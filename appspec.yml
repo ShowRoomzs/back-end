@@ -1,0 +1,23 @@
+version: 0.0
+os: linux
+
+files:
+  - source: /
+    destination: /home/ubuntu
+
+permissions:
+  - object: /home/ubuntu
+    owner: ubuntu  
+    group: ubuntu
+    mode: 755
+
+hooks:
+  BeforeInstall:
+    - location: unzip.sh
+      timeout: 60
+      runas: ubuntu 
+
+  ApplicationStart:
+    - location: start.sh
+      timeout: 60
+      runas: ubuntu  

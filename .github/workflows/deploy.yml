@@ -1,0 +1,55 @@
+name: Deploy Spring Boot to EC2
+
+on:
+  push:
+    branches:
+      - main  # main 브랜치에 push될 때만 실행
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 소스 코드 체크아웃
+      uses: actions/checkout@v3
+
+
+    - name: application.yml 디코딩 및 적용
+      run: |
+        echo "${{ secrets.APPLICATION_YML }}" | base64 --decode > src/main/resources/application.yml
+
+    - name: Java 17 설정
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'corretto'
+        java-version: '21'
+
+    - name: Gradle 빌드
+      run: |
+        chmod +x gradlew
+        ./gradlew clean build -x test
+
+    - name: AWS 로그인 (S3 & CodeDeploy 사용)
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-northeast-2  # 서울 리전
+
+    - name: S3에 업로드
+      run: |
+        mkdir deploy
+        cp build/libs/myblog-0.0.1-SNAPSHOT.jar deploy/app.jar
+        cp appspec.yml deploy/
+        cp scripts/start.sh deploy/
+        cp scripts/unzip.sh deploy/
+        
+        zip -r deploy.zip deploy/
+        aws s3 cp deploy.zip s3://${{ secrets.AWS_S3_BUCKET}}/deploy.zip
+
+    - name: AWS CodeDeploy 실행
+      run: |
+        aws deploy create-deployment \
+          --application-name spring-boot-app \
+          --deployment-group-name spring-boot-deploy-group \
+          --s3-location bucket=${{ secrets.AWS_S3_BUCKET}},bundleType=zip,key=deploy.zip
