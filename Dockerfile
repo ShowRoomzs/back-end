@@ -9,7 +9,7 @@ COPY src /app/src
 RUN ./gradlew build -x test
 
 # 2. Run Stage (실행 환경)
-FROM public.ecr.aws/amazoncorretto/amazon-corretto:21-alpine-jre
+FROM amazoncorretto:21-alpine-jdk
 WORKDIR /app
 # 빌드 스테이지에서 .jar 파일을 복사
 COPY --from=BUILD_STAGE /app/build/libs/*.jar app.jar
