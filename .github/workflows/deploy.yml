@@ -3,7 +3,7 @@ name: Deploy Spring Boot to EC2
 on:
   push:
     branches:
-      - main  # main 브랜치에 push될 때만 실행
+      - main 
   workflow_dispatch:  
 jobs:
   deploy:
