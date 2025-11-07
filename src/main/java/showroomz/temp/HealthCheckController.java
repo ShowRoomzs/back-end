@@ -1,4 +1,4 @@
-package showroomz.controller;
+package showroomz.temp;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
