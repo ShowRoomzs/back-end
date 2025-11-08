@@ -22,14 +22,14 @@ import java.time.LocalDateTime;
 public class Users {
     @JsonIgnore
     @Id
-    @Column(name = "USER_SEQ")
+    @Column(name = "USER_ID")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userSeq;
+    private Long userId;
 
-    @Column(name = "USER_ID", length = 64, unique = true)
+    @Column(name = "USERNAME", length = 64, unique = true)
     @NotNull
     @Size(max = 64)
-    private String userId;
+    private String username;
 
     @Column(name = "NICKNAME", length = 100)
     @NotNull
@@ -87,7 +87,7 @@ public class Users {
             @NotNull LocalDateTime createdAt,
             @NotNull LocalDateTime modifiedAt
     ) {
-        this.userId = userId;
+        this.username = username;
         this.nickname = nickname;
         this.password = "NO_PASS";
         this.email = email != null ? email : "NO_EMAIL";
