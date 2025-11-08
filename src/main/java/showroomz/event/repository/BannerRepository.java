@@ -1,9 +1,10 @@
 package showroomz.event.repository;
-import org.springframework.boot.Banner;
+
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import showroomz.event.entitiy.Banner;
 import showroomz.event.entitiy.BannerPosition;
 
 import java.time.LocalDateTime;

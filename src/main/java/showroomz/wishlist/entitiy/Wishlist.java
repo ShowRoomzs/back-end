@@ -35,17 +35,17 @@ public class Wishlist {
     private Users user;
 
     // Product와의 관계 (N:1)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "product_id", nullable = false)
+//    private Product product;
 
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt; // 찜한 날짜
 
     //== 생성자 ==//
-    public Wishlist(Users user, Product product) {
-        this.user = user;
-        this.product = product;
-    }
+//    public Wishlist(Users user, Product product) {
+//        this.user = user;
+//        this.product = product;
+//    }
 }
