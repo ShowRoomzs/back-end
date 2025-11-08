@@ -17,7 +17,6 @@ public class RecentSearch {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(columnDefinition = "uuid")
     private UUID id; // "id": "search_uuid_12345"
 
     @ManyToOne(fetch = FetchType.LAZY)

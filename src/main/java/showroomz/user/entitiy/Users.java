@@ -74,7 +74,8 @@ public class Users {
     @Column(name = "MODIFIED_AT")
     @NotNull
     private LocalDateTime modifiedAt;
-
+    
+    
     public Users(
             @NotNull @Size(max = 64) String userId,
             @NotNull @Size(max = 100) String nickname,
