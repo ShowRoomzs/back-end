@@ -4,9 +4,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.web.filter.CorsFilter;
 
-import showroomz.config.properties.AppProperties;
 import showroomz.config.properties.CorsProperties;
-import showroomz.oauthlogin.auth.UserRefreshTokenRepository;
 import showroomz.oauthlogin.oauth.entity.RoleType;
 import showroomz.oauthlogin.oauth.exception.RestAuthenticationEntryPoint;
 import showroomz.oauthlogin.oauth.filter.TokenAuthenticationFilter;
@@ -45,7 +43,7 @@ public class SecurityConfig {
     private static final String[] AUTH_WHITELIST = {
             "/swagger-ui/**", "/api-docs", "/swagger-ui-custom.html", "/payment/**",
             "/v3/api-docs/**", "/api-docs/**", "/swagger-ui.html", 
-            "/api/v1/auth/login", "/api/v1/auth/signup", "/api/v1/auth/social" 
+            "/v1/auth/social/login", "/v1/auth/register", "/" 
     };
     /*
      * SecurityFilterChain 설정 (Spring Security 3.x 최신 방식)
@@ -66,8 +64,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
                 .requestMatchers(AUTH_WHITELIST).permitAll()
+                .requestMatchers("/api/*/admin/**").hasAnyAuthority(RoleType.ADMIN.getCode())
                 .requestMatchers("/api/**").hasAnyAuthority(RoleType.USER.getCode())
-                .requestMatchers("/api/**/admin/**").hasAnyAuthority(RoleType.ADMIN.getCode())
                 .anyRequest().authenticated()
             );
             
@@ -90,8 +88,7 @@ public class SecurityConfig {
      */
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }

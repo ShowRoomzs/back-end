@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -18,10 +19,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 import showroomz.config.properties.AppProperties;
 import showroomz.oauthlogin.auth.DTO.AuthReqModel;
-import showroomz.oauthlogin.auth.DTO.RefreshTokenRequest; // [추가]
+import showroomz.oauthlogin.auth.DTO.ErrorResponse;
+import showroomz.oauthlogin.auth.DTO.RefreshTokenRequest;
 import showroomz.oauthlogin.auth.DTO.SignUpRequest;
 import showroomz.oauthlogin.auth.DTO.SocialLoginRequest;
-import showroomz.oauthlogin.auth.DTO.TokenResponse;      // [추가]
+import showroomz.oauthlogin.auth.DTO.TokenResponse;
 import showroomz.oauthlogin.oauth.entity.ProviderType;
 import showroomz.oauthlogin.oauth.entity.RoleType;
 import showroomz.oauthlogin.oauth.entity.UserPrincipal;
@@ -57,54 +59,73 @@ public class AuthController {
     
     private final static long THREE_DAYS_MSEC = 259200000;
 
-    @PostMapping("/{provider}/social")
-    public TokenResponse socialLogin(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            @PathVariable String provider,
-            @RequestBody @Valid SocialLoginRequest socialLoginRequest
-    ) {
+    @PostMapping("/social/login")
+    public ResponseEntity<?> socialLogin(@RequestBody @Valid SocialLoginRequest socialLoginRequest) {
         try {
-            ProviderType providerType = convertToProviderType(provider);
+            // 1. 필수 파라미터 검증
+            if (socialLoginRequest.getToken() == null || socialLoginRequest.getToken().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ErrorResponse("BAD_REQUEST", "token은 필수 입력값입니다."));
+            }
 
-            SocialLoginResult result = socialLoginService.loginOrSignup(
-                    providerType,
-                    socialLoginRequest.getAccessToken()
-            );
+            if (socialLoginRequest.getProviderType() == null || socialLoginRequest.getProviderType().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ErrorResponse("BAD_REQUEST", "providerType은 필수 입력값입니다."));
+            }
 
-            return generateTokens(result.getUser().getUserId(), result.getUser().getRoleType(), result.isNewMember());
+            // 2. ProviderType 변환
+            ProviderType providerType;
+            try {
+                providerType = ProviderType.valueOf(socialLoginRequest.getProviderType().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ErrorResponse("INVALID_SOCIAL_PROVIDER", "지원하지 않는 소셜 공급자입니다."));
+            }
+
+            // 3. 소셜 로그인 처리 (애플의 경우 name 전달)
+            SocialLoginResult result;
+            if (providerType == ProviderType.APPLE && socialLoginRequest.getName() != null) {
+                result = socialLoginService.loginOrSignup(
+                        providerType,
+                        socialLoginRequest.getToken(),
+                        socialLoginRequest.getName()
+                );
+            } else {
+                result = socialLoginService.loginOrSignup(
+                        providerType,
+                        socialLoginRequest.getToken()
+                );
+            }
+
+            // 4. 신규 회원인 경우 registerToken 반환 (5분 유효)
+            if (result.isNewMember()) {
+                Date now = new Date();
+                long registerTokenExpiry = 5 * 60 * 1000; // 5분
+                AuthToken registerToken = tokenProvider.createAuthToken(
+                        result.getUser().getUserId(),
+                        new Date(now.getTime() + registerTokenExpiry)
+                );
+                return ResponseEntity.ok(new TokenResponse(registerToken.getToken()));
+            }
+
+            // 5. 기존 회원인 경우 일반 토큰 반환
+            return ResponseEntity.ok(generateTokens(
+                    result.getUser().getUserId(),
+                    result.getUser().getRoleType(),
+                    false
+            ));
 
         } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+            String message = e.getMessage();
+            if (message.contains("유효하지 않은") || message.contains("토큰") || message.contains("만료")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("UNAUTHORIZED", "유효하지 않은 액세스 토큰입니다."));
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse("BAD_REQUEST", message));
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "소셜 로그인 실패: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * 경로 변수의 provider 문자열을 ProviderType enum으로 변환
-     */
-    private ProviderType convertToProviderType(String provider) {
-        if (provider == null) {
-            throw new IllegalArgumentException("Provider는 필수입니다.");
-        }
-        
-        String providerUpper = provider.toUpperCase();
-        switch (providerUpper) {
-            case "네이버":
-            case "NAVER":
-                return ProviderType.NAVER;
-            case "구글":
-            case "GOOGLE":
-                return ProviderType.GOOGLE;
-            case "카카오":
-            case "KAKAO":
-                return ProviderType.KAKAO;
-            case "애플":
-            case "APPLE":
-                return ProviderType.APPLE;
-            default:
-                throw new IllegalArgumentException("지원하지 않는 소셜 로그인 제공자입니다: " + provider);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."));
         }
     }
     
@@ -237,7 +258,9 @@ public class AuthController {
             refreshTokenStr = authRefreshToken.getToken();
         }
 
-        return new TokenResponse(newAccessToken.getToken(), refreshTokenStr, appProperties.getAuth().getTokenExpiry(), false);
+        long accessTokenExpiresInSeconds = appProperties.getAuth().getTokenExpiry() / 1000;
+        long refreshTokenExpiresInSeconds = appProperties.getAuth().getRefreshTokenExpiry() / 1000;
+        return new TokenResponse(newAccessToken.getToken(), refreshTokenStr, accessTokenExpiresInSeconds, refreshTokenExpiresInSeconds, false);
     }
     
     @PostMapping("/logout")
@@ -260,10 +283,11 @@ public class AuthController {
         Date now = new Date();
         
         // Access Token 생성
+        long accessTokenExpiry = appProperties.getAuth().getTokenExpiry();
         AuthToken accessToken = tokenProvider.createAuthToken(
                 userId,
                 roleType.getCode(),
-                new Date(now.getTime() + appProperties.getAuth().getTokenExpiry())
+                new Date(now.getTime() + accessTokenExpiry)
         );
 
         // Refresh Token 생성
@@ -283,6 +307,16 @@ public class AuthController {
             userRefreshTokenRepository.saveAndFlush(userRefreshToken);
         }
 
-        return new TokenResponse(accessToken.getToken(), refreshToken.getToken(), appProperties.getAuth().getTokenExpiry(), isNewMember);
+        // 밀리초를 초로 변환
+        long accessTokenExpiresInSeconds = accessTokenExpiry / 1000;
+        long refreshTokenExpiresInSeconds = refreshTokenExpiry / 1000;
+
+        return new TokenResponse(
+                accessToken.getToken(),
+                refreshToken.getToken(),
+                accessTokenExpiresInSeconds,
+                refreshTokenExpiresInSeconds,
+                isNewMember
+        );
     }
 }
