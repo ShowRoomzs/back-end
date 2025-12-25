@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import showroomz.user.entitiy.Users;
+import showroomz.oauthlogin.user.User;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -32,7 +32,7 @@ public class Wishlist {
     // Member와의 관계 (N:1)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private Users user;
+    private User user;
 
     // Product와의 관계 (N:1)
 //    @ManyToOne(fetch = FetchType.LAZY)
