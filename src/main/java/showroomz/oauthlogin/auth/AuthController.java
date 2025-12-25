@@ -281,73 +281,97 @@ public class AuthController {
      * - Refresh Token을 Body로 받아서 검증 후 새로운 Access Token (필요 시 Refresh Token도) 반환
      */
     @PostMapping("/refresh")
-    public TokenResponse refreshToken(
-            HttpServletRequest request, 
-            @RequestBody RefreshTokenRequest refreshRequest
-    ) {
-        // 1. Access Token 확인 (Header)
-        String accessToken = HeaderUtil.getAccessToken(request);
-        AuthToken authToken = tokenProvider.convertAuthToken(accessToken);
-        
-        // Access Token 유효성 검사 (만료 여부 상관없이 구조적 유효성)
-        if (!authToken.validate()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid access token.");
-        }
+    public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest refreshRequest) {
+        try {
+            // 1. Refresh Token 확인 (Body)
+            String refreshTokenStr = refreshRequest.getRefreshToken();
+            if (refreshTokenStr == null || refreshTokenStr.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ErrorResponse("BAD_REQUEST", "refreshToken은 필수 입력값입니다."));
+            }
 
-        // 2. Access Token에서 유저 정보 추출
-        Claims claims = authToken.getExpiredTokenClaims();
-        if (claims == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not expired token yet.");
-        }
+            AuthToken authRefreshToken = tokenProvider.convertAuthToken(refreshTokenStr);
 
-        String userId = claims.getSubject();
-        RoleType roleType = RoleType.of(claims.get("role", String.class));
+            // 2. Refresh Token 유효성 검사
+            if (!authRefreshToken.validate()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("INVALID_TOKEN", "유효하지 않은 토큰입니다."));
+            }
 
-        // 3. Refresh Token 확인 (Body)
-        String refreshTokenStr = refreshRequest.getRefreshToken();
-        AuthToken authRefreshToken = tokenProvider.convertAuthToken(refreshTokenStr);
+            // 3. Refresh Token 만료 여부 확인
+            Claims refreshClaims = authRefreshToken.getTokenClaims();
+            if (refreshClaims == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("INVALID_TOKEN", "유효하지 않은 토큰입니다."));
+            }
 
-        // Refresh Token 유효성 검사
-        if (!authRefreshToken.validate()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token.");
-        }
+            Date expiration = refreshClaims.getExpiration();
+            Date now = new Date();
+            if (expiration.before(now)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("REFRESH_TOKEN_EXPIRED", "리프레시 토큰이 만료되었습니다. 다시 로그인해주세요."));
+            }
 
-        // 4. DB에서 User ID와 Refresh Token 일치 여부 확인
-        UserRefreshToken userRefreshToken = userRefreshTokenRepository.findByUserIdAndRefreshToken(userId, refreshTokenStr);
-        if (userRefreshToken == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token.");
-        }
+            // 4. DB에서 Refresh Token으로 User ID 조회
+            UserRefreshToken userRefreshToken = userRefreshTokenRepository.findByRefreshToken(refreshTokenStr);
+            if (userRefreshToken == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("INVALID_TOKEN", "유효하지 않은 토큰입니다."));
+            }
 
-        // 5. 새로운 Access Token 생성
-        Date now = new Date();
-        AuthToken newAccessToken = tokenProvider.createAuthToken(
-                userId,
-                roleType.getCode(),
-                new Date(now.getTime() + appProperties.getAuth().getTokenExpiry())
-        );
+            String userId = userRefreshToken.getUserId();
+            
+            // 5. User 조회하여 RoleType 가져오기
+            User user = userRepository.findByUserId(userId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+            RoleType roleType = user.getRoleType();
 
-        long validTime = authRefreshToken.getTokenClaims().getExpiration().getTime() - now.getTime();
-
-        // 6. Refresh Token 갱신 로직 (만료 3일 전이면 갱신)
-        if (validTime <= THREE_DAYS_MSEC) {
-            long refreshTokenExpiry = appProperties.getAuth().getRefreshTokenExpiry();
-
-            authRefreshToken = tokenProvider.createAuthToken(
-                    appProperties.getAuth().getTokenSecret(),
-                    new Date(now.getTime() + refreshTokenExpiry)
+            // 6. 새로운 Access Token 생성
+            AuthToken newAccessToken = tokenProvider.createAuthToken(
+                    userId,
+                    roleType.getCode(),
+                    new Date(now.getTime() + appProperties.getAuth().getTokenExpiry())
             );
 
-            // DB 업데이트
-            userRefreshToken.setRefreshToken(authRefreshToken.getToken());
-            userRefreshTokenRepository.save(userRefreshToken);
-            
-            // 갱신된 Refresh Token 문자열 사용
-            refreshTokenStr = authRefreshToken.getToken();
-        }
+            long validTime = expiration.getTime() - now.getTime();
 
-        long accessTokenExpiresInSeconds = appProperties.getAuth().getTokenExpiry() / 1000;
-        long refreshTokenExpiresInSeconds = appProperties.getAuth().getRefreshTokenExpiry() / 1000;
-        return new TokenResponse(newAccessToken.getToken(), refreshTokenStr, accessTokenExpiresInSeconds, refreshTokenExpiresInSeconds, false);
+            // 7. Refresh Token 갱신 로직 (만료 3일 전이면 갱신)
+            if (validTime <= THREE_DAYS_MSEC) {
+                long refreshTokenExpiry = appProperties.getAuth().getRefreshTokenExpiry();
+
+                authRefreshToken = tokenProvider.createAuthToken(
+                        appProperties.getAuth().getTokenSecret(),
+                        new Date(now.getTime() + refreshTokenExpiry)
+                );
+
+                // DB 업데이트
+                userRefreshToken.setRefreshToken(authRefreshToken.getToken());
+                userRefreshTokenRepository.save(userRefreshToken);
+                
+                // 갱신된 Refresh Token 문자열 사용
+                refreshTokenStr = authRefreshToken.getToken();
+            }
+
+            // 8. 응답 반환 (isNewMember 제외)
+            long accessTokenExpiresInSeconds = appProperties.getAuth().getTokenExpiry() / 1000;
+            long refreshTokenExpiresInSeconds = appProperties.getAuth().getRefreshTokenExpiry() / 1000;
+            
+            TokenResponse response = new TokenResponse();
+            response.setTokenType("Bearer");
+            response.setAccessToken(newAccessToken.getToken());
+            response.setRefreshToken(refreshTokenStr);
+            response.setAccessTokenExpiresIn(accessTokenExpiresInSeconds);
+            response.setRefreshTokenExpiresIn(refreshTokenExpiresInSeconds);
+            // isNewMember는 null로 유지하여 응답에서 제외
+            
+            return ResponseEntity.ok(response);
+
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."));
+        }
     }
     
     @PostMapping("/logout")
