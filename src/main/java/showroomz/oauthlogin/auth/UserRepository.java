@@ -11,5 +11,5 @@ import showroomz.oauthlogin.user.User;
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUserId(String userId);
     Boolean existsByUserId(String userId);
-
+    Boolean existsByNickname(String nickname);
 }

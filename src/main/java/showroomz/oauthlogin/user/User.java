@@ -58,6 +58,12 @@ public class User {
     @Size(max = 512)
     private String profileImageUrl;
 
+    @Column(name = "GENDER", length = 10)
+    private String gender; // "MALE", "FEMALE", null
+
+    @Column(name = "BIRTHDAY", length = 10)
+    private String birthday; // "YYYY-MM-DD"
+
     @Column(name = "PROVIDER_TYPE", length = 20)
     @Enumerated(EnumType.STRING)
     @NotNull

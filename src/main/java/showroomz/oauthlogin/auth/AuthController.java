@@ -20,10 +20,12 @@ import org.springframework.web.server.ResponseStatusException;
 import showroomz.config.properties.AppProperties;
 import showroomz.oauthlogin.auth.DTO.AuthReqModel;
 import showroomz.oauthlogin.auth.DTO.ErrorResponse;
+import showroomz.oauthlogin.auth.DTO.RegisterRequest;
 import showroomz.oauthlogin.auth.DTO.RefreshTokenRequest;
 import showroomz.oauthlogin.auth.DTO.SignUpRequest;
 import showroomz.oauthlogin.auth.DTO.SocialLoginRequest;
 import showroomz.oauthlogin.auth.DTO.TokenResponse;
+import showroomz.oauthlogin.auth.DTO.ValidationErrorResponse;
 import showroomz.oauthlogin.oauth.entity.ProviderType;
 import showroomz.oauthlogin.oauth.entity.RoleType;
 import showroomz.oauthlogin.oauth.entity.UserPrincipal;
@@ -129,6 +131,74 @@ public class AuthController {
         }
     }
     
+    @PostMapping("/register")
+    public ResponseEntity<?> register(HttpServletRequest request, @RequestBody @Valid RegisterRequest registerRequest) {
+        try {
+            // 1. registerToken 검증
+            String registerTokenStr = HeaderUtil.getAccessToken(request);
+            if (registerTokenStr == null || registerTokenStr.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("UNAUTHORIZED", "회원가입 유효 시간이 만료되었습니다. 다시 로그인해주세요."));
+            }
+
+            AuthToken registerToken = tokenProvider.convertAuthToken(registerTokenStr);
+            if (!registerToken.validate()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("UNAUTHORIZED", "회원가입 유효 시간이 만료되었습니다. 다시 로그인해주세요."));
+            }
+
+            Claims claims = registerToken.getTokenClaims();
+            if (claims == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("UNAUTHORIZED", "회원가입 유효 시간이 만료되었습니다. 다시 로그인해주세요."));
+            }
+
+            String userId = claims.getSubject();
+
+            // 2. 닉네임 중복 체크
+            if (userRepository.existsByNickname(registerRequest.getNickname())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new ErrorResponse("DUPLICATE_NICKNAME", "이미 사용 중인 닉네임입니다."));
+            }
+
+            // 3. 닉네임 부적절한 단어 체크
+            if (containsInappropriateWord(registerRequest.getNickname())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ValidationErrorResponse("INVALID_INPUT", "입력값이 올바르지 않습니다.",
+                                java.util.List.of(new ValidationErrorResponse.FieldError("nickname", "부적절한 단어가 포함되어 있습니다."))));
+            }
+
+            // 4. 생년월일 형식 검증 (null이 아닐 때만)
+            if (registerRequest.getBirthday() != null && !registerRequest.getBirthday().isEmpty()) {
+                if (!registerRequest.getBirthday().matches("^\\d{4}-\\d{2}-\\d{2}$")) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body(new ValidationErrorResponse("INVALID_INPUT", "입력값이 올바르지 않습니다.",
+                                    java.util.List.of(new ValidationErrorResponse.FieldError("birthday", "생년월일 형식이 올바르지 않습니다."))));
+                }
+            }
+
+            // 5. User 조회 및 업데이트
+            User user = userRepository.findByUserId(userId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+
+            user.setNickname(registerRequest.getNickname());
+            user.setGender(registerRequest.getGender());
+            user.setBirthday(registerRequest.getBirthday());
+            user.setModifiedAt(LocalDateTime.now());
+            userRepository.save(user);
+
+            // 6. 토큰 발급 및 반환
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(generateTokens(userId, user.getRoleType(), false));
+
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."));
+        }
+    }
+
     @PostMapping("/signup")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "성공"),
@@ -155,6 +225,23 @@ public class AuthController {
         userRepository.save(user);
 
         return Map.of("message", "회원가입이 완료되었습니다.");
+    }
+
+    // 닉네임 부적절한 단어 체크
+    private boolean containsInappropriateWord(String nickname) {
+        // 부적절한 단어 목록 (실제로는 DB나 설정 파일에서 관리하는 것이 좋습니다)
+        String[] inappropriateWords = {
+            "관리자", "admin", "administrator", "운영자", "operator",
+            "시스템", "system", "서버", "server", "테스트", "test"
+        };
+        
+        String lowerNickname = nickname.toLowerCase();
+        for (String word : inappropriateWords) {
+            if (lowerNickname.contains(word.toLowerCase())) {
+                return true;
+            }
+        }
+        return false;
     }
     
     @PostMapping("/login")

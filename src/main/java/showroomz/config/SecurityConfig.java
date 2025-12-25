@@ -41,9 +41,11 @@ public class SecurityConfig {
     private final TokenAccessDeniedHandler tokenAccessDeniedHandler;
     
     private static final String[] AUTH_WHITELIST = {
-            "/swagger-ui/**", "/api-docs", "/swagger-ui-custom.html", "/payment/**",
-            "/v3/api-docs/**", "/api-docs/**", "/swagger-ui.html", 
-            "/v1/auth/social/login", "/v1/auth/register", "/" 
+            "/swagger-ui/**", "/swagger-ui.html", "/swagger-ui/index.html",
+            "/api-docs", "/swagger-ui-custom.html", "/payment/**",
+            "/v3/api-docs/**", "/api-docs/**", 
+            "/v1/auth/social/login", "/v1/auth/register", "/",
+            "/error"  // 에러 페이지 접근 허용
     };
     /*
      * SecurityFilterChain 설정 (Spring Security 3.x 최신 방식)

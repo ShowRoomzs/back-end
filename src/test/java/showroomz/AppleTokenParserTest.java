@@ -25,6 +25,7 @@ public class AppleTokenParserTest {
     void 애플_토큰_헤더_파싱_테스트() throws Exception {
         // given
         Date now = new Date();
+        
         KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
         PrivateKey privateKey = keyPair.getPrivate();
 
