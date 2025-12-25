@@ -39,6 +39,7 @@ import showroomz.oauthlogin.utils.HeaderUtil;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
 import java.time.LocalDateTime;
@@ -281,6 +282,7 @@ public class AuthController {
      * - Refresh Token을 Body로 받아서 검증 후 새로운 Access Token (필요 시 Refresh Token도) 반환
      */
     @PostMapping("/refresh")
+    @Transactional
     public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest refreshRequest) {
         try {
             // 1. Refresh Token 확인 (Body)
@@ -340,7 +342,7 @@ public class AuthController {
                 long refreshTokenExpiry = appProperties.getAuth().getRefreshTokenExpiry();
 
                 authRefreshToken = tokenProvider.createAuthToken(
-                        appProperties.getAuth().getTokenSecret(),
+                        userId,
                         new Date(now.getTime() + refreshTokenExpiry)
                 );
 
@@ -404,7 +406,7 @@ public class AuthController {
         // Refresh Token 생성
         long refreshTokenExpiry = appProperties.getAuth().getRefreshTokenExpiry();
         AuthToken refreshToken = tokenProvider.createAuthToken(
-                appProperties.getAuth().getTokenSecret(),
+                userId,
                 new Date(now.getTime() + refreshTokenExpiry)
         );
 
