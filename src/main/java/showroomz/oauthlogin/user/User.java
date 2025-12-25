@@ -1,7 +1,8 @@
-package showroomz.user.entitiy;
+package showroomz.oauthlogin.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
+import showroomz.oauthlogin.oauth.entity.ProviderType;
+import showroomz.oauthlogin.oauth.entity.RoleType;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,18 +19,18 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "USERS")
-public class Users {
+@Table(name = "USER")
+public class User {
     @JsonIgnore
     @Id
-    @Column(name = "USER_ID")
+    @Column(name = "USER_SEQ")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userId;
+    private Long userSeq;
 
-    @Column(name = "USERNAME", length = 64, unique = true)
+    @Column(name = "USER_ID", length = 64, unique = true)
     @NotNull
     @Size(max = 64)
-    private String username;
+    private String userId;
 
     @Column(name = "NICKNAME", length = 100)
     @NotNull
@@ -74,9 +75,8 @@ public class Users {
     @Column(name = "MODIFIED_AT")
     @NotNull
     private LocalDateTime modifiedAt;
-    
-    
-    public Users(
+
+    public User(
             @NotNull @Size(max = 64) String userId,
             @NotNull @Size(max = 100) String nickname,
             @NotNull @Size(max = 512) String email,
@@ -87,7 +87,7 @@ public class Users {
             @NotNull LocalDateTime createdAt,
             @NotNull LocalDateTime modifiedAt
     ) {
-        this.username = username;
+        this.userId = userId;
         this.nickname = nickname;
         this.password = "NO_PASS";
         this.email = email != null ? email : "NO_EMAIL";

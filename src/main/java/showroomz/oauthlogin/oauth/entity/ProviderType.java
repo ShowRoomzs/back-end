@@ -1,4 +1,4 @@
-package showroomz.user.entitiy;
+package showroomz.oauthlogin.oauth.entity;
 
 import lombok.Getter;
 
@@ -8,5 +8,6 @@ public enum ProviderType {
     FACEBOOK,
     NAVER,
     KAKAO,
+    APPLE,
     LOCAL;
 }
