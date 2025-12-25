@@ -60,6 +60,11 @@ public class SocialLoginService {
 
     @Transactional
     public SocialLoginResult loginOrSignup(ProviderType providerType, String accessToken) {
+        return loginOrSignup(providerType, accessToken, null);
+    }
+
+    @Transactional
+    public SocialLoginResult loginOrSignup(ProviderType providerType, String accessToken, String name) {
         // 1. [보안 추가] 구글의 경우 토큰이 우리 앱의 것인지 검증
         if (providerType == ProviderType.GOOGLE) {
             verifyGoogleToken(accessToken);
@@ -79,7 +84,12 @@ public class SocialLoginService {
         boolean isNewMember = false;
 
         if (user == null) {
-            user = createUser(userInfo, providerType);
+            // 애플의 경우 name이 제공되면 사용
+            if (providerType == ProviderType.APPLE && name != null && !name.isEmpty()) {
+                user = createUser(userInfo, providerType, name);
+            } else {
+                user = createUser(userInfo, providerType);
+            }
             isNewMember = true;
         } else {
             updateUser(user, userInfo);
@@ -225,13 +235,19 @@ public class SocialLoginService {
 
     // ... createUser, updateUser는 기존과 동일 ...
     private User createUser(OAuth2UserInfo userInfo, ProviderType providerType) {
+        return createUser(userInfo, providerType, null);
+    }
+
+    private User createUser(OAuth2UserInfo userInfo, ProviderType providerType, String name) {
         LocalDateTime now = LocalDateTime.now();
+        String userName = name != null && !name.isEmpty() ? name : 
+                         (userInfo.getName() != null ? userInfo.getName() : "Guest");
         User user = new User(
                 userInfo.getId(),
-                userInfo.getName() != null ? userInfo.getName() : "Guest",
+                userName,
                 userInfo.getEmail() != null ? userInfo.getEmail() : userInfo.getId() + "@social.com",
                 "Y",
-                userInfo.getImageUrl(),
+                userInfo.getImageUrl() != null ? userInfo.getImageUrl() : "",
                 providerType,
                 RoleType.USER,
                 now,
