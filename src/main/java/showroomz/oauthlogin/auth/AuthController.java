@@ -35,6 +35,8 @@ import showroomz.oauthlogin.oauth.service.SocialLoginService.SocialLoginResult;
 import showroomz.oauthlogin.oauth.token.AuthToken;
 import showroomz.oauthlogin.oauth.token.AuthTokenProvider;
 import showroomz.oauthlogin.user.User;
+import showroomz.oauthlogin.user.UserService;
+import showroomz.oauthlogin.user.DTO.NicknameCheckResponse;
 import showroomz.oauthlogin.utils.HeaderUtil;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -57,6 +59,7 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final UserRefreshTokenRepository userRefreshTokenRepository;
     private final UserRepository userRepository;
+    private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final SocialLoginService socialLoginService;
     
@@ -156,17 +159,21 @@ public class AuthController {
 
             String userId = claims.getSubject();
 
-            // 2. 닉네임 중복 체크
-            if (userRepository.existsByNickname(registerRequest.getNickname())) {
-                return ResponseEntity.status(HttpStatus.CONFLICT)
-                        .body(new ErrorResponse("DUPLICATE_NICKNAME", "이미 사용 중인 닉네임입니다."));
-            }
-
-            // 3. 닉네임 부적절한 단어 체크
-            if (containsInappropriateWord(registerRequest.getNickname())) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new ValidationErrorResponse("INVALID_INPUT", "입력값이 올바르지 않습니다.",
-                                java.util.List.of(new ValidationErrorResponse.FieldError("nickname", "부적절한 단어가 포함되어 있습니다."))));
+            // 2. 닉네임 검증 (형식, 금칙어, 중복 체크)
+            NicknameCheckResponse nicknameCheck = userService.checkNickname(registerRequest.getNickname());
+            if (!nicknameCheck.getIsAvailable()) {
+                if ("INVALID_FORMAT".equals(nicknameCheck.getCode())) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body(new ValidationErrorResponse("INVALID_INPUT", "입력값이 올바르지 않습니다.",
+                                    java.util.List.of(new ValidationErrorResponse.FieldError("nickname", nicknameCheck.getMessage()))));
+                } else if ("PROFANITY".equals(nicknameCheck.getCode())) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body(new ValidationErrorResponse("INVALID_INPUT", "입력값이 올바르지 않습니다.",
+                                    java.util.List.of(new ValidationErrorResponse.FieldError("nickname", nicknameCheck.getMessage()))));
+                } else if ("DUPLICATE".equals(nicknameCheck.getCode())) {
+                    return ResponseEntity.status(HttpStatus.CONFLICT)
+                            .body(new ErrorResponse("DUPLICATE_NICKNAME", nicknameCheck.getMessage()));
+                }
             }
 
             // 4. 생년월일 형식 검증 (null이 아닐 때만)
@@ -228,23 +235,6 @@ public class AuthController {
         return Map.of("message", "회원가입이 완료되었습니다.");
     }
 
-    // 닉네임 부적절한 단어 체크
-    private boolean containsInappropriateWord(String nickname) {
-        // 부적절한 단어 목록 (실제로는 DB나 설정 파일에서 관리하는 것이 좋습니다)
-        String[] inappropriateWords = {
-            "관리자", "admin", "administrator", "운영자", "operator",
-            "시스템", "system", "서버", "server", "테스트", "test"
-        };
-        
-        String lowerNickname = nickname.toLowerCase();
-        for (String word : inappropriateWords) {
-            if (lowerNickname.contains(word.toLowerCase())) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
     @PostMapping("/login")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "성공"),
