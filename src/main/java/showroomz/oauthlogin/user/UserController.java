@@ -71,7 +71,7 @@ public class UserController {
                     user.getRoleType(),
                     user.getCreatedAt(),
                     user.getModifiedAt(),
-                    user.getMarketingAgree()
+                    user.isMarketingAgree()
             );
 
             return ResponseEntity.ok(response);
@@ -204,7 +204,7 @@ public class UserController {
                     updatedUser.getRoleType(),
                     updatedUser.getCreatedAt(),
                     updatedUser.getModifiedAt(),
-                    updatedUser.getMarketingAgree()
+                    updatedUser.isMarketingAgree()
             );
 
             return ResponseEntity.ok(response);
