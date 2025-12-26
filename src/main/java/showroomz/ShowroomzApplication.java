@@ -8,9 +8,10 @@ import org.springframework.web.client.RestTemplate;
 
 import showroomz.config.properties.AppProperties;
 import showroomz.config.properties.CorsProperties;
+import showroomz.config.properties.S3Properties;
 
 @SpringBootApplication
-@EnableConfigurationProperties({AppProperties.class, CorsProperties.class})
+@EnableConfigurationProperties({AppProperties.class, CorsProperties.class, S3Properties.class})
 public class ShowroomzApplication {
 
 	public static void main(String[] args) {
