@@ -45,6 +45,7 @@ aws:
     region: ${AWS_S3_REGION:ap-northeast-2}
     access-key: ${AWS_ACCESS_KEY_ID}
     secret-key: ${AWS_SECRET_ACCESS_KEY}
+    cloud-front-domain: ${AWS_CLOUDFRONT_DOMAIN:}
 
 # 로깅 설정 
 logging:

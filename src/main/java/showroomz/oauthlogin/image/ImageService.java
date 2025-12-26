@@ -16,6 +16,8 @@ import showroomz.config.properties.S3Properties;
 import showroomz.oauthlogin.image.DTO.ImageUploadResponse;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -107,6 +109,7 @@ public class ImageService {
 
     private String uploadToS3(MultipartFile file, String s3Key) throws IOException {
         try {
+            // 1. S3에 업로드
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(s3Properties.getBucket())
                     .key(s3Key)
@@ -116,11 +119,25 @@ public class ImageService {
             s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(
                     file.getInputStream(), file.getSize()));
 
-            // S3 URL 생성
+            // 2. URL 인코딩 처리
+            // 한글, 공백, 특수문자가 있어도 브라우저가 인식할 수 있게 변환합니다.
+            // UUID만 쓴다면 당장 필요 없지만, 나중을 위해 필수입니다.
+            String encodedKey = URLEncoder.encode(s3Key, StandardCharsets.UTF_8.toString())
+                    .replaceAll("\\+", "%20") // 공백(+)을 %20으로 치환
+                    .replaceAll("%2F", "/");  // 경로 구분자(/)는 인코딩 하지 않음
+
+            // 3. CloudFront URL 사용 (버킷 이름 숨김)
+            if (s3Properties.getCloudFrontDomain() != null && !s3Properties.getCloudFrontDomain().isEmpty()) {
+                return "https://" + s3Properties.getCloudFrontDomain() + "/" + encodedKey;
+            }
+            
+            // 4. Fallback: CloudFront가 없으면 S3 기본 URL 사용
+            // (SDK v2에서는 getUrl이 복잡하므로, 인코딩된 키를 사용하여 직접 조합하는 것이 확실합니다)
             return String.format("https://%s.s3.%s.amazonaws.com/%s",
                     s3Properties.getBucket(),
                     s3Properties.getRegion(),
-                    s3Key);
+                    encodedKey); // s3Key 대신 encodedKey 사용
+
         } catch (S3Exception e) {
             log.error("S3 업로드 실패: {}", e.getMessage(), e);
             throw e;
