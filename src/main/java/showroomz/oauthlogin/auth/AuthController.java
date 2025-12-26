@@ -377,18 +377,46 @@ public class AuthController {
     }
     
     @PostMapping("/logout")
-    public Map<String, String> logout(@RequestBody RefreshTokenRequest refreshRequest) {
-        String refreshToken = refreshRequest.getRefreshToken();
+    public ResponseEntity<?> logout(
+            HttpServletRequest request,
+            @RequestBody RefreshTokenRequest refreshRequest
+    ) {
+        try {
+            // 1. Authorization 헤더에서 Access Token 확인
+            String accessToken = HeaderUtil.getAccessToken(request);
+            if (accessToken == null || accessToken.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("UNAUTHORIZED", "인증 정보가 유효하지 않습니다."));
+            }
 
-        if (refreshToken != null) {
-            // DB에서 해당 Refresh Token 삭제
+            AuthToken authToken = tokenProvider.convertAuthToken(accessToken);
+            
+            // Access Token 유효성 검사
+            if (!authToken.validate()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("UNAUTHORIZED", "인증 정보가 유효하지 않습니다."));
+            }
+
+            // 2. Body에 Refresh Token 확인
+            String refreshToken = refreshRequest.getRefreshToken();
+            if (refreshToken == null || refreshToken.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ErrorResponse("INVALID_INPUT", "Refresh Token이 필요합니다."));
+            }
+
+            // 3. DB에서 해당 Refresh Token 삭제
             userRefreshTokenRepository.deleteByRefreshToken(refreshToken);
+
+            // 4. SecurityContext 초기화
+            SecurityContextHolder.clearContext();
+
+            // 5. 성공 응답 반환
+            return ResponseEntity.ok(Map.of("message", "로그아웃이 완료되었습니다."));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."));
         }
-
-        // SecurityContext 초기화
-        SecurityContextHolder.clearContext();
-
-        return Map.of("message", "로그아웃이 완료되었습니다.");
     }
     
     // 토큰 생성 및 DB 저장 헬퍼 메소드
