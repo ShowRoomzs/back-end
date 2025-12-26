@@ -89,6 +89,7 @@ public class UserController {
     }
 
     @GetMapping
+    @io.swagger.v3.oas.annotations.Hidden
     public Users getUser() {
         User principal = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
