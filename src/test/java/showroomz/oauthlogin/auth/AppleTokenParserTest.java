@@ -1,4 +1,4 @@
-package showroomz;
+package showroomz.oauthlogin.auth;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

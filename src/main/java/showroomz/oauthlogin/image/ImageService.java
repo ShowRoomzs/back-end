@@ -109,9 +109,30 @@ public class ImageService {
 
     private String uploadToS3(MultipartFile file, String s3Key) throws IOException {
         try {
-            // 1. S3에 업로드
+            // 1. S3 설정 검증
+            String bucket = s3Properties.getBucket();
+            if (bucket == null || bucket.isEmpty()) {
+                log.error("S3 버킷 이름이 설정되지 않았습니다. AWS_S3_BUCKET 환경변수를 확인하세요.");
+                throw new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "S3 버킷 설정이 올바르지 않습니다. 관리자에게 문의하세요."
+                );
+            }
+
+            String region = s3Properties.getRegion();
+            if (region == null || region.isEmpty()) {
+                log.error("S3 리전이 설정되지 않았습니다. AWS_S3_REGION 환경변수를 확인하세요.");
+                throw new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "S3 리전 설정이 올바르지 않습니다. 관리자에게 문의하세요."
+                );
+            }
+
+            log.debug("S3 업로드 시도 - Bucket: {}, Region: {}, Key: {}", bucket, region, s3Key);
+
+            // 2. S3에 업로드
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(s3Properties.getBucket())
+                    .bucket(bucket)
                     .key(s3Key)
                     .contentType(file.getContentType())
                     .build();
@@ -119,28 +140,62 @@ public class ImageService {
             s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(
                     file.getInputStream(), file.getSize()));
 
-            // 2. URL 인코딩 처리
-            // 한글, 공백, 특수문자가 있어도 브라우저가 인식할 수 있게 변환합니다.
-            // UUID만 쓴다면 당장 필요 없지만, 나중을 위해 필수입니다.
+            log.debug("S3 업로드 성공 - Key: {}", s3Key);
+
+            // 3. URL 인코딩 처리
             String encodedKey = URLEncoder.encode(s3Key, StandardCharsets.UTF_8.toString())
                     .replaceAll("\\+", "%20") // 공백(+)을 %20으로 치환
                     .replaceAll("%2F", "/");  // 경로 구분자(/)는 인코딩 하지 않음
 
-            // 3. CloudFront URL 사용 (버킷 이름 숨김)
+            // 4. CloudFront URL 사용 (버킷 이름 숨김)
             if (s3Properties.getCloudFrontDomain() != null && !s3Properties.getCloudFrontDomain().isEmpty()) {
                 return "https://" + s3Properties.getCloudFrontDomain() + "/" + encodedKey;
             }
             
-            // 4. Fallback: CloudFront가 없으면 S3 기본 URL 사용
-            // (SDK v2에서는 getUrl이 복잡하므로, 인코딩된 키를 사용하여 직접 조합하는 것이 확실합니다)
+            // 5. Fallback: CloudFront가 없으면 S3 기본 URL 사용
             return String.format("https://%s.s3.%s.amazonaws.com/%s",
-                    s3Properties.getBucket(),
-                    s3Properties.getRegion(),
+                    bucket,
+                    region,
                     encodedKey); // s3Key 대신 encodedKey 사용
 
         } catch (S3Exception e) {
-            log.error("S3 업로드 실패: {}", e.getMessage(), e);
-            throw e;
+            log.error("S3 업로드 실패 - Bucket: {}, Region: {}, Error: {}, StatusCode: {}, ErrorCode: {}", 
+                    s3Properties.getBucket(), 
+                    s3Properties.getRegion(),
+                    e.getMessage(), 
+                    e.statusCode(),
+                    e.awsErrorDetails() != null ? e.awsErrorDetails().errorCode() : "N/A");
+            
+            // 더 명확한 에러 메시지 제공
+            if (e.statusCode() == 400) {
+                String errorCode = e.awsErrorDetails() != null ? e.awsErrorDetails().errorCode() : "";
+                if ("InvalidBucketName".equals(errorCode)) {
+                    throw new ResponseStatusException(
+                            HttpStatus.INTERNAL_SERVER_ERROR,
+                            "S3 버킷 이름이 올바르지 않습니다. 버킷 이름은 소문자, 숫자, 하이픈(-), 점(.)만 사용 가능하며 3-63자 사이여야 합니다."
+                    );
+                } else if ("NoSuchBucket".equals(errorCode)) {
+                    throw new ResponseStatusException(
+                            HttpStatus.INTERNAL_SERVER_ERROR,
+                            "S3 버킷이 존재하지 않습니다. 버킷 이름과 리전을 확인하세요."
+                    );
+                } else {
+                    throw new ResponseStatusException(
+                            HttpStatus.INTERNAL_SERVER_ERROR,
+                            "S3 버킷 설정이 올바르지 않습니다. 버킷 이름과 리전을 확인하세요."
+                    );
+                }
+            } else if (e.statusCode() == 403) {
+                throw new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "S3 접근 권한이 없습니다. IAM 사용자에게 s3:PutObject 권한이 필요합니다."
+                );
+            } else {
+                throw new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "파일 업로드 중 오류가 발생했습니다: " + e.getMessage()
+                );
+            }
         }
     }
 }
