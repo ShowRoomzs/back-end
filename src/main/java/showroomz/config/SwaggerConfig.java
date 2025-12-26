@@ -12,8 +12,19 @@ import org.springframework.context.annotation.Profile;
 
 @OpenAPIDefinition(
         info = @Info(
-                title = "00 프로젝트 API 명세서",
-                description = "00 프로젝트에 사용되는 API 명세서",
+                title = "Showroomz API 명세서",
+                description = """                     
+
+                        - User ID: test-user-123
+                        - Role: USER
+                        - Token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfVVNFUiIsImV4cCI6MTc3MTkyNjIzN30.Msm-Sr4KOmR5LKEFXHysNKihcCGKNFb3MOlQB5KzJMc
+                        
+                        - User ID: test-user-123
+                        - Role: ADMIN
+                        - Token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfQURNSU4iLCJleHAiOjE3NzE5MjYyMzd9.7IsnSTt6iujVTkav24DxCTh-r91SkCSejsdMhSoAagU
+                        
+                        **유효기간:** 2개월 (60일)
+                        """,
                 version = "v1"
         )
 )

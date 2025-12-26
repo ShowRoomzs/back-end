@@ -7,7 +7,7 @@ import showroomz.oauthlogin.oauth.entity.ProviderType;
 import showroomz.oauthlogin.oauth.entity.RoleType;
 import showroomz.oauthlogin.oauth.info.OAuth2UserInfo;
 import showroomz.oauthlogin.oauth.info.OAuth2UserInfoFactory;
-import showroomz.oauthlogin.user.User;
+import showroomz.oauthlogin.user.Users;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
@@ -79,8 +79,8 @@ public class SocialLoginService {
         }
 
         // 3. 회원가입 or 로그인 처리
-        String userId = userInfo.getId();
-        User user = userRepository.findByUserId(userId).orElse(null);
+        String username = userInfo.getId();
+        Users user = userRepository.findByUsername(username).orElse(null);
         boolean isNewMember = false;
 
         if (user == null) {
@@ -234,15 +234,15 @@ public class SocialLoginService {
     }
 
     // ... createUser, updateUser는 기존과 동일 ...
-    private User createUser(OAuth2UserInfo userInfo, ProviderType providerType) {
+    private Users createUser(OAuth2UserInfo userInfo, ProviderType providerType) {
         return createUser(userInfo, providerType, null);
     }
 
-    private User createUser(OAuth2UserInfo userInfo, ProviderType providerType, String name) {
+    private Users createUser(OAuth2UserInfo userInfo, ProviderType providerType, String name) {
         LocalDateTime now = LocalDateTime.now();
         String userName = name != null && !name.isEmpty() ? name : 
                          (userInfo.getName() != null ? userInfo.getName() : "Guest");
-        User user = new User(
+        Users user = new Users(
                 userInfo.getId(),
                 userName,
                 userInfo.getEmail() != null ? userInfo.getEmail() : userInfo.getId() + "@social.com",
@@ -256,7 +256,7 @@ public class SocialLoginService {
         return userRepository.save(user);
     }
 
-    private void updateUser(User user, OAuth2UserInfo userInfo) {
+    private void updateUser(Users user, OAuth2UserInfo userInfo) {
         if (userInfo.getName() != null && !user.getNickname().equals(userInfo.getName())) {
             user.setNickname(userInfo.getName());
         }
@@ -268,7 +268,7 @@ public class SocialLoginService {
     @Getter
     @AllArgsConstructor
     public static class SocialLoginResult {
-        private final User user;
+        private final Users user;
         private final boolean isNewMember;
     }
 }

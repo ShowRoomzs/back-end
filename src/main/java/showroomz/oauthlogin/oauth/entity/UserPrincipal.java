@@ -1,6 +1,6 @@
 package showroomz.oauthlogin.oauth.entity;
 
-import showroomz.oauthlogin.user.User;
+import showroomz.oauthlogin.user.Users;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ import java.util.Collections;
 @RequiredArgsConstructor
 // [변경] OAuth2User, OidcUser 인터페이스 제거
 public class UserPrincipal implements UserDetails {
-    private final String userId;
+    private final String username;
     private final String password;
     private final ProviderType providerType;
     private final RoleType roleType;
@@ -38,7 +38,7 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public String getUsername() {
-        return userId;
+        return username;
     }
 
     @Override
@@ -53,9 +53,9 @@ public class UserPrincipal implements UserDetails {
     @Override
     public boolean isEnabled() { return true; }
 
-    public static UserPrincipal create(User user) {
+    public static UserPrincipal create(Users user) {
         return new UserPrincipal(
-                user.getUserId(),
+                user.getUsername(),
                 user.getPassword(),
                 user.getProviderType(),
                 RoleType.USER,
