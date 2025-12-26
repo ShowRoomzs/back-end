@@ -192,6 +192,12 @@ public class AuthController {
             user.setNickname(registerRequest.getNickname());
             user.setGender(registerRequest.getGender());
             user.setBirthday(registerRequest.getBirthday());
+            
+            // 동의 항목 저장
+            user.setServiceAgree(registerRequest.getServiceAgree());
+            user.setPrivacyAgree(registerRequest.getPrivacyAgree());
+            user.setMarketingAgree(registerRequest.getMarketingAgree());
+            
             user.setModifiedAt(LocalDateTime.now());
             userRepository.save(user);
 

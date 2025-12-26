@@ -82,6 +82,15 @@ public class Users {
     @NotNull
     private LocalDateTime modifiedAt;
 
+    @Column(name = "SERVICE_AGREE")
+    private boolean serviceAgree;
+
+    @Column(name = "PRIVACY_AGREE")
+    private boolean privacyAgree;
+
+    @Column(name = "MARKETING_AGREE")
+    private boolean marketingAgree;
+
     public Users(
             @NotNull @Size(max = 64) String username,
             @NotNull @Size(max = 100) String nickname,

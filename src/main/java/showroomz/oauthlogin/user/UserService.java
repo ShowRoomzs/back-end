@@ -2,12 +2,15 @@ package showroomz.oauthlogin.user;
 
 import lombok.RequiredArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import showroomz.oauthlogin.auth.UserRepository;
 import showroomz.oauthlogin.user.DTO.NicknameCheckResponse;
+import showroomz.oauthlogin.user.DTO.UpdateUserProfileRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -16,6 +19,48 @@ public class UserService {
 
     public Optional<Users> getUser(String username) {
         return userRepository.findByUsername(username);
+    }
+
+    /**
+     * 사용자 프로필 업데이트
+     * @param username 사용자 이름
+     * @param request 업데이트 요청
+     * @return 업데이트된 사용자
+     */
+    @Transactional
+    public Users updateProfile(String username, UpdateUserProfileRequest request) {
+        Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        // 닉네임 업데이트
+        if (request.getNickname() != null && !request.getNickname().isEmpty()) {
+            user.setNickname(request.getNickname());
+        }
+
+        // 생년월일 업데이트
+        if (request.getBirthday() != null && !request.getBirthday().isEmpty()) {
+            user.setBirthday(request.getBirthday());
+        }
+
+        // 성별 업데이트
+        if (request.getGender() != null && !request.getGender().isEmpty()) {
+            user.setGender(request.getGender());
+        }
+
+        // 프로필 이미지 업데이트
+        if (request.getProfileImageUrl() != null && !request.getProfileImageUrl().isEmpty()) {
+            user.setProfileImageUrl(request.getProfileImageUrl());
+        }
+
+        // 마케팅 동의 업데이트
+        if (request.getMarketingAgree() != null) {
+            user.setMarketingAgree(request.getMarketingAgree().booleanValue());
+        }
+
+        // 수정 시간 업데이트
+        user.setModifiedAt(LocalDateTime.now());
+
+        return userRepository.save(user);
     }
 
     /**
@@ -60,14 +105,28 @@ public class UserService {
     }
 
     /**
-     * 닉네임 형식 검증 (한글, 영문, 숫자만 허용)
+     * 닉네임 형식 검증 (한글, 영문, 숫자만 허용, 2자 이상 10자 이하)
      */
     public boolean isValidNicknameFormat(String nickname) {
         if (nickname == null || nickname.isEmpty()) {
             return false;
         }
+        // 길이 검증 (2자 이상 10자 이하)
+        if (nickname.length() < 2 || nickname.length() > 10) {
+            return false;
+        }
         // 한글, 영문(대소문자), 숫자만 허용
         return nickname.matches("^[가-힣a-zA-Z0-9]+$");
+    }
+
+    /**
+     * 닉네임 길이 검증
+     */
+    public boolean isValidNicknameLength(String nickname) {
+        if (nickname == null || nickname.isEmpty()) {
+            return false;
+        }
+        return nickname.length() >= 2 && nickname.length() <= 10;
     }
 
     /**
