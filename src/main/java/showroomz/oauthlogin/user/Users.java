@@ -20,17 +20,17 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Entity
 @Table(name = "USER")
-public class User {
+public class Users {
     @JsonIgnore
     @Id
     @Column(name = "USER_SEQ")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userSeq;
+    private Long userId;
 
     @Column(name = "USER_ID", length = 64, unique = true)
     @NotNull
     @Size(max = 64)
-    private String userId;
+    private String username;
 
     @Column(name = "NICKNAME", length = 100)
     @NotNull
@@ -82,8 +82,8 @@ public class User {
     @NotNull
     private LocalDateTime modifiedAt;
 
-    public User(
-            @NotNull @Size(max = 64) String userId,
+    public Users(
+            @NotNull @Size(max = 64) String username,
             @NotNull @Size(max = 100) String nickname,
             @NotNull @Size(max = 512) String email,
             @NotNull @Size(max = 1) String emailVerifiedYn,
@@ -93,7 +93,7 @@ public class User {
             @NotNull LocalDateTime createdAt,
             @NotNull LocalDateTime modifiedAt
     ) {
-        this.userId = userId;
+        this.username = username;
         this.nickname = nickname;
         this.password = "NO_PASS";
         this.email = email != null ? email : "NO_EMAIL";
@@ -105,3 +105,4 @@ public class User {
         this.modifiedAt = modifiedAt;
     }
 }
+

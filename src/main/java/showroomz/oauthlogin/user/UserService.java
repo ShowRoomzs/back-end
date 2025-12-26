@@ -14,8 +14,8 @@ import showroomz.oauthlogin.user.DTO.NicknameCheckResponse;
 public class UserService {
     private final UserRepository userRepository;
 
-    public Optional<User> getUser(String userId) {
-        return userRepository.findByUserId(userId);
+    public Optional<Users> getUser(String username) {
+        return userRepository.findByUsername(username);
     }
 
     /**

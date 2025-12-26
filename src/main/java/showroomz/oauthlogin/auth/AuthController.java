@@ -34,7 +34,7 @@ import showroomz.oauthlogin.oauth.service.SocialLoginService;
 import showroomz.oauthlogin.oauth.service.SocialLoginService.SocialLoginResult;
 import showroomz.oauthlogin.oauth.token.AuthToken;
 import showroomz.oauthlogin.oauth.token.AuthTokenProvider;
-import showroomz.oauthlogin.user.User;
+import showroomz.oauthlogin.user.Users;
 import showroomz.oauthlogin.user.UserService;
 import showroomz.oauthlogin.user.DTO.NicknameCheckResponse;
 import showroomz.oauthlogin.utils.HeaderUtil;
@@ -108,7 +108,7 @@ public class AuthController {
                 Date now = new Date();
                 long registerTokenExpiry = 5 * 60 * 1000; // 5분
                 AuthToken registerToken = tokenProvider.createAuthToken(
-                        result.getUser().getUserId(),
+                        result.getUser().getUsername(),
                         new Date(now.getTime() + registerTokenExpiry)
                 );
                 return ResponseEntity.ok(new TokenResponse(registerToken.getToken()));
@@ -116,7 +116,7 @@ public class AuthController {
 
             // 5. 기존 회원인 경우 일반 토큰 반환
             return ResponseEntity.ok(generateTokens(
-                    result.getUser().getUserId(),
+                    result.getUser().getUsername(),
                     result.getUser().getRoleType(),
                     false
             ));
@@ -157,7 +157,7 @@ public class AuthController {
                         .body(new ErrorResponse("UNAUTHORIZED", "회원가입 유효 시간이 만료되었습니다. 다시 로그인해주세요."));
             }
 
-            String userId = claims.getSubject();
+            String username = claims.getSubject();
 
             // 2. 닉네임 검증 (형식, 금칙어, 중복 체크)
             NicknameCheckResponse nicknameCheck = userService.checkNickname(registerRequest.getNickname());
@@ -185,8 +185,8 @@ public class AuthController {
                 }
             }
 
-            // 5. User 조회 및 업데이트
-            User user = userRepository.findByUserId(userId)
+            // 5. Users 조회 및 업데이트
+            Users user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
             user.setNickname(registerRequest.getNickname());
@@ -197,7 +197,7 @@ public class AuthController {
 
             // 6. 토큰 발급 및 반환
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(generateTokens(userId, user.getRoleType(), false));
+                    .body(generateTokens(username, user.getRoleType(), false));
 
         } catch (ResponseStatusException e) {
             throw e;
@@ -213,11 +213,11 @@ public class AuthController {
             @ApiResponse(responseCode = "404", description = "해당 ID의 유저가 존재하지 않습니다."),
         })
     public Map<String, String> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {
-        if (userRepository.existsByUserId(signUpRequest.getUserId())) {
+        if (userRepository.existsByUsername(signUpRequest.getUserId())) {
             throw new BadRequestException("이미 사용 중인 아이디입니다.");
         }
 
-        User user = new User(
+        Users user = new Users(
             signUpRequest.getUserId(),
             signUpRequest.getUsername(),
             signUpRequest.getEmail(),
@@ -253,12 +253,12 @@ public class AuthController {
                     )
             );
     
-            String userId = authReqModel.getId();
+            String username = authReqModel.getId();
             SecurityContextHolder.getContext().setAuthentication(authentication);
             RoleType roleType = ((UserPrincipal) authentication.getPrincipal()).getRoleType();
     
             // 토큰 생성 및 저장
-            return generateTokens(userId, roleType, false);
+            return generateTokens(username, roleType, false);
 
         } catch (AuthenticationException e) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 실패: 아이디 또는 비밀번호가 올바르지 않습니다.");
@@ -311,16 +311,16 @@ public class AuthController {
                         .body(new ErrorResponse("INVALID_TOKEN", "유효하지 않은 토큰입니다."));
             }
 
-            String userId = userRefreshToken.getUserId();
+            String username = userRefreshToken.getUserId();
             
-            // 5. User 조회하여 RoleType 가져오기
-            User user = userRepository.findByUserId(userId)
+            // 5. Users 조회하여 RoleType 가져오기
+            Users user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
             RoleType roleType = user.getRoleType();
 
             // 6. 새로운 Access Token 생성
             AuthToken newAccessToken = tokenProvider.createAuthToken(
-                    userId,
+                    username,
                     roleType.getCode(),
                     new Date(now.getTime() + appProperties.getAuth().getTokenExpiry())
             );
@@ -332,7 +332,7 @@ public class AuthController {
                 long refreshTokenExpiry = appProperties.getAuth().getRefreshTokenExpiry();
 
                 authRefreshToken = tokenProvider.createAuthToken(
-                        userId,
+                        username,
                         new Date(now.getTime() + refreshTokenExpiry)
                 );
 
@@ -410,13 +410,13 @@ public class AuthController {
     }
     
     // 토큰 생성 및 DB 저장 헬퍼 메소드
-    private TokenResponse generateTokens(String userId, RoleType roleType, boolean isNewMember) {
+    private TokenResponse generateTokens(String username, RoleType roleType, boolean isNewMember) {
         Date now = new Date();
         
         // Access Token 생성
         long accessTokenExpiry = appProperties.getAuth().getTokenExpiry();
         AuthToken accessToken = tokenProvider.createAuthToken(
-                userId,
+                username,
                 roleType.getCode(),
                 new Date(now.getTime() + accessTokenExpiry)
         );
@@ -424,14 +424,14 @@ public class AuthController {
         // Refresh Token 생성
         long refreshTokenExpiry = appProperties.getAuth().getRefreshTokenExpiry();
         AuthToken refreshToken = tokenProvider.createAuthToken(
-                userId,
+                username,
                 new Date(now.getTime() + refreshTokenExpiry)
         );
 
         // DB 저장/업데이트
-        UserRefreshToken userRefreshToken = userRefreshTokenRepository.findByUserId(userId);
+        UserRefreshToken userRefreshToken = userRefreshTokenRepository.findByUserId(username);
         if (userRefreshToken == null) {
-            userRefreshToken = new UserRefreshToken(userId, refreshToken.getToken());
+            userRefreshToken = new UserRefreshToken(username, refreshToken.getToken());
             userRefreshTokenRepository.saveAndFlush(userRefreshToken);
         } else {
             userRefreshToken.setRefreshToken(refreshToken.getToken());

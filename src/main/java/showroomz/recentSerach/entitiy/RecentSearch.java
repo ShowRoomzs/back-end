@@ -2,7 +2,7 @@ package showroomz.recentSerach.entitiy;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import showroomz.oauthlogin.user.User;
+import showroomz.oauthlogin.user.Users;
 
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -22,7 +22,7 @@ public class RecentSearch {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user; // (필수 추가) 사용자 참조
+    private Users user; // (필수 추가) 사용자 참조
 
     @Column(nullable = false, length = 255)
     private String term; // "term": "화이트 린넨 셔츠"
