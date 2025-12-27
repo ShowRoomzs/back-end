@@ -38,12 +38,18 @@ jobs:
     - name: S3에 업로드
       run: |
         mkdir deploy
+        # 1. 기존 파일들 복사
         cp build/libs/back-end-0.0.1-SNAPSHOT.jar deploy/app.jar
         cp appspec.yml deploy/
         cp scripts/start.sh deploy/
         cp scripts/unzip.sh deploy/
-        cp .env deploy/
         
+        # 2. [수정됨] .env 파일 생성 (이 부분만 교체!)
+        # echo 대신 cat을 사용해야 여러 줄 내용이 깨지지 않고 안전하게 저장됩니다.
+        # deploy 폴더 안에 바로 생성합니다.
+        cat <<EOF > deploy/.env
+        ${{ secrets.APPLICATION_ENV }}
+        EOF
         zip -r deploy.zip deploy/
         aws s3 cp deploy.zip s3://${{ secrets.AWS_S3_BUCKET}}/deploy.zip
 
