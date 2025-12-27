@@ -18,7 +18,11 @@ jobs:
       with:
         distribution: 'corretto'
         java-version: '21'
-
+    # 1. GitHub Secret 내용을 이용해 프로젝트 루트에 .env 파일 생성
+    - name: Make .env file
+      run: |
+        echo "${{ secrets.APPLICATION_ENV }}" > .env
+      shell: bash
     - name: Gradle 빌드
       run: |
         chmod +x gradlew
@@ -38,6 +42,7 @@ jobs:
         cp appspec.yml deploy/
         cp scripts/start.sh deploy/
         cp scripts/unzip.sh deploy/
+        cp .env deploy/
         
         zip -r deploy.zip deploy/
         aws s3 cp deploy.zip s3://${{ secrets.AWS_S3_BUCKET}}/deploy.zip
