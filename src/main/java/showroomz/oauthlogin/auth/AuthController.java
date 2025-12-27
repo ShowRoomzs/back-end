@@ -214,6 +214,7 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
+    @io.swagger.v3.oas.annotations.Hidden
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "성공"),
             @ApiResponse(responseCode = "404", description = "해당 ID의 유저가 존재하지 않습니다."),

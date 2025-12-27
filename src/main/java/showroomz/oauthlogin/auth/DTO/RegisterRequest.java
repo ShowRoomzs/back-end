@@ -13,7 +13,7 @@ public class RegisterRequest {
     
     @NotNull(message = "닉네임은 필수 입력값입니다.")
     @Size(min = 2, max = 10, message = "닉네임은 2자 이상 10자 이하이어야 합니다.")
-    @Pattern(regexp = "^[가-힣a-zA-Z0-9]+$", message = "닉네임에 특수문자나 이모티콘을 사용할 수 없습니다.")
+    @Pattern(regexp = "^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9]+$", message = "닉네임에 특수문자나 이모티콘을 사용할 수 없습니다.")
     private String nickname;
     
     @Pattern(regexp = "^(MALE|FEMALE)$", message = "성별은 MALE 또는 FEMALE이어야 합니다.", flags = Pattern.Flag.CASE_INSENSITIVE)

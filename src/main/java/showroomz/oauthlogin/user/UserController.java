@@ -1,6 +1,7 @@
 package showroomz.oauthlogin.user;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -100,7 +101,13 @@ public class UserController {
     }
 
     @GetMapping("/check-nickname")
-    public ResponseEntity<NicknameCheckResponse> checkNickname(@RequestParam String nickname) {
+    @Operation(
+            summary = "닉네임 중복 확인",
+            description = "사용하려는 닉네임의 사용 가능 여부를 확인합니다."
+    )
+    public ResponseEntity<NicknameCheckResponse> checkNickname(
+            @Parameter(name = "nickname", description = "확인할 닉네임", required = true)
+            @RequestParam("nickname") String nickname) {
         NicknameCheckResponse response = userService.checkNickname(nickname);
         return ResponseEntity.ok(response);
     }
