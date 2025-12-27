@@ -44,8 +44,15 @@ public class AuthTokenProvider {
         if(authToken.validate()) {
 
             Claims claims = authToken.getTokenClaims();
+            
+            // role 클레임이 없으면 예외 발생 (register 토큰 등)
+            Object roleClaim = claims.get(AUTHORITIES_KEY);
+            if (roleClaim == null) {
+                throw new TokenValidFailedException("Role claim is missing in token");
+            }
+            
             Collection<? extends GrantedAuthority> authorities =
-                    Arrays.stream(new String[]{claims.get(AUTHORITIES_KEY).toString()})
+                    Arrays.stream(new String[]{roleClaim.toString()})
                             .map(SimpleGrantedAuthority::new)
                             .collect(Collectors.toList());
 
