@@ -69,7 +69,16 @@ public class UserService {
      * @return NicknameCheckResponse 검증 결과
      */
     public NicknameCheckResponse checkNickname(String nickname) {
-        // 1. 닉네임 형식 검증 (한글, 영문, 숫자만 허용)
+        // 1. 길이 검증 (2자 이상 10자 이하)
+        if (!isValidNicknameLength(nickname)) {
+            return new NicknameCheckResponse(
+                    false,
+                    "INVALID_LENGTH",
+                    "닉네임은 2자 이상 10자 이하이어야 합니다."
+            );
+        }
+        
+        // 2. 닉네임 형식 검증 (한글, 영문, 숫자만 허용)
         if (!isValidNicknameFormat(nickname)) {
             return new NicknameCheckResponse(
                     false,
@@ -78,7 +87,7 @@ public class UserService {
             );
         }
 
-        // 2. 금칙어 체크
+        // 3. 금칙어 체크
         if (containsInappropriateWord(nickname)) {
             return new NicknameCheckResponse(
                     false,
@@ -87,7 +96,7 @@ public class UserService {
             );
         }
 
-        // 3. 중복 체크
+        // 4. 중복 체크
         if (userRepository.existsByNickname(nickname)) {
             return new NicknameCheckResponse(
                     false,
@@ -105,18 +114,16 @@ public class UserService {
     }
 
     /**
-     * 닉네임 형식 검증 (한글, 영문, 숫자만 허용, 2자 이상 10자 이하)
+     * 닉네임 형식 검증 (한글, 영문, 숫자만 허용)
+     * 주의: 길이 검증은 별도로 수행해야 함
      */
     public boolean isValidNicknameFormat(String nickname) {
         if (nickname == null || nickname.isEmpty()) {
             return false;
         }
-        // 길이 검증 (2자 이상 10자 이하)
-        if (nickname.length() < 2 || nickname.length() > 10) {
-            return false;
-        }
-        // 한글, 영문(대소문자), 숫자만 허용
-        return nickname.matches("^[가-힣a-zA-Z0-9]+$");
+        // 한글(완성형 + 자모), 영문(대소문자), 숫자만 허용
+        // 완성형 한글(가-힣), 한글 자모(ㄱ-ㅎ, ㅏ-ㅣ)
+        return nickname.matches("^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9]+$");
     }
 
     /**

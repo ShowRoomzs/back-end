@@ -4,7 +4,7 @@ spring:
   config:
     import: optional:file:.env[.properties]  
   profiles:
-    active: prod
+    active: dev
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
