@@ -23,11 +23,11 @@ import java.time.LocalDateTime;
 public class Users {
     @JsonIgnore
     @Id
-    @Column(name = "USER_SEQ")
+    @Column(name = "USER_ID")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long userId;
 
-    @Column(name = "USER_ID", length = 64, unique = true)
+    @Column(name = "USERNAME", length = 64, unique = true)
     @NotNull
     @Size(max = 64)
     private String username;
