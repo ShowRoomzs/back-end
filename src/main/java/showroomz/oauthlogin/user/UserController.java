@@ -61,11 +61,16 @@ public class UserController {
                     ));
 
             // 3. UserProfileResponse로 변환
+            String profileImageUrl = user.getProfileImageUrl();
+            if (profileImageUrl != null && profileImageUrl.isEmpty()) {
+                profileImageUrl = null;
+            }
+            
             UserProfileResponse response = new UserProfileResponse(
                     user.getUserId(), // id
                     user.getEmail(),
                     user.getNickname(),
-                    user.getProfileImageUrl(),
+                    profileImageUrl,
                     user.getBirthday(),
                     user.getGender(),
                     user.getProviderType(),
@@ -201,11 +206,16 @@ public class UserController {
             Users updatedUser = userService.updateProfile(username, request);
 
             // 6. UserProfileResponse로 변환
+            String profileImageUrl = updatedUser.getProfileImageUrl();
+            if (profileImageUrl != null && profileImageUrl.isEmpty()) {
+                profileImageUrl = null;
+            }
+            
             UserProfileResponse response = new UserProfileResponse(
                     updatedUser.getUserId(), // id
                     updatedUser.getEmail(),
                     updatedUser.getNickname(),
-                    updatedUser.getProfileImageUrl(),
+                    profileImageUrl,
                     updatedUser.getBirthday(),
                     updatedUser.getGender(),
                     updatedUser.getProviderType(),

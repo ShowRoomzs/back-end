@@ -247,7 +247,7 @@ public class SocialLoginService {
                 userName,
                 userInfo.getEmail() != null ? userInfo.getEmail() : userInfo.getId() + "@social.com",
                 "Y",
-                userInfo.getImageUrl() != null ? userInfo.getImageUrl() : "",
+                userInfo.getImageUrl(), // null 허용
                 providerType,
                 RoleType.USER,
                 now,
