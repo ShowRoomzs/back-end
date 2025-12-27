@@ -19,12 +19,6 @@ jobs:
         distribution: 'corretto'
         java-version: '21'
 
-    # [추가됨] 1. GitHub Secret 내용을 이용해 .env 파일 생성
-    - name: Make .env file
-      run: |
-        echo "${{ secrets.APPLICATION_ENV }}" > .env
-      shell: bash
-
     - name: Gradle 빌드
       run: |
         chmod +x gradlew
@@ -40,21 +34,12 @@ jobs:
     - name: S3에 업로드
       run: |
         mkdir deploy
-        # 빌드된 jar 파일 복사
         cp build/libs/back-end-0.0.1-SNAPSHOT.jar deploy/app.jar
-        
-        # 설정 파일들 복사
         cp appspec.yml deploy/
         cp scripts/start.sh deploy/
         cp scripts/unzip.sh deploy/
         
-        # 2. 아까 만든 .env 파일도 배포 폴더에 복사
-        cp .env deploy/
-        
-        # deploy 폴더 전체를 압축
         zip -r deploy.zip deploy/
-        
-        # S3 업로드
         aws s3 cp deploy.zip s3://${{ secrets.AWS_S3_BUCKET}}/deploy.zip
 
     - name: AWS CodeDeploy 실행
