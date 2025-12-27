@@ -1,6 +1,12 @@
 package showroomz.oauthlogin.auth;
 
 import io.jsonwebtoken.Claims;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -136,7 +142,122 @@ public class AuthController {
     }
     
     @PostMapping("/register")
-    public ResponseEntity<?> register(HttpServletRequest request, @RequestBody @Valid RegisterRequest registerRequest) {
+    @Operation(
+            summary = "회원가입 완료",
+            description = "소셜 로그인 후 회원가입 정보를 입력하여 회원가입을 완료합니다. Register Token이 필요합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "회원가입 성공",
+                    content = @io.swagger.v3.oas.annotations.media.Content(
+                            mediaType = "application/json",
+                            schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = TokenResponse.class),
+                            examples = {
+                                    @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"tokenType\": \"Bearer\",\n" +
+                                                    "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrYWthb18xMjM0NTY3ODkwIiwicm9sZSI6IlJPTEVfVVNFUiIsImV4cCI6MTc3MjAwMDAwMH0.example\",\n" +
+                                                    "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4gZXhhbXBsZQ\",\n" +
+                                                    "  \"accessTokenExpiresIn\": 3600,\n" +
+                                                    "  \"refreshTokenExpiresIn\": 1209600\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "입력값 형식 오류",
+                    content = @io.swagger.v3.oas.annotations.media.Content(
+                            mediaType = "application/json",
+                            schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ValidationErrorResponse.class),
+                            examples = {
+                                    @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                            name = "입력값 오류 예시",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"입력값이 올바르지 않습니다.\",\n" +
+                                                    "  \"errors\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"field\": \"nickname\",\n" +
+                                                    "      \"reason\": \"닉네임은 2자 이상 10자 이하이어야 합니다.\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"field\": \"birthday\",\n" +
+                                                    "      \"reason\": \"생년월일 형식이 올바르지 않습니다.\"\n" +
+                                                    "    }\n" +
+                                                    "  ]\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Register Token 만료",
+                    content = @io.swagger.v3.oas.annotations.media.Content(
+                            mediaType = "application/json",
+                            schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                            name = "토큰 만료 예시",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"회원가입 유효 시간이 만료되었습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "닉네임 중복",
+                    content = @io.swagger.v3.oas.annotations.media.Content(
+                            mediaType = "application/json",
+                            schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                            name = "닉네임 중복 예시",
+                                            value = "{\n" +
+                                                    "  \"code\": \"DUPLICATE_NICKNAME\",\n" +
+                                                    "  \"message\": \"이미 사용 중인 닉네임입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "회원가입 정보",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = RegisterRequest.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "요청 예시",
+                                    value = "{\n" +
+                                            "  \"nickname\": \"홍길동\",\n" +
+                                            "  \"gender\": \"MALE\",\n" +
+                                            "  \"birthday\": \"1990-01-15\",\n" +
+                                            "  \"serviceAgree\": true,\n" +
+                                            "  \"privacyAgree\": true,\n" +
+                                            "  \"marketingAgree\": true\n" +
+                                            "}"
+                            )
+                    }
+            )
+    )
+    public ResponseEntity<?> register(
+            @io.swagger.v3.oas.annotations.Parameter(
+                    description = "Authorization 헤더에 Bearer {registerToken} 형식으로 전달",
+                    required = true,
+                    hidden = true
+            )
+            HttpServletRequest request,
+            @RequestBody @Valid RegisterRequest registerRequest) {
         try {
             // 1. registerToken 검증
             String registerTokenStr = HeaderUtil.getAccessToken(request);
