@@ -134,4 +134,14 @@ public class SecurityConfig {
         return source;
     }
 
+    /*
+     * ✅ CORS 필터 설정 (preflight 요청 처리용)
+     */
+    @Bean
+    public FilterRegistrationBean<CorsFilter> corsFilter() {
+        FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(new CorsFilter(corsConfigurationSource()));
+        bean.setOrder(-102);  // Spring Security 필터보다 먼저 실행되도록 우선순위 설정
+        return bean;
+    }
+
 }
