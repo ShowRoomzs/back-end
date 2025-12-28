@@ -220,7 +220,7 @@ public class AuthController {
                     }
             )
     )
-    public ResponseEntity<?> socialLogin(@RequestBody @Valid SocialLoginRequest socialLoginRequest) {
+    public ResponseEntity<?> socialLogin(@org.springframework.web.bind.annotation.RequestBody @Valid SocialLoginRequest socialLoginRequest) {
         try {
             // 1. 필수 파라미터 검증
             if (socialLoginRequest.getToken() == null || socialLoginRequest.getToken().isEmpty()) {
