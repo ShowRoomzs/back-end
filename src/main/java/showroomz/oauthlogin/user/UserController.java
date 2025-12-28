@@ -98,12 +98,6 @@ public class UserController {
                     )
             )
     })
-    @io.swagger.v3.oas.annotations.Parameter(
-            name = "Authorization",
-            description = "Bearer {access_token} 형식으로 전달",
-            required = true,
-            hidden = false
-    )
     public ResponseEntity<?> getCurrentUser() {
         try {
             // 1. SecurityContext에서 현재 인증된 사용자 정보 가져오기
