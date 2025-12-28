@@ -12,10 +12,13 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
-import showroomz.oauthlogin.image.DTO.ImageUploadResponse;
-import showroomz.oauthlogin.oauth.exception.GlobalExceptionHandler;
-import showroomz.oauthlogin.oauth.token.AuthToken;
-import showroomz.oauthlogin.oauth.token.AuthTokenProvider;
+import showroomz.auth.exception.GlobalExceptionHandler;
+import showroomz.auth.token.AuthToken;
+import showroomz.auth.token.AuthTokenProvider;
+import showroomz.image.type.ImageType;
+import showroomz.image.DTO.ImageUploadResponse;
+import showroomz.image.controller.ImageController;
+import showroomz.image.service.ImageService;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;

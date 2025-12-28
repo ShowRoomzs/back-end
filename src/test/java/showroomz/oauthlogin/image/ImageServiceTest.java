@@ -19,7 +19,9 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import showroomz.config.properties.S3Properties;
-import showroomz.oauthlogin.image.DTO.ImageUploadResponse;
+import showroomz.image.type.ImageType;
+import showroomz.image.DTO.ImageUploadResponse;
+import showroomz.image.service.ImageService;
 
 import java.io.IOException;
 

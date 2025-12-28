@@ -2,7 +2,7 @@ package showroomz.recentSerach.entitiy;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import showroomz.oauthlogin.user.Users;
+import showroomz.user.entity.Users;
 
 import org.hibernate.annotations.CreationTimestamp;
 
