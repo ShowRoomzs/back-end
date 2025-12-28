@@ -333,8 +333,24 @@ public class AuthController {
                                                     "      \"reason\": \"닉네임은 2자 이상 10자 이하이어야 합니다.\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
+                                                    "      \"field\": \"nickname\",\n" +
+                                                    "      \"reason\": \"닉네임에 특수문자나 이모티콘을 사용할 수 없습니다.\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"field\": \"nickname\",\n" +
+                                                    "      \"reason\": \"부적절한 단어가 포함되어 있습니다.\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
                                                     "      \"field\": \"birthday\",\n" +
                                                     "      \"reason\": \"생년월일 형식이 올바르지 않습니다.\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"field\": \"serviceAgree\",\n" +
+                                                    "      \"reason\": \"서비스 이용약관에 동의해야 합니다.\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"field\": \"privacyAgree\",\n" +
+                                                    "      \"reason\": \"개인정보 수집 및 이용에 동의해야 합니다.\"\n" +
                                                     "    }\n" +
                                                     "  ]\n" +
                                                     "}"
