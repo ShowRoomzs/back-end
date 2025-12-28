@@ -80,10 +80,19 @@ public interface ImageControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "인증 실패",
+                    description = "인증 실패 - Status: 401 Unauthorized",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
