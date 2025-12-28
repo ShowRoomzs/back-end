@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "USER")
+@Table(name = "USERS")
 public class Users {
     @JsonIgnore
     @Id
@@ -54,7 +54,6 @@ public class Users {
     private String emailVerifiedYn;
 
     @Column(name = "PROFILE_IMAGE_URL", length = 512)
-    @NotNull
     @Size(max = 512)
     private String profileImageUrl;
 
@@ -96,7 +95,7 @@ public class Users {
             @NotNull @Size(max = 100) String nickname,
             @NotNull @Size(max = 512) String email,
             @NotNull @Size(max = 1) String emailVerifiedYn,
-            @NotNull @Size(max = 512) String profileImageUrl,
+            @Size(max = 512) String profileImageUrl,
             @NotNull ProviderType providerType,
             @NotNull RoleType roleType,
             @NotNull LocalDateTime createdAt,
@@ -107,7 +106,7 @@ public class Users {
         this.password = "NO_PASS";
         this.email = email != null ? email : "NO_EMAIL";
         this.emailVerifiedYn = emailVerifiedYn;
-        this.profileImageUrl = profileImageUrl != null ? profileImageUrl : "";
+        this.profileImageUrl = profileImageUrl; // null 허용
         this.providerType = providerType;
         this.roleType = roleType;
         this.createdAt = createdAt;

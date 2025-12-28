@@ -247,7 +247,7 @@ public class SocialLoginService {
                 userName,
                 userInfo.getEmail() != null ? userInfo.getEmail() : userInfo.getId() + "@social.com",
                 "Y",
-                userInfo.getImageUrl() != null ? userInfo.getImageUrl() : "",
+                userInfo.getImageUrl(), // null 허용
                 providerType,
                 RoleType.USER,
                 now,
@@ -257,9 +257,8 @@ public class SocialLoginService {
     }
 
     private void updateUser(Users user, OAuth2UserInfo userInfo) {
-        if (userInfo.getName() != null && !user.getNickname().equals(userInfo.getName())) {
-            user.setNickname(userInfo.getName());
-        }
+        // 닉네임은 사용자가 설정한 값만 유지 (소셜에서 받은 닉네임 무시)
+        // 프로필 이미지만 업데이트
         if (userInfo.getImageUrl() != null && !user.getProfileImageUrl().equals(userInfo.getImageUrl())) {
             user.setProfileImageUrl(userInfo.getImageUrl());
         }

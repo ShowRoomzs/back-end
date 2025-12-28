@@ -35,7 +35,7 @@ public class SwaggerConfig {
     private static final String BEARER_TOKEN_PREFIX = "Bearer";
 
     @Bean
-    @Profile("!Prod") // 운영 환경에서 Swagger 비활성화
+    @Profile("!prod") // 운영 환경에서 Swagger 비활성화
     public OpenAPI openAPI() {
         SecurityRequirement securityRequirement = new SecurityRequirement().addList(AUTHORIZATION_HEADER);
         Components components = new Components()
