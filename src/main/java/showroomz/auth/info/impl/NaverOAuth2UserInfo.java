@@ -51,6 +51,18 @@ public class NaverOAuth2UserInfo extends OAuth2UserInfo {
             return null;
         }
 
-        return (String) response.get("profile_image");
+        String profileImage = (String) response.get("profile_image");
+        
+        // 네이버 기본 프로필 이미지는 null로 저장 (URL이 정확히 일치하거나 포함되는 경우)
+        if (profileImage != null) {
+            // 정확한 URL 매칭 또는 경로 부분 매칭
+            if (profileImage.equals("https://ssl.pstatic.net/static/pwe/address/img_profile.png") ||
+                profileImage.equals("http://ssl.pstatic.net/static/pwe/address/img_profile.png") ||
+                profileImage.contains("/static/pwe/address/img_profile.png")) {
+                return null;
+            }
+        }
+
+        return profileImage;
     }
 }

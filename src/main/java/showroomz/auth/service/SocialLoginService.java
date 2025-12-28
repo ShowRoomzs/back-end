@@ -264,8 +264,14 @@ public class SocialLoginService {
     private void updateUser(Users user, OAuth2UserInfo userInfo) {
         // 닉네임은 사용자가 설정한 값만 유지 (소셜에서 받은 닉네임 무시)
         // 프로필 이미지만 업데이트
-        if (userInfo.getImageUrl() != null && !user.getProfileImageUrl().equals(userInfo.getImageUrl())) {
-            user.setProfileImageUrl(userInfo.getImageUrl());
+        String newImageUrl = userInfo.getImageUrl();
+        String currentImageUrl = user.getProfileImageUrl();
+        
+        // null 체크 및 변경사항 확인
+        if (newImageUrl == null && currentImageUrl != null) {
+            user.setProfileImageUrl(null);
+        } else if (newImageUrl != null && !newImageUrl.equals(currentImageUrl)) {
+            user.setProfileImageUrl(newImageUrl);
         }
     }
 
