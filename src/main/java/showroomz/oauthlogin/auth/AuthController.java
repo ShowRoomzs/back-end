@@ -72,6 +72,155 @@ public class AuthController {
     private final static long THREE_DAYS_MSEC = 259200000;
 
     @PostMapping("/social/login")
+    @Operation(
+            summary = "소셜 로그인",
+            description = "카카오, 네이버, 애플 소셜 로그인을 처리합니다. 신규 회원인 경우 registerToken을 반환하고, 기존 회원인 경우 accessToken과 refreshToken을 반환합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "로그인 성공 (기존 회원)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = TokenResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "기존 회원 로그인 성공",
+                                            value = "{\n" +
+                                                    "  \"tokenType\": \"Bearer\",\n" +
+                                                    "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ...\",\n" +
+                                                    "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...\",\n" +
+                                                    "  \"accessTokenExpiresIn\": 3600,\n" +
+                                                    "  \"refreshTokenExpiresIn\": 1209600,\n" +
+                                                    "  \"isNewMember\": false\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "로그인 성공 (신규 회원)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = TokenResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "신규 회원 로그인 성공",
+                                            value = "{\n" +
+                                                    "  \"isNewMember\": true,\n" +
+                                                    "  \"registerToken\": \"eyJhbGciOiJIUzI1Ni...\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "필수 파라미터 누락",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "토큰 누락",
+                                            value = "{\n" +
+                                                    "  \"code\": \"BAD_REQUEST\",\n" +
+                                                    "  \"message\": \"token은 필수 입력값입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "지원하지 않는 소셜 공급자",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "잘못된 공급자",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_SOCIAL_PROVIDER\",\n" +
+                                                    "  \"message\": \"지원하지 않는 소셜 공급자입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "소셜 토큰 만료 또는 유효하지 않음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "유효하지 않은 토큰",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"유효하지 않은 액세스 토큰입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "서버 오류",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INTERNAL_SERVER_ERROR\",\n" +
+                                                    "  \"message\": \"서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "소셜 로그인 요청 정보\n" +
+                    "- providerType: 필수, 소셜 공급자 타입 (KAKAO, NAVER, APPLE)\n" +
+                    "- token: 필수, 애플은 idToken, 카카오/네이버는 accessToken\n" +
+                    "- name: 선택, 애플 로그인에서만 사용 (첫 로그인 시 이름)\n" +
+                    "- fcmToken: 선택, (푸시 알림 전송용 FCM 토큰)",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = SocialLoginRequest.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "네이버 로그인 예시",
+                                    value = "{\n" +
+                                            "  \"providerType\": \"NAVER\",\n" +
+                                            "  \"token\": \"eyJhbGciOiJIUzI1NiJ9...\"\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "카카오 로그인 예시",
+                                    value = "{\n" +
+                                            "  \"providerType\": \"KAKAO\",\n" +
+                                            "  \"token\": \"eyJhbGciOiJIUzI1NiJ9...\"\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "애플 로그인 예시 (첫 로그인)",
+                                    value = "{\n" +
+                                            "  \"providerType\": \"APPLE\",\n" +
+                                            "  \"token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\",\n" +
+                                            "  \"name\": \"홍길동\",\n" +
+                                            "  \"fcmToken\": \"dGhpcyBpcyBhIGZjbSB0b2tlbiBleGFtcGxl\"\n" +
+                                            "}"
+                            )
+                    }
+            )
+    )
     public ResponseEntity<?> socialLogin(@RequestBody @Valid SocialLoginRequest socialLoginRequest) {
         try {
             // 1. 필수 파라미터 검증
