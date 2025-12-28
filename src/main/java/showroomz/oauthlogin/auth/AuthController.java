@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -220,7 +219,7 @@ public class AuthController {
                     }
             )
     )
-    public ResponseEntity<?> socialLogin(@org.springframework.web.bind.annotation.RequestBody @Valid SocialLoginRequest socialLoginRequest) {
+    public ResponseEntity<?> socialLogin(@RequestBody @Valid SocialLoginRequest socialLoginRequest) {
         try {
             // 1. 필수 파라미터 검증
             if (socialLoginRequest.getToken() == null || socialLoginRequest.getToken().isEmpty()) {
@@ -391,6 +390,23 @@ public class AuthController {
                                     )
                             }
                     )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "이미 회원가입 완료 (Status: 400 Bad Request)",
+                    content = @io.swagger.v3.oas.annotations.media.Content(
+                            mediaType = "application/json",
+                            schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                            name = "이미 회원가입 완료 예시",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ALREADY_REGISTERED\",\n" +
+                                                    "  \"message\": \"이미 회원가입이 완료된 사용자입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
             )
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -474,6 +490,12 @@ public class AuthController {
             Users user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
+            // 이미 회원가입이 완료된 사용자(GUEST가 아닌 경우")는 재가입 불가
+            if (user.getRoleType() != RoleType.GUEST) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ErrorResponse(ALREADY_REGISTERED", "이미 회원가입이 완료된 사용자입니다."));
+            }
+
             user.setNickname(registerRequest.getNickname());
             user.setGender(registerRequest.getGender());
             user.setBirthday(registerRequest.getBirthday());
@@ -482,6 +504,9 @@ public class AuthController {
             user.setServiceAgree(registerRequest.getServiceAgree());
             user.setPrivacyAgree(registerRequest.getPrivacyAgree());
             user.setMarketingAgree(registerRequest.getMarketingAgree());
+            
+            // 회원가입 완료: GUEST -> USER로 권한 변경
+            user.setRoleType(RoleType.USER);
             
             user.setModifiedAt(LocalDateTime.now());
             userRepository.save(user);
