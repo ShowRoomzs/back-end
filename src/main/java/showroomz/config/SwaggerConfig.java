@@ -2,6 +2,7 @@ package showroomz.config;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.servers.Server;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
@@ -26,7 +27,10 @@ import org.springframework.context.annotation.Profile;
                         **유효기간:** 2개월 (60일)
                         """,
                 version = "v1"
-        )
+        ),
+        servers = {
+                @Server(url = "https://api.showroomz.shop", description = "Default Server")
+        }
 )
 @Configuration
 public class SwaggerConfig {
