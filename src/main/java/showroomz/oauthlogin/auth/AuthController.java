@@ -79,13 +79,13 @@ public class AuthController {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "로그인 성공 (기존 회원)",
+                    description = "로그인 성공 (기존 회원) - Status: 200 OK",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = TokenResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "기존 회원 로그인 성공",
+                                            name = "성공 시",
                                             value = "{\n" +
                                                     "  \"tokenType\": \"Bearer\",\n" +
                                                     "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ...\",\n" +
@@ -99,14 +99,14 @@ public class AuthController {
                     )
             ),
             @ApiResponse(
-                    responseCode = "200",
-                    description = "로그인 성공 (신규 회원)",
+                    responseCode = "204",
+                    description = "로그인 성공 (신규 회원) - Status: 200 OK",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = TokenResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "신규 회원 로그인 성공",
+                                            name = "신규 회원일 시",
                                             value = "{\n" +
                                                     "  \"isNewMember\": true,\n" +
                                                     "  \"registerToken\": \"eyJhbGciOiJIUzI1Ni...\"\n" +
@@ -214,8 +214,7 @@ public class AuthController {
                                     value = "{\n" +
                                             "  \"providerType\": \"APPLE\",\n" +
                                             "  \"token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\",\n" +
-                                            "  \"name\": \"홍길동\",\n" +
-                                            "  \"fcmToken\": \"dGhpcyBpcyBhIGZjbSB0b2tlbiBleGFtcGxl\"\n" +
+                                            "  \"name\": \"홍길동\"\n" +
                                             "}"
                             )
                     }
@@ -551,6 +550,116 @@ public class AuthController {
      */
     @PostMapping("/refresh")
     @Transactional
+    @Operation(
+            summary = "Access Token 재발급",
+            description = "Refresh Token을 사용하여 새로운 Access Token을 발급받습니다. Refresh Token이 만료 3일 이내인 경우 새로운 Refresh Token도 함께 발급됩니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "토큰 재발급 성공 - Status: 200 OK",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = TokenResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 시",
+                                            value = "{\n" +
+                                                    "  \"tokenType\": \"Bearer\",\n" +
+                                                    "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ...\",\n" +
+                                                    "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...\",\n" +
+                                                    "  \"accessTokenExpiresIn\": 3600,\n" +
+                                                    "  \"refreshTokenExpiresIn\": 1209600\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "필수 파라미터 누락",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "토큰 누락",
+                                            value = "{\n" +
+                                                    "  \"code\": \"BAD_REQUEST\",\n" +
+                                                    "  \"message\": \"refreshToken은 필수 입력값입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "리프레시 토큰 만료 - Status: 401 Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "토큰 만료",
+                                            value = "{\n" +
+                                                    "  \"code\": \"REFRESH_TOKEN_EXPIRED\",\n" +
+                                                    "  \"message\": \"리프레시 토큰이 만료되었습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "402",
+                    description = "유효하지 않은 토큰 - Status: 401 Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "유효하지 않은 토큰",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_TOKEN\",\n" +
+                                                    "  \"message\": \"유효하지 않은 토큰입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "서버 오류",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INTERNAL_SERVER_ERROR\",\n" +
+                                                    "  \"message\": \"서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Refresh Token 재발급 요청",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = RefreshTokenRequest.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "요청 예시",
+                                    value = "{\n" +
+                                            "  \"refreshToken\": \"string\"\n" +
+                                            "}"
+                            )
+                    }
+            )
+    )
     public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest refreshRequest) {
         try {
             // 1. Refresh Token 확인 (Body)
