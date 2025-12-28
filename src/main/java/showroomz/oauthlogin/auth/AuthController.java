@@ -754,7 +754,101 @@ public class AuthController {
     }
     
     @PostMapping("/logout")
+    @Operation(
+            summary = "로그아웃",
+            description = "사용자를 로그아웃 처리합니다. Authorization 헤더에 Bearer {access_token}이 필요하며, Body에 refreshToken을 전달해야 합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "로그아웃 성공 - Status: 200 OK",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Map.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 시",
+                                            value = "{\n" +
+                                                    "  \"message\": \"로그아웃이 완료되었습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Body에 Refresh Token이 없는 경우 - Status: 400 Bad Request",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Refresh Token 누락",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"Refresh Token이 필요합니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "헤더에 Access Token이 없거나 만료된 경우 - Status: 401 Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "서버 오류",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INTERNAL_SERVER_ERROR\",\n" +
+                                                    "  \"message\": \"서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "로그아웃 요청 (Refresh Token 필요)",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = RefreshTokenRequest.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "요청 예시",
+                                    value = "{\n" +
+                                            "  \"refreshToken\": \"string\"\n" +
+                                            "}"
+                            )
+                    }
+            )
+    )
     public ResponseEntity<?> logout(
+            @io.swagger.v3.oas.annotations.Parameter(
+                    description = "Authorization 헤더에 Bearer {access_token} 형식으로 전달",
+                    required = true,
+                    hidden = true
+            )
             HttpServletRequest request,
             @RequestBody RefreshTokenRequest refreshRequest
     ) {
