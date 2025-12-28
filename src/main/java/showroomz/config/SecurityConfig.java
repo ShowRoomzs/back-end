@@ -58,6 +58,7 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .formLogin(form -> form.disable())
             .httpBasic(httpBasic -> httpBasic.disable())
             .exceptionHandling(exceptions -> exceptions
@@ -91,8 +92,7 @@ public class SecurityConfig {
      */
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
@@ -117,10 +117,10 @@ public class SecurityConfig {
      * Cors 설정
      */
     /*
-     * ✅ CORS 필터 설정
+     * ✅ CORS 설정 소스 (Spring Security용)
      */
     @Bean
-    public FilterRegistrationBean<CorsFilter> corsFilter() {
+    public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
 
@@ -131,8 +131,7 @@ public class SecurityConfig {
         config.setMaxAge(corsProperties.getMaxAge());
 
         source.registerCorsConfiguration("/**", config);
-        FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(new CorsFilter(source));
-        bean.setOrder(-102);  // Spring Security 필터보다 먼저 실행되도록 우선순위 설정
-        return bean;
+        return source;
     }
+
 }
