@@ -92,6 +92,10 @@ public class SocialLoginService {
             }
             isNewMember = true;
         } else {
+            // 사용자가 존재하더라도 GUEST 권한이면 회원가입 미완료로 처리
+            if (user.getRoleType() == RoleType.GUEST) {
+                isNewMember = true;
+            }
             updateUser(user, userInfo);
         }
 
@@ -249,7 +253,7 @@ public class SocialLoginService {
                 "Y",
                 userInfo.getImageUrl(), // null 허용
                 providerType,
-                RoleType.USER,
+                RoleType.GUEST, // 처음엔 GUEST로 저장 (회원가입 미완료)
                 now,
                 now
         );
