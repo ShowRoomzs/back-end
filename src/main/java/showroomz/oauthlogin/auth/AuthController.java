@@ -73,7 +73,8 @@ public class AuthController {
     @PostMapping("/social/login")
     @Operation(
             summary = "소셜 로그인",
-            description = "카카오, 네이버, 애플 소셜 로그인을 처리합니다. 신규 회원인 경우 registerToken을 반환하고, 기존 회원인 경우 accessToken과 refreshToken을 반환합니다."
+            description = "카카오, 네이버, 애플 소셜 로그인을 처리합니다. 신규 회원인 경우 registerToken을 반환하고, 기존 회원인 경우 accessToken과 refreshToken을 반환합니다.\n\n" +
+                    "**registerToken 유효기간:** 5분 (회원가입 완료에 사용)"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -99,7 +100,7 @@ public class AuthController {
             ),
             @ApiResponse(
                     responseCode = "204",
-                    description = "로그인 성공 (신규 회원) - Status: 200 OK",
+                    description = "로그인 성공 (신규 회원) - Status: 200 OK\nregisterToken 유효기간: 5분",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = TokenResponse.class),
@@ -109,7 +110,8 @@ public class AuthController {
                                             value = "{\n" +
                                                     "  \"isNewMember\": true,\n" +
                                                     "  \"registerToken\": \"eyJhbGciOiJIUzI1Ni...\"\n" +
-                                                    "}"
+                                                    "}",
+                                            description = "registerToken은 5분간 유효하며, 회원가입 완료에 사용됩니다."
                                     )
                             }
                     )
@@ -925,6 +927,146 @@ public class AuthController {
             // 5. 성공 응답 반환
             return ResponseEntity.ok(Map.of("message", "로그아웃이 완료되었습니다."));
 
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."));
+        }
+    }
+
+    @DeleteMapping("/withdraw")
+    @Operation(
+            summary = "회원 탈퇴",
+            description = "인증된 사용자의 회원 탈퇴를 처리합니다. 사용자 계정과 관련된 모든 리프레시 토큰이 삭제됩니다.\n\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken} (Access Token만 필요)"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "회원 탈퇴 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Map.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"message\": \"회원 탈퇴가 완료되었습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패 예시",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "사용자 없음 예시",
+                                            value = "{\n" +
+                                                    "  \"code\": \"NOT_FOUND\",\n" +
+                                                    "  \"message\": \"사용자를 찾을 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "서버 오류 예시",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INTERNAL_SERVER_ERROR\",\n" +
+                                                    "  \"message\": \"서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    @Transactional
+    public ResponseEntity<?> withdraw(
+            @io.swagger.v3.oas.annotations.Parameter(
+                    description = "Authorization 헤더에 Bearer {accessToken} 형식으로 전달 (Access Token만 필요)",
+                    required = true,
+                    hidden = true
+            )
+            HttpServletRequest request) {
+        try {
+            // 1. Authorization 헤더에서 Access Token 확인
+            String accessToken = HeaderUtil.getAccessToken(request);
+            if (accessToken == null || accessToken.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("UNAUTHORIZED", "인증 정보가 유효하지 않습니다."));
+            }
+
+            AuthToken authToken = tokenProvider.convertAuthToken(accessToken);
+            
+            // Access Token 유효성 검사
+            if (!authToken.validate()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("UNAUTHORIZED", "인증 정보가 유효하지 않습니다."));
+            }
+
+            // 2. 토큰에서 사용자명 추출
+            Claims claims = authToken.getTokenClaims();
+            if (claims == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("UNAUTHORIZED", "인증 정보가 유효하지 않습니다."));
+            }
+
+            String username = claims.getSubject();
+
+            // 3. 사용자 조회
+            Users user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "사용자를 찾을 수 없습니다."
+                    ));
+
+            // 4. 사용자 관련 리프레시 토큰 삭제
+            UserRefreshToken userRefreshToken = userRefreshTokenRepository.findByUserId(username);
+            if (userRefreshToken != null) {
+                userRefreshTokenRepository.delete(userRefreshToken);
+            }
+
+            // 5. 사용자 삭제
+            if (user != null) {
+                userRepository.delete(user);
+            }
+
+            // 6. SecurityContext 초기화
+            SecurityContextHolder.clearContext();
+
+            // 7. 성공 응답 반환
+            return ResponseEntity.ok(Map.of("message", "회원 탈퇴가 완료되었습니다."));
+
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."));
