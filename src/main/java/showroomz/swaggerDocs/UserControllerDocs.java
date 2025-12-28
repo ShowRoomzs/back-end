@@ -12,11 +12,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import showroomz.oauthlogin.auth.DTO.ErrorResponse;
-import showroomz.oauthlogin.auth.DTO.ValidationErrorResponse;
-import showroomz.oauthlogin.user.DTO.NicknameCheckResponse;
-import showroomz.oauthlogin.user.DTO.UpdateUserProfileRequest;
-import showroomz.oauthlogin.user.DTO.UserProfileResponse;
+import showroomz.auth.DTO.ErrorResponse;
+import showroomz.auth.DTO.ValidationErrorResponse;
+import showroomz.user.DTO.NicknameCheckResponse;
+import showroomz.user.DTO.UpdateUserProfileRequest;
+import showroomz.user.DTO.UserProfileResponse;
 
 @Tag(name = "User", description = "사용자 정보 API")
 public interface UserControllerDocs {

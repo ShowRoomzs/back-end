@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import showroomz.oauthlogin.oauth.token.AuthTokenProvider;
+import showroomz.auth.token.AuthTokenProvider;
 
 @Configuration
 public class JwtConfig {

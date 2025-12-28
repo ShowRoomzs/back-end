@@ -1,19 +1,14 @@
 package showroomz.config;
 
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.web.filter.CorsFilter;
-
+import showroomz.auth.entity.RoleType;
+import showroomz.auth.exception.RestAuthenticationEntryPoint;
+import showroomz.auth.filter.TokenAuthenticationFilter;
+import showroomz.auth.handler.TokenAccessDeniedHandler;
+import showroomz.auth.service.CustomUserDetailsService;
+import showroomz.auth.token.AuthTokenProvider;
 import showroomz.config.properties.CorsProperties;
-import showroomz.oauthlogin.oauth.entity.RoleType;
-import showroomz.oauthlogin.oauth.exception.RestAuthenticationEntryPoint;
-import showroomz.oauthlogin.oauth.filter.TokenAuthenticationFilter;
 
-import showroomz.oauthlogin.oauth.handler.TokenAccessDeniedHandler;
-import showroomz.oauthlogin.oauth.service.CustomUserDetailsService;
-import showroomz.oauthlogin.oauth.token.AuthTokenProvider;
-
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
