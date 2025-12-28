@@ -490,10 +490,10 @@ public class AuthController {
             Users user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
-            // 이미 회원가입이 완료된 사용자(GUEST가 아닌 경우")는 재가입 불가
+            // 이미 회원가입이 완료된 사용자(GUEST가 아닌 경우)는 재가입 불가
             if (user.getRoleType() != RoleType.GUEST) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new ErrorResponse(ALREADY_REGISTERED", "이미 회원가입이 완료된 사용자입니다."));
+                        .body(new ErrorResponse("ALREADY_REGISTERED", "이미 회원가입이 완료된 사용자입니다."));
             }
 
             user.setNickname(registerRequest.getNickname());
