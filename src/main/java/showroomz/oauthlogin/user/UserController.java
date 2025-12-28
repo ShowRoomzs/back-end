@@ -34,7 +34,8 @@ public class UserController {
     @Operation(
             summary = "현재 로그인한 사용자 정보 조회",
             description = "프로필 카드에 표시될 현재 로그인한 사용자의 정보(닉네임, 이메일, 프로필 이미지 등)를 조회합니다.\n\n" +
-                    "**호출 도메인**\n"
+                    "**참고사항**\n" +
+                    "- 프로필 사진이 없는 경우 `profileImageUrl`은 `null`로 반환됩니다.\n\n" 
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -45,12 +46,28 @@ public class UserController {
                             schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = UserProfileResponse.class),
                             examples = {
                                     @io.swagger.v3.oas.annotations.media.ExampleObject(
-                                            name = "성공 시",
+                                            name = "성공 시 (프로필 사진 있음)",
                                             value = "{\n" +
                                                     "  \"id\": 1,\n" +
                                                     "  \"email\": \"string\",\n" +
                                                     "  \"nickname\": \"string\",\n" +
                                                     "  \"profileImageUrl\": \"https://k.kakaocdn.net/img_640x640.jpg\",\n" +
+                                                    "  \"birthday\": \"YYYY-MM-DD\",\n" +
+                                                    "  \"gender\": \"MALE\",\n" +
+                                                    "  \"providerType\": \"GOOGLE\",\n" +
+                                                    "  \"roleType\": \"USER\",\n" +
+                                                    "  \"createdAt\": \"2025-10-31T10:00:00\",\n" +
+                                                    "  \"modifiedAt\": \"2025-10-31T10:00:00\",\n" +
+                                                    "  \"marketingAgree\": true\n" +
+                                                    "}"
+                                    ),
+                                    @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                            name = "성공 시 (프로필 사진 없음)",
+                                            value = "{\n" +
+                                                    "  \"id\": 1,\n" +
+                                                    "  \"email\": \"string\",\n" +
+                                                    "  \"nickname\": \"string\",\n" +
+                                                    "  \"profileImageUrl\": null,\n" +
                                                     "  \"birthday\": \"YYYY-MM-DD\",\n" +
                                                     "  \"gender\": \"MALE\",\n" +
                                                     "  \"providerType\": \"GOOGLE\",\n" +
@@ -385,12 +402,6 @@ public class UserController {
                             )
                     }
             )
-    )
-    @io.swagger.v3.oas.annotations.Parameter(
-            name = "Authorization",
-            description = "Bearer {access_token} 형식으로 전달",
-            required = true,
-            hidden = false
     )
     public ResponseEntity<?> updateCurrentUser(@RequestBody UpdateUserProfileRequest request) {
         try {
