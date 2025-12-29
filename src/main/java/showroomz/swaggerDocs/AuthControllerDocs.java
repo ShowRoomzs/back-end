@@ -258,7 +258,7 @@ public interface AuthControllerDocs {
                     )
             ),
             @ApiResponse(
-                    responseCode = "401",
+                    responseCode = "399",
                     description = "이미 회원가입 완료 (Status: 400 Bad Request)",
                     content = @Content(
                             mediaType = "application/json",
