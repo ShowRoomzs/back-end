@@ -4,22 +4,16 @@ import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import showroomz.auth.DTO.*;
 import showroomz.auth.entity.ProviderType;
 import showroomz.auth.entity.RoleType;
-import showroomz.auth.entity.UserPrincipal;
-import showroomz.auth.exception.BadRequestException;
 import showroomz.auth.refreshToken.UserRefreshToken;
 import showroomz.auth.refreshToken.UserRefreshTokenRepository;
+import showroomz.auth.service.AuthService;
 import showroomz.auth.service.SocialLoginService;
 import showroomz.auth.service.SocialLoginService.SocialLoginResult;
 import showroomz.auth.token.AuthToken;
@@ -32,7 +26,6 @@ import showroomz.user.repository.UserRepository;
 import showroomz.user.service.UserService;
 import showroomz.utils.HeaderUtil;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
@@ -47,12 +40,11 @@ public class AuthController implements AuthControllerDocs {
 
     private final AppProperties appProperties;
     private final AuthTokenProvider tokenProvider;
-    private final AuthenticationManager authenticationManager;
     private final UserRefreshTokenRepository userRefreshTokenRepository;
     private final UserRepository userRepository;
     private final UserService userService;
-    private final PasswordEncoder passwordEncoder;
     private final SocialLoginService socialLoginService;
+    private final AuthService authService;
     
     private final static long THREE_DAYS_MSEC = 259200000;
 
@@ -107,7 +99,7 @@ public class AuthController implements AuthControllerDocs {
             }
 
             // 5. 기존 회원인 경우 일반 토큰 반환
-            return ResponseEntity.ok(generateTokens(
+            return ResponseEntity.ok(authService.generateTokens(
                     result.getUser().getUsername(),
                     result.getUser().getRoleType(),
                     false
@@ -194,10 +186,10 @@ public class AuthController implements AuthControllerDocs {
             user.setGender(registerRequest.getGender());
             user.setBirthday(registerRequest.getBirthday());
             
-            // 동의 항목 저장
-            user.setServiceAgree(registerRequest.getServiceAgree());
-            user.setPrivacyAgree(registerRequest.getPrivacyAgree());
-            user.setMarketingAgree(registerRequest.getMarketingAgree());
+            // 동의 항목 저장 (Boolean을 boolean으로 변환)
+            user.setServiceAgree(registerRequest.getServiceAgree() != null && registerRequest.getServiceAgree());
+            user.setPrivacyAgree(registerRequest.getPrivacyAgree() != null && registerRequest.getPrivacyAgree());
+            user.setMarketingAgree(registerRequest.getMarketingAgree() != null && registerRequest.getMarketingAgree());
             
             // 회원가입 완료: GUEST -> USER로 권한 변경
             user.setRoleType(RoleType.USER);
@@ -207,67 +199,13 @@ public class AuthController implements AuthControllerDocs {
 
             // 6. 토큰 발급 및 반환
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(generateTokens(username, user.getRoleType(), false));
+                    .body(authService.generateTokens(username, user.getRoleType(), false));
 
         } catch (ResponseStatusException e) {
             throw e;
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."));
-        }
-    }
-
-    @Override
-    @PostMapping("/signup")
-    public Map<String, String> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {
-        if (userRepository.existsByUsername(signUpRequest.getUserId())) {
-            throw new BadRequestException("이미 사용 중인 아이디입니다.");
-        }
-
-        Users user = new Users(
-            signUpRequest.getUserId(),
-            signUpRequest.getUsername(),
-            signUpRequest.getEmail(),
-            "N",
-            "",
-            ProviderType.LOCAL,
-            RoleType.USER,
-            LocalDateTime.now(),
-            LocalDateTime.now()
-        );
-
-        user.setPassword(passwordEncoder.encode(signUpRequest.getPassword()));
-        userRepository.save(user);
-
-        return Map.of("message", "회원가입이 완료되었습니다.");
-    }
-
-    @Override
-    @PostMapping("/login")
-    public TokenResponse login(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            @RequestBody AuthReqModel authReqModel
-    ) {
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            authReqModel.getId(),
-                            authReqModel.getPassword()
-                    )
-            );
-    
-            String username = authReqModel.getId();
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            RoleType roleType = ((UserPrincipal) authentication.getPrincipal()).getRoleType();
-    
-            // 토큰 생성 및 저장
-            return generateTokens(username, roleType, false);
-
-        } catch (AuthenticationException e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 실패: 아이디 또는 비밀번호가 올바르지 않습니다.");
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "로그인 처리 중 오류가 발생했습니다.");
         }
     }
 
@@ -470,47 +408,5 @@ public class AuthController implements AuthControllerDocs {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."));
         }
-    }
-    
-    // 토큰 생성 및 DB 저장 헬퍼 메소드
-    private TokenResponse generateTokens(String username, RoleType roleType, boolean isNewMember) {
-        Date now = new Date();
-        
-        // Access Token 생성
-        long accessTokenExpiry = appProperties.getAuth().getTokenExpiry();
-        AuthToken accessToken = tokenProvider.createAuthToken(
-                username,
-                roleType.getCode(),
-                new Date(now.getTime() + accessTokenExpiry)
-        );
-
-        // Refresh Token 생성
-        long refreshTokenExpiry = appProperties.getAuth().getRefreshTokenExpiry();
-        AuthToken refreshToken = tokenProvider.createAuthToken(
-                username,
-                new Date(now.getTime() + refreshTokenExpiry)
-        );
-
-        // DB 저장/업데이트
-        UserRefreshToken userRefreshToken = userRefreshTokenRepository.findByUserId(username);
-        if (userRefreshToken == null) {
-            userRefreshToken = new UserRefreshToken(username, refreshToken.getToken());
-            userRefreshTokenRepository.saveAndFlush(userRefreshToken);
-        } else {
-            userRefreshToken.setRefreshToken(refreshToken.getToken());
-            userRefreshTokenRepository.saveAndFlush(userRefreshToken);
-        }
-
-        // 밀리초를 초로 변환
-        long accessTokenExpiresInSeconds = accessTokenExpiry / 1000;
-        long refreshTokenExpiresInSeconds = refreshTokenExpiry / 1000;
-
-        return new TokenResponse(
-                accessToken.getToken(),
-                refreshToken.getToken(),
-                accessTokenExpiresInSeconds,
-                refreshTokenExpiresInSeconds,
-                isNewMember
-        );
     }
 }
