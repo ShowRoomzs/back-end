@@ -19,7 +19,10 @@ public class SignUpRequest {
     
     @NotBlank
     @Email
-    private String email; 
+    private String email;
+    
+    @NotBlank
+    private String nickname; 
     
     public String getEmail() {
 		return email;
@@ -51,5 +54,13 @@ public class SignUpRequest {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+    
+    public String getNickname() {
+        return nickname;
+    }
+    
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
     }
 }
