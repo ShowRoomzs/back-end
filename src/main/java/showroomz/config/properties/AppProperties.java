@@ -11,7 +11,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class AppProperties {
 
     private final Auth auth = new Auth();
-    // [삭제] private final OAuth2 oauth2 = new OAuth2();
+    private final NaverOAuth2 naverOAuth2 = new NaverOAuth2();
 
     @Getter
     @Setter
@@ -23,5 +23,13 @@ public class AppProperties {
         private long refreshTokenExpiry;
     }
 
-    // [삭제] public static final class OAuth2 { ... } 내부 클래스 전체 삭제
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class NaverOAuth2 {
+        private String clientId;
+        private String clientSecret;
+        private String redirectUri;
+    }
 }

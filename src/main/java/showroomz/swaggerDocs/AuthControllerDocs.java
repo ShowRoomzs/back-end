@@ -258,7 +258,7 @@ public interface AuthControllerDocs {
                     )
             ),
             @ApiResponse(
-                    responseCode = "401",
+                    responseCode = "399",
                     description = "이미 회원가입 완료 (Status: 400 Bad Request)",
                     content = @Content(
                             mediaType = "application/json",
@@ -322,20 +322,6 @@ public interface AuthControllerDocs {
             HttpServletRequest request,
             @RequestBody RegisterRequest registerRequest
     );
-
-    @io.swagger.v3.oas.annotations.Hidden
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "성공"),
-            @ApiResponse(responseCode = "404", description = "해당 ID의 유저가 존재하지 않습니다."),
-    })
-    Map<String, String> registerUser(@RequestBody SignUpRequest signUpRequest);
-
-    @io.swagger.v3.oas.annotations.Hidden
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "성공"),
-            @ApiResponse(responseCode = "404", description = "해당 ID의 유저가 존재하지 않습니다."),
-    })
-    TokenResponse login(HttpServletRequest request, HttpServletResponse response, @RequestBody AuthReqModel authReqModel);
 
     @Operation(
             summary = "Access Token 재발급",

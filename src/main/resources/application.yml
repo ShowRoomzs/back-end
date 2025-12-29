@@ -26,6 +26,10 @@ app:
     tokenSecret: ${TOKEN_SECRET}
     tokenExpiry: 1800000      # 액세스 토큰 만료 시간 (30분, 밀리초 단위)
     refreshTokenExpiry: 604800000 # 리프레시 토큰 만료 시간 (7일)
+  naver-oauth2:
+    client-id: ${NAVER_CLIENT_ID:}
+    client-secret: ${NAVER_CLIENT_SECRET:}
+    redirect-uri: ${NAVER_REDIRECT_URI:http://localhost:8080/login/oauth2/code/naver}
 
 # JwtConfig.java 관련 설정 
 jwt:

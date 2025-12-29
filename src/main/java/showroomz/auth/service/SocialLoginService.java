@@ -97,7 +97,7 @@ public class SocialLoginService {
             if (user.getRoleType() == RoleType.GUEST) {
                 isNewMember = true;
             }
-            updateUser(user, userInfo);
+            // 기존 사용자의 경우 업데이트할 필요 없음 (닉네임, 프로필 이미지는 사용자가 직접 관리)
         }
 
         return new SocialLoginResult(user, isNewMember);
@@ -238,7 +238,6 @@ public class SocialLoginService {
         return (RSAPublicKey) keyFactory.generatePublic(publicKeySpec);
     }
 
-    // ... createUser, updateUser는 기존과 동일 ...
     private Users createUser(OAuth2UserInfo userInfo, ProviderType providerType) {
         return createUser(userInfo, providerType, null);
     }
@@ -247,12 +246,13 @@ public class SocialLoginService {
         LocalDateTime now = LocalDateTime.now();
         String userName = name != null && !name.isEmpty() ? name : 
                          (userInfo.getName() != null ? userInfo.getName() : "Guest");
+        // 소셜 로그인 프로필 이미지는 DB에 저장하되, 첫 가입 시에는 null로 저장 (사용자가 변경했을 때만 표시)
         Users user = new Users(
                 userInfo.getId(),
                 userName,
                 userInfo.getEmail() != null ? userInfo.getEmail() : userInfo.getId() + "@social.com",
                 "Y",
-                userInfo.getImageUrl(), // null 허용
+                null, // 첫 가입 시에는 항상 null로 저장 (사용자가 변경했을 때만 저장)
                 providerType,
                 RoleType.GUEST, // 처음엔 GUEST로 저장 (회원가입 미완료)
                 now,
@@ -261,13 +261,6 @@ public class SocialLoginService {
         return userRepository.save(user);
     }
 
-    private void updateUser(Users user, OAuth2UserInfo userInfo) {
-        // 닉네임은 사용자가 설정한 값만 유지 (소셜에서 받은 닉네임 무시)
-        // 프로필 이미지만 업데이트
-        if (userInfo.getImageUrl() != null && !user.getProfileImageUrl().equals(userInfo.getImageUrl())) {
-            user.setProfileImageUrl(userInfo.getImageUrl());
-        }
-    }
 
     @Getter
     @AllArgsConstructor

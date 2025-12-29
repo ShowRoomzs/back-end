@@ -9,17 +9,17 @@ import jakarta.validation.constraints.NotBlank;
 
 public class SignUpRequest {
     @NotBlank
-    private String username;
-
-    @NotBlank
-    private String userId;
+    private String username; // 로그인 ID
 
     @NotBlank
     private String password;
     
     @NotBlank
     @Email
-    private String email; 
+    private String email;
+    
+    @NotBlank
+    private String nickname; 
     
     public String getEmail() {
 		return email;
@@ -37,19 +37,19 @@ public class SignUpRequest {
         this.username = username;
     }
 
-    public String getUserId() {
-        return userId;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-
     public String getPassword() {
         return password;
     }
 
     public void setPassword(String password) {
         this.password = password;
+    }
+    
+    public String getNickname() {
+        return nickname;
+    }
+    
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
     }
 }
