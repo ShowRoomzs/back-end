@@ -186,9 +186,9 @@ public class AuthController implements AuthControllerDocs {
             user.setGender(registerRequest.getGender());
             user.setBirthday(registerRequest.getBirthday());
             
-            // 동의 항목 저장 (Boolean을 boolean으로 변환)
-            user.setServiceAgree(registerRequest.getServiceAgree() != null && registerRequest.getServiceAgree());
-            user.setPrivacyAgree(registerRequest.getPrivacyAgree() != null && registerRequest.getPrivacyAgree());
+            // 동의 항목 저장
+            user.setServiceAgree(registerRequest.isServiceAgree());
+            user.setPrivacyAgree(registerRequest.isPrivacyAgree());
             user.setMarketingAgree(registerRequest.getMarketingAgree() != null && registerRequest.getMarketingAgree());
             
             // 회원가입 완료: GUEST -> USER로 권한 변경

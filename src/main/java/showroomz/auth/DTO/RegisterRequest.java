@@ -27,15 +27,13 @@ public class RegisterRequest {
     @Schema(description = "생년월일", example = "1990-01-15", pattern = "YYYY-MM-DD", nullable = true)
     private String birthday; // null 또는 "YYYY-MM-DD"
     
-    @NotNull(message = "서비스 이용약관에 동의해야 합니다.")
     @AssertTrue(message = "서비스 이용약관에 동의해야 합니다.")
     @Schema(description = "서비스 이용약관 동의", example = "true", requiredMode = Schema.RequiredMode.REQUIRED)
-    private Boolean serviceAgree;
+    private boolean serviceAgree;
     
-    @NotNull(message = "개인정보 수집 및 이용에 동의해야 합니다.")
     @AssertTrue(message = "개인정보 수집 및 이용에 동의해야 합니다.")
     @Schema(description = "개인정보 수집 및 이용 동의", example = "true", requiredMode = Schema.RequiredMode.REQUIRED)
-    private Boolean privacyAgree;
+    private boolean privacyAgree;
     
     @Schema(description = "마케팅 수신 동의", example = "true", nullable = true)
     private Boolean marketingAgree; // 선택사항
