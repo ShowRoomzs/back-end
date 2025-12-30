@@ -41,6 +41,7 @@ public class SecurityConfig {
             "/v3/api-docs/**", "/api-docs/**", 
             "/v1/auth/social/login", "/v1/auth/register", "/v1/auth/refresh",  // 토큰 갱신 (인증 불필요)
             "/v1/auth/local/signup", "/v1/auth/local/login",  // 로컬 회원가입 및 로그인 (인증 불필요)
+            "/v1/admin/signup",  // 관리자 회원가입 (인증 불필요)
             "/v1/users/check-nickname",  // 닉네임 중복 확인 (인증 불필요)
             "/error"  // 에러 페이지 접근 허용
     };
