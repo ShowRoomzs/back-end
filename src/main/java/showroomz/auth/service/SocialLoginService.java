@@ -85,6 +85,12 @@ public class SocialLoginService {
         boolean isNewMember = false;
 
         if (user == null) {
+            // 이메일이 이미 다른 계정에서 사용 중인지 확인
+            String email = userInfo.getEmail();
+            if (email != null && !email.isEmpty() && userRepository.existsByEmail(email)) {
+                throw new IllegalArgumentException("이미 다른 계정에서 사용 중인 이메일입니다.");
+            }
+            
             // 애플의 경우 name이 제공되면 사용
             if (providerType == ProviderType.APPLE && name != null && !name.isEmpty()) {
                 user = createUser(userInfo, providerType, name);
