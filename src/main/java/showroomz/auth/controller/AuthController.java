@@ -111,6 +111,10 @@ public class AuthController implements AuthControllerDocs {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(new ErrorResponse("UNAUTHORIZED", "유효하지 않은 액세스 토큰입니다."));
             }
+            if (message.contains("이미 다른 계정에서 사용 중인 이메일")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new ErrorResponse("DUPLICATE_EMAIL", "이미 다른 계정에서 사용 중인 이메일입니다."));
+            }
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ErrorResponse("BAD_REQUEST", message));
         } catch (Exception e) {

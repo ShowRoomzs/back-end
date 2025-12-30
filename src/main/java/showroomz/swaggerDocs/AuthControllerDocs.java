@@ -48,7 +48,7 @@ public interface AuthControllerDocs {
                     )
             ),
             @ApiResponse(
-                    responseCode = "204",
+                    responseCode = "199",
                     description = "로그인 성공 (신규 회원) - Status: 200 OK\nregisterToken 유효기간: 5분",
                     content = @Content(
                             mediaType = "application/json",
@@ -66,7 +66,7 @@ public interface AuthControllerDocs {
                     )
             ),
             @ApiResponse(
-                    responseCode = "400",
+                    responseCode = "399",
                     description = "필수 파라미터 누락",
                     content = @Content(
                             mediaType = "application/json",
@@ -111,6 +111,23 @@ public interface AuthControllerDocs {
                                             value = "{\n" +
                                                     "  \"code\": \"UNAUTHORIZED\",\n" +
                                                     "  \"message\": \"유효하지 않은 액세스 토큰입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "이메일 중복 - 이미 다른 소셜 계정에서 사용 중인 이메일",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "이메일 중복",
+                                            value = "{\n" +
+                                                    "  \"code\": \"DUPLICATE_EMAIL\",\n" +
+                                                    "  \"message\": \"이미 다른 계정에서 사용 중인 이메일입니다.\"\n" +
                                                     "}"
                                     )
                             }
