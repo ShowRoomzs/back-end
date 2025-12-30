@@ -23,12 +23,6 @@ public class Market {
     @JoinColumn(name = "USER_ID", nullable = false)
     private Users user;
 
-    @Column(name = "SELLER_NAME", nullable = false)
-    private String sellerName;
-
-    @Column(name = "SELLER_CONTACT", nullable = false)
-    private String sellerContact;
-
     @Column(name = "MARKET_NAME", nullable = false, unique = true)
     private String marketName;
 
@@ -58,10 +52,8 @@ public class Market {
     @Column(name = "SNS_LINK_3", length = 512)
     private String snsLink3;
 
-    public Market(Users user, String sellerName, String sellerContact, String marketName, String csNumber) {
+    public Market(Users user, String marketName, String csNumber) {
         this.user = user;
-        this.sellerName = sellerName;
-        this.sellerContact = sellerContact;
         this.marketName = marketName;
         this.csNumber = csNumber;
     }

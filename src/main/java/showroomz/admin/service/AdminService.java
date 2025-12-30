@@ -41,10 +41,10 @@ public class AdminService {
              throw new BadRequestException("이미 사용 중인 마켓명입니다.");
         }
 
-        // 4. Users 엔티티 생성 (계정 정보)
+        // 4. Users 엔티티 생성 (계정 + 개인 정보)
         Users user = new Users(
                 request.getEmail(), // username을 이메일로 사용
-                request.getMarketName(), // 닉네임을 마켓명으로 대체
+                request.getMarketName(), // nickname에 마켓명 저장
                 request.getEmail(),
                 "N", // 이메일 인증 여부
                 null, // 프로필 이미지
@@ -54,16 +54,16 @@ public class AdminService {
                 LocalDateTime.now()
         );
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setName(request.getSellerName()); // 판매자 이름(실명)을 name 필드에 저장
+        user.setPhoneNumber(request.getSellerContact()); // 판매자 연락처를 유저 정보로 저장
         
         Users savedUser = userRepository.save(user);
 
-        // 5. Market 엔티티 생성 (판매자 및 마켓 정보)
+        // 5. Market 엔티티 생성 (가게 정보)
         Market market = new Market(
                 savedUser,
-                request.getSellerName(),
-                request.getSellerContact(),
                 request.getMarketName(),
-                request.getCsNumber()
+                request.getCsNumber() // 고객센터 번호
         );
 
         marketRepository.save(market);
