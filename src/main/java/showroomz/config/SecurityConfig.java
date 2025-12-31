@@ -36,6 +36,7 @@ public class SecurityConfig {
     private final TokenAccessDeniedHandler tokenAccessDeniedHandler;
     
     private static final String[] AUTH_WHITELIST = {
+            "/",  // Health Check (인증 불필요)
             "/swagger-ui/**", "/swagger-ui.html", "/swagger-ui/index.html",
             "/api-docs", "/swagger-ui-custom.html", "/payment/**",
             "/v3/api-docs/**", "/api-docs/**", 

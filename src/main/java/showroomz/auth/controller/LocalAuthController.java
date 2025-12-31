@@ -16,6 +16,7 @@ import showroomz.auth.entity.ProviderType;
 import showroomz.auth.entity.RoleType;
 import showroomz.auth.entity.UserPrincipal;
 import showroomz.auth.exception.BadRequestException;
+import showroomz.global.exception.ErrorCode;
 import showroomz.auth.service.AuthService;
 import showroomz.user.DTO.NicknameCheckResponse;
 import showroomz.user.entity.Users;
@@ -45,12 +46,12 @@ public class LocalAuthController {
         
         // 1. 아이디 중복 체크
         if (userRepository.existsByUsername(loginId)) {
-            throw new BadRequestException("이미 사용 중인 아이디입니다.");
+            throw new BadRequestException(ErrorCode.DUPLICATE_USERNAME);
         }
 
         // 2. 이메일 중복 체크
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            throw new BadRequestException("이미 사용 중인 이메일입니다.");
+            throw new BadRequestException(ErrorCode.DUPLICATE_EMAIL);
         }
 
         // 3. 닉네임 검증
@@ -58,12 +59,12 @@ public class LocalAuthController {
         NicknameCheckResponse nicknameCheck = userService.checkNickname(nickname);
         if (!nicknameCheck.getIsAvailable()) {
             if ("DUPLICATE".equals(nicknameCheck.getCode())) {
-                throw new BadRequestException("이미 사용 중인 닉네임입니다.");
+                throw new BadRequestException(ErrorCode.DUPLICATE_NICKNAME);
             } else if ("INVALID_FORMAT".equals(nicknameCheck.getCode()) || 
                        "INVALID_LENGTH".equals(nicknameCheck.getCode())) {
-                throw new BadRequestException(nicknameCheck.getMessage());
+                throw new BadRequestException(ErrorCode.INVALID_NICKNAME_FORMAT);
             } else if ("PROFANITY".equals(nicknameCheck.getCode())) {
-                throw new BadRequestException(nicknameCheck.getMessage());
+                throw new BadRequestException(ErrorCode.PROFANITY_DETECTED);
             }
         }
 

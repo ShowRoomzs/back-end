@@ -11,6 +11,7 @@ import showroomz.auth.DTO.AdminSignUpRequest;
 import showroomz.auth.entity.ProviderType;
 import showroomz.auth.entity.RoleType;
 import showroomz.auth.exception.BadRequestException;
+import showroomz.global.exception.ErrorCode;
 import showroomz.user.entity.Users;
 import showroomz.user.repository.UserRepository;
 
@@ -28,17 +29,17 @@ public class AdminService {
     public void registerAdmin(AdminSignUpRequest request) {
         // 1. 비밀번호 일치 확인
         if (!request.getPassword().equals(request.getPasswordConfirm())) {
-            throw new BadRequestException("비밀번호가 일치하지 않습니다.");
+            throw new BadRequestException(ErrorCode.PASSWORD_MISMATCH);
         }
 
         // 2. 이메일(ID) 중복 체크
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new BadRequestException("이미 사용 중인 이메일입니다.");
+            throw new BadRequestException(ErrorCode.DUPLICATE_EMAIL);
         }
         
-        // 3. 마켓명 중복 체크 (MarketRepository에 existsByMarketName 메서드 필요)
+        // 3. 마켓명 중복 체크
         if (marketRepository.existsByMarketName(request.getMarketName())) {
-             throw new BadRequestException("이미 사용 중인 마켓명입니다.");
+             throw new BadRequestException(ErrorCode.DUPLICATE_MARKET_NAME);
         }
 
         // 4. Users 엔티티 생성 (계정 + 개인 정보)

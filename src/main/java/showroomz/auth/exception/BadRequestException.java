@@ -1,15 +1,15 @@
 package showroomz.auth.exception;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import lombok.Getter;
+import showroomz.global.exception.ErrorCode;
 
-@ResponseStatus(HttpStatus.BAD_REQUEST)
+@Getter
 public class BadRequestException extends RuntimeException {
-    public BadRequestException(String message) {
-        super(message);
-    }
+    
+    private final ErrorCode errorCode;
 
-    public BadRequestException(String message, Throwable cause) {
-        super(message, cause);
+    public BadRequestException(ErrorCode errorCode) {
+        super(errorCode.getMessage());
+        this.errorCode = errorCode;
     }
 }
