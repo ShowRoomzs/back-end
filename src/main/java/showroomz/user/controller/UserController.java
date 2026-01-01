@@ -6,10 +6,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
-import showroomz.auth.DTO.ErrorResponse;
 import showroomz.auth.DTO.ValidationErrorResponse;
+import showroomz.auth.exception.BusinessException;
+import showroomz.global.error.exception.ErrorCode;
 import showroomz.swaggerDocs.UserControllerDocs;
 import showroomz.user.DTO.NicknameCheckResponse;
 import showroomz.user.DTO.UpdateUserProfileRequest;
@@ -29,70 +29,55 @@ public class UserController implements UserControllerDocs {
 
     @Override
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser() {
-        try {
-            // 1. SecurityContext에서 현재 인증된 사용자 정보 가져오기
-            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    public ResponseEntity<UserProfileResponse> getCurrentUser() {
+        // 1. SecurityContext에서 현재 인증된 사용자 정보 가져오기
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-            if (principal == null || !(principal instanceof User)) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ErrorResponse("UNAUTHORIZED", "인증 정보가 유효하지 않습니다. 다시 로그인해주세요."));
-            }
-
-            User springUser = (User) principal;
-            String username = springUser.getUsername();
-
-            // 2. 사용자 정보 조회
-            Users user = userService.getUser(username)
-                    .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.NOT_FOUND,
-                            "존재하지 않는 회원입니다."
-                    ));
-
-            // 3. UserProfileResponse로 변환
-            String profileImageUrl = user.getProfileImageUrl();
-            if (profileImageUrl != null && profileImageUrl.isEmpty()) {
-                profileImageUrl = null;
-            }
-
-            UserProfileResponse response = new UserProfileResponse(
-                    user.getUserId(), // id
-                    user.getEmail(),
-                    user.getNickname(),
-                    profileImageUrl,
-                    user.getBirthday(),
-                    user.getGender(),
-                    user.getProviderType(),
-                    user.getRoleType(),
-                    user.getCreatedAt(),
-                    user.getModifiedAt(),
-                    user.isMarketingAgree()
-            );
-
-            return ResponseEntity.ok(response);
-
-        } catch (ResponseStatusException e) {
-            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(new ErrorResponse("USER_NOT_FOUND", e.getReason()));
-            }
-            throw e;
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new ErrorResponse("UNAUTHORIZED", "인증 정보가 유효하지 않습니다. 다시 로그인해주세요."));
+        if (principal == null || !(principal instanceof User)) {
+            throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
         }
+
+        User springUser = (User) principal;
+        String username = springUser.getUsername();
+
+        // 2. 사용자 정보 조회
+        Users user = userService.getUser(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // 3. UserProfileResponse로 변환
+        String profileImageUrl = user.getProfileImageUrl();
+        if (profileImageUrl != null && profileImageUrl.isEmpty()) {
+            profileImageUrl = null;
+        }
+
+        UserProfileResponse response = new UserProfileResponse(
+                user.getUserId(),
+                user.getEmail(),
+                user.getNickname(),
+                profileImageUrl,
+                user.getBirthday(),
+                user.getGender(),
+                user.getProviderType(),
+                user.getRoleType(),
+                user.getCreatedAt(),
+                user.getModifiedAt(),
+                user.isMarketingAgree()
+        );
+
+        return ResponseEntity.ok(response);
     }
 
     // 내부 호출용 메소드 (Swagger 문서화 불필요)
     @GetMapping
     @io.swagger.v3.oas.annotations.Hidden
     public Users getUser() {
-        User principal = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        Users user = userService.getUser(principal.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        return user;
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal == null || !(principal instanceof User)) {
+             throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
+        }
+        
+        return userService.getUser(((User) principal).getUsername())
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
     @Override
@@ -105,112 +90,101 @@ public class UserController implements UserControllerDocs {
     @Override
     @PatchMapping("/me")
     public ResponseEntity<?> updateCurrentUser(@RequestBody UpdateUserProfileRequest request) {
-        try {
-            // 1. SecurityContext에서 현재 인증된 사용자 정보 가져오기
-            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // 1. SecurityContext에서 현재 인증된 사용자 정보 가져오기
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-            if (principal == null || !(principal instanceof User)) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ErrorResponse("UNAUTHORIZED", "인증 정보가 유효하지 않습니다. 다시 로그인해주세요."));
-            }
+        if (principal == null || !(principal instanceof User)) {
+            throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
+        }
 
-            User springUser = (User) principal;
-            String username = springUser.getUsername();
+        User springUser = (User) principal;
+        String username = springUser.getUsername();
 
-            // 2. 현재 사용자 정보 조회
-            Users currentUser = userService.getUser(username)
-                    .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.NOT_FOUND,
-                            "존재하지 않는 회원입니다."
-                    ));
+        // 2. 현재 사용자 정보 조회
+        Users currentUser = userService.getUser(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-            // 3. 입력값 검증
-            List<ValidationErrorResponse.FieldError> fieldErrors = new ArrayList<>();
+        // 3. 입력값 검증
+        List<ValidationErrorResponse.FieldError> fieldErrors = new ArrayList<>();
 
-            // 닉네임 검증
-            if (request.getNickname() != null && !request.getNickname().isEmpty()) {
-                // 현재 닉네임과 동일한지 확인
-                if (!request.getNickname().equals(currentUser.getNickname())) {
-                    // 닉네임 길이 검증 (먼저 체크)
-                    if (!userService.isValidNicknameLength(request.getNickname())) {
-                        fieldErrors.add(new ValidationErrorResponse.FieldError("nickname",
-                                "닉네임은 2자 이상 10자 이하이어야 합니다."));
-                    } else {
-                        // 길이가 유효한 경우에만 다른 검증 수행
-                        NicknameCheckResponse nicknameCheck = userService.checkNickname(request.getNickname());
+        // 닉네임 검증
+        if (request.getNickname() != null && !request.getNickname().isEmpty()) {
+            // 현재 닉네임과 다를 경우에만 검증
+            if (!request.getNickname().equals(currentUser.getNickname())) {
+                // 닉네임 길이 검증
+                if (!userService.isValidNicknameLength(request.getNickname())) {
+                    fieldErrors.add(new ValidationErrorResponse.FieldError("nickname",
+                            "닉네임은 2자 이상 10자 이하이어야 합니다."));
+                } else {
+                    // 길이가 유효한 경우에만 다른 검증 수행
+                    NicknameCheckResponse nicknameCheck = userService.checkNickname(request.getNickname());
 
-                        if (!nicknameCheck.getIsAvailable()) {
-                            if ("DUPLICATE".equals(nicknameCheck.getCode())) {
-                                return ResponseEntity.status(HttpStatus.CONFLICT)
-                                        .body(new ErrorResponse("DUPLICATE_NICKNAME", "이미 사용 중인 닉네임입니다."));
-                            } else if ("INVALID_FORMAT".equals(nicknameCheck.getCode())) {
-                                fieldErrors.add(new ValidationErrorResponse.FieldError("nickname",
-                                        "닉네임에 특수문자나 이모티콘을 사용할 수 없습니다."));
-                            } else if ("PROFANITY".equals(nicknameCheck.getCode())) {
-                                fieldErrors.add(new ValidationErrorResponse.FieldError("nickname",
-                                        "부적절한 단어가 포함되어 있습니다."));
-                            }
+                    if (!nicknameCheck.getIsAvailable()) {
+                        if ("DUPLICATE".equals(nicknameCheck.getCode())) {
+                            // 중복 닉네임은 즉시 예외 발생 (409 Conflict)
+                            throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
+                        } else if ("INVALID_FORMAT".equals(nicknameCheck.getCode())) {
+                            fieldErrors.add(new ValidationErrorResponse.FieldError("nickname",
+                                    "닉네임에 특수문자나 이모티콘을 사용할 수 없습니다."));
+                        } else if ("PROFANITY".equals(nicknameCheck.getCode())) {
+                            fieldErrors.add(new ValidationErrorResponse.FieldError("nickname",
+                                    "부적절한 단어가 포함되어 있습니다."));
                         }
                     }
                 }
             }
-
-            // 생년월일 형식 검증
-            if (request.getBirthday() != null && !request.getBirthday().isEmpty()) {
-                if (!request.getBirthday().matches("^\\d{4}-\\d{2}-\\d{2}$")) {
-                    fieldErrors.add(new ValidationErrorResponse.FieldError("birthday",
-                            "생년월일 형식이 올바르지 않습니다."));
-                }
-            }
-
-            // 성별 검증
-            if (request.getGender() != null && !request.getGender().isEmpty()) {
-                if (!request.getGender().equals("MALE") && !request.getGender().equals("FEMALE")) {
-                    fieldErrors.add(new ValidationErrorResponse.FieldError("gender",
-                            "성별은 MALE 또는 FEMALE만 가능합니다."));
-                }
-            }
-
-            // 4. 검증 오류가 있으면 400 에러 반환
-            if (!fieldErrors.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new ValidationErrorResponse("INVALID_INPUT", "입력값이 올바르지 않습니다.", fieldErrors));
-            }
-
-            // 5. 프로필 업데이트
-            Users updatedUser = userService.updateProfile(username, request);
-
-            // 6. UserProfileResponse로 변환
-            String profileImageUrl = updatedUser.getProfileImageUrl();
-            if (profileImageUrl != null && profileImageUrl.isEmpty()) {
-                profileImageUrl = null;
-            }
-
-            UserProfileResponse response = new UserProfileResponse(
-                    updatedUser.getUserId(), // id
-                    updatedUser.getEmail(),
-                    updatedUser.getNickname(),
-                    profileImageUrl,
-                    updatedUser.getBirthday(),
-                    updatedUser.getGender(),
-                    updatedUser.getProviderType(),
-                    updatedUser.getRoleType(),
-                    updatedUser.getCreatedAt(),
-                    updatedUser.getModifiedAt(),
-                    updatedUser.isMarketingAgree()
-            );
-
-            return ResponseEntity.ok(response);
-
-        } catch (ResponseStatusException e) {
-            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(new ErrorResponse("USER_NOT_FOUND", e.getReason()));
-            }
-            throw e;
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다."));
         }
+
+        // 생년월일 형식 검증
+        if (request.getBirthday() != null && !request.getBirthday().isEmpty()) {
+            if (!request.getBirthday().matches("^\\d{4}-\\d{2}-\\d{2}$")) {
+                fieldErrors.add(new ValidationErrorResponse.FieldError("birthday",
+                        "생년월일 형식이 올바르지 않습니다."));
+            }
+        }
+
+        // 성별 검증
+        if (request.getGender() != null && !request.getGender().isEmpty()) {
+            if (!request.getGender().equals("MALE") && !request.getGender().equals("FEMALE")) {
+                fieldErrors.add(new ValidationErrorResponse.FieldError("gender",
+                        "성별은 MALE 또는 FEMALE만 가능합니다."));
+            }
+        }
+
+        // 4. 검증 오류가 있으면 ValidationErrorResponse 반환
+        if (!fieldErrors.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ValidationErrorResponse(
+                            ErrorCode.INVALID_INPUT_VALUE.getCode(),
+                            ErrorCode.INVALID_INPUT_VALUE.getMessage(),
+                            fieldErrors
+                    ));
+        }
+
+        // 5. 프로필 업데이트 (모든 검증을 통과한 경우에만 수행)
+        Users updatedUser = userService.updateProfile(username, request);
+
+        // 6. UserProfileResponse로 변환
+        String profileImageUrl = updatedUser.getProfileImageUrl();
+        if (profileImageUrl != null && profileImageUrl.isEmpty()) {
+            profileImageUrl = null;
+        }
+
+        UserProfileResponse response = new UserProfileResponse(
+                updatedUser.getUserId(),
+                updatedUser.getEmail(),
+                updatedUser.getNickname(),
+                profileImageUrl,
+                updatedUser.getBirthday(),
+                updatedUser.getGender(),
+                updatedUser.getProviderType(),
+                updatedUser.getRoleType(),
+                updatedUser.getCreatedAt(),
+                updatedUser.getModifiedAt(),
+                updatedUser.isMarketingAgree()
+        );
+
+        return ResponseEntity.ok(response);
     }
 }
+

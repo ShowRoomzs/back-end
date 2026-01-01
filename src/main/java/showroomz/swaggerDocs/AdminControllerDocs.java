@@ -10,10 +10,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import showroomz.admin.DTO.AdminLoginRequest;
 import showroomz.admin.DTO.AdminSignUpRequest;
 import showroomz.auth.DTO.ErrorResponse;
+import showroomz.auth.DTO.RefreshTokenRequest;
 import showroomz.auth.DTO.TokenResponse;
 import showroomz.auth.DTO.ValidationErrorResponse;
 
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -360,5 +362,316 @@ public interface AdminControllerDocs {
             )
     )
     ResponseEntity<TokenResponse> login(@RequestBody AdminLoginRequest request);
+
+    @Operation(
+            summary = "Access Token 재발급",
+            description = "Refresh Token을 사용하여 새로운 Access Token을 발급받습니다. Refresh Token이 만료 3일 이내인 경우 새로운 Refresh Token도 함께 발급됩니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "토큰 재발급 성공 - Status: 200 OK",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = TokenResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 시",
+                                            value = "{\n" +
+                                                    "  \"tokenType\": \"Bearer\",\n" +
+                                                    "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ...\",\n" +
+                                                    "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...\",\n" +
+                                                    "  \"accessTokenExpiresIn\": 3600,\n" +
+                                                    "  \"refreshTokenExpiresIn\": 1209600\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "필수 파라미터 누락",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "토큰 누락",
+                                            value = "{\n" +
+                                                    "  \"code\": \"BAD_REQUEST\",\n" +
+                                                    "  \"message\": \"refreshToken은 필수 입력값입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "리프레시 토큰 만료 - Status: 401 Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "토큰 만료",
+                                            value = "{\n" +
+                                                    "  \"code\": \"REFRESH_TOKEN_EXPIRED\",\n" +
+                                                    "  \"message\": \"리프레시 토큰이 만료되었습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "402",
+                    description = "유효하지 않은 토큰 - Status: 401 Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "유효하지 않은 토큰",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_TOKEN\",\n" +
+                                                    "  \"message\": \"유효하지 않은 토큰입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "관리자를 찾을 수 없음 - Status: 404 Not Found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "관리자 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"NOT_FOUND\",\n" +
+                                                    "  \"message\": \"사용자를 찾을 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "서버 오류",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INTERNAL_SERVER_ERROR\",\n" +
+                                                    "  \"message\": \"서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Refresh Token 재발급 요청",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = RefreshTokenRequest.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "요청 예시",
+                                    value = "{\n" +
+                                            "  \"refreshToken\": \"string\"\n" +
+                                            "}"
+                            )
+                    }
+            )
+    )
+    ResponseEntity<TokenResponse> refreshToken(@RequestBody RefreshTokenRequest request);
+
+    @Operation(
+            summary = "로그아웃",
+            description = "관리자를 로그아웃 처리합니다. Authorization 헤더에 Bearer {access_token}이 필요하며, Body에 refreshToken을 전달해야 합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "로그아웃 성공 - Status: 200 OK",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Map.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 시",
+                                            value = "{\n" +
+                                                    "  \"message\": \"로그아웃이 완료되었습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Body에 Refresh Token이 없는 경우 - Status: 400 Bad Request",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Refresh Token 누락",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"Refresh Token이 필요합니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "헤더에 Access Token이 없거나 만료된 경우 - Status: 401 Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "서버 오류",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INTERNAL_SERVER_ERROR\",\n" +
+                                                    "  \"message\": \"서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "로그아웃 요청 (Refresh Token 필요)",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = RefreshTokenRequest.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "요청 예시",
+                                    value = "{\n" +
+                                            "  \"refreshToken\": \"string\"\n" +
+                                            "}"
+                            )
+                    }
+            )
+    )
+    ResponseEntity<?> logout(
+            @Parameter(
+                    description = "Authorization 헤더에 Bearer {access_token} 형식으로 전달",
+                    required = true,
+                    hidden = true
+            )
+            HttpServletRequest request,
+            @RequestBody RefreshTokenRequest refreshTokenRequest
+    );
+
+    @Operation(
+            summary = "관리자 회원 탈퇴",
+            description = "인증된 관리자의 회원 탈퇴를 처리합니다. 관리자 계정과 관련된 모든 리프레시 토큰, 마켓 정보가 삭제됩니다.\n\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken} (Access Token만 필요)"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "회원 탈퇴 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Map.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"message\": \"관리자 회원 탈퇴가 완료되었습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패 예시",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "관리자를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "관리자 없음 예시",
+                                            value = "{\n" +
+                                                    "  \"code\": \"NOT_FOUND\",\n" +
+                                                    "  \"message\": \"사용자를 찾을 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "서버 오류 예시",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INTERNAL_SERVER_ERROR\",\n" +
+                                                    "  \"message\": \"서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<?> withdraw(
+            @Parameter(
+                    description = "Authorization 헤더에 Bearer {accessToken} 형식으로 전달 (Access Token만 필요)",
+                    required = true,
+                    hidden = true
+            )
+            HttpServletRequest request
+    );
 }
 

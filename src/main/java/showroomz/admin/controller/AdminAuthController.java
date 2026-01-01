@@ -59,12 +59,14 @@ public class AdminAuthController implements AdminControllerDocs {
         return ResponseEntity.ok(tokenResponse);
     }
 
+    @Override
     @PostMapping("/refresh")
     public ResponseEntity<TokenResponse> refreshToken(@RequestBody RefreshTokenRequest request) {
         TokenResponse tokenResponse = adminService.refreshToken(request);
         return ResponseEntity.ok(tokenResponse);
     }
 
+    @Override
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletRequest request, @RequestBody RefreshTokenRequest refreshTokenRequest) {
         // Authorization 헤더에서 Access Token 추출
@@ -79,9 +81,7 @@ public class AdminAuthController implements AdminControllerDocs {
         return ResponseEntity.ok(Map.of("message", "로그아웃이 완료되었습니다."));
     }
 
-    /**
-     * 관리자 회원 탈퇴
-     */
+    @Override
     @DeleteMapping("/withdraw")
     public ResponseEntity<?> withdraw(HttpServletRequest request) {
         // 1. Authorization 헤더에서 Access Token 추출
