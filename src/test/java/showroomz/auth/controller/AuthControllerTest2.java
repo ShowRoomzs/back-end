@@ -15,17 +15,18 @@ import showroomz.auth.entity.ProviderType;
 import showroomz.auth.entity.RoleType;
 import showroomz.auth.refreshToken.UserRefreshToken;
 import showroomz.auth.refreshToken.UserRefreshTokenRepository;
+import showroomz.auth.service.AuthService;
+import showroomz.auth.service.SocialLoginService;
 import showroomz.auth.token.AuthToken;
 import showroomz.auth.token.AuthTokenProvider;
-import showroomz.global.error.exception.ErrorCode;
+import showroomz.config.properties.AppProperties;
 import showroomz.user.entity.Users;
 import showroomz.user.repository.UserRepository;
+import showroomz.user.service.UserService;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -55,9 +56,17 @@ class AuthControllerTest2 {
     @MockBean
     private UserRepository userRepository;
 
-    // 다른 의존성이 있다면 추가로 MockBean 처리 (예: AuthenticationManager 등)
-    // @MockBean private SocialLoginService socialLoginService; 
-    // @MockBean private AuthService authService; 
+    @MockBean
+    private UserService userService;
+
+    @MockBean
+    private SocialLoginService socialLoginService;
+
+    @MockBean
+    private AuthService authService;
+
+    @MockBean
+    private AppProperties appProperties; 
 
     @Test
     @DisplayName("로그아웃 성공")
@@ -100,7 +109,7 @@ class AuthControllerTest2 {
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("UNAUTHORIZED_ACCESS"));
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 
     @Test
@@ -122,7 +131,7 @@ class AuthControllerTest2 {
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("UNAUTHORIZED_ACCESS"));
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 
     @Test
@@ -143,7 +152,7 @@ class AuthControllerTest2 {
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("MISSING_REFRESH_TOKEN_LOGOUT"));
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
 
     @Test
@@ -226,6 +235,6 @@ class AuthControllerTest2 {
                         .header("Authorization", "Bearer " + accessToken))
                 .andDo(print())
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("UNAUTHORIZED_ACCESS"));
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 }
