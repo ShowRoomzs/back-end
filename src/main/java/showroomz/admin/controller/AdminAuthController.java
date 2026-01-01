@@ -1,9 +1,11 @@
 package showroomz.admin.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,8 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 import showroomz.admin.DTO.AdminLoginRequest;
 import showroomz.admin.DTO.AdminSignUpRequest;
 import showroomz.admin.service.AdminService;
+import showroomz.auth.DTO.RefreshTokenRequest;
 import showroomz.auth.DTO.TokenResponse;
 import showroomz.swaggerDocs.AdminControllerDocs;
+import showroomz.utils.HeaderUtil;
 
 import java.util.Map;
 
@@ -52,5 +56,25 @@ public class AdminAuthController implements AdminControllerDocs {
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody AdminLoginRequest request) {
         TokenResponse tokenResponse = adminService.login(request);
         return ResponseEntity.ok(tokenResponse);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<TokenResponse> refreshToken(@RequestBody RefreshTokenRequest request) {
+        TokenResponse tokenResponse = adminService.refreshToken(request);
+        return ResponseEntity.ok(tokenResponse);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request, @RequestBody RefreshTokenRequest refreshTokenRequest) {
+        // Authorization 헤더에서 Access Token 추출
+        String accessToken = HeaderUtil.getAccessToken(request);
+        
+        // 서비스 로그아웃 로직 수행
+        adminService.logout(accessToken, refreshTokenRequest.getRefreshToken());
+        
+        // SecurityContext 초기화
+        SecurityContextHolder.clearContext();
+
+        return ResponseEntity.ok(Map.of("message", "로그아웃이 완료되었습니다."));
     }
 }
