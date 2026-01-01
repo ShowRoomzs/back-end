@@ -12,9 +12,9 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
-import showroomz.auth.exception.GlobalExceptionHandler;
 import showroomz.auth.token.AuthToken;
 import showroomz.auth.token.AuthTokenProvider;
+import showroomz.global.error.exception.GlobalExceptionHandler;
 import showroomz.image.type.ImageType;
 import showroomz.image.DTO.ImageUploadResponse;
 import showroomz.image.controller.ImageController;
