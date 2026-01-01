@@ -16,7 +16,7 @@ import showroomz.auth.entity.ProviderType;
 import showroomz.auth.entity.RoleType;
 import showroomz.auth.entity.UserPrincipal;
 import showroomz.auth.exception.BadRequestException;
-import showroomz.global.exception.ErrorCode;
+import showroomz.global.error.exception.ErrorCode;
 import showroomz.auth.service.AuthService;
 import showroomz.user.DTO.NicknameCheckResponse;
 import showroomz.user.entity.Users;

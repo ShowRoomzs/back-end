@@ -11,7 +11,7 @@ import showroomz.auth.DTO.AdminSignUpRequest;
 import showroomz.auth.entity.ProviderType;
 import showroomz.auth.entity.RoleType;
 import showroomz.auth.exception.BadRequestException;
-import showroomz.global.exception.ErrorCode;
+import showroomz.global.error.exception.ErrorCode;
 import showroomz.user.entity.Users;
 import showroomz.user.repository.UserRepository;
 
@@ -34,7 +34,7 @@ public class AdminService {
 
         // 2. 이메일(ID) 중복 체크
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new BadRequestException(ErrorCode.DUPLICATE_EMAIL);
+            throw new BadRequestException(ErrorCode.DUPLICATE_EMAIL_SIGNUP);
         }
         
         // 3. 마켓명 중복 체크

@@ -1,7 +1,7 @@
 package showroomz.auth.exception;
 
 import lombok.Getter;
-import showroomz.global.exception.ErrorCode;
+import showroomz.global.error.exception.ErrorCode;
 
 @Getter
 public class BadRequestException extends RuntimeException {

@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import showroomz.auth.DTO.ErrorResponse;
 import showroomz.auth.DTO.ValidationErrorResponse;
-import showroomz.global.exception.ErrorCode;
+import showroomz.global.error.exception.ErrorCode;
 
 import java.util.stream.Collectors;
 
