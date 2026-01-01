@@ -33,10 +33,10 @@ public class AdminAuthController implements AdminControllerDocs {
 
     @Override
     @PostMapping("/signup")
-    public ResponseEntity<?> registerAdmin(@Valid @RequestBody AdminSignUpRequest request) {
-        adminService.registerAdmin(request);
+    public ResponseEntity<TokenResponse> registerAdmin(@Valid @RequestBody AdminSignUpRequest request) {
+        TokenResponse tokenResponse = adminService.registerAdmin(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of("message", "관리자 회원가입이 완료되었습니다."));
+                .body(tokenResponse);
     }
 
     @Override

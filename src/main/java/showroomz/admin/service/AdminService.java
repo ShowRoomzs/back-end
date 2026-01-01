@@ -39,13 +39,13 @@ public class AdminService {
     private final static long THREE_DAYS_MSEC = 259200000;
 
     @Transactional
-    public void registerAdmin(AdminSignUpRequest request) {
+    public TokenResponse registerAdmin(AdminSignUpRequest request) {
         // 1. 비밀번호 일치 확인
         if (!request.getPassword().equals(request.getPasswordConfirm())) {
             throw new BusinessException(ErrorCode.PASSWORD_MISMATCH);
         }
 
-        // 2. 관리자 테이블에서 이메일 중복 체크 (일반 유저 테이블은 신경 안 씀)
+        // 2. 관리자 테이블에서 이메일 중복 체크
         if (adminRepository.existsByEmail(request.getEmail())) {
             throw new BusinessException(ErrorCode.DUPLICATE_EMAIL_SIGNUP);
         }
@@ -67,7 +67,7 @@ public class AdminService {
         
         Admin savedAdmin = adminRepository.save(admin);
 
-        // 5. Market 엔티티 생성 (Admins 연결)
+        // 5. Market 엔티티 생성
         Market market = new Market(
                 savedAdmin,
                 request.getMarketName(),
@@ -75,6 +75,9 @@ public class AdminService {
         );
 
         marketRepository.save(market);
+
+        // 6. 토큰 생성 및 반환 (공통 메서드 사용)
+        return issueTokenResponse(savedAdmin);
     }
 
     // 읽기 전용 트랜잭션으로 설정하여 성능 최적화
@@ -99,43 +102,8 @@ public class AdminService {
             throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
         }
 
-        // 3. 토큰 생성 (RoleType.ADMIN 권한 부여, userId 포함)
-        Date now = new Date();
-        long accessTokenExpiry = appProperties.getAuth().getTokenExpiry();
-        AuthToken accessToken = tokenProvider.createAuthToken(
-                admin.getEmail(),
-                admin.getRoleType().getCode(),
-                admin.getAdminId(),
-                new Date(now.getTime() + accessTokenExpiry)
-        );
-
-        long refreshTokenExpiry = appProperties.getAuth().getRefreshTokenExpiry();
-        AuthToken refreshToken = tokenProvider.createAuthToken(
-                admin.getEmail(),
-                new Date(now.getTime() + refreshTokenExpiry)
-        );
-
-        // 4. Refresh Token DB 저장 (Admin 전용 테이블)
-        AdminRefreshToken adminRefreshToken = adminRefreshTokenRepository.findByAdminEmail(admin.getEmail());
-        if (adminRefreshToken == null) {
-            adminRefreshToken = new AdminRefreshToken(admin.getEmail(), refreshToken.getToken());
-            adminRefreshTokenRepository.saveAndFlush(adminRefreshToken);
-        } else {
-            adminRefreshToken.setRefreshToken(refreshToken.getToken());
-            adminRefreshTokenRepository.saveAndFlush(adminRefreshToken);
-        }
-
-        // 밀리초를 초로 변환
-        long accessTokenExpiresInSeconds = accessTokenExpiry / 1000;
-        long refreshTokenExpiresInSeconds = refreshTokenExpiry / 1000;
-
-        return new TokenResponse(
-                accessToken.getToken(),
-                refreshToken.getToken(),
-                accessTokenExpiresInSeconds,
-                refreshTokenExpiresInSeconds,
-                false // 관리자는 항상 기존 회원 취급 (신규 여부 의미 없음)
-        );
+        // 3. 토큰 생성 및 반환 (공통 메서드 사용)
+        return issueTokenResponse(admin);
     }
 
     @Transactional
@@ -177,14 +145,9 @@ public class AdminService {
         Admin admin = adminRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // 6. 새로운 Access Token 생성
+        // 6. 새로운 Access Token 생성 (공통 메서드 사용)
+        AuthToken newAccessToken = createAccessToken(admin, now);
         long accessTokenExpiry = appProperties.getAuth().getTokenExpiry();
-        AuthToken newAccessToken = tokenProvider.createAuthToken(
-                admin.getEmail(),
-                admin.getRoleType().getCode(),
-                admin.getAdminId(),
-                new Date(now.getTime() + accessTokenExpiry)
-        );
 
         // 7. Refresh Token 갱신 로직 (만료 3일 전이면 갱신)
         long validTime = expiration.getTime() - now.getTime();
@@ -271,10 +234,63 @@ public class AdminService {
             adminRefreshTokenRepository.delete(adminRefreshToken);
         }
 
-        // 5. Market 삭제 (Admin과 1:1 관계이므로 함께 삭제)
+        // 5. Market 삭제
         marketRepository.findByAdmin(admin).ifPresent(marketRepository::delete);
 
         // 6. Admin 삭제
         adminRepository.delete(admin);
+    }
+
+    /**
+     * 공통 메서드: Access Token 생성
+     */
+    private AuthToken createAccessToken(Admin admin, Date now) {
+        long accessTokenExpiry = appProperties.getAuth().getTokenExpiry();
+        return tokenProvider.createAuthToken(
+                admin.getEmail(),
+                admin.getRoleType().getCode(),
+                admin.getAdminId(),
+                new Date(now.getTime() + accessTokenExpiry)
+        );
+    }
+
+    /**
+     * 공통 메서드: 토큰 발급 및 저장 (로그인, 회원가입용)
+     */
+    private TokenResponse issueTokenResponse(Admin admin) {
+        Date now = new Date();
+
+        // 1. Access Token 생성
+        AuthToken accessToken = createAccessToken(admin, now);
+        long accessTokenExpiry = appProperties.getAuth().getTokenExpiry();
+
+        // 2. Refresh Token 생성
+        long refreshTokenExpiry = appProperties.getAuth().getRefreshTokenExpiry();
+        AuthToken refreshToken = tokenProvider.createAuthToken(
+                admin.getEmail(),
+                new Date(now.getTime() + refreshTokenExpiry)
+        );
+
+        // 3. Refresh Token DB 저장 (없으면 생성, 있으면 업데이트)
+        AdminRefreshToken adminRefreshToken = adminRefreshTokenRepository.findByAdminEmail(admin.getEmail());
+        if (adminRefreshToken == null) {
+            adminRefreshToken = new AdminRefreshToken(admin.getEmail(), refreshToken.getToken());
+            adminRefreshTokenRepository.saveAndFlush(adminRefreshToken);
+        } else {
+            adminRefreshToken.setRefreshToken(refreshToken.getToken());
+            adminRefreshTokenRepository.saveAndFlush(adminRefreshToken);
+        }
+
+        // 4. 응답 생성
+        long accessTokenExpiresInSeconds = accessTokenExpiry / 1000;
+        long refreshTokenExpiresInSeconds = refreshTokenExpiry / 1000;
+
+        return new TokenResponse(
+                accessToken.getToken(),
+                refreshToken.getToken(),
+                accessTokenExpiresInSeconds,
+                refreshTokenExpiresInSeconds,
+                false
+        );
     }
 }

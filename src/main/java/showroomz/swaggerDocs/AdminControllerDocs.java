@@ -27,11 +27,14 @@ public interface AdminControllerDocs {
 
     @Operation(
             summary = "관리자(판매자) 회원가입",
-            description = "계정, 판매자, 마켓 정보를 입력받아 관리자 계정을 생성합니다.\n\n" +
+            description = "계정, 판매자, 마켓 정보를 입력받아 관리자 계정을 생성하고, 액세스 토큰과 리프레시 토큰을 반환합니다.\n\n" +
                     "**생성되는 정보:**\n" +
-                    "- Users 엔티티: 관리자 계정 정보 (이메일, 비밀번호, 판매자 이름, 연락처)\n" +
+                    "- Admin 엔티티: 관리자 계정 정보 (이메일, 비밀번호, 판매자 이름, 연락처)\n" +
                     "- Market 엔티티: 마켓 정보 (마켓명, 고객센터 번호)\n\n" +
-                    "**권한:** ADMIN"
+                    "**반환 정보:**\n" +
+                    "- Access Token: 인증에 사용되는 토큰\n" +
+                    "- Refresh Token: Access Token 갱신에 사용되는 토큰\n\n" +
+                    "**권한:** 없음 (회원가입은 인증 불필요)"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -39,12 +42,17 @@ public interface AdminControllerDocs {
                     description = "회원가입 성공 - Status: 201 Created",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = Map.class),
+                            schema = @Schema(implementation = TokenResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "성공 예시",
                                             value = "{\n" +
-                                                    "  \"message\": \"관리자 회원가입이 완료되었습니다.\"\n" +
+                                                    "  \"tokenType\": \"Bearer\",\n" +
+                                                    "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGUiOiJST0xFX0FETUlOIiwicGsiOjEsImV4cCI6MTcwNDEwMDAwMH0...\",\n" +
+                                                    "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4gZm9yIGFkbWlu...\",\n" +
+                                                    "  \"accessTokenExpiresIn\": 3600,\n" +
+                                                    "  \"refreshTokenExpiresIn\": 1209600,\n" +
+                                                    "  \"isNewMember\": false\n" +
                                                     "}"
                                     )
                             }
@@ -190,7 +198,7 @@ public interface AdminControllerDocs {
                     }
             )
     )
-    ResponseEntity<?> registerAdmin(@RequestBody AdminSignUpRequest request);
+    ResponseEntity<TokenResponse> registerAdmin(@RequestBody AdminSignUpRequest request);
 
     @Operation(
             summary = "이메일 중복 체크",

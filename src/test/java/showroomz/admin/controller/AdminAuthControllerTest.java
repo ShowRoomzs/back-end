@@ -51,13 +51,23 @@ class AdminAuthControllerTest {
         request.setMarketName("테스트마켓");
         request.setCsNumber("02-1234-5678");
 
+        TokenResponse tokenResponse = new TokenResponse(
+                "accessToken", "refreshToken", 3600L, 1209600L, false
+        );
+
+        given(adminService.registerAdmin(any(AdminSignUpRequest.class))).willReturn(tokenResponse);
+
         // when & then
         mockMvc.perform(post("/v1/admin/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.message").value("관리자 회원가입이 완료되었습니다."));
+                .andExpect(jsonPath("$.accessToken").value("accessToken"))
+                .andExpect(jsonPath("$.refreshToken").value("refreshToken"))
+                .andExpect(jsonPath("$.accessTokenExpiresIn").value(3600))
+                .andExpect(jsonPath("$.refreshTokenExpiresIn").value(1209600))
+                .andExpect(jsonPath("$.isNewMember").value(false));
 
         verify(adminService).registerAdmin(any(AdminSignUpRequest.class));
     }
