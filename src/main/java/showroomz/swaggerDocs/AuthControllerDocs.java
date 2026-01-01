@@ -75,9 +75,18 @@ public interface AuthControllerDocs {
                                     @ExampleObject(
                                             name = "토큰 누락",
                                             value = "{\n" +
-                                                    "  \"code\": \"BAD_REQUEST\",\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
                                                     "  \"message\": \"token은 필수 입력값입니다.\"\n" +
-                                                    "}"
+                                                    "}",
+                                            description = "token 필드가 누락된 경우"
+                                    ),
+                                    @ExampleObject(
+                                            name = "providerType 누락",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"providerType은 필수 입력값입니다.\"\n" +
+                                                    "}",
+                                            description = "providerType 필드가 누락된 경우"
                                     )
                             }
                     )

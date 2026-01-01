@@ -29,12 +29,20 @@ public class Users {
     @Column(name = "USERNAME", length = 64, unique = true)
     @NotNull
     @Size(max = 64)
-    private String username;
+    private String username; // 로그인 아이디
 
     @Column(name = "NICKNAME", length = 100)
     @NotNull
     @Size(max = 100)
     private String nickname;
+
+    @Column(name = "NAME", length = 64)
+    @Size(max = 64)
+    private String name; // 실명(판매자 이름)
+
+    @Column(name = "PHONE_NUMBER", length = 20)
+    @Size(max = 20)
+    private String phoneNumber; // 연락처
 
     @JsonIgnore
     @Column(name = "PASSWORD", length = 128)

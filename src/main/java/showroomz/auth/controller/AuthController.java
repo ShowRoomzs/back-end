@@ -6,11 +6,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import showroomz.auth.DTO.*;
 import showroomz.auth.entity.ProviderType;
 import showroomz.auth.entity.RoleType;
+import showroomz.auth.exception.BadRequestException;
 import showroomz.auth.refreshToken.UserRefreshToken;
 import showroomz.auth.refreshToken.UserRefreshTokenRepository;
 import showroomz.auth.service.AuthService;
@@ -19,6 +19,7 @@ import showroomz.auth.service.SocialLoginService.SocialLoginResult;
 import showroomz.auth.token.AuthToken;
 import showroomz.auth.token.AuthTokenProvider;
 import showroomz.config.properties.AppProperties;
+import showroomz.global.error.exception.ErrorCode;
 import showroomz.swaggerDocs.AuthControllerDocs;
 import showroomz.user.DTO.NicknameCheckResponse;
 import showroomz.user.entity.Users;
@@ -51,29 +52,26 @@ public class AuthController implements AuthControllerDocs {
     @Override
     @PostMapping("/social/login")
     public ResponseEntity<?> socialLogin(@RequestBody @Valid SocialLoginRequest socialLoginRequest) {
+        // 1. 필수 파라미터 검증
+        if (socialLoginRequest.getToken() == null || socialLoginRequest.getToken().isEmpty()) {
+            throw new BadRequestException(ErrorCode.MISSING_TOKEN);
+        }
+
+        if (socialLoginRequest.getProviderType() == null || socialLoginRequest.getProviderType().isEmpty()) {
+            throw new BadRequestException(ErrorCode.MISSING_PROVIDER_TYPE);
+        }
+
+        // 2. ProviderType 변환
+        ProviderType providerType;
         try {
-            // 1. 필수 파라미터 검증
-            if (socialLoginRequest.getToken() == null || socialLoginRequest.getToken().isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new ErrorResponse("BAD_REQUEST", "token은 필수 입력값입니다."));
-            }
+            providerType = ProviderType.valueOf(socialLoginRequest.getProviderType().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException(ErrorCode.INVALID_SOCIAL_PROVIDER);
+        }
 
-            if (socialLoginRequest.getProviderType() == null || socialLoginRequest.getProviderType().isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new ErrorResponse("BAD_REQUEST", "providerType은 필수 입력값입니다."));
-            }
-
-            // 2. ProviderType 변환
-            ProviderType providerType;
-            try {
-                providerType = ProviderType.valueOf(socialLoginRequest.getProviderType().toUpperCase());
-            } catch (IllegalArgumentException e) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new ErrorResponse("INVALID_SOCIAL_PROVIDER", "지원하지 않는 소셜 공급자입니다."));
-            }
-
-            // 3. 소셜 로그인 처리 (애플의 경우 name 전달)
-            SocialLoginResult result;
+        // 3. 소셜 로그인 처리 (애플의 경우 name 전달)
+        SocialLoginResult result;
+        try {
             if (providerType == ProviderType.APPLE && socialLoginRequest.getName() != null) {
                 result = socialLoginService.loginOrSignup(
                         providerType,
@@ -86,41 +84,34 @@ public class AuthController implements AuthControllerDocs {
                         socialLoginRequest.getToken()
                 );
             }
-
-            // 4. 신규 회원인 경우 registerToken 반환 (5분 유효)
-            if (result.isNewMember()) {
-                Date now = new Date();
-                long registerTokenExpiry = 5 * 60 * 1000; // 5분
-                AuthToken registerToken = tokenProvider.createAuthToken(
-                        result.getUser().getUsername(),
-                        new Date(now.getTime() + registerTokenExpiry)
-                );
-                return ResponseEntity.ok(new TokenResponse(registerToken.getToken()));
-            }
-
-            // 5. 기존 회원인 경우 일반 토큰 반환
-            return ResponseEntity.ok(authService.generateTokens(
-                    result.getUser().getUsername(),
-                    result.getUser().getRoleType(),
-                    false
-            ));
-
         } catch (IllegalArgumentException e) {
             String message = e.getMessage();
             if (message.contains("유효하지 않은") || message.contains("토큰") || message.contains("만료")) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ErrorResponse("UNAUTHORIZED", "유효하지 않은 액세스 토큰입니다."));
+                throw new BadRequestException(ErrorCode.INVALID_ACCESS_TOKEN);
             }
             if (message.contains("이미 다른 계정에서 사용 중인 이메일")) {
-                return ResponseEntity.status(HttpStatus.CONFLICT)
-                        .body(new ErrorResponse("DUPLICATE_EMAIL", "이미 다른 계정에서 사용 중인 이메일입니다."));
+                throw new BadRequestException(ErrorCode.DUPLICATE_EMAIL);
             }
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorResponse("BAD_REQUEST", message));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."));
+            throw new BadRequestException(ErrorCode.INVALID_INPUT_VALUE);
         }
+
+        // 4. 신규 회원인 경우 registerToken 반환 (5분 유효)
+        if (result.isNewMember()) {
+            Date now = new Date();
+            long registerTokenExpiry = 5 * 60 * 1000; // 5분
+            AuthToken registerToken = tokenProvider.createAuthToken(
+                    result.getUser().getUsername(),
+                    new Date(now.getTime() + registerTokenExpiry)
+            );
+            return ResponseEntity.ok(new TokenResponse(registerToken.getToken()));
+        }
+
+        // 5. 기존 회원인 경우 일반 토큰 반환
+        return ResponseEntity.ok(authService.generateTokens(
+                result.getUser().getUsername(),
+                result.getUser().getRoleType(),
+                false
+        ));
     }
     
     @Override
@@ -128,185 +119,153 @@ public class AuthController implements AuthControllerDocs {
     public ResponseEntity<?> register(
             HttpServletRequest request,
             @RequestBody @Valid RegisterRequest registerRequest) {
-        try {
-            // 1. registerToken 검증
-            String registerTokenStr = HeaderUtil.getAccessToken(request);
-            if (registerTokenStr == null || registerTokenStr.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ErrorResponse("UNAUTHORIZED", "회원가입 유효 시간이 만료되었습니다. 다시 로그인해주세요."));
-            }
-
-            AuthToken registerToken = tokenProvider.convertAuthToken(registerTokenStr);
-            if (!registerToken.validate()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ErrorResponse("UNAUTHORIZED", "회원가입 유효 시간이 만료되었습니다. 다시 로그인해주세요."));
-            }
-
-            Claims claims = registerToken.getTokenClaims();
-            if (claims == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ErrorResponse("UNAUTHORIZED", "회원가입 유효 시간이 만료되었습니다. 다시 로그인해주세요."));
-            }
-
-            String username = claims.getSubject();
-
-            // 2. 닉네임 검증 (형식, 금칙어, 중복 체크)
-            NicknameCheckResponse nicknameCheck = userService.checkNickname(registerRequest.getNickname());
-            if (!nicknameCheck.getIsAvailable()) {
-                if ("INVALID_FORMAT".equals(nicknameCheck.getCode())) {
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                            .body(new ValidationErrorResponse("INVALID_INPUT", "입력값이 올바르지 않습니다.",
-                                    java.util.List.of(new ValidationErrorResponse.FieldError("nickname", nicknameCheck.getMessage()))));
-                } else if ("PROFANITY".equals(nicknameCheck.getCode())) {
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                            .body(new ValidationErrorResponse("INVALID_INPUT", "입력값이 올바르지 않습니다.",
-                                    java.util.List.of(new ValidationErrorResponse.FieldError("nickname", nicknameCheck.getMessage()))));
-                } else if ("DUPLICATE".equals(nicknameCheck.getCode())) {
-                    return ResponseEntity.status(HttpStatus.CONFLICT)
-                            .body(new ErrorResponse("DUPLICATE_NICKNAME", nicknameCheck.getMessage()));
-                }
-            }
-
-            // 4. 생년월일 형식 검증 (null이 아닐 때만)
-            if (registerRequest.getBirthday() != null && !registerRequest.getBirthday().isEmpty()) {
-                if (!registerRequest.getBirthday().matches("^\\d{4}-\\d{2}-\\d{2}$")) {
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                            .body(new ValidationErrorResponse("INVALID_INPUT", "입력값이 올바르지 않습니다.",
-                                    java.util.List.of(new ValidationErrorResponse.FieldError("birthday", "생년월일 형식이 올바르지 않습니다."))));
-                }
-            }
-
-            // 5. Users 조회 및 업데이트
-            Users user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
-
-            // 이미 회원가입이 완료된 사용자(GUEST가 아닌 경우)는 재가입 불가
-            if (user.getRoleType() != RoleType.GUEST) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new ErrorResponse("ALREADY_REGISTERED", "이미 회원가입이 완료된 사용자입니다."));
-            }
-
-            user.setNickname(registerRequest.getNickname());
-            user.setGender(registerRequest.getGender());
-            user.setBirthday(registerRequest.getBirthday());
-            
-            // 동의 항목 저장
-            user.setServiceAgree(registerRequest.isServiceAgree());
-            user.setPrivacyAgree(registerRequest.isPrivacyAgree());
-            user.setMarketingAgree(registerRequest.getMarketingAgree() != null && registerRequest.getMarketingAgree());
-            
-            // 회원가입 완료: GUEST -> USER로 권한 변경
-            user.setRoleType(RoleType.USER);
-            
-            user.setModifiedAt(LocalDateTime.now());
-            userRepository.save(user);
-
-            // 6. 토큰 발급 및 반환
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(authService.generateTokens(username, user.getRoleType(), false));
-
-        } catch (ResponseStatusException e) {
-            throw e;
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."));
+        // 1. registerToken 검증
+        String registerTokenStr = HeaderUtil.getAccessToken(request);
+        if (registerTokenStr == null || registerTokenStr.isEmpty()) {
+            throw new BadRequestException(ErrorCode.REGISTER_EXPIRED);
         }
+
+        AuthToken registerToken = tokenProvider.convertAuthToken(registerTokenStr);
+        if (!registerToken.validate()) {
+            throw new BadRequestException(ErrorCode.REGISTER_EXPIRED);
+        }
+
+        Claims claims = registerToken.getTokenClaims();
+        if (claims == null) {
+            throw new BadRequestException(ErrorCode.REGISTER_EXPIRED);
+        }
+
+        String username = claims.getSubject();
+
+        // 2. 닉네임 검증 (형식, 금칙어, 중복 체크)
+        NicknameCheckResponse nicknameCheck = userService.checkNickname(registerRequest.getNickname());
+        if (!nicknameCheck.getIsAvailable()) {
+            if ("INVALID_FORMAT".equals(nicknameCheck.getCode()) || "INVALID_LENGTH".equals(nicknameCheck.getCode())) {
+                throw new BadRequestException(ErrorCode.INVALID_INPUT_VALUE);
+            } else if ("PROFANITY".equals(nicknameCheck.getCode())) {
+                throw new BadRequestException(ErrorCode.INVALID_INPUT_VALUE);
+            } else if ("DUPLICATE".equals(nicknameCheck.getCode())) {
+                throw new BadRequestException(ErrorCode.DUPLICATE_NICKNAME);
+            }
+        }
+
+        // 4. 생년월일 형식 검증 (null이 아닐 때만)
+        if (registerRequest.getBirthday() != null && !registerRequest.getBirthday().isEmpty()) {
+            if (!registerRequest.getBirthday().matches("^\\d{4}-\\d{2}-\\d{2}$")) {
+                throw new BadRequestException(ErrorCode.INVALID_INPUT_VALUE);
+            }
+        }
+
+        // 5. Users 조회 및 업데이트
+        Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BadRequestException(ErrorCode.USER_NOT_FOUND));
+
+        // 이미 회원가입이 완료된 사용자(GUEST가 아닌 경우)는 재가입 불가
+        if (user.getRoleType() != RoleType.GUEST) {
+            throw new BadRequestException(ErrorCode.ALREADY_REGISTERED);
+        }
+
+        user.setNickname(registerRequest.getNickname());
+        user.setGender(registerRequest.getGender());
+        user.setBirthday(registerRequest.getBirthday());
+        
+        // 동의 항목 저장
+        user.setServiceAgree(registerRequest.isServiceAgree());
+        user.setPrivacyAgree(registerRequest.isPrivacyAgree());
+        user.setMarketingAgree(registerRequest.getMarketingAgree() != null && registerRequest.getMarketingAgree());
+        
+        // 회원가입 완료: GUEST -> USER로 권한 변경
+        user.setRoleType(RoleType.USER);
+        
+        user.setModifiedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        // 6. 토큰 발급 및 반환
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(authService.generateTokens(username, user.getRoleType(), false));
     }
 
     @Override
     @PostMapping("/refresh")
     @Transactional
     public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest refreshRequest) {
-        try {
-            // 1. Refresh Token 확인 (Body)
-            String refreshTokenStr = refreshRequest.getRefreshToken();
-            if (refreshTokenStr == null || refreshTokenStr.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new ErrorResponse("BAD_REQUEST", "refreshToken은 필수 입력값입니다."));
-            }
+        // 1. Refresh Token 확인 (Body)
+        String refreshTokenStr = refreshRequest.getRefreshToken();
+        if (refreshTokenStr == null || refreshTokenStr.isEmpty()) {
+            throw new BadRequestException(ErrorCode.MISSING_REFRESH_TOKEN);
+        }
 
-            AuthToken authRefreshToken = tokenProvider.convertAuthToken(refreshTokenStr);
+        AuthToken authRefreshToken = tokenProvider.convertAuthToken(refreshTokenStr);
 
-            // 2. Refresh Token 유효성 검사
-            if (!authRefreshToken.validate()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ErrorResponse("INVALID_TOKEN", "유효하지 않은 토큰입니다."));
-            }
+        // 2. Refresh Token 유효성 검사
+        if (!authRefreshToken.validate()) {
+            throw new BadRequestException(ErrorCode.INVALID_TOKEN);
+        }
 
-            // 3. Refresh Token 만료 여부 확인
-            Claims refreshClaims = authRefreshToken.getTokenClaims();
-            if (refreshClaims == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ErrorResponse("INVALID_TOKEN", "유효하지 않은 토큰입니다."));
-            }
+        // 3. Refresh Token 만료 여부 확인
+        Claims refreshClaims = authRefreshToken.getTokenClaims();
+        if (refreshClaims == null) {
+            throw new BadRequestException(ErrorCode.INVALID_TOKEN);
+        }
 
-            Date expiration = refreshClaims.getExpiration();
-            Date now = new Date();
-            if (expiration.before(now)) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ErrorResponse("REFRESH_TOKEN_EXPIRED", "리프레시 토큰이 만료되었습니다. 다시 로그인해주세요."));
-            }
+        Date expiration = refreshClaims.getExpiration();
+        Date now = new Date();
+        if (expiration.before(now)) {
+            throw new BadRequestException(ErrorCode.REFRESH_TOKEN_EXPIRED);
+        }
 
-            // 4. DB에서 Refresh Token으로 User ID 조회
-            UserRefreshToken userRefreshToken = userRefreshTokenRepository.findByRefreshToken(refreshTokenStr);
-            if (userRefreshToken == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ErrorResponse("INVALID_TOKEN", "유효하지 않은 토큰입니다."));
-            }
+        // 4. DB에서 Refresh Token으로 User ID 조회
+        UserRefreshToken userRefreshToken = userRefreshTokenRepository.findByRefreshToken(refreshTokenStr);
+        if (userRefreshToken == null) {
+            throw new BadRequestException(ErrorCode.INVALID_TOKEN);
+        }
 
-            String username = userRefreshToken.getUserId();
-            
-            // 5. Users 조회하여 RoleType 가져오기
-            Users user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
-            RoleType roleType = user.getRoleType();
+        String username = userRefreshToken.getUserId();
+        
+        // 5. Users 조회하여 RoleType 가져오기
+        Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BadRequestException(ErrorCode.USER_NOT_FOUND));
+        RoleType roleType = user.getRoleType();
 
-            // 6. 새로운 Access Token 생성
-            AuthToken newAccessToken = tokenProvider.createAuthToken(
+        // 6. 새로운 Access Token 생성
+        AuthToken newAccessToken = tokenProvider.createAuthToken(
+                username,
+                roleType.getCode(),
+                new Date(now.getTime() + appProperties.getAuth().getTokenExpiry())
+        );
+
+        long validTime = expiration.getTime() - now.getTime();
+
+        // 7. Refresh Token 갱신 로직 (만료 3일 전이면 갱신)
+        if (validTime <= THREE_DAYS_MSEC) {
+            long refreshTokenExpiry = appProperties.getAuth().getRefreshTokenExpiry();
+
+            authRefreshToken = tokenProvider.createAuthToken(
                     username,
-                    roleType.getCode(),
-                    new Date(now.getTime() + appProperties.getAuth().getTokenExpiry())
+                    new Date(now.getTime() + refreshTokenExpiry)
             );
 
-            long validTime = expiration.getTime() - now.getTime();
-
-            // 7. Refresh Token 갱신 로직 (만료 3일 전이면 갱신)
-            if (validTime <= THREE_DAYS_MSEC) {
-                long refreshTokenExpiry = appProperties.getAuth().getRefreshTokenExpiry();
-
-                authRefreshToken = tokenProvider.createAuthToken(
-                        username,
-                        new Date(now.getTime() + refreshTokenExpiry)
-                );
-
-                // DB 업데이트
-                userRefreshToken.setRefreshToken(authRefreshToken.getToken());
-                userRefreshTokenRepository.save(userRefreshToken);
-                
-                // 갱신된 Refresh Token 문자열 사용
-                refreshTokenStr = authRefreshToken.getToken();
-            }
-
-            // 8. 응답 반환 (isNewMember 제외)
-            long accessTokenExpiresInSeconds = appProperties.getAuth().getTokenExpiry() / 1000;
-            long refreshTokenExpiresInSeconds = appProperties.getAuth().getRefreshTokenExpiry() / 1000;
+            // DB 업데이트
+            userRefreshToken.setRefreshToken(authRefreshToken.getToken());
+            userRefreshTokenRepository.save(userRefreshToken);
             
-            TokenResponse response = new TokenResponse();
-            response.setTokenType("Bearer");
-            response.setAccessToken(newAccessToken.getToken());
-            response.setRefreshToken(refreshTokenStr);
-            response.setAccessTokenExpiresIn(accessTokenExpiresInSeconds);
-            response.setRefreshTokenExpiresIn(refreshTokenExpiresInSeconds);
-            // isNewMember는 null로 유지하여 응답에서 제외
-            
-            return ResponseEntity.ok(response);
-
-        } catch (ResponseStatusException e) {
-            throw e;
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."));
+            // 갱신된 Refresh Token 문자열 사용
+            refreshTokenStr = authRefreshToken.getToken();
         }
+
+        // 8. 응답 반환 (isNewMember 제외)
+        long accessTokenExpiresInSeconds = appProperties.getAuth().getTokenExpiry() / 1000;
+        long refreshTokenExpiresInSeconds = appProperties.getAuth().getRefreshTokenExpiry() / 1000;
+        
+        TokenResponse response = new TokenResponse();
+        response.setTokenType("Bearer");
+        response.setAccessToken(newAccessToken.getToken());
+        response.setRefreshToken(refreshTokenStr);
+        response.setAccessTokenExpiresIn(accessTokenExpiresInSeconds);
+        response.setRefreshTokenExpiresIn(refreshTokenExpiresInSeconds);
+        // isNewMember는 null로 유지하여 응답에서 제외
+        
+        return ResponseEntity.ok(response);
     }
     
     @Override
@@ -315,102 +274,77 @@ public class AuthController implements AuthControllerDocs {
             HttpServletRequest request,
             @RequestBody RefreshTokenRequest refreshRequest
     ) {
-        try {
-            // 1. Authorization 헤더에서 Access Token 확인
-            String accessToken = HeaderUtil.getAccessToken(request);
-            if (accessToken == null || accessToken.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ErrorResponse("UNAUTHORIZED", "인증 정보가 유효하지 않습니다."));
-            }
-
-            AuthToken authToken = tokenProvider.convertAuthToken(accessToken);
-            
-            // Access Token 유효성 검사
-            if (!authToken.validate()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ErrorResponse("UNAUTHORIZED", "인증 정보가 유효하지 않습니다."));
-            }
-
-            // 2. Body에 Refresh Token 확인
-            String refreshToken = refreshRequest.getRefreshToken();
-            if (refreshToken == null || refreshToken.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new ErrorResponse("INVALID_INPUT", "Refresh Token이 필요합니다."));
-            }
-
-            // 3. DB에서 해당 Refresh Token 삭제
-            userRefreshTokenRepository.deleteByRefreshToken(refreshToken);
-
-            // 4. SecurityContext 초기화
-            SecurityContextHolder.clearContext();
-
-            // 5. 성공 응답 반환
-            return ResponseEntity.ok(Map.of("message", "로그아웃이 완료되었습니다."));
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."));
+        // 1. Authorization 헤더에서 Access Token 확인
+        String accessToken = HeaderUtil.getAccessToken(request);
+        if (accessToken == null || accessToken.isEmpty()) {
+            throw new BadRequestException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
+
+        AuthToken authToken = tokenProvider.convertAuthToken(accessToken);
+        
+        // Access Token 유효성 검사
+        if (!authToken.validate()) {
+            throw new BadRequestException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        // 2. Body에 Refresh Token 확인
+        String refreshToken = refreshRequest.getRefreshToken();
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            throw new BadRequestException(ErrorCode.MISSING_REFRESH_TOKEN_LOGOUT);
+        }
+
+        // 3. DB에서 해당 Refresh Token 삭제
+        userRefreshTokenRepository.deleteByRefreshToken(refreshToken);
+
+        // 4. SecurityContext 초기화
+        SecurityContextHolder.clearContext();
+
+        // 5. 성공 응답 반환
+        return ResponseEntity.ok(Map.of("message", "로그아웃이 완료되었습니다."));
     }
 
     @Override
     @DeleteMapping("/withdraw")
     @Transactional
     public ResponseEntity<?> withdraw(HttpServletRequest request) {
-        try {
-            // 1. Authorization 헤더에서 Access Token 확인
-            String accessToken = HeaderUtil.getAccessToken(request);
-            if (accessToken == null || accessToken.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ErrorResponse("UNAUTHORIZED", "인증 정보가 유효하지 않습니다."));
-            }
-
-            AuthToken authToken = tokenProvider.convertAuthToken(accessToken);
-            
-            // Access Token 유효성 검사
-            if (!authToken.validate()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ErrorResponse("UNAUTHORIZED", "인증 정보가 유효하지 않습니다."));
-            }
-
-            // 2. 토큰에서 사용자명 추출
-            Claims claims = authToken.getTokenClaims();
-            if (claims == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ErrorResponse("UNAUTHORIZED", "인증 정보가 유효하지 않습니다."));
-            }
-
-            String username = claims.getSubject();
-
-            // 3. 사용자 조회
-            Users user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.NOT_FOUND,
-                            "사용자를 찾을 수 없습니다."
-                    ));
-
-            // 4. 사용자 관련 리프레시 토큰 삭제
-            UserRefreshToken userRefreshToken = userRefreshTokenRepository.findByUserId(username);
-            if (userRefreshToken != null) {
-                userRefreshTokenRepository.delete(userRefreshToken);
-            }
-
-            // 5. 사용자 삭제
-            if (user != null) {
-                userRepository.delete(user);
-            }
-
-            // 6. SecurityContext 초기화
-            SecurityContextHolder.clearContext();
-
-            // 7. 성공 응답 반환
-            return ResponseEntity.ok(Map.of("message", "회원 탈퇴가 완료되었습니다."));
-
-        } catch (ResponseStatusException e) {
-            throw e;
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."));
+        // 1. Authorization 헤더에서 Access Token 확인
+        String accessToken = HeaderUtil.getAccessToken(request);
+        if (accessToken == null || accessToken.isEmpty()) {
+            throw new BadRequestException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
+
+        AuthToken authToken = tokenProvider.convertAuthToken(accessToken);
+        
+        // Access Token 유효성 검사
+        if (!authToken.validate()) {
+            throw new BadRequestException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        // 2. 토큰에서 사용자명 추출
+        Claims claims = authToken.getTokenClaims();
+        if (claims == null) {
+            throw new BadRequestException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        String username = claims.getSubject();
+
+        // 3. 사용자 조회
+        Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BadRequestException(ErrorCode.USER_NOT_FOUND));
+
+        // 4. 사용자 관련 리프레시 토큰 삭제
+        UserRefreshToken userRefreshToken = userRefreshTokenRepository.findByUserId(username);
+        if (userRefreshToken != null) {
+            userRefreshTokenRepository.delete(userRefreshToken);
+        }
+
+        // 5. 사용자 삭제
+        userRepository.delete(user);
+
+        // 6. SecurityContext 초기화
+        SecurityContextHolder.clearContext();
+
+        // 7. 성공 응답 반환
+        return ResponseEntity.ok(Map.of("message", "회원 탈퇴가 완료되었습니다."));
     }
 }

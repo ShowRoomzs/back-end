@@ -8,11 +8,21 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import showroomz.auth.DTO.ErrorResponse;
 import showroomz.auth.DTO.ValidationErrorResponse;
+import showroomz.global.error.exception.ErrorCode;
 
 import java.util.stream.Collectors;
 
 @RestControllerAdvice(basePackages = "showroomz")
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ErrorResponse> handleBadRequestException(BadRequestException e) {
+        ErrorCode errorCode = e.getErrorCode();
+
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(new ErrorResponse(errorCode.getCode(), errorCode.getMessage()));
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
@@ -26,7 +36,8 @@ public class GlobalExceptionHandler {
                     .collect(Collectors.toList());
             
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ValidationErrorResponse("INVALID_INPUT", "입력값이 올바르지 않습니다.", fieldErrors));
+                    .body(new ValidationErrorResponse(ErrorCode.INVALID_INPUT_VALUE.getCode(), 
+                            ErrorCode.INVALID_INPUT_VALUE.getMessage(), fieldErrors));
         }
         
         // 다른 경우 기본 ErrorResponse 반환
@@ -36,7 +47,8 @@ public class GlobalExceptionHandler {
                 .orElse("입력값 검증에 실패했습니다.");
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse("BAD_REQUEST", message));
+                .body(new ErrorResponse(ErrorCode.INVALID_INPUT_VALUE.getCode(), 
+                        message.isEmpty() ? ErrorCode.INVALID_INPUT_VALUE.getMessage() : message));
     }
 }
 
