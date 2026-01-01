@@ -241,4 +241,40 @@ public class AdminService {
             adminRefreshTokenRepository.delete(adminRefreshToken);
         }
     }
+
+    @Transactional
+    public void withdraw(String accessTokenStr) {
+        // 1. Access Token 유효성 검사
+        if (accessTokenStr == null || accessTokenStr.isEmpty()) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        AuthToken accessToken = tokenProvider.convertAuthToken(accessTokenStr);
+        if (!accessToken.validate()) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        // 2. 토큰에서 이메일 추출
+        Claims claims = accessToken.getTokenClaims();
+        if (claims == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+        String email = claims.getSubject();
+
+        // 3. 관리자 정보 조회
+        Admin admin = adminRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // 4. Refresh Token 삭제
+        AdminRefreshToken adminRefreshToken = adminRefreshTokenRepository.findByAdminEmail(email);
+        if (adminRefreshToken != null) {
+            adminRefreshTokenRepository.delete(adminRefreshToken);
+        }
+
+        // 5. Market 삭제 (Admin과 1:1 관계이므로 함께 삭제)
+        marketRepository.findByAdmin(admin).ifPresent(marketRepository::delete);
+
+        // 6. Admin 삭제
+        adminRepository.delete(admin);
+    }
 }

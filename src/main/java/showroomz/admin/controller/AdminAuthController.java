@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -76,5 +77,22 @@ public class AdminAuthController implements AdminControllerDocs {
         SecurityContextHolder.clearContext();
 
         return ResponseEntity.ok(Map.of("message", "로그아웃이 완료되었습니다."));
+    }
+
+    /**
+     * 관리자 회원 탈퇴
+     */
+    @DeleteMapping("/withdraw")
+    public ResponseEntity<?> withdraw(HttpServletRequest request) {
+        // 1. Authorization 헤더에서 Access Token 추출
+        String accessToken = HeaderUtil.getAccessToken(request);
+        
+        // 2. 서비스 탈퇴 로직 수행
+        adminService.withdraw(accessToken);
+        
+        // 3. SecurityContext 초기화 (로그인 상태 해제)
+        SecurityContextHolder.clearContext();
+
+        return ResponseEntity.ok(Map.of("message", "관리자 회원 탈퇴가 완료되었습니다."));
     }
 }
