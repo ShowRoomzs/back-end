@@ -104,8 +104,12 @@ public class LocalAuthController {
             SecurityContextHolder.getContext().setAuthentication(authentication);
             RoleType roleType = ((UserPrincipal) authentication.getPrincipal()).getRoleType();
     
+            // userId 조회
+            Users user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+    
             // 토큰 생성 및 저장
-            return authService.generateTokens(username, roleType, false);
+            return authService.generateTokens(username, roleType, user.getUserId(), false);
 
         } catch (AuthenticationException e) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 실패: 아이디 또는 비밀번호가 올바르지 않습니다.");

@@ -7,8 +7,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import showroomz.auth.DTO.AdminSignUpRequest;
+import showroomz.admin.DTO.AdminLoginRequest;
+import showroomz.admin.DTO.AdminSignUpRequest;
 import showroomz.auth.DTO.ErrorResponse;
+import showroomz.auth.DTO.TokenResponse;
 import showroomz.auth.DTO.ValidationErrorResponse;
 
 import io.swagger.v3.oas.annotations.Parameter;
@@ -263,5 +265,100 @@ public interface AdminControllerDocs {
             )
             @RequestParam String marketName
     );
+
+    @Operation(
+            summary = "관리자(판매자) 로그인",
+            description = "이메일과 비밀번호로 관리자 계정에 로그인합니다.\n\n" +
+                    "**응답:**\n" +
+                    "- Access Token: 관리자 API 접근에 사용\n" +
+                    "- Refresh Token: Access Token 갱신에 사용"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "로그인 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = TokenResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"tokenType\": \"Bearer\",\n" +
+                                                    "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ...\",\n" +
+                                                    "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...\",\n" +
+                                                    "  \"accessTokenExpiresIn\": 3600,\n" +
+                                                    "  \"refreshTokenExpiresIn\": 1209600,\n" +
+                                                    "  \"isNewMember\": false\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "입력값 형식 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ValidationErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "입력값 오류 예시",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"입력값이 올바르지 않습니다.\",\n" +
+                                                    "  \"errors\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"field\": \"email\",\n" +
+                                                    "      \"reason\": \"이메일을 입력해주세요.\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"field\": \"password\",\n" +
+                                                    "      \"reason\": \"비밀번호를 입력해주세요.\"\n" +
+                                                    "    }\n" +
+                                                    "  ]\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "로그인 실패 - 아이디 또는 비밀번호 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "로그인 실패 예시",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"아이디 또는 비밀번호가 올바르지 않습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "관리자 로그인 정보\n" +
+                    "- email: 필수, 관리자 이메일\n" +
+                    "- password: 필수, 비밀번호",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = AdminLoginRequest.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "요청 예시",
+                                    value = "{\n" +
+                                            "  \"email\": \"admin@showroomz.shop\",\n" +
+                                            "  \"password\": \"Admin123!\"\n" +
+                                            "}"
+                            )
+                    }
+            )
+    )
+    ResponseEntity<TokenResponse> login(@RequestBody AdminLoginRequest request);
 }
 

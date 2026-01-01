@@ -10,8 +10,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import showroomz.admin.DTO.AdminLoginRequest;
+import showroomz.admin.DTO.AdminSignUpRequest;
 import showroomz.admin.service.AdminService;
-import showroomz.auth.DTO.AdminSignUpRequest;
+import showroomz.auth.DTO.TokenResponse;
 import showroomz.swaggerDocs.AdminControllerDocs;
 
 import java.util.Map;
@@ -19,7 +22,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/v1/admin")
 @RequiredArgsConstructor
-public class AdminController implements AdminControllerDocs {
+public class AdminAuthController implements AdminControllerDocs {
 
     private final AdminService adminService;
 
@@ -42,5 +45,12 @@ public class AdminController implements AdminControllerDocs {
     @GetMapping("/check-market-name")
     public ResponseEntity<Boolean> checkMarketName(@RequestParam String marketName) {
         return ResponseEntity.ok(adminService.checkMarketNameDuplicate(marketName));
+    }
+
+    @Override
+    @PostMapping("/login")
+    public ResponseEntity<TokenResponse> login(@Valid @RequestBody AdminLoginRequest request) {
+        TokenResponse tokenResponse = adminService.login(request);
+        return ResponseEntity.ok(tokenResponse);
     }
 }
