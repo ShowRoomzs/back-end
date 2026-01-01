@@ -1,4 +1,4 @@
-package showroomz.auth.exception;
+package showroomz.global.error.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import showroomz.auth.DTO.ErrorResponse;
 import showroomz.auth.DTO.ValidationErrorResponse;
-import showroomz.global.error.exception.ErrorCode;
+import showroomz.auth.exception.BusinessException;
 
 import java.util.stream.Collectors;
 
