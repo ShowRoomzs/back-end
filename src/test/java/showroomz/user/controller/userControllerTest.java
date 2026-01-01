@@ -22,6 +22,7 @@ import showroomz.auth.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.user.DTO.NicknameCheckResponse;
 import showroomz.user.DTO.UpdateUserProfileRequest;
+import showroomz.user.controller.UserController;
 import showroomz.user.entity.Users;
 import showroomz.user.service.UserService;
 

@@ -12,8 +12,10 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
+import showroomz.auth.exception.BusinessException;
 import showroomz.auth.token.AuthToken;
 import showroomz.auth.token.AuthTokenProvider;
+import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.error.exception.GlobalExceptionHandler;
 import showroomz.image.type.ImageType;
 import showroomz.image.DTO.ImageUploadResponse;
@@ -92,7 +94,7 @@ class ImageControllerTest {
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
-                .andExpect(jsonPath("$.message").value("인증 정보가 유효하지 않습니다."));
+                .andExpect(jsonPath("$.message").value("인증 정보가 유효하지 않습니다. 다시 로그인해주세요."));
     }
 
     @Test
@@ -112,7 +114,7 @@ class ImageControllerTest {
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
-                .andExpect(jsonPath("$.message").value("인증 정보가 유효하지 않습니다."));
+                .andExpect(jsonPath("$.message").value("인증 정보가 유효하지 않습니다. 다시 로그인해주세요."));
     }
 
     @Test
@@ -147,10 +149,7 @@ class ImageControllerTest {
 
         when(tokenProvider.convertAuthToken(accessToken)).thenReturn(validAuthToken);
         when(imageService.uploadImage(any(), any(ImageType.class)))
-                .thenThrow(new org.springframework.web.server.ResponseStatusException(
-                        org.springframework.http.HttpStatus.BAD_REQUEST,
-                        "이미지 파일(jpg, png, jpeg, gif)만 업로드 가능합니다."
-                ));
+                .thenThrow(new BusinessException(ErrorCode.INVALID_FILE_EXTENSION));
 
         // when & then
         mockMvc.perform(multipart("/v1/images")
@@ -170,10 +169,7 @@ class ImageControllerTest {
         String accessToken = "valid_access_token";
         when(tokenProvider.convertAuthToken(accessToken)).thenReturn(validAuthToken);
         when(imageService.uploadImage(any(), any(ImageType.class)))
-                .thenThrow(new org.springframework.web.server.ResponseStatusException(
-                        org.springframework.http.HttpStatus.PAYLOAD_TOO_LARGE,
-                        "이미지 파일은 최대 10MB까지만 업로드 가능합니다."
-                ));
+                .thenThrow(new BusinessException(ErrorCode.FILE_SIZE_EXCEEDED));
 
         // when & then
         mockMvc.perform(multipart("/v1/images")
@@ -200,10 +196,7 @@ class ImageControllerTest {
 
         when(tokenProvider.convertAuthToken(accessToken)).thenReturn(validAuthToken);
         when(imageService.uploadImage(any(), any(ImageType.class)))
-                .thenThrow(new org.springframework.web.server.ResponseStatusException(
-                        org.springframework.http.HttpStatus.BAD_REQUEST,
-                        "업로드할 파일이 존재하지 않습니다."
-                ));
+                .thenThrow(new BusinessException(ErrorCode.EMPTY_FILE_EXCEPTION));
 
         // when & then
         mockMvc.perform(multipart("/v1/images")
