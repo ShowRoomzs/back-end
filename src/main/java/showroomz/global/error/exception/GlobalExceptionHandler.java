@@ -26,9 +26,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
-        // RegisterRequest의 경우 ValidationErrorResponse 반환
+        // RegisterRequest, AdminSignUpRequest의 경우 ValidationErrorResponse 반환
         String requestType = e.getParameter().getParameterType().getSimpleName();
-        if ("RegisterRequest".equals(requestType)) {
+        if ("RegisterRequest".equals(requestType) || "AdminSignUpRequest".equals(requestType)) {
             var fieldErrors = e.getBindingResult().getFieldErrors().stream()
                     .map(error -> new ValidationErrorResponse.FieldError(
                             error.getField(),

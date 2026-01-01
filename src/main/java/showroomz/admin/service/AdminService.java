@@ -69,4 +69,15 @@ public class AdminService {
 
         marketRepository.save(market);
     }
+
+    // 읽기 전용 트랜잭션으로 설정하여 성능 최적화
+    @Transactional(readOnly = true)
+    public boolean checkEmailDuplicate(String email) {
+        return userRepository.existsByEmail(email);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean checkMarketNameDuplicate(String marketName) {
+        return marketRepository.existsByMarketName(marketName);
+    }
 }
