@@ -1,4 +1,4 @@
-package showroomz.admin.controller;
+package showroomz.admin.service;
 
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.DisplayName;

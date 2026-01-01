@@ -1,3 +1,4 @@
+package showroomz.auth.service;
 // package showroomz.oauthlogin.auth;
 
 // import com.fasterxml.jackson.databind.ObjectMapper;

@@ -46,13 +46,34 @@ public interface ImageControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "파일 형식이 이미지가 아님 - Status: 400 Bad Request",
+                    description = "입력값 오류 - Status: 400 Bad Request",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "파일 형식 오류",
+                                            name = "유효하지 않은 이미지 타입",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, PRODUCT)\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "빈 파일",
+                                            value = "{\n" +
+                                                    "  \"code\": \"EMPTY_FILE\",\n" +
+                                                    "  \"message\": \"업로드할 파일이 존재하지 않습니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "파일명 오류",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"파일명이 올바르지 않습니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "파일 확장자 오류",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_FILE_TYPE\",\n" +
                                                     "  \"message\": \"이미지 파일(jpg, png, jpeg, gif)만 업로드 가능합니다.\"\n" +
@@ -62,25 +83,8 @@ public interface ImageControllerDocs {
                     )
             ),
             @ApiResponse(
-                    responseCode = "399",
-                    description = "파일이 비어있음 - Status: 400 Bad Request",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class),
-                            examples = {
-                                    @ExampleObject(
-                                            name = "빈 파일",
-                                            value = "{\n" +
-                                                    "  \"code\": \"EMPTY_FILE\",\n" +
-                                                    "  \"message\": \"업로드할 파일이 존재하지 않습니다.\"\n" +
-                                                    "}"
-                                    )
-                            }
-                    )
-            ),
-            @ApiResponse(
                     responseCode = "401",
-                    description = "인증 실패 - Status: 401 Unauthorized",
+                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -89,7 +93,7 @@ public interface ImageControllerDocs {
                                             name = "인증 실패",
                                             value = "{\n" +
                                                     "  \"code\": \"UNAUTHORIZED\",\n" +
-                                                    "  \"message\": \"인증 정보가 유효하지 않습니다.\"\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
                                                     "}"
                                     )
                             }
@@ -111,9 +115,26 @@ public interface ImageControllerDocs {
                                     )
                             }
                     )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "파일 업로드 중 오류 발생 - Status: 500 Internal Server Error",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "업로드 오류",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INTERNAL_SERVER_ERROR\",\n" +
+                                                    "  \"message\": \"파일 업로드 중 오류가 발생했습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
             )
     })
-    ResponseEntity<?> uploadImage(
+    ResponseEntity<ImageUploadResponse> uploadImage(
             @Parameter(
                     name = "Authorization",
                     description = "Bearer {access_token} 형식으로 전달",

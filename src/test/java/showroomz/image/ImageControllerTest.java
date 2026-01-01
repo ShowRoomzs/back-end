@@ -1,4 +1,4 @@
-package showroomz.oauthlogin.image;
+package showroomz.image;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

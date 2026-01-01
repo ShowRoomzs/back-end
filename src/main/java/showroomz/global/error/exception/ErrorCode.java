@@ -55,8 +55,17 @@ public enum ErrorCode {
 
     /* * 6. 마켓 (Market) 
      */
-    DUPLICATE_MARKET_NAME(HttpStatus.BAD_REQUEST, "DUPLICATE_MARKET_NAME", "이미 사용 중인 마켓명입니다.");
+    DUPLICATE_MARKET_NAME(HttpStatus.BAD_REQUEST, "DUPLICATE_MARKET_NAME", "이미 사용 중인 마켓명입니다."),
 
+    /* * 7. 이미지 (Image)
+     */
+    INVALID_IMAGE_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, PRODUCT)"),
+    EMPTY_FILE_EXCEPTION(HttpStatus.BAD_REQUEST, "EMPTY_FILE", "업로드할 파일이 존재하지 않습니다."),
+    INVALID_FILE_EXTENSION(HttpStatus.BAD_REQUEST, "INVALID_FILE_TYPE", "이미지 파일(jpg, png, jpeg, gif)만 업로드 가능합니다."),
+    FILE_SIZE_EXCEEDED(HttpStatus.PAYLOAD_TOO_LARGE, "FILE_SIZE_EXCEEDED", "이미지 파일은 최대 10MB까지만 업로드 가능합니다."),
+    INVALID_FILE_NAME(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "파일명이 올바르지 않습니다."),
+    FILE_UPLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "파일 업로드 중 오류가 발생했습니다.");
+    
     private final HttpStatus status;
     private final String code;
     private final String message;
