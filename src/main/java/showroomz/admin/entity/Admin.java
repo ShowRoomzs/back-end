@@ -16,8 +16,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "ADMINS")
-public class Admins {
+@Table(name = "ADMIN")
+public class Admin {
 
     @Id
     @Column(name = "ADMIN_ID")
@@ -57,7 +57,7 @@ public class Admins {
     private LocalDateTime modifiedAt;
 
     // 생성자 편의 메서드
-    public Admins(String email, String password, String name, String phoneNumber, LocalDateTime now) {
+    public Admin(String email, String password, String name, String phoneNumber, LocalDateTime now) {
         this.email = email;
         this.password = password;
         this.name = name;

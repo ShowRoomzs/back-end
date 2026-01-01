@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import showroomz.admin.entity.Admins;
+import showroomz.admin.entity.Admin;
 
 @Entity
 @Getter
@@ -21,7 +21,7 @@ public class Market {
     // Admins 테이블과 1:1 관계 (계정 정보)
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ADMIN_ID", nullable = false)
-    private Admins admin;
+    private Admin admin;
 
     @Column(name = "MARKET_NAME", nullable = false, unique = true)
     private String marketName;
@@ -52,7 +52,7 @@ public class Market {
     @Column(name = "SNS_LINK_3", length = 512)
     private String snsLink3;
 
-    public Market(Admins admin, String marketName, String csNumber) {
+    public Market(Admin admin, String marketName, String csNumber) {
         this.admin = admin;
         this.marketName = marketName;
         this.csNumber = csNumber;

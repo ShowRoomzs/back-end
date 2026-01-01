@@ -9,7 +9,7 @@ import showroomz.Market.entity.Market;
 import showroomz.user.repository.MarketRepository;
 import showroomz.admin.DTO.AdminLoginRequest;
 import showroomz.admin.DTO.AdminSignUpRequest;
-import showroomz.admin.entity.Admins;
+import showroomz.admin.entity.Admin;
 import showroomz.admin.repository.AdminRepository;
 import showroomz.auth.DTO.TokenResponse;
 import showroomz.auth.exception.BusinessException;
@@ -53,7 +53,7 @@ public class AdminService {
 
         // 4. Admins 엔티티 생성
         LocalDateTime now = LocalDateTime.now();
-        Admins admin = new Admins(
+        Admin admin = new Admin(
                 request.getEmail(),
                 passwordEncoder.encode(request.getPassword()),
                 request.getSellerName(),
@@ -61,7 +61,7 @@ public class AdminService {
                 now
         );
         
-        Admins savedAdmin = adminRepository.save(admin);
+        Admin savedAdmin = adminRepository.save(admin);
 
         // 5. Market 엔티티 생성 (Admins 연결)
         Market market = new Market(
@@ -87,7 +87,7 @@ public class AdminService {
     @Transactional
     public TokenResponse login(AdminLoginRequest request) {
         // 1. 관리자 계정 조회
-        Admins admin = adminRepository.findByEmail(request.getEmail())
+        Admin admin = adminRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
 
         // 2. 비밀번호 검증
