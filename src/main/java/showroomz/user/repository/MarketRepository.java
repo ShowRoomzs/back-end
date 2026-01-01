@@ -7,5 +7,6 @@ import showroomz.Market.entity.Market;
 @Repository
 public interface MarketRepository extends JpaRepository<Market, Long> {
     boolean existsByMarketName(String marketName);
+    java.util.Optional<Market> findByAdmin(showroomz.admin.entity.Admin admin);
 }
 

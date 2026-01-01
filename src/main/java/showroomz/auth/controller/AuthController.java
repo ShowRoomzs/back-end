@@ -110,6 +110,7 @@ public class AuthController implements AuthControllerDocs {
         return ResponseEntity.ok(authService.generateTokens(
                 result.getUser().getUsername(),
                 result.getUser().getRoleType(),
+                result.getUser().getUserId(),
                 false
         ));
     }
@@ -182,7 +183,7 @@ public class AuthController implements AuthControllerDocs {
 
         // 6. 토큰 발급 및 반환
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(authService.generateTokens(username, user.getRoleType(), false));
+                .body(authService.generateTokens(username, user.getRoleType(), user.getUserId(), false));
     }
 
     @Override
@@ -231,6 +232,7 @@ public class AuthController implements AuthControllerDocs {
         AuthToken newAccessToken = tokenProvider.createAuthToken(
                 username,
                 roleType.getCode(),
+                user.getUserId(),
                 new Date(now.getTime() + appProperties.getAuth().getTokenExpiry())
         );
 

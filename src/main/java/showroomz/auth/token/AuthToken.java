@@ -17,6 +17,7 @@ public class AuthToken {
     private final Key key;
 
     private static final String AUTHORITIES_KEY = "role";
+    private static final String PK_KEY = "pk";
 
     AuthToken(String id, Date expiry, Key key) {
         this.key = key;
@@ -26,6 +27,11 @@ public class AuthToken {
     AuthToken(String id, String role, Date expiry, Key key) {
         this.key = key;
         this.token = createAuthToken(id, role, expiry);
+    }
+
+    AuthToken(String id, String role, Long userPk, Date expiry, Key key) {
+        this.key = key;
+        this.token = createAuthToken(id, role, userPk, expiry);
     }
 
     private String createAuthToken(String id, Date expiry) {
@@ -40,6 +46,16 @@ public class AuthToken {
         return Jwts.builder()
                 .setSubject(id)
                 .claim(AUTHORITIES_KEY, role)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .setExpiration(expiry)
+                .compact();
+    }
+
+    private String createAuthToken(String id, String role, Long userPk, Date expiry) {
+        return Jwts.builder()
+                .setSubject(id)
+                .claim(AUTHORITIES_KEY, role)
+                .claim(PK_KEY, userPk)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .setExpiration(expiry)
                 .compact();

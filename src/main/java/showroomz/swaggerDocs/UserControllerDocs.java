@@ -72,7 +72,7 @@ public interface UserControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "헤더에 토큰이 없거나, 만료되었거나, 위조된 경우 - Status: 401 Unauthorized",
+                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -105,7 +105,7 @@ public interface UserControllerDocs {
                     )
             )
     })
-    ResponseEntity<?> getCurrentUser();
+    ResponseEntity<UserProfileResponse> getCurrentUser();
 
     @Operation(
             summary = "닉네임 유효성 검사",
@@ -265,6 +265,10 @@ public interface UserControllerDocs {
                                                     "    {\n" +
                                                     "      \"field\": \"birthday\",\n" +
                                                     "      \"reason\": \"생년월일 형식이 올바르지 않습니다.\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"field\": \"gender\",\n" +
+                                                    "      \"reason\": \"성별은 MALE 또는 FEMALE만 가능합니다.\"\n" +
                                                     "    }\n" +
                                                     "  ]\n" +
                                                     "}"
@@ -274,7 +278,7 @@ public interface UserControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "인증 실패 - Status: 401 Unauthorized",
+                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),

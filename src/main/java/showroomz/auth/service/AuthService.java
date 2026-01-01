@@ -25,10 +25,11 @@ public class AuthService {
      * 토큰 생성 및 DB 저장
      * @param username 사용자명
      * @param roleType 역할 타입
+     * @param userPk 사용자 PK
      * @param isNewMember 신규 회원 여부
      * @return TokenResponse 토큰 응답
      */
-    public TokenResponse generateTokens(String username, RoleType roleType, boolean isNewMember) {
+    public TokenResponse generateTokens(String username, RoleType roleType, Long userPk, boolean isNewMember) {
         Date now = new Date();
         
         // Access Token 생성
@@ -36,6 +37,7 @@ public class AuthService {
         AuthToken accessToken = tokenProvider.createAuthToken(
                 username,
                 roleType.getCode(),
+                userPk,
                 new Date(now.getTime() + accessTokenExpiry)
         );
 

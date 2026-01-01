@@ -35,6 +35,10 @@ public class AuthTokenProvider {
         return new AuthToken(id, role, expiry, key);
     }
 
+    public AuthToken createAuthToken(String id, String role, Long userPk, Date expiry) {
+        return new AuthToken(id, role, userPk, expiry, key);
+    }
+
     public AuthToken convertAuthToken(String token) {
         return new AuthToken(token, key);
     }

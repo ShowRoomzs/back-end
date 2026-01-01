@@ -1,4 +1,4 @@
-package showroomz.oauthlogin.image;
+package showroomz.image;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -7,10 +7,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
+
+import showroomz.auth.exception.BusinessException;
+import showroomz.global.error.exception.ErrorCode;
 
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -128,11 +129,11 @@ class ImageServiceTest {
     void 빈_파일_업로드_예외() {
         // when & then
         assertThatThrownBy(() -> imageService.uploadImage(emptyFile, ImageType.PROFILE))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(BusinessException.class)
                 .satisfies(exception -> {
-                    ResponseStatusException ex = (ResponseStatusException) exception;
-                    assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-                    assertThat(ex.getReason()).isEqualTo("업로드할 파일이 존재하지 않습니다.");
+                    BusinessException ex = (BusinessException) exception;
+                    assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.EMPTY_FILE_EXCEPTION);
+                    assertThat(ex.getMessage()).isEqualTo("업로드할 파일이 존재하지 않습니다.");
                 });
     }
 
@@ -141,11 +142,11 @@ class ImageServiceTest {
     void null_파일_업로드_예외() {
         // when & then
         assertThatThrownBy(() -> imageService.uploadImage(null, ImageType.PROFILE))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(BusinessException.class)
                 .satisfies(exception -> {
-                    ResponseStatusException ex = (ResponseStatusException) exception;
-                    assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-                    assertThat(ex.getReason()).isEqualTo("업로드할 파일이 존재하지 않습니다.");
+                    BusinessException ex = (BusinessException) exception;
+                    assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.EMPTY_FILE_EXCEPTION);
+                    assertThat(ex.getMessage()).isEqualTo("업로드할 파일이 존재하지 않습니다.");
                 });
     }
 
@@ -154,11 +155,11 @@ class ImageServiceTest {
     void 파일_크기_초과_예외() {
         // when & then
         assertThatThrownBy(() -> imageService.uploadImage(largeImageFile, ImageType.PROFILE))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(BusinessException.class)
                 .satisfies(exception -> {
-                    ResponseStatusException ex = (ResponseStatusException) exception;
-                    assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE);
-                    assertThat(ex.getReason()).isEqualTo("이미지 파일은 최대 10MB까지만 업로드 가능합니다.");
+                    BusinessException ex = (BusinessException) exception;
+                    assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.FILE_SIZE_EXCEEDED);
+                    assertThat(ex.getMessage()).isEqualTo("이미지 파일은 최대 10MB까지만 업로드 가능합니다.");
                 });
     }
 
@@ -167,11 +168,11 @@ class ImageServiceTest {
     void 잘못된_파일_형식_예외() {
         // when & then
         assertThatThrownBy(() -> imageService.uploadImage(invalidFormatFile, ImageType.PROFILE))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(BusinessException.class)
                 .satisfies(exception -> {
-                    ResponseStatusException ex = (ResponseStatusException) exception;
-                    assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-                    assertThat(ex.getReason()).isEqualTo("이미지 파일(jpg, png, jpeg, gif)만 업로드 가능합니다.");
+                    BusinessException ex = (BusinessException) exception;
+                    assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.INVALID_FILE_EXTENSION);
+                    assertThat(ex.getMessage()).isEqualTo("이미지 파일(jpg, png, jpeg, gif)만 업로드 가능합니다.");
                 });
     }
 
@@ -188,11 +189,11 @@ class ImageServiceTest {
 
         // when & then
         assertThatThrownBy(() -> imageService.uploadImage(fileWithNullName, ImageType.PROFILE))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(BusinessException.class)
                 .satisfies(exception -> {
-                    ResponseStatusException ex = (ResponseStatusException) exception;
-                    assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-                    assertThat(ex.getReason()).isEqualTo("파일명이 올바르지 않습니다.");
+                    BusinessException ex = (BusinessException) exception;
+                    assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.INVALID_FILE_NAME);
+                    assertThat(ex.getMessage()).isEqualTo("파일명이 올바르지 않습니다.");
                 });
     }
 
@@ -252,10 +253,11 @@ class ImageServiceTest {
 
         // when & then
         assertThatThrownBy(() -> imageService.uploadImage(validImageFile, ImageType.PROFILE))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(BusinessException.class)
                 .satisfies(exception -> {
-                    ResponseStatusException ex = (ResponseStatusException) exception;
-                    assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+                    BusinessException ex = (BusinessException) exception;
+                    assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.FILE_UPLOAD_ERROR);
+                    assertThat(ex.getMessage()).isEqualTo("파일 업로드 중 오류가 발생했습니다.");
                 });
     }
 
@@ -271,11 +273,11 @@ class ImageServiceTest {
 
         // when & then
         assertThatThrownBy(() -> imageService.uploadImage(fileWithIOException, ImageType.PROFILE))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(BusinessException.class)
                 .satisfies(exception -> {
-                    ResponseStatusException ex = (ResponseStatusException) exception;
-                    assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-                    assertThat(ex.getReason()).isEqualTo("파일 업로드 중 오류가 발생했습니다.");
+                    BusinessException ex = (BusinessException) exception;
+                    assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.FILE_UPLOAD_ERROR);
+                    assertThat(ex.getMessage()).isEqualTo("파일 업로드 중 오류가 발생했습니다.");
                 });
     }
 }
