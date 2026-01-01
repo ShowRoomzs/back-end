@@ -15,7 +15,7 @@ import showroomz.auth.DTO.*;
 import showroomz.auth.entity.ProviderType;
 import showroomz.auth.entity.RoleType;
 import showroomz.auth.entity.UserPrincipal;
-import showroomz.auth.exception.BadRequestException;
+import showroomz.auth.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.auth.service.AuthService;
 import showroomz.user.DTO.NicknameCheckResponse;
@@ -46,12 +46,12 @@ public class LocalAuthController {
         
         // 1. 아이디 중복 체크
         if (userRepository.existsByUsername(loginId)) {
-            throw new BadRequestException(ErrorCode.DUPLICATE_USERNAME);
+            throw new BusinessException(ErrorCode.DUPLICATE_USERNAME);
         }
 
         // 2. 이메일 중복 체크
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            throw new BadRequestException(ErrorCode.DUPLICATE_EMAIL);
+            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
         }
 
         // 3. 닉네임 검증
@@ -59,12 +59,12 @@ public class LocalAuthController {
         NicknameCheckResponse nicknameCheck = userService.checkNickname(nickname);
         if (!nicknameCheck.getIsAvailable()) {
             if ("DUPLICATE".equals(nicknameCheck.getCode())) {
-                throw new BadRequestException(ErrorCode.DUPLICATE_NICKNAME);
+                throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
             } else if ("INVALID_FORMAT".equals(nicknameCheck.getCode()) || 
                        "INVALID_LENGTH".equals(nicknameCheck.getCode())) {
-                throw new BadRequestException(ErrorCode.INVALID_NICKNAME_FORMAT);
+                throw new BusinessException(ErrorCode.INVALID_NICKNAME_FORMAT);
             } else if ("PROFANITY".equals(nicknameCheck.getCode())) {
-                throw new BadRequestException(ErrorCode.PROFANITY_DETECTED);
+                throw new BusinessException(ErrorCode.PROFANITY_DETECTED);
             }
         }
 

@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import showroomz.auth.DTO.*;
 import showroomz.auth.entity.ProviderType;
 import showroomz.auth.entity.RoleType;
-import showroomz.auth.exception.BadRequestException;
+import showroomz.auth.exception.BusinessException;
 import showroomz.auth.refreshToken.UserRefreshToken;
 import showroomz.auth.refreshToken.UserRefreshTokenRepository;
 import showroomz.auth.service.AuthService;
@@ -54,11 +54,11 @@ public class AuthController implements AuthControllerDocs {
     public ResponseEntity<?> socialLogin(@RequestBody @Valid SocialLoginRequest socialLoginRequest) {
         // 1. 필수 파라미터 검증
         if (socialLoginRequest.getToken() == null || socialLoginRequest.getToken().isEmpty()) {
-            throw new BadRequestException(ErrorCode.MISSING_TOKEN);
+            throw new BusinessException(ErrorCode.MISSING_TOKEN);
         }
 
         if (socialLoginRequest.getProviderType() == null || socialLoginRequest.getProviderType().isEmpty()) {
-            throw new BadRequestException(ErrorCode.MISSING_PROVIDER_TYPE);
+            throw new BusinessException(ErrorCode.MISSING_PROVIDER_TYPE);
         }
 
         // 2. ProviderType 변환
@@ -66,7 +66,7 @@ public class AuthController implements AuthControllerDocs {
         try {
             providerType = ProviderType.valueOf(socialLoginRequest.getProviderType().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new BadRequestException(ErrorCode.INVALID_SOCIAL_PROVIDER);
+            throw new BusinessException(ErrorCode.INVALID_SOCIAL_PROVIDER);
         }
 
         // 3. 소셜 로그인 처리 (애플의 경우 name 전달)
@@ -87,12 +87,12 @@ public class AuthController implements AuthControllerDocs {
         } catch (IllegalArgumentException e) {
             String message = e.getMessage();
             if (message.contains("유효하지 않은") || message.contains("토큰") || message.contains("만료")) {
-                throw new BadRequestException(ErrorCode.INVALID_ACCESS_TOKEN);
+                throw new BusinessException(ErrorCode.INVALID_ACCESS_TOKEN);
             }
             if (message.contains("이미 다른 계정에서 사용 중인 이메일")) {
-                throw new BadRequestException(ErrorCode.DUPLICATE_EMAIL);
+                throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
             }
-            throw new BadRequestException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
         // 4. 신규 회원인 경우 registerToken 반환 (5분 유효)
@@ -122,17 +122,17 @@ public class AuthController implements AuthControllerDocs {
         // 1. registerToken 검증
         String registerTokenStr = HeaderUtil.getAccessToken(request);
         if (registerTokenStr == null || registerTokenStr.isEmpty()) {
-            throw new BadRequestException(ErrorCode.REGISTER_EXPIRED);
+            throw new BusinessException(ErrorCode.REGISTER_EXPIRED);
         }
 
         AuthToken registerToken = tokenProvider.convertAuthToken(registerTokenStr);
         if (!registerToken.validate()) {
-            throw new BadRequestException(ErrorCode.REGISTER_EXPIRED);
+            throw new BusinessException(ErrorCode.REGISTER_EXPIRED);
         }
 
         Claims claims = registerToken.getTokenClaims();
         if (claims == null) {
-            throw new BadRequestException(ErrorCode.REGISTER_EXPIRED);
+            throw new BusinessException(ErrorCode.REGISTER_EXPIRED);
         }
 
         String username = claims.getSubject();
@@ -141,28 +141,28 @@ public class AuthController implements AuthControllerDocs {
         NicknameCheckResponse nicknameCheck = userService.checkNickname(registerRequest.getNickname());
         if (!nicknameCheck.getIsAvailable()) {
             if ("INVALID_FORMAT".equals(nicknameCheck.getCode()) || "INVALID_LENGTH".equals(nicknameCheck.getCode())) {
-                throw new BadRequestException(ErrorCode.INVALID_INPUT_VALUE);
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
             } else if ("PROFANITY".equals(nicknameCheck.getCode())) {
-                throw new BadRequestException(ErrorCode.INVALID_INPUT_VALUE);
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
             } else if ("DUPLICATE".equals(nicknameCheck.getCode())) {
-                throw new BadRequestException(ErrorCode.DUPLICATE_NICKNAME);
+                throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
             }
         }
 
         // 4. 생년월일 형식 검증 (null이 아닐 때만)
         if (registerRequest.getBirthday() != null && !registerRequest.getBirthday().isEmpty()) {
             if (!registerRequest.getBirthday().matches("^\\d{4}-\\d{2}-\\d{2}$")) {
-                throw new BadRequestException(ErrorCode.INVALID_INPUT_VALUE);
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
             }
         }
 
         // 5. Users 조회 및 업데이트
         Users user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new BadRequestException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         // 이미 회원가입이 완료된 사용자(GUEST가 아닌 경우)는 재가입 불가
         if (user.getRoleType() != RoleType.GUEST) {
-            throw new BadRequestException(ErrorCode.ALREADY_REGISTERED);
+            throw new BusinessException(ErrorCode.ALREADY_REGISTERED);
         }
 
         user.setNickname(registerRequest.getNickname());
@@ -192,39 +192,39 @@ public class AuthController implements AuthControllerDocs {
         // 1. Refresh Token 확인 (Body)
         String refreshTokenStr = refreshRequest.getRefreshToken();
         if (refreshTokenStr == null || refreshTokenStr.isEmpty()) {
-            throw new BadRequestException(ErrorCode.MISSING_REFRESH_TOKEN);
+            throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN);
         }
 
         AuthToken authRefreshToken = tokenProvider.convertAuthToken(refreshTokenStr);
 
         // 2. Refresh Token 유효성 검사
         if (!authRefreshToken.validate()) {
-            throw new BadRequestException(ErrorCode.INVALID_TOKEN);
+            throw new BusinessException(ErrorCode.INVALID_TOKEN);
         }
 
         // 3. Refresh Token 만료 여부 확인
         Claims refreshClaims = authRefreshToken.getTokenClaims();
         if (refreshClaims == null) {
-            throw new BadRequestException(ErrorCode.INVALID_TOKEN);
+            throw new BusinessException(ErrorCode.INVALID_TOKEN);
         }
 
         Date expiration = refreshClaims.getExpiration();
         Date now = new Date();
         if (expiration.before(now)) {
-            throw new BadRequestException(ErrorCode.REFRESH_TOKEN_EXPIRED);
+            throw new BusinessException(ErrorCode.REFRESH_TOKEN_EXPIRED);
         }
 
         // 4. DB에서 Refresh Token으로 User ID 조회
         UserRefreshToken userRefreshToken = userRefreshTokenRepository.findByRefreshToken(refreshTokenStr);
         if (userRefreshToken == null) {
-            throw new BadRequestException(ErrorCode.INVALID_TOKEN);
+            throw new BusinessException(ErrorCode.INVALID_TOKEN);
         }
 
         String username = userRefreshToken.getUserId();
         
         // 5. Users 조회하여 RoleType 가져오기
         Users user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new BadRequestException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         RoleType roleType = user.getRoleType();
 
         // 6. 새로운 Access Token 생성
@@ -277,20 +277,20 @@ public class AuthController implements AuthControllerDocs {
         // 1. Authorization 헤더에서 Access Token 확인
         String accessToken = HeaderUtil.getAccessToken(request);
         if (accessToken == null || accessToken.isEmpty()) {
-            throw new BadRequestException(ErrorCode.UNAUTHORIZED_ACCESS);
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
 
         AuthToken authToken = tokenProvider.convertAuthToken(accessToken);
         
         // Access Token 유효성 검사
         if (!authToken.validate()) {
-            throw new BadRequestException(ErrorCode.UNAUTHORIZED_ACCESS);
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
 
         // 2. Body에 Refresh Token 확인
         String refreshToken = refreshRequest.getRefreshToken();
         if (refreshToken == null || refreshToken.isEmpty()) {
-            throw new BadRequestException(ErrorCode.MISSING_REFRESH_TOKEN_LOGOUT);
+            throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN_LOGOUT);
         }
 
         // 3. DB에서 해당 Refresh Token 삭제
@@ -310,27 +310,27 @@ public class AuthController implements AuthControllerDocs {
         // 1. Authorization 헤더에서 Access Token 확인
         String accessToken = HeaderUtil.getAccessToken(request);
         if (accessToken == null || accessToken.isEmpty()) {
-            throw new BadRequestException(ErrorCode.UNAUTHORIZED_ACCESS);
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
 
         AuthToken authToken = tokenProvider.convertAuthToken(accessToken);
         
         // Access Token 유효성 검사
         if (!authToken.validate()) {
-            throw new BadRequestException(ErrorCode.UNAUTHORIZED_ACCESS);
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
 
         // 2. 토큰에서 사용자명 추출
         Claims claims = authToken.getTokenClaims();
         if (claims == null) {
-            throw new BadRequestException(ErrorCode.UNAUTHORIZED_ACCESS);
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
 
         String username = claims.getSubject();
 
         // 3. 사용자 조회
         Users user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new BadRequestException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         // 4. 사용자 관련 리프레시 토큰 삭제
         UserRefreshToken userRefreshToken = userRefreshTokenRepository.findByUserId(username);

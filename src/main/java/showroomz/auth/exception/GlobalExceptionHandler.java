@@ -15,8 +15,8 @@ import java.util.stream.Collectors;
 @RestControllerAdvice(basePackages = "showroomz")
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ErrorResponse> handleBadRequestException(BadRequestException e) {
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handleBadRequestException(BusinessException e) {
         ErrorCode errorCode = e.getErrorCode();
 
         return ResponseEntity

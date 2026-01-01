@@ -10,7 +10,7 @@ import showroomz.user.repository.MarketRepository;
 import showroomz.auth.DTO.AdminSignUpRequest;
 import showroomz.auth.entity.ProviderType;
 import showroomz.auth.entity.RoleType;
-import showroomz.auth.exception.BadRequestException;
+import showroomz.auth.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.user.entity.Users;
 import showroomz.user.repository.UserRepository;
@@ -29,17 +29,17 @@ public class AdminService {
     public void registerAdmin(AdminSignUpRequest request) {
         // 1. 비밀번호 일치 확인
         if (!request.getPassword().equals(request.getPasswordConfirm())) {
-            throw new BadRequestException(ErrorCode.PASSWORD_MISMATCH);
+            throw new BusinessException(ErrorCode.PASSWORD_MISMATCH);
         }
 
         // 2. 이메일(ID) 중복 체크
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new BadRequestException(ErrorCode.DUPLICATE_EMAIL_SIGNUP);
+            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL_SIGNUP);
         }
         
         // 3. 마켓명 중복 체크
         if (marketRepository.existsByMarketName(request.getMarketName())) {
-             throw new BadRequestException(ErrorCode.DUPLICATE_MARKET_NAME);
+             throw new BusinessException(ErrorCode.DUPLICATE_MARKET_NAME);
         }
 
         // 4. Users 엔티티 생성 (계정 + 개인 정보)
