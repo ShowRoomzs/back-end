@@ -16,7 +16,6 @@ import showroomz.admin.entity.Admin;
 import showroomz.admin.refreshToken.AdminRefreshToken;
 import showroomz.admin.refreshToken.AdminRefreshTokenRepository;
 import showroomz.admin.repository.AdminRepository;
-import showroomz.admin.service.AdminService;
 import showroomz.auth.DTO.RefreshTokenRequest;
 import showroomz.auth.DTO.TokenResponse;
 import showroomz.auth.entity.RoleType;
@@ -34,7 +33,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -83,12 +81,34 @@ class AdminServiceTest {
             Admin savedAdmin = createAdmin();
             given(adminRepository.save(any(Admin.class))).willReturn(savedAdmin);
 
+            // Mocking Token Properties
+            given(appProperties.getAuth()).willReturn(authProperties);
+            given(authProperties.getTokenExpiry()).willReturn(3600000L);
+            given(authProperties.getRefreshTokenExpiry()).willReturn(1209600000L);
+
+            // Mocking Token Creation
+            AuthToken accessToken = mock(AuthToken.class);
+            AuthToken refreshToken = mock(AuthToken.class);
+            given(accessToken.getToken()).willReturn("accessToken");
+            given(refreshToken.getToken()).willReturn("refreshToken");
+
+            given(tokenProvider.createAuthToken(eq(savedAdmin.getEmail()), eq(RoleType.ADMIN.getCode()), eq(savedAdmin.getAdminId()), any(Date.class)))
+                    .willReturn(accessToken);
+            given(tokenProvider.createAuthToken(eq(savedAdmin.getEmail()), any(Date.class)))
+                    .willReturn(refreshToken);
+
+            // Mocking Refresh Token Repository
+            given(adminRefreshTokenRepository.findByAdminEmail(savedAdmin.getEmail())).willReturn(null);
+
             // when
-            adminService.registerAdmin(request);
+            TokenResponse response = adminService.registerAdmin(request);
 
             // then
+            assertThat(response.getAccessToken()).isEqualTo("accessToken");
+            assertThat(response.getRefreshToken()).isEqualTo("refreshToken");
             verify(adminRepository).save(any(Admin.class));
             verify(marketRepository).save(any(Market.class));
+            verify(adminRefreshTokenRepository).saveAndFlush(any(AdminRefreshToken.class));
         }
 
         @Test
