@@ -21,40 +21,11 @@ import java.io.IOException;
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
     private final AuthTokenProvider tokenProvider;
 
-    private static final String[] AUTH_WHITELIST = {
-            "/",
-            "/swagger-ui/**", "/swagger-ui.html", "/swagger-ui/index.html",
-            "/api-docs", "/swagger-ui-custom.html", "/payment/**",
-            "/v3/api-docs/**", "/api-docs/**",
-            "/v1/auth/social/login", "/v1/auth/register", "/v1/auth/refresh",
-            "/v1/auth/local/signup", "/v1/auth/local/login",
-            "/v1/admin/signup", "/v1/admin/login",
-            "/v1/admin/check-email", "/v1/admin/check-market-name",
-            "/v1/users/check-nickname",
-            "/error"
-    };
-
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain)  throws ServletException, IOException {
-
-        String requestPath = request.getRequestURI();
-        
-        // Whitelist 경로는 필터 건너뛰기
-        for (String path : AUTH_WHITELIST) {
-            if (path.endsWith("/**")) {
-                String basePath = path.substring(0, path.length() - 3);
-                if (requestPath.startsWith(basePath)) {
-                    filterChain.doFilter(request, response);
-                    return;
-                }
-            } else if (requestPath.equals(path)) {
-                filterChain.doFilter(request, response);
-                return;
-            }
-        }
 
         String tokenStr = HeaderUtil.getAccessToken(request);
         
