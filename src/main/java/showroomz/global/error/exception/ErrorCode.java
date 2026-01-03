@@ -59,12 +59,16 @@ public enum ErrorCode {
 
     /* * 7. 이미지 (Image)
      */
-    INVALID_IMAGE_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, PRODUCT)"),
+    INVALID_IMAGE_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, PRODUCT, MARKET)"),
     EMPTY_FILE_EXCEPTION(HttpStatus.BAD_REQUEST, "EMPTY_FILE", "업로드할 파일이 존재하지 않습니다."),
-    INVALID_FILE_EXTENSION(HttpStatus.BAD_REQUEST, "INVALID_FILE_TYPE", "이미지 파일(jpg, png, jpeg, gif)만 업로드 가능합니다."),
-    FILE_SIZE_EXCEEDED(HttpStatus.PAYLOAD_TOO_LARGE, "FILE_SIZE_EXCEEDED", "이미지 파일은 최대 10MB까지만 업로드 가능합니다."),
+    INVALID_FILE_EXTENSION(HttpStatus.BAD_REQUEST, "INVALID_FILE_TYPE", "지원하지 않는 이미지 형식입니다"),
+    FILE_SIZE_EXCEEDED(HttpStatus.PAYLOAD_TOO_LARGE, "FILE_SIZE_EXCEEDED", "이미지 용량은 최대 20MB까지 등록 가능합니다."),
     INVALID_FILE_NAME(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "파일명이 올바르지 않습니다."),
-    FILE_UPLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "파일 업로드 중 오류가 발생했습니다.");
+    FILE_UPLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "파일 업로드 중 오류가 발생했습니다."),
+    
+    // 마켓 이미지 전용 검증 에러
+    IMAGE_RESOLUTION_TOO_LOW(HttpStatus.BAD_REQUEST, "IMAGE_RESOLUTION_TOO_LOW", "이미지는 최소 160×160px 이상이어야 합니다."),
+    IMAGE_RATIO_NOT_SQUARE(HttpStatus.BAD_REQUEST, "IMAGE_RATIO_NOT_SQUARE", "정비율의 이미지만 업로드 가능합니다.");
     
     private final HttpStatus status;
     private final String code;

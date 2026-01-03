@@ -31,6 +31,8 @@ public class MarketDto {
         private String marketName;
         private String csNumber;
         private String marketImageUrl;
+        // 검수 상태 반환
+        private String marketImageStatus; // "APPROVED", "UNDER_REVIEW", "REJECTED"
         private String marketDescription;
         private String marketUrl;
         private String mainCategory;
@@ -70,6 +72,14 @@ public class MarketDto {
         // SNS 링크: 최대 3개
         @Size(max = 3, message = "SNS 링크는 최대 3개까지 등록 가능합니다.")
         private List<SnsLinkRequest> snsLinks;
+    }
+
+    // 검수 상태 변경 요청 DTO
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    public static class UpdateImageStatusRequest {
+        private String status; // APPROVED, REJECTED
     }
 }
 

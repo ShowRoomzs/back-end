@@ -10,6 +10,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import showroomz.admin.DTO.AdminDto;
 import showroomz.admin.DTO.AdminLoginRequest;
 import showroomz.admin.DTO.AdminSignUpRequest;
 import showroomz.admin.service.AdminService;
@@ -73,34 +74,23 @@ class AdminAuthControllerTest {
     }
 
     @Test
-    @DisplayName("이메일 중복 체크 - 중복인 경우 true 반환")
+    @DisplayName("이메일 중복 체크 - 중복인 경우")
     void checkEmail_Duplicate() throws Exception {
         // given
         String email = "duplicate@test.com";
-        given(adminService.checkEmailDuplicate(email)).willReturn(true);
+        AdminDto.CheckEmailResponse response = new AdminDto.CheckEmailResponse(false, "DUPLICATE", "이미 사용 중인 이메일입니다.");
+        given(adminService.checkEmailDuplicate(email)).willReturn(response);
 
         // when & then
         mockMvc.perform(get("/v1/admin/check-email")
                         .param("email", email))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(content().string("true"));
+                .andExpect(jsonPath("$.isAvailable").value(false))
+                .andExpect(jsonPath("$.code").value("DUPLICATE"))
+                .andExpect(jsonPath("$.message").value("이미 사용 중인 이메일입니다."));
     }
 
-    @Test
-    @DisplayName("마켓명 중복 체크 - 사용 가능한 경우 false 반환")
-    void checkMarketName_Available() throws Exception {
-        // given
-        String marketName = "newMarket";
-        given(adminService.checkMarketNameDuplicate(marketName)).willReturn(false);
-
-        // when & then
-        mockMvc.perform(get("/v1/admin/check-market-name")
-                        .param("marketName", marketName))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(content().string("false"));
-    }
 
     @Test
     @DisplayName("로그인 성공")
