@@ -51,8 +51,8 @@ public interface ImageControllerDocs {
                     )
             ),
             @ApiResponse(
-                    responseCode = "400",
-                    description = "입력값 오류 - Status: 400 Bad Request",
+                    responseCode = "399",
+                    description = "입력값 오류 - Status: 400 Bad Request (일반 이미지 타입: PROFILE, REVIEW, PRODUCT)",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -84,20 +84,32 @@ public interface ImageControllerDocs {
                                                     "  \"code\": \"INVALID_FILE_TYPE\",\n" +
                                                     "  \"message\": \"지원하지 않는 이미지 형식입니다\"\n" +
                                                     "}"
-                                    ),
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "마켓 이미지 업로드 오류 - Status: 400 Bad Request (MARKET 타입 전용)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
                                     @ExampleObject(
                                             name = "마켓 이미지 해상도 부족",
                                             value = "{\n" +
                                                     "  \"code\": \"IMAGE_RESOLUTION_TOO_LOW\",\n" +
                                                     "  \"message\": \"이미지는 최소 160×160px 이상이어야 합니다.\"\n" +
-                                                    "}"
+                                                    "}",
+                                            description = "MARKET 타입 이미지 업로드 시, 이미지 해상도가 160×160px 미만인 경우 발생합니다."
                                     ),
                                     @ExampleObject(
                                             name = "마켓 이미지 비율 오류",
                                             value = "{\n" +
                                                     "  \"code\": \"IMAGE_RATIO_NOT_SQUARE\",\n" +
                                                     "  \"message\": \"정비율의 이미지만 업로드 가능합니다.\"\n" +
-                                                    "}"
+                                                    "}",
+                                            description = "MARKET 타입 이미지 업로드 시, 이미지가 정비율(1:1)이 아닌 경우 발생합니다."
                                     )
                             }
                     )
