@@ -8,7 +8,6 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 import showroomz.Market.DTO.MarketDto;
 import showroomz.Market.service.MarketService;
-import showroomz.Market.type.MarketImageStatus;
 import showroomz.auth.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.swaggerDocs.MarketControllerDocs;
@@ -54,23 +53,6 @@ public class MarketController implements MarketControllerDocs {
         String email = getCurrentAdminEmail();
         marketService.updateMarketProfile(email, request);
         
-        return ResponseEntity.ok().build();
-    }
-
-    @Override
-    @PatchMapping("/{marketId}/image-status")
-    public ResponseEntity<Void> updateImageStatus(
-            @PathVariable Long marketId,
-            @RequestBody MarketDto.UpdateImageStatusRequest request) {
-        
-        MarketImageStatus status;
-        try {
-            status = MarketImageStatus.valueOf(request.getStatus().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
-        }
-
-        marketService.updateMarketImageStatus(marketId, status);
         return ResponseEntity.ok().build();
     }
 }

@@ -28,6 +28,7 @@ public class MarketDto {
     @AllArgsConstructor
     @Builder
     public static class MarketProfileResponse {
+        private Long marketId;
         private String marketName;
         private String csNumber;
         private String marketImageUrl;

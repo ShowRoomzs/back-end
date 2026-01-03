@@ -70,6 +70,7 @@ public class MarketService {
         parseAndAddSnsLink(market.getSnsLink3(), snsLinks);
 
         return MarketDto.MarketProfileResponse.builder()
+                .marketId(market.getId())
                 .marketName(market.getMarketName())
                 .csNumber(market.getCsNumber())
                 .marketImageUrl(market.getMarketImageUrl())
