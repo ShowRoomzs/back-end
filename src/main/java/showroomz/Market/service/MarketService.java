@@ -79,6 +79,7 @@ public class MarketService {
                 .marketUrl(market.getMarketUrl())
                 .mainCategory(market.getMainCategory())
                 .snsLinks(snsLinks)
+                .followerCount(0L) // 기본값
                 .build();
     }
 

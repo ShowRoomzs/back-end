@@ -39,6 +39,9 @@ public class MarketDto {
         private String marketUrl;
         private String mainCategory;
         private List<SnsLinkRequest> snsLinks; // 프론트엔드에 리스트 형태로 반환
+        // 마켓 팔로워(찜) 수
+        @Builder.Default
+        private Long followerCount = 0L;
     }
 
     @Getter

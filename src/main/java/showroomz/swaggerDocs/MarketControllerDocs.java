@@ -78,7 +78,8 @@ public interface MarketControllerDocs {
                     "- `marketDescription`: 마켓 소개\n" +
                     "- `marketUrl`: 마켓 URL (자동 생성, 변경 불가)\n" +
                     "- `mainCategory`: 대표 카테고리\n" +
-                    "- `snsLinks`: SNS 링크 목록 (최대 3개)\n\n" +
+                    "- `snsLinks`: SNS 링크 목록 (최대 3개)\n" +
+                    "- `followerCount`: 마켓을 팔로우(찜)한 유저 수\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -110,7 +111,8 @@ public interface MarketControllerDocs {
                                                     "      \"snsType\": \"YOUTUBE\",\n" +
                                                     "      \"snsUrl\": \"https://youtube.com/showroomz\"\n" +
                                                     "    }\n" +
-                                                    "  ]\n" +
+                                                    "  ],\n" +
+                                                    "  \"followerCount\": 0\n" +
                                                     "}",
                                             description = "마켓 정보 조회 성공. marketImageStatus는 \"APPROVED\"(검수 완료), \"UNDER_REVIEW\"(검수 중), \"REJECTED\"(반려됨) 중 하나입니다."
                                     )
