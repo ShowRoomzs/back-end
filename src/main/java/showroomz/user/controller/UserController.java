@@ -61,7 +61,9 @@ public class UserController implements UserControllerDocs {
                 user.getRoleType(),
                 user.getCreatedAt(),
                 user.getModifiedAt(),
-                user.isMarketingAgree()
+                user.isMarketingAgree(),
+                0L, // followerCount (기본값)
+                0L  // followingCount (기본값)
         );
 
         return ResponseEntity.ok(response);
@@ -181,7 +183,9 @@ public class UserController implements UserControllerDocs {
                 updatedUser.getRoleType(),
                 updatedUser.getCreatedAt(),
                 updatedUser.getModifiedAt(),
-                updatedUser.isMarketingAgree()
+                updatedUser.isMarketingAgree(),
+                0L, // followerCount (기본값)
+                0L  // followingCount (기본값)
         );
 
         return ResponseEntity.ok(response);
