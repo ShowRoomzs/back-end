@@ -69,6 +69,16 @@ public interface MarketControllerDocs {
     @Operation(
             summary = "내 마켓 정보 조회",
             description = "현재 로그인한 관리자의 마켓 정보를 조회합니다.\n\n" +
+                    "**응답 필드:**\n" +
+                    "- `marketId`: 마켓 ID\n" +
+                    "- `marketName`: 마켓명\n" +
+                    "- `csNumber`: 고객센터 번호\n" +
+                    "- `marketImageUrl`: 마켓 대표 이미지 URL\n" +
+                    "- `marketImageStatus`: 마켓 이미지 검수 상태 (APPROVED: 검수 완료, UNDER_REVIEW: 검수 중, REJECTED: 반려됨)\n" +
+                    "- `marketDescription`: 마켓 소개\n" +
+                    "- `marketUrl`: 마켓 URL (자동 생성, 변경 불가)\n" +
+                    "- `mainCategory`: 대표 카테고리\n" +
+                    "- `snsLinks`: SNS 링크 목록 (최대 3개)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -81,7 +91,7 @@ public interface MarketControllerDocs {
                             schema = @Schema(implementation = MarketDto.MarketProfileResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "성공 예시",
+                                            name = "성공 예시 (검수 완료)",
                                             value = "{\n" +
                                                     "  \"marketId\": 1,\n" +
                                                     "  \"marketName\": \"쇼룸즈\",\n" +
@@ -101,7 +111,8 @@ public interface MarketControllerDocs {
                                                     "      \"snsUrl\": \"https://youtube.com/showroomz\"\n" +
                                                     "    }\n" +
                                                     "  ]\n" +
-                                                    "}"
+                                                    "}",
+                                            description = "마켓 정보 조회 성공. marketImageStatus는 \"APPROVED\"(검수 완료), \"UNDER_REVIEW\"(검수 중), \"REJECTED\"(반려됨) 중 하나입니다."
                                     )
                             }
                     )
