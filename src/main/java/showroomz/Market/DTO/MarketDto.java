@@ -1,5 +1,6 @@
 package showroomz.Market.DTO;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -72,6 +73,7 @@ public class MarketDto {
 
         // SNS 링크: 최대 3개
         @Size(max = 3, message = "SNS 링크는 최대 3개까지 등록 가능합니다.")
+        @Valid // 중첩된 객체의 validation을 활성화
         private List<SnsLinkRequest> snsLinks;
     }
 

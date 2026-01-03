@@ -132,7 +132,7 @@ class ImageControllerTest {
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"))
-                .andExpect(jsonPath("$.message").value("유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, PRODUCT)"));
+                .andExpect(jsonPath("$.message").value("유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, PRODUCT, MARKET)"));
     }
 
     @Test
@@ -159,7 +159,7 @@ class ImageControllerTest {
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_FILE_TYPE"))
-                .andExpect(jsonPath("$.message").value("이미지 파일(jpg, png, jpeg, gif)만 업로드 가능합니다."));
+                .andExpect(jsonPath("$.message").value("지원하지 않는 이미지 형식입니다"));
     }
 
     @Test
@@ -179,7 +179,7 @@ class ImageControllerTest {
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isPayloadTooLarge())
                 .andExpect(jsonPath("$.code").value("FILE_SIZE_EXCEEDED"))
-                .andExpect(jsonPath("$.message").value("이미지 파일은 최대 10MB까지만 업로드 가능합니다."));
+                .andExpect(jsonPath("$.message").value("이미지 용량은 최대 20MB까지 등록 가능합니다."));
     }
 
     @Test

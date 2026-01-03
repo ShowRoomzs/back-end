@@ -27,9 +27,9 @@ public interface SuperAdminControllerDocs {
     )
     @ApiResponses(value = {
             @ApiResponse(
-                    responseCode = "200",
-                    description = "이미지 검수 상태 변경 성공",
-                    content = @Content(mediaType = "application/json")
+                    responseCode = "204",
+                    description = "이미지 검수 상태 변경 성공 - Status: 204 No Content",
+                    content = @Content
             ),
             @ApiResponse(
                     responseCode = "400",

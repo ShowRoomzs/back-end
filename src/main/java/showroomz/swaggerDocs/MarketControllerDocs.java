@@ -168,9 +168,9 @@ public interface MarketControllerDocs {
     )
     @ApiResponses(value = {
             @ApiResponse(
-                    responseCode = "200",
-                    description = "마켓 프로필 수정 성공",
-                    content = @Content(mediaType = "application/json")
+                    responseCode = "204",
+                    description = "마켓 프로필 수정 성공 - Status: 204 No Content",
+                    content = @Content
             ),
             @ApiResponse(
                     responseCode = "400",

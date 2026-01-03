@@ -53,7 +53,7 @@ public class MarketController implements MarketControllerDocs {
         String email = getCurrentAdminEmail();
         marketService.updateMarketProfile(email, request);
         
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 }
 

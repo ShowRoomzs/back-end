@@ -31,7 +31,7 @@ public class SuperAdminController implements SuperAdminControllerDocs {
         }
 
         marketService.updateMarketImageStatus(marketId, status);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 }
 
