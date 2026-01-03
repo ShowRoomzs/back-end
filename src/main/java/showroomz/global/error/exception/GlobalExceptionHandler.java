@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import showroomz.auth.DTO.ErrorResponse;
 import showroomz.auth.DTO.ValidationErrorResponse;
 import showroomz.auth.exception.BusinessException;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.sql.SQLException;
 import java.util.stream.Collectors;
@@ -82,6 +83,17 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(
                         ErrorCode.INTERNAL_SERVER_ERROR.getCode(),
                         "데이터베이스 오류가 발생했습니다. 잠시 후 다시 시도해주세요."));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException e) {
+        log.warn("접근 권한 없음: {}", e.getMessage());
+        
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse(
+                        ErrorCode.FORBIDDEN.getCode(),
+                        ErrorCode.FORBIDDEN.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
