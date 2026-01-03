@@ -42,7 +42,7 @@ public class AdminAuthController implements AdminControllerDocs {
 
     @Override
     @GetMapping("/check-email")
-    public ResponseEntity<AdminDto.CheckEmailResponse> checkEmail(@RequestParam String email) {
+    public ResponseEntity<AdminDto.CheckEmailResponse> checkEmail(@RequestParam("email") String email) {
         return ResponseEntity.ok(adminService.checkEmailDuplicate(email));
     }
 
