@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import showroomz.admin.DTO.AdminDto;
 import showroomz.admin.DTO.AdminLoginRequest;
 import showroomz.admin.DTO.AdminSignUpRequest;
 import showroomz.admin.service.AdminService;
@@ -41,15 +42,8 @@ public class AdminAuthController implements AdminControllerDocs {
 
     @Override
     @GetMapping("/check-email")
-    public ResponseEntity<Boolean> checkEmail(@RequestParam String email) {
-        // 중복이면 true, 사용 가능하면 false 반환
+    public ResponseEntity<AdminDto.CheckEmailResponse> checkEmail(@RequestParam String email) {
         return ResponseEntity.ok(adminService.checkEmailDuplicate(email));
-    }
-
-    @Override
-    @GetMapping("/check-market-name")
-    public ResponseEntity<Boolean> checkMarketName(@RequestParam String marketName) {
-        return ResponseEntity.ok(adminService.checkMarketNameDuplicate(marketName));
     }
 
     @Override

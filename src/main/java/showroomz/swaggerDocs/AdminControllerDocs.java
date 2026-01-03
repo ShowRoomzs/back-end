@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import showroomz.admin.DTO.AdminDto;
 import showroomz.admin.DTO.AdminLoginRequest;
 import showroomz.admin.DTO.AdminSignUpRequest;
 import showroomz.auth.DTO.ErrorResponse;
@@ -204,8 +205,8 @@ public interface AdminControllerDocs {
             summary = "이메일 중복 체크",
             description = "관리자 회원가입 시 사용할 이메일의 중복 여부를 확인합니다.\n\n" +
                     "**응답:**\n" +
-                    "- `true`: 이메일이 이미 사용 중 (중복)\n" +
-                    "- `false`: 이메일 사용 가능"
+                    "- `isAvailable`: true면 사용 가능, false면 중복\n" +
+                    "- `message`: 결과 메시지"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -213,67 +214,35 @@ public interface AdminControllerDocs {
                     description = "중복 체크 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = Boolean.class),
+                            schema = @Schema(implementation = AdminDto.CheckEmailResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "중복인 경우",
-                                            value = "true",
-                                            description = "이메일이 이미 사용 중입니다."
+                                            name = "사용 가능한 경우",
+                                            value = "{\n" +
+                                                    "  \"isAvailable\": true,\n" +
+                                                    "  \"message\": \"사용 가능한 이메일입니다.\"\n" +
+                                                    "}",
+                                            description = "이메일을 사용할 수 있습니다."
                                     ),
                                     @ExampleObject(
-                                            name = "사용 가능한 경우",
-                                            value = "false",
-                                            description = "이메일을 사용할 수 있습니다."
+                                            name = "중복인 경우",
+                                            value = "{\n" +
+                                                    "  \"isAvailable\": false,\n" +
+                                                    "  \"message\": \"이미 사용 중인 이메일입니다.\"\n" +
+                                                    "}",
+                                            description = "이메일이 이미 사용 중입니다."
                                     )
                             }
                     )
             )
     })
-    ResponseEntity<Boolean> checkEmail(
+    ResponseEntity<AdminDto.CheckEmailResponse> checkEmail(
             @Parameter(
                     description = "중복 체크할 이메일 주소",
                     required = true,
                     example = "admin@showroomz.shop"
             )
             @RequestParam String email
-    );
-
-    @Operation(
-            summary = "마켓명 중복 체크",
-            description = "관리자 회원가입 시 사용할 마켓명의 중복 여부를 확인합니다.\n\n" +
-                    "**응답:**\n" +
-                    "- `true`: 마켓명이 이미 사용 중 (중복)\n" +
-                    "- `false`: 마켓명 사용 가능"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "중복 체크 성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = Boolean.class),
-                            examples = {
-                                    @ExampleObject(
-                                            name = "중복인 경우",
-                                            value = "true",
-                                            description = "마켓명이 이미 사용 중입니다."
-                                    ),
-                                    @ExampleObject(
-                                            name = "사용 가능한 경우",
-                                            value = "false",
-                                            description = "마켓명을 사용할 수 있습니다."
-                                    )
-                            }
-                    )
-            )
-    })
-    ResponseEntity<Boolean> checkMarketName(
-            @Parameter(
-                    description = "중복 체크할 마켓명",
-                    required = true,
-                    example = "쇼룸즈"
-            )
-            @RequestParam String marketName
     );
 
     @Operation(
