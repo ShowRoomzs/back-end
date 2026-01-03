@@ -22,7 +22,7 @@ public interface AuthControllerDocs {
 
     @Operation(
             summary = "소셜 로그인",
-            description = "카카오, 네이버, 애플 소셜 로그인을 처리합니다. 신규 회원인 경우 registerToken을 반환하고, 기존 회원인 경우 accessToken과 refreshToken을 반환합니다.\n\n" +
+            description = "카카오, 네이버, 구글, 애플 소셜 로그인을 처리합니다. 신규 회원인 경우 registerToken을 반환하고, 기존 회원인 경우 accessToken과 refreshToken을 반환합니다.\n\n" +
                     "**registerToken 유효기간:** 5분 (회원가입 완료에 사용)"
     )
     @ApiResponses(value = {
@@ -162,8 +162,8 @@ public interface AuthControllerDocs {
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "소셜 로그인 요청 정보\n" +
-                    "- providerType: 필수, 소셜 공급자 타입 (KAKAO, NAVER, APPLE)\n" +
-                    "- token: 필수, 애플은 idToken, 카카오/네이버는 accessToken\n" +
+                    "- providerType: 필수, 소셜 공급자 타입 (KAKAO, NAVER, GOOGLE, APPLE)\n" +
+                    "- token: 필수, 애플은 idToken, 카카오/네이버/구글은 accessToken\n" +
                     "- name: 선택, 애플 로그인에서만 사용 (첫 로그인 시 이름)\n" +
                     "- fcmToken: 선택, (푸시 알림 전송용 FCM 토큰)",
             required = true,
@@ -183,6 +183,13 @@ public interface AuthControllerDocs {
                                     value = "{\n" +
                                             "  \"providerType\": \"KAKAO\",\n" +
                                             "  \"token\": \"eyJhbGciOiJIUzI1NiJ9...\"\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "구글 로그인 예시",
+                                    value = "{\n" +
+                                            "  \"providerType\": \"GOOGLE\",\n" +
+                                            "  \"token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\"\n" +
                                             "}"
                             ),
                             @ExampleObject(
