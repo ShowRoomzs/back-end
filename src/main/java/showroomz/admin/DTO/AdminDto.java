@@ -13,6 +13,7 @@ public class AdminDto {
     @AllArgsConstructor
     public static class CheckEmailResponse {
         private boolean isAvailable;
+        private String code;
         private String message;
     }
 }

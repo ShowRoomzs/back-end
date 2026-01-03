@@ -206,6 +206,7 @@ public interface AdminControllerDocs {
             description = "관리자 회원가입 시 사용할 이메일의 중복 여부를 확인합니다.\n\n" +
                     "**응답:**\n" +
                     "- `isAvailable`: true면 사용 가능, false면 중복\n" +
+                    "- `code`: 응답 코드 (AVAILABLE: 사용 가능, DUPLICATE: 중복)\n" +
                     "- `message`: 결과 메시지"
     )
     @ApiResponses(value = {
@@ -220,6 +221,7 @@ public interface AdminControllerDocs {
                                             name = "사용 가능한 경우",
                                             value = "{\n" +
                                                     "  \"isAvailable\": true,\n" +
+                                                    "  \"code\": \"AVAILABLE\",\n" +
                                                     "  \"message\": \"사용 가능한 이메일입니다.\"\n" +
                                                     "}",
                                             description = "이메일을 사용할 수 있습니다."
@@ -228,6 +230,7 @@ public interface AdminControllerDocs {
                                             name = "중복인 경우",
                                             value = "{\n" +
                                                     "  \"isAvailable\": false,\n" +
+                                                    "  \"code\": \"DUPLICATE\",\n" +
                                                     "  \"message\": \"이미 사용 중인 이메일입니다.\"\n" +
                                                     "}",
                                             description = "이메일이 이미 사용 중입니다."

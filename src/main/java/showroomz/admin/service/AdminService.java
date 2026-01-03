@@ -80,9 +80,9 @@ public class AdminService {
     @Transactional(readOnly = true)
     public AdminDto.CheckEmailResponse checkEmailDuplicate(String email) {
         if (adminRepository.existsByEmail(email)) {
-            return new AdminDto.CheckEmailResponse(false, "이미 사용 중인 이메일입니다.");
+            return new AdminDto.CheckEmailResponse(false, "DUPLICATE", "이미 사용 중인 이메일입니다.");
         }
-        return new AdminDto.CheckEmailResponse(true, "사용 가능한 이메일입니다.");
+        return new AdminDto.CheckEmailResponse(true, "AVAILABLE", "사용 가능한 이메일입니다.");
     }
 
     @Transactional

@@ -23,7 +23,7 @@ public class MarketService {
     private final AdminRepository adminRepository;
     
     // application.yml에서 도메인 주소를 가져오도록 설정
-    @Value("${app.base-url:https://www.showroomz.co.kr}")
+    @Value("${app.base-url:https://showroomz.shop}")
     private String baseUrl;
 
     /**
@@ -38,7 +38,6 @@ public class MarketService {
         marketRepository.save(market);
 
         // 3. 생성된 ID를 기반으로 URL 조합
-        // 예: https://www.showroomz.co.kr/market/15
         String generatedUrl = baseUrl + "/market/" + market.getId();
 
         // 4. URL 업데이트 (Dirty Checking으로 인해 트랜잭션 종료 시 자동 반영)
@@ -51,9 +50,9 @@ public class MarketService {
     @Transactional(readOnly = true)
     public MarketDto.CheckMarketNameResponse checkMarketName(String marketName) {
         if (marketRepository.existsByMarketName(marketName)) {
-            return new MarketDto.CheckMarketNameResponse(false, "이미 사용 중인 마켓명입니다.");
+            return new MarketDto.CheckMarketNameResponse(false, "DUPLICATE", "이미 사용 중인 마켓명입니다.");
         }
-        return new MarketDto.CheckMarketNameResponse(true, "사용 가능한 마켓명입니다.");
+        return new MarketDto.CheckMarketNameResponse(true, "AVAILABLE", "사용 가능한 마켓명입니다.");
     }
 
     /**

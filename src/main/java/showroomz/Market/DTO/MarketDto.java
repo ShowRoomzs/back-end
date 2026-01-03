@@ -18,6 +18,7 @@ public class MarketDto {
     @AllArgsConstructor
     public static class CheckMarketNameResponse {
         private boolean isAvailable;
+        private String code;
         private String message;
     }
 

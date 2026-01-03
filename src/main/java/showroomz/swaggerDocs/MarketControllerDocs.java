@@ -24,6 +24,7 @@ public interface MarketControllerDocs {
             description = "마켓명의 중복 여부를 확인합니다.\n\n" +
                     "**응답:**\n" +
                     "- `isAvailable`: true면 사용 가능, false면 중복\n" +
+                    "- `code`: 응답 코드 (AVAILABLE: 사용 가능, DUPLICATE: 중복)\n" +
                     "- `message`: 결과 메시지"
     )
     @ApiResponses(value = {
@@ -38,6 +39,7 @@ public interface MarketControllerDocs {
                                             name = "사용 가능한 경우",
                                             value = "{\n" +
                                                     "  \"isAvailable\": true,\n" +
+                                                    "  \"code\": \"AVAILABLE\",\n" +
                                                     "  \"message\": \"사용 가능한 마켓명입니다.\"\n" +
                                                     "}",
                                             description = "마켓명을 사용할 수 있습니다."
@@ -46,6 +48,7 @@ public interface MarketControllerDocs {
                                             name = "중복인 경우",
                                             value = "{\n" +
                                                     "  \"isAvailable\": false,\n" +
+                                                    "  \"code\": \"DUPLICATE\",\n" +
                                                     "  \"message\": \"이미 사용 중인 마켓명입니다.\"\n" +
                                                     "}",
                                             description = "마켓명이 이미 사용 중입니다."
