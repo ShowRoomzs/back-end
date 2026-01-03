@@ -11,7 +11,7 @@ import showroomz.global.error.exception.ErrorCode;
 import showroomz.swaggerDocs.SuperAdminControllerDocs;
 
 @RestController
-@RequestMapping("/v1/admin/super")
+@RequestMapping("/v1/admin")
 @RequiredArgsConstructor
 public class SuperAdminController implements SuperAdminControllerDocs {
 
