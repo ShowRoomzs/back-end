@@ -43,8 +43,9 @@ public class SecurityConfig {
             "/v1/auth/social/login", "/v1/auth/register", "/v1/auth/refresh",  // 토큰 갱신 (인증 불필요)
             "/v1/auth/local/signup", "/v1/auth/local/login",  // 로컬 회원가입 및 로그인 (인증 불필요)
             "/v1/admin/signup", "/v1/admin/login",  // 관리자 회원가입 및 로그인 (인증 불필요)
-            "/v1/admin/check-email", "/v1/admin/check-market-name",  // 관리자 이메일 및 마켓명 중복 확인 (인증 불필요)
+            "/v1/admin/check-email",  // 관리자 이메일 중복 확인 (인증 불필요)
             "/v1/users/check-nickname",  // 닉네임 중복 확인 (인증 불필요)
+            "/v1/markets/check-name",  // 마켓명 중복 확인 (인증 불필요)
             "/error"  // 에러 페이지 접근 허용
     };
     /*
@@ -67,6 +68,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
                 .requestMatchers(AUTH_WHITELIST).permitAll()
+                .requestMatchers("/v1/admin/markets/*/image-status").hasAnyAuthority(RoleType.SUPER_ADMIN.getCode())  // 슈퍼 어드민 API는 SUPER_ADMIN 권한 필요
+                .requestMatchers("/v1/markets/**").hasAnyAuthority(RoleType.ADMIN.getCode())  // 마켓 관련 API는 ADMIN 권한 필요
                 .requestMatchers("/api/*/admin/**").hasAnyAuthority(RoleType.ADMIN.getCode())
                 .requestMatchers("/api/**").hasAnyAuthority(RoleType.USER.getCode())
                 .anyRequest().authenticated()

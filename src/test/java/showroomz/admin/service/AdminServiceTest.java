@@ -10,6 +10,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import showroomz.Market.entity.Market;
+import showroomz.Market.repository.MarketRepository;
+import showroomz.Market.service.MarketService;
 import showroomz.admin.DTO.AdminLoginRequest;
 import showroomz.admin.DTO.AdminSignUpRequest;
 import showroomz.admin.entity.Admin;
@@ -24,7 +26,6 @@ import showroomz.auth.token.AuthToken;
 import showroomz.auth.token.AuthTokenProvider;
 import showroomz.config.properties.AppProperties;
 import showroomz.global.error.exception.ErrorCode;
-import showroomz.user.repository.MarketRepository;
 
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -33,6 +34,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -49,6 +51,9 @@ class AdminServiceTest {
 
     @Mock
     private MarketRepository marketRepository;
+
+    @Mock
+    private MarketService marketService;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -81,6 +86,9 @@ class AdminServiceTest {
             Admin savedAdmin = createAdmin();
             given(adminRepository.save(any(Admin.class))).willReturn(savedAdmin);
 
+            // Mocking MarketService
+            doNothing().when(marketService).createMarket(any(Admin.class), anyString(), anyString());
+
             // Mocking Token Properties
             given(appProperties.getAuth()).willReturn(authProperties);
             given(authProperties.getTokenExpiry()).willReturn(3600000L);
@@ -107,7 +115,7 @@ class AdminServiceTest {
             assertThat(response.getAccessToken()).isEqualTo("accessToken");
             assertThat(response.getRefreshToken()).isEqualTo("refreshToken");
             verify(adminRepository).save(any(Admin.class));
-            verify(marketRepository).save(any(Market.class));
+            verify(marketService).createMarket(eq(savedAdmin), eq(request.getMarketName()), eq(request.getCsNumber()));
             verify(adminRefreshTokenRepository).saveAndFlush(any(AdminRefreshToken.class));
         }
 

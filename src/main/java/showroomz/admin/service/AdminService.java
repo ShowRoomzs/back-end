@@ -6,8 +6,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import showroomz.Market.entity.Market;
-import showroomz.user.repository.MarketRepository;
+import showroomz.Market.repository.MarketRepository;
+import showroomz.Market.service.MarketService;
+import showroomz.admin.DTO.AdminDto;
 import showroomz.admin.DTO.AdminLoginRequest;
 import showroomz.admin.DTO.AdminSignUpRequest;
 import showroomz.admin.entity.Admin;
@@ -31,6 +32,7 @@ public class AdminService {
 
     private final AdminRepository adminRepository;
     private final MarketRepository marketRepository;
+    private final MarketService marketService;
     private final PasswordEncoder passwordEncoder;
     private final AuthTokenProvider tokenProvider;
     private final AppProperties appProperties;
@@ -67,14 +69,8 @@ public class AdminService {
         
         Admin savedAdmin = adminRepository.save(admin);
 
-        // 5. Market 엔티티 생성
-        Market market = new Market(
-                savedAdmin,
-                request.getMarketName(),
-                request.getCsNumber()
-        );
-
-        marketRepository.save(market);
+        // 5. Market 엔티티 생성 및 URL 자동 할당
+        marketService.createMarket(savedAdmin, request.getMarketName(), request.getCsNumber());
 
         // 6. 토큰 생성 및 반환 (공통 메서드 사용)
         return issueTokenResponse(savedAdmin);
@@ -82,13 +78,11 @@ public class AdminService {
 
     // 읽기 전용 트랜잭션으로 설정하여 성능 최적화
     @Transactional(readOnly = true)
-    public boolean checkEmailDuplicate(String email) {
-        return adminRepository.existsByEmail(email);
-    }
-
-    @Transactional(readOnly = true)
-    public boolean checkMarketNameDuplicate(String marketName) {
-        return marketRepository.existsByMarketName(marketName);
+    public AdminDto.CheckEmailResponse checkEmailDuplicate(String email) {
+        if (adminRepository.existsByEmail(email)) {
+            return new AdminDto.CheckEmailResponse(false, "DUPLICATE", "이미 사용 중인 이메일입니다.");
+        }
+        return new AdminDto.CheckEmailResponse(true, "AVAILABLE", "사용 가능한 이메일입니다.");
     }
 
     @Transactional

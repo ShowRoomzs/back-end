@@ -15,12 +15,14 @@ import showroomz.global.error.exception.ErrorCode;
 import showroomz.image.DTO.ImageUploadResponse;
 import showroomz.image.type.ImageType;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import javax.imageio.ImageIO;
 
 @Slf4j
 @Service
@@ -30,7 +32,7 @@ public class ImageService {
     private final S3Client s3Client;
     private final S3Properties s3Properties;
 
-    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    private static final long MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "gif");
 
     public ImageUploadResponse uploadImage(MultipartFile file, ImageType type) {
@@ -55,7 +57,12 @@ public class ImageService {
             throw new BusinessException(ErrorCode.INVALID_FILE_EXTENSION);
         }
 
-        // 4. S3에 업로드
+        // 4. 마켓 대표 이미지(MARKET)인 경우 해상도 및 비율 검증
+        if (type == ImageType.MARKET) {
+            validateMarketImage(file);
+        }
+
+        // 5. S3에 업로드
         try {
             String fileName = generateFileName(type, extension);
             String s3Key = getS3Key(type, fileName);
@@ -143,6 +150,35 @@ public class ImageService {
 
             // 클라이언트에게는 내부 상세 정보(버킷명, 권한 등)를 숨기고 공통 에러 코드 반환
             throw new BusinessException(ErrorCode.FILE_UPLOAD_ERROR);
+        }
+    }
+
+    /**
+     * 마켓 이미지 정밀 검증 (해상도, 비율)
+     */
+    private void validateMarketImage(MultipartFile file) {
+        try {
+            BufferedImage image = ImageIO.read(file.getInputStream());
+            if (image == null) {
+                throw new BusinessException(ErrorCode.INVALID_FILE_EXTENSION);
+            }
+
+            int width = image.getWidth();
+            int height = image.getHeight();
+
+            // 1. 해상도 검사: 160x160 미만인 경우
+            if (width < 160 || height < 160) {
+                throw new BusinessException(ErrorCode.IMAGE_RESOLUTION_TOO_LOW);
+            }
+
+            // 2. 비율 검사: 정비율(1:1)이 아닌 경우
+            if (width != height) {
+                throw new BusinessException(ErrorCode.IMAGE_RATIO_NOT_SQUARE);
+            }
+
+        } catch (IOException e) {
+            log.error("이미지 읽기 실패", e);
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }
 }

@@ -25,7 +25,13 @@ public interface ImageControllerDocs {
             description = "파일을 받아 S3에 업로드하고, 업로드된 이미지의 URL을 반환합니다.\n\n" +
                     "**호출 도메인**\n" +
                     "- 개발: https://localhost:8080\n" +
-                    "- 배포: https://api.showroomz.shop"
+                    "- 배포: https://api.showroomz.shop\n\n" +
+                    "**이미지 타입별 제약사항:**\n" +
+                    "- `PROFILE`, `REVIEW`, `PRODUCT`: 일반 이미지 (최대 20MB)\n" +
+                    "- `MARKET`: 마켓 대표 이미지\n" +
+                    "  - 최소 해상도: 160×160px 이상\n" +
+                    "  - 비율: 정비율(1:1)만 허용\n" +
+                    "  - 최대 크기: 20MB"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -46,7 +52,7 @@ public interface ImageControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "입력값 오류 - Status: 400 Bad Request",
+                    description = "입력값 오류 - Status: 400 Bad Request (모든 이미지 타입 공통)",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -55,7 +61,7 @@ public interface ImageControllerDocs {
                                             name = "유효하지 않은 이미지 타입",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, PRODUCT)\"\n" +
+                                                    "  \"message\": \"유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, PRODUCT, MARKET)\"\n" +
                                                     "}"
                                     ),
                                     @ExampleObject(
@@ -76,8 +82,34 @@ public interface ImageControllerDocs {
                                             name = "파일 확장자 오류",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_FILE_TYPE\",\n" +
-                                                    "  \"message\": \"이미지 파일(jpg, png, jpeg, gif)만 업로드 가능합니다.\"\n" +
+                                                    "  \"message\": \"지원하지 않는 이미지 형식입니다\"\n" +
                                                     "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "마켓 이미지 업로드 오류 - Status: 400 Bad Request (MARKET 타입 전용)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "마켓 이미지 해상도 부족",
+                                            value = "{\n" +
+                                                    "  \"code\": \"IMAGE_RESOLUTION_TOO_LOW\",\n" +
+                                                    "  \"message\": \"이미지는 최소 160×160px 이상이어야 합니다.\"\n" +
+                                                    "}",
+                                            description = "MARKET 타입 이미지 업로드 시, 이미지 해상도가 160×160px 미만인 경우 발생합니다."
+                                    ),
+                                    @ExampleObject(
+                                            name = "마켓 이미지 비율 오류",
+                                            value = "{\n" +
+                                                    "  \"code\": \"IMAGE_RATIO_NOT_SQUARE\",\n" +
+                                                    "  \"message\": \"정비율의 이미지만 업로드 가능합니다.\"\n" +
+                                                    "}",
+                                            description = "MARKET 타입 이미지 업로드 시, 이미지가 정비율(1:1)이 아닌 경우 발생합니다."
                                     )
                             }
                     )
@@ -101,7 +133,7 @@ public interface ImageControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "413",
-                    description = "파일 용량 초과 (10MB 제한) - Status: 413 Payload Too Large",
+                    description = "파일 용량 초과 (20MB 제한) - Status: 413 Payload Too Large",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -110,7 +142,7 @@ public interface ImageControllerDocs {
                                             name = "파일 크기 초과",
                                             value = "{\n" +
                                                     "  \"code\": \"FILE_SIZE_EXCEEDED\",\n" +
-                                                    "  \"message\": \"이미지 파일은 최대 10MB까지만 업로드 가능합니다.\"\n" +
+                                                    "  \"message\": \"이미지 용량은 최대 20MB까지 등록 가능합니다.\"\n" +
                                                     "}"
                                     )
                             }
@@ -147,7 +179,8 @@ public interface ImageControllerDocs {
                     description = "업로드할 이미지의 용도 (필수)\n" +
                             "- `PROFILE`: 프로필 이미지\n" +
                             "- `REVIEW`: 리뷰 이미지\n" +
-                            "- `PRODUCT`: 상품 이미지",
+                            "- `PRODUCT`: 상품 이미지\n" +
+                            "- `MARKET`: 마켓 대표 이미지 (160×160px 이상, 정비율 필수)",
                     required = true,
                     example = "PROFILE"
             )
@@ -156,7 +189,8 @@ public interface ImageControllerDocs {
             @Parameter(
                     description = "업로드할 이미지 파일 (Binary File)\n" +
                             "- 지원 형식: jpg, png, jpeg, gif\n" +
-                            "- 최대 크기: 10MB",
+                            "- 최대 크기: 20MB\n" +
+                            "- MARKET 타입의 경우: 최소 160×160px, 정비율(1:1) 필수",
                     required = true,
                     content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
                             schema = @Schema(type = "string", format = "binary"))

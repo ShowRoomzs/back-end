@@ -59,12 +59,12 @@ class ImageServiceTest {
                 new byte[1024]
         );
 
-        // 큰 이미지 파일 (11MB - 제한 초과)
+        // 큰 이미지 파일 (21MB - 제한 초과, 현재 제한은 20MB)
         largeImageFile = new MockMultipartFile(
                 "file",
                 "large-image.jpg",
                 "image/jpeg",
-                new byte[11 * 1024 * 1024]
+                new byte[21 * 1024 * 1024]
         );
 
         // 잘못된 형식 파일
@@ -159,7 +159,7 @@ class ImageServiceTest {
                 .satisfies(exception -> {
                     BusinessException ex = (BusinessException) exception;
                     assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.FILE_SIZE_EXCEEDED);
-                    assertThat(ex.getMessage()).isEqualTo("이미지 파일은 최대 10MB까지만 업로드 가능합니다.");
+                    assertThat(ex.getMessage()).isEqualTo("이미지 용량은 최대 20MB까지 등록 가능합니다.");
                 });
     }
 
@@ -172,7 +172,7 @@ class ImageServiceTest {
                 .satisfies(exception -> {
                     BusinessException ex = (BusinessException) exception;
                     assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.INVALID_FILE_EXTENSION);
-                    assertThat(ex.getMessage()).isEqualTo("이미지 파일(jpg, png, jpeg, gif)만 업로드 가능합니다.");
+                    assertThat(ex.getMessage()).isEqualTo("지원하지 않는 이미지 형식입니다");
                 });
     }
 

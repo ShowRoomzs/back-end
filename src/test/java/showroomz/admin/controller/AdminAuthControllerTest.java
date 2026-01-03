@@ -7,25 +7,29 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import showroomz.admin.DTO.AdminDto;
 import showroomz.admin.DTO.AdminLoginRequest;
 import showroomz.admin.DTO.AdminSignUpRequest;
 import showroomz.admin.service.AdminService;
 import showroomz.auth.DTO.RefreshTokenRequest;
 import showroomz.auth.DTO.TokenResponse;
+import showroomz.global.error.exception.GlobalExceptionHandler;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = AdminAuthController.class)
 @AutoConfigureMockMvc(addFilters = false) // Security Filter Chain 비활성화 (순수 컨트롤러 로직만 테스트)
+@Import(GlobalExceptionHandler.class) // GlobalExceptionHandler를 import하여 validation 에러 처리 활성화
 @DisplayName("AdminController 단위 테스트")
 class AdminAuthControllerTest {
 
@@ -73,34 +77,45 @@ class AdminAuthControllerTest {
     }
 
     @Test
-    @DisplayName("이메일 중복 체크 - 중복인 경우 true 반환")
-    void checkEmail_Duplicate() throws Exception {
+    @DisplayName("이메일 중복 체크 - 사용 가능한 경우")
+    void checkEmail_Available() throws Exception {
         // given
-        String email = "duplicate@test.com";
-        given(adminService.checkEmailDuplicate(email)).willReturn(true);
+        String email = "available@test.com";
+        AdminDto.CheckEmailResponse response = new AdminDto.CheckEmailResponse(true, "AVAILABLE", "사용 가능한 이메일입니다.");
+        given(adminService.checkEmailDuplicate(email)).willReturn(response);
 
         // when & then
         mockMvc.perform(get("/v1/admin/check-email")
                         .param("email", email))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(content().string("true"));
+                .andExpect(jsonPath("$.available").value(true)) // Jackson이 isAvailable을 available로 직렬화
+                .andExpect(jsonPath("$.code").value("AVAILABLE"))
+                .andExpect(jsonPath("$.message").value("사용 가능한 이메일입니다."));
+
+        verify(adminService).checkEmailDuplicate(email);
     }
 
     @Test
-    @DisplayName("마켓명 중복 체크 - 사용 가능한 경우 false 반환")
-    void checkMarketName_Available() throws Exception {
+    @DisplayName("이메일 중복 체크 - 중복인 경우")
+    void checkEmail_Duplicate() throws Exception {
         // given
-        String marketName = "newMarket";
-        given(adminService.checkMarketNameDuplicate(marketName)).willReturn(false);
+        String email = "duplicate@test.com";
+        AdminDto.CheckEmailResponse response = new AdminDto.CheckEmailResponse(false, "DUPLICATE", "이미 사용 중인 이메일입니다.");
+        given(adminService.checkEmailDuplicate(email)).willReturn(response);
 
         // when & then
-        mockMvc.perform(get("/v1/admin/check-market-name")
-                        .param("marketName", marketName))
+        mockMvc.perform(get("/v1/admin/check-email")
+                        .param("email", email))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(content().string("false"));
+                .andExpect(jsonPath("$.available").value(false)) // Jackson이 isAvailable을 available로 직렬화
+                .andExpect(jsonPath("$.code").value("DUPLICATE"))
+                .andExpect(jsonPath("$.message").value("이미 사용 중인 이메일입니다."));
+
+        verify(adminService).checkEmailDuplicate(email);
     }
+
 
     @Test
     @DisplayName("로그인 성공")
@@ -186,5 +201,179 @@ class AdminAuthControllerTest {
                 .andExpect(jsonPath("$.message").value("관리자 회원 탈퇴가 완료되었습니다."));
 
         verify(adminService).withdraw(any());
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 - 이메일 형식 오류")
+    void registerAdmin_InvalidEmail() throws Exception {
+        // given
+        AdminSignUpRequest request = new AdminSignUpRequest();
+        request.setEmail("invalid-email"); // 유효하지 않은 이메일 형식
+        request.setPassword("Password123!");
+        request.setPasswordConfirm("Password123!");
+        request.setSellerName("김담당");
+        request.setSellerContact("010-1234-5678");
+        request.setMarketName("테스트마켓");
+        request.setCsNumber("02-1234-5678");
+
+        // when & then
+        mockMvc.perform(post("/v1/admin/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        verify(adminService, never()).registerAdmin(any());
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 - 비밀번호 형식 오류")
+    void registerAdmin_InvalidPassword() throws Exception {
+        // given
+        AdminSignUpRequest request = new AdminSignUpRequest();
+        request.setEmail("admin@test.com");
+        request.setPassword("1234"); // 8자 미만, 영문/특수문자 없음
+        request.setPasswordConfirm("1234");
+        request.setSellerName("김담당");
+        request.setSellerContact("010-1234-5678");
+        request.setMarketName("테스트마켓");
+        request.setCsNumber("02-1234-5678");
+
+        // when & then
+        mockMvc.perform(post("/v1/admin/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        verify(adminService, never()).registerAdmin(any());
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 - 필수값 누락 (이메일)")
+    void registerAdmin_MissingEmail() throws Exception {
+        // given
+        AdminSignUpRequest request = new AdminSignUpRequest();
+        // email 누락
+        request.setPassword("Password123!");
+        request.setPasswordConfirm("Password123!");
+        request.setSellerName("김담당");
+        request.setSellerContact("010-1234-5678");
+        request.setMarketName("테스트마켓");
+        request.setCsNumber("02-1234-5678");
+
+        // when & then
+        mockMvc.perform(post("/v1/admin/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        verify(adminService, never()).registerAdmin(any());
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 - 연락처 형식 오류")
+    void registerAdmin_InvalidContact() throws Exception {
+        // given
+        AdminSignUpRequest request = new AdminSignUpRequest();
+        request.setEmail("admin@test.com");
+        request.setPassword("Password123!");
+        request.setPasswordConfirm("Password123!");
+        request.setSellerName("김담당");
+        request.setSellerContact("123-456-789"); // 잘못된 형식
+        request.setMarketName("테스트마켓");
+        request.setCsNumber("02-1234-5678");
+
+        // when & then
+        mockMvc.perform(post("/v1/admin/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        verify(adminService, never()).registerAdmin(any());
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 - 마켓명 형식 오류 (공백 포함)")
+    void registerAdmin_InvalidMarketName() throws Exception {
+        // given
+        AdminSignUpRequest request = new AdminSignUpRequest();
+        request.setEmail("admin@test.com");
+        request.setPassword("Password123!");
+        request.setPasswordConfirm("Password123!");
+        request.setSellerName("김담당");
+        request.setSellerContact("010-1234-5678");
+        request.setMarketName("테스트 마켓"); // 공백 포함
+        request.setCsNumber("02-1234-5678");
+
+        // when & then
+        mockMvc.perform(post("/v1/admin/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        verify(adminService, never()).registerAdmin(any());
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 - 고객센터 번호 형식 오류")
+    void registerAdmin_InvalidCsNumber() throws Exception {
+        // given
+        AdminSignUpRequest request = new AdminSignUpRequest();
+        request.setEmail("admin@test.com");
+        request.setPassword("Password123!");
+        request.setPasswordConfirm("Password123!");
+        request.setSellerName("김담당");
+        request.setSellerContact("010-1234-5678");
+        request.setMarketName("테스트마켓");
+        request.setCsNumber("12345678"); // 잘못된 형식
+
+        // when & then
+        mockMvc.perform(post("/v1/admin/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        verify(adminService, never()).registerAdmin(any());
+    }
+
+    @Test
+    @DisplayName("로그인 실패 - 이메일 누락")
+    void login_MissingEmail() throws Exception {
+        // given
+        AdminLoginRequest request = new AdminLoginRequest();
+        // email 누락
+        request.setPassword("Password123!");
+
+        // when & then
+        mockMvc.perform(post("/v1/admin/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        verify(adminService, never()).login(any());
+    }
+
+    @Test
+    @DisplayName("로그인 실패 - 비밀번호 누락")
+    void login_MissingPassword() throws Exception {
+        // given
+        AdminLoginRequest request = new AdminLoginRequest();
+        request.setEmail("admin@test.com");
+        // password 누락
+
+        // when & then
+        mockMvc.perform(post("/v1/admin/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        verify(adminService, never()).login(any());
     }
 }
