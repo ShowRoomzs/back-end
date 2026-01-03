@@ -51,8 +51,8 @@ public interface ImageControllerDocs {
                     )
             ),
             @ApiResponse(
-                    responseCode = "399",
-                    description = "입력값 오류 - Status: 400 Bad Request (일반 이미지 타입: PROFILE, REVIEW, PRODUCT)",
+                    responseCode = "400",
+                    description = "입력값 오류 - Status: 400 Bad Request (모든 이미지 타입 공통)",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
