@@ -1,6 +1,5 @@
-package showroomz.image.controller;
+package showroomz.admin.controller;
 
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -11,42 +10,26 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import showroomz.auth.exception.BusinessException;
-import showroomz.auth.token.AuthToken;
-import showroomz.auth.token.AuthTokenProvider;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.image.DTO.ImageUploadResponse;
 import showroomz.image.service.ImageService;
 import showroomz.image.type.ImageType;
-import showroomz.swaggerDocs.ImageControllerDocs;
-import showroomz.utils.HeaderUtil;
+import showroomz.swaggerDocs.AdminImageControllerDocs;
 
 @RestController
-@RequestMapping("/v1/images")
+@RequestMapping("/v1/admin/images")
 @RequiredArgsConstructor
-public class ImageController implements ImageControllerDocs {
+public class AdminImageController implements AdminImageControllerDocs {
 
     private final ImageService imageService;
-    private final AuthTokenProvider tokenProvider;
 
     @Override
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ImageUploadResponse> uploadImage(
-            HttpServletRequest request,
+    public ResponseEntity<ImageUploadResponse> uploadMarketImage(
             @RequestParam("type") String typeParam,
             @RequestParam("file") MultipartFile file) {
 
-        // 1. Authorization 헤더 검증
-        String accessToken = HeaderUtil.getAccessToken(request);
-        if (accessToken == null || accessToken.isEmpty()) {
-            throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
-        }
-
-        AuthToken authToken = tokenProvider.convertAuthToken(accessToken);
-        if (!authToken.validate()) {
-            throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
-        }
-
-        // 2. type 파라미터 검증
+        // 1. 이미지 타입 검증 (MARKET, PRODUCT 등 관리자 전용 타입만 허용)
         ImageType imageType;
         try {
             imageType = ImageType.valueOf(typeParam.toUpperCase());
@@ -54,14 +37,13 @@ public class ImageController implements ImageControllerDocs {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_TYPE);
         }
 
-        // 3. 일반 유저는 PROFILE, REVIEW만 가능하도록 제한
-        if (imageType == ImageType.MARKET || imageType == ImageType.PRODUCT) {
-            throw new BusinessException(ErrorCode.FORBIDDEN);
+        if (imageType != ImageType.MARKET && imageType != ImageType.PRODUCT) {
+            throw new BusinessException(ErrorCode.INVALID_IMAGE_TYPE);
         }
 
-        // 4. 파일 업로드 (서비스 내부에서 BusinessException 발생 가능)
+        // 2. 업로드 (Service는 기존 로직 재사용)
         ImageUploadResponse response = imageService.uploadImage(file, imageType);
-        
         return ResponseEntity.ok(response);
     }
 }
+

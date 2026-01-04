@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,19 +16,22 @@ import org.springframework.web.multipart.MultipartFile;
 import showroomz.auth.DTO.ErrorResponse;
 import showroomz.image.DTO.ImageUploadResponse;
 
-@Tag(name = "Image", description = "Image Upload API")
-public interface ImageControllerDocs {
+@Tag(name = "Admin Image", description = "관리자(판매자) 전용 이미지 업로드 API")
+public interface AdminImageControllerDocs {
 
     @Operation(
-            summary = "이미지 업로드",
-            description = "파일을 받아 S3에 업로드하고, 업로드된 이미지의 URL을 반환합니다.\n\n" +
+            summary = "관리자 전용 이미지 업로드",
+            description = "관리자(판매자)만 사용 가능한 이미지 업로드 API입니다. MARKET과 PRODUCT 타입만 업로드할 수 있습니다.\n\n" +
                     "**호출 도메인**\n" +
                     "- 개발: https://localhost:8080\n" +
                     "- 배포: https://api.showroomz.shop\n\n" +
                     "**이미지 타입별 제약사항:**\n" +
-                    "- `PROFILE`: 프로필 이미지 (최대 20MB)\n" +
-                    "- `REVIEW`: 리뷰 이미지 (최대 20MB)\n\n" +
-                    "**참고:** 일반 유저는 PROFILE, REVIEW만 사용 가능합니다. MARKET과 PRODUCT 타입은 관리자 전용이며, `/v1/admin/images` 엔드포인트를 사용해야 합니다."
+                    "- `PRODUCT`: 상품 이미지 (최대 20MB)\n" +
+                    "- `MARKET`: 마켓 대표 이미지\n" +
+                    "  - 최소 해상도: 160×160px 이상\n" +
+                    "  - 비율: 정비율(1:1)만 허용\n" +
+                    "  - 최대 크기: 20MB\n\n" +
+                    "**권한:** 관리자(판매자) 인증 필요"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -42,7 +44,7 @@ public interface ImageControllerDocs {
                                     @ExampleObject(
                                             name = "성공 시",
                                             value = "{\n" +
-                                                    "  \"imageUrl\": \"https://s3.ap-northeast-2.amazonaws.com/bucket-name/uploads/profile/uuid_filename.jpg\"\n" +
+                                                    "  \"imageUrl\": \"https://s3.ap-northeast-2.amazonaws.com/bucket-name/uploads/market/uuid_filename.jpg\"\n" +
                                                     "}"
                                     )
                             }
@@ -50,7 +52,7 @@ public interface ImageControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "입력값 오류 - Status: 400 Bad Request (모든 이미지 타입 공통)",
+                    description = "입력값 오류 - Status: 400 Bad Request",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -113,23 +115,6 @@ public interface ImageControllerDocs {
                     )
             ),
             @ApiResponse(
-                    responseCode = "401",
-                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class),
-                            examples = {
-                                    @ExampleObject(
-                                            name = "인증 실패",
-                                            value = "{\n" +
-                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
-                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
-                                                    "}"
-                                    )
-                            }
-                    )
-            ),
-            @ApiResponse(
                     responseCode = "403",
                     description = "권한 없음 - Status: 403 Forbidden",
                     content = @Content(
@@ -141,8 +126,7 @@ public interface ImageControllerDocs {
                                             value = "{\n" +
                                                     "  \"code\": \"FORBIDDEN\",\n" +
                                                     "  \"message\": \"접근 권한이 없습니다.\"\n" +
-                                                    "}",
-                                            description = "일반 유저가 MARKET 또는 PRODUCT 타입 이미지를 업로드하려고 할 때 발생합니다. 관리자는 `/v1/admin/images` 엔드포인트를 사용해야 합니다."
+                                                    "}"
                                     )
                             }
                     )
@@ -182,22 +166,14 @@ public interface ImageControllerDocs {
                     )
             )
     })
-    ResponseEntity<ImageUploadResponse> uploadImage(
-            @Parameter(
-                    name = "Authorization",
-                    description = "Bearer {access_token} 형식으로 전달",
-                    required = true,
-                    hidden = false
-            )
-            HttpServletRequest request,
-
+    ResponseEntity<ImageUploadResponse> uploadMarketImage(
             @Parameter(
                     description = "업로드할 이미지의 용도 (필수)\n" +
-                            "- `PROFILE`: 프로필 이미지\n" +
-                            "- `REVIEW`: 리뷰 이미지\n\n" +
-                            "**참고:** 일반 유저는 PROFILE, REVIEW만 사용 가능합니다. MARKET과 PRODUCT 타입은 관리자 전용이며, `/v1/admin/images` 엔드포인트를 사용해야 합니다.",
+                            "- `PRODUCT`: 상품 이미지\n" +
+                            "- `MARKET`: 마켓 대표 이미지 (160×160px 이상, 정비율 필수)\n\n" +
+                            "**참고:** 일반 유저는 PROFILE, REVIEW만 사용 가능하며, MARKET과 PRODUCT는 관리자 전용입니다.",
                     required = true,
-                    example = "PROFILE"
+                    example = "MARKET"
             )
             @RequestParam("type") String typeParam,
 
@@ -213,3 +189,4 @@ public interface ImageControllerDocs {
             @RequestParam("file") MultipartFile file
     );
 }
+
