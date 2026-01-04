@@ -26,7 +26,6 @@ public interface UserControllerDocs {
             description = "프로필 카드에 표시될 현재 로그인한 사용자의 정보(닉네임, 이메일, 프로필 이미지 등)를 조회합니다.\n\n" +
                     "**참고사항**\n" +
                     "- 프로필 사진이 없는 경우 `profileImageUrl`은 `null`로 반환됩니다.\n" +
-                    "- `followerCount`: 나를 팔로우하는 유저 수\n" +
                     "- `followingCount`: 내가 팔로우하는 유저(또는 마켓) 수"
     )
     @ApiResponses(value = {
@@ -51,7 +50,6 @@ public interface UserControllerDocs {
                                                     "  \"createdAt\": \"2025-10-31T10:00:00\",\n" +
                                                     "  \"modifiedAt\": \"2025-10-31T10:00:00\",\n" +
                                                     "  \"marketingAgree\": true,\n" +
-                                                    "  \"followerCount\": 0,\n" +
                                                     "  \"followingCount\": 0\n" +
                                                     "}"
                                     ),
@@ -69,7 +67,6 @@ public interface UserControllerDocs {
                                                     "  \"createdAt\": \"2025-10-31T10:00:00\",\n" +
                                                     "  \"modifiedAt\": \"2025-10-31T10:00:00\",\n" +
                                                     "  \"marketingAgree\": true,\n" +
-                                                    "  \"followerCount\": 0,\n" +
                                                     "  \"followingCount\": 0\n" +
                                                     "}"
                                     )
@@ -238,7 +235,6 @@ public interface UserControllerDocs {
                                                     "  \"createdAt\": \"2025-10-31T10:00:00\",\n" +
                                                     "  \"modifiedAt\": \"2025-10-31T10:00:00\",\n" +
                                                     "  \"marketingAgree\": true,\n" +
-                                                    "  \"followerCount\": 0,\n" +
                                                     "  \"followingCount\": 0\n" +
                                                     "}"
                                     )
