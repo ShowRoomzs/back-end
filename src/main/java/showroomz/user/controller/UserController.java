@@ -62,7 +62,6 @@ public class UserController implements UserControllerDocs {
                 user.getCreatedAt(),
                 user.getModifiedAt(),
                 user.isMarketingAgree(),
-                0L, // followerCount (기본값)
                 0L  // followingCount (기본값)
         );
 
@@ -184,7 +183,6 @@ public class UserController implements UserControllerDocs {
                 updatedUser.getCreatedAt(),
                 updatedUser.getModifiedAt(),
                 updatedUser.isMarketingAgree(),
-                0L, // followerCount (기본값)
                 0L  // followingCount (기본값)
         );
 

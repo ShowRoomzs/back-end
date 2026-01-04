@@ -1,4 +1,4 @@
-package showroomz.Market.controller;
+package showroomz.market.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -6,10 +6,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
-import showroomz.Market.DTO.MarketDto;
-import showroomz.Market.service.MarketService;
+
 import showroomz.auth.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.market.DTO.MarketDto;
+import showroomz.market.service.MarketService;
 import showroomz.swaggerDocs.MarketControllerDocs;
 
 @RestController

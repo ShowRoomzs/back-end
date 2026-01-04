@@ -1,4 +1,4 @@
-package showroomz.Market.controller;
+package showroomz.market.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,9 +16,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.test.web.servlet.MockMvc;
 
-import showroomz.Market.DTO.MarketDto;
-import showroomz.Market.service.MarketService;
 import showroomz.global.error.exception.GlobalExceptionHandler;
+import showroomz.market.DTO.MarketDto;
+import showroomz.market.controller.MarketController;
+import showroomz.market.service.MarketService;
 
 import java.util.ArrayList;
 import java.util.List;

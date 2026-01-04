@@ -11,8 +11,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import showroomz.Market.DTO.MarketDto;
+
 import showroomz.auth.DTO.ErrorResponse;
+import showroomz.market.DTO.MarketDto;
 
 @Tag(name = "Super Admin", description = "슈퍼 관리자 API")
 public interface SuperAdminControllerDocs {
