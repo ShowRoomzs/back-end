@@ -113,9 +113,6 @@ public interface UserControllerDocs {
     @Operation(
             summary = "닉네임 유효성 검사",
             description = "닉네임 유효성 검사를 수행합니다.\n\n" +
-                    "**호출 도메인**\n" +
-                    "- 개발: https://localhost:8080\n" +
-                    "- 배포: https://api.showroomz.shop\n\n" +
                     "**응답 코드 (code)**\n" +
                     "- `AVAILABLE`: 사용 가능한 닉네임 (isAvailable: true)\n" +
                     "- `INVALID_FORMAT`: 형식 오류 - 이모티콘, 특수문자 등 (isAvailable: false)\n" +
@@ -208,10 +205,7 @@ public interface UserControllerDocs {
 
     @Operation(
             summary = "현재 로그인한 사용자 프로필 정보 수정",
-            description = "현재 로그인한 사용자의 프로필 정보(닉네임, 프로필 이미지 등)를 수정합니다.\n\n" +
-                    "**호출 도메인**\n" +
-                    "- 개발: https://localhost:8080\n" +
-                    "- 배포: https://api.showroomz.shop"
+            description = "현재 로그인한 사용자의 프로필 정보(닉네임, 프로필 이미지 등)를 수정합니다."
     )
     @ApiResponses(value = {
             @ApiResponse(
