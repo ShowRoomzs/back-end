@@ -23,13 +23,9 @@ public interface ImageControllerDocs {
     @Operation(
             summary = "이미지 업로드",
             description = "파일을 받아 S3에 업로드하고, 업로드된 이미지의 URL을 반환합니다.\n\n" +
-                    "**호출 도메인**\n" +
-                    "- 개발: https://localhost:8080\n" +
-                    "- 배포: https://api.showroomz.shop\n\n" +
                     "**이미지 타입별 제약사항:**\n" +
                     "- `PROFILE`: 프로필 이미지 (최대 20MB)\n" +
-                    "- `REVIEW`: 리뷰 이미지 (최대 20MB)\n\n" +
-                    "**참고:** 일반 유저는 PROFILE, REVIEW만 사용 가능합니다. MARKET과 PRODUCT 타입은 관리자 전용이며, `/v1/admin/images` 엔드포인트를 사용해야 합니다."
+                    "- `REVIEW`: 리뷰 이미지 (최대 20MB)"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -115,9 +111,8 @@ public interface ImageControllerDocs {
                                             value = "{\n" +
                                                     "  \"code\": \"FORBIDDEN\",\n" +
                                                     "  \"message\": \"접근 권한이 없습니다.\"\n" +
-                                                    "}",
-                                            description = "일반 유저가 MARKET 또는 PRODUCT 타입 이미지를 업로드하려고 할 때 발생합니다. 관리자는 `/v1/admin/images` 엔드포인트를 사용해야 합니다."
-                                    )
+                                                    "}"
+                                            )
                             }
                     )
             ),
@@ -168,8 +163,7 @@ public interface ImageControllerDocs {
             @Parameter(
                     description = "업로드할 이미지의 용도 (필수)\n" +
                             "- `PROFILE`: 프로필 이미지\n" +
-                            "- `REVIEW`: 리뷰 이미지\n\n" +
-                            "**참고:** 일반 유저는 PROFILE, REVIEW만 사용 가능합니다. MARKET과 PRODUCT 타입은 관리자 전용이며, `/v1/admin/images` 엔드포인트를 사용해야 합니다.",
+                            "- `REVIEW`: 리뷰 이미지",
                     required = true,
                     example = "PROFILE"
             )

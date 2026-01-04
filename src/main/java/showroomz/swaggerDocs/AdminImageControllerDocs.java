@@ -22,9 +22,7 @@ public interface AdminImageControllerDocs {
     @Operation(
             summary = "관리자 전용 이미지 업로드",
             description = "관리자(판매자)만 사용 가능한 이미지 업로드 API입니다. MARKET과 PRODUCT 타입만 업로드할 수 있습니다.\n\n" +
-                    "**호출 도메인**\n" +
-                    "- 개발: https://localhost:8080\n" +
-                    "- 배포: https://api.showroomz.shop\n\n" +
+            
                     "**이미지 타입별 제약사항:**\n" +
                     "- `PRODUCT`: 상품 이미지 (최대 20MB)\n" +
                     "- `MARKET`: 마켓 대표 이미지\n" +
@@ -170,8 +168,7 @@ public interface AdminImageControllerDocs {
             @Parameter(
                     description = "업로드할 이미지의 용도 (필수)\n" +
                             "- `PRODUCT`: 상품 이미지\n" +
-                            "- `MARKET`: 마켓 대표 이미지 (160×160px 이상, 정비율 필수)\n\n" +
-                            "**참고:** 일반 유저는 PROFILE, REVIEW만 사용 가능하며, MARKET과 PRODUCT는 관리자 전용입니다.",
+                            "- `MARKET`: 마켓 대표 이미지 (160×160px 이상, 정비율 필수)\n\n",
                     required = true,
                     example = "MARKET"
             )
