@@ -9,9 +9,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import showroomz.Market.entity.Market;
-import showroomz.Market.repository.MarketRepository;
-import showroomz.Market.service.MarketService;
+
 import showroomz.admin.DTO.AdminLoginRequest;
 import showroomz.admin.DTO.AdminSignUpRequest;
 import showroomz.admin.entity.Admin;
@@ -26,6 +24,9 @@ import showroomz.auth.token.AuthToken;
 import showroomz.auth.token.AuthTokenProvider;
 import showroomz.config.properties.AppProperties;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.market.entity.Market;
+import showroomz.market.repository.MarketRepository;
+import showroomz.market.service.MarketService;
 
 import java.time.LocalDateTime;
 import java.util.Date;

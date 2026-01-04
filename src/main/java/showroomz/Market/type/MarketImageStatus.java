@@ -1,4 +1,4 @@
-package showroomz.Market.type;
+package showroomz.market.type;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

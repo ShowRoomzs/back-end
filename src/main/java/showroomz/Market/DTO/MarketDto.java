@@ -1,4 +1,4 @@
-package showroomz.Market.DTO;
+package showroomz.market.DTO;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;

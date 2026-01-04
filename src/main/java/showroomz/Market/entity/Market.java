@@ -1,11 +1,11 @@
-package showroomz.Market.entity;
+package showroomz.market.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import showroomz.admin.entity.Admin;
-import showroomz.Market.type.MarketImageStatus;
+import showroomz.market.type.MarketImageStatus;
 
 @Entity
 @Getter
