@@ -22,14 +22,14 @@ public interface AdminImageControllerDocs {
     @Operation(
             summary = "관리자 전용 이미지 업로드",
             description = "관리자(판매자)만 사용 가능한 이미지 업로드 API입니다. MARKET과 PRODUCT 타입만 업로드할 수 있습니다.\n\n" +
-            
                     "**이미지 타입별 제약사항:**\n" +
                     "- `PRODUCT`: 상품 이미지 (최대 20MB)\n" +
                     "- `MARKET`: 마켓 대표 이미지\n" +
                     "  - 최소 해상도: 160×160px 이상\n" +
                     "  - 비율: 정비율(1:1)만 허용\n" +
                     "  - 최대 크기: 20MB\n\n" +
-                    "**권한:** 관리자(판매자) 인증 필요"
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(
