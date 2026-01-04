@@ -231,15 +231,11 @@ class ImageControllerTest {
     }
 
     @Test
-    @DisplayName("PRODUCT 타입 이미지 업로드 성공")
-    void PRODUCT_타입_이미지_업로드_성공() throws Exception {
+    @DisplayName("PRODUCT 타입 이미지 업로드 권한 없음 - 403 에러")
+    void PRODUCT_타입_이미지_업로드_권한_없음_403_에러() throws Exception {
         // given
         String accessToken = "valid_access_token";
-        String imageUrl = "https://d1234567890.cloudfront.net/uploads/product/uuid-product.jpg";
-
         when(tokenProvider.convertAuthToken(accessToken)).thenReturn(validAuthToken);
-        when(imageService.uploadImage(any(), any(ImageType.class)))
-                .thenReturn(new ImageUploadResponse(imageUrl));
 
         // when & then
         mockMvc.perform(multipart("/v1/images")
@@ -247,8 +243,27 @@ class ImageControllerTest {
                         .param("type", "PRODUCT")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.MULTIPART_FORM_DATA))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.imageUrl").value(imageUrl));
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.message").value("접근 권한이 없습니다."));
+    }
+
+    @Test
+    @DisplayName("MARKET 타입 이미지 업로드 권한 없음 - 403 에러")
+    void MARKET_타입_이미지_업로드_권한_없음_403_에러() throws Exception {
+        // given
+        String accessToken = "valid_access_token";
+        when(tokenProvider.convertAuthToken(accessToken)).thenReturn(validAuthToken);
+
+        // when & then
+        mockMvc.perform(multipart("/v1/images")
+                        .file(validImageFile)
+                        .param("type", "MARKET")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.message").value("접근 권한이 없습니다."));
     }
 
     @Test
