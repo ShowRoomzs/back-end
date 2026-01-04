@@ -25,7 +25,9 @@ public interface ImageControllerDocs {
             description = "파일을 받아 S3에 업로드하고, 업로드된 이미지의 URL을 반환합니다.\n\n" +
                     "**이미지 타입별 제약사항:**\n" +
                     "- `PROFILE`: 프로필 이미지 (최대 20MB)\n" +
-                    "- `REVIEW`: 리뷰 이미지 (최대 20MB)"
+                    "- `REVIEW`: 리뷰 이미지 (최대 20MB)\n\n" +
+                    "**권한:** USER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(

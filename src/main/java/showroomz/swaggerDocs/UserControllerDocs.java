@@ -26,7 +26,9 @@ public interface UserControllerDocs {
             description = "프로필 카드에 표시될 현재 로그인한 사용자의 정보(닉네임, 이메일, 프로필 이미지 등)를 조회합니다.\n\n" +
                     "**참고사항**\n" +
                     "- 프로필 사진이 없는 경우 `profileImageUrl`은 `null`로 반환됩니다.\n" +
-                    "- `followingCount`: 내가 팔로우하는 유저(또는 마켓) 수"
+                    "- `followingCount`: 내가 팔로우하는 유저(또는 마켓) 수\n\n" +
+                    "**권한:** USER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -205,7 +207,9 @@ public interface UserControllerDocs {
 
     @Operation(
             summary = "현재 로그인한 사용자 프로필 정보 수정",
-            description = "현재 로그인한 사용자의 프로필 정보(닉네임, 프로필 이미지 등)를 수정합니다."
+            description = "현재 로그인한 사용자의 프로필 정보(닉네임, 프로필 이미지 등)를 수정합니다.\n\n" +
+                    "**권한:** USER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(
