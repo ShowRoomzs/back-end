@@ -51,7 +51,7 @@ public interface AdminImageControllerDocs {
                     )
             ),
             @ApiResponse(
-                    responseCode = "400",
+                    responseCode = "399",
                     description = "입력값 오류 - Status: 400 Bad Request",
                     content = @Content(
                             mediaType = "application/json",

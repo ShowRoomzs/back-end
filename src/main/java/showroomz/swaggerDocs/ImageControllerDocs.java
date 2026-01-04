@@ -59,7 +59,7 @@ public interface ImageControllerDocs {
                                             name = "유효하지 않은 이미지 타입",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, PRODUCT, MARKET)\"\n" +
+                                                    "  \"message\": \"유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW)\"\n" +
                                                     "}"
                                     ),
                                     @ExampleObject(
@@ -82,32 +82,6 @@ public interface ImageControllerDocs {
                                                     "  \"code\": \"INVALID_FILE_TYPE\",\n" +
                                                     "  \"message\": \"지원하지 않는 이미지 형식입니다\"\n" +
                                                     "}"
-                                    )
-                            }
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "마켓 이미지 업로드 오류 - Status: 400 Bad Request (MARKET 타입 전용)",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class),
-                            examples = {
-                                    @ExampleObject(
-                                            name = "마켓 이미지 해상도 부족",
-                                            value = "{\n" +
-                                                    "  \"code\": \"IMAGE_RESOLUTION_TOO_LOW\",\n" +
-                                                    "  \"message\": \"이미지는 최소 160×160px 이상이어야 합니다.\"\n" +
-                                                    "}",
-                                            description = "MARKET 타입 이미지 업로드 시, 이미지 해상도가 160×160px 미만인 경우 발생합니다."
-                                    ),
-                                    @ExampleObject(
-                                            name = "마켓 이미지 비율 오류",
-                                            value = "{\n" +
-                                                    "  \"code\": \"IMAGE_RATIO_NOT_SQUARE\",\n" +
-                                                    "  \"message\": \"정비율의 이미지만 업로드 가능합니다.\"\n" +
-                                                    "}",
-                                            description = "MARKET 타입 이미지 업로드 시, 이미지가 정비율(1:1)이 아닌 경우 발생합니다."
                                     )
                             }
                     )
@@ -204,8 +178,7 @@ public interface ImageControllerDocs {
             @Parameter(
                     description = "업로드할 이미지 파일 (Binary File)\n" +
                             "- 지원 형식: jpg, png, jpeg, gif\n" +
-                            "- 최대 크기: 20MB\n" +
-                            "- MARKET 타입의 경우: 최소 160×160px, 정비율(1:1) 필수",
+                            "- 최대 크기: 20MB",
                     required = true,
                     content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
                             schema = @Schema(type = "string", format = "binary"))
