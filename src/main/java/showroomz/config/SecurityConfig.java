@@ -68,8 +68,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
                 .requestMatchers(AUTH_WHITELIST).permitAll()
-                .requestMatchers("/v1/admin/markets/*/image-status").hasAnyAuthority(RoleType.SUPER_ADMIN.getCode())  // 슈퍼 어드민 API는 SUPER_ADMIN 권한 필요
+                .requestMatchers("/v1/admin/markets/*/image-status", "/v1/admin/categories").hasAnyAuthority(RoleType.SUPER_ADMIN.getCode())  // 슈퍼 어드민 API는 SUPER_ADMIN 권한 필요
                 .requestMatchers("/v1/markets/**").hasAnyAuthority(RoleType.ADMIN.getCode())  // 마켓 관련 API는 ADMIN 권한 필요
+                .requestMatchers("/api/v1/backstage/**").hasAnyAuthority(RoleType.ADMIN.getCode())  // 백스테이지 API는 ADMIN 권한 필요
                 .requestMatchers("/api/*/admin/**").hasAnyAuthority(RoleType.ADMIN.getCode())
                 .requestMatchers("/api/**").hasAnyAuthority(RoleType.USER.getCode())
                 .anyRequest().authenticated()

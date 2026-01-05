@@ -69,7 +69,16 @@ public enum ErrorCode {
     
     // 마켓 이미지 전용 검증 에러
     IMAGE_RESOLUTION_TOO_LOW(HttpStatus.BAD_REQUEST, "IMAGE_RESOLUTION_TOO_LOW", "이미지는 최소 160×160px 이상이어야 합니다."),
-    IMAGE_RATIO_NOT_SQUARE(HttpStatus.BAD_REQUEST, "IMAGE_RATIO_NOT_SQUARE", "정비율의 이미지만 업로드 가능합니다.");
+    IMAGE_RATIO_NOT_SQUARE(HttpStatus.BAD_REQUEST, "IMAGE_RATIO_NOT_SQUARE", "정비율의 이미지만 업로드 가능합니다."),
+
+    /* * 8. 상품 (Product)
+     */
+    CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND", "존재하지 않는 카테고리입니다."),
+    BRAND_NOT_FOUND(HttpStatus.NOT_FOUND, "BRAND_NOT_FOUND", "존재하지 않는 브랜드입니다."),
+    PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", "존재하지 않는 상품입니다."),
+    INVALID_VARIANT_OPTIONS(HttpStatus.BAD_REQUEST, "INVALID_VARIANT_OPTIONS", "옵션 조합이 올바르지 않습니다."),
+    DUPLICATE_CATEGORY_NAME(HttpStatus.BAD_REQUEST, "DUPLICATE_CATEGORY_NAME", "이미 존재하는 카테고리명입니다."),
+    CATEGORY_IN_USE(HttpStatus.BAD_REQUEST, "CATEGORY_IN_USE", "사용 중인 카테고리는 삭제할 수 없습니다.");
     
     private final HttpStatus status;
     private final String code;
