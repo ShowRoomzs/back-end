@@ -20,10 +20,10 @@ public interface ProductControllerDocs {
             summary = "상품 등록",
             description = "백스테이지 관리자가 새로운 상품을 등록합니다. 카테고리, 가격, 옵션 조합(재고/판매가), 이미지, 상세 설명 및 공시 정보를 모두 포함합니다.\n\n" +
                     "**필수 항목:**\n" +
-                    "- category_name: 카테고리명 (예: \"옷\", \"신발\", \"뷰티\", \"푸드\")\n" +
+                    "- categoryId: 카테고리 ID (예: 1, 2, 3)\n" +
                     "- name: 상품명\n" +
-                    "- regular_price: 판매가 (할인 전)\n" +
-                    "- sale_price: 할인 판매가 (최종가)\n" +
+                    "- regularPrice: 판매가 (할인 전)\n" +
+                    "- salePrice: 할인 판매가 (최종가)\n" +
                     "- variants: 옵션 목록 (조합된 결과)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
@@ -39,8 +39,8 @@ public interface ProductControllerDocs {
                                     @ExampleObject(
                                             name = "성공 예시",
                                             value = "{\n" +
-                                                    "  \"product_id\": 1,\n" +
-                                                    "  \"product_number\": \"SRZ-20251228-001\",\n" +
+                                                    "  \"productId\": 1,\n" +
+                                                    "  \"productNumber\": \"SRZ-20251228-001\",\n" +
                                                     "  \"message\": \"상품이 성공적으로 등록되었습니다.\"\n" +
                                                     "}",
                                             description = "상품이 성공적으로 등록되었습니다."
@@ -124,36 +124,36 @@ public interface ProductControllerDocs {
                             @ExampleObject(
                                     name = "요청 예시",
                                     value = "{\n" +
-                                            "  \"category_name\": \"옷\",\n" +
+                                            "  \"categoryId\": 1,\n" +
                                             "  \"name\": \"프리미엄 린넨 셔츠\",\n" +
-                                            "  \"seller_product_code\": \"PROD-001\",\n" +
-                                            "  \"purchase_price\": 30000,\n" +
-                                            "  \"regular_price\": 59000,\n" +
-                                            "  \"sale_price\": 49000,\n" +
-                                            "  \"is_discount\": true,\n" +
-                                            "  \"representative_image_url\": \"https://example.com/image.jpg\",\n" +
-                                            "  \"cover_image_urls\": [\n" +
+                                            "  \"sellerProductCode\": \"PROD-001\",\n" +
+                                            "  \"purchasePrice\": 30000,\n" +
+                                            "  \"regularPrice\": 59000,\n" +
+                                            "  \"salePrice\": 49000,\n" +
+                                            "  \"isDiscount\": true,\n" +
+                                            "  \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
+                                            "  \"coverImageUrls\": [\n" +
                                             "    \"https://example.com/image1.jpg\",\n" +
                                             "    \"https://example.com/image2.jpg\"\n" +
                                             "  ],\n" +
                                             "  \"description\": \"<p>상품 상세 설명</p>\",\n" +
                                             "  \"tags\": [\"신상\", \"할인\", \"인기\"],\n" +
-                                            "  \"delivery_type\": \"STANDARD\",\n" +
-                                            "  \"delivery_fee\": 3000,\n" +
-                                            "  \"delivery_free_threshold\": 50000,\n" +
-                                            "  \"delivery_estimated_days\": 3,\n" +
-                                            "  \"product_notice\": {\n" +
+                                            "  \"deliveryType\": \"STANDARD\",\n" +
+                                            "  \"deliveryFee\": 3000,\n" +
+                                            "  \"deliveryFreeThreshold\": 50000,\n" +
+                                            "  \"deliveryEstimatedDays\": 3,\n" +
+                                            "  \"productNotice\": {\n" +
                                             "    \"origin\": \"제품 상세 참고\",\n" +
                                             "    \"material\": \"제품 상세 참고\",\n" +
                                             "    \"color\": \"제품 상세 참고\",\n" +
                                             "    \"size\": \"제품 상세 참고\",\n" +
                                             "    \"manufacturer\": \"제품 상세 참고\",\n" +
-                                            "    \"washing_method\": \"제품 상세 참고\",\n" +
-                                            "    \"manufacture_date\": \"제품 상세 참고\",\n" +
-                                            "    \"as_info\": \"제품 상세 참고\",\n" +
-                                            "    \"quality_assurance\": \"제품 상세 참고\"\n" +
+                                            "    \"washingMethod\": \"제품 상세 참고\",\n" +
+                                            "    \"manufactureDate\": \"제품 상세 참고\",\n" +
+                                            "    \"asInfo\": \"제품 상세 참고\",\n" +
+                                            "    \"qualityAssurance\": \"제품 상세 참고\"\n" +
                                             "  },\n" +
-                                            "  \"option_groups\": [\n" +
+                                            "  \"optionGroups\": [\n" +
                                             "    {\n" +
                                             "      \"name\": \"사이즈\",\n" +
                                             "      \"options\": [\"Free\"]\n" +
@@ -161,11 +161,11 @@ public interface ProductControllerDocs {
                                             "  ],\n" +
                                             "  \"variants\": [\n" +
                                             "    {\n" +
-                                            "      \"option_names\": [\"Free\"],\n" +
-                                            "      \"sale_price\": 49000,\n" +
+                                            "      \"optionNames\": [\"Free\"],\n" +
+                                            "      \"salePrice\": 49000,\n" +
                                             "      \"stock\": 999,\n" +
-                                            "      \"is_display\": true,\n" +
-                                            "      \"is_representative\": true\n" +
+                                            "      \"isDisplay\": true,\n" +
+                                            "      \"isRepresentative\": true\n" +
                                             "    }\n" +
                                             "  ]\n" +
                                             "}"
