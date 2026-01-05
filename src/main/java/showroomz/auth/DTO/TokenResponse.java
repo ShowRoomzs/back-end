@@ -1,7 +1,6 @@
 package showroomz.auth.DTO;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -18,9 +17,10 @@ public class TokenResponse {
     private Long refreshTokenExpiresIn;
     private Boolean isNewMember;
     private String registerToken; // 신규 회원일 때만 제공 (5분 유효)
+    private String role; // 권한 정보 (예: "ADMIN", "SUPER_ADMIN")
 
     // 기존 회원용 생성자
-    public TokenResponse(String accessToken, String refreshToken, long accessTokenExpiresIn, long refreshTokenExpiresIn, boolean isNewMember) {
+    public TokenResponse(String accessToken, String refreshToken, long accessTokenExpiresIn, long refreshTokenExpiresIn, boolean isNewMember, String role) {
         this.tokenType = "Bearer";
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
@@ -28,6 +28,7 @@ public class TokenResponse {
         this.refreshTokenExpiresIn = refreshTokenExpiresIn;
         this.isNewMember = isNewMember;
         this.registerToken = null;
+        this.role = role;
     }
 
     // 신규 회원용 생성자
@@ -39,5 +40,6 @@ public class TokenResponse {
         this.refreshToken = null;
         this.accessTokenExpiresIn = null;
         this.refreshTokenExpiresIn = null;
+        this.role = "GUEST"; // 필요하다면 기본값 설정
     }
 }

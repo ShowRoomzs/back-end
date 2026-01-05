@@ -265,6 +265,7 @@ public class AuthController implements AuthControllerDocs {
         response.setRefreshToken(refreshTokenStr);
         response.setAccessTokenExpiresIn(accessTokenExpiresInSeconds);
         response.setRefreshTokenExpiresIn(refreshTokenExpiresInSeconds);
+        response.setRole(roleType.toString()); // 권한 정보 추가
         // isNewMember는 null로 유지하여 응답에서 제외
         
         return ResponseEntity.ok(response);

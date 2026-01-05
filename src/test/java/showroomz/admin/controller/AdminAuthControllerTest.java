@@ -56,7 +56,7 @@ class AdminAuthControllerTest {
         request.setCsNumber("02-1234-5678");
 
         TokenResponse tokenResponse = new TokenResponse(
-                "accessToken", "refreshToken", 3600L, 1209600L, false
+                "accessToken", "refreshToken", 3600L, 1209600L, false, "ADMIN"
         );
 
         given(adminService.registerAdmin(any(AdminSignUpRequest.class))).willReturn(tokenResponse);
@@ -126,7 +126,7 @@ class AdminAuthControllerTest {
         request.setPassword("Password123!");
 
         TokenResponse tokenResponse = new TokenResponse(
-                "accessToken", "refreshToken", 3600L, 1209600L, false
+                "accessToken", "refreshToken", 3600L, 1209600L, false, "ADMIN"
         );
 
         given(adminService.login(any(AdminLoginRequest.class))).willReturn(tokenResponse);
@@ -149,7 +149,7 @@ class AdminAuthControllerTest {
         request.setRefreshToken("validRefreshToken");
 
         TokenResponse tokenResponse = new TokenResponse(
-                "newAccessToken", "validRefreshToken", 3600L, 1209600L, false
+                "newAccessToken", "validRefreshToken", 3600L, 1209600L, false, "ADMIN"
         );
 
         given(adminService.refreshToken(any(RefreshTokenRequest.class))).willReturn(tokenResponse);

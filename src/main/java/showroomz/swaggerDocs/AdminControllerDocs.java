@@ -53,7 +53,8 @@ public interface AdminControllerDocs {
                                                     "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4gZm9yIGFkbWlu...\",\n" +
                                                     "  \"accessTokenExpiresIn\": 3600,\n" +
                                                     "  \"refreshTokenExpiresIn\": 1209600,\n" +
-                                                    "  \"isNewMember\": false\n" +
+                                                    "  \"isNewMember\": false,\n" +
+                                                    "  \"role\": \"ADMIN\"\n" +
                                                     "}"
                                     )
                             }
@@ -253,7 +254,8 @@ public interface AdminControllerDocs {
             description = "이메일과 비밀번호로 관리자 계정에 로그인합니다.\n\n" +
                     "**응답:**\n" +
                     "- Access Token: 관리자 API 접근에 사용\n" +
-                    "- Refresh Token: Access Token 갱신에 사용"
+                    "- Refresh Token: Access Token 갱신에 사용" +
+                    "- role: 관리자 권한 (ADMIN, SUPER_ADMIN)"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -271,7 +273,8 @@ public interface AdminControllerDocs {
                                                     "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...\",\n" +
                                                     "  \"accessTokenExpiresIn\": 3600,\n" +
                                                     "  \"refreshTokenExpiresIn\": 1209600,\n" +
-                                                    "  \"isNewMember\": false\n" +
+                                                    "  \"isNewMember\": false,\n" +
+                                                    "  \"role\": \"ADMIN\"\n" +
                                                     "}"
                                     )
                             }
@@ -364,7 +367,8 @@ public interface AdminControllerDocs {
                                                     "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ...\",\n" +
                                                     "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...\",\n" +
                                                     "  \"accessTokenExpiresIn\": 3600,\n" +
-                                                    "  \"refreshTokenExpiresIn\": 1209600\n" +
+                                                    "  \"refreshTokenExpiresIn\": 1209600,\n" +
+                                                    "  \"role\": \"ADMIN\"\n" +
                                                     "}"
                                     )
                             }

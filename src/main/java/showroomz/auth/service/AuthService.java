@@ -67,7 +67,8 @@ public class AuthService {
                 refreshToken.getToken(),
                 accessTokenExpiresInSeconds,
                 refreshTokenExpiresInSeconds,
-                isNewMember
+                isNewMember,
+                roleType.toString() // 권한 정보 추가
         );
     }
 }

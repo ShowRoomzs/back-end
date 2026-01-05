@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import showroomz.auth.DTO.*;
 
 import org.springframework.http.ResponseEntity;
@@ -23,7 +22,8 @@ public interface AuthControllerDocs {
     @Operation(
             summary = "소셜 로그인",
             description = "카카오, 네이버, 구글, 애플 소셜 로그인을 처리합니다. 신규 회원인 경우 registerToken을 반환하고, 기존 회원인 경우 accessToken과 refreshToken을 반환합니다.\n\n" +
-                    "**registerToken 유효기간:** 5분 (회원가입 완료에 사용)"
+                    "**registerToken 유효기간:** 5분 (회원가입 완료에 사용)\n" +
+                    "**role:** 사용자 권한 (USER, GUEST)"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -41,7 +41,8 @@ public interface AuthControllerDocs {
                                                     "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...\",\n" +
                                                     "  \"accessTokenExpiresIn\": 3600,\n" +
                                                     "  \"refreshTokenExpiresIn\": 1209600,\n" +
-                                                    "  \"isNewMember\": false\n" +
+                                                    "  \"isNewMember\": false,\n" +
+                                                    "  \"role\": \"USER\"\n" +
                                                     "}"
                                     )
                             }
@@ -58,7 +59,8 @@ public interface AuthControllerDocs {
                                             name = "신규 회원일 시",
                                             value = "{\n" +
                                                     "  \"isNewMember\": true,\n" +
-                                                    "  \"registerToken\": \"eyJhbGciOiJIUzI1Ni...\"\n" +
+                                                    "  \"registerToken\": \"eyJhbGciOiJIUzI1Ni...\",\n" +
+                                                    "  \"role\": \"GUEST\"\n" +
                                                     "}",
                                             description = "registerToken은 5분간 유효하며, 회원가입 완료에 사용됩니다."
                                     )
@@ -224,7 +226,8 @@ public interface AuthControllerDocs {
                                                     "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrYWthb18xMjM0NTY3ODkwIiwicm9sZSI6IlJPTEVfVVNFUiIsImV4cCI6MTc3MjAwMDAwMH0.example\",\n" +
                                                     "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4gZXhhbXBsZQ\",\n" +
                                                     "  \"accessTokenExpiresIn\": 3600,\n" +
-                                                    "  \"refreshTokenExpiresIn\": 1209600\n" +
+                                                    "  \"refreshTokenExpiresIn\": 1209600,\n" +
+                                                    "  \"role\": \"USER\"\n" +
                                                     "}"
                                     )
                             }
@@ -377,7 +380,8 @@ public interface AuthControllerDocs {
                                                     "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ...\",\n" +
                                                     "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...\",\n" +
                                                     "  \"accessTokenExpiresIn\": 3600,\n" +
-                                                    "  \"refreshTokenExpiresIn\": 1209600\n" +
+                                                    "  \"refreshTokenExpiresIn\": 1209600,\n" +
+                                                    "  \"role\": \"USER\"\n" +
                                                     "}"
                                     )
                             }
