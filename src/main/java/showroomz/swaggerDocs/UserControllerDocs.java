@@ -26,8 +26,9 @@ public interface UserControllerDocs {
             description = "프로필 카드에 표시될 현재 로그인한 사용자의 정보(닉네임, 이메일, 프로필 이미지 등)를 조회합니다.\n\n" +
                     "**참고사항**\n" +
                     "- 프로필 사진이 없는 경우 `profileImageUrl`은 `null`로 반환됩니다.\n" +
-                    "- `followerCount`: 나를 팔로우하는 유저 수\n" +
-                    "- `followingCount`: 내가 팔로우하는 유저(또는 마켓) 수"
+                    "- `followingCount`: 내가 팔로우하는 유저(또는 마켓) 수\n\n" +
+                    "**권한:** USER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -51,7 +52,6 @@ public interface UserControllerDocs {
                                                     "  \"createdAt\": \"2025-10-31T10:00:00\",\n" +
                                                     "  \"modifiedAt\": \"2025-10-31T10:00:00\",\n" +
                                                     "  \"marketingAgree\": true,\n" +
-                                                    "  \"followerCount\": 0,\n" +
                                                     "  \"followingCount\": 0\n" +
                                                     "}"
                                     ),
@@ -69,7 +69,6 @@ public interface UserControllerDocs {
                                                     "  \"createdAt\": \"2025-10-31T10:00:00\",\n" +
                                                     "  \"modifiedAt\": \"2025-10-31T10:00:00\",\n" +
                                                     "  \"marketingAgree\": true,\n" +
-                                                    "  \"followerCount\": 0,\n" +
                                                     "  \"followingCount\": 0\n" +
                                                     "}"
                                     )
@@ -116,9 +115,6 @@ public interface UserControllerDocs {
     @Operation(
             summary = "닉네임 유효성 검사",
             description = "닉네임 유효성 검사를 수행합니다.\n\n" +
-                    "**호출 도메인**\n" +
-                    "- 개발: https://localhost:8080\n" +
-                    "- 배포: https://api.showroomz.shop\n\n" +
                     "**응답 코드 (code)**\n" +
                     "- `AVAILABLE`: 사용 가능한 닉네임 (isAvailable: true)\n" +
                     "- `INVALID_FORMAT`: 형식 오류 - 이모티콘, 특수문자 등 (isAvailable: false)\n" +
@@ -212,9 +208,8 @@ public interface UserControllerDocs {
     @Operation(
             summary = "현재 로그인한 사용자 프로필 정보 수정",
             description = "현재 로그인한 사용자의 프로필 정보(닉네임, 프로필 이미지 등)를 수정합니다.\n\n" +
-                    "**호출 도메인**\n" +
-                    "- 개발: https://localhost:8080\n" +
-                    "- 배포: https://api.showroomz.shop"
+                    "**권한:** USER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -238,7 +233,6 @@ public interface UserControllerDocs {
                                                     "  \"createdAt\": \"2025-10-31T10:00:00\",\n" +
                                                     "  \"modifiedAt\": \"2025-10-31T10:00:00\",\n" +
                                                     "  \"marketingAgree\": true,\n" +
-                                                    "  \"followerCount\": 0,\n" +
                                                     "  \"followingCount\": 0\n" +
                                                     "}"
                                     )

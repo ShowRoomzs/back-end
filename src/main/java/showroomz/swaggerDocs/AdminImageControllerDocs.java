@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,16 +16,19 @@ import org.springframework.web.multipart.MultipartFile;
 import showroomz.auth.DTO.ErrorResponse;
 import showroomz.image.DTO.ImageUploadResponse;
 
-@Tag(name = "Image", description = "Image Upload API")
-public interface ImageControllerDocs {
+@Tag(name = "Admin Image", description = "관리자(판매자) 전용 이미지 업로드 API")
+public interface AdminImageControllerDocs {
 
     @Operation(
-            summary = "이미지 업로드",
-            description = "파일을 받아 S3에 업로드하고, 업로드된 이미지의 URL을 반환합니다.\n\n" +
+            summary = "관리자 전용 이미지 업로드",
+            description = "관리자(판매자)만 사용 가능한 이미지 업로드 API입니다. MARKET과 PRODUCT 타입만 업로드할 수 있습니다.\n\n" +
                     "**이미지 타입별 제약사항:**\n" +
-                    "- `PROFILE`: 프로필 이미지 (최대 20MB)\n" +
-                    "- `REVIEW`: 리뷰 이미지 (최대 20MB)\n\n" +
-                    "**권한:** USER\n" +
+                    "- `PRODUCT`: 상품 이미지 (최대 20MB)\n" +
+                    "- `MARKET`: 마켓 대표 이미지\n" +
+                    "  - 최소 해상도: 160×160px 이상\n" +
+                    "  - 비율: 정비율(1:1)만 허용\n" +
+                    "  - 최대 크기: 20MB\n\n" +
+                    "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
@@ -40,15 +42,15 @@ public interface ImageControllerDocs {
                                     @ExampleObject(
                                             name = "성공 시",
                                             value = "{\n" +
-                                                    "  \"imageUrl\": \"https://s3.ap-northeast-2.amazonaws.com/bucket-name/uploads/profile/uuid_filename.jpg\"\n" +
+                                                    "  \"imageUrl\": \"https://s3.ap-northeast-2.amazonaws.com/bucket-name/uploads/market/uuid_filename.jpg\"\n" +
                                                     "}"
                                     )
                             }
                     )
             ),
             @ApiResponse(
-                    responseCode = "400",
-                    description = "입력값 오류 - Status: 400 Bad Request (모든 이미지 타입 공통)",
+                    responseCode = "399",
+                    description = "입력값 오류 - Status: 400 Bad Request",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -57,7 +59,7 @@ public interface ImageControllerDocs {
                                             name = "유효하지 않은 이미지 타입",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW)\"\n" +
+                                                    "  \"message\": \"유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, PRODUCT, MARKET)\"\n" +
                                                     "}"
                                     ),
                                     @ExampleObject(
@@ -85,18 +87,27 @@ public interface ImageControllerDocs {
                     )
             ),
             @ApiResponse(
-                    responseCode = "401",
-                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
+                    responseCode = "400",
+                    description = "마켓 이미지 업로드 오류 - Status: 400 Bad Request (MARKET 타입 전용)",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "인증 실패",
+                                            name = "마켓 이미지 해상도 부족",
                                             value = "{\n" +
-                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
-                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
-                                                    "}"
+                                                    "  \"code\": \"IMAGE_RESOLUTION_TOO_LOW\",\n" +
+                                                    "  \"message\": \"이미지는 최소 160×160px 이상이어야 합니다.\"\n" +
+                                                    "}",
+                                            description = "MARKET 타입 이미지 업로드 시, 이미지 해상도가 160×160px 미만인 경우 발생합니다."
+                                    ),
+                                    @ExampleObject(
+                                            name = "마켓 이미지 비율 오류",
+                                            value = "{\n" +
+                                                    "  \"code\": \"IMAGE_RATIO_NOT_SQUARE\",\n" +
+                                                    "  \"message\": \"정비율의 이미지만 업로드 가능합니다.\"\n" +
+                                                    "}",
+                                            description = "MARKET 타입 이미지 업로드 시, 이미지가 정비율(1:1)이 아닌 경우 발생합니다."
                                     )
                             }
                     )
@@ -114,7 +125,7 @@ public interface ImageControllerDocs {
                                                     "  \"code\": \"FORBIDDEN\",\n" +
                                                     "  \"message\": \"접근 권한이 없습니다.\"\n" +
                                                     "}"
-                                            )
+                                    )
                             }
                     )
             ),
@@ -153,28 +164,21 @@ public interface ImageControllerDocs {
                     )
             )
     })
-    ResponseEntity<ImageUploadResponse> uploadImage(
-            @Parameter(
-                    name = "Authorization",
-                    description = "Bearer {access_token} 형식으로 전달",
-                    required = true,
-                    hidden = false
-            )
-            HttpServletRequest request,
-
+    ResponseEntity<ImageUploadResponse> uploadMarketImage(
             @Parameter(
                     description = "업로드할 이미지의 용도 (필수)\n" +
-                            "- `PROFILE`: 프로필 이미지\n" +
-                            "- `REVIEW`: 리뷰 이미지",
+                            "- `PRODUCT`: 상품 이미지\n" +
+                            "- `MARKET`: 마켓 대표 이미지 (160×160px 이상, 정비율 필수)\n\n",
                     required = true,
-                    example = "PROFILE"
+                    example = "MARKET"
             )
             @RequestParam("type") String typeParam,
 
             @Parameter(
                     description = "업로드할 이미지 파일 (Binary File)\n" +
                             "- 지원 형식: jpg, png, jpeg, gif\n" +
-                            "- 최대 크기: 20MB",
+                            "- 최대 크기: 20MB\n" +
+                            "- MARKET 타입의 경우: 최소 160×160px, 정비율(1:1) 필수",
                     required = true,
                     content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
                             schema = @Schema(type = "string", format = "binary"))
@@ -182,3 +186,4 @@ public interface ImageControllerDocs {
             @RequestParam("file") MultipartFile file
     );
 }
+

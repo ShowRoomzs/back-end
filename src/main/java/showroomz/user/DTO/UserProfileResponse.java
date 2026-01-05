@@ -25,8 +25,7 @@ public class UserProfileResponse {
     private LocalDateTime createdAt;
     private LocalDateTime modifiedAt;
     private Boolean marketingAgree;
-    // 팔로워/팔로잉 카운트
-    private Long followerCount = 0L;  // 나를 팔로우하는 유저 수
+    // 팔로잉 카운트
     private Long followingCount = 0L; // 내가 팔로우하는 유저(또는 마켓) 수
 }
 

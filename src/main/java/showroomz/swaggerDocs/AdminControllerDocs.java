@@ -345,7 +345,9 @@ public interface AdminControllerDocs {
 
     @Operation(
             summary = "Access Token 재발급",
-            description = "Refresh Token을 사용하여 새로운 Access Token을 발급받습니다. Refresh Token이 만료 3일 이내인 경우 새로운 Refresh Token도 함께 발급됩니다."
+            description = "Refresh Token을 사용하여 새로운 Access Token을 발급받습니다. Refresh Token이 만료 3일 이내인 경우 새로운 Refresh Token도 함께 발급됩니다.\n\n" +
+                    "**권한:** : 없음\n" +
+                    "**요청 헤더:** 없음"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -474,7 +476,9 @@ public interface AdminControllerDocs {
 
     @Operation(
             summary = "로그아웃",
-            description = "관리자를 로그아웃 처리합니다. Authorization 헤더에 Bearer {access_token}이 필요하며, Body에 refreshToken을 전달해야 합니다."
+            description = "관리자를 로그아웃 처리합니다. Authorization 헤더에 Bearer {access_token}이 필요하며, Body에 refreshToken을 전달해야 합니다.\n\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -574,7 +578,8 @@ public interface AdminControllerDocs {
     @Operation(
             summary = "관리자 회원 탈퇴",
             description = "인증된 관리자의 회원 탈퇴를 처리합니다. 관리자 계정과 관련된 모든 리프레시 토큰, 마켓 정보가 삭제됩니다.\n\n" +
-                    "**요청 헤더:** Authorization: Bearer {accessToken} (Access Token만 필요)"
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(
