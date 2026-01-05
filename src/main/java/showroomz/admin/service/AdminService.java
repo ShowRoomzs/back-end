@@ -162,13 +162,14 @@ public class AdminService {
         long accessTokenExpiresInSeconds = accessTokenExpiry / 1000;
         long refreshTokenExpiresInSeconds = appProperties.getAuth().getRefreshTokenExpiry() / 1000;
 
-        // 8. 응답 반환
+        // 8. 응답 반환 (마지막 인자에 role 추가)
         return new TokenResponse(
                 newAccessToken.getToken(),
                 refreshTokenStr,
                 accessTokenExpiresInSeconds,
                 refreshTokenExpiresInSeconds,
-                false
+                false,
+                admin.getRoleType().toString() // "SUPER_ADMIN" 또는 "ADMIN" 문자열 반환
         );
     }
 
@@ -275,7 +276,7 @@ public class AdminService {
             adminRefreshTokenRepository.saveAndFlush(adminRefreshToken);
         }
 
-        // 4. 응답 생성
+        // 4. 응답 생성 (마지막 인자에 role 추가)
         long accessTokenExpiresInSeconds = accessTokenExpiry / 1000;
         long refreshTokenExpiresInSeconds = refreshTokenExpiry / 1000;
 
@@ -284,7 +285,8 @@ public class AdminService {
                 refreshToken.getToken(),
                 accessTokenExpiresInSeconds,
                 refreshTokenExpiresInSeconds,
-                false
+                false,
+                admin.getRoleType().toString() // 여기서 권한을 넘겨줌
         );
     }
 }
