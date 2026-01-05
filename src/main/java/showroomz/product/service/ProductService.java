@@ -35,8 +35,8 @@ public class ProductService {
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     public ProductDto.CreateProductResponse createProduct(String adminEmail, ProductDto.CreateProductRequest request) {
-        // 1. 카테고리 조회 및 검증 (카테고리명으로 조회)
-        Category category = categoryRepository.findByName(request.getCategoryName())
+        // 1. 카테고리 조회 및 검증 (카테고리 ID로 조회)
+        Category category = categoryRepository.findByCategoryId(request.getCategoryId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
 
         // 2. 브랜드 조회 (관리자의 마켓에 연결된 브랜드 사용)
