@@ -18,7 +18,7 @@ spring:
         format_sql: true  # SQL 쿼리를 보기 좋게 줄 바꿈하여 정렬합니다.
         use_sql_comments: true # JPQL 쿼리 내용을 주석으로 함께 표시해줍니다.
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
     
 app:
   base-url: ${APP_BASE_URL:https://www.showroomz.co.kr}  # 마켓 URL 생성에 사용되는 기본 도메인
