@@ -13,7 +13,7 @@ import showroomz.auth.DTO.ErrorResponse;
 import showroomz.auth.DTO.ValidationErrorResponse;
 import showroomz.product.DTO.ProductDto;
 
-@Tag(name = "Product (Backstage)", description = "백스테이지 상품 관리 API")
+@Tag(name = "Seller", description = "Seller API")
 public interface ProductControllerDocs {
 
     @Operation(

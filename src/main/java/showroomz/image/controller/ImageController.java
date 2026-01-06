@@ -21,7 +21,7 @@ import showroomz.swaggerDocs.ImageControllerDocs;
 import showroomz.utils.HeaderUtil;
 
 @RestController
-@RequestMapping("/v1/images")
+@RequestMapping("/v1/user/images")
 @RequiredArgsConstructor
 public class ImageController implements ImageControllerDocs {
 

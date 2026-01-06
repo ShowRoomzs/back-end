@@ -15,7 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@Tag(name = "Market", description = "마켓 API")
+@Tag(name = "Seller", description = "Seller API")
 public interface MarketControllerDocs {
 
     @Operation(
