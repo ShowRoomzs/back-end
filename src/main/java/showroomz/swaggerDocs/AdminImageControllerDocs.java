@@ -28,7 +28,7 @@ public interface AdminImageControllerDocs {
                     "  - 최소 해상도: 160×160px 이상\n" +
                     "  - 비율: 정비율(1:1)만 허용\n" +
                     "  - 최대 크기: 20MB\n\n" +
-                    "**권한:** ADMIN\n" +
+                    "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {

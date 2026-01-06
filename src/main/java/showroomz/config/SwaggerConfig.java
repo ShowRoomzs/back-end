@@ -21,8 +21,8 @@ import org.springframework.context.annotation.Profile;
                         - Token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfVVNFUiIsImV4cCI6MTc3MTkyNjIzN30.Msm-Sr4KOmR5LKEFXHysNKihcCGKNFb3MOlQB5KzJMc
                         
                         - User ID: test-user-123
-                        - Role: ADMIN
-                        - Token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfQURNSU4iLCJleHAiOjE3NzE5MjYyMzd9.7IsnSTt6iujVTkav24DxCTh-r91SkCSejsdMhSoAagU
+                        - Role: SELLER
+                        - Token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfU0VMTEVSIiwieHAiOjE3NzE5MjYyMzd9.7IsnSTt6iujVTkav24DxCTh-r91SkCSejsdMhSoAagU
                         
                         **유효기간:** 2개월 (60일)
                         """,

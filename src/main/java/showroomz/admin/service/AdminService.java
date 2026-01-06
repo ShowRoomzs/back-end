@@ -169,7 +169,7 @@ public class AdminService {
                 accessTokenExpiresInSeconds,
                 refreshTokenExpiresInSeconds,
                 false,
-                admin.getRoleType().toString() // "SUPER_ADMIN" 또는 "ADMIN" 문자열 반환
+                admin.getRoleType().toString() // "SUPER_ADMIN" 또는 "SELLER" 문자열 반환
         );
     }
 

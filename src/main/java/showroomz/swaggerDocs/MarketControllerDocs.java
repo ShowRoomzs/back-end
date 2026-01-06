@@ -79,7 +79,7 @@ public interface MarketControllerDocs {
                     "- `mainCategory`: 대표 카테고리\n" +
                     "- `snsLinks`: SNS 링크 목록 (최대 3개)\n" +
                     "- `followerCount`: 마켓을 팔로우(찜)한 유저 수\n\n" +
-                    "**권한:** ADMIN\n" +
+                    "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
@@ -164,7 +164,7 @@ public interface MarketControllerDocs {
                     "- marketImageUrl: 마켓 대표 이미지 URL\n" +
                     "- mainCategory: 대표 카테고리\n" +
                     "- snsLinks: SNS 링크 (최대 3개)\n\n" +
-                    "**권한:** ADMIN\n" +
+                    "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
