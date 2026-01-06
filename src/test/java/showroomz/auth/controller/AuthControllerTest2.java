@@ -84,7 +84,7 @@ class AuthControllerTest2 {
         given(mockAuthToken.validate()).willReturn(true);
 
         // when & then
-        mockMvc.perform(post("/v1/auth/logout")
+        mockMvc.perform(post("/v1/user/auth/logout")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -104,7 +104,7 @@ class AuthControllerTest2 {
         request.setRefreshToken("some_token");
 
         // when & then
-        mockMvc.perform(post("/v1/auth/logout")
+        mockMvc.perform(post("/v1/user/auth/logout")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -125,7 +125,7 @@ class AuthControllerTest2 {
         given(mockAuthToken.validate()).willReturn(false); // 유효성 검증 실패
 
         // when & then
-        mockMvc.perform(post("/v1/auth/logout")
+        mockMvc.perform(post("/v1/user/auth/logout")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -146,7 +146,7 @@ class AuthControllerTest2 {
         given(mockAuthToken.validate()).willReturn(true);
 
         // when & then
-        mockMvc.perform(post("/v1/auth/logout")
+        mockMvc.perform(post("/v1/user/auth/logout")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -183,7 +183,7 @@ class AuthControllerTest2 {
         given(userRefreshTokenRepository.findByUserId(username)).willReturn(userRefreshToken);
 
         // when & then
-        mockMvc.perform(delete("/v1/auth/withdraw")
+        mockMvc.perform(delete("/v1/user/auth/withdraw")
                         .header("Authorization", "Bearer " + accessToken))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -213,7 +213,7 @@ class AuthControllerTest2 {
         given(userRepository.findByUsername(username)).willReturn(Optional.empty());
 
         // when & then
-        mockMvc.perform(delete("/v1/auth/withdraw")
+        mockMvc.perform(delete("/v1/user/auth/withdraw")
                         .header("Authorization", "Bearer " + accessToken))
                 .andDo(print())
                 .andExpect(status().isNotFound())
@@ -231,7 +231,7 @@ class AuthControllerTest2 {
         given(mockAuthToken.validate()).willReturn(false);
 
         // when & then
-        mockMvc.perform(delete("/v1/auth/withdraw")
+        mockMvc.perform(delete("/v1/user/auth/withdraw")
                         .header("Authorization", "Bearer " + accessToken))
                 .andDo(print())
                 .andExpect(status().isUnauthorized())

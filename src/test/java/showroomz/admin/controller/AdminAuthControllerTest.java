@@ -62,7 +62,7 @@ class AdminAuthControllerTest {
         given(adminService.registerAdmin(any(AdminSignUpRequest.class))).willReturn(tokenResponse);
 
         // when & then
-        mockMvc.perform(post("/v1/admin/signup")
+        mockMvc.perform(post("/v1/seller/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -85,7 +85,7 @@ class AdminAuthControllerTest {
         given(adminService.checkEmailDuplicate(email)).willReturn(response);
 
         // when & then
-        mockMvc.perform(get("/v1/admin/check-email")
+        mockMvc.perform(get("/v1/seller/auth/check-email")
                         .param("email", email))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -105,7 +105,7 @@ class AdminAuthControllerTest {
         given(adminService.checkEmailDuplicate(email)).willReturn(response);
 
         // when & then
-        mockMvc.perform(get("/v1/admin/check-email")
+        mockMvc.perform(get("/v1/seller/auth/check-email")
                         .param("email", email))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -132,7 +132,7 @@ class AdminAuthControllerTest {
         given(adminService.login(any(AdminLoginRequest.class))).willReturn(tokenResponse);
 
         // when & then
-        mockMvc.perform(post("/v1/admin/login")
+        mockMvc.perform(post("/v1/seller/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -155,7 +155,7 @@ class AdminAuthControllerTest {
         given(adminService.refreshToken(any(RefreshTokenRequest.class))).willReturn(tokenResponse);
 
         // when & then
-        mockMvc.perform(post("/v1/admin/refresh")
+        mockMvc.perform(post("/v1/seller/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -173,7 +173,7 @@ class AdminAuthControllerTest {
         String accessToken = "Bearer validAccessToken";
 
         // when & then
-        mockMvc.perform(post("/v1/admin/logout")
+        mockMvc.perform(post("/v1/seller/auth/logout")
                         .header("Authorization", accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -194,7 +194,7 @@ class AdminAuthControllerTest {
         String accessToken = "Bearer validAccessToken";
 
         // when & then
-        mockMvc.perform(delete("/v1/admin/withdraw")
+        mockMvc.perform(delete("/v1/seller/auth/withdraw")
                         .header("Authorization", accessToken))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -217,7 +217,7 @@ class AdminAuthControllerTest {
         request.setCsNumber("02-1234-5678");
 
         // when & then
-        mockMvc.perform(post("/v1/admin/signup")
+        mockMvc.perform(post("/v1/seller/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -240,7 +240,7 @@ class AdminAuthControllerTest {
         request.setCsNumber("02-1234-5678");
 
         // when & then
-        mockMvc.perform(post("/v1/admin/signup")
+        mockMvc.perform(post("/v1/seller/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -263,7 +263,7 @@ class AdminAuthControllerTest {
         request.setCsNumber("02-1234-5678");
 
         // when & then
-        mockMvc.perform(post("/v1/admin/signup")
+        mockMvc.perform(post("/v1/seller/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -286,7 +286,7 @@ class AdminAuthControllerTest {
         request.setCsNumber("02-1234-5678");
 
         // when & then
-        mockMvc.perform(post("/v1/admin/signup")
+        mockMvc.perform(post("/v1/seller/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -309,7 +309,7 @@ class AdminAuthControllerTest {
         request.setCsNumber("02-1234-5678");
 
         // when & then
-        mockMvc.perform(post("/v1/admin/signup")
+        mockMvc.perform(post("/v1/seller/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -332,7 +332,7 @@ class AdminAuthControllerTest {
         request.setCsNumber("12345678"); // 잘못된 형식
 
         // when & then
-        mockMvc.perform(post("/v1/admin/signup")
+        mockMvc.perform(post("/v1/seller/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -350,7 +350,7 @@ class AdminAuthControllerTest {
         request.setPassword("Password123!");
 
         // when & then
-        mockMvc.perform(post("/v1/admin/login")
+        mockMvc.perform(post("/v1/seller/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -368,7 +368,7 @@ class AdminAuthControllerTest {
         // password 누락
 
         // when & then
-        mockMvc.perform(post("/v1/admin/login")
+        mockMvc.perform(post("/v1/seller/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
