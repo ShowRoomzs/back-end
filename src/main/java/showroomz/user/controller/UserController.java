@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@RequestMapping("/v1/users")
+@RequestMapping("/v1/user")
 @RequiredArgsConstructor
 public class UserController implements UserControllerDocs {
 

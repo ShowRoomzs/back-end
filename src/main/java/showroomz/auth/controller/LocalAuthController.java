@@ -30,7 +30,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/v1/auth/local")
+@RequestMapping("/v1/user/auth/local")
 @RequiredArgsConstructor
 public class LocalAuthController {
 

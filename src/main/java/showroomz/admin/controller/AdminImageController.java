@@ -17,7 +17,7 @@ import showroomz.image.type.ImageType;
 import showroomz.swaggerDocs.AdminImageControllerDocs;
 
 @RestController
-@RequestMapping("/v1/admin/images")
+@RequestMapping("/v1/seller/images")
 @RequiredArgsConstructor
 public class AdminImageController implements AdminImageControllerDocs {
 

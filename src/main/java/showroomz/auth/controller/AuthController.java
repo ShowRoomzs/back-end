@@ -35,7 +35,7 @@ import java.util.Date;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/v1/auth")
+@RequestMapping("/v1/user/auth")
 @RequiredArgsConstructor
 public class AuthController implements AuthControllerDocs {
 

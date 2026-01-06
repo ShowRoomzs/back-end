@@ -14,7 +14,7 @@ import showroomz.product.service.ProductService;
 import showroomz.swaggerDocs.product.ProductControllerDocs;
 
 @RestController
-@RequestMapping("/v1/backstage/products")
+@RequestMapping("/v1/seller/products")
 @RequiredArgsConstructor
 public class ProductController implements ProductControllerDocs {
 
