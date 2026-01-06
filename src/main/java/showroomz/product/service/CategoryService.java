@@ -24,12 +24,19 @@ public class CategoryService {
             throw new BusinessException(ErrorCode.DUPLICATE_CATEGORY_NAME);
         }
 
+        // parentId가 제공된 경우 부모 카테고리 존재 여부 확인
+        Category parent = null;
+        if (request.getParentId() != null) {
+            parent = categoryRepository.findByCategoryId(request.getParentId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
+        }
+
         // 카테고리 생성
         Category category = new Category();
         category.setName(request.getName());
         category.setOrder(request.getOrder() != null ? request.getOrder() : 0);
         category.setIconUrl(request.getIconUrl());
-        // parent_id는 null로 설정 (대분류/중분류/소분류 기능은 추후 구현)
+        category.setParent(parent);
 
         Category savedCategory = categoryRepository.save(category);
 
@@ -37,6 +44,7 @@ public class CategoryService {
                 .categoryId(savedCategory.getCategoryId())
                 .name(savedCategory.getName())
                 .order(savedCategory.getOrder())
+                .parentId(savedCategory.getParent() != null ? savedCategory.getParent().getCategoryId() : null)
                 .message("카테고리가 성공적으로 생성되었습니다.")
                 .build();
     }
@@ -98,6 +106,7 @@ public class CategoryService {
                 .name(savedCategory.getName())
                 .order(savedCategory.getOrder())
                 .iconUrl(savedCategory.getIconUrl())
+                .parentId(savedCategory.getParent() != null ? savedCategory.getParent().getCategoryId() : null)
                 .message("카테고리가 성공적으로 수정되었습니다.")
                 .build();
     }
