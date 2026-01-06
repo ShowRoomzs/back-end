@@ -26,7 +26,7 @@ import showroomz.utils.HeaderUtil;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/v1/admin")
+@RequestMapping("/v1/seller/auth")
 @RequiredArgsConstructor
 public class AdminAuthController implements AdminControllerDocs {
 

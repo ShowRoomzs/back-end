@@ -66,7 +66,7 @@ class AuthControllerTest {
         request.setToken(invalidToken);
 
         // 유효하지 않은 토큰의 경우 네이버 API 호출 실패로 401 UNAUTHORIZED 반환
-        mockMvc.perform(post("/v1/auth/social/login")
+        mockMvc.perform(post("/v1/user/auth/social/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -82,7 +82,7 @@ class AuthControllerTest {
         request.setProviderType("NAVER");
         // token을 설정하지 않음
 
-        mockMvc.perform(post("/v1/auth/social/login")
+        mockMvc.perform(post("/v1/user/auth/social/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -98,7 +98,7 @@ class AuthControllerTest {
         request.setToken("some_token");
         // providerType을 설정하지 않음
 
-        mockMvc.perform(post("/v1/auth/social/login")
+        mockMvc.perform(post("/v1/user/auth/social/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -113,7 +113,7 @@ class AuthControllerTest {
         request.setProviderType("INVALID_PROVIDER");
         request.setToken("some_token");
 
-        mockMvc.perform(post("/v1/auth/social/login")
+        mockMvc.perform(post("/v1/user/auth/social/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -160,7 +160,7 @@ class AuthControllerTest {
 
         // 4. 회원가입 완료 요청
         String requestBody = objectMapper.writeValueAsString(registerRequest);
-        mockMvc.perform(post("/v1/auth/register")
+        mockMvc.perform(post("/v1/user/auth/social/signup")
                         .header("Authorization", "Bearer " + registerToken.getToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
@@ -190,7 +190,7 @@ class AuthControllerTest {
         registerRequest.setServiceAgree(true);
         registerRequest.setPrivacyAgree(true);
 
-        mockMvc.perform(post("/v1/auth/register")
+        mockMvc.perform(post("/v1/user/auth/social/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)))
                 .andDo(print())
@@ -246,7 +246,7 @@ class AuthControllerTest {
         registerRequest.setServiceAgree(true);
         registerRequest.setPrivacyAgree(true);
 
-        mockMvc.perform(post("/v1/auth/register")
+        mockMvc.perform(post("/v1/user/auth/social/signup")
                         .header("Authorization", "Bearer " + registerToken.getToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)))
@@ -288,7 +288,7 @@ class AuthControllerTest {
         registerRequest.setServiceAgree(true);
         registerRequest.setPrivacyAgree(true);
 
-        mockMvc.perform(post("/v1/auth/register")
+        mockMvc.perform(post("/v1/user/auth/social/signup")
                         .header("Authorization", "Bearer " + registerToken.getToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)))
@@ -329,7 +329,7 @@ class AuthControllerTest {
         registerRequest.setServiceAgree(true);
         registerRequest.setPrivacyAgree(true);
 
-        mockMvc.perform(post("/v1/auth/register")
+        mockMvc.perform(post("/v1/user/auth/social/signup")
                         .header("Authorization", "Bearer " + registerToken.getToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)))

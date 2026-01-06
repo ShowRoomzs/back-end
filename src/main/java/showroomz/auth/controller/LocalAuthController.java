@@ -26,11 +26,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+@Hidden
 @RestController
-@RequestMapping("/v1/auth/local")
+@RequestMapping("/v1/user/auth/local")
 @RequiredArgsConstructor
 public class LocalAuthController {
 

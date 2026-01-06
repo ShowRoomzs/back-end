@@ -14,7 +14,7 @@ import showroomz.market.service.MarketService;
 import showroomz.swaggerDocs.MarketControllerDocs;
 
 @RestController
-@RequestMapping("/v1/markets")
+@RequestMapping("/v1/seller/markets")
 @RequiredArgsConstructor
 public class MarketController implements MarketControllerDocs {
 

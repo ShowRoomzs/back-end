@@ -16,6 +16,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -36,17 +37,20 @@ public class SecurityConfig {
     private final TokenAccessDeniedHandler tokenAccessDeniedHandler;
     
     private static final String[] AUTH_WHITELIST = {
-            "/",  // Health Check (인증 불필요)
-            "/swagger-ui/**", "/swagger-ui.html", "/swagger-ui/index.html",
-            "/api-docs", "/swagger-ui-custom.html", "/payment/**",
-            "/v3/api-docs/**", "/api-docs/**", 
-            "/v1/auth/social/login", "/v1/auth/register", "/v1/auth/refresh",  // 토큰 갱신 (인증 불필요)
-            "/v1/auth/local/signup", "/v1/auth/local/login",  // 로컬 회원가입 및 로그인 (인증 불필요)
-            "/v1/admin/signup", "/v1/admin/login",  // 관리자 회원가입 및 로그인 (인증 불필요)
-            "/v1/admin/check-email",  // 관리자 이메일 중복 확인 (인증 불필요)
-            "/v1/users/check-nickname",  // 닉네임 중복 확인 (인증 불필요)
-            "/v1/markets/check-name",  // 마켓명 중복 확인 (인증 불필요)
-            "/error"  // 에러 페이지 접근 허용
+            "/", "/error",  // 기본
+            "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**", // Swagger (중복 경로 통합)
+
+            // Auth 관련 (일관성 있게 'signup'으로 통일 추천)
+            "/v1/user/auth/social/login", 
+            "/v1/user/auth/social/signup", // 기존 register -> signup (일관성)
+            "/v1/user/auth/refresh",
+            "/v1/user/auth/local/signup", "/v1/user/auth/local/login",
+            "/v1/seller/auth/signup", "/v1/seller/auth/login",
+            
+            // 중복 확인 (인증 불필요)
+            "/v1/seller/auth/check-email",
+            "/v1/user/check-nickname",
+            "/v1/seller/markets/check-name"
     };
     /*
      * SecurityFilterChain 설정 (Spring Security 3.x 최신 방식)
@@ -57,28 +61,30 @@ public class SecurityConfig {
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
-            .csrf(csrf -> csrf.disable())
+            .csrf(AbstractHttpConfigurer::disable) // 람다식 간소화
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .formLogin(form -> form.disable())
-            .httpBasic(httpBasic -> httpBasic.disable())
+            .formLogin(AbstractHttpConfigurer::disable)
+            .httpBasic(AbstractHttpConfigurer::disable)
             .exceptionHandling(exceptions -> exceptions
                 .authenticationEntryPoint(new RestAuthenticationEntryPoint())
                 .accessDeniedHandler(tokenAccessDeniedHandler)
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
-                .requestMatchers(AUTH_WHITELIST).permitAll()       
-                .requestMatchers("/v1/admin/markets/*/image-status", "/v1/admin/categories/**").hasAnyAuthority(RoleType.SUPER_ADMIN.getCode()) 
-                .requestMatchers("/v1/admin/images/**").hasAnyAuthority(RoleType.ADMIN.getCode())
-                .requestMatchers("/v1/markets/**").hasAnyAuthority(RoleType.ADMIN.getCode())  // 마켓 관련 API는 ADMIN 권한 필요
-                .requestMatchers("/api/v1/backstage/**").hasAnyAuthority(RoleType.ADMIN.getCode())  // 백스테이지 API는 ADMIN 권한 필요
-                .requestMatchers("/api/*/admin/**").hasAnyAuthority(RoleType.ADMIN.getCode())
-                .requestMatchers("/api/**").hasAnyAuthority(RoleType.USER.getCode())
+                .requestMatchers(AUTH_WHITELIST).permitAll()
+                
+                // SUPER_ADMIN 전용
+                .requestMatchers("/v1/admin/**").hasAnyAuthority(RoleType.SUPER_ADMIN.getCode())
+
+                // SELLER 권한 (중복 제거됨: 하위 경로는 /seller/** 하나로 모두 커버됨)
+                .requestMatchers("/v1/seller/**").hasAnyAuthority(RoleType.ADMIN.getCode())
+
+                // USER 권한
+                .requestMatchers("/v1/user/**").hasAnyAuthority(RoleType.USER.getCode())
+                
                 .anyRequest().authenticated()
             );
-            
-            // .oauth2Login(...) 블록 전체 삭제
-
+        
         http.addFilterBefore(tokenAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

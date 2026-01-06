@@ -17,7 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import showroomz.auth.DTO.ErrorResponse;
 import showroomz.image.DTO.ImageUploadResponse;
 
-@Tag(name = "Image", description = "Image Upload API")
+@Tag(name = "User", description = "사용자 정보 API")
 public interface ImageControllerDocs {
 
     @Operation(

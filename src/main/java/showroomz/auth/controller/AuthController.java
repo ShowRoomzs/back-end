@@ -35,7 +35,7 @@ import java.util.Date;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/v1/auth")
+@RequestMapping("/v1/user/auth")
 @RequiredArgsConstructor
 public class AuthController implements AuthControllerDocs {
 
@@ -116,7 +116,7 @@ public class AuthController implements AuthControllerDocs {
     }
     
     @Override
-    @PostMapping("/register")
+    @PostMapping("/social/signup")
     public ResponseEntity<?> register(
             HttpServletRequest request,
             @RequestBody @Valid RegisterRequest registerRequest) {
