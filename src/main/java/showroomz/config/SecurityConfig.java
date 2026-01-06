@@ -73,11 +73,11 @@ public class SecurityConfig {
                 .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
                 .requestMatchers(AUTH_WHITELIST).permitAll()
                 
-                // SUPER_ADMIN 전용
-                .requestMatchers("/v1/admin/**").hasAnyAuthority(RoleType.SUPER_ADMIN.getCode())
+                // ADMIN 전용
+                .requestMatchers("/v1/admin/**").hasAnyAuthority(RoleType.ADMIN.getCode())
 
                 // SELLER 권한 (중복 제거됨: 하위 경로는 /seller/** 하나로 모두 커버됨)
-                .requestMatchers("/v1/seller/**").hasAnyAuthority(RoleType.ADMIN.getCode())
+                .requestMatchers("/v1/seller/**").hasAnyAuthority(RoleType.SELLER.getCode())
 
                 // USER 권한
                 .requestMatchers("/v1/user/**").hasAnyAuthority(RoleType.USER.getCode())

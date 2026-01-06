@@ -54,7 +54,7 @@ public interface AdminControllerDocs {
                                                     "  \"accessTokenExpiresIn\": 3600,\n" +
                                                     "  \"refreshTokenExpiresIn\": 1209600,\n" +
                                                     "  \"isNewMember\": false,\n" +
-                                                    "  \"role\": \"ADMIN\"\n" +
+                                                    "  \"role\": \"SELLER\"\n" +
                                                     "}"
                                     )
                             }
@@ -255,7 +255,7 @@ public interface AdminControllerDocs {
                     "**응답:**\n" +
                     "- Access Token: 관리자 API 접근에 사용\n" +
                     "- Refresh Token: Access Token 갱신에 사용" +
-                    "- role: 관리자 권한 (ADMIN, SUPER_ADMIN)"
+                    "- role: 판매자 권한 (SELLER, ADMIN)"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -274,7 +274,7 @@ public interface AdminControllerDocs {
                                                     "  \"accessTokenExpiresIn\": 3600,\n" +
                                                     "  \"refreshTokenExpiresIn\": 1209600,\n" +
                                                     "  \"isNewMember\": false,\n" +
-                                                    "  \"role\": \"ADMIN\"\n" +
+                                                    "  \"role\": \"SELLER\"\n" +
                                                     "}"
                                     )
                             }
@@ -368,7 +368,7 @@ public interface AdminControllerDocs {
                                                     "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...\",\n" +
                                                     "  \"accessTokenExpiresIn\": 3600,\n" +
                                                     "  \"refreshTokenExpiresIn\": 1209600,\n" +
-                                                    "  \"role\": \"ADMIN\"\n" +
+                                                    "  \"role\": \"SELLER\"\n" +
                                                     "}"
                                     )
                             }
@@ -481,7 +481,7 @@ public interface AdminControllerDocs {
     @Operation(
             summary = "로그아웃",
             description = "관리자를 로그아웃 처리합니다. Authorization 헤더에 Bearer {access_token}이 필요하며, Body에 refreshToken을 전달해야 합니다.\n\n" +
-                    "**권한:** ADMIN\n" +
+                    "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
@@ -582,7 +582,7 @@ public interface AdminControllerDocs {
     @Operation(
             summary = "관리자 회원 탈퇴",
             description = "인증된 관리자의 회원 탈퇴를 처리합니다. 관리자 계정과 관련된 모든 리프레시 토큰, 마켓 정보가 삭제됩니다.\n\n" +
-                    "**권한:** ADMIN\n" +
+                    "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {

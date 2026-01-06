@@ -27,13 +27,13 @@ public class SuperAdminInitializer implements CommandLineRunner {
         if (!adminRepository.existsByEmail(email)) {
             
             // 3. Admin 엔티티 생성 (기본 생성자와 Setter 사용)
-            // 주의: 기존 Admin 생성자(public Admin(...))는 RoleType.ADMIN으로 고정되므로 사용하지 않습니다.
+            // 주의: 기존 Admin 생성자(public Admin(...))는 RoleType.SELLER로 고정되므로 사용하지 않습니다.
             Admin superAdmin = new Admin();
             superAdmin.setEmail(email);
             superAdmin.setPassword(passwordEncoder.encode(password)); // 비밀번호 암호화 필수
             superAdmin.setName("Super Master");
             superAdmin.setPhoneNumber("010-0000-0000");
-            superAdmin.setRoleType(RoleType.SUPER_ADMIN); // 핵심: 권한을 SUPER_ADMIN으로 설정
+            superAdmin.setRoleType(RoleType.ADMIN); // 핵심: 권한을 ADMIN으로 설정
             superAdmin.setCreatedAt(LocalDateTime.now());
             superAdmin.setModifiedAt(LocalDateTime.now());
 

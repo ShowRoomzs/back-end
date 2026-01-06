@@ -101,7 +101,7 @@ class AdminServiceTest {
             given(accessToken.getToken()).willReturn("accessToken");
             given(refreshToken.getToken()).willReturn("refreshToken");
 
-            given(tokenProvider.createAuthToken(eq(savedAdmin.getEmail()), eq(RoleType.ADMIN.getCode()), eq(savedAdmin.getAdminId()), any(Date.class)))
+            given(tokenProvider.createAuthToken(eq(savedAdmin.getEmail()), eq(RoleType.SELLER.getCode()), eq(savedAdmin.getAdminId()), any(Date.class)))
                     .willReturn(accessToken);
             given(tokenProvider.createAuthToken(eq(savedAdmin.getEmail()), any(Date.class)))
                     .willReturn(refreshToken);
@@ -191,7 +191,7 @@ class AdminServiceTest {
             given(accessToken.getToken()).willReturn("accessToken");
             given(refreshToken.getToken()).willReturn("refreshToken");
 
-            given(tokenProvider.createAuthToken(eq(admin.getEmail()), eq(RoleType.ADMIN.getCode()), eq(admin.getAdminId()), any(Date.class)))
+            given(tokenProvider.createAuthToken(eq(admin.getEmail()), eq(RoleType.SELLER.getCode()), eq(admin.getAdminId()), any(Date.class)))
                     .willReturn(accessToken);
             given(tokenProvider.createAuthToken(eq(admin.getEmail()), any(Date.class)))
                     .willReturn(refreshToken);
@@ -279,7 +279,7 @@ class AdminServiceTest {
 
             AuthToken newAccessToken = mock(AuthToken.class);
             given(newAccessToken.getToken()).willReturn("newAccessToken");
-            given(tokenProvider.createAuthToken(eq(admin.getEmail()), eq(RoleType.ADMIN.getCode()), eq(admin.getAdminId()), any(Date.class)))
+            given(tokenProvider.createAuthToken(eq(admin.getEmail()), eq(RoleType.SELLER.getCode()), eq(admin.getAdminId()), any(Date.class)))
                     .willReturn(newAccessToken);
 
             // when

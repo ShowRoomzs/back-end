@@ -18,16 +18,14 @@ import showroomz.auth.DTO.ValidationErrorResponse;
 import showroomz.product.DTO.CategoryDto;
 import showroomz.market.DTO.MarketDto;
 
-@Tag(name = "Super Admin", description = "슈퍼 관리자 API")
+@Tag(name = "Admin", description = "관리자 API")
 public interface SuperAdminControllerDocs {
 
     @Operation(
             summary = "마켓 이미지 검수 상태 변경",
             description = "특정 마켓의 대표 이미지 검수 상태를 변경합니다. (APPROVED, REJECTED)\n\n" +
-                    "**권한:** SUPER_ADMIN\n" +
-                    "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
-                    "**테스트용 슈퍼 어드민 토큰:**\n" +
-                    "`eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfU1VQRVJfQURNSU4iLCJleHAiOjE3NzI2MTY3MDV9.W7jUQrsV8qGbcQNp_AlosklYzE37Lgv3CtwtdCE-zQ0`"
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -71,7 +69,7 @@ public interface SuperAdminControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "403",
-                    description = "권한 없음 (SUPER_ADMIN 권한 필요)",
+                    description = "권한 없음 (ADMIN 권한 필요)",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -132,11 +130,9 @@ public interface SuperAdminControllerDocs {
 
     @Operation(
             summary = "카테고리 생성",
-            description = "슈퍼 관리자가 새로운 카테고리를 생성합니다.\n\n" +
-                    "**권한:** SUPER_ADMIN\n" +
-                    "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
-                    "**테스트용 슈퍼 어드민 토큰:**\n" +
-                    "`eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfU1VQRVJfQURNSU4iLCJleHAiOjE3NzI2MTY3MDV9.W7jUQrsV8qGbcQNp_AlosklYzE37Lgv3CtwtdCE-zQ0`"
+            description = "관리자가 새로운 카테고리를 생성합니다.\n\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -193,7 +189,7 @@ public interface SuperAdminControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "403",
-                    description = "권한 없음 (SUPER_ADMIN 권한 필요)",
+                    description = "권한 없음 (ADMIN 권한 필요)",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)
@@ -224,8 +220,8 @@ public interface SuperAdminControllerDocs {
 
     @Operation(
             summary = "카테고리 조회 (단일)",
-            description = "슈퍼 관리자가 특정 카테고리의 정보를 조회합니다.\n\n" +
-                    "**권한:** SUPER_ADMIN\n" +
+            description = "관리자가 특정 카테고리의 정보를 조회합니다.\n\n" +
+                    "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
@@ -258,8 +254,8 @@ public interface SuperAdminControllerDocs {
 
     @Operation(
             summary = "카테고리 목록 조회",
-            description = "슈퍼 관리자가 모든 카테고리 목록을 조회합니다.\n\n" +
-                    "**권한:** SUPER_ADMIN\n" +
+            description = "관리자가 모든 카테고리 목록을 조회합니다.\n\n" +
+                    "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
@@ -276,8 +272,8 @@ public interface SuperAdminControllerDocs {
 
     @Operation(
             summary = "카테고리 수정",
-            description = "슈퍼 관리자가 카테고리 정보를 수정합니다.\n\n" +
-                    "**권한:** SUPER_ADMIN\n" +
+            description = "관리자가 카테고리 정보를 수정합니다.\n\n" +
+                    "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
                     "수정할 필드만 전달하면 됩니다."
     )
@@ -338,8 +334,8 @@ public interface SuperAdminControllerDocs {
 
     @Operation(
             summary = "카테고리 삭제",
-            description = "슈퍼 관리자가 카테고리를 삭제합니다.\n\n" +
-                    "**권한:** SUPER_ADMIN\n" +
+            description = "관리자가 카테고리를 삭제합니다.\n\n" +
+                    "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {

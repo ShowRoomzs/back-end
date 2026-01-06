@@ -25,7 +25,7 @@ public interface ProductControllerDocs {
                     "- regularPrice: 판매가 (할인 전)\n" +
                     "- salePrice: 할인 판매가 (최종가)\n" +
                     "- variants: 옵션 목록 (조합된 결과)\n\n" +
-                    "**권한:** ADMIN\n" +
+                    "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {

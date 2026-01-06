@@ -46,7 +46,7 @@ public class Admin {
     @Column(name = "ROLE_TYPE", length = 20)
     @Enumerated(EnumType.STRING)
     @NotNull
-    private RoleType roleType; // 주로 ADMIN
+    private RoleType roleType; // 주로 SELLER
 
     @Column(name = "CREATED_AT")
     @NotNull
@@ -62,7 +62,7 @@ public class Admin {
         this.password = password;
         this.name = name;
         this.phoneNumber = phoneNumber;
-        this.roleType = RoleType.ADMIN;
+        this.roleType = RoleType.SELLER;
         this.createdAt = now;
         this.modifiedAt = now;
     }
