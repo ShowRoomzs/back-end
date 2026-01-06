@@ -18,7 +18,7 @@ import showroomz.auth.DTO.ValidationErrorResponse;
 import showroomz.product.DTO.CategoryDto;
 import showroomz.market.DTO.MarketDto;
 
-@Tag(name = "Super Admin", description = "슈퍼 관리자 API")
+@Tag(name = "Admin", description = "관리자 API")
 public interface SuperAdminControllerDocs {
 
     @Operation(
