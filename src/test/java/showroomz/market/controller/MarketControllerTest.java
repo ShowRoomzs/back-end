@@ -66,7 +66,7 @@ class MarketControllerTest {
         given(marketService.checkMarketName(marketName)).willReturn(response);
 
         // when & then
-        mockMvc.perform(get("/v1/markets/check-name")
+        mockMvc.perform(get("/v1/seller/markets/check-name")
                         .param("marketName", marketName))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -88,7 +88,7 @@ class MarketControllerTest {
         given(marketService.checkMarketName(marketName)).willReturn(response);
 
         // when & then
-        mockMvc.perform(get("/v1/markets/check-name")
+        mockMvc.perform(get("/v1/seller/markets/check-name")
                         .param("marketName", marketName))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -124,7 +124,7 @@ class MarketControllerTest {
         given(marketService.getMyMarket(TEST_ADMIN_EMAIL)).willReturn(response);
 
         // when & then
-        mockMvc.perform(get("/v1/markets/me"))
+        mockMvc.perform(get("/v1/seller/markets/me"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.marketId").value(1))
@@ -162,7 +162,7 @@ class MarketControllerTest {
         doNothing().when(marketService).updateMarketProfile(eq(TEST_ADMIN_EMAIL), any(MarketDto.UpdateMarketProfileRequest.class));
 
         // when & then
-        mockMvc.perform(patch("/v1/markets/me")
+        mockMvc.perform(patch("/v1/seller/markets/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -181,7 +181,7 @@ class MarketControllerTest {
         request.setMarketName("테스트 마켓"); // 공백 포함 (한글만 허용, 공백 불가)
 
         // when & then
-        mockMvc.perform(patch("/v1/markets/me")
+        mockMvc.perform(patch("/v1/seller/markets/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -200,7 +200,7 @@ class MarketControllerTest {
         request.setMarketDescription("가".repeat(31)); // 31자 (최대 30자)
 
         // when & then
-        mockMvc.perform(patch("/v1/markets/me")
+        mockMvc.perform(patch("/v1/seller/markets/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -223,7 +223,7 @@ class MarketControllerTest {
         request.setSnsLinks(snsLinks); // 4개 (최대 3개)
 
         // when & then
-        mockMvc.perform(patch("/v1/markets/me")
+        mockMvc.perform(patch("/v1/seller/markets/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -244,7 +244,7 @@ class MarketControllerTest {
         request.setSnsLinks(snsLinks);
 
         // when & then
-        mockMvc.perform(patch("/v1/markets/me")
+        mockMvc.perform(patch("/v1/seller/markets/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -266,7 +266,7 @@ class MarketControllerTest {
         request.setSnsLinks(snsLinks);
 
         // when & then
-        mockMvc.perform(patch("/v1/markets/me")
+        mockMvc.perform(patch("/v1/seller/markets/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -291,7 +291,7 @@ class MarketControllerTest {
         doNothing().when(marketService).updateMarketProfile(eq(TEST_ADMIN_EMAIL), any(MarketDto.UpdateMarketProfileRequest.class));
 
         // when & then
-        mockMvc.perform(patch("/v1/markets/me")
+        mockMvc.perform(patch("/v1/seller/markets/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -314,7 +314,7 @@ class MarketControllerTest {
 
         // when & then
         // getCurrentAdminEmail()에서 NullPointerException 발생 -> GlobalExceptionHandler가 500으로 처리
-        mockMvc.perform(get("/v1/markets/me"))
+        mockMvc.perform(get("/v1/seller/markets/me"))
                 .andDo(print())
                 .andExpect(status().isInternalServerError()) // NullPointerException -> 500 Internal Server Error
                 .andExpect(jsonPath("$.code").value("INTERNAL_SERVER_ERROR"));

@@ -98,7 +98,7 @@ class UserControllerTest {
         given(userService.getUser(username)).willReturn(Optional.of(user));
 
         // when & then
-        mockMvc.perform(get("/v1/users/me"))
+        mockMvc.perform(get("/v1/user/me"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(user.getEmail()))
@@ -115,7 +115,7 @@ class UserControllerTest {
         given(authentication.getPrincipal()).willReturn("anonymousUser");
 
         // when & then
-        mockMvc.perform(get("/v1/users/me"))
+        mockMvc.perform(get("/v1/user/me"))
                 .andDo(print())
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED")); // ErrorCode.INVALID_AUTH_INFO
@@ -130,7 +130,7 @@ class UserControllerTest {
         given(userService.checkNickname(nickname)).willReturn(response);
 
         // when & then
-        mockMvc.perform(get("/v1/users/check-nickname")
+        mockMvc.perform(get("/v1/user/check-nickname")
                         .param("nickname", nickname))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -163,7 +163,7 @@ class UserControllerTest {
         given(userService.updateProfile(eq(username), any(UpdateUserProfileRequest.class))).willReturn(updatedUser);
 
         // when & then
-        mockMvc.perform(patch("/v1/users/me")
+        mockMvc.perform(patch("/v1/user/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -191,7 +191,7 @@ class UserControllerTest {
         given(userService.isValidNicknameLength("a")).willReturn(false);
 
         // when & then
-        mockMvc.perform(patch("/v1/users/me")
+        mockMvc.perform(patch("/v1/user/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -225,7 +225,7 @@ class UserControllerTest {
         given(userService.checkNickname("duplicateNick")).willReturn(duplicateResponse);
 
         // when & then
-        mockMvc.perform(patch("/v1/users/me")
+        mockMvc.perform(patch("/v1/user/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -252,7 +252,7 @@ class UserControllerTest {
         given(userService.checkNickname("badWord")).willReturn(profanityResponse);
         
         // when & then
-        mockMvc.perform(patch("/v1/users/me")
+        mockMvc.perform(patch("/v1/user/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())

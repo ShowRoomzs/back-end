@@ -75,7 +75,7 @@ class ImageControllerTest {
                 .thenReturn(new ImageUploadResponse(imageUrl));
 
         // when & then
-        mockMvc.perform(multipart("/v1/images")
+        mockMvc.perform(multipart("/v1/user/images")
                         .file(validImageFile)
                         .param("type", "PROFILE")
                         .header("Authorization", "Bearer " + accessToken)
@@ -88,7 +88,7 @@ class ImageControllerTest {
     @DisplayName("Authorization 헤더 없음 - 401 에러")
     void Authorization_헤더_없음_401_에러() throws Exception {
         // when & then
-        mockMvc.perform(multipart("/v1/images")
+        mockMvc.perform(multipart("/v1/user/images")
                         .file(validImageFile)
                         .param("type", "PROFILE")
                         .contentType(MediaType.MULTIPART_FORM_DATA))
@@ -107,7 +107,7 @@ class ImageControllerTest {
         when(tokenProvider.convertAuthToken(invalidToken)).thenReturn(invalidAuthToken);
 
         // when & then
-        mockMvc.perform(multipart("/v1/images")
+        mockMvc.perform(multipart("/v1/user/images")
                         .file(validImageFile)
                         .param("type", "PROFILE")
                         .header("Authorization", "Bearer " + invalidToken)
@@ -125,7 +125,7 @@ class ImageControllerTest {
         when(tokenProvider.convertAuthToken(accessToken)).thenReturn(validAuthToken);
 
         // when & then
-        mockMvc.perform(multipart("/v1/images")
+        mockMvc.perform(multipart("/v1/user/images")
                         .file(validImageFile)
                         .param("type", "INVALID_TYPE")
                         .header("Authorization", "Bearer " + accessToken)
@@ -152,7 +152,7 @@ class ImageControllerTest {
                 .thenThrow(new BusinessException(ErrorCode.INVALID_FILE_EXTENSION));
 
         // when & then
-        mockMvc.perform(multipart("/v1/images")
+        mockMvc.perform(multipart("/v1/user/images")
                         .file(invalidFile)
                         .param("type", "PROFILE")
                         .header("Authorization", "Bearer " + accessToken)
@@ -172,7 +172,7 @@ class ImageControllerTest {
                 .thenThrow(new BusinessException(ErrorCode.FILE_SIZE_EXCEEDED));
 
         // when & then
-        mockMvc.perform(multipart("/v1/images")
+        mockMvc.perform(multipart("/v1/user/images")
                         .file(validImageFile)
                         .param("type", "PROFILE")
                         .header("Authorization", "Bearer " + accessToken)
@@ -199,7 +199,7 @@ class ImageControllerTest {
                 .thenThrow(new BusinessException(ErrorCode.EMPTY_FILE_EXCEPTION));
 
         // when & then
-        mockMvc.perform(multipart("/v1/images")
+        mockMvc.perform(multipart("/v1/user/images")
                         .file(emptyFile)
                         .param("type", "PROFILE")
                         .header("Authorization", "Bearer " + accessToken)
@@ -221,7 +221,7 @@ class ImageControllerTest {
                 .thenReturn(new ImageUploadResponse(imageUrl));
 
         // when & then
-        mockMvc.perform(multipart("/v1/images")
+        mockMvc.perform(multipart("/v1/user/images")
                         .file(validImageFile)
                         .param("type", "REVIEW")
                         .header("Authorization", "Bearer " + accessToken)
@@ -238,7 +238,7 @@ class ImageControllerTest {
         when(tokenProvider.convertAuthToken(accessToken)).thenReturn(validAuthToken);
 
         // when & then
-        mockMvc.perform(multipart("/v1/images")
+        mockMvc.perform(multipart("/v1/user/images")
                         .file(validImageFile)
                         .param("type", "PRODUCT")
                         .header("Authorization", "Bearer " + accessToken)
@@ -256,7 +256,7 @@ class ImageControllerTest {
         when(tokenProvider.convertAuthToken(accessToken)).thenReturn(validAuthToken);
 
         // when & then
-        mockMvc.perform(multipart("/v1/images")
+        mockMvc.perform(multipart("/v1/user/images")
                         .file(validImageFile)
                         .param("type", "MARKET")
                         .header("Authorization", "Bearer " + accessToken)
@@ -278,7 +278,7 @@ class ImageControllerTest {
                 .thenReturn(new ImageUploadResponse(imageUrl));
 
         // when & then
-        mockMvc.perform(multipart("/v1/images")
+        mockMvc.perform(multipart("/v1/user/images")
                         .file(validImageFile)
                         .param("type", "profile") // 소문자
                         .header("Authorization", "Bearer " + accessToken)

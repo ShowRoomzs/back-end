@@ -66,7 +66,7 @@ class AdminImageControllerTest {
 
         // when
         ResultActions result = mockMvc.perform(
-                multipart("/v1/admin/images")
+                multipart("/v1/seller/images")
                         .file(file)
                         .param("type", type)
                         .contentType(MediaType.MULTIPART_FORM_DATA)
@@ -96,7 +96,7 @@ class AdminImageControllerTest {
 
         // when
         ResultActions result = mockMvc.perform(
-                multipart("/v1/admin/images")
+                multipart("/v1/seller/images")
                         .file(file)
                         .param("type", type)
                         .contentType(MediaType.MULTIPART_FORM_DATA)
@@ -121,7 +121,7 @@ class AdminImageControllerTest {
 
         // when
         ResultActions result = mockMvc.perform(
-                multipart("/v1/admin/images")
+                multipart("/v1/seller/images")
                         .file(file)
                         .param("type", type)
                         .contentType(MediaType.MULTIPART_FORM_DATA)
@@ -145,7 +145,7 @@ class AdminImageControllerTest {
 
         // when
         ResultActions result = mockMvc.perform(
-                multipart("/v1/admin/images")
+                multipart("/v1/seller/images")
                         .file(file)
                         .param("type", type)
                         .contentType(MediaType.MULTIPART_FORM_DATA)
@@ -173,7 +173,7 @@ class AdminImageControllerTest {
 
         // when
         ResultActions result = mockMvc.perform(
-                multipart("/v1/admin/images")
+                multipart("/v1/seller/images")
                         .file(file)
                         .param("type", type)
                         .contentType(MediaType.MULTIPART_FORM_DATA)
