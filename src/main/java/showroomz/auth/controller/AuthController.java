@@ -116,7 +116,7 @@ public class AuthController implements AuthControllerDocs {
     }
     
     @Override
-    @PostMapping("/register")
+    @PostMapping("/social/signup")
     public ResponseEntity<?> register(
             HttpServletRequest request,
             @RequestBody @Valid RegisterRequest registerRequest) {

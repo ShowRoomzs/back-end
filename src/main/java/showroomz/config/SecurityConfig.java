@@ -40,12 +40,12 @@ public class SecurityConfig {
             "/swagger-ui/**", "/swagger-ui.html", "/swagger-ui/index.html",
             "/api-docs", "/swagger-ui-custom.html", "/payment/**",
             "/v3/api-docs/**", "/api-docs/**", 
-            "/v1/auth/social/login", "/v1/auth/register", "/v1/auth/refresh",  // 토큰 갱신 (인증 불필요)
-            "/v1/auth/local/signup", "/v1/auth/local/login",  // 로컬 회원가입 및 로그인 (인증 불필요)
-            "/v1/admin/signup", "/v1/admin/login",  // 관리자 회원가입 및 로그인 (인증 불필요)
-            "/v1/admin/check-email",  // 관리자 이메일 중복 확인 (인증 불필요)
-            "/v1/users/check-nickname",  // 닉네임 중복 확인 (인증 불필요)
-            "/v1/markets/check-name",  // 마켓명 중복 확인 (인증 불필요)
+            "/v1/user/auth/social/login", "/v1/user/auth/social/signup", "/v1/user/auth/refresh",  // 토큰 갱신 (인증 불필요)
+            "/v1/user/auth/local/signup", "/v1/user/auth/local/login",  // 로컬 회원가입 및 로그인 (인증 불필요)
+            "/v1/seller/auth/signup", "/v1/seller/auth/login",  // 관리자 회원가입 및 로그인 (인증 불필요)
+            "/v1/seller/auth/check-email",  // 관리자 이메일 중복 확인 (인증 불필요)
+            "/v1/user/check-nickname",  // 닉네임 중복 확인 (인증 불필요)
+            "/v1/seller/markets/check-name",  // 마켓명 중복 확인 (인증 불필요)
             "/error"  // 에러 페이지 접근 허용
     };
     /*
@@ -69,11 +69,11 @@ public class SecurityConfig {
                 .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
                 .requestMatchers(AUTH_WHITELIST).permitAll()       
                 .requestMatchers("/v1/admin/markets/*/image-status", "/v1/admin/categories/**").hasAnyAuthority(RoleType.SUPER_ADMIN.getCode()) 
-                .requestMatchers("/v1/admin/images/**").hasAnyAuthority(RoleType.ADMIN.getCode())
-                .requestMatchers("/v1/markets/**").hasAnyAuthority(RoleType.ADMIN.getCode())  // 마켓 관련 API는 ADMIN 권한 필요
-                .requestMatchers("/api/v1/backstage/**").hasAnyAuthority(RoleType.ADMIN.getCode())  // 백스테이지 API는 ADMIN 권한 필요
-                .requestMatchers("/api/*/admin/**").hasAnyAuthority(RoleType.ADMIN.getCode())
-                .requestMatchers("/api/**").hasAnyAuthority(RoleType.USER.getCode())
+                .requestMatchers("/v1/seller/images/**").hasAnyAuthority(RoleType.ADMIN.getCode())  // 판매자 이미지 API는 ADMIN 권한 필요
+                .requestMatchers("/v1/seller/markets/**").hasAnyAuthority(RoleType.ADMIN.getCode())  // 마켓 관련 API는 ADMIN 권한 필요
+                .requestMatchers("/v1/seller/products/**").hasAnyAuthority(RoleType.ADMIN.getCode())  // 상품 관련 API는 ADMIN 권한 필요
+                .requestMatchers("/v1/seller/**").hasAnyAuthority(RoleType.ADMIN.getCode())  // 기타 판매자 API는 ADMIN 권한 필요
+                .requestMatchers("/v1/user/**").hasAnyAuthority(RoleType.USER.getCode())  // 사용자 API는 USER 권한 필요
                 .anyRequest().authenticated()
             );
             
