@@ -17,7 +17,7 @@ public class TokenResponse {
     private Long refreshTokenExpiresIn;
     private Boolean isNewMember;
     private String registerToken; // 신규 회원일 때만 제공 (5분 유효)
-    private String role; // 권한 정보 (예: "SELLER", "SUPER_ADMIN")
+    private String role; // 권한 정보 (예: "SELLER", "ADMIN")
 
     // 기존 회원용 생성자
     public TokenResponse(String accessToken, String refreshToken, long accessTokenExpiresIn, long refreshTokenExpiresIn, boolean isNewMember, String role) {

@@ -33,7 +33,7 @@ public class SuperAdminInitializer implements CommandLineRunner {
             superAdmin.setPassword(passwordEncoder.encode(password)); // 비밀번호 암호화 필수
             superAdmin.setName("Super Master");
             superAdmin.setPhoneNumber("010-0000-0000");
-            superAdmin.setRoleType(RoleType.SUPER_ADMIN); // 핵심: 권한을 SUPER_ADMIN으로 설정
+            superAdmin.setRoleType(RoleType.ADMIN); // 핵심: 권한을 ADMIN으로 설정
             superAdmin.setCreatedAt(LocalDateTime.now());
             superAdmin.setModifiedAt(LocalDateTime.now());
 

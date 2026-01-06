@@ -37,7 +37,7 @@ public class TestTokenGenerator {
      * 테스트용 액세스 토큰 생성 (유효기간: 2개월, 역할 포함)
      * 
      * @param userId 사용자 ID
-     * @param roleType 역할 타입 (USER, SELLER, SUPER_ADMIN)
+     * @param roleType 역할 타입 (USER, SELLER, ADMIN)
      * @param tokenSecret JWT 시크릿 키 (application.yml의 app.auth.tokenSecret 값)
      * @return 생성된 액세스 토큰 문자열
      */
@@ -101,19 +101,19 @@ public class TestTokenGenerator {
         System.out.println("curl -X GET 'https://api.showroomz.shop/v1/markets/me' \\");
         System.out.println("  -H 'Authorization: Bearer " + sellerToken + "'\n");
 
-        // SUPER_ADMIN 역할로 토큰 생성
-        String superAdminToken = generateToken(testUserId, RoleType.SUPER_ADMIN, tokenSecret);
+        // ADMIN 역할로 토큰 생성
+        String adminToken = generateToken(testUserId, RoleType.ADMIN, tokenSecret);
         System.out.println("=".repeat(80));
-        System.out.println("테스트용 액세스 토큰 (SUPER_ADMIN 역할, 유효기간: 2개월)");
+        System.out.println("테스트용 액세스 토큰 (ADMIN 역할, 유효기간: 2개월)");
         System.out.println("=".repeat(80));
         System.out.println("User ID: " + testUserId);
-        System.out.println("Role: SUPER_ADMIN");
+        System.out.println("Role: ADMIN");
         System.out.println("Token:");
-        System.out.println(superAdminToken);
+        System.out.println(adminToken);
         System.out.println("=".repeat(80));
         System.out.println("\ncurl 예시:");
         System.out.println("curl -X PATCH 'https://api.showroomz.shop/v1/markets/1/image-status' \\");
-        System.out.println("  -H 'Authorization: Bearer " + superAdminToken + "' \\");
+        System.out.println("  -H 'Authorization: Bearer " + adminToken + "' \\");
         System.out.println("  -H 'Content-Type: application/json' \\");
         System.out.println("  -d '{\"status\":\"APPROVED\"}'\n");
     }

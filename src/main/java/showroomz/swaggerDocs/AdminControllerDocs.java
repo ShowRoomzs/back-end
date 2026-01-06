@@ -255,7 +255,7 @@ public interface AdminControllerDocs {
                     "**응답:**\n" +
                     "- Access Token: 관리자 API 접근에 사용\n" +
                     "- Refresh Token: Access Token 갱신에 사용" +
-                    "- role: 판매자 권한 (SELLER, SUPER_ADMIN)"
+                    "- role: 판매자 권한 (SELLER, ADMIN)"
     )
     @ApiResponses(value = {
             @ApiResponse(
