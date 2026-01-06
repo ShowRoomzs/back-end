@@ -132,7 +132,10 @@ public interface SuperAdminControllerDocs {
             summary = "카테고리 생성",
             description = "관리자가 새로운 카테고리를 생성합니다.\n\n" +
                     "**권한:** ADMIN\n" +
-                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+                    "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
+                    "**카테고리 depth:**\n" +
+                    "- 1depth: parentId 없이 생성 (최상위 카테고리)\n" +
+                    "- 2depth 이상: parentId에 상위 카테고리 ID 지정"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -145,9 +148,10 @@ public interface SuperAdminControllerDocs {
                                     @ExampleObject(
                                             name = "성공 예시",
                                             value = "{\n" +
-                                                    "  \"categoryId\": 1,\n" +
-                                                    "  \"name\": \"옷\",\n" +
-                                                    "  \"order\": 1,\n" +
+                                                    "  \"categoryId\": 2,\n" +
+                                                    "  \"name\": \"블레이저\",\n" +
+                                                    "  \"order\": 2,\n" +
+                                                    "  \"parentId\": 1,\n" +
                                                     "  \"message\": \"카테고리가 성공적으로 생성되었습니다.\"\n" +
                                                     "}"
                                     )
@@ -194,10 +198,36 @@ public interface SuperAdminControllerDocs {
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)
                     )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "부모 카테고리를 찾을 수 없음 (parentId가 존재하지 않음)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "부모 카테고리 없음 예시",
+                                            value = "{\n" +
+                                                    "  \"code\": \"CATEGORY_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"카테고리를 찾을 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
             )
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "카테고리 생성 정보",
+            description = "카테고리 생성 정보\n\n" +
+                    "**필드 설명:**\n" +
+                    "- `name`: 필수, 카테고리명\n" +
+                    "- `order`: 필수, 카테고리 순서 (0 이상)\n" +
+                    "- `iconUrl`: 선택, 아이콘 URL\n" +
+                    "- `parentId`: 선택, 부모 카테고리 ID\n\n" +
+                    "**사용 방법:**\n" +
+                    "- 1depth (최상위): `parentId` 필드를 제거하거나 null로 설정\n" +
+                    "- 2depth 이상: `parentId`에 상위 카테고리 ID를 입력 (예: `\"parentId\": 1`)\n\n" +
+                    "**아래 예시는 2depth 카테고리 생성 예시입니다. 1depth를 생성하려면 `parentId` 필드를 삭제하세요.**",
             required = true,
             content = @Content(
                     mediaType = "application/json",
@@ -206,9 +236,10 @@ public interface SuperAdminControllerDocs {
                             @ExampleObject(
                                     name = "요청 예시",
                                     value = "{\n" +
-                                            "  \"name\": \"옷\",\n" +
-                                            "  \"order\": 1,\n" +
-                                            "  \"iconUrl\": \"https://example.com/icon/clothing.png\"\n" +
+                                            "  \"name\": \"블레이저\",\n" +
+                                            "  \"order\": 2,\n" +
+                                            "  \"iconUrl\": \"https://example.com/icon/clothing.png\",\n" +
+                                            "  \"parentId\": 1\n" +
                                             "}"
                             )
                     }

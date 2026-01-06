@@ -30,6 +30,9 @@ public class CategoryDto {
         @Size(max = 2048, message = "아이콘 URL은 최대 2048자까지 입력 가능합니다.")
         @Schema(description = "아이콘 URL", example = "https://example.com/icon/clothing.png")
         private String iconUrl;
+
+        @Schema(description = "부모 카테고리 ID (2depth 이상 카테고리 생성 시 필수)", example = "2")
+        private Long parentId;
     }
 
     @Getter
@@ -47,6 +50,9 @@ public class CategoryDto {
 
         @Schema(description = "카테고리 순서", example = "1")
         private Integer order;
+
+        @Schema(description = "부모 카테고리 ID", example = "2")
+        private Long parentId;
 
         @Schema(description = "응답 메시지", example = "카테고리가 성공적으로 생성되었습니다.")
         private String message;
@@ -112,6 +118,9 @@ public class CategoryDto {
 
         @Schema(description = "아이콘 URL", example = "https://example.com/icon/clothing.png")
         private String iconUrl;
+
+        @Schema(description = "부모 카테고리 ID", example = "1")
+        private Long parentId;
 
         @Schema(description = "응답 메시지", example = "카테고리가 성공적으로 수정되었습니다.")
         private String message;
