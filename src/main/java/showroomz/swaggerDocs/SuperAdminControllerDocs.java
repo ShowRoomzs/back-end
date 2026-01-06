@@ -25,9 +25,7 @@ public interface SuperAdminControllerDocs {
             summary = "마켓 이미지 검수 상태 변경",
             description = "특정 마켓의 대표 이미지 검수 상태를 변경합니다. (APPROVED, REJECTED)\n\n" +
                     "**권한:** ADMIN\n" +
-                    "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
-                    "**테스트용 관리자 토큰:**\n" +
-                    "`eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfQURNSU4iLCJleHAiOjE3NzI2MTY3MDV9.W7jUQrsV8qGbcQNp_AlosklYzE37Lgv3CtwtdCE-zQ0`"
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -134,9 +132,7 @@ public interface SuperAdminControllerDocs {
             summary = "카테고리 생성",
             description = "관리자가 새로운 카테고리를 생성합니다.\n\n" +
                     "**권한:** ADMIN\n" +
-                    "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
-                    "**테스트용 관리자 토큰:**\n" +
-                    "`eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfQURNSU4iLCJleHAiOjE3NzI2MTY3MDV9.W7jUQrsV8qGbcQNp_AlosklYzE37Lgv3CtwtdCE-zQ0`"
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(
