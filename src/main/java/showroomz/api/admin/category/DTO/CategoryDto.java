@@ -1,4 +1,4 @@
-package showroomz.api.seller.product.DTO;
+package showroomz.api.admin.category.DTO;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;

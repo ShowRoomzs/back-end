@@ -1,4 +1,4 @@
-package showroomz.api.seller.product.service;
+package showroomz.api.admin.category.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -6,8 +6,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.api.admin.category.DTO.CategoryDto;
 import showroomz.api.app.auth.exception.BusinessException;
-import showroomz.api.seller.product.DTO.CategoryDto;
 import showroomz.domain.product.entity.Category;
 import showroomz.domain.product.repository.CategoryRepository;
 
