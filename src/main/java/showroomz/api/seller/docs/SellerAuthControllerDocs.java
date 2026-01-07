@@ -349,10 +349,17 @@ public interface SellerAuthControllerDocs {
                     schema = @Schema(implementation = SellerLoginRequest.class),
                     examples = {
                             @ExampleObject(
-                                    name = "요청 예시",
+                                    name = "일반 판매자 로그인",
                                     value = "{\n" +
-                                            "  \"email\": \"admin@showroomz.shop\",\n" +
-                                            "  \"password\": \"Admin123!\"\n" +
+                                            "  \"email\": \"seller@example.com\",\n" +
+                                            "  \"password\": \"Seller123!\"\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "슈퍼 관리자 로그인",
+                                    value = "{\n" +
+                                            "  \"email\": \"super\",\n" +
+                                            "  \"password\": \"super\"\n" +
                                             "}"
                             )
                     }
