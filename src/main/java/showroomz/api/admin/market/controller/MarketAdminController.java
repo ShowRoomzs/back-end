@@ -1,6 +1,7 @@
 package showroomz.api.admin.market.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.admin.docs.MarketAdminControllerDocs;
@@ -11,9 +12,9 @@ import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.api.seller.market.DTO.MarketDto;
 import showroomz.api.seller.market.service.MarketService;
 import showroomz.api.seller.market.type.MarketImageStatus;
+import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.ErrorCode;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/v1/admin")
@@ -25,8 +26,10 @@ public class MarketAdminController implements MarketAdminControllerDocs {
 
     @Override
     @GetMapping("/sellers/pending")
-    public ResponseEntity<List<SellerDto.PendingSellerResponse>> getPendingSellers() {
-        List<SellerDto.PendingSellerResponse> response = adminService.getPendingSellers();
+    public ResponseEntity<PageResponse<SellerDto.PendingSellerResponse>> getPendingSellers(
+            @ModelAttribute PagingRequest pagingRequest) {
+        Pageable pageable = pagingRequest.toPageable();
+        PageResponse<SellerDto.PendingSellerResponse> response = adminService.getPendingSellers(pageable);
         return ResponseEntity.ok(response);
     }
 

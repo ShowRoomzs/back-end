@@ -22,9 +22,12 @@ public interface MarketAdminControllerDocs {
     @Operation(
             summary = "가입 대기 판매자 목록 조회",
             description = "회원가입 후 승인을 기다리고 있는(PENDING 상태) 판매자들의 목록을 조회합니다.\n\n" +
-                    "**반환 정보:** 판매자 ID, 이메일, 이름, 마켓명, 연락처, 신청일\n" +
+                    "**반환 정보:** 판매자 ID, 이메일, 이름, 마켓명, 연락처, 신청일 (페이징)\n" +
                     "**권한:** ADMIN\n" +
-                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+                    "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
+                    "**페이징 파라미터:**\n" +
+                    "- page: 페이지 번호 (1부터 시작, 기본값: 1)\n" +
+                    "- size: 페이지당 항목 수 (기본값: 20)"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -32,11 +35,13 @@ public interface MarketAdminControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = SellerDto.PendingSellerResponse.class)
+                            schema = @Schema(implementation = showroomz.global.dto.PageResponse.class)
                     )
             )
     })
-    ResponseEntity<java.util.List<SellerDto.PendingSellerResponse>> getPendingSellers();
+    ResponseEntity<showroomz.global.dto.PageResponse<SellerDto.PendingSellerResponse>> getPendingSellers(
+            @Parameter(description = "페이징 정보", hidden = true) showroomz.global.dto.PagingRequest pagingRequest
+    );
 
     @Operation(
             summary = "마켓 이미지 검수 상태 변경",
