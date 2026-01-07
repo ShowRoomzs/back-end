@@ -13,10 +13,30 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.market.DTO.MarketDto;
 
 @Tag(name = "Admin - Market", description = "관리자 마켓 관리 API")
 public interface MarketAdminControllerDocs {
+
+    @Operation(
+            summary = "가입 대기 판매자 목록 조회",
+            description = "회원가입 후 승인을 기다리고 있는(PENDING 상태) 판매자들의 목록을 조회합니다.\n\n" +
+                    "**반환 정보:** 판매자 ID, 이메일, 이름, 마켓명, 연락처, 신청일\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = SellerDto.PendingSellerResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<java.util.List<SellerDto.PendingSellerResponse>> getPendingSellers();
 
     @Operation(
             summary = "마켓 이미지 검수 상태 변경",
@@ -124,6 +144,79 @@ public interface MarketAdminControllerDocs {
             )
             @PathVariable Long marketId,
             @RequestBody MarketDto.UpdateImageStatusRequest request
+    );
+
+    @Operation(
+            summary = "판매자 계정 상태 변경 (승인/반려)",
+            description = "회원가입을 신청한 판매자 계정의 상태를 변경합니다. (APPROVED, REJECTED)\n\n" +
+                    "**상태값:**\n" +
+                    "- `APPROVED`: 승인 (로그인 가능)\n" +
+                    "- `REJECTED`: 반려 (로그인 불가)\n\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "상태 변경 성공 - Status: 204 No Content",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 상태값 요청",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "잘못된 상태값",
+                                            value = "{\"code\": \"INVALID_INPUT\", \"message\": \"입력값이 올바르지 않습니다.\"}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "판매자 계정을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "계정 없음",
+                                            value = "{\"code\": \"USER_NOT_FOUND\", \"message\": \"존재하지 않는 회원입니다.\"}"
+                                    )
+                            }
+                    )
+            )
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "변경할 계정 상태 (APPROVED 또는 REJECTED)",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = SellerDto.UpdateStatusRequest.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "승인 요청 예시",
+                                    value = "{\n  \"status\": \"APPROVED\"\n}"
+                            ),
+                            @ExampleObject(
+                                    name = "반려 요청 예시",
+                                    value = "{\n  \"status\": \"REJECTED\"\n}"
+                            )
+                    }
+            )
+    )
+    ResponseEntity<Void> updateSellerStatus(
+            @Parameter(
+                    description = "상태를 변경할 판매자(Seller) ID",
+                    required = true,
+                    example = "1",
+                    in = ParameterIn.PATH
+            )
+            @PathVariable Long sellerId,
+            @RequestBody SellerDto.UpdateStatusRequest request
     );
 }
 

@@ -13,6 +13,8 @@ import showroomz.api.seller.market.service.MarketService;
 import showroomz.api.seller.market.type.MarketImageStatus;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/v1/admin")
 @RequiredArgsConstructor
@@ -20,6 +22,13 @@ public class MarketAdminController implements MarketAdminControllerDocs {
 
     private final MarketService marketService;
     private final AdminService adminService;
+
+    @Override
+    @GetMapping("/sellers/pending")
+    public ResponseEntity<List<SellerDto.PendingSellerResponse>> getPendingSellers() {
+        List<SellerDto.PendingSellerResponse> response = adminService.getPendingSellers();
+        return ResponseEntity.ok(response);
+    }
 
     @Override
     @PatchMapping("/markets/{marketId}/image-status")
@@ -38,9 +47,7 @@ public class MarketAdminController implements MarketAdminControllerDocs {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * 판매자 계정 승인/반려 API
-     */
+    @Override
     @PatchMapping("/sellers/{sellerId}/status")
     public ResponseEntity<Void> updateSellerStatus(
             @PathVariable Long sellerId,

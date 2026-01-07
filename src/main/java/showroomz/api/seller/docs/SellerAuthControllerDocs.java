@@ -26,14 +26,13 @@ import java.util.Map;
 public interface SellerAuthControllerDocs {
 
     @Operation(
-            summary = "관리자(판매자) 회원가입",
-            description = "계정, 판매자, 마켓 정보를 입력받아 관리자 계정을 생성합니다. 회원가입 후 관리자 승인 대기 상태가 되며, 승인 후 로그인이 가능합니다.\n\n" +
-                    "**생성되는 정보:**\n" +
-                    "- Admin 엔티티: 관리자 계정 정보 (이메일, 비밀번호, 판매자 이름, 연락처, 상태: PENDING)\n" +
-                    "- Market 엔티티: 마켓 정보 (마켓명, 고객센터 번호)\n\n" +
-                    "**반환 정보:**\n" +
-                    "- message: 회원가입 신청 완료 메시지\n\n" +
-                    "**권한:** 없음 (회원가입은 인증 불필요)\n\n" +
+            summary = "관리자(판매자) 회원가입 요청",
+            description = "계정, 판매자, 마켓 정보를 입력받아 관리자(판매자) 계정을 생성합니다.\n\n" +
+                    "**주의사항:**\n" +
+                    "- 회원가입 직후에는 **승인 대기(PENDING)** 상태가 되며 로그인이 불가능합니다.\n" +
+                    "- 슈퍼 관리자의 승인 완료 후 로그인이 가능해집니다.\n" +
+                    "- 따라서 회원가입 성공 시 토큰 대신 안내 메시지를 반환합니다.\n\n" +
+                    "**권한:** 없음 (회원가입은 인증 불필요)" +
                     "**승인 상태:** PENDING (승인 대기 상태)\n\n" +
                     "**승인 상태:** APPROVED (승인 완료 상태)\n\n" +
                     "**승인 상태:** REJECTED (승인 반려 상태)"
@@ -44,6 +43,7 @@ public interface SellerAuthControllerDocs {
                     description = "회원가입 신청 성공 - Status: 201 Created",
                     content = @Content(
                             mediaType = "application/json",
+                            schema = @Schema(implementation = Map.class),
                             examples = {
                                     @ExampleObject(
                                             name = "성공 예시",
@@ -246,10 +246,9 @@ public interface SellerAuthControllerDocs {
     @Operation(
             summary = "관리자(판매자) 로그인",
             description = "이메일과 비밀번호로 관리자 계정에 로그인합니다.\n\n" +
-                    "**응답:**\n" +
-                    "- Access Token: 관리자 API 접근에 사용\n" +
-                    "- Refresh Token: Access Token 갱신에 사용" +
-                    "- role: 판매자 권한 (SELLER, ADMIN)"
+                    "**제약사항:**\n" +
+                    "- 승인 완료(APPROVED)된 계정만 로그인할 수 있습니다.\n" +
+                    "- 승인 대기(PENDING) 또는 반려(REJECTED)된 계정은 403 Forbidden 에러가 발생합니다."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -309,10 +308,31 @@ public interface SellerAuthControllerDocs {
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "로그인 실패 예시",
+                                            name = "비밀번호 오류",
+                                            value = "{\"code\": \"UNAUTHORIZED\", \"message\": \"아이디 또는 비밀번호가 올바르지 않습니다.\"}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "로그인 실패 - 계정 미승인",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "승인 대기 중",
                                             value = "{\n" +
-                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
-                                                    "  \"message\": \"아이디 또는 비밀번호가 올바르지 않습니다.\"\n" +
+                                                    "  \"code\": \"ACCOUNT_NOT_APPROVED\",\n" +
+                                                    "  \"message\": \"관리자 승인 대기 중인 계정입니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "승인 반려됨",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ACCOUNT_REJECTED\",\n" +
+                                                    "  \"message\": \"가입 승인이 반려된 계정입니다.\"\n" +
                                                     "}"
                                     )
                             }
