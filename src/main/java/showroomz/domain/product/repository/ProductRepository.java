@@ -1,4 +1,4 @@
-package showroomz.api.seller.product.repository;
+package showroomz.domain.product.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

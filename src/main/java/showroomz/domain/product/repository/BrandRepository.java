@@ -1,4 +1,4 @@
-package showroomz.api.seller.product.repository;
+package showroomz.domain.product.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

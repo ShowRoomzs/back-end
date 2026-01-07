@@ -9,7 +9,7 @@ import showroomz.global.error.exception.ErrorCode;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.seller.product.DTO.CategoryDto;
 import showroomz.domain.product.entity.Category;
-import showroomz.api.seller.product.repository.CategoryRepository;
+import showroomz.domain.product.repository.CategoryRepository;
 
 @Service
 @RequiredArgsConstructor
