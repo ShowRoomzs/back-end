@@ -71,7 +71,7 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
-                .requestMatchers(AUTH_WHITELIST).permitAll()
+                .requestMatchers(AUTH_WHITELIST).permitAll()       
                 
                 // ADMIN 전용
                 .requestMatchers("/v1/admin/**").hasAnyAuthority(RoleType.ADMIN.getCode())
@@ -84,7 +84,7 @@ public class SecurityConfig {
                 
                 .anyRequest().authenticated()
             );
-        
+
         http.addFilterBefore(tokenAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
