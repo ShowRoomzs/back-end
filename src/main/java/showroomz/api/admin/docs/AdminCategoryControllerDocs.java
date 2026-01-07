@@ -17,8 +17,8 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.seller.product.DTO.CategoryDto;
 
-@Tag(name = "Admin", description = "관리자 API")
-public interface AdminControllerDocs {
+@Tag(name = "Admin - Category", description = "관리자 카테고리 관리 API")
+public interface AdminCategoryControllerDocs {
 
     @Operation(
             summary = "카테고리 생성",

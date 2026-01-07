@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.Map;
 
-@Tag(name = "User Auth", description = "User Auth API")
+@Tag(name = "User - Auth", description = "User Auth API")
 public interface AuthControllerDocs {
 
     @Operation(

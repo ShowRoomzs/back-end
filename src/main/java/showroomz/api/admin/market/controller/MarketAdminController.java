@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import showroomz.api.admin.docs.MarketAdminControllerDocs;
+import showroomz.api.admin.docs.AdminMarketControllerDocs;
 import showroomz.api.admin.market.service.AdminService;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.seller.auth.DTO.SellerDto;
@@ -19,7 +19,7 @@ import showroomz.global.error.exception.ErrorCode;
 @RestController
 @RequestMapping("/v1/admin")
 @RequiredArgsConstructor
-public class MarketAdminController implements MarketAdminControllerDocs {
+public class MarketAdminController implements AdminMarketControllerDocs {
 
     private final MarketService marketService;
     private final AdminService adminService;

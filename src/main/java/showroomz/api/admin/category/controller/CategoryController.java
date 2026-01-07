@@ -6,14 +6,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import showroomz.api.admin.docs.AdminControllerDocs;
+import showroomz.api.admin.docs.AdminCategoryControllerDocs;
 import showroomz.api.seller.product.DTO.CategoryDto;
 import showroomz.api.seller.product.service.CategoryService;
 
 @RestController
 @RequestMapping("/v1/admin")
 @RequiredArgsConstructor
-public class CategoryController implements AdminControllerDocs {
+public class CategoryController implements AdminCategoryControllerDocs {
 
     private final CategoryService categoryService;
 

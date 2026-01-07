@@ -17,7 +17,7 @@ import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.market.DTO.MarketDto;
 
 @Tag(name = "Admin - Market", description = "관리자 마켓 관리 API")
-public interface MarketAdminControllerDocs {
+public interface AdminMarketControllerDocs {
 
     @Operation(
             summary = "가입 대기 판매자 목록 조회",

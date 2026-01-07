@@ -18,7 +18,7 @@ import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
 import showroomz.api.app.user.DTO.UserProfileResponse;
 
-@Tag(name = "User", description = "사용자 정보 API")
+@Tag(name = "User - Profile", description = "사용자 프로필 관리 API")
 public interface UserControllerDocs {
 
     @Operation(

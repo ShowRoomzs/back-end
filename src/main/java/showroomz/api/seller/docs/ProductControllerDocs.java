@@ -17,7 +17,7 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.seller.product.DTO.ProductDto;
 
-@Tag(name = "Seller", description = "Seller API")
+@Tag(name = "Seller - Product", description = "Seller Product API")
 public interface ProductControllerDocs {
 
     @Operation(

@@ -54,3 +54,8 @@ logging:
     org.springframework.security: DEBUG
     org.springframework.web: DEBUG
     com.oauthlogin: DEBUG
+
+springdoc:
+  swagger-ui:
+    tags-sorter: alpha       # 태그를 알파벳순 정렬
+    operations-sorter: alpha # API(메서드)도 알파벳순 정렬
