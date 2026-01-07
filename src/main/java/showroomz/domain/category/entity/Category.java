@@ -1,4 +1,4 @@
-package showroomz.domain.product.entity;
+package showroomz.domain.category.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

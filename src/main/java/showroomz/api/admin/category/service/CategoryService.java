@@ -8,8 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.api.admin.category.DTO.CategoryDto;
 import showroomz.api.app.auth.exception.BusinessException;
-import showroomz.domain.product.entity.Category;
-import showroomz.domain.product.repository.CategoryRepository;
+import showroomz.domain.category.entity.Category;
+import showroomz.domain.category.repository.CategoryRepository;
 
 @Service
 @RequiredArgsConstructor

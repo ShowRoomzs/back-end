@@ -1,8 +1,9 @@
-package showroomz.domain.product.repository;
+package showroomz.domain.category.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import showroomz.domain.product.entity.Category;
+
+import showroomz.domain.category.entity.Category;
 
 import java.util.Optional;
 
