@@ -45,8 +45,8 @@ public class SellerDto {
     @AllArgsConstructor
     @Schema(description = "가입 대기 판매자 정보")
     public static class PendingSellerResponse {
-        @Schema(description = "관리자(판매자) ID", example = "1")
-        private Long adminId;
+        @Schema(description = "판매자 ID", example = "1")
+        private Long sellerId;
 
         @Schema(description = "이메일", example = "seller@example.com")
         private String email;

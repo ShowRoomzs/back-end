@@ -65,7 +65,7 @@ public class AdminService {
         // Market -> DTO 변환
         List<SellerDto.PendingSellerResponse> content = pendingMarkets.getContent().stream()
                 .map(market -> SellerDto.PendingSellerResponse.builder()
-                        .adminId(market.getSeller().getId())
+                        .sellerId(market.getSeller().getId())
                         .email(market.getSeller().getEmail())
                         .name(market.getSeller().getName())
                         .marketName(market.getMarketName())

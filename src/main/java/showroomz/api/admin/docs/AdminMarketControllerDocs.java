@@ -36,7 +36,52 @@ public interface AdminMarketControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = showroomz.global.dto.PageResponse.class)
+                            schema = @Schema(implementation = showroomz.global.dto.PageResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"content\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"sellerId\": 1,\n" +
+                                                    "      \"email\": \"seller1@example.com\",\n" +
+                                                    "      \"name\": \"홍길동\",\n" +
+                                                    "      \"marketName\": \"멋쟁이 옷장\",\n" +
+                                                    "      \"phoneNumber\": \"010-1234-5678\",\n" +
+                                                    "      \"createdAt\": \"2024-01-15T10:30:00\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"sellerId\": 2,\n" +
+                                                    "      \"email\": \"seller2@example.com\",\n" +
+                                                    "      \"name\": \"김철수\",\n" +
+                                                    "      \"marketName\": \"패션 스토어\",\n" +
+                                                    "      \"phoneNumber\": \"010-9876-5432\",\n" +
+                                                    "      \"createdAt\": \"2024-01-14T14:20:00\"\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"pageInfo\": {\n" +
+                                                    "    \"currentPage\": 1,\n" +
+                                                    "    \"totalPages\": 3,\n" +
+                                                    "    \"totalResults\": 25,\n" +
+                                                    "    \"limit\": 20,\n" +
+                                                    "    \"hasNext\": true\n" +
+                                                    "  }\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "빈 목록 예시",
+                                            value = "{\n" +
+                                                    "  \"content\": [],\n" +
+                                                    "  \"pageInfo\": {\n" +
+                                                    "    \"currentPage\": 1,\n" +
+                                                    "    \"totalPages\": 0,\n" +
+                                                    "    \"totalResults\": 0,\n" +
+                                                    "    \"limit\": 20,\n" +
+                                                    "    \"hasNext\": false\n" +
+                                                    "  }\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             )
     })
