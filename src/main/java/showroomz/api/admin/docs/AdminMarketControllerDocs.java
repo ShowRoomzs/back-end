@@ -158,6 +158,9 @@ public interface AdminMarketControllerDocs {
                     "**상태값:**\n" +
                     "- `APPROVED`: 승인 (로그인 가능)\n" +
                     "- `REJECTED`: 반려 (로그인 불가)\n\n" +
+                    "\n" +
+                    "- `rejectionReason` 필드는 선택 사항입니다. REJECTED 상태일 때 거부 사유를 입력할 수 있습니다.\n" +
+                    "- APPROVED 상태로 변경 시 `rejectionReason` 필드는 무시됩니다.\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -209,7 +212,7 @@ public interface AdminMarketControllerDocs {
                             ),
                             @ExampleObject(
                                     name = "반려 요청 예시",
-                                    value = "{\n  \"status\": \"REJECTED\"\n}"
+                                    value = "{\n  \"status\": \"REJECTED\",\n  \"rejectionReason\": \"서류 미비로 인한 반려\"\n}"
                             )
                     }
             )

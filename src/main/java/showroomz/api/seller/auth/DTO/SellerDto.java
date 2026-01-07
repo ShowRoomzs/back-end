@@ -33,6 +33,9 @@ public class SellerDto {
     public static class UpdateStatusRequest {
         @Schema(description = "변경할 상태 (APPROVED: 승인, REJECTED: 반려)", example = "APPROVED")
         private String status;
+
+        @Schema(description = "거부 사유 (선택 사항, REJECTED 상태일 때 입력 가능)", example = "서류 미비로 인한 반려")
+        private String rejectionReason;
     }
 
     @Getter

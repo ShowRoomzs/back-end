@@ -31,11 +31,20 @@ public class AdminService {
      * 판매자(관리자) 계정 승인/반려 처리
      */
     @Transactional
-    public void updateAdminStatus(Long adminId, SellerStatus status) {
+    public void updateAdminStatus(Long adminId, SellerStatus status, String rejectionReason) {
         Seller admin = sellerRepository.findById(adminId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         admin.setStatus(status);
+        
+        // REJECTED 상태일 때만 rejectionReason 저장
+        if (status == SellerStatus.REJECTED) {
+            admin.setRejectionReason(rejectionReason);
+        } else {
+            // APPROVED 상태일 때는 rejectionReason 초기화
+            admin.setRejectionReason(null);
+        }
+        
         admin.setModifiedAt(LocalDateTime.now());
     }
 
