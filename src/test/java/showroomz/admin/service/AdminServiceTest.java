@@ -381,7 +381,7 @@ class AdminServiceTest {
             given(adminRefreshTokenRepository.findByAdminEmail("admin@test.com")).willReturn(dbToken);
 
             Market market = new Market(admin, "TestMarket", "010-0000-0000");
-            given(marketRepository.findByAdmin(admin)).willReturn(Optional.of(market));
+            given(marketRepository.findBySeller(admin)).willReturn(Optional.of(market));
 
             // when
             adminService.withdraw(accessTokenStr);
