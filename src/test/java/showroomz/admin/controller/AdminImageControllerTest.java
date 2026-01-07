@@ -17,7 +17,7 @@ import showroomz.api.app.auth.token.AuthTokenProvider;
 import showroomz.api.app.image.DTO.ImageUploadResponse;
 import showroomz.api.app.image.service.ImageService;
 import showroomz.api.app.image.type.ImageType;
-import showroomz.api.seller.auth.controller.SellerImageController;
+import showroomz.api.seller.image.controller.SellerImageController;
 import showroomz.global.config.SecurityConfig;
 import showroomz.global.error.exception.ErrorCode;
 

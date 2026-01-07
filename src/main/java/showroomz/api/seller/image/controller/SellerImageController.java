@@ -1,4 +1,4 @@
-package showroomz.api.seller.auth.controller;
+package showroomz.api.seller.image.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
