@@ -16,6 +16,7 @@ import showroomz.auth.DTO.TokenResponse;
 import showroomz.auth.exception.BusinessException;
 import showroomz.admin.refreshToken.AdminRefreshToken;
 import showroomz.admin.refreshToken.AdminRefreshTokenRepository;
+import showroomz.auth.entity.RoleType;
 import showroomz.auth.token.AuthToken;
 import showroomz.auth.token.AuthTokenProvider;
 import showroomz.config.properties.AppProperties;
@@ -238,12 +239,22 @@ public class AdminService {
 
     /**
      * 공통 메서드: Access Token 생성
+     * 슈퍼 관리자(super) 계정만 ADMIN 권한을 유지하고, 나머지는 모두 SELLER 권한으로 설정
      */
     private AuthToken createAccessToken(Admin admin, Date now) {
         long accessTokenExpiry = appProperties.getAuth().getTokenExpiry();
+        
+        // 슈퍼 관리자 계정만 ADMIN 권한 유지, 나머지는 모두 SELLER로 설정
+        String roleCode;
+        if ("super".equals(admin.getEmail()) && admin.getRoleType() == RoleType.ADMIN) {
+            roleCode = RoleType.ADMIN.getCode();
+        } else {
+            roleCode = RoleType.SELLER.getCode();
+        }
+        
         return tokenProvider.createAuthToken(
                 admin.getEmail(),
-                admin.getRoleType().getCode(),
+                roleCode,
                 admin.getAdminId(),
                 new Date(now.getTime() + accessTokenExpiry)
         );

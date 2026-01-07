@@ -235,5 +235,132 @@ public class ProductService {
         
         return prefix + String.format("%03d", sequenceNumber);
     }
+
+    @Transactional(readOnly = true)
+    public ProductDto.ProductListResponse getProductList(String adminEmail) {
+        // 1. Admin과 Market 조회
+        Admin admin = adminRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        
+        Market market = marketRepository.findByAdmin(admin)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        
+        // 2. Market의 Brand 조회
+        // Market 이름과 일치하는 Brand를 찾거나, 없으면 생성
+        Brand brand = brandRepository.findAll().stream()
+                .filter(b -> market.getMarketName().equals(b.getName()))
+                .findFirst()
+                .orElseGet(() -> {
+                    // Brand가 없으면 생성 (상품 등록 시와 동일한 로직)
+                    Brand newBrand = new Brand();
+                    newBrand.setName(market.getMarketName());
+                    return brandRepository.save(newBrand);
+                });
+        
+        // 3. 해당 Brand의 모든 상품 조회
+        List<Product> products = productRepository.findAll().stream()
+                .filter(p -> p.getBrand() != null && p.getBrand().getBrandId().equals(brand.getBrandId()))
+                .sorted((p1, p2) -> {
+                    // 최신순 정렬 (createdAt 내림차순)
+                    if (p1.getCreatedAt() == null && p2.getCreatedAt() == null) return 0;
+                    if (p1.getCreatedAt() == null) return 1;
+                    if (p2.getCreatedAt() == null) return -1;
+                    return p2.getCreatedAt().compareTo(p1.getCreatedAt());
+                })
+                .collect(Collectors.toList());
+        
+        // 4. ProductListItem으로 변환
+        List<ProductDto.ProductListItem> productList = products.stream()
+                .map(product -> {
+                    String calculatedStockStatus = calculateStockStatus(product, null);
+                    return convertToProductListItem(product, calculatedStockStatus);
+                })
+                .collect(Collectors.toList());
+        
+        // 5. 응답 생성
+        return ProductDto.ProductListResponse.builder()
+                .products(productList)
+                .build();
+    }
+    
+    @Transactional(readOnly = true)
+    public ProductDto.ProductListItem getProductById(String adminEmail, Long productId) {
+        // 1. Admin과 Market 조회
+        Admin admin = adminRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        
+        Market market = marketRepository.findByAdmin(admin)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        
+        // 2. Market의 Brand 조회
+        Brand brand = brandRepository.findAll().stream()
+                .filter(b -> market.getMarketName().equals(b.getName()))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        
+        // 3. 상품 조회 및 권한 확인 (해당 Brand의 상품인지 확인)
+        Product product = productRepository.findByProductId(productId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+        
+        // 4. 해당 seller의 상품인지 확인
+        if (product.getBrand() == null || !product.getBrand().getBrandId().equals(brand.getBrandId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+        
+        // 5. 품절 상태 계산
+        String stockStatus = calculateStockStatus(product, null);
+        
+        // 6. 응답 생성
+        return convertToProductListItem(product, stockStatus);
+    }
+    
+    /**
+     * 상품의 품절 상태 계산
+     */
+    private String calculateStockStatus(Product product, String requestedStockStatus) {
+        // 강제 품절 처리된 경우
+        if (Boolean.TRUE.equals(product.getIsOutOfStockForced())) {
+            return "OUT_OF_STOCK";
+        }
+        
+        // 모든 variant의 재고 확인
+        boolean hasStock = product.getVariants().stream()
+                .anyMatch(variant -> variant.getStock() > 0);
+        
+        return hasStock ? "IN_STOCK" : "OUT_OF_STOCK";
+    }
+    
+    /**
+     * Product 엔티티를 ProductListItem DTO로 변환
+     */
+    private ProductDto.ProductListItem convertToProductListItem(Product product, String stockStatus) {
+        // 진열 상태 변환
+        String displayStatus = Boolean.TRUE.equals(product.getIsDisplay()) ? "DISPLAY" : "HIDDEN";
+        
+        // 가격 정보
+        ProductDto.PriceInfo priceInfo = ProductDto.PriceInfo.builder()
+                .purchasePrice(product.getPurchasePrice())
+                .regularPrice(product.getRegularPrice())
+                .salePrice(product.getSalePrice())
+                .build();
+        
+        // 등록일 포맷팅 (ISO 8601 형식)
+        String createdAtStr = product.getCreatedAt() != null 
+                ? product.getCreatedAt().toString() 
+                : null;
+        
+        return ProductDto.ProductListItem.builder()
+                .productId(product.getProductId())
+                .productNumber(product.getProductNumber())
+                .sellerProductCode(product.getSellerProductCode())
+                .thumbnailUrl(product.getThumbnailUrl())
+                .name(product.getName())
+                .price(priceInfo)
+                .createdAt(createdAtStr)
+                .displayStatus(displayStatus)
+                .stockStatus(stockStatus)
+                .isOutOfStockForced(product.getIsOutOfStockForced())
+                .build();
+    }
 }
 
