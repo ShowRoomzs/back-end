@@ -22,8 +22,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
-import showroomz.auth.service.SocialLoginService;
-import showroomz.user.repository.UserRepository;
+import showroomz.api.app.auth.service.SocialLoginService;
+import showroomz.api.app.user.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("NonAsciiCharacters")

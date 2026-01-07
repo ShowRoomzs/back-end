@@ -10,15 +10,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-import showroomz.auth.DTO.RegisterRequest;
-import showroomz.auth.DTO.SocialLoginRequest;
-import showroomz.auth.entity.ProviderType;
-import showroomz.auth.entity.RoleType;
-import showroomz.auth.token.AuthToken;
-import showroomz.auth.token.AuthTokenProvider;
-import showroomz.config.properties.AppProperties;
-import showroomz.user.entity.Users;
-import showroomz.user.repository.UserRepository;
+
+import showroomz.api.app.auth.DTO.RegisterRequest;
+import showroomz.api.app.auth.DTO.SocialLoginRequest;
+import showroomz.api.app.auth.entity.ProviderType;
+import showroomz.api.app.auth.entity.RoleType;
+import showroomz.api.app.auth.token.AuthToken;
+import showroomz.api.app.auth.token.AuthTokenProvider;
+import showroomz.api.app.user.entity.Users;
+import showroomz.api.app.user.repository.UserRepository;
+import showroomz.global.config.properties.AppProperties;
 
 import java.time.LocalDateTime;
 import java.util.Date;

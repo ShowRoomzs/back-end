@@ -11,12 +11,13 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import showroomz.admin.DTO.AdminDto;
-import showroomz.admin.DTO.AdminLoginRequest;
-import showroomz.admin.DTO.AdminSignUpRequest;
-import showroomz.admin.service.AdminService;
-import showroomz.auth.DTO.RefreshTokenRequest;
-import showroomz.auth.DTO.TokenResponse;
+import showroomz.api.app.auth.DTO.RefreshTokenRequest;
+import showroomz.api.app.auth.DTO.TokenResponse;
+import showroomz.api.seller.auth.DTO.SellerDto;
+import showroomz.api.seller.auth.DTO.SellerLoginRequest;
+import showroomz.api.seller.auth.DTO.SellerSignUpRequest;
+import showroomz.api.seller.auth.controller.SellerAuthController;
+import showroomz.api.seller.auth.service.SellerService;
 import showroomz.global.error.exception.GlobalExceptionHandler;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -27,10 +28,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(controllers = AdminAuthController.class)
+@WebMvcTest(controllers = SellerAuthController.class)
 @AutoConfigureMockMvc(addFilters = false) // Security Filter Chain 비활성화 (순수 컨트롤러 로직만 테스트)
 @Import(GlobalExceptionHandler.class) // GlobalExceptionHandler를 import하여 validation 에러 처리 활성화
-@DisplayName("AdminController 단위 테스트")
+    @DisplayName("SellerAuthController 단위 테스트")
 class AdminAuthControllerTest {
 
     @Autowired
@@ -40,13 +41,13 @@ class AdminAuthControllerTest {
     private ObjectMapper objectMapper;
 
     @MockBean
-    private AdminService adminService;
+    private SellerService adminService;
 
     @Test
-    @DisplayName("관리자 회원가입 성공")
+    @DisplayName("관리자 회원가입 성공 - 승인 대기 메시지 반환")
     void registerAdmin_Success() throws Exception {
         // given
-        AdminSignUpRequest request = new AdminSignUpRequest();
+        SellerSignUpRequest request = new SellerSignUpRequest();
         request.setEmail("admin@test.com");
         request.setPassword("Password123!");
         request.setPasswordConfirm("Password123!");
@@ -55,11 +56,11 @@ class AdminAuthControllerTest {
         request.setMarketName("테스트마켓");
         request.setCsNumber("02-1234-5678");
 
-        TokenResponse tokenResponse = new TokenResponse(
-                "accessToken", "refreshToken", 3600L, 1209600L, false, "SELLER"
+        java.util.Map<String, String> responseBody = java.util.Map.of(
+                "message", "회원가입 신청이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다."
         );
 
-        given(adminService.registerAdmin(any(AdminSignUpRequest.class))).willReturn(tokenResponse);
+        given(adminService.registerAdmin(any(SellerSignUpRequest.class))).willReturn(responseBody);
 
         // when & then
         mockMvc.perform(post("/v1/seller/auth/signup")
@@ -67,13 +68,9 @@ class AdminAuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.accessToken").value("accessToken"))
-                .andExpect(jsonPath("$.refreshToken").value("refreshToken"))
-                .andExpect(jsonPath("$.accessTokenExpiresIn").value(3600))
-                .andExpect(jsonPath("$.refreshTokenExpiresIn").value(1209600))
-                .andExpect(jsonPath("$.isNewMember").value(false));
+                .andExpect(jsonPath("$.message").value("회원가입 신청이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다."));
 
-        verify(adminService).registerAdmin(any(AdminSignUpRequest.class));
+        verify(adminService).registerAdmin(any(SellerSignUpRequest.class));
     }
 
     @Test
@@ -81,7 +78,7 @@ class AdminAuthControllerTest {
     void checkEmail_Available() throws Exception {
         // given
         String email = "available@test.com";
-        AdminDto.CheckEmailResponse response = new AdminDto.CheckEmailResponse(true, "AVAILABLE", "사용 가능한 이메일입니다.");
+        SellerDto.CheckEmailResponse response = new SellerDto.CheckEmailResponse(true, "AVAILABLE", "사용 가능한 이메일입니다.");
         given(adminService.checkEmailDuplicate(email)).willReturn(response);
 
         // when & then
@@ -101,7 +98,7 @@ class AdminAuthControllerTest {
     void checkEmail_Duplicate() throws Exception {
         // given
         String email = "duplicate@test.com";
-        AdminDto.CheckEmailResponse response = new AdminDto.CheckEmailResponse(false, "DUPLICATE", "이미 사용 중인 이메일입니다.");
+        SellerDto.CheckEmailResponse response = new SellerDto.CheckEmailResponse(false, "DUPLICATE", "이미 사용 중인 이메일입니다.");
         given(adminService.checkEmailDuplicate(email)).willReturn(response);
 
         // when & then
@@ -121,7 +118,7 @@ class AdminAuthControllerTest {
     @DisplayName("로그인 성공")
     void login_Success() throws Exception {
         // given
-        AdminLoginRequest request = new AdminLoginRequest();
+        SellerLoginRequest request = new SellerLoginRequest();
         request.setEmail("admin@test.com");
         request.setPassword("Password123!");
 
@@ -129,7 +126,7 @@ class AdminAuthControllerTest {
                 "accessToken", "refreshToken", 3600L, 1209600L, false, "SELLER"
         );
 
-        given(adminService.login(any(AdminLoginRequest.class))).willReturn(tokenResponse);
+        given(adminService.login(any(SellerLoginRequest.class))).willReturn(tokenResponse);
 
         // when & then
         mockMvc.perform(post("/v1/seller/auth/login")
@@ -207,7 +204,7 @@ class AdminAuthControllerTest {
     @DisplayName("회원가입 실패 - 이메일 형식 오류")
     void registerAdmin_InvalidEmail() throws Exception {
         // given
-        AdminSignUpRequest request = new AdminSignUpRequest();
+        SellerSignUpRequest request = new SellerSignUpRequest();
         request.setEmail("invalid-email"); // 유효하지 않은 이메일 형식
         request.setPassword("Password123!");
         request.setPasswordConfirm("Password123!");
@@ -230,7 +227,7 @@ class AdminAuthControllerTest {
     @DisplayName("회원가입 실패 - 비밀번호 형식 오류")
     void registerAdmin_InvalidPassword() throws Exception {
         // given
-        AdminSignUpRequest request = new AdminSignUpRequest();
+        SellerSignUpRequest request = new SellerSignUpRequest();
         request.setEmail("admin@test.com");
         request.setPassword("1234"); // 8자 미만, 영문/특수문자 없음
         request.setPasswordConfirm("1234");
@@ -253,7 +250,7 @@ class AdminAuthControllerTest {
     @DisplayName("회원가입 실패 - 필수값 누락 (이메일)")
     void registerAdmin_MissingEmail() throws Exception {
         // given
-        AdminSignUpRequest request = new AdminSignUpRequest();
+        SellerSignUpRequest request = new SellerSignUpRequest();
         // email 누락
         request.setPassword("Password123!");
         request.setPasswordConfirm("Password123!");
@@ -276,7 +273,7 @@ class AdminAuthControllerTest {
     @DisplayName("회원가입 실패 - 연락처 형식 오류")
     void registerAdmin_InvalidContact() throws Exception {
         // given
-        AdminSignUpRequest request = new AdminSignUpRequest();
+        SellerSignUpRequest request = new SellerSignUpRequest();
         request.setEmail("admin@test.com");
         request.setPassword("Password123!");
         request.setPasswordConfirm("Password123!");
@@ -299,7 +296,7 @@ class AdminAuthControllerTest {
     @DisplayName("회원가입 실패 - 마켓명 형식 오류 (공백 포함)")
     void registerAdmin_InvalidMarketName() throws Exception {
         // given
-        AdminSignUpRequest request = new AdminSignUpRequest();
+        SellerSignUpRequest request = new SellerSignUpRequest();
         request.setEmail("admin@test.com");
         request.setPassword("Password123!");
         request.setPasswordConfirm("Password123!");
@@ -322,7 +319,7 @@ class AdminAuthControllerTest {
     @DisplayName("회원가입 실패 - 고객센터 번호 형식 오류")
     void registerAdmin_InvalidCsNumber() throws Exception {
         // given
-        AdminSignUpRequest request = new AdminSignUpRequest();
+        SellerSignUpRequest request = new SellerSignUpRequest();
         request.setEmail("admin@test.com");
         request.setPassword("Password123!");
         request.setPasswordConfirm("Password123!");
@@ -345,7 +342,7 @@ class AdminAuthControllerTest {
     @DisplayName("로그인 실패 - 이메일 누락")
     void login_MissingEmail() throws Exception {
         // given
-        AdminLoginRequest request = new AdminLoginRequest();
+        SellerLoginRequest request = new SellerLoginRequest();
         // email 누락
         request.setPassword("Password123!");
 
@@ -363,7 +360,7 @@ class AdminAuthControllerTest {
     @DisplayName("로그인 실패 - 비밀번호 누락")
     void login_MissingPassword() throws Exception {
         // given
-        AdminLoginRequest request = new AdminLoginRequest();
+        SellerLoginRequest request = new SellerLoginRequest();
         request.setEmail("admin@test.com");
         // password 누락
 

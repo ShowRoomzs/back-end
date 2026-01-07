@@ -6,9 +6,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
 
-import showroomz.config.properties.AppProperties;
-import showroomz.config.properties.CorsProperties;
-import showroomz.config.properties.S3Properties;
+import showroomz.global.config.properties.AppProperties;
+import showroomz.global.config.properties.CorsProperties;
+import showroomz.global.config.properties.S3Properties;
 
 @SpringBootApplication
 @EnableConfigurationProperties({AppProperties.class, CorsProperties.class, S3Properties.class})

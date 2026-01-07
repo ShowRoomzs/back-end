@@ -15,16 +15,17 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.test.web.servlet.MockMvc;
-import showroomz.auth.DTO.ValidationErrorResponse;
-import showroomz.auth.entity.ProviderType;
-import showroomz.auth.entity.RoleType;
-import showroomz.auth.exception.BusinessException;
+
+import showroomz.api.app.auth.DTO.ValidationErrorResponse;
+import showroomz.api.app.auth.entity.ProviderType;
+import showroomz.api.app.auth.entity.RoleType;
+import showroomz.api.app.auth.exception.BusinessException;
+import showroomz.api.app.user.DTO.NicknameCheckResponse;
+import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
+import showroomz.api.app.user.controller.UserController;
+import showroomz.api.app.user.entity.Users;
+import showroomz.api.app.user.service.UserService;
 import showroomz.global.error.exception.ErrorCode;
-import showroomz.user.DTO.NicknameCheckResponse;
-import showroomz.user.DTO.UpdateUserProfileRequest;
-import showroomz.user.controller.UserController;
-import showroomz.user.entity.Users;
-import showroomz.user.service.UserService;
 
 import java.time.LocalDateTime;
 import java.util.Collections;

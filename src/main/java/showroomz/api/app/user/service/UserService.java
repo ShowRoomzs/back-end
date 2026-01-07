@@ -1,0 +1,158 @@
+package showroomz.api.app.user.service;
+
+import lombok.RequiredArgsConstructor;
+import showroomz.api.app.user.DTO.NicknameCheckResponse;
+import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
+import showroomz.api.app.user.entity.Users;
+import showroomz.api.app.user.repository.UserRepository;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class UserService {
+    private final UserRepository userRepository;
+
+    public Optional<Users> getUser(String username) {
+        return userRepository.findByUsername(username);
+    }
+
+    /**
+     * 사용자 프로필 업데이트
+     * @param username 사용자 이름
+     * @param request 업데이트 요청
+     * @return 업데이트된 사용자
+     */
+    @Transactional
+    public Users updateProfile(String username, UpdateUserProfileRequest request) {
+        Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        // 닉네임 업데이트
+        if (request.getNickname() != null && !request.getNickname().isEmpty()) {
+            user.setNickname(request.getNickname());
+        }
+
+        // 생년월일 업데이트
+        if (request.getBirthday() != null && !request.getBirthday().isEmpty()) {
+            user.setBirthday(request.getBirthday());
+        }
+
+        // 성별 업데이트
+        if (request.getGender() != null && !request.getGender().isEmpty()) {
+            user.setGender(request.getGender());
+        }
+
+        // 프로필 이미지 업데이트
+        if (request.getProfileImageUrl() != null && !request.getProfileImageUrl().isEmpty()) {
+            user.setProfileImageUrl(request.getProfileImageUrl());
+        }
+
+        // 마케팅 동의 업데이트
+        if (request.getMarketingAgree() != null) {
+            user.setMarketingAgree(request.getMarketingAgree().booleanValue());
+        }
+
+        // 수정 시간 업데이트
+        user.setModifiedAt(LocalDateTime.now());
+
+        return userRepository.save(user);
+    }
+
+    /**
+     * 닉네임 검증 및 체크
+     * @param nickname 검증할 닉네임
+     * @return NicknameCheckResponse 검증 결과
+     */
+    public NicknameCheckResponse checkNickname(String nickname) {
+        // 1. 길이 검증 (2자 이상 10자 이하)
+        if (!isValidNicknameLength(nickname)) {
+            return new NicknameCheckResponse(
+                    false,
+                    "INVALID_LENGTH",
+                    "닉네임은 2자 이상 10자 이하이어야 합니다."
+            );
+        }
+        
+        // 2. 닉네임 형식 검증 (한글, 영문, 숫자만 허용)
+        if (!isValidNicknameFormat(nickname)) {
+            return new NicknameCheckResponse(
+                    false,
+                    "INVALID_FORMAT",
+                    "닉네임에 특수문자나 이모티콘을 사용할 수 없습니다."
+            );
+        }
+
+        // 3. 금칙어 체크
+        if (containsInappropriateWord(nickname)) {
+            return new NicknameCheckResponse(
+                    false,
+                    "PROFANITY",
+                    "부적절한 단어가 포함되어 있습니다."
+            );
+        }
+
+        // 4. 중복 체크
+        if (userRepository.existsByNickname(nickname)) {
+            return new NicknameCheckResponse(
+                    false,
+                    "DUPLICATE",
+                    "이미 사용 중인 닉네임입니다."
+            );
+        }
+
+        // 4. 사용 가능
+        return new NicknameCheckResponse(
+                true,
+                "AVAILABLE",
+                "사용 가능한 닉네임입니다."
+        );
+    }
+
+    /**
+     * 닉네임 형식 검증 (한글, 영문, 숫자만 허용)
+     * 주의: 길이 검증은 별도로 수행해야 함
+     */
+    public boolean isValidNicknameFormat(String nickname) {
+        if (nickname == null || nickname.isEmpty()) {
+            return false;
+        }
+        // 한글(완성형 + 자모), 영문(대소문자), 숫자만 허용
+        // 완성형 한글(가-힣), 한글 자모(ㄱ-ㅎ, ㅏ-ㅣ)
+        return nickname.matches("^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9]+$");
+    }
+
+    /**
+     * 닉네임 길이 검증
+     */
+    public boolean isValidNicknameLength(String nickname) {
+        if (nickname == null || nickname.isEmpty()) {
+            return false;
+        }
+        return nickname.length() >= 2 && nickname.length() <= 10;
+    }
+
+    /**
+     * 닉네임 부적절한 단어 체크
+     */
+    public boolean containsInappropriateWord(String nickname) {
+        // 부적절한 단어 목록 (실제로는 DB나 설정 파일에서 관리하는 것이 좋습니다)
+        String[] inappropriateWords = {
+            "관리자", "admin", "administrator", "운영자", "operator",
+            "시스템", "system", "서버", "server", "테스트", "test",
+            "욕설", "비속어", "fuck", "shit", "damn", "hell"
+        };
+        
+        String lowerNickname = nickname.toLowerCase();
+        for (String word : inappropriateWords) {
+            if (lowerNickname.contains(word.toLowerCase())) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
