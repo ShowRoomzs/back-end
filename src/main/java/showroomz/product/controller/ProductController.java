@@ -37,6 +37,23 @@ public class ProductController implements ProductControllerDocs {
         ProductDto.CreateProductResponse response = productService.createProduct(adminEmail, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @Override
+    @GetMapping("/{productId}")
+    public ResponseEntity<ProductDto.ProductListItem> getProductById(
+            @PathVariable Long productId) {
+        String adminEmail = getCurrentAdminEmail();
+        ProductDto.ProductListItem response = productService.getProductById(adminEmail, productId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @GetMapping
+    public ResponseEntity<ProductDto.ProductListResponse> getProductList() {
+        String adminEmail = getCurrentAdminEmail();
+        ProductDto.ProductListResponse response = productService.getProductList(adminEmail);
+        return ResponseEntity.ok(response);
+    }
 }
 
 

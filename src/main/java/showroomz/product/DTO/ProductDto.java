@@ -1,5 +1,6 @@
 package showroomz.product.DTO;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -191,6 +192,106 @@ public class ProductDto {
 
         @Schema(description = "응답 메시지", example = "상품이 성공적으로 등록되었습니다.")
         private String message;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "상품 목록 조회 응답")
+    public static class ProductListResponse {
+        @Schema(description = "상품 목록")
+        private List<ProductListItem> products;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "상품 목록 항목")
+    public static class ProductListItem {
+        @JsonProperty("product_id")
+        @Schema(description = "상품 ID", example = "1")
+        private Long productId;
+
+        @JsonProperty("product_number")
+        @Schema(description = "상품 번호", example = "SRZ-20251228-001")
+        private String productNumber;
+
+        @JsonProperty("seller_product_code")
+        @Schema(description = "판매자 상품 코드", example = "PROD-ABC-001")
+        private String sellerProductCode;
+
+        @JsonProperty("thumbnail_url")
+        @Schema(description = "썸네일 URL", example = "https://example.com/thumbnail.jpg")
+        private String thumbnailUrl;
+
+        @Schema(description = "상품명", example = "프리미엄 린넨 셔츠")
+        private String name;
+
+        @Schema(description = "가격 정보")
+        private PriceInfo price;
+
+        @JsonProperty("created_at")
+        @Schema(description = "등록일", example = "2025-12-28T14:30:00Z")
+        private String createdAt;
+
+        @JsonProperty("display_status")
+        @Schema(description = "진열 상태", example = "DISPLAY")
+        private String displayStatus;
+
+        @JsonProperty("stock_status")
+        @Schema(description = "품절 상태", example = "IN_STOCK")
+        private String stockStatus;
+
+        @JsonProperty("is_out_of_stock_forced")
+        @Schema(description = "강제 품절 처리 여부", example = "false")
+        private Boolean isOutOfStockForced;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "가격 정보")
+    public static class PriceInfo {
+        @JsonProperty("purchase_price")
+        @Schema(description = "매입가", example = "25000")
+        private Integer purchasePrice;
+
+        @JsonProperty("regular_price")
+        @Schema(description = "판매가", example = "59000")
+        private Integer regularPrice;
+
+        @JsonProperty("sale_price")
+        @Schema(description = "할인 판매가", example = "49000")
+        private Integer salePrice;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "페이지네이션 정보")
+    public static class PaginationInfo {
+        @JsonProperty("current_page")
+        @Schema(description = "현재 페이지", example = "1")
+        private Integer currentPage;
+
+        @JsonProperty("total_pages")
+        @Schema(description = "전체 페이지 수", example = "10")
+        private Integer totalPages;
+
+        @JsonProperty("total_results")
+        @Schema(description = "전체 결과 수", example = "485")
+        private Long totalResults;
+
+        @Schema(description = "페이지당 개수", example = "50")
+        private Integer limit;
     }
 }
 

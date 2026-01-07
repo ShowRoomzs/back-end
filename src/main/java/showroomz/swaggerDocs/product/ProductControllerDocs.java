@@ -1,6 +1,7 @@
 package showroomz.swaggerDocs.product;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -8,7 +9,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.auth.DTO.ErrorResponse;
 import showroomz.auth.DTO.ValidationErrorResponse;
 import showroomz.product.DTO.ProductDto;
@@ -176,5 +179,134 @@ public interface ProductControllerDocs {
     ResponseEntity<ProductDto.CreateProductResponse> createProduct(
             @RequestBody ProductDto.CreateProductRequest request
     );
+
+    @Operation(
+            summary = "상품 개별 조회",
+            description = "백스테이지에서 판매자가 특정 상품의 상세 정보를 조회합니다.\n\n" +
+                    "**권한:** SELLER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "상품 개별 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProductDto.ProductListItem.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"product_id\": 1,\n" +
+                                                    "  \"product_number\": \"SRZ-20251228-001\",\n" +
+                                                    "  \"seller_product_code\": \"PROD-ABC-001\",\n" +
+                                                    "  \"thumbnail_url\": \"https://example.com/thumbnail.jpg\",\n" +
+                                                    "  \"name\": \"프리미엄 린넨 셔츠\",\n" +
+                                                    "  \"price\": {\n" +
+                                                    "    \"purchase_price\": 25000,\n" +
+                                                    "    \"regular_price\": 59000,\n" +
+                                                    "    \"sale_price\": 49000\n" +
+                                                    "  },\n" +
+                                                    "  \"created_at\": \"2025-12-28T14:30:00Z\",\n" +
+                                                    "  \"display_status\": \"DISPLAY\",\n" +
+                                                    "  \"stock_status\": \"IN_STOCK\",\n" +
+                                                    "  \"is_out_of_stock_forced\": false\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 또는 본인의 상품이 아님",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "상품을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<ProductDto.ProductListItem> getProductById(
+            @Parameter(
+                    description = "조회할 상품 ID",
+                    required = true,
+                    example = "1"
+            )
+            @PathVariable Long productId
+    );
+
+    @Operation(
+            summary = "상품 목록 조회",
+            description = "백스테이지에서 판매자가 자신의 상품 목록을 조회합니다. 미진열 상품 및 품절된 상품을 포함한 전체 데이터가 반환됩니다.\n\n" +
+                    "**권한:** SELLER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "상품 목록 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProductDto.ProductListResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"products\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"product_id\": 1,\n" +
+                                                    "      \"product_number\": \"SRZ-20251228-001\",\n" +
+                                                    "      \"seller_product_code\": \"PROD-ABC-001\",\n" +
+                                                    "      \"thumbnail_url\": \"https://example.com/thumbnail.jpg\",\n" +
+                                                    "      \"name\": \"프리미엄 린넨 셔츠\",\n" +
+                                                    "      \"price\": {\n" +
+                                                    "        \"purchase_price\": 25000,\n" +
+                                                    "        \"regular_price\": 59000,\n" +
+                                                    "        \"sale_price\": 49000\n" +
+                                                    "      },\n" +
+                                                    "      \"created_at\": \"2025-12-28T14:30:00Z\",\n" +
+                                                    "      \"display_status\": \"DISPLAY\",\n" +
+                                                    "      \"stock_status\": \"IN_STOCK\",\n" +
+                                                    "      \"is_out_of_stock_forced\": false\n" +
+                                                    "    }\n" +
+                                                    "  ]\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<ProductDto.ProductListResponse> getProductList();
 }
 
