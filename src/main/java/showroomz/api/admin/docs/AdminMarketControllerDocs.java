@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -40,7 +41,7 @@ public interface AdminMarketControllerDocs {
             )
     })
     ResponseEntity<showroomz.global.dto.PageResponse<SellerDto.PendingSellerResponse>> getPendingSellers(
-            @Parameter(description = "페이징 정보", hidden = true) showroomz.global.dto.PagingRequest pagingRequest
+            @ParameterObject showroomz.global.dto.PagingRequest pagingRequest
     );
 
     @Operation(
