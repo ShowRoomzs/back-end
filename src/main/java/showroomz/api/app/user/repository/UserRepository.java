@@ -5,7 +5,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import showroomz.api.app.user.entity.Users;
+import showroomz.domain.member.user.entity.Users;
 
 @Repository
 public interface UserRepository extends JpaRepository<Users, Long> {

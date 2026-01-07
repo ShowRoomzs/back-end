@@ -9,12 +9,12 @@ import showroomz.global.error.exception.ErrorCode;
 import showroomz.api.seller.product.DTO.ProductDto;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
+import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.product.entity.*;
 import showroomz.domain.product.repository.BrandRepository;
 import showroomz.domain.product.repository.CategoryRepository;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.api.app.auth.exception.BusinessException;
-import showroomz.api.seller.auth.entity.Seller;
 import showroomz.api.seller.auth.repository.SellerRepository;
 
 import java.time.LocalDate;

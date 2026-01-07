@@ -18,9 +18,9 @@ import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.auth.service.AuthService;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
-import showroomz.api.app.user.entity.Users;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.app.user.service.UserService;
+import showroomz.domain.member.user.entity.Users;
 import showroomz.global.error.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -111,7 +111,7 @@ public class LocalAuthController {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
     
             // 토큰 생성 및 저장
-            return authService.generateTokens(username, roleType, user.getUserId(), false);
+            return authService.generateTokens(username, roleType, user.getId(), false);
 
         } catch (AuthenticationException e) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 실패: 아이디 또는 비밀번호가 올바르지 않습니다.");

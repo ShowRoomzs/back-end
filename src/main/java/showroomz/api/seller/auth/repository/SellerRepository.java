@@ -3,7 +3,7 @@ package showroomz.api.seller.auth.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import showroomz.api.seller.auth.entity.Seller;
+import showroomz.domain.member.seller.entity.Seller;
 
 import java.util.Optional;
 

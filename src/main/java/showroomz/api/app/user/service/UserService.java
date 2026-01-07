@@ -3,8 +3,8 @@ package showroomz.api.app.user.service;
 import lombok.RequiredArgsConstructor;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
-import showroomz.api.app.user.entity.Users;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.domain.member.user.entity.Users;
 
 import java.time.LocalDateTime;
 import java.util.Optional;

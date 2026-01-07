@@ -5,9 +5,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import showroomz.api.seller.auth.entity.Seller;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.member.seller.entity.Seller;
 
 import java.util.List;
 import java.util.Optional;

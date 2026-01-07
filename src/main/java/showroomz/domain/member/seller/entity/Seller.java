@@ -1,4 +1,4 @@
-package showroomz.api.seller.auth.entity;
+package showroomz.domain.member.seller.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;

@@ -8,11 +8,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.seller.auth.DTO.SellerDto;
-import showroomz.api.seller.auth.entity.Seller;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
+import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -50,12 +50,12 @@ public class AdminService {
         // Market -> DTO 변환
         List<SellerDto.PendingSellerResponse> content = pendingMarkets.getContent().stream()
                 .map(market -> SellerDto.PendingSellerResponse.builder()
-                        .adminId(market.getAdmin().getId())
-                        .email(market.getAdmin().getEmail())
-                        .name(market.getAdmin().getName())
+                        .adminId(market.getSeller().getId())
+                        .email(market.getSeller().getEmail())
+                        .name(market.getSeller().getName())
                         .marketName(market.getMarketName())
-                        .phoneNumber(market.getAdmin().getPhoneNumber())
-                        .createdAt(market.getAdmin().getCreatedAt())
+                        .phoneNumber(market.getSeller().getPhoneNumber())
+                        .createdAt(market.getSeller().getCreatedAt())
                         .build())
                 .collect(Collectors.toList());
 

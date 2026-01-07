@@ -6,9 +6,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import showroomz.api.app.auth.entity.RoleType;
-import showroomz.api.seller.auth.entity.Seller;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
+import showroomz.domain.member.seller.entity.Seller;
 
 import java.time.LocalDateTime;
 

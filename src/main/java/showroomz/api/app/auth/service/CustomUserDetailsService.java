@@ -7,8 +7,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import showroomz.api.app.auth.entity.UserPrincipal;
-import showroomz.api.app.user.entity.Users;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.domain.member.user.entity.Users;
 
 @Service
 @RequiredArgsConstructor

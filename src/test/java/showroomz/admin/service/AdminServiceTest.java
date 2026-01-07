@@ -18,7 +18,6 @@ import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
 import showroomz.api.seller.auth.DTO.SellerLoginRequest;
 import showroomz.api.seller.auth.DTO.SellerSignUpRequest;
-import showroomz.api.seller.auth.entity.Seller;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshToken;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshTokenRepository;
 import showroomz.api.seller.auth.repository.SellerRepository;
@@ -26,6 +25,7 @@ import showroomz.api.seller.auth.service.SellerService;
 import showroomz.api.seller.market.service.MarketService;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
+import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.config.properties.AppProperties;
 import showroomz.global.error.exception.ErrorCode;
 

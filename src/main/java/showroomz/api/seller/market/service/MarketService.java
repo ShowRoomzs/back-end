@@ -6,12 +6,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import showroomz.api.app.auth.exception.BusinessException;
-import showroomz.api.seller.auth.entity.Seller;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.market.DTO.MarketDto;
 import showroomz.api.seller.market.type.MarketImageStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
+import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.util.ArrayList;

@@ -21,9 +21,9 @@ import showroomz.api.app.auth.service.AuthService;
 import showroomz.api.app.auth.service.SocialLoginService;
 import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
-import showroomz.api.app.user.entity.Users;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.app.user.service.UserService;
+import showroomz.domain.member.user.entity.Users;
 import showroomz.global.config.properties.AppProperties;
 
 import java.time.LocalDateTime;

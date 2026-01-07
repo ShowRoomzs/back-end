@@ -23,8 +23,8 @@ import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
 import showroomz.api.app.user.controller.UserController;
-import showroomz.api.app.user.entity.Users;
 import showroomz.api.app.user.service.UserService;
+import showroomz.domain.member.user.entity.Users;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.time.LocalDateTime;

@@ -20,9 +20,9 @@ import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
 import showroomz.api.app.docs.AuthControllerDocs;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
-import showroomz.api.app.user.entity.Users;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.app.user.service.UserService;
+import showroomz.domain.member.user.entity.Users;
 import showroomz.global.config.properties.AppProperties;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.HeaderUtil;
@@ -110,7 +110,7 @@ public class AuthController implements AuthControllerDocs {
         return ResponseEntity.ok(authService.generateTokens(
                 result.getUser().getUsername(),
                 result.getUser().getRoleType(),
-                result.getUser().getUserId(),
+                result.getUser().getId(),
                 false
         ));
     }
@@ -183,7 +183,7 @@ public class AuthController implements AuthControllerDocs {
 
         // 6. 토큰 발급 및 반환
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(authService.generateTokens(username, user.getRoleType(), user.getUserId(), false));
+                .body(authService.generateTokens(username, user.getRoleType(), user.getId(), false));
     }
 
     @Override
@@ -232,7 +232,7 @@ public class AuthController implements AuthControllerDocs {
         AuthToken newAccessToken = tokenProvider.createAuthToken(
                 username,
                 roleType.getCode(),
-                user.getUserId(),
+                user.getId(),
                 new Date(now.getTime() + appProperties.getAuth().getTokenExpiry())
         );
 

@@ -13,8 +13,8 @@ import showroomz.api.app.docs.UserControllerDocs;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
 import showroomz.api.app.user.DTO.UserProfileResponse;
-import showroomz.api.app.user.entity.Users;
 import showroomz.api.app.user.service.UserService;
+import showroomz.domain.member.user.entity.Users;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.util.ArrayList;
@@ -51,7 +51,7 @@ public class UserController implements UserControllerDocs {
         }
 
         UserProfileResponse response = new UserProfileResponse(
-                user.getUserId(),
+                user.getId(),
                 user.getEmail(),
                 user.getNickname(),
                 profileImageUrl,
@@ -172,7 +172,7 @@ public class UserController implements UserControllerDocs {
         }
 
         UserProfileResponse response = new UserProfileResponse(
-                updatedUser.getUserId(),
+                updatedUser.getId(),
                 updatedUser.getEmail(),
                 updatedUser.getNickname(),
                 profileImageUrl,

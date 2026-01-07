@@ -1,4 +1,4 @@
-package showroomz.api.app.user.entity;
+package showroomz.domain.member.user.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -24,7 +24,7 @@ public class Users {
     @Id
     @Column(name = "USER_ID")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userId;
+    private Long id;
 
     @Column(name = "USERNAME", length = 64, unique = true)
     @NotNull

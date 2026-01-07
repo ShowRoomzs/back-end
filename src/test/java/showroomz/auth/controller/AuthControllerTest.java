@@ -17,8 +17,8 @@ import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
-import showroomz.api.app.user.entity.Users;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.domain.member.user.entity.Users;
 import showroomz.global.config.properties.AppProperties;
 
 import java.time.LocalDateTime;

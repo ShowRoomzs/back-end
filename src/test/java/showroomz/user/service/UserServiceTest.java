@@ -12,9 +12,9 @@ import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
-import showroomz.api.app.user.entity.Users;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.app.user.service.UserService;
+import showroomz.domain.member.user.entity.Users;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
