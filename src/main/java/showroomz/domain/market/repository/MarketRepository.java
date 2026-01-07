@@ -15,12 +15,12 @@ import java.util.Optional;
 @Repository
 public interface MarketRepository extends JpaRepository<Market, Long> {
     boolean existsByMarketName(String marketName);
-    Optional<Market> findByAdmin(Seller admin);
+    Optional<Market> findBySeller(Seller seller);
 
-    // Admin의 Status가 PENDING인 마켓 목록 조회 (페이징 없음)
-    List<Market> findAllByAdmin_Status(SellerStatus status);
+    // Seller의 Status가 PENDING인 마켓 목록 조회 (페이징 없음)
+    List<Market> findAllBySeller_Status(SellerStatus status);
     
-    // Admin의 Status가 PENDING인 마켓 목록 조회 (페이징)
-    Page<Market> findAllByAdmin_Status(SellerStatus status, Pageable pageable);
+    // Seller의 Status가 PENDING인 마켓 목록 조회 (페이징)
+    Page<Market> findAllBySeller_Status(SellerStatus status, Pageable pageable);
 }
 

@@ -241,7 +241,7 @@ public class SellerService {
         }
 
         // 5. Market 삭제
-        marketRepository.findByAdmin(admin).ifPresent(marketRepository::delete);
+        marketRepository.findBySeller(admin).ifPresent(marketRepository::delete);
 
         // 6. Admin 삭제
         adminRepository.delete(admin);

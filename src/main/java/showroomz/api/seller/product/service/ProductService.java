@@ -46,7 +46,7 @@ public class ProductService {
         Seller admin = adminRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         
-        Market market = marketRepository.findByAdmin(admin)
+        Market market = marketRepository.findBySeller(admin)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         
         // 마켓명으로 브랜드를 찾거나 생성 (기본 브랜드 전략)
@@ -243,7 +243,7 @@ public class ProductService {
         Seller admin = adminRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         
-        Market market = marketRepository.findByAdmin(admin)
+        Market market = marketRepository.findBySeller(admin)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         
         // 2. Market의 Brand 조회
@@ -290,7 +290,7 @@ public class ProductService {
         Seller admin = adminRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         
-        Market market = marketRepository.findByAdmin(admin)
+        Market market = marketRepository.findBySeller(admin)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         
         // 2. Market의 Brand 조회

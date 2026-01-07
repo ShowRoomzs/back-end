@@ -44,8 +44,8 @@ public class AdminService {
      */
     @Transactional(readOnly = true)
     public PageResponse<SellerDto.PendingSellerResponse> getPendingSellers(Pageable pageable) {
-        // PENDING 상태인 Admin을 가진 Market 목록 조회 (페이징)
-        Page<Market> pendingMarkets = marketRepository.findAllByAdmin_Status(SellerStatus.PENDING, pageable);
+        // PENDING 상태인 Seller를 가진 Market 목록 조회 (페이징)
+        Page<Market> pendingMarkets = marketRepository.findAllBySeller_Status(SellerStatus.PENDING, pageable);
 
         // Market -> DTO 변환
         List<SellerDto.PendingSellerResponse> content = pendingMarkets.getContent().stream()

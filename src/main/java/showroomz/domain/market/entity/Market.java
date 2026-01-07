@@ -19,7 +19,7 @@ public class Market {
     @Column(name = "MARKET_ID")
     private Long id;
 
-    // Admins 테이블과 1:1 관계 (계정 정보)
+    // Seller 테이블과 1:1 관계 (계정 정보)
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "SELLER_ID", nullable = false)
     private Seller seller;
@@ -58,8 +58,8 @@ public class Market {
     @Column(name = "SNS_LINK_3", length = 512)
     private String snsLink3;
 
-    public Market(Seller admin, String marketName, String csNumber) {
-        this.seller = admin;
+    public Market(Seller seller, String marketName, String csNumber) {
+        this.seller = seller;
         this.marketName = marketName;
         this.csNumber = csNumber;
     }

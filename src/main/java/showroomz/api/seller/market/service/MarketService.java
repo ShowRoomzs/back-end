@@ -142,7 +142,7 @@ public class MarketService {
         Seller admin = adminRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         
-        return marketRepository.findByAdmin(admin)
+        return marketRepository.findBySeller(admin)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND)); // 마켓 없음
     }
 
