@@ -158,7 +158,9 @@ public interface AdminMarketControllerDocs {
                     "**상태값:**\n" +
                     "- `APPROVED`: 승인 (로그인 가능)\n" +
                     "- `REJECTED`: 반려 (로그인 불가)\n\n" +
-                    "\n" +
+                    "**주의사항:**\n" +
+                    "- `PENDING` (승인 대기) 상태일 때만 상태 변경이 가능합니다.\n" +
+                    "- 이미 `APPROVED` 또는 `REJECTED` 상태인 경우 변경할 수 없습니다.\n" +
                     "- `rejectionReason` 필드는 선택 사항입니다. REJECTED 상태일 때 거부 사유를 입력할 수 있습니다.\n" +
                     "- APPROVED 상태로 변경 시 `rejectionReason` 필드는 무시됩니다.\n\n" +
                     "**권한:** ADMIN\n" +
@@ -172,13 +174,17 @@ public interface AdminMarketControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "잘못된 상태값 요청",
+                    description = "잘못된 상태값 요청 또는 PENDING 상태가 아님",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "잘못된 상태값",
+                                            value = "{\"code\": \"INVALID_INPUT\", \"message\": \"입력값이 올바르지 않습니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "PENDING 상태가 아님",
                                             value = "{\"code\": \"INVALID_INPUT\", \"message\": \"입력값이 올바르지 않습니다.\"}"
                                     )
                             }

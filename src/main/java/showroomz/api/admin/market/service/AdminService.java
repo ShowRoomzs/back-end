@@ -29,11 +29,17 @@ public class AdminService {
 
     /**
      * 판매자(관리자) 계정 승인/반려 처리
+     * PENDING 상태일 때만 변경 가능
      */
     @Transactional
     public void updateAdminStatus(Long adminId, SellerStatus status, String rejectionReason) {
         Seller admin = sellerRepository.findById(adminId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // PENDING 상태일 때만 변경 가능
+        if (admin.getStatus() != SellerStatus.PENDING) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
 
         admin.setStatus(status);
         
