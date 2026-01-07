@@ -13,9 +13,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import showroomz.api.admin.category.DTO.CategoryDto;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
-import showroomz.api.seller.product.DTO.CategoryDto;
 
 @Tag(name = "Admin - Category", description = "관리자 카테고리 관리 API")
 public interface AdminCategoryControllerDocs {
