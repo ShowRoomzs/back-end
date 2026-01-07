@@ -7,12 +7,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import showroomz.auth.entity.ProviderType;
-import showroomz.auth.entity.RoleType;
-import showroomz.user.DTO.NicknameCheckResponse;
-import showroomz.user.DTO.UpdateUserProfileRequest;
-import showroomz.user.entity.Users;
-import showroomz.user.repository.UserRepository;
+
+import showroomz.api.app.auth.entity.ProviderType;
+import showroomz.api.app.auth.entity.RoleType;
+import showroomz.api.app.user.DTO.NicknameCheckResponse;
+import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
+import showroomz.api.app.user.repository.UserRepository;
+import showroomz.api.app.user.service.UserService;
+import showroomz.domain.member.user.entity.Users;
 
 import java.time.LocalDateTime;
 import java.util.Optional;

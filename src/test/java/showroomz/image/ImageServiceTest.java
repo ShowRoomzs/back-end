@@ -10,7 +10,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
-import showroomz.auth.exception.BusinessException;
+import showroomz.api.app.auth.exception.BusinessException;
+import showroomz.api.app.image.DTO.ImageUploadResponse;
+import showroomz.api.app.image.service.ImageService;
+import showroomz.api.app.image.type.ImageType;
+import showroomz.global.config.properties.S3Properties;
 import showroomz.global.error.exception.ErrorCode;
 
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -18,11 +22,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Exception;
-
-import showroomz.config.properties.S3Properties;
-import showroomz.image.type.ImageType;
-import showroomz.image.DTO.ImageUploadResponse;
-import showroomz.image.service.ImageService;
 
 import java.io.IOException;
 

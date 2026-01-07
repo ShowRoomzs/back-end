@@ -11,13 +11,15 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import showroomz.auth.exception.BusinessException;
-import showroomz.auth.token.AuthTokenProvider;
-import showroomz.config.SecurityConfig;
+
+import showroomz.api.app.auth.exception.BusinessException;
+import showroomz.api.app.auth.token.AuthTokenProvider;
+import showroomz.api.app.image.DTO.ImageUploadResponse;
+import showroomz.api.app.image.service.ImageService;
+import showroomz.api.app.image.type.ImageType;
+import showroomz.api.seller.auth.controller.SellerImageController;
+import showroomz.global.config.SecurityConfig;
 import showroomz.global.error.exception.ErrorCode;
-import showroomz.image.DTO.ImageUploadResponse;
-import showroomz.image.service.ImageService;
-import showroomz.image.type.ImageType;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -27,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = AdminImageController.class)
+@WebMvcTest(controllers = SellerImageController.class)
 // Security 필터를 비활성화하여 컨트롤러 로직만 집중 테스트 (필요 시 SecurityConfig 포함 후 @WithMockUser 사용)
 @AutoConfigureMockMvc(addFilters = false)
 class AdminImageControllerTest {

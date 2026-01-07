@@ -1,6 +1,10 @@
 package showroomz.global.error.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.api.app.auth.DTO.ValidationErrorResponse;
+import showroomz.api.app.auth.exception.BusinessException;
+
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,10 +12,6 @@ import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
-import showroomz.auth.DTO.ErrorResponse;
-import showroomz.auth.DTO.ValidationErrorResponse;
-import showroomz.auth.exception.BusinessException;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.sql.SQLException;

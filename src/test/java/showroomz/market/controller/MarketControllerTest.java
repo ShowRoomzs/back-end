@@ -16,10 +16,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.test.web.servlet.MockMvc;
 
+import showroomz.api.seller.market.DTO.MarketDto;
+import showroomz.api.seller.market.controller.MarketController;
+import showroomz.api.seller.market.service.MarketService;
 import showroomz.global.error.exception.GlobalExceptionHandler;
-import showroomz.market.DTO.MarketDto;
-import showroomz.market.controller.MarketController;
-import showroomz.market.service.MarketService;
 
 import java.util.ArrayList;
 import java.util.List;
