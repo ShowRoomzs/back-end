@@ -38,7 +38,7 @@ public class SecurityConfig {
     
     private static final String[] AUTH_WHITELIST = {
             "/", "/error",  // 기본
-            "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**", // Swagger (중복 경로 통합)
+            "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**", // Swagger
 
             // Auth 관련 (일관성 있게 'signup'으로 통일 추천)
             "/v1/user/auth/social/login", 
