@@ -339,7 +339,7 @@ public interface SellerAuthControllerDocs {
                                     @ExampleObject(
                                             name = "승인 반려됨 (반려 사유 포함)",
                                             value = "{\n" +
-                                                    "  \"code\": \"ACCOUNT_REJECTED\",\n" +
+                                                    "  \"code\": \"ACCOUNT_REJECTED_WITH_REASON\",\n" +
                                                     "  \"message\": \"서류 미비로 인한 가입 승인 반려\"\n" +
                                                     "}",
                                             description = "반려 사유가 있는 경우, message 필드에 반려 사유가 포함됩니다."

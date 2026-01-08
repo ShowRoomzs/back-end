@@ -106,14 +106,14 @@ public class SellerService {
             throw new BusinessException(ErrorCode.ACCOUNT_NOT_APPROVED);
         }
         if (admin.getStatus() == SellerStatus.REJECTED) {
-            // [수정] 반려된 계정일 경우, 반려 사유를 포함하여 예외 발생
+            // 반려된 계정일 경우, 반려 사유 유무에 따라 다른 ErrorCode 사용
             String rejectionReason = admin.getRejectionReason();
             log.info("🔍 반려된 계정 로그인 시도 - 이메일: {}, 반려 사유: '{}'", admin.getEmail(), rejectionReason);
             if (rejectionReason != null && !rejectionReason.isBlank()) {
-                log.info("✅ 반려 사유 포함하여 예외 발생");
-                throw new BusinessException(ErrorCode.ACCOUNT_REJECTED, rejectionReason);
+                log.info("✅ 반려 사유 포함하여 예외 발생 - ACCOUNT_REJECTED_WITH_REASON");
+                throw new BusinessException(ErrorCode.ACCOUNT_REJECTED_WITH_REASON, rejectionReason);
             }
-            log.info("⚠️ 반려 사유 없음 - 기본 메시지 사용");
+            log.info("⚠️ 반려 사유 없음 - ACCOUNT_REJECTED 사용");
             throw new BusinessException(ErrorCode.ACCOUNT_REJECTED);
         }
 
