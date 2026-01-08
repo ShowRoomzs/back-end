@@ -13,7 +13,6 @@ import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.product.entity.*;
-import showroomz.domain.product.repository.BrandRepository;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.seller.auth.repository.SellerRepository;
@@ -31,7 +30,6 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
-    private final BrandRepository brandRepository;
     private final SellerRepository adminRepository;
     private final MarketRepository marketRepository;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
@@ -41,25 +39,12 @@ public class ProductService {
         Category category = categoryRepository.findByCategoryId(request.getCategoryId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
 
-        // 2. 브랜드 조회 (관리자의 마켓에 연결된 브랜드 사용)
-        // TODO: 실제로는 마켓별로 브랜드를 관리하거나, 요청에 브랜드 ID를 포함시켜야 할 수 있음
-        // 현재는 임시로 기본 브랜드를 사용하거나, 마켓명을 브랜드명으로 사용
+        // 2. 마켓 조회 (관리자의 마켓 사용)
         Seller admin = adminRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         
         Market market = marketRepository.findBySeller(admin)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        
-        // 마켓명으로 브랜드를 찾거나 생성 (기본 브랜드 전략)
-        Brand brand = brandRepository.findAll().stream()
-                .filter(b -> market.getMarketName().equals(b.getName()))
-                .findFirst()
-                .orElseGet(() -> {
-                    // 브랜드가 없으면 생성
-                    Brand newBrand = new Brand();
-                    newBrand.setName(market.getMarketName());
-                    return brandRepository.save(newBrand);
-                });
 
         // 3. 상품 번호 생성 (SRZ-YYYYMMDD-XXX 형식)
         String productNumber = generateProductNumber();
@@ -67,7 +52,7 @@ public class ProductService {
         // 4. Product 엔티티 생성
         Product product = new Product();
         product.setCategory(category);
-        product.setBrand(brand);
+        product.setMarket(market);
         product.setName(request.getName());
         product.setSellerProductCode(request.getSellerProductCode());
         product.setRegularPrice(request.getRegularPrice());
@@ -247,21 +232,9 @@ public class ProductService {
         Market market = marketRepository.findBySeller(admin)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         
-        // 2. Market의 Brand 조회
-        // Market 이름과 일치하는 Brand를 찾거나, 없으면 생성
-        Brand brand = brandRepository.findAll().stream()
-                .filter(b -> market.getMarketName().equals(b.getName()))
-                .findFirst()
-                .orElseGet(() -> {
-                    // Brand가 없으면 생성 (상품 등록 시와 동일한 로직)
-                    Brand newBrand = new Brand();
-                    newBrand.setName(market.getMarketName());
-                    return brandRepository.save(newBrand);
-                });
-        
-        // 3. 해당 Brand의 모든 상품 조회
+        // 2. 해당 Market의 모든 상품 조회
         List<Product> products = productRepository.findAll().stream()
-                .filter(p -> p.getBrand() != null && p.getBrand().getBrandId().equals(brand.getBrandId()))
+                .filter(p -> p.getMarket() != null && p.getMarket().getId().equals(market.getId()))
                 .sorted((p1, p2) -> {
                     // 최신순 정렬 (createdAt 내림차순)
                     if (p1.getCreatedAt() == null && p2.getCreatedAt() == null) return 0;
@@ -294,18 +267,12 @@ public class ProductService {
         Market market = marketRepository.findBySeller(admin)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         
-        // 2. Market의 Brand 조회
-        Brand brand = brandRepository.findAll().stream()
-                .filter(b -> market.getMarketName().equals(b.getName()))
-                .findFirst()
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        
-        // 3. 상품 조회 및 권한 확인 (해당 Brand의 상품인지 확인)
+        // 2. 상품 조회 및 권한 확인 (해당 Market의 상품인지 확인)
         Product product = productRepository.findByProductId(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
         
-        // 4. 해당 seller의 상품인지 확인
-        if (product.getBrand() == null || !product.getBrand().getBrandId().equals(brand.getBrandId())) {
+        // 3. 해당 seller의 상품인지 확인
+        if (product.getMarket() == null || !product.getMarket().getId().equals(market.getId())) {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
         
