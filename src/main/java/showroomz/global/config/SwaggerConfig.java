@@ -15,12 +15,17 @@ import org.springframework.context.annotation.Profile;
         info = @Info(
                 title = "Showroomz API 명세서",
                 description = """
-                        테스트용 JWT 
+                        테스트용 JWT
+                        
                         - 유효기간: 3/8일까지
+                        
                         - 샘플 토큰:
-                          USER  : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfVVNFUiIsImV4cCI6MTc3MzAzNjgzMH0.gpYsAkzzuPkXPb-JuwvBY_5OkkMzh4-4OHBCxxZYhrk
-                          SELLER: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfU0VMTEVSIiwiZXhwIjoxNzczMDM2ODMwfQ.E6XYiAqVRE5f-P0oSMO08o_vPVj9-E9bUSZLboRN4M8
-                          ADMIN : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfQURNSU4iLCJleHAiOjE3NzMwMzY4MzB9.vP2P5Rf6mr3_vC3upehi6uKf8H6rvFbOg7VDt2hn6S4
+                        
+                          USER   : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfVVNFUiIsImV4cCI6MTc3MzAzNjgzMH0.gpYsAkzzuPkXPb-JuwvBY_5OkkMzh4-4OHBCxxZYhrk
+                          
+                          SELLER : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfU0VMTEVSIiwiZXhwIjoxNzczMDM2ODMwfQ.E6XYiAqVRE5f-P0oSMO08o_vPVj9-E9bUSZLboRN4M8
+                          
+                          ADMIN  : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfQURNSU4iLCJleHAiOjE3NzMwMzY4MzB9.vP2P5Rf6mr3_vC3upehi6uKf8H6rvFbOg7VDt2hn6S4
                         """,
                 version = "v1"
         ),
