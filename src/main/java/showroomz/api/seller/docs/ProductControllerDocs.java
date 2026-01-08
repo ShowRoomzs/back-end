@@ -254,12 +254,15 @@ public interface ProductControllerDocs {
     );
 
     @Operation(
-            summary = "상품 목록 조회 (페이징 및 필터링)",
-            description = "백스테이지에서 판매자가 자신의 상품 목록을 조회합니다. 페이징, 카테고리, 진열상태, 품절상태 필터를 지원합니다.\n\n" +
+            summary = "상품 목록 조회 (페이징, 필터링, 검색)",
+            description = "백스테이지에서 판매자가 자신의 상품 목록을 조회합니다. 페이징, 카테고리, 진열상태, 품절상태 필터 및 검색 기능을 지원합니다.\n\n" +
                     "**필터 파라미터:**\n" +
                     "- categoryId: 최종 선택된 카테고리 ID (선택사항)\n" +
                     "- displayStatus: 진열 상태 (ALL, DISPLAY, HIDDEN) - 기본값: ALL\n" +
                     "- stockStatus: 품절 상태 (ALL, OUT_OF_STOCK, IN_STOCK) - 기본값: ALL\n\n" +
+                    "**검색 파라미터:**\n" +
+                    "- keyword: 검색어 (선택사항)\n" +
+                    "- keywordType: 검색 타입 (productNumber: 상품 번호, sellerProductCode: 판매자 상품 코드, name: 상품명) - keywordType이 없으면 전체 검색\n\n" +
                     "**페이징 파라미터:**\n" +
                     "- page: 페이지 번호 (1부터 시작) - 기본값: 1\n" +
                     "- size: 페이지당 항목 수 - 기본값: 20\n\n" +
