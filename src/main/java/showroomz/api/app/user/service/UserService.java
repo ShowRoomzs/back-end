@@ -1,24 +1,55 @@
 package showroomz.api.app.user.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
+import showroomz.api.app.user.DTO.UserProfileResponse;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.domain.market.repository.MarketFollowRepository;
 import showroomz.domain.member.user.entity.Users;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 @Service
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final MarketFollowRepository marketFollowRepository;
 
     public Optional<Users> getUser(String username) {
         return userRepository.findByUsername(username);
+    }
+
+    /**
+     * 유저 프로필 조회 (팔로잉 수 포함)
+     * Controller에서 이 메서드를 호출하여 응답을 생성합니다.
+     */
+    @Transactional(readOnly = true)
+    public UserProfileResponse getProfile(String username) {
+        Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        // 유저가 팔로우한 마켓 수 조회
+        long followingCount = marketFollowRepository.countByUser(user);
+
+        // DTO 생성 및 반환
+        return new UserProfileResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getNickname(),
+                user.getProfileImageUrl(),
+                user.getBirthday(),
+                user.getGender(),
+                user.getProviderType(),
+                user.getRoleType(),
+                user.getCreatedAt(),
+                user.getModifiedAt(),
+                user.isMarketingAgree(),
+                followingCount // 실제 팔로잉 수 주입
+        );
     }
 
     /**
