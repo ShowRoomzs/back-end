@@ -1,6 +1,5 @@
 package showroomz.api.seller.product.DTO;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -198,6 +197,29 @@ public class ProductDto {
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
+    @Schema(description = "상품 목록 조회 요청 (필터)")
+    public static class ProductListRequest {
+        @Schema(description = "카테고리 ID (최종 선택된 카테고리)", example = "3")
+        private Long categoryId;
+
+        @Schema(description = "진열 상태 (ALL: 전체, DISPLAY: 진열, HIDDEN: 미진열)", example = "ALL", allowableValues = {"ALL", "DISPLAY", "HIDDEN"})
+        private String displayStatus = "ALL";
+
+        @Schema(description = "품절 상태 (ALL: 전체, OUT_OF_STOCK: 품절, IN_STOCK: 품절 아님)", example = "ALL", allowableValues = {"ALL", "OUT_OF_STOCK", "IN_STOCK"})
+        private String stockStatus = "ALL";
+
+        @Schema(description = "검색어", example = "멋진코트")
+        private String keyword;
+
+        @Schema(description = "검색 타입 (productNumber: 상품 번호, sellerProductCode: 판매자 상품 코드, name: 상품명)", 
+                example = "name", allowableValues = {"productNumber", "sellerProductCode", "name"})
+        private String keywordType;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     @Builder
     @Schema(description = "상품 목록 조회 응답")
     public static class ProductListResponse {
@@ -212,19 +234,15 @@ public class ProductDto {
     @Builder
     @Schema(description = "상품 목록 항목")
     public static class ProductListItem {
-        @JsonProperty("product_id")
         @Schema(description = "상품 ID", example = "1")
         private Long productId;
 
-        @JsonProperty("product_number")
         @Schema(description = "상품 번호", example = "SRZ-20251228-001")
         private String productNumber;
 
-        @JsonProperty("seller_product_code")
         @Schema(description = "판매자 상품 코드", example = "PROD-ABC-001")
         private String sellerProductCode;
 
-        @JsonProperty("thumbnail_url")
         @Schema(description = "썸네일 URL", example = "https://example.com/thumbnail.jpg")
         private String thumbnailUrl;
 
@@ -234,19 +252,15 @@ public class ProductDto {
         @Schema(description = "가격 정보")
         private PriceInfo price;
 
-        @JsonProperty("created_at")
         @Schema(description = "등록일", example = "2025-12-28T14:30:00Z")
         private String createdAt;
 
-        @JsonProperty("display_status")
         @Schema(description = "진열 상태", example = "DISPLAY")
         private String displayStatus;
 
-        @JsonProperty("stock_status")
         @Schema(description = "품절 상태", example = "IN_STOCK")
         private String stockStatus;
 
-        @JsonProperty("is_out_of_stock_forced")
         @Schema(description = "강제 품절 처리 여부", example = "false")
         private Boolean isOutOfStockForced;
     }
@@ -258,15 +272,12 @@ public class ProductDto {
     @Builder
     @Schema(description = "가격 정보")
     public static class PriceInfo {
-        @JsonProperty("purchase_price")
         @Schema(description = "매입가", example = "25000")
         private Integer purchasePrice;
 
-        @JsonProperty("regular_price")
         @Schema(description = "판매가", example = "59000")
         private Integer regularPrice;
 
-        @JsonProperty("sale_price")
         @Schema(description = "할인 판매가", example = "49000")
         private Integer salePrice;
     }
@@ -278,15 +289,12 @@ public class ProductDto {
     @Builder
     @Schema(description = "페이지네이션 정보")
     public static class PaginationInfo {
-        @JsonProperty("current_page")
         @Schema(description = "현재 페이지", example = "1")
         private Integer currentPage;
 
-        @JsonProperty("total_pages")
         @Schema(description = "전체 페이지 수", example = "10")
         private Integer totalPages;
 
-        @JsonProperty("total_results")
         @Schema(description = "전체 결과 수", example = "485")
         private Long totalResults;
 

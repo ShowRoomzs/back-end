@@ -42,6 +42,9 @@ dependencies {
 	implementation 'org.jsoup:jsoup:1.17.2'
 	/*implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.1'*/
 	
+	// Sentry SDK 추가
+	implementation 'io.sentry:sentry-spring-boot-starter:7.3.0'
+	
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	

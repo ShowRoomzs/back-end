@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.seller.product.DTO.ProductDto;
+import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "Seller - Product", description = "Seller Product API")
 public interface ProductControllerDocs {
@@ -198,20 +200,20 @@ public interface ProductControllerDocs {
                                     @ExampleObject(
                                             name = "성공 예시",
                                             value = "{\n" +
-                                                    "  \"product_id\": 1,\n" +
-                                                    "  \"product_number\": \"SRZ-20251228-001\",\n" +
-                                                    "  \"seller_product_code\": \"PROD-ABC-001\",\n" +
-                                                    "  \"thumbnail_url\": \"https://example.com/thumbnail.jpg\",\n" +
+                                                    "  \"productId\": 1,\n" +
+                                                    "  \"productNumber\": \"SRZ-20251228-001\",\n" +
+                                                    "  \"sellerProductCode\": \"PROD-ABC-001\",\n" +
+                                                    "  \"thumbnailUrl\": \"https://example.com/thumbnail.jpg\",\n" +
                                                     "  \"name\": \"프리미엄 린넨 셔츠\",\n" +
                                                     "  \"price\": {\n" +
-                                                    "    \"purchase_price\": 25000,\n" +
-                                                    "    \"regular_price\": 59000,\n" +
-                                                    "    \"sale_price\": 49000\n" +
+                                                    "    \"purchasePrice\": 25000,\n" +
+                                                    "    \"regularPrice\": 59000,\n" +
+                                                    "    \"salePrice\": 49000\n" +
                                                     "  },\n" +
-                                                    "  \"created_at\": \"2025-12-28T14:30:00Z\",\n" +
-                                                    "  \"display_status\": \"DISPLAY\",\n" +
-                                                    "  \"stock_status\": \"IN_STOCK\",\n" +
-                                                    "  \"is_out_of_stock_forced\": false\n" +
+                                                    "  \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
+                                                    "  \"displayStatus\": \"DISPLAY\",\n" +
+                                                    "  \"stockStatus\": \"IN_STOCK\",\n" +
+                                                    "  \"isOutOfStockForced\": false\n" +
                                                     "}"
                                     )
                             }
@@ -252,8 +254,18 @@ public interface ProductControllerDocs {
     );
 
     @Operation(
-            summary = "상품 목록 조회",
-            description = "백스테이지에서 판매자가 자신의 상품 목록을 조회합니다. 미진열 상품 및 품절된 상품을 포함한 전체 데이터가 반환됩니다.\n\n" +
+            summary = "상품 목록 조회 (페이징, 필터링, 검색)",
+            description = "백스테이지에서 판매자가 자신의 상품 목록을 조회합니다. 페이징, 카테고리, 진열상태, 품절상태 필터 및 검색 기능을 지원합니다.\n\n" +
+                    "**필터 파라미터:**\n" +
+                    "- categoryId: 최종 선택된 카테고리 ID (선택사항)\n" +
+                    "- displayStatus: 진열 상태 (ALL, DISPLAY, HIDDEN) - 기본값: ALL\n" +
+                    "- stockStatus: 품절 상태 (ALL, OUT_OF_STOCK, IN_STOCK) - 기본값: ALL\n\n" +
+                    "**검색 파라미터:**\n" +
+                    "- keyword: 검색어 (선택사항)\n" +
+                    "- keywordType: 검색 타입 (productNumber: 상품 번호, sellerProductCode: 판매자 상품 코드, name: 상품명) - keywordType이 없으면 전체 검색\n\n" +
+                    "**페이징 파라미터:**\n" +
+                    "- page: 페이지 번호 (1부터 시작) - 기본값: 1\n" +
+                    "- size: 페이지당 항목 수 - 기본값: 20\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -263,29 +275,36 @@ public interface ProductControllerDocs {
                     description = "상품 목록 조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ProductDto.ProductListResponse.class),
+                            schema = @Schema(implementation = PageResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "성공 예시",
                                             value = "{\n" +
-                                                    "  \"products\": [\n" +
+                                                    "  \"content\": [\n" +
                                                     "    {\n" +
-                                                    "      \"product_id\": 1,\n" +
-                                                    "      \"product_number\": \"SRZ-20251228-001\",\n" +
-                                                    "      \"seller_product_code\": \"PROD-ABC-001\",\n" +
-                                                    "      \"thumbnail_url\": \"https://example.com/thumbnail.jpg\",\n" +
+                                                    "      \"productId\": 1,\n" +
+                                                    "      \"productNumber\": \"SRZ-20251228-001\",\n" +
+                                                    "      \"sellerProductCode\": \"PROD-ABC-001\",\n" +
+                                                    "      \"thumbnailUrl\": \"https://example.com/thumbnail.jpg\",\n" +
                                                     "      \"name\": \"프리미엄 린넨 셔츠\",\n" +
                                                     "      \"price\": {\n" +
-                                                    "        \"purchase_price\": 25000,\n" +
-                                                    "        \"regular_price\": 59000,\n" +
-                                                    "        \"sale_price\": 49000\n" +
+                                                    "        \"purchasePrice\": 25000,\n" +
+                                                    "        \"regularPrice\": 59000,\n" +
+                                                    "        \"salePrice\": 49000\n" +
                                                     "      },\n" +
-                                                    "      \"created_at\": \"2025-12-28T14:30:00Z\",\n" +
-                                                    "      \"display_status\": \"DISPLAY\",\n" +
-                                                    "      \"stock_status\": \"IN_STOCK\",\n" +
-                                                    "      \"is_out_of_stock_forced\": false\n" +
+                                                    "      \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
+                                                    "      \"displayStatus\": \"DISPLAY\",\n" +
+                                                    "      \"stockStatus\": \"IN_STOCK\",\n" +
+                                                    "      \"isOutOfStockForced\": false\n" +
                                                     "    }\n" +
-                                                    "  ]\n" +
+                                                    "  ],\n" +
+                                                    "  \"pageInfo\": {\n" +
+                                                    "    \"currentPage\": 1,\n" +
+                                                    "    \"totalPages\": 10,\n" +
+                                                    "    \"totalResults\": 195,\n" +
+                                                    "    \"limit\": 20,\n" +
+                                                    "    \"hasNext\": true\n" +
+                                                    "  }\n" +
                                                     "}"
                                     )
                             }
@@ -308,6 +327,11 @@ public interface ProductControllerDocs {
                     )
             )
     })
-    ResponseEntity<ProductDto.ProductListResponse> getProductList();
+    ResponseEntity<PageResponse<ProductDto.ProductListItem>> getProductList(
+            @Parameter(description = "필터 조건 (카테고리, 진열상태, 품절상태)")
+            ProductDto.ProductListRequest request,
+            @Parameter(description = "페이징 정보 (페이지 번호, 페이지 크기)")
+            PagingRequest pagingRequest
+    );
 }
 

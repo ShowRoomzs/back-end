@@ -37,7 +37,7 @@ public class SecurityConfig {
     private final TokenAccessDeniedHandler tokenAccessDeniedHandler;
     
     private static final String[] AUTH_WHITELIST = {
-            "/", "/error",  // 기본
+            "/", "/error", "/test/**",  // 기본
             "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**", // Swagger
 
             // Auth 관련 (일관성 있게 'signup'으로 통일 추천)
@@ -46,7 +46,7 @@ public class SecurityConfig {
             "/v1/user/auth/refresh",
             "/v1/user/auth/local/signup", "/v1/user/auth/local/login",
             "/v1/seller/auth/signup", "/v1/seller/auth/login",
-            
+            "/v1/seller/auth/refresh",
             // 중복 확인 (인증 불필요)
             "/v1/seller/auth/check-email",
             "/v1/user/check-nickname",

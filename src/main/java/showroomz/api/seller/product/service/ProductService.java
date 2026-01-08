@@ -16,6 +16,10 @@ import showroomz.domain.product.entity.*;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.seller.auth.repository.SellerRepository;
+import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -63,9 +67,10 @@ public class ProductService {
         product.setIsRecommended(false);
         product.setDescription(request.getDescription());
         product.setDeliveryType(request.getDeliveryType() != null ? request.getDeliveryType() : "STANDARD");
-        product.setDeliveryFee(request.getDeliveryFee());
-        product.setDeliveryFreeThreshold(request.getDeliveryFreeThreshold());
-        product.setDeliveryEstimatedDays(request.getDeliveryEstimatedDays());
+        // 배송 정보 기본값 설정 (배포 DB의 NOT NULL 제약조건 대응)
+        product.setDeliveryFee(request.getDeliveryFee() != null ? request.getDeliveryFee() : 0);
+        product.setDeliveryFreeThreshold(request.getDeliveryFreeThreshold() != null ? request.getDeliveryFreeThreshold() : 0);
+        product.setDeliveryEstimatedDays(request.getDeliveryEstimatedDays() != null ? request.getDeliveryEstimatedDays() : 1);
         product.setProductNumber(productNumber);
 
         // 5. 태그 JSON 변환
@@ -224,7 +229,7 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public ProductDto.ProductListResponse getProductList(String adminEmail) {
+    public PageResponse<ProductDto.ProductListItem> getProductList(String adminEmail, ProductDto.ProductListRequest request, PagingRequest pagingRequest) {
         // 1. Admin과 Market 조회
         Seller admin = adminRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -232,35 +237,44 @@ public class ProductService {
         Market market = marketRepository.findBySeller(admin)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         
-        // 2. 해당 Market의 모든 상품 조회
-        List<Product> products = productRepository.findAll().stream()
-                .filter(p -> p.getMarket() != null && p.getMarket().getId().equals(market.getId()))
-                .sorted((p1, p2) -> {
-                    // 최신순 정렬 (createdAt 내림차순)
-                    if (p1.getCreatedAt() == null && p2.getCreatedAt() == null) return 0;
-                    if (p1.getCreatedAt() == null) return 1;
-                    if (p2.getCreatedAt() == null) return -1;
-                    return p2.getCreatedAt().compareTo(p1.getCreatedAt());
-                })
-                .collect(Collectors.toList());
+        // 2. 페이징 정보 생성
+        Pageable pageable = pagingRequest.toPageable();
         
-        // 3. 상품이 없을 경우 에러 처리
-        if (products.isEmpty()) {
-            throw new BusinessException(ErrorCode.PRODUCT_LIST_EMPTY);
-        }
+        // 3. 필터 파라미터 설정
+        Long categoryId = request != null ? request.getCategoryId() : null;
+        String displayStatus = (request != null && request.getDisplayStatus() != null) 
+                ? request.getDisplayStatus() : "ALL";
+        String stockStatus = (request != null && request.getStockStatus() != null) 
+                ? request.getStockStatus() : "ALL";
+        String keyword = (request != null && request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) 
+                ? request.getKeyword().trim() : null;
+        String keywordType = (request != null && request.getKeywordType() != null && !request.getKeywordType().trim().isEmpty()) 
+                ? request.getKeywordType().trim() : null;
         
-        // 4. ProductListItem으로 변환
-        List<ProductDto.ProductListItem> productList = products.stream()
+        // 4. 필터링된 상품 조회 (모든 필터는 쿼리에서 처리)
+        Page<Product> productPage = productRepository.findByMarketIdWithFilters(
+                market.getId(),
+                categoryId,
+                displayStatus,
+                stockStatus,
+                keyword,
+                keywordType,
+                pageable
+        );
+        
+        // 5. ProductListItem으로 변환
+        List<ProductDto.ProductListItem> productList = productPage.getContent().stream()
                 .map(product -> {
                     String calculatedStockStatus = calculateStockStatus(product, null);
                     return convertToProductListItem(product, calculatedStockStatus);
                 })
                 .collect(Collectors.toList());
         
-        // 5. 응답 생성
-        return ProductDto.ProductListResponse.builder()
-                .products(productList)
-                .build();
+        // 7. PageResponse 생성
+        return new PageResponse<>(
+                productList,
+                productPage
+        );
     }
     
     @Transactional(readOnly = true)
