@@ -41,5 +41,28 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     // 특정 카테고리를 사용하는 상품 조회
     @Query("SELECT p FROM Product p WHERE p.category.categoryId = :categoryId")
     List<Product> findByCategory_CategoryId(@Param("categoryId") Long categoryId);
+    
+    // Market별 상품 조회 (페이징, 필터링 포함)
+    // 품절 상태는 variants의 stock 합계를 기반으로 계산
+    @Query("SELECT DISTINCT p FROM Product p " +
+           "LEFT JOIN p.variants v " +
+           "WHERE p.market.id = :marketId " +
+           "AND (:categoryId IS NULL OR p.category.categoryId = :categoryId) " +
+           "AND (:displayStatus = 'ALL' OR " +
+           "     (:displayStatus = 'DISPLAY' AND p.isDisplay = true) OR " +
+           "     (:displayStatus = 'HIDDEN' AND p.isDisplay = false)) " +
+           "AND (p.isOutOfStockForced = true OR " +
+           "     (:stockStatus = 'ALL') OR " +
+           "     (:stockStatus = 'OUT_OF_STOCK' AND (p.isOutOfStockForced = true OR " +
+           "          (SELECT COALESCE(SUM(v2.stock), 0) FROM ProductVariant v2 WHERE v2.product = p) = 0)) OR " +
+           "     (:stockStatus = 'IN_STOCK' AND p.isOutOfStockForced = false AND " +
+           "          (SELECT COALESCE(SUM(v2.stock), 0) FROM ProductVariant v2 WHERE v2.product = p) > 0))")
+    Page<Product> findByMarketIdWithFilters(
+            @Param("marketId") Long marketId,
+            @Param("categoryId") Long categoryId,
+            @Param("displayStatus") String displayStatus,
+            @Param("stockStatus") String stockStatus,
+            Pageable pageable
+    );
 }
 
