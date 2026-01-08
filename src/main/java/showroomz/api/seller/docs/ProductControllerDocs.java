@@ -200,20 +200,20 @@ public interface ProductControllerDocs {
                                     @ExampleObject(
                                             name = "성공 예시",
                                             value = "{\n" +
-                                                    "  \"product_id\": 1,\n" +
-                                                    "  \"product_number\": \"SRZ-20251228-001\",\n" +
-                                                    "  \"seller_product_code\": \"PROD-ABC-001\",\n" +
-                                                    "  \"thumbnail_url\": \"https://example.com/thumbnail.jpg\",\n" +
+                                                    "  \"productId\": 1,\n" +
+                                                    "  \"productNumber\": \"SRZ-20251228-001\",\n" +
+                                                    "  \"sellerProductCode\": \"PROD-ABC-001\",\n" +
+                                                    "  \"thumbnailUrl\": \"https://example.com/thumbnail.jpg\",\n" +
                                                     "  \"name\": \"프리미엄 린넨 셔츠\",\n" +
                                                     "  \"price\": {\n" +
-                                                    "    \"purchase_price\": 25000,\n" +
-                                                    "    \"regular_price\": 59000,\n" +
-                                                    "    \"sale_price\": 49000\n" +
+                                                    "    \"purchasePrice\": 25000,\n" +
+                                                    "    \"regularPrice\": 59000,\n" +
+                                                    "    \"salePrice\": 49000\n" +
                                                     "  },\n" +
-                                                    "  \"created_at\": \"2025-12-28T14:30:00Z\",\n" +
-                                                    "  \"display_status\": \"DISPLAY\",\n" +
-                                                    "  \"stock_status\": \"IN_STOCK\",\n" +
-                                                    "  \"is_out_of_stock_forced\": false\n" +
+                                                    "  \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
+                                                    "  \"displayStatus\": \"DISPLAY\",\n" +
+                                                    "  \"stockStatus\": \"IN_STOCK\",\n" +
+                                                    "  \"isOutOfStockForced\": false\n" +
                                                     "}"
                                     )
                             }
@@ -282,20 +282,20 @@ public interface ProductControllerDocs {
                                             value = "{\n" +
                                                     "  \"content\": [\n" +
                                                     "    {\n" +
-                                                    "      \"product_id\": 1,\n" +
-                                                    "      \"product_number\": \"SRZ-20251228-001\",\n" +
-                                                    "      \"seller_product_code\": \"PROD-ABC-001\",\n" +
-                                                    "      \"thumbnail_url\": \"https://example.com/thumbnail.jpg\",\n" +
+                                                    "      \"productId\": 1,\n" +
+                                                    "      \"productNumber\": \"SRZ-20251228-001\",\n" +
+                                                    "      \"sellerProductCode\": \"PROD-ABC-001\",\n" +
+                                                    "      \"thumbnailUrl\": \"https://example.com/thumbnail.jpg\",\n" +
                                                     "      \"name\": \"프리미엄 린넨 셔츠\",\n" +
                                                     "      \"price\": {\n" +
-                                                    "        \"purchase_price\": 25000,\n" +
-                                                    "        \"regular_price\": 59000,\n" +
-                                                    "        \"sale_price\": 49000\n" +
+                                                    "        \"purchasePrice\": 25000,\n" +
+                                                    "        \"regularPrice\": 59000,\n" +
+                                                    "        \"salePrice\": 49000\n" +
                                                     "      },\n" +
-                                                    "      \"created_at\": \"2025-12-28T14:30:00Z\",\n" +
-                                                    "      \"display_status\": \"DISPLAY\",\n" +
-                                                    "      \"stock_status\": \"IN_STOCK\",\n" +
-                                                    "      \"is_out_of_stock_forced\": false\n" +
+                                                    "      \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
+                                                    "      \"displayStatus\": \"DISPLAY\",\n" +
+                                                    "      \"stockStatus\": \"IN_STOCK\",\n" +
+                                                    "      \"isOutOfStockForced\": false\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
