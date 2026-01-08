@@ -1,5 +1,6 @@
 package showroomz.global.error.exception;
 
+import io.sentry.Sentry; // Sentry import 추가
 import lombok.extern.slf4j.Slf4j;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
@@ -23,6 +24,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ErrorResponse> handleBadRequestException(BusinessException e) {
+        // 비즈니스 로직 예외(400 등)는 보통 Sentry에 보낼 필요 없음 (로그만 남김)
+        log.warn("BusinessException: {}", e.getMessage());
         ErrorCode errorCode = e.getErrorCode();
 
         return ResponseEntity
@@ -59,6 +62,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({JpaSystemException.class, DataAccessException.class})
     public ResponseEntity<ErrorResponse> handleDataAccessException(Exception e) {
+        // 1. Sentry에 예외 전송 (데이터베이스 오류는 중요하므로 Sentry에 보고)
+        Sentry.captureException(e);
+        
+        // 2. 서버 로그에도 남기기
         log.error("데이터베이스 오류 발생", e);
         
         // SQLException의 원인 메시지 확인
@@ -96,10 +103,17 @@ public class GlobalExceptionHandler {
                         ErrorCode.FORBIDDEN.getMessage()));
     }
 
+    // ★ [수정 완료] 예상치 못한 시스템 예외 (500 에러) 처리 부분
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
-        log.error("예상치 못한 오류 발생", e);
         
+        // 1. Sentry에 예외 전송 (이 한 줄이 핵심입니다!)
+        Sentry.captureException(e);
+        
+        // 2. 서버 로그에도 남기기
+        log.error("Unhandled Exception 발생: ", e);
+
+        // 3. 클라이언트 응답
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponse(

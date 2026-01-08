@@ -59,3 +59,12 @@ springdoc:
   swagger-ui:
     tags-sorter: alpha       # 태그를 알파벳순 정렬
     operations-sorter: alpha # API(메서드)도 알파벳순 정렬
+
+# Sentry 설정
+sentry:
+  dsn: ${SENTRY_DSN:https://default-dsn-address@sentry.io/0} # Sentry에서 발급받은 DSN을 환경 변수에서 읽어옴
+  traces-sample-rate: 1.0 # 성능 모니터링 샘플링 비율 (1.0 = 100% 수집, 운영 시엔 0.1~0.5 권장)
+  exception-resolver-order: -2147483647 # Sentry 예외 처리 순서를 가장 높게 설정
+  logging:
+    minimum-event-level: error # log.error() 이상은 무조건 Sentry로 보냄
+    minimum-breadcrumb-level: info # log.info()는 Sentry 이슈 내의 '타임라인(Breadcrumb)'에 기록으로 남김
