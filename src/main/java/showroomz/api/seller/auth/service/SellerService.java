@@ -2,6 +2,7 @@ package showroomz.api.seller.auth.service;
 
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,7 @@ import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SellerService {
@@ -104,6 +106,14 @@ public class SellerService {
             throw new BusinessException(ErrorCode.ACCOUNT_NOT_APPROVED);
         }
         if (admin.getStatus() == SellerStatus.REJECTED) {
+            // [수정] 반려된 계정일 경우, 반려 사유를 포함하여 예외 발생
+            String rejectionReason = admin.getRejectionReason();
+            log.info("🔍 반려된 계정 로그인 시도 - 이메일: {}, 반려 사유: '{}'", admin.getEmail(), rejectionReason);
+            if (rejectionReason != null && !rejectionReason.isBlank()) {
+                log.info("✅ 반려 사유 포함하여 예외 발생");
+                throw new BusinessException(ErrorCode.ACCOUNT_REJECTED, rejectionReason);
+            }
+            log.info("⚠️ 반려 사유 없음 - 기본 메시지 사용");
             throw new BusinessException(ErrorCode.ACCOUNT_REJECTED);
         }
 
