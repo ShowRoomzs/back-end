@@ -28,9 +28,14 @@ public class GlobalExceptionHandler {
         log.warn("BusinessException: {}", e.getMessage());
         ErrorCode errorCode = e.getErrorCode();
 
+        // 커스텀 메시지가 있으면 사용, 없으면 ErrorCode의 기본 메시지 사용
+        String message = e.getMessage() != null && !e.getMessage().equals(errorCode.getMessage()) 
+                ? e.getMessage() 
+                : errorCode.getMessage();
+
         return ResponseEntity
                 .status(errorCode.getStatus())
-                .body(new ErrorResponse(errorCode.getCode(), errorCode.getMessage()));
+                .body(new ErrorResponse(errorCode.getCode(), message));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
