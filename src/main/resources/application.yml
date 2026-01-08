@@ -62,7 +62,7 @@ springdoc:
 
 # Sentry 설정
 sentry:
-  dsn: "https://examplePublicKey@o0.ingest.sentry.io/0" # Sentry에서 발급받은 실제 DSN 입력
+  dsn: ${SENTRY_DSN:https://default-dsn-address@sentry.io/0} # Sentry에서 발급받은 DSN을 환경 변수에서 읽어옴
   traces-sample-rate: 1.0 # 성능 모니터링 샘플링 비율 (1.0 = 100% 수집, 운영 시엔 0.1~0.5 권장)
   exception-resolver-order: -2147483647 # Sentry 예외 처리 순서를 가장 높게 설정
   logging:
