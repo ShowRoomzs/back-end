@@ -244,6 +244,11 @@ public class ProductService {
                 })
                 .collect(Collectors.toList());
         
+        // 3. 상품이 없을 경우 에러 처리
+        if (products.isEmpty()) {
+            throw new BusinessException(ErrorCode.PRODUCT_LIST_EMPTY);
+        }
+        
         // 4. ProductListItem으로 변환
         List<ProductDto.ProductListItem> productList = products.stream()
                 .map(product -> {
