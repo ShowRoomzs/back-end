@@ -120,17 +120,36 @@ public class CategoryService {
         Category category = categoryRepository.findByCategoryId(categoryId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
 
-        // 해당 카테고리를 사용하는 상품 조회
-        java.util.List<Product> productsUsingCategory = productRepository.findByCategory_CategoryId(categoryId);
+        // 해당 카테고리와 모든 하위 카테고리를 사용하는 상품 조회
+        java.util.List<Long> categoryIdsToCheck = getAllCategoryIdsIncludingChildren(category);
         
-        if (!productsUsingCategory.isEmpty()) {
-            // 첫 번째 상품 ID를 사용하여 에러 메시지 생성
-            Long firstProductId = productsUsingCategory.get(0).getProductId();
-            String errorMessage = String.format("상품 ID %d와 연결되어있어 해당 카테고리를 삭제할 수 없습니다.", firstProductId);
-            throw new BusinessException(ErrorCode.CATEGORY_IN_USE, errorMessage);
+        for (Long id : categoryIdsToCheck) {
+            java.util.List<Product> productsUsingCategory = productRepository.findByCategory_CategoryId(id);
+            if (!productsUsingCategory.isEmpty()) {
+                // 첫 번째 상품 ID를 사용하여 에러 메시지 생성
+                Long firstProductId = productsUsingCategory.get(0).getProductId();
+                String errorMessage = String.format("상품 ID %d와 연결되어있어 해당 카테고리를 삭제할 수 없습니다.", firstProductId);
+                throw new BusinessException(ErrorCode.CATEGORY_IN_USE, errorMessage);
+            }
         }
 
+        // cascade로 인해 하위 카테고리도 자동으로 삭제됨
         categoryRepository.delete(category);
+    }
+    
+    /**
+     * 카테고리와 모든 하위 카테고리 ID를 재귀적으로 수집
+     */
+    private java.util.List<Long> getAllCategoryIdsIncludingChildren(Category category) {
+        java.util.List<Long> categoryIds = new java.util.ArrayList<>();
+        categoryIds.add(category.getCategoryId());
+        
+        // 하위 카테고리들을 재귀적으로 수집
+        for (Category child : category.getChildren()) {
+            categoryIds.addAll(getAllCategoryIdsIncludingChildren(child));
+        }
+        
+        return categoryIds;
     }
 }
 
