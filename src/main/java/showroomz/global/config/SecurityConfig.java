@@ -40,13 +40,14 @@ public class SecurityConfig {
             "/", "/error", "/test/**",  // 기본
             "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**", // Swagger
 
-            // Auth 관련 (일관성 있게 'signup'으로 통일 추천)
+            //auth 관련
             "/v1/user/auth/social/login", 
-            "/v1/user/auth/social/signup", // 기존 register -> signup (일관성)
+            "/v1/user/auth/social/signup", 
             "/v1/user/auth/refresh",
             "/v1/user/auth/local/signup", "/v1/user/auth/local/login",
             "/v1/seller/auth/signup", "/v1/seller/auth/login",
             "/v1/seller/auth/refresh",
+
             // 중복 확인 (인증 불필요)
             "/v1/seller/auth/check-email",
             "/v1/user/check-nickname",
@@ -76,7 +77,11 @@ public class SecurityConfig {
                 // ADMIN 전용
                 .requestMatchers("/v1/admin/**").hasAnyAuthority(RoleType.ADMIN.getCode())
 
-                // SELLER 권한 (중복 제거됨: 하위 경로는 /seller/** 하나로 모두 커버됨)
+                // SELLER auth - logout, withdraw, images는 ADMIN과 SELLER 모두 접근 가능
+                .requestMatchers("/v1/seller/auth/logout", "/v1/seller/auth/withdraw", "/v1/seller/images")
+                    .hasAnyAuthority(RoleType.ADMIN.getCode(), RoleType.SELLER.getCode())
+
+                // SELLER 권한
                 .requestMatchers("/v1/seller/**").hasAnyAuthority(RoleType.SELLER.getCode())
 
                 // USER 권한
