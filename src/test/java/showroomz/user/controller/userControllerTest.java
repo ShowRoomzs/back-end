@@ -16,23 +16,20 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.test.web.servlet.MockMvc;
 
-import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
-import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
+import showroomz.api.app.user.DTO.UserProfileResponse;
 import showroomz.api.app.user.controller.UserController;
 import showroomz.api.app.user.service.UserService;
 import showroomz.domain.member.user.entity.Users;
-import showroomz.global.error.exception.ErrorCode;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -96,7 +93,21 @@ class UserControllerTest {
         mockAuthenticatedUser(username);
 
         Users user = createMockUser(username, "테스트닉네임");
-        given(userService.getUser(username)).willReturn(Optional.of(user));
+        UserProfileResponse profileResponse = new UserProfileResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getNickname(),
+                user.getProfileImageUrl(),
+                user.getBirthday(),
+                user.getGender(),
+                user.getProviderType(),
+                user.getRoleType(),
+                user.getCreatedAt(),
+                user.getModifiedAt(),
+                user.isMarketingAgree(),
+                0L // followingCount
+        );
+        given(userService.getProfile(username)).willReturn(profileResponse);
 
         // when & then
         mockMvc.perform(get("/v1/user/me"))
@@ -162,6 +173,23 @@ class UserControllerTest {
         // 업데이트 후 반환될 유저 정보
         Users updatedUser = new Users(username, "newNick", "email", "Y", "img", ProviderType.NAVER, RoleType.USER, LocalDateTime.now(), LocalDateTime.now());
         given(userService.updateProfile(eq(username), any(UpdateUserProfileRequest.class))).willReturn(updatedUser);
+        
+        // 업데이트 후 반환될 프로필 응답
+        UserProfileResponse updatedProfileResponse = new UserProfileResponse(
+                updatedUser.getId(),
+                updatedUser.getEmail(),
+                updatedUser.getNickname(),
+                updatedUser.getProfileImageUrl(),
+                updatedUser.getBirthday(),
+                updatedUser.getGender(),
+                updatedUser.getProviderType(),
+                updatedUser.getRoleType(),
+                updatedUser.getCreatedAt(),
+                updatedUser.getModifiedAt(),
+                updatedUser.isMarketingAgree(),
+                0L // followingCount
+        );
+        given(userService.getProfile(username)).willReturn(updatedProfileResponse);
 
         // when & then
         mockMvc.perform(patch("/v1/user/me")
