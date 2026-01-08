@@ -37,5 +37,9 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
                                                     @Param("startDate") Instant startDate, 
                                                     @Param("endDate") Instant endDate, 
                                                     Pageable pageable);
+    
+    // 특정 카테고리를 사용하는 상품 조회
+    @Query("SELECT p FROM Product p WHERE p.category.categoryId = :categoryId")
+    List<Product> findByCategory_CategoryId(@Param("categoryId") Long categoryId);
 }
 
