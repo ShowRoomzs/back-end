@@ -5,6 +5,7 @@ import org.springframework.stereotype.Repository;
 
 import showroomz.domain.category.entity.Category;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -12,5 +13,6 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     Optional<Category> findByCategoryId(Long categoryId);
     Optional<Category> findByName(String name);
     boolean existsByName(String name);
+    List<Category> findByParent(Category parent);
 }
 
