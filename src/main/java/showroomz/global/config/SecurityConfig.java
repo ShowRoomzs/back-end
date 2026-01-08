@@ -46,7 +46,7 @@ public class SecurityConfig {
             "/v1/user/auth/refresh",
             "/v1/user/auth/local/signup", "/v1/user/auth/local/login",
             "/v1/seller/auth/signup", "/v1/seller/auth/login",
-            
+            "/v1/seller/auth/refresh",
             // 중복 확인 (인증 불필요)
             "/v1/seller/auth/check-email",
             "/v1/user/check-nickname",
