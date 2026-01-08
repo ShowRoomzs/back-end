@@ -57,6 +57,7 @@ public enum ErrorCode {
     // 승인 대기 중 로그인 시도 에러
     ACCOUNT_NOT_APPROVED(HttpStatus.FORBIDDEN, "ACCOUNT_NOT_APPROVED", "관리자 승인 대기 중인 계정입니다."),
     ACCOUNT_REJECTED(HttpStatus.FORBIDDEN, "ACCOUNT_REJECTED", "가입 승인이 반려된 계정입니다."),
+    ACCOUNT_REJECTED_WITH_REASON(HttpStatus.FORBIDDEN, "ACCOUNT_REJECTED_WITH_REASON", "가입 승인이 반려된 계정입니다."),
 
     /* * 6. 마켓 (Market) 
      */

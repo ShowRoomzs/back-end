@@ -182,9 +182,9 @@ public interface SellerAuthControllerDocs {
                             @ExampleObject(
                                     name = "요청 예시",
                                     value = "{\n" +
-                                            "  \"email\": \"admin@showroomz.shop\",\n" +
-                                            "  \"password\": \"Admin123!\",\n" +
-                                            "  \"passwordConfirm\": \"Admin123!\",\n" +
+                                            "  \"email\": \"seller@example.com\",\n" +
+                                            "  \"password\": \"Seller123!\",\n" +
+                                            "  \"passwordConfirm\": \"Seller123!\",\n" +
                                             "  \"sellerName\": \"김담당\",\n" +
                                             "  \"sellerContact\": \"010-1234-5678\",\n" +
                                             "  \"marketName\": \"쇼룸즈\",\n" +
@@ -238,7 +238,7 @@ public interface SellerAuthControllerDocs {
             @Parameter(
                     description = "중복 체크할 이메일 주소",
                     required = true,
-                    example = "admin@showroomz.shop"
+                    example = "seller@showroomz.shop"
             )
             @RequestParam String email
     );
@@ -248,7 +248,8 @@ public interface SellerAuthControllerDocs {
             description = "이메일과 비밀번호로 관리자 계정에 로그인합니다.\n\n" +
                     "**제약사항:**\n" +
                     "- 승인 완료(APPROVED)된 계정만 로그인할 수 있습니다.\n" +
-                    "- 승인 대기(PENDING) 또는 반려(REJECTED)된 계정은 403 Forbidden 에러가 발생합니다."
+                    "- 승인 대기(PENDING) 또는 반려(REJECTED)된 계정은 403 Forbidden 에러가 발생합니다.\n" +
+                    "- 반려(REJECTED)된 계정의 경우, 반려 사유가 있으면 응답의 `message` 필드에 반려 사유가 포함됩니다."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -329,11 +330,19 @@ public interface SellerAuthControllerDocs {
                                                     "}"
                                     ),
                                     @ExampleObject(
-                                            name = "승인 반려됨",
+                                            name = "승인 반려됨 (반려 사유 없음)",
                                             value = "{\n" +
                                                     "  \"code\": \"ACCOUNT_REJECTED\",\n" +
                                                     "  \"message\": \"가입 승인이 반려된 계정입니다.\"\n" +
                                                     "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "승인 반려됨 (반려 사유 포함)",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ACCOUNT_REJECTED_WITH_REASON\",\n" +
+                                                    "  \"message\": \"서류 미비로 인한 가입 승인 반려\"\n" +
+                                                    "}",
+                                            description = "반려 사유가 있는 경우, message 필드에 반려 사유가 포함됩니다."
                                     )
                             }
                     )
