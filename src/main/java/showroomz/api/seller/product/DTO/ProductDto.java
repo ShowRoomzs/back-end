@@ -208,6 +208,13 @@ public class ProductDto {
 
         @Schema(description = "품절 상태 (ALL: 전체, OUT_OF_STOCK: 품절, IN_STOCK: 품절 아님)", example = "ALL", allowableValues = {"ALL", "OUT_OF_STOCK", "IN_STOCK"})
         private String stockStatus = "ALL";
+
+        @Schema(description = "검색어", example = "멋진코트")
+        private String keyword;
+
+        @Schema(description = "검색 타입 (productNumber: 상품 번호, sellerProductCode: 판매자 상품 코드, name: 상품명)", 
+                example = "name", allowableValues = {"productNumber", "sellerProductCode", "name"})
+        private String keywordType;
     }
 
     @Getter

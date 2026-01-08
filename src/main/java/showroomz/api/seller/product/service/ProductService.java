@@ -246,6 +246,10 @@ public class ProductService {
                 ? request.getDisplayStatus() : "ALL";
         String stockStatus = (request != null && request.getStockStatus() != null) 
                 ? request.getStockStatus() : "ALL";
+        String keyword = (request != null && request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) 
+                ? request.getKeyword().trim() : null;
+        String keywordType = (request != null && request.getKeywordType() != null && !request.getKeywordType().trim().isEmpty()) 
+                ? request.getKeywordType().trim() : null;
         
         // 4. 필터링된 상품 조회 (모든 필터는 쿼리에서 처리)
         Page<Product> productPage = productRepository.findByMarketIdWithFilters(
@@ -253,10 +257,17 @@ public class ProductService {
                 categoryId,
                 displayStatus,
                 stockStatus,
+                keyword,
+                keywordType,
                 pageable
         );
         
-        // 5. ProductListItem으로 변환
+        // 5. 상품이 없을 경우 에러 처리
+        if (productPage.getContent().isEmpty()) {
+            throw new BusinessException(ErrorCode.PRODUCT_LIST_EMPTY);
+        }
+        
+        // 6. ProductListItem으로 변환
         List<ProductDto.ProductListItem> productList = productPage.getContent().stream()
                 .map(product -> {
                     String calculatedStockStatus = calculateStockStatus(product, null);
@@ -264,7 +275,7 @@ public class ProductService {
                 })
                 .collect(Collectors.toList());
         
-        // 6. PageResponse 생성
+        // 7. PageResponse 생성
         return new PageResponse<>(
                 productList,
                 productPage
