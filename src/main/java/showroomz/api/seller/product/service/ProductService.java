@@ -67,9 +67,10 @@ public class ProductService {
         product.setIsRecommended(false);
         product.setDescription(request.getDescription());
         product.setDeliveryType(request.getDeliveryType() != null ? request.getDeliveryType() : "STANDARD");
-        product.setDeliveryFee(request.getDeliveryFee());
-        product.setDeliveryFreeThreshold(request.getDeliveryFreeThreshold());
-        product.setDeliveryEstimatedDays(request.getDeliveryEstimatedDays());
+        // 배송 정보 기본값 설정 (배포 DB의 NOT NULL 제약조건 대응)
+        product.setDeliveryFee(request.getDeliveryFee() != null ? request.getDeliveryFee() : 0);
+        product.setDeliveryFreeThreshold(request.getDeliveryFreeThreshold() != null ? request.getDeliveryFreeThreshold() : 0);
+        product.setDeliveryEstimatedDays(request.getDeliveryEstimatedDays() != null ? request.getDeliveryEstimatedDays() : 1);
         product.setProductNumber(productNumber);
 
         // 5. 태그 JSON 변환
