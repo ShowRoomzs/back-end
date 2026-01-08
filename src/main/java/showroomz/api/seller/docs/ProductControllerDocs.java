@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.seller.product.DTO.ProductDto;
+import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "Seller - Product", description = "Seller Product API")
 public interface ProductControllerDocs {
@@ -252,8 +254,15 @@ public interface ProductControllerDocs {
     );
 
     @Operation(
-            summary = "상품 목록 조회",
-            description = "백스테이지에서 판매자가 자신의 상품 목록을 조회합니다. 미진열 상품 및 품절된 상품을 포함한 전체 데이터가 반환됩니다.\n\n" +
+            summary = "상품 목록 조회 (페이징 및 필터링)",
+            description = "백스테이지에서 판매자가 자신의 상품 목록을 조회합니다. 페이징, 카테고리, 진열상태, 품절상태 필터를 지원합니다.\n\n" +
+                    "**필터 파라미터:**\n" +
+                    "- categoryId: 최종 선택된 카테고리 ID (선택사항)\n" +
+                    "- displayStatus: 진열 상태 (ALL, DISPLAY, HIDDEN) - 기본값: ALL\n" +
+                    "- stockStatus: 품절 상태 (ALL, OUT_OF_STOCK, IN_STOCK) - 기본값: ALL\n\n" +
+                    "**페이징 파라미터:**\n" +
+                    "- page: 페이지 번호 (1부터 시작) - 기본값: 1\n" +
+                    "- size: 페이지당 항목 수 - 기본값: 20\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -263,12 +272,12 @@ public interface ProductControllerDocs {
                     description = "상품 목록 조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ProductDto.ProductListResponse.class),
+                            schema = @Schema(implementation = PageResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "성공 예시",
                                             value = "{\n" +
-                                                    "  \"products\": [\n" +
+                                                    "  \"content\": [\n" +
                                                     "    {\n" +
                                                     "      \"product_id\": 1,\n" +
                                                     "      \"product_number\": \"SRZ-20251228-001\",\n" +
@@ -285,7 +294,14 @@ public interface ProductControllerDocs {
                                                     "      \"stock_status\": \"IN_STOCK\",\n" +
                                                     "      \"is_out_of_stock_forced\": false\n" +
                                                     "    }\n" +
-                                                    "  ]\n" +
+                                                    "  ],\n" +
+                                                    "  \"pageInfo\": {\n" +
+                                                    "    \"currentPage\": 1,\n" +
+                                                    "    \"totalPages\": 10,\n" +
+                                                    "    \"totalResults\": 195,\n" +
+                                                    "    \"limit\": 20,\n" +
+                                                    "    \"hasNext\": true\n" +
+                                                    "  }\n" +
                                                     "}"
                                     )
                             }
@@ -308,6 +324,11 @@ public interface ProductControllerDocs {
                     )
             )
     })
-    ResponseEntity<ProductDto.ProductListResponse> getProductList();
+    ResponseEntity<PageResponse<ProductDto.ProductListItem>> getProductList(
+            @Parameter(description = "필터 조건 (카테고리, 진열상태, 품절상태)")
+            ProductDto.ProductListRequest request,
+            @Parameter(description = "페이징 정보 (페이지 번호, 페이지 크기)")
+            PagingRequest pagingRequest
+    );
 }
 

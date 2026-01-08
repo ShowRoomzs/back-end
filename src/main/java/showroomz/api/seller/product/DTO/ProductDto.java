@@ -198,6 +198,22 @@ public class ProductDto {
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
+    @Schema(description = "상품 목록 조회 요청 (필터)")
+    public static class ProductListRequest {
+        @Schema(description = "카테고리 ID (최종 선택된 카테고리)", example = "3")
+        private Long categoryId;
+
+        @Schema(description = "진열 상태 (ALL: 전체, DISPLAY: 진열, HIDDEN: 미진열)", example = "ALL", allowableValues = {"ALL", "DISPLAY", "HIDDEN"})
+        private String displayStatus = "ALL";
+
+        @Schema(description = "품절 상태 (ALL: 전체, OUT_OF_STOCK: 품절, IN_STOCK: 품절 아님)", example = "ALL", allowableValues = {"ALL", "OUT_OF_STOCK", "IN_STOCK"})
+        private String stockStatus = "ALL";
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     @Builder
     @Schema(description = "상품 목록 조회 응답")
     public static class ProductListResponse {
