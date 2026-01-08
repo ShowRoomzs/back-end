@@ -262,12 +262,7 @@ public class ProductService {
                 pageable
         );
         
-        // 5. 상품이 없을 경우 에러 처리
-        if (productPage.getContent().isEmpty()) {
-            throw new BusinessException(ErrorCode.PRODUCT_LIST_EMPTY);
-        }
-        
-        // 6. ProductListItem으로 변환
+        // 5. ProductListItem으로 변환
         List<ProductDto.ProductListItem> productList = productPage.getContent().stream()
                 .map(product -> {
                     String calculatedStockStatus = calculateStockStatus(product, null);
