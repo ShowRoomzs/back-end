@@ -25,6 +25,11 @@ jobs:
       run: |
         echo "${{ secrets.APPLICATION_ENV }}" > .env
       shell: bash
+    # 1. 통합 테스트(DB 검증) 먼저 실행 -> 실패하면 여기서 배포 중단됨
+    - name: Run Integration Tests (DB Schema Validation)
+      run: |
+        chmod +x gradlew
+        ./gradlew integrationTest
 
     - name: Gradle 빌드
       run: |
