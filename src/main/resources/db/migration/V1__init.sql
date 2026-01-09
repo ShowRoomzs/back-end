@@ -1,175 +1,186 @@
--- Flyway 초기 마이그레이션 스크립트
--- 모든 엔티티 기반 테이블 생성
+CREATE TABLE `admin` (
+  `admin_id` bigint NOT NULL AUTO_INCREMENT,
+  `created_at` datetime(6) NOT NULL,
+  `modified_at` datetime(6) NOT NULL,
+  `phone_number` varchar(20) DEFAULT NULL,
+  `name` varchar(64) NOT NULL,
+  `password` varchar(128) NOT NULL,
+  `email` varchar(512) NOT NULL,
+  `role_type` enum('ADMIN','GUEST','SELLER','USER') NOT NULL,
+  PRIMARY KEY (`admin_id`),
+  UNIQUE KEY `UKc0r9atamxvbhjjvy5j8da1kam` (`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- 1. USERS 테이블 (사용자)
-CREATE TABLE IF NOT EXISTS USERS (
-    USER_ID BIGINT AUTO_INCREMENT PRIMARY KEY,
-    USERNAME VARCHAR(64) NOT NULL UNIQUE,
-    NICKNAME VARCHAR(100) NOT NULL,
-    NAME VARCHAR(64),
-    PHONE_NUMBER VARCHAR(20),
-    PASSWORD VARCHAR(128) NOT NULL,
-    EMAIL VARCHAR(512) NOT NULL UNIQUE,
-    EMAIL_VERIFIED_YN VARCHAR(1) NOT NULL,
-    PROFILE_IMAGE_URL VARCHAR(512),
-    GENDER VARCHAR(10),
-    BIRTHDAY VARCHAR(10),
-    PROVIDER_TYPE VARCHAR(20) NOT NULL,
-    ROLE_TYPE VARCHAR(20) NOT NULL,
-    CREATED_AT DATETIME(6) NOT NULL,
-    MODIFIED_AT DATETIME(6) NOT NULL,
-    SERVICE_AGREE BOOLEAN DEFAULT FALSE,
-    PRIVACY_AGREE BOOLEAN DEFAULT FALSE,
-    MARKETING_AGREE BOOLEAN DEFAULT FALSE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `admin_refresh_token` (
+  `refresh_token_seq` bigint NOT NULL AUTO_INCREMENT,
+  `refresh_token` varchar(256) NOT NULL,
+  `admin_email` varchar(512) NOT NULL,
+  PRIMARY KEY (`refresh_token_seq`),
+  UNIQUE KEY `UKlob6xik9nhf2v8qbso6ft7sec` (`admin_email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- 2. SELLER 테이블 (판매자)
-CREATE TABLE IF NOT EXISTS SELLER (
-    SELLER_ID BIGINT AUTO_INCREMENT PRIMARY KEY,
-    EMAIL VARCHAR(512) NOT NULL UNIQUE,
-    PASSWORD VARCHAR(128) NOT NULL,
-    NAME VARCHAR(64) NOT NULL,
-    PHONE_NUMBER VARCHAR(20),
-    ROLE_TYPE VARCHAR(20) NOT NULL,
-    STATUS VARCHAR(20) NOT NULL,
-    REJECTION_REASON VARCHAR(500),
-    CREATED_AT DATETIME(6) NOT NULL,
-    MODIFIED_AT DATETIME(6) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `category` (
+  `order` int DEFAULT NULL,
+  `category_id` bigint NOT NULL AUTO_INCREMENT,
+  `parent_id` bigint DEFAULT NULL,
+  `icon_url` varchar(2048) DEFAULT NULL,
+  `name` varchar(255) NOT NULL,
+  PRIMARY KEY (`category_id`),
+  KEY `FK2y94svpmqttx80mshyny85wqr` (`parent_id`),
+  CONSTRAINT `FK2y94svpmqttx80mshyny85wqr` FOREIGN KEY (`parent_id`) REFERENCES `category` (`category_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- 3. MARKET 테이블 (마켓)
-CREATE TABLE IF NOT EXISTS MARKET (
-    MARKET_ID BIGINT AUTO_INCREMENT PRIMARY KEY,
-    SELLER_ID BIGINT NOT NULL,
-    MARKET_NAME VARCHAR(255) NOT NULL UNIQUE,
-    CS_NUMBER VARCHAR(255) NOT NULL,
-    MARKET_IMAGE_URL VARCHAR(512),
-    MARKET_IMAGE_STATUS VARCHAR(20) DEFAULT 'APPROVED',
-    MARKET_DESCRIPTION VARCHAR(1000),
-    MARKET_URL VARCHAR(512),
-    MAIN_CATEGORY VARCHAR(100),
-    SNS_LINK_1 VARCHAR(512),
-    SNS_LINK_2 VARCHAR(512),
-    SNS_LINK_3 VARCHAR(512),
-    FOREIGN KEY (SELLER_ID) REFERENCES SELLER(SELLER_ID) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `market` (
+  `market_id` bigint NOT NULL AUTO_INCREMENT,
+  `seller_id` bigint NOT NULL,
+  `main_category` varchar(100) DEFAULT NULL,
+  `market_image_url` varchar(512) DEFAULT NULL,
+  `market_url` varchar(512) DEFAULT NULL,
+  `sns_link_1` varchar(512) DEFAULT NULL,
+  `sns_link_2` varchar(512) DEFAULT NULL,
+  `sns_link_3` varchar(512) DEFAULT NULL,
+  `market_description` varchar(1000) DEFAULT NULL,
+  `cs_number` varchar(255) NOT NULL,
+  `market_name` varchar(255) NOT NULL,
+  `market_image_status` enum('APPROVED','REJECTED','UNDER_REVIEW') DEFAULT NULL,
+  PRIMARY KEY (`market_id`),
+  UNIQUE KEY `UKagtyaitfan2mngy8ocdu9tle5` (`seller_id`),
+  UNIQUE KEY `UKqb8gnd8e5hl8gkmv4m9nxude3` (`market_name`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- 4. CATEGORY 테이블 (카테고리)
-CREATE TABLE IF NOT EXISTS category (
-    category_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    parent_id BIGINT,
-    name VARCHAR(255) NOT NULL,
-    `order` INT,
-    icon_url VARCHAR(2048),
-    FOREIGN KEY (parent_id) REFERENCES category(category_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `product` (
+  `delivery_estimated_days` int DEFAULT NULL,
+  `delivery_fee` int DEFAULT NULL,
+  `delivery_free_threshold` int DEFAULT NULL,
+  `is_display` bit(1) NOT NULL,
+  `is_out_of_stock_forced` bit(1) NOT NULL,
+  `is_recommended` bit(1) NOT NULL,
+  `purchase_price` int DEFAULT NULL,
+  `regular_price` int NOT NULL,
+  `sale_price` int NOT NULL,
+  `category_id` bigint NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `market_id` bigint NOT NULL,
+  `product_id` bigint NOT NULL AUTO_INCREMENT,
+  `product_number` varchar(50) DEFAULT NULL,
+  `delivery_type` varchar(100) DEFAULT NULL,
+  `seller_product_code` varchar(100) DEFAULT NULL,
+  `thumbnail_url` varchar(2048) DEFAULT NULL,
+  `description` text,
+  `name` varchar(255) NOT NULL,
+  `product_notice` json DEFAULT NULL,
+  `tags` json DEFAULT NULL,
+  PRIMARY KEY (`product_id`),
+  UNIQUE KEY `UKo9lr7abbchek72c2xu8x0g884` (`product_number`),
+  KEY `FK1mtsbur82frn64de7balymq9s` (`category_id`),
+  KEY `FKnd0xf8hu7ixgw6u0do43xp2fb` (`market_id`),
+  CONSTRAINT `FK1mtsbur82frn64de7balymq9s` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`),
+  CONSTRAINT `FKnd0xf8hu7ixgw6u0do43xp2fb` FOREIGN KEY (`market_id`) REFERENCES `market` (`market_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- 5. product 테이블 (상품)
-CREATE TABLE IF NOT EXISTS product (
-    product_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    market_id BIGINT NOT NULL,
-    category_id BIGINT NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    seller_product_code VARCHAR(100),
-    thumbnail_url VARCHAR(2048),
-    regular_price INT NOT NULL,
-    sale_price INT NOT NULL,
-    purchase_price INT,
-    is_display BOOLEAN NOT NULL DEFAULT TRUE,
-    is_out_of_stock_forced BOOLEAN NOT NULL DEFAULT FALSE,
-    is_recommended BOOLEAN NOT NULL DEFAULT FALSE,
-    product_notice JSON,
-    description TEXT,
-    tags JSON,
-    delivery_type VARCHAR(100),
-    delivery_fee INT,
-    delivery_free_threshold INT,
-    delivery_estimated_days INT,
-    created_at TIMESTAMP(6) NOT NULL,
-    product_number VARCHAR(50) UNIQUE,
-    FOREIGN KEY (market_id) REFERENCES MARKET(MARKET_ID) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES category(category_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `product_image` (
+  `order` int NOT NULL,
+  `image_id` bigint NOT NULL AUTO_INCREMENT,
+  `product_id` bigint NOT NULL,
+  `url` varchar(2048) NOT NULL,
+  PRIMARY KEY (`image_id`),
+  KEY `FK6oo0cvcdtb6qmwsga468uuukk` (`product_id`),
+  CONSTRAINT `FK6oo0cvcdtb6qmwsga468uuukk` FOREIGN KEY (`product_id`) REFERENCES `product` (`product_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- 6. product_image 테이블 (상품 이미지)
-CREATE TABLE IF NOT EXISTS product_image (
-    image_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    product_id BIGINT NOT NULL,
-    url VARCHAR(2048) NOT NULL,
-    `order` INT NOT NULL,
-    FOREIGN KEY (product_id) REFERENCES product(product_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `product_option` (
+  `option_group_id` bigint NOT NULL,
+  `option_id` bigint NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  PRIMARY KEY (`option_id`),
+  KEY `FK1chbk3kb4ib2qwwitild434g4` (`option_group_id`),
+  CONSTRAINT `FK1chbk3kb4ib2qwwitild434g4` FOREIGN KEY (`option_group_id`) REFERENCES `product_option_group` (`option_group_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- 7. product_option_group 테이블 (상품 옵션 그룹)
-CREATE TABLE IF NOT EXISTS product_option_group (
-    option_group_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    product_id BIGINT NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    FOREIGN KEY (product_id) REFERENCES product(product_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `product_option_group` (
+  `option_group_id` bigint NOT NULL AUTO_INCREMENT,
+  `product_id` bigint NOT NULL,
+  `name` varchar(255) NOT NULL,
+  PRIMARY KEY (`option_group_id`),
+  KEY `FKsifetwvwtdfqltwegvv0ijt28` (`product_id`),
+  CONSTRAINT `FKsifetwvwtdfqltwegvv0ijt28` FOREIGN KEY (`product_id`) REFERENCES `product` (`product_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- 8. product_option 테이블 (상품 옵션)
-CREATE TABLE IF NOT EXISTS product_option (
-    option_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    option_group_id BIGINT NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    FOREIGN KEY (option_group_id) REFERENCES product_option_group(option_group_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `product_variant` (
+  `is_representative` bit(1) NOT NULL,
+  `regular_price` int NOT NULL,
+  `sale_price` int NOT NULL,
+  `stock` int NOT NULL,
+  `product_id` bigint NOT NULL,
+  `variant_id` bigint NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`variant_id`),
+  KEY `FKgrbbs9t374m9gg43l6tq1xwdj` (`product_id`),
+  CONSTRAINT `FKgrbbs9t374m9gg43l6tq1xwdj` FOREIGN KEY (`product_id`) REFERENCES `product` (`product_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- 9. product_variant 테이블 (상품 변형)
-CREATE TABLE IF NOT EXISTS product_variant (
-    variant_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    product_id BIGINT NOT NULL,
-    name VARCHAR(255),
-    regular_price INT NOT NULL,
-    sale_price INT NOT NULL,
-    stock INT NOT NULL DEFAULT 0,
-    is_representative BOOLEAN NOT NULL DEFAULT FALSE,
-    FOREIGN KEY (product_id) REFERENCES product(product_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `recent_search` (
+  `searched_at` datetime(6) NOT NULL,
+  `user_id` bigint NOT NULL,
+  `id` binary(16) NOT NULL,
+  `term` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKjwtiy8gf03joqr0a7pn1ioy9j` (`user_id`),
+  CONSTRAINT `FKjwtiy8gf03joqr0a7pn1ioy9j` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- 10. variant_option_map 테이블 (변형-옵션 매핑, ManyToMany 조인 테이블)
-CREATE TABLE IF NOT EXISTS variant_option_map (
-    variant_id BIGINT NOT NULL,
-    option_id BIGINT NOT NULL,
-    PRIMARY KEY (variant_id, option_id),
-    FOREIGN KEY (variant_id) REFERENCES product_variant(variant_id) ON DELETE CASCADE,
-    FOREIGN KEY (option_id) REFERENCES product_option(option_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `seller` (
+  `created_at` datetime(6) NOT NULL,
+  `modified_at` datetime(6) NOT NULL,
+  `seller_id` bigint NOT NULL AUTO_INCREMENT,
+  `phone_number` varchar(20) DEFAULT NULL,
+  `name` varchar(64) NOT NULL,
+  `password` varchar(128) NOT NULL,
+  `rejection_reason` varchar(500) DEFAULT NULL,
+  `email` varchar(512) NOT NULL,
+  `role_type` enum('ADMIN','GUEST','SELLER','USER') NOT NULL,
+  `status` enum('APPROVED','PENDING','REJECTED') NOT NULL,
+  PRIMARY KEY (`seller_id`),
+  UNIQUE KEY `UKcrgbovyy4gvgsum2yyb3fbfn7` (`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- 11. recent_search 테이블 (최근 검색)
-CREATE TABLE IF NOT EXISTS recent_search (
-    id BINARY(16) PRIMARY KEY,
-    user_id BIGINT NOT NULL,
-    term VARCHAR(255) NOT NULL,
-    searched_at TIMESTAMP(6) NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES USERS(USER_ID) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `user_refresh_token` (
+  `refresh_token_seq` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` varchar(64) NOT NULL,
+  `refresh_token` varchar(256) NOT NULL,
+  PRIMARY KEY (`refresh_token_seq`),
+  UNIQUE KEY `UKqca3mjxv5a1egwmn4wnbplfkt` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- 12. USER_REFRESH_TOKEN 테이블 (사용자 리프레시 토큰)
-CREATE TABLE IF NOT EXISTS USER_REFRESH_TOKEN (
-    REFRESH_TOKEN_SEQ BIGINT AUTO_INCREMENT PRIMARY KEY,
-    USER_ID VARCHAR(64) NOT NULL UNIQUE,
-    REFRESH_TOKEN VARCHAR(256) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `users` (
+  `email_verified_yn` varchar(1) NOT NULL,
+  `marketing_agree` bit(1) DEFAULT NULL,
+  `privacy_agree` bit(1) DEFAULT NULL,
+  `service_agree` bit(1) DEFAULT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `modified_at` datetime(6) NOT NULL,
+  `user_id` bigint NOT NULL AUTO_INCREMENT,
+  `birthday` varchar(10) DEFAULT NULL,
+  `gender` varchar(10) DEFAULT NULL,
+  `username` varchar(64) NOT NULL,
+  `nickname` varchar(100) NOT NULL,
+  `password` varchar(128) NOT NULL,
+  `email` varchar(512) NOT NULL,
+  `profile_image_url` varchar(512) DEFAULT NULL,
+  `provider_type` enum('APPLE','FACEBOOK','GOOGLE','KAKAO','LOCAL','NAVER') NOT NULL,
+  `role_type` enum('ADMIN','GUEST','SELLER','USER') NOT NULL,
+  `name` varchar(64) DEFAULT NULL,
+  `phone_number` varchar(20) DEFAULT NULL,
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `UKr43af9ap4edm43mmtq01oddj6` (`username`),
+  UNIQUE KEY `UK6dotkott2kjsp8vw4d0m25fb7` (`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=290 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- 13. ADMIN_REFRESH_TOKEN 테이블 (판매자 리프레시 토큰)
-CREATE TABLE IF NOT EXISTS ADMIN_REFRESH_TOKEN (
-    REFRESH_TOKEN_SEQ BIGINT AUTO_INCREMENT PRIMARY KEY,
-    ADMIN_EMAIL VARCHAR(512) NOT NULL UNIQUE,
-    REFRESH_TOKEN VARCHAR(256) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- 인덱스 생성 (성능 최적화)
-CREATE INDEX idx_users_email ON USERS(EMAIL);
-CREATE INDEX idx_users_username ON USERS(USERNAME);
-CREATE INDEX idx_seller_email ON SELLER(EMAIL);
-CREATE INDEX idx_market_seller_id ON MARKET(SELLER_ID);
-CREATE INDEX idx_product_market_id ON product(market_id);
-CREATE INDEX idx_product_category_id ON product(category_id);
-CREATE INDEX idx_product_image_product_id ON product_image(product_id);
-CREATE INDEX idx_product_option_group_product_id ON product_option_group(product_id);
-CREATE INDEX idx_product_option_option_group_id ON product_option(option_group_id);
-CREATE INDEX idx_product_variant_product_id ON product_variant(product_id);
-CREATE INDEX idx_recent_search_user_id ON recent_search(user_id);
-
+CREATE TABLE `variant_option_map` (
+  `option_id` bigint NOT NULL,
+  `variant_id` bigint NOT NULL,
+  KEY `FKipnrov51jqfx8emcvoiv7lwfj` (`option_id`),
+  KEY `FK9jg4lc8rq7ys8gkfs08lreccy` (`variant_id`),
+  CONSTRAINT `FK9jg4lc8rq7ys8gkfs08lreccy` FOREIGN KEY (`variant_id`) REFERENCES `product_variant` (`variant_id`),
+  CONSTRAINT `FKipnrov51jqfx8emcvoiv7lwfj` FOREIGN KEY (`option_id`) REFERENCES `product_option` (`option_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
