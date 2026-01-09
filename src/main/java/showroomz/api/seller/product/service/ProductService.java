@@ -314,7 +314,221 @@ public class ProductService {
         // 6. 응답 생성
         return convertToProductListItem(product, stockStatus);
     }
+
+    public ProductDto.DeleteProductResponse deleteProduct(String adminEmail, Long productId) {
+        // 1. Admin과 Market 조회
+        Seller admin = adminRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        
+        Market market = marketRepository.findBySeller(admin)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        
+        // 2. 상품 조회 및 존재 여부 확인
+        Product product = productRepository.findByProductId(productId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+        
+        // 3. 해당 seller의 상품인지 확인
+        if (product.getMarket() == null || !product.getMarket().getId().equals(market.getId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+        
+        // 4. 상품 삭제
+        productRepository.delete(product);
+        
+        // 5. 응답 생성
+        return ProductDto.DeleteProductResponse.builder()
+                .productId(productId)
+                .message("상품이 성공적으로 삭제되었습니다.")
+                .build();
+    }
     
+    public ProductDto.UpdateProductResponse updateProduct(String adminEmail, Long productId, ProductDto.UpdateProductRequest request) {
+        // 1. Admin과 Market 조회
+        Seller admin = adminRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        
+        Market market = marketRepository.findBySeller(admin)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // 2. 상품 조회 및 권한 확인
+        Product product = productRepository.findByProductId(productId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+        
+        if (product.getMarket() == null || !product.getMarket().getId().equals(market.getId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+
+        // 3. 카테고리 업데이트 (제공된 경우)
+        if (request.getCategoryId() != null) {
+            Category category = categoryRepository.findByCategoryId(request.getCategoryId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
+            product.setCategory(category);
+        }
+
+        // 4. 기본 정보 업데이트
+        if (request.getName() != null) {
+            product.setName(request.getName());
+        }
+        if (request.getSellerProductCode() != null) {
+            product.setSellerProductCode(request.getSellerProductCode());
+        }
+        if (request.getIsDisplay() != null) {
+            product.setIsDisplay(request.getIsDisplay());
+        }
+        if (request.getIsOutOfStockForced() != null) {
+            product.setIsOutOfStockForced(request.getIsOutOfStockForced());
+        }
+        if (request.getPurchasePrice() != null) {
+            product.setPurchasePrice(request.getPurchasePrice());
+        }
+        if (request.getRegularPrice() != null) {
+            product.setRegularPrice(request.getRegularPrice());
+        }
+        if (request.getSalePrice() != null) {
+            product.setSalePrice(request.getSalePrice());
+        }
+        if (request.getDescription() != null) {
+            product.setDescription(request.getDescription());
+        }
+        if (request.getDeliveryType() != null) {
+            product.setDeliveryType(request.getDeliveryType());
+        }
+        if (request.getDeliveryFee() != null) {
+            product.setDeliveryFee(request.getDeliveryFee());
+        }
+        if (request.getDeliveryFreeThreshold() != null) {
+            product.setDeliveryFreeThreshold(request.getDeliveryFreeThreshold());
+        }
+        if (request.getDeliveryEstimatedDays() != null) {
+            product.setDeliveryEstimatedDays(request.getDeliveryEstimatedDays());
+        }
+
+        // 5. 태그 JSON 변환 (제공된 경우)
+        if (request.getTags() != null) {
+            try {
+                String tagsJson = objectMapper.writeValueAsString(request.getTags());
+                product.setTags(tagsJson);
+            } catch (Exception e) {
+                log.error("태그 JSON 변환 실패", e);
+                throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
+            }
+        }
+
+        // 6. 상품정보제공고시 JSON 변환 (제공된 경우)
+        if (request.getProductNotice() != null) {
+            try {
+                String productNoticeJson = objectMapper.writeValueAsString(request.getProductNotice());
+                product.setProductNotice(productNoticeJson);
+            } catch (Exception e) {
+                log.error("상품정보제공고시 JSON 변환 실패", e);
+                throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
+            }
+        }
+
+        // 7. 이미지 업데이트 (제공된 경우)
+        if (request.getRepresentativeImageUrl() != null || request.getCoverImageUrls() != null) {
+            // 기존 이미지 삭제
+            product.getProductImages().clear();
+            
+            List<ProductImage> productImages = new ArrayList<>();
+            int imageOrder = 0;
+            
+            // 대표 이미지 추가
+            if (request.getRepresentativeImageUrl() != null) {
+                product.setThumbnailUrl(request.getRepresentativeImageUrl());
+                ProductImage representativeImage = new ProductImage(product, request.getRepresentativeImageUrl(), imageOrder++);
+                productImages.add(representativeImage);
+            }
+            
+            // 커버 이미지 추가 (최대 4개)
+            if (request.getCoverImageUrls() != null && !request.getCoverImageUrls().isEmpty()) {
+                for (String coverImageUrl : request.getCoverImageUrls()) {
+                    if (imageOrder >= 5) break; // 대표 이미지 포함 최대 5개
+                    ProductImage coverImage = new ProductImage(product, coverImageUrl, imageOrder++);
+                    productImages.add(coverImage);
+                }
+            }
+            
+            product.setProductImages(productImages);
+        }
+
+        // 8. 옵션 그룹 및 옵션 업데이트 (제공된 경우)
+        if (request.getOptionGroups() != null && request.getVariants() != null) {
+            // 기존 옵션 그룹 및 variant 삭제
+            product.getOptionGroups().clear();
+            product.getVariants().clear();
+            
+            Map<String, Map<String, ProductOption>> optionMap = new HashMap<>();
+            
+            // 옵션 그룹 생성
+            for (ProductDto.OptionGroupRequest groupRequest : request.getOptionGroups()) {
+                ProductOptionGroup optionGroup = new ProductOptionGroup(product, groupRequest.getName());
+                product.getOptionGroups().add(optionGroup);
+                
+                Map<String, ProductOption> optionsInGroup = new HashMap<>();
+                for (String optionName : groupRequest.getOptions()) {
+                    ProductOption option = new ProductOption(optionGroup, optionName);
+                    optionGroup.getOptions().add(option);
+                    optionsInGroup.put(optionName, option);
+                }
+                optionMap.put(groupRequest.getName(), optionsInGroup);
+            }
+
+            // Variant 생성 및 옵션 매핑
+            for (ProductDto.VariantRequest variantRequest : request.getVariants()) {
+                List<ProductOption> variantOptions = new ArrayList<>();
+                
+                if (request.getOptionGroups() != null) {
+                    int optionIndex = 0;
+                    for (ProductDto.OptionGroupRequest groupRequest : request.getOptionGroups()) {
+                        if (optionIndex >= variantRequest.getOptionNames().size()) {
+                            throw new BusinessException(ErrorCode.INVALID_VARIANT_OPTIONS);
+                        }
+                        String optionName = variantRequest.getOptionNames().get(optionIndex);
+                        Map<String, ProductOption> optionsInGroup = optionMap.get(groupRequest.getName());
+                        if (optionsInGroup == null || !optionsInGroup.containsKey(optionName)) {
+                            throw new BusinessException(ErrorCode.INVALID_VARIANT_OPTIONS);
+                        }
+                        variantOptions.add(optionsInGroup.get(optionName));
+                        optionIndex++;
+                    }
+                }
+                
+                String variantName = variantRequest.getOptionNames().stream()
+                        .collect(Collectors.joining(" / "));
+                
+                Integer variantRegularPrice = request.getRegularPrice() != null 
+                        ? request.getRegularPrice() 
+                        : product.getRegularPrice();
+                
+                ProductVariant variant = new ProductVariant(
+                        product,
+                        variantName,
+                        variantRegularPrice,
+                        variantRequest.getSalePrice(),
+                        variantRequest.getStock(),
+                        variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false
+                );
+                
+                variant.setOptions(variantOptions);
+                product.getVariants().add(variant);
+            }
+        } else if (request.getVariants() != null) {
+            // variants만 제공된 경우 (옵션 그룹은 유지하고 variant만 업데이트)
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        // 9. Product 저장
+        Product savedProduct = productRepository.save(product);
+
+        // 10. 응답 생성
+        return ProductDto.UpdateProductResponse.builder()
+                .productId(savedProduct.getProductId())
+                .productNumber(savedProduct.getProductNumber())
+                .message("상품이 성공적으로 수정되었습니다.")
+                .build();
+    }
+
     /**
      * 상품의 품절 상태 계산
      */
