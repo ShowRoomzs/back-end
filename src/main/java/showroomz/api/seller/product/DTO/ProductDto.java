@@ -197,6 +197,99 @@ public class ProductDto {
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
+    @Schema(description = "상품 수정 요청")
+    public static class UpdateProductRequest {
+
+        @Schema(description = "카테고리 ID", example = "1")
+        private Long categoryId;
+
+        @Size(max = 255, message = "상품명은 최대 255자까지 입력 가능합니다.")
+        @Schema(description = "상품명", example = "프리미엄 린넨 셔츠")
+        private String name;
+
+        @Schema(description = "판매자 상품 코드", example = "PROD-001")
+        private String sellerProductCode;
+
+        @Schema(description = "진열 상태", example = "true")
+        private Boolean isDisplay;
+
+        @Schema(description = "강제 품절 처리 여부", example = "false")
+        private Boolean isOutOfStockForced;
+
+        @Min(value = 0, message = "매입가는 0 이상이어야 합니다.")
+        @Schema(description = "매입가", example = "30000")
+        private Integer purchasePrice;
+
+        @Min(value = 0, message = "판매가는 0 이상이어야 합니다.")
+        @Schema(description = "판매가 (할인 전)", example = "59000")
+        private Integer regularPrice;
+
+        @Min(value = 0, message = "할인 판매가는 0 이상이어야 합니다.")
+        @Schema(description = "할인 판매가 (최종가)", example = "49000")
+        private Integer salePrice;
+
+        @Schema(description = "대표 이미지 URL", example = "https://example.com/image.jpg")
+        private String representativeImageUrl;
+
+        @Schema(description = "커버 이미지 URL 목록 (최대 4개)", example = "[\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\"]")
+        @Size(max = 4, message = "커버 이미지는 최대 4개까지 등록 가능합니다.")
+        private List<String> coverImageUrls;
+
+        @Schema(description = "에디터 상세 설명 (HTML)", example = "<p>상품 상세 설명</p>")
+        private String description;
+
+        @Schema(description = "태그 목록", example = "[\"신상\", \"할인\", \"인기\"]")
+        private List<String> tags;
+
+        @Schema(description = "배송 유형", example = "STANDARD")
+        private String deliveryType;
+
+        @Min(value = 0, message = "배송비는 0 이상이어야 합니다.")
+        @Schema(description = "배송비", example = "3000")
+        private Integer deliveryFee;
+
+        @Min(value = 0, message = "무료 배송 최소 금액은 0 이상이어야 합니다.")
+        @Schema(description = "무료 배송 최소 금액", example = "50000")
+        private Integer deliveryFreeThreshold;
+
+        @Min(value = 1, message = "배송 예상 일수는 1 이상이어야 합니다.")
+        @Schema(description = "배송 예상 일수", example = "3")
+        private Integer deliveryEstimatedDays;
+
+        @Valid
+        @Schema(description = "상품정보제공고시")
+        private ProductNoticeRequest productNotice;
+
+        @Valid
+        @Schema(description = "옵션 그룹 목록")
+        private List<OptionGroupRequest> optionGroups;
+
+        @Valid
+        @Schema(description = "옵션 목록 (조합된 결과)")
+        private List<VariantRequest> variants;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "상품 수정 응답")
+    public static class UpdateProductResponse {
+        @Schema(description = "상품 ID", example = "1")
+        private Long productId;
+
+        @Schema(description = "상품 번호", example = "SRZ-20251228-001")
+        private String productNumber;
+
+        @Schema(description = "응답 메시지", example = "상품이 성공적으로 수정되었습니다.")
+        private String message;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     @Schema(description = "상품 목록 조회 요청 (필터)")
     public static class ProductListRequest {
         @Schema(description = "카테고리 ID (최종 선택된 카테고리)", example = "3")
@@ -300,6 +393,20 @@ public class ProductDto {
 
         @Schema(description = "페이지당 개수", example = "50")
         private Integer limit;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "상품 삭제 응답")
+    public static class DeleteProductResponse {
+        @Schema(description = "상품 ID", example = "1")
+        private Long productId;
+
+        @Schema(description = "응답 메시지", example = "상품이 성공적으로 삭제되었습니다.")
+        private String message;
     }
 }
 
