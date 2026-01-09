@@ -5,6 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.client.RestTemplate;
 
 import io.sentry.Sentry;
@@ -14,6 +15,7 @@ import showroomz.global.config.properties.CorsProperties;
 import showroomz.global.config.properties.S3Properties;
 
 @SpringBootApplication
+@EnableScheduling
 @EnableConfigurationProperties({AppProperties.class, CorsProperties.class, S3Properties.class})
 public class ShowroomzApplication {
 	@Value("${sentry.dsn:}") // 설정 파일에서 dsn을 가져와봄
