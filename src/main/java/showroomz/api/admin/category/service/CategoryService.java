@@ -151,5 +151,19 @@ public class CategoryService {
         
         return categoryIds;
     }
+    
+    /**
+     * 특정 카테고리 ID의 모든 하위 카테고리 ID 리스트를 재귀적으로 조회
+     * (자신 포함)
+     * @param categoryId 카테고리 ID
+     * @return 자신과 모든 하위 카테고리 ID 리스트
+     */
+    @Transactional(readOnly = true)
+    public java.util.List<Long> getAllSubCategoryIds(Long categoryId) {
+        Category category = categoryRepository.findByCategoryId(categoryId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
+        
+        return getAllCategoryIdsIncludingChildren(category);
+    }
 }
 

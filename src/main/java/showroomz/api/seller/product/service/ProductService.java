@@ -9,6 +9,7 @@ import showroomz.global.error.exception.ErrorCode;
 import showroomz.api.seller.product.DTO.ProductDto;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.category.repository.CategoryRepository;
+import showroomz.api.seller.category.service.CategoryService;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
@@ -34,6 +35,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final CategoryService categoryService;
     private final SellerRepository adminRepository;
     private final MarketRepository marketRepository;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
@@ -251,10 +253,21 @@ public class ProductService {
         String keywordType = (request != null && request.getKeywordType() != null && !request.getKeywordType().trim().isEmpty()) 
                 ? request.getKeywordType().trim() : null;
         
-        // 4. 필터링된 상품 조회 (모든 필터는 쿼리에서 처리)
+        // 4. 카테고리 필터링 처리: 상위 카테고리인 경우 모든 하위 카테고리 ID를 포함
+        List<Long> categoryIds = null;
+        if (categoryId != null) {
+            // 해당 카테고리와 모든 하위 카테고리 ID를 조회
+            categoryIds = categoryService.getAllSubCategoryIds(categoryId);
+            // 빈 리스트인 경우 null로 변환 (JPQL에서 IN ()는 에러 발생)
+            if (categoryIds != null && categoryIds.isEmpty()) {
+                categoryIds = null;
+            }
+        }
+        
+        // 5. 필터링된 상품 조회 (모든 필터는 쿼리에서 처리)
         Page<Product> productPage = productRepository.findByMarketIdWithFilters(
                 market.getId(),
-                categoryId,
+                categoryIds,
                 displayStatus,
                 stockStatus,
                 keyword,
