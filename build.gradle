@@ -43,7 +43,7 @@ dependencies {
 	/*implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.1'*/
 	
 	// Sentry SDK 추가
-	implementation 'io.sentry:sentry-spring-boot-starter:7.3.0'
+	implementation 'io.sentry:sentry-spring-boot-starter-jakarta:7.3.0'
 	
 	// Flyway 적용을 위한 의존성 추가
 	implementation 'org.flywaydb:flyway-core'
