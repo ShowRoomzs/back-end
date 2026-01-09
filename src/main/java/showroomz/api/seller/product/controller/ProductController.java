@@ -59,6 +59,25 @@ public class ProductController implements ProductControllerDocs {
         PageResponse<ProductDto.ProductListItem> response = productService.getProductList(adminEmail, request, pagingRequest);
         return ResponseEntity.ok(response);
     }
+
+    @Override
+    @PutMapping("/{productId}")
+    public ResponseEntity<ProductDto.UpdateProductResponse> updateProduct(
+            @PathVariable Long productId,
+            @Valid @RequestBody ProductDto.UpdateProductRequest request) {
+        String adminEmail = getCurrentAdminEmail();
+        ProductDto.UpdateProductResponse response = productService.updateProduct(adminEmail, productId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @DeleteMapping("/{productId}")
+    public ResponseEntity<ProductDto.DeleteProductResponse> deleteProduct(
+            @PathVariable Long productId) {
+        String adminEmail = getCurrentAdminEmail();
+        ProductDto.DeleteProductResponse response = productService.deleteProduct(adminEmail, productId);
+        return ResponseEntity.ok(response);
+    }
 }
 
 

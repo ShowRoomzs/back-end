@@ -52,7 +52,7 @@ public enum ErrorCode {
     UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "인증 정보가 유효하지 않습니다."),
     MISSING_REFRESH_TOKEN_LOGOUT(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "Refresh Token이 필요합니다."),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "아이디 또는 비밀번호가 올바르지 않습니다."),
-    FORBIDDEN(HttpStatus.FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다."),
+    FORBIDDEN(HttpStatus.FORBIDDEN, "FORBIDDEN", "권한이 없습니다."),
     
     // 승인 대기 중 로그인 시도 에러
     ACCOUNT_NOT_APPROVED(HttpStatus.FORBIDDEN, "ACCOUNT_NOT_APPROVED", "관리자 승인 대기 중인 계정입니다."),
@@ -80,7 +80,7 @@ public enum ErrorCode {
     /* * 8. 상품 (Product)
      */
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND", "존재하지 않는 카테고리입니다."),
-    PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", "상품이 없습니다."),
+    PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", "존재하지 않는 상품입니다."),
     PRODUCT_LIST_EMPTY(HttpStatus.NOT_FOUND, "PRODUCT_LIST_EMPTY", "해당 상품이 존재하지 않습니다."),
     INVALID_VARIANT_OPTIONS(HttpStatus.BAD_REQUEST, "INVALID_VARIANT_OPTIONS", "옵션 조합이 올바르지 않습니다."),
     DUPLICATE_CATEGORY_NAME(HttpStatus.BAD_REQUEST, "DUPLICATE_CATEGORY_NAME", "이미 존재하는 카테고리명입니다."),
