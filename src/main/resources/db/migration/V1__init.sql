@@ -1,15 +1,43 @@
-CREATE TABLE `admin` (
-  `admin_id` bigint NOT NULL AUTO_INCREMENT,
+CREATE TABLE `users` (
+  `email_verified_yn` varchar(1) NOT NULL,
+  `marketing_agree` bit(1) DEFAULT NULL,
+  `privacy_agree` bit(1) DEFAULT NULL,
+  `service_agree` bit(1) DEFAULT NULL,
   `created_at` datetime(6) NOT NULL,
   `modified_at` datetime(6) NOT NULL,
+  `user_id` bigint NOT NULL AUTO_INCREMENT,
+  `birthday` varchar(10) DEFAULT NULL,
+  `gender` varchar(10) DEFAULT NULL,
+  `username` varchar(64) NOT NULL,
+  `nickname` varchar(100) NOT NULL,
+  `password` varchar(128) NOT NULL,
+  `email` varchar(512) NOT NULL,
+  `profile_image_url` varchar(512) DEFAULT NULL,
+  `provider_type` enum('APPLE','FACEBOOK','GOOGLE','KAKAO','LOCAL','NAVER') NOT NULL,
+  `role_type` enum('ADMIN','GUEST','SELLER','USER') NOT NULL,
+  `name` varchar(64) DEFAULT NULL,
+  `phone_number` varchar(20) DEFAULT NULL,
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `UKr43af9ap4edm43mmtq01oddj6` (`username`),
+  UNIQUE KEY `UK6dotkott2kjsp8vw4d0m25fb7` (`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=290 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+CREATE TABLE `seller` (
+  `created_at` datetime(6) NOT NULL,
+  `modified_at` datetime(6) NOT NULL,
+  `seller_id` bigint NOT NULL AUTO_INCREMENT,
   `phone_number` varchar(20) DEFAULT NULL,
   `name` varchar(64) NOT NULL,
   `password` varchar(128) NOT NULL,
+  `rejection_reason` varchar(500) DEFAULT NULL,
   `email` varchar(512) NOT NULL,
   `role_type` enum('ADMIN','GUEST','SELLER','USER') NOT NULL,
-  PRIMARY KEY (`admin_id`),
-  UNIQUE KEY `UKc0r9atamxvbhjjvy5j8da1kam` (`email`)
+  `status` enum('APPROVED','PENDING','REJECTED') NOT NULL,
+  PRIMARY KEY (`seller_id`),
+  UNIQUE KEY `UKcrgbovyy4gvgsum2yyb3fbfn7` (`email`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 
 CREATE TABLE `admin_refresh_token` (
   `refresh_token_seq` bigint NOT NULL AUTO_INCREMENT,
@@ -17,6 +45,15 @@ CREATE TABLE `admin_refresh_token` (
   `admin_email` varchar(512) NOT NULL,
   PRIMARY KEY (`refresh_token_seq`),
   UNIQUE KEY `UKlob6xik9nhf2v8qbso6ft7sec` (`admin_email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+CREATE TABLE `user_refresh_token` (
+  `refresh_token_seq` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` varchar(64) NOT NULL,
+  `refresh_token` varchar(256) NOT NULL,
+  PRIMARY KEY (`refresh_token_seq`),
+  UNIQUE KEY `UKqca3mjxv5a1egwmn4wnbplfkt` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `category` (
@@ -47,6 +84,19 @@ CREATE TABLE `market` (
   UNIQUE KEY `UKagtyaitfan2mngy8ocdu9tle5` (`seller_id`),
   UNIQUE KEY `UKqb8gnd8e5hl8gkmv4m9nxude3` (`market_name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+CREATE TABLE `recent_search` (
+  `searched_at` datetime(6) NOT NULL,
+  `user_id` bigint NOT NULL,
+  `id` binary(16) NOT NULL,
+  `term` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKjwtiy8gf03joqr0a7pn1ioy9j` (`user_id`),
+  CONSTRAINT `FKjwtiy8gf03joqr0a7pn1ioy9j` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
 
 CREATE TABLE `product` (
   `delivery_estimated_days` int DEFAULT NULL,
@@ -88,14 +138,6 @@ CREATE TABLE `product_image` (
   CONSTRAINT `FK6oo0cvcdtb6qmwsga468uuukk` FOREIGN KEY (`product_id`) REFERENCES `product` (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-CREATE TABLE `product_option` (
-  `option_group_id` bigint NOT NULL,
-  `option_id` bigint NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) NOT NULL,
-  PRIMARY KEY (`option_id`),
-  KEY `FK1chbk3kb4ib2qwwitild434g4` (`option_group_id`),
-  CONSTRAINT `FK1chbk3kb4ib2qwwitild434g4` FOREIGN KEY (`option_group_id`) REFERENCES `product_option_group` (`option_group_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `product_option_group` (
   `option_group_id` bigint NOT NULL AUTO_INCREMENT,
@@ -104,6 +146,16 @@ CREATE TABLE `product_option_group` (
   PRIMARY KEY (`option_group_id`),
   KEY `FKsifetwvwtdfqltwegvv0ijt28` (`product_id`),
   CONSTRAINT `FKsifetwvwtdfqltwegvv0ijt28` FOREIGN KEY (`product_id`) REFERENCES `product` (`product_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+CREATE TABLE `product_option` (
+  `option_group_id` bigint NOT NULL,
+  `option_id` bigint NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  PRIMARY KEY (`option_id`),
+  KEY `FK1chbk3kb4ib2qwwitild434g4` (`option_group_id`),
+  CONSTRAINT `FK1chbk3kb4ib2qwwitild434g4` FOREIGN KEY (`option_group_id`) REFERENCES `product_option_group` (`option_group_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `product_variant` (
@@ -118,63 +170,6 @@ CREATE TABLE `product_variant` (
   KEY `FKgrbbs9t374m9gg43l6tq1xwdj` (`product_id`),
   CONSTRAINT `FKgrbbs9t374m9gg43l6tq1xwdj` FOREIGN KEY (`product_id`) REFERENCES `product` (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-CREATE TABLE `recent_search` (
-  `searched_at` datetime(6) NOT NULL,
-  `user_id` bigint NOT NULL,
-  `id` binary(16) NOT NULL,
-  `term` varchar(255) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `FKjwtiy8gf03joqr0a7pn1ioy9j` (`user_id`),
-  CONSTRAINT `FKjwtiy8gf03joqr0a7pn1ioy9j` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-CREATE TABLE `seller` (
-  `created_at` datetime(6) NOT NULL,
-  `modified_at` datetime(6) NOT NULL,
-  `seller_id` bigint NOT NULL AUTO_INCREMENT,
-  `phone_number` varchar(20) DEFAULT NULL,
-  `name` varchar(64) NOT NULL,
-  `password` varchar(128) NOT NULL,
-  `rejection_reason` varchar(500) DEFAULT NULL,
-  `email` varchar(512) NOT NULL,
-  `role_type` enum('ADMIN','GUEST','SELLER','USER') NOT NULL,
-  `status` enum('APPROVED','PENDING','REJECTED') NOT NULL,
-  PRIMARY KEY (`seller_id`),
-  UNIQUE KEY `UKcrgbovyy4gvgsum2yyb3fbfn7` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-CREATE TABLE `user_refresh_token` (
-  `refresh_token_seq` bigint NOT NULL AUTO_INCREMENT,
-  `user_id` varchar(64) NOT NULL,
-  `refresh_token` varchar(256) NOT NULL,
-  PRIMARY KEY (`refresh_token_seq`),
-  UNIQUE KEY `UKqca3mjxv5a1egwmn4wnbplfkt` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-CREATE TABLE `users` (
-  `email_verified_yn` varchar(1) NOT NULL,
-  `marketing_agree` bit(1) DEFAULT NULL,
-  `privacy_agree` bit(1) DEFAULT NULL,
-  `service_agree` bit(1) DEFAULT NULL,
-  `created_at` datetime(6) NOT NULL,
-  `modified_at` datetime(6) NOT NULL,
-  `user_id` bigint NOT NULL AUTO_INCREMENT,
-  `birthday` varchar(10) DEFAULT NULL,
-  `gender` varchar(10) DEFAULT NULL,
-  `username` varchar(64) NOT NULL,
-  `nickname` varchar(100) NOT NULL,
-  `password` varchar(128) NOT NULL,
-  `email` varchar(512) NOT NULL,
-  `profile_image_url` varchar(512) DEFAULT NULL,
-  `provider_type` enum('APPLE','FACEBOOK','GOOGLE','KAKAO','LOCAL','NAVER') NOT NULL,
-  `role_type` enum('ADMIN','GUEST','SELLER','USER') NOT NULL,
-  `name` varchar(64) DEFAULT NULL,
-  `phone_number` varchar(20) DEFAULT NULL,
-  PRIMARY KEY (`user_id`),
-  UNIQUE KEY `UKr43af9ap4edm43mmtq01oddj6` (`username`),
-  UNIQUE KEY `UK6dotkott2kjsp8vw4d0m25fb7` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=290 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `variant_option_map` (
   `option_id` bigint NOT NULL,
