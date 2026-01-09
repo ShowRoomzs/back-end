@@ -4,9 +4,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.category.DTO.CategoryDto;
+import showroomz.global.error.exception.ErrorCode;
+import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.category.repository.CategoryRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service("sellerCategoryService")
@@ -37,5 +40,33 @@ public class CategoryService {
                 .iconUrl(category.getIconUrl())
                 .parentId(category.getParent() != null ? category.getParent().getCategoryId() : null)
                 .build();
+    }
+    
+    /**
+     * 특정 카테고리 ID의 모든 하위 카테고리 ID 리스트를 재귀적으로 조회
+     * (자신 포함)
+     * @param categoryId 카테고리 ID
+     * @return 자신과 모든 하위 카테고리 ID 리스트
+     */
+    public List<Long> getAllSubCategoryIds(Long categoryId) {
+        Category category = categoryRepository.findByCategoryId(categoryId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
+        
+        return getAllCategoryIdsIncludingChildren(category);
+    }
+    
+    /**
+     * 카테고리와 모든 하위 카테고리 ID를 재귀적으로 수집
+     */
+    private List<Long> getAllCategoryIdsIncludingChildren(Category category) {
+        List<Long> categoryIds = new ArrayList<>();
+        categoryIds.add(category.getCategoryId());
+        
+        // 하위 카테고리들을 재귀적으로 수집
+        for (Category child : category.getChildren()) {
+            categoryIds.addAll(getAllCategoryIdsIncludingChildren(child));
+        }
+        
+        return categoryIds;
     }
 }

@@ -44,10 +44,11 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     
     // Market별 상품 조회 (페이징, 필터링, 검색 포함)
     // 품절 상태는 variants의 stock 합계를 기반으로 계산
+    // categoryIds는 상위 카테고리를 포함한 모든 하위 카테고리 ID 리스트
     @Query("SELECT DISTINCT p FROM Product p " +
            "LEFT JOIN p.variants v " +
            "WHERE p.market.id = :marketId " +
-           "AND (:categoryId IS NULL OR p.category.categoryId = :categoryId) " +
+           "AND (:categoryIds IS NULL OR p.category.categoryId IN :categoryIds) " +
            "AND (:displayStatus = 'ALL' OR " +
            "     (:displayStatus = 'DISPLAY' AND p.isDisplay = true) OR " +
            "     (:displayStatus = 'HIDDEN' AND p.isDisplay = false)) " +
@@ -64,7 +65,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
            "     (:keywordType IS NULL AND (p.productNumber LIKE %:keyword% OR p.sellerProductCode LIKE %:keyword% OR p.name LIKE %:keyword%)))")
     Page<Product> findByMarketIdWithFilters(
             @Param("marketId") Long marketId,
-            @Param("categoryId") Long categoryId,
+            @Param("categoryIds") List<Long> categoryIds,
             @Param("displayStatus") String displayStatus,
             @Param("stockStatus") String stockStatus,
             @Param("keyword") String keyword,
