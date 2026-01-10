@@ -1,0 +1,22 @@
+# 프로덕션 환경 설정
+spring:
+  jpa:
+    show-sql: false  # 프로덕션에서는 SQL 쿼리 출력하지 않음
+    hibernate:
+      ddl-auto: validate  # 프로덕션에서는 스키마 검증만 수행 (자동 생성 안 함)
+
+# 로깅 설정 (프로덕션은 최소화)
+logging:
+  level:
+    root: INFO
+    showroomz: INFO
+    org.springframework.security: WARN
+    org.springframework.web: WARN
+    org.hibernate: WARN
+    org.springframework.boot: WARN
+
+
+# Sentry 설정 (프로덕션은 샘플링 적용)
+sentry:
+  traces-sample-rate: 0.1 # 성능 모니터링 샘플링 비율 (프로덕션은 10% 수집 권장)
+  environment: production
