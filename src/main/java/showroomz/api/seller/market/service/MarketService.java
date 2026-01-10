@@ -75,7 +75,6 @@ public class MarketService {
                 .marketName(market.getMarketName())
                 .csNumber(market.getCsNumber())
                 .marketImageUrl(market.getMarketImageUrl())
-                .marketImageStatus(market.getMarketImageStatus() != null ? market.getMarketImageStatus().name() : MarketImageStatus.APPROVED.name())
                 .marketDescription(market.getMarketDescription())
                 .marketUrl(market.getMarketUrl())
                 .mainCategory(market.getMainCategory())
@@ -108,13 +107,8 @@ public class MarketService {
         }
 
         // 3. 기본 필드 업데이트
-        // 마켓 대표 이미지가 변경된 경우 검수 상태를 '검수 중'으로 변경
         if (request.getMarketImageUrl() != null) {
-            // 기존 이미지와 다른 새로운 URL이 들어오면
-            if (!request.getMarketImageUrl().equals(market.getMarketImageUrl())) {
-                market.setMarketImageUrl(request.getMarketImageUrl());
-                market.setMarketImageStatus(MarketImageStatus.UNDER_REVIEW); // 검수 중으로 변경
-            }
+            market.setMarketImageUrl(request.getMarketImageUrl());
         }
         if (request.getMainCategory() != null) market.setMainCategory(request.getMainCategory());
 

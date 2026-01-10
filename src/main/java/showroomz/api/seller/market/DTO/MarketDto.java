@@ -33,8 +33,6 @@ public class MarketDto {
         private String marketName;
         private String csNumber;
         private String marketImageUrl;
-        // 검수 상태 반환
-        private String marketImageStatus; // "APPROVED", "UNDER_REVIEW", "REJECTED"
         private String marketDescription;
         private String marketUrl;
         private String mainCategory;

@@ -73,7 +73,6 @@ public interface MarketControllerDocs {
                     "- `marketName`: 마켓명\n" +
                     "- `csNumber`: 고객센터 번호\n" +
                     "- `marketImageUrl`: 마켓 대표 이미지 URL\n" +
-                    "- `marketImageStatus`: 마켓 이미지 검수 상태 (APPROVED: 검수 완료, UNDER_REVIEW: 검수 중, REJECTED: 반려됨)\n" +
                     "- `marketDescription`: 마켓 소개\n" +
                     "- `marketUrl`: 마켓 URL (자동 생성, 변경 불가)\n" +
                     "- `mainCategory`: 대표 카테고리\n" +
@@ -91,13 +90,12 @@ public interface MarketControllerDocs {
                             schema = @Schema(implementation = MarketDto.MarketProfileResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "성공 예시 (검수 완료)",
+                                            name = "성공 예시",
                                             value = "{\n" +
                                                     "  \"marketId\": 1,\n" +
                                                     "  \"marketName\": \"쇼룸즈\",\n" +
                                                     "  \"csNumber\": \"02-1234-5678\",\n" +
                                                     "  \"marketImageUrl\": \"https://example.com/image.jpg\",\n" +
-                                                    "  \"marketImageStatus\": \"APPROVED\",\n" +
                                                     "  \"marketDescription\": \"최고의 쇼핑몰\",\n" +
                                                     "  \"marketUrl\": \"https://showroomz.shop/market/1\",\n" +
                                                     "  \"mainCategory\": \"패션\",\n" +
@@ -112,8 +110,7 @@ public interface MarketControllerDocs {
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"followerCount\": 0\n" +
-                                                    "}",
-                                            description = "마켓 정보 조회 성공. marketImageStatus는 \"APPROVED\"(검수 완료), \"UNDER_REVIEW\"(검수 중), \"REJECTED\"(반려됨) 중 하나입니다."
+                                                    "}"
                                     )
                             }
                     )

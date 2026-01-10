@@ -12,9 +12,7 @@ import showroomz.api.admin.market.service.AdminService;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.type.SellerStatus;
-import showroomz.api.seller.market.DTO.MarketDto;
 import showroomz.api.seller.market.service.MarketService;
-import showroomz.api.seller.market.type.MarketImageStatus;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.ErrorCode;
@@ -36,34 +34,6 @@ public class MarketAdminController implements AdminMarketControllerDocs {
         Pageable pageable = pagingRequest.toPageable(sort);
         PageResponse<SellerDto.PendingSellerResponse> response = adminService.getPendingSellers(pageable);
         return ResponseEntity.ok(response);
-    }
-
-    @Override
-    @PatchMapping("/markets/{marketId}/image-status")
-    @io.swagger.v3.oas.annotations.Operation(
-            parameters = {
-                    @Parameter(
-                            name = "marketId",
-                            description = "상태를 변경할 마켓의 ID",
-                            required = true,
-                            example = "1",
-                            in = ParameterIn.PATH
-                    )
-            }
-    )
-    public ResponseEntity<Void> updateMarketImageStatus(
-            @PathVariable("marketId") Long marketId,
-            @RequestBody MarketDto.UpdateImageStatusRequest request) {
-
-        MarketImageStatus status;
-        try {
-            status = MarketImageStatus.valueOf(request.getStatus().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
-        }
-
-        marketService.updateMarketImageStatus(marketId, status);
-        return ResponseEntity.noContent().build();
     }
 
     @Override
