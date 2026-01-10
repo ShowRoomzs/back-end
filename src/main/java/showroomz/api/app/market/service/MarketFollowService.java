@@ -30,7 +30,7 @@ public class MarketFollowService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         Market market = marketRepository.findById(marketId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND)); // 마켓 없음 에러 재사용 혹은 전용 에러 생성
+                .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
 
         // 이미 팔로우 중이면 삭제 (언팔로우)
         if (marketFollowRepository.existsByUserAndMarket(user, market)) {

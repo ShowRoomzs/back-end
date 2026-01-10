@@ -25,7 +25,7 @@ public class UserMarketController implements UserMarketControllerDocs {
     @Override
     @GetMapping("/{marketId}")
     public ResponseEntity<MarketDetailResponse> getMarketDetail(
-            @PathVariable Long marketId) {
+        @PathVariable("marketId") Long marketId) {
         
         // 현재 로그인한 사용자 확인 (없으면 null 처리하여 비로그인 로직 수행)
         String username = null;
@@ -41,7 +41,7 @@ public class UserMarketController implements UserMarketControllerDocs {
     @Override
     @PostMapping("/{marketId}/follow")
     public ResponseEntity<MarketFollowResponse> toggleFollow(
-            @PathVariable Long marketId) {
+        @PathVariable("marketId") Long marketId) {
         
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal == null || !(principal instanceof User)) {

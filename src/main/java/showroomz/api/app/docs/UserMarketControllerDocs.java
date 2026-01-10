@@ -2,6 +2,7 @@ package showroomz.api.app.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -22,10 +23,20 @@ public interface UserMarketControllerDocs {
                     "**응답 필드:**\n" +
                     "- `marketId`: 마켓 ID\n" +
                     "- `marketName`: 마켓명\n" +
+                    "- `marketImageUrl`: 마켓 이미지 URL\n" +
+                    "- `marketDescription`: 마켓 한줄 소개\n" +
                     "- `marketUrl`: 마켓 URL\n" +
+                    "- `mainCategory`: 대표 카테고리\n" +
+                    "- `csNumber`: 고객센터 번호\n" +
+                    "- `snsLink1`: SNS 링크 1\n" +
+                    "- `snsLink2`: SNS 링크 2\n" +
+                    "- `snsLink3`: SNS 링크 3\n" +
                     "- `followerCount`: 이 마켓을 찜한 유저 수\n" +
                     "- `isFollowed`: 현재 유저가 찜했는지 여부 (비로그인 시 false)\n\n" +
-                    "**권한:** 인증 불필요 (비로그인 가능)"
+                    "**권한:** 인증 불필요 (비로그인 가능)",
+            parameters = {
+                    @Parameter(name = "marketId", description = "마켓 ID", required = true, example = "1", in = ParameterIn.PATH)
+            }
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -40,7 +51,14 @@ public interface UserMarketControllerDocs {
                                             value = "{\n" +
                                                     "  \"marketId\": 1,\n" +
                                                     "  \"marketName\": \"쇼룸즈\",\n" +
+                                                    "  \"marketImageUrl\": \"https://s3.amazonaws.com/bucket/market-image.jpg\",\n" +
+                                                    "  \"marketDescription\": \"트렌디한 라이프스타일을 제안하는 마켓입니다.\",\n" +
                                                     "  \"marketUrl\": \"https://www.showroomz.co.kr/shop/showroomz\",\n" +
+                                                    "  \"mainCategory\": \"패션/의류\",\n" +
+                                                    "  \"csNumber\": \"1588-0000\",\n" +
+                                                    "  \"snsLink1\": \"https://instagram.com/showroomz\",\n" +
+                                                    "  \"snsLink2\": \"https://facebook.com/showroomz\",\n" +
+                                                    "  \"snsLink3\": \"https://twitter.com/showroomz\",\n" +
                                                     "  \"followerCount\": 150,\n" +
                                                     "  \"isFollowed\": true\n" +
                                                     "}",
@@ -51,7 +69,14 @@ public interface UserMarketControllerDocs {
                                             value = "{\n" +
                                                     "  \"marketId\": 1,\n" +
                                                     "  \"marketName\": \"쇼룸즈\",\n" +
+                                                    "  \"marketImageUrl\": \"https://s3.amazonaws.com/bucket/market-image.jpg\",\n" +
+                                                    "  \"marketDescription\": \"트렌디한 라이프스타일을 제안하는 마켓입니다.\",\n" +
                                                     "  \"marketUrl\": \"https://www.showroomz.co.kr/shop/showroomz\",\n" +
+                                                    "  \"mainCategory\": \"패션/의류\",\n" +
+                                                    "  \"csNumber\": \"1588-0000\",\n" +
+                                                    "  \"snsLink1\": \"https://instagram.com/showroomz\",\n" +
+                                                    "  \"snsLink2\": \"https://facebook.com/showroomz\",\n" +
+                                                    "  \"snsLink3\": null,\n" +
                                                     "  \"followerCount\": 150,\n" +
                                                     "  \"isFollowed\": false\n" +
                                                     "}",
@@ -79,7 +104,7 @@ public interface UserMarketControllerDocs {
             )
     })
     ResponseEntity<MarketDetailResponse> getMarketDetail(
-            @Parameter(description = "마켓 ID", required = true, example = "1")
+            @Parameter(description = "마켓 ID", required = true, example = "1", in = ParameterIn.PATH)
             Long marketId
     );
 
@@ -93,7 +118,10 @@ public interface UserMarketControllerDocs {
                     "- `isFollowed`: 최종 상태 (true: 팔로우됨, false: 취소됨)\n" +
                     "- `message`: 결과 메시지\n\n" +
                     "**권한:** USER (로그인 필수)\n" +
-                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+                    "**요청 헤더:** Authorization: Bearer {accessToken}",
+            parameters = {
+                    @Parameter(name = "marketId", description = "마켓 ID", required = true, example = "1", in = ParameterIn.PATH)
+            }
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -158,7 +186,7 @@ public interface UserMarketControllerDocs {
             )
     })
     ResponseEntity<MarketFollowResponse> toggleFollow(
-            @Parameter(description = "마켓 ID", required = true, example = "1")
+            @Parameter(description = "마켓 ID", required = true, example = "1", in = ParameterIn.PATH)
             Long marketId
     );
 }
