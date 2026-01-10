@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -37,14 +37,14 @@ class AdminImageControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private ImageService imageService;
 
-    // SecurityConfig 등에서 빈으로 주입받는 컴포넌트가 있다면 MockBean 처리
-    @MockBean
+    // SecurityConfig 등에서 빈으로 주입받는 컴포넌트가 있다면 MockitoBean 처리
+    @MockitoBean
     private AuthTokenProvider tokenProvider; 
     
-    @MockBean
+    @MockitoBean
     private SecurityConfig securityConfig;
 
     @Autowired
