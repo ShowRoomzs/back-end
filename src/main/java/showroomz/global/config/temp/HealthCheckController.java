@@ -18,11 +18,11 @@ public class HealthCheckController {
         return "Showroomz server is running! CI/CD Success! 🚀";
     }
 
-    // @GetMapping("/test/sentry-error")
-    // @Hidden
-    // public String testSentryError() {
-    //     throw new RuntimeException("Sentry 테스트용 500 에러입니다!");
-    // }
+    @GetMapping("/test/sentry-error")
+    @Hidden
+    public String testSentryError() {
+        throw new RuntimeException("Sentry 테스트용 500 에러입니다!");
+    }
 
     // @GetMapping("/test/db-error")
     // @Transactional
