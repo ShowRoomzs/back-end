@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import showroomz.api.seller.market.type.MarketImageStatus;
 import showroomz.domain.member.seller.entity.Seller;
 
 @Entity
@@ -33,11 +32,6 @@ public class Market {
     // 마켓 정보 필드
     @Column(name = "MARKET_IMAGE_URL", length = 512)
     private String marketImageUrl; // 마켓 대표 이미지
-
-    // 마켓 이미지 검수 상태
-    @Column(name = "MARKET_IMAGE_STATUS", length = 20)
-    @Enumerated(EnumType.STRING)
-    private MarketImageStatus marketImageStatus = MarketImageStatus.APPROVED; // 기본값은 검수 완료
 
     @Column(name = "MARKET_DESCRIPTION", length = 1000)
     private String marketDescription; // 마켓 소개

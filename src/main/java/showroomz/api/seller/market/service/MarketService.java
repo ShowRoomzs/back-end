@@ -162,13 +162,13 @@ public class MarketService {
     /**
      * 마켓 이미지 검수 상태 변경 (운영자용)
      */
-    @Transactional
-    public void updateMarketImageStatus(Long marketId, MarketImageStatus status) {
-        Market market = marketRepository.findById(marketId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+    // @Transactional
+    // public void updateMarketImageStatus(Long marketId, MarketImageStatus status) {
+    //     Market market = marketRepository.findById(marketId)
+    //             .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         
-        market.setMarketImageStatus(status);
-        marketRepository.save(market);
-    }
+    //     market.setMarketImageStatus(status);
+    //     marketRepository.save(market);
+    // }
 }
 
