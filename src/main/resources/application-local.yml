@@ -1,0 +1,22 @@
+# 로컬 개발 환경 설정
+spring:
+  jpa:
+    show-sql: true  # 실행되는 SQL 쿼리를 콘솔에 출력합니다.
+    hibernate:
+      ddl-auto: validate  # 로컬에서는 스키마를 자동으로 생성합니다
+
+# 로깅 설정 (로컬은 상세하게)
+logging:
+  level:
+    root: INFO
+    showroomz: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    com.oauthlogin: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# Sentry 설정 (로컬은 모든 트레이스 수집)
+sentry:
+  traces-sample-rate: 1.0 # 성능 모니터링 샘플링 비율 (로컬은 100% 수집)
+  environment: local

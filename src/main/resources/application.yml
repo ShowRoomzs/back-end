@@ -4,7 +4,7 @@ spring:
   config:
     import: optional:file:.env[.properties]  
   profiles:
-    active: dev
+    active: ${SPRING_PROFILES_ACTIVE:local} # 환경변수가 없으면 local 기본값
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
@@ -12,14 +12,10 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
-    show-sql: true  # 실행되는 SQL 쿼리를 콘솔에 출력합니다.
     properties:
       hibernate:
         format_sql: true  # SQL 쿼리를 보기 좋게 줄 바꿈하여 정렬합니다.
         use_sql_comments: true # JPQL 쿼리 내용을 주석으로 함께 표시해줍니다.
-    hibernate:
-      # 중요: Flyway 사용 시 validate 또는 none으로 변경하여 자동 스키마 변경을 막습니다.
-      ddl-auto: validate
       
   # Flyway 설정 추가
   flyway:
@@ -56,22 +52,15 @@ aws:
     secret-key: ${AWS_SECRET_ACCESS_KEY}
     cloud-front-domain: ${AWS_CLOUDFRONT_DOMAIN:}
 
-# 로깅 설정 
-logging:
-  level:
-    org.springframework.security: DEBUG
-    org.springframework.web: DEBUG
-    com.oauthlogin: DEBUG
 
 springdoc:
   swagger-ui:
     tags-sorter: alpha       # 태그를 알파벳순 정렬
     operations-sorter: alpha # API(메서드)도 알파벳순 정렬
 
-# Sentry 설정
+# Sentry 설정 (공통)
 sentry:
   dsn: ${SENTRY_DSN:https://default-dsn-address@sentry.io/0} # Sentry에서 발급받은 DSN을 환경 변수에서 읽어옴
-  traces-sample-rate: 1.0 # 성능 모니터링 샘플링 비율 (1.0 = 100% 수집, 운영 시엔 0.1~0.5 권장)
   exception-resolver-order: -2147483647 # Sentry 예외 처리 순서를 가장 높게 설정
   logging:
     minimum-event-level: error # log.error() 이상은 무조건 Sentry로 보냄
