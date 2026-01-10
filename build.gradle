@@ -43,7 +43,11 @@ dependencies {
 	/*implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.1'*/
 	
 	// Sentry SDK 추가
-	implementation 'io.sentry:sentry-spring-boot-starter:7.3.0'
+	implementation 'io.sentry:sentry-spring-boot-starter-jakarta:7.3.0'
+	
+	// Flyway 적용을 위한 의존성 추가
+	implementation 'org.flywaydb:flyway-core'
+	implementation 'org.flywaydb:flyway-mysql'
 	
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
@@ -63,4 +67,22 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+tasks.register('integrationTest', Test) {
+    description = 'Runs integration tests only.'
+    group = 'verification'
+
+    useJUnitPlatform {
+        // 위에서 지정한 태그(@Tag("integration"))가 붙은 테스트만 실행
+        includeTags 'integration'
+    }
+
+    // 테스트 결과를 일반 test 태스크와 분리해서 보고 싶다면 설정 (선택사항)
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+    
+    // 이 태스크가 돌 때도 Flyway 검증 등을 위해 환경변수가 필요하다면 여기서 설정 가능
+    // systemProperty 'spring.profiles.active', 'test' 
 }

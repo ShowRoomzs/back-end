@@ -18,7 +18,15 @@ spring:
         format_sql: true  # SQL 쿼리를 보기 좋게 줄 바꿈하여 정렬합니다.
         use_sql_comments: true # JPQL 쿼리 내용을 주석으로 함께 표시해줍니다.
     hibernate:
-      ddl-auto: update
+      # 중요: Flyway 사용 시 validate 또는 none으로 변경하여 자동 스키마 변경을 막습니다.
+      ddl-auto: validate
+      
+  # Flyway 설정 추가
+  flyway:
+    enabled: true
+    # 기존에 생성된 테이블이 있다면 메타데이터 테이블을 생성하여 관리 시작 (필수 설정)
+    baseline-on-migrate: true
+    baseline-version: 1
     
 app:
   base-url: ${APP_BASE_URL:https://www.showroomz.co.kr}  # 마켓 URL 생성에 사용되는 기본 도메인

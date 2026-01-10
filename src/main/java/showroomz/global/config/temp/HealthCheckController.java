@@ -24,11 +24,18 @@ public class HealthCheckController {
         throw new RuntimeException("Sentry 테스트용 500 에러입니다!");
     }
 
-    @GetMapping("/test/db-error")
-    @Transactional
-    @Hidden
-    public void testDbError() {
-        // 존재하지 않는 테이블을 조회하여 강제로 DB 에러 발생 (BadSqlGrammarException)
-        entityManager.createNativeQuery("SELECT * FROM non_existent_table_1234").getResultList();
-    }
+    // @GetMapping("/test/db-error")
+    // @Transactional
+    // @Hidden
+    // public void testDbError() {
+    //     // 존재하지 않는 테이블을 조회하여 강제로 DB 에러 발생 (BadSqlGrammarException)
+    //     entityManager.createNativeQuery("SELECT * FROM non_existent_table_1234").getResultList();
+    // }
+
+    // @GetMapping("/test/sentry-check")
+    // @Hidden
+    // public String testSentryCheck() {
+    //     // Sentry 체크용 커스텀 예외 발생
+    //     throw new IllegalStateException("Sentry 체크용 IllegalStateException 발생 - " + System.currentTimeMillis());
+    // }
 }

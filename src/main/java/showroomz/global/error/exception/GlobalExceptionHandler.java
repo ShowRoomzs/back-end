@@ -10,6 +10,8 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.jpa.JpaSystemException;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -106,6 +108,32 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(
                         ErrorCode.FORBIDDEN.getCode(),
                         ErrorCode.FORBIDDEN.getMessage()));
+    }
+
+    // 봇이 발생시키는 예외 - Sentry에 전송하지 않음
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
+    public ResponseEntity<ErrorResponse> handleHttpMediaTypeNotAcceptableException(HttpMediaTypeNotAcceptableException e) {
+        // 봇 요청으로 인한 예외이므로 Sentry에 전송하지 않고 로그만 남김
+        log.debug("HttpMediaTypeNotAcceptableException: {} - Sentry 전송하지 않음", e.getMessage());
+        
+        return ResponseEntity
+                .status(HttpStatus.NOT_ACCEPTABLE)
+                .body(new ErrorResponse(
+                        ErrorCode.INTERNAL_SERVER_ERROR.getCode(),
+                        "Not acceptable representation"));
+    }
+
+    // 봇이 발생시키는 예외 - Sentry에 전송하지 않음
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException e) {
+        // 봇 요청으로 인한 예외이므로 Sentry에 전송하지 않고 로그만 남김
+        log.debug("HttpRequestMethodNotSupportedException: {} - Sentry 전송하지 않음", e.getMessage());
+        
+        return ResponseEntity
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(new ErrorResponse(
+                        ErrorCode.INTERNAL_SERVER_ERROR.getCode(),
+                        "Request method not supported"));
     }
 
     // ★ [수정 완료] 예상치 못한 시스템 예외 (500 에러) 처리 부분

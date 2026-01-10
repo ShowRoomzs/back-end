@@ -9,6 +9,21 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    # 1. MySQL 서비스 컨테이너 추가 (테스트용 DB 띄우기)
+    services:
+      mysql:
+        image: mysql:8.0 # 로컬과 동일한 버전 권장
+        env:
+          MYSQL_ROOT_PASSWORD: root # 테스트용 비밀번호
+          MYSQL_DATABASE: showroomz # 생성할 DB 이름
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
     steps:
     - name: 소스 코드 체크아웃
       uses: actions/checkout@v3
@@ -25,6 +40,16 @@ jobs:
       run: |
         echo "${{ secrets.APPLICATION_ENV }}" > .env
       shell: bash
+    # 1. 통합 테스트(DB 검증) 먼저 실행 -> 실패하면 여기서 배포 중단됨
+    - name: Run Integration Tests (DB Schema Validation)
+      run: |
+        chmod +x gradlew
+        ./gradlew integrationTest
+      env:
+          # Spring Boot가 이 환경변수를 인식하여 application.yml 설정보다 우선 적용함
+          SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/showroomz?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: root
 
     - name: Gradle 빌드
       run: |
