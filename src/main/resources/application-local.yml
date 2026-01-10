@@ -7,9 +7,9 @@ spring:
         persistence:
           schema-generation:
             scripts:
-              action: create  # create 문만 뽑겠다
-              create-target: ./output-ddl.sql # 이 파일명으로 저장해라
-              create-source: metadata # 엔티티 메타데이터 기반으로 생성
+              # action: create  # create 문만 뽑겠다
+              # create-target: ./output-ddl.sql # 이 파일명으로 저장해라
+              # create-source: metadata # 엔티티 메타데이터 기반으로 생성
     hibernate:
       ddl-auto: validate # DB에는 반영 안 하고 파일만 뽑을 거니까 none 추천
 
