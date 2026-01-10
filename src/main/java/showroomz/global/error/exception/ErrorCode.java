@@ -52,7 +52,7 @@ public enum ErrorCode {
     UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "인증 정보가 유효하지 않습니다."),
     MISSING_REFRESH_TOKEN_LOGOUT(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "Refresh Token이 필요합니다."),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "아이디 또는 비밀번호가 올바르지 않습니다."),
-    FORBIDDEN(HttpStatus.FORBIDDEN, "FORBIDDEN", "권한이 없습니다."),
+    FORBIDDEN(HttpStatus.FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다."),
     
     // 승인 대기 중 로그인 시도 에러
     ACCOUNT_NOT_APPROVED(HttpStatus.FORBIDDEN, "ACCOUNT_NOT_APPROVED", "관리자 승인 대기 중인 계정입니다."),
@@ -62,6 +62,7 @@ public enum ErrorCode {
     /* * 6. 마켓 (Market) 
      */
     DUPLICATE_MARKET_NAME(HttpStatus.BAD_REQUEST, "DUPLICATE_MARKET_NAME", "이미 사용 중인 마켓명입니다."),
+    MARKET_NOT_FOUND(HttpStatus.NOT_FOUND, "MARKET_NOT_FOUND", "존재하지 않는 마켓입니다."),
 
     /* * 7. 이미지 (Image)
      */

@@ -27,13 +27,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
 import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import java.time.LocalDateTime;
 import java.util.Map;
 
-@Hidden
 @RestController
 @RequestMapping("/v1/user/auth/local")
 @RequiredArgsConstructor
+@Tag(name = "Z User - LocalAuth", description = "테스트용 LocalAuth API")
 public class LocalAuthController {
 
     private final AuthenticationManager authenticationManager;

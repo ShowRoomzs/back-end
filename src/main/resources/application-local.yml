@@ -2,8 +2,16 @@
 spring:
   jpa:
     show-sql: true  # 실행되는 SQL 쿼리를 콘솔에 출력합니다.
+    properties:
+      jakarta:
+        persistence:
+          schema-generation:
+            scripts:
+              # action: create  # create 문만 뽑겠다
+              # create-target: ./output-ddl.sql # 이 파일명으로 저장해라
+              # create-source: metadata # 엔티티 메타데이터 기반으로 생성
     hibernate:
-      ddl-auto: validate  # 로컬에서는 스키마를 자동으로 생성합니다
+      ddl-auto: validate # DB에는 반영 안 하고 파일만 뽑을 거니까 none 추천
 
 # 로깅 설정 (로컬은 상세하게)
 logging:

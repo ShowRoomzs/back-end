@@ -40,30 +40,14 @@ public class UserController implements UserControllerDocs {
         User springUser = (User) principal;
         String username = springUser.getUsername();
 
-        // 2. 사용자 정보 조회
-        Users user = userService.getUser(username)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
-        // 3. UserProfileResponse로 변환
-        String profileImageUrl = user.getProfileImageUrl();
+        // 2. 사용자 프로필 조회 (팔로잉 수 포함)
+        UserProfileResponse response = userService.getProfile(username);
+        
+        // 3. 프로필 이미지 URL 정리
+        String profileImageUrl = response.getProfileImageUrl();
         if (profileImageUrl != null && profileImageUrl.isEmpty()) {
-            profileImageUrl = null;
+            response.setProfileImageUrl(null);
         }
-
-        UserProfileResponse response = new UserProfileResponse(
-                user.getId(),
-                user.getEmail(),
-                user.getNickname(),
-                profileImageUrl,
-                user.getBirthday(),
-                user.getGender(),
-                user.getProviderType(),
-                user.getRoleType(),
-                user.getCreatedAt(),
-                user.getModifiedAt(),
-                user.isMarketingAgree(),
-                0L  // followingCount (기본값)
-        );
 
         return ResponseEntity.ok(response);
     }
@@ -163,28 +147,16 @@ public class UserController implements UserControllerDocs {
         }
 
         // 5. 프로필 업데이트 (모든 검증을 통과한 경우에만 수행)
-        Users updatedUser = userService.updateProfile(username, request);
+        userService.updateProfile(username, request);
 
-        // 6. UserProfileResponse로 변환
-        String profileImageUrl = updatedUser.getProfileImageUrl();
+        // 6. 업데이트된 프로필 조회 (팔로잉 수 포함)
+        UserProfileResponse response = userService.getProfile(username);
+        
+        // 7. 프로필 이미지 URL 정리
+        String profileImageUrl = response.getProfileImageUrl();
         if (profileImageUrl != null && profileImageUrl.isEmpty()) {
-            profileImageUrl = null;
+            response.setProfileImageUrl(null);
         }
-
-        UserProfileResponse response = new UserProfileResponse(
-                updatedUser.getId(),
-                updatedUser.getEmail(),
-                updatedUser.getNickname(),
-                profileImageUrl,
-                updatedUser.getBirthday(),
-                updatedUser.getGender(),
-                updatedUser.getProviderType(),
-                updatedUser.getRoleType(),
-                updatedUser.getCreatedAt(),
-                updatedUser.getModifiedAt(),
-                updatedUser.isMarketingAgree(),
-                0L  // followingCount (기본값)
-        );
 
         return ResponseEntity.ok(response);
     }
