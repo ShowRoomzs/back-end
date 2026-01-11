@@ -425,6 +425,38 @@ public class ProductDto {
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
+    @Schema(description = "일괄 품절 상태 변경 요청")
+    public static class BatchStockStatusRequest {
+        @NotNull(message = "상품 ID 목록은 필수 입력값입니다.")
+        @Size(min = 1, message = "최소 1개 이상의 상품 ID가 필요합니다.")
+        @Schema(description = "처리할 상품 ID 목록", example = "[1, 2, 3]")
+        private List<Long> productIds;
+
+        @NotNull(message = "품절 상태는 필수 입력값입니다.")
+        @Schema(description = "품절 상태 (true: 품절 처리, false: 품절 해제)", example = "true")
+        private Boolean isOutOfStocked;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "일괄 진열 상태 변경 요청")
+    public static class BatchDisplayStatusRequest {
+        @NotNull(message = "상품 ID 목록은 필수 입력값입니다.")
+        @Size(min = 1, message = "최소 1개 이상의 상품 ID가 필요합니다.")
+        @Schema(description = "처리할 상품 ID 목록", example = "[1, 2, 3]")
+        private List<Long> productIds;
+
+        @NotNull(message = "진열 상태는 필수 입력값입니다.")
+        @Schema(description = "진열 상태 (true: 진열 처리, false: 미진열 처리)", example = "true")
+        private Boolean isDisplayed;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     @Builder
     @Schema(description = "일괄 처리 응답")
     public static class BatchUpdateResponse {

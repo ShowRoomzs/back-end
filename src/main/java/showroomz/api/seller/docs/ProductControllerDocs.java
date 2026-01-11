@@ -616,10 +616,10 @@ public interface ProductControllerDocs {
 
     @Operation(
             summary = "상품 일괄 품절/품절 해제 처리",
-            description = "선택된 여러 상품의 품절 상태를 일괄적으로 토글 처리합니다.\n\n" +
+            description = "선택된 여러 상품의 품절 상태를 지정한 값으로 일괄 변경합니다.\n\n" +
                     "**동작 방식:**\n" +
-                    "- 현재 품절 상태인 상품 → 품절 해제\n" +
-                    "- 현재 품절 해제 상태인 상품 → 품절 처리\n\n" +
+                    "- `isOutOfStocked: true` → 품절 처리\n" +
+                    "- `isOutOfStocked: false` → 품절 해제\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -646,14 +646,6 @@ public interface ProductControllerDocs {
                                                     "  \"count\": 3,\n" +
                                                     "  \"message\": \"3개의 상품이 성공적으로 품절 해제되었습니다.\"\n" +
                                                     "}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "성공 예시 (혼합)",
-                                            value = "{\n" +
-                                                    "  \"productIds\": [1, 2, 3],\n" +
-                                                    "  \"count\": 3,\n" +
-                                                    "  \"message\": \"2개의 상품이 품절 처리되었고, 1개의 상품이 품절 해제되었습니다.\"\n" +
-                                                    "}"
                                     )
                             }
                     )
@@ -692,31 +684,39 @@ public interface ProductControllerDocs {
             )
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "품절 상태를 토글할 상품 ID 목록",
+            description = "품절 상태를 변경할 상품 ID 목록 및 품절 상태",
             required = true,
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ProductDto.BatchUpdateRequest.class),
+                    schema = @Schema(implementation = ProductDto.BatchStockStatusRequest.class),
                     examples = {
                             @ExampleObject(
-                                    name = "요청 예시",
+                                    name = "품절 처리 요청 예시",
                                     value = "{\n" +
-                                            "  \"productIds\": [1, 2, 3]\n" +
+                                            "  \"productIds\": [1, 2, 3],\n" +
+                                            "  \"isOutOfStocked\": true\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "품절 해제 요청 예시",
+                                    value = "{\n" +
+                                            "  \"productIds\": [1, 2, 3],\n" +
+                                            "  \"isOutOfStocked\": false\n" +
                                             "}"
                             )
                     }
             )
     )
-    ResponseEntity<ProductDto.BatchUpdateResponse> batchToggleStockStatus(
-            @RequestBody ProductDto.BatchUpdateRequest request
+    ResponseEntity<ProductDto.BatchUpdateResponse> batchUpdateStockStatus(
+            @RequestBody ProductDto.BatchStockStatusRequest request
     );
 
     @Operation(
             summary = "상품 일괄 미진열/진열 처리",
-            description = "선택된 여러 상품의 진열 상태를 일괄적으로 토글 처리합니다.\n\n" +
+            description = "선택된 여러 상품의 진열 상태를 지정한 값으로 일괄 변경합니다.\n\n" +
                     "**동작 방식:**\n" +
-                    "- 현재 미진열 상태인 상품 → 진열 처리\n" +
-                    "- 현재 진열 상태인 상품 → 미진열 처리\n\n" +
+                    "- `isDisplayed: true` → 진열 처리\n" +
+                    "- `isDisplayed: false` → 미진열 처리\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -743,14 +743,6 @@ public interface ProductControllerDocs {
                                                     "  \"count\": 3,\n" +
                                                     "  \"message\": \"3개의 상품이 성공적으로 진열 처리되었습니다.\"\n" +
                                                     "}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "성공 예시 (혼합)",
-                                            value = "{\n" +
-                                                    "  \"productIds\": [1, 2, 3],\n" +
-                                                    "  \"count\": 3,\n" +
-                                                    "  \"message\": \"2개의 상품이 미진열 처리되었고, 1개의 상품이 진열 처리되었습니다.\"\n" +
-                                                    "}"
                                     )
                             }
                     )
@@ -789,23 +781,31 @@ public interface ProductControllerDocs {
             )
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "진열 상태를 토글할 상품 ID 목록",
+            description = "진열 상태를 변경할 상품 ID 목록 및 진열 상태",
             required = true,
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ProductDto.BatchUpdateRequest.class),
+                    schema = @Schema(implementation = ProductDto.BatchDisplayStatusRequest.class),
                     examples = {
                             @ExampleObject(
-                                    name = "요청 예시",
+                                    name = "진열 처리 요청 예시",
                                     value = "{\n" +
-                                            "  \"productIds\": [1, 2, 3]\n" +
+                                            "  \"productIds\": [1, 2, 3],\n" +
+                                            "  \"isDisplayed\": true\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "미진열 처리 요청 예시",
+                                    value = "{\n" +
+                                            "  \"productIds\": [1, 2, 3],\n" +
+                                            "  \"isDisplayed\": false\n" +
                                             "}"
                             )
                     }
             )
     )
-    ResponseEntity<ProductDto.BatchUpdateResponse> batchToggleDisplayStatus(
-            @RequestBody ProductDto.BatchUpdateRequest request
+    ResponseEntity<ProductDto.BatchUpdateResponse> batchUpdateDisplayStatus(
+            @RequestBody ProductDto.BatchDisplayStatusRequest request
     );
 }
 
