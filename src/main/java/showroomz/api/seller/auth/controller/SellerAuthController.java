@@ -30,44 +30,47 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SellerAuthController implements SellerAuthControllerDocs {
 
-    private final SellerService sellerService; 
+    private final SellerService adminService;
 
     @Override
     @PostMapping("/signup")
     public ResponseEntity<?> registerAdmin(@Valid @RequestBody SellerSignUpRequest request) {
-        return ResponseEntity.status(201).body(sellerService.registerAdmin(request));
+        Map<String, String> response = adminService.registerAdmin(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @Override
     @GetMapping("/check-email")
     public ResponseEntity<SellerDto.CheckEmailResponse> checkEmail(@RequestParam("email") String email) {
-        return ResponseEntity.ok(sellerService.checkEmailDuplicate(email));
+        return ResponseEntity.ok(adminService.checkEmailDuplicate(email));
     }
 
     @Override
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody SellerLoginRequest request) {
-        // [수정] 판매자 전용 로그인 메서드 호출
-        TokenResponse tokenResponse = sellerService.loginSeller(request);
+        TokenResponse tokenResponse = adminService.login(request);
         return ResponseEntity.ok(tokenResponse);
     }
 
     @Override
     @PostMapping("/refresh")
     public ResponseEntity<TokenResponse> refreshToken(@RequestBody RefreshTokenRequest request) {
-        return ResponseEntity.ok(sellerService.refreshToken(request));
+        TokenResponse tokenResponse = adminService.refreshToken(request);
+        return ResponseEntity.ok(tokenResponse);
     }
 
     @Override
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletRequest request, @RequestBody RefreshTokenRequest refreshTokenRequest) {
+        // Authorization 헤더에서 Access Token 추출
         String accessToken = HeaderUtil.getAccessToken(request);
         
         // 서비스 로그아웃 로직 수행
-        sellerService.logout(accessToken, refreshTokenRequest.getRefreshToken());
+        adminService.logout(accessToken, refreshTokenRequest.getRefreshToken());
         
         // SecurityContext 초기화
         SecurityContextHolder.clearContext();
+
         return ResponseEntity.ok(Map.of("message", "로그아웃이 완료되었습니다."));
     }
 
@@ -78,10 +81,11 @@ public class SellerAuthController implements SellerAuthControllerDocs {
         String accessToken = HeaderUtil.getAccessToken(request);
         
         // 2. 서비스 탈퇴 로직 수행
-        sellerService.withdraw(accessToken);
+        adminService.withdraw(accessToken);
         
         // 3. SecurityContext 초기화 (로그인 상태 해제)
         SecurityContextHolder.clearContext();
-        return ResponseEntity.ok(Map.of("message", "판매자 회원 탈퇴가 완료되었습니다."));
+
+        return ResponseEntity.ok(Map.of("message", "관리자 회원 탈퇴가 완료되었습니다."));
     }
 }
