@@ -62,4 +62,39 @@ public class AdminMarketDto {
         @Schema(description = "가입 신청일", example = "2024-01-01T12:00:00")
         private LocalDateTime createdAt;
     }
+
+    // 상세 조회를 위한 DTO 분리 (필드는 동일하지만 추후 확장을 위해 분리)
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "마켓 상세 정보 응답")
+    public static class MarketDetailResponse {
+        @Schema(description = "판매자 ID", example = "1")
+        private Long sellerId;
+
+        @Schema(description = "마켓 ID", example = "10")
+        private Long marketId;
+
+        @Schema(description = "이메일", example = "seller@example.com")
+        private String email;
+
+        @Schema(description = "판매자명 (대표자명)", example = "홍길동")
+        private String name;
+
+        @Schema(description = "마켓명", example = "멋쟁이 옷장")
+        private String marketName;
+
+        @Schema(description = "연락처", example = "010-1234-5678")
+        private String phoneNumber;
+
+        @Schema(description = "상태 (PENDING, APPROVED, REJECTED)", example = "PENDING")
+        private SellerStatus status;
+
+        @Schema(description = "거부 사유 (반려 시)", example = "서류 미비")
+        private String rejectionReason;
+
+        @Schema(description = "가입 신청일", example = "2024-01-01T12:00:00")
+        private LocalDateTime createdAt;
+    }
 }

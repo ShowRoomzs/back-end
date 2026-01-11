@@ -25,7 +25,7 @@ public class MarketAdminController implements AdminMarketControllerDocs {
     private final AdminService adminService;
 
     @Override
-    @GetMapping("/markets/applications")
+    @GetMapping("/sellers/applications")
     public ResponseEntity<PageResponse<AdminMarketDto.ApplicationResponse>> getMarketApplications(
             @ModelAttribute PagingRequest pagingRequest,
             @ModelAttribute AdminMarketDto.SearchCondition searchCondition) {
@@ -36,6 +36,16 @@ public class MarketAdminController implements AdminMarketControllerDocs {
         
         PageResponse<AdminMarketDto.ApplicationResponse> response = 
                 adminService.getMarketApplications(searchCondition, pageable);
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @GetMapping("/sellers/{sellerId}")
+    public ResponseEntity<AdminMarketDto.MarketDetailResponse> getMarketDetail(
+            @PathVariable("sellerId") Long sellerId) {
+        
+        AdminMarketDto.MarketDetailResponse response = adminService.getMarketDetail(sellerId);
         
         return ResponseEntity.ok(response);
     }

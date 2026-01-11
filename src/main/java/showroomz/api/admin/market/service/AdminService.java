@@ -56,6 +56,30 @@ public class AdminService {
     }
 
     /**
+     * 판매자 상세 정보 조회
+     */
+    @Transactional(readOnly = true)
+    public AdminMarketDto.MarketDetailResponse getMarketDetail(Long sellerId) {
+        Seller seller = sellerRepository.findById(sellerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        Market market = marketRepository.findBySeller(seller)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
+
+        return AdminMarketDto.MarketDetailResponse.builder()
+                .sellerId(seller.getId())
+                .marketId(market.getId())
+                .email(seller.getEmail())
+                .name(seller.getName())
+                .marketName(market.getMarketName())
+                .phoneNumber(seller.getPhoneNumber())
+                .status(seller.getStatus())
+                .rejectionReason(seller.getRejectionReason())
+                .createdAt(seller.getCreatedAt())
+                .build();
+    }
+
+    /**
      * 마켓 가입 신청 목록 조회 (검색 필터 적용)
      */
     @Transactional(readOnly = true)

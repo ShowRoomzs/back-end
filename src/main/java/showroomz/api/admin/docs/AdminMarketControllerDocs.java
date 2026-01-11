@@ -17,12 +17,12 @@ import showroomz.api.admin.market.DTO.AdminMarketDto;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.seller.auth.DTO.SellerDto;
 
-@Tag(name = "Admin - Market", description = "관리자 마켓 관리 API")
+@Tag(name = "Admin - Seller", description = "관리자 판매자 가입 관리 API")
 public interface AdminMarketControllerDocs {
 
     @Operation(
-            summary = "마켓 가입 신청 관리 목록 조회",
-            description = "마켓 가입 신청 내역을 조회합니다. 상태별 필터링과 기간 조회가 가능합니다.\n\n" +
+            summary = "판매자 가입 신청 관리 목록 조회",
+            description = "판매자 가입 신청 내역을 조회합니다. 상태별 필터링과 기간 조회가 가능합니다.\n\n" +
                     "**필터 기능:**\n" +
                     "- **status**: 판매자 상태 (PENDING: 승인 대기, APPROVED: 승인, REJECTED: 반려, null: 전체)\n" +
                     "- **startDate / endDate**: 신청일 기준 조회 기간 (YYYY-MM-DD)\n\n" +
@@ -86,6 +86,50 @@ public interface AdminMarketControllerDocs {
     ResponseEntity<showroomz.global.dto.PageResponse<AdminMarketDto.ApplicationResponse>> getMarketApplications(
             @ParameterObject showroomz.global.dto.PagingRequest pagingRequest,
             @ParameterObject AdminMarketDto.SearchCondition searchCondition
+    );
+
+    @Operation(
+            summary = "판매자 상세 정보 조회",
+            description = "특정 판매자의 상세 정보(판매자 정보 및 마켓 정보)를 조회합니다.\n\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AdminMarketDto.MarketDetailResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "판매자 또는 마켓을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "판매자 없음",
+                                            value = "{\"code\": \"USER_NOT_FOUND\", \"message\": \"존재하지 않는 회원입니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "마켓 없음",
+                                            value = "{\"code\": \"MARKET_NOT_FOUND\", \"message\": \"존재하지 않는 마켓입니다.\"}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<AdminMarketDto.MarketDetailResponse> getMarketDetail(
+            @Parameter(
+                    description = "조회할 판매자 ID",
+                    required = true,
+                    example = "1",
+                    in = ParameterIn.PATH
+            )
+            @PathVariable Long sellerId
     );
 
     @Operation(
