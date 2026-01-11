@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
@@ -529,28 +528,36 @@ public interface ProductControllerDocs {
     );
 
     @Operation(
-            summary = "상품 삭제",
-            description = "백스테이지 관리자가 자신의 상품을 삭제합니다.\n\n" +
+            summary = "상품 일괄 삭제",
+            description = "선택된 여러 상품을 일괄적으로 삭제합니다.\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "상품 삭제 성공",
+                    description = "일괄 삭제 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ProductDto.DeleteProductResponse.class),
+                            schema = @Schema(implementation = ProductDto.BatchDeleteResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "성공 예시",
                                             value = "{\n" +
-                                                    "  \"productId\": 1,\n" +
-                                                    "  \"message\": \"상품이 성공적으로 삭제되었습니다.\"\n" +
-                                                    "}",
-                                            description = "상품이 성공적으로 삭제되었습니다."
+                                                    "  \"productIds\": [1, 2, 3],\n" +
+                                                    "  \"count\": 3,\n" +
+                                                    "  \"message\": \"3개의 상품이 성공적으로 삭제되었습니다.\"\n" +
+                                                    "}"
                                     )
                             }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "입력값 형식 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ValidationErrorResponse.class)
                     )
             ),
             @ApiResponse(
@@ -558,16 +565,7 @@ public interface ProductControllerDocs {
                     description = "인증 실패",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class),
-                            examples = {
-                                    @ExampleObject(
-                                            name = "인증 실패 예시",
-                                            value = "{\n" +
-                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
-                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
-                                                    "}"
-                                    )
-                            }
+                            schema = @Schema(implementation = ErrorResponse.class)
                     )
             ),
             @ApiResponse(
@@ -581,7 +579,7 @@ public interface ProductControllerDocs {
                                             name = "권한 없음 예시",
                                             value = "{\n" +
                                                     "  \"code\": \"FORBIDDEN\",\n" +
-                                                    "  \"message\": \"권한이 없습니다.\"\n" +
+                                                    "  \"message\": \"productId: 1, 3에 대한 권한이 없습니다.\"\n" +
                                                     "}"
                                     )
                             }
@@ -592,26 +590,28 @@ public interface ProductControllerDocs {
                     description = "상품을 찾을 수 없음",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class),
-                            examples = {
-                                    @ExampleObject(
-                                            name = "상품 없음 예시",
-                                            value = "{\n" +
-                                                    "  \"code\": \"PRODUCT_NOT_FOUND\",\n" +
-                                                    "  \"message\": \"존재하지 않는 상품입니다.\"\n" +
-                                                    "}"
-                                    )
-                            }
+                            schema = @Schema(implementation = ErrorResponse.class)
                     )
             )
     })
-    ResponseEntity<ProductDto.DeleteProductResponse> deleteProduct(
-            @Parameter(
-                    description = "삭제할 상품 ID",
-                    required = true,
-                    example = "1"
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "삭제할 상품 ID 목록",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ProductDto.BatchDeleteRequest.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "요청 예시",
+                                    value = "{\n" +
+                                            "  \"productIds\": [1, 2, 3]\n" +
+                                            "}"
+                            )
+                    }
             )
-            @PathVariable Long productId
+    )
+    ResponseEntity<ProductDto.BatchDeleteResponse> batchDeleteProducts(
+            @RequestBody ProductDto.BatchDeleteRequest request
     );
 
     @Operation(

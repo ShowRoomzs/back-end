@@ -315,7 +315,10 @@ public class ProductService {
         return convertToProductListItem(product, stockStatus);
     }
 
-    public ProductDto.DeleteProductResponse deleteProduct(String adminEmail, Long productId) {
+    /**
+     * 선택된 상품들을 일괄 삭제
+     */
+    public ProductDto.BatchDeleteResponse batchDeleteProducts(String adminEmail, ProductDto.BatchDeleteRequest request) {
         // 1. Admin과 Market 조회
         Seller admin = adminRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -324,21 +327,53 @@ public class ProductService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         
         // 2. 상품 조회 및 존재 여부 확인
-        Product product = productRepository.findByProductId(productId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+        List<Product> products = productRepository.findAllById(request.getProductIds());
         
-        // 3. 해당 seller의 상품인지 확인
-        if (product.getMarket() == null || !product.getMarket().getId().equals(market.getId())) {
-            throw new BusinessException(ErrorCode.FORBIDDEN);
+        // 존재하지 않는 상품 ID 찾기
+        Set<Long> foundProductIds = products.stream()
+                .map(Product::getProductId)
+                .collect(java.util.stream.Collectors.toSet());
+        List<Long> notFoundProductIds = request.getProductIds().stream()
+                .filter(id -> !foundProductIds.contains(id))
+                .collect(java.util.stream.Collectors.toList());
+        
+        if (!notFoundProductIds.isEmpty()) {
+            String productIdsStr = notFoundProductIds.stream()
+                    .map(String::valueOf)
+                    .collect(java.util.stream.Collectors.joining(", "));
+            String errorMessage = String.format("productId: %s에 대한 상품이 존재하지 않습니다.", productIdsStr);
+            throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND, errorMessage);
         }
         
-        // 4. 상품 삭제
-        productRepository.delete(product);
+        // 3. 본인의 상품인지 확인 및 삭제 대상 수집
+        List<Long> deletedProductIds = new ArrayList<>();
+        List<Long> unauthorizedProductIds = new ArrayList<>();
+        
+        for (Product product : products) {
+            if (product.getMarket() == null || !product.getMarket().getId().equals(market.getId())) {
+                unauthorizedProductIds.add(product.getProductId());
+            } else {
+                deletedProductIds.add(product.getProductId());
+            }
+        }
+        
+        // 권한이 없는 상품이 있으면 에러 발생
+        if (!unauthorizedProductIds.isEmpty()) {
+            String productIdsStr = unauthorizedProductIds.stream()
+                    .map(String::valueOf)
+                    .collect(java.util.stream.Collectors.joining(", "));
+            String errorMessage = String.format("productId: %s에 대한 권한이 없습니다.", productIdsStr);
+            throw new BusinessException(ErrorCode.FORBIDDEN, errorMessage);
+        }
+        
+        // 4. 상품 일괄 삭제
+        productRepository.deleteAll(products);
         
         // 5. 응답 생성
-        return ProductDto.DeleteProductResponse.builder()
-                .productId(productId)
-                .message("상품이 성공적으로 삭제되었습니다.")
+        return ProductDto.BatchDeleteResponse.builder()
+                .productIds(deletedProductIds)
+                .count(deletedProductIds.size())
+                .message(deletedProductIds.size() + "개의 상품이 성공적으로 삭제되었습니다.")
                 .build();
     }
     
