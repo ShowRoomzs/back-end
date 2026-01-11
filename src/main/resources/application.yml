@@ -24,6 +24,21 @@ spring:
     baseline-on-migrate: true
     baseline-version: 1
     
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}  # Gmail 주소 (예: showroomz.admin@gmail.com)
+    password: ${MAIL_PASSWORD:} # Gmail 앱 비밀번호
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 app:
   base-url: ${APP_BASE_URL:https://www.showroomz.co.kr}  # 마켓 URL 생성에 사용되는 기본 도메인
   auth:

@@ -138,9 +138,15 @@ public interface AdminMarketControllerDocs {
                     "**상태값:**\n" +
                     "- `APPROVED`: 승인 (로그인 가능)\n" +
                     "- `REJECTED`: 반려 (로그인 불가)\n\n" +
-                    "\n" +
-                    "- `rejectionReason` 필드는 선택 사항입니다. REJECTED 상태일 때 거부 사유를 입력할 수 있습니다.\n" +
-                    "- APPROVED 상태로 변경 시 `rejectionReason` 필드는 무시됩니다.\n\n" +
+                    "**반려 사유:**\n" +
+                    "- REJECTED 상태일 때 `rejectionReasonType` 필드는 필수입니다.\n" +
+                    "- `rejectionReasonType`이 `OTHER`일 경우 `rejectionReasonDetail` 필드도 필수입니다.\n" +
+                    "- APPROVED 상태로 변경 시 반려 사유 관련 필드는 무시됩니다.\n\n" +
+                    "**반려 사유 타입:**\n" +
+                    "- `BUSINESS_INFO_UNVERIFIED`: 사업자정보 확인 불가\n" +
+                    "- `CRITERIA_NOT_MET`: 입점 기준 미달성\n" +
+                    "- `INAPPROPRIATE_MARKET_NAME`: 마켓명 부적절\n" +
+                    "- `OTHER`: 기타(직접 작성) - 이 경우 `rejectionReasonDetail` 필수\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -195,8 +201,12 @@ public interface AdminMarketControllerDocs {
                                     value = "{\n  \"status\": \"APPROVED\"\n}"
                             ),
                             @ExampleObject(
-                                    name = "반려 요청 예시",
-                                    value = "{\n  \"status\": \"REJECTED\",\n  \"rejectionReason\": \"서류 미비로 인한 반려\"\n}"
+                                    name = "반려 요청 예시 (사전 정의된 사유)",
+                                    value = "{\n  \"status\": \"REJECTED\",\n  \"rejectionReasonType\": \"BUSINESS_INFO_UNVERIFIED\"\n}"
+                            ),
+                            @ExampleObject(
+                                    name = "반려 요청 예시 (기타 사유)",
+                                    value = "{\n  \"status\": \"REJECTED\",\n  \"rejectionReasonType\": \"OTHER\",\n  \"rejectionReasonDetail\": \"사업자 등록증이 흐릿합니다.\"\n}"
                             )
                     }
             )

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import showroomz.api.admin.market.DTO.AdminMarketDto;
+import showroomz.api.admin.market.type.RejectionReasonType;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
@@ -15,6 +16,7 @@ import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.service.MailService;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -27,32 +29,52 @@ public class AdminService {
 
     private final SellerRepository sellerRepository;
     private final MarketRepository marketRepository;
+    private final MailService mailService;
 
     /**
      * 판매자(관리자) 계정 승인/반려 처리
-     * PENDING 상태일 때만 변경 가능
      */
     @Transactional
-    public void updateAdminStatus(Long adminId, SellerStatus status, String rejectionReason) {
-        Seller admin = sellerRepository.findById(adminId)
+    public void updateAdminStatus(Long sellerId, SellerStatus status, 
+                                  RejectionReasonType reasonType, String reasonDetail) {
+        Seller seller = sellerRepository.findById(sellerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // PENDING 상태일 때만 변경 가능
-        if (admin.getStatus() != SellerStatus.PENDING) {
+        if (seller.getStatus() != SellerStatus.PENDING) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
-        admin.setStatus(status);
+        seller.setStatus(status);
         
-        // REJECTED 상태일 때만 rejectionReason 저장
-        if (status == SellerStatus.REJECTED) {
-            admin.setRejectionReason(rejectionReason);
-        } else {
-            // APPROVED 상태일 때는 rejectionReason 초기화
-            admin.setRejectionReason(null);
+        if (status == SellerStatus.APPROVED) {
+            seller.setRejectionReason(null);
+            // 승인 메일 발송
+            mailService.sendApprovalEmail(seller.getEmail(), seller.getName());
+            
+        } else if (status == SellerStatus.REJECTED) {
+            // 반려 사유 결정 로직
+            String finalReason = resolveRejectionReason(reasonType, reasonDetail);
+            seller.setRejectionReason(finalReason);
+            // 반려 메일 발송
+            mailService.sendRejectionEmail(seller.getEmail(), seller.getName(), finalReason);
         }
         
-        admin.setModifiedAt(LocalDateTime.now());
+        seller.setModifiedAt(LocalDateTime.now());
+    }
+
+    private String resolveRejectionReason(RejectionReasonType type, String detail) {
+        if (type == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE); // 반려 시 타입 필수
+        }
+        
+        if (type == RejectionReasonType.OTHER) {
+            if (detail == null || detail.isBlank()) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE); // 기타 선택 시 상세 사유 필수
+            }
+            return detail;
+        }
+        
+        return type.getDescription();
     }
 
     /**

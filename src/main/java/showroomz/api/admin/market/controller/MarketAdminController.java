@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import showroomz.api.admin.docs.AdminMarketControllerDocs;
 import showroomz.api.admin.market.DTO.AdminMarketDto;
 import showroomz.api.admin.market.service.AdminService;
+import showroomz.api.admin.market.type.RejectionReasonType;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.type.SellerStatus;
@@ -63,7 +64,14 @@ public class MarketAdminController implements AdminMarketControllerDocs {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
-        adminService.updateAdminStatus(sellerId, status, request.getRejectionReason());
+        // DTO에서 Enum과 Detail을 꺼내서 전달
+        adminService.updateAdminStatus(
+                sellerId, 
+                status, 
+                request.getRejectionReasonType(), 
+                request.getRejectionReasonDetail()
+        );
+        
         return ResponseEntity.noContent().build();
     }
 }
