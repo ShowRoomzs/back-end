@@ -6,8 +6,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import showroomz.api.admin.market.DTO.AdminMarketDto;
+import showroomz.api.admin.market.type.RejectionReasonType;
 import showroomz.api.app.auth.exception.BusinessException;
-import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.market.entity.Market;
@@ -15,8 +16,10 @@ import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.service.MailService;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,55 +29,114 @@ public class AdminService {
 
     private final SellerRepository sellerRepository;
     private final MarketRepository marketRepository;
+    private final MailService mailService;
 
     /**
      * 판매자(관리자) 계정 승인/반려 처리
-     * PENDING 상태일 때만 변경 가능
      */
     @Transactional
-    public void updateAdminStatus(Long adminId, SellerStatus status, String rejectionReason) {
-        Seller admin = sellerRepository.findById(adminId)
+    public void updateAdminStatus(Long sellerId, SellerStatus status, 
+                                  RejectionReasonType reasonType, String reasonDetail) {
+        Seller seller = sellerRepository.findById(sellerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // PENDING 상태일 때만 변경 가능
-        if (admin.getStatus() != SellerStatus.PENDING) {
+        if (seller.getStatus() != SellerStatus.PENDING) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
-        admin.setStatus(status);
+        seller.setStatus(status);
         
-        // REJECTED 상태일 때만 rejectionReason 저장
-        if (status == SellerStatus.REJECTED) {
-            admin.setRejectionReason(rejectionReason);
-        } else {
-            // APPROVED 상태일 때는 rejectionReason 초기화
-            admin.setRejectionReason(null);
+        if (status == SellerStatus.APPROVED) {
+            seller.setRejectionReason(null);
+            // 승인 메일 발송
+            mailService.sendApprovalEmail(seller.getEmail(), seller.getName());
+            
+        } else if (status == SellerStatus.REJECTED) {
+            // 반려 사유 결정 로직
+            String finalReason = resolveRejectionReason(reasonType, reasonDetail);
+            seller.setRejectionReason(finalReason);
+            // 반려 메일 발송
+            mailService.sendRejectionEmail(seller.getEmail(), seller.getName(), finalReason);
         }
         
-        admin.setModifiedAt(LocalDateTime.now());
+        seller.setModifiedAt(LocalDateTime.now());
+    }
+
+    private String resolveRejectionReason(RejectionReasonType type, String detail) {
+        if (type == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE); // 반려 시 타입 필수
+        }
+        
+        if (type == RejectionReasonType.OTHER) {
+            if (detail == null || detail.isBlank()) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE); // 기타 선택 시 상세 사유 필수
+            }
+            return detail;
+        }
+        
+        return type.getDescription();
     }
 
     /**
-     * 가입 대기 판매자 목록 조회 (페이징)
+     * 판매자 상세 정보 조회
      */
     @Transactional(readOnly = true)
-    public PageResponse<SellerDto.PendingSellerResponse> getPendingSellers(Pageable pageable) {
-        // PENDING 상태인 Seller를 가진 Market 목록 조회 (페이징)
-        Page<Market> pendingMarkets = marketRepository.findAllBySeller_Status(SellerStatus.PENDING, pageable);
+    public AdminMarketDto.MarketDetailResponse getMarketDetail(Long sellerId) {
+        Seller seller = sellerRepository.findById(sellerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // Market -> DTO 변환
-        List<SellerDto.PendingSellerResponse> content = pendingMarkets.getContent().stream()
-                .map(market -> SellerDto.PendingSellerResponse.builder()
+        Market market = marketRepository.findBySeller(seller)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
+
+        return AdminMarketDto.MarketDetailResponse.builder()
+                .sellerId(seller.getId())
+                .marketId(market.getId())
+                .email(seller.getEmail())
+                .name(seller.getName())
+                .marketName(market.getMarketName())
+                .phoneNumber(seller.getPhoneNumber())
+                .status(seller.getStatus())
+                .rejectionReason(seller.getRejectionReason())
+                .createdAt(seller.getCreatedAt())
+                .build();
+    }
+
+    /**
+     * 마켓 가입 신청 목록 조회 (검색 필터 적용)
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<AdminMarketDto.ApplicationResponse> getMarketApplications(
+            AdminMarketDto.SearchCondition condition, Pageable pageable) {
+
+        LocalDateTime startDateTime = condition.getStartDate() != null 
+                ? condition.getStartDate().atStartOfDay() 
+                : null;
+        LocalDateTime endDateTime = condition.getEndDate() != null 
+                ? condition.getEndDate().atTime(LocalTime.MAX) 
+                : null;
+
+        Page<Market> marketPage = marketRepository.searchApplications(
+                condition.getStatus(),
+                startDateTime,
+                endDateTime,
+                pageable
+        );
+
+        List<AdminMarketDto.ApplicationResponse> content = marketPage.getContent().stream()
+                .map(market -> AdminMarketDto.ApplicationResponse.builder()
                         .sellerId(market.getSeller().getId())
+                        .marketId(market.getId())
                         .email(market.getSeller().getEmail())
                         .name(market.getSeller().getName())
                         .marketName(market.getMarketName())
                         .phoneNumber(market.getSeller().getPhoneNumber())
+                        .status(market.getSeller().getStatus())
+                        .rejectionReason(market.getSeller().getRejectionReason())
                         .createdAt(market.getSeller().getCreatedAt())
                         .build())
                 .collect(Collectors.toList());
 
-        return new PageResponse<>(content, pendingMarkets);
+        return new PageResponse<>(content, marketPage);
     }
 }
 

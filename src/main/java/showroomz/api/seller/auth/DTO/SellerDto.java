@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import showroomz.api.admin.market.type.RejectionReasonType;
 
 import java.time.LocalDateTime;
 
@@ -34,8 +35,11 @@ public class SellerDto {
         @Schema(description = "변경할 상태 (APPROVED: 승인, REJECTED: 반려)", example = "APPROVED")
         private String status;
 
-        @Schema(description = "거부 사유 (선택 사항, REJECTED 상태일 때 입력 가능)", example = "서류 미비로 인한 반려")
-        private String rejectionReason;
+        @Schema(description = "반려 사유 타입 (반려 시 필수)", example = "BUSINESS_INFO_UNVERIFIED")
+        private RejectionReasonType rejectionReasonType;
+
+        @Schema(description = "반려 사유 상세 (사유 타입이 OTHER일 경우 필수)", example = "사업자 등록증이 흐릿합니다.")
+        private String rejectionReasonDetail;
     }
 
     @Getter

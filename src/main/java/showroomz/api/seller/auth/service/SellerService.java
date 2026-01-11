@@ -21,6 +21,7 @@ import showroomz.api.seller.auth.refreshToken.SellerRefreshTokenRepository;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.api.seller.market.service.MarketService;
+import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.config.properties.AppProperties;
@@ -29,6 +30,7 @@ import showroomz.global.error.exception.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -52,8 +54,15 @@ public class SellerService {
             throw new BusinessException(ErrorCode.PASSWORD_MISMATCH);
         }
 
-        // 2. 관리자 테이블에서 이메일 중복 체크
-        if (adminRepository.existsByEmail(request.getEmail())) {
+        // 2. 이메일 중복 체크 및 반려 계정 재가입 처리 [수정됨]
+        Optional<Seller> sellerOpt = adminRepository.findByEmail(request.getEmail());
+        if (sellerOpt.isPresent()) {
+            Seller existingSeller = sellerOpt.get();
+            // 반려된 계정인 경우 재가입(정보 업데이트) 진행
+            if (existingSeller.getStatus() == SellerStatus.REJECTED) {
+                return reRegisterRejectedSeller(existingSeller, request);
+            }
+            // 그 외(승인, 대기)의 경우 중복 에러
             throw new BusinessException(ErrorCode.DUPLICATE_EMAIL_SIGNUP);
         }
         
@@ -79,6 +88,37 @@ public class SellerService {
 
         // 토큰을 발급하지 않고 승인 대기 메시지 리턴
         return Map.of("message", "회원가입 신청이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.");
+    }
+
+    /**
+     * 반려된 판매자 재가입 처리 (정보 업데이트 및 상태 변경) [추가됨]
+     */
+    private Map<String, String> reRegisterRejectedSeller(Seller seller, SellerSignUpRequest request) {
+        // 기존 마켓 정보 조회
+        Market market = marketRepository.findBySeller(seller)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // 마켓명 변경 시 중복 체크 (기존 이름과 다를 경우에만)
+        if (!market.getMarketName().equals(request.getMarketName()) && 
+            marketRepository.existsByMarketName(request.getMarketName())) {
+            throw new BusinessException(ErrorCode.DUPLICATE_MARKET_NAME);
+        }
+
+        // Seller 정보 업데이트
+        seller.setPassword(passwordEncoder.encode(request.getPassword()));
+        seller.setName(request.getSellerName());
+        seller.setPhoneNumber(request.getSellerContact());
+        seller.setStatus(SellerStatus.PENDING); // 상태를 다시 PENDING으로 변경
+        seller.setRejectionReason(null); // 반려 사유 초기화
+        seller.setModifiedAt(LocalDateTime.now());
+        
+        // Market 정보 업데이트
+        market.setMarketName(request.getMarketName());
+        market.setCsNumber(request.getCsNumber());
+        
+        // Dirty Checking으로 트랜잭션 종료 시 자동 Update 쿼리 실행
+        
+        return Map.of("message", "재가입 신청이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.");
     }
 
     // 읽기 전용 트랜잭션으로 설정하여 성능 최적화
@@ -150,7 +190,9 @@ public class SellerService {
         if (seller.getStatus() == SellerStatus.REJECTED) {
             String rejectionReason = seller.getRejectionReason();
             if (rejectionReason != null && !rejectionReason.isBlank()) {
-                throw new BusinessException(ErrorCode.ACCOUNT_REJECTED_WITH_REASON, rejectionReason);
+                // 반려 사유가 있는 경우: 유저 친화적인 메시지로 변경
+                String userFriendlyMessage = String.format("가입 승인이 반려되었습니다. 반려 사유: %s", rejectionReason);
+                throw new BusinessException(ErrorCode.ACCOUNT_REJECTED_WITH_REASON, userFriendlyMessage);
             }
             throw new BusinessException(ErrorCode.ACCOUNT_REJECTED);
         }
