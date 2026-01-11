@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.admin.market.DTO.AdminMarketDto;
@@ -20,23 +19,6 @@ import showroomz.api.seller.auth.DTO.SellerDto;
 
 @Tag(name = "Admin - Market", description = "관리자 마켓 관리 API")
 public interface AdminMarketControllerDocs {
-
-    @Operation(
-            summary = "가입 대기 판매자 목록 조회 (구 버전)",
-            description = "회원가입 후 승인을 기다리고 있는(PENDING 상태) 판매자들의 목록을 조회합니다.\n" +
-                    "**참고:** 이 API는 추후 '마켓 가입 신청 관리 목록 조회' API로 대체될 예정입니다.\n\n" +
-                    "**권한:** ADMIN"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "조회 성공",
-                    content = @Content(schema = @Schema(implementation = showroomz.global.dto.PageResponse.class))
-            )
-    })
-    ResponseEntity<showroomz.global.dto.PageResponse<SellerDto.PendingSellerResponse>> getPendingSellers(
-            @ParameterObject showroomz.global.dto.PagingRequest pagingRequest
-    );
 
     @Operation(
             summary = "마켓 가입 신청 관리 목록 조회",

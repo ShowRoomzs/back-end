@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import showroomz.api.admin.market.DTO.AdminMarketDto;
 import showroomz.api.app.auth.exception.BusinessException;
-import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.market.entity.Market;
@@ -54,29 +53,6 @@ public class AdminService {
         }
         
         admin.setModifiedAt(LocalDateTime.now());
-    }
-
-    /**
-     * 가입 대기 판매자 목록 조회 (페이징)
-     */
-    @Transactional(readOnly = true)
-    public PageResponse<SellerDto.PendingSellerResponse> getPendingSellers(Pageable pageable) {
-        // PENDING 상태인 Seller를 가진 Market 목록 조회 (페이징)
-        Page<Market> pendingMarkets = marketRepository.findAllBySeller_Status(SellerStatus.PENDING, pageable);
-
-        // Market -> DTO 변환
-        List<SellerDto.PendingSellerResponse> content = pendingMarkets.getContent().stream()
-                .map(market -> SellerDto.PendingSellerResponse.builder()
-                        .sellerId(market.getSeller().getId())
-                        .email(market.getSeller().getEmail())
-                        .name(market.getSeller().getName())
-                        .marketName(market.getMarketName())
-                        .phoneNumber(market.getSeller().getPhoneNumber())
-                        .createdAt(market.getSeller().getCreatedAt())
-                        .build())
-                .collect(Collectors.toList());
-
-        return new PageResponse<>(content, pendingMarkets);
     }
 
     /**

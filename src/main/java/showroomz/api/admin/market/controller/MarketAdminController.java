@@ -25,17 +25,6 @@ public class MarketAdminController implements AdminMarketControllerDocs {
     private final AdminService adminService;
 
     @Override
-    @GetMapping("/sellers/pending")
-    public ResponseEntity<PageResponse<SellerDto.PendingSellerResponse>> getPendingSellers(
-            @ModelAttribute PagingRequest pagingRequest) {
-        // Seller의 createdAt으로 정렬 (Market에는 createdAt 필드가 없음)
-        Sort sort = Sort.by(Sort.Direction.DESC, "seller.createdAt");
-        Pageable pageable = pagingRequest.toPageable(sort);
-        PageResponse<SellerDto.PendingSellerResponse> response = adminService.getPendingSellers(pageable);
-        return ResponseEntity.ok(response);
-    }
-
-    @Override
     @GetMapping("/markets/applications")
     public ResponseEntity<PageResponse<AdminMarketDto.ApplicationResponse>> getMarketApplications(
             @ModelAttribute PagingRequest pagingRequest,
