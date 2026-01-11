@@ -99,9 +99,10 @@ public class SellerService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
 
         // 1. RoleType 확인 (관리자가 판매자 페이지로 로그인하는 것 방지)
-        if (seller.getRoleType() != RoleType.SELLER) {
-            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
-        }
+        // TODO: 프론트엔드에서 관리자 로그인을 /v1/admin/auth/login으로 변경하면 주석 해제
+        // if (seller.getRoleType() != RoleType.SELLER) {
+        //     throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
+        // }
 
         // 2. 비밀번호 검증
         if (!passwordEncoder.matches(request.getPassword(), seller.getPassword())) {
