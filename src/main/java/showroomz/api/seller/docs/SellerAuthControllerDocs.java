@@ -32,10 +32,15 @@ public interface SellerAuthControllerDocs {
                     "- 회원가입 직후에는 **승인 대기(PENDING)** 상태가 되며 로그인이 불가능합니다.\n" +
                     "- 슈퍼 관리자의 승인 완료 후 로그인이 가능해집니다.\n" +
                     "- 따라서 회원가입 성공 시 토큰 대신 안내 메시지를 반환합니다.\n\n" +
-                    "**권한:** 없음 (회원가입은 인증 불필요)" +
-                    "**승인 상태:** PENDING (승인 대기 상태)\n\n" +
-                    "**승인 상태:** APPROVED (승인 완료 상태)\n\n" +
-                    "**승인 상태:** REJECTED (승인 반려 상태)"
+                    "**반려된 계정 재가입:**\n" +
+                    "- 이전에 반려(REJECTED)된 계정의 경우, 동일한 이메일로 재가입 시 기존 정보를 업데이트하고 상태를 PENDING으로 변경합니다.\n" +
+                    "- 반려 사유는 초기화되며, 새로운 정보로 재심사를 받을 수 있습니다.\n" +
+                    "- 재가입 성공 시 \"재가입 신청이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.\" 메시지를 반환합니다.\n\n" +
+                    "**승인 상태:**\n" +
+                    "- **PENDING**: 승인 대기 상태 (로그인 불가)\n" +
+                    "- **APPROVED**: 승인 완료 상태 (로그인 가능)\n" +
+                    "- **REJECTED**: 승인 반려 상태 (로그인 불가, 재가입 가능)\n\n" +
+                    "**권한:** 없음 (회원가입은 인증 불필요)"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -46,10 +51,17 @@ public interface SellerAuthControllerDocs {
                             schema = @Schema(implementation = Map.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "성공 예시",
+                                            name = "신규 가입 성공 예시",
                                             value = "{\n" +
                                                     "  \"message\": \"회원가입 신청이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.\"\n" +
                                                     "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "재가입 성공 예시",
+                                            value = "{\n" +
+                                                    "  \"message\": \"재가입 신청이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.\"\n" +
+                                                    "}",
+                                            description = "반려된 계정의 재가입 시 반환되는 메시지입니다."
                                     )
                             }
                     )
@@ -112,7 +124,9 @@ public interface SellerAuthControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "이메일 중복 - Status: 400 Bad Request",
+                    description = "이메일 중복 - Status: 400 Bad Request\n\n" +
+                            "**참고:** 반려(REJECTED)된 계정은 동일한 이메일로 재가입이 가능합니다. " +
+                            "승인 대기(PENDING) 또는 승인 완료(APPROVED) 상태의 계정만 중복 에러가 발생합니다.",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
