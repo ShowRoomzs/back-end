@@ -65,3 +65,5 @@ sentry:
   logging:
     minimum-event-level: error # log.error() 이상은 무조건 Sentry로 보냄
     minimum-breadcrumb-level: info # log.info()는 Sentry 이슈 내의 '타임라인(Breadcrumb)'에 기록으로 남김
+  ignored-exceptions-for-type:
+    - showroomz.api.app.auth.exception.BusinessException
