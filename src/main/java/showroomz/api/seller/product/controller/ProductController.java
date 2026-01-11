@@ -81,19 +81,19 @@ public class ProductController implements ProductControllerDocs {
 
     @Override
     @PostMapping("/batch/stock-status")
-    public ResponseEntity<ProductDto.BatchUpdateResponse> batchToggleStockStatus(
-            @Valid @RequestBody ProductDto.BatchUpdateRequest request) {
+    public ResponseEntity<ProductDto.BatchUpdateResponse> batchUpdateStockStatus(
+            @Valid @RequestBody ProductDto.BatchStockStatusRequest request) {
         String adminEmail = getCurrentAdminEmail();
-        ProductDto.BatchUpdateResponse response = productService.batchToggleStockStatus(adminEmail, request);
+        ProductDto.BatchUpdateResponse response = productService.batchUpdateStockStatus(adminEmail, request);
         return ResponseEntity.ok(response);
     }
 
     @Override
     @PostMapping("/batch/display-status")
-    public ResponseEntity<ProductDto.BatchUpdateResponse> batchToggleDisplayStatus(
-            @Valid @RequestBody ProductDto.BatchUpdateRequest request) {
+    public ResponseEntity<ProductDto.BatchUpdateResponse> batchUpdateDisplayStatus(
+            @Valid @RequestBody ProductDto.BatchDisplayStatusRequest request) {
         String adminEmail = getCurrentAdminEmail();
-        ProductDto.BatchUpdateResponse response = productService.batchToggleDisplayStatus(adminEmail, request);
+        ProductDto.BatchUpdateResponse response = productService.batchUpdateDisplayStatus(adminEmail, request);
         return ResponseEntity.ok(response);
     }
 }
