@@ -150,7 +150,9 @@ public class SellerService {
         if (seller.getStatus() == SellerStatus.REJECTED) {
             String rejectionReason = seller.getRejectionReason();
             if (rejectionReason != null && !rejectionReason.isBlank()) {
-                throw new BusinessException(ErrorCode.ACCOUNT_REJECTED_WITH_REASON, rejectionReason);
+                // 반려 사유가 있는 경우: 유저 친화적인 메시지로 변경
+                String userFriendlyMessage = String.format("가입 승인이 반려되었습니다. 반려 사유: %s", rejectionReason);
+                throw new BusinessException(ErrorCode.ACCOUNT_REJECTED_WITH_REASON, userFriendlyMessage);
             }
             throw new BusinessException(ErrorCode.ACCOUNT_REJECTED);
         }
