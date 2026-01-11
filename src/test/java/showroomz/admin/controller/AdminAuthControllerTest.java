@@ -126,7 +126,7 @@ class AdminAuthControllerTest {
                 "accessToken", "refreshToken", 3600L, 1209600L, false, "SELLER"
         );
 
-        given(adminService.login(any(SellerLoginRequest.class))).willReturn(tokenResponse);
+        given(adminService.loginSeller(any(SellerLoginRequest.class))).willReturn(tokenResponse);
 
         // when & then
         mockMvc.perform(post("/v1/seller/auth/login")
@@ -195,7 +195,7 @@ class AdminAuthControllerTest {
                         .header("Authorization", accessToken))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("관리자 회원 탈퇴가 완료되었습니다."));
+                .andExpect(jsonPath("$.message").value("판매자 회원 탈퇴가 완료되었습니다."));
 
         verify(adminService).withdraw(any());
     }
@@ -353,7 +353,7 @@ class AdminAuthControllerTest {
                 .andDo(print())
                 .andExpect(status().isBadRequest());
 
-        verify(adminService, never()).login(any());
+        verify(adminService, never()).loginSeller(any());
     }
 
     @Test
@@ -371,6 +371,6 @@ class AdminAuthControllerTest {
                 .andDo(print())
                 .andExpect(status().isBadRequest());
 
-        verify(adminService, never()).login(any());
+        verify(adminService, never()).loginSeller(any());
     }
 }
