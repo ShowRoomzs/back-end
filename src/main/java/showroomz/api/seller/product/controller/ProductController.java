@@ -71,11 +71,11 @@ public class ProductController implements ProductControllerDocs {
     }
 
     @Override
-    @DeleteMapping("/{productId}")
-    public ResponseEntity<ProductDto.DeleteProductResponse> deleteProduct(
-            @PathVariable Long productId) {
+    @DeleteMapping
+    public ResponseEntity<ProductDto.BatchDeleteResponse> batchDeleteProducts(
+            @Valid @RequestBody ProductDto.BatchDeleteRequest request) {
         String adminEmail = getCurrentAdminEmail();
-        ProductDto.DeleteProductResponse response = productService.deleteProduct(adminEmail, productId);
+        ProductDto.BatchDeleteResponse response = productService.batchDeleteProducts(adminEmail, request);
         return ResponseEntity.ok(response);
     }
 
