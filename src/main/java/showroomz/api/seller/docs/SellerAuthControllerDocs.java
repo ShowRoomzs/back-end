@@ -244,8 +244,8 @@ public interface SellerAuthControllerDocs {
     );
 
     @Operation(
-            summary = "관리자(판매자) 로그인",
-            description = "이메일과 비밀번호로 관리자 계정에 로그인합니다.\n\n" +
+            summary = "판매자 로그인",
+            description = "이메일과 비밀번호로 판매자 계정에 로그인합니다.\n\n" +
                     "**제약사항:**\n" +
                     "- 승인 완료(APPROVED)된 계정만 로그인할 수 있습니다.\n" +
                     "- 승인 대기(PENDING) 또는 반려(REJECTED)된 계정은 403 Forbidden 에러가 발생합니다.\n" +
@@ -349,8 +349,8 @@ public interface SellerAuthControllerDocs {
             )
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "관리자 로그인 정보\n" +
-                    "- email: 필수, 관리자 이메일\n" +
+            description = "판매자 로그인 정보\n" +
+                    "- email: 필수, 판매자 이메일\n" +
                     "- password: 필수, 비밀번호",
             required = true,
             content = @Content(
@@ -610,8 +610,8 @@ public interface SellerAuthControllerDocs {
     );
 
     @Operation(
-            summary = "관리자 회원 탈퇴",
-            description = "인증된 관리자의 회원 탈퇴를 처리합니다. 관리자 계정과 관련된 모든 리프레시 토큰, 마켓 정보가 삭제됩니다.\n\n" +
+            summary = "판매자 회원 탈퇴",
+            description = "인증된 판매자의 회원 탈퇴를 처리합니다. 판매자 계정과 관련된 모든 리프레시 토큰, 마켓 정보가 삭제됩니다.\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -626,7 +626,7 @@ public interface SellerAuthControllerDocs {
                                     @ExampleObject(
                                             name = "성공 예시",
                                             value = "{\n" +
-                                                    "  \"message\": \"관리자 회원 탈퇴가 완료되었습니다.\"\n" +
+                                                    "  \"message\": \"판매자 회원 탈퇴가 완료되었습니다.\"\n" +
                                                     "}"
                                     )
                             }

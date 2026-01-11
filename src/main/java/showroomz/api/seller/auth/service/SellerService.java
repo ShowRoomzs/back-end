@@ -90,35 +90,70 @@ public class SellerService {
         return new SellerDto.CheckEmailResponse(true, "AVAILABLE", "사용 가능한 이메일입니다.");
     }
 
+    /**
+     * [판매자용] 로그인
+     */
     @Transactional
-    public TokenResponse login(SellerLoginRequest request) {
-        // 1. 관리자 계정 조회
+    public TokenResponse loginSeller(SellerLoginRequest request) {
+        Seller seller = adminRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
+
+        // 1. RoleType 확인 (관리자가 판매자 페이지로 로그인하는 것 방지)
+        // TODO: 프론트엔드에서 관리자 로그인을 /v1/admin/auth/login으로 변경하면 주석 해제
+        // if (seller.getRoleType() != RoleType.SELLER) {
+        //     throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
+        // }
+
+        // 2. 비밀번호 검증
+        if (!passwordEncoder.matches(request.getPassword(), seller.getPassword())) {
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
+        // 3. 계정 승인 상태 검증
+        validateSellerStatus(seller);
+
+        return issueTokenResponse(seller);
+    }
+
+    /**
+     * [관리자용] 로그인
+     */
+    @Transactional
+    public TokenResponse loginAdmin(SellerLoginRequest request) {
         Seller admin = adminRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
+
+        // 1. RoleType 확인 (판매자가 관리자 페이지로 로그인하는 것 방지)
+        if (admin.getRoleType() != RoleType.ADMIN) {
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
+        }
 
         // 2. 비밀번호 검증
         if (!passwordEncoder.matches(request.getPassword(), admin.getPassword())) {
             throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
         }
 
-        // 3. 계정 승인 상태 검증
+        // 3. 관리자도 활성 상태 체크가 필요하다면 추가 (현재는 별도 승인 로직 없으므로 패스하거나 PENDING 체크)
+        // DB에 직접 넣을 때 STATUS='APPROVED'로 넣는다고 가정.
         if (admin.getStatus() == SellerStatus.PENDING) {
-            throw new BusinessException(ErrorCode.ACCOUNT_NOT_APPROVED);
-        }
-        if (admin.getStatus() == SellerStatus.REJECTED) {
-            // 반려된 계정일 경우, 반려 사유 유무에 따라 다른 ErrorCode 사용
-            String rejectionReason = admin.getRejectionReason();
-            log.info("🔍 반려된 계정 로그인 시도 - 이메일: {}, 반려 사유: '{}'", admin.getEmail(), rejectionReason);
-            if (rejectionReason != null && !rejectionReason.isBlank()) {
-                log.info("✅ 반려 사유 포함하여 예외 발생 - ACCOUNT_REJECTED_WITH_REASON");
-                throw new BusinessException(ErrorCode.ACCOUNT_REJECTED_WITH_REASON, rejectionReason);
-            }
-            log.info("⚠️ 반려 사유 없음 - ACCOUNT_REJECTED 사용");
-            throw new BusinessException(ErrorCode.ACCOUNT_REJECTED);
+             throw new BusinessException(ErrorCode.ACCOUNT_NOT_APPROVED);
         }
 
-        // 4. 토큰 생성 및 반환 (공통 메서드 사용)
         return issueTokenResponse(admin);
+    }
+
+    // 상태 검증 로직 분리
+    private void validateSellerStatus(Seller seller) {
+        if (seller.getStatus() == SellerStatus.PENDING) {
+            throw new BusinessException(ErrorCode.ACCOUNT_NOT_APPROVED);
+        }
+        if (seller.getStatus() == SellerStatus.REJECTED) {
+            String rejectionReason = seller.getRejectionReason();
+            if (rejectionReason != null && !rejectionReason.isBlank()) {
+                throw new BusinessException(ErrorCode.ACCOUNT_REJECTED_WITH_REASON, rejectionReason);
+            }
+            throw new BusinessException(ErrorCode.ACCOUNT_REJECTED);
+        }
     }
 
     @Transactional
@@ -241,7 +276,7 @@ public class SellerService {
         String email = claims.getSubject();
 
         // 3. 관리자 정보 조회
-        Seller admin = adminRepository.findByEmail(email)
+        Seller user = adminRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         // 4. Refresh Token 삭제
@@ -250,27 +285,24 @@ public class SellerService {
             adminRefreshTokenRepository.delete(adminRefreshToken);
         }
 
-        // 5. Market 삭제
-        marketRepository.findBySeller(admin).ifPresent(marketRepository::delete);
+        // 5. [수정] 판매자인 경우에만 마켓 삭제
+        if (user.getRoleType() == RoleType.SELLER) {
+            marketRepository.findBySeller(user).ifPresent(marketRepository::delete);
+        }
 
         // 6. Admin 삭제
-        adminRepository.delete(admin);
+        adminRepository.delete(user);
     }
 
     /**
      * 공통 메서드: Access Token 생성
-     * 슈퍼 관리자(super) 계정만 ADMIN 권한을 유지하고, 나머지는 모두 SELLER 권한으로 설정
      */
     private AuthToken createAccessToken(Seller admin, Date now) {
         long accessTokenExpiry = appProperties.getAuth().getTokenExpiry();
         
-        // 슈퍼 관리자 계정만 ADMIN 권한 유지, 나머지는 모두 SELLER로 설정
-        String roleCode;
-        if ("super".equals(admin.getEmail()) && admin.getRoleType() == RoleType.ADMIN) {
-            roleCode = RoleType.ADMIN.getCode();
-        } else {
-            roleCode = RoleType.SELLER.getCode();
-        }
+        // [수정] DB에 저장된 RoleType을 그대로 사용
+        // (로그인 시점에서 loginSeller/loginAdmin 분리하여 검증하므로 안전)
+        String roleCode = admin.getRoleType().getCode();
         
         return tokenProvider.createAuthToken(
                 admin.getEmail(),
