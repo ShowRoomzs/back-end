@@ -1,0 +1,1 @@
+ALTER TABLE recent_search RENAME COLUMN searched_at TO created_at;
