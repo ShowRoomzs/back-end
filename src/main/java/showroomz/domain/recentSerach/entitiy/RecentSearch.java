@@ -28,7 +28,7 @@ public class RecentSearch {
     private String term; // "term": "화이트 린넨 셔츠"
 
     @CreationTimestamp // 엔티티 생성 시 자동으로 현재 시간 매핑
-    @Column(name = "searched_at", nullable = false, updatable = false)
-    private Instant searchedAt; // "searchedAt": "..." (UTC 기준 Instant 타입)
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt; // "createdAt": "..." (UTC 기준 Instant 타입)
 
 }
