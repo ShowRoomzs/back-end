@@ -78,6 +78,24 @@ public class ProductController implements ProductControllerDocs {
         ProductDto.DeleteProductResponse response = productService.deleteProduct(adminEmail, productId);
         return ResponseEntity.ok(response);
     }
+
+    @Override
+    @PostMapping("/batch/stock-status")
+    public ResponseEntity<ProductDto.BatchUpdateResponse> batchToggleStockStatus(
+            @Valid @RequestBody ProductDto.BatchUpdateRequest request) {
+        String adminEmail = getCurrentAdminEmail();
+        ProductDto.BatchUpdateResponse response = productService.batchToggleStockStatus(adminEmail, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @PostMapping("/batch/display-status")
+    public ResponseEntity<ProductDto.BatchUpdateResponse> batchToggleDisplayStatus(
+            @Valid @RequestBody ProductDto.BatchUpdateRequest request) {
+        String adminEmail = getCurrentAdminEmail();
+        ProductDto.BatchUpdateResponse response = productService.batchToggleDisplayStatus(adminEmail, request);
+        return ResponseEntity.ok(response);
+    }
 }
 
 

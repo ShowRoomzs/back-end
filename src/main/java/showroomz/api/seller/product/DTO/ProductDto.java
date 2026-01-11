@@ -408,5 +408,34 @@ public class ProductDto {
         @Schema(description = "응답 메시지", example = "상품이 성공적으로 삭제되었습니다.")
         private String message;
     }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "일괄 처리 요청 (품절 처리, 미진열 처리)")
+    public static class BatchUpdateRequest {
+        @NotNull(message = "상품 ID 목록은 필수 입력값입니다.")
+        @Size(min = 1, message = "최소 1개 이상의 상품 ID가 필요합니다.")
+        @Schema(description = "처리할 상품 ID 목록", example = "[1, 2, 3]")
+        private List<Long> productIds;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "일괄 처리 응답")
+    public static class BatchUpdateResponse {
+        @Schema(description = "처리된 상품 ID 목록", example = "[1, 2, 3]")
+        private List<Long> productIds;
+
+        @Schema(description = "처리된 상품 개수", example = "3")
+        private Integer count;
+
+        @Schema(description = "응답 메시지", example = "3개의 상품이 성공적으로 품절 처리되었습니다.")
+        private String message;
+    }
 }
 
