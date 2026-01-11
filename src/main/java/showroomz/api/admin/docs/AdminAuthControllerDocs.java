@@ -26,8 +26,7 @@ public interface AdminAuthControllerDocs {
             description = "이메일과 비밀번호로 관리자 계정에 로그인합니다.\n\n" +
                     "**제약사항:**\n" +
                     "- 관리자(RoleType.ADMIN) 계정만 로그인할 수 있습니다.\n" +
-                    "- 판매자(RoleType.SELLER) 계정은 이 엔드포인트로 로그인할 수 없습니다. 판매자 로그인은 `/v1/seller/auth/login`을 사용하세요.\n" +
-                    "- PENDING 상태의 계정은 로그인할 수 없습니다.\n\n" +
+                    "- 판매자(RoleType.SELLER) 계정은 이 엔드포인트로 로그인할 수 없습니다. 판매자 로그인은 `/v1/seller/auth/login`을 사용하세요.\n\n" +
                     "**권한:** 없음 (로그인은 인증 불필요)\n" +
                     "**요청 헤더:** 없음"
     )
@@ -118,8 +117,8 @@ public interface AdminAuthControllerDocs {
                             @ExampleObject(
                                     name = "요청 예시",
                                     value = "{\n" +
-                                            "  \"email\": \"admin@example.com\",\n" +
-                                            "  \"password\": \"Admin123!\"\n" +
+                                            "  \"email\": \"super\",\n" +
+                                            "  \"password\": \"super\"\n" +
                                             "}"
                             )
                     }
