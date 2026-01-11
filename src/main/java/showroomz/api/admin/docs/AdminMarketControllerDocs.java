@@ -11,19 +11,42 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import showroomz.api.admin.market.DTO.AdminMarketDto;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.seller.auth.DTO.SellerDto;
-import showroomz.api.seller.market.DTO.MarketDto;
 
 @Tag(name = "Admin - Market", description = "관리자 마켓 관리 API")
 public interface AdminMarketControllerDocs {
 
     @Operation(
-            summary = "가입 대기 판매자 목록 조회",
-            description = "회원가입 후 승인을 기다리고 있는(PENDING 상태) 판매자들의 목록을 조회합니다.\n\n" +
-                    "**반환 정보:** 판매자 ID, 이메일, 이름, 마켓명, 연락처, 신청일 (페이징)\n" +
+            summary = "가입 대기 판매자 목록 조회 (구 버전)",
+            description = "회원가입 후 승인을 기다리고 있는(PENDING 상태) 판매자들의 목록을 조회합니다.\n" +
+                    "**참고:** 이 API는 추후 '마켓 가입 신청 관리 목록 조회' API로 대체될 예정입니다.\n\n" +
+                    "**권한:** ADMIN"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = showroomz.global.dto.PageResponse.class))
+            )
+    })
+    ResponseEntity<showroomz.global.dto.PageResponse<SellerDto.PendingSellerResponse>> getPendingSellers(
+            @ParameterObject showroomz.global.dto.PagingRequest pagingRequest
+    );
+
+    @Operation(
+            summary = "마켓 가입 신청 관리 목록 조회",
+            description = "마켓 가입 신청 내역을 조회합니다. 상태별 필터링과 기간 조회가 가능합니다.\n\n" +
+                    "**필터 기능:**\n" +
+                    "- **status**: 판매자 상태 (PENDING: 승인 대기, APPROVED: 승인, REJECTED: 반려, null: 전체)\n" +
+                    "- **startDate / endDate**: 신청일 기준 조회 기간 (YYYY-MM-DD)\n\n" +
+                    "**반환 정보:**\n" +
+                    "- 판매자 및 마켓 기본 정보\n" +
+                    "- 현재 승인 상태 및 반려 사유 (반려된 경우)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
                     "**페이징 파라미터:**\n" +
@@ -39,45 +62,38 @@ public interface AdminMarketControllerDocs {
                             schema = @Schema(implementation = showroomz.global.dto.PageResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "성공 예시",
+                                            name = "목록 조회 예시",
                                             value = "{\n" +
                                                     "  \"content\": [\n" +
                                                     "    {\n" +
                                                     "      \"sellerId\": 1,\n" +
-                                                    "      \"email\": \"seller1@example.com\",\n" +
+                                                    "      \"marketId\": 10,\n" +
+                                                    "      \"email\": \"seller@example.com\",\n" +
                                                     "      \"name\": \"홍길동\",\n" +
                                                     "      \"marketName\": \"멋쟁이 옷장\",\n" +
                                                     "      \"phoneNumber\": \"010-1234-5678\",\n" +
+                                                    "      \"status\": \"PENDING\",\n" +
+                                                    "      \"rejectionReason\": null,\n" +
                                                     "      \"createdAt\": \"2024-01-15T10:30:00\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
                                                     "      \"sellerId\": 2,\n" +
-                                                    "      \"email\": \"seller2@example.com\",\n" +
+                                                    "      \"marketId\": 11,\n" +
+                                                    "      \"email\": \"rejected@example.com\",\n" +
                                                     "      \"name\": \"김철수\",\n" +
-                                                    "      \"marketName\": \"패션 스토어\",\n" +
+                                                    "      \"marketName\": \"빈티지 샵\",\n" +
                                                     "      \"phoneNumber\": \"010-9876-5432\",\n" +
-                                                    "      \"createdAt\": \"2024-01-14T14:20:00\"\n" +
+                                                    "      \"status\": \"REJECTED\",\n" +
+                                                    "      \"rejectionReason\": \"사업자 등록증 식별 불가\",\n" +
+                                                    "      \"createdAt\": \"2024-01-10T09:00:00\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
                                                     "    \"currentPage\": 1,\n" +
-                                                    "    \"totalPages\": 3,\n" +
-                                                    "    \"totalResults\": 25,\n" +
+                                                    "    \"totalPages\": 5,\n" +
+                                                    "    \"totalResults\": 42,\n" +
                                                     "    \"limit\": 20,\n" +
                                                     "    \"hasNext\": true\n" +
-                                                    "  }\n" +
-                                                    "}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "빈 목록 예시",
-                                            value = "{\n" +
-                                                    "  \"content\": [],\n" +
-                                                    "  \"pageInfo\": {\n" +
-                                                    "    \"currentPage\": 1,\n" +
-                                                    "    \"totalPages\": 0,\n" +
-                                                    "    \"totalResults\": 0,\n" +
-                                                    "    \"limit\": 20,\n" +
-                                                    "    \"hasNext\": false\n" +
                                                     "  }\n" +
                                                     "}"
                                     )
@@ -85,8 +101,9 @@ public interface AdminMarketControllerDocs {
                     )
             )
     })
-    ResponseEntity<showroomz.global.dto.PageResponse<SellerDto.PendingSellerResponse>> getPendingSellers(
-            @ParameterObject showroomz.global.dto.PagingRequest pagingRequest
+    ResponseEntity<showroomz.global.dto.PageResponse<AdminMarketDto.ApplicationResponse>> getMarketApplications(
+            @ParameterObject showroomz.global.dto.PagingRequest pagingRequest,
+            @ParameterObject AdminMarketDto.SearchCondition searchCondition
     );
 
     @Operation(
@@ -169,5 +186,3 @@ public interface AdminMarketControllerDocs {
             @RequestBody SellerDto.UpdateStatusRequest request
     );
 }
-
-

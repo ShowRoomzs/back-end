@@ -1,13 +1,12 @@
 package showroomz.api.admin.market.controller;
 
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.admin.docs.AdminMarketControllerDocs;
+import showroomz.api.admin.market.DTO.AdminMarketDto;
 import showroomz.api.admin.market.service.AdminService;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.seller.auth.DTO.SellerDto;
@@ -37,18 +36,23 @@ public class MarketAdminController implements AdminMarketControllerDocs {
     }
 
     @Override
+    @GetMapping("/markets/applications")
+    public ResponseEntity<PageResponse<AdminMarketDto.ApplicationResponse>> getMarketApplications(
+            @ModelAttribute PagingRequest pagingRequest,
+            @ModelAttribute AdminMarketDto.SearchCondition searchCondition) {
+        
+        // 정렬 기준: 신청일 최신순
+        Sort sort = Sort.by(Sort.Direction.DESC, "seller.createdAt");
+        Pageable pageable = pagingRequest.toPageable(sort);
+        
+        PageResponse<AdminMarketDto.ApplicationResponse> response = 
+                adminService.getMarketApplications(searchCondition, pageable);
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
     @PatchMapping("/sellers/{sellerId}/status")
-    // @io.swagger.v3.oas.annotations.Operation(
-    //         parameters = {
-    //                 @Parameter(
-    //                         name = "sellerId",
-    //                         description = "상태를 변경할 판매자(Seller) ID",
-    //                         required = true,
-    //                         example = "1",
-    //                         in = ParameterIn.PATH
-    //                 )
-    //         }
-    // )
     public ResponseEntity<Void> updateSellerStatus(
             @PathVariable("sellerId") Long sellerId,
             @RequestBody SellerDto.UpdateStatusRequest request) {

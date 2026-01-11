@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import showroomz.api.admin.market.DTO.AdminMarketDto;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.repository.SellerRepository;
@@ -17,6 +18,7 @@ import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -75,6 +77,44 @@ public class AdminService {
                 .collect(Collectors.toList());
 
         return new PageResponse<>(content, pendingMarkets);
+    }
+
+    /**
+     * 마켓 가입 신청 목록 조회 (검색 필터 적용)
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<AdminMarketDto.ApplicationResponse> getMarketApplications(
+            AdminMarketDto.SearchCondition condition, Pageable pageable) {
+
+        LocalDateTime startDateTime = condition.getStartDate() != null 
+                ? condition.getStartDate().atStartOfDay() 
+                : null;
+        LocalDateTime endDateTime = condition.getEndDate() != null 
+                ? condition.getEndDate().atTime(LocalTime.MAX) 
+                : null;
+
+        Page<Market> marketPage = marketRepository.searchApplications(
+                condition.getStatus(),
+                startDateTime,
+                endDateTime,
+                pageable
+        );
+
+        List<AdminMarketDto.ApplicationResponse> content = marketPage.getContent().stream()
+                .map(market -> AdminMarketDto.ApplicationResponse.builder()
+                        .sellerId(market.getSeller().getId())
+                        .marketId(market.getId())
+                        .email(market.getSeller().getEmail())
+                        .name(market.getSeller().getName())
+                        .marketName(market.getMarketName())
+                        .phoneNumber(market.getSeller().getPhoneNumber())
+                        .status(market.getSeller().getStatus())
+                        .rejectionReason(market.getSeller().getRejectionReason())
+                        .createdAt(market.getSeller().getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+
+        return new PageResponse<>(content, marketPage);
     }
 }
 
