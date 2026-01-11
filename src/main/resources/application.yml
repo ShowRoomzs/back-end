@@ -38,7 +38,7 @@ jwt:
 
 # CorsProperties.java 관련 설정
 cors:
-  allowed-origins: http://localhost:3000,http://localhost:5173,http://localhost:8080,http://api.showroomz.shop,https://api.showroomz.shop,http://54.180.85.237:8080,https://54.180.85.237:8080
+  allowed-origins: http://localhost:3000,http://localhost:5173,http://localhost:8080,http://api.showroomz.shop,https://api.showroomz.shop,http://54.180.85.237:8080,https://54.180.85.237:8080,https://front-end-partners-one.vercel.app,https://front-end-admin-seven-brown.vercel.app
   allowed-methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
   allowed-headers: '*'
   max-age: 3600
@@ -65,3 +65,5 @@ sentry:
   logging:
     minimum-event-level: error # log.error() 이상은 무조건 Sentry로 보냄
     minimum-breadcrumb-level: info # log.info()는 Sentry 이슈 내의 '타임라인(Breadcrumb)'에 기록으로 남김
+  ignored-exceptions-for-type:
+    - showroomz.api.app.auth.exception.BusinessException

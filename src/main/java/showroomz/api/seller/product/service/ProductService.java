@@ -315,7 +315,10 @@ public class ProductService {
         return convertToProductListItem(product, stockStatus);
     }
 
-    public ProductDto.DeleteProductResponse deleteProduct(String adminEmail, Long productId) {
+    /**
+     * 선택된 상품들을 일괄 삭제
+     */
+    public ProductDto.BatchDeleteResponse batchDeleteProducts(String adminEmail, ProductDto.BatchDeleteRequest request) {
         // 1. Admin과 Market 조회
         Seller admin = adminRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -324,28 +327,60 @@ public class ProductService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         
         // 2. 상품 조회 및 존재 여부 확인
-        Product product = productRepository.findByProductId(productId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+        List<Product> products = productRepository.findAllById(request.getProductIds());
         
-        // 3. 해당 seller의 상품인지 확인
-        if (product.getMarket() == null || !product.getMarket().getId().equals(market.getId())) {
-            throw new BusinessException(ErrorCode.FORBIDDEN);
+        // 존재하지 않는 상품 ID 찾기
+        Set<Long> foundProductIds = products.stream()
+                .map(Product::getProductId)
+                .collect(java.util.stream.Collectors.toSet());
+        List<Long> notFoundProductIds = request.getProductIds().stream()
+                .filter(id -> !foundProductIds.contains(id))
+                .collect(java.util.stream.Collectors.toList());
+        
+        if (!notFoundProductIds.isEmpty()) {
+            String productIdsStr = notFoundProductIds.stream()
+                    .map(String::valueOf)
+                    .collect(java.util.stream.Collectors.joining(", "));
+            String errorMessage = String.format("productId: %s에 대한 상품이 존재하지 않습니다.", productIdsStr);
+            throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND, errorMessage);
         }
         
-        // 4. 상품 삭제
-        productRepository.delete(product);
+        // 3. 본인의 상품인지 확인 및 삭제 대상 수집
+        List<Long> deletedProductIds = new ArrayList<>();
+        List<Long> unauthorizedProductIds = new ArrayList<>();
+        
+        for (Product product : products) {
+            if (product.getMarket() == null || !product.getMarket().getId().equals(market.getId())) {
+                unauthorizedProductIds.add(product.getProductId());
+            } else {
+                deletedProductIds.add(product.getProductId());
+            }
+        }
+        
+        // 권한이 없는 상품이 있으면 에러 발생
+        if (!unauthorizedProductIds.isEmpty()) {
+            String productIdsStr = unauthorizedProductIds.stream()
+                    .map(String::valueOf)
+                    .collect(java.util.stream.Collectors.joining(", "));
+            String errorMessage = String.format("productId: %s에 대한 권한이 없습니다.", productIdsStr);
+            throw new BusinessException(ErrorCode.FORBIDDEN, errorMessage);
+        }
+        
+        // 4. 상품 일괄 삭제
+        productRepository.deleteAll(products);
         
         // 5. 응답 생성
-        return ProductDto.DeleteProductResponse.builder()
-                .productId(productId)
-                .message("상품이 성공적으로 삭제되었습니다.")
+        return ProductDto.BatchDeleteResponse.builder()
+                .productIds(deletedProductIds)
+                .count(deletedProductIds.size())
+                .message(deletedProductIds.size() + "개의 상품이 성공적으로 삭제되었습니다.")
                 .build();
     }
     
     /**
-     * 선택된 상품들의 품절 상태를 토글 처리 (품절 ↔ 품절 해제)
+     * 선택된 상품들의 품절 상태를 명시적으로 설정
      */
-    public ProductDto.BatchUpdateResponse batchToggleStockStatus(String adminEmail, ProductDto.BatchUpdateRequest request) {
+    public ProductDto.BatchUpdateResponse batchUpdateStockStatus(String adminEmail, ProductDto.BatchStockStatusRequest request) {
         // 1. Admin과 Market 조회
         Seller admin = adminRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -360,26 +395,17 @@ public class ProductService {
             throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
         }
         
-        // 3. 본인의 상품인지 확인 및 품절 상태 토글 처리
+        // 3. 본인의 상품인지 확인 및 품절 상태 설정
         List<Long> processedProductIds = new ArrayList<>();
         List<Long> unauthorizedProductIds = new ArrayList<>();
-        int outOfStockCount = 0;
-        int inStockCount = 0;
         
         for (Product product : products) {
             if (product.getMarket() == null || !product.getMarket().getId().equals(market.getId())) {
                 unauthorizedProductIds.add(product.getProductId());
             } else {
-                // 토글: 현재 품절 상태면 품절 해제, 아니면 품절 처리
-                boolean newStatus = !product.getIsOutOfStockForced();
-                product.setIsOutOfStockForced(newStatus);
+                // 요청받은 상태로 명시적 설정
+                product.setIsOutOfStockForced(request.getIsOutOfStocked());
                 processedProductIds.add(product.getProductId());
-                
-                if (newStatus) {
-                    outOfStockCount++;
-                } else {
-                    inStockCount++;
-                }
             }
         }
         
@@ -397,13 +423,10 @@ public class ProductService {
         
         // 5. 응답 메시지 생성
         String message;
-        if (outOfStockCount > 0 && inStockCount > 0) {
-            message = String.format("%d개의 상품이 품절 처리되었고, %d개의 상품이 품절 해제되었습니다.", 
-                    outOfStockCount, inStockCount);
-        } else if (outOfStockCount > 0) {
-            message = String.format("%d개의 상품이 성공적으로 품절 처리되었습니다.", outOfStockCount);
+        if (request.getIsOutOfStocked()) {
+            message = String.format("%d개의 상품이 성공적으로 품절 처리되었습니다.", processedProductIds.size());
         } else {
-            message = String.format("%d개의 상품이 성공적으로 품절 해제되었습니다.", inStockCount);
+            message = String.format("%d개의 상품이 성공적으로 품절 해제되었습니다.", processedProductIds.size());
         }
         
         // 6. 응답 생성
@@ -415,9 +438,9 @@ public class ProductService {
     }
     
     /**
-     * 선택된 상품들의 진열 상태를 토글 처리 (미진열 ↔ 진열)
+     * 선택된 상품들의 진열 상태를 명시적으로 설정
      */
-    public ProductDto.BatchUpdateResponse batchToggleDisplayStatus(String adminEmail, ProductDto.BatchUpdateRequest request) {
+    public ProductDto.BatchUpdateResponse batchUpdateDisplayStatus(String adminEmail, ProductDto.BatchDisplayStatusRequest request) {
         // 1. Admin과 Market 조회
         Seller admin = adminRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -432,26 +455,17 @@ public class ProductService {
             throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
         }
         
-        // 3. 본인의 상품인지 확인 및 진열 상태 토글 처리
+        // 3. 본인의 상품인지 확인 및 진열 상태 설정
         List<Long> processedProductIds = new ArrayList<>();
         List<Long> unauthorizedProductIds = new ArrayList<>();
-        int undisplayedCount = 0;
-        int displayedCount = 0;
         
         for (Product product : products) {
             if (product.getMarket() == null || !product.getMarket().getId().equals(market.getId())) {
                 unauthorizedProductIds.add(product.getProductId());
             } else {
-                // 토글: 현재 미진열 상태면 진열, 아니면 미진열 처리
-                boolean newStatus = !product.getIsDisplay();
-                product.setIsDisplay(newStatus);
+                // 요청받은 상태로 명시적 설정
+                product.setIsDisplay(request.getIsDisplayed());
                 processedProductIds.add(product.getProductId());
-                
-                if (newStatus) {
-                    displayedCount++;
-                } else {
-                    undisplayedCount++;
-                }
             }
         }
         
@@ -469,13 +483,10 @@ public class ProductService {
         
         // 5. 응답 메시지 생성
         String message;
-        if (undisplayedCount > 0 && displayedCount > 0) {
-            message = String.format("%d개의 상품이 미진열 처리되었고, %d개의 상품이 진열 처리되었습니다.", 
-                    undisplayedCount, displayedCount);
-        } else if (undisplayedCount > 0) {
-            message = String.format("%d개의 상품이 성공적으로 미진열 처리되었습니다.", undisplayedCount);
+        if (request.getIsDisplayed()) {
+            message = String.format("%d개의 상품이 성공적으로 진열 처리되었습니다.", processedProductIds.size());
         } else {
-            message = String.format("%d개의 상품이 성공적으로 진열 처리되었습니다.", displayedCount);
+            message = String.format("%d개의 상품이 성공적으로 미진열 처리되었습니다.", processedProductIds.size());
         }
         
         // 6. 응답 생성

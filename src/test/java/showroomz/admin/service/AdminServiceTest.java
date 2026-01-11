@@ -179,7 +179,7 @@ class AdminServiceTest {
                     .willReturn(refreshToken);
 
             // when
-            TokenResponse response = adminService.login(request);
+            TokenResponse response = adminService.loginSeller(request);
 
             // then
             assertThat(response.getAccessToken()).isEqualTo("accessToken");
@@ -198,7 +198,7 @@ class AdminServiceTest {
             given(adminRepository.findByEmail(request.getEmail())).willReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> adminService.login(request))
+            assertThatThrownBy(() -> adminService.loginSeller(request))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.INVALID_CREDENTIALS);
@@ -217,7 +217,7 @@ class AdminServiceTest {
             given(passwordEncoder.matches(request.getPassword(), admin.getPassword())).willReturn(false);
 
             // when & then
-            assertThatThrownBy(() -> adminService.login(request))
+            assertThatThrownBy(() -> adminService.loginSeller(request))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.INVALID_CREDENTIALS);

@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
@@ -529,28 +528,36 @@ public interface ProductControllerDocs {
     );
 
     @Operation(
-            summary = "상품 삭제",
-            description = "백스테이지 관리자가 자신의 상품을 삭제합니다.\n\n" +
+            summary = "상품 일괄 삭제",
+            description = "선택된 여러 상품을 일괄적으로 삭제합니다.\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "상품 삭제 성공",
+                    description = "일괄 삭제 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ProductDto.DeleteProductResponse.class),
+                            schema = @Schema(implementation = ProductDto.BatchDeleteResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "성공 예시",
                                             value = "{\n" +
-                                                    "  \"productId\": 1,\n" +
-                                                    "  \"message\": \"상품이 성공적으로 삭제되었습니다.\"\n" +
-                                                    "}",
-                                            description = "상품이 성공적으로 삭제되었습니다."
+                                                    "  \"productIds\": [1, 2, 3],\n" +
+                                                    "  \"count\": 3,\n" +
+                                                    "  \"message\": \"3개의 상품이 성공적으로 삭제되었습니다.\"\n" +
+                                                    "}"
                                     )
                             }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "입력값 형식 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ValidationErrorResponse.class)
                     )
             ),
             @ApiResponse(
@@ -558,16 +565,7 @@ public interface ProductControllerDocs {
                     description = "인증 실패",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class),
-                            examples = {
-                                    @ExampleObject(
-                                            name = "인증 실패 예시",
-                                            value = "{\n" +
-                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
-                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
-                                                    "}"
-                                    )
-                            }
+                            schema = @Schema(implementation = ErrorResponse.class)
                     )
             ),
             @ApiResponse(
@@ -581,7 +579,7 @@ public interface ProductControllerDocs {
                                             name = "권한 없음 예시",
                                             value = "{\n" +
                                                     "  \"code\": \"FORBIDDEN\",\n" +
-                                                    "  \"message\": \"권한이 없습니다.\"\n" +
+                                                    "  \"message\": \"productId: 1, 3에 대한 권한이 없습니다.\"\n" +
                                                     "}"
                                     )
                             }
@@ -592,34 +590,36 @@ public interface ProductControllerDocs {
                     description = "상품을 찾을 수 없음",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class),
-                            examples = {
-                                    @ExampleObject(
-                                            name = "상품 없음 예시",
-                                            value = "{\n" +
-                                                    "  \"code\": \"PRODUCT_NOT_FOUND\",\n" +
-                                                    "  \"message\": \"존재하지 않는 상품입니다.\"\n" +
-                                                    "}"
-                                    )
-                            }
+                            schema = @Schema(implementation = ErrorResponse.class)
                     )
             )
     })
-    ResponseEntity<ProductDto.DeleteProductResponse> deleteProduct(
-            @Parameter(
-                    description = "삭제할 상품 ID",
-                    required = true,
-                    example = "1"
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "삭제할 상품 ID 목록",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ProductDto.BatchDeleteRequest.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "요청 예시",
+                                    value = "{\n" +
+                                            "  \"productIds\": [1, 2, 3]\n" +
+                                            "}"
+                            )
+                    }
             )
-            @PathVariable Long productId
+    )
+    ResponseEntity<ProductDto.BatchDeleteResponse> batchDeleteProducts(
+            @RequestBody ProductDto.BatchDeleteRequest request
     );
 
     @Operation(
             summary = "상품 일괄 품절/품절 해제 처리",
-            description = "선택된 여러 상품의 품절 상태를 일괄적으로 토글 처리합니다.\n\n" +
+            description = "선택된 여러 상품의 품절 상태를 지정한 값으로 일괄 변경합니다.\n\n" +
                     "**동작 방식:**\n" +
-                    "- 현재 품절 상태인 상품 → 품절 해제\n" +
-                    "- 현재 품절 해제 상태인 상품 → 품절 처리\n\n" +
+                    "- `isOutOfStocked: true` → 품절 처리\n" +
+                    "- `isOutOfStocked: false` → 품절 해제\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -646,14 +646,6 @@ public interface ProductControllerDocs {
                                                     "  \"count\": 3,\n" +
                                                     "  \"message\": \"3개의 상품이 성공적으로 품절 해제되었습니다.\"\n" +
                                                     "}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "성공 예시 (혼합)",
-                                            value = "{\n" +
-                                                    "  \"productIds\": [1, 2, 3],\n" +
-                                                    "  \"count\": 3,\n" +
-                                                    "  \"message\": \"2개의 상품이 품절 처리되었고, 1개의 상품이 품절 해제되었습니다.\"\n" +
-                                                    "}"
                                     )
                             }
                     )
@@ -692,31 +684,39 @@ public interface ProductControllerDocs {
             )
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "품절 상태를 토글할 상품 ID 목록",
+            description = "품절 상태를 변경할 상품 ID 목록 및 품절 상태",
             required = true,
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ProductDto.BatchUpdateRequest.class),
+                    schema = @Schema(implementation = ProductDto.BatchStockStatusRequest.class),
                     examples = {
                             @ExampleObject(
-                                    name = "요청 예시",
+                                    name = "품절 처리 요청 예시",
                                     value = "{\n" +
-                                            "  \"productIds\": [1, 2, 3]\n" +
+                                            "  \"productIds\": [1, 2, 3],\n" +
+                                            "  \"isOutOfStocked\": true\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "품절 해제 요청 예시",
+                                    value = "{\n" +
+                                            "  \"productIds\": [1, 2, 3],\n" +
+                                            "  \"isOutOfStocked\": false\n" +
                                             "}"
                             )
                     }
             )
     )
-    ResponseEntity<ProductDto.BatchUpdateResponse> batchToggleStockStatus(
-            @RequestBody ProductDto.BatchUpdateRequest request
+    ResponseEntity<ProductDto.BatchUpdateResponse> batchUpdateStockStatus(
+            @RequestBody ProductDto.BatchStockStatusRequest request
     );
 
     @Operation(
             summary = "상품 일괄 미진열/진열 처리",
-            description = "선택된 여러 상품의 진열 상태를 일괄적으로 토글 처리합니다.\n\n" +
+            description = "선택된 여러 상품의 진열 상태를 지정한 값으로 일괄 변경합니다.\n\n" +
                     "**동작 방식:**\n" +
-                    "- 현재 미진열 상태인 상품 → 진열 처리\n" +
-                    "- 현재 진열 상태인 상품 → 미진열 처리\n\n" +
+                    "- `isDisplayed: true` → 진열 처리\n" +
+                    "- `isDisplayed: false` → 미진열 처리\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -743,14 +743,6 @@ public interface ProductControllerDocs {
                                                     "  \"count\": 3,\n" +
                                                     "  \"message\": \"3개의 상품이 성공적으로 진열 처리되었습니다.\"\n" +
                                                     "}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "성공 예시 (혼합)",
-                                            value = "{\n" +
-                                                    "  \"productIds\": [1, 2, 3],\n" +
-                                                    "  \"count\": 3,\n" +
-                                                    "  \"message\": \"2개의 상품이 미진열 처리되었고, 1개의 상품이 진열 처리되었습니다.\"\n" +
-                                                    "}"
                                     )
                             }
                     )
@@ -789,23 +781,31 @@ public interface ProductControllerDocs {
             )
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "진열 상태를 토글할 상품 ID 목록",
+            description = "진열 상태를 변경할 상품 ID 목록 및 진열 상태",
             required = true,
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = ProductDto.BatchUpdateRequest.class),
+                    schema = @Schema(implementation = ProductDto.BatchDisplayStatusRequest.class),
                     examples = {
                             @ExampleObject(
-                                    name = "요청 예시",
+                                    name = "진열 처리 요청 예시",
                                     value = "{\n" +
-                                            "  \"productIds\": [1, 2, 3]\n" +
+                                            "  \"productIds\": [1, 2, 3],\n" +
+                                            "  \"isDisplayed\": true\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "미진열 처리 요청 예시",
+                                    value = "{\n" +
+                                            "  \"productIds\": [1, 2, 3],\n" +
+                                            "  \"isDisplayed\": false\n" +
                                             "}"
                             )
                     }
             )
     )
-    ResponseEntity<ProductDto.BatchUpdateResponse> batchToggleDisplayStatus(
-            @RequestBody ProductDto.BatchUpdateRequest request
+    ResponseEntity<ProductDto.BatchUpdateResponse> batchUpdateDisplayStatus(
+            @RequestBody ProductDto.BatchDisplayStatusRequest request
     );
 }
 
