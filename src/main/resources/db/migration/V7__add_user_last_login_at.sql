@@ -1,5 +1,5 @@
--- 1. 컬럼 추가
-ALTER TABLE USERS ADD COLUMN LAST_LOGIN_AT DATETIME;
+-- 4. last_login_at 컬럼 추가 (테이블명 users 소문자 통일)
+ALTER TABLE users ADD COLUMN last_login_at DATETIME;
 
--- 2. 기존 데이터 업데이트 (가입일로 설정)
-UPDATE USERS SET LAST_LOGIN_AT = CREATED_AT WHERE LAST_LOGIN_AT IS NULL;
+-- 5. 기존 데이터 업데이트 (테이블명 users 소문자 통일, 컬럼명도 소문자 권장)
+UPDATE users SET last_login_at = created_at WHERE last_login_at IS NULL;
