@@ -7,8 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.seller.auth.repository.SellerRepository;
+import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.api.seller.market.DTO.MarketDto;
-import showroomz.api.seller.market.type.MarketImageStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
@@ -51,7 +51,8 @@ public class MarketService {
      */
     @Transactional(readOnly = true)
     public MarketDto.CheckMarketNameResponse checkMarketName(String marketName) {
-        if (marketRepository.existsByMarketName(marketName)) {
+        // REJECTED 상태가 아닌 판매자의 마켓명만 체크 (반려된 계정의 마켓명은 재사용 가능)
+        if (marketRepository.existsByMarketNameAndSellerStatusNotRejected(marketName, SellerStatus.REJECTED)) {
             return new MarketDto.CheckMarketNameResponse(false, "DUPLICATE", "이미 사용 중인 마켓명입니다.");
         }
         return new MarketDto.CheckMarketNameResponse(true, "AVAILABLE", "사용 가능한 마켓명입니다.");
@@ -92,7 +93,8 @@ public class MarketService {
 
         // 1. 마켓명 변경 및 중복 검증 (이름이 변경된 경우에만)
         if (request.getMarketName() != null && !request.getMarketName().equals(market.getMarketName())) {
-            if (marketRepository.existsByMarketName(request.getMarketName())) {
+            // REJECTED 상태가 아닌 판매자의 마켓명만 체크 (반려된 계정의 마켓명은 재사용 가능)
+            if (marketRepository.existsByMarketNameAndSellerStatusNotRejected(request.getMarketName(), SellerStatus.REJECTED)) {
                 throw new BusinessException(ErrorCode.DUPLICATE_MARKET_NAME);
             }
             market.setMarketName(request.getMarketName());
