@@ -32,7 +32,7 @@ public class UserAdminController {
             summary = "일반 유저 목록 조회",
             description = "가입 채널, 가입일, 활동 상태별 필터링 및 페이징 조회\n\n" +
                     "**필터 기능:**\n" +
-                    "- providerType: 가입 채널 (GOOGLE, FACEBOOK, NAVER, KAKAO, APPLE, LOCAL)\n" +
+                    "- providerType: 가입 채널 (GOOGLE, NAVER, KAKAO, APPLE)\n" +
                     "- status: 활동 상태 (NORMAL, DORMANT, WITHDRAWN)\n" +
                     "- startDate / endDate: 가입일 기준 조회 기간 (YYYY-MM-DD)\n\n" +
                     "**권한:** ADMIN\n" +

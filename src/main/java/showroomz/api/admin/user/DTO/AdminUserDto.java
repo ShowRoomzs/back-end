@@ -18,7 +18,11 @@ public class AdminUserDto {
     @AllArgsConstructor
     @Schema(description = "유저 목록 검색 조건")
     public static class SearchCondition {
-        @Schema(description = "가입 채널 (GOOGLE, FACEBOOK, NAVER, KAKAO, APPLE, LOCAL)", example = "GOOGLE")
+        @Schema(
+                description = "가입 채널 (GOOGLE, NAVER, KAKAO, APPLE)",
+                example = "GOOGLE",
+                allowableValues = {"GOOGLE", "NAVER", "KAKAO", "APPLE"}
+        )
         private ProviderType providerType;
 
         @Schema(description = "활동 상태 (NORMAL, DORMANT, WITHDRAWN)", example = "NORMAL")
