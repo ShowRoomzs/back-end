@@ -22,10 +22,13 @@ public interface AdminMarketControllerDocs {
 
     @Operation(
             summary = "판매자 가입 신청 관리 목록 조회",
-            description = "판매자 가입 신청 내역을 조회합니다. 상태별 필터링과 기간 조회가 가능합니다.\n\n" +
+            description = "판매자 가입 신청 내역을 조회합니다. 상태별 필터링, 기간 조회, 키워드 검색이 가능합니다.\n\n" +
                     "**필터 기능:**\n" +
                     "- **status**: 판매자 상태 (PENDING: 승인 대기, APPROVED: 승인, REJECTED: 반려, null: 전체)\n" +
-                    "- **startDate / endDate**: 신청일 기준 조회 기간 (YYYY-MM-DD)\n\n" +
+                    "- **startDate / endDate**: 신청일 기준 조회 기간 (YYYY-MM-DD)\n" +
+                    "- **keyword**: 검색어 (부분 일치 검색)\n" +
+                    "- **keywordType**: 검색 타입 (SELLER_ID: 신청 ID, MARKET_NAME: 마켓명, NAME: 담당자 이름, PHONE_NUMBER: 연락처)\n\n" +
+
                     "**반환 정보:**\n" +
                     "- 판매자 및 마켓 기본 정보\n" +
                     "- 현재 승인 상태 및 반려 사유 (반려된 경우)\n\n" +

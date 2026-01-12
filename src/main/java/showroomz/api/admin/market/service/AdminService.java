@@ -115,10 +115,17 @@ public class AdminService {
                 ? condition.getEndDate().atTime(LocalTime.MAX) 
                 : null;
 
+        // Enum 타입을 String으로 변환 (null 체크 포함)
+        String keywordTypeStr = condition.getKeywordType() != null 
+                ? condition.getKeywordType().name() 
+                : null;
+
         Page<Market> marketPage = marketRepository.searchApplications(
                 condition.getStatus(),
                 startDateTime,
                 endDateTime,
+                condition.getKeyword(),
+                keywordTypeStr,
                 pageable
         );
 

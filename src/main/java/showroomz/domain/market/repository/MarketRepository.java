@@ -26,14 +26,22 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
     // Seller의 Status가 PENDING인 마켓 목록 조회 (페이징)
     Page<Market> findAllBySeller_Status(SellerStatus status, Pageable pageable);
 
-    // 검색 조건(상태, 기간)에 따른 마켓 목록 조회
+    // 검색 조건(상태, 기간, 키워드)에 따른 마켓 목록 조회
     @Query("SELECT m FROM Market m JOIN FETCH m.seller s " +
            "WHERE (:status IS NULL OR s.status = :status) " +
            "AND (:startDate IS NULL OR s.createdAt >= :startDate) " +
-           "AND (:endDate IS NULL OR s.createdAt <= :endDate)")
+           "AND (:endDate IS NULL OR s.createdAt <= :endDate) " +
+           "AND (:keyword IS NULL OR :keyword = '' OR " +
+           "    (:keywordType = 'SELLER_ID'    AND CAST(s.id AS string) LIKE CONCAT('%', :keyword, '%')) OR " +
+           "    (:keywordType = 'MARKET_NAME'  AND m.marketName LIKE CONCAT('%', :keyword, '%')) OR " +
+           "    (:keywordType = 'NAME'         AND s.name LIKE CONCAT('%', :keyword, '%')) OR " +
+           "    (:keywordType = 'PHONE_NUMBER' AND s.phoneNumber LIKE CONCAT('%', :keyword, '%'))" +
+           ")")
     Page<Market> searchApplications(@Param("status") SellerStatus status,
                                     @Param("startDate") LocalDateTime startDate,
                                     @Param("endDate") LocalDateTime endDate,
+                                    @Param("keyword") String keyword,
+                                    @Param("keywordType") String keywordType,
                                     Pageable pageable);
 }
 
