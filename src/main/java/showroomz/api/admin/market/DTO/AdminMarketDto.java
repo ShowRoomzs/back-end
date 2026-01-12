@@ -108,6 +108,9 @@ public class AdminMarketDto {
         @Schema(description = "거부 사유 (반려 시)", example = "서류 미비")
         private String rejectionReason;
 
+        @Schema(description = "고객센터 전화번호", example = "02-1234-5678")
+        private String csNumber;
+
         @Schema(description = "가입 신청일", example = "2024-01-01T12:00:00")
         private LocalDateTime createdAt;
     }

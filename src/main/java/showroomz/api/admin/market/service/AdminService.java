@@ -97,6 +97,7 @@ public class AdminService {
                 .phoneNumber(seller.getPhoneNumber())
                 .status(seller.getStatus())
                 .rejectionReason(seller.getRejectionReason())
+                .csNumber(market.getCsNumber())
                 .createdAt(seller.getCreatedAt())
                 .build();
     }
