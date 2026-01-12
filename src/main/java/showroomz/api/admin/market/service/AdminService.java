@@ -146,5 +146,22 @@ public class AdminService {
 
         return new PageResponse<>(content, marketPage);
     }
+
+    /**
+     * 마켓 목록 조회 (어드민용)
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<AdminMarketDto.MarketResponse> getMarkets(
+            AdminMarketDto.MarketListSearchCondition condition, Pageable pageable) {
+
+        Page<AdminMarketDto.MarketResponse> page = marketRepository.findMarketsWithProductCount(
+                condition.getMainCategory(),
+                condition.getMarketName(),
+                SellerStatus.APPROVED,
+                pageable
+        );
+
+        return new PageResponse<>(page.getContent(), page);
+    }
 }
 

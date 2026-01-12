@@ -44,6 +44,49 @@ public class AdminMarketDto {
     }
 
     @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "어드민 마켓 목록 검색 조건")
+    public static class MarketListSearchCondition {
+
+        @Schema(description = "대표 카테고리 (대분류) 필터", example = "의류")
+        private String mainCategory;
+
+        @Schema(description = "마켓명 검색어", example = "멋쟁이")
+        private String marketName;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "어드민 마켓 목록 응답 (상품 수 포함)")
+    public static class MarketResponse {
+
+        @Schema(description = "마켓 ID", example = "10")
+        private Long marketId;
+
+        @Schema(description = "마켓명", example = "멋쟁이 옷장")
+        private String marketName;
+
+        @Schema(description = "대표 카테고리", example = "의류")
+        private String mainCategory;
+
+        @Schema(description = "판매자명 (담당자)", example = "홍길동")
+        private String sellerName;
+
+        @Schema(description = "연락처", example = "010-1234-5678")
+        private String phoneNumber;
+
+        @Schema(description = "등록 상품 수", example = "120")
+        private Long productCount;
+
+        @Schema(description = "입점일", example = "2024-01-01T10:00:00")
+        private LocalDateTime createdAt;
+    }
+
+    @Getter
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor

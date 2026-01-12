@@ -8,11 +8,9 @@ import org.springframework.web.bind.annotation.*;
 import showroomz.api.admin.docs.AdminMarketControllerDocs;
 import showroomz.api.admin.market.DTO.AdminMarketDto;
 import showroomz.api.admin.market.service.AdminService;
-import showroomz.api.admin.market.type.RejectionReasonType;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.type.SellerStatus;
-import showroomz.api.seller.market.service.MarketService;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.ErrorCode;
@@ -22,7 +20,6 @@ import showroomz.global.error.exception.ErrorCode;
 @RequiredArgsConstructor
 public class MarketAdminController implements AdminMarketControllerDocs {
 
-    private final MarketService marketService;
     private final AdminService adminService;
 
     @Override
@@ -38,6 +35,22 @@ public class MarketAdminController implements AdminMarketControllerDocs {
         PageResponse<AdminMarketDto.ApplicationResponse> response = 
                 adminService.getMarketApplications(searchCondition, pageable);
         
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @GetMapping("/markets")
+    public ResponseEntity<PageResponse<AdminMarketDto.MarketResponse>> getMarkets(
+            @ModelAttribute PagingRequest pagingRequest,
+            @ModelAttribute AdminMarketDto.MarketListSearchCondition searchCondition) {
+
+        // 기본 정렬: 입점일(판매자 생성일) 내림차순
+        Sort sort = Sort.by(Sort.Direction.DESC, "seller.createdAt");
+        Pageable pageable = pagingRequest.toPageable(sort);
+
+        PageResponse<AdminMarketDto.MarketResponse> response =
+                adminService.getMarkets(searchCondition, pageable);
+
         return ResponseEntity.ok(response);
     }
 

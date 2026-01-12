@@ -92,6 +92,30 @@ public interface AdminMarketControllerDocs {
     );
 
     @Operation(
+            summary = "마켓 목록 조회",
+            description = "어드민용 마켓 목록을 조회합니다. 승인된(APPROVED) 판매자의 마켓만 조회하며, 카테고리 필터와 마켓명 검색을 지원합니다.\n\n" +
+                    "**필터/검색:**\n" +
+                    "- mainCategory: 대표 카테고리(대분류)\n" +
+                    "- marketName: 마켓명 검색어 (부분 일치)\n\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = showroomz.global.dto.PageResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<showroomz.global.dto.PageResponse<AdminMarketDto.MarketResponse>> getMarkets(
+            @ParameterObject showroomz.global.dto.PagingRequest pagingRequest,
+            @ParameterObject AdminMarketDto.MarketListSearchCondition searchCondition
+    );
+
+    @Operation(
             summary = "판매자 상세 정보 조회",
             description = "특정 판매자의 상세 정보(판매자 정보 및 마켓 정보)를 조회합니다.\n\n" +
                     "**권한:** ADMIN\n" +
