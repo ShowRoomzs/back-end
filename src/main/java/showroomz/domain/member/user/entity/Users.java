@@ -102,6 +102,10 @@ public class Users {
     @Enumerated(EnumType.STRING)
     private UserStatus status;
 
+    // 최근 접속일
+    @Column(name = "LAST_LOGIN_AT")
+    private LocalDateTime lastLoginAt;
+
     public Users(
             @NotNull @Size(max = 64) String username,
             @NotNull @Size(max = 100) String nickname,
