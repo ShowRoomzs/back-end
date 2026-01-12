@@ -27,6 +27,20 @@ public class AdminMarketDto {
         @Schema(description = "조회 종료일 (YYYY-MM-DD)", example = "2024-12-31")
         @DateTimeFormat(pattern = "yyyy-MM-dd")
         private LocalDate endDate;
+
+        @Schema(description = "검색어 (부분 일치 검색, keywordType과 함께 사용)", example = "홍길동")
+        private String keyword;
+
+        @Schema(
+                description = "검색 타입\n" +
+                        "- SELLER_ID: 신청 ID로 검색\n" +
+                        "- MARKET_NAME: 마켓명으로 검색\n" +
+                        "- NAME: 담당자 이름으로 검색\n" +
+                        "- PHONE_NUMBER: 연락처로 검색",
+                example = "NAME",
+                allowableValues = {"SELLER_ID", "MARKET_NAME", "NAME", "PHONE_NUMBER"}
+        )
+        private KeywordType keywordType;
     }
 
     @Getter
@@ -96,5 +110,20 @@ public class AdminMarketDto {
 
         @Schema(description = "가입 신청일", example = "2024-01-01T12:00:00")
         private LocalDateTime createdAt;
+    }
+
+    /**
+     * 검색 타입 Enum
+     */
+    @Getter
+    @AllArgsConstructor
+    @Schema(description = "키워드 검색 타입")
+    public enum KeywordType {
+        SELLER_ID("신청 ID"),
+        MARKET_NAME("마켓명"),
+        NAME("담당자 이름"),
+        PHONE_NUMBER("연락처");
+
+        private final String description;
     }
 }
