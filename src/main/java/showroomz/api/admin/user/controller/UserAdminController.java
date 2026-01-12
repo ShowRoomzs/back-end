@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -61,6 +62,78 @@ public class UserAdminController {
                     @Parameter(name = "endDate", description = "가입일 조회 종료 날짜 (yyyy-MM-dd)", example = "2024-12-31", in = ParameterIn.QUERY)
             }
     )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = showroomz.global.dto.PageResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "목록 조회 예시",
+                                            value = "{\n" +
+                                                    "  \"content\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"userId\": 1,\n" +
+                                                    "      \"email\": \"user@example.com\",\n" +
+                                                    "      \"nickname\": \"홍길동\",\n" +
+                                                    "      \"providerType\": \"GOOGLE\",\n" +
+                                                    "      \"createdAt\": \"2024-01-01T10:00:00\",\n" +
+                                                    "      \"lastLoginAt\": \"2024-01-15T14:30:00\",\n" +
+                                                    "      \"status\": \"NORMAL\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"userId\": 2,\n" +
+                                                    "      \"email\": \"user2@example.com\",\n" +
+                                                    "      \"nickname\": \"김철수\",\n" +
+                                                    "      \"providerType\": \"NAVER\",\n" +
+                                                    "      \"createdAt\": \"2024-01-05T09:00:00\",\n" +
+                                                    "      \"lastLoginAt\": \"2024-01-20T16:45:00\",\n" +
+                                                    "      \"status\": \"NORMAL\"\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"pageInfo\": {\n" +
+                                                    "    \"currentPage\": 1,\n" +
+                                                    "    \"totalPages\": 5,\n" +
+                                                    "    \"totalResults\": 42,\n" +
+                                                    "    \"limit\": 20,\n" +
+                                                    "    \"hasNext\": true\n" +
+                                                    "  }\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\"code\": \"UNAUTHORIZED\", \"message\": \"인증 정보가 유효하지 않습니다.\"}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "권한 없음",
+                                            value = "{\"code\": \"FORBIDDEN\", \"message\": \"접근 권한이 없습니다.\"}"
+                                    )
+                            }
+                    )
+            )
+    })
     @GetMapping
     public ResponseEntity<PageResponse<AdminUserDto.UserResponse>> getUsers(
             @ParameterObject @ModelAttribute PagingRequest pagingRequest,
