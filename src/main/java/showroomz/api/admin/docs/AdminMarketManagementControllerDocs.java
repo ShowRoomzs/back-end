@@ -42,7 +42,69 @@ public interface AdminMarketManagementControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = showroomz.global.dto.PageResponse.class)
+                            schema = @Schema(implementation = showroomz.global.dto.PageResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "목록 조회 예시",
+                                            value = "{\n" +
+                                                    "  \"content\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"marketId\": 10,\n" +
+                                                    "      \"marketName\": \"멋쟁이 옷장\",\n" +
+                                                    "      \"mainCategory\": \"의류\",\n" +
+                                                    "      \"sellerName\": \"홍길동\",\n" +
+                                                    "      \"phoneNumber\": \"010-1234-5678\",\n" +
+                                                    "      \"productCount\": 120,\n" +
+                                                    "      \"createdAt\": \"2024-01-01T10:00:00\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"marketId\": 11,\n" +
+                                                    "      \"marketName\": \"빈티지 샵\",\n" +
+                                                    "      \"mainCategory\": \"액세서리\",\n" +
+                                                    "      \"sellerName\": \"김철수\",\n" +
+                                                    "      \"phoneNumber\": \"010-9876-5432\",\n" +
+                                                    "      \"productCount\": 85,\n" +
+                                                    "      \"createdAt\": \"2024-01-05T14:30:00\"\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"pageInfo\": {\n" +
+                                                    "    \"currentPage\": 1,\n" +
+                                                    "    \"totalPages\": 5,\n" +
+                                                    "    \"totalResults\": 42,\n" +
+                                                    "    \"limit\": 20,\n" +
+                                                    "    \"hasNext\": true\n" +
+                                                    "  }\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\"code\": \"UNAUTHORIZED\", \"message\": \"인증 정보가 유효하지 않습니다.\"}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "권한 없음",
+                                            value = "{\"code\": \"FORBIDDEN\", \"message\": \"접근 권한이 없습니다.\"}"
+                                    )
+                            }
                     )
             )
     })

@@ -9,8 +9,10 @@ import showroomz.api.app.auth.refreshToken.UserRefreshToken;
 import showroomz.api.app.auth.refreshToken.UserRefreshTokenRepository;
 import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
+import showroomz.api.app.user.repository.UserRepository;
 import showroomz.global.config.properties.AppProperties;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Service
@@ -20,6 +22,8 @@ public class AuthService {
     private final AppProperties appProperties;
     private final AuthTokenProvider tokenProvider;
     private final UserRefreshTokenRepository userRefreshTokenRepository;
+    // 사용자 정보 업데이트를 위한 Repository
+    private final UserRepository userRepository;
 
     /**
      * 토큰 생성 및 DB 저장
@@ -31,6 +35,12 @@ public class AuthService {
      */
     public TokenResponse generateTokens(String username, RoleType roleType, Long userPk, boolean isNewMember) {
         Date now = new Date();
+        
+        // 최근 접속일 업데이트 로직
+        userRepository.findByUsername(username).ifPresent(user -> {
+            user.setLastLoginAt(LocalDateTime.now());
+            userRepository.save(user);
+        });
         
         // Access Token 생성
         long accessTokenExpiry = appProperties.getAuth().getTokenExpiry();

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
+import showroomz.domain.member.user.type.UserStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -97,6 +98,14 @@ public class Users {
     @Column(name = "MARKETING_AGREE")
     private boolean marketingAgree;
 
+    @Column(name = "STATUS", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private UserStatus status;
+
+    // 최근 접속일
+    @Column(name = "LAST_LOGIN_AT")
+    private LocalDateTime lastLoginAt;
+
     public Users(
             @NotNull @Size(max = 64) String username,
             @NotNull @Size(max = 100) String nickname,
@@ -118,6 +127,12 @@ public class Users {
         this.roleType = roleType;
         this.createdAt = createdAt;
         this.modifiedAt = modifiedAt;
+        this.status = UserStatus.NORMAL; // 생성 시 기본값 설정
+    }
+
+    // 상태 변경을 위한 메서드 추가 (비즈니스 로직용)
+    public void updateStatus(UserStatus status) {
+        this.status = status;
     }
 }
 
