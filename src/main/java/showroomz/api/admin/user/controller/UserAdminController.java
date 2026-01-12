@@ -114,7 +114,7 @@ public class UserAdminController {
                     example = "1",
                     in = ParameterIn.PATH
             )
-            @PathVariable Long userId) {
+            @PathVariable("userId") Long userId) {
         AdminUserDto.UserDetailResponse response = adminUserService.getUserDetail(userId);
         return ResponseEntity.ok(response);
     }
