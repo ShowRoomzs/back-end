@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -42,8 +43,8 @@ public class UserAdminController {
     )
     @GetMapping
     public ResponseEntity<PageResponse<AdminUserDto.UserResponse>> getUsers(
-            @ModelAttribute PagingRequest pagingRequest,
-            @ModelAttribute AdminUserDto.SearchCondition searchCondition) {
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest,
+            @ParameterObject @ModelAttribute AdminUserDto.SearchCondition searchCondition) {
 
         // 기본 정렬: 가입일 최신순
         Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
