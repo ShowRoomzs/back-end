@@ -163,5 +163,17 @@ public class AdminService {
 
         return new PageResponse<>(page.getContent(), page);
     }
+
+    /**
+     * 마켓 정보 관리용 상세 조회
+     */
+    @Transactional(readOnly = true)
+    public AdminMarketDto.MarketAdminDetailResponse getMarketInfo(Long marketId) {
+        // SellerId가 아니라 MarketId로 조회하는 경우가 많음 (어드민 마켓 목록에서 클릭해서 들어오므로)
+        Market market = marketRepository.findById(marketId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
+        
+        return AdminMarketDto.MarketAdminDetailResponse.from(market);
+    }
 }
 
