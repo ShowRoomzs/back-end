@@ -18,6 +18,16 @@ import java.util.Optional;
 @Repository
 public interface MarketRepository extends JpaRepository<Market, Long> {
     boolean existsByMarketName(String marketName);
+    
+    /**
+     * REJECTED 상태가 아닌 판매자의 마켓명 존재 여부 확인
+     * 반려된 계정의 마켓명은 재사용 가능하도록 제외
+     */
+    @Query("SELECT CASE WHEN COUNT(m) > 0 THEN true ELSE false END FROM Market m " +
+           "JOIN m.seller s WHERE m.marketName = :marketName AND s.status != :rejectedStatus")
+    boolean existsByMarketNameAndSellerStatusNotRejected(@Param("marketName") String marketName,
+                                                          @Param("rejectedStatus") SellerStatus rejectedStatus);
+    
     Optional<Market> findBySeller(Seller seller);
 
     // Seller의 Status가 PENDING인 마켓 목록 조회 (페이징 없음)

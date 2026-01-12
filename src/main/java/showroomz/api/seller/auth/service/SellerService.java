@@ -124,7 +124,8 @@ public class SellerService {
     // 읽기 전용 트랜잭션으로 설정하여 성능 최적화
     @Transactional(readOnly = true)
     public SellerDto.CheckEmailResponse checkEmailDuplicate(String email) {
-        if (adminRepository.existsByEmail(email)) {
+        // REJECTED 상태가 아닌 이메일만 체크 (반려된 계정의 이메일은 재사용 가능)
+        if (adminRepository.existsByEmailAndStatusNotRejected(email, SellerStatus.REJECTED)) {
             return new SellerDto.CheckEmailResponse(false, "DUPLICATE", "이미 사용 중인 이메일입니다.");
         }
         return new SellerDto.CheckEmailResponse(true, "AVAILABLE", "사용 가능한 이메일입니다.");
