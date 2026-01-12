@@ -8,9 +8,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.user.DTO.AdminUserDto;
 import showroomz.api.admin.user.repository.UserSpecification;
+import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.error.exception.ErrorCode;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,5 +40,15 @@ public class AdminUserService {
 
         // PageResponse 생성
         return new PageResponse<>(content, usersPage);
+    }
+
+    /**
+     * 유저 상세 정보 조회
+     */
+    public AdminUserDto.UserDetailResponse getUserDetail(Long userId) {
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        return AdminUserDto.UserDetailResponse.from(user);
     }
 }

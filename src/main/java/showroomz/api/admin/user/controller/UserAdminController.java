@@ -1,15 +1,19 @@
 package showroomz.api.admin.user.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.admin.user.DTO.AdminUserDto;
 import showroomz.api.admin.user.service.AdminUserService;
 import showroomz.global.dto.PageResponse;
@@ -48,6 +52,49 @@ public class UserAdminController {
         PageResponse<AdminUserDto.UserResponse> response = 
                 adminUserService.getUsers(searchCondition, pageable);
 
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "일반 유저 상세 조회",
+            description = "유저 ID를 통해 상세 정보를 조회합니다.\n\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AdminUserDto.UserDetailResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "유저를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                            name = "유저 없음",
+                                            value = "{\"code\": \"USER_NOT_FOUND\", \"message\": \"존재하지 않는 회원입니다.\"}"
+                                    )
+                            }
+                    )
+            )
+    })
+    @GetMapping("/{userId}")
+    public ResponseEntity<AdminUserDto.UserDetailResponse> getUserDetail(
+            @Parameter(
+                    description = "조회할 유저 ID",
+                    required = true,
+                    example = "1",
+                    in = ParameterIn.PATH
+            )
+            @PathVariable Long userId) {
+        AdminUserDto.UserDetailResponse response = adminUserService.getUserDetail(userId);
         return ResponseEntity.ok(response);
     }
 }
