@@ -4,9 +4,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
 import showroomz.api.seller.auth.type.SellerStatus;
+import showroomz.domain.market.entity.Market;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AdminMarketDto {
 
@@ -41,6 +44,49 @@ public class AdminMarketDto {
                 allowableValues = {"SELLER_ID", "MARKET_NAME", "NAME", "PHONE_NUMBER"}
         )
         private KeywordType keywordType;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "어드민 마켓 목록 검색 조건")
+    public static class MarketListSearchCondition {
+
+        @Schema(description = "대표 카테고리 (대분류) 필터", example = "의류")
+        private String mainCategory;
+
+        @Schema(description = "마켓명 검색어", example = "멋쟁이")
+        private String marketName;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "어드민 마켓 목록 응답 (상품 수 포함)")
+    public static class MarketResponse {
+
+        @Schema(description = "마켓 ID", example = "10")
+        private Long marketId;
+
+        @Schema(description = "마켓명", example = "멋쟁이 옷장")
+        private String marketName;
+
+        @Schema(description = "대표 카테고리", example = "의류")
+        private String mainCategory;
+
+        @Schema(description = "판매자명 (담당자)", example = "홍길동")
+        private String sellerName;
+
+        @Schema(description = "연락처", example = "010-1234-5678")
+        private String phoneNumber;
+
+        @Schema(description = "등록 상품 수", example = "120")
+        private Long productCount;
+
+        @Schema(description = "입점일", example = "2024-01-01T10:00:00")
+        private LocalDateTime createdAt;
     }
 
     @Getter
@@ -113,6 +159,82 @@ public class AdminMarketDto {
 
         @Schema(description = "가입 신청일", example = "2024-01-01T12:00:00")
         private LocalDateTime createdAt;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "어드민 마켓 상세/수정용 응답")
+    public static class MarketAdminDetailResponse {
+        @Schema(description = "마켓 ID", example = "10")
+        private Long marketId;
+
+        @Schema(description = "마켓명", example = "멋쟁이 옷장")
+        private String marketName;
+
+        @Schema(description = "고객센터 번호", example = "02-1234-5678")
+        private String csNumber;
+
+        @Schema(description = "마켓 이미지 URL", example = "https://example.com/image.jpg")
+        private String marketImageUrl;
+
+        @Schema(description = "마켓 소개글", example = "멋진 옷을 판매하는 마켓입니다.")
+        private String marketDescription;
+
+        @Schema(description = "마켓 URL", example = "https://www.showroomz.co.kr/market/10")
+        private String marketUrl;
+
+        @Schema(description = "대표 카테고리", example = "의류")
+        private String mainCategory;
+
+        @Schema(description = "SNS 링크 목록")
+        private List<SnsLinkResponse> snsLinks;
+
+        // Entity -> DTO 변환 편의 메서드
+        public static MarketAdminDetailResponse from(Market market) {
+            List<SnsLinkResponse> links = new ArrayList<>();
+            
+            // SNS 링크 파싱 ("TYPE|URL" 형식)
+            parseAndAddSnsLink(market.getSnsLink1(), links);
+            parseAndAddSnsLink(market.getSnsLink2(), links);
+            parseAndAddSnsLink(market.getSnsLink3(), links);
+
+            return MarketAdminDetailResponse.builder()
+                    .marketId(market.getId())
+                    .marketName(market.getMarketName())
+                    .csNumber(market.getCsNumber())
+                    .marketImageUrl(market.getMarketImageUrl())
+                    .marketDescription(market.getMarketDescription())
+                    .marketUrl(market.getMarketUrl())
+                    .mainCategory(market.getMainCategory())
+                    .snsLinks(links)
+                    .build();
+        }
+
+        // SNS 링크 파싱 헬퍼 메서드
+        private static void parseAndAddSnsLink(String linkString, List<SnsLinkResponse> list) {
+            if (linkString != null && !linkString.isEmpty()) {
+                String[] parts = linkString.split("\\|", 2);
+                if (parts.length == 2) {
+                    list.add(new SnsLinkResponse(parts[0], parts[1]));
+                } else {
+                    // 형식이 맞지 않으면 URL만이라도 넣거나 무시
+                    list.add(new SnsLinkResponse("UNKNOWN", linkString));
+                }
+            }
+        }
+    }
+
+    @Getter
+    @AllArgsConstructor
+    @Schema(description = "SNS 링크 정보")
+    public static class SnsLinkResponse {
+        @Schema(description = "SNS 타입", example = "INSTAGRAM")
+        private String snsType;
+        
+        @Schema(description = "URL", example = "https://instagram.com/example")
+        private String snsUrl;
     }
 
     /**
