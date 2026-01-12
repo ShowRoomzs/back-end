@@ -39,7 +39,27 @@ public class UserAdminController {
                     "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
                     "**페이징 파라미터:**\n" +
                     "- page: 페이지 번호 (1부터 시작, 기본값: 1)\n" +
-                    "- size: 페이지당 항목 수 (기본값: 20)"
+                    "- size: 페이지당 항목 수 (기본값: 20)",
+            parameters = {
+                    @Parameter(name = "page", description = "페이지 번호 (1부터 시작)", example = "1", in = ParameterIn.QUERY),
+                    @Parameter(name = "size", description = "페이지당 항목 수", example = "20", in = ParameterIn.QUERY),
+                    @Parameter(
+                            name = "providerType",
+                            description = "가입 채널",
+                            example = "GOOGLE",
+                            in = ParameterIn.QUERY,
+                            schema = @Schema(allowableValues = {"GOOGLE", "NAVER", "KAKAO", "APPLE"})
+                    ),
+                    @Parameter(
+                            name = "status",
+                            description = "활동 상태",
+                            example = "NORMAL",
+                            in = ParameterIn.QUERY,
+                            schema = @Schema(allowableValues = {"NORMAL", "DORMANT", "WITHDRAWN"})
+                    ),
+                    @Parameter(name = "startDate", description = "가입일 조회 시작 날짜 (yyyy-MM-dd)", example = "2024-01-01", in = ParameterIn.QUERY),
+                    @Parameter(name = "endDate", description = "가입일 조회 종료 날짜 (yyyy-MM-dd)", example = "2024-12-31", in = ParameterIn.QUERY)
+            }
     )
     @GetMapping
     public ResponseEntity<PageResponse<AdminUserDto.UserResponse>> getUsers(
