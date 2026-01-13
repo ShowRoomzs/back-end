@@ -43,10 +43,10 @@ public class ProductController implements ProductControllerDocs {
 
     @Override
     @GetMapping("/{productId}")
-    public ResponseEntity<ProductDto.ProductListItem> getProductById(
+    public ResponseEntity<ProductDto.ProductDetailResponse> getProductById(
             @PathVariable Long productId) {
         String adminEmail = getCurrentAdminEmail();
-        ProductDto.ProductListItem response = productService.getProductById(adminEmail, productId);
+        ProductDto.ProductDetailResponse response = productService.getProductById(adminEmail, productId);
         return ResponseEntity.ok(response);
     }
 

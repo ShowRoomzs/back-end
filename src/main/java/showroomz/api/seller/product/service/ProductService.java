@@ -291,7 +291,7 @@ public class ProductService {
     }
     
     @Transactional(readOnly = true)
-    public ProductDto.ProductListItem getProductById(String adminEmail, Long productId) {
+    public ProductDto.ProductDetailResponse getProductById(String adminEmail, Long productId) {
         // 1. Admin과 Market 조회
         Seller admin = adminRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -308,11 +308,11 @@ public class ProductService {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
         
-        // 5. 품절 상태 계산
+        // 4. 품절 상태 계산
         String stockStatus = calculateStockStatus(product, null);
         
-        // 6. 응답 생성
-        return convertToProductListItem(product, stockStatus);
+        // 5. 응답 생성 (모든 필드 포함)
+        return convertToProductDetailResponse(product, stockStatus);
     }
 
     /**
@@ -730,6 +730,42 @@ public class ProductService {
                 .displayStatus(displayStatus)
                 .stockStatus(stockStatus)
                 .isOutOfStockForced(product.getIsOutOfStockForced())
+                .build();
+    }
+    
+    /**
+     * Product 엔티티를 ProductDetailResponse DTO로 변환 (Product 엔티티의 모든 컬럼만 포함)
+     */
+    private ProductDto.ProductDetailResponse convertToProductDetailResponse(Product product, String stockStatus) {
+        // 등록일 포맷팅 (ISO 8601 형식)
+        String createdAtStr = product.getCreatedAt() != null 
+                ? product.getCreatedAt().toString() 
+                : null;
+        
+        return ProductDto.ProductDetailResponse.builder()
+                .productId(product.getProductId())
+                .productNumber(product.getProductNumber())
+                .marketId(product.getMarket() != null ? product.getMarket().getId() : null)
+                .marketName(product.getMarket() != null ? product.getMarket().getMarketName() : null)
+                .categoryId(product.getCategory() != null ? product.getCategory().getCategoryId() : null)
+                .categoryName(product.getCategory() != null ? product.getCategory().getName() : null)
+                .name(product.getName())
+                .sellerProductCode(product.getSellerProductCode())
+                .thumbnailUrl(product.getThumbnailUrl())
+                .regularPrice(product.getRegularPrice())
+                .salePrice(product.getSalePrice())
+                .purchasePrice(product.getPurchasePrice())
+                .isDisplay(product.getIsDisplay())
+                .isOutOfStockForced(product.getIsOutOfStockForced())
+                .isRecommended(product.getIsRecommended())
+                .productNotice(product.getProductNotice())
+                .description(product.getDescription())
+                .tags(product.getTags())
+                .deliveryType(product.getDeliveryType())
+                .deliveryFee(product.getDeliveryFee())
+                .deliveryFreeThreshold(product.getDeliveryFreeThreshold())
+                .deliveryEstimatedDays(product.getDeliveryEstimatedDays())
+                .createdAt(createdAtStr)
                 .build();
     }
 }
