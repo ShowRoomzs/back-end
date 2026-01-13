@@ -184,7 +184,7 @@ public interface ProductControllerDocs {
 
     @Operation(
             summary = "상품 개별 조회",
-            description = "백스테이지에서 판매자가 특정 상품의 상세 정보를 조회합니다.\n\n" +
+            description = "백스테이지에서 판매자가 특정 상품의 상세 정보를 조회합니다. 상품의 모든 정보를 포함합니다.\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -194,25 +194,34 @@ public interface ProductControllerDocs {
                     description = "상품 개별 조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ProductDto.ProductListItem.class),
+                            schema = @Schema(implementation = ProductDto.ProductDetailResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "성공 예시",
                                             value = "{\n" +
                                                     "  \"productId\": 1,\n" +
                                                     "  \"productNumber\": \"SRZ-20251228-001\",\n" +
+                                                    "  \"marketId\": 1,\n" +
+                                                    "  \"marketName\": \"프리미엄 쇼핑몰\",\n" +
+                                                    "  \"categoryId\": 1,\n" +
+                                                    "  \"categoryName\": \"의류\",\n" +
+                                                    "  \"name\": \"프리미엄 린넨 셔츠\",\n" +
                                                     "  \"sellerProductCode\": \"PROD-ABC-001\",\n" +
                                                     "  \"thumbnailUrl\": \"https://example.com/thumbnail.jpg\",\n" +
-                                                    "  \"name\": \"프리미엄 린넨 셔츠\",\n" +
-                                                    "  \"price\": {\n" +
-                                                    "    \"purchasePrice\": 25000,\n" +
-                                                    "    \"regularPrice\": 59000,\n" +
-                                                    "    \"salePrice\": 49000\n" +
-                                                    "  },\n" +
-                                                    "  \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
-                                                    "  \"displayStatus\": \"DISPLAY\",\n" +
-                                                    "  \"stockStatus\": \"IN_STOCK\",\n" +
-                                                    "  \"isOutOfStockForced\": false\n" +
+                                                    "  \"regularPrice\": 59000,\n" +
+                                                    "  \"salePrice\": 49000,\n" +
+                                                    "  \"purchasePrice\": 25000,\n" +
+                                                    "  \"isDisplay\": true,\n" +
+                                                    "  \"isOutOfStockForced\": false,\n" +
+                                                    "  \"isRecommended\": false,\n" +
+                                                    "  \"productNotice\": \"{\\\"origin\\\":\\\"대한민국\\\",\\\"material\\\":\\\"면 100%\\\"}\",\n" +
+                                                    "  \"description\": \"<p>상품 상세 설명</p>\",\n" +
+                                                    "  \"tags\": \"[\\\"신상\\\", \\\"할인\\\"]\",\n" +
+                                                    "  \"deliveryType\": \"STANDARD\",\n" +
+                                                    "  \"deliveryFee\": 3000,\n" +
+                                                    "  \"deliveryFreeThreshold\": 50000,\n" +
+                                                    "  \"deliveryEstimatedDays\": 3,\n" +
+                                                    "  \"createdAt\": \"2025-12-28T14:30:00Z\"\n" +
                                                     "}"
                                     )
                             }
@@ -243,7 +252,7 @@ public interface ProductControllerDocs {
                     )
             )
     })
-    ResponseEntity<ProductDto.ProductListItem> getProductById(
+    ResponseEntity<ProductDto.ProductDetailResponse> getProductById(
             @Parameter(
                     description = "조회할 상품 ID",
                     required = true,
