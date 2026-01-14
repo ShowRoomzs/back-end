@@ -582,17 +582,17 @@ public class ProductService {
 
         // 7. 이미지 업데이트 (제공된 경우)
         if (request.getRepresentativeImageUrl() != null || request.getCoverImageUrls() != null) {
-            // 기존 이미지 삭제
-            product.getProductImages().clear();
+            // 기존 이미지 삭제 (orphanRemoval을 위해 기존 컬렉션을 유지하고 clear 후 addAll 사용)
+            List<ProductImage> existingImages = product.getProductImages();
+            existingImages.clear();
             
-            List<ProductImage> productImages = new ArrayList<>();
             int imageOrder = 0;
             
             // 대표 이미지 추가
             if (request.getRepresentativeImageUrl() != null) {
                 product.setThumbnailUrl(request.getRepresentativeImageUrl());
                 ProductImage representativeImage = new ProductImage(product, request.getRepresentativeImageUrl(), imageOrder++);
-                productImages.add(representativeImage);
+                existingImages.add(representativeImage);
             }
             
             // 커버 이미지 추가 (최대 4개)
@@ -600,11 +600,9 @@ public class ProductService {
                 for (String coverImageUrl : request.getCoverImageUrls()) {
                     if (imageOrder >= 5) break; // 대표 이미지 포함 최대 5개
                     ProductImage coverImage = new ProductImage(product, coverImageUrl, imageOrder++);
-                    productImages.add(coverImage);
+                    existingImages.add(coverImage);
                 }
             }
-            
-            product.setProductImages(productImages);
         }
 
         // 8. 옵션 그룹 및 옵션 업데이트 (제공된 경우)
