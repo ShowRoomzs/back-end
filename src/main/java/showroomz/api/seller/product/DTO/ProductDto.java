@@ -406,8 +406,11 @@ public class ProductDto {
         @Schema(description = "판매자 상품 코드", example = "PROD-ABC-001")
         private String sellerProductCode;
 
-        @Schema(description = "썸네일 URL", example = "https://example.com/thumbnail.jpg")
-        private String thumbnailUrl;
+        @Schema(description = "대표 이미지 URL (타이틀/썸네일 이미지)", example = "https://example.com/image.jpg")
+        private String representativeImageUrl;
+
+        @Schema(description = "커버 이미지 URL 목록", example = "[\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\"]")
+        private List<String> coverImageUrls;
 
         @Schema(description = "정가", example = "59000")
         private Integer regularPrice;
@@ -450,6 +453,12 @@ public class ProductDto {
 
         @Schema(description = "등록일", example = "2025-12-28T14:30:00Z")
         private String createdAt;
+
+        @Schema(description = "옵션 그룹 목록")
+        private List<OptionGroupInfo> optionGroups;
+
+        @Schema(description = "옵션 조합 (Variant) 목록")
+        private List<VariantInfo> variants;
     }
 
     @Getter
