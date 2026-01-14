@@ -39,6 +39,9 @@ public class ProductVariant {
     @Column(name = "is_representative", nullable = false)
     private Boolean isRepresentative = false;
 
+    @Column(name = "is_display", nullable = false)
+    private Boolean isDisplay = true;
+
     @ManyToMany
     @JoinTable(
             name = "variant_option_map",
@@ -54,6 +57,17 @@ public class ProductVariant {
         this.salePrice = salePrice;
         this.stock = stock;
         this.isRepresentative = isRepresentative;
+        this.isDisplay = true;
+    }
+
+    public ProductVariant(Product product, String name, Integer regularPrice, Integer salePrice, Integer stock, Boolean isRepresentative, Boolean isDisplay) {
+        this.product = product;
+        this.name = name;
+        this.regularPrice = regularPrice;
+        this.salePrice = salePrice;
+        this.stock = stock;
+        this.isRepresentative = isRepresentative;
+        this.isDisplay = isDisplay != null ? isDisplay : true;
     }
 }
 

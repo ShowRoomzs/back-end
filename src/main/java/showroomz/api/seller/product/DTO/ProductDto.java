@@ -145,8 +145,24 @@ public class ProductDto {
         private String name;
 
         @NotEmpty(message = "옵션 목록은 필수 입력값입니다.")
-        @Schema(description = "옵션 목록", example = "[\"S\", \"M\", \"L\"]")
-        private List<String> options;
+        @Valid
+        @Schema(description = "옵션 목록")
+        private List<OptionRequest> options;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "옵션 요청")
+    public static class OptionRequest {
+        @NotBlank(message = "옵션명은 필수 입력값입니다.")
+        @Schema(description = "옵션명", example = "S")
+        private String name;
+
+        @Schema(description = "옵션 가격 (추가 가격)", example = "0")
+        private Integer price = 0;
     }
 
     @Getter
@@ -507,6 +523,9 @@ public class ProductDto {
 
         @Schema(description = "옵션명", example = "S")
         private String name;
+
+        @Schema(description = "옵션 가격 (추가 가격)", example = "0")
+        private Integer price;
     }
 
     @Getter
@@ -533,6 +552,9 @@ public class ProductDto {
 
         @Schema(description = "대표 옵션 여부", example = "true")
         private Boolean isRepresentative;
+
+        @Schema(description = "진열 여부", example = "true")
+        private Boolean isDisplay;
 
         @Schema(description = "옵션 ID 목록", example = "[1, 2]")
         private List<Long> optionIds;
