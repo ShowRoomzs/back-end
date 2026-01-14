@@ -207,7 +207,8 @@ public interface ProductControllerDocs {
                                                     "  \"categoryName\": \"의류\",\n" +
                                                     "  \"name\": \"프리미엄 린넨 셔츠\",\n" +
                                                     "  \"sellerProductCode\": \"PROD-ABC-001\",\n" +
-                                                    "  \"thumbnailUrl\": \"https://example.com/thumbnail.jpg\",\n" +
+                                                    "  \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
+                                                    "  \"coverImageUrls\": [\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\"],\n" +
                                                     "  \"regularPrice\": 59000,\n" +
                                                     "  \"salePrice\": 49000,\n" +
                                                     "  \"purchasePrice\": 25000,\n" +
@@ -221,7 +222,34 @@ public interface ProductControllerDocs {
                                                     "  \"deliveryFee\": 3000,\n" +
                                                     "  \"deliveryFreeThreshold\": 50000,\n" +
                                                     "  \"deliveryEstimatedDays\": 3,\n" +
-                                                    "  \"createdAt\": \"2025-12-28T14:30:00Z\"\n" +
+                                                    "  \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
+                                                    "  \"optionGroups\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"optionGroupId\": 1,\n" +
+                                                    "      \"name\": \"사이즈\",\n" +
+                                                    "      \"options\": [\n" +
+                                                    "        {\n" +
+                                                    "          \"optionId\": 1,\n" +
+                                                    "          \"name\": \"S\"\n" +
+                                                    "        },\n" +
+                                                    "        {\n" +
+                                                    "          \"optionId\": 2,\n" +
+                                                    "          \"name\": \"M\"\n" +
+                                                    "        }\n" +
+                                                    "      ]\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"variants\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"variantId\": 1,\n" +
+                                                    "      \"name\": \"S / Black\",\n" +
+                                                    "      \"regularPrice\": 50000,\n" +
+                                                    "      \"salePrice\": 49000,\n" +
+                                                    "      \"stock\": 100,\n" +
+                                                    "      \"isRepresentative\": true,\n" +
+                                                    "      \"optionIds\": [1, 2]\n" +
+                                                    "    }\n" +
+                                                    "  ]\n" +
                                                     "}"
                                     )
                             }
