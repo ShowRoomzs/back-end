@@ -132,10 +132,10 @@ public class ProductService {
                 product.getOptionGroups().add(optionGroup);
                 
                 Map<String, ProductOption> optionsInGroup = new HashMap<>();
-                for (String optionName : groupRequest.getOptions()) {
-                    ProductOption option = new ProductOption(optionGroup, optionName);
+                for (ProductDto.OptionRequest optionRequest : groupRequest.getOptions()) {
+                    ProductOption option = new ProductOption(optionGroup, optionRequest.getName(), optionRequest.getPrice());
                     optionGroup.getOptions().add(option);
-                    optionsInGroup.put(optionName, option);
+                    optionsInGroup.put(optionRequest.getName(), option);
                 }
                 optionMap.put(groupRequest.getName(), optionsInGroup);
             }
@@ -173,7 +173,8 @@ public class ProductService {
                         request.getRegularPrice(), // 기본 가격
                         variantRequest.getSalePrice(),
                         variantRequest.getStock(),
-                        variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false
+                        variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false,
+                        variantRequest.getIsDisplay()
                 );
                 
                 variant.setOptions(variantOptions);
@@ -187,6 +188,7 @@ public class ProductService {
                     request.getRegularPrice(),
                     request.getSalePrice(),
                     0,
+                    true,
                     true
             );
             product.getVariants().add(variant);
@@ -619,10 +621,10 @@ public class ProductService {
                 product.getOptionGroups().add(optionGroup);
                 
                 Map<String, ProductOption> optionsInGroup = new HashMap<>();
-                for (String optionName : groupRequest.getOptions()) {
-                    ProductOption option = new ProductOption(optionGroup, optionName);
+                for (ProductDto.OptionRequest optionRequest : groupRequest.getOptions()) {
+                    ProductOption option = new ProductOption(optionGroup, optionRequest.getName(), optionRequest.getPrice());
                     optionGroup.getOptions().add(option);
-                    optionsInGroup.put(optionName, option);
+                    optionsInGroup.put(optionRequest.getName(), option);
                 }
                 optionMap.put(groupRequest.getName(), optionsInGroup);
             }
@@ -660,7 +662,8 @@ public class ProductService {
                         variantRegularPrice,
                         variantRequest.getSalePrice(),
                         variantRequest.getStock(),
-                        variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false
+                        variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false,
+                        variantRequest.getIsDisplay()
                 );
                 
                 variant.setOptions(variantOptions);
@@ -757,6 +760,7 @@ public class ProductService {
                             .map(option -> ProductDto.OptionInfo.builder()
                                     .optionId(option.getOptionId())
                                     .name(option.getName())
+                                    .price(option.getPrice())
                                     .build())
                             .collect(Collectors.toList());
                     
@@ -782,6 +786,7 @@ public class ProductService {
                             .salePrice(variant.getSalePrice())
                             .stock(variant.getStock())
                             .isRepresentative(variant.getIsRepresentative())
+                            .isDisplay(variant.getIsDisplay())
                             .optionIds(optionIds)
                             .build();
                 })

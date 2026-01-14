@@ -161,7 +161,12 @@ public interface ProductControllerDocs {
                                             "  \"optionGroups\": [\n" +
                                             "    {\n" +
                                             "      \"name\": \"사이즈\",\n" +
-                                            "      \"options\": [\"Free\"]\n" +
+                                            "      \"options\": [\n" +
+                                            "        {\n" +
+                                            "          \"name\": \"Free\",\n" +
+                                            "          \"price\": 0\n" +
+                                            "        }\n" +
+                                            "      ]\n" +
                                             "    }\n" +
                                             "  ],\n" +
                                             "  \"variants\": [\n" +
@@ -230,11 +235,13 @@ public interface ProductControllerDocs {
                                                     "      \"options\": [\n" +
                                                     "        {\n" +
                                                     "          \"optionId\": 1,\n" +
-                                                    "          \"name\": \"S\"\n" +
+                                                    "          \"name\": \"S\",\n" +
+                                                    "          \"price\": 0\n" +
                                                     "        },\n" +
                                                     "        {\n" +
                                                     "          \"optionId\": 2,\n" +
-                                                    "          \"name\": \"M\"\n" +
+                                                    "          \"name\": \"M\",\n" +
+                                                    "          \"price\": 0\n" +
                                                     "        }\n" +
                                                     "      ]\n" +
                                                     "    }\n" +
@@ -247,6 +254,7 @@ public interface ProductControllerDocs {
                                                     "      \"salePrice\": 49000,\n" +
                                                     "      \"stock\": 100,\n" +
                                                     "      \"isRepresentative\": true,\n" +
+                                                    "      \"isDisplay\": true,\n" +
                                                     "      \"optionIds\": [1, 2]\n" +
                                                     "    }\n" +
                                                     "  ]\n" +
@@ -536,7 +544,12 @@ public interface ProductControllerDocs {
                                             "  \"optionGroups\": [\n" +
                                             "    {\n" +
                                             "      \"name\": \"사이즈\",\n" +
-                                            "      \"options\": [\"Free\"]\n" +
+                                            "      \"options\": [\n" +
+                                            "        {\n" +
+                                            "          \"name\": \"Free\",\n" +
+                                            "          \"price\": 0\n" +
+                                            "        }\n" +
+                                            "      ]\n" +
                                             "    }\n" +
                                             "  ],\n" +
                                             "  \"variants\": [\n" +
