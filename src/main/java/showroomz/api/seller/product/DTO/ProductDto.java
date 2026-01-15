@@ -11,6 +11,8 @@ import lombok.Setter;
 
 import java.util.List;
 
+import showroomz.domain.product.type.ProductGender;
+
 public class ProductDto {
 
     @Getter
@@ -51,6 +53,9 @@ public class ProductDto {
         @Min(value = 0, message = "할인 판매가는 0 이상이어야 합니다.")
         @Schema(description = "할인 판매가 (최종가)", example = "49000")
         private Integer salePrice;
+
+        @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
+        private ProductGender gender;
 
         @Schema(description = "할인 설정 여부", example = "true")
         private Boolean isDiscount = false;
@@ -162,6 +167,7 @@ public class ProductDto {
         private String name;
 
         @Schema(description = "옵션 가격 (추가 가격)", example = "0")
+        @Builder.Default
         private Integer price = 0;
     }
 
@@ -243,6 +249,9 @@ public class ProductDto {
         @Min(value = 0, message = "할인 판매가는 0 이상이어야 합니다.")
         @Schema(description = "할인 판매가 (최종가)", example = "49000")
         private Integer salePrice;
+
+        @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
+        private ProductGender gender;
 
         @Schema(description = "대표 이미지 URL", example = "https://example.com/image.jpg")
         private String representativeImageUrl;
@@ -433,6 +442,9 @@ public class ProductDto {
 
         @Schema(description = "할인 판매가", example = "49000")
         private Integer salePrice;
+
+        @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
+        private ProductGender gender;
 
         @Schema(description = "매입가", example = "30000")
         private Integer purchasePrice;

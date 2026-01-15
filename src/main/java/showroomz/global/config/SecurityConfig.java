@@ -56,7 +56,10 @@ public class SecurityConfig {
             "/v1/seller/markets/check-name",
             
             // 마켓 조회 (인증 불필요 - 비로그인 가능)
-            "/v1/user/markets/*"
+            "/v1/user/markets/*",
+
+            // 상품 목록 조회 (비회원 허용)
+            "/v1/products"
     };
     /*
      * SecurityFilterChain 설정 (Spring Security 3.x 최신 방식)

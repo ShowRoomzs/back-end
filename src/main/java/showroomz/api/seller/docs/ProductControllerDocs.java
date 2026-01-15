@@ -95,7 +95,7 @@ public interface ProductControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "카테고리 또는 브랜드를 찾을 수 없음",
+                    description = "카테고리 또는 마켓을 찾을 수 없음",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -135,6 +135,7 @@ public interface ProductControllerDocs {
                                             "  \"purchasePrice\": 30000,\n" +
                                             "  \"regularPrice\": 59000,\n" +
                                             "  \"salePrice\": 49000,\n" +
+                                            "  \"gender\": \"UNISEX\",\n" +
                                             "  \"isDiscount\": true,\n" +
                                             "  \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
                                             "  \"coverImageUrls\": [\n" +
@@ -217,6 +218,7 @@ public interface ProductControllerDocs {
                                                     "  \"regularPrice\": 59000,\n" +
                                                     "  \"salePrice\": 49000,\n" +
                                                     "  \"purchasePrice\": 25000,\n" +
+                                                    "  \"gender\": \"UNISEX\",\n" +
                                                     "  \"isDisplay\": true,\n" +
                                                     "  \"isOutOfStockForced\": false,\n" +
                                                     "  \"isRecommended\": false,\n" +
@@ -506,6 +508,7 @@ public interface ProductControllerDocs {
                                             "  \"name\": \"수정된 상품명\",\n" +
                                             "  \"regularPrice\": 69000,\n" +
                                             "  \"salePrice\": 59000,\n" +
+                                                    "  \"gender\": \"UNISEX\",\n" +
                                             "  \"isDisplay\": true\n" +
                                             "}",
                                     description = "일부 필드만 수정하는 예시"
@@ -519,6 +522,7 @@ public interface ProductControllerDocs {
                                             "  \"purchasePrice\": 30000,\n" +
                                             "  \"regularPrice\": 59000,\n" +
                                             "  \"salePrice\": 49000,\n" +
+                                            "  \"gender\": \"UNISEX\",\n" +
                                             "  \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
                                             "  \"coverImageUrls\": [\n" +
                                             "    \"https://example.com/image1.jpg\",\n" +

@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.product.type.ProductGender;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -45,6 +46,10 @@ public class Product {
 
     @Column(name = "sale_price", nullable = false)
     private Integer salePrice;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender", length = 10)
+    private ProductGender gender;
 
     @Column(name = "purchase_price")
     private Integer purchasePrice;
