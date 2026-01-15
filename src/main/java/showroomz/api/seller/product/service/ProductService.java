@@ -27,7 +27,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Service
+@Service("sellerProductService")
 @RequiredArgsConstructor
 @Slf4j
 @Transactional
@@ -63,6 +63,7 @@ public class ProductService {
         product.setSellerProductCode(request.getSellerProductCode());
         product.setRegularPrice(request.getRegularPrice());
         product.setSalePrice(request.getSalePrice());
+        product.setGender(request.getGender());
         product.setPurchasePrice(request.getPurchasePrice());
         product.setIsDisplay(request.getIsDisplay() != null ? request.getIsDisplay() : true);
         product.setIsOutOfStockForced(request.getIsOutOfStockForced() != null ? request.getIsOutOfStockForced() : false);
@@ -544,6 +545,9 @@ public class ProductService {
         if (request.getSalePrice() != null) {
             product.setSalePrice(request.getSalePrice());
         }
+        if (request.getGender() != null) {
+            product.setGender(request.getGender());
+        }
         if (request.getDescription() != null) {
             product.setDescription(request.getDescription());
         }
@@ -805,6 +809,7 @@ public class ProductService {
                 .coverImageUrls(coverImageUrls)
                 .regularPrice(product.getRegularPrice())
                 .salePrice(product.getSalePrice())
+                .gender(product.getGender())
                 .purchasePrice(product.getPurchasePrice())
                 .isDisplay(product.getIsDisplay())
                 .isOutOfStockForced(product.getIsOutOfStockForced())
