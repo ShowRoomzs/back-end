@@ -59,7 +59,10 @@ public class SecurityConfig {
             "/v1/user/markets/*",
 
             // 상품 목록 조회 (비회원 허용)
-            "/v1/products"
+            "/v1/products",
+
+            // 공용 카테고리 조회 (비회원 허용)
+            "/v1/common/categories/**"
     };
     /*
      * SecurityFilterChain 설정 (Spring Security 3.x 최신 방식)
