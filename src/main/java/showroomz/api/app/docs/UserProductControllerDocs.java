@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.product.DTO.ProductDto;
 
-@Tag(name = "App - Product", description = "메인 APP 상품 API")
+@Tag(name = "Common - Product", description = "공용 상품 API")
 public interface UserProductControllerDocs {
 
     @Operation(

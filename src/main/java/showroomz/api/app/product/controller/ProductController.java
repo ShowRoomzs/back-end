@@ -12,7 +12,7 @@ import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.member.user.entity.Users;
 
 @RestController("appProductController")
-@RequestMapping("/v1/products")
+@RequestMapping("/v1/common/products")
 @RequiredArgsConstructor
 public class ProductController implements UserProductControllerDocs {
 
