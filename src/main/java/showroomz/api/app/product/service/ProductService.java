@@ -55,7 +55,7 @@ public class ProductService {
         String keyword = normalize(request.getQ());
         ProductGender gender = parseGender(normalize(request.getGender()));
         String color = normalize(request.getColor());
-        String sortType = normalize(request.getSort());
+        String sortType = normalizeSortType(request.getSort());
 
         // 검색 실행
         Page<Product> productPage = productRepository.searchProductsForUser(
@@ -191,5 +191,10 @@ public class ProductService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizeSortType(String sortType) {
+        String normalized = normalize(sortType);
+        return normalized != null ? normalized.toUpperCase() : null;
     }
 }
