@@ -26,20 +26,6 @@ public class CategoryController implements AdminCategoryControllerDocs {
     }
 
     @Override
-    @GetMapping("/categories/{categoryId}")
-    public ResponseEntity<CategoryDto.CategoryResponse> getCategory(@PathVariable("categoryId") Long categoryId) {
-        CategoryDto.CategoryResponse response = categoryService.getCategory(categoryId);
-        return ResponseEntity.ok(response);
-    }
-
-    @Override
-    @GetMapping("/categories")
-    public ResponseEntity<java.util.List<CategoryDto.CategoryResponse>> getAllCategories() {
-        java.util.List<CategoryDto.CategoryResponse> response = categoryService.getAllCategories();
-        return ResponseEntity.ok(response);
-    }
-
-    @Override
     @PatchMapping("/categories/{categoryId}")
     public ResponseEntity<CategoryDto.UpdateCategoryResponse> updateCategory(
             @PathVariable("categoryId") Long categoryId,

@@ -142,58 +142,6 @@ public interface AdminCategoryControllerDocs {
     );
 
     @Operation(
-            summary = "카테고리 조회 (단일)",
-            description = "관리자가 특정 카테고리의 정보를 조회합니다.\n\n" +
-                    "**권한:** ADMIN\n" +
-                    "**요청 헤더:** Authorization: Bearer {accessToken}"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "카테고리 조회 성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = CategoryDto.CategoryResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "카테고리를 찾을 수 없음",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            )
-    })
-    ResponseEntity<CategoryDto.CategoryResponse> getCategory(
-            @Parameter(
-                    description = "조회할 카테고리 ID",
-                    required = true,
-                    example = "1",
-                    in = ParameterIn.PATH
-            )
-            @PathVariable Long categoryId
-    );
-
-    @Operation(
-            summary = "카테고리 목록 조회",
-            description = "관리자가 모든 카테고리 목록을 조회합니다.\n\n" +
-                    "**권한:** ADMIN\n" +
-                    "**요청 헤더:** Authorization: Bearer {accessToken}"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "카테고리 목록 조회 성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = CategoryDto.CategoryResponse.class)
-                    )
-            )
-    })
-    ResponseEntity<java.util.List<CategoryDto.CategoryResponse>> getAllCategories();
-
-    @Operation(
             summary = "카테고리 수정",
             description = "관리자가 카테고리 정보를 수정합니다.\n\n" +
                     "**권한:** ADMIN\n" +
