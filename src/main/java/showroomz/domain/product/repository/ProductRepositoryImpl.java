@@ -26,10 +26,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
             String keyword,
             List<Long> categoryIds,
             Long marketId,
-            ProductGender gender,
-            String color,
-            Integer minPrice,
-            Integer maxPrice,
+            List<ProductFilterCriteria> filters,
             String sortType,
             Pageable pageable
     ) {
@@ -55,23 +52,18 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
             where.and(product.market.id.eq(marketId));
         }
 
-        if (gender != null) {
-            where.and(product.gender.eq(gender));
-        }
-
-        if (minPrice != null) {
-            where.and(product.salePrice.goe(minPrice));
-        }
-
-        if (maxPrice != null) {
-            where.and(product.salePrice.loe(maxPrice));
-        }
-
         JPAQuery<Product> query = queryFactory.selectFrom(product);
-        if (color != null && !color.isBlank()) {
+        boolean needsColorJoin = filters != null && filters.stream()
+                .anyMatch(criteria -> "color".equalsIgnoreCase(criteria.key()));
+        if (needsColorJoin) {
             query.leftJoin(product.optionGroups, optionGroup)
                     .leftJoin(optionGroup.options, option);
-            where.and(optionGroup.name.eq("색상").and(option.name.eq(color)));
+        }
+
+        if (filters != null) {
+            for (ProductFilterCriteria criteria : filters) {
+                applyFilter(criteria, product, optionGroup, option, where);
+            }
         }
 
         query.where(where)
@@ -86,7 +78,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         JPAQuery<Long> countQuery = queryFactory
                 .select(product.productId.countDistinct())
                 .from(product);
-        if (color != null && !color.isBlank()) {
+        if (needsColorJoin) {
             countQuery.leftJoin(product.optionGroups, optionGroup)
                     .leftJoin(optionGroup.options, option);
         }
@@ -125,5 +117,86 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                     product.createdAt.desc()
             };
         };
+    }
+
+    private void applyFilter(
+            ProductFilterCriteria criteria,
+            QProduct product,
+            QProductOptionGroup optionGroup,
+            QProductOption option,
+            BooleanBuilder where
+    ) {
+        if (criteria == null || criteria.key() == null) {
+            return;
+        }
+        String key = criteria.key().toLowerCase();
+
+        switch (key) {
+            case "gender" -> applyGenderFilter(criteria, product, where);
+            case "color" -> applyColorFilter(criteria, optionGroup, option, where);
+            case "price" -> applyPriceFilter(criteria, product, where);
+            default -> {
+                // no-op for unknown filter keys
+            }
+        }
+    }
+
+    private void applyGenderFilter(ProductFilterCriteria criteria, QProduct product, BooleanBuilder where) {
+        if (criteria.values() == null || criteria.values().isEmpty()) {
+            return;
+        }
+        BooleanBuilder genderBuilder = new BooleanBuilder();
+        for (String value : criteria.values()) {
+            if (value == null || value.isBlank()) {
+                continue;
+            }
+            try {
+                ProductGender gender = ProductGender.valueOf(value.trim().toUpperCase());
+                if (criteria.condition() == showroomz.domain.filter.type.FilterCondition.AND) {
+                    genderBuilder.and(product.gender.eq(gender));
+                } else {
+                    genderBuilder.or(product.gender.eq(gender));
+                }
+            } catch (IllegalArgumentException ignored) {
+                // ignore invalid value
+            }
+        }
+        if (genderBuilder.hasValue()) {
+            where.and(genderBuilder);
+        }
+    }
+
+    private void applyColorFilter(
+            ProductFilterCriteria criteria,
+            QProductOptionGroup optionGroup,
+            QProductOption option,
+            BooleanBuilder where
+    ) {
+        if (criteria.values() == null || criteria.values().isEmpty()) {
+            return;
+        }
+        BooleanBuilder colorBuilder = new BooleanBuilder();
+        for (String value : criteria.values()) {
+            if (value == null || value.isBlank()) {
+                continue;
+            }
+            if (criteria.condition() == showroomz.domain.filter.type.FilterCondition.AND) {
+                colorBuilder.and(optionGroup.name.eq("색상").and(option.name.eq(value)));
+            } else {
+                colorBuilder.or(optionGroup.name.eq("색상").and(option.name.eq(value)));
+            }
+        }
+        if (colorBuilder.hasValue()) {
+            where.and(colorBuilder);
+        }
+    }
+
+    private void applyPriceFilter(ProductFilterCriteria criteria, QProduct product, BooleanBuilder where) {
+        if (criteria.minValue() != null) {
+            where.and(product.salePrice.goe(criteria.minValue()));
+        }
+        if (criteria.maxValue() != null) {
+            where.and(product.salePrice.loe(criteria.maxValue()));
+        }
     }
 }

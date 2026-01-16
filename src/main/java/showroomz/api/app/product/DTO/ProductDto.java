@@ -27,20 +27,31 @@ public class ProductDto {
         @Schema(description = "쇼룸 ID", example = "5")
         private Long marketId;
 
-        @Schema(description = "성별", example = "MALE", allowableValues = {"MALE", "FEMALE", "UNISEX"})
-        private String gender;
-
-        @Schema(description = "색상", example = "화이트")
-        private String color;
-
-        @Schema(description = "최소 가격", example = "10000")
-        private Integer minPrice;
-
-        @Schema(description = "최대 가격", example = "100000")
-        private Integer maxPrice;
-
         @Schema(description = "정렬 기준", example = "RECOMMEND", allowableValues = {"RECOMMEND", "POPULAR", "NEWEST", "PRICE_ASC", "PRICE_DESC"})
         private String sort;
+
+        @Schema(description = "필터 목록")
+        private List<FilterRequest> filters;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "필터 요청")
+    public static class FilterRequest {
+        @Schema(description = "필터 키", example = "gender")
+        private String key;
+
+        @Schema(description = "필터 값 목록", example = "[\"MALE\", \"FEMALE\"]")
+        private List<String> values;
+
+        @Schema(description = "최소값 (RANGE)", example = "10000")
+        private Integer minValue;
+
+        @Schema(description = "최대값 (RANGE)", example = "100000")
+        private Integer maxValue;
     }
 
     @Getter

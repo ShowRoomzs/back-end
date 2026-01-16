@@ -98,6 +98,67 @@ public class CategoryDto {
 
         @Schema(description = "부모 카테고리 ID", example = "1")
         private Long parentId;
+
+        @Schema(description = "연결된 필터 목록")
+        private java.util.List<FilterInfo> filters;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "필터 정보")
+    public static class FilterInfo {
+        @Schema(description = "필터 ID", example = "1")
+        private Long id;
+
+        @Schema(description = "필터 키", example = "gender")
+        private String filterKey;
+
+        @Schema(description = "노출명", example = "성별")
+        private String label;
+
+        @Schema(description = "필터 타입", example = "CHECKBOX")
+        private showroomz.domain.filter.type.FilterType filterType;
+
+        @Schema(description = "조건", example = "OR")
+        private showroomz.domain.filter.type.FilterCondition condition;
+
+        @Schema(description = "정렬 순서", example = "1")
+        private Integer sortOrder;
+
+        @Schema(description = "활성화 여부", example = "true")
+        private Boolean isActive;
+
+        @Schema(description = "필터 값 목록")
+        private java.util.List<FilterValueInfo> values;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "필터 값 정보")
+    public static class FilterValueInfo {
+        @Schema(description = "값 ID", example = "1")
+        private Long id;
+
+        @Schema(description = "검색 값", example = "MALE")
+        private String value;
+
+        @Schema(description = "노출명", example = "남성")
+        private String label;
+
+        @Schema(description = "추가 정보", example = "#FFFFFF")
+        private String extra;
+
+        @Schema(description = "정렬 순서", example = "1")
+        private Integer sortOrder;
+
+        @Schema(description = "활성화 여부", example = "true")
+        private Boolean isActive;
     }
 
     @Getter
