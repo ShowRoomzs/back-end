@@ -80,7 +80,8 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize());
 
-        List<Product> content = query.fetch();
+        @SuppressWarnings("null")
+        List<Product> content = java.util.Objects.requireNonNullElse(query.fetch(), List.of());
 
         JPAQuery<Long> countQuery = queryFactory
                 .select(product.productId.countDistinct())
@@ -94,11 +95,13 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         Long total = countQuery.fetchOne();
         long totalElements = total != null ? total : 0L;
 
-        return new PageImpl<>(content, pageable, totalElements);
+        @SuppressWarnings("null")
+        PageImpl<Product> page = new PageImpl<>(content, pageable, totalElements);
+        return page;
     }
 
     private OrderSpecifier<?>[] getOrderSpecifiers(String sortType, QProduct product) {
-        if (sortType == null || sortType.isBlank() || "recommend".equals(sortType)) {
+        if (sortType == null || sortType.isBlank() || "RECOMMEND".equals(sortType)) {
             return new OrderSpecifier<?>[]{
                     product.isRecommended.desc(),
                     product.createdAt.desc()
@@ -106,16 +109,16 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         }
 
         return switch (sortType) {
-            case "popular" -> new OrderSpecifier<?>[]{
+            case "POPULAR" -> new OrderSpecifier<?>[]{
                     product.createdAt.desc()
             };
-            case "newest" -> new OrderSpecifier<?>[]{
+            case "NEWEST" -> new OrderSpecifier<?>[]{
                     product.createdAt.desc()
             };
-            case "price_asc" -> new OrderSpecifier<?>[]{
+            case "PRICE_ASC" -> new OrderSpecifier<?>[]{
                     product.salePrice.asc()
             };
-            case "price_desc" -> new OrderSpecifier<?>[]{
+            case "PRICE_DESC" -> new OrderSpecifier<?>[]{
                     product.salePrice.desc()
             };
             default -> new OrderSpecifier<?>[]{

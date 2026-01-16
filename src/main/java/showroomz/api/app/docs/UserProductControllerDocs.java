@@ -27,13 +27,13 @@ public interface UserProductControllerDocs {
                     "- gender: 성별 (MALE, FEMALE, UNISEX)\n" +
                     "- color: 색상\n" +
                     "- minPrice/maxPrice: 가격 범위\n" +
-                    "- sort: 정렬 기준 (recommend, popular, newest, price_asc, price_desc)\n\n" +
+                    "- sort: 정렬 기준 (RECOMMEND, POPULAR, NEWEST, PRICE_ASC, PRICE_DESC)\n\n" +
                     "**정렬 옵션:**\n" +
-                    "- recommend: 추천순 (isRecommended DESC, createdAt DESC)\n" +
-                    "- popular: 인기순 (현재: 최신순, 추후 좋아요 수 기준)\n" +
-                    "- newest: 최신순 (createdAt DESC)\n" +
-                    "- price_asc: 가격 낮은순 (salePrice ASC)\n" +
-                    "- price_desc: 가격 높은순 (salePrice DESC)\n\n" +
+                    "- RECOMMEND: 추천순 (isRecommended DESC, createdAt DESC)\n" +
+                    "- POPULAR: 인기순 (현재: 최신순, 추후 좋아요 수 기준)\n" +
+                    "- NEWEST: 최신순 (createdAt DESC)\n" +
+                    "- PRICE_ASC: 가격 낮은순 (salePrice ASC)\n" +
+                    "- PRICE_DESC: 가격 높은순 (salePrice DESC)\n\n" +
                     "**페이징:**\n" +
                     "- page: 페이지 번호 (기본값: 1)\n" +
                     "- limit: 페이지당 항목 수 (기본값: 20)\n\n" +
@@ -123,7 +123,7 @@ public interface UserProductControllerDocs {
             @RequestParam(required = false) Integer minPrice,
             @Parameter(description = "최대 가격", required = false)
             @RequestParam(required = false) Integer maxPrice,
-            @Parameter(description = "정렬 기준 (recommend, popular, newest, price_asc, price_desc)", required = false)
+            @Parameter(description = "정렬 기준 (RECOMMEND, POPULAR, NEWEST, PRICE_ASC, PRICE_DESC)", required = false)
             @RequestParam(required = false) String sort,
             @Parameter(description = "페이지 번호 (기본값: 1)", required = false, example = "1")
             @RequestParam(required = false, defaultValue = "1") Integer page,

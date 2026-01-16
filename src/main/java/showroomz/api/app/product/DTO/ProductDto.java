@@ -39,7 +39,7 @@ public class ProductDto {
         @Schema(description = "최대 가격", example = "100000")
         private Integer maxPrice;
 
-        @Schema(description = "정렬 기준", example = "recommend", allowableValues = {"recommend", "popular", "newest", "price_asc", "price_desc"})
+        @Schema(description = "정렬 기준", example = "RECOMMEND", allowableValues = {"RECOMMEND", "POPULAR", "NEWEST", "PRICE_ASC", "PRICE_DESC"})
         private String sort;
     }
 
