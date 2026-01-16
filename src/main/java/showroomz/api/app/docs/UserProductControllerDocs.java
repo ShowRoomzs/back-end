@@ -24,9 +24,7 @@ public interface UserProductControllerDocs {
                     "- q: 검색어 (상품명, 마켓명 등)\n" +
                     "- categoryId: 카테고리 ID (하위 카테고리 포함)\n" +
                     "- marketId: 쇼룸 ID\n" +
-                    "- gender: 성별 (MALE, FEMALE, UNISEX)\n" +
-                    "- color: 색상\n" +
-                    "- minPrice/maxPrice: 가격 범위\n" +
+                    "- filters: 동적 필터 목록 (JSON 배열 문자열)\n" +
                     "- sort: 정렬 기준 (RECOMMEND, POPULAR, NEWEST, PRICE_ASC, PRICE_DESC)\n\n" +
                     "**정렬 옵션:**\n" +
                     "- RECOMMEND: 추천순 (isRecommended DESC, createdAt DESC)\n" +
@@ -57,8 +55,13 @@ public interface UserProductControllerDocs {
                                                     "  \"products\": [\n" +
                                                     "    {\n" +
                                                     "      \"id\": 1024,\n" +
+                                                    "      \"productNumber\": \"SRZ-20251228-001\",\n" +
                                                     "      \"name\": \"프리미엄 린넨 셔츠\",\n" +
+                                                    "      \"sellerProductCode\": \"PROD-001\",\n" +
                                                     "      \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
+                                                    "      \"thumbnailUrl\": \"https://example.com/image.jpg\",\n" +
+                                                    "      \"categoryId\": 1,\n" +
+                                                    "      \"categoryName\": \"의류\",\n" +
                                                     "      \"marketId\": 5,\n" +
                                                     "      \"marketName\": \"M 브라이튼\",\n" +
                                                     "      \"price\": {\n" +
@@ -67,13 +70,25 @@ public interface UserProductControllerDocs {
                                                     "        \"salePrice\": 33900,\n" +
                                                     "        \"maxBenefitPrice\": 31000\n" +
                                                     "      },\n" +
+                                                    "      \"purchasePrice\": 30000,\n" +
+                                                    "      \"gender\": \"UNISEX\",\n" +
+                                                    "      \"isDisplay\": true,\n" +
+                                                    "      \"isRecommended\": false,\n" +
+                                                    "      \"productNotice\": \"{\\\"origin\\\":\\\"한국\\\"}\",\n" +
+                                                    "      \"description\": \"<p>상품 상세 설명</p>\",\n" +
+                                                    "      \"tags\": \"[\\\"신상\\\", \\\"할인\\\"]\",\n" +
+                                                    "      \"deliveryType\": \"STANDARD\",\n" +
+                                                    "      \"deliveryFee\": 3000,\n" +
+                                                    "      \"deliveryFreeThreshold\": 50000,\n" +
+                                                    "      \"deliveryEstimatedDays\": 3,\n" +
+                                                    "      \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
                                                     "      \"status\": {\n" +
                                                     "        \"isOutOfStock\": false,\n" +
                                                     "        \"isOutOfStockForced\": false\n" +
                                                     "      },\n" +
                                                     "      \"likeCount\": 1200,\n" +
                                                     "      \"reviewCount\": 850,\n" +
-                                                    "      \"isWished\": true\n" +
+                                                    "      \"isWished\": false\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
@@ -115,16 +130,13 @@ public interface UserProductControllerDocs {
             @RequestParam(required = false) Long categoryId,
             @Parameter(description = "쇼룸 ID", required = false)
             @RequestParam(required = false) Long marketId,
-            @Parameter(description = "성별 (MALE, FEMALE, UNISEX)", required = false)
-            @RequestParam(required = false) String gender,
-            @Parameter(description = "색상", required = false)
-            @RequestParam(required = false) String color,
-            @Parameter(description = "최소 가격", required = false)
-            @RequestParam(required = false) Integer minPrice,
-            @Parameter(description = "최대 가격", required = false)
-            @RequestParam(required = false) Integer maxPrice,
             @Parameter(description = "정렬 기준 (RECOMMEND, POPULAR, NEWEST, PRICE_ASC, PRICE_DESC)", required = false)
             @RequestParam(required = false) String sort,
+            @Parameter(
+                    description = "필터 목록 (JSON 배열 문자열) 예: [{\"key\":\"gender\",\"values\":[\"MALE\"]}]",
+                    required = false
+            )
+            @RequestParam(required = false) String filters,
             @Parameter(description = "페이지 번호 (기본값: 1)", required = false, example = "1")
             @RequestParam(required = false, defaultValue = "1") Integer page,
             @Parameter(description = "페이지당 항목 수 (기본값: 20)", required = false, example = "20")

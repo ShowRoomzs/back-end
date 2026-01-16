@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -30,7 +31,35 @@ public interface CommonCategoryControllerDocs {
                     description = "카테고리 목록 조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = CategoryDto.CategoryResponse.class)
+                            schema = @Schema(implementation = CategoryDto.CategoryResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "[\n" +
+                                                    "  {\n" +
+                                                    "    \"categoryId\": 1,\n" +
+                                                    "    \"name\": \"의류\",\n" +
+                                                    "    \"order\": 1,\n" +
+                                                    "    \"iconUrl\": \"https://example.com/icon/clothing.png\",\n" +
+                                                    "    \"parentId\": null,\n" +
+                                                    "    \"filters\": [\n" +
+                                                    "      {\n" +
+                                                    "        \"id\": 1,\n" +
+                                                    "        \"filterKey\": \"gender\",\n" +
+                                                    "        \"label\": \"성별\",\n" +
+                                                    "        \"filterType\": \"CHECKBOX\",\n" +
+                                                    "        \"condition\": \"OR\",\n" +
+                                                    "        \"sortOrder\": 1,\n" +
+                                                    "        \"isActive\": true,\n" +
+                                                    "        \"values\": [\n" +
+                                                    "          {\"id\": 11, \"value\": \"MALE\", \"label\": \"남성\", \"extra\": null, \"sortOrder\": 1, \"isActive\": true}\n" +
+                                                    "        ]\n" +
+                                                    "      }\n" +
+                                                    "    ]\n" +
+                                                    "  }\n" +
+                                                    "]"
+                                    )
+                            }
                     )
             )
     })
@@ -47,7 +76,34 @@ public interface CommonCategoryControllerDocs {
                     description = "카테고리 조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = CategoryDto.CategoryResponse.class)
+                            schema = @Schema(implementation = CategoryDto.CategoryResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"categoryId\": 2,\n" +
+                                                    "  \"name\": \"셔츠\",\n" +
+                                                    "  \"order\": 2,\n" +
+                                                    "  \"iconUrl\": \"https://example.com/icon/shirt.png\",\n" +
+                                                    "  \"parentId\": 1,\n" +
+                                                    "  \"filters\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"id\": 2,\n" +
+                                                    "      \"filterKey\": \"color\",\n" +
+                                                    "      \"label\": \"색상\",\n" +
+                                                    "      \"filterType\": \"COLOR\",\n" +
+                                                    "      \"condition\": \"OR\",\n" +
+                                                    "      \"sortOrder\": 2,\n" +
+                                                    "      \"isActive\": true,\n" +
+                                                    "      \"values\": [\n" +
+                                                    "        {\"id\": 21, \"value\": \"블랙\", \"label\": \"블랙\", \"extra\": \"#000000\", \"sortOrder\": 1, \"isActive\": true},\n" +
+                                                    "        {\"id\": 22, \"value\": \"화이트\", \"label\": \"화이트\", \"extra\": \"#FFFFFF\", \"sortOrder\": 2, \"isActive\": true}\n" +
+                                                    "      ]\n" +
+                                                    "    }\n" +
+                                                    "  ]\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(

@@ -9,9 +9,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.domain.product.entity.Product;
+import showroomz.domain.filter.entity.Filter;
+import showroomz.domain.filter.repository.FilterRepository;
+import showroomz.domain.product.repository.ProductFilterCriteria;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.api.seller.category.service.CategoryService;
-import showroomz.domain.product.type.ProductGender;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,6 +26,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryService categoryService;
+    private final FilterRepository filterRepository;
 
     /**
      * 사용자용 상품 검색
@@ -53,19 +56,15 @@ public class ProductService {
         }
 
         String keyword = normalize(request.getQ());
-        ProductGender gender = parseGender(normalize(request.getGender()));
-        String color = normalize(request.getColor());
         String sortType = normalizeSortType(request.getSort());
+        List<ProductFilterCriteria> filterCriteria = buildFilterCriteria(request.getFilters());
 
         // 검색 실행
         Page<Product> productPage = productRepository.searchProductsForUser(
                 keyword,
                 categoryIds,
                 request.getMarketId(),
-                gender,
-                color,
-                request.getMinPrice(),
-                request.getMaxPrice(),
+                filterCriteria,
                 sortType,
                 pageable
         );
@@ -174,17 +173,6 @@ public class ProductService {
         return Math.min(rounded, 100);
     }
 
-    private ProductGender parseGender(String gender) {
-        if (gender == null) {
-            return null;
-        }
-        try {
-            return ProductGender.valueOf(gender.toUpperCase());
-        } catch (IllegalArgumentException ex) {
-            return null;
-        }
-    }
-
     private String normalize(String value) {
         if (value == null) {
             return null;
@@ -196,5 +184,45 @@ public class ProductService {
     private String normalizeSortType(String sortType) {
         String normalized = normalize(sortType);
         return normalized != null ? normalized.toUpperCase() : null;
+    }
+
+    private List<ProductFilterCriteria> buildFilterCriteria(List<ProductDto.FilterRequest> filters) {
+        if (filters == null || filters.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> keys = filters.stream()
+                .map(ProductDto.FilterRequest::getKey)
+                .filter(key -> key != null && !key.isBlank())
+                .map(String::toLowerCase)
+                .distinct()
+                .toList();
+
+        List<Filter> filterDefinitions = filterRepository.findByFilterKeyIn(keys);
+
+        return filters.stream()
+                .map(filter -> {
+                    String key = normalize(filter.getKey());
+                    if (key == null) {
+                        return null;
+                    }
+                    Filter definition = filterDefinitions.stream()
+                            .filter(item -> key.equalsIgnoreCase(item.getFilterKey()))
+                            .findFirst()
+                            .orElse(null);
+                    if (definition == null || !Boolean.TRUE.equals(definition.getIsActive())) {
+                        return null;
+                    }
+                    return new ProductFilterCriteria(
+                            key,
+                            definition.getFilterType(),
+                            definition.getCondition(),
+                            filter.getValues(),
+                            filter.getMinValue(),
+                            filter.getMaxValue()
+                    );
+                })
+                .filter(java.util.Objects::nonNull)
+                .toList();
     }
 }
