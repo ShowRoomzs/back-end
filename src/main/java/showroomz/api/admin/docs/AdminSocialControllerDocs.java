@@ -20,6 +20,72 @@ import java.util.Map;
 public interface AdminSocialControllerDocs {
 
     @Operation(
+            summary = "전체 소셜 로그인 상태 조회",
+            description = "모든 소셜 로그인 제공자의 현재 활성화 상태를 조회합니다.\n\n" +
+                    "**응답 형식:**\n" +
+                    "- `true`: 활성화된 상태\n" +
+                    "- `false`: 일시 중단된 상태\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "소셜 로그인 상태 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Map.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 응답 예시",
+                                            value = "{\n" +
+                                                    "  \"GOOGLE\": true,\n" +
+                                                    "  \"NAVER\": true,\n" +
+                                                    "  \"KAKAO\": false,\n" +
+                                                    "  \"APPLE\": true\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 유효하지 않은 토큰 또는 토큰 만료",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 - ADMIN 권한이 필요합니다",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "권한 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"FORBIDDEN\",\n" +
+                                                    "  \"message\": \"접근 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<Map<String, Boolean>> getAllSocialStatuses();
+
+    @Operation(
             summary = "소셜 로그인 상태 변경",
             description = "특정 소셜 로그인 제공자의 활성화/비활성화 상태를 변경합니다.\n\n" +
                     "**동작 방식:**\n" +

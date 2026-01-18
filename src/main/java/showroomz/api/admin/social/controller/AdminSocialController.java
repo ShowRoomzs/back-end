@@ -17,6 +17,13 @@ public class AdminSocialController implements AdminSocialControllerDocs {
     private final SocialPolicyService socialPolicyService;
 
     @Override
+    @GetMapping("/status")
+    public ResponseEntity<Map<String, Boolean>> getAllSocialStatuses() {
+        Map<String, Boolean> statuses = socialPolicyService.getAllProviderStatuses();
+        return ResponseEntity.ok(statuses);
+    }
+
+    @Override
     @PatchMapping("/{provider}/status")
     public ResponseEntity<Map<String, String>> updateSocialStatus(
             @PathVariable("provider") ProviderType providerType,

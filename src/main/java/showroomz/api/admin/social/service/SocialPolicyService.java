@@ -9,6 +9,9 @@ import showroomz.domain.social.repository.SocialLoginPolicyRepository;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class SocialPolicyService {
@@ -49,5 +52,33 @@ public class SocialPolicyService {
         } else {
             policy.updateStatus(isActive);
         }
+    }
+
+    /**
+     * 전체 소셜 로그인 상태 조회 (관리자용)
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Boolean> getAllProviderStatuses() {
+        Map<String, Boolean> statusMap = new HashMap<>();
+        
+        // 지원하는 ProviderType 목록
+        ProviderType[] supportedProviders = {
+            ProviderType.GOOGLE,
+            ProviderType.NAVER,
+            ProviderType.KAKAO,
+            ProviderType.APPLE
+        };
+        
+        for (ProviderType providerType : supportedProviders) {
+            SocialLoginPolicy policy = policyRepository.findByProviderType(providerType)
+                    .orElseGet(() -> SocialLoginPolicy.builder()
+                            .providerType(providerType)
+                            .isActive(true) // 기본값: 활성
+                            .build());
+            
+            statusMap.put(providerType.name(), policy.isActive());
+        }
+        
+        return statusMap;
     }
 }
