@@ -7,8 +7,10 @@ import showroomz.api.admin.docs.AdminSocialControllerDocs;
 import showroomz.api.admin.social.service.SocialPolicyService;
 import showroomz.api.app.auth.entity.ProviderType;
 
+import java.util.Map;
+
 @RestController
-@RequestMapping("/api/admin/social")
+@RequestMapping("/v1/admin/social")
 @RequiredArgsConstructor
 public class AdminSocialController implements AdminSocialControllerDocs {
 
@@ -16,13 +18,14 @@ public class AdminSocialController implements AdminSocialControllerDocs {
 
     @Override
     @PatchMapping("/{provider}/status")
-    public ResponseEntity<String> updateSocialStatus(
+    public ResponseEntity<Map<String, String>> updateSocialStatus(
             @PathVariable("provider") ProviderType providerType,
-            @RequestParam boolean active) {
+            @RequestParam("active") boolean active) {
         
         socialPolicyService.updateProviderStatus(providerType, active);
         
         String statusText = active ? "활성화" : "일시 중단";
-        return ResponseEntity.ok(providerType + " 로그인이 " + statusText + " 되었습니다.");
+        String message = providerType + " 로그인이 " + statusText + " 되었습니다.";
+        return ResponseEntity.ok(Map.of("message", message));
     }
 }

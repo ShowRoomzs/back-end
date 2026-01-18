@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
+import showroomz.api.admin.social.service.SocialPolicyService;
 import showroomz.api.app.auth.service.SocialLoginService;
 import showroomz.api.app.user.repository.UserRepository;
 
@@ -34,6 +35,9 @@ class ApplePublicKeyGeneratorTest {
 
     @Mock
     private RestTemplate restTemplate;
+
+    @Mock
+    private SocialPolicyService socialPolicyService;
 
     /**
      * SocialLoginService#loadApplePublicKey(kid, alg)는 애플 JWK 목록에서
@@ -67,7 +71,7 @@ class ApplePublicKeyGeneratorTest {
         when(restTemplate.getForObject(eq("https://appleid.apple.com/auth/keys"), any()))
                 .thenReturn(jwkResponse);
 
-        SocialLoginService service = new SocialLoginService(userRepository, restTemplate);
+        SocialLoginService service = new SocialLoginService(userRepository, restTemplate, socialPolicyService);
 
         // when (private 메소드 호출)
         RSAPublicKey generated = ReflectionTestUtils.invokeMethod(service, "loadApplePublicKey", kid, alg);
