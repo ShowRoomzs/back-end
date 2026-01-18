@@ -27,7 +27,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Service
+@Service("sellerProductService")
 @RequiredArgsConstructor
 @Slf4j
 @Transactional
@@ -63,6 +63,7 @@ public class ProductService {
         product.setSellerProductCode(request.getSellerProductCode());
         product.setRegularPrice(request.getRegularPrice());
         product.setSalePrice(request.getSalePrice());
+        product.setGender(request.getGender());
         product.setPurchasePrice(request.getPurchasePrice());
         product.setIsDisplay(request.getIsDisplay() != null ? request.getIsDisplay() : true);
         product.setIsOutOfStockForced(request.getIsOutOfStockForced() != null ? request.getIsOutOfStockForced() : false);
@@ -132,10 +133,10 @@ public class ProductService {
                 product.getOptionGroups().add(optionGroup);
                 
                 Map<String, ProductOption> optionsInGroup = new HashMap<>();
-                for (String optionName : groupRequest.getOptions()) {
-                    ProductOption option = new ProductOption(optionGroup, optionName);
+                for (ProductDto.OptionRequest optionRequest : groupRequest.getOptions()) {
+                    ProductOption option = new ProductOption(optionGroup, optionRequest.getName(), optionRequest.getPrice());
                     optionGroup.getOptions().add(option);
-                    optionsInGroup.put(optionName, option);
+                    optionsInGroup.put(optionRequest.getName(), option);
                 }
                 optionMap.put(groupRequest.getName(), optionsInGroup);
             }
@@ -173,7 +174,8 @@ public class ProductService {
                         request.getRegularPrice(), // 기본 가격
                         variantRequest.getSalePrice(),
                         variantRequest.getStock(),
-                        variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false
+                        variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false,
+                        variantRequest.getIsDisplay()
                 );
                 
                 variant.setOptions(variantOptions);
@@ -187,6 +189,7 @@ public class ProductService {
                     request.getRegularPrice(),
                     request.getSalePrice(),
                     0,
+                    true,
                     true
             );
             product.getVariants().add(variant);
@@ -542,6 +545,9 @@ public class ProductService {
         if (request.getSalePrice() != null) {
             product.setSalePrice(request.getSalePrice());
         }
+        if (request.getGender() != null) {
+            product.setGender(request.getGender());
+        }
         if (request.getDescription() != null) {
             product.setDescription(request.getDescription());
         }
@@ -582,17 +588,17 @@ public class ProductService {
 
         // 7. 이미지 업데이트 (제공된 경우)
         if (request.getRepresentativeImageUrl() != null || request.getCoverImageUrls() != null) {
-            // 기존 이미지 삭제
-            product.getProductImages().clear();
+            // 기존 이미지 삭제 (orphanRemoval을 위해 기존 컬렉션을 유지하고 clear 후 addAll 사용)
+            List<ProductImage> existingImages = product.getProductImages();
+            existingImages.clear();
             
-            List<ProductImage> productImages = new ArrayList<>();
             int imageOrder = 0;
             
             // 대표 이미지 추가
             if (request.getRepresentativeImageUrl() != null) {
                 product.setThumbnailUrl(request.getRepresentativeImageUrl());
                 ProductImage representativeImage = new ProductImage(product, request.getRepresentativeImageUrl(), imageOrder++);
-                productImages.add(representativeImage);
+                existingImages.add(representativeImage);
             }
             
             // 커버 이미지 추가 (최대 4개)
@@ -600,11 +606,9 @@ public class ProductService {
                 for (String coverImageUrl : request.getCoverImageUrls()) {
                     if (imageOrder >= 5) break; // 대표 이미지 포함 최대 5개
                     ProductImage coverImage = new ProductImage(product, coverImageUrl, imageOrder++);
-                    productImages.add(coverImage);
+                    existingImages.add(coverImage);
                 }
             }
-            
-            product.setProductImages(productImages);
         }
 
         // 8. 옵션 그룹 및 옵션 업데이트 (제공된 경우)
@@ -621,10 +625,10 @@ public class ProductService {
                 product.getOptionGroups().add(optionGroup);
                 
                 Map<String, ProductOption> optionsInGroup = new HashMap<>();
-                for (String optionName : groupRequest.getOptions()) {
-                    ProductOption option = new ProductOption(optionGroup, optionName);
+                for (ProductDto.OptionRequest optionRequest : groupRequest.getOptions()) {
+                    ProductOption option = new ProductOption(optionGroup, optionRequest.getName(), optionRequest.getPrice());
                     optionGroup.getOptions().add(option);
-                    optionsInGroup.put(optionName, option);
+                    optionsInGroup.put(optionRequest.getName(), option);
                 }
                 optionMap.put(groupRequest.getName(), optionsInGroup);
             }
@@ -662,7 +666,8 @@ public class ProductService {
                         variantRegularPrice,
                         variantRequest.getSalePrice(),
                         variantRequest.getStock(),
-                        variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false
+                        variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false,
+                        variantRequest.getIsDisplay()
                 );
                 
                 variant.setOptions(variantOptions);
@@ -734,13 +739,62 @@ public class ProductService {
     }
     
     /**
-     * Product 엔티티를 ProductDetailResponse DTO로 변환 (Product 엔티티의 모든 컬럼만 포함)
+     * Product 엔티티를 ProductDetailResponse DTO로 변환
      */
     private ProductDto.ProductDetailResponse convertToProductDetailResponse(Product product, String stockStatus) {
         // 등록일 포맷팅 (ISO 8601 형식)
         String createdAtStr = product.getCreatedAt() != null 
                 ? product.getCreatedAt().toString() 
                 : null;
+        
+        // 대표 이미지 URL (product.thumbnail_url 값)
+        String representativeImageUrl = product.getThumbnailUrl();
+        
+        // 커버 이미지 URL 목록 (product_image 테이블에서 order >= 1인 이미지들)
+        List<String> coverImageUrls = product.getProductImages().stream()
+                .filter(image -> image.getOrder() != null && image.getOrder() >= 1)
+                .sorted(Comparator.comparing(ProductImage::getOrder))
+                .map(ProductImage::getUrl)
+                .collect(Collectors.toList());
+        
+        // 옵션 그룹 목록 변환
+        List<ProductDto.OptionGroupInfo> optionGroups = product.getOptionGroups().stream()
+                .map(group -> {
+                    List<ProductDto.OptionInfo> options = group.getOptions().stream()
+                            .map(option -> ProductDto.OptionInfo.builder()
+                                    .optionId(option.getOptionId())
+                                    .name(option.getName())
+                                    .price(option.getPrice())
+                                    .build())
+                            .collect(Collectors.toList());
+                    
+                    return ProductDto.OptionGroupInfo.builder()
+                            .optionGroupId(group.getOptionGroupId())
+                            .name(group.getName())
+                            .options(options)
+                            .build();
+                })
+                .collect(Collectors.toList());
+        
+        // Variant 목록 변환
+        List<ProductDto.VariantInfo> variants = product.getVariants().stream()
+                .map(variant -> {
+                    List<Long> optionIds = variant.getOptions().stream()
+                            .map(ProductOption::getOptionId)
+                            .collect(Collectors.toList());
+                    
+                    return ProductDto.VariantInfo.builder()
+                            .variantId(variant.getVariantId())
+                            .name(variant.getName())
+                            .regularPrice(variant.getRegularPrice())
+                            .salePrice(variant.getSalePrice())
+                            .stock(variant.getStock())
+                            .isRepresentative(variant.getIsRepresentative())
+                            .isDisplay(variant.getIsDisplay())
+                            .optionIds(optionIds)
+                            .build();
+                })
+                .collect(Collectors.toList());
         
         return ProductDto.ProductDetailResponse.builder()
                 .productId(product.getProductId())
@@ -751,9 +805,11 @@ public class ProductService {
                 .categoryName(product.getCategory() != null ? product.getCategory().getName() : null)
                 .name(product.getName())
                 .sellerProductCode(product.getSellerProductCode())
-                .thumbnailUrl(product.getThumbnailUrl())
+                .representativeImageUrl(representativeImageUrl)
+                .coverImageUrls(coverImageUrls)
                 .regularPrice(product.getRegularPrice())
                 .salePrice(product.getSalePrice())
+                .gender(product.getGender())
                 .purchasePrice(product.getPurchasePrice())
                 .isDisplay(product.getIsDisplay())
                 .isOutOfStockForced(product.getIsOutOfStockForced())
@@ -766,6 +822,8 @@ public class ProductService {
                 .deliveryFreeThreshold(product.getDeliveryFreeThreshold())
                 .deliveryEstimatedDays(product.getDeliveryEstimatedDays())
                 .createdAt(createdAtStr)
+                .optionGroups(optionGroups)
+                .variants(variants)
                 .build();
     }
 }

@@ -16,7 +16,7 @@ import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
-@RestController
+@RestController("sellerProductController")
 @RequestMapping("/v1/seller/products")
 @RequiredArgsConstructor
 public class ProductController implements ProductControllerDocs {

@@ -11,6 +11,8 @@ import lombok.Setter;
 
 import java.util.List;
 
+import showroomz.domain.product.type.ProductGender;
+
 public class ProductDto {
 
     @Getter
@@ -51,6 +53,9 @@ public class ProductDto {
         @Min(value = 0, message = "할인 판매가는 0 이상이어야 합니다.")
         @Schema(description = "할인 판매가 (최종가)", example = "49000")
         private Integer salePrice;
+
+        @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
+        private ProductGender gender;
 
         @Schema(description = "할인 설정 여부", example = "true")
         private Boolean isDiscount = false;
@@ -145,8 +150,25 @@ public class ProductDto {
         private String name;
 
         @NotEmpty(message = "옵션 목록은 필수 입력값입니다.")
-        @Schema(description = "옵션 목록", example = "[\"S\", \"M\", \"L\"]")
-        private List<String> options;
+        @Valid
+        @Schema(description = "옵션 목록")
+        private List<OptionRequest> options;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "옵션 요청")
+    public static class OptionRequest {
+        @NotBlank(message = "옵션명은 필수 입력값입니다.")
+        @Schema(description = "옵션명", example = "S")
+        private String name;
+
+        @Schema(description = "옵션 가격 (추가 가격)", example = "0")
+        @Builder.Default
+        private Integer price = 0;
     }
 
     @Getter
@@ -227,6 +249,9 @@ public class ProductDto {
         @Min(value = 0, message = "할인 판매가는 0 이상이어야 합니다.")
         @Schema(description = "할인 판매가 (최종가)", example = "49000")
         private Integer salePrice;
+
+        @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
+        private ProductGender gender;
 
         @Schema(description = "대표 이미지 URL", example = "https://example.com/image.jpg")
         private String representativeImageUrl;
@@ -406,14 +431,20 @@ public class ProductDto {
         @Schema(description = "판매자 상품 코드", example = "PROD-ABC-001")
         private String sellerProductCode;
 
-        @Schema(description = "썸네일 URL", example = "https://example.com/thumbnail.jpg")
-        private String thumbnailUrl;
+        @Schema(description = "대표 이미지 URL (타이틀/썸네일 이미지)", example = "https://example.com/image.jpg")
+        private String representativeImageUrl;
+
+        @Schema(description = "커버 이미지 URL 목록", example = "[\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\"]")
+        private List<String> coverImageUrls;
 
         @Schema(description = "정가", example = "59000")
         private Integer regularPrice;
 
         @Schema(description = "할인 판매가", example = "49000")
         private Integer salePrice;
+
+        @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
+        private ProductGender gender;
 
         @Schema(description = "매입가", example = "30000")
         private Integer purchasePrice;
@@ -450,6 +481,12 @@ public class ProductDto {
 
         @Schema(description = "등록일", example = "2025-12-28T14:30:00Z")
         private String createdAt;
+
+        @Schema(description = "옵션 그룹 목록")
+        private List<OptionGroupInfo> optionGroups;
+
+        @Schema(description = "옵션 조합 (Variant) 목록")
+        private List<VariantInfo> variants;
     }
 
     @Getter
@@ -498,6 +535,9 @@ public class ProductDto {
 
         @Schema(description = "옵션명", example = "S")
         private String name;
+
+        @Schema(description = "옵션 가격 (추가 가격)", example = "0")
+        private Integer price;
     }
 
     @Getter
@@ -524,6 +564,9 @@ public class ProductDto {
 
         @Schema(description = "대표 옵션 여부", example = "true")
         private Boolean isRepresentative;
+
+        @Schema(description = "진열 여부", example = "true")
+        private Boolean isDisplay;
 
         @Schema(description = "옵션 ID 목록", example = "[1, 2]")
         private List<Long> optionIds;

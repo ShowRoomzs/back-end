@@ -10,6 +10,11 @@ import showroomz.api.admin.category.DTO.CategoryDto;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.category.repository.CategoryRepository;
+import showroomz.domain.filter.entity.CategoryFilter;
+import showroomz.domain.filter.entity.Filter;
+import showroomz.domain.filter.entity.FilterValue;
+import showroomz.domain.filter.repository.CategoryFilterRepository;
+import showroomz.domain.filter.repository.CategoryFilterValueRepository;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductRepository;
 
@@ -21,7 +26,10 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
+    private final CategoryFilterRepository categoryFilterRepository;
+    private final CategoryFilterValueRepository categoryFilterValueRepository;
 
+    @SuppressWarnings("null")
     public CategoryDto.CreateCategoryResponse createCategory(CategoryDto.CreateCategoryRequest request) {
         // 카테고리명 중복 체크
         if (categoryRepository.existsByName(request.getName())) {
@@ -42,6 +50,7 @@ public class CategoryService {
         category.setIconUrl(request.getIconUrl());
         category.setParent(parent);
 
+        @SuppressWarnings("null")
         Category savedCategory = categoryRepository.save(category);
 
         return CategoryDto.CreateCategoryResponse.builder()
@@ -64,6 +73,7 @@ public class CategoryService {
                 .order(category.getOrder())
                 .iconUrl(category.getIconUrl())
                 .parentId(category.getParent() != null ? category.getParent().getCategoryId() : null)
+                .filters(getFiltersForCategory(category.getCategoryId()))
                 .build();
     }
 
@@ -76,11 +86,13 @@ public class CategoryService {
                         .order(category.getOrder())
                         .iconUrl(category.getIconUrl())
                         .parentId(category.getParent() != null ? category.getParent().getCategoryId() : null)
+                        .filters(getFiltersForCategory(category.getCategoryId()))
                         .build())
                 .toList();
     }
 
     @Transactional
+    @SuppressWarnings("null")
     public CategoryDto.UpdateCategoryResponse updateCategory(Long categoryId, CategoryDto.UpdateCategoryRequest request) {
         Category category = categoryRepository.findByCategoryId(categoryId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
@@ -116,6 +128,7 @@ public class CategoryService {
     }
 
     @Transactional
+    @SuppressWarnings("null")
     public void deleteCategory(Long categoryId) {
         Category category = categoryRepository.findByCategoryId(categoryId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
@@ -134,7 +147,9 @@ public class CategoryService {
         }
 
         // cascade로 인해 하위 카테고리도 자동으로 삭제됨
-        categoryRepository.delete(category);
+        @SuppressWarnings("null")
+        Category deleteTarget = category;
+        categoryRepository.delete(deleteTarget);
     }
     
     /**
@@ -164,6 +179,58 @@ public class CategoryService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
         
         return getAllCategoryIdsIncludingChildren(category);
+    }
+
+    private java.util.List<CategoryDto.FilterInfo> getFiltersForCategory(Long categoryId) {
+        java.util.List<CategoryFilter> mappings = categoryFilterRepository.findByCategory_CategoryId(categoryId);
+
+        return mappings.stream()
+                .map(CategoryFilter::getFilter)
+                .filter(filter -> Boolean.TRUE.equals(filter.getIsActive()))
+                .distinct()
+                .sorted(java.util.Comparator.comparingInt(filter -> filter.getSortOrder() != null ? filter.getSortOrder() : 0))
+                .map(filter -> toFilterInfo(filter, categoryId))
+                .toList();
+    }
+
+    private CategoryDto.FilterInfo toFilterInfo(Filter filter, Long categoryId) {
+        java.util.List<Long> selectedValueIds = categoryFilterValueRepository
+                .findByCategoryFilter_Category_CategoryId(categoryId).stream()
+                .filter(item -> item.getCategoryFilter().getFilter().getId().equals(filter.getId()))
+                .map(item -> item.getFilterValue().getId())
+                .toList();
+
+        java.util.List<FilterValue> values = filter.getValues().stream()
+                .filter(FilterValue::getIsActive)
+                .filter(value -> selectedValueIds.isEmpty() || selectedValueIds.contains(value.getId()))
+                .sorted(java.util.Comparator.comparingInt(value -> value.getSortOrder() != null ? value.getSortOrder() : 0))
+                .toList();
+
+        java.util.List<CategoryDto.FilterValueInfo> valueInfos = values.stream()
+                .map(this::toFilterValueInfo)
+                .toList();
+
+        return CategoryDto.FilterInfo.builder()
+                .id(filter.getId())
+                .filterKey(filter.getFilterKey())
+                .label(filter.getLabel())
+                .filterType(filter.getFilterType())
+                .condition(filter.getCondition())
+                .sortOrder(filter.getSortOrder())
+                .isActive(filter.getIsActive())
+                .values(valueInfos)
+                .build();
+    }
+
+    private CategoryDto.FilterValueInfo toFilterValueInfo(FilterValue value) {
+        return CategoryDto.FilterValueInfo.builder()
+                .id(value.getId())
+                .value(value.getValue())
+                .label(value.getLabel())
+                .extra(value.getExtra())
+                .sortOrder(value.getSortOrder())
+                .isActive(value.getIsActive())
+                .build();
     }
 }
 

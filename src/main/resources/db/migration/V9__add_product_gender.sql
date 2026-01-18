@@ -1,0 +1,2 @@
+ALTER TABLE product
+    ADD COLUMN gender VARCHAR(10) NULL;

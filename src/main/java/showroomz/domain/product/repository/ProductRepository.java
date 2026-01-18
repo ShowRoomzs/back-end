@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
+public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product>, ProductRepositoryCustom {
     Optional<Product> findByProductId(Long productId);
     Optional<Product> findByProductNumber(String productNumber);
     
@@ -72,5 +72,6 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
             @Param("keywordType") String keywordType,
             Pageable pageable
     );
+
 }
 
