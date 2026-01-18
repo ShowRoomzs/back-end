@@ -18,5 +18,5 @@ logging:
 
 # Sentry 설정 (프로덕션은 샘플링 적용)
 sentry:
-  traces-sample-rate: 0.1 # 성능 모니터링 샘플링 비율 (프로덕션은 10% 수집 권장)
+  traces-sample-rate: 1.0 # 성능 모니터링 샘플링 비율 (프로덕션은 10% 수집 권장)
   environment: production

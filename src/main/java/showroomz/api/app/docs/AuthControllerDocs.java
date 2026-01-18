@@ -128,6 +128,24 @@ public interface AuthControllerDocs {
                     )
             ),
             @ApiResponse(
+                    responseCode = "403",
+                    description = "소셜 로그인 일시 중단 - 해당 소셜 로그인이 관리자에 의해 비활성화됨",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "소셜 로그인 비활성화",
+                                            value = "{\n" +
+                                                    "  \"code\": \"DISABLED_SOCIAL_VENDOR\",\n" +
+                                                    "  \"message\": \"해당 소셜 로그인은 현재 일시 중단되었습니다.\"\n" +
+                                                    "}",
+                                            description = "관리자가 해당 소셜 로그인 제공자를 비활성화한 경우 발생합니다."
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
                     responseCode = "409",
                     description = "이메일 중복 - 이미 다른 소셜 계정에서 사용 중인 이메일",
                     content = @Content(
