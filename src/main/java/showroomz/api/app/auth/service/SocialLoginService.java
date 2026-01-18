@@ -8,6 +8,7 @@ import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.auth.info.OAuth2UserInfo;
 import showroomz.api.app.auth.info.OAuth2UserInfoFactory;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.api.admin.social.service.SocialPolicyService;
 import showroomz.domain.member.user.entity.Users;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
@@ -45,6 +46,7 @@ public class SocialLoginService {
 
     private final UserRepository userRepository;
     private final RestTemplate restTemplate; // Bean 주입 권장
+    private final SocialPolicyService socialPolicyService; // 주입 추가
 
     // application.yml 등에 설정된 구글 클라이언트 ID (Android/iOS 등)
     // 예: spring.security.oauth2.client.registration.google.client-id 와 같은 경로의 값
@@ -66,6 +68,10 @@ public class SocialLoginService {
 
     @Transactional
     public SocialLoginResult loginOrSignup(ProviderType providerType, String accessToken, String name) {
+        // [추가된 로직] 로그인 프로세스 시작 전 상태 검증
+        // 일시 중단 상태라면 예외(BusinessException)가 발생하여 가입/로그인 모두 차단됨
+        socialPolicyService.validateProviderActive(providerType);
+
         // 1. [보안 추가] 구글의 경우 토큰이 우리 앱의 것인지 검증
         if (providerType == ProviderType.GOOGLE) {
             verifyGoogleToken(accessToken);

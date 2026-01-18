@@ -81,7 +81,7 @@ class AdminServiceTest {
         void success() {
             // given
             SellerSignUpRequest request = createSignUpRequest();
-            given(adminRepository.existsByEmail(request.getEmail())).willReturn(false);
+            given(adminRepository.findByEmail(request.getEmail())).willReturn(Optional.empty());
             given(marketRepository.existsByMarketName(request.getMarketName())).willReturn(false);
             given(passwordEncoder.encode(request.getPassword())).willReturn("encodedPassword");
             
@@ -120,7 +120,9 @@ class AdminServiceTest {
         void fail_duplicate_email() {
             // given
             SellerSignUpRequest request = createSignUpRequest();
-            given(adminRepository.existsByEmail(request.getEmail())).willReturn(true);
+            Seller existingSeller = createAdmin();
+            existingSeller.setStatus(showroomz.api.seller.auth.type.SellerStatus.APPROVED);
+            given(adminRepository.findByEmail(request.getEmail())).willReturn(Optional.of(existingSeller));
 
             // when & then
             assertThatThrownBy(() -> adminService.registerAdmin(request))
@@ -134,7 +136,7 @@ class AdminServiceTest {
         void fail_duplicate_market_name() {
             // given
             SellerSignUpRequest request = createSignUpRequest();
-            given(adminRepository.existsByEmail(request.getEmail())).willReturn(false);
+            given(adminRepository.findByEmail(request.getEmail())).willReturn(Optional.empty());
             given(marketRepository.existsByMarketName(request.getMarketName())).willReturn(true);
 
             // when & then
