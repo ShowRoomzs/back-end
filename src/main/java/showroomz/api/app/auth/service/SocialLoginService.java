@@ -10,6 +10,7 @@ import showroomz.api.app.auth.info.OAuth2UserInfoFactory;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.admin.social.service.SocialPolicyService;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.type.UserStatus;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
@@ -91,6 +92,7 @@ public class SocialLoginService {
         boolean isNewMember = false;
 
         if (user == null) {
+            // [신규 가입]
             // 이메일이 이미 다른 계정에서 사용 중인지 확인
             String email = userInfo.getEmail();
             if (email != null && !email.isEmpty() && userRepository.existsByEmail(email)) {
@@ -105,11 +107,30 @@ public class SocialLoginService {
             }
             isNewMember = true;
         } else {
-            // 사용자가 존재하더라도 GUEST 권한이면 회원가입 미완료로 처리
-            if (user.getRoleType() == RoleType.GUEST) {
+            // [기존 유저 존재]
+            
+            // 탈퇴 회원(WITHDRAWN)인 경우 재가입(복구) 처리
+            if (user.getStatus() == UserStatus.WITHDRAWN) {
+                // 1. 상태 복구: 탈퇴 -> 정상
+                user.updateStatus(UserStatus.NORMAL);
+                
+                // 2. 재가입 프로세스 유도:
+                //    - Role을 GUEST로 변경하여 권한을 축소 (가입 미완료 상태로 전환)
+                //    - isNewMember를 true로 설정하여 프론트엔드가 가입 화면(약관/닉네임)을 띄우게 함
+                user.setRoleType(RoleType.GUEST);
                 isNewMember = true;
+
+                // 3. (선택사항) 기존 정보 초기화
+                //    완전한 '새 출발'을 위해 기존 닉네임이나 동의 내역 등을 초기화할 수 있습니다.
+                // user.setNickname(userInfo.getName()); // 소셜 이름으로 리셋
+                // user.setMarketingAgree(false);        // 마케팅 동의 리셋
+                
+            } else {
+                // 정상 회원인 경우
+                if (user.getRoleType() == RoleType.GUEST) {
+                    isNewMember = true;
+                }
             }
-            // 기존 사용자의 경우 업데이트할 필요 없음 (닉네임, 프로필 이미지는 사용자가 직접 관리)
         }
 
         return new SocialLoginResult(user, isNewMember);
