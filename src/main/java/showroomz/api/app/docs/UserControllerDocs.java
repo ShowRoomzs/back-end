@@ -49,8 +49,8 @@ public interface UserControllerDocs {
                                                     "  \"gender\": \"MALE\",\n" +
                                                     "  \"providerType\": \"GOOGLE\",\n" +
                                                     "  \"roleType\": \"USER\",\n" +
-                                                    "  \"createdAt\": \"2025-10-31T10:00:00\",\n" +
-                                                    "  \"modifiedAt\": \"2025-10-31T10:00:00\",\n" +
+                                                    "  \"createdAt\": \"2025-10-31T10:00:00Z\",\n" +
+                                                    "  \"modifiedAt\": \"2025-10-31T10:00:00Z\",\n" +
                                                     "  \"marketingAgree\": true,\n" +
                                                     "  \"followingCount\": 0\n" +
                                                     "}"
@@ -66,8 +66,8 @@ public interface UserControllerDocs {
                                                     "  \"gender\": \"MALE\",\n" +
                                                     "  \"providerType\": \"GOOGLE\",\n" +
                                                     "  \"roleType\": \"USER\",\n" +
-                                                    "  \"createdAt\": \"2025-10-31T10:00:00\",\n" +
-                                                    "  \"modifiedAt\": \"2025-10-31T10:00:00\",\n" +
+                                                    "  \"createdAt\": \"2025-10-31T10:00:00Z\",\n" +
+                                                    "  \"modifiedAt\": \"2025-10-31T10:00:00Z\",\n" +
                                                     "  \"marketingAgree\": true,\n" +
                                                     "  \"followingCount\": 0\n" +
                                                     "}"
@@ -230,8 +230,8 @@ public interface UserControllerDocs {
                                                     "  \"gender\": \"MALE\",\n" +
                                                     "  \"providerType\": \"GOOGLE\",\n" +
                                                     "  \"roleType\": \"USER\",\n" +
-                                                    "  \"createdAt\": \"2025-10-31T10:00:00\",\n" +
-                                                    "  \"modifiedAt\": \"2025-10-31T10:00:00\",\n" +
+                                                    "  \"createdAt\": \"2025-10-31T10:00:00Z\",\n" +
+                                                    "  \"modifiedAt\": \"2025-10-31T10:00:00Z\",\n" +
                                                     "  \"marketingAgree\": true,\n" +
                                                     "  \"followingCount\": 0\n" +
                                                     "}"

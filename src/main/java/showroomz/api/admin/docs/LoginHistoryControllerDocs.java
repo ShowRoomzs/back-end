@@ -124,7 +124,7 @@ public interface LoginHistoryControllerDocs {
                                                     "      \"id\": 1,\n" +
                                                     "      \"userId\": 123,\n" +
                                                     "      \"email\": \"user1@example.com\",\n" +
-                                                    "      \"loginAt\": \"2024-01-15 14:30:25\",\n" +
+                                                    "      \"loginAt\": \"2024-01-15T14:30:25Z\",\n" +
                                                     "      \"clientIp\": \"192.168.1.100\",\n" +
                                                     "      \"deviceType\": \"DESKTOP_CHROME\",\n" +
                                                     "      \"country\": \"대한민국\",\n" +
@@ -135,7 +135,7 @@ public interface LoginHistoryControllerDocs {
                                                     "      \"id\": 2,\n" +
                                                     "      \"userId\": 124,\n" +
                                                     "      \"email\": \"user2@example.com\",\n" +
-                                                    "      \"loginAt\": \"2024-01-15 13:20:10\",\n" +
+                                                    "      \"loginAt\": \"2024-01-15T13:20:10Z\",\n" +
                                                     "      \"clientIp\": \"192.168.1.101\",\n" +
                                                     "      \"deviceType\": \"IPHONE\",\n" +
                                                     "      \"country\": \"대한민국\",\n" +

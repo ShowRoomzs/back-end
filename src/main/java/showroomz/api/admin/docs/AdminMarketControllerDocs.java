@@ -59,7 +59,7 @@ public interface AdminMarketControllerDocs {
                                                     "      \"phoneNumber\": \"010-1234-5678\",\n" +
                                                     "      \"status\": \"PENDING\",\n" +
                                                     "      \"rejectionReason\": null,\n" +
-                                                    "      \"createdAt\": \"2024-01-15T10:30:00\"\n" +
+                                                    "      \"createdAt\": \"2024-01-15T10:30:00Z\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
                                                     "      \"sellerId\": 2,\n" +
@@ -70,7 +70,7 @@ public interface AdminMarketControllerDocs {
                                                     "      \"phoneNumber\": \"010-9876-5432\",\n" +
                                                     "      \"status\": \"REJECTED\",\n" +
                                                     "      \"rejectionReason\": \"사업자 등록증 식별 불가\",\n" +
-                                                    "      \"createdAt\": \"2024-01-10T09:00:00\"\n" +
+                                                    "      \"createdAt\": \"2024-01-10T09:00:00Z\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +

@@ -79,8 +79,8 @@ public class UserAdminController {
                                                     "      \"email\": \"user@example.com\",\n" +
                                                     "      \"nickname\": \"홍길동\",\n" +
                                                     "      \"providerType\": \"GOOGLE\",\n" +
-                                                    "      \"createdAt\": \"2024-01-01T10:00:00\",\n" +
-                                                    "      \"lastLoginAt\": \"2024-01-15T14:30:00\",\n" +
+                                                    "      \"createdAt\": \"2024-01-01T10:00:00Z\",\n" +
+                                                    "      \"lastLoginAt\": \"2024-01-15T14:30:00Z\",\n" +
                                                     "      \"status\": \"NORMAL\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
@@ -88,8 +88,8 @@ public class UserAdminController {
                                                     "      \"email\": \"user2@example.com\",\n" +
                                                     "      \"nickname\": \"김철수\",\n" +
                                                     "      \"providerType\": \"NAVER\",\n" +
-                                                    "      \"createdAt\": \"2024-01-05T09:00:00\",\n" +
-                                                    "      \"lastLoginAt\": \"2024-01-20T16:45:00\",\n" +
+                                                    "      \"createdAt\": \"2024-01-05T09:00:00Z\",\n" +
+                                                    "      \"lastLoginAt\": \"2024-01-20T16:45:00Z\",\n" +
                                                     "      \"status\": \"NORMAL\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
