@@ -16,6 +16,12 @@ spring:
       hibernate:
         format_sql: true  # SQL 쿼리를 보기 좋게 줄 바꿈하여 정렬합니다.
         use_sql_comments: true # JPQL 쿼리 내용을 주석으로 함께 표시해줍니다.
+  
+  # Jackson 설정 - 모든 API 응답의 시간 형식 통일 (ISO 8601 UTC: 2026-01-19T12:54:03Z)
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false  # 날짜를 타임스탬프가 아닌 문자열로 직렬화
+    time-zone: UTC  # UTC 시간대 사용
       
   # Flyway 설정 추가
   flyway:
