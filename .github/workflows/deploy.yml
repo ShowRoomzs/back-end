@@ -96,27 +96,24 @@ jobs:
         DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        # 커밋 메시지 가져오기
-        COMMIT_MSG=$(git log -1 --pretty=%B)
+        # 커밋 메시지 가져오기 (첫 줄만, 줄바꿈 제거)
+        COMMIT_MSG=$(git log -1 --pretty=%B | head -1 | tr -d '\n' | sed 's/"/\\"/g')
         
         # PR 정보 가져오기 (최근 머지된 PR 찾기)
         PR_INFO=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
           "https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" | \
           jq -r '.[0] | "\(.title) (#\(.number))"' 2>/dev/null || echo "")
         
-        # PR 정보가 없으면 커밋 메시지에서 추출 시도
+        # PR 정보가 없으면 커밋 메시지 사용
         if [ -z "$PR_INFO" ] || [ "$PR_INFO" = "null" ]; then
-          PR_INFO=$(echo "$COMMIT_MSG" | head -1)
+          PR_INFO="$COMMIT_MSG"
         fi
         
-        # Discord 메시지 생성
-        MESSAGE="✅ 배포 성공 알림
-        Repo: ${GITHUB_REPOSITORY}
-        Branch: ${GITHUB_REF_NAME}
-        Commit: ${GITHUB_SHA:0:7}
-        커밋 메시지: ${COMMIT_MSG}
-        PR: ${PR_INFO}
-        Triggered by: ${GITHUB_ACTOR}"
+        # PR 정보에서 특수문자 이스케이프
+        PR_INFO=$(echo "$PR_INFO" | sed 's/"/\\"/g' | tr -d '\n')
+        
+        # Discord 메시지 생성 (JSON 형식으로)
+        MESSAGE="✅ 배포 성공 알림\\nRepo: ${GITHUB_REPOSITORY}\\nBranch: ${GITHUB_REF_NAME}\\nCommit: ${GITHUB_SHA:0:7}\\n커밋 메시지: ${COMMIT_MSG}\\nPR: ${PR_INFO}\\nTriggered by: ${GITHUB_ACTOR}"
         
         curl -H "Content-Type: application/json" \
           -d "{\"username\": \"GitHub Actions\", \"content\": \"$MESSAGE\"}" \
