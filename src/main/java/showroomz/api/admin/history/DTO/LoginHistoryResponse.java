@@ -1,6 +1,5 @@
 package showroomz.api.admin.history.DTO;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import showroomz.domain.history.entity.LoginHistory;
@@ -18,8 +17,7 @@ public class LoginHistoryResponse {
     private Long userId;
     private String email; // 사용자 이메일
     
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime loginAt;
+    private LocalDateTime loginAt; // 이제 자동으로 설정된 포맷으로 나갑니다.
     
     private String clientIp;
     private DeviceType deviceType; // 디바이스 타입
