@@ -3,12 +3,15 @@ package showroomz.api.app.user.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
 import showroomz.api.app.user.DTO.UserProfileResponse;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.market.repository.MarketFollowRepository;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.type.UserStatus;
+import showroomz.global.error.exception.ErrorCode;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -30,7 +33,12 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserProfileResponse getProfile(String username) {
         Users user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // 탈퇴 회원 체크
+        if (user.getStatus() == UserStatus.WITHDRAWN) {
+            throw new BusinessException(ErrorCode.USER_WITHDRAWN);
+        }
 
         // 유저가 팔로우한 마켓 수 조회
         long followingCount = marketFollowRepository.countByUser(user);
@@ -61,7 +69,12 @@ public class UserService {
     @Transactional
     public Users updateProfile(String username, UpdateUserProfileRequest request) {
         Users user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // 탈퇴 회원 체크
+        if (user.getStatus() == UserStatus.WITHDRAWN) {
+            throw new BusinessException(ErrorCode.USER_WITHDRAWN);
+        }
 
         // 닉네임 업데이트
         if (request.getNickname() != null && !request.getNickname().isEmpty()) {
@@ -185,5 +198,32 @@ public class UserService {
             }
         }
         return false;
+    }
+
+    /**
+     * 회원 탈퇴 (논리 삭제)
+     * 실제 DB 삭제 대신 상태를 WITHDRAWN으로 변경하여 외래 키 문제를 방지합니다.
+     */
+    @Transactional
+    public void withdrawUser(String username) {
+        Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // 이미 탈퇴한 회원인지 확인
+        if (user.getStatus() == UserStatus.WITHDRAWN) {
+            throw new BusinessException(ErrorCode.USER_WITHDRAWN);
+        }
+
+        // 회원 상태 변경 (논리 삭제)
+        user.updateStatus(UserStatus.WITHDRAWN);
+
+        // (선택 사항) 개인정보 보호를 위한 중요 정보 마스킹/삭제 처리
+        // 탈퇴한 회원의 개인정보를 즉시 파기해야 한다면 아래와 같이 처리합니다.
+        // user.setPassword(""); // 비밀번호 삭제
+        // user.setName("탈퇴한 회원");
+        // user.setPhoneNumber("");
+        // user.setEmail(user.getId() + "@withdrawn.user"); // 유니크 제약조건 유지를 위해 ID 활용
+        
+        // Dirty Checking(변경 감지)에 의해 트랜잭션 종료 시 자동으로 Update 쿼리가 실행됩니다.
     }
 }

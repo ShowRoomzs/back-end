@@ -373,13 +373,13 @@ public class AuthController implements AuthControllerDocs {
             userRefreshTokenRepository.delete(userRefreshToken);
         }
 
-        // 5. 사용자 삭제
-        userRepository.delete(user);
+        // 4. 회원 탈퇴 처리 (논리 삭제: 상태를 WITHDRAWN으로 변경)
+        userService.withdrawUser(username);
 
-        // 6. SecurityContext 초기화
+        // 5. SecurityContext 초기화
         SecurityContextHolder.clearContext();
 
-        // 7. 성공 응답 반환
+        // 6. 성공 응답 반환
         return ResponseEntity.ok(Map.of("message", "회원 탈퇴가 완료되었습니다."));
     }
 }
