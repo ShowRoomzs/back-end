@@ -232,14 +232,6 @@ public interface LoginHistoryControllerDocs {
     @Operation(
             summary = "로그인 이력 필터 옵션 조회 (국가별 도시 목록)",
             description = "로그인 이력 조회 시 사용할 수 있는 국가/도시 필터 옵션을 국가별로 그룹화하여 조회합니다.\n\n" +
-                    "**응답 형식:**\n" +
-                    "- 각 항목은 `country`(국가명)와 `cities`(해당 국가의 도시 목록) 필드를 포함합니다\n" +
-                    "- 프론트엔드에서 이 데이터를 계층적 드롭다운이나 멀티 셀렉트 박스에 표시할 수 있습니다\n\n" +
-                    "**사용 예시:**\n" +
-                    "1. 필터 목록 조회: `GET /v1/admin/history/login/filters/locations`\n" +
-                    "2. 사용자가 \"대한민국\" 국가와 \"서울\" 도시 선택\n" +
-                    "3. 검색 요청: `GET /v1/admin/history/login?country=대한민국&city=서울`\n" +
-                    "4. 전체 국가 검색: `GET /v1/admin/history/login?country=대한민국` (city 생략)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
