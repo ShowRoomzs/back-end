@@ -40,25 +40,37 @@ public class GeoLocationService {
             InetAddress ipAddress = InetAddress.getByName(ip);
             CityResponse response = databaseReader.city(ipAddress);
 
-            // [수정] 한글("ko") 이름을 우선 조회하고, 없으면 기본(영문) 이름 사용
-            String country = response.getCountry().getNames().get("ko");
-            if (country == null) {
-                country = response.getCountry().getName();
+            // 한글 이름 우선 조회 ("ko" 또는 기본 영문)
+            String country = null;
+            String city = null;
+
+            // 국가 이름 조회
+            if (response.getCountry() != null && response.getCountry().getNames() != null) {
+                country = response.getCountry().getNames().get("ko");
+                if (country == null || country.isEmpty()) {
+                    country = response.getCountry().getName();
+                }
             }
 
-            String city = response.getCity().getNames().get("ko");
-            if (city == null) {
-                city = response.getCity().getName();
+            // 도시 이름 조회
+            if (response.getCity() != null && response.getCity().getNames() != null) {
+                city = response.getCity().getNames().get("ko");
+                if (city == null || city.isEmpty()) {
+                    city = response.getCity().getName();
+                }
             }
 
             // null 방지
-            if (country == null) country = "Unknown";
-            if (city == null) city = "Unknown";
+            if (country == null || country.isEmpty()) country = "Unknown";
+            if (city == null || city.isEmpty()) city = "Unknown";
+
+            log.debug("IP: {}, Country: {}, City: {}", ip, country, city);
 
             return new GeoLocation(country, city);
 
         } catch (IOException | GeoIp2Exception e) {
             // 사설 IP(로컬호스트 등)이거나 DB에 없는 IP일 경우 발생
+            log.debug("Failed to get location for IP: {}, error: {}", ip, e.getMessage());
             return new GeoLocation("Unknown", "Unknown");
         }
     }
