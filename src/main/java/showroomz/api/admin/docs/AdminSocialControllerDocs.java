@@ -15,7 +15,7 @@ import showroomz.api.app.auth.entity.ProviderType;
 
 import java.util.Map;
 
-@Tag(name = "Admin - Social Login", description = "관리자 소셜 로그인 활성/비활성 관리 API\n\n")
+@Tag(name = "Admin - Social Login", description = "관리자 소셜 로그인 관리 API")
 
 public interface AdminSocialControllerDocs {
 
