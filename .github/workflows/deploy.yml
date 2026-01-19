@@ -90,7 +90,7 @@ jobs:
           --deployment-group-name spring-boot-deploy-group \
           --s3-location bucket=${{ secrets.AWS_S3_BUCKET}},bundleType=zip,key=deploy.zip
 
-- name: Discord 알림 (성공 시)
+    - name: Discord 알림 (성공 시)
       if: ${{ success() }}
       env:
         DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
