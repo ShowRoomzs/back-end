@@ -220,7 +220,7 @@ public class UserService {
         // (선택 사항) 개인정보 보호를 위한 중요 정보 마스킹/삭제 처리
         // 탈퇴한 회원의 개인정보를 즉시 파기해야 한다면 아래와 같이 처리합니다.
         // user.setPassword(""); // 비밀번호 삭제
-        // user.setName("탈퇴한 회원");
+        user.setNickname("탈퇴한 회원123456789");
         // user.setPhoneNumber("");
         // user.setEmail(user.getId() + "@withdrawn.user"); // 유니크 제약조건 유지를 위해 ID 활용
         
