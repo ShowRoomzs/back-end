@@ -42,6 +42,7 @@ dependencies {
 	implementation 'software.amazon.awssdk:s3:2.20.26'
 	implementation 'org.jsoup:jsoup:1.17.2'
 	implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
+	implementation 'com.maxmind.geoip2:geoip2:4.4.0'
 	/*implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.1'*/
 	
 	// Sentry SDK 추가
