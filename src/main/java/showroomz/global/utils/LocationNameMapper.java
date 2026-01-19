@@ -10,6 +10,8 @@ public class LocationNameMapper {
 
     private static final Map<String, String> COUNTRY_MAP = new HashMap<>();
     private static final Map<String, String> CITY_MAP = new HashMap<>();
+    private static final Map<String, String> REVERSE_COUNTRY_MAP = new HashMap<>();
+    private static final Map<String, String> REVERSE_CITY_MAP = new HashMap<>();
 
     static {
         // 국가명 매핑
@@ -37,6 +39,10 @@ public class LocationNameMapper {
         CITY_MAP.put("Seongnam-si", "성남시");
         CITY_MAP.put("Goyang-si", "고양시");
         CITY_MAP.put("Unknown", "알 수 없음");
+
+        // 역방향 매핑 (한글 → 영어)
+        COUNTRY_MAP.forEach((eng, kor) -> REVERSE_COUNTRY_MAP.put(kor, eng));
+        CITY_MAP.forEach((eng, kor) -> REVERSE_CITY_MAP.put(kor, eng));
     }
 
     /**
@@ -57,5 +63,25 @@ public class LocationNameMapper {
             return "알 수 없음";
         }
         return CITY_MAP.getOrDefault(englishName, englishName);
+    }
+
+    /**
+     * 한글 국가명을 영어로 역변환 (DB 검색용)
+     */
+    public static String toEnglishCountry(String koreanName) {
+        if (koreanName == null || koreanName.isEmpty()) {
+            return null;
+        }
+        return REVERSE_COUNTRY_MAP.getOrDefault(koreanName, koreanName);
+    }
+
+    /**
+     * 한글 도시명을 영어로 역변환 (DB 검색용)
+     */
+    public static String toEnglishCity(String koreanName) {
+        if (koreanName == null || koreanName.isEmpty()) {
+            return null;
+        }
+        return REVERSE_CITY_MAP.getOrDefault(koreanName, koreanName);
     }
 }

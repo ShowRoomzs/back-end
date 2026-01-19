@@ -11,6 +11,7 @@ import showroomz.api.admin.history.DTO.LoginHistorySearchCondition;
 import showroomz.domain.history.entity.LoginHistory;
 import showroomz.domain.history.type.DeviceType;
 import showroomz.domain.history.type.LoginStatus;
+import showroomz.global.utils.LocationNameMapper;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -100,11 +101,21 @@ public class LoginHistoryRepositoryImpl implements LoginHistoryRepositoryCustom 
     }
 
     private BooleanExpression eqCountry(String country) {
-        return (country != null && !country.isEmpty()) ? loginHistory.country.eq(country) : null;
+        if (country == null || country.isEmpty()) {
+            return null;
+        }
+        // 한글이 들어올 경우 영어로 역변환하여 검색
+        String searchCountry = LocationNameMapper.toEnglishCountry(country);
+        return loginHistory.country.eq(searchCountry);
     }
 
     private BooleanExpression eqCity(String city) {
-        return (city != null && !city.isEmpty()) ? loginHistory.city.eq(city) : null;
+        if (city == null || city.isEmpty()) {
+            return null;
+        }
+        // 한글이 들어올 경우 영어로 역변환하여 검색
+        String searchCity = LocationNameMapper.toEnglishCity(city);
+        return loginHistory.city.eq(searchCity);
     }
 
     private BooleanExpression eqStatus(LoginStatus status) {
