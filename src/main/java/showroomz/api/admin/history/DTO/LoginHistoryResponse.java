@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import showroomz.domain.history.entity.LoginHistory;
 import showroomz.domain.history.type.DeviceType;
 import showroomz.domain.history.type.LoginStatus;
+import showroomz.global.utils.LocationNameMapper;
 
 import java.time.LocalDateTime;
 
@@ -33,8 +34,8 @@ public class LoginHistoryResponse {
         this.loginAt = history.getLoginAt();
         this.clientIp = history.getClientIp();
         this.deviceType = parseDeviceType(history.getUserAgent());
-        this.country = history.getCountry();
-        this.city = history.getCity();
+        this.country = LocationNameMapper.toKoreanCountry(history.getCountry());
+        this.city = LocationNameMapper.toKoreanCity(history.getCity());
         this.status = history.getStatus();
     }
 
