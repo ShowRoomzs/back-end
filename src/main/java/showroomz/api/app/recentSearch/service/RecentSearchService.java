@@ -10,7 +10,7 @@ import showroomz.api.app.recentSearch.DTO.RecentSearchResponse;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.recentSearch.entitiy.RecentSearch;
-import showroomz.domain.recentSerach.repository.RecentSearchRepository;
+import showroomz.domain.recentSearch.repository.RecentSearchRepository;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.ErrorCode;
