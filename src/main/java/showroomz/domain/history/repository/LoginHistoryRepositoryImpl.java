@@ -34,6 +34,7 @@ public class LoginHistoryRepositoryImpl implements LoginHistoryRepositoryCustom 
                         betweenDate(condition),
                         eqDeviceType(condition.getDeviceType()),
                         eqCountry(condition.getCountry()),
+                        eqCity(condition.getCity()),
                         eqStatus(condition.getStatus())
                 )
                 .orderBy(loginHistory.loginAt.desc()) // 최신순 정렬
@@ -48,6 +49,7 @@ public class LoginHistoryRepositoryImpl implements LoginHistoryRepositoryCustom 
                         betweenDate(condition),
                         eqDeviceType(condition.getDeviceType()),
                         eqCountry(condition.getCountry()),
+                        eqCity(condition.getCity()),
                         eqStatus(condition.getStatus())
                 );
 
@@ -99,6 +101,10 @@ public class LoginHistoryRepositoryImpl implements LoginHistoryRepositoryCustom 
 
     private BooleanExpression eqCountry(String country) {
         return (country != null && !country.isEmpty()) ? loginHistory.country.eq(country) : null;
+    }
+
+    private BooleanExpression eqCity(String city) {
+        return (city != null && !city.isEmpty()) ? loginHistory.city.eq(city) : null;
     }
 
     private BooleanExpression eqStatus(LoginStatus status) {

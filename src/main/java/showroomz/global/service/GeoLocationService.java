@@ -30,7 +30,9 @@ public class GeoLocationService {
     }
 
     public GeoLocation getLocation(String ip) {
-        if (databaseReader == null || ip == null) {
+        // 로컬호스트(127.0.0.1) 등 조회 불가능한 IP 처리
+        if (databaseReader == null || ip == null || 
+            ip.equals("127.0.0.1") || ip.equals("0:0:0:0:0:0:0:1")) {
             return new GeoLocation("Unknown", "Unknown");
         }
 
@@ -38,8 +40,20 @@ public class GeoLocationService {
             InetAddress ipAddress = InetAddress.getByName(ip);
             CityResponse response = databaseReader.city(ipAddress);
 
-            String country = (response.getCountry().getName() != null) ? response.getCountry().getName() : "Unknown";
-            String city = (response.getCity().getName() != null) ? response.getCity().getName() : "Unknown";
+            // [수정] 한글("ko") 이름을 우선 조회하고, 없으면 기본(영문) 이름 사용
+            String country = response.getCountry().getNames().get("ko");
+            if (country == null) {
+                country = response.getCountry().getName();
+            }
+
+            String city = response.getCity().getNames().get("ko");
+            if (city == null) {
+                city = response.getCity().getName();
+            }
+
+            // null 방지
+            if (country == null) country = "Unknown";
+            if (city == null) city = "Unknown";
 
             return new GeoLocation(country, city);
 

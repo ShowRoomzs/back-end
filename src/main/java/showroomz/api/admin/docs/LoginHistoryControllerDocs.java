@@ -10,11 +10,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import showroomz.api.admin.history.DTO.LocationFilterResponse;
 import showroomz.api.admin.history.DTO.LoginHistoryResponse;
 import showroomz.api.admin.history.DTO.LoginHistorySearchCondition;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
+
+import java.util.List;
 
 @Tag(name = "Admin - Social Login", description = "관리자 소셜 로그인 활성/비활성 관리 API 및 로그인 이력 조회 API")
 public interface LoginHistoryControllerDocs {
@@ -30,7 +33,10 @@ public interface LoginHistoryControllerDocs {
                     "  - `DESKTOP_CHROME`: 데스크톱 Chrome 브라우저\n" +
                     "  - `DESKTOP_EDGE`: 데스크톱 Edge 브라우저\n" +
                     "  - `null`: 전체 (기본값)\n" +
-                    "- `country`: 국가명으로 필터링 (예: \"South Korea\", \"United States\")\n" +
+                    "- `country`: 국가명으로 필터링 (예: \"대한민국\", \"미국\")\n" +
+                    "- `city`: 도시명으로 필터링 (예: \"서울\", \"부산\")\n" +
+                    "  - `country`와 함께 사용하면 해당 국가의 특정 도시만 검색\n" +
+                    "  - `country`만 지정하면 해당 국가 전체 검색\n" +
                     "- `status`: 로그인 상태 필터링\n" +
                     "  - `SUCCESS`: 정상 로그인\n" +
                     "  - `ABNORMAL`: 이상 로그인\n" +
@@ -69,7 +75,13 @@ public interface LoginHistoryControllerDocs {
                     @Parameter(
                             name = "country",
                             description = "국가명",
-                            example = "South Korea",
+                            example = "대한민국",
+                            in = ParameterIn.QUERY
+                    ),
+                    @Parameter(
+                            name = "city",
+                            description = "도시명",
+                            example = "서울",
                             in = ParameterIn.QUERY
                     ),
                     @Parameter(
@@ -111,33 +123,32 @@ public interface LoginHistoryControllerDocs {
                                                     "    {\n" +
                                                     "      \"id\": 1,\n" +
                                                     "      \"userId\": 123,\n" +
-                                                    "      \"username\": \"kakao_1234567890\",\n" +
+                                                    "      \"email\": \"user1@example.com\",\n" +
                                                     "      \"loginAt\": \"2024-01-15 14:30:25\",\n" +
                                                     "      \"clientIp\": \"192.168.1.100\",\n" +
                                                     "      \"deviceType\": \"DESKTOP_CHROME\",\n" +
-                                                    "      \"country\": \"South Korea\",\n" +
-                                                    "      \"city\": \"Seoul\",\n" +
+                                                    "      \"country\": \"대한민국\",\n" +
+                                                    "      \"city\": \"서울\",\n" +
                                                     "      \"status\": \"SUCCESS\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
                                                     "      \"id\": 2,\n" +
                                                     "      \"userId\": 124,\n" +
-                                                    "      \"username\": \"naver_9876543210\",\n" +
+                                                    "      \"email\": \"user2@example.com\",\n" +
                                                     "      \"loginAt\": \"2024-01-15 13:20:10\",\n" +
                                                     "      \"clientIp\": \"192.168.1.101\",\n" +
                                                     "      \"deviceType\": \"IPHONE\",\n" +
-                                                    "      \"country\": \"South Korea\",\n" +
-                                                    "      \"city\": \"Busan\",\n" +
+                                                    "      \"country\": \"대한민국\",\n" +
+                                                    "      \"city\": \"부산\",\n" +
                                                     "      \"status\": \"SUCCESS\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
-                                                    "    \"page\": 1,\n" +
-                                                    "    \"size\": 20,\n" +
-                                                    "    \"totalElements\": 150,\n" +
+                                                    "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 8,\n" +
-                                                    "    \"hasNext\": true,\n" +
-                                                    "    \"hasPrevious\": false\n" +
+                                                    "    \"totalResults\": 150,\n" +
+                                                    "    \"limit\": 20,\n" +
+                                                    "    \"hasNext\": true\n" +
                                                     "  }\n" +
                                                     "}"
                                     )
@@ -217,4 +228,100 @@ public interface LoginHistoryControllerDocs {
             @Parameter(hidden = true) LoginHistorySearchCondition condition,
             @Parameter(hidden = true) PagingRequest pagingRequest
     );
+
+    @Operation(
+            summary = "로그인 이력 필터 옵션 조회 (국가별 도시 목록)",
+            description = "로그인 이력 조회 시 사용할 수 있는 국가/도시 필터 옵션을 국가별로 그룹화하여 조회합니다.\n\n" +
+                    "**응답 형식:**\n" +
+                    "- 각 항목은 `country`(국가명)와 `cities`(해당 국가의 도시 목록) 필드를 포함합니다\n" +
+                    "- 프론트엔드에서 이 데이터를 계층적 드롭다운이나 멀티 셀렉트 박스에 표시할 수 있습니다\n\n" +
+                    "**사용 예시:**\n" +
+                    "1. 필터 목록 조회: `GET /v1/admin/history/login/filters/locations`\n" +
+                    "2. 사용자가 \"대한민국\" 국가와 \"서울\" 도시 선택\n" +
+                    "3. 검색 요청: `GET /v1/admin/history/login?country=대한민국&city=서울`\n" +
+                    "4. 전체 국가 검색: `GET /v1/admin/history/login?country=대한민국` (city 생략)\n\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "필터 옵션 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = LocationFilterResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 응답 예시",
+                                            value = "[\n" +
+                                                    "  {\n" +
+                                                    "    \"country\": \"대한민국\",\n" +
+                                                    "    \"cities\": [\"부산\", \"서울\", \"인천\"]\n" +
+                                                    "  },\n" +
+                                                    "  {\n" +
+                                                    "    \"country\": \"미국\",\n" +
+                                                    "    \"cities\": [\"뉴욕\", \"로스앤젤레스\"]\n" +
+                                                    "  },\n" +
+                                                    "  {\n" +
+                                                    "    \"country\": \"일본\",\n" +
+                                                    "    \"cities\": [\"도쿄\", \"오사카\"]\n" +
+                                                    "  }\n" +
+                                                    "]"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 유효하지 않은 토큰 또는 토큰 만료",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 - ADMIN 권한이 필요합니다",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "권한 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"FORBIDDEN\",\n" +
+                                                    "  \"message\": \"접근 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "서버 오류",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INTERNAL_SERVER_ERROR\",\n" +
+                                                    "  \"message\": \"서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<List<LocationFilterResponse>> getLocationFilters();
 }

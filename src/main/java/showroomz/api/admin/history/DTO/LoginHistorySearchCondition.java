@@ -23,5 +23,7 @@ public class LoginHistorySearchCondition {
 
     private String country;
     
+    private String city; // 도시 필터링
+
     private LoginStatus status; // SUCCESS, ABNORMAL (전체는 null)
 }

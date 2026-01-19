@@ -15,7 +15,7 @@ public class LoginHistoryResponse {
 
     private Long id;
     private Long userId;
-    private String username; // 사용자 아이디 or 닉네임
+    private String email; // 사용자 이메일
     
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime loginAt;
@@ -29,7 +29,7 @@ public class LoginHistoryResponse {
     public LoginHistoryResponse(LoginHistory history) {
         this.id = history.getId();
         this.userId = history.getUser().getId();
-        this.username = history.getUser().getUsername();
+        this.email = history.getUser().getEmail();
         this.loginAt = history.getLoginAt();
         this.clientIp = history.getClientIp();
         this.deviceType = parseDeviceType(history.getUserAgent());
