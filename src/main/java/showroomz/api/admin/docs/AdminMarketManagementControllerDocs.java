@@ -55,7 +55,7 @@ public interface AdminMarketManagementControllerDocs {
                                                     "      \"sellerName\": \"홍길동\",\n" +
                                                     "      \"phoneNumber\": \"010-1234-5678\",\n" +
                                                     "      \"productCount\": 120,\n" +
-                                                    "      \"createdAt\": \"2024-01-01T10:00:00\"\n" +
+                                                    "      \"createdAt\": \"2024-01-01T10:00:00Z\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
                                                     "      \"marketId\": 11,\n" +
@@ -64,7 +64,7 @@ public interface AdminMarketManagementControllerDocs {
                                                     "      \"sellerName\": \"김철수\",\n" +
                                                     "      \"phoneNumber\": \"010-9876-5432\",\n" +
                                                     "      \"productCount\": 85,\n" +
-                                                    "      \"createdAt\": \"2024-01-05T14:30:00\"\n" +
+                                                    "      \"createdAt\": \"2024-01-05T14:30:00Z\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
