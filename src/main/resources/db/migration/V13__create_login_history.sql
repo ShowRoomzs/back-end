@@ -1,14 +1,16 @@
-CREATE TABLE login_history (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL,
-    client_ip VARCHAR(45),
-    user_agent VARCHAR(512),
-    country VARCHAR(100),
-    city VARCHAR(100),
-    status VARCHAR(20) NOT NULL DEFAULT 'SUCCESS',
-    login_at DATETIME NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES USERS(USER_ID) ON DELETE CASCADE
-);
+create table login_history (
+id bigint not null auto_increment,
+login_at datetime(6),
+user_id bigint,
+city varchar(255),
+client_ip varchar(255),
+country varchar(255),
+user_agent varchar(255),
+status enum ('ABNORMAL','SUCCESS'),
+primary key (id)
+) engine=InnoDB;
 
-CREATE INDEX idx_login_history_user_id ON login_history(user_id);
-CREATE INDEX idx_login_history_login_at ON login_history(login_at);
+alter table login_history 
+add constraint FK20v0mimmdegh2afs39uixlxpm 
+foreign key (user_id) 
+references users (user_id);
