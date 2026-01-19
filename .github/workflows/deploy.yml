@@ -127,8 +127,10 @@ jobs:
           제목: ${PR_TITLE}
           번호: #${PR_NUMBER}
 
-          📝 **작업 내용**
+
           ${PR_BODY}
+
+
 
           🔗 **기타 정보**
           Repo: ${GITHUB_REPOSITORY}
