@@ -19,7 +19,7 @@ import showroomz.global.dto.PagingRequest;
 
 import java.util.List;
 
-@Tag(name = "Admin - Social Login", description = "관리자 소셜 로그인 활성/비활성 관리 API 및 로그인 이력 조회 API")
+@Tag(name = "Admin - Social Login", description = "관리자 소셜 로그인 관리 API")
 public interface LoginHistoryControllerDocs {
 
     @Operation(
