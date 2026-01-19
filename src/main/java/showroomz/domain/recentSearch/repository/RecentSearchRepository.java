@@ -1,4 +1,4 @@
-package showroomz.domain.recentSerach.repository;
+package showroomz.domain.recentSearch.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
