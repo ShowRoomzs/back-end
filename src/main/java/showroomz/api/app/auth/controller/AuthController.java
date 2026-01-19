@@ -25,6 +25,7 @@ import showroomz.api.app.user.service.UserService;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.config.properties.AppProperties;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.ClientUtils;
 import showroomz.global.utils.HeaderUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
@@ -51,7 +52,9 @@ public class AuthController implements AuthControllerDocs {
 
     @Override
     @PostMapping("/social/login")
-    public ResponseEntity<?> socialLogin(@RequestBody @Valid SocialLoginRequest socialLoginRequest) {
+    public ResponseEntity<?> socialLogin(
+            HttpServletRequest request,
+            @RequestBody @Valid SocialLoginRequest socialLoginRequest) {
         // 1. 필수 파라미터 검증
         if (socialLoginRequest.getToken() == null || socialLoginRequest.getToken().isEmpty()) {
             throw new BusinessException(ErrorCode.MISSING_TOKEN);
@@ -103,16 +106,33 @@ public class AuthController implements AuthControllerDocs {
                     result.getUser().getUsername(),
                     new Date(now.getTime() + registerTokenExpiry)
             );
+            
+            // 신규 회원이지만 Users 엔티티는 생성된 상태이므로 로그인 이력 저장
+            String clientIp = ClientUtils.getRemoteIP(request);
+            String userAgent = ClientUtils.getUserAgent(request);
+            if (result.getUser() != null) {
+                authService.saveLoginHistory(result.getUser().getId(), clientIp, userAgent);
+            }
+            
             return ResponseEntity.ok(new TokenResponse(registerToken.getToken()));
         }
 
         // 5. 기존 회원인 경우 일반 토큰 반환
-        return ResponseEntity.ok(authService.generateTokens(
+        TokenResponse tokenResponse = authService.generateTokens(
                 result.getUser().getUsername(),
                 result.getUser().getRoleType(),
                 result.getUser().getId(),
                 false
-        ));
+        );
+
+        // 6. 로그인 이력 저장
+        String clientIp = ClientUtils.getRemoteIP(request);
+        String userAgent = ClientUtils.getUserAgent(request);
+        if (result.getUser() != null) {
+            authService.saveLoginHistory(result.getUser().getId(), clientIp, userAgent);
+        }
+
+        return ResponseEntity.ok(tokenResponse);
     }
     
     @Override
@@ -181,7 +201,12 @@ public class AuthController implements AuthControllerDocs {
         user.setModifiedAt(LocalDateTime.now());
         userRepository.save(user);
 
-        // 6. 토큰 발급 및 반환
+        // 6. 로그인 이력 저장 (회원가입 완료 후 첫 로그인으로 간주)
+        String clientIp = ClientUtils.getRemoteIP(request);
+        String userAgent = ClientUtils.getUserAgent(request);
+        authService.saveLoginHistory(user.getId(), clientIp, userAgent);
+
+        // 7. 토큰 발급 및 반환
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(authService.generateTokens(username, user.getRoleType(), user.getId(), false));
     }
@@ -189,7 +214,9 @@ public class AuthController implements AuthControllerDocs {
     @Override
     @PostMapping("/refresh")
     @Transactional
-    public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest refreshRequest) {
+    public ResponseEntity<?> refreshToken(
+            HttpServletRequest request,
+            @RequestBody RefreshTokenRequest refreshRequest) {
         // 1. Refresh Token 확인 (Body)
         String refreshTokenStr = refreshRequest.getRefreshToken();
         if (refreshTokenStr == null || refreshTokenStr.isEmpty()) {
@@ -255,7 +282,12 @@ public class AuthController implements AuthControllerDocs {
             refreshTokenStr = authRefreshToken.getToken();
         }
 
-        // 8. 응답 반환 (isNewMember 제외)
+        // 8. 토큰 갱신 이력 저장 (옵션)
+        String clientIp = ClientUtils.getRemoteIP(request);
+        String userAgent = ClientUtils.getUserAgent(request);
+        authService.saveLoginHistory(user.getId(), clientIp, userAgent);
+
+        // 9. 응답 반환 (isNewMember 제외)
         long accessTokenExpiresInSeconds = appProperties.getAuth().getTokenExpiry() / 1000;
         long refreshTokenExpiresInSeconds = appProperties.getAuth().getRefreshTokenExpiry() / 1000;
         

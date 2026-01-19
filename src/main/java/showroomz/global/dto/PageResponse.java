@@ -21,5 +21,10 @@ public class PageResponse<T> {
         this.content = content;
         this.pageInfo = new PaginationInfo(page);
     }
+    
+    // static factory 메서드
+    public static <T> PageResponse<T> of(Page<T> page) {
+        return new PageResponse<>(page);
+    }
 }
 

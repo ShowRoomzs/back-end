@@ -2,6 +2,7 @@ package showroomz.api.app.auth.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import showroomz.api.app.auth.DTO.TokenResponse;
 import showroomz.api.app.auth.entity.RoleType;
@@ -10,7 +11,12 @@ import showroomz.api.app.auth.refreshToken.UserRefreshTokenRepository;
 import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.domain.history.entity.LoginHistory;
+import showroomz.domain.history.repository.LoginHistoryRepository;
+import showroomz.domain.history.type.LoginStatus;
 import showroomz.global.config.properties.AppProperties;
+import showroomz.global.service.GeoLocationService;
+import showroomz.global.service.GeoLocationService.GeoLocation;
 
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -24,6 +30,8 @@ public class AuthService {
     private final UserRefreshTokenRepository userRefreshTokenRepository;
     // 사용자 정보 업데이트를 위한 Repository
     private final UserRepository userRepository;
+    private final LoginHistoryRepository loginHistoryRepository;
+    private final GeoLocationService geoLocationService;
 
     /**
      * 토큰 생성 및 DB 저장
@@ -80,6 +88,33 @@ public class AuthService {
                 isNewMember,
                 roleType.toString() // 권한 정보 추가
         );
+    }
+
+    /**
+     * 로그인 이력 저장
+     * @param userId 사용자 ID
+     * @param ip 클라이언트 IP
+     * @param userAgent User-Agent 정보
+     */
+    @Transactional
+    public void saveLoginHistory(Long userId, String ip, String userAgent) {
+        userRepository.findById(userId).ifPresent(user -> {
+            // 1. IP로 위치 정보 조회
+            GeoLocation location = geoLocationService.getLocation(ip);
+
+            // 2. 이력 엔티티 생성
+            LoginHistory history = LoginHistory.builder()
+                    .user(user)
+                    .clientIp(ip)
+                    .userAgent(userAgent)
+                    .country(location.getCountry())
+                    .city(location.getCity())
+                    .status(LoginStatus.SUCCESS)
+                    .build();
+
+            // 3. 저장
+            loginHistoryRepository.save(history);
+        });
     }
 }
 

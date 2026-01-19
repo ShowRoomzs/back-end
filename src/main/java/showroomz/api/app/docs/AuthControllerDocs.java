@@ -223,7 +223,14 @@ public interface AuthControllerDocs {
                     }
             )
     )
-    ResponseEntity<?> socialLogin(@RequestBody SocialLoginRequest socialLoginRequest);
+    ResponseEntity<?> socialLogin(
+            @Parameter(
+                    description = "클라이언트 IP 및 User-Agent 추출용",
+                    required = false,
+                    hidden = true
+            )
+            HttpServletRequest request,
+            @RequestBody SocialLoginRequest socialLoginRequest);
 
     @Operation(
             summary = "회원가입 완료",
@@ -490,7 +497,14 @@ public interface AuthControllerDocs {
                     }
             )
     )
-    ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest refreshRequest);
+    ResponseEntity<?> refreshToken(
+            @Parameter(
+                    description = "클라이언트 IP 및 User-Agent 추출용",
+                    required = false,
+                    hidden = true
+            )
+            HttpServletRequest request,
+            @RequestBody RefreshTokenRequest refreshRequest);
 
     @Operation(
             summary = "로그아웃",
