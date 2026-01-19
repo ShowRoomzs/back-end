@@ -99,21 +99,28 @@ jobs:
         # 커밋 메시지 가져오기 (첫 줄만, 줄바꿈 제거)
         COMMIT_MSG=$(git log -1 --pretty=%B | head -1 | tr -d '\n' | sed 's/"/\\"/g')
         
-        # PR 정보 가져오기 (최근 머지된 PR 찾기)
-        PR_INFO=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-          "https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" | \
-          jq -r '.[0] | "\(.title) (#\(.number))"' 2>/dev/null || echo "")
+        # PR 정보 가져오기 (제목, 번호, 본문)
+        PR_DATA=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
+          "https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" | jq -r '.[0]' 2>/dev/null)
+        
+        # PR 제목과 번호 추출
+        PR_TITLE=$(echo "$PR_DATA" | jq -r '.title // ""' 2>/dev/null | sed 's/"/\\"/g' | tr -d '\n')
+        PR_NUMBER=$(echo "$PR_DATA" | jq -r '.number // ""' 2>/dev/null)
+        PR_BODY=$(echo "$PR_DATA" | jq -r '.body // ""' 2>/dev/null | sed 's/"/\\"/g' | sed 's/$/\\n/' | tr -d '\n' | head -c 1000)
         
         # PR 정보가 없으면 커밋 메시지 사용
-        if [ -z "$PR_INFO" ] || [ "$PR_INFO" = "null" ]; then
-          PR_INFO="$COMMIT_MSG"
+        if [ -z "$PR_TITLE" ] || [ "$PR_TITLE" = "null" ]; then
+          PR_TITLE="$COMMIT_MSG"
+          PR_NUMBER=""
+          PR_BODY=""
         fi
         
-        # PR 정보에서 특수문자 이스케이프
-        PR_INFO=$(echo "$PR_INFO" | sed 's/"/\\"/g' | tr -d '\n')
-        
         # Discord 메시지 생성 (JSON 형식으로)
-        MESSAGE="✅ 배포 성공 알림\\nRepo: ${GITHUB_REPOSITORY}\\nBranch: ${GITHUB_REF_NAME}\\nCommit: ${GITHUB_SHA:0:7}\\n커밋 메시지: ${COMMIT_MSG}\\nPR: ${PR_INFO}\\nTriggered by: ${GITHUB_ACTOR}"
+        if [ -n "$PR_BODY" ] && [ "$PR_BODY" != "null" ]; then
+          MESSAGE="✅ 배포 성공 알림\\n\\n📦 **PR 정보**\\n제목: ${PR_TITLE}\\n번호: #${PR_NUMBER}\\n\\n📝 **작업 내용**\\n${PR_BODY}\\n\\n🔗 **기타 정보**\\nRepo: ${GITHUB_REPOSITORY}\\nBranch: ${GITHUB_REF_NAME}\\nCommit: ${GITHUB_SHA:0:7}\\nTriggered by: ${GITHUB_ACTOR}"
+        else
+          MESSAGE="✅ 배포 성공 알림\\nRepo: ${GITHUB_REPOSITORY}\\nBranch: ${GITHUB_REF_NAME}\\nCommit: ${GITHUB_SHA:0:7}\\n커밋 메시지: ${COMMIT_MSG}\\nPR: ${PR_TITLE} #${PR_NUMBER}\\nTriggered by: ${GITHUB_ACTOR}"
+        fi
         
         curl -H "Content-Type: application/json" \
           -d "{\"username\": \"GitHub Actions\", \"content\": \"$MESSAGE\"}" \
