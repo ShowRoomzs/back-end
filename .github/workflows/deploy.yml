@@ -8,7 +8,7 @@ on:
 
 env:
   AWS_REGION: ap-northeast-2
-  ECR_REPOSITORY: showroomz-backend  # 본인의 ECR 리포지토리 이름 확인
+  ECR_REPOSITORY: showroomz-backend
   S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET }}
   CODEDEPLOY_APP_NAME: spring-boot-app
   CODEDEPLOY_GROUP_NAME: spring-boot-deploy-group
@@ -17,8 +17,12 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    
+    # [변경됨] OIDC 인증을 위한 권한 설정 추가
+    permissions:
+      id-token: write
+      contents: read
 
-    # 1. MySQL 서비스 컨테이너 (통합 테스트용 - 기존 유지)
     services:
       mysql:
         image: mysql:8.0
@@ -68,11 +72,13 @@ jobs:
         chmod +x gradlew
         ./gradlew clean build -x test
 
-    - name: AWS 로그인 (ECR & S3 & CodeDeploy 사용)
-      uses: aws-actions/configure-aws-credentials@v2
+    # [변경됨] AWS 로그인 (OIDC 방식 사용)
+    # 기존 Access Key 방식 대신 IAM Role을 Assume 하는 방식으로 변경
+    # GitHub Secrets에 'AWS_ROLE_ARN'을 추가해야 합니다.
+    - name: AWS 로그인 (OIDC 사용)
+      uses: aws-actions/configure-aws-credentials@v4
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
         aws-region: ${{ env.AWS_REGION }}
 
     # [추가됨] 5. ECR 로그인
