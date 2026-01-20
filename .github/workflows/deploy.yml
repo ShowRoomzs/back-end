@@ -10,8 +10,8 @@ env:
   AWS_REGION: ap-northeast-2
   ECR_REPOSITORY: showroomz-backend
   S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET }}
-  CODEDEPLOY_APP_NAME: spring-boot-app
-  CODEDEPLOY_GROUP_NAME: spring-boot-deploy-group
+  CODEDEPLOY_APP_NAME: showroomz-backend
+  CODEDEPLOY_GROUP_NAME: showroomz-backend-prod
   CONTAINER_IMAGE_TAG: ${{ github.sha }}
 
 jobs:

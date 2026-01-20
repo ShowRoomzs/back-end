@@ -3,7 +3,7 @@
 cd /home/ubuntu/app-deploy
 
 # 환경변수 설정
-export IMAGE_NAME="<AWS_ACCOUNT_ID>.dkr.ecr.ap-northeast-2.amazonaws.com/showroomz-backend:latest"
+export IMAGE_NAME="773182954354.dkr.ecr.ap-northeast-2.amazonaws.com/showroomz-backend:latest"
 
 echo "Logging in to ECR..."
 aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin <AWS_ACCOUNT_ID>.dkr.ecr.ap-northeast-2.amazonaws.com
