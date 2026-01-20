@@ -45,4 +45,4 @@ services:
         condition: service_healthy # [변경 3] MySQL이 건강할 때만 앱 실행
     environment:
       # 컨테이너 간 통신이므로 호스트명은 'mysql' 그대로 유지
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/showroomz?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/showroomz?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
