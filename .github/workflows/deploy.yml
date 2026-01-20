@@ -103,14 +103,17 @@ jobs:
       run: |
         mkdir deploy_artifact
         
-        # appspec.yml과 scripts 폴더 복사 (back-end 폴더 기준)
+        # appspec.yml, scripts, .env 복사
         cp back-end/appspec.yml deploy_artifact/
         cp -r back-end/scripts deploy_artifact/
         
         # [중요] .env 파일도 배포 아티팩트에 포함 (컨테이너 실행 시 사용)
         cp .env deploy_artifact/
+
+        # [추가됨] docker-compose.yml 파일도 배포 아티팩트에 포함
+        cp back-end/docker-compose.yml deploy_artifact/
         
-        # 압축 (CodeDeploy용)
+        # 압축 및 업로드
         cd deploy_artifact
         zip -r ../deploy.zip .
         cd ..

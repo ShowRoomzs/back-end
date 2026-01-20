@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # 1. MySQL 서비스
+  mysql:
+    image: mysql:8.0
+    container_name: showroomz-db
+    restart: always
+    environment:
+      # .env 파일에 있는 변수를 사용합니다.
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: showroomz
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: Asia/Seoul
+    # [변경 1] 보안: 외부 접속이 필요 없다면 127.0.0.1에만 바인딩 (또는 ports 제거)
+    ports:
+      - "127.0.0.1:3306:3306" 
+    # [변경 2] 데이터 보존: 배포 폴더 바깥(홈 디렉토리)에 저장하여 삭제 방지
+    volumes:
+      - /home/ubuntu/mysql_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    
+    # [변경 3] 헬스 체크 추가: MySQL이 진짜 준비됐는지 확인
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u${MYSQL_USER}", "-p${MYSQL_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. Spring Boot 백엔드 서비스
+  app:
+    container_name: showroomz-backend
+    # start.sh에서 export한 환경변수 IMAGE_NAME을 사용
+    image: ${IMAGE_NAME}
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - /home/ubuntu/logs:/logs
+    depends_on:
+      mysql:
+        condition: service_healthy # [변경 3] MySQL이 건강할 때만 앱 실행
+    environment:
+      # 컨테이너 간 통신이므로 호스트명은 'mysql' 그대로 유지
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/showroomz?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8

@@ -1,14 +1,15 @@
 #!/bin/bash
 
-CONTAINER_NAME="showroomz-backend"
+cd /home/ubuntu/app-deploy
 
-# 실행 중인 컨테이너 확인 및 중지/삭제
-if [ $(docker ps -aq -f name=$CONTAINER_NAME) ]; then
-    echo "Stopping existing container..."
-    docker stop $CONTAINER_NAME
-    echo "Removing existing container..."
-    docker rm $CONTAINER_NAME
+# [변경] 전체 서비스 종료(down)가 아니라, 백엔드 앱(app)만 중지하고 제거합니다.
+# "showroomz-backend"는 docker-compose.yml의 container_name과 일치해야 합니다.
+if [ "$(docker ps -aq -f name=showroomz-backend)" ]; then
+    echo "Stopping Spring Boot application..."
+    docker stop showroomz-backend
+    echo "Removing Spring Boot container..."
+    docker rm showroomz-backend
 fi
 
-# (선택 사항) 사용하지 않는 도커 이미지 정리
-# docker image prune -f
+# (선택) 불필요한 이미지 정리 (공간 확보)
+docker image prune -f
