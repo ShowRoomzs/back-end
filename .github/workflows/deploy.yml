@@ -57,7 +57,6 @@ jobs:
     # 3. 통합 테스트 실행 (기존 유지, 경로만 back-end 반영)
     - name: Run Integration Tests (DB Schema Validation)
       run: |
-        cd back-end
         chmod +x gradlew
         ./gradlew integrationTest
       env:
@@ -68,7 +67,6 @@ jobs:
     # 4. Gradle 빌드 (JAR 생성)
     - name: Gradle 빌드
       run: |
-        cd back-end
         chmod +x gradlew
         ./gradlew clean build -x test
 
@@ -91,10 +89,10 @@ jobs:
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
-        # back-end 폴더를 컨텍스트로 사용하여 Docker 빌드
+        # 현재 디렉토리(.)를 컨텍스트로 사용하여 Docker 빌드
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
                      -t $ECR_REGISTRY/$ECR_REPOSITORY:$CONTAINER_IMAGE_TAG \
-                     back-end
+                     .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CONTAINER_IMAGE_TAG
 
@@ -103,15 +101,15 @@ jobs:
       run: |
         mkdir deploy_artifact
         
-        # appspec.yml, scripts, .env 복사
-        cp back-end/appspec.yml deploy_artifact/
-        cp -r back-end/scripts deploy_artifact/
+        # appspec.yml, scripts, .env 복사 (경로 수정됨)
+        cp appspec.yml deploy_artifact/
+        cp -r scripts deploy_artifact/
         
-        # [중요] .env 파일도 배포 아티팩트에 포함 (컨테이너 실행 시 사용)
+        # .env 파일 복사
         cp .env deploy_artifact/
 
-        # [추가됨] docker-compose.yml 파일도 배포 아티팩트에 포함
-        cp back-end/docker-compose.yml deploy_artifact/
+        # docker-compose.yml 파일 복사 (경로 수정됨)
+        cp docker-compose.yml deploy_artifact/
         
         # 압축 및 업로드
         cd deploy_artifact

@@ -6,7 +6,7 @@ cd /home/ubuntu/app-deploy
 export IMAGE_NAME="773182954354.dkr.ecr.ap-northeast-2.amazonaws.com/showroomz-backend:latest"
 
 echo "Logging in to ECR..."
-aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin <AWS_ACCOUNT_ID>.dkr.ecr.ap-northeast-2.amazonaws.com
+aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 773182954354.dkr.ecr.ap-northeast-2.amazonaws.com
 
 echo "Pulling images..."
 # docker-compose.yml에 정의된 최신 이미지를 가져옴
