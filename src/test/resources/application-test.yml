@@ -1,2 +1,17 @@
 sentry:
   enabled: false  
+
+spring:
+  # 테스트에서는 무거운 MySQL 대신 가벼운 H2 DB를 사용 (설치 불필요)
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
