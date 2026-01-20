@@ -3,22 +3,26 @@ os: linux
 
 files:
   - source: /
-    destination: /home/ubuntu
+    destination: /home/ubuntu/app-deploy # 배포 스크립트가 위치할 경로
     overwrite: true
 
 permissions:
-  - object: /home/ubuntu
-    owner: ubuntu  
+  - object: /home/ubuntu/app-deploy
+    owner: ubuntu
+    group: ubuntu
+    mode: 755
+  - object: /home/ubuntu/app-deploy/scripts
+    owner: ubuntu
     group: ubuntu
     mode: 755
 
 hooks:
-  BeforeInstall:
-    - location: unzip.sh
+  ApplicationStop:
+    - location: scripts/stop.sh
       timeout: 60
-      runas: ubuntu 
+      runas: ubuntu
 
   ApplicationStart:
-    - location: start.sh
-      timeout: 60
-      runas: ubuntu  
+    - location: scripts/start.sh
+      timeout: 300
+      runas: ubuntu
