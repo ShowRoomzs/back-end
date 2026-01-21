@@ -128,9 +128,7 @@ jobs:
           번호: #${PR_NUMBER}
 
 
-          ${PR_BODY}
-
-
+          ${PR_BODY}\n\n
 
           🔗 **기타 정보**
           Repo: ${GITHUB_REPOSITORY}
