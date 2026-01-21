@@ -34,6 +34,11 @@ services:
       - .env
     volumes:
       - /home/ubuntu/logs:/logs
+    # 애플리케이션 로그를 /logs/app.log로 리다이렉션해 호스트와 동기화
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        java -Dspring.profiles.active=prod -jar app.jar > /logs/app.log 2>&1
     depends_on:
       mysql:
         condition: service_healthy

@@ -7,13 +7,6 @@ spring:
 
 # 로깅 설정 (프로덕션은 최소화)
 logging:
-  file:
-    name: /logs/app.log  # 컨테이너 내부의 /logs 폴더에 app.log라는 이름으로 저장
-  logback:
-    rollingpolicy:
-      max-history: 1            # 7일치 보관
-      max-file-size: 10MB        # 10MB 넘으면 분할
-      total-size-cap: 1GB        # 전체 로그 크기 제한
   level:
     root: INFO
     showroomz: INFO
