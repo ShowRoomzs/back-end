@@ -54,7 +54,7 @@ jobs:
         echo "${{ secrets.APPLICATION_ENV }}" > .env
       shell: bash
 
-    # 3. 통합 테스트 실행 (기존 유지, 경로만 back-end 반영)
+    # 3. 통합 테스트 실행
     - name: Run Integration Tests (DB Schema Validation)
       run: |
         chmod +x gradlew
@@ -70,45 +70,53 @@ jobs:
         chmod +x gradlew
         ./gradlew clean build -x test
 
-    # [변경됨] AWS 로그인 (OIDC 방식 사용)
-    # 기존 Access Key 방식 대신 IAM Role을 Assume 하는 방식으로 변경
-    # GitHub Secrets에 'AWS_ROLE_ARN'을 추가해야 합니다.
+    # AWS 로그인 (OIDC 사용)
     - name: AWS 로그인 (OIDC 사용)
       uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
         aws-region: ${{ env.AWS_REGION }}
 
-    # [추가됨] 5. ECR 로그인
+    # 5. ECR 로그인
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
 
-    # [추가됨] 6. Docker 이미지 빌드 및 ECR 푸시
-    - name: Build, tag, and push image to Amazon ECR
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-      run: |
-        # 현재 디렉토리(.)를 컨텍스트로 사용하여 Docker 빌드
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
-                     -t $ECR_REGISTRY/$ECR_REPOSITORY:$CONTAINER_IMAGE_TAG \
-                     .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CONTAINER_IMAGE_TAG
+    # [추가됨] 멀티 아키텍처 빌드를 위한 QEMU 설정
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
 
-    # 7. 배포 파일 준비 및 S3 업로드 (JAR 제외, 스크립트 및 설정만 포함)
+    # [추가됨] Docker Buildx 설정 (ARM 빌드 지원용)
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    # [변경됨] 6. Docker 이미지 빌드 및 ECR 푸시 (ARM64 아키텍처 지정)
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        # 태그 설정 (latest와 커밋 해시 태그 두 개 생성)
+        tags: |
+          ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+          ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.CONTAINER_IMAGE_TAG }}
+        # [핵심] EC2(t4g) 아키텍처에 맞춰 linux/arm64로 빌드
+        platforms: linux/arm64
+        provenance: false
+
+    # 7. 배포 파일 준비 및 S3 업로드
     - name: Zip deployment files and Upload to S3
       run: |
         mkdir deploy_artifact
         
-        # appspec.yml, scripts, .env 복사 (경로 수정됨)
+        # appspec.yml, scripts 복사
         cp appspec.yml deploy_artifact/
         cp -r scripts deploy_artifact/
         
         # .env 파일 복사
         cp .env deploy_artifact/
 
-        # docker-compose.yml 파일 복사 (경로 수정됨)
+        # docker-compose.yml 파일 복사
         cp docker-compose.yml deploy_artifact/
         
         # 압축 및 업로드
@@ -119,7 +127,7 @@ jobs:
         # S3 업로드
         aws s3 cp deploy.zip s3://$S3_BUCKET_NAME/deploy.zip
 
-    # 8. CodeDeploy 실행 (기존 유지)
+    # 8. CodeDeploy 실행
     - name: AWS CodeDeploy 실행
       run: |
         aws deploy create-deployment \
@@ -128,7 +136,7 @@ jobs:
           --deployment-group-name $CODEDEPLOY_GROUP_NAME \
           --s3-location bucket=$S3_BUCKET_NAME,bundleType=zip,key=deploy.zip
 
-    # 9. Discord 알림 (성공 시) - 기존 유지
+    # 9. Discord 알림 (성공 시)
     - name: Discord 알림 (성공 시)
       if: ${{ success() }}
       env:
