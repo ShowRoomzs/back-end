@@ -3,7 +3,7 @@ os: linux
 
 files:
   - source: /
-    destination: /home/ubuntu/app-deploy # 배포 스크립트가 위치할 경로
+    destination: /home/ubuntu/app-deploy
     overwrite: true
 
 permissions:
@@ -11,10 +11,7 @@ permissions:
     owner: ubuntu
     group: ubuntu
     mode: 755
-  - object: /home/ubuntu/app-deploy/scripts
-    owner: ubuntu
-    group: ubuntu
-    mode: 755
+  # 아래의 scripts 관련 중복 설정 삭제함
 
 hooks:
   ApplicationStop:
