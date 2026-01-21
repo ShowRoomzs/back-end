@@ -146,7 +146,7 @@ public interface AdminCategoryControllerDocs {
             description = "관리자가 카테고리 정보를 수정합니다.\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
-                    "수정할 필드만 전달하면 됩니다."
+                    "수정할 필드만 전달하면 됩니다. filters가 포함되면 필터 매핑도 동기화됩니다."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -154,7 +154,20 @@ public interface AdminCategoryControllerDocs {
                     description = "카테고리 수정 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = CategoryDto.UpdateCategoryResponse.class)
+                            schema = @Schema(implementation = CategoryDto.UpdateCategoryResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"categoryId\": 1,\n" +
+                                                    "  \"name\": \"옷\",\n" +
+                                                    "  \"order\": 1,\n" +
+                                                    "  \"iconUrl\": \"https://example.com/icon/clothing.png\",\n" +
+                                                    "  \"parentId\": null,\n" +
+                                                    "  \"message\": \"카테고리가 성공적으로 수정되었습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
@@ -186,7 +199,11 @@ public interface AdminCategoryControllerDocs {
                                     value = "{\n" +
                                             "  \"name\": \"옷\",\n" +
                                             "  \"order\": 1,\n" +
-                                            "  \"iconUrl\": \"https://example.com/icon/clothing.png\"\n" +
+                                            "  \"iconUrl\": \"https://example.com/icon/clothing.png\",\n" +
+                                            "  \"filters\": [\n" +
+                                            "    {\"filterId\": 1, \"selectedValueIds\": [11, 12]},\n" +
+                                            "    {\"filterId\": 2, \"selectedValueIds\": []}\n" +
+                                            "  ]\n" +
                                             "}"
                             )
                     }
