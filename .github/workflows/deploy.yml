@@ -176,6 +176,7 @@ jobs:
 
           ${PR_BODY}
 
+
           🔗 **기타 정보**
           Repo: ${GITHUB_REPOSITORY}
           Branch: ${GITHUB_REF_NAME}

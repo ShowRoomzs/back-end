@@ -75,6 +75,22 @@ public class CategoryDto {
         @Size(max = 2048, message = "아이콘 URL은 최대 2048자까지 입력 가능합니다.")
         @Schema(description = "아이콘 URL", example = "https://example.com/icon/clothing.png")
         private String iconUrl;
+
+        @Schema(description = "카테고리 필터 매핑")
+        private java.util.List<FilterMappingRequest> filters;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "필터 매핑 요청")
+    public static class FilterMappingRequest {
+        @Schema(description = "필터 ID", example = "1")
+        private Long filterId;
+
+        @Schema(description = "선택된 값 ID 목록 (비어 있으면 전체 활성 값)", example = "[1,2]")
+        private java.util.List<Long> selectedValueIds;
     }
 
     @Getter

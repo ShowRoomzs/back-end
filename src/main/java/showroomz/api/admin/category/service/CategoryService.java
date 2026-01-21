@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.api.admin.category.DTO.CategoryDto;
+import showroomz.api.admin.filter.DTO.CategoryFilterDto;
+import showroomz.api.admin.filter.service.FilterService;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.category.repository.CategoryRepository;
@@ -28,6 +30,7 @@ public class CategoryService {
     private final ProductRepository productRepository;
     private final CategoryFilterRepository categoryFilterRepository;
     private final CategoryFilterValueRepository categoryFilterValueRepository;
+    private final FilterService filterService;
 
     @SuppressWarnings("null")
     public CategoryDto.CreateCategoryResponse createCategory(CategoryDto.CreateCategoryRequest request) {
@@ -116,6 +119,17 @@ public class CategoryService {
         }
 
         Category savedCategory = categoryRepository.save(category);
+
+        if (request.getFilters() != null) {
+            CategoryFilterDto.SyncRequest syncRequest = new CategoryFilterDto.SyncRequest();
+            syncRequest.setFilters(request.getFilters().stream()
+                    .map(filter -> new CategoryFilterDto.FilterMapping(
+                            filter.getFilterId(),
+                            filter.getSelectedValueIds()
+                    ))
+                    .toList());
+            filterService.syncCategoryFilters(categoryId, syncRequest);
+        }
 
         return CategoryDto.UpdateCategoryResponse.builder()
                 .categoryId(savedCategory.getCategoryId())
