@@ -3,22 +3,23 @@ os: linux
 
 files:
   - source: /
-    destination: /home/ubuntu
+    destination: /home/ubuntu/app-deploy
     overwrite: true
 
 permissions:
-  - object: /home/ubuntu
-    owner: ubuntu  
+  - object: /home/ubuntu/app-deploy
+    owner: ubuntu
     group: ubuntu
     mode: 755
+  # 아래의 scripts 관련 중복 설정 삭제함
 
 hooks:
-  BeforeInstall:
-    - location: unzip.sh
+  ApplicationStop:
+    - location: scripts/stop.sh
       timeout: 60
-      runas: ubuntu 
+      runas: ubuntu
 
   ApplicationStart:
-    - location: start.sh
-      timeout: 60
-      runas: ubuntu  
+    - location: scripts/start.sh
+      timeout: 300
+      runas: ubuntu

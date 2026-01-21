@@ -1,21 +1,34 @@
-name: Deploy Spring Boot to EC2
+name: Deploy Spring Boot to EC2 with Docker
 
 on:
   push:
     branches:
       - main 
   workflow_dispatch:  
+
+env:
+  AWS_REGION: ap-northeast-2
+  ECR_REPOSITORY: showroomz-backend
+  S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET }}
+  CODEDEPLOY_APP_NAME: showroomz-backend
+  CODEDEPLOY_GROUP_NAME: showroomz-backend-prod
+  CONTAINER_IMAGE_TAG: ${{ github.sha }}
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    
+    # [변경됨] OIDC 인증을 위한 권한 설정 추가
+    permissions:
+      id-token: write
+      contents: read
 
-    # 1. MySQL 서비스 컨테이너 추가 (테스트용 DB 띄우기)
     services:
       mysql:
-        image: mysql:8.0 # 로컬과 동일한 버전 권장
+        image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: root # 테스트용 비밀번호
-          MYSQL_DATABASE: showroomz # 생성할 DB 이름
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: showroomz
         ports:
           - 3306:3306
         options: >-
@@ -35,61 +48,95 @@ jobs:
         java-version: '21'
         cache: 'gradle'
 
-    # [추가됨] 1. GitHub Secret 내용을 이용해 .env 파일 생성
+    # 2. GitHub Secret을 이용해 .env 파일 생성 (기존 유지)
     - name: Make .env file
       run: |
         echo "${{ secrets.APPLICATION_ENV }}" > .env
       shell: bash
-    # 1. 통합 테스트(DB 검증) 먼저 실행 -> 실패하면 여기서 배포 중단됨
+
+    # 3. 통합 테스트 실행
     - name: Run Integration Tests (DB Schema Validation)
       run: |
         chmod +x gradlew
         ./gradlew integrationTest
       env:
-          # Spring Boot가 이 환경변수를 인식하여 application.yml 설정보다 우선 적용함
-          SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/showroomz?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-          SPRING_DATASOURCE_USERNAME: root
-          SPRING_DATASOURCE_PASSWORD: root
+        SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/showroomz?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+        SPRING_DATASOURCE_USERNAME: root
+        SPRING_DATASOURCE_PASSWORD: root
 
+    # 4. Gradle 빌드 (JAR 생성)
     - name: Gradle 빌드
       run: |
         chmod +x gradlew
         ./gradlew clean build -x test
 
-    - name: AWS 로그인 (S3 & CodeDeploy 사용)
-      uses: aws-actions/configure-aws-credentials@v2
+    # AWS 로그인 (OIDC 사용)
+    - name: AWS 로그인 (OIDC 사용)
+      uses: aws-actions/configure-aws-credentials@v4
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-northeast-2  # 서울 리전
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
 
-    - name: S3에 업로드
+    # 5. ECR 로그인
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    # [추가됨] 멀티 아키텍처 빌드를 위한 QEMU 설정
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    # [추가됨] Docker Buildx 설정 (ARM 빌드 지원용)
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    # [변경됨] 6. Docker 이미지 빌드 및 ECR 푸시 (ARM64 아키텍처 지정)
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        # 태그 설정 (latest와 커밋 해시 태그 두 개 생성)
+        tags: |
+          ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+          ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.CONTAINER_IMAGE_TAG }}
+        # [핵심] EC2(t4g) 아키텍처에 맞춰 linux/arm64로 빌드
+        platforms: linux/arm64
+        provenance: false
+
+    # 7. 배포 파일 준비 및 S3 업로드
+    - name: Zip deployment files and Upload to S3
       run: |
-        mkdir deploy
-        # 빌드된 jar 파일 복사
-        cp build/libs/back-end-0.0.1-SNAPSHOT.jar deploy/app.jar
+        mkdir deploy_artifact
         
-        # 설정 파일들 복사
-        cp appspec.yml deploy/
-        cp scripts/start.sh deploy/
-        cp scripts/unzip.sh deploy/
+        # appspec.yml, scripts 복사
+        cp appspec.yml deploy_artifact/
+        cp -r scripts deploy_artifact/
         
-        # [추가됨] 2. 아까 만든 .env 파일도 배포 폴더에 복사
-        cp .env deploy/
+        # .env 파일 복사
+        cp .env deploy_artifact/
+
+        # docker-compose.yml 파일 복사
+        cp docker-compose.yml deploy_artifact/
         
-        # deploy 폴더 전체를 압축
-        zip -r deploy.zip deploy/
+        # 압축 및 업로드
+        cd deploy_artifact
+        zip -r ../deploy.zip .
+        cd ..
         
         # S3 업로드
-        aws s3 cp deploy.zip s3://${{ secrets.AWS_S3_BUCKET}}/deploy.zip
+        aws s3 cp deploy.zip s3://$S3_BUCKET_NAME/deploy.zip
 
+    # 8. CodeDeploy 실행
     - name: AWS CodeDeploy 실행
       run: |
         aws deploy create-deployment \
-          --application-name spring-boot-app \
-          --deployment-group-name spring-boot-deploy-group \
-          --s3-location bucket=${{ secrets.AWS_S3_BUCKET}},bundleType=zip,key=deploy.zip
+          --application-name $CODEDEPLOY_APP_NAME \
+          --deployment-config-name CodeDeployDefault.OneAtATime \
+          --deployment-group-name $CODEDEPLOY_GROUP_NAME \
+          --s3-location bucket=$S3_BUCKET_NAME,bundleType=zip,key=deploy.zip
 
+    # 9. Discord 알림 (성공 시)
     - name: Discord 알림 (성공 시)
       if: ${{ success() }}
       env:
@@ -127,8 +174,8 @@ jobs:
           제목: ${PR_TITLE}
           번호: #${PR_NUMBER}
 
+          ${PR_BODY}
 
-          ${PR_BODY}\n\n
 
           🔗 **기타 정보**
           Repo: ${GITHUB_REPOSITORY}

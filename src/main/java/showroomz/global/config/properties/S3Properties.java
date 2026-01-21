@@ -10,8 +10,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class S3Properties {
     private String bucket;
     private String region;
-    private String accessKey;
-    private String secretKey;
+    // private String accessKey; // 삭제: IAM Role/OIDC 사용 시 불필요
+    // private String secretKey; // 삭제: IAM Role/OIDC 사용 시 불필요
     private String cloudFrontDomain;
 }
 

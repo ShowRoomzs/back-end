@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: showroomz-db
+    restart: always
+    environment:
+      # [핵심] .env의 DB_PASSWORD 값을 MySQL의 루트 비밀번호로 설정
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: showroomz
+      TZ: UTC
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - /home/ubuntu/mysql_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    
+    # 헬스 체크에서도 통일된 DB_PASSWORD 사용
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    container_name: showroomz-backend
+    # start.sh에서 export한 환경변수 IMAGE_NAME을 사용
+    image: ${IMAGE_NAME}
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - /home/ubuntu/logs:/logs
+    # 애플리케이션 로그를 /logs/app.log로 리다이렉션해 호스트와 동기화
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        java -Dspring.profiles.active=prod -jar app.jar > /logs/app.log 2>&1
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # 앱도 똑같은 변수를 사용
+      SPRING_DATASOURCE_URL: ${DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
