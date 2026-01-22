@@ -1,21 +1,39 @@
 package showroomz.api.app.product.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.product.DTO.ProductDto;
+import showroomz.api.app.user.repository.UserRepository;
+import showroomz.domain.market.repository.MarketFollowRepository;
 import showroomz.domain.product.entity.Product;
+import showroomz.domain.product.entity.ProductImage;
+import showroomz.domain.product.entity.ProductOption;
+import showroomz.domain.product.entity.ProductOptionGroup;
+import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.filter.entity.Filter;
 import showroomz.domain.filter.repository.FilterRepository;
 import showroomz.domain.product.repository.ProductFilterCriteria;
+import showroomz.domain.product.repository.ProductOptionGroupRepository;
 import showroomz.domain.product.repository.ProductRepository;
+import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.api.seller.category.service.CategoryService;
+import showroomz.domain.wishlist.repository.WishlistRepository;
+import showroomz.api.app.auth.exception.BusinessException;
+import showroomz.global.error.exception.ErrorCode;
+import showroomz.domain.member.user.entity.Users;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service("appProductService")
@@ -27,6 +45,12 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryService categoryService;
     private final FilterRepository filterRepository;
+    private final ProductOptionGroupRepository productOptionGroupRepository;
+    private final ProductVariantRepository productVariantRepository;
+    private final UserRepository userRepository;
+    private final MarketFollowRepository marketFollowRepository;
+    private final WishlistRepository wishlistRepository;
+    private final ObjectMapper objectMapper;
     private static final String DEFAULT_SORT = "RECOMMEND";
     private static final String SORT_FILTER_KEY = "sort";
 
@@ -84,6 +108,69 @@ public class ProductService {
                 .build();
 
         return response;
+    }
+
+    /**
+     * 사용자용 상품 상세 조회
+     */
+    public ProductDto.ProductDetailResponse getProductDetail(Long productId) {
+        Product product = productRepository.findDetailByProductId(productId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        Users currentUser = resolveCurrentUser();
+        boolean isWished = false;
+        boolean isFollowing = false;
+        if (currentUser != null) {
+            isWished = wishlistRepository.existsByUserAndProduct(currentUser, product);
+            if (product.getMarket() != null) {
+                isFollowing = marketFollowRepository.existsByUserAndMarket(currentUser, product.getMarket());
+            }
+        }
+
+        String representativeImageUrl = extractRepresentativeImageUrl(product);
+        List<String> coverImageUrls = extractCoverImageUrls(product);
+        List<ProductOptionGroup> optionGroupEntities = productOptionGroupRepository.findByProductIdWithOptions(productId);
+        List<ProductVariant> variantEntities = productVariantRepository.findByProductIdWithOptions(productId);
+        List<ProductDto.OptionGroupInfo> optionGroups = buildOptionGroups(optionGroupEntities);
+        List<ProductDto.VariantInfo> variants = buildVariants(variantEntities);
+        Integer regularPrice = product.getRegularPrice();
+        Integer salePrice = product.getSalePrice();
+        Integer deliveryFreeThreshold = product.getDeliveryFreeThreshold();
+        Boolean isFreeDelivery = calculateIsFreeDelivery(salePrice, deliveryFreeThreshold);
+        JsonNode productNotice = parseJsonSafely(product.getProductNotice());
+        JsonNode tags = parseJsonSafely(product.getTags());
+
+        String createdAt = product.getCreatedAt() != null ? product.getCreatedAt().toString() : null;
+
+        return ProductDto.ProductDetailResponse.builder()
+                .id(product.getProductId())
+                .productNumber(product.getProductNumber())
+                .marketId(product.getMarket() != null ? product.getMarket().getId() : null)
+                .marketName(product.getMarket() != null ? product.getMarket().getMarketName() : null)
+                .categoryId(product.getCategory() != null ? product.getCategory().getCategoryId() : null)
+                .categoryName(product.getCategory() != null ? product.getCategory().getName() : null)
+                .name(product.getName())
+                .sellerProductCode(product.getSellerProductCode())
+                .representativeImageUrl(representativeImageUrl)
+                .coverImageUrls(coverImageUrls)
+                .description(product.getDescription())
+                .productNotice(productNotice)
+                .tags(tags)
+                .gender(product.getGender() != null ? product.getGender().name() : null)
+                .isRecommended(product.getIsRecommended())
+                .regularPrice(regularPrice)
+                .salePrice(salePrice)
+                .deliveryType(product.getDeliveryType())
+                .deliveryFee(product.getDeliveryFee())
+                .deliveryFreeThreshold(deliveryFreeThreshold)
+                .deliveryEstimatedDays(product.getDeliveryEstimatedDays())
+                .isFreeDelivery(isFreeDelivery)
+                .optionGroups(optionGroups)
+                .variants(variants)
+                .isWished(isWished)
+                .isFollowing(isFollowing)
+                .createdAt(createdAt)
+                .build();
     }
 
     /**
@@ -252,6 +339,87 @@ public class ProductService {
                 })
                 .filter(java.util.Objects::nonNull)
                 .toList();
+    }
+
+    private Users resolveCurrentUser() {
+        try {
+            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (principal instanceof User userPrincipal) {
+                return userRepository.findByUsername(userPrincipal.getUsername()).orElse(null);
+            }
+        } catch (Exception ignored) {
+            // guest user
+        }
+        return null;
+    }
+
+    private String extractRepresentativeImageUrl(Product product) {
+        return product.getProductImages().stream()
+                .filter(image -> image.getOrder() != null && image.getOrder() == 0)
+                .sorted(Comparator.comparing(ProductImage::getOrder))
+                .map(ProductImage::getUrl)
+                .findFirst()
+                .orElse(product.getThumbnailUrl());
+    }
+
+    private List<String> extractCoverImageUrls(Product product) {
+        return product.getProductImages().stream()
+                .filter(image -> image.getOrder() != null && image.getOrder() >= 1)
+                .sorted(Comparator.comparing(ProductImage::getOrder))
+                .map(ProductImage::getUrl)
+                .collect(Collectors.toList());
+    }
+
+    private List<ProductDto.OptionGroupInfo> buildOptionGroups(List<ProductOptionGroup> optionGroups) {
+        return optionGroups.stream()
+                .map(group -> ProductDto.OptionGroupInfo.builder()
+                        .optionGroupId(group.getOptionGroupId())
+                        .name(group.getName())
+                        .options(group.getOptions().stream()
+                                .map(option -> ProductDto.OptionInfo.builder()
+                                        .optionId(option.getOptionId())
+                                        .name(option.getName())
+                                        .price(option.getPrice())
+                                        .build())
+                                .collect(Collectors.toList()))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private List<ProductDto.VariantInfo> buildVariants(List<ProductVariant> variants) {
+        return variants.stream()
+                .map(variant -> ProductDto.VariantInfo.builder()
+                        .variantId(variant.getVariantId())
+                        .name(variant.getName())
+                        .regularPrice(variant.getRegularPrice())
+                        .salePrice(variant.getSalePrice())
+                        .stock(variant.getStock())
+                        .isRepresentative(variant.getIsRepresentative())
+                        .isDisplay(variant.getIsDisplay())
+                        .optionIds(variant.getOptions().stream()
+                                .map(ProductOption::getOptionId)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toList()))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private Boolean calculateIsFreeDelivery(Integer salePrice, Integer deliveryFreeThreshold) {
+        if (salePrice == null || deliveryFreeThreshold == null) {
+            return false;
+        }
+        return salePrice >= deliveryFreeThreshold;
+    }
+
+    private JsonNode parseJsonSafely(String rawJson) {
+        if (rawJson == null || rawJson.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readTree(rawJson);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private static class FilterParsingResult {

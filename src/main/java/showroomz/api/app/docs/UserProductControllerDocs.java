@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
@@ -144,5 +145,95 @@ public interface UserProductControllerDocs {
             @RequestParam(required = false, defaultValue = "1") Integer page,
             @Parameter(description = "페이지당 항목 수 (기본값: 20)", required = false, example = "20")
             @RequestParam(required = false, defaultValue = "20") Integer limit
+    );
+
+    @Operation(
+            summary = "비회원/회원 상품 상세 조회",
+            description = "상품 ID로 상세 정보를 조회합니다.\n\n" +
+                    "**참고사항:**\n" +
+                    "- 대표 이미지: 상품 이미지 중 order == 0\n" +
+                    "- 커버 이미지: 상품 이미지 중 order >= 1\n" +
+                    "- 무료배송 여부는 deliveryFreeThreshold 기준으로 계산됩니다.\n" +
+                    "- 로그인한 사용자는 isWished, isFollowing 정보가 포함됩니다.\n\n" +
+                    "**권한:** 선택사항 (게스트 가능)"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProductDto.ProductDetailResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"id\": 1024,\n" +
+                                                    "  \"productNumber\": \"SRZ-20251228-001\",\n" +
+                                                    "  \"marketId\": 5,\n" +
+                                                    "  \"marketName\": \"M 브라이튼\",\n" +
+                                                    "  \"categoryId\": 1,\n" +
+                                                    "  \"categoryName\": \"의류\",\n" +
+                                                    "  \"name\": \"프리미엄 린넨 셔츠\",\n" +
+                                                    "  \"sellerProductCode\": \"PROD-001\",\n" +
+                                                    "  \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
+                                                    "  \"coverImageUrls\": [\n" +
+                                                    "    \"https://example.com/image1.jpg\",\n" +
+                                                    "    \"https://example.com/image2.jpg\"\n" +
+                                                    "  ],\n" +
+                                                    "  \"description\": \"<p>상품 상세 설명</p>\",\n" +
+                                                    "  \"productNotice\": {\"origin\":\"한국\"},\n" +
+                                                    "  \"tags\": [\"신상\", \"할인\"],\n" +
+                                                    "  \"gender\": \"UNISEX\",\n" +
+                                                    "  \"isRecommended\": false,\n" +
+                                                    "  \"regularPrice\": 113000,\n" +
+                                                    "  \"salePrice\": 33900,\n" +
+                                                    "  \"deliveryType\": \"STANDARD\",\n" +
+                                                    "  \"deliveryFee\": 3000,\n" +
+                                                    "  \"deliveryFreeThreshold\": 50000,\n" +
+                                                    "  \"deliveryEstimatedDays\": 3,\n" +
+                                                    "  \"isFreeDelivery\": false,\n" +
+                                                    "  \"optionGroups\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"optionGroupId\": 1,\n" +
+                                                    "      \"name\": \"사이즈\",\n" +
+                                                    "      \"options\": [\n" +
+                                                    "        {\"optionId\": 1, \"name\": \"S\", \"price\": 0},\n" +
+                                                    "        {\"optionId\": 2, \"name\": \"M\", \"price\": 0}\n" +
+                                                    "      ]\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"variants\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"variantId\": 1,\n" +
+                                                    "      \"name\": \"S\",\n" +
+                                                    "      \"regularPrice\": 113000,\n" +
+                                                    "      \"salePrice\": 33900,\n" +
+                                                    "      \"stock\": 10,\n" +
+                                                    "      \"isRepresentative\": true,\n" +
+                                                    "      \"isDisplay\": true,\n" +
+                                                    "      \"optionIds\": [1]\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"isWished\": false,\n" +
+                                                    "  \"isFollowing\": false,\n" +
+                                                    "  \"createdAt\": \"2025-12-28T14:30:00Z\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "상품을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<ProductDto.ProductDetailResponse> getProductDetail(
+            @Parameter(description = "상품 ID", required = true)
+            @PathVariable Long productId
     );
 }

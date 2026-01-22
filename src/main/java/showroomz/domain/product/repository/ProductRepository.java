@@ -17,6 +17,13 @@ import java.util.Optional;
 public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product>, ProductRepositoryCustom {
     Optional<Product> findByProductId(Long productId);
     Optional<Product> findByProductNumber(String productNumber);
+
+    @Query("SELECT DISTINCT p FROM Product p " +
+           "LEFT JOIN FETCH p.market " +
+           "LEFT JOIN FETCH p.category " +
+           "LEFT JOIN FETCH p.productImages " +
+           "WHERE p.productId = :productId")
+    Optional<Product> findDetailByProductId(@Param("productId") Long productId);
     
     // 특정 마켓의 상품만 조회
     Page<Product> findByMarket_Id(Long marketId, Pageable pageable);

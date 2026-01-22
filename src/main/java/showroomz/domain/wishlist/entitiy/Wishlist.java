@@ -1,52 +1,59 @@
 package showroomz.domain.wishlist.entitiy;
-// package showroomz.wishlist.entitiy;
-// import jakarta.persistence.*;
-// import java.time.LocalDateTime;
-// import lombok.AccessLevel;
-// import lombok.Getter;
-// import lombok.NoArgsConstructor;
-// import showroomz.user.entity.Users;
 
-// import org.springframework.data.annotation.CreatedDate;
-// import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.product.entity.Product;
 
-// @Entity
-// @Getter
-// @NoArgsConstructor(access = AccessLevel.PROTECTED)
-// @EntityListeners(AuditingEntityListener.class) // createdAt 자동 생성을 위함
-// @Table(name = "wishlist",
-//     // 유저 한 명이 동일 상품을 여러 번 찜하는 것을 방지
-//     uniqueConstraints = {
-//         @UniqueConstraint(
-//             name = "wishlist_uk",
-//             columnNames = {"member_id", "product_id"}
-//         )
-//     }
-// )
-// public class Wishlist {
+import java.time.LocalDateTime;
 
-//     @Id
-//     @GeneratedValue(strategy = GenerationType.IDENTITY)
-//     @Column(name = "wishlist_id")
-//     private Long id;
+@Entity
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EntityListeners(AuditingEntityListener.class)
+@Table(name = "wishlist",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "wishlist_uk",
+            columnNames = {"user_id", "product_id"}
+        )
+    }
+)
+public class Wishlist {
 
-//     // Member와의 관계 (N:1)
-//     @ManyToOne(fetch = FetchType.LAZY)
-//     @JoinColumn(name = "user_id", nullable = false)
-//     private Users user;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "wishlist_id")
+    private Long id;
 
-//     // Product와의 관계 (N:1)
-// //    @ManyToOne(fetch = FetchType.LAZY)
-// //    @JoinColumn(name = "product_id", nullable = false)
-// //    private Product product;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private Users user;
 
-//     @CreatedDate
-//     @Column(updatable = false)
-//     private LocalDateTime createdAt; // 찜한 날짜
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = true)
+    private Product product;
 
-//     //== 생성자 ==//
-// //    public Wishlist(Users user, Product product) {
-// //        this.user = user;
-// //        this.product = product;
-// //    }
-// }
+    @CreatedDate
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    public Wishlist(Users user, Product product) {
+        this.user = user;
+        this.product = product;
+    }
+}
