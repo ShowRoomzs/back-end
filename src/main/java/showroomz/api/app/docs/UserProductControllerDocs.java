@@ -24,11 +24,10 @@ public interface UserProductControllerDocs {
                     "- q: 검색어 (상품명, 마켓명 등)\n" +
                     "- categoryId: 카테고리 ID (하위 카테고리 포함)\n" +
                     "- marketId: 쇼룸 ID\n" +
-                    "- filters: 동적 필터 목록 (JSON 배열 문자열)\n" +
-                    "- sort: 정렬 기준 (RECOMMEND, POPULAR, NEWEST, PRICE_ASC, PRICE_DESC)\n\n" +
+                    "- filters: 동적 필터 목록 (JSON 배열 문자열, 정렬 조건은 key: 'sort'로 포함하여 전달)\n\n" +
                     "**정렬 옵션:**\n" +
                     "- RECOMMEND: 추천순 (isRecommended DESC, createdAt DESC)\n" +
-                    "- POPULAR: 인기순 (현재: 최신순, 추후 좋아요 수 기준)\n" +
+                    "- POPULAR: 인기순 (현재: createdAt DESC, 추후 좋아요 수 기준)\n" +
                     "- NEWEST: 최신순 (createdAt DESC)\n" +
                     "- PRICE_ASC: 가격 낮은순 (salePrice ASC)\n" +
                     "- PRICE_DESC: 가격 높은순 (salePrice DESC)\n\n" +
@@ -130,10 +129,14 @@ public interface UserProductControllerDocs {
             @RequestParam(required = false) Long categoryId,
             @Parameter(description = "쇼룸 ID", required = false)
             @RequestParam(required = false) Long marketId,
-            @Parameter(description = "정렬 기준 (RECOMMEND, POPULAR, NEWEST, PRICE_ASC, PRICE_DESC)", required = false)
-            @RequestParam(required = false) String sort,
             @Parameter(
-                    description = "필터 목록 (JSON 배열 문자열) 예: [{\"key\":\"gender\",\"values\":[\"MALE\"]}]",
+                    description = "필터 목록 (JSON 배열 문자열). 정렬 조건은 key: 'sort'로 포함하여 전달합니다.\n" +
+                            "- sort=RECOMMEND: 추천순 (isRecommended DESC, createdAt DESC)\n" +
+                            "- sort=POPULAR: 인기순 (현재: createdAt DESC, 추후 좋아요 수 기준)\n" +
+                            "- sort=NEWEST: 최신순 (createdAt DESC)\n" +
+                            "- sort=PRICE_ASC: 가격 낮은순 (salePrice ASC)\n" +
+                            "- sort=PRICE_DESC: 가격 높은순 (salePrice DESC)\n" +
+                            "예: [{\"key\":\"gender\",\"values\":[\"MALE\"]},{\"key\":\"sort\",\"values\":[\"RECOMMEND\"]}]",
                     required = false
             )
             @RequestParam(required = false) String filters,
