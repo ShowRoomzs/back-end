@@ -1,7 +1,10 @@
 package showroomz.domain.filter.type;
 
 public enum FilterType {
-    CHECKBOX,
+    SELECT,
+    RADIO,
     COLOR,
-    RANGE
+    BRAND,
+    PRICE_RANGE,
+    CHECKBOX
 }
