@@ -1,5 +1,6 @@
 package showroomz.api.app.product.DTO;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -186,6 +187,161 @@ public class ProductDto {
 
         @Schema(description = "관리자 강제 품절 여부", example = "false")
         private Boolean isOutOfStockForced;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "상품 상세 조회 응답")
+    public static class ProductDetailResponse {
+        @Schema(description = "상품 ID", example = "1024")
+        private Long id;
+
+        @Schema(description = "상품 번호", example = "SRZ-20251228-001")
+        private String productNumber;
+
+        @Schema(description = "마켓 ID", example = "5")
+        private Long marketId;
+
+        @Schema(description = "마켓명", example = "M 브라이튼")
+        private String marketName;
+
+        @Schema(description = "카테고리 ID", example = "1")
+        private Long categoryId;
+
+        @Schema(description = "카테고리명", example = "의류")
+        private String categoryName;
+
+        @Schema(description = "상품명", example = "프리미엄 린넨 셔츠")
+        private String name;
+
+        @Schema(description = "판매자 상품 코드", example = "PROD-001")
+        private String sellerProductCode;
+
+        @Schema(description = "대표 이미지 URL", example = "https://example.com/image.jpg")
+        private String representativeImageUrl;
+
+        @Schema(description = "커버 이미지 URL 목록")
+        private List<String> coverImageUrls;
+
+        @Schema(description = "상품 상세 설명 (HTML)")
+        private String description;
+
+        @Schema(description = "상품정보제공고시 (JSON 객체)")
+        private JsonNode productNotice;
+
+        @Schema(description = "태그 (JSON 배열)")
+        private JsonNode tags;
+
+        @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
+        private String gender;
+
+        @Schema(description = "추천 상품 여부", example = "false")
+        private Boolean isRecommended;
+
+        @Schema(description = "정가", example = "113000")
+        private Integer regularPrice;
+
+        @Schema(description = "할인 판매가", example = "33900")
+        private Integer salePrice;
+
+        @Schema(description = "배송 유형", example = "STANDARD")
+        private String deliveryType;
+
+        @Schema(description = "배송비", example = "3000")
+        private Integer deliveryFee;
+
+        @Schema(description = "무료 배송 최소 금액", example = "50000")
+        private Integer deliveryFreeThreshold;
+
+        @Schema(description = "배송 예상 일수", example = "3")
+        private Integer deliveryEstimatedDays;
+
+        @Schema(description = "무료배송 여부", example = "false")
+        private Boolean isFreeDelivery;
+
+        @Schema(description = "옵션 그룹 목록")
+        private List<OptionGroupInfo> optionGroups;
+
+        @Schema(description = "옵션 조합 (Variant) 목록")
+        private List<VariantInfo> variants;
+
+        @Schema(description = "찜 여부", example = "false")
+        private Boolean isWished;
+
+        @Schema(description = "마켓 팔로우 여부", example = "false")
+        private Boolean isFollowing;
+
+        @Schema(description = "등록일", example = "2025-12-28T14:30:00Z")
+        private String createdAt;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "옵션 그룹 정보")
+    public static class OptionGroupInfo {
+        @Schema(description = "옵션 그룹 ID", example = "1")
+        private Long optionGroupId;
+
+        @Schema(description = "옵션 그룹명", example = "사이즈")
+        private String name;
+
+        @Schema(description = "옵션 목록")
+        private List<OptionInfo> options;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "옵션 정보")
+    public static class OptionInfo {
+        @Schema(description = "옵션 ID", example = "1")
+        private Long optionId;
+
+        @Schema(description = "옵션명", example = "S")
+        private String name;
+
+        @Schema(description = "옵션 가격 (추가 가격)", example = "0")
+        private Integer price;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "옵션 조합 (Variant) 정보")
+    public static class VariantInfo {
+        @Schema(description = "Variant ID", example = "1")
+        private Long variantId;
+
+        @Schema(description = "옵션 조합명", example = "S, Black")
+        private String name;
+
+        @Schema(description = "정가", example = "59000")
+        private Integer regularPrice;
+
+        @Schema(description = "할인 판매가", example = "49000")
+        private Integer salePrice;
+
+        @Schema(description = "재고 수량", example = "10")
+        private Integer stock;
+
+        @Schema(description = "대표 옵션 여부", example = "true")
+        private Boolean isRepresentative;
+
+        @Schema(description = "노출 여부", example = "true")
+        private Boolean isDisplay;
+
+        @Schema(description = "옵션 ID 목록", example = "[1, 2]")
+        private List<Long> optionIds;
     }
 
     @Getter

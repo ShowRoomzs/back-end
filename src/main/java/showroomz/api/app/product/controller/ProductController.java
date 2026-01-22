@@ -76,4 +76,13 @@ public class ProductController implements UserProductControllerDocs {
 
         return ResponseEntity.ok(response);
     }
+
+    @Override
+    @GetMapping("/{productId}")
+    public ResponseEntity<ProductDto.ProductDetailResponse> getProductDetail(
+            @PathVariable Long productId
+    ) {
+        ProductDto.ProductDetailResponse response = productService.getProductDetail(productId);
+        return ResponseEntity.ok(response);
+    }
 }
