@@ -27,6 +27,8 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryService categoryService;
     private final FilterRepository filterRepository;
+    private static final String DEFAULT_SORT = "RECOMMEND";
+    private static final String SORT_FILTER_KEY = "sort";
 
     /**
      * 사용자용 상품 검색
@@ -56,8 +58,9 @@ public class ProductService {
         }
 
         String keyword = normalize(request.getQ());
-        String sortType = normalizeSortType(request.getSort());
-        List<ProductFilterCriteria> filterCriteria = buildFilterCriteria(request.getFilters());
+        FilterParsingResult parsedFilters = parseFilters(request.getFilters());
+        String sortType = parsedFilters.sortType != null ? parsedFilters.sortType : DEFAULT_SORT;
+        List<ProductFilterCriteria> filterCriteria = buildFilterCriteria(parsedFilters.filters);
 
         // 검색 실행
         Page<Product> productPage = productRepository.searchProductsForUser(
@@ -186,6 +189,28 @@ public class ProductService {
         return normalized != null ? normalized.toUpperCase() : null;
     }
 
+    private FilterParsingResult parseFilters(List<ProductDto.FilterRequest> filters) {
+        if (filters == null || filters.isEmpty()) {
+            return new FilterParsingResult(null, List.of());
+        }
+        String sortType = null;
+        List<ProductDto.FilterRequest> criteriaFilters = new java.util.ArrayList<>();
+        for (ProductDto.FilterRequest filter : filters) {
+            if (filter == null) {
+                continue;
+            }
+            String key = normalize(filter.getKey());
+            if (key != null && key.equalsIgnoreCase(SORT_FILTER_KEY)) {
+                if (sortType == null && filter.getValues() != null && !filter.getValues().isEmpty()) {
+                    sortType = normalizeSortType(filter.getValues().get(0));
+                }
+                continue;
+            }
+            criteriaFilters.add(filter);
+        }
+        return new FilterParsingResult(sortType, criteriaFilters);
+    }
+
     private List<ProductFilterCriteria> buildFilterCriteria(List<ProductDto.FilterRequest> filters) {
         if (filters == null || filters.isEmpty()) {
             return List.of();
@@ -206,6 +231,9 @@ public class ProductService {
                     if (key == null) {
                         return null;
                     }
+                    if (SORT_FILTER_KEY.equalsIgnoreCase(key)) {
+                        return null;
+                    }
                     Filter definition = filterDefinitions.stream()
                             .filter(item -> key.equalsIgnoreCase(item.getFilterKey()))
                             .findFirst()
@@ -224,5 +252,15 @@ public class ProductService {
                 })
                 .filter(java.util.Objects::nonNull)
                 .toList();
+    }
+
+    private static class FilterParsingResult {
+        private final String sortType;
+        private final List<ProductDto.FilterRequest> filters;
+
+        private FilterParsingResult(String sortType, List<ProductDto.FilterRequest> filters) {
+            this.sortType = sortType;
+            this.filters = filters;
+        }
     }
 }

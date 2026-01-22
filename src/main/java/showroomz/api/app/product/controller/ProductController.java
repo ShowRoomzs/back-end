@@ -31,7 +31,6 @@ public class ProductController implements UserProductControllerDocs {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Long marketId,
-            @RequestParam(required = false) String sort,
             @RequestParam(required = false) String filters,
             @RequestParam(required = false, defaultValue = "1") Integer page,
             @RequestParam(required = false, defaultValue = "20") Integer limit
@@ -50,7 +49,6 @@ public class ProductController implements UserProductControllerDocs {
                 .q(q)
                 .categoryId(categoryId)
                 .marketId(marketId)
-                .sort(sort)
                 .filters(filterRequests)
                 .build();
 

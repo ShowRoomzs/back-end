@@ -27,9 +27,6 @@ public class ProductDto {
         @Schema(description = "쇼룸 ID", example = "5")
         private Long marketId;
 
-        @Schema(description = "정렬 기준", example = "RECOMMEND", allowableValues = {"RECOMMEND", "POPULAR", "NEWEST", "PRICE_ASC", "PRICE_DESC"})
-        private String sort;
-
         @Schema(description = "필터 목록")
         private List<FilterRequest> filters;
     }
