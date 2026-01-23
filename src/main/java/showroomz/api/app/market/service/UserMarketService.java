@@ -37,9 +37,10 @@ public class UserMarketService {
         // 3. 현재 유저의 팔로우 여부 조회
         boolean isFollowed = false;
         if (username != null && !username.equals("anonymousUser")) {
-            Users user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-            isFollowed = marketFollowRepository.existsByUserAndMarket(user, market);
+            Users user = userRepository.findByUsername(username).orElse(null);
+            if (user != null) {
+                isFollowed = marketFollowRepository.existsByUserAndMarket(user, market);
+            }
         }
 
         // 4. 응답 생성

@@ -9,12 +9,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.market.DTO.MarketDetailResponse;
 import showroomz.api.app.market.DTO.MarketListResponse;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "Common - Market", description = "공통 마켓 API (조회)")
 public interface CommonMarketControllerDocs {
@@ -27,14 +27,7 @@ public interface CommonMarketControllerDocs {
                     "- 카테고리 필터링 (선택)\n" +
                     "- 마켓명 키워드 검색 (선택)\n\n" +
 
-                    "**권한:** 인증 불필요 (비로그인 가능)",
-            parameters = {
-                    @Parameter(name = "mainCategory", description = "카테고리 필터 (선택)", required = false, example = "패션/의류", in = ParameterIn.QUERY),
-                    @Parameter(name = "keyword", description = "마켓명 검색 키워드 (선택)", required = false, example = "쇼룸즈", in = ParameterIn.QUERY),
-                    @Parameter(name = "page", description = "페이지 번호 (0부터 시작)", required = false, example = "0", in = ParameterIn.QUERY),
-                    @Parameter(name = "size", description = "페이지 크기", required = false, example = "20", in = ParameterIn.QUERY),
-                    @Parameter(name = "sort", description = "정렬 기준 (기본: id,DESC)", required = false, example = "id,DESC", in = ParameterIn.QUERY)
-            }
+                    "**권한:** 인증 불필요 (비로그인 가능)"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -60,7 +53,7 @@ public interface CommonMarketControllerDocs {
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
-                                                    "    \"page\": 0,\n" +
+                                                    "    \"page\": 1,\n" +
                                                     "    \"size\": 20,\n" +
                                                     "    \"totalElements\": 150,\n" +
                                                     "    \"totalPages\": 8,\n" +
@@ -75,12 +68,11 @@ public interface CommonMarketControllerDocs {
             )
     })
     ResponseEntity<PageResponse<MarketListResponse>> getMarkets(
-            @Parameter(description = "카테고리 필터", required = false, example = "패션/의류", in = ParameterIn.QUERY)
+            @Parameter(name = "mainCategory", description = "카테고리 필터 (선택)", required = false, example = "패션/의류", in = ParameterIn.QUERY)
             String mainCategory,
-            @Parameter(description = "마켓명 검색 키워드", required = false, example = "쇼룸즈", in = ParameterIn.QUERY)
+            @Parameter(name = "keyword", description = "마켓명 검색 키워드 (선택)", required = false, example = "쇼룸즈", in = ParameterIn.QUERY)
             String keyword,
-            @Parameter(description = "페이징 정보", required = false, in = ParameterIn.QUERY)
-            Pageable pageable
+            PagingRequest pagingRequest
     );
 
     @Operation(

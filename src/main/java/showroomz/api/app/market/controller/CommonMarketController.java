@@ -1,10 +1,10 @@
 package showroomz.api.app.market.controller;
 
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,6 +16,7 @@ import showroomz.api.app.market.DTO.MarketDetailResponse;
 import showroomz.api.app.market.DTO.MarketListResponse;
 import showroomz.api.app.market.service.UserMarketService;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 @RestController
 @RequestMapping("/v1/common/markets")
@@ -27,11 +28,14 @@ public class CommonMarketController implements CommonMarketControllerDocs {
     @Override
     @GetMapping
     public ResponseEntity<PageResponse<MarketListResponse>> getMarkets(
-            @RequestParam(required = false) String mainCategory,
-            @RequestParam(required = false) String keyword,
-            @ParameterObject @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
+            @Parameter(name = "mainCategory", description = "카테고리 필터 (선택)", required = false, example = "패션/의류", in = ParameterIn.QUERY)
+            @RequestParam(name = "mainCategory", required = false) String mainCategory,
+            @Parameter(name = "keyword", description = "마켓명 검색 키워드 (선택)", required = false, example = "쇼룸즈", in = ParameterIn.QUERY)
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @ParameterObject @org.springframework.web.bind.annotation.ModelAttribute PagingRequest pagingRequest) {
         
-        PageResponse<MarketListResponse> response = userMarketService.getMarkets(mainCategory, keyword, pageable);
+        PageResponse<MarketListResponse> response = userMarketService.getMarkets(
+                mainCategory, keyword, pagingRequest.toPageable(Sort.by(Sort.Direction.DESC, "id")));
         
         return ResponseEntity.ok(response);
     }
