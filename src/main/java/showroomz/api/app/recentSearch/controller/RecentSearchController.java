@@ -60,6 +60,6 @@ public class RecentSearchController implements RecentSearchControllerDocs {
             recentSearchService.saveRecentSearch(principal.getUsername(), keyword);
         }
         
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 }

@@ -256,8 +256,8 @@ public interface RecentSearchControllerDocs {
     )
     @ApiResponses(value = {
             @ApiResponse(
-                    responseCode = "200",
-                    description = "저장 성공 - Status: 200 OK",
+                    responseCode = "204",
+                    description = "저장 성공 - Status: 204 No Content",
                     content = @Content
             ),
             @ApiResponse(
