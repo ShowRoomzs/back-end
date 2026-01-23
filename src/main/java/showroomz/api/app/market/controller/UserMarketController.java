@@ -7,6 +7,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import showroomz.api.app.docs.UserMarketControllerDocs;
 import showroomz.api.app.market.DTO.MarketDetailResponse;
 import showroomz.api.app.market.service.MarketFollowService;
@@ -23,6 +24,7 @@ public class UserMarketController implements UserMarketControllerDocs {
     private final MarketFollowService marketFollowService;
 
     @Override
+    @Hidden
     @GetMapping("/{marketId}")
     public ResponseEntity<MarketDetailResponse> getMarketDetail(
         @PathVariable("marketId") Long marketId) {
