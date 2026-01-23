@@ -92,3 +92,7 @@ tasks.register('integrationTest', Test) {
     // 이 태스크가 돌 때도 Flyway 검증 등을 위해 환경변수가 필요하다면 여기서 설정 가능
     // systemProperty 'spring.profiles.active', 'test' 
 }
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs << '-parameters'
+}
