@@ -28,6 +28,7 @@ import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.api.seller.category.service.CategoryService;
 import showroomz.domain.wishlist.repository.WishlistRepository;
+import showroomz.api.app.wishlist.service.WishlistService;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.domain.member.user.entity.Users;
@@ -51,6 +52,7 @@ public class ProductService {
     private final UserRepository userRepository;
     private final MarketFollowRepository marketFollowRepository;
     private final WishlistRepository wishlistRepository;
+    private final WishlistService wishlistService;
     private final ObjectMapper objectMapper;
     private static final String DEFAULT_SORT = "RECOMMEND";
     private static final String SORT_FILTER_KEY = "sort";
