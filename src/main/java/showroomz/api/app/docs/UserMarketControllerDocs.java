@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.market.DTO.MarketDetailResponse;
-import showroomz.api.app.market.DTO.MarketFollowResponse;
 
 @Tag(name = "User - Market", description = "사용자용 마켓 API (조회/팔로우)")
 public interface UserMarketControllerDocs {
@@ -109,14 +108,11 @@ public interface UserMarketControllerDocs {
     );
 
     @Operation(
-            summary = "마켓 팔로우/언팔로우 토글",
-            description = "마켓을 팔로우하거나 취소합니다.\n\n" +
+            summary = "마켓 팔로우 (찜 하기)",
+            description = "마켓을 팔로우(찜)합니다.\n\n" +
                     "**동작 방식:**\n" +
-                    "- 이미 팔로우 중이면 → 언팔로우 (팔로우 취소)\n" +
-                    "- 팔로우하지 않았으면 → 팔로우 (찜하기)\n\n" +
-                    "**응답 필드:**\n" +
-                    "- `isFollowed`: 최종 상태 (true: 팔로우됨, false: 취소됨)\n" +
-                    "- `message`: 결과 메시지\n\n" +
+                    "- 이미 팔로우 중이면 아무 동작도 하지 않음\n" +
+                    "- 팔로우하지 않았으면 팔로우 추가\n\n" +
                     "**권한:** USER (로그인 필수)\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}",
             parameters = {
@@ -125,30 +121,8 @@ public interface UserMarketControllerDocs {
     )
     @ApiResponses(value = {
             @ApiResponse(
-                    responseCode = "200",
-                    description = "팔로우/언팔로우 성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = MarketFollowResponse.class),
-                            examples = {
-                                    @ExampleObject(
-                                            name = "팔로우 성공",
-                                            value = "{\n" +
-                                                    "  \"isFollowed\": true,\n" +
-                                                    "  \"message\": \"마켓을 찜했습니다.\"\n" +
-                                                    "}",
-                                            description = "팔로우하지 않았던 마켓을 팔로우한 경우"
-                                    ),
-                                    @ExampleObject(
-                                            name = "언팔로우 성공",
-                                            value = "{\n" +
-                                                    "  \"isFollowed\": false,\n" +
-                                                    "  \"message\": \"마켓 찜을 취소했습니다.\"\n" +
-                                                    "}",
-                                            description = "이미 팔로우 중이던 마켓을 언팔로우한 경우"
-                                    )
-                            }
-                    )
+                    responseCode = "204",
+                    description = "팔로우 성공 (No Content)"
             ),
             @ApiResponse(
                     responseCode = "401",
@@ -160,8 +134,8 @@ public interface UserMarketControllerDocs {
                                     @ExampleObject(
                                             name = "인증 정보 없음",
                                             value = "{\n" +
-                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
-                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "  \"code\": \"INVALID_AUTH_INFO\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다.\"\n" +
                                                     "}"
                                     )
                             }
@@ -185,7 +159,64 @@ public interface UserMarketControllerDocs {
                     )
             )
     })
-    ResponseEntity<MarketFollowResponse> toggleFollow(
+    ResponseEntity<Void> followMarket(
+            @Parameter(description = "마켓 ID", required = true, example = "1", in = ParameterIn.PATH)
+            Long marketId
+    );
+
+    @Operation(
+            summary = "마켓 팔로우 취소 (찜 취소)",
+            description = "마켓 팔로우를 취소합니다.\n\n" +
+                    "**동작 방식:**\n" +
+                    "- 팔로우 중이면 팔로우 삭제\n" +
+                    "- 팔로우하지 않았으면 아무 동작도 하지 않음\n\n" +
+                    "**권한:** USER (로그인 필수)\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}",
+            parameters = {
+                    @Parameter(name = "marketId", description = "마켓 ID", required = true, example = "1", in = ParameterIn.PATH)
+            }
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "팔로우 취소 성공 (No Content)"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 정보 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_AUTH_INFO\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "마켓을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "마켓 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"MARKET_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 마켓입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<Void> unfollowMarket(
             @Parameter(description = "마켓 ID", required = true, example = "1", in = ParameterIn.PATH)
             Long marketId
     );
