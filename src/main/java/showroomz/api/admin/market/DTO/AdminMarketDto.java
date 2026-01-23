@@ -193,12 +193,10 @@ public class AdminMarketDto {
 
         // Entity -> DTO 변환 편의 메서드
         public static MarketAdminDetailResponse from(Market market) {
-            List<SnsLinkResponse> links = new ArrayList<>();
-            
-            // SNS 링크 파싱 ("TYPE|URL" 형식)
-            parseAndAddSnsLink(market.getSnsLink1(), links);
-            parseAndAddSnsLink(market.getSnsLink2(), links);
-            parseAndAddSnsLink(market.getSnsLink3(), links);
+            // SNS 링크 변환
+            List<SnsLinkResponse> links = market.getSnsLinks().stream()
+                    .map(sns -> new SnsLinkResponse(sns.getSnsType(), sns.getSnsUrl()))
+                    .collect(java.util.stream.Collectors.toList());
 
             return MarketAdminDetailResponse.builder()
                     .marketId(market.getId())
@@ -210,19 +208,6 @@ public class AdminMarketDto {
                     .mainCategory(market.getMainCategory())
                     .snsLinks(links)
                     .build();
-        }
-
-        // SNS 링크 파싱 헬퍼 메서드
-        private static void parseAndAddSnsLink(String linkString, List<SnsLinkResponse> list) {
-            if (linkString != null && !linkString.isEmpty()) {
-                String[] parts = linkString.split("\\|", 2);
-                if (parts.length == 2) {
-                    list.add(new SnsLinkResponse(parts[0], parts[1]));
-                } else {
-                    // 형식이 맞지 않으면 URL만이라도 넣거나 무시
-                    list.add(new SnsLinkResponse("UNKNOWN", linkString));
-                }
-            }
         }
     }
 

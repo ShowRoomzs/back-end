@@ -16,6 +16,10 @@ import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.domain.market.entity.MarketSns;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -43,7 +47,12 @@ public class UserMarketService {
             }
         }
 
-        // 4. 응답 생성
+        // 4. SNS 링크 변환
+        List<MarketDetailResponse.SnsLinkResponse> snsLinks = market.getSnsLinks().stream()
+                .map(sns -> new MarketDetailResponse.SnsLinkResponse(sns.getSnsType(), sns.getSnsUrl()))
+                .collect(Collectors.toList());
+
+        // 5. 응답 생성
         return MarketDetailResponse.builder()
                 .marketId(market.getId())
                 .marketName(market.getMarketName())
@@ -52,9 +61,7 @@ public class UserMarketService {
                 .marketUrl(market.getMarketUrl())
                 .mainCategory(market.getMainCategory())
                 .csNumber(market.getCsNumber())
-                .snsLink1(market.getSnsLink1())
-                .snsLink2(market.getSnsLink2())
-                .snsLink3(market.getSnsLink3())
+                .snsLinks(snsLinks)
                 .followerCount(followerCount)
                 .isFollowed(isFollowed)
                 .build();

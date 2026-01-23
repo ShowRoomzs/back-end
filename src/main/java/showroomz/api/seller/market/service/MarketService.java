@@ -65,11 +65,10 @@ public class MarketService {
     public MarketDto.MarketProfileResponse getMyMarket(String adminEmail) {
         Market market = getMarketByAdminEmail(adminEmail);
 
-        // Entity의 snsLink1, 2, 3을 List<Dto>로 변환
-        List<MarketDto.SnsLinkRequest> snsLinks = new ArrayList<>();
-        parseAndAddSnsLink(market.getSnsLink1(), snsLinks);
-        parseAndAddSnsLink(market.getSnsLink2(), snsLinks);
-        parseAndAddSnsLink(market.getSnsLink3(), snsLinks);
+        // Entity의 snsLinks를 List<Dto>로 변환
+        List<MarketDto.SnsLinkRequest> snsLinks = market.getSnsLinks().stream()
+                .map(sns -> new MarketDto.SnsLinkRequest(sns.getSnsType(), sns.getSnsUrl()))
+                .collect(java.util.stream.Collectors.toList());
 
         return MarketDto.MarketProfileResponse.builder()
                 .marketId(market.getId())
@@ -114,18 +113,14 @@ public class MarketService {
         }
         if (request.getMainCategory() != null) market.setMainCategory(request.getMainCategory());
 
-        // 4. SNS 링크 저장 (List -> Entity 필드 1,2,3 매핑)
-        // 기존 링크 초기화
-        market.setSnsLink1(null);
-        market.setSnsLink2(null);
-        market.setSnsLink3(null);
+        // 4. SNS 링크 저장
+        market.clearSnsLinks(); // 기존 링크 삭제 (orphanRemoval = true로 인해 DB에서도 삭제됨)
 
         List<MarketDto.SnsLinkRequest> links = request.getSnsLinks();
         if (links != null && !links.isEmpty()) {
-            // DB 저장을 위해 "TYPE|URL" 형식으로 조합하여 저장
-            if (links.size() >= 1) market.setSnsLink1(combineSnsInfo(links.get(0)));
-            if (links.size() >= 2) market.setSnsLink2(combineSnsInfo(links.get(1)));
-            if (links.size() >= 3) market.setSnsLink3(combineSnsInfo(links.get(2)));
+            for (MarketDto.SnsLinkRequest linkDto : links) {
+                market.addSnsLink(linkDto.getSnsType(), linkDto.getSnsUrl());
+            }
         }
         
         marketRepository.save(market);
@@ -142,24 +137,6 @@ public class MarketService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND)); // 마켓 없음
     }
 
-    // DB의 문자열을 DTO로 파싱 ("TYPE|URL" 구조 가정)
-    private void parseAndAddSnsLink(String linkString, List<MarketDto.SnsLinkRequest> list) {
-        if (linkString != null && !linkString.isEmpty()) {
-            String[] parts = linkString.split("\\|", 2);
-            if (parts.length == 2) {
-                list.add(new MarketDto.SnsLinkRequest(parts[0], parts[1]));
-            } else {
-                // 형식이 맞지 않으면 URL만이라도 넣거나 무시
-                list.add(new MarketDto.SnsLinkRequest("UNKNOWN", linkString));
-            }
-        }
-    }
-
-    // DTO를 DB 저장용 문자열로 변환
-    private String combineSnsInfo(MarketDto.SnsLinkRequest dto) {
-        if (dto.getSnsType() == null || dto.getSnsUrl() == null) return null;
-        return dto.getSnsType() + "|" + dto.getSnsUrl();
-    }
 
     /**
      * 마켓 이미지 검수 상태 변경 (운영자용)
