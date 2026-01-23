@@ -106,6 +106,9 @@ public class ProductDto {
         @Schema(description = "가격 정보")
         private PriceInfo price;
 
+        @Schema(description = "할인율 (%)", example = "70")
+        private Integer discountRate;
+
         @Schema(description = "매입가", example = "30000")
         private Integer purchasePrice;
 
@@ -147,6 +150,9 @@ public class ProductDto {
 
         @Schema(description = "좋아요 수", example = "1200")
         private Long likeCount;
+
+        @Schema(description = "찜 수", example = "300")
+        private Long wishCount;
 
         @Schema(description = "리뷰 수", example = "850")
         private Long reviewCount;

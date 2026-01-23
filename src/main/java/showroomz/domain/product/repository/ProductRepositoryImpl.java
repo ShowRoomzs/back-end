@@ -2,6 +2,7 @@ package showroomz.domain.product.repository;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -92,6 +93,54 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         return page;
     }
 
+    @Override
+    public Page<Product> findRelatedProducts(
+            Long productId,
+            Long categoryId,
+            ProductGender gender,
+            Pageable pageable
+    ) {
+        if (productId == null || (categoryId == null && gender == null)) {
+            @SuppressWarnings("null")
+            PageImpl<Product> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+            return emptyPage;
+        }
+
+        QProduct product = QProduct.product;
+        BooleanBuilder where = new BooleanBuilder();
+        where.and(product.isDisplay.isTrue());
+        where.and(product.productId.ne(productId));
+
+        BooleanBuilder related = new BooleanBuilder();
+        if (categoryId != null) {
+            related.or(product.category.categoryId.eq(categoryId));
+        }
+        if (gender != null) {
+            related.or(product.gender.eq(gender));
+        }
+        where.and(related);
+
+        JPAQuery<Product> query = queryFactory.selectFrom(product)
+                .where(where)
+                .orderBy(getRelatedOrderSpecifiers(categoryId, product))
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize());
+
+        @SuppressWarnings("null")
+        List<Product> content = java.util.Objects.requireNonNullElse(query.fetch(), List.of());
+
+        Long total = queryFactory
+                .select(product.productId.countDistinct())
+                .from(product)
+                .where(where)
+                .fetchOne();
+
+        long totalElements = total != null ? total : 0L;
+        @SuppressWarnings("null")
+        PageImpl<Product> page = new PageImpl<>(content, pageable, totalElements);
+        return page;
+    }
+
     private OrderSpecifier<?>[] getOrderSpecifiers(String sortType, QProduct product) {
         if (sortType == null || sortType.isBlank() || "RECOMMEND".equals(sortType)) {
             return new OrderSpecifier<?>[]{
@@ -116,6 +165,23 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
             default -> new OrderSpecifier<?>[]{
                     product.createdAt.desc()
             };
+        };
+    }
+
+    private OrderSpecifier<?>[] getRelatedOrderSpecifiers(Long categoryId, QProduct product) {
+        if (categoryId != null) {
+            return new OrderSpecifier<?>[]{
+                    new CaseBuilder()
+                            .when(product.category.categoryId.eq(categoryId)).then(1)
+                            .otherwise(0)
+                            .desc(),
+                    product.isRecommended.desc(),
+                    product.createdAt.desc()
+            };
+        }
+        return new OrderSpecifier<?>[]{
+                product.isRecommended.desc(),
+                product.createdAt.desc()
         };
     }
 

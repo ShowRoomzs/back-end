@@ -6,6 +6,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
+
+import io.swagger.v3.oas.annotations.Hidden;
 import showroomz.api.app.docs.UserMarketControllerDocs;
 import showroomz.api.app.market.DTO.MarketDetailResponse;
 import showroomz.api.app.market.DTO.MarketFollowResponse;
@@ -39,6 +41,7 @@ public class UserMarketController implements UserMarketControllerDocs {
     }
 
     @Override
+    @Hidden
     @PostMapping("/{marketId}/follow")
     public ResponseEntity<MarketFollowResponse> toggleFollow(
         @PathVariable("marketId") Long marketId) {
