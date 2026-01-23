@@ -9,4 +9,6 @@ import showroomz.domain.wishlist.entitiy.Wishlist;
 @Repository
 public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
     boolean existsByUserAndProduct(Users user, Product product);
+
+    long countByProduct(Product product);
 }

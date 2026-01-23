@@ -19,6 +19,7 @@ import showroomz.domain.product.entity.ProductImage;
 import showroomz.domain.product.entity.ProductOption;
 import showroomz.domain.product.entity.ProductOptionGroup;
 import showroomz.domain.product.entity.ProductVariant;
+import showroomz.domain.product.type.ProductGender;
 import showroomz.domain.filter.entity.Filter;
 import showroomz.domain.filter.repository.FilterRepository;
 import showroomz.domain.product.repository.ProductFilterCriteria;
@@ -61,7 +62,7 @@ public class ProductService {
             ProductDto.ProductSearchRequest request,
             Integer page,
             Integer limit,
-            Long userId // 좋아요 여부 확인용 (null 가능)
+            Users currentUser // 좋아요 여부 확인용 (null 가능)
     ) {
         // 페이징 설정 (page는 1부터 시작)
         int pageNumber = (page != null && page > 0) ? page - 1 : 0;
@@ -98,7 +99,7 @@ public class ProductService {
 
         // DTO 변환
         List<ProductDto.ProductItem> productItems = productPage.getContent().stream()
-                .map(product -> convertToProductItem(product, userId))
+                .map(product -> convertToProductItem(product, currentUser))
                 .collect(Collectors.toList());
 
         // 응답 생성
@@ -174,9 +175,45 @@ public class ProductService {
     }
 
     /**
+     * 사용자용 연관 상품 조회
+     */
+    public ProductDto.ProductSearchResponse getRelatedProducts(
+            Long productId,
+            Integer page,
+            Integer limit,
+            Users currentUser
+    ) {
+        Product product = productRepository.findByProductId(productId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        int pageNumber = (page != null && page > 0) ? page - 1 : 0;
+        int pageSize = (limit != null && limit > 0) ? limit : 20;
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+
+        Long categoryId = product.getCategory() != null ? product.getCategory().getCategoryId() : null;
+        ProductGender gender = product.getGender();
+
+        Page<Product> relatedPage = productRepository.findRelatedProducts(
+                productId,
+                categoryId,
+                gender,
+                pageable
+        );
+
+        List<ProductDto.ProductItem> productItems = relatedPage.getContent().stream()
+                .map(item -> convertToProductItem(item, currentUser))
+                .collect(Collectors.toList());
+
+        return ProductDto.ProductSearchResponse.builder()
+                .products(productItems)
+                .pageInfo(convertToPageInfo(relatedPage))
+                .build();
+    }
+
+    /**
      * Product 엔티티를 ProductItem DTO로 변환
      */
-    private ProductDto.ProductItem convertToProductItem(Product product, Long userId) {
+    private ProductDto.ProductItem convertToProductItem(Product product, Users currentUser) {
         // 가격 정보 (최대 혜택가는 할인가와 동일하게 설정, 추후 할인 로직 추가 가능)
         Integer regularPrice = product.getRegularPrice();
         Integer salePrice = product.getSalePrice();
@@ -188,11 +225,13 @@ public class ProductService {
                 .maxBenefitPrice(salePrice) // TODO: 할인 로직 추가 시 수정
                 .build();
 
-        // 좋아요 여부 확인 (TODO: 실제 좋아요 테이블 조회)
+        // 찜 여부 확인
         Boolean isWished = false;
-        if (userId != null) {
-            // isWished = wishlistService.isWished(userId, product.getProductId());
+        if (currentUser != null) {
+            isWished = wishlistRepository.existsByUserAndProduct(currentUser, product);
         }
+        Long wishCount = wishlistRepository.countByProduct(product);
+        Long reviewCount = 0L; // TODO: MVP 제외, 추후 리뷰 집계 연동
 
         return ProductDto.ProductItem.builder()
                 .id(product.getProductId())
@@ -206,6 +245,7 @@ public class ProductService {
                 .marketId(product.getMarket() != null ? product.getMarket().getId() : null)
                 .marketName(product.getMarket() != null ? product.getMarket().getMarketName() : null)
                 .price(priceInfo)
+                .discountRate(discountRate)
                 .purchasePrice(product.getPurchasePrice())
                 .gender(product.getGender() != null ? product.getGender().name() : null)
                 .isDisplay(product.getIsDisplay())
@@ -220,7 +260,8 @@ public class ProductService {
                 .createdAt(product.getCreatedAt() != null ? product.getCreatedAt().toString() : null)
                 .status(buildStockStatus(product))
                 .likeCount(0L) // TODO: 실제 좋아요 수 조회
-                .reviewCount(0L) // TODO: 실제 리뷰 수 조회
+                .wishCount(wishCount)
+                .reviewCount(reviewCount)
                 .isWished(isWished)
                 .build();
     }

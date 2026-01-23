@@ -70,6 +70,7 @@ public interface UserProductControllerDocs {
                                                     "        \"salePrice\": 33900,\n" +
                                                     "        \"maxBenefitPrice\": 31000\n" +
                                                     "      },\n" +
+                                                    "      \"discountRate\": 70,\n" +
                                                     "      \"purchasePrice\": 30000,\n" +
                                                     "      \"gender\": \"UNISEX\",\n" +
                                                     "      \"isDisplay\": true,\n" +
@@ -87,6 +88,7 @@ public interface UserProductControllerDocs {
                                                     "        \"isOutOfStockForced\": false\n" +
                                                     "      },\n" +
                                                     "      \"likeCount\": 1200,\n" +
+                                                    "      \"wishCount\": 300,\n" +
                                                     "      \"reviewCount\": 850,\n" +
                                                     "      \"isWished\": false\n" +
                                                     "    }\n" +
@@ -122,7 +124,7 @@ public interface UserProductControllerDocs {
             )
     })
     ResponseEntity<ProductDto.ProductSearchResponse> searchProducts(
-            @Parameter(description = "Authorization 헤더 (Optional)", required = false)
+            @Parameter(description = "Authorization 헤더 (Optional)", required = false, hidden = true)
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @Parameter(description = "검색 조건", required = false)
             @RequestParam(required = false) String q,
@@ -235,5 +237,48 @@ public interface UserProductControllerDocs {
     ResponseEntity<ProductDto.ProductDetailResponse> getProductDetail(
             @Parameter(description = "상품 ID", required = true)
             @PathVariable Long productId
+    );
+
+    @Operation(
+            summary = "비회원/회원 연관 상품 조회",
+            description = "특정 상품과 연관된 상품 목록을 조회합니다.\n\n" +
+                    "**추천 기준:**\n" +
+                    "- 1순위: 동일 카테고리 상품\n" +
+                    "- 2순위: 동일 성별 상품\n\n" +
+                    "**정렬:**\n" +
+                    "- isRecommended DESC, createdAt DESC\n\n" +
+                    "**참고사항:**\n" +
+                    "- 조회 대상 상품은 결과에서 제외됩니다.\n" +
+                    "- Authorization 헤더가 없어도 조회 가능합니다 (게스트 조회).\n" +
+                    "- 로그인한 사용자의 경우 isWished 정보가 포함됩니다.\n\n" +
+                    "**권한:** 선택사항 (게스트 가능)"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProductDto.ProductSearchResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "상품을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<ProductDto.ProductSearchResponse> getRelatedProducts(
+            @Parameter(description = "상품 ID", required = true)
+            @PathVariable Long productId,
+            @Parameter(description = "Authorization 헤더 (Optional)", required = false, hidden = true)
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @Parameter(description = "페이지 번호 (기본값: 1)", required = false, example = "1")
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @Parameter(description = "페이지당 항목 수 (기본값: 20)", required = false, example = "20")
+            @RequestParam(required = false, defaultValue = "20") Integer limit
     );
 }
