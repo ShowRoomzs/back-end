@@ -54,9 +54,6 @@ public class SecurityConfig {
             "/v1/seller/auth/check-email",
             "/v1/user/check-nickname",
             "/v1/seller/markets/check-name",
-            
-            // 마켓 조회 (인증 불필요 - 비로그인 가능)
-            "/v1/user/markets/*",
 
             // 공용 상품 목록 조회 (비회원 허용)
             "/v1/common/products",
