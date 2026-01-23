@@ -22,25 +22,35 @@ public class MarketFollowService {
     private final UserRepository userRepository;
 
     /**
-     * 마켓 팔로우 토글 (Follow/Unfollow)
-     * @return true: 팔로우 성공, false: 팔로우 취소(언팔로우)
+     * 마켓 팔로우 (찜 하기)
      */
-    public boolean toggleFollow(String username, Long marketId) {
+    public void followMarket(String username, Long marketId) {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         Market market = marketRepository.findById(marketId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
 
-        // 이미 팔로우 중이면 삭제 (언팔로우)
-        if (marketFollowRepository.existsByUserAndMarket(user, market)) {
-            marketFollowRepository.deleteByUserAndMarket(user, market);
-            return false;
-        } else {
-            // 팔로우 안 했으면 저장 (팔로우)
+        // 이미 팔로우 중이 아니면 저장
+        if (!marketFollowRepository.existsByUserAndMarket(user, market)) {
             MarketFollow marketFollow = new MarketFollow(user, market);
             marketFollowRepository.save(marketFollow);
-            return true;
+        }
+    }
+
+    /**
+     * 마켓 팔로우 취소 (찜 취소)
+     */
+    public void unfollowMarket(String username, Long marketId) {
+        Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        Market market = marketRepository.findById(marketId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
+
+        // 팔로우 중이면 삭제
+        if (marketFollowRepository.existsByUserAndMarket(user, market)) {
+            marketFollowRepository.deleteByUserAndMarket(user, market);
         }
     }
     
