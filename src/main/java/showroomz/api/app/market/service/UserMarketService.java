@@ -1,15 +1,20 @@
 package showroomz.api.app.market.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.market.DTO.MarketDetailResponse;
+import showroomz.api.app.market.DTO.MarketListResponse;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketFollowRepository;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.ErrorCode;
 
 @Service
@@ -52,6 +57,15 @@ public class UserMarketService {
                 .followerCount(followerCount)
                 .isFollowed(isFollowed)
                 .build();
+    }
+
+    /**
+     * 마켓 목록 조회 (유저용)
+     */
+    public PageResponse<MarketListResponse> getMarkets(String mainCategory, String keyword, Pageable pageable) {
+        Page<MarketListResponse> page = marketRepository.findAllForUser(
+                mainCategory, keyword, SellerStatus.APPROVED, pageable);
+        return new PageResponse<>(page.getContent(), page);
     }
 }
 

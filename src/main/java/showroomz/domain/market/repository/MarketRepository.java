@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import showroomz.api.admin.market.DTO.AdminMarketDto;
+import showroomz.api.app.market.DTO.MarketListResponse;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.seller.entity.Seller;
@@ -72,6 +73,23 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
     Page<AdminMarketDto.MarketResponse> findMarketsWithProductCount(
             @Param("mainCategory") String mainCategory,
             @Param("marketName") String marketName,
+            @Param("approvedStatus") SellerStatus approvedStatus,
+            Pageable pageable);
+
+    /**
+     * 유저용 마켓 목록 조회 (검색 + 카테고리 필터)
+     * - 승인된(APPROVED) 판매자의 마켓만 조회
+     * - 필요한 필드만 DTO로 즉시 변환
+     */
+    @Query("SELECT new showroomz.api.app.market.DTO.MarketListResponse(" +
+           "m.id, m.marketName, m.marketImageUrl) " +
+           "FROM Market m JOIN m.seller s " +
+           "WHERE s.status = :approvedStatus " +
+           "AND (:mainCategory IS NULL OR :mainCategory = '' OR m.mainCategory = :mainCategory) " +
+           "AND (:keyword IS NULL OR :keyword = '' OR m.marketName LIKE CONCAT('%', :keyword, '%'))")
+    Page<MarketListResponse> findAllForUser(
+            @Param("mainCategory") String mainCategory,
+            @Param("keyword") String keyword,
             @Param("approvedStatus") SellerStatus approvedStatus,
             Pageable pageable);
 }
