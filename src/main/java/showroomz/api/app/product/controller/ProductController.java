@@ -52,26 +52,13 @@ public class ProductController implements UserProductControllerDocs {
                 .filters(filterRequests)
                 .build();
 
-        // 현재 로그인한 사용자 ID 확인 (선택사항)
-        Long userId = null;
-        try {
-            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (principal instanceof User) {
-                String username = ((User) principal).getUsername();
-                Users user = userRepository.findByUsername(username).orElse(null);
-                if (user != null) {
-                    userId = user.getId();
-                }
-            }
-        } catch (Exception e) {
-            // 인증되지 않은 사용자(게스트)인 경우 userId는 null로 유지
-        }
+        Users currentUser = resolveCurrentUser();
 
         ProductDto.ProductSearchResponse response = productService.searchProducts(
                 request,
                 page,
                 limit,
-                userId
+                currentUser
         );
 
         return ResponseEntity.ok(response);
@@ -84,5 +71,35 @@ public class ProductController implements UserProductControllerDocs {
     ) {
         ProductDto.ProductDetailResponse response = productService.getProductDetail(productId);
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @GetMapping("/{productId}/related")
+    public ResponseEntity<ProductDto.ProductSearchResponse> getRelatedProducts(
+            @PathVariable Long productId,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(required = false, defaultValue = "20") Integer limit
+    ) {
+        Users currentUser = resolveCurrentUser();
+        ProductDto.ProductSearchResponse response = productService.getRelatedProducts(
+                productId,
+                page,
+                limit,
+                currentUser
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    private Users resolveCurrentUser() {
+        try {
+            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (principal instanceof User userPrincipal) {
+                return userRepository.findByUsername(userPrincipal.getUsername()).orElse(null);
+            }
+        } catch (Exception ignored) {
+            // guest user
+        }
+        return null;
     }
 }
