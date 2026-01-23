@@ -27,7 +27,23 @@ public class RecentSearch {
     private String term;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = true)
     private Instant createdAt;
 
+    /**
+     * 최근 검색어 생성 (팩토리 메서드)
+     */
+    public static RecentSearch create(Users user, String term) {
+        RecentSearch recentSearch = new RecentSearch();
+        recentSearch.user = user;
+        recentSearch.term = term;
+        return recentSearch;
+    }
+
+    /**
+     * 타임스탬프를 현재 시간으로 업데이트
+     */
+    public void updateTimestamp() {
+        this.createdAt = Instant.now();
+    }
 }

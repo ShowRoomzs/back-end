@@ -14,4 +14,7 @@ public interface RecentSearchRepository extends JpaRepository<RecentSearch, Long
 
     // [추가] 삭제 시 본인 확인을 위해 ID와 User로 조회
     Optional<RecentSearch> findByIdAndUser(Long id, Users user);
+
+    // 사용자와 검색어로 조회 (upsert를 위해)
+    Optional<RecentSearch> findByUserAndTerm(Users user, String term);
 }
