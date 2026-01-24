@@ -16,8 +16,8 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 public interface MarketFollowControllerDocs {
 
     @Operation(
-            summary = "마켓 팔로우 (찜 하기)",
-            description = "마켓을 팔로우(찜)합니다.\n\n" +
+            summary = "마켓 팔로우",
+            description = "마켓을 팔로우합니다.\n\n" +
                     "**동작 방식:**\n" +
                     "- 이미 팔로우 중이면 아무 동작도 하지 않음\n" +
                     "- 팔로우하지 않았으면 팔로우 추가\n\n" +
@@ -73,7 +73,7 @@ public interface MarketFollowControllerDocs {
     );
 
     @Operation(
-            summary = "마켓 팔로우 취소 (찜 취소)",
+            summary = "마켓 팔로우 취소",
             description = "마켓 팔로우를 취소합니다.\n\n" +
                     "**동작 방식:**\n" +
                     "- 팔로우 중이면 팔로우 삭제\n" +
