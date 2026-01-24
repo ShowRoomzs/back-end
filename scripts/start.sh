@@ -1,14 +1,18 @@
 #!/bin/bash
 
-# [안전장치] 스크립트 실행 중 에러 발생 시 즉시 중단 (배포 불완전 방지)
+# [안전장치] 스크립트 실행 중 에러 발생 시 즉시 중단
 set -e
+
+# [수정됨] 배포된 프로젝트 경로로 이동 (appspec.yml의 destination 경로)
+cd /home/ubuntu/app-deploy
 
 # .env 파일이 있으면 불러오기 (환경변수 로드)
 if [ -f .env ]; then
-  export $(cat .env | xargs)
+  # xargs는 특수문자나 공백 처리에 취약할 수 있으므로, 주석(#)이 있다면 아래 방식이 더 안전할 수 있습니다.
+  export $(grep -v '^#' .env | xargs)
 fi
 
-# 필수 변수 확인 (변수가 없으면 에러 출력)
+# 필수 변수 확인
 if [ -z "$AWS_ACCOUNT_ID" ] || [ -z "$AWS_REGION" ] || [ -z "$ECR_REPO_NAME" ]; then
   echo "Error: 필수 환경변수(AWS_ACCOUNT_ID, AWS_REGION, ECR_REPO_NAME)가 설정되지 않았습니다."
   exit 1
