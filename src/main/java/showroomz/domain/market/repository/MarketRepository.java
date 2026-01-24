@@ -61,17 +61,20 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
      * - 마켓명, 카테고리 필터링
      * - 등록된 상품 수(productCount) 포함
      * - 승인된(APPROVED) 판매자만 조회
+     * - 수정됨: LEFT JOIN을 사용하여 mainCategory가 null인 마켓도 포함
      */
     @Query("SELECT new showroomz.api.admin.market.DTO.AdminMarketDto$MarketResponse(" +
            "m.id, m.marketName, " +
-           "CASE WHEN m.mainCategory IS NOT NULL THEN m.mainCategory.categoryId ELSE NULL END, " +
-           "CASE WHEN m.mainCategory IS NOT NULL THEN m.mainCategory.name ELSE NULL END, " +
+           "c.categoryId, " +
+           "c.name, " +
            "s.name, s.phoneNumber, " +
            "(SELECT COUNT(p) FROM Product p WHERE p.market = m), " +
            "s.createdAt) " +
-           "FROM Market m JOIN m.seller s " +
+           "FROM Market m " +
+           "JOIN m.seller s " +
+           "LEFT JOIN m.mainCategory c " +
            "WHERE s.status = :approvedStatus " +
-           "AND (:mainCategoryId IS NULL OR m.mainCategory.categoryId = :mainCategoryId) " +
+           "AND (:mainCategoryId IS NULL OR c.categoryId = :mainCategoryId) " +
            "AND (:marketName IS NULL OR :marketName = '' OR m.marketName LIKE CONCAT('%', :marketName, '%'))")
     Page<AdminMarketDto.MarketResponse> findMarketsWithProductCount(
             @Param("mainCategoryId") Long mainCategoryId,
@@ -83,12 +86,15 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
      * 유저용 마켓 목록 조회 (검색 + 카테고리 필터)
      * - 승인된(APPROVED) 판매자의 마켓만 조회
      * - 필요한 필드만 DTO로 즉시 변환
+     * - 수정됨: LEFT JOIN을 사용하여 mainCategory가 null인 마켓도 포함
      */
     @Query("SELECT new showroomz.api.app.market.DTO.MarketListResponse(" +
            "m.id, m.marketName, m.marketImageUrl) " +
-           "FROM Market m JOIN m.seller s " +
+           "FROM Market m " +
+           "JOIN m.seller s " +
+           "LEFT JOIN m.mainCategory c " +
            "WHERE s.status = :approvedStatus " +
-           "AND (:mainCategoryId IS NULL OR m.mainCategory.categoryId = :mainCategoryId) " +
+           "AND (:mainCategoryId IS NULL OR c.categoryId = :mainCategoryId) " +
            "AND (:keyword IS NULL OR :keyword = '' OR m.marketName LIKE CONCAT('%', :keyword, '%'))")
     Page<MarketListResponse> findAllForUser(
             @Param("mainCategoryId") Long mainCategoryId,
