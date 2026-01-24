@@ -138,7 +138,7 @@ jobs:
 
     # 9. Discord 알림 (성공 시)
     - name: Discord 알림 (성공 시)
-      if: ${{ success() }}
+      if: ${{ always() }}
       env:
         DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -159,7 +159,7 @@ jobs:
         # 4. PR 정보 유무에 따라 메시지 내용 구성
         if [ -z "$PR_TITLE" ]; then
           # PR이 없는 경우 커밋 메시지 사용
-          MESSAGE_CONTENT="✅ **배포 성공**
+          MESSAGE_CONTENT="
 
           Repo: ${GITHUB_REPOSITORY}
           Branch: ${GITHUB_REF_NAME}
@@ -168,7 +168,7 @@ jobs:
           Triggered by: ${GITHUB_ACTOR}"
         else
           # PR이 있는 경우 (본문 포함)
-          MESSAGE_CONTENT="✅ **배포 성공**
+          MESSAGE_CONTENT="
 
           📦 **PR 정보**
           제목: ${PR_TITLE}

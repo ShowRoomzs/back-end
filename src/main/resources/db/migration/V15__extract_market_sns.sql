@@ -1,45 +1,45 @@
-/* 1. MARKET_SNS 테이블 생성 */
-CREATE TABLE MARKET_SNS (
-    ID BIGINT AUTO_INCREMENT PRIMARY KEY,
-    MARKET_ID BIGINT NOT NULL,
-    SNS_TYPE VARCHAR(50) NOT NULL,
-    SNS_URL VARCHAR(512) NOT NULL,
+/* 1. market_sns 테이블 생성 */
+CREATE TABLE market_sns (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    market_id BIGINT NOT NULL,
+    sns_type VARCHAR(50) NOT NULL,
+    sns_url VARCHAR(512) NOT NULL,
     
-    /* 외래키 제약조건 (필요 시 FK 이름 변경) */
+    /* 외래키 제약조건 */
     CONSTRAINT FK_MARKET_SNS_MARKET 
-        FOREIGN KEY (MARKET_ID) REFERENCES MARKET (MARKET_ID)
+        FOREIGN KEY (market_id) REFERENCES market (market_id)
         ON DELETE CASCADE
 );
 
 /* 2. 기존 데이터 마이그레이션 (TYPE|URL 파싱) */
--- SNS_LINK_1 데이터 이전
-INSERT INTO MARKET_SNS (MARKET_ID, SNS_TYPE, SNS_URL)
+-- sns_link_1 데이터 이전
+INSERT INTO market_sns (market_id, sns_type, sns_url)
 SELECT 
-    MARKET_ID, 
-    SUBSTRING_INDEX(SNS_LINK_1, '|', 1), -- 구분자 앞부분 (TYPE)
-    SUBSTRING_INDEX(SNS_LINK_1, '|', -1) -- 구분자 뒷부분 (URL)
-FROM MARKET 
-WHERE SNS_LINK_1 IS NOT NULL AND SNS_LINK_1 != '';
+    market_id, 
+    SUBSTRING_INDEX(sns_link_1, '|', 1), -- 구분자 앞부분 (TYPE)
+    SUBSTRING_INDEX(sns_link_1, '|', -1) -- 구분자 뒷부분 (URL)
+FROM market 
+WHERE sns_link_1 IS NOT NULL AND sns_link_1 != '';
 
--- SNS_LINK_2 데이터 이전
-INSERT INTO MARKET_SNS (MARKET_ID, SNS_TYPE, SNS_URL)
+-- sns_link_2 데이터 이전
+INSERT INTO market_sns (market_id, sns_type, sns_url)
 SELECT 
-    MARKET_ID, 
-    SUBSTRING_INDEX(SNS_LINK_2, '|', 1), 
-    SUBSTRING_INDEX(SNS_LINK_2, '|', -1)
-FROM MARKET 
-WHERE SNS_LINK_2 IS NOT NULL AND SNS_LINK_2 != '';
+    market_id, 
+    SUBSTRING_INDEX(sns_link_2, '|', 1), 
+    SUBSTRING_INDEX(sns_link_2, '|', -1)
+FROM market 
+WHERE sns_link_2 IS NOT NULL AND sns_link_2 != '';
 
--- SNS_LINK_3 데이터 이전
-INSERT INTO MARKET_SNS (MARKET_ID, SNS_TYPE, SNS_URL)
+-- sns_link_3 데이터 이전
+INSERT INTO market_sns (market_id, sns_type, sns_url)
 SELECT 
-    MARKET_ID, 
-    SUBSTRING_INDEX(SNS_LINK_3, '|', 1), 
-    SUBSTRING_INDEX(SNS_LINK_3, '|', -1)
-FROM MARKET 
-WHERE SNS_LINK_3 IS NOT NULL AND SNS_LINK_3 != '';
+    market_id, 
+    SUBSTRING_INDEX(sns_link_3, '|', 1), 
+    SUBSTRING_INDEX(sns_link_3, '|', -1)
+FROM market 
+WHERE sns_link_3 IS NOT NULL AND sns_link_3 != '';
 
 /* 3. 기존 컬럼 삭제 */
-ALTER TABLE MARKET DROP COLUMN SNS_LINK_1;
-ALTER TABLE MARKET DROP COLUMN SNS_LINK_2;
-ALTER TABLE MARKET DROP COLUMN SNS_LINK_3;
+ALTER TABLE market DROP COLUMN sns_link_1;
+ALTER TABLE market DROP COLUMN sns_link_2;
+ALTER TABLE market DROP COLUMN sns_link_3;
