@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import showroomz.domain.category.entity.Category;
 import showroomz.domain.member.seller.entity.Seller;
 
 import java.util.ArrayList;
@@ -42,8 +43,9 @@ public class Market {
     @Column(name = "MARKET_URL", length = 512)
     private String marketUrl; // 마켓 URL
 
-    @Column(name = "MAIN_CATEGORY", length = 100)
-    private String mainCategory; // 대표 카테고리
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "MAIN_CATEGORY_ID")
+    private Category mainCategory; // 대표 카테고리
 
     // SNS 링크 (1:N 관계)
     @OneToMany(mappedBy = "market", cascade = CascadeType.ALL, orphanRemoval = true)

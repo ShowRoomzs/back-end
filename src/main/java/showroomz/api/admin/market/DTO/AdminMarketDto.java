@@ -8,7 +8,6 @@ import showroomz.domain.market.entity.Market;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 public class AdminMarketDto {
@@ -53,8 +52,8 @@ public class AdminMarketDto {
     @Schema(description = "어드민 마켓 목록 검색 조건")
     public static class MarketListSearchCondition {
 
-        @Schema(description = "대표 카테고리 (대분류) 필터", example = "의류")
-        private String mainCategory;
+        @Schema(description = "대표 카테고리 ID 필터", example = "1")
+        private Long mainCategoryId;
 
         @Schema(description = "마켓명 검색어", example = "멋쟁이")
         private String marketName;
@@ -73,8 +72,11 @@ public class AdminMarketDto {
         @Schema(description = "마켓명", example = "멋쟁이 옷장")
         private String marketName;
 
-        @Schema(description = "대표 카테고리", example = "의류")
-        private String mainCategory;
+        @Schema(description = "대표 카테고리 ID", example = "1")
+        private Long mainCategoryId;
+
+        @Schema(description = "대표 카테고리명", example = "의류")
+        private String mainCategoryName;
 
         @Schema(description = "판매자명 (담당자)", example = "홍길동")
         private String sellerName;
@@ -185,8 +187,11 @@ public class AdminMarketDto {
         @Schema(description = "마켓 URL", example = "https://www.showroomz.co.kr/market/10")
         private String marketUrl;
 
-        @Schema(description = "대표 카테고리", example = "의류")
-        private String mainCategory;
+        @Schema(description = "대표 카테고리 ID", example = "1")
+        private Long mainCategoryId;
+
+        @Schema(description = "대표 카테고리명", example = "의류")
+        private String mainCategoryName;
 
         @Schema(description = "SNS 링크 목록")
         private List<SnsLinkResponse> snsLinks;
@@ -205,7 +210,8 @@ public class AdminMarketDto {
                     .marketImageUrl(market.getMarketImageUrl())
                     .marketDescription(market.getMarketDescription())
                     .marketUrl(market.getMarketUrl())
-                    .mainCategory(market.getMainCategory())
+                    .mainCategoryId(market.getMainCategory() != null ? market.getMainCategory().getCategoryId() : null)
+                    .mainCategoryName(market.getMainCategory() != null ? market.getMainCategory().getName() : null)
                     .snsLinks(links)
                     .build();
         }

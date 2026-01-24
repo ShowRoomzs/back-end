@@ -10,13 +10,13 @@ import showroomz.api.app.market.DTO.MarketDetailResponse;
 import showroomz.api.app.market.DTO.MarketListResponse;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
+import showroomz.domain.category.entity.Category;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketFollowRepository;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.ErrorCode;
-import showroomz.domain.market.entity.MarketSns;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -53,13 +53,15 @@ public class UserMarketService {
                 .collect(Collectors.toList());
 
         // 5. 응답 생성
+        Category mainCategory = market.getMainCategory();
         return MarketDetailResponse.builder()
                 .marketId(market.getId())
                 .marketName(market.getMarketName())
                 .marketImageUrl(market.getMarketImageUrl())
                 .marketDescription(market.getMarketDescription())
                 .marketUrl(market.getMarketUrl())
-                .mainCategory(market.getMainCategory())
+                .mainCategoryId(mainCategory != null ? mainCategory.getCategoryId() : null)
+                .mainCategoryName(mainCategory != null ? mainCategory.getName() : null)
                 .csNumber(market.getCsNumber())
                 .snsLinks(snsLinks)
                 .followerCount(followerCount)
@@ -70,9 +72,9 @@ public class UserMarketService {
     /**
      * 마켓 목록 조회 (유저용)
      */
-    public PageResponse<MarketListResponse> getMarkets(String mainCategory, String keyword, Pageable pageable) {
+    public PageResponse<MarketListResponse> getMarkets(Long mainCategoryId, String keyword, Pageable pageable) {
         Page<MarketListResponse> page = marketRepository.findAllForUser(
-                mainCategory, keyword, SellerStatus.APPROVED, pageable);
+                mainCategoryId, keyword, SellerStatus.APPROVED, pageable);
         return new PageResponse<>(page.getContent(), page);
     }
 }

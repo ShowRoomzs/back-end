@@ -68,8 +68,8 @@ public interface UserMarketControllerDocs {
             )
     })
     ResponseEntity<PageResponse<MarketListResponse>> getMarkets(
-            @Parameter(name = "mainCategory", description = "카테고리 필터 (선택)", required = false, example = "패션/의류", in = ParameterIn.QUERY)
-            String mainCategory,
+            @Parameter(name = "mainCategoryId", description = "카테고리 ID 필터 (선택)", required = false, example = "1", in = ParameterIn.QUERY)
+            Long mainCategoryId,
             @Parameter(name = "keyword", description = "마켓명 검색 키워드 (선택)", required = false, example = "쇼룸즈", in = ParameterIn.QUERY)
             String keyword,
             PagingRequest pagingRequest
@@ -84,11 +84,10 @@ public interface UserMarketControllerDocs {
                     "- `marketImageUrl`: 마켓 이미지 URL\n" +
                     "- `marketDescription`: 마켓 한줄 소개\n" +
                     "- `marketUrl`: 마켓 URL\n" +
-                    "- `mainCategory`: 대표 카테고리\n" +
+                    "- `mainCategoryId`: 대표 카테고리 ID\n" +
+                    "- `mainCategoryName`: 대표 카테고리명\n" +
                     "- `csNumber`: 고객센터 번호\n" +
-                    "- `snsLink1`: SNS 링크 1\n" +
-                    "- `snsLink2`: SNS 링크 2\n" +
-                    "- `snsLink3`: SNS 링크 3\n" +
+                    "- `snsLinks`: SNS 링크 배열 (각 항목은 `snsType`, `snsUrl` 필드를 포함)\n" +
                     "- `followerCount`: 이 마켓을 찜한 유저 수\n" +
                     "- `isFollowed`: 현재 유저가 찜했는지 여부 (비로그인 시 false)\n\n" +
                     "**권한:** 인증 불필요 (비로그인 가능)",
@@ -112,11 +111,23 @@ public interface UserMarketControllerDocs {
                                                     "  \"marketImageUrl\": \"https://s3.amazonaws.com/bucket/market-image.jpg\",\n" +
                                                     "  \"marketDescription\": \"트렌디한 라이프스타일을 제안하는 마켓입니다.\",\n" +
                                                     "  \"marketUrl\": \"https://www.showroomz.co.kr/shop/showroomz\",\n" +
-                                                    "  \"mainCategory\": \"패션/의류\",\n" +
+                                                    "  \"mainCategoryId\": 1,\n" +
+                                                    "  \"mainCategoryName\": \"패션/의류\",\n" +
                                                     "  \"csNumber\": \"1588-0000\",\n" +
-                                                    "  \"snsLink1\": \"https://instagram.com/showroomz\",\n" +
-                                                    "  \"snsLink2\": \"https://facebook.com/showroomz\",\n" +
-                                                    "  \"snsLink3\": \"https://twitter.com/showroomz\",\n" +
+                                                    "  \"snsLinks\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"snsType\": \"INSTAGRAM\",\n" +
+                                                    "      \"snsUrl\": \"https://instagram.com/showroomz\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"snsType\": \"FACEBOOK\",\n" +
+                                                    "      \"snsUrl\": \"https://facebook.com/showroomz\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"snsType\": \"TWITTER\",\n" +
+                                                    "      \"snsUrl\": \"https://twitter.com/showroomz\"\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
                                                     "  \"followerCount\": 150,\n" +
                                                     "  \"isFollowed\": true\n" +
                                                     "}",
@@ -130,11 +141,19 @@ public interface UserMarketControllerDocs {
                                                     "  \"marketImageUrl\": \"https://s3.amazonaws.com/bucket/market-image.jpg\",\n" +
                                                     "  \"marketDescription\": \"트렌디한 라이프스타일을 제안하는 마켓입니다.\",\n" +
                                                     "  \"marketUrl\": \"https://www.showroomz.co.kr/shop/showroomz\",\n" +
-                                                    "  \"mainCategory\": \"패션/의류\",\n" +
+                                                    "  \"mainCategoryId\": 1,\n" +
+                                                    "  \"mainCategoryName\": \"패션/의류\",\n" +
                                                     "  \"csNumber\": \"1588-0000\",\n" +
-                                                    "  \"snsLink1\": \"https://instagram.com/showroomz\",\n" +
-                                                    "  \"snsLink2\": \"https://facebook.com/showroomz\",\n" +
-                                                    "  \"snsLink3\": null,\n" +
+                                                    "  \"snsLinks\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"snsType\": \"INSTAGRAM\",\n" +
+                                                    "      \"snsUrl\": \"https://instagram.com/showroomz\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"snsType\": \"FACEBOOK\",\n" +
+                                                    "      \"snsUrl\": \"https://facebook.com/showroomz\"\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
                                                     "  \"followerCount\": 150,\n" +
                                                     "  \"isFollowed\": false\n" +
                                                     "}",

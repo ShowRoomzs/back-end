@@ -17,7 +17,8 @@ public class MarketDetailResponse {
     private String marketImageUrl;
     private String marketDescription;
     private String marketUrl;
-    private String mainCategory;
+    private Long mainCategoryId;
+    private String mainCategoryName;
     private String csNumber;
     
     // SNS 링크 배열

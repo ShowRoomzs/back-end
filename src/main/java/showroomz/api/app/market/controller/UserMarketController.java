@@ -28,14 +28,14 @@ public class UserMarketController implements UserMarketControllerDocs {
     @Override
     @GetMapping
     public ResponseEntity<PageResponse<MarketListResponse>> getMarkets(
-            @Parameter(name = "mainCategory", description = "카테고리 필터 (선택)", required = false, example = "패션/의류", in = ParameterIn.QUERY)
-            @RequestParam(name = "mainCategory", required = false) String mainCategory,
+            @Parameter(name = "mainCategoryId", description = "카테고리 ID 필터 (선택)", required = false, example = "1", in = ParameterIn.QUERY)
+            @RequestParam(name = "mainCategoryId", required = false) Long mainCategoryId,
             @Parameter(name = "keyword", description = "마켓명 검색 키워드 (선택)", required = false, example = "쇼룸즈", in = ParameterIn.QUERY)
             @RequestParam(name = "keyword", required = false) String keyword,
             @ParameterObject @org.springframework.web.bind.annotation.ModelAttribute PagingRequest pagingRequest) {
         
         PageResponse<MarketListResponse> response = userMarketService.getMarkets(
-                mainCategory, keyword, pagingRequest.toPageable(Sort.by(Sort.Direction.DESC, "id")));
+                mainCategoryId, keyword, pagingRequest.toPageable(Sort.by(Sort.Direction.DESC, "id")));
         
         return ResponseEntity.ok(response);
     }

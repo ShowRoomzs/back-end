@@ -63,15 +63,18 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
      * - 승인된(APPROVED) 판매자만 조회
      */
     @Query("SELECT new showroomz.api.admin.market.DTO.AdminMarketDto$MarketResponse(" +
-           "m.id, m.marketName, m.mainCategory, s.name, s.phoneNumber, " +
+           "m.id, m.marketName, " +
+           "CASE WHEN m.mainCategory IS NOT NULL THEN m.mainCategory.categoryId ELSE NULL END, " +
+           "CASE WHEN m.mainCategory IS NOT NULL THEN m.mainCategory.name ELSE NULL END, " +
+           "s.name, s.phoneNumber, " +
            "(SELECT COUNT(p) FROM Product p WHERE p.market = m), " +
            "s.createdAt) " +
            "FROM Market m JOIN m.seller s " +
            "WHERE s.status = :approvedStatus " +
-           "AND (:mainCategory IS NULL OR :mainCategory = '' OR m.mainCategory = :mainCategory) " +
+           "AND (:mainCategoryId IS NULL OR m.mainCategory.categoryId = :mainCategoryId) " +
            "AND (:marketName IS NULL OR :marketName = '' OR m.marketName LIKE CONCAT('%', :marketName, '%'))")
     Page<AdminMarketDto.MarketResponse> findMarketsWithProductCount(
-            @Param("mainCategory") String mainCategory,
+            @Param("mainCategoryId") Long mainCategoryId,
             @Param("marketName") String marketName,
             @Param("approvedStatus") SellerStatus approvedStatus,
             Pageable pageable);
@@ -85,10 +88,10 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
            "m.id, m.marketName, m.marketImageUrl) " +
            "FROM Market m JOIN m.seller s " +
            "WHERE s.status = :approvedStatus " +
-           "AND (:mainCategory IS NULL OR :mainCategory = '' OR m.mainCategory = :mainCategory) " +
+           "AND (:mainCategoryId IS NULL OR m.mainCategory.categoryId = :mainCategoryId) " +
            "AND (:keyword IS NULL OR :keyword = '' OR m.marketName LIKE CONCAT('%', :keyword, '%'))")
     Page<MarketListResponse> findAllForUser(
-            @Param("mainCategory") String mainCategory,
+            @Param("mainCategoryId") Long mainCategoryId,
             @Param("keyword") String keyword,
             @Param("approvedStatus") SellerStatus approvedStatus,
             Pageable pageable);

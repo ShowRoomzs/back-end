@@ -9,12 +9,13 @@ import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.api.seller.market.DTO.MarketDto;
+import showroomz.domain.category.entity.Category;
+import showroomz.domain.category.repository.CategoryRepository;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.error.exception.ErrorCode;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -23,6 +24,7 @@ public class MarketService {
 
     private final MarketRepository marketRepository;
     private final SellerRepository adminRepository;
+    private final CategoryRepository categoryRepository;
     
     // application.yml에서 도메인 주소를 가져오도록 설정
     @Value("${app.base-url:https://showroomz.shop}")
@@ -70,6 +72,7 @@ public class MarketService {
                 .map(sns -> new MarketDto.SnsLinkRequest(sns.getSnsType(), sns.getSnsUrl()))
                 .collect(java.util.stream.Collectors.toList());
 
+        Category mainCategory = market.getMainCategory();
         return MarketDto.MarketProfileResponse.builder()
                 .marketId(market.getId())
                 .marketName(market.getMarketName())
@@ -77,7 +80,8 @@ public class MarketService {
                 .marketImageUrl(market.getMarketImageUrl())
                 .marketDescription(market.getMarketDescription())
                 .marketUrl(market.getMarketUrl())
-                .mainCategory(market.getMainCategory())
+                .mainCategoryId(mainCategory != null ? mainCategory.getCategoryId() : null)
+                .mainCategoryName(mainCategory != null ? mainCategory.getName() : null)
                 .snsLinks(snsLinks)
                 .followerCount(0L) // 기본값
                 .build();
@@ -111,7 +115,11 @@ public class MarketService {
         if (request.getMarketImageUrl() != null) {
             market.setMarketImageUrl(request.getMarketImageUrl());
         }
-        if (request.getMainCategory() != null) market.setMainCategory(request.getMainCategory());
+        if (request.getMainCategoryId() != null) {
+            Category category = categoryRepository.findByCategoryId(request.getMainCategoryId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INPUT_VALUE));
+            market.setMainCategory(category);
+        }
 
         // 4. SNS 링크 저장
         market.clearSnsLinks(); // 기존 링크 삭제 (orphanRemoval = true로 인해 DB에서도 삭제됨)
