@@ -6,7 +6,7 @@ ALTER TABLE MARKET ADD COLUMN MAIN_CATEGORY_ID BIGINT;
 
 -- 3. 데이터 이관
 UPDATE MARKET m
-JOIN category c ON m.MAIN_CATEGORY = c.name
+JOIN category c ON m.MAIN_CATEGORY = c.category_id
 SET m.MAIN_CATEGORY_ID = c.category_id;
 
 -- 4. 기존 컬럼 삭제
