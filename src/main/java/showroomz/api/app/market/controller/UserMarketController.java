@@ -42,7 +42,6 @@ public class UserMarketController implements UserMarketControllerDocs {
     }
 
     @Override
-    @Hidden
     @GetMapping("/{marketId}")
     public ResponseEntity<MarketDetailResponse> getMarketDetail(
         @PathVariable("marketId") Long marketId) {
