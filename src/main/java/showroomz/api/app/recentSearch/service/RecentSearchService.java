@@ -17,7 +17,6 @@ import showroomz.global.error.exception.ErrorCode;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class RecentSearchService {
 
     private final RecentSearchRepository recentSearchRepository;
@@ -26,6 +25,7 @@ public class RecentSearchService {
     /**
      * 내 최근 검색 기록 조회
      */
+    @Transactional(readOnly = true)
     public PageResponse<RecentSearchResponse> getMyRecentSearches(String username, PagingRequest pagingRequest) {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -49,5 +49,27 @@ public class RecentSearchService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INPUT_VALUE)); // 또는 RESOURCE_NOT_FOUND
 
         recentSearchRepository.delete(recentSearch);
+    }
+
+    /**
+     * 최근 검색어 저장 (upsert)
+     * - 이미 존재하는 검색어라면 시간만 최신으로 갱신
+     * - 없으면 새로 생성
+     */
+    @Transactional
+    public void saveRecentSearch(String username, String keyword) {
+        Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // 이미 존재하는지 확인 (Optional)
+        recentSearchRepository.findByUserAndTerm(user, keyword)
+            .ifPresentOrElse(
+                // 1. 있으면 시간만 업데이트 (Dirty Checking)
+                existingSearch -> existingSearch.updateTimestamp(), 
+                // 2. 없으면 새로 생성
+                () -> recentSearchRepository.save(RecentSearch.create(user, keyword)) 
+            );
+            
+        // (선택) 최대 10개까지만 유지하고 싶다면, 오래된 것 삭제 로직 추가
     }
 }

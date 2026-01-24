@@ -35,7 +35,8 @@ public class MarketDto {
         private String marketImageUrl;
         private String marketDescription;
         private String marketUrl;
-        private String mainCategory;
+        private Long mainCategoryId;
+        private String mainCategoryName;
         private List<SnsLinkRequest> snsLinks; // 프론트엔드에 리스트 형태로 반환
         // 마켓 팔로워(찜) 수
         @Builder.Default
@@ -70,7 +71,7 @@ public class MarketDto {
 
         private String marketImageUrl;
 
-        private String mainCategory;
+        private Long mainCategoryId;
 
         // SNS 링크: 최대 3개
         @Size(max = 3, message = "SNS 링크는 최대 3개까지 등록 가능합니다.")

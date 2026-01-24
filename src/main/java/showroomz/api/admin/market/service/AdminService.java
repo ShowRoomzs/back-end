@@ -155,7 +155,7 @@ public class AdminService {
             AdminMarketDto.MarketListSearchCondition condition, Pageable pageable) {
 
         Page<AdminMarketDto.MarketResponse> page = marketRepository.findMarketsWithProductCount(
-                condition.getMainCategory(),
+                condition.getMainCategoryId(),
                 condition.getMarketName(),
                 SellerStatus.APPROVED,
                 pageable

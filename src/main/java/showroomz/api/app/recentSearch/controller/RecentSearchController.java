@@ -8,7 +8,9 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import showroomz.api.app.docs.RecentSearchControllerDocs;
 import showroomz.api.app.recentSearch.DTO.RecentSearchResponse;
@@ -41,6 +43,23 @@ public class RecentSearchController implements RecentSearchControllerDocs {
             @PathVariable Long recentSearchId
     ) {
         recentSearchService.deleteRecentSearch(principal.getUsername(), recentSearchId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 최근 검색어 저장 (단독 호출용)
+     */
+    @Override
+    @PostMapping
+    public ResponseEntity<Void> saveRecentSearch(
+            @AuthenticationPrincipal User principal,
+            @RequestParam String keyword) {
+        
+        // 검색어가 비어있지 않을 때만 저장
+        if (keyword != null && !keyword.isBlank()) {
+            recentSearchService.saveRecentSearch(principal.getUsername(), keyword);
+        }
+        
         return ResponseEntity.noContent().build();
     }
 }

@@ -1,6 +1,10 @@
 package showroomz.api.app.market.controller;
 
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -10,10 +14,10 @@ import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Hidden;
 import showroomz.api.app.docs.UserMarketControllerDocs;
 import showroomz.api.app.market.DTO.MarketDetailResponse;
-import showroomz.api.app.market.service.MarketFollowService;
+import showroomz.api.app.market.DTO.MarketListResponse;
 import showroomz.api.app.market.service.UserMarketService;
-import showroomz.api.app.auth.exception.BusinessException;
-import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 @RestController
 @RequestMapping("/v1/user/markets")
@@ -21,7 +25,21 @@ import showroomz.global.error.exception.ErrorCode;
 public class UserMarketController implements UserMarketControllerDocs {
 
     private final UserMarketService userMarketService;
-    private final MarketFollowService marketFollowService;
+
+    @Override
+    @GetMapping
+    public ResponseEntity<PageResponse<MarketListResponse>> getMarkets(
+            @Parameter(name = "mainCategoryId", description = "카테고리 ID 필터 (선택)", required = false, example = "1", in = ParameterIn.QUERY)
+            @RequestParam(name = "mainCategoryId", required = false) Long mainCategoryId,
+            @Parameter(name = "keyword", description = "마켓명 검색 키워드 (선택)", required = false, example = "쇼룸즈", in = ParameterIn.QUERY)
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @ParameterObject @org.springframework.web.bind.annotation.ModelAttribute PagingRequest pagingRequest) {
+        
+        PageResponse<MarketListResponse> response = userMarketService.getMarkets(
+                mainCategoryId, keyword, pagingRequest.toPageable(Sort.by(Sort.Direction.DESC, "id")));
+        
+        return ResponseEntity.ok(response);
+    }
 
     @Override
     @Hidden
@@ -38,37 +56,4 @@ public class UserMarketController implements UserMarketControllerDocs {
         MarketDetailResponse response = userMarketService.getMarketDetail(marketId, username);
         return ResponseEntity.ok(response);
     }
-
-    // 찜 하기 (추가) - 성공 시 204 No Content
-    @Override
-    @PostMapping("/{marketId}/follow")
-    public ResponseEntity<Void> followMarket(
-        @PathVariable("marketId") Long marketId) {
-        
-        String username = getUsername();
-        marketFollowService.followMarket(username, marketId);
-        
-        return ResponseEntity.noContent().build();
-    }
-
-    // 찜 취소 (삭제) - 성공 시 204 No Content
-    @Override
-    @DeleteMapping("/{marketId}/follow")
-    public ResponseEntity<Void> unfollowMarket(
-        @PathVariable("marketId") Long marketId) {
-        
-        String username = getUsername();
-        marketFollowService.unfollowMarket(username, marketId);
-        
-        return ResponseEntity.noContent().build();
-    }
-
-    private String getUsername() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal == null || !(principal instanceof User)) {
-            throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
-        }
-        return ((User) principal).getUsername();
-    }
 }
-

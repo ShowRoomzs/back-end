@@ -4,7 +4,11 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import showroomz.domain.category.entity.Category;
 import showroomz.domain.member.seller.entity.Seller;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -39,22 +43,27 @@ public class Market {
     @Column(name = "MARKET_URL", length = 512)
     private String marketUrl; // 마켓 URL
 
-    @Column(name = "MAIN_CATEGORY", length = 100)
-    private String mainCategory; // 대표 카테고리
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "MAIN_CATEGORY_ID")
+    private Category mainCategory; // 대표 카테고리
 
-    // SNS 링크 (최대 3개)
-    @Column(name = "SNS_LINK_1", length = 512)
-    private String snsLink1;
-
-    @Column(name = "SNS_LINK_2", length = 512)
-    private String snsLink2;
-
-    @Column(name = "SNS_LINK_3", length = 512)
-    private String snsLink3;
+    // SNS 링크 (1:N 관계)
+    @OneToMany(mappedBy = "market", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<MarketSns> snsLinks = new ArrayList<>();
 
     public Market(Seller seller, String marketName, String csNumber) {
         this.seller = seller;
         this.marketName = marketName;
         this.csNumber = csNumber;
+    }
+
+    // 연관관계 편의 메서드
+    public void addSnsLink(String type, String url) {
+        MarketSns sns = new MarketSns(this, type, url);
+        this.snsLinks.add(sns);
+    }
+
+    public void clearSnsLinks() {
+        this.snsLinks.clear();
     }
 }

@@ -1,16 +1,25 @@
 package showroomz.api.app.market.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.market.DTO.MarketDetailResponse;
+import showroomz.api.app.market.DTO.MarketListResponse;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.api.seller.auth.type.SellerStatus;
+import showroomz.domain.category.entity.Category;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketFollowRepository;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.ErrorCode;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,26 +41,41 @@ public class UserMarketService {
         // 3. 현재 유저의 팔로우 여부 조회
         boolean isFollowed = false;
         if (username != null && !username.equals("anonymousUser")) {
-            Users user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-            isFollowed = marketFollowRepository.existsByUserAndMarket(user, market);
+            Users user = userRepository.findByUsername(username).orElse(null);
+            if (user != null) {
+                isFollowed = marketFollowRepository.existsByUserAndMarket(user, market);
+            }
         }
 
-        // 4. 응답 생성
+        // 4. SNS 링크 변환
+        List<MarketDetailResponse.SnsLinkResponse> snsLinks = market.getSnsLinks().stream()
+                .map(sns -> new MarketDetailResponse.SnsLinkResponse(sns.getSnsType(), sns.getSnsUrl()))
+                .collect(Collectors.toList());
+
+        // 5. 응답 생성
+        Category mainCategory = market.getMainCategory();
         return MarketDetailResponse.builder()
                 .marketId(market.getId())
                 .marketName(market.getMarketName())
                 .marketImageUrl(market.getMarketImageUrl())
                 .marketDescription(market.getMarketDescription())
                 .marketUrl(market.getMarketUrl())
-                .mainCategory(market.getMainCategory())
+                .mainCategoryId(mainCategory != null ? mainCategory.getCategoryId() : null)
+                .mainCategoryName(mainCategory != null ? mainCategory.getName() : null)
                 .csNumber(market.getCsNumber())
-                .snsLink1(market.getSnsLink1())
-                .snsLink2(market.getSnsLink2())
-                .snsLink3(market.getSnsLink3())
+                .snsLinks(snsLinks)
                 .followerCount(followerCount)
                 .isFollowed(isFollowed)
                 .build();
+    }
+
+    /**
+     * 마켓 목록 조회 (유저용)
+     */
+    public PageResponse<MarketListResponse> getMarkets(Long mainCategoryId, String keyword, Pageable pageable) {
+        Page<MarketListResponse> page = marketRepository.findAllForUser(
+                mainCategoryId, keyword, SellerStatus.APPROVED, pageable);
+        return new PageResponse<>(page.getContent(), page);
     }
 }
 

@@ -116,7 +116,8 @@ class MarketControllerTest {
                 .marketImageUrl("https://example.com/image.jpg")
                 .marketDescription("테스트 마켓입니다")
                 .marketUrl("https://showroomz.shop/market/1")
-                .mainCategory("패션")
+                .mainCategoryId(1L)
+                .mainCategoryName("패션")
                 .snsLinks(snsLinks)
                 .build();
 
@@ -132,7 +133,8 @@ class MarketControllerTest {
                 .andExpect(jsonPath("$.marketImageUrl").value("https://example.com/image.jpg"))
                 .andExpect(jsonPath("$.marketDescription").value("테스트 마켓입니다"))
                 .andExpect(jsonPath("$.marketUrl").value("https://showroomz.shop/market/1"))
-                .andExpect(jsonPath("$.mainCategory").value("패션"))
+                .andExpect(jsonPath("$.mainCategoryId").value(1))
+                .andExpect(jsonPath("$.mainCategoryName").value("패션"))
                 .andExpect(jsonPath("$.snsLinks[0].snsType").value("INSTAGRAM"))
                 .andExpect(jsonPath("$.snsLinks[0].snsUrl").value("https://instagram.com/test"))
                 .andExpect(jsonPath("$.snsLinks[1].snsType").value("YOUTUBE"))
@@ -151,7 +153,7 @@ class MarketControllerTest {
         request.setMarketName("수정된마켓명");
         request.setMarketDescription("수정된 마켓 소개");
         request.setMarketImageUrl("https://example.com/new-image.jpg");
-        request.setMainCategory("전자제품");
+        request.setMainCategoryId(2L);
 
         List<MarketDto.SnsLinkRequest> snsLinks = new ArrayList<>();
         snsLinks.add(new MarketDto.SnsLinkRequest("INSTAGRAM", "https://instagram.com/new"));

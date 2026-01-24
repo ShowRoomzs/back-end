@@ -8,7 +8,6 @@ import showroomz.domain.market.entity.Market;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 public class AdminMarketDto {
@@ -53,8 +52,8 @@ public class AdminMarketDto {
     @Schema(description = "어드민 마켓 목록 검색 조건")
     public static class MarketListSearchCondition {
 
-        @Schema(description = "대표 카테고리 (대분류) 필터", example = "의류")
-        private String mainCategory;
+        @Schema(description = "대표 카테고리 ID 필터", example = "1")
+        private Long mainCategoryId;
 
         @Schema(description = "마켓명 검색어", example = "멋쟁이")
         private String marketName;
@@ -73,8 +72,11 @@ public class AdminMarketDto {
         @Schema(description = "마켓명", example = "멋쟁이 옷장")
         private String marketName;
 
-        @Schema(description = "대표 카테고리", example = "의류")
-        private String mainCategory;
+        @Schema(description = "대표 카테고리 ID", example = "1")
+        private Long mainCategoryId;
+
+        @Schema(description = "대표 카테고리명", example = "의류")
+        private String mainCategoryName;
 
         @Schema(description = "판매자명 (담당자)", example = "홍길동")
         private String sellerName;
@@ -185,20 +187,21 @@ public class AdminMarketDto {
         @Schema(description = "마켓 URL", example = "https://www.showroomz.co.kr/market/10")
         private String marketUrl;
 
-        @Schema(description = "대표 카테고리", example = "의류")
-        private String mainCategory;
+        @Schema(description = "대표 카테고리 ID", example = "1")
+        private Long mainCategoryId;
+
+        @Schema(description = "대표 카테고리명", example = "의류")
+        private String mainCategoryName;
 
         @Schema(description = "SNS 링크 목록")
         private List<SnsLinkResponse> snsLinks;
 
         // Entity -> DTO 변환 편의 메서드
         public static MarketAdminDetailResponse from(Market market) {
-            List<SnsLinkResponse> links = new ArrayList<>();
-            
-            // SNS 링크 파싱 ("TYPE|URL" 형식)
-            parseAndAddSnsLink(market.getSnsLink1(), links);
-            parseAndAddSnsLink(market.getSnsLink2(), links);
-            parseAndAddSnsLink(market.getSnsLink3(), links);
+            // SNS 링크 변환
+            List<SnsLinkResponse> links = market.getSnsLinks().stream()
+                    .map(sns -> new SnsLinkResponse(sns.getSnsType(), sns.getSnsUrl()))
+                    .collect(java.util.stream.Collectors.toList());
 
             return MarketAdminDetailResponse.builder()
                     .marketId(market.getId())
@@ -207,22 +210,10 @@ public class AdminMarketDto {
                     .marketImageUrl(market.getMarketImageUrl())
                     .marketDescription(market.getMarketDescription())
                     .marketUrl(market.getMarketUrl())
-                    .mainCategory(market.getMainCategory())
+                    .mainCategoryId(market.getMainCategory() != null ? market.getMainCategory().getCategoryId() : null)
+                    .mainCategoryName(market.getMainCategory() != null ? market.getMainCategory().getName() : null)
                     .snsLinks(links)
                     .build();
-        }
-
-        // SNS 링크 파싱 헬퍼 메서드
-        private static void parseAndAddSnsLink(String linkString, List<SnsLinkResponse> list) {
-            if (linkString != null && !linkString.isEmpty()) {
-                String[] parts = linkString.split("\\|", 2);
-                if (parts.length == 2) {
-                    list.add(new SnsLinkResponse(parts[0], parts[1]));
-                } else {
-                    // 형식이 맞지 않으면 URL만이라도 넣거나 무시
-                    list.add(new SnsLinkResponse("UNKNOWN", linkString));
-                }
-            }
         }
     }
 

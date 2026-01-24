@@ -75,7 +75,8 @@ public interface MarketControllerDocs {
                     "- `marketImageUrl`: 마켓 대표 이미지 URL\n" +
                     "- `marketDescription`: 마켓 소개\n" +
                     "- `marketUrl`: 마켓 URL (자동 생성, 변경 불가)\n" +
-                    "- `mainCategory`: 대표 카테고리\n" +
+                    "- `mainCategoryId`: 대표 카테고리 ID\n" +
+                    "- `mainCategoryName`: 대표 카테고리명\n" +
                     "- `snsLinks`: SNS 링크 목록 (최대 3개)\n" +
                     "- `followerCount`: 마켓을 팔로우(찜)한 유저 수\n\n" +
                     "**권한:** SELLER\n" +
@@ -98,7 +99,8 @@ public interface MarketControllerDocs {
                                                     "  \"marketImageUrl\": \"https://example.com/image.jpg\",\n" +
                                                     "  \"marketDescription\": \"최고의 쇼핑몰\",\n" +
                                                     "  \"marketUrl\": \"https://showroomz.shop/market/1\",\n" +
-                                                    "  \"mainCategory\": \"패션\",\n" +
+                                                    "  \"mainCategoryId\": 1,\n" +
+                                                    "  \"mainCategoryName\": \"패션\",\n" +
                                                     "  \"snsLinks\": [\n" +
                                                     "    {\n" +
                                                     "      \"snsType\": \"INSTAGRAM\",\n" +
@@ -159,7 +161,7 @@ public interface MarketControllerDocs {
                     "- marketName: 마켓명 (한글만 허용, 공백 불가)\n" +
                     "- marketDescription: 마켓 소개 (최대 30자, 줄바꿈 불가)\n" +
                     "- marketImageUrl: 마켓 대표 이미지 URL\n" +
-                    "- mainCategory: 대표 카테고리\n" +
+                    "- mainCategoryId: 대표 카테고리 ID (정수)\n" +
                     "- snsLinks: SNS 링크 (최대 3개)\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
@@ -288,7 +290,7 @@ public interface MarketControllerDocs {
                                             "  \"marketName\": \"쇼룸즈\",\n" +
                                             "  \"marketDescription\": \"최고의 쇼핑몰\",\n" +
                                             "  \"marketImageUrl\": \"https://example.com/image.jpg\",\n" +
-                                            "  \"mainCategory\": \"패션\",\n" +
+                                            "  \"mainCategoryId\": 1,\n" +
                                             "  \"snsLinks\": [\n" +
                                             "    {\n" +
                                             "      \"snsType\": \"INSTAGRAM\",\n" +
