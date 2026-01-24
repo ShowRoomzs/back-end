@@ -89,7 +89,7 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
      * - 수정됨: LEFT JOIN을 사용하여 mainCategory가 null인 마켓도 포함
      */
     @Query("SELECT new showroomz.api.app.market.DTO.MarketListResponse(" +
-           "m.id, m.marketName, m.marketImageUrl) " +
+           "m.id, m.marketName, m.marketImageUrl, c.categoryId, c.name) " +
            "FROM Market m " +
            "JOIN m.seller s " +
            "LEFT JOIN m.mainCategory c " +

@@ -44,12 +44,16 @@ public interface UserMarketControllerDocs {
                                                     "    {\n" +
                                                     "      \"marketId\": 1,\n" +
                                                     "      \"marketName\": \"쇼룸즈\",\n" +
-                                                    "      \"marketImageUrl\": \"https://s3.amazonaws.com/bucket/market-image.jpg\"\n" +
+                                                    "      \"marketImageUrl\": \"https://s3.amazonaws.com/bucket/market-image.jpg\",\n" +
+                                                    "      \"mainCategoryId\": 1,\n" +
+                                                    "      \"mainCategoryName\": \"패션/의류\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
                                                     "      \"marketId\": 2,\n" +
                                                     "      \"marketName\": \"트렌디샵\",\n" +
-                                                    "      \"marketImageUrl\": \"https://s3.amazonaws.com/bucket/market-image2.jpg\"\n" +
+                                                    "      \"marketImageUrl\": \"https://s3.amazonaws.com/bucket/market-image2.jpg\",\n" +
+                                                    "      \"mainCategoryId\": 2,\n" +
+                                                    "      \"mainCategoryName\": \"액세서리\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +

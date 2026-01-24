@@ -13,4 +13,6 @@ public class MarketListResponse {
     private Long marketId;
     private String marketName;
     private String marketImageUrl;
+    private Long mainCategoryId;
+    private String mainCategoryName;
 }
