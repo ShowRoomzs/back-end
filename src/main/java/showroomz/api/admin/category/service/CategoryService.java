@@ -17,6 +17,7 @@ import showroomz.domain.filter.entity.Filter;
 import showroomz.domain.filter.entity.FilterValue;
 import showroomz.domain.filter.repository.CategoryFilterRepository;
 import showroomz.domain.filter.repository.CategoryFilterValueRepository;
+import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductRepository;
 
@@ -28,6 +29,7 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
+    private final MarketRepository marketRepository;
     private final CategoryFilterRepository categoryFilterRepository;
     private final CategoryFilterValueRepository categoryFilterValueRepository;
     private final FilterService filterService;
@@ -151,12 +153,19 @@ public class CategoryService {
         java.util.List<Long> categoryIdsToCheck = getAllCategoryIdsIncludingChildren(category);
         
         for (Long id : categoryIdsToCheck) {
+            // 1. 상품 사용 여부 체크
             java.util.List<Product> productsUsingCategory = productRepository.findByCategory_CategoryId(id);
             if (!productsUsingCategory.isEmpty()) {
                 // 첫 번째 상품 ID를 사용하여 에러 메시지 생성
                 Long firstProductId = productsUsingCategory.get(0).getProductId();
                 String errorMessage = String.format("상품 ID %d와 연결되어있어 해당 카테고리를 삭제할 수 없습니다.", firstProductId);
                 throw new BusinessException(ErrorCode.CATEGORY_IN_USE, errorMessage);
+            }
+
+            // 2. 마켓 대표 카테고리 사용 여부 체크
+            if (marketRepository.existsByMainCategory_CategoryId(id)) {
+                throw new BusinessException(ErrorCode.CATEGORY_IN_USE, 
+                    "해당 카테고리를 대표 카테고리로 설정한 마켓이 존재하여 삭제할 수 없습니다.");
             }
         }
 

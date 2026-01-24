@@ -95,5 +95,10 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
             @Param("keyword") String keyword,
             @Param("approvedStatus") SellerStatus approvedStatus,
             Pageable pageable);
+
+    /**
+     * 특정 카테고리를 대표 카테고리로 설정한 마켓이 존재하는지 확인
+     */
+    boolean existsByMainCategory_CategoryId(Long categoryId);
 }
 
