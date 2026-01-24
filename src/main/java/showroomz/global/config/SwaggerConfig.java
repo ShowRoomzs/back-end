@@ -30,8 +30,7 @@ import org.springframework.context.annotation.Profile;
                 version = "v1"
         ),
         servers = {
-                @Server(url = "https://api.showroomz.shop", description = "배포 서버"),
-                @Server(url = "http://localhost:8080", description = "로컬 서버")
+                @Server(url = "/", description = "Default Server")
         }
 )
 @Configuration
