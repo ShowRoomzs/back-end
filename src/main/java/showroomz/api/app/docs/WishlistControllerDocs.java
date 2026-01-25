@@ -12,10 +12,95 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.api.app.product.DTO.ProductDto;
 
 @Tag(name = "User - Wishlist", description = "위시리스트 관리 API")
 public interface WishlistControllerDocs {
+
+    @Operation(
+            summary = "위시리스트 상품 목록 조회",
+            description = "로그인한 사용자가 찜한 상품 목록을 페이징하여 조회합니다.\n\n" +
+                    "**정렬:** 최신 찜한 순(위시리스트 생성일 내림차순)\n" +
+                    "**페이징 파라미터:**\n" +
+                    "- page: 페이지 번호 (1부터 시작) - 기본값: 1\n" +
+                    "- limit: 페이지당 항목 수 - 기본값: 20\n\n" +
+                    "**응답:**\n" +
+                    "- 모든 상품의 isWished 값은 true입니다.\n" +
+                    "- ProductSearchResponse 구조를 재사용합니다.\n\n" +
+                    "**권한:** USER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProductDto.ProductSearchResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"products\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"id\": 1,\n" +
+                                                    "      \"productNumber\": \"SRZ-20251228-001\",\n" +
+                                                    "      \"name\": \"프리미엄 린넨 셔츠\",\n" +
+                                                    "      \"thumbnailUrl\": \"https://example.com/image.jpg\",\n" +
+                                                    "      \"price\": {\n" +
+                                                    "        \"regularPrice\": 59000,\n" +
+                                                    "        \"salePrice\": 49000,\n" +
+                                                    "        \"discountRate\": 17\n" +
+                                                    "      },\n" +
+                                                    "      \"isWished\": true\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"pageInfo\": {\n" +
+                                                    "    \"currentPage\": 1,\n" +
+                                                    "    \"pageSize\": 20,\n" +
+                                                    "    \"totalElements\": 15,\n" +
+                                                    "    \"totalPages\": 1,\n" +
+                                                    "    \"isLast\": true,\n" +
+                                                    "    \"hasNext\": false\n" +
+                                                    "  }\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<ProductDto.ProductSearchResponse> getWishlist(
+            @AuthenticationPrincipal User principal,
+            @Parameter(
+                    description = "페이지 번호 (1부터 시작)",
+                    example = "1"
+            )
+            @RequestParam(value = "page", required = false) Integer page,
+            @Parameter(
+                    description = "페이지당 항목 수",
+                    example = "20"
+            )
+            @RequestParam(value = "limit", required = false) Integer limit
+    );
 
     @Operation(
             summary = "위시리스트 추가",
