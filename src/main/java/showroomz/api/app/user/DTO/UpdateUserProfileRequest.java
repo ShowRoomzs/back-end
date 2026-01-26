@@ -11,6 +11,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class UpdateUserProfileRequest {
     private String nickname; // optional
+    private String phoneNumber; // optional
     private String birthday; // optional (YYYY-MM-DD)
     private String gender; // optional (MALE, FEMALE)
     private String profileImageUrl; // optional
