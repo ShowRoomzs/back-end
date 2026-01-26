@@ -80,5 +80,24 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
             Pageable pageable
     );
 
+    /**
+     * 마켓별 대표 상품 3개 조회
+     * - isRecommended=true 우선, 그 다음 최신순
+     * - isDisplay=true인 상품만
+     * - 카테고리 필터링 지원
+     */
+    @Query("SELECT p FROM Product p " +
+           "LEFT JOIN FETCH p.productImages " +
+           "LEFT JOIN FETCH p.category " +
+           "WHERE p.market.id = :marketId " +
+           "AND p.isDisplay = true " +
+           "AND (:categoryId IS NULL OR p.category.categoryId = :categoryId) " +
+           "ORDER BY p.isRecommended DESC, p.createdAt DESC")
+    List<Product> findTop3RepresentativeProductsByMarket(
+            @Param("marketId") Long marketId,
+            @Param("categoryId") Long categoryId,
+            Pageable pageable
+    );
+
 }
 

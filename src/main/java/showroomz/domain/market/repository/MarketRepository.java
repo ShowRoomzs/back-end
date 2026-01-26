@@ -106,5 +106,26 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
      * 특정 카테고리를 대표 카테고리로 설정한 마켓이 존재하는지 확인
      */
     boolean existsByMainCategory_CategoryId(Long categoryId);
+
+    /**
+     * 추천 마켓 조회
+     * - 승인된(APPROVED) 판매자의 마켓만 조회
+     * - 카테고리 필터링 지원
+     * - isRecommended=true인 상품이 있는 마켓 우선, 그 다음 최신순 정렬
+     */
+    @Query("SELECT new showroomz.api.app.market.DTO.MarketListResponse(" +
+           "m.id, m.marketName, m.marketImageUrl, c.categoryId, c.name) " +
+           "FROM Market m " +
+           "JOIN m.seller s " +
+           "LEFT JOIN m.mainCategory c " +
+           "LEFT JOIN Product p ON p.market = m AND p.isDisplay = true " +
+           "WHERE s.status = :approvedStatus " +
+           "AND (:mainCategoryId IS NULL OR c.categoryId = :mainCategoryId) " +
+           "GROUP BY m.id, m.marketName, m.marketImageUrl, c.categoryId, c.name " +
+           "ORDER BY MAX(CASE WHEN p.isRecommended = true THEN 1 ELSE 0 END) DESC, m.id DESC")
+    Page<MarketListResponse> findRecommendedMarkets(
+            @Param("mainCategoryId") Long mainCategoryId,
+            @Param("approvedStatus") SellerStatus approvedStatus,
+            Pageable pageable);
 }
 
