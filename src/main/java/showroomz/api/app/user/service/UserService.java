@@ -7,7 +7,10 @@ import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
 import showroomz.api.app.user.DTO.UserProfileResponse;
+import showroomz.api.app.user.DTO.WithdrawalRequest;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.domain.history.entity.WithdrawalHistory;
+import showroomz.domain.history.repository.WithdrawalHistoryRepository;
 import showroomz.domain.market.repository.MarketFollowRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.member.user.type.UserStatus;
@@ -21,6 +24,7 @@ import java.util.Optional;
 public class UserService {
     private final UserRepository userRepository;
     private final MarketFollowRepository marketFollowRepository;
+    private final WithdrawalHistoryRepository withdrawalHistoryRepository;
 
     public Optional<Users> getUser(String username) {
         return userRepository.findByUsername(username);
@@ -208,7 +212,7 @@ public class UserService {
      * 실제 DB 삭제 대신 상태를 WITHDRAWN으로 변경하여 외래 키 문제를 방지합니다.
      */
     @Transactional
-    public void withdrawUser(String username) {
+    public void withdrawUser(String username, WithdrawalRequest request) {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -217,13 +221,26 @@ public class UserService {
             throw new BusinessException(ErrorCode.USER_WITHDRAWN);
         }
 
-        // 회원 상태 변경 (논리 삭제)
+        // 1. 탈퇴 동의 체크 확인 (백엔드에서도 한 번 더 검증)
+        if (!request.isAgreeConsent()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "탈퇴 유의사항에 동의해야 합니다.");
+        }
+
+        // 2. 탈퇴 히스토리 저장
+        withdrawalHistoryRepository.save(WithdrawalHistory.builder()
+                .userId(user.getId())
+                .agreeConsent(request.isAgreeConsent())
+                .reason(request.getReason())
+                .customReason(request.getCustomReason())
+                .build());
+
+        // 3. 회원 상태 변경 (논리 삭제)
         user.updateStatus(UserStatus.WITHDRAWN);
 
         // (선택 사항) 개인정보 보호를 위한 중요 정보 마스킹/삭제 처리
         // 탈퇴한 회원의 개인정보를 즉시 파기해야 한다면 아래와 같이 처리합니다.
         // user.setPassword(""); // 비밀번호 삭제
-        user.setNickname("탈퇴한 회원123456789");
+        user.setNickname("탈퇴한 회원" + user.getId());
         // user.setPhoneNumber("");
         // user.setEmail(user.getId() + "@withdrawn.user"); // 유니크 제약조건 유지를 위해 ID 활용
         
