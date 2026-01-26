@@ -3,16 +3,16 @@ package showroomz.api.app.user.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
-import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.docs.UserControllerDocs;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
+import showroomz.api.app.user.DTO.NotificationSettingRequest;
+import showroomz.api.app.user.DTO.NotificationSettingResponse;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
 import showroomz.api.app.user.DTO.UserProfileResponse;
 import showroomz.api.app.user.service.UserService;
@@ -161,6 +161,45 @@ public class UserController implements UserControllerDocs {
         }
 
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    /**
+     * 알림 설정 조회 API
+     */
+    @GetMapping("/notifications")
+    public ResponseEntity<NotificationSettingResponse> getNotificationSettings() {
+        // 1. 현재 사용자 정보 가져오기
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal == null || !(principal instanceof User)) {
+            throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
+        }
+        User springUser = (User) principal;
+
+        // 2. 서비스 호출
+        NotificationSettingResponse response = userService.getNotificationSettings(springUser.getUsername());
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    /**
+     * 알림 설정 변경 API
+     * (스위치 토글 시 호출)
+     */
+    @PatchMapping("/notifications")
+    public ResponseEntity<Void> updateNotificationSettings(@RequestBody NotificationSettingRequest request) {
+        // 1. 현재 사용자 정보 가져오기
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal == null || !(principal instanceof User)) {
+            throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
+        }
+        User springUser = (User) principal;
+
+        // 2. 서비스 호출
+        userService.updateNotificationSettings(springUser.getUsername(), request);
+
+        return ResponseEntity.noContent().build();
     }
 }
 

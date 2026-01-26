@@ -9,6 +9,7 @@ import lombok.Setter;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.domain.member.user.type.UserStatus;
+import showroomz.domain.member.user.vo.NotificationSetting;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -106,6 +107,9 @@ public class Users {
     @Column(name = "LAST_LOGIN_AT")
     private LocalDateTime lastLoginAt;
 
+    @Embedded
+    private NotificationSetting notificationSetting;
+
     public Users(
             @NotNull @Size(max = 64) String username,
             @NotNull @Size(max = 100) String nickname,
@@ -128,11 +132,20 @@ public class Users {
         this.createdAt = createdAt;
         this.modifiedAt = modifiedAt;
         this.status = UserStatus.NORMAL; // 생성 시 기본값 설정
+        this.notificationSetting = new NotificationSetting(); // 기본값으로 초기화
     }
 
     // 상태 변경을 위한 메서드 추가 (비즈니스 로직용)
     public void updateStatus(UserStatus status) {
         this.status = status;
+    }
+
+    // 알림 설정 변경 메서드
+    public void updateNotificationSettings(Boolean smsAgree, Boolean nightPushAgree, Boolean showroomPushAgree, Boolean marketPushAgree) {
+        if (this.notificationSetting == null) {
+            this.notificationSetting = new NotificationSetting();
+        }
+        this.notificationSetting.update(smsAgree, nightPushAgree, showroomPushAgree, marketPushAgree);
     }
 }
 
