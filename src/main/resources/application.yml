@@ -45,6 +45,11 @@ spring:
           connectiontimeout: 5000
           timeout: 5000
           writetimeout: 5000
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 20MB
+      max-request-size: 20MB
 app:
   base-url: ${APP_BASE_URL:https://www.showroomz.co.kr}  # 마켓 URL 생성에 사용되는 기본 도메인
   auth:
