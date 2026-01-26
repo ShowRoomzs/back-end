@@ -9,7 +9,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import showroomz.api.app.auth.DTO.*;
+import showroomz.api.app.user.DTO.WithdrawalRequest;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -609,9 +611,18 @@ public interface AuthControllerDocs {
 
     @Operation(
             summary = "회원 탈퇴",
-            description = "인증된 사용자의 회원 탈퇴를 처리합니다. 사용자 계정과 관련된 모든 리프레시 토큰이 삭제됩니다.\n\n" +
+            description = "인증된 사용자의 회원 탈퇴를 처리합니다. 탈퇴 사유가 기록됩니다.\n\n" +
                     "**권한:** USER\n" +
-                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+                    "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
+                    "**탈퇴 처리 내용:**\n" +
+                    "- 사용자 상태를 WITHDRAWN(탈퇴)으로 변경 (논리 삭제)\n" +
+                    "- 관련 리프레시 토큰 삭제\n" +
+                    "- 탈퇴 사유 및 동의 여부 기록\n" +
+                    "- 개인정보 마스킹 처리\n\n" +
+                    "**탈퇴 사유 (reason):**\n" +
+                    "- `INCONVENIENT_USE`: 앱 사용이 불편해요\n" +
+                    "- `DIFFICULT_SEARCH`: 상품 탐색이 어려워요\n" +
+                    "- `ETC`: 기타 (직접 입력) - 이 경우 customReason 필드에 상세 사유를 입력해야 합니다."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -631,8 +642,34 @@ public interface AuthControllerDocs {
                     )
             ),
             @ApiResponse(
+                    responseCode = "400",
+                    description = "입력값 오류 - 탈퇴 동의 미체크 또는 필수 필드 누락",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "탈퇴 동의 미체크",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"탈퇴 유의사항에 동의해야 합니다.\"\n" +
+                                                    "}",
+                                            description = "agreeConsent가 false인 경우"
+                                    ),
+                                    @ExampleObject(
+                                            name = "필수 필드 누락",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"입력값이 올바르지 않습니다.\"\n" +
+                                                    "}",
+                                            description = "reason 필드가 누락된 경우"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
                     responseCode = "401",
-                    description = "인증 실패",
+                    description = "인증 실패 - Access Token이 없거나 만료됨",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -648,6 +685,23 @@ public interface AuthControllerDocs {
                     )
             ),
             @ApiResponse(
+                    responseCode = "403",
+                    description = "이미 탈퇴한 회원",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "이미 탈퇴한 회원",
+                                            value = "{\n" +
+                                                    "  \"code\": \"USER_WITHDRAWN\",\n" +
+                                                    "  \"message\": \"탈퇴한 회원입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
                     responseCode = "404",
                     description = "사용자를 찾을 수 없음",
                     content = @Content(
@@ -657,8 +711,8 @@ public interface AuthControllerDocs {
                                     @ExampleObject(
                                             name = "사용자 없음 예시",
                                             value = "{\n" +
-                                                    "  \"code\": \"NOT_FOUND\",\n" +
-                                                    "  \"message\": \"사용자를 찾을 수 없습니다.\"\n" +
+                                                    "  \"code\": \"USER_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 회원입니다.\"\n" +
                                                     "}"
                                     )
                             }
@@ -682,12 +736,55 @@ public interface AuthControllerDocs {
                     )
             )
     })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "탈퇴 요청 정보\n\n" +
+                    "**필수 필드:**\n" +
+                    "- `agreeConsent`: 탈퇴 유의사항 동의 여부 (true 필수)\n" +
+                    "- `reason`: 탈퇴 사유 (INCONVENIENT_USE, DIFFICULT_SEARCH, ETC)\n\n" +
+                    "**선택 필드:**\n" +
+                    "- `customReason`: reason이 ETC인 경우 상세 사유 입력 (최대 1000자)",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = WithdrawalRequest.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "앱 사용 불편",
+                                    value = "{\n" +
+                                            "  \"agreeConsent\": true,\n" +
+                                            "  \"reason\": \"INCONVENIENT_USE\",\n" +
+                                            "  \"customReason\": null\n" +
+                                            "}",
+                                    description = "앱 사용이 불편한 경우"
+                            ),
+                            @ExampleObject(
+                                    name = "상품 탐색 어려움",
+                                    value = "{\n" +
+                                            "  \"agreeConsent\": true,\n" +
+                                            "  \"reason\": \"DIFFICULT_SEARCH\",\n" +
+                                            "  \"customReason\": null\n" +
+                                            "}",
+                                    description = "상품 탐색이 어려운 경우"
+                            ),
+                            @ExampleObject(
+                                    name = "기타 사유",
+                                    value = "{\n" +
+                                            "  \"agreeConsent\": true,\n" +
+                                            "  \"reason\": \"ETC\",\n" +
+                                            "  \"customReason\": \"다른 앱을 사용하게 되었습니다.\"\n" +
+                                            "}",
+                                    description = "기타 사유를 직접 입력하는 경우"
+                            )
+                    }
+            )
+    )
     ResponseEntity<?> withdraw(
             @Parameter(
                     description = "Authorization 헤더에 Bearer {accessToken} 형식으로 전달 (Access Token만 필요)",
                     required = true,
                     hidden = true
             )
-            HttpServletRequest request
+            HttpServletRequest request,
+            @RequestBody @Valid WithdrawalRequest withdrawalRequest
     );
 }

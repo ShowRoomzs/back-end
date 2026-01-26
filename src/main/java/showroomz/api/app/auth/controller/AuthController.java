@@ -20,6 +20,7 @@ import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
 import showroomz.api.app.docs.AuthControllerDocs;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
+import showroomz.api.app.user.DTO.WithdrawalRequest;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.app.user.service.UserService;
 import showroomz.domain.member.user.entity.Users;
@@ -341,7 +342,7 @@ public class AuthController implements AuthControllerDocs {
     @Override
     @DeleteMapping("/withdraw")
     @Transactional
-    public ResponseEntity<?> withdraw(HttpServletRequest request) {
+    public ResponseEntity<?> withdraw(HttpServletRequest request, @RequestBody @Valid WithdrawalRequest withdrawalRequest) {
         // 1. Authorization 헤더에서 Access Token 확인
         String accessToken = HeaderUtil.getAccessToken(request);
         if (accessToken == null || accessToken.isEmpty()) {
@@ -374,7 +375,7 @@ public class AuthController implements AuthControllerDocs {
         }
 
         // 4. 회원 탈퇴 처리 (논리 삭제: 상태를 WITHDRAWN으로 변경)
-        userService.withdrawUser(username);
+        userService.withdrawUser(username, withdrawalRequest);
 
         // 5. SecurityContext 초기화
         SecurityContextHolder.clearContext();
