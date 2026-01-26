@@ -27,5 +27,10 @@ public class UserProfileResponse {
     private Boolean marketingAgree;
     // 팔로잉 카운트
     private Long followingCount = 0L; // 내가 팔로우하는 유저(또는 마켓) 수
+
+    // 추가된 더미 데이터 필드
+    private Long couponCount;
+    private Long point;
+    private Long reviewCount;
 }
 

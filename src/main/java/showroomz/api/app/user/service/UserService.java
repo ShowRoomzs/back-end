@@ -43,7 +43,7 @@ public class UserService {
         // 유저가 팔로우한 마켓 수 조회
         long followingCount = marketFollowRepository.countByUser(user);
 
-        // DTO 생성 및 반환
+        // DTO 생성 및 반환 (더미 데이터 추가)
         return new UserProfileResponse(
                 user.getId(),
                 user.getEmail(),
@@ -56,7 +56,10 @@ public class UserService {
                 user.getCreatedAt(),
                 user.getModifiedAt(),
                 user.isMarketingAgree(),
-                followingCount // 실제 팔로잉 수 주입
+                followingCount, // 실제 팔로잉 수
+                3L,             // couponCount (더미 값: 3장)
+                5000L,          // point (더미 값: 5000포인트)
+                12L             // reviewCount (더미 값: 12개)
         );
     }
 
