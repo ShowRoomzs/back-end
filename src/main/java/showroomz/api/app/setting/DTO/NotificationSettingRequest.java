@@ -1,4 +1,4 @@
-package showroomz.api.app.user.DTO;
+package showroomz.api.app.setting.DTO;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
