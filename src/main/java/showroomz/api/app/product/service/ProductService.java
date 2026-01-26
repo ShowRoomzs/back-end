@@ -215,7 +215,7 @@ public class ProductService {
     /**
      * Product 엔티티를 ProductItem DTO로 변환
      */
-    private ProductDto.ProductItem convertToProductItem(Product product, Users currentUser) {
+    public ProductDto.ProductItem convertToProductItem(Product product, Users currentUser) {
         // 가격 정보 (최대 혜택가는 할인가와 동일하게 설정, 추후 할인 로직 추가 가능)
         Integer regularPrice = product.getRegularPrice();
         Integer salePrice = product.getSalePrice();
@@ -271,7 +271,7 @@ public class ProductService {
     /**
      * Page 객체를 PageInfo DTO로 변환
      */
-    private ProductDto.PageInfo convertToPageInfo(Page<Product> page) {
+    public ProductDto.PageInfo convertToPageInfo(Page<Product> page) {
         return ProductDto.PageInfo.builder()
                 .currentPage(page.getNumber() + 1) // 0-based to 1-based
                 .pageSize(page.getSize())

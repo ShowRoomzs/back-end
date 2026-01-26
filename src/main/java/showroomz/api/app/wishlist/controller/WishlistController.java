@@ -6,6 +6,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.docs.WishlistControllerDocs;
+import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.api.app.wishlist.service.WishlistService;
 
 @RestController
@@ -14,6 +15,18 @@ import showroomz.api.app.wishlist.service.WishlistService;
 public class WishlistController implements WishlistControllerDocs {
 
     private final WishlistService wishlistService;
+
+    @Override
+    @GetMapping
+    public ResponseEntity<ProductDto.ProductSearchResponse> getWishlist(
+            @AuthenticationPrincipal User principal,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "limit", required = false) Integer limit) {
+
+        ProductDto.ProductSearchResponse response = wishlistService.getWishlist(
+                principal.getUsername(), page, limit);
+        return ResponseEntity.ok(response);
+    }
 
     @Override
     @PostMapping("/{productId}")
