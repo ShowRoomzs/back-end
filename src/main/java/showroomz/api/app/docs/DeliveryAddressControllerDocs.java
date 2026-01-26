@@ -18,7 +18,7 @@ import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 
 import java.util.List;
 
-@Tag(name = "Delivery Address", description = "배송지 관리 API")
+@Tag(name = "USER - Delivery Address", description = "배송지 관리 API")
 public interface DeliveryAddressControllerDocs {
 
     @Operation(

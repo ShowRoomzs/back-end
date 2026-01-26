@@ -15,7 +15,7 @@ import showroomz.global.error.exception.ErrorCode;
 import java.util.List;
 
 @RestController
-@RequestMapping("/v1/delivery-addresses")
+@RequestMapping("/v1/user/delivery-addresses")
 @RequiredArgsConstructor
 public class DeliveryAddressController implements DeliveryAddressControllerDocs {
 
