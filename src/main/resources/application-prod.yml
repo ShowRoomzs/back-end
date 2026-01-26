@@ -3,8 +3,14 @@ spring:
   jpa:
     show-sql: false  # 프로덕션에서는 SQL 쿼리 출력하지 않음
     hibernate:
-      ddl-auto: validate  # 프로덕션에서는 스키마 검증만 수행 (자동 생성 안 함)\
-  
+      ddl-auto: validate  # 프로덕션에서는 스키마 검증만 수행 (자동 생성 안 함)
+
+  # Flyway 설정 추가
+  flyway:
+    enabled: true
+    # 기존에 생성된 테이블이 있다면 메타데이터 테이블을 생성하여 관리 시작 (필수 설정)
+    baseline-on-migrate: true
+    baseline-version: 1
 
 # 로깅 설정 (프로덕션은 최소화)
 logging:

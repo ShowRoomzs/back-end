@@ -22,13 +22,6 @@ spring:
     serialization:
       write-dates-as-timestamps: false  # 날짜를 타임스탬프가 아닌 문자열로 직렬화
     time-zone: UTC  # UTC 시간대 사용
-      
-  # Flyway 설정 추가
-  flyway:
-    enabled: true
-    # 기존에 생성된 테이블이 있다면 메타데이터 테이블을 생성하여 관리 시작 (필수 설정)
-    baseline-on-migrate: true
-    baseline-version: 1
     
   mail:
     host: smtp.gmail.com
