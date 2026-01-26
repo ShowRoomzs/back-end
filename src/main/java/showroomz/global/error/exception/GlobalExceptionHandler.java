@@ -15,6 +15,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.sql.SQLException;
@@ -108,6 +109,19 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(
                         ErrorCode.FORBIDDEN.getCode(),
                         ErrorCode.FORBIDDEN.getMessage()));
+    }
+
+    // 봇이 발생시키는 존재하지 않는 리소스 요청 예외 - Sentry에 전송하지 않음
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFoundException(NoResourceFoundException e) {
+        // 봇의 스캔 활동으로 인한 예외이므로 Sentry에 전송하지 않고 로그만 남김
+        log.debug("NoResourceFoundException: {} - Sentry 전송하지 않음", e.getMessage());
+        
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        ErrorCode.NOT_FOUND.getCode(),
+                        "Resource not found"));
     }
 
     // 봇이 발생시키는 예외 - Sentry에 전송하지 않음
