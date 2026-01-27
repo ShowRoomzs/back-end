@@ -87,7 +87,14 @@ public enum ErrorCode {
     PRODUCT_LIST_EMPTY(HttpStatus.NOT_FOUND, "PRODUCT_LIST_EMPTY", "해당 상품이 존재하지 않습니다."),
     INVALID_VARIANT_OPTIONS(HttpStatus.BAD_REQUEST, "INVALID_VARIANT_OPTIONS", "옵션 조합이 올바르지 않습니다."),
     DUPLICATE_CATEGORY_NAME(HttpStatus.BAD_REQUEST, "DUPLICATE_CATEGORY_NAME", "이미 존재하는 카테고리명입니다."),
-    CATEGORY_IN_USE(HttpStatus.BAD_REQUEST, "CATEGORY_IN_USE", "사용 중인 카테고리는 삭제할 수 없습니다.");
+    CATEGORY_IN_USE(HttpStatus.BAD_REQUEST, "CATEGORY_IN_USE", "사용 중인 카테고리는 삭제할 수 없습니다."),
+
+    /* * 9. 배송지 (Address)
+     */
+    ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "ADDRESS_NOT_FOUND", "존재하지 않는 배송지입니다."),
+    MAX_ADDRESS_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "MAX_ADDRESS_LIMIT_EXCEEDED", "배송지는 최대 10개까지만 등록 가능합니다."),
+    ADDRESS_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ADDRESS_ACCESS_DENIED", "해당 배송지에 대한 권한이 없습니다."),
+    DEFAULT_ADDRESS_DELETE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "DEFAULT_ADDRESS_DELETE_NOT_ALLOWED", "기본 배송지는 삭제할 수 없습니다. 다른 배송지를 기본으로 지정 후 삭제해주세요.");
     
     private final HttpStatus status;
     private final String code;
