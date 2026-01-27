@@ -53,7 +53,7 @@ public class DeliveryAddressController implements DeliveryAddressControllerDocs 
     @Override
     // 2. 배송지 삭제
     @DeleteMapping("/{addressId}")
-    public ResponseEntity<Void> deleteAddress(@PathVariable Long addressId) {
+    public ResponseEntity<Void> deleteAddress(@PathVariable("addressId") Long addressId) {
         // 1. 현재 사용자 정보 가져오기
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal == null || !(principal instanceof User)) {
@@ -68,7 +68,7 @@ public class DeliveryAddressController implements DeliveryAddressControllerDocs 
     @Override
     // 3. 배송지 수정
     @PutMapping("/{addressId}")
-    public ResponseEntity<Void> updateAddress(@PathVariable Long addressId,
+    public ResponseEntity<Void> updateAddress(@PathVariable("addressId") Long addressId,
                                               @Valid @RequestBody DeliveryAddressDto.Request request) {
         // 1. 현재 사용자 정보 가져오기
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -84,7 +84,7 @@ public class DeliveryAddressController implements DeliveryAddressControllerDocs 
     @Override
     // 4. 기본 배송지로 지정
     @PatchMapping("/{addressId}/default")
-    public ResponseEntity<Void> setDefaultAddress(@PathVariable Long addressId) {
+    public ResponseEntity<Void> setDefaultAddress(@PathVariable("addressId") Long addressId) {
         // 1. 현재 사용자 정보 가져오기
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal == null || !(principal instanceof User)) {

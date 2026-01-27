@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import showroomz.domain.address.entity.DeliveryAddress;
 
 public class DeliveryAddressDto {
@@ -37,6 +38,7 @@ public class DeliveryAddressDto {
         @Pattern(regexp = "^\\d{2,3}-\\d{3,4}-\\d{4}$", message = "전화번호 형식이 올바르지 않습니다. (예: 010-1234-5678)")
         private String phoneNumber;
 
+        @JsonProperty("isDefault")
         private boolean isDefault;
     }
 

@@ -18,7 +18,7 @@ import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 
 import java.util.List;
 
-@Tag(name = "USER - Delivery Address", description = "배송지 관리 API")
+@Tag(name = "User - Delivery Address", description = "배송지 관리 API")
 public interface DeliveryAddressControllerDocs {
 
     @Operation(
@@ -237,8 +237,8 @@ public interface DeliveryAddressControllerDocs {
             description = "등록된 배송지를 삭제합니다.\n\n" +
                     "**삭제 규칙:**\n" +
                     "- 본인이 등록한 배송지만 삭제할 수 있습니다.\n" +
-                    "- 기본 배송지는 다른 배송지가 있을 경우 삭제할 수 없습니다.\n" +
-                    "- 배송지가 1개만 남은 경우, 기본 배송지라도 삭제 가능합니다.\n\n" +
+                //     "- 기본 배송지는 다른 배송지가 있을 경우 삭제할 수 없습니다.\n" +
+                //     "- 배송지가 1개만 남은 경우, 기본 배송지라도 삭제 가능합니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -324,7 +324,12 @@ public interface DeliveryAddressControllerDocs {
             )
     })
     ResponseEntity<Void> deleteAddress(
-            @Parameter(description = "삭제할 배송지 ID", required = true, example = "1")
+            @Parameter(
+                    name = "addressId",
+                    description = "삭제할 배송지 ID",
+                    required = true,
+                    example = "1"
+            )
             @PathVariable Long addressId
     );
 
@@ -458,7 +463,12 @@ public interface DeliveryAddressControllerDocs {
             )
     )
     ResponseEntity<Void> updateAddress(
-            @Parameter(description = "수정할 배송지 ID", required = true, example = "1")
+            @Parameter(
+                    name = "addressId",
+                    description = "수정할 배송지 ID",
+                    required = true,
+                    example = "1"
+            )
             @PathVariable Long addressId,
             @RequestBody DeliveryAddressDto.Request request
     );
@@ -538,7 +548,12 @@ public interface DeliveryAddressControllerDocs {
             )
     })
     ResponseEntity<Void> setDefaultAddress(
-            @Parameter(description = "기본 배송지로 설정할 배송지 ID", required = true, example = "1")
+            @Parameter(
+                    name = "addressId",
+                    description = "기본 배송지로 설정할 배송지 ID",
+                    required = true,
+                    example = "1"
+            )
             @PathVariable Long addressId
     );
 }
