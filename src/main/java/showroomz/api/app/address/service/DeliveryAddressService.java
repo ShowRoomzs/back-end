@@ -68,12 +68,12 @@ public class DeliveryAddressService {
         Users user = getUserByUsername(username);
         DeliveryAddress address = getAddress(addressId, user);
 
-        // 기본 배송지 삭제 방지 (배송지가 1개만 남았을 때는 삭제 허용)
-        if (address.isDefault()) {
-            if (deliveryAddressRepository.countByUser(user) > 1) {
-                throw new BusinessException(ErrorCode.DEFAULT_ADDRESS_DELETE_NOT_ALLOWED);
-            }
-        }
+        // // 기본 배송지 삭제 방지 (배송지가 1개만 남았을 때는 삭제 허용)
+        // if (address.isDefault()) {
+        //     if (deliveryAddressRepository.countByUser(user) > 1) {
+        //         throw new BusinessException(ErrorCode.DEFAULT_ADDRESS_DELETE_NOT_ALLOWED);
+        //     }
+        // }
 
         deliveryAddressRepository.delete(address);
     }
