@@ -21,7 +21,6 @@ public class MarketFollowController implements MarketFollowControllerDocs {
 
     // 찜 하기 (추가) - 성공 시 204 No Content
     @Override
-    @Hidden
     @PostMapping("/{marketId}/follow")
     public ResponseEntity<Void> followMarket(
         @PathVariable("marketId") Long marketId) {
@@ -34,7 +33,6 @@ public class MarketFollowController implements MarketFollowControllerDocs {
 
     // 찜 취소 (삭제) - 성공 시 204 No Content
     @Override
-    @Hidden
     @DeleteMapping("/{marketId}/follow")
     public ResponseEntity<Void> unfollowMarket(
         @PathVariable("marketId") Long marketId) {
