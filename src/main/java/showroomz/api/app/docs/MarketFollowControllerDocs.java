@@ -12,7 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 
-@Tag(name = "User - Market", description = "사용자 마켓 API")
+@Tag(name = "User - Shop", description = "사용자 Shop API")
 public interface MarketFollowControllerDocs {
 
     @Operation(

@@ -16,7 +16,7 @@ import showroomz.api.app.market.DTO.MarketListResponse;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "User - Market", description = "사용자 마켓 API")
+@Tag(name = "User - Shop", description = "사용자 Shop API")
 public interface UserMarketControllerDocs {
 
     @Operation(

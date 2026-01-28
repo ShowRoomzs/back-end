@@ -13,7 +13,7 @@ import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 @RestController
-@RequestMapping("/v1/user/markets")
+@RequestMapping("/v1/user/shops")
 @RequiredArgsConstructor
 public class MarketFollowController implements MarketFollowControllerDocs {
 
@@ -21,24 +21,24 @@ public class MarketFollowController implements MarketFollowControllerDocs {
 
     // 찜 하기 (추가) - 성공 시 204 No Content
     @Override
-    @PostMapping("/{marketId}/follow")
+    @PostMapping("/{shopId}/follow")
     public ResponseEntity<Void> followMarket(
-        @PathVariable("marketId") Long marketId) {
+        @PathVariable("shopId") Long shopId) {
         
         String username = getUsername();
-        marketFollowService.followMarket(username, marketId);
+        marketFollowService.followMarket(username, shopId);
         
         return ResponseEntity.noContent().build();
     }
 
     // 찜 취소 (삭제) - 성공 시 204 No Content
     @Override
-    @DeleteMapping("/{marketId}/follow")
+    @DeleteMapping("/{shopId}/follow")
     public ResponseEntity<Void> unfollowMarket(
-        @PathVariable("marketId") Long marketId) {
+        @PathVariable("shopId") Long shopId) {
         
         String username = getUsername();
-        marketFollowService.unfollowMarket(username, marketId);
+        marketFollowService.unfollowMarket(username, shopId);
         
         return ResponseEntity.noContent().build();
     }
