@@ -265,4 +265,48 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
             where.and(product.salePrice.loe(criteria.maxValue()));
         }
     }
+
+    @Override
+    public Page<Product> findRecommendedProducts(
+            Long categoryId,
+            ProductGender userGender,
+            Pageable pageable
+    ) {
+        QProduct product = QProduct.product;
+
+        BooleanBuilder where = new BooleanBuilder();
+        where.and(product.isDisplay.isTrue());
+
+        // 카테고리 필터
+        if (categoryId != null) {
+            where.and(product.category.categoryId.eq(categoryId));
+        }
+
+        // 성별 필터: 사용자 성별에 맞는 상품 또는 UNISEX 상품
+        if (userGender != null) {
+            where.and(
+                    product.gender.eq(userGender)
+                            .or(product.gender.eq(ProductGender.UNISEX))
+            );
+        }
+
+        // 정렬: isRecommended DESC, createdAt DESC (추천 상품 우선, 최신순)
+        OrderSpecifier<?>[] orderSpecifiers = {
+                product.isRecommended.desc(),
+                product.createdAt.desc()
+        };
+
+        JPAQuery<Product> query = queryFactory
+                .selectFrom(product)
+                .where(where)
+                .orderBy(orderSpecifiers);
+
+        long total = query.fetchCount();
+        List<Product> content = query
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        return new PageImpl<>(content, pageable, total);
+    }
 }

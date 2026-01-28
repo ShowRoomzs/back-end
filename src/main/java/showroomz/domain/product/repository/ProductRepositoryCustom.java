@@ -22,4 +22,10 @@ public interface ProductRepositoryCustom {
             ProductGender gender,
             Pageable pageable
     );
+
+    Page<Product> findRecommendedProducts(
+            Long categoryId,
+            ProductGender userGender,
+            Pageable pageable
+    );
 }
