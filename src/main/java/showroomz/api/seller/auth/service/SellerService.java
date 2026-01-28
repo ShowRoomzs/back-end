@@ -135,7 +135,7 @@ public class SellerService {
         Market market = new Market(savedSeller, request.getMarketName(), request.getSellerContact());
         market.setMarketType(MarketType.SHOWROOM); // 크리에이터(쇼룸) 타입
 
-        // 6. SNS 링크 추가
+        // 6. SNS 링크 추가 (요청의 enum 직접 사용)
         market.addSnsLink(request.getSnsType(), request.getSnsUrl());
 
         marketRepository.save(market);

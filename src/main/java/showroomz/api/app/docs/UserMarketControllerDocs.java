@@ -92,6 +92,7 @@ public interface UserMarketControllerDocs {
                     "- `mainCategoryName`: 대표 카테고리명\n" +
                     "- `csNumber`: 고객센터 번호\n" +
                     "- `snsLinks`: SNS 링크 배열 (각 항목은 `snsType`, `snsUrl` 필드를 포함)\n" +
+                    "  - `snsType`: SNS 타입 (INSTAGRAM, TIKTOK, X, YOUTUBE)\n" +
                     "- `followerCount`: 이 마켓을 찜한 유저 수\n" +
                     "- `isFollowed`: 현재 유저가 찜했는지 여부 (비로그인 시 false)\n\n" +
                     "**권한:** 인증 불필요 (비로그인 가능)",
@@ -124,12 +125,12 @@ public interface UserMarketControllerDocs {
                                                     "      \"snsUrl\": \"https://instagram.com/showroomz\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
-                                                    "      \"snsType\": \"FACEBOOK\",\n" +
-                                                    "      \"snsUrl\": \"https://facebook.com/showroomz\"\n" +
+                                                    "      \"snsType\": \"YOUTUBE\",\n" +
+                                                    "      \"snsUrl\": \"https://youtube.com/showroomz\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
-                                                    "      \"snsType\": \"TWITTER\",\n" +
-                                                    "      \"snsUrl\": \"https://twitter.com/showroomz\"\n" +
+                                                    "      \"snsType\": \"TIKTOK\",\n" +
+                                                    "      \"snsUrl\": \"https://tiktok.com/@showroomz\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"followerCount\": 150,\n" +
@@ -154,8 +155,8 @@ public interface UserMarketControllerDocs {
                                                     "      \"snsUrl\": \"https://instagram.com/showroomz\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
-                                                    "      \"snsType\": \"FACEBOOK\",\n" +
-                                                    "      \"snsUrl\": \"https://facebook.com/showroomz\"\n" +
+                                                    "      \"snsType\": \"YOUTUBE\",\n" +
+                                                    "      \"snsUrl\": \"https://youtube.com/showroomz\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"followerCount\": 150,\n" +

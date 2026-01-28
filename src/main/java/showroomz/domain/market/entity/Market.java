@@ -7,6 +7,7 @@ import lombok.Setter;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.market.type.MarketType;
+import showroomz.domain.market.type.SnsType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,7 +64,7 @@ public class Market {
     }
 
     // 연관관계 편의 메서드
-    public void addSnsLink(String type, String url) {
+    public void addSnsLink(SnsType type, String url) {
         MarketSns sns = new MarketSns(this, type, url);
         this.snsLinks.add(sns);
     }

@@ -3,9 +3,11 @@ package showroomz.api.seller.auth.DTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
+import showroomz.domain.market.type.SnsType;
 
 @Getter
 @Setter
@@ -47,10 +49,13 @@ public class CreatorSignUpRequest {
     @Schema(description = "활동명 (닉네임)", example = "뷰티크리에이터")
     private String activityName;
 
-    @NotBlank(message = "SNS 플랫폼은 필수 입력값입니다.")
-    @Pattern(regexp = "^(INSTAGRAM|TIKTOK|X|YOUTUBE)$", message = "지원하지 않는 SNS 플랫폼입니다.")
-    @Schema(description = "SNS 플랫폼 (INSTAGRAM, TIKTOK, X, YOUTUBE)", example = "INSTAGRAM")
-    private String snsType;
+    @NotNull(message = "SNS 플랫폼은 필수 입력값입니다.")
+    @Schema(
+            description = "SNS 플랫폼 (INSTAGRAM, TIKTOK, X, YOUTUBE)",
+            example = "INSTAGRAM",
+            allowableValues = {"INSTAGRAM", "TIKTOK", "X", "YOUTUBE"}
+    )
+    private SnsType snsType;
 
     @NotBlank(message = "SNS URL은 필수 입력값입니다.")
     @Schema(description = "SNS URL", example = "https://instagram.com/my_id")

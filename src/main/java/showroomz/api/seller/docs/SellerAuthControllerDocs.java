@@ -217,7 +217,8 @@ public interface SellerAuthControllerDocs {
                     "**특징:**\n" +
                     "- 활동명(activityName)을 함께 저장합니다.\n" +
                     "- 마켓 타입은 SHOWROOM으로 저장됩니다.\n" +
-                    "- SNS 플랫폼 정보와 URL을 함께 등록합니다.\n\n" +
+                    "- SNS 플랫폼 정보와 URL을 함께 등록합니다.\n" +
+                    "  - `snsType`: SNS 타입 (INSTAGRAM, TIKTOK, X, YOUTUBE)\n\n" +
                     "**승인 플로우:**\n" +
                     "- 기본적으로 판매자와 동일하게 승인 대기(PENDING) 상태로 생성되며, 관리자 승인 후 로그인 가능합니다."
     )
@@ -240,7 +241,10 @@ public interface SellerAuthControllerDocs {
             )
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "크리에이터(쇼룸) 회원가입 정보",
+            description = "크리에이터(쇼룸) 회원가입 정보\n\n" +
+                    "**SNS 정보:**\n" +
+                    "- snsType: SNS 타입 (INSTAGRAM, TIKTOK, X, YOUTUBE)\n" +
+                    "- snsUrl: SNS 프로필/채널 URL",
             required = true,
             content = @Content(
                     mediaType = "application/json",

@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
 
@@ -48,7 +49,12 @@ public class MarketDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SnsLinkRequest {
-        private String snsType; // SNS 종류 (INSTAGRAM, YOUTUBE 등)
+        @Schema(
+                description = "SNS 종류 (INSTAGRAM, TIKTOK, X, YOUTUBE)",
+                example = "INSTAGRAM",
+                allowableValues = {"INSTAGRAM", "TIKTOK", "X", "YOUTUBE"}
+        )
+        private String snsType; // SNS 종류 (INSTAGRAM, TIKTOK, X, YOUTUBE)
         
         // URL 형식 검증 (간단한 예시, 필요 시 정교한 정규식 사용)
         @Pattern(regexp = "^(http|https)://.*$", message = "올바른 URL 형식이 아닙니다.")

@@ -47,9 +47,9 @@ public class UserMarketService {
             }
         }
 
-        // 4. SNS 링크 변환
+        // 4. SNS 링크 변환 (Enum -> String)
         List<MarketDetailResponse.SnsLinkResponse> snsLinks = market.getSnsLinks().stream()
-                .map(sns -> new MarketDetailResponse.SnsLinkResponse(sns.getSnsType(), sns.getSnsUrl()))
+                .map(sns -> new MarketDetailResponse.SnsLinkResponse(sns.getSnsType().name(), sns.getSnsUrl()))
                 .collect(Collectors.toList());
 
         // 5. 응답 생성

@@ -13,6 +13,7 @@ import showroomz.domain.category.entity.Category;
 import showroomz.domain.category.repository.CategoryRepository;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
+import showroomz.domain.market.type.SnsType;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -69,7 +70,7 @@ public class MarketService {
 
         // Entity의 snsLinks를 List<Dto>로 변환
         List<MarketDto.SnsLinkRequest> snsLinks = market.getSnsLinks().stream()
-                .map(sns -> new MarketDto.SnsLinkRequest(sns.getSnsType(), sns.getSnsUrl()))
+                .map(sns -> new MarketDto.SnsLinkRequest(sns.getSnsType().name(), sns.getSnsUrl()))
                 .collect(java.util.stream.Collectors.toList());
 
         Category mainCategory = market.getMainCategory();
@@ -127,7 +128,7 @@ public class MarketService {
         List<MarketDto.SnsLinkRequest> links = request.getSnsLinks();
         if (links != null && !links.isEmpty()) {
             for (MarketDto.SnsLinkRequest linkDto : links) {
-                market.addSnsLink(linkDto.getSnsType(), linkDto.getSnsUrl());
+                market.addSnsLink(SnsType.valueOf(linkDto.getSnsType()), linkDto.getSnsUrl());
             }
         }
         

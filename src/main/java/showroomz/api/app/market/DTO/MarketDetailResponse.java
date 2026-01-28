@@ -1,5 +1,6 @@
 package showroomz.api.app.market.DTO;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -31,6 +32,11 @@ public class MarketDetailResponse {
     @Getter
     @AllArgsConstructor
     public static class SnsLinkResponse {
+        @Schema(
+                description = "SNS 종류 (INSTAGRAM, TIKTOK, X, YOUTUBE)",
+                example = "INSTAGRAM",
+                allowableValues = {"INSTAGRAM", "TIKTOK", "X", "YOUTUBE"}
+        )
         private String snsType;
         private String snsUrl;
     }
