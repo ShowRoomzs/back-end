@@ -10,20 +10,20 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.recommendation.DTO.RecommendationDto;
 
-@Tag(name = "User - Product", description = "사용자 상품 API")
+@Tag(name = "Common - Product", description = "공용 상품 API")
 public interface RecommendationControllerDocs {
 
     @Operation(
-            summary = "사용자 추천 상품 및 쇼룸 조회",
-            description = "로그인한 사용자의 취향에 맞는 상품과 마켓을 통합하여 추천합니다.\n\n" +
+            summary = "비회원/회원 추천 상품 조회",
+            description = "비회원/회원 모두 추천 상품과 마켓을 통합 조회합니다.\n\n" +
                     "**추천 로직:**\n" +
-                    "- 사용자의 성별을 기반으로 추천 (MALE/FEMALE/UNISEX)\n" +
+                    "- 로그인 시 사용자 성별 기반 추천 (MALE/FEMALE/UNISEX)\n" +
+                    "- 비회원은 성별 필터 없이 전체 추천 상품 노출\n" +
+                    "- 비회원은 isWished/isFollowing 등 사용자 필드가 false\n" +
                     "- isRecommended=true인 상품을 우선 노출\n" +
                     "- 최신순 정렬\n\n" +
                     "**응답 구조:**\n" +
@@ -34,8 +34,8 @@ public interface RecommendationControllerDocs {
                     "- categoryId: 카테고리 ID 필터 (선택사항, 마켓과 상품 모두에 적용)\n" +
                     "- page: 페이지 번호 (1부터 시작) - 기본값: 1 (상품용)\n" +
                     "- limit: 페이지당 항목 수 - 기본값: 20 (상품용)\n\n" +
-                    "**권한:** USER\n" +
-                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+                    "**권한:** 비회원/USER\n" +
+                    "**요청 헤더(선택):** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -124,7 +124,6 @@ public interface RecommendationControllerDocs {
             )
     })
     ResponseEntity<RecommendationDto.UnifiedRecommendationResponse> getRecommendations(
-            @AuthenticationPrincipal User principal,
             @Parameter(
                     name = "categoryId",
                     description = "카테고리 ID 필터 (마켓과 상품 모두에 적용)",

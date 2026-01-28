@@ -4,9 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.api.app.recommendation.DTO.RecommendationDto;
 import showroomz.api.app.user.repository.UserRepository;
@@ -19,7 +20,6 @@ import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.type.ProductGender;
 import showroomz.domain.wishlist.repository.WishlistRepository;
-import showroomz.global.error.exception.ErrorCode;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,18 +39,16 @@ public class RecommendationService {
      * 상품 추천 조회
      */
     public RecommendationDto.ProductRecommendationResponse getRecommendedProducts(
-            String username,
             Long categoryId,
             Integer page,
             Integer limit
     ) {
-        // 사용자 조회
-        Users user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        // 사용자 조회 (게스트면 null)
+        Users user = resolveCurrentUser();
 
         // 사용자 성별 변환
         ProductGender userGender = null;
-        if (user.getGender() != null) {
+        if (user != null && user.getGender() != null) {
             try {
                 userGender = ProductGender.valueOf(user.getGender().toUpperCase());
             } catch (IllegalArgumentException e) {
@@ -92,14 +90,12 @@ public class RecommendationService {
      * 마켓 추천 조회
      */
     public RecommendationDto.MarketRecommendationResponse getRecommendedMarkets(
-            String username,
             Long categoryId,
             Integer page,
             Integer limit
     ) {
-        // 사용자 조회
-        Users user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        // 사용자 조회 (게스트면 null)
+        Users user = resolveCurrentUser();
 
         // 페이징 설정
         int pageNumber = (page != null && page > 0) ? page - 1 : 0;
@@ -122,7 +118,9 @@ public class RecommendationService {
 
                     if (market != null) {
                         followerCount = marketFollowRepository.countByMarket(market);
-                        isFollowing = marketFollowRepository.existsByUserAndMarket(user, market);
+                        if (user != null) {
+                            isFollowing = marketFollowRepository.existsByUserAndMarket(user, market);
+                        }
                     }
 
                     return RecommendationDto.MarketRecommendationItem.builder()
@@ -228,18 +226,16 @@ public class RecommendationService {
      * 통합 추천 조회 (마켓 + 상품)
      */
     public RecommendationDto.UnifiedRecommendationResponse getUnifiedRecommendations(
-            String username,
             Long categoryId,
             Integer page,
             Integer limit
     ) {
-        // 사용자 조회
-        Users user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        // 사용자 조회 (게스트면 null)
+        Users user = resolveCurrentUser();
 
         // 사용자 성별 변환
         ProductGender userGender = null;
-        if (user.getGender() != null) {
+        if (user != null && user.getGender() != null) {
             try {
                 userGender = ProductGender.valueOf(user.getGender().toUpperCase());
             } catch (IllegalArgumentException e) {
@@ -270,7 +266,9 @@ public class RecommendationService {
 
                     if (market != null) {
                         followerCount = marketFollowRepository.countByMarket(market);
-                        isFollowing = marketFollowRepository.existsByUserAndMarket(user, market);
+                        if (user != null) {
+                            isFollowing = marketFollowRepository.existsByUserAndMarket(user, market);
+                        }
 
                         // 대표 상품 3개 조회
                         Pageable top3Pageable = PageRequest.of(0, 3);
@@ -333,5 +331,17 @@ public class RecommendationService {
             return 0;
         }
         return Math.min(rounded, 100);
+    }
+
+    private Users resolveCurrentUser() {
+        try {
+            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (principal instanceof User userPrincipal) {
+                return userRepository.findByUsername(userPrincipal.getUsername()).orElse(null);
+            }
+        } catch (Exception ignored) {
+            // guest user
+        }
+        return null;
     }
 }
