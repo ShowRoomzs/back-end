@@ -44,6 +44,10 @@ public class Seller {
     @Size(max = 20)
     private String phoneNumber; // 담당자 연락처
 
+    // 활동명 (관리자 식별용)
+    @Column(name = "ACTIVITY_NAME", length = 100)
+    private String activityName;
+
     @Column(name = "ROLE_TYPE", length = 20)
     @Enumerated(EnumType.STRING)
     @NotNull
@@ -72,6 +76,19 @@ public class Seller {
         this.password = password;
         this.name = name;
         this.phoneNumber = phoneNumber;
+        this.roleType = RoleType.SELLER;
+        this.status = SellerStatus.PENDING; // 기본값을 승인 대기로 설정
+        this.createdAt = now;
+        this.modifiedAt = now;
+    }
+
+    // 생성자 편의 메서드 (활동명 포함)
+    public Seller(String email, String password, String name, String phoneNumber, String activityName, LocalDateTime now) {
+        this.email = email;
+        this.password = password;
+        this.name = name;
+        this.phoneNumber = phoneNumber;
+        this.activityName = activityName;
         this.roleType = RoleType.SELLER;
         this.status = SellerStatus.PENDING; // 기본값을 승인 대기로 설정
         this.createdAt = now;
