@@ -27,3 +27,9 @@ logging:
 sentry:
   traces-sample-rate: 1.0 # 성능 모니터링 샘플링 비율 (프로덕션은 10% 수집 권장)
   environment: production
+  
+  # 아래 예외 클래스들은 Sentry로 전송하지 않음
+  ignored-exceptions-for-type:
+    - org.springframework.web.servlet.resource.NoResourceFoundException
+    - org.springframework.web.HttpMediaTypeNotAcceptableException # 봇 공격 방어용 추가 권장
+    - org.springframework.web.HttpRequestMethodNotSupportedException # 봇 공격 방어용 추가 권장  
