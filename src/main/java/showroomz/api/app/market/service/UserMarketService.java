@@ -62,7 +62,6 @@ public class UserMarketService {
                 .marketUrl(market.getMarketUrl())
                 .mainCategoryId(mainCategory != null ? mainCategory.getCategoryId() : null)
                 .mainCategoryName(mainCategory != null ? mainCategory.getName() : null)
-                .csNumber(market.getCsNumber())
                 .snsLinks(snsLinks)
                 .followerCount(followerCount)
                 .isFollowed(isFollowed)

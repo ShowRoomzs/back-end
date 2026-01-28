@@ -90,7 +90,6 @@ public interface UserMarketControllerDocs {
                     "- `marketUrl`: 마켓 URL\n" +
                     "- `mainCategoryId`: 대표 카테고리 ID\n" +
                     "- `mainCategoryName`: 대표 카테고리명\n" +
-                    "- `csNumber`: 고객센터 번호\n" +
                     "- `snsLinks`: SNS 링크 배열 (각 항목은 `snsType`, `snsUrl` 필드를 포함)\n" +
                     "  - `snsType`: SNS 타입 (INSTAGRAM, TIKTOK, X, YOUTUBE)\n" +
                     "- `followerCount`: 이 마켓을 찜한 유저 수\n" +
@@ -118,7 +117,6 @@ public interface UserMarketControllerDocs {
                                                     "  \"marketUrl\": \"https://www.showroomz.co.kr/shop/showroomz\",\n" +
                                                     "  \"mainCategoryId\": 1,\n" +
                                                     "  \"mainCategoryName\": \"패션/의류\",\n" +
-                                                    "  \"csNumber\": \"1588-0000\",\n" +
                                                     "  \"snsLinks\": [\n" +
                                                     "    {\n" +
                                                     "      \"snsType\": \"INSTAGRAM\",\n" +
@@ -148,7 +146,6 @@ public interface UserMarketControllerDocs {
                                                     "  \"marketUrl\": \"https://www.showroomz.co.kr/shop/showroomz\",\n" +
                                                     "  \"mainCategoryId\": 1,\n" +
                                                     "  \"mainCategoryName\": \"패션/의류\",\n" +
-                                                    "  \"csNumber\": \"1588-0000\",\n" +
                                                     "  \"snsLinks\": [\n" +
                                                     "    {\n" +
                                                     "      \"snsType\": \"INSTAGRAM\",\n" +
