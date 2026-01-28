@@ -91,9 +91,15 @@ public class WishlistService {
      * @param username 사용자명
      * @param page 페이지 번호 (1부터 시작)
      * @param limit 페이지당 항목 수
+     * @param categoryId 카테고리 ID (선택)
      * @return 위시리스트 상품 목록
      */
-    public ProductDto.ProductSearchResponse getWishlist(String username, Integer page, Integer limit) {
+    public ProductDto.ProductSearchResponse getWishlist(
+            String username,
+            Integer page,
+            Integer limit,
+            Long categoryId
+    ) {
         // 사용자 조회
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -104,7 +110,11 @@ public class WishlistService {
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
 
         // 위시리스트 조회 (Fetch Join으로 N+1 문제 방지)
-        Page<Wishlist> wishlistPage = wishlistRepository.findByUserWithProduct(user.getId(), pageable);
+        Page<Wishlist> wishlistPage = wishlistRepository.findByUserWithProduct(
+                user.getId(),
+                categoryId,
+                pageable
+        );
 
         // Product 엔티티 추출
         List<Product> products = wishlistPage.getContent().stream()

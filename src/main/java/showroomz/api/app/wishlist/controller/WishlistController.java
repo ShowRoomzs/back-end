@@ -21,10 +21,11 @@ public class WishlistController implements WishlistControllerDocs {
     public ResponseEntity<ProductDto.ProductSearchResponse> getWishlist(
             @AuthenticationPrincipal User principal,
             @RequestParam(value = "page", required = false) Integer page,
-            @RequestParam(value = "limit", required = false) Integer limit) {
+            @RequestParam(value = "limit", required = false) Integer limit,
+            @RequestParam(value = "categoryId", required = false) Long categoryId) {
 
         ProductDto.ProductSearchResponse response = wishlistService.getWishlist(
-                principal.getUsername(), page, limit);
+                principal.getUsername(), page, limit, categoryId);
         return ResponseEntity.ok(response);
     }
 
