@@ -25,7 +25,8 @@ public interface WishlistControllerDocs {
                     "**정렬:** 최신 찜한 순(위시리스트 생성일 내림차순)\n" +
                     "**페이징 파라미터:**\n" +
                     "- page: 페이지 번호 (1부터 시작) - 기본값: 1\n" +
-                    "- limit: 페이지당 항목 수 - 기본값: 20\n\n" +
+                    "- limit: 페이지당 항목 수 - 기본값: 20\n" +
+                    "- categoryId: 카테고리 ID (선택, 해당 카테고리 상품만 조회)\n\n" +
                     "**응답:**\n" +
                     "- 모든 상품의 isWished 값은 true입니다.\n" +
                     "- ProductSearchResponse 구조를 재사용합니다.\n\n" +
@@ -99,7 +100,12 @@ public interface WishlistControllerDocs {
                     description = "페이지당 항목 수",
                     example = "20"
             )
-            @RequestParam(value = "limit", required = false) Integer limit
+            @RequestParam(value = "limit", required = false) Integer limit,
+            @Parameter(
+                    description = "카테고리 ID (선택, 해당 카테고리 상품만 조회)",
+                    example = "10"
+            )
+            @RequestParam(value = "categoryId", required = false) Long categoryId
     );
 
     @Operation(
