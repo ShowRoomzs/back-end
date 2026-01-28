@@ -14,6 +14,7 @@ import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.DTO.SellerLoginRequest;
 import showroomz.api.seller.auth.DTO.SellerSignUpRequest;
+import showroomz.api.seller.auth.DTO.CreatorSignUpRequest;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
@@ -209,6 +210,60 @@ public interface SellerAuthControllerDocs {
             )
     )
     ResponseEntity<?> registerAdmin(@RequestBody SellerSignUpRequest request);
+
+    @Operation(
+            summary = "크리에이터(쇼룸) 회원가입 요청",
+            description = "크리에이터(쇼룸) 전용 회원가입 API입니다.\n\n" +
+                    "**특징:**\n" +
+                    "- 활동명(activityName)을 함께 저장합니다.\n" +
+                    "- 마켓 타입은 SHOWROOM으로 저장됩니다.\n" +
+                    "- SNS 플랫폼 정보와 URL을 함께 등록합니다.\n\n" +
+                    "**승인 플로우:**\n" +
+                    "- 기본적으로 판매자와 동일하게 승인 대기(PENDING) 상태로 생성되며, 관리자 승인 후 로그인 가능합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "쇼룸 회원가입 신청 성공 - Status: 201 Created",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Map.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "신규 쇼룸 가입 성공 예시",
+                                            value = "{\n" +
+                                                    "  \"message\": \"쇼룸 개설 신청이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "크리에이터(쇼룸) 회원가입 정보",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = CreatorSignUpRequest.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "요청 예시",
+                                    value = "{\n" +
+                                            "  \"email\": \"creator@example.com\",\n" +
+                                            "  \"password\": \"Creator123!\",\n" +
+                                            "  \"passwordConfirm\": \"Creator123!\",\n" +
+                                            "  \"sellerName\": \"김창작\",\n" +
+                                            "  \"sellerContact\": \"010-1234-5678\",\n" +
+                                            "  \"marketName\": \"myshowroom\",\n" +
+                                            "  \"activityName\": \"뷰티크리에이터\",\n" +
+                                            "  \"snsType\": \"INSTAGRAM\",\n" +
+                                            "  \"snsUrl\": \"https://instagram.com/my_id\"\n" +
+                                            "}"
+                            )
+                    }
+            )
+    )
+    ResponseEntity<?> registerCreator(@RequestBody CreatorSignUpRequest request);
 
     @Operation(
             summary = "이메일 중복 체크",
