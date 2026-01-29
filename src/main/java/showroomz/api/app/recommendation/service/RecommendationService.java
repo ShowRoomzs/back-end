@@ -20,6 +20,7 @@ import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.type.ProductGender;
 import showroomz.domain.wishlist.repository.WishlistRepository;
+import showroomz.domain.category.service.CategoryHierarchyService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,6 +35,7 @@ public class RecommendationService {
     private final MarketFollowRepository marketFollowRepository;
     private final UserRepository userRepository;
     private final WishlistRepository wishlistRepository;
+    private final CategoryHierarchyService categoryHierarchyService;
 
     /**
      * 상품 추천 조회
@@ -61,9 +63,11 @@ public class RecommendationService {
         int pageSize = (limit != null && limit > 0) ? limit : 20;
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
 
+        List<Long> categoryIds = resolveCategoryIds(categoryId);
+
         // 추천 상품 조회
         Page<Product> productPage = productRepository.findRecommendedProducts(
-                categoryId, userGender, pageable);
+                categoryIds, userGender, pageable);
 
         // ProductItem DTO 변환
         List<ProductDto.ProductItem> productItems = productPage.getContent().stream()
@@ -252,6 +256,7 @@ public class RecommendationService {
         Pageable marketPageable = PageRequest.of(0, 20);
         Page<showroomz.api.app.market.DTO.MarketListResponse> marketPage = marketRepository.findRecommendedMarkets(
                 categoryId, SellerStatus.APPROVED, marketPageable);
+        List<Long> categoryIds = resolveCategoryIds(categoryId);
 
         // 마켓 추천 항목 변환 (대표 상품 3개 포함)
         List<RecommendationDto.MarketRecommendationItem> marketItems = marketPage.getContent().stream()
@@ -273,7 +278,7 @@ public class RecommendationService {
                         // 대표 상품 3개 조회
                         Pageable top3Pageable = PageRequest.of(0, 3);
                         List<Product> top3Products = productRepository.findTop3RepresentativeProductsByMarket(
-                                market.getId(), categoryId, top3Pageable);
+                                market.getId(), categoryIds, top3Pageable);
                         representativeProducts = top3Products.stream()
                                 .map(product -> convertToProductItem(product, user))
                                 .collect(Collectors.toList());
@@ -294,7 +299,7 @@ public class RecommendationService {
 
         // 추천 상품 조회
         Page<Product> productPage = productRepository.findRecommendedProducts(
-                categoryId, userGender, productPageable);
+                categoryIds, userGender, productPageable);
 
         // ProductItem DTO 변환
         List<ProductDto.ProductItem> productItems = productPage.getContent().stream()
@@ -343,5 +348,16 @@ public class RecommendationService {
             // guest user
         }
         return null;
+    }
+
+    private List<Long> resolveCategoryIds(Long categoryId) {
+        if (categoryId == null) {
+            return null;
+        }
+        try {
+            return categoryHierarchyService.getAllSubCategoryIds(categoryId);
+        } catch (Exception e) {
+            return List.of(categoryId);
+        }
     }
 }

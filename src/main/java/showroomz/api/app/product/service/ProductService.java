@@ -26,7 +26,7 @@ import showroomz.domain.product.repository.ProductFilterCriteria;
 import showroomz.domain.product.repository.ProductOptionGroupRepository;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.repository.ProductVariantRepository;
-import showroomz.api.seller.category.service.CategoryService;
+import showroomz.domain.category.service.CategoryHierarchyService;
 import showroomz.domain.wishlist.repository.WishlistRepository;
 import showroomz.api.app.wishlist.service.WishlistService;
 import showroomz.api.app.auth.exception.BusinessException;
@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository productRepository;
-    private final CategoryService categoryService;
+    private final CategoryHierarchyService categoryHierarchyService;
     private final FilterRepository filterRepository;
     private final ProductOptionGroupRepository productOptionGroupRepository;
     private final ProductVariantRepository productVariantRepository;
@@ -77,7 +77,7 @@ public class ProductService {
         List<Long> categoryIds = null;
         if (categoryId != null) {
             try {
-                categoryIds = categoryService.getAllSubCategoryIds(categoryId);
+                categoryIds = categoryHierarchyService.getAllSubCategoryIds(categoryId);
             } catch (Exception e) {
                 log.warn("카테고리 조회 실패: {}", categoryId, e);
                 categoryIds = List.of(categoryId);
@@ -193,11 +193,20 @@ public class ProductService {
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
 
         Long categoryId = product.getCategory() != null ? product.getCategory().getCategoryId() : null;
+        List<Long> categoryIds = null;
+        if (categoryId != null) {
+            try {
+                categoryIds = categoryHierarchyService.getAllSubCategoryIds(categoryId);
+            } catch (Exception e) {
+                log.warn("카테고리 조회 실패: {}", categoryId, e);
+                categoryIds = List.of(categoryId);
+            }
+        }
         ProductGender gender = product.getGender();
 
         Page<Product> relatedPage = productRepository.findRelatedProducts(
                 productId,
-                categoryId,
+                categoryIds,
                 gender,
                 pageable
         );

@@ -91,11 +91,11 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
            "LEFT JOIN FETCH p.category " +
            "WHERE p.market.id = :marketId " +
            "AND p.isDisplay = true " +
-           "AND (:categoryId IS NULL OR p.category.categoryId = :categoryId) " +
+           "AND (:categoryIds IS NULL OR p.category.categoryId IN :categoryIds) " +
            "ORDER BY p.isRecommended DESC, p.createdAt DESC")
     List<Product> findTop3RepresentativeProductsByMarket(
             @Param("marketId") Long marketId,
-            @Param("categoryId") Long categoryId,
+            @Param("categoryIds") List<Long> categoryIds,
             Pageable pageable
     );
 

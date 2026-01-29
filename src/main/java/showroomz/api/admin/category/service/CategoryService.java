@@ -12,6 +12,7 @@ import showroomz.api.admin.filter.service.FilterService;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.category.repository.CategoryRepository;
+import showroomz.domain.category.service.CategoryHierarchyService;
 import showroomz.domain.filter.entity.CategoryFilter;
 import showroomz.domain.filter.entity.Filter;
 import showroomz.domain.filter.entity.FilterValue;
@@ -28,6 +29,7 @@ import showroomz.domain.product.repository.ProductRepository;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final CategoryHierarchyService categoryHierarchyService;
     private final ProductRepository productRepository;
     private final MarketRepository marketRepository;
     private final CategoryFilterRepository categoryFilterRepository;
@@ -58,13 +60,15 @@ public class CategoryService {
         @SuppressWarnings("null")
         Category savedCategory = categoryRepository.save(category);
 
-        return CategoryDto.CreateCategoryResponse.builder()
+        CategoryDto.CreateCategoryResponse response = CategoryDto.CreateCategoryResponse.builder()
                 .categoryId(savedCategory.getCategoryId())
                 .name(savedCategory.getName())
                 .order(savedCategory.getOrder())
                 .parentId(savedCategory.getParent() != null ? savedCategory.getParent().getCategoryId() : null)
                 .message("카테고리가 성공적으로 생성되었습니다.")
                 .build();
+        categoryHierarchyService.refreshCategoryHierarchy();
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -133,7 +137,7 @@ public class CategoryService {
             filterService.syncCategoryFilters(categoryId, syncRequest);
         }
 
-        return CategoryDto.UpdateCategoryResponse.builder()
+        CategoryDto.UpdateCategoryResponse response = CategoryDto.UpdateCategoryResponse.builder()
                 .categoryId(savedCategory.getCategoryId())
                 .name(savedCategory.getName())
                 .order(savedCategory.getOrder())
@@ -141,6 +145,8 @@ public class CategoryService {
                 .parentId(savedCategory.getParent() != null ? savedCategory.getParent().getCategoryId() : null)
                 .message("카테고리가 성공적으로 수정되었습니다.")
                 .build();
+        categoryHierarchyService.refreshCategoryHierarchy();
+        return response;
     }
 
     @Transactional
@@ -150,7 +156,7 @@ public class CategoryService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
 
         // 해당 카테고리와 모든 하위 카테고리를 사용하는 상품 조회
-        java.util.List<Long> categoryIdsToCheck = getAllCategoryIdsIncludingChildren(category);
+        java.util.List<Long> categoryIdsToCheck = categoryHierarchyService.getAllSubCategoryIds(category.getCategoryId());
         
         for (Long id : categoryIdsToCheck) {
             // 1. 상품 사용 여부 체크
@@ -173,21 +179,7 @@ public class CategoryService {
         @SuppressWarnings("null")
         Category deleteTarget = category;
         categoryRepository.delete(deleteTarget);
-    }
-    
-    /**
-     * 카테고리와 모든 하위 카테고리 ID를 재귀적으로 수집
-     */
-    private java.util.List<Long> getAllCategoryIdsIncludingChildren(Category category) {
-        java.util.List<Long> categoryIds = new java.util.ArrayList<>();
-        categoryIds.add(category.getCategoryId());
-        
-        // 하위 카테고리들을 재귀적으로 수집
-        for (Category child : category.getChildren()) {
-            categoryIds.addAll(getAllCategoryIdsIncludingChildren(child));
-        }
-        
-        return categoryIds;
+        categoryHierarchyService.refreshCategoryHierarchy();
     }
     
     /**
@@ -198,10 +190,7 @@ public class CategoryService {
      */
     @Transactional(readOnly = true)
     public java.util.List<Long> getAllSubCategoryIds(Long categoryId) {
-        Category category = categoryRepository.findByCategoryId(categoryId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
-        
-        return getAllCategoryIdsIncludingChildren(category);
+        return categoryHierarchyService.getAllSubCategoryIds(categoryId);
     }
 
     private java.util.List<CategoryDto.FilterInfo> getFiltersForCategory(Long categoryId) {
