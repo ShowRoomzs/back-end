@@ -91,6 +91,16 @@ public class ProductController implements UserProductControllerDocs {
         return ResponseEntity.ok(response);
     }
 
+    @Override
+    @GetMapping("/{productId}/variants/{variantId}")
+    public ResponseEntity<ProductDto.ProductVariantStockResponse> getVariantStock(
+            @PathVariable Long productId,
+            @PathVariable Long variantId
+    ) {
+        ProductDto.ProductVariantStockResponse response = productService.getVariantStock(productId, variantId);
+        return ResponseEntity.ok(response);
+    }
+
     private Users resolveCurrentUser() {
         try {
             Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();

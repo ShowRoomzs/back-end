@@ -240,6 +240,47 @@ public interface UserProductControllerDocs {
     );
 
     @Operation(
+            summary = "비회원/회원 옵션별 실시간 상품 재고 조회",
+            description = "상품 ID와 옵션(Variant) ID로 재고 및 가격 정보를 조회합니다.\n\n" +
+                    "**참고사항:**\n" +
+                    "- 비회원도 조회 가능합니다.\n" +
+                    "- 옵션이 해당 상품에 속하지 않는 경우 오류가 발생합니다.\n\n" +
+                    "**권한:** 선택사항 (게스트 가능)"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProductDto.ProductVariantStockResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "상품 또는 옵션을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "옵션이 상품에 속하지 않음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<ProductDto.ProductVariantStockResponse> getVariantStock(
+            @Parameter(description = "상품 ID", required = true)
+            @PathVariable Long productId,
+            @Parameter(description = "옵션(Variant) ID", required = true)
+            @PathVariable Long variantId
+    );
+
+    @Operation(
             summary = "비회원/회원 연관 상품 조회",
             description = "특정 상품과 연관된 상품 목록을 조회합니다.\n\n" +
                     "**추천 기준:**\n" +
