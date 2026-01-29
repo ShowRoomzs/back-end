@@ -71,17 +71,17 @@ public interface UserProductControllerDocs {
                                                     "        \"maxBenefitPrice\": 31000\n" +
                                                     "      },\n" +
                                                     "      \"discountRate\": 70,\n" +
-                                                    "      \"purchasePrice\": 30000,\n" +
-                                                    "      \"gender\": \"UNISEX\",\n" +
-                                                    "      \"isDisplay\": true,\n" +
-                                                    "      \"isRecommended\": false,\n" +
-                                                    "      \"productNotice\": \"{\\\"origin\\\":\\\"한국\\\"}\",\n" +
-                                                    "      \"description\": \"<p>상품 상세 설명</p>\",\n" +
-                                                    "      \"tags\": \"[\\\"신상\\\", \\\"할인\\\"]\",\n" +
-                                                    "      \"deliveryType\": \"STANDARD\",\n" +
-                                                    "      \"deliveryFee\": 3000,\n" +
-                                                    "      \"deliveryFreeThreshold\": 50000,\n" +
-                                                    "      \"deliveryEstimatedDays\": 3,\n" +
+"      \"purchasePrice\": 30000,\n" +
+"      \"gender\": \"UNISEX\",\n" +
+"      \"isDisplay\": true,\n" +
+"      \"isRecommended\": false,\n" +
+"      \"productNotice\": \"{\\\"origin\\\":\\\"한국\\\"}\",\n" +
+"      \"description\": \"<p>상품 상세 설명</p>\",\n" +
+"      \"tags\": \"[\\\"신상\\\", \\\"할인\\\"]\",\n" +
+"      \"deliveryType\": \"STANDARD\",\n" +
+"      \"deliveryFee\": 3000,\n" +
+"      \"deliveryFreeThreshold\": 50000,\n" +
+"      \"deliveryEstimatedDays\": 3,\n" +
                                                     "      \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
                                                     "      \"status\": {\n" +
                                                     "        \"isOutOfStock\": false,\n" +
