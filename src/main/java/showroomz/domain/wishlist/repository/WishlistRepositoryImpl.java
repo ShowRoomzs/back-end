@@ -24,7 +24,7 @@ public class WishlistRepositoryImpl implements WishlistRepositoryCustom {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<Wishlist> findByUserWithProduct(Long userId, Long categoryId, Pageable pageable) {
+    public Page<Wishlist> findByUserWithProduct(Long userId, List<Long> categoryIds, Pageable pageable) {
         List<Wishlist> content = Objects.requireNonNullElse(
                 queryFactory
                 .selectFrom(wishlist)
@@ -34,7 +34,7 @@ public class WishlistRepositoryImpl implements WishlistRepositoryCustom {
                 .leftJoin(product.market, market).fetchJoin()
                 .where(
                         wishlist.user.id.eq(userId),
-                        eqCategoryId(categoryId)
+                        inCategoryIds(categoryIds)
                 )
                 .orderBy(wishlist.createdAt.desc())
                 .offset(pageable.getOffset())
@@ -50,7 +50,7 @@ public class WishlistRepositoryImpl implements WishlistRepositoryCustom {
                 .join(wishlist.product, product)
                 .where(
                         wishlist.user.id.eq(userId),
-                        eqCategoryId(categoryId)
+                        inCategoryIds(categoryIds)
                 );
 
         @SuppressWarnings("null")
@@ -58,7 +58,9 @@ public class WishlistRepositoryImpl implements WishlistRepositoryCustom {
         return page;
     }
 
-    private BooleanExpression eqCategoryId(Long categoryId) {
-        return categoryId != null ? product.category.categoryId.eq(categoryId) : null;
+    private BooleanExpression inCategoryIds(List<Long> categoryIds) {
+        return categoryIds != null && !categoryIds.isEmpty()
+                ? product.category.categoryId.in(categoryIds)
+                : null;
     }
 }

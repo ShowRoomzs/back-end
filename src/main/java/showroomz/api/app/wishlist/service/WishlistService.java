@@ -12,6 +12,7 @@ import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductRepository;
+import showroomz.domain.category.service.CategoryHierarchyService;
 import showroomz.domain.wishlist.entitiy.Wishlist;
 import showroomz.domain.wishlist.repository.WishlistRepository;
 import showroomz.global.error.exception.ErrorCode;
@@ -27,6 +28,7 @@ public class WishlistService {
     private final WishlistRepository wishlistRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final CategoryHierarchyService categoryHierarchyService;
 
     /**
      * 위시리스트 추가 (멱등성 보장)
@@ -109,10 +111,19 @@ public class WishlistService {
         int pageSize = (limit != null && limit > 0) ? limit : 20;
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
 
+        List<Long> categoryIds = null;
+        if (categoryId != null) {
+            try {
+                categoryIds = categoryHierarchyService.getAllSubCategoryIds(categoryId);
+            } catch (Exception e) {
+                categoryIds = List.of(categoryId);
+            }
+        }
+
         // 위시리스트 조회 (Fetch Join으로 N+1 문제 방지)
         Page<Wishlist> wishlistPage = wishlistRepository.findByUserWithProduct(
                 user.getId(),
-                categoryId,
+                categoryIds,
                 pageable
         );
 
