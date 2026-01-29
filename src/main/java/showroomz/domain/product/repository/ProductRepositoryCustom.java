@@ -18,13 +18,13 @@ public interface ProductRepositoryCustom {
 
     Page<Product> findRelatedProducts(
             Long productId,
-            Long categoryId,
+            List<Long> categoryIds,
             ProductGender gender,
             Pageable pageable
     );
 
     Page<Product> findRecommendedProducts(
-            Long categoryId,
+            List<Long> categoryIds,
             ProductGender userGender,
             Pageable pageable
     );

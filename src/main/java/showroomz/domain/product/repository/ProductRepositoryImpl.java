@@ -96,11 +96,11 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
     @Override
     public Page<Product> findRelatedProducts(
             Long productId,
-            Long categoryId,
+            List<Long> categoryIds,
             ProductGender gender,
             Pageable pageable
     ) {
-        if (productId == null || (categoryId == null && gender == null)) {
+        if (productId == null || ((categoryIds == null || categoryIds.isEmpty()) && gender == null)) {
             @SuppressWarnings("null")
             PageImpl<Product> emptyPage = new PageImpl<>(List.of(), pageable, 0);
             return emptyPage;
@@ -112,8 +112,8 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         where.and(product.productId.ne(productId));
 
         BooleanBuilder related = new BooleanBuilder();
-        if (categoryId != null) {
-            related.or(product.category.categoryId.eq(categoryId));
+        if (categoryIds != null && !categoryIds.isEmpty()) {
+            related.or(product.category.categoryId.in(categoryIds));
         }
         if (gender != null) {
             related.or(product.gender.eq(gender));
@@ -122,7 +122,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
 
         JPAQuery<Product> query = queryFactory.selectFrom(product)
                 .where(where)
-                .orderBy(getRelatedOrderSpecifiers(categoryId, product))
+                .orderBy(getRelatedOrderSpecifiers(categoryIds, product))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize());
 
@@ -168,11 +168,11 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         };
     }
 
-    private OrderSpecifier<?>[] getRelatedOrderSpecifiers(Long categoryId, QProduct product) {
-        if (categoryId != null) {
+    private OrderSpecifier<?>[] getRelatedOrderSpecifiers(List<Long> categoryIds, QProduct product) {
+        if (categoryIds != null && !categoryIds.isEmpty()) {
             return new OrderSpecifier<?>[]{
                     new CaseBuilder()
-                            .when(product.category.categoryId.eq(categoryId)).then(1)
+                            .when(product.category.categoryId.in(categoryIds)).then(1)
                             .otherwise(0)
                             .desc(),
                     product.isRecommended.desc(),
@@ -268,7 +268,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
 
     @Override
     public Page<Product> findRecommendedProducts(
-            Long categoryId,
+            List<Long> categoryIds,
             ProductGender userGender,
             Pageable pageable
     ) {
@@ -278,8 +278,8 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         where.and(product.isDisplay.isTrue());
 
         // 카테고리 필터
-        if (categoryId != null) {
-            where.and(product.category.categoryId.eq(categoryId));
+        if (categoryIds != null && !categoryIds.isEmpty()) {
+            where.and(product.category.categoryId.in(categoryIds));
         }
 
         // 성별 필터: 사용자 성별에 맞는 상품 또는 UNISEX 상품
