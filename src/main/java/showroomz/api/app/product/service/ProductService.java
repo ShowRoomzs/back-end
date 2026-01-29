@@ -177,6 +177,38 @@ public class ProductService {
     }
 
     /**
+     * 옵션별 재고 및 가격 조회
+     */
+    public ProductDto.ProductVariantStockResponse getVariantStock(Long productId, Long variantId) {
+        Product product = productRepository.findByProductId(productId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        ProductVariant variant = productVariantRepository.findByVariantId(variantId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.VARIANT_NOT_FOUND));
+
+        if (variant.getProduct() == null || !variant.getProduct().getProductId().equals(product.getProductId())) {
+            throw new BusinessException(ErrorCode.INVALID_VARIANT_OPTIONS);
+        }
+
+        Integer regularPrice = variant.getRegularPrice();
+        Integer salePrice = variant.getSalePrice();
+        Integer discountRate = calculateDiscountRate(regularPrice, salePrice);
+        ProductDto.PriceInfo priceInfo = ProductDto.PriceInfo.builder()
+                .regularPrice(regularPrice)
+                .discountRate(discountRate)
+                .salePrice(salePrice)
+                .maxBenefitPrice(salePrice)
+                .build();
+
+        return ProductDto.ProductVariantStockResponse.builder()
+                .productId(product.getProductId())
+                .variantId(variant.getVariantId())
+                .stock(variant.getStock())
+                .price(priceInfo)
+                .build();
+    }
+
+    /**
      * 사용자용 연관 상품 조회
      */
     public ProductDto.ProductSearchResponse getRelatedProducts(

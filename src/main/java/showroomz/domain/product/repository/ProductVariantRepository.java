@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import showroomz.domain.product.entity.ProductVariant;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ProductVariantRepository extends JpaRepository<ProductVariant, Long> {
@@ -14,4 +15,6 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
            "LEFT JOIN FETCH v.options " +
            "WHERE v.product.productId = :productId")
     List<ProductVariant> findByProductIdWithOptions(@Param("productId") Long productId);
+
+    Optional<ProductVariant> findByVariantId(Long variantId);
 }

@@ -289,6 +289,26 @@ public class ProductDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
+    @Schema(description = "옵션별 재고/가격 조회 응답")
+    public static class ProductVariantStockResponse {
+        @Schema(description = "상품 ID", example = "1024")
+        private Long productId;
+
+        @Schema(description = "옵션(Variant) ID", example = "1")
+        private Long variantId;
+
+        @Schema(description = "재고 수량", example = "10")
+        private Integer stock;
+
+        @Schema(description = "가격 정보")
+        private PriceInfo price;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
     @Schema(description = "옵션 그룹 정보")
     public static class OptionGroupInfo {
         @Schema(description = "옵션 그룹 ID", example = "1")

@@ -58,6 +58,7 @@ public class SecurityConfig {
 
             // 공용 상품 목록 조회 (비회원 허용)
             "/v1/common/products",
+            "/v1/common/products/**",
 
             // 공용 카테고리 조회 (비회원 허용)
             "/v1/common/categories/**",
