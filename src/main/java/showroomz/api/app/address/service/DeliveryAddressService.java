@@ -31,6 +31,13 @@ public class DeliveryAddressService {
                 .collect(Collectors.toList());
     }
 
+    // 배송지 개별 조회
+    public DeliveryAddressDto.Response getAddressDetail(String username, Long addressId) {
+        Users user = getUserByUsername(username);
+        DeliveryAddress address = getAddress(addressId, user);
+        return DeliveryAddressDto.Response.from(address);
+    }
+
     // 1. 배송지 추가
     @Transactional
     public void addAddress(String username, DeliveryAddressDto.Request request) {

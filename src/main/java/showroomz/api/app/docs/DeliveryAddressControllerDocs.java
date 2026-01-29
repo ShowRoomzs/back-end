@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -104,6 +105,85 @@ public interface DeliveryAddressControllerDocs {
             )
     })
     ResponseEntity<List<DeliveryAddressDto.Response>> getAddressList();
+
+    @Operation(
+            summary = "배송지 개별 조회",
+            description = "배송지 ID로 단일 배송지 정보를 조회합니다.\n\n" +
+                    "- 본인이 등록한 배송지만 조회할 수 있습니다.\n" +
+                    "**권한:** USER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공 - Status: 200 OK",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = DeliveryAddressDto.Response.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 시",
+                                            value = "{\n" +
+                                                    "  \"id\": 1,\n" +
+                                                    "  \"recipientName\": \"홍길동\",\n" +
+                                                    "  \"zipCode\": \"12345\",\n" +
+                                                    "  \"address\": \"서울특별시 강남구 테헤란로 123\",\n" +
+                                                    "  \"detailAddress\": \"101동 101호\",\n" +
+                                                    "  \"phoneNumber\": \"010-1234-5678\",\n" +
+                                                    "  \"isDefault\": true\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "해당 배송지에 대한 권한 없음 - Status: 403 Forbidden",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "권한 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ADDRESS_ACCESS_DENIED\",\n" +
+                                                    "  \"message\": \"해당 배송지에 대한 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "배송지를 찾을 수 없음 - Status: 404 Not Found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "배송지 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ADDRESS_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 배송지입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    @GetMapping("/{addressId}")
+    ResponseEntity<DeliveryAddressDto.Response> getAddressDetail(
+            @Parameter(description = "조회할 배송지 ID", required = true, example = "1", in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH)
+            @PathVariable("addressId") Long addressId
+    );
 
     @Operation(
             summary = "배송지 추가",

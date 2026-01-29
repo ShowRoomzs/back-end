@@ -36,6 +36,16 @@ public class DeliveryAddressController implements DeliveryAddressControllerDocs 
     }
 
     @Override
+    public ResponseEntity<DeliveryAddressDto.Response> getAddressDetail(@PathVariable("addressId") Long addressId) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal == null || !(principal instanceof User)) {
+            throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
+        }
+        User springUser = (User) principal;
+        return ResponseEntity.ok(deliveryAddressService.getAddressDetail(springUser.getUsername(), addressId));
+    }
+
+    @Override
     // 1. 배송지 추가
     @PostMapping
     public ResponseEntity<Void> addAddress(@Valid @RequestBody DeliveryAddressDto.Request request) {
