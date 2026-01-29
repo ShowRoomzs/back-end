@@ -23,7 +23,7 @@ import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.api.seller.market.service.MarketService;
 import showroomz.domain.market.entity.Market;
-import showroomz.domain.market.type.MarketType;
+import showroomz.domain.market.type.ShopType;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.config.properties.AppProperties;
@@ -133,7 +133,7 @@ public class SellerService {
 
         // 5. Market 생성 (타입: SHOWROOM, CS 번호는 개인 연락처 사용)
         Market market = new Market(savedSeller, request.getMarketName(), request.getSellerContact());
-        market.setMarketType(MarketType.SHOWROOM); // 크리에이터(쇼룸) 타입
+        market.setMarketType(ShopType.SHOWROOM); // 크리에이터(쇼룸) 타입
 
         // 6. SNS 링크 추가 (요청의 enum 직접 사용)
         market.addSnsLink(request.getSnsType(), request.getSnsUrl());
@@ -200,7 +200,7 @@ public class SellerService {
         // Market 정보 및 SNS 정보 업데이트
         market.setMarketName(request.getMarketName());
         market.setCsNumber(request.getSellerContact());
-        market.setMarketType(MarketType.SHOWROOM);
+        market.setMarketType(ShopType.SHOWROOM);
         market.clearSnsLinks();
         market.addSnsLink(request.getSnsType(), request.getSnsUrl());
 
@@ -349,14 +349,23 @@ public class SellerService {
         long accessTokenExpiresInSeconds = accessTokenExpiry / 1000;
         long refreshTokenExpiresInSeconds = appProperties.getAuth().getRefreshTokenExpiry() / 1000;
 
-        // 8. 응답 반환 (마지막 인자에 role 추가)
+        // 8. 응답 반환 (마지막 인자에 role, marketType 추가)
+        String marketType = null;
+        if (admin.getRoleType() == RoleType.SELLER) {
+            Market market = marketRepository.findBySeller(admin).orElse(null);
+            if (market != null && market.getMarketType() != null) {
+                marketType = market.getMarketType().name();
+            }
+        }
+
         return new TokenResponse(
                 newAccessToken.getToken(),
                 refreshTokenStr,
                 accessTokenExpiresInSeconds,
                 refreshTokenExpiresInSeconds,
                 false,
-                admin.getRoleType().toString() // "ADMIN" 또는 "SELLER" 문자열 반환
+                admin.getRoleType().toString(), // "ADMIN" 또는 "SELLER" 문자열 반환
+                marketType
         );
     }
 
@@ -474,13 +483,23 @@ public class SellerService {
         long accessTokenExpiresInSeconds = accessTokenExpiry / 1000;
         long refreshTokenExpiresInSeconds = refreshTokenExpiry / 1000;
 
+        // 판매자인 경우에만 마켓 타입 조회 (어드민은 null 반환)
+        String marketType = null;
+        if (admin.getRoleType() == RoleType.SELLER) {
+            Market market = marketRepository.findBySeller(admin).orElse(null);
+            if (market != null && market.getMarketType() != null) {
+                marketType = market.getMarketType().name();
+            }
+        }
+
         return new TokenResponse(
                 accessToken.getToken(),
                 refreshToken.getToken(),
                 accessTokenExpiresInSeconds,
                 refreshTokenExpiresInSeconds,
                 false,
-                admin.getRoleType().toString() // 여기서 권한을 넘겨줌
+                admin.getRoleType().toString(), // 여기서 권한을 넘겨줌
+                marketType
         );
     }
 

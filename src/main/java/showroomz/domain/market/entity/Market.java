@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.member.seller.entity.Seller;
-import showroomz.domain.market.type.MarketType;
+import showroomz.domain.market.type.ShopType;
 import showroomz.domain.market.type.SnsType;
 
 import java.util.ArrayList;
@@ -37,7 +37,7 @@ public class Market {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "MARKET_TYPE")
-    private MarketType marketType; // MARKET or INFLUENCER
+    private ShopType marketType; // MARKET or INFLUENCER
 
     // 마켓 정보 필드
     @Column(name = "MARKET_IMAGE_URL", length = 512)
