@@ -53,6 +53,7 @@ public class DeliveryAddressDto {
         private String address;
         private String detailAddress;
         private String phoneNumber;
+        @JsonProperty("isDefault")
         private boolean isDefault;
 
         public static Response from(DeliveryAddress entity) {
