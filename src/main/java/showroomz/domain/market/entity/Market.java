@@ -36,8 +36,8 @@ public class Market {
     private String csNumber;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "MARKET_TYPE")
-    private ShopType marketType; // MARKET or INFLUENCER
+    @Column(name = "SHOP_TYPE")
+    private ShopType shopType; // MARKET or SHOWROOM
 
     // 마켓 정보 필드
     @Column(name = "MARKET_IMAGE_URL", length = 512)

@@ -133,7 +133,7 @@ public class SellerService {
 
         // 5. Market 생성 (타입: SHOWROOM, CS 번호는 개인 연락처 사용)
         Market market = new Market(savedSeller, request.getMarketName(), request.getSellerContact());
-        market.setMarketType(ShopType.SHOWROOM); // 크리에이터(쇼룸) 타입
+        market.setShopType(ShopType.SHOWROOM); // 크리에이터(쇼룸) 타입
 
         // 6. SNS 링크 추가 (요청의 enum 직접 사용)
         market.addSnsLink(request.getSnsType(), request.getSnsUrl());
@@ -200,7 +200,7 @@ public class SellerService {
         // Market 정보 및 SNS 정보 업데이트
         market.setMarketName(request.getMarketName());
         market.setCsNumber(request.getSellerContact());
-        market.setMarketType(ShopType.SHOWROOM);
+        market.setShopType(ShopType.SHOWROOM);
         market.clearSnsLinks();
         market.addSnsLink(request.getSnsType(), request.getSnsUrl());
 
@@ -349,12 +349,12 @@ public class SellerService {
         long accessTokenExpiresInSeconds = accessTokenExpiry / 1000;
         long refreshTokenExpiresInSeconds = appProperties.getAuth().getRefreshTokenExpiry() / 1000;
 
-        // 8. 응답 반환 (마지막 인자에 role, marketType 추가)
-        String marketType = null;
+        // 8. 응답 반환 (마지막 인자에 role, shopType 추가)
+        String shopType = null;
         if (admin.getRoleType() == RoleType.SELLER) {
             Market market = marketRepository.findBySeller(admin).orElse(null);
-            if (market != null && market.getMarketType() != null) {
-                marketType = market.getMarketType().name();
+            if (market != null && market.getShopType() != null) {
+                shopType = market.getShopType().name();
             }
         }
 
@@ -365,7 +365,7 @@ public class SellerService {
                 refreshTokenExpiresInSeconds,
                 false,
                 admin.getRoleType().toString(), // "ADMIN" 또는 "SELLER" 문자열 반환
-                marketType
+                shopType
         );
     }
 
@@ -483,12 +483,12 @@ public class SellerService {
         long accessTokenExpiresInSeconds = accessTokenExpiry / 1000;
         long refreshTokenExpiresInSeconds = refreshTokenExpiry / 1000;
 
-        // 판매자인 경우에만 마켓 타입 조회 (어드민은 null 반환)
-        String marketType = null;
+        // 판매자인 경우에만 샵 타입 조회 (어드민은 null 반환)
+        String shopType = null;
         if (admin.getRoleType() == RoleType.SELLER) {
             Market market = marketRepository.findBySeller(admin).orElse(null);
-            if (market != null && market.getMarketType() != null) {
-                marketType = market.getMarketType().name();
+            if (market != null && market.getShopType() != null) {
+                shopType = market.getShopType().name();
             }
         }
 
@@ -499,7 +499,7 @@ public class SellerService {
                 refreshTokenExpiresInSeconds,
                 false,
                 admin.getRoleType().toString(), // 여기서 권한을 넘겨줌
-                marketType
+                shopType
         );
     }
 

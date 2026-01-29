@@ -319,6 +319,8 @@ public interface SellerAuthControllerDocs {
     @Operation(
             summary = "판매자 로그인",
             description = "이메일과 비밀번호로 판매자 계정에 로그인합니다.\n\n" +
+                    "**응답:**\n" +
+                    "- `shopType`: 판매자 마켓의 샵 타입 (MARKET: 일반 브랜드, SHOWROOM: 크리에이터)\n\n" +
                     "**제약사항:**\n" +
                     "- 승인 완료(APPROVED)된 계정만 로그인할 수 있습니다.\n" +
                     "- 승인 대기(PENDING) 또는 반려(REJECTED)된 계정은 403 Forbidden 에러가 발생합니다.\n" +
@@ -341,7 +343,8 @@ public interface SellerAuthControllerDocs {
                                                     "  \"accessTokenExpiresIn\": 3600,\n" +
                                                     "  \"refreshTokenExpiresIn\": 1209600,\n" +
                                                     "  \"isNewMember\": false,\n" +
-                                                    "  \"role\": \"SELLER\"\n" +
+                                                    "  \"role\": \"SELLER\",\n" +
+                                                    "  \"shopType\": \"MARKET\"\n" +
                                                     "}"
                                     )
                             }
@@ -471,7 +474,8 @@ public interface SellerAuthControllerDocs {
                                                     "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...\",\n" +
                                                     "  \"accessTokenExpiresIn\": 3600,\n" +
                                                     "  \"refreshTokenExpiresIn\": 1209600,\n" +
-                                                    "  \"role\": \"SELLER\"\n" +
+                                                    "  \"role\": \"SELLER\",\n" +
+                                                    "  \"shopType\": \"MARKET\"\n" +
                                                     "}"
                                     )
                             }

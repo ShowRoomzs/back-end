@@ -89,7 +89,7 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
      * - 수정됨: LEFT JOIN을 사용하여 mainCategory가 null인 마켓도 포함
      */
     @Query("SELECT new showroomz.api.app.market.DTO.MarketListResponse(" +
-           "m.id, m.marketName, m.marketImageUrl, c.categoryId, c.name) " +
+           "m.id, m.marketName, m.marketImageUrl, c.categoryId, c.name, m.shopType) " +
            "FROM Market m " +
            "JOIN m.seller s " +
            "LEFT JOIN m.mainCategory c " +
@@ -114,14 +114,14 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
      * - isRecommended=true인 상품이 있는 마켓 우선, 그 다음 최신순 정렬
      */
     @Query("SELECT new showroomz.api.app.market.DTO.MarketListResponse(" +
-           "m.id, m.marketName, m.marketImageUrl, c.categoryId, c.name) " +
+           "m.id, m.marketName, m.marketImageUrl, c.categoryId, c.name, m.shopType) " +
            "FROM Market m " +
            "JOIN m.seller s " +
            "LEFT JOIN m.mainCategory c " +
            "LEFT JOIN Product p ON p.market = m AND p.isDisplay = true " +
            "WHERE s.status = :approvedStatus " +
            "AND (:mainCategoryId IS NULL OR c.categoryId = :mainCategoryId) " +
-           "GROUP BY m.id, m.marketName, m.marketImageUrl, c.categoryId, c.name " +
+           "GROUP BY m.id, m.marketName, m.marketImageUrl, c.categoryId, c.name, m.shopType " +
            "ORDER BY MAX(CASE WHEN p.isRecommended = true THEN 1 ELSE 0 END) DESC, m.id DESC")
     Page<MarketListResponse> findRecommendedMarkets(
             @Param("mainCategoryId") Long mainCategoryId,

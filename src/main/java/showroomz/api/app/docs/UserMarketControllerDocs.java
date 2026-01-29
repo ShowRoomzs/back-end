@@ -42,18 +42,20 @@ public interface UserMarketControllerDocs {
                                             value = "{\n" +
                                                     "  \"content\": [\n" +
                                                     "    {\n" +
-                                                    "      \"marketId\": 1,\n" +
-                                                    "      \"marketName\": \"쇼룸즈\",\n" +
-                                                    "      \"marketImageUrl\": \"https://s3.amazonaws.com/bucket/market-image.jpg\",\n" +
+                                                    "      \"shopId\": 1,\n" +
+                                                    "      \"shopName\": \"쇼룸즈\",\n" +
+                                                    "      \"shopImageUrl\": \"https://s3.amazonaws.com/bucket/market-image.jpg\",\n" +
                                                     "      \"mainCategoryId\": 1,\n" +
-                                                    "      \"mainCategoryName\": \"패션/의류\"\n" +
+                                                    "      \"mainCategoryName\": \"패션/의류\",\n" +
+                                                    "      \"shopType\": \"MARKET\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
-                                                    "      \"marketId\": 2,\n" +
-                                                    "      \"marketName\": \"트렌디샵\",\n" +
-                                                    "      \"marketImageUrl\": \"https://s3.amazonaws.com/bucket/market-image2.jpg\",\n" +
+                                                    "      \"shopId\": 2,\n" +
+                                                    "      \"shopName\": \"트렌디샵\",\n" +
+                                                    "      \"shopImageUrl\": \"https://s3.amazonaws.com/bucket/market-image2.jpg\",\n" +
                                                     "      \"mainCategoryId\": 2,\n" +
-                                                    "      \"mainCategoryName\": \"액세서리\"\n" +
+                                                    "      \"mainCategoryName\": \"액세서리\",\n" +
+                                                    "      \"shopType\": \"SHOWROOM\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
@@ -81,22 +83,23 @@ public interface UserMarketControllerDocs {
 
     @Operation(
             summary = "마켓 상세 조회",
-            description = "마켓 정보와 팔로워 수를 조회합니다. (비로그인 상태에서도 조회 가능)\n\n" +
+            description = "샵 정보와 팔로워 수를 조회합니다. (비로그인 상태에서도 조회 가능)\n\n" +
                     "**응답 필드:**\n" +
-                    "- `marketId`: 마켓 ID\n" +
-                    "- `marketName`: 마켓명\n" +
-                    "- `marketImageUrl`: 마켓 이미지 URL\n" +
-                    "- `marketDescription`: 마켓 한줄 소개\n" +
-                    "- `marketUrl`: 마켓 URL\n" +
+                    "- `shopId`: 샵 ID\n" +
+                    "- `shopName`: 샵명\n" +
+                    "- `shopImageUrl`: 샵 이미지 URL\n" +
+                    "- `shopDescription`: 샵 한줄 소개\n" +
+                    "- `shopUrl`: 샵 URL\n" +
+                    "- `shopType`: 샵 타입 (MARKET: 일반 브랜드, SHOWROOM: 크리에이터)\n" +
                     "- `mainCategoryId`: 대표 카테고리 ID\n" +
                     "- `mainCategoryName`: 대표 카테고리명\n" +
                     "- `snsLinks`: SNS 링크 배열 (각 항목은 `snsType`, `snsUrl` 필드를 포함)\n" +
                     "  - `snsType`: SNS 타입 (INSTAGRAM, TIKTOK, X, YOUTUBE)\n" +
-                    "- `followerCount`: 이 마켓을 찜한 유저 수\n" +
+                    "- `followerCount`: 이 샵을 찜한 유저 수\n" +
                     "- `isFollowed`: 현재 유저가 찜했는지 여부 (비로그인 시 false)\n\n" +
                     "**권한:** 인증 불필요 (비로그인 가능)",
             parameters = {
-                    @Parameter(name = "marketId", description = "마켓 ID", required = true, example = "1", in = ParameterIn.PATH)
+                    @Parameter(name = "shopId", description = "샵 ID", required = true, example = "1", in = ParameterIn.PATH)
             }
     )
     @ApiResponses(value = {
@@ -110,11 +113,12 @@ public interface UserMarketControllerDocs {
                                     @ExampleObject(
                                             name = "성공 시 (로그인 상태, 팔로우 중)",
                                             value = "{\n" +
-                                                    "  \"marketId\": 1,\n" +
-                                                    "  \"marketName\": \"쇼룸즈\",\n" +
-                                                    "  \"marketImageUrl\": \"https://s3.amazonaws.com/bucket/market-image.jpg\",\n" +
-                                                    "  \"marketDescription\": \"트렌디한 라이프스타일을 제안하는 마켓입니다.\",\n" +
-                                                    "  \"marketUrl\": \"https://www.showroomz.co.kr/shop/showroomz\",\n" +
+                                                    "  \"shopId\": 1,\n" +
+                                                    "  \"shopName\": \"쇼룸즈\",\n" +
+                                                    "  \"shopImageUrl\": \"https://s3.amazonaws.com/bucket/market-image.jpg\",\n" +
+                                                    "  \"shopDescription\": \"트렌디한 라이프스타일을 제안하는 마켓입니다.\",\n" +
+                                                    "  \"shopUrl\": \"https://www.showroomz.co.kr/shop/showroomz\",\n" +
+                                                    "  \"shopType\": \"MARKET\",\n" +
                                                     "  \"mainCategoryId\": 1,\n" +
                                                     "  \"mainCategoryName\": \"패션/의류\",\n" +
                                                     "  \"snsLinks\": [\n" +
@@ -134,16 +138,17 @@ public interface UserMarketControllerDocs {
                                                     "  \"followerCount\": 150,\n" +
                                                     "  \"isFollowed\": true\n" +
                                                     "}",
-                                            description = "로그인한 사용자가 해당 마켓을 팔로우한 경우"
+                                            description = "로그인한 사용자가 해당 샵을 팔로우한 경우"
                                     ),
                                     @ExampleObject(
                                             name = "성공 시 (비로그인 상태)",
                                             value = "{\n" +
-                                                    "  \"marketId\": 1,\n" +
-                                                    "  \"marketName\": \"쇼룸즈\",\n" +
-                                                    "  \"marketImageUrl\": \"https://s3.amazonaws.com/bucket/market-image.jpg\",\n" +
-                                                    "  \"marketDescription\": \"트렌디한 라이프스타일을 제안하는 마켓입니다.\",\n" +
-                                                    "  \"marketUrl\": \"https://www.showroomz.co.kr/shop/showroomz\",\n" +
+                                                    "  \"shopId\": 1,\n" +
+                                                    "  \"shopName\": \"쇼룸즈\",\n" +
+                                                    "  \"shopImageUrl\": \"https://s3.amazonaws.com/bucket/market-image.jpg\",\n" +
+                                                    "  \"shopDescription\": \"트렌디한 라이프스타일을 제안하는 마켓입니다.\",\n" +
+                                                    "  \"shopUrl\": \"https://www.showroomz.co.kr/shop/showroomz\",\n" +
+                                                    "  \"shopType\": \"MARKET\",\n" +
                                                     "  \"mainCategoryId\": 1,\n" +
                                                     "  \"mainCategoryName\": \"패션/의류\",\n" +
                                                     "  \"snsLinks\": [\n" +
@@ -183,7 +188,7 @@ public interface UserMarketControllerDocs {
             )
     })
     ResponseEntity<MarketDetailResponse> getMarketDetail(
-            @Parameter(description = "마켓 ID", required = true, example = "1", in = ParameterIn.PATH)
-            Long marketId
+            @Parameter(description = "샵 ID", required = true, example = "1", in = ParameterIn.PATH)
+            Long shopId
     );
 }

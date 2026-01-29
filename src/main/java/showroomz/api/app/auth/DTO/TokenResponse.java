@@ -18,7 +18,7 @@ public class TokenResponse {
     private Boolean isNewMember;
     private String registerToken; // 신규 회원일 때만 제공 (5분 유효)
     private String role; // 권한 정보 (예: "SELLER", "ADMIN")
-    private String marketType; // 판매자 로그인 시 마켓 타입 (예: "MARKET", "SHOWROOM"), 어드민/일반 사용자 등은 null
+    private String shopType; // 판매자 로그인 시 샵 타입 (예: "MARKET", "SHOWROOM"), 어드민/일반 사용자 등은 null
 
     // 기존 회원용 생성자
     public TokenResponse(String accessToken, String refreshToken, long accessTokenExpiresIn, long refreshTokenExpiresIn, boolean isNewMember, String role) {
@@ -30,13 +30,13 @@ public class TokenResponse {
         this.isNewMember = isNewMember;
         this.registerToken = null;
         this.role = role;
-        this.marketType = null;
+        this.shopType = null;
     }
 
-    // 기존 회원용 생성자 + 마켓 타입 포함 (판매자 로그인 전용)
-    public TokenResponse(String accessToken, String refreshToken, long accessTokenExpiresIn, long refreshTokenExpiresIn, boolean isNewMember, String role, String marketType) {
+    // 기존 회원용 생성자 + shopType 포함 (판매자 로그인 전용)
+    public TokenResponse(String accessToken, String refreshToken, long accessTokenExpiresIn, long refreshTokenExpiresIn, boolean isNewMember, String role, String shopType) {
         this(accessToken, refreshToken, accessTokenExpiresIn, refreshTokenExpiresIn, isNewMember, role);
-        this.marketType = marketType;
+        this.shopType = shopType;
     }
 
     // 신규 회원용 생성자
