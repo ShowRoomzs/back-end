@@ -143,7 +143,17 @@ public class ProductService {
         }
 
         // 10. Variant 생성 및 옵션 매핑
-        if (request.getVariants() != null && !request.getVariants().isEmpty()) {
+        boolean hasVariantRequests = request.getVariants() != null && !request.getVariants().isEmpty();
+        boolean hasOptionGroups = request.getOptionGroups() != null && !request.getOptionGroups().isEmpty();
+
+        if (hasOptionGroups && !hasVariantRequests) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_VARIANT_OPTIONS,
+                    "최소 한 개 이상의 옵션 조합을 등록해야 합니다."
+            );
+        }
+
+        if (hasVariantRequests) {
             for (ProductDto.VariantRequest variantRequest : request.getVariants()) {
                 // 옵션명으로 옵션 조합 생성
                 List<ProductOption> variantOptions = new ArrayList<>();
@@ -161,6 +171,9 @@ public class ProductService {
                         }
                         variantOptions.add(optionsInGroup.get(optionName));
                         optionIndex++;
+                    }
+                    if (optionIndex != variantRequest.getOptionNames().size()) {
+                        throw new BusinessException(ErrorCode.INVALID_VARIANT_OPTIONS);
                     }
                 }
                 
@@ -232,6 +245,7 @@ public class ProductService {
         
         return prefix + String.format("%03d", sequenceNumber);
     }
+
 
     @Transactional(readOnly = true)
     public PageResponse<ProductDto.ProductListItem> getProductList(String adminEmail, ProductDto.ProductListRequest request, PagingRequest pagingRequest) {
