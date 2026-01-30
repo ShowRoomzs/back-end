@@ -13,6 +13,7 @@ import showroomz.domain.category.entity.Category;
 import showroomz.domain.category.repository.CategoryRepository;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
+import showroomz.domain.market.type.ShopType;
 import showroomz.domain.market.type.SnsType;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.error.exception.ErrorCode;
@@ -36,9 +37,10 @@ public class MarketService {
      */
     @Transactional
     public void createMarket(Seller admin, String marketName, String csNumber) {
-        // 1. 마켓 엔티티 생성
+        // 1. 마켓 엔티티 생성 (판매자 회원가입 시 shopType = MARKET)
         Market market = new Market(admin, marketName, csNumber);
-        
+        market.setShopType(ShopType.MARKET);
+
         // 2. 1차 저장 (이 시점에 DB에서 ID가 생성되어 market 객체에 주입됨)
         marketRepository.save(market);
 

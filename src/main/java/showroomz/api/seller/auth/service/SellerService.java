@@ -165,12 +165,13 @@ public class SellerService {
         seller.setRejectionReason(null); // 반려 사유 초기화
         seller.setModifiedAt(LocalDateTime.now());
         
-        // Market 정보 업데이트
+        // Market 정보 업데이트 (판매자 회원가입 경로이므로 shopType = MARKET)
         market.setMarketName(request.getMarketName());
         market.setCsNumber(request.getCsNumber());
-        
+        market.setShopType(ShopType.MARKET);
+
         // Dirty Checking으로 트랜잭션 종료 시 자동 Update 쿼리 실행
-        
+
         return Map.of("message", "재가입 신청이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.");
     }
 
