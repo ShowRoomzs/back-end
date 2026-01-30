@@ -69,9 +69,9 @@ public class SecurityConfig {
             // 공용 API 전체 허용
             "/v1/common/**",
 
-            // 마켓 조회 API
-            "/v1/user/markets",
-            "/v1/user/markets/{marketId}",
+            // 샵 조회 API
+            "/v1/user/shops",
+            "/v1/user/shops/{shopId}",
     };
     /*
      * SecurityFilterChain 설정 (Spring Security 3.x 최신 방식)
