@@ -144,7 +144,36 @@ public interface MarketFollowControllerDocs {
             @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
-                    content = @Content(schema = @Schema(implementation = PageResponse.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PageResponse.class),
+                            examples = @ExampleObject(
+                                    name = "조회 성공",
+                                    value = "{\n" +
+                                            "  \"content\": [\n" +
+                                            "    {\n" +
+                                            "      \"shopId\": 1,\n" +
+                                            "      \"shopName\": \"샘플 마켓\",\n" +
+                                            "      \"shopImageUrl\": \"https://example.com/shop1.jpg\",\n" +
+                                            "      \"shopType\": \"MARKET\"\n" +
+                                            "    },\n" +
+                                            "    {\n" +
+                                            "      \"shopId\": 2,\n" +
+                                            "      \"shopName\": \"크리에이터 쇼룸\",\n" +
+                                            "      \"shopImageUrl\": \"https://example.com/shop2.jpg\",\n" +
+                                            "      \"shopType\": \"SHOWROOM\"\n" +
+                                            "    }\n" +
+                                            "  ],\n" +
+                                            "  \"pageInfo\": {\n" +
+                                            "    \"currentPage\": 1,\n" +
+                                            "    \"totalPages\": 3,\n" +
+                                            "    \"totalResults\": 25,\n" +
+                                            "    \"limit\": 10,\n" +
+                                            "    \"hasNext\": true\n" +
+                                            "  }\n" +
+                                            "}"
+                            )
+                    )
             ),
             @ApiResponse(
                     responseCode = "401",
