@@ -7,7 +7,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
 import showroomz.api.app.docs.MarketFollowControllerDocs;
-import showroomz.api.app.market.DTO.MarketListResponse;
+import showroomz.api.app.market.DTO.FollowingMarketResponse;
 import showroomz.api.app.market.service.MarketFollowService;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.global.dto.PageResponse;
@@ -48,7 +48,7 @@ public class MarketFollowController implements MarketFollowControllerDocs {
     // 팔로우 목록 조회
     @Override
     @GetMapping("/following")
-    public ResponseEntity<PageResponse<MarketListResponse>> getFollowedMarkets(
+    public ResponseEntity<PageResponse<FollowingMarketResponse>> getFollowedMarkets(
             @ModelAttribute PagingRequest pagingRequest) {
 
         String username = getUsername();

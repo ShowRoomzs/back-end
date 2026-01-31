@@ -5,7 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.auth.exception.BusinessException;
-import showroomz.api.app.market.DTO.MarketListResponse;
+import showroomz.api.app.market.DTO.FollowingMarketResponse;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.entity.MarketFollow;
 import showroomz.domain.market.repository.MarketFollowRepository;
@@ -76,23 +76,21 @@ public class MarketFollowService {
      * 팔로우한 마켓 목록 조회
      */
     @Transactional(readOnly = true)
-    public PageResponse<MarketListResponse> getFollowedMarkets(String username, PagingRequest pagingRequest) {
+    public PageResponse<FollowingMarketResponse> getFollowedMarkets(String username, PagingRequest pagingRequest) {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         // PagingRequest.toPageable()이 createdAt DESC(최신순) 정렬을 기본으로 반환함
         Page<MarketFollow> follows = marketFollowRepository.findByUser(user, pagingRequest.toPageable());
 
-        List<MarketListResponse> content = follows.getContent().stream()
+        List<FollowingMarketResponse> content = follows.getContent().stream()
                 .map(follow -> {
                     Market market = follow.getMarket();
-                    return MarketListResponse.builder()
+                    return FollowingMarketResponse.builder()
                             .shopId(market.getId())
                             .shopName(market.getMarketName())
                             .shopImageUrl(market.getMarketImageUrl())
                             .shopType(market.getShopType())
-                            .mainCategoryId(market.getMainCategory() != null ? market.getMainCategory().getCategoryId() : null)
-                            .mainCategoryName(market.getMainCategory() != null ? market.getMainCategory().getName() : null)
                             .build();
                 })
                 .toList();

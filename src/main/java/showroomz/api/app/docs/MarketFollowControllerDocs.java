@@ -11,7 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import showroomz.api.app.auth.DTO.ErrorResponse;
-import showroomz.api.app.market.DTO.MarketListResponse;
+import showroomz.api.app.market.DTO.FollowingMarketResponse;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
@@ -164,7 +164,7 @@ public interface MarketFollowControllerDocs {
                     )
             )
     })
-    ResponseEntity<PageResponse<MarketListResponse>> getFollowedMarkets(
+    ResponseEntity<PageResponse<FollowingMarketResponse>> getFollowedMarkets(
             @Parameter(hidden = true) PagingRequest pagingRequest
     );
 }
