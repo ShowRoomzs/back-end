@@ -11,6 +11,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.api.app.market.DTO.MarketListResponse;
+import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "User - Shop", description = "사용자 Shop API")
 public interface MarketFollowControllerDocs {
@@ -127,6 +130,42 @@ public interface MarketFollowControllerDocs {
     ResponseEntity<Void> unfollowMarket(
             @Parameter(description = "마켓 ID", required = true, example = "1", in = ParameterIn.PATH)
             Long marketId
+    );
+
+    @Operation(
+            summary = "팔로우한 마켓 목록 조회",
+            description = "사용자가 팔로우한 마켓 목록을 조회합니다.\n\n" +
+                    "**동작 방식:**\n" +
+                    "- 최근 팔로우한 순서(최신순)대로 정렬되어 반환됩니다.\n\n" +
+                    "**권한:** USER (로그인 필수)\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = PageResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 정보 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_AUTH_INFO\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<PageResponse<MarketListResponse>> getFollowedMarkets(
+            @Parameter(hidden = true) PagingRequest pagingRequest
     );
 }
 

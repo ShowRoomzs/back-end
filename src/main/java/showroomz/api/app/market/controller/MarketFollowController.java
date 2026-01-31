@@ -6,10 +6,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
-import io.swagger.v3.oas.annotations.Hidden;
 import showroomz.api.app.docs.MarketFollowControllerDocs;
+import showroomz.api.app.market.DTO.MarketListResponse;
 import showroomz.api.app.market.service.MarketFollowService;
 import showroomz.api.app.auth.exception.BusinessException;
+import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.ErrorCode;
 
 @RestController
@@ -41,6 +43,16 @@ public class MarketFollowController implements MarketFollowControllerDocs {
         marketFollowService.unfollowMarket(username, shopId);
         
         return ResponseEntity.noContent().build();
+    }
+
+    // 팔로우 목록 조회
+    @Override
+    @GetMapping("/following")
+    public ResponseEntity<PageResponse<MarketListResponse>> getFollowedMarkets(
+            @ModelAttribute PagingRequest pagingRequest) {
+
+        String username = getUsername();
+        return ResponseEntity.ok(marketFollowService.getFollowedMarkets(username, pagingRequest));
     }
 
     private String getUsername() {
