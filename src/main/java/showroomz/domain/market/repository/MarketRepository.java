@@ -32,6 +32,12 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
     
     Optional<Market> findBySeller(Seller seller);
 
+    /**
+     * ID와 판매자 상태로 마켓 조회 (유저용 상세 조회 시 승인된 Shop만 조회)
+     */
+    @Query("SELECT m FROM Market m JOIN m.seller s WHERE m.id = :id AND s.status = :status")
+    Optional<Market> findByIdAndSellerStatus(@Param("id") Long id, @Param("status") SellerStatus status);
+
     // Seller의 Status가 PENDING인 마켓 목록 조회 (페이징 없음)
     List<Market> findAllBySeller_Status(SellerStatus status);
     

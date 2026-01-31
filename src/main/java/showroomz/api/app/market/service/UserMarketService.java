@@ -31,8 +31,8 @@ public class UserMarketService {
     private final UserRepository userRepository;
 
     public MarketDetailResponse getMarketDetail(Long marketId, String username) {
-        // 1. 마켓 조회
-        Market market = marketRepository.findById(marketId)
+        // 1. 마켓 조회 (승인된 Shop만 조회)
+        Market market = marketRepository.findByIdAndSellerStatus(marketId, SellerStatus.APPROVED)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
 
         // 2. 팔로워 수 조회
