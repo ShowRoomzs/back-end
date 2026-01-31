@@ -1,5 +1,7 @@
 package showroomz.domain.market.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import showroomz.domain.market.entity.MarketFollow;
@@ -19,5 +21,8 @@ public interface MarketFollowRepository extends JpaRepository<MarketFollow, Long
 
     // 유저의 팔로잉 수 카운트
     long countByUser(Users user);
+
+    // 유저의 팔로우 목록 조회 (페이징)
+    Page<MarketFollow> findByUser(Users user, Pageable pageable);
 }
 

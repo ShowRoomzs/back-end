@@ -78,6 +78,7 @@ public interface MarketControllerDocs {
                     "- `mainCategoryId`: 대표 카테고리 ID\n" +
                     "- `mainCategoryName`: 대표 카테고리명\n" +
                     "- `snsLinks`: SNS 링크 목록 (최대 3개)\n" +
+                    "  - `snsType`: SNS 타입 (INSTAGRAM, TIKTOK, X, YOUTUBE)\n" +
                     "- `followerCount`: 마켓을 팔로우(찜)한 유저 수\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
@@ -162,7 +163,7 @@ public interface MarketControllerDocs {
                     "- marketDescription: 마켓 소개 (최대 30자, 줄바꿈 불가)\n" +
                     "- marketImageUrl: 마켓 대표 이미지 URL\n" +
                     "- mainCategoryId: 대표 카테고리 ID (정수)\n" +
-                    "- snsLinks: SNS 링크 (최대 3개)\n\n" +
+                    "- snsLinks: SNS 링크 (최대 3개, 각 항목의 `snsType`은 INSTAGRAM, TIKTOK, X, YOUTUBE 중 하나)\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )

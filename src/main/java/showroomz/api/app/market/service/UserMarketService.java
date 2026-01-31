@@ -47,22 +47,22 @@ public class UserMarketService {
             }
         }
 
-        // 4. SNS 링크 변환
+        // 4. SNS 링크 변환 (Enum -> String)
         List<MarketDetailResponse.SnsLinkResponse> snsLinks = market.getSnsLinks().stream()
-                .map(sns -> new MarketDetailResponse.SnsLinkResponse(sns.getSnsType(), sns.getSnsUrl()))
+                .map(sns -> new MarketDetailResponse.SnsLinkResponse(sns.getSnsType().name(), sns.getSnsUrl()))
                 .collect(Collectors.toList());
 
         // 5. 응답 생성
         Category mainCategory = market.getMainCategory();
         return MarketDetailResponse.builder()
-                .marketId(market.getId())
-                .marketName(market.getMarketName())
-                .marketImageUrl(market.getMarketImageUrl())
-                .marketDescription(market.getMarketDescription())
-                .marketUrl(market.getMarketUrl())
+                .shopId(market.getId())
+                .shopName(market.getMarketName())
+                .shopImageUrl(market.getMarketImageUrl())
+                .shopDescription(market.getMarketDescription())
+                .shopUrl(market.getMarketUrl())
+                .shopType(market.getShopType())
                 .mainCategoryId(mainCategory != null ? mainCategory.getCategoryId() : null)
                 .mainCategoryName(mainCategory != null ? mainCategory.getName() : null)
-                .csNumber(market.getCsNumber())
                 .snsLinks(snsLinks)
                 .followerCount(followerCount)
                 .isFollowed(isFollowed)

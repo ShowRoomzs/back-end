@@ -11,8 +11,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.api.app.market.DTO.FollowingMarketResponse;
+import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "User - Market", description = "사용자 마켓 API")
+@Tag(name = "User - Shop", description = "사용자 Shop API")
 public interface MarketFollowControllerDocs {
 
     @Operation(
@@ -127,6 +130,71 @@ public interface MarketFollowControllerDocs {
     ResponseEntity<Void> unfollowMarket(
             @Parameter(description = "마켓 ID", required = true, example = "1", in = ParameterIn.PATH)
             Long marketId
+    );
+
+    @Operation(
+            summary = "팔로우한 마켓 목록 조회",
+            description = "사용자가 팔로우한 마켓 목록을 조회합니다.\n\n" +
+                    "**동작 방식:**\n" +
+                    "- 최근 팔로우한 순서(최신순)대로 정렬되어 반환됩니다.\n\n" +
+                    "**권한:** USER (로그인 필수)\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PageResponse.class),
+                            examples = @ExampleObject(
+                                    name = "조회 성공",
+                                    value = "{\n" +
+                                            "  \"content\": [\n" +
+                                            "    {\n" +
+                                            "      \"shopId\": 1,\n" +
+                                            "      \"shopName\": \"샘플 마켓\",\n" +
+                                            "      \"shopImageUrl\": \"https://example.com/shop1.jpg\",\n" +
+                                            "      \"shopType\": \"MARKET\"\n" +
+                                            "    },\n" +
+                                            "    {\n" +
+                                            "      \"shopId\": 2,\n" +
+                                            "      \"shopName\": \"크리에이터 쇼룸\",\n" +
+                                            "      \"shopImageUrl\": \"https://example.com/shop2.jpg\",\n" +
+                                            "      \"shopType\": \"SHOWROOM\"\n" +
+                                            "    }\n" +
+                                            "  ],\n" +
+                                            "  \"pageInfo\": {\n" +
+                                            "    \"currentPage\": 1,\n" +
+                                            "    \"totalPages\": 3,\n" +
+                                            "    \"totalResults\": 25,\n" +
+                                            "    \"limit\": 10,\n" +
+                                            "    \"hasNext\": true\n" +
+                                            "  }\n" +
+                                            "}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 정보 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_AUTH_INFO\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<PageResponse<FollowingMarketResponse>> getFollowedMarkets(
+            @Parameter(hidden = true) PagingRequest pagingRequest
     );
 }
 

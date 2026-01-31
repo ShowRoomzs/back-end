@@ -16,12 +16,14 @@ import showroomz.api.app.auth.token.AuthTokenProvider;
 import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.DTO.SellerLoginRequest;
 import showroomz.api.seller.auth.DTO.SellerSignUpRequest;
+import showroomz.api.seller.auth.DTO.CreatorSignUpRequest;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshToken;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshTokenRepository;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.api.seller.market.service.MarketService;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.market.type.ShopType;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.config.properties.AppProperties;
@@ -91,6 +93,57 @@ public class SellerService {
     }
 
     /**
+     * 크리에이터(쇼룸) 회원가입
+     */
+    @Transactional
+    public Map<String, String> registerCreator(CreatorSignUpRequest request) {
+        // 1. 비밀번호 일치 확인
+        if (!request.getPassword().equals(request.getPasswordConfirm())) {
+            throw new BusinessException(ErrorCode.PASSWORD_MISMATCH);
+        }
+
+        // 2. 이메일 중복 체크 및 반려 계정 재가입 처리
+        Optional<Seller> sellerOpt = adminRepository.findByEmail(request.getEmail());
+        if (sellerOpt.isPresent()) {
+            Seller existingSeller = sellerOpt.get();
+            // 반려된 계정인 경우 재가입(정보 업데이트) 진행
+            if (existingSeller.getStatus() == SellerStatus.REJECTED) {
+                return reRegisterRejectedCreator(existingSeller, request);
+            }
+            // 그 외(승인, 대기)의 경우 중복 에러
+            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL_SIGNUP);
+        }
+
+        // 3. 마켓명 중복 체크
+        if (marketRepository.existsByMarketName(request.getMarketName())) {
+            throw new BusinessException(ErrorCode.DUPLICATE_MARKET_NAME);
+        }
+
+        // 4. Seller 생성 (활동명 포함)
+        LocalDateTime now = LocalDateTime.now();
+        Seller seller = new Seller(
+                request.getEmail(),
+                passwordEncoder.encode(request.getPassword()),
+                request.getSellerName(),
+                request.getSellerContact(),
+                request.getActivityName(),
+                now
+        );
+        Seller savedSeller = adminRepository.save(seller);
+
+        // 5. Market 생성 (타입: SHOWROOM, CS 번호는 개인 연락처 사용)
+        Market market = new Market(savedSeller, request.getMarketName(), request.getSellerContact());
+        market.setShopType(ShopType.SHOWROOM); // 크리에이터(쇼룸) 타입
+
+        // 6. SNS 링크 추가 (요청의 enum 직접 사용)
+        market.addSnsLink(request.getSnsType(), request.getSnsUrl());
+
+        marketRepository.save(market);
+
+        return Map.of("message", "쇼룸 개설 신청이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.");
+    }
+
+    /**
      * 반려된 판매자 재가입 처리 (정보 업데이트 및 상태 변경) [추가됨]
      */
     private Map<String, String> reRegisterRejectedSeller(Seller seller, SellerSignUpRequest request) {
@@ -112,13 +165,49 @@ public class SellerService {
         seller.setRejectionReason(null); // 반려 사유 초기화
         seller.setModifiedAt(LocalDateTime.now());
         
-        // Market 정보 업데이트
+        // Market 정보 업데이트 (판매자 회원가입 경로이므로 shopType = MARKET)
         market.setMarketName(request.getMarketName());
         market.setCsNumber(request.getCsNumber());
-        
+        market.setShopType(ShopType.MARKET);
+
         // Dirty Checking으로 트랜잭션 종료 시 자동 Update 쿼리 실행
-        
+
         return Map.of("message", "재가입 신청이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.");
+    }
+
+    /**
+     * 반려된 크리에이터(쇼룸) 재가입 처리 (정보 업데이트 및 상태 변경)
+     */
+    private Map<String, String> reRegisterRejectedCreator(Seller seller, CreatorSignUpRequest request) {
+        // 기존 마켓 정보 조회
+        Market market = marketRepository.findBySeller(seller)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // 마켓명 변경 시 중복 체크 (기존 이름과 다를 경우에만)
+        if (!market.getMarketName().equals(request.getMarketName())
+                && marketRepository.existsByMarketName(request.getMarketName())) {
+            throw new BusinessException(ErrorCode.DUPLICATE_MARKET_NAME);
+        }
+
+        // Seller 정보 업데이트 (활동명 포함)
+        seller.setPassword(passwordEncoder.encode(request.getPassword()));
+        seller.setName(request.getSellerName());
+        seller.setPhoneNumber(request.getSellerContact());
+        seller.setActivityName(request.getActivityName());
+        seller.setStatus(SellerStatus.PENDING); // 상태를 다시 PENDING으로 변경
+        seller.setRejectionReason(null); // 반려 사유 초기화
+        seller.setModifiedAt(LocalDateTime.now());
+
+        // Market 정보 및 SNS 정보 업데이트
+        market.setMarketName(request.getMarketName());
+        market.setCsNumber(request.getSellerContact());
+        market.setShopType(ShopType.SHOWROOM);
+        market.clearSnsLinks();
+        market.addSnsLink(request.getSnsType(), request.getSnsUrl());
+
+        // Dirty Checking으로 트랜잭션 종료 시 자동 Update 쿼리 실행
+
+        return Map.of("message", "쇼룸 재가입 신청이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.");
     }
 
     // 읽기 전용 트랜잭션으로 설정하여 성능 최적화
@@ -261,14 +350,23 @@ public class SellerService {
         long accessTokenExpiresInSeconds = accessTokenExpiry / 1000;
         long refreshTokenExpiresInSeconds = appProperties.getAuth().getRefreshTokenExpiry() / 1000;
 
-        // 8. 응답 반환 (마지막 인자에 role 추가)
+        // 8. 응답 반환 (마지막 인자에 role, shopType 추가)
+        String shopType = null;
+        if (admin.getRoleType() == RoleType.SELLER) {
+            Market market = marketRepository.findBySeller(admin).orElse(null);
+            if (market != null && market.getShopType() != null) {
+                shopType = market.getShopType().name();
+            }
+        }
+
         return new TokenResponse(
                 newAccessToken.getToken(),
                 refreshTokenStr,
                 accessTokenExpiresInSeconds,
                 refreshTokenExpiresInSeconds,
                 false,
-                admin.getRoleType().toString() // "ADMIN" 또는 "SELLER" 문자열 반환
+                admin.getRoleType().toString(), // "ADMIN" 또는 "SELLER" 문자열 반환
+                shopType
         );
     }
 
@@ -386,13 +484,23 @@ public class SellerService {
         long accessTokenExpiresInSeconds = accessTokenExpiry / 1000;
         long refreshTokenExpiresInSeconds = refreshTokenExpiry / 1000;
 
+        // 판매자인 경우에만 샵 타입 조회 (어드민은 null 반환)
+        String shopType = null;
+        if (admin.getRoleType() == RoleType.SELLER) {
+            Market market = marketRepository.findBySeller(admin).orElse(null);
+            if (market != null && market.getShopType() != null) {
+                shopType = market.getShopType().name();
+            }
+        }
+
         return new TokenResponse(
                 accessToken.getToken(),
                 refreshToken.getToken(),
                 accessTokenExpiresInSeconds,
                 refreshTokenExpiresInSeconds,
                 false,
-                admin.getRoleType().toString() // 여기서 권한을 넘겨줌
+                admin.getRoleType().toString(), // 여기서 권한을 넘겨줌
+                shopType
         );
     }
 

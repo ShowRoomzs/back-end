@@ -200,7 +200,7 @@ public class AdminMarketDto {
         public static MarketAdminDetailResponse from(Market market) {
             // SNS 링크 변환
             List<SnsLinkResponse> links = market.getSnsLinks().stream()
-                    .map(sns -> new SnsLinkResponse(sns.getSnsType(), sns.getSnsUrl()))
+                    .map(sns -> new SnsLinkResponse(sns.getSnsType().name(), sns.getSnsUrl()))
                     .collect(java.util.stream.Collectors.toList());
 
             return MarketAdminDetailResponse.builder()
@@ -221,7 +221,11 @@ public class AdminMarketDto {
     @AllArgsConstructor
     @Schema(description = "SNS 링크 정보")
     public static class SnsLinkResponse {
-        @Schema(description = "SNS 타입", example = "INSTAGRAM")
+        @Schema(
+                description = "SNS 타입 (INSTAGRAM, TIKTOK, X, YOUTUBE)",
+                example = "INSTAGRAM",
+                allowableValues = {"INSTAGRAM", "TIKTOK", "X", "YOUTUBE"}
+        )
         private String snsType;
         
         @Schema(description = "URL", example = "https://instagram.com/example")

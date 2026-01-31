@@ -20,7 +20,7 @@ import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
 @RestController
-@RequestMapping("/v1/user/markets")
+@RequestMapping("/v1/user/shops")
 @RequiredArgsConstructor
 public class UserMarketController implements UserMarketControllerDocs {
 
@@ -28,7 +28,6 @@ public class UserMarketController implements UserMarketControllerDocs {
 
     @Override
     @GetMapping
-    @Hidden
     public ResponseEntity<PageResponse<MarketListResponse>> getMarkets(
             @Parameter(name = "mainCategoryId", description = "카테고리 ID 필터 (선택)", required = false, example = "1", in = ParameterIn.QUERY)
             @RequestParam(name = "mainCategoryId", required = false) Long mainCategoryId,
@@ -43,10 +42,9 @@ public class UserMarketController implements UserMarketControllerDocs {
     }
 
     @Override
-    @Hidden
-    @GetMapping("/{marketId}")
+    @GetMapping("/{shopId}")
     public ResponseEntity<MarketDetailResponse> getMarketDetail(
-        @PathVariable("marketId") Long marketId) {
+        @PathVariable("shopId") Long shopId) {
         
         String username = null;
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -54,7 +52,7 @@ public class UserMarketController implements UserMarketControllerDocs {
             username = ((User) authentication.getPrincipal()).getUsername();
         }
 
-        MarketDetailResponse response = userMarketService.getMarketDetail(marketId, username);
+        MarketDetailResponse response = userMarketService.getMarketDetail(shopId, username);
         return ResponseEntity.ok(response);
     }
 }

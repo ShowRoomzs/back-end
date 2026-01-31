@@ -114,7 +114,7 @@ public class RecommendationService {
         List<RecommendationDto.MarketRecommendationItem> marketItems = marketPage.getContent().stream()
                 .map(marketResponse -> {
                     // 마켓 엔티티 조회 (팔로워 수, 팔로우 여부 확인용)
-                    Market market = marketRepository.findById(marketResponse.getMarketId())
+                    Market market = marketRepository.findById(marketResponse.getShopId())
                             .orElse(null);
 
                     Long followerCount = 0L;
@@ -128,9 +128,9 @@ public class RecommendationService {
                     }
 
                     return RecommendationDto.MarketRecommendationItem.builder()
-                            .marketId(marketResponse.getMarketId())
-                            .marketName(marketResponse.getMarketName())
-                            .marketImageUrl(marketResponse.getMarketImageUrl())
+                            .marketId(marketResponse.getShopId())
+                            .marketName(marketResponse.getShopName())
+                            .marketImageUrl(marketResponse.getShopImageUrl())
                             .mainCategoryId(marketResponse.getMainCategoryId())
                             .mainCategoryName(marketResponse.getMainCategoryName())
                             .followerCount(followerCount)
@@ -262,7 +262,7 @@ public class RecommendationService {
         List<RecommendationDto.MarketRecommendationItem> marketItems = marketPage.getContent().stream()
                 .map(marketResponse -> {
                     // 마켓 엔티티 조회
-                    Market market = marketRepository.findById(marketResponse.getMarketId())
+                    Market market = marketRepository.findById(marketResponse.getShopId())
                             .orElse(null);
 
                     Long followerCount = 0L;
@@ -285,9 +285,9 @@ public class RecommendationService {
                     }
 
                     return RecommendationDto.MarketRecommendationItem.builder()
-                            .marketId(marketResponse.getMarketId())
-                            .marketName(marketResponse.getMarketName())
-                            .marketImageUrl(marketResponse.getMarketImageUrl())
+                            .marketId(marketResponse.getShopId())
+                            .marketName(marketResponse.getShopName())
+                            .marketImageUrl(marketResponse.getShopImageUrl())
                             .mainCategoryId(marketResponse.getMainCategoryId())
                             .mainCategoryName(marketResponse.getMainCategoryName())
                             .followerCount(followerCount)

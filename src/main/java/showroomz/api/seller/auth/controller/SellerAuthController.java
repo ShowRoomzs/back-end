@@ -3,7 +3,6 @@ package showroomz.api.seller.auth.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,6 +18,7 @@ import showroomz.api.app.auth.DTO.TokenResponse;
 import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.DTO.SellerLoginRequest;
 import showroomz.api.seller.auth.DTO.SellerSignUpRequest;
+import showroomz.api.seller.auth.DTO.CreatorSignUpRequest;
 import showroomz.api.seller.auth.service.SellerService;
 import showroomz.api.seller.docs.SellerAuthControllerDocs;
 import showroomz.global.utils.HeaderUtil;
@@ -36,6 +36,14 @@ public class SellerAuthController implements SellerAuthControllerDocs {
     @PostMapping("/signup")
     public ResponseEntity<?> registerAdmin(@Valid @RequestBody SellerSignUpRequest request) {
         return ResponseEntity.status(201).body(sellerService.registerAdmin(request));
+    }
+
+    /**
+     * 크리에이터(쇼룸) 회원가입
+     */
+    @PostMapping("/signup/showroom")
+    public ResponseEntity<?> registerCreator(@Valid @RequestBody CreatorSignUpRequest request) {
+        return ResponseEntity.status(201).body(sellerService.registerCreator(request));
     }
 
     @Override

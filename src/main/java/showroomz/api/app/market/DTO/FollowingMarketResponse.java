@@ -10,11 +10,9 @@ import showroomz.domain.market.type.ShopType;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MarketListResponse {
+public class FollowingMarketResponse {
     private Long shopId;
     private String shopName;
     private String shopImageUrl;
-    private Long mainCategoryId;
-    private String mainCategoryName;
     private ShopType shopType;
 }
