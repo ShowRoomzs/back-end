@@ -15,6 +15,7 @@ import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.category.service.CategoryHierarchyService;
 import showroomz.domain.wishlist.entitiy.Wishlist;
 import showroomz.domain.wishlist.repository.WishlistRepository;
+import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.util.List;
@@ -96,7 +97,7 @@ public class WishlistService {
      * @param categoryId 카테고리 ID (선택)
      * @return 위시리스트 상품 목록
      */
-    public ProductDto.ProductSearchResponse getWishlist(
+    public PageResponse<ProductDto.ProductItem> getWishlist(
             String username,
             Integer page,
             Integer limit,
@@ -137,21 +138,7 @@ public class WishlistService {
                 .map(product -> convertToProductItem(product, user))
                 .collect(Collectors.toList());
 
-        // PageInfo 생성 (Wishlist Page를 Product Page로 변환)
-        ProductDto.PageInfo pageInfo = ProductDto.PageInfo.builder()
-                .currentPage(wishlistPage.getNumber() + 1) // 0-based to 1-based
-                .pageSize(wishlistPage.getSize())
-                .totalElements(wishlistPage.getTotalElements())
-                .totalPages(wishlistPage.getTotalPages())
-                .isLast(wishlistPage.isLast())
-                .hasNext(wishlistPage.hasNext())
-                .build();
-
-        // 응답 생성
-        return ProductDto.ProductSearchResponse.builder()
-                .products(productItems)
-                .pageInfo(pageInfo)
-                .build();
+        return new PageResponse<>(productItems, wishlistPage);
     }
 
     /**

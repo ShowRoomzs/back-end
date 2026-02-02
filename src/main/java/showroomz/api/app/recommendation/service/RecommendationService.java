@@ -21,6 +21,7 @@ import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.type.ProductGender;
 import showroomz.domain.wishlist.repository.WishlistRepository;
 import showroomz.domain.category.service.CategoryHierarchyService;
+import showroomz.global.dto.PageInfo;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -74,15 +75,7 @@ public class RecommendationService {
                 .map(product -> convertToProductItem(product, user))
                 .collect(Collectors.toList());
 
-        // PageInfo 생성
-        ProductDto.PageInfo pageInfo = ProductDto.PageInfo.builder()
-                .currentPage(productPage.getNumber() + 1)
-                .pageSize(productPage.getSize())
-                .totalElements(productPage.getTotalElements())
-                .totalPages(productPage.getTotalPages())
-                .isLast(productPage.isLast())
-                .hasNext(productPage.hasNext())
-                .build();
+        PageInfo pageInfo = new PageInfo(productPage);
 
         return RecommendationDto.ProductRecommendationResponse.builder()
                 .products(productItems)
@@ -139,15 +132,7 @@ public class RecommendationService {
                 })
                 .collect(Collectors.toList());
 
-        // PageInfo 생성
-        ProductDto.PageInfo pageInfo = ProductDto.PageInfo.builder()
-                .currentPage(marketPage.getNumber() + 1)
-                .pageSize(marketPage.getSize())
-                .totalElements(marketPage.getTotalElements())
-                .totalPages(marketPage.getTotalPages())
-                .isLast(marketPage.isLast())
-                .hasNext(marketPage.hasNext())
-                .build();
+        PageInfo pageInfo = new PageInfo(marketPage);
 
         return RecommendationDto.MarketRecommendationResponse.builder()
                 .markets(marketItems)
@@ -306,15 +291,7 @@ public class RecommendationService {
                 .map(product -> convertToProductItem(product, user))
                 .collect(Collectors.toList());
 
-        // PageInfo 생성 (상품용)
-        ProductDto.PageInfo pageInfo = ProductDto.PageInfo.builder()
-                .currentPage(productPage.getNumber() + 1)
-                .pageSize(productPage.getSize())
-                .totalElements(productPage.getTotalElements())
-                .totalPages(productPage.getTotalPages())
-                .isLast(productPage.isLast())
-                .hasNext(productPage.hasNext())
-                .build();
+        PageInfo pageInfo = new PageInfo(productPage);
 
         return RecommendationDto.UnifiedRecommendationResponse.builder()
                 .recommendedMarkets(marketItems)

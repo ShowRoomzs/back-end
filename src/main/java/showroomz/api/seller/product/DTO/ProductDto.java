@@ -582,14 +582,17 @@ public class ProductDto {
         @Schema(description = "현재 페이지", example = "1")
         private Integer currentPage;
 
+        @Schema(description = "페이지당 개수", example = "20")
+        private Integer pageSize;
+
+        @Schema(description = "전체 결과 수", example = "485")
+        private Long totalElements;
+
         @Schema(description = "전체 페이지 수", example = "10")
         private Integer totalPages;
 
-        @Schema(description = "전체 결과 수", example = "485")
-        private Long totalResults;
-
-        @Schema(description = "페이지당 개수", example = "50")
-        private Integer limit;
+        @Schema(description = "마지막 페이지 여부", example = "false")
+        private Boolean isLast;
     }
 
     @Getter

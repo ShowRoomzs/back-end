@@ -40,7 +40,7 @@ public interface UserMarketControllerDocs {
                                     @ExampleObject(
                                             name = "성공 시",
                                             value = "{\n" +
-                                                    "  \"content\": [\n" +
+                                                    "  \"data\": [\n" +
                                                     "    {\n" +
                                                     "      \"shopId\": 1,\n" +
                                                     "      \"shopName\": \"쇼룸즈\",\n" +
@@ -59,12 +59,11 @@ public interface UserMarketControllerDocs {
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
-                                                    "    \"page\": 1,\n" +
-                                                    "    \"size\": 20,\n" +
+                                                    "    \"currentPage\": 1,\n" +
+                                                    "    \"pageSize\": 20,\n" +
                                                     "    \"totalElements\": 150,\n" +
                                                     "    \"totalPages\": 8,\n" +
-                                                    "    \"first\": true,\n" +
-                                                    "    \"last\": false\n" +
+                                                    "    \"isLast\": false\n" +
                                                     "  }\n" +
                                                     "}",
                                             description = "마켓 목록과 페이징 정보"

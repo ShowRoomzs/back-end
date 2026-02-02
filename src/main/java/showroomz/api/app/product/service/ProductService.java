@@ -32,6 +32,7 @@ import showroomz.api.app.wishlist.service.WishlistService;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.global.dto.PageResponse;
 
 import java.util.Comparator;
 import java.util.List;
@@ -60,7 +61,7 @@ public class ProductService {
     /**
      * 사용자용 상품 검색
      */
-    public ProductDto.ProductSearchResponse searchProducts(
+    public PageResponse<ProductDto.ProductItem> searchProducts(
             ProductDto.ProductSearchRequest request,
             Integer page,
             Integer limit,
@@ -104,13 +105,7 @@ public class ProductService {
                 .map(product -> convertToProductItem(product, currentUser))
                 .collect(Collectors.toList());
 
-        // 응답 생성
-        ProductDto.ProductSearchResponse response = ProductDto.ProductSearchResponse.builder()
-                .products(productItems)
-                .pageInfo(convertToPageInfo(productPage))
-                .build();
-
-        return response;
+        return new PageResponse<>(productItems, productPage);
     }
 
     /**
@@ -211,7 +206,7 @@ public class ProductService {
     /**
      * 사용자용 연관 상품 조회
      */
-    public ProductDto.ProductSearchResponse getRelatedProducts(
+    public PageResponse<ProductDto.ProductItem> getRelatedProducts(
             Long productId,
             Integer page,
             Integer limit,
@@ -247,10 +242,7 @@ public class ProductService {
                 .map(item -> convertToProductItem(item, currentUser))
                 .collect(Collectors.toList());
 
-        return ProductDto.ProductSearchResponse.builder()
-                .products(productItems)
-                .pageInfo(convertToPageInfo(relatedPage))
-                .build();
+        return new PageResponse<>(productItems, relatedPage);
     }
 
     /**
@@ -309,19 +301,7 @@ public class ProductService {
                 .build();
     }
 
-    /**
-     * Page 객체를 PageInfo DTO로 변환
-     */
-    public ProductDto.PageInfo convertToPageInfo(Page<Product> page) {
-        return ProductDto.PageInfo.builder()
-                .currentPage(page.getNumber() + 1) // 0-based to 1-based
-                .pageSize(page.getSize())
-                .totalElements(page.getTotalElements())
-                .totalPages(page.getTotalPages())
-                .isLast(page.isLast())
-                .hasNext(page.hasNext())
-                .build();
-    }
+    
 
     private ProductDto.StockStatus buildStockStatus(Product product) {
         boolean isOutOfStockForced = Boolean.TRUE.equals(product.getIsOutOfStockForced());

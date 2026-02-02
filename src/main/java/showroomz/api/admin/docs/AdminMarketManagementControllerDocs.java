@@ -47,7 +47,7 @@ public interface AdminMarketManagementControllerDocs {
                                     @ExampleObject(
                                             name = "목록 조회 예시",
                                             value = "{\n" +
-                                                    "  \"content\": [\n" +
+                                                    "  \"data\": [\n" +
                                                     "    {\n" +
                                                     "      \"marketId\": 10,\n" +
                                                     "      \"marketName\": \"멋쟁이 옷장\",\n" +
@@ -71,10 +71,10 @@ public interface AdminMarketManagementControllerDocs {
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
                                                     "    \"currentPage\": 1,\n" +
+                                                    "    \"pageSize\": 20,\n" +
+                                                    "    \"totalElements\": 42,\n" +
                                                     "    \"totalPages\": 5,\n" +
-                                                    "    \"totalResults\": 42,\n" +
-                                                    "    \"limit\": 20,\n" +
-                                                    "    \"hasNext\": true\n" +
+                                                    "    \"isLast\": false\n" +
                                                     "  }\n" +
                                                     "}"
                                     )

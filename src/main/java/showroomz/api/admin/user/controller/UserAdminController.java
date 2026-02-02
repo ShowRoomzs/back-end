@@ -73,7 +73,7 @@ public class UserAdminController {
                                     @ExampleObject(
                                             name = "목록 조회 예시",
                                             value = "{\n" +
-                                                    "  \"content\": [\n" +
+                                                    "  \"data\": [\n" +
                                                     "    {\n" +
                                                     "      \"userId\": 1,\n" +
                                                     "      \"email\": \"user@example.com\",\n" +
@@ -95,10 +95,10 @@ public class UserAdminController {
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
                                                     "    \"currentPage\": 1,\n" +
+                                                    "    \"pageSize\": 20,\n" +
+                                                    "    \"totalElements\": 42,\n" +
                                                     "    \"totalPages\": 5,\n" +
-                                                    "    \"totalResults\": 42,\n" +
-                                                    "    \"limit\": 20,\n" +
-                                                    "    \"hasNext\": true\n" +
+                                                    "    \"isLast\": false\n" +
                                                     "  }\n" +
                                                     "}"
                                     )

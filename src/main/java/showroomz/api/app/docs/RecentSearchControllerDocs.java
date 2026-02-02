@@ -31,17 +31,16 @@ public interface RecentSearchControllerDocs {
                     "- `page`: 페이지 번호 (1부터 시작, 기본값: 1)\n" +
                     "- `size`: 페이지당 항목 수 (기본값: 20)\n\n" +
                     "**응답 구조**\n" +
-                    "- `content`: 검색 기록 배열\n" +
+                    "- `data`: 검색 기록 배열\n" +
                     "  - `id`: 검색 기록 ID\n" +
                     "  - `term`: 검색 키워드\n" +
                     "  - `createdAt`: 검색 시각 (UTC 기준)\n" +
                     "- `pageInfo`: 페이징 정보\n" +
-                    "  - `page`: 현재 페이지 번호\n" +
-                    "  - `size`: 페이지당 항목 수\n" +
+                    "  - `currentPage`: 현재 페이지 번호\n" +
+                    "  - `pageSize`: 페이지당 항목 수\n" +
                     "  - `totalElements`: 전체 항목 수\n" +
                     "  - `totalPages`: 전체 페이지 수\n" +
-                    "  - `hasNext`: 다음 페이지 존재 여부\n" +
-                    "  - `hasPrevious`: 이전 페이지 존재 여부\n\n" +
+                    "  - `isLast`: 마지막 페이지 여부\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -56,7 +55,7 @@ public interface RecentSearchControllerDocs {
                                     @ExampleObject(
                                             name = "성공 시 (검색 기록 있음)",
                                             value = "{\n" +
-                                                    "  \"content\": [\n" +
+                                                    "  \"data\": [\n" +
                                                     "    {\n" +
                                                     "      \"id\": 1,\n" +
                                                     "      \"term\": \"화이트 린넨 셔츠\",\n" +
@@ -74,26 +73,24 @@ public interface RecentSearchControllerDocs {
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
-                                                    "    \"page\": 1,\n" +
-                                                    "    \"size\": 20,\n" +
+                                                    "    \"currentPage\": 1,\n" +
+                                                    "    \"pageSize\": 20,\n" +
                                                     "    \"totalElements\": 15,\n" +
                                                     "    \"totalPages\": 1,\n" +
-                                                    "    \"hasNext\": false,\n" +
-                                                    "    \"hasPrevious\": false\n" +
+                                                    "    \"isLast\": true\n" +
                                                     "  }\n" +
                                                     "}"
                                     ),
                                     @ExampleObject(
                                             name = "성공 시 (검색 기록 없음)",
                                             value = "{\n" +
-                                                    "  \"content\": [],\n" +
+                                                    "  \"data\": [],\n" +
                                                     "  \"pageInfo\": {\n" +
-                                                    "    \"page\": 1,\n" +
-                                                    "    \"size\": 20,\n" +
+                                                    "    \"currentPage\": 1,\n" +
+                                                    "    \"pageSize\": 20,\n" +
                                                     "    \"totalElements\": 0,\n" +
                                                     "    \"totalPages\": 0,\n" +
-                                                    "    \"hasNext\": false,\n" +
-                                                    "    \"hasPrevious\": false\n" +
+                                                    "    \"isLast\": true\n" +
                                                     "  }\n" +
                                                     "}"
                                     )
