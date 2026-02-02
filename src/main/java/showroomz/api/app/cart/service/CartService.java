@@ -17,6 +17,7 @@ import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductOption;
 import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.product.repository.ProductVariantRepository;
+import showroomz.global.dto.PageInfo;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.util.Comparator;
@@ -91,14 +92,7 @@ public class CartService {
                 .finalTotal(summaryData.finalTotal)
                 .build();
 
-        CartDto.PageInfo pageInfo = CartDto.PageInfo.builder()
-                .currentPage(cartPage.getNumber() + 1)
-                .pageSize(cartPage.getSize())
-                .totalElements(cartPage.getTotalElements())
-                .totalPages(cartPage.getTotalPages())
-                .isLast(cartPage.isLast())
-                .hasNext(cartPage.hasNext())
-                .build();
+        PageInfo pageInfo = new PageInfo(cartPage);
 
         return CartDto.CartListResponse.builder()
                 .items(items)

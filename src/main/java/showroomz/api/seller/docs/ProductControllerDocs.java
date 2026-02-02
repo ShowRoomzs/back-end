@@ -326,7 +326,7 @@ public interface ProductControllerDocs {
                                     @ExampleObject(
                                             name = "성공 예시",
                                             value = "{\n" +
-                                                    "  \"content\": [\n" +
+                                                    "  \"data\": [\n" +
                                                     "    {\n" +
                                                     "      \"productId\": 1,\n" +
                                                     "      \"productNumber\": \"SRZ-20251228-001\",\n" +
@@ -346,10 +346,10 @@ public interface ProductControllerDocs {
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
                                                     "    \"currentPage\": 1,\n" +
+                                                    "    \"pageSize\": 20,\n" +
+                                                    "    \"totalElements\": 195,\n" +
                                                     "    \"totalPages\": 10,\n" +
-                                                    "    \"totalResults\": 195,\n" +
-                                                    "    \"limit\": 20,\n" +
-                                                    "    \"hasNext\": true\n" +
+                                                    "    \"isLast\": false\n" +
                                                     "  }\n" +
                                                     "}"
                                     )
