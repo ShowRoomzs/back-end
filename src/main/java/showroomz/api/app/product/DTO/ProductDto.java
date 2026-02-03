@@ -57,6 +57,20 @@ public class ProductDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
+    @Schema(description = "상품 검색 응답")
+    public static class ProductSearchResponse {
+        @Schema(description = "상품 목록")
+        private List<ProductItem> products;
+
+        @Schema(description = "페이지 정보")
+        private PageInfo pageInfo;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
     @Schema(description = "상품 아이템")
     public static class ProductItem {
         @Schema(description = "상품 ID", example = "1024")
@@ -356,4 +370,29 @@ public class ProductDto {
         private List<Long> optionIds;
     }
 
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "페이지 정보")
+    public static class PageInfo {
+        @Schema(description = "현재 페이지 번호", example = "1")
+        private Integer currentPage;
+
+        @Schema(description = "한 페이지당 보여줄 개수", example = "20")
+        private Integer pageSize;
+
+        @Schema(description = "검색 조건에 맞는 전체 상품 수", example = "1540")
+        private Long totalElements;
+
+        @Schema(description = "전체 페이지 수", example = "77")
+        private Integer totalPages;
+
+        @Schema(description = "마지막 페이지 여부", example = "false")
+        private Boolean isLast;
+
+        @Schema(description = "다음 페이지 존재 여부", example = "true")
+        private Boolean hasNext;
+    }
 }

@@ -13,7 +13,6 @@ import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.api.app.product.service.ProductService;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.member.user.entity.Users;
-import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.ErrorCode;
 
 @RestController("appProductController")
@@ -27,7 +26,7 @@ public class ProductController implements UserProductControllerDocs {
 
     @Override
     @GetMapping
-    public ResponseEntity<PageResponse<ProductDto.ProductItem>> searchProducts(
+    public ResponseEntity<ProductDto.ProductSearchResponse> searchProducts(
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Long categoryId,
@@ -55,7 +54,7 @@ public class ProductController implements UserProductControllerDocs {
 
         Users currentUser = resolveCurrentUser();
 
-        PageResponse<ProductDto.ProductItem> response = productService.searchProducts(
+        ProductDto.ProductSearchResponse response = productService.searchProducts(
                 request,
                 page,
                 limit,
@@ -76,14 +75,14 @@ public class ProductController implements UserProductControllerDocs {
 
     @Override
     @GetMapping("/{productId}/related")
-    public ResponseEntity<PageResponse<ProductDto.ProductItem>> getRelatedProducts(
+    public ResponseEntity<ProductDto.ProductSearchResponse> getRelatedProducts(
             @PathVariable Long productId,
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestParam(required = false, defaultValue = "1") Integer page,
             @RequestParam(required = false, defaultValue = "20") Integer limit
     ) {
         Users currentUser = resolveCurrentUser();
-        PageResponse<ProductDto.ProductItem> response = productService.getRelatedProducts(
+        ProductDto.ProductSearchResponse response = productService.getRelatedProducts(
                 productId,
                 page,
                 limit,

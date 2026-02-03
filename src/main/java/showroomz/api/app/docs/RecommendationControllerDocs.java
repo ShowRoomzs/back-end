@@ -96,7 +96,8 @@ public interface RecommendationControllerDocs {
                                                     "    \"pageSize\": 20,\n" +
                                                     "    \"totalElements\": 150,\n" +
                                                     "    \"totalPages\": 8,\n" +
-                                                    "    \"isLast\": false\n" +
+                                                    "    \"isLast\": false,\n" +
+                                                    "    \"hasNext\": true\n" +
                                                     "  }\n" +
                                                     "}",
                                             description = "통합 추천 응답 (마켓 + 상품)"
