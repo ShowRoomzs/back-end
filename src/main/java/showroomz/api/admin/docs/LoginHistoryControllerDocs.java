@@ -119,7 +119,7 @@ public interface LoginHistoryControllerDocs {
                                     @ExampleObject(
                                             name = "성공 응답 예시",
                                             value = "{\n" +
-                                                    "  \"data\": [\n" +
+                                                    "  \"content\": [\n" +
                                                     "    {\n" +
                                                     "      \"id\": 1,\n" +
                                                     "      \"userId\": 123,\n" +
@@ -145,10 +145,10 @@ public interface LoginHistoryControllerDocs {
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
                                                     "    \"currentPage\": 1,\n" +
-                                                    "    \"pageSize\": 20,\n" +
-                                                    "    \"totalElements\": 150,\n" +
                                                     "    \"totalPages\": 8,\n" +
-                                                    "    \"isLast\": false\n" +
+                                                    "    \"totalResults\": 150,\n" +
+                                                    "    \"limit\": 20,\n" +
+                                                    "    \"hasNext\": true\n" +
                                                     "  }\n" +
                                                     "}"
                                     )

@@ -150,7 +150,7 @@ public interface MarketFollowControllerDocs {
                             examples = @ExampleObject(
                                     name = "조회 성공",
                                     value = "{\n" +
-                                            "  \"data\": [\n" +
+                                            "  \"content\": [\n" +
                                             "    {\n" +
                                             "      \"shopId\": 1,\n" +
                                             "      \"shopName\": \"샘플 마켓\",\n" +
@@ -166,10 +166,10 @@ public interface MarketFollowControllerDocs {
                                             "  ],\n" +
                                             "  \"pageInfo\": {\n" +
                                             "    \"currentPage\": 1,\n" +
-                                            "    \"pageSize\": 10,\n" +
-                                            "    \"totalElements\": 25,\n" +
                                             "    \"totalPages\": 3,\n" +
-                                            "    \"isLast\": false\n" +
+                                            "    \"totalResults\": 25,\n" +
+                                            "    \"limit\": 10,\n" +
+                                            "    \"hasNext\": true\n" +
                                             "  }\n" +
                                             "}"
                             )

@@ -32,7 +32,6 @@ import showroomz.api.app.wishlist.service.WishlistService;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.domain.member.user.entity.Users;
-import showroomz.global.dto.PageResponse;
 
 import java.util.Comparator;
 import java.util.List;
@@ -61,7 +60,7 @@ public class ProductService {
     /**
      * 사용자용 상품 검색
      */
-    public PageResponse<ProductDto.ProductItem> searchProducts(
+    public ProductDto.ProductSearchResponse searchProducts(
             ProductDto.ProductSearchRequest request,
             Integer page,
             Integer limit,
@@ -105,7 +104,13 @@ public class ProductService {
                 .map(product -> convertToProductItem(product, currentUser))
                 .collect(Collectors.toList());
 
-        return new PageResponse<>(productItems, productPage);
+        // 응답 생성
+        ProductDto.ProductSearchResponse response = ProductDto.ProductSearchResponse.builder()
+                .products(productItems)
+                .pageInfo(convertToPageInfo(productPage))
+                .build();
+
+        return response;
     }
 
     /**
@@ -206,7 +211,7 @@ public class ProductService {
     /**
      * 사용자용 연관 상품 조회
      */
-    public PageResponse<ProductDto.ProductItem> getRelatedProducts(
+    public ProductDto.ProductSearchResponse getRelatedProducts(
             Long productId,
             Integer page,
             Integer limit,
@@ -242,7 +247,10 @@ public class ProductService {
                 .map(item -> convertToProductItem(item, currentUser))
                 .collect(Collectors.toList());
 
-        return new PageResponse<>(productItems, relatedPage);
+        return ProductDto.ProductSearchResponse.builder()
+                .products(productItems)
+                .pageInfo(convertToPageInfo(relatedPage))
+                .build();
     }
 
     /**
@@ -301,7 +309,19 @@ public class ProductService {
                 .build();
     }
 
-    
+    /**
+     * Page 객체를 PageInfo DTO로 변환
+     */
+    public ProductDto.PageInfo convertToPageInfo(Page<Product> page) {
+        return ProductDto.PageInfo.builder()
+                .currentPage(page.getNumber() + 1) // 0-based to 1-based
+                .pageSize(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .isLast(page.isLast())
+                .hasNext(page.hasNext())
+                .build();
+    }
 
     private ProductDto.StockStatus buildStockStatus(Product product) {
         boolean isOutOfStockForced = Boolean.TRUE.equals(product.getIsOutOfStockForced());

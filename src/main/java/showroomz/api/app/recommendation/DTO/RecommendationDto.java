@@ -7,7 +7,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import showroomz.api.app.product.DTO.ProductDto;
-import showroomz.global.dto.PageInfo;
 
 import java.util.List;
 
@@ -24,7 +23,7 @@ public class RecommendationDto {
         private List<ProductDto.ProductItem> products;
 
         @Schema(description = "페이지 정보")
-        private PageInfo pageInfo;
+        private ProductDto.PageInfo pageInfo;
     }
 
     @Getter
@@ -70,7 +69,7 @@ public class RecommendationDto {
         private List<MarketRecommendationItem> markets;
 
         @Schema(description = "페이지 정보")
-        private PageInfo pageInfo;
+        private ProductDto.PageInfo pageInfo;
     }
 
     @Getter
@@ -87,6 +86,6 @@ public class RecommendationDto {
         private List<ProductDto.ProductItem> recommendedProducts;
 
         @Schema(description = "페이지 정보 (상품용)")
-        private PageInfo pageInfo;
+        private ProductDto.PageInfo pageInfo;
     }
 }

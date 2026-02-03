@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.docs.WishlistControllerDocs;
 import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.api.app.wishlist.service.WishlistService;
-import showroomz.global.dto.PageResponse;
 
 @RestController
 @RequestMapping("/v1/user/wishlist")
@@ -19,13 +18,13 @@ public class WishlistController implements WishlistControllerDocs {
 
     @Override
     @GetMapping
-    public ResponseEntity<PageResponse<ProductDto.ProductItem>> getWishlist(
+    public ResponseEntity<ProductDto.ProductSearchResponse> getWishlist(
             @AuthenticationPrincipal User principal,
             @RequestParam(value = "page", required = false) Integer page,
             @RequestParam(value = "limit", required = false) Integer limit,
             @RequestParam(value = "categoryId", required = false) Long categoryId) {
 
-        PageResponse<ProductDto.ProductItem> response = wishlistService.getWishlist(
+        ProductDto.ProductSearchResponse response = wishlistService.getWishlist(
                 principal.getUsername(), page, limit, categoryId);
         return ResponseEntity.ok(response);
     }
