@@ -72,6 +72,9 @@ public class SecurityConfig {
             // 샵 조회 API
             "/v1/user/shops",
             "/v1/user/shops/{shopId}",
+
+            // 검색 자동완성 (비로그인 허용)
+            "/v1/user/search/autocomplete",
     };
     /*
      * SecurityFilterChain 설정 (Spring Security 3.x 최신 방식)
