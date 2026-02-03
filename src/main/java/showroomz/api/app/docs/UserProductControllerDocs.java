@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.product.DTO.ProductDto;
+import showroomz.global.dto.PageResponse;
 
 @Tag(name = "Common - Product", description = "공용 상품 API")
 public interface UserProductControllerDocs {
@@ -47,12 +48,12 @@ public interface UserProductControllerDocs {
                     description = "검색 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ProductDto.ProductSearchResponse.class),
+                            schema = @Schema(implementation = PageResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "성공 예시",
                                             value = "{\n" +
-                                                    "  \"products\": [\n" +
+                                                    "  \"content\": [\n" +
                                                     "    {\n" +
                                                     "      \"id\": 1024,\n" +
                                                     "      \"productNumber\": \"SRZ-20251228-001\",\n" +
@@ -95,10 +96,9 @@ public interface UserProductControllerDocs {
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
                                                     "    \"currentPage\": 1,\n" +
-                                                    "    \"pageSize\": 20,\n" +
-                                                    "    \"totalElements\": 1540,\n" +
                                                     "    \"totalPages\": 77,\n" +
-                                                    "    \"isLast\": false,\n" +
+                                                    "    \"totalResults\": 1540,\n" +
+                                                    "    \"limit\": 20,\n" +
                                                     "    \"hasNext\": true\n" +
                                                     "  }\n" +
                                                     "}"
@@ -123,7 +123,7 @@ public interface UserProductControllerDocs {
                     )
             )
     })
-    ResponseEntity<ProductDto.ProductSearchResponse> searchProducts(
+    ResponseEntity<PageResponse<ProductDto.ProductItem>> searchProducts(
             @Parameter(description = "Authorization 헤더 (Optional)", required = false, hidden = true)
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @Parameter(description = "검색 조건", required = false)

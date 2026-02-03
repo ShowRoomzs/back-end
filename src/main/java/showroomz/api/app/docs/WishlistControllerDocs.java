@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.product.DTO.ProductDto;
+import showroomz.global.dto.PageResponse;
 
 @Tag(name = "User - Wishlist", description = "위시리스트 관리 API")
 public interface WishlistControllerDocs {
@@ -28,8 +29,7 @@ public interface WishlistControllerDocs {
                     "- limit: 페이지당 항목 수 - 기본값: 20\n" +
                     "- categoryId: 카테고리 ID (선택, 해당 카테고리 상품만 조회)\n\n" +
                     "**응답:**\n" +
-                    "- 모든 상품의 isWished 값은 true입니다.\n" +
-                    "- ProductSearchResponse 구조를 재사용합니다.\n\n" +
+                    "- 모든 상품의 isWished 값은 true입니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -39,12 +39,12 @@ public interface WishlistControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ProductDto.ProductSearchResponse.class),
+                            schema = @Schema(implementation = PageResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "성공 예시",
                                             value = "{\n" +
-                                                    "  \"products\": [\n" +
+                                                    "  \"content\": [\n" +
                                                     "    {\n" +
                                                     "      \"id\": 1,\n" +
                                                     "      \"productNumber\": \"SRZ-20251228-001\",\n" +
@@ -60,10 +60,9 @@ public interface WishlistControllerDocs {
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
                                                     "    \"currentPage\": 1,\n" +
-                                                    "    \"pageSize\": 20,\n" +
-                                                    "    \"totalElements\": 15,\n" +
                                                     "    \"totalPages\": 1,\n" +
-                                                    "    \"isLast\": true,\n" +
+                                                    "    \"totalResults\": 15,\n" +
+                                                    "    \"limit\": 20,\n" +
                                                     "    \"hasNext\": false\n" +
                                                     "  }\n" +
                                                     "}"
@@ -89,7 +88,7 @@ public interface WishlistControllerDocs {
                     )
             )
     })
-    ResponseEntity<ProductDto.ProductSearchResponse> getWishlist(
+    ResponseEntity<PageResponse<ProductDto.ProductItem>> getWishlist(
             @AuthenticationPrincipal User principal,
             @Parameter(
                     description = "페이지 번호 (1부터 시작)",
