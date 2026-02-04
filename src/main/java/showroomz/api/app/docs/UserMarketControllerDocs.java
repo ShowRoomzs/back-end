@@ -59,12 +59,11 @@ public interface UserMarketControllerDocs {
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
-                                                    "    \"page\": 1,\n" +
-                                                    "    \"size\": 20,\n" +
-                                                    "    \"totalElements\": 150,\n" +
-                                                    "    \"totalPages\": 8,\n" +
-                                                    "    \"first\": true,\n" +
-                                                    "    \"last\": false\n" +
+                                                    "    \"currentPage\": 1,\n" +
+                                                    "    \"totalPages\": 1,\n" +
+                                                    "    \"totalResults\": 11,\n" +
+                                                    "    \"limit\": 20,\n" +
+                                                    "    \"hasNext\": false\n" +
                                                     "  }\n" +
                                                     "}",
                                             description = "마켓 목록과 페이징 정보"
