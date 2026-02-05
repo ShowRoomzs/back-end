@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.filter.DTO.FilterDto;
-import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.category.repository.CategoryRepository;
 import showroomz.api.admin.filter.DTO.CategoryFilterDto;
@@ -16,6 +15,7 @@ import showroomz.domain.filter.repository.CategoryFilterRepository;
 import showroomz.domain.filter.repository.CategoryFilterValueRepository;
 import showroomz.domain.filter.repository.FilterRepository;
 import showroomz.domain.filter.repository.FilterValueRepository;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.util.ArrayList;

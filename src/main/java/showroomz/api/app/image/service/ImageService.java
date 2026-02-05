@@ -8,10 +8,10 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
-import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.image.DTO.ImageUploadResponse;
 import showroomz.api.app.image.type.ImageType;
 import showroomz.global.config.properties.S3Properties;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.awt.image.BufferedImage;

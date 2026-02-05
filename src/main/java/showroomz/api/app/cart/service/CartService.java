@@ -5,7 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import showroomz.api.app.auth.exception.BusinessException;
+
 import showroomz.api.app.cart.dto.CartDto;
 import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.api.app.user.repository.UserRepository;
@@ -17,6 +17,7 @@ import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductOption;
 import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.product.repository.ProductVariantRepository;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.util.Comparator;

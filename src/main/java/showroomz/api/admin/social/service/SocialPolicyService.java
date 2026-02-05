@@ -6,7 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.domain.social.entity.SocialLoginPolicy;
 import showroomz.domain.social.repository.SocialLoginPolicyRepository;
-import showroomz.api.app.auth.exception.BusinessException;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.util.HashMap;

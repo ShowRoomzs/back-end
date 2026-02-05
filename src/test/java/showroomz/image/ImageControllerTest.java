@@ -12,13 +12,13 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
-import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
 import showroomz.api.app.image.DTO.ImageUploadResponse;
 import showroomz.api.app.image.controller.ImageController;
 import showroomz.api.app.image.service.ImageService;
 import showroomz.api.app.image.type.ImageType;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.error.exception.GlobalExceptionHandler;
 

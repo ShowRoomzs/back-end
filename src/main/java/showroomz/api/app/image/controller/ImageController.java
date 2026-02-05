@@ -10,13 +10,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
 import showroomz.api.app.docs.ImageControllerDocs;
 import showroomz.api.app.image.DTO.ImageUploadResponse;
 import showroomz.api.app.image.service.ImageService;
 import showroomz.api.app.image.type.ImageType;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.HeaderUtil;
 

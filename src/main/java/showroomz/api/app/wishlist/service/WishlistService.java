@@ -6,7 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import showroomz.api.app.auth.exception.BusinessException;
+
 import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.member.user.entity.Users;
@@ -15,6 +15,7 @@ import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.category.service.CategoryHierarchyService;
 import showroomz.domain.wishlist.entitiy.Wishlist;
 import showroomz.domain.wishlist.repository.WishlistRepository;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.dto.PageResponse;
 

@@ -1,7 +1,6 @@
-package showroomz.api.app.auth.exception;
+package showroomz.global.error.exception;
 
 import lombok.Getter;
-import showroomz.global.error.exception.ErrorCode;
 
 @Getter
 public class BusinessException extends RuntimeException {

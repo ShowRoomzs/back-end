@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.api.seller.market.DTO.MarketDto;
@@ -16,6 +15,7 @@ import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.market.type.ShopType;
 import showroomz.domain.market.type.SnsType;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.util.List;

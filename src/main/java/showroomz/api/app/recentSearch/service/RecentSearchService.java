@@ -5,7 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import showroomz.api.app.auth.exception.BusinessException;
+
 import showroomz.api.app.recentSearch.DTO.RecentSearchResponse;
 import showroomz.api.app.recentSearch.DTO.RecentSearchSyncRequest;
 import showroomz.api.app.user.repository.UserRepository;
@@ -14,6 +14,7 @@ import showroomz.domain.recentSearch.entitiy.RecentSearch;
 import showroomz.domain.recentSearch.repository.RecentSearchRepository;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.time.Instant;

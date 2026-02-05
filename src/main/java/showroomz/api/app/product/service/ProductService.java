@@ -29,7 +29,7 @@ import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.domain.category.service.CategoryHierarchyService;
 import showroomz.domain.wishlist.repository.WishlistRepository;
 import showroomz.api.app.wishlist.service.WishlistService;
-import showroomz.api.app.auth.exception.BusinessException;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.dto.PageResponse;

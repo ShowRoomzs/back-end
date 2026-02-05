@@ -3,11 +3,12 @@ package showroomz.api.app.setting.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import showroomz.api.app.auth.exception.BusinessException;
+
 import showroomz.api.app.setting.DTO.NotificationSettingRequest;
 import showroomz.api.app.setting.DTO.NotificationSettingResponse;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.time.LocalDateTime;

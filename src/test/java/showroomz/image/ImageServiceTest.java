@@ -10,11 +10,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
-import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.image.DTO.ImageUploadResponse;
 import showroomz.api.app.image.service.ImageService;
 import showroomz.api.app.image.type.ImageType;
 import showroomz.global.config.properties.S3Properties;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import software.amazon.awssdk.core.sync.RequestBody;

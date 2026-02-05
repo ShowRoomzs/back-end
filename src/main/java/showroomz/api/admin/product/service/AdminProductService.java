@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.product.DTO.AdminProductDto;
-import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductRepository;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 @Service

@@ -9,9 +9,9 @@ import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.docs.MarketFollowControllerDocs;
 import showroomz.api.app.market.DTO.FollowingMarketResponse;
 import showroomz.api.app.market.service.MarketFollowService;
-import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 @RestController

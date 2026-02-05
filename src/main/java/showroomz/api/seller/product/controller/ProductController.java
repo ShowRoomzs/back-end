@@ -8,10 +8,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
-import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.seller.docs.ProductControllerDocs;
 import showroomz.api.seller.product.DTO.ProductDto;
 import showroomz.api.seller.product.service.ProductService;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;

@@ -5,11 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.api.admin.category.DTO.CategoryDto;
 import showroomz.api.admin.filter.DTO.CategoryFilterDto;
 import showroomz.api.admin.filter.service.FilterService;
-import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.category.repository.CategoryRepository;
 import showroomz.domain.category.service.CategoryHierarchyService;
