@@ -3,14 +3,19 @@ package showroomz.api.app.user.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
+
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.docs.UserControllerDocs;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
+import showroomz.api.app.user.DTO.RefundAccountRequest;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
 import showroomz.api.app.user.DTO.UserProfileResponse;
 import showroomz.api.app.user.service.UserService;
@@ -159,6 +164,19 @@ public class UserController implements UserControllerDocs {
         }
 
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @PutMapping("/refund-account")
+    public ResponseEntity<Void> updateRefundAccount(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @Valid @RequestBody RefundAccountRequest request
+    ) {
+        if (userPrincipal == null) {
+            throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
+        }
+        userService.updateRefundAccount(userPrincipal.getUserId(), request);
+        return ResponseEntity.ok().build();
     }
 }
 

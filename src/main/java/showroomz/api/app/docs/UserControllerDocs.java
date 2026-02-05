@@ -9,12 +9,15 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
+import showroomz.api.app.user.DTO.RefundAccountRequest;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
 import showroomz.api.app.user.DTO.UserProfileResponse;
 
@@ -355,4 +358,130 @@ public interface UserControllerDocs {
             )
     )
     ResponseEntity<?> updateCurrentUser(@RequestBody UpdateUserProfileRequest request);
+
+    @Operation(
+            summary = "환불 계좌 등록/수정",
+            description = "로그인한 사용자의 환불 계좌 정보를 등록하거나 수정합니다.\n\n" +
+                    "**설명**\n" +
+                    "- 환불이 발생할 경우 이 계좌로 환불금이 입금됩니다.\n" +
+                    "- 기존 환불 계좌가 있는 경우 새 정보로 덮어씌워집니다.\n" +
+                    "- `bankCode`는 은행 목록 조회 API(`/banks`)에서 제공하는 3자리 표준 코드를 사용합니다. (예: KB국민은행 004, 카카오뱅크 090)\n" +
+                    "- `accountNumber`는 하이픈 없이 숫자만 입력해야 합니다.\n" +
+                    "- `accountHolder`(예금주명)는 선택 입력입니다.\n\n" +
+                    "**권한:** USER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "등록/수정 성공 - Status: 200 OK (응답 본문 없음)"
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "입력값 형식 오류 - Status: 400 Bad Request",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ValidationErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "유효성 검증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"입력값이 올바르지 않습니다.\",\n" +
+                                                    "  \"errors\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"field\": \"bankCode\",\n" +
+                                                    "      \"reason\": \"은행 코드는 3자리여야 합니다.\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"field\": \"accountNumber\",\n" +
+                                                    "      \"reason\": \"계좌번호는 숫자만 입력해주세요.\"\n" +
+                                                    "    }\n" +
+                                                    "  ]\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "탈퇴한 회원 - Status: 403 Forbidden",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "탈퇴 회원",
+                                            value = "{\n" +
+                                                    "  \"code\": \"USER_WITHDRAWN\",\n" +
+                                                    "  \"message\": \"탈퇴한 회원입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "사용자 또는 은행 코드를 찾을 수 없음 - Status: 404 Not Found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "사용자 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"USER_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 회원입니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "은행 코드 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"B-001\",\n" +
+                                                    "  \"message\": \"존재하지 않는 은행 코드입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "환불 계좌 정보 (bankCode, accountNumber 필수 / accountHolder 선택)",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = RefundAccountRequest.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "요청 예시",
+                                    value = "{\n" +
+                                            "  \"bankCode\": \"004\",\n" +
+                                            "  \"accountNumber\": \"123456789012\",\n" +
+                                            "  \"accountHolder\": \"홍길동\"\n" +
+                                            "}"
+                            )
+                    }
+            )
+    )
+    ResponseEntity<Void> updateRefundAccount(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestBody RefundAccountRequest request
+    );
 }

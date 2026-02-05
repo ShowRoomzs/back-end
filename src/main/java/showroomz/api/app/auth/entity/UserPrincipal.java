@@ -1,6 +1,5 @@
 package showroomz.api.app.auth.entity;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -18,6 +17,7 @@ import java.util.Collections;
 @RequiredArgsConstructor
 // [변경] OAuth2User, OidcUser 인터페이스 제거
 public class UserPrincipal implements UserDetails {
+    private final Long userId;
     private final String username;
     private final String password;
     private final ProviderType providerType;
@@ -56,6 +56,7 @@ public class UserPrincipal implements UserDetails {
 
     public static UserPrincipal create(Users user) {
         return new UserPrincipal(
+                user.getId(),
                 user.getUsername(),
                 user.getPassword(),
                 user.getProviderType(),
