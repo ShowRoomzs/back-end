@@ -3,7 +3,7 @@ package showroomz.api.app.wishlist.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.docs.WishlistControllerDocs;
 import showroomz.api.app.product.DTO.ProductDto;
@@ -20,33 +20,33 @@ public class WishlistController implements WishlistControllerDocs {
     @Override
     @GetMapping
     public ResponseEntity<PageResponse<ProductDto.ProductItem>> getWishlist(
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(value = "page", required = false) Integer page,
             @RequestParam(value = "limit", required = false) Integer limit,
             @RequestParam(value = "categoryId", required = false) Long categoryId) {
 
         PageResponse<ProductDto.ProductItem> response = wishlistService.getWishlist(
-                principal.getUsername(), page, limit, categoryId);
+                userPrincipal.getUsername(), page, limit, categoryId);
         return ResponseEntity.ok(response);
     }
 
     @Override
     @PostMapping("/{productId}")
     public ResponseEntity<Void> addWishlist(
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable("productId") Long productId) {
 
-        wishlistService.addWishlist(principal.getUsername(), productId);
+        wishlistService.addWishlist(userPrincipal.getUsername(), productId);
         return ResponseEntity.noContent().build();
     }
 
     @Override
     @DeleteMapping("/{productId}")
     public ResponseEntity<Void> deleteWishlist(
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable("productId") Long productId) {
 
-        wishlistService.deleteWishlist(principal.getUsername(), productId);
+        wishlistService.deleteWishlist(userPrincipal.getUsername(), productId);
         return ResponseEntity.noContent().build();
     }
 }

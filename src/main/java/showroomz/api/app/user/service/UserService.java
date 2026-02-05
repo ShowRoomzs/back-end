@@ -5,15 +5,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
+import showroomz.api.app.user.DTO.RefundAccountRequest;
+import showroomz.api.app.user.DTO.RefundAccountResponse;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
 import showroomz.api.app.user.DTO.UserProfileResponse;
 import showroomz.api.app.user.DTO.WithdrawalRequest;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.domain.bank.entity.Bank;
+import showroomz.domain.bank.repository.BankRepository;
 import showroomz.domain.history.entity.WithdrawalHistory;
 import showroomz.domain.history.repository.WithdrawalHistoryRepository;
 import showroomz.domain.market.repository.MarketFollowRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.member.user.type.UserStatus;
+import showroomz.domain.member.user.vo.RefundAccount;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.time.LocalDateTime;
@@ -23,6 +28,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final BankRepository bankRepository;
     private final MarketFollowRepository marketFollowRepository;
     private final WithdrawalHistoryRepository withdrawalHistoryRepository;
 
@@ -251,5 +257,47 @@ public class UserService {
         // user.setEmail(user.getId() + "@withdrawn.user"); // 유니크 제약조건 유지를 위해 ID 활용
         
         // Dirty Checking(변경 감지)에 의해 트랜잭션 종료 시 자동으로 Update 쿼리가 실행됩니다.
+    }
+
+    /**
+     * 내 환불 계좌 정보 조회
+     * 등록된 계좌가 없으면 null을 반환합니다.
+     */
+    @Transactional(readOnly = true)
+    public RefundAccountResponse getRefundAccount(Long userId) {
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        RefundAccount account = user.getRefundAccount();
+        if (account == null) {
+            return null;
+        }
+
+        return RefundAccountResponse.of(account, account.getBank().getName());
+    }
+
+    /**
+     * 환불 계좌 등록 및 수정
+     */
+    @Transactional
+    public void updateRefundAccount(Long userId, RefundAccountRequest request) {
+        // 1. 유저 조회
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // 2. 탈퇴 회원 체크
+        if (user.getStatus() == UserStatus.WITHDRAWN) {
+            throw new BusinessException(ErrorCode.USER_WITHDRAWN);
+        }
+
+        Bank bank = bankRepository.findById(request.getBankCode())
+                .orElseThrow(() -> new BusinessException(ErrorCode.BANK_NOT_FOUND));
+
+        // 4. 계좌 정보 업데이트
+        user.updateRefundAccount(
+                bank,
+                request.getAccountNumber(),
+                request.getAccountHolder()
+        );
     }
 }

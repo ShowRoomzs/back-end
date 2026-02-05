@@ -3,13 +3,14 @@ package showroomz.api.app.auth.token;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
+import showroomz.api.app.auth.entity.RoleType;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.auth.exception.TokenValidFailedException;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 
 import java.security.Key;
 import java.util.Arrays;
@@ -22,6 +23,7 @@ public class AuthTokenProvider {
 
     private final Key key;
     private static final String AUTHORITIES_KEY = "role";
+    private static final String PK_KEY = "pk";
 
     public AuthTokenProvider(String secret) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
@@ -61,7 +63,16 @@ public class AuthTokenProvider {
                             .collect(Collectors.toList());
 
             log.debug("claims subject := [{}]", claims.getSubject());
-            User principal = new User(claims.getSubject(), "", authorities);
+            String roleStr = roleClaim.toString();
+            RoleType roleType = RoleType.of(roleStr);
+            Long userId = claims.get(PK_KEY, Long.class);
+
+            UserPrincipal principal = new UserPrincipal(
+                    userId,
+                    claims.getSubject(),
+                    roleType,
+                    authorities
+            );
 
             return new UsernamePasswordAuthenticationToken(principal, authToken, authorities);
         } else {

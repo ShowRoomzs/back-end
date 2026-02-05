@@ -3,14 +3,19 @@ package showroomz.api.app.user.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
 
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.docs.UserControllerDocs;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
+import showroomz.api.app.user.DTO.RefundAccountRequest;
+import showroomz.api.app.user.DTO.RefundAccountResponse;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
 import showroomz.api.app.user.DTO.UserProfileResponse;
 import showroomz.api.app.user.service.UserService;
@@ -33,12 +38,12 @@ public class UserController implements UserControllerDocs {
         // 1. SecurityContext에서 현재 인증된 사용자 정보 가져오기
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        if (principal == null || !(principal instanceof User)) {
+        if (principal == null || !(principal instanceof UserPrincipal)) {
             throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
         }
 
-        User springUser = (User) principal;
-        String username = springUser.getUsername();
+        UserPrincipal userPrincipal = (UserPrincipal) principal;
+        String username = userPrincipal.getUsername();
 
         // 2. 사용자 프로필 조회 (팔로잉 수 포함)
         UserProfileResponse response = userService.getProfile(username);
@@ -57,11 +62,11 @@ public class UserController implements UserControllerDocs {
     @io.swagger.v3.oas.annotations.Hidden
     public Users getUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal == null || !(principal instanceof User)) {
+        if (principal == null || !(principal instanceof UserPrincipal)) {
              throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
         }
         
-        return userService.getUser(((User) principal).getUsername())
+        return userService.getUser(((UserPrincipal) principal).getUsername())
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
@@ -78,12 +83,12 @@ public class UserController implements UserControllerDocs {
         // 1. SecurityContext에서 현재 인증된 사용자 정보 가져오기
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        if (principal == null || !(principal instanceof User)) {
+        if (principal == null || !(principal instanceof UserPrincipal)) {
             throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
         }
 
-        User springUser = (User) principal;
-        String username = springUser.getUsername();
+        UserPrincipal userPrincipal = (UserPrincipal) principal;
+        String username = userPrincipal.getUsername();
 
         // 2. 현재 사용자 정보 조회
         Users currentUser = userService.getUser(username)
@@ -159,6 +164,31 @@ public class UserController implements UserControllerDocs {
         }
 
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @GetMapping("/refund-account")
+    public ResponseEntity<RefundAccountResponse> getRefundAccount(
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
+        if (userPrincipal == null) {
+            throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
+        }
+        RefundAccountResponse response = userService.getRefundAccount(userPrincipal.getUserId());
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @PutMapping("/refund-account")
+    public ResponseEntity<Void> updateRefundAccount(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @Valid @RequestBody RefundAccountRequest request
+    ) {
+        if (userPrincipal == null) {
+            throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
+        }
+        userService.updateRefundAccount(userPrincipal.getUserId(), request);
+        return ResponseEntity.ok().build();
     }
 }
 

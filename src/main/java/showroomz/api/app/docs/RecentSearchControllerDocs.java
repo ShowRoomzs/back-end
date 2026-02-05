@@ -10,7 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -136,7 +136,7 @@ public interface RecentSearchControllerDocs {
     })
     ResponseEntity<PageResponse<RecentSearchResponse>> getMyRecentSearches(
             @Parameter(hidden = true)
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Parameter(
                     description = "페이징 요청 파라미터 (선택사항)",
                     schema = @Schema(implementation = PagingRequest.class)
@@ -230,7 +230,7 @@ public interface RecentSearchControllerDocs {
     })
     ResponseEntity<Void> deleteRecentSearch(
             @Parameter(hidden = true)
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Parameter(
                     name = "recentSearchId",
                     description = "삭제할 검색 기록의 ID",
@@ -296,7 +296,7 @@ public interface RecentSearchControllerDocs {
     })
     ResponseEntity<Void> saveRecentSearch(
             @Parameter(hidden = true)
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Parameter(
                     name = "keyword",
                     description = "저장할 검색어",
@@ -313,7 +313,10 @@ public interface RecentSearchControllerDocs {
                     "- 각 검색어마다 기존과 동일한 로직 적용 (있으면 갱신, 없으면 저장)\n" +
                     "- 빈 문자열이나 null은 무시\n\n" +
                     "**요청 본문:**\n" +
-                    "- `keywords`: 동기화할 검색어 목록 (배열)\n\n" +
+                    "- `keywords`: 동기화할 검색어 목록 (배열)\n" +
+                    "  - `keyword` (필수): 검색어 문자열\n" +
+                    "  - `createdAt` (선택): 검색 시각 (예: \"2026-02-05T10:15:40.673Z\"),\n" +
+                    "    값이 없으면 서버 현재 시각이 사용됩니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -360,7 +363,7 @@ public interface RecentSearchControllerDocs {
     })
     ResponseEntity<Void> syncRecentSearches(
             @Parameter(hidden = true)
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Parameter(description = "동기화할 검색어 목록", required = true)
             @RequestBody RecentSearchSyncRequest request
     );

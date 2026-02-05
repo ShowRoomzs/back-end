@@ -10,6 +10,8 @@ import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.domain.member.user.type.UserStatus;
 import showroomz.domain.member.user.vo.NotificationSetting;
+import showroomz.domain.member.user.vo.RefundAccount;
+import showroomz.domain.bank.entity.Bank;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -110,6 +112,9 @@ public class Users {
     @Embedded
     private NotificationSetting notificationSetting;
 
+    @Embedded
+    private RefundAccount refundAccount; // 환불 계좌 정보 (null 가능)
+
     public Users(
             @NotNull @Size(max = 64) String username,
             @NotNull @Size(max = 100) String nickname,
@@ -138,6 +143,15 @@ public class Users {
     // 상태 변경을 위한 메서드 추가 (비즈니스 로직용)
     public void updateStatus(UserStatus status) {
         this.status = status;
+    }
+
+    // 환불 계좌 정보 업데이트 메서드
+    public void updateRefundAccount(Bank bank, String accountNumber, String accountHolder) {
+        this.refundAccount = RefundAccount.builder()
+                .bank(bank)
+                .accountNumber(accountNumber)
+                .accountHolder(accountHolder)
+                .build();
     }
 
     // 알림 설정 변경 메서드

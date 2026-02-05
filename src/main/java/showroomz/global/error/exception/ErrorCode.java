@@ -93,7 +93,11 @@ public enum ErrorCode {
     DUPLICATE_CATEGORY_NAME(HttpStatus.BAD_REQUEST, "DUPLICATE_CATEGORY_NAME", "이미 존재하는 카테고리명입니다."),
     CATEGORY_IN_USE(HttpStatus.BAD_REQUEST, "CATEGORY_IN_USE", "사용 중인 카테고리는 삭제할 수 없습니다."),
 
-    /* * 9. 배송지 (Address)
+    /* * 9. 은행 (Bank)
+     */
+    BANK_NOT_FOUND(HttpStatus.NOT_FOUND, "B-001", "존재하지 않는 은행 코드입니다."),
+
+    /* * 10. 배송지 (Address)
      */
     ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "ADDRESS_NOT_FOUND", "존재하지 않는 배송지입니다."),
     MAX_ADDRESS_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "MAX_ADDRESS_LIMIT_EXCEEDED", "배송지는 최대 10개까지만 등록 가능합니다."),

@@ -4,7 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,17 +30,17 @@ public class CartController implements CartControllerDocs {
     @Override
     @PostMapping
     public ResponseEntity<CartDto.AddCartResponse> addCart(
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody CartDto.AddCartRequest request
     ) {
-        CartDto.AddCartResponse response = cartService.addCart(principal.getUsername(), request);
+        CartDto.AddCartResponse response = cartService.addCart(userPrincipal.getUsername(), request);
         return ResponseEntity.ok(response);
     }
 
     @Override
     @GetMapping
     public ResponseEntity<CartDto.CartListResponse> getCart(
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
             @RequestParam(value = "limit", required = false, defaultValue = "20") Integer limit
     ) {
@@ -48,37 +48,37 @@ public class CartController implements CartControllerDocs {
         int pageSize = (limit != null && limit > 0) ? limit : 20;
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
 
-        CartDto.CartListResponse response = cartService.getCart(principal.getUsername(), pageable);
+        CartDto.CartListResponse response = cartService.getCart(userPrincipal.getUsername(), pageable);
         return ResponseEntity.ok(response);
     }
 
     @Override
     @PatchMapping("/{cartItemId}")
     public ResponseEntity<CartDto.UpdateCartResponse> updateCart(
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long cartItemId,
             @RequestBody CartDto.UpdateCartRequest request
     ) {
-        CartDto.UpdateCartResponse response = cartService.updateCart(principal.getUsername(), cartItemId, request);
+        CartDto.UpdateCartResponse response = cartService.updateCart(userPrincipal.getUsername(), cartItemId, request);
         return ResponseEntity.ok(response);
     }
 
     @Override
     @DeleteMapping("/{cartItemId}")
     public ResponseEntity<CartDto.DeleteCartResponse> deleteCart(
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long cartItemId
     ) {
-        CartDto.DeleteCartResponse response = cartService.deleteCart(principal.getUsername(), cartItemId);
+        CartDto.DeleteCartResponse response = cartService.deleteCart(userPrincipal.getUsername(), cartItemId);
         return ResponseEntity.ok(response);
     }
 
     @Override
     @DeleteMapping
     public ResponseEntity<CartDto.ClearCartResponse> clearCart(
-            @AuthenticationPrincipal User principal
+            @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
-        CartDto.ClearCartResponse response = cartService.clearCart(principal.getUsername());
+        CartDto.ClearCartResponse response = cartService.clearCart(userPrincipal.getUsername());
         return ResponseEntity.ok(response);
     }
 }
