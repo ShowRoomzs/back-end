@@ -4,9 +4,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
+import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.seller.docs.MarketControllerDocs;
 import showroomz.api.seller.market.DTO.MarketDto;
 import showroomz.api.seller.market.service.MarketService;
@@ -23,10 +23,10 @@ public class MarketController implements MarketControllerDocs {
     // 현재 로그인한 Admin의 Email 가져오기 (SecurityContext의 username은 email)
     private String getCurrentAdminEmail() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal == null || !(principal instanceof User)) {
+        if (principal == null || !(principal instanceof UserPrincipal)) {
             throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
         }
-        return ((User) principal).getUsername();
+        return ((UserPrincipal) principal).getUsername();
     }
 
     @Override

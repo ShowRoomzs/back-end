@@ -8,10 +8,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Hidden;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.docs.UserMarketControllerDocs;
 import showroomz.api.app.market.DTO.MarketDetailResponse;
 import showroomz.api.app.market.DTO.MarketListResponse;
@@ -48,8 +48,8 @@ public class UserMarketController implements UserMarketControllerDocs {
         
         String username = null;
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof User) {
-            username = ((User) authentication.getPrincipal()).getUsername();
+        if (authentication != null && authentication.getPrincipal() instanceof UserPrincipal) {
+            username = ((UserPrincipal) authentication.getPrincipal()).getUsername();
         }
 
         MarketDetailResponse response = userMarketService.getMarketDetail(shopId, username);

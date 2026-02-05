@@ -3,9 +3,9 @@ package showroomz.api.app.market.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
+import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.docs.MarketFollowControllerDocs;
 import showroomz.api.app.market.DTO.FollowingMarketResponse;
 import showroomz.api.app.market.service.MarketFollowService;
@@ -57,10 +57,10 @@ public class MarketFollowController implements MarketFollowControllerDocs {
 
     private String getUsername() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal == null || !(principal instanceof User)) {
+        if (principal == null || !(principal instanceof UserPrincipal)) {
             throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
         }
-        return ((User) principal).getUsername();
+        return ((UserPrincipal) principal).getUsername();
     }
 }
 

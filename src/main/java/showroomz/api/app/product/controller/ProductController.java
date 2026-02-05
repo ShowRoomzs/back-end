@@ -5,9 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
+import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.docs.UserProductControllerDocs;
 import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.api.app.product.service.ProductService;
@@ -106,7 +106,7 @@ public class ProductController implements UserProductControllerDocs {
     private Users resolveCurrentUser() {
         try {
             Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (principal instanceof User userPrincipal) {
+            if (principal instanceof UserPrincipal userPrincipal) {
                 return userRepository.findByUsername(userPrincipal.getUsername()).orElse(null);
             }
         } catch (Exception ignored) {
