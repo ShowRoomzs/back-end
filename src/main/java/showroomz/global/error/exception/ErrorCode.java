@@ -95,7 +95,7 @@ public enum ErrorCode {
 
     /* * 9. 은행 (Bank)
      */
-    BANK_NOT_FOUND(HttpStatus.NOT_FOUND, "B-001", "존재하지 않는 은행 코드입니다."),
+    BANK_NOT_FOUND(HttpStatus.NOT_FOUND, "BANK_NOT_FOUND", "존재하지 않는 은행 코드입니다."),
 
     /* * 10. 배송지 (Address)
      */

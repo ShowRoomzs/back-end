@@ -524,7 +524,7 @@ public interface UserControllerDocs {
                                     @ExampleObject(
                                             name = "은행 코드 없음",
                                             value = "{\n" +
-                                                    "  \"code\": \"B-001\",\n" +
+                                                    "  \"code\": \"BANK_NOT_FOUND\",\n" +
                                                     "  \"message\": \"존재하지 않는 은행 코드입니다.\"\n" +
                                                     "}"
                                     )
