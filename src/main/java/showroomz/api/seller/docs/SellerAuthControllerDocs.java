@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.RefreshTokenRequest;
 import showroomz.api.app.auth.DTO.TokenResponse;
-import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.DTO.SellerLoginRequest;
 import showroomz.api.seller.auth.DTO.SellerSignUpRequest;
@@ -69,38 +68,30 @@ public interface SellerAuthControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "398",
-                    description = "입력값 형식 오류 - Status: 400 Bad Request",
+                    description = "입력값 형식 오류 - Status: 400 Bad Request (@Valid 실패 시 첫 번째 필드 오류 메시지 반환)",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ValidationErrorResponse.class),
+                            schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "입력값 오류 예시",
+                                            name = "이메일 형식 오류",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"입력값이 올바르지 않습니다.\",\n" +
-                                                    "  \"errors\": [\n" +
-                                                    "    {\n" +
-                                                    "      \"field\": \"email\",\n" +
-                                                    "      \"reason\": \"이메일 형식이 올바르지 않습니다.\"\n" +
-                                                    "    },\n" +
-                                                    "    {\n" +
-                                                    "      \"field\": \"password\",\n" +
-                                                    "      \"reason\": \"비밀번호는 8~16자의 영문자, 숫자, 특수문자를 포함해야 합니다.\"\n" +
-                                                    "    },\n" +
-                                                    "    {\n" +
-                                                    "      \"field\": \"sellerContact\",\n" +
-                                                    "      \"reason\": \"올바른 휴대폰 번호 형식이 아닙니다.\"\n" +
-                                                    "    },\n" +
-                                                    "    {\n" +
-                                                    "      \"field\": \"marketName\",\n" +
-                                                    "      \"reason\": \"마켓명은 공백과 특수문자를 사용할 수 없으며, 한글 또는 영문 중 하나만 사용해야 합니다.\"\n" +
-                                                    "    },\n" +
-                                                    "    {\n" +
-                                                    "      \"field\": \"csNumber\",\n" +
-                                                    "      \"reason\": \"올바른 전화번호 형식이 아닙니다.\"\n" +
-                                                    "    }\n" +
-                                                    "  ]\n" +
+                                                    "  \"message\": \"이메일 형식이 올바르지 않습니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "비밀번호 형식 오류",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"비밀번호는 8~16자의 영문자, 숫자, 특수문자를 포함해야 합니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "마켓명 오류",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"마켓명은 공백과 특수문자를 사용할 수 없으며, 한글 또는 영문 중 하나만 사용해야 합니다.\"\n" +
                                                     "}"
                                     )
                             }
@@ -355,23 +346,13 @@ public interface SellerAuthControllerDocs {
                     description = "입력값 형식 오류",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ValidationErrorResponse.class),
+                            schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "입력값 오류 예시",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"입력값이 올바르지 않습니다.\",\n" +
-                                                    "  \"errors\": [\n" +
-                                                    "    {\n" +
-                                                    "      \"field\": \"email\",\n" +
-                                                    "      \"reason\": \"이메일을 입력해주세요.\"\n" +
-                                                    "    },\n" +
-                                                    "    {\n" +
-                                                    "      \"field\": \"password\",\n" +
-                                                    "      \"reason\": \"비밀번호를 입력해주세요.\"\n" +
-                                                    "    }\n" +
-                                                    "  ]\n" +
+                                                    "  \"message\": \"이메일을 입력해주세요.\"\n" +
                                                     "}"
                                     )
                             }
