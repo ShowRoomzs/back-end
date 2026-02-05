@@ -42,7 +42,7 @@ public class RecentSearchController implements RecentSearchControllerDocs {
     @DeleteMapping("/{recentSearchId}")
     public ResponseEntity<Void> deleteRecentSearch(
             @AuthenticationPrincipal User principal,
-            @PathVariable Long recentSearchId
+            @PathVariable("recentSearchId") Long recentSearchId
     ) {
         recentSearchService.deleteRecentSearch(principal.getUsername(), recentSearchId);
         return ResponseEntity.noContent().build();
