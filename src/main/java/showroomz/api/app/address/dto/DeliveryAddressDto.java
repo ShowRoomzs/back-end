@@ -53,7 +53,8 @@ public class DeliveryAddressDto {
         private String address;
         private String detailAddress;
         private String phoneNumber;
-        @JsonProperty("isDefault")
+
+        // @JsonProperty("isDefault") 제거: Getter(isDefault())를 통해 JSON 키가 "default"로 생성됨
         private boolean isDefault;
 
         public static Response from(DeliveryAddress entity) {

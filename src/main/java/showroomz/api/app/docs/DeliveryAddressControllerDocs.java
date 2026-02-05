@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import showroomz.api.app.address.dto.DeliveryAddressDto;
 import showroomz.api.app.auth.DTO.ErrorResponse;
-import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 
 import java.util.List;
 
@@ -26,7 +25,7 @@ public interface DeliveryAddressControllerDocs {
             summary = "배송지 목록 조회",
             description = "현재 로그인한 사용자의 등록된 배송지 목록을 조회합니다.\n\n" +
                     "**정렬 규칙:**\n" +
-                    "- 기본 배송지(`isDefault: true`)가 가장 먼저 표시됩니다.\n" +
+                    "- 기본 배송지(`default: true`)가 가장 먼저 표시됩니다.\n" +
                     "- 그 다음 최근 수정일 기준 내림차순으로 정렬됩니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
@@ -49,7 +48,7 @@ public interface DeliveryAddressControllerDocs {
                                                     "    \"address\": \"서울특별시 강남구 테헤란로 123\",\n" +
                                                     "    \"detailAddress\": \"101동 101호\",\n" +
                                                     "    \"phoneNumber\": \"010-1234-5678\",\n" +
-                                                    "    \"isDefault\": true\n" +
+                                                    "    \"default\": true\n" +
                                                     "  },\n" +
                                                     "  {\n" +
                                                     "    \"id\": 2,\n" +
@@ -58,7 +57,7 @@ public interface DeliveryAddressControllerDocs {
                                                     "    \"address\": \"부산광역시 해운대구 해운대해변로 456\",\n" +
                                                     "    \"detailAddress\": \"202동 202호\",\n" +
                                                     "    \"phoneNumber\": \"010-9876-5432\",\n" +
-                                                    "    \"isDefault\": false\n" +
+                                                    "    \"default\": false\n" +
                                                     "  }\n" +
                                                     "]"
                                     ),
@@ -130,7 +129,7 @@ public interface DeliveryAddressControllerDocs {
                                                     "  \"address\": \"서울특별시 강남구 테헤란로 123\",\n" +
                                                     "  \"detailAddress\": \"101동 101호\",\n" +
                                                     "  \"phoneNumber\": \"010-1234-5678\",\n" +
-                                                    "  \"isDefault\": true\n" +
+                                                    "  \"default\": true\n" +
                                                     "}"
                                     )
                             }
@@ -209,26 +208,16 @@ public interface DeliveryAddressControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "입력값 오류 - Status: 400 Bad Request",
+                    description = "입력값 오류 또는 비즈니스 예외 - Status: 400 Bad Request",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ValidationErrorResponse.class),
+                            schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "유효성 검증 실패",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"입력값이 올바르지 않습니다.\",\n" +
-                                                    "  \"errors\": [\n" +
-                                                    "    {\n" +
-                                                    "      \"field\": \"recipientName\",\n" +
-                                                    "      \"message\": \"수령인 이름은 필수입니다.\"\n" +
-                                                    "    },\n" +
-                                                    "    {\n" +
-                                                    "      \"field\": \"phoneNumber\",\n" +
-                                                    "      \"message\": \"전화번호 형식이 올바르지 않습니다. (예: 010-1234-5678)\"\n" +
-                                                    "    }\n" +
-                                                    "  ]\n" +
+                                                    "  \"message\": \"입력값이 올바르지 않습니다.\"\n" +
                                                     "}"
                                     ),
                                     @ExampleObject(
@@ -439,23 +428,13 @@ public interface DeliveryAddressControllerDocs {
                     description = "입력값 오류 - Status: 400 Bad Request",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ValidationErrorResponse.class),
+                            schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "유효성 검증 실패",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"입력값이 올바르지 않습니다.\",\n" +
-                                                    "  \"errors\": [\n" +
-                                                    "    {\n" +
-                                                    "      \"field\": \"recipientName\",\n" +
-                                                    "      \"message\": \"수령인 이름은 필수입니다.\"\n" +
-                                                    "    },\n" +
-                                                    "    {\n" +
-                                                    "      \"field\": \"phoneNumber\",\n" +
-                                                    "      \"message\": \"전화번호 형식이 올바르지 않습니다. (예: 010-1234-5678)\"\n" +
-                                                    "    }\n" +
-                                                    "  ]\n" +
+                                                    "  \"message\": \"입력값이 올바르지 않습니다.\"\n" +
                                                     "}"
                                     )
                             }
