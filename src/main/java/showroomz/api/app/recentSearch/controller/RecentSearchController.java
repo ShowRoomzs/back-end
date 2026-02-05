@@ -55,7 +55,7 @@ public class RecentSearchController implements RecentSearchControllerDocs {
     @PostMapping
     public ResponseEntity<Void> saveRecentSearch(
             @AuthenticationPrincipal User principal,
-            @RequestParam String keyword) {
+            @RequestParam("keyword") String keyword) {
         
         // 검색어가 비어있지 않을 때만 저장
         if (keyword != null && !keyword.isBlank()) {

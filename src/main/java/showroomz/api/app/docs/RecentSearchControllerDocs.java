@@ -303,7 +303,7 @@ public interface RecentSearchControllerDocs {
                     required = true,
                     example = "화이트 린넨 셔츠"
             )
-            @RequestParam String keyword
+            @RequestParam("keyword") String keyword
     );
 
     @Operation(
