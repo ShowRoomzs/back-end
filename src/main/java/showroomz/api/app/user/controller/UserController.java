@@ -16,6 +16,7 @@ import showroomz.api.app.docs.UserControllerDocs;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.RefundAccountRequest;
+import showroomz.api.app.user.DTO.RefundAccountResponse;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
 import showroomz.api.app.user.DTO.UserProfileResponse;
 import showroomz.api.app.user.service.UserService;
@@ -163,6 +164,18 @@ public class UserController implements UserControllerDocs {
             response.setProfileImageUrl(null);
         }
 
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @GetMapping("/refund-account")
+    public ResponseEntity<RefundAccountResponse> getRefundAccount(
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
+        if (userPrincipal == null) {
+            throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
+        }
+        RefundAccountResponse response = userService.getRefundAccount(userPrincipal.getUserId());
         return ResponseEntity.ok(response);
     }
 

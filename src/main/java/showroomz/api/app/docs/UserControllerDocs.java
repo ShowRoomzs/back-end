@@ -18,6 +18,7 @@ import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.RefundAccountRequest;
+import showroomz.api.app.user.DTO.RefundAccountResponse;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
 import showroomz.api.app.user.DTO.UserProfileResponse;
 
@@ -360,12 +361,36 @@ public interface UserControllerDocs {
     ResponseEntity<?> updateCurrentUser(@RequestBody UpdateUserProfileRequest request);
 
     @Operation(
+            summary = "내 환불 계좌 조회",
+            description = "등록된 환불 계좌 정보를 조회합니다. 등록된 정보가 없으면 null을 반환합니다.\n\n" +
+                    "**권한:** USER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공 - Status: 200 OK (등록된 계좌가 있으면 본문에 데이터, 없으면 null)"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized"
+            ),f
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음 - Status: 404 Not Found"
+            )
+    })
+    ResponseEntity<RefundAccountResponse> getRefundAccount(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal
+    );
+
+    @Operation(
             summary = "환불 계좌 등록/수정",
             description = "로그인한 사용자의 환불 계좌 정보를 등록하거나 수정합니다.\n\n" +
                     "**설명**\n" +
                     "- 환불이 발생할 경우 이 계좌로 환불금이 입금됩니다.\n" +
                     "- 기존 환불 계좌가 있는 경우 새 정보로 덮어씌워집니다.\n" +
-                    "- `bankCode`는 은행 목록 조회 API(`/banks`)에서 제공하는 3자리 표준 코드를 사용합니다. (예: KB국민은행 004, 카카오뱅크 090)\n" +
+                    "- `bankCode`는 은행 목록 조회 API(`common/banks`)에서 제공하는 3자리 표준 코드를 사용합니다. (예: KB국민은행 004, 카카오뱅크 090)\n" +
                     "- `accountNumber`는 하이픈 없이 숫자만 입력해야 합니다.\n" +
                     "- `accountHolder`(예금주명)는 선택 입력입니다.\n\n" +
                     "**권한:** USER\n" +

@@ -6,16 +6,19 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.RefundAccountRequest;
+import showroomz.api.app.user.DTO.RefundAccountResponse;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
 import showroomz.api.app.user.DTO.UserProfileResponse;
 import showroomz.api.app.user.DTO.WithdrawalRequest;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.domain.bank.entity.Bank;
 import showroomz.domain.bank.repository.BankRepository;
 import showroomz.domain.history.entity.WithdrawalHistory;
 import showroomz.domain.history.repository.WithdrawalHistoryRepository;
 import showroomz.domain.market.repository.MarketFollowRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.member.user.type.UserStatus;
+import showroomz.domain.member.user.vo.RefundAccount;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.time.LocalDateTime;
@@ -254,6 +257,28 @@ public class UserService {
         // user.setEmail(user.getId() + "@withdrawn.user"); // 유니크 제약조건 유지를 위해 ID 활용
         
         // Dirty Checking(변경 감지)에 의해 트랜잭션 종료 시 자동으로 Update 쿼리가 실행됩니다.
+    }
+
+    /**
+     * 내 환불 계좌 정보 조회
+     * 등록된 계좌가 없으면 null을 반환합니다.
+     */
+    @Transactional(readOnly = true)
+    public RefundAccountResponse getRefundAccount(Long userId) {
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        RefundAccount account = user.getRefundAccount();
+
+        if (account == null) {
+            return null;
+        }
+
+        String bankName = bankRepository.findById(account.getBankCode())
+                .map(Bank::getName)
+                .orElse("미지원 은행");
+
+        return RefundAccountResponse.of(account, bankName);
     }
 
     /**
