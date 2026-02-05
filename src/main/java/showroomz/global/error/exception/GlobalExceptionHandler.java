@@ -4,7 +4,6 @@ import io.sentry.Sentry; // Sentry import 추가
 import lombok.extern.slf4j.Slf4j;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
-import showroomz.api.app.auth.exception.BusinessException;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;

@@ -8,13 +8,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import showroomz.api.admin.market.DTO.AdminMarketDto;
 import showroomz.api.admin.market.type.RejectionReasonType;
-import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.service.MailService;
 

@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.auth.DTO.RefreshTokenRequest;
 import showroomz.api.app.auth.DTO.TokenResponse;
 import showroomz.api.app.auth.entity.RoleType;
-import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
 import showroomz.api.seller.auth.DTO.SellerDto;
@@ -27,6 +26,7 @@ import showroomz.domain.market.type.ShopType;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.config.properties.AppProperties;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.time.LocalDateTime;

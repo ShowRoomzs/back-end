@@ -4,11 +4,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.address.dto.DeliveryAddressDto;
-import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.domain.address.entity.DeliveryAddress;
 import showroomz.domain.address.repository.DeliveryAddressRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.util.List;

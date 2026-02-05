@@ -8,8 +8,8 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.address.dto.DeliveryAddressDto;
 import showroomz.api.app.address.service.DeliveryAddressService;
-import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.docs.DeliveryAddressControllerDocs;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.util.List;

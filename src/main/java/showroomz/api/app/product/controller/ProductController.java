@@ -7,13 +7,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
-import showroomz.api.app.auth.exception.BusinessException;
+
 import showroomz.api.app.docs.UserProductControllerDocs;
 import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.api.app.product.service.ProductService;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 @RestController("appProductController")

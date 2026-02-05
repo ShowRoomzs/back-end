@@ -8,11 +8,11 @@ import org.springframework.web.bind.annotation.*;
 import showroomz.api.admin.docs.AdminMarketControllerDocs;
 import showroomz.api.admin.market.DTO.AdminMarketDto;
 import showroomz.api.admin.market.service.AdminService;
-import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 @RestController
