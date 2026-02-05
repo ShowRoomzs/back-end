@@ -451,23 +451,20 @@ public interface UserControllerDocs {
                     description = "입력값 형식 오류 - Status: 400 Bad Request",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ValidationErrorResponse.class),
+                            schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "유효성 검증 실패",
+                                            name = "은행 코드 오류",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"입력값이 올바르지 않습니다.\",\n" +
-                                                    "  \"errors\": [\n" +
-                                                    "    {\n" +
-                                                    "      \"field\": \"bankCode\",\n" +
-                                                    "      \"reason\": \"은행 코드는 3자리여야 합니다.\"\n" +
-                                                    "    },\n" +
-                                                    "    {\n" +
-                                                    "      \"field\": \"accountNumber\",\n" +
-                                                    "      \"reason\": \"계좌번호는 숫자만 입력해주세요.\"\n" +
-                                                    "    }\n" +
-                                                    "  ]\n" +
+                                                    "  \"message\": \"은행 코드는 3자리여야 합니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "계좌번호 오류",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"계좌번호는 숫자만 입력해주세요.\"\n" +
                                                     "}"
                                     )
                             }
