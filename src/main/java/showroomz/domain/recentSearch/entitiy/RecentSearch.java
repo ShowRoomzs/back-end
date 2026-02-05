@@ -3,7 +3,6 @@ package showroomz.domain.recentSearch.entitiy;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
 import showroomz.domain.member.user.entity.Users;
 
 import java.time.Instant;
@@ -26,24 +25,27 @@ public class RecentSearch {
     @Column(nullable = false, length = 255)
     private String term;
 
-    @CreationTimestamp
+    // @CreationTimestamp 제거: 클라이언트 시간을 우선 사용
     @Column(name = "created_at", nullable = false, updatable = true)
     private Instant createdAt;
 
     /**
      * 최근 검색어 생성 (팩토리 메서드)
+     * - createdAt이 null이면 현재 시간 사용
      */
-    public static RecentSearch create(Users user, String term) {
+    public static RecentSearch create(Users user, String term, Instant createdAt) {
         RecentSearch recentSearch = new RecentSearch();
         recentSearch.user = user;
         recentSearch.term = term;
+        recentSearch.createdAt = createdAt != null ? createdAt : Instant.now();
         return recentSearch;
     }
 
     /**
-     * 타임스탬프를 현재 시간으로 업데이트
+     * 타임스탬프를 전달받은 시간으로 업데이트
+     * - createdAt이 null이면 현재 시간으로 설정
      */
-    public void updateTimestamp() {
-        this.createdAt = Instant.now();
+    public void updateTimestamp(Instant createdAt) {
+        this.createdAt = createdAt != null ? createdAt : Instant.now();
     }
 }
