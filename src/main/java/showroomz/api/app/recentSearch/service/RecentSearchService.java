@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.auth.exception.BusinessException;
 import showroomz.api.app.recentSearch.DTO.RecentSearchResponse;
+import showroomz.api.app.recentSearch.DTO.RecentSearchSyncRequest;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.recentSearch.entitiy.RecentSearch;
@@ -15,6 +16,7 @@ import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -66,10 +68,10 @@ public class RecentSearchService {
         // 이미 존재하는지 확인 (Optional)
         recentSearchRepository.findByUserAndTerm(user, keyword)
             .ifPresentOrElse(
-                // 1. 있으면 시간만 업데이트 (Dirty Checking)
-                existingSearch -> existingSearch.updateTimestamp(), 
-                // 2. 없으면 새로 생성
-                () -> recentSearchRepository.save(RecentSearch.create(user, keyword)) 
+                // 1. 있으면 시간만 업데이트 (현재 시간 기준)
+                existingSearch -> existingSearch.updateTimestamp(null),
+                // 2. 없으면 새로 생성 (현재 시간 기준)
+                () -> recentSearchRepository.save(RecentSearch.create(user, keyword, null))
             );
 
         // (선택) 최대 10개까지만 유지하고 싶다면, 오래된 것 삭제 로직 추가
@@ -77,19 +79,24 @@ public class RecentSearchService {
 
     /**
      * 검색어 목록 일괄 저장 (동기화)
+     * - 요청받은 createdAt 시간으로 설정
      */
     @Transactional
-    public void syncRecentSearches(String username, List<String> keywords) {
+    public void syncRecentSearches(String username, List<RecentSearchSyncRequest.RecentSearchSyncItem> items) {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        for (String keyword : keywords) {
+        for (RecentSearchSyncRequest.RecentSearchSyncItem item : items) {
+            if (item == null) continue;
+            String keyword = item.getKeyword();
+            Instant createdAt = item.getCreatedAt();
+
             if (keyword == null || keyword.isBlank()) continue;
 
             recentSearchRepository.findByUserAndTerm(user, keyword)
                     .ifPresentOrElse(
-                            RecentSearch::updateTimestamp,
-                            () -> recentSearchRepository.save(RecentSearch.create(user, keyword))
+                            existing -> existing.updateTimestamp(createdAt),
+                            () -> recentSearchRepository.save(RecentSearch.create(user, keyword, createdAt))
                     );
         }
     }
