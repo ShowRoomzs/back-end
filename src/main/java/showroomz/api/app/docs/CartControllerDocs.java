@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -52,7 +52,7 @@ public interface CartControllerDocs {
             )
     })
     ResponseEntity<CartDto.AddCartResponse> addCart(
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @RequestBody CartDto.AddCartRequest request
     );
 
@@ -81,7 +81,7 @@ public interface CartControllerDocs {
             )
     })
     ResponseEntity<CartDto.CartListResponse> getCart(
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
             @RequestParam(value = "limit", required = false, defaultValue = "20") Integer limit
     );
@@ -119,7 +119,7 @@ public interface CartControllerDocs {
             )
     })
     ResponseEntity<CartDto.UpdateCartResponse> updateCart(
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long cartItemId,
             @RequestBody CartDto.UpdateCartRequest request
     );
@@ -173,7 +173,7 @@ public interface CartControllerDocs {
             )
     })
     ResponseEntity<CartDto.DeleteCartResponse> deleteCart(
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long cartItemId
     );
 
@@ -232,6 +232,6 @@ public interface CartControllerDocs {
             )
     })
     ResponseEntity<CartDto.ClearCartResponse> clearCart(
-            @AuthenticationPrincipal User principal
+            @AuthenticationPrincipal UserPrincipal principal
     );
 }

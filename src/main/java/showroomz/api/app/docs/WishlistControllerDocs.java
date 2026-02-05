@@ -10,7 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
@@ -89,7 +89,7 @@ public interface WishlistControllerDocs {
             )
     })
     ResponseEntity<PageResponse<ProductDto.ProductItem>> getWishlist(
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Parameter(
                     description = "페이지 번호 (1부터 시작)",
                     example = "1"
@@ -164,7 +164,7 @@ public interface WishlistControllerDocs {
             )
     })
     ResponseEntity<Void> addWishlist(
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Parameter(
                     name = "productId",
                     description = "위시리스트에 추가할 상품 ID",
@@ -231,7 +231,7 @@ public interface WishlistControllerDocs {
             )
     })
     ResponseEntity<Void> deleteWishlist(
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Parameter(
                     name = "productId",
                     description = "위시리스트에서 삭제할 상품 ID",

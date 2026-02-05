@@ -10,7 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -136,7 +136,7 @@ public interface RecentSearchControllerDocs {
     })
     ResponseEntity<PageResponse<RecentSearchResponse>> getMyRecentSearches(
             @Parameter(hidden = true)
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Parameter(
                     description = "페이징 요청 파라미터 (선택사항)",
                     schema = @Schema(implementation = PagingRequest.class)
@@ -230,7 +230,7 @@ public interface RecentSearchControllerDocs {
     })
     ResponseEntity<Void> deleteRecentSearch(
             @Parameter(hidden = true)
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Parameter(
                     name = "recentSearchId",
                     description = "삭제할 검색 기록의 ID",
@@ -296,7 +296,7 @@ public interface RecentSearchControllerDocs {
     })
     ResponseEntity<Void> saveRecentSearch(
             @Parameter(hidden = true)
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Parameter(
                     name = "keyword",
                     description = "저장할 검색어",
@@ -360,7 +360,7 @@ public interface RecentSearchControllerDocs {
     })
     ResponseEntity<Void> syncRecentSearches(
             @Parameter(hidden = true)
-            @AuthenticationPrincipal User principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Parameter(description = "동기화할 검색어 목록", required = true)
             @RequestBody RecentSearchSyncRequest request
     );

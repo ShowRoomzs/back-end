@@ -5,7 +5,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -39,12 +38,12 @@ public class UserController implements UserControllerDocs {
         // 1. SecurityContext에서 현재 인증된 사용자 정보 가져오기
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        if (principal == null || !(principal instanceof User)) {
+        if (principal == null || !(principal instanceof UserPrincipal)) {
             throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
         }
 
-        User springUser = (User) principal;
-        String username = springUser.getUsername();
+        UserPrincipal userPrincipal = (UserPrincipal) principal;
+        String username = userPrincipal.getUsername();
 
         // 2. 사용자 프로필 조회 (팔로잉 수 포함)
         UserProfileResponse response = userService.getProfile(username);
@@ -63,11 +62,11 @@ public class UserController implements UserControllerDocs {
     @io.swagger.v3.oas.annotations.Hidden
     public Users getUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal == null || !(principal instanceof User)) {
+        if (principal == null || !(principal instanceof UserPrincipal)) {
              throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
         }
         
-        return userService.getUser(((User) principal).getUsername())
+        return userService.getUser(((UserPrincipal) principal).getUsername())
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
@@ -84,12 +83,12 @@ public class UserController implements UserControllerDocs {
         // 1. SecurityContext에서 현재 인증된 사용자 정보 가져오기
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        if (principal == null || !(principal instanceof User)) {
+        if (principal == null || !(principal instanceof UserPrincipal)) {
             throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
         }
 
-        User springUser = (User) principal;
-        String username = springUser.getUsername();
+        UserPrincipal userPrincipal = (UserPrincipal) principal;
+        String username = userPrincipal.getUsername();
 
         // 2. 현재 사용자 정보 조회
         Users currentUser = userService.getUser(username)
