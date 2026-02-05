@@ -23,7 +23,7 @@ public class RefundAccountResponse {
 
     public static RefundAccountResponse of(RefundAccount account, String bankName) {
         return RefundAccountResponse.builder()
-                .bankCode(account.getBankCode())
+                .bankCode(account.getBank().getCode())
                 .bankName(bankName)
                 .accountNumber(account.getAccountNumber())
                 .accountHolder(account.getAccountHolder())

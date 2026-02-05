@@ -1,19 +1,20 @@
 package showroomz.domain.member.user.vo;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import showroomz.domain.bank.entity.Bank;
 
 @Embeddable
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RefundAccount {
 
-    @Column(name = "REFUND_BANK_CODE", length = 3)
-    private String bankCode; // Bank 테이블의 PK (논리적 연결)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "REFUND_BANK_CODE", nullable = true)
+    private Bank bank;
 
     @Column(name = "REFUND_ACCOUNT_NUMBER", length = 20)
     private String accountNumber;
@@ -22,8 +23,8 @@ public class RefundAccount {
     private String accountHolder;
 
     @Builder
-    public RefundAccount(String bankCode, String accountNumber, String accountHolder) {
-        this.bankCode = bankCode;
+    public RefundAccount(Bank bank, String accountNumber, String accountHolder) {
+        this.bank = bank;
         this.accountNumber = accountNumber;
         this.accountHolder = accountHolder;
     }

@@ -11,6 +11,7 @@ import showroomz.api.app.auth.entity.RoleType;
 import showroomz.domain.member.user.type.UserStatus;
 import showroomz.domain.member.user.vo.NotificationSetting;
 import showroomz.domain.member.user.vo.RefundAccount;
+import showroomz.domain.bank.entity.Bank;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -145,9 +146,9 @@ public class Users {
     }
 
     // 환불 계좌 정보 업데이트 메서드
-    public void updateRefundAccount(String bankCode, String accountNumber, String accountHolder) {
+    public void updateRefundAccount(Bank bank, String accountNumber, String accountHolder) {
         this.refundAccount = RefundAccount.builder()
-                .bankCode(bankCode)
+                .bank(bank)
                 .accountNumber(accountNumber)
                 .accountHolder(accountHolder)
                 .build();

@@ -269,16 +269,11 @@ public class UserService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         RefundAccount account = user.getRefundAccount();
-
         if (account == null) {
             return null;
         }
 
-        String bankName = bankRepository.findById(account.getBankCode())
-                .map(Bank::getName)
-                .orElse("미지원 은행");
-
-        return RefundAccountResponse.of(account, bankName);
+        return RefundAccountResponse.of(account, account.getBank().getName());
     }
 
     /**
@@ -295,14 +290,12 @@ public class UserService {
             throw new BusinessException(ErrorCode.USER_WITHDRAWN);
         }
 
-        // 3. 은행 코드 유효성 검증 (Bank 테이블에 존재하는 코드인지 확인)
-        if (!bankRepository.existsById(request.getBankCode())) {
-            throw new BusinessException(ErrorCode.BANK_NOT_FOUND);
-        }
+        Bank bank = bankRepository.findById(request.getBankCode())
+                .orElseThrow(() -> new BusinessException(ErrorCode.BANK_NOT_FOUND));
 
         // 4. 계좌 정보 업데이트
         user.updateRefundAccount(
-                request.getBankCode(),
+                bank,
                 request.getAccountNumber(),
                 request.getAccountHolder()
         );
