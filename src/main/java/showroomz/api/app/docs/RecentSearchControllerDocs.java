@@ -13,10 +13,12 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.recentSearch.DTO.RecentSearchResponse;
+import showroomz.api.app.recentSearch.DTO.RecentSearchSyncRequest;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
@@ -36,12 +38,11 @@ public interface RecentSearchControllerDocs {
                     "  - `term`: 검색 키워드\n" +
                     "  - `createdAt`: 검색 시각 (UTC 기준)\n" +
                     "- `pageInfo`: 페이징 정보\n" +
-                    "  - `page`: 현재 페이지 번호\n" +
-                    "  - `size`: 페이지당 항목 수\n" +
-                    "  - `totalElements`: 전체 항목 수\n" +
+                    "  - `currentPage`: 현재 페이지 번호\n" +
+                    "  - `limit`: 페이지당 항목 수\n" +
+                    "  - `totalResults`: 전체 항목 수\n" +
                     "  - `totalPages`: 전체 페이지 수\n" +
-                    "  - `hasNext`: 다음 페이지 존재 여부\n" +
-                    "  - `hasPrevious`: 이전 페이지 존재 여부\n\n" +
+                    "  - `hasNext`: 다음 페이지 존재 여부\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -74,12 +75,11 @@ public interface RecentSearchControllerDocs {
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
-                                                    "    \"page\": 1,\n" +
-                                                    "    \"size\": 20,\n" +
-                                                    "    \"totalElements\": 15,\n" +
+                                                    "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 1,\n" +
-                                                    "    \"hasNext\": false,\n" +
-                                                    "    \"hasPrevious\": false\n" +
+                                                    "    \"totalResults\": 15,\n" +
+                                                    "    \"limit\": 20,\n" +
+                                                    "    \"hasNext\": false\n" +
                                                     "  }\n" +
                                                     "}"
                                     ),
@@ -88,12 +88,11 @@ public interface RecentSearchControllerDocs {
                                             value = "{\n" +
                                                     "  \"content\": [],\n" +
                                                     "  \"pageInfo\": {\n" +
-                                                    "    \"page\": 1,\n" +
-                                                    "    \"size\": 20,\n" +
-                                                    "    \"totalElements\": 0,\n" +
+                                                    "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 0,\n" +
-                                                    "    \"hasNext\": false,\n" +
-                                                    "    \"hasPrevious\": false\n" +
+                                                    "    \"totalResults\": 0,\n" +
+                                                    "    \"limit\": 20,\n" +
+                                                    "    \"hasNext\": false\n" +
                                                     "  }\n" +
                                                     "}"
                                     )
@@ -304,6 +303,65 @@ public interface RecentSearchControllerDocs {
                     required = true,
                     example = "화이트 린넨 셔츠"
             )
-            @RequestParam String keyword
+            @RequestParam("keyword") String keyword
+    );
+
+    @Operation(
+            summary = "로컬 검색어 목록 서버 동기화",
+            description = "클라이언트의 로컬 검색어 목록을 서버에 동기화합니다. 로그인 직후 호출합니다.\n\n" +
+                    "**동작 방식:**\n" +
+                    "- 각 검색어마다 기존과 동일한 로직 적용 (있으면 갱신, 없으면 저장)\n" +
+                    "- 빈 문자열이나 null은 무시\n\n" +
+                    "**요청 본문:**\n" +
+                    "- `keywords`: 동기화할 검색어 목록 (배열)\n\n" +
+                    "**권한:** USER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "동기화 성공 - Status: 204 No Content",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음 - Status: 404 Not Found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "사용자 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"USER_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 회원입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<Void> syncRecentSearches(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal User principal,
+            @Parameter(description = "동기화할 검색어 목록", required = true)
+            @RequestBody RecentSearchSyncRequest request
     );
 }

@@ -15,6 +15,8 @@ import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class RecentSearchService {
@@ -69,7 +71,26 @@ public class RecentSearchService {
                 // 2. 없으면 새로 생성
                 () -> recentSearchRepository.save(RecentSearch.create(user, keyword)) 
             );
-            
+
         // (선택) 최대 10개까지만 유지하고 싶다면, 오래된 것 삭제 로직 추가
+    }
+
+    /**
+     * 검색어 목록 일괄 저장 (동기화)
+     */
+    @Transactional
+    public void syncRecentSearches(String username, List<String> keywords) {
+        Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        for (String keyword : keywords) {
+            if (keyword == null || keyword.isBlank()) continue;
+
+            recentSearchRepository.findByUserAndTerm(user, keyword)
+                    .ifPresentOrElse(
+                            RecentSearch::updateTimestamp,
+                            () -> recentSearchRepository.save(RecentSearch.create(user, keyword))
+                    );
+        }
     }
 }
