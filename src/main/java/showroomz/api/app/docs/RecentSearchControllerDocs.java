@@ -36,12 +36,11 @@ public interface RecentSearchControllerDocs {
                     "  - `term`: 검색 키워드\n" +
                     "  - `createdAt`: 검색 시각 (UTC 기준)\n" +
                     "- `pageInfo`: 페이징 정보\n" +
-                    "  - `page`: 현재 페이지 번호\n" +
-                    "  - `size`: 페이지당 항목 수\n" +
-                    "  - `totalElements`: 전체 항목 수\n" +
+                    "  - `currentPage`: 현재 페이지 번호\n" +
+                    "  - `limit`: 페이지당 항목 수\n" +
+                    "  - `totalResults`: 전체 항목 수\n" +
                     "  - `totalPages`: 전체 페이지 수\n" +
-                    "  - `hasNext`: 다음 페이지 존재 여부\n" +
-                    "  - `hasPrevious`: 이전 페이지 존재 여부\n\n" +
+                    "  - `hasNext`: 다음 페이지 존재 여부\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -74,12 +73,11 @@ public interface RecentSearchControllerDocs {
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
-                                                    "    \"page\": 1,\n" +
-                                                    "    \"size\": 20,\n" +
-                                                    "    \"totalElements\": 15,\n" +
+                                                    "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 1,\n" +
-                                                    "    \"hasNext\": false,\n" +
-                                                    "    \"hasPrevious\": false\n" +
+                                                    "    \"totalResults\": 15,\n" +
+                                                    "    \"limit\": 20,\n" +
+                                                    "    \"hasNext\": false\n" +
                                                     "  }\n" +
                                                     "}"
                                     ),
@@ -88,12 +86,11 @@ public interface RecentSearchControllerDocs {
                                             value = "{\n" +
                                                     "  \"content\": [],\n" +
                                                     "  \"pageInfo\": {\n" +
-                                                    "    \"page\": 1,\n" +
-                                                    "    \"size\": 20,\n" +
-                                                    "    \"totalElements\": 0,\n" +
+                                                    "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 0,\n" +
-                                                    "    \"hasNext\": false,\n" +
-                                                    "    \"hasPrevious\": false\n" +
+                                                    "    \"totalResults\": 0,\n" +
+                                                    "    \"limit\": 20,\n" +
+                                                    "    \"hasNext\": false\n" +
                                                     "  }\n" +
                                                     "}"
                                     )
