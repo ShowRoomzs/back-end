@@ -374,7 +374,7 @@ public interface UserControllerDocs {
             @ApiResponse(
                     responseCode = "401",
                     description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized"
-            ),f
+            ),
             @ApiResponse(
                     responseCode = "404",
                     description = "사용자를 찾을 수 없음 - Status: 404 Not Found"
