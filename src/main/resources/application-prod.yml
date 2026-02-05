@@ -33,3 +33,4 @@ sentry:
     - org.springframework.web.servlet.resource.NoResourceFoundException
     - org.springframework.web.HttpMediaTypeNotAcceptableException # 봇 공격 방어용 추가 권장
     - org.springframework.web.HttpRequestMethodNotSupportedException # 봇 공격 방어용 추가 권장  
+    - showroomz.api.app.auth.exception.BusinessException
