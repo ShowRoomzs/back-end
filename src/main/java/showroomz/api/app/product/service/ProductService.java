@@ -8,9 +8,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.market.repository.MarketFollowRepository;
@@ -423,7 +423,7 @@ public class ProductService {
     private Users resolveCurrentUser() {
         try {
             Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (principal instanceof User userPrincipal) {
+            if (principal instanceof UserPrincipal userPrincipal) {
                 return userRepository.findByUsername(userPrincipal.getUsername()).orElse(null);
             }
         } catch (Exception ignored) {
