@@ -313,7 +313,10 @@ public interface RecentSearchControllerDocs {
                     "- 각 검색어마다 기존과 동일한 로직 적용 (있으면 갱신, 없으면 저장)\n" +
                     "- 빈 문자열이나 null은 무시\n\n" +
                     "**요청 본문:**\n" +
-                    "- `keywords`: 동기화할 검색어 목록 (배열)\n\n" +
+                    "- `keywords`: 동기화할 검색어 목록 (배열)\n" +
+                    "  - `keyword` (필수): 검색어 문자열\n" +
+                    "  - `createdAt` (선택): 검색 시각 (예: \"2026-02-05T10:15:40.673Z\"),\n" +
+                    "    값이 없으면 서버 현재 시각이 사용됩니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )

@@ -369,15 +369,60 @@ public interface UserControllerDocs {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "조회 성공 - Status: 200 OK (등록된 계좌가 있으면 본문에 데이터, 없으면 null)"
+                    description = "조회 성공 - Status: 200 OK (등록된 계좌가 있으면 본문에 데이터, 없으면 null)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = RefundAccountResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "등록된 환불 계좌가 있는 경우",
+                                            value = "{\n" +
+                                                    "  \"bankCode\": \"004\",\n" +
+                                                    "  \"bankName\": \"KB국민은행\",\n" +
+                                                    "  \"accountNumber\": \"123456789012\",\n" +
+                                                    "  \"accountHolder\": \"홍길동\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "등록된 환불 계좌가 없는 경우",
+                                            value = "null"
+                                    )
+                            }
+                    )
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized"
+                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "사용자를 찾을 수 없음 - Status: 404 Not Found"
+                    description = "사용자를 찾을 수 없음 - Status: 404 Not Found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "사용자 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"USER_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 회원입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
             )
     })
     ResponseEntity<RefundAccountResponse> getRefundAccount(
