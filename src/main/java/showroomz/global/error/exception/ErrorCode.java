@@ -13,6 +13,7 @@ public enum ErrorCode {
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."),
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "입력값이 올바르지 않습니다."),
     NOT_FOUND(HttpStatus.NOT_FOUND, "NOT_FOUND", "Resource not found"),
+    NOT_FOUND_DATA(HttpStatus.NOT_FOUND, "NOT_FOUND_DATA", "데이터를 찾을 수 없습니다."),
 
     /* * 2. 소셜 로그인 (Social Login)
      */
@@ -56,6 +57,7 @@ public enum ErrorCode {
     MISSING_REFRESH_TOKEN_LOGOUT(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "Refresh Token이 필요합니다."),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "아이디 또는 비밀번호가 올바르지 않습니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다."),
+    ACCESS_DENIED(HttpStatus.FORBIDDEN, "ACCESS_DENIED", "해당 리소스에 대한 접근 권한이 없습니다."),
     
     // 승인 대기 중 로그인 시도 에러
     ACCOUNT_NOT_APPROVED(HttpStatus.FORBIDDEN, "ACCOUNT_NOT_APPROVED", "관리자 승인 대기 중인 계정입니다."),

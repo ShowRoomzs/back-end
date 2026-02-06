@@ -17,11 +17,11 @@ public class InquiryDetailResponse {
     @Schema(description = "문의 ID")
     private Long id;
 
-    @Schema(description = "문의 유형")
+    @Schema(description = "문의 타입 (대분류)")
     private InquiryType type;
 
-    @Schema(description = "문의 제목")
-    private String title;
+    @Schema(description = "문의 유형 (상세)")
+    private String category;
 
     @Schema(description = "문의 내용")
     private String content;
@@ -45,7 +45,7 @@ public class InquiryDetailResponse {
         return InquiryDetailResponse.builder()
                 .id(inquiry.getId())
                 .type(inquiry.getType())
-                .title(inquiry.getTitle())
+                .category(inquiry.getCategory())
                 .content(inquiry.getContent())
                 .imageUrls(inquiry.getImageUrls())
                 .status(inquiry.getStatus())

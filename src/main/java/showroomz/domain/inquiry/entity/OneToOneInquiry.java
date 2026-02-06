@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import showroomz.domain.common.BaseTimeEntity;
 import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.domain.inquiry.type.InquiryType;
 import showroomz.domain.member.user.entity.Users;
@@ -17,7 +18,7 @@ import java.util.List;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "ONE_TO_ONE_INQUIRY")
-public class OneToOneInquiry {
+public class OneToOneInquiry extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,12 +29,14 @@ public class OneToOneInquiry {
     @JoinColumn(name = "USER_ID", nullable = false)
     private Users user;
 
+    // 1. 문의 타입 (대분류 - Enum)
     @Enumerated(EnumType.STRING)
     @Column(name = "TYPE", nullable = false)
     private InquiryType type;
 
-    @Column(name = "TITLE", nullable = false, length = 200)
-    private String title;
+    // 2. 문의 유형 (상세 - String, 기획 미정으로 자유 입력)
+    @Column(name = "CATEGORY", nullable = false, length = 50)
+    private String category;
 
     @Column(name = "CONTENT", nullable = false, columnDefinition = "TEXT")
     private String content;
@@ -58,29 +61,11 @@ public class OneToOneInquiry {
     @Column(name = "STATUS", nullable = false)
     private InquiryStatus status;
 
-    @Column(name = "CREATED_AT", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "MODIFIED_AT", nullable = false)
-    private LocalDateTime modifiedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        this.createdAt = now;
-        this.modifiedAt = now;
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.modifiedAt = LocalDateTime.now();
-    }
-
     @Builder
-    public OneToOneInquiry(Users user, InquiryType type, String title, String content, List<String> imageUrls) {
+    public OneToOneInquiry(Users user, InquiryType type, String category, String content, List<String> imageUrls) {
         this.user = user;
         this.type = type;
-        this.title = title;
+        this.category = category; // 상세 유형 저장
         this.content = content;
         if (imageUrls != null) {
             this.imageUrls = imageUrls;

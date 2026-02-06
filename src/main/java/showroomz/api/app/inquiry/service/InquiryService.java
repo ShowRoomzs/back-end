@@ -32,8 +32,8 @@ public class InquiryService {
 
         OneToOneInquiry inquiry = OneToOneInquiry.builder()
                 .user(user)
-                .type(request.getType())
-                .title(request.getTitle())
+                .type(request.getType())          // Enum (대분류)
+                .category(request.getCategory())  // String (상세 유형)
                 .content(request.getContent())
                 .imageUrls(request.getImageUrls())
                 .build();
@@ -55,11 +55,11 @@ public class InquiryService {
     // 문의 상세 조회
     public InquiryDetailResponse getInquiryDetail(Long userId, Long inquiryId) {
         OneToOneInquiry inquiry = inquiryRepository.findById(inquiryId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND)); // 적절한 에러코드 사용
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
         // 본인의 문의인지 검증
         if (!inquiry.getUser().getId().equals(userId)) {
-            throw new BusinessException(ErrorCode.FORBIDDEN); // 혹은 권한 없음 에러
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
         return InquiryDetailResponse.from(inquiry);
