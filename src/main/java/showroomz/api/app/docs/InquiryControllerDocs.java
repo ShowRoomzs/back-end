@@ -17,6 +17,7 @@ import showroomz.api.app.inquiry.dto.InquiryDetailResponse;
 import showroomz.api.app.inquiry.dto.InquiryListResponse;
 import showroomz.api.app.inquiry.dto.InquiryRegisterRequest;
 import showroomz.api.app.inquiry.dto.InquiryRegisterResponse;
+import showroomz.api.app.inquiry.dto.InquiryUpdateRequest;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
@@ -28,7 +29,7 @@ public interface InquiryControllerDocs {
             description = "문의 타입(Enum)과 상세 유형(String), 내용을 입력하여 1:1 문의를 등록합니다.\n\n" +
                     "**필수 값:**\n" +
                     "- `type`: 문의 타입 (DELIVERY, ORDER_PAYMENT, CANCEL_REFUND_EXCHANGE, USER_INFO, PRODUCT_CHECK, SERVICE)\n" +
-                    "- `category`: 상세 문의 유형 (예: \"배송 지연\", \"상품 불량\" 등 자유 입력, 최대 50자)\n" +
+                    "- `category`: 문의 유형 (현재는 string 타입으로 임의값 입력, 추후 기획 시 enum으로 변경 예정)\n" +
                     "- `content`: 문의 내용\n\n" +
                     "**선택 값:**\n" +
                     "- `imageUrls`: 첨부 이미지 URL 리스트 (최대 10장)\n\n" +
@@ -284,6 +285,137 @@ public interface InquiryControllerDocs {
     InquiryDetailResponse getInquiryDetail(
             @Parameter(hidden = true) UserPrincipal userPrincipal,
             @Parameter(description = "조회할 문의 ID", required = true, example = "1")
+            @PathVariable Long inquiryId
+    );
+
+    @Operation(
+            summary = "문의 수정",
+            description = "답변 대기 중인 1:1 문의의 내용을 수정합니다.\n\n" +
+                    "- 본인이 등록한 문의만 수정할 수 있습니다.\n" +
+                    "- 답변이 완료된 문의는 수정할 수 없습니다.\n\n" +
+                    "**권한:** USER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "수정 성공 - Status: 200 OK (응답 본문 없음)"
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "입력값 오류 또는 답변 완료된 문의 - Status: 400 Bad Request",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "답변 완료된 문의",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INQUIRY_ALREADY_ANSWERED\",\n" +
+                                                    "  \"message\": \"답변이 완료된 문의는 수정하거나 삭제할 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "해당 문의에 대한 권한 없음 - Status: 403 Forbidden",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "문의를 찾을 수 없음 - Status: 404 Not Found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "문의 수정 요청 바디",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = InquiryUpdateRequest.class)
+            )
+    )
+    ResponseEntity<Void> updateInquiry(
+            @Parameter(hidden = true) UserPrincipal userPrincipal,
+            @Parameter(description = "수정할 문의 ID", required = true, example = "1")
+            @PathVariable Long inquiryId,
+            @RequestBody InquiryUpdateRequest request
+    );
+
+    @Operation(
+            summary = "문의 삭제",
+            description = "답변 대기 중인 1:1 문의를 삭제합니다. (물리 삭제)\n\n" +
+                    "- 본인이 등록한 문의만 삭제할 수 있습니다.\n" +
+                    "- 답변이 완료된 문의는 삭제할 수 없습니다.\n\n" +
+                    "**권한:** USER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "삭제 성공 - Status: 200 OK (응답 본문 없음)"
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "답변 완료된 문의 - Status: 400 Bad Request",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "답변 완료된 문의",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INQUIRY_ALREADY_ANSWERED\",\n" +
+                                                    "  \"message\": \"답변이 완료된 문의는 수정하거나 삭제할 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "해당 문의에 대한 권한 없음 - Status: 403 Forbidden",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "문의를 찾을 수 없음 - Status: 404 Not Found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<Void> deleteInquiry(
+            @Parameter(hidden = true) UserPrincipal userPrincipal,
+            @Parameter(description = "삭제할 문의 ID", required = true, example = "1")
             @PathVariable Long inquiryId
     );
 }

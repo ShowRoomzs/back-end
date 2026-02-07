@@ -79,4 +79,11 @@ public class OneToOneInquiry extends BaseTimeEntity {
         this.answeredAt = LocalDateTime.now();
         this.status = InquiryStatus.ANSWERED;
     }
+
+    public void update(InquiryType type, String category, String content, List<String> imageUrls) {
+        this.type = type;
+        this.category = category;
+        this.content = content;
+        this.imageUrls = imageUrls != null ? imageUrls : new ArrayList<>();
+    }
 }

@@ -104,8 +104,12 @@ public enum ErrorCode {
     ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "ADDRESS_NOT_FOUND", "존재하지 않는 배송지입니다."),
     MAX_ADDRESS_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "MAX_ADDRESS_LIMIT_EXCEEDED", "배송지는 최대 10개까지만 등록 가능합니다."),
     ADDRESS_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ADDRESS_ACCESS_DENIED", "해당 배송지에 대한 권한이 없습니다."),
-    DEFAULT_ADDRESS_DELETE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "DEFAULT_ADDRESS_DELETE_NOT_ALLOWED", "기본 배송지는 삭제할 수 없습니다. 다른 배송지를 기본으로 지정 후 삭제해주세요.");
-    
+    DEFAULT_ADDRESS_DELETE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "DEFAULT_ADDRESS_DELETE_NOT_ALLOWED", "기본 배송지는 삭제할 수 없습니다. 다른 배송지를 기본으로 지정 후 삭제해주세요."),
+
+    /* 11. 1:1 문의 (Inquiry)
+     */
+    INQUIRY_ALREADY_ANSWERED(HttpStatus.BAD_REQUEST, "INQUIRY_ALREADY_ANSWERED", "답변이 완료된 문의는 수정하거나 삭제할 수 없습니다.");
+
     private final HttpStatus status;
     private final String code;
     private final String message;

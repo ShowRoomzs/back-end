@@ -12,6 +12,7 @@ import showroomz.api.app.inquiry.dto.InquiryDetailResponse;
 import showroomz.api.app.inquiry.dto.InquiryListResponse;
 import showroomz.api.app.inquiry.dto.InquiryRegisterRequest;
 import showroomz.api.app.inquiry.dto.InquiryRegisterResponse;
+import showroomz.api.app.inquiry.dto.InquiryUpdateRequest;
 import showroomz.api.app.inquiry.service.InquiryService;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
@@ -46,5 +47,24 @@ public class InquiryController implements InquiryControllerDocs {
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long inquiryId) {
         return inquiryService.getInquiryDetail(userPrincipal.getUserId(), inquiryId);
+    }
+
+    @Override
+    @PatchMapping("/{inquiryId}")
+    public ResponseEntity<Void> updateInquiry(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable Long inquiryId,
+            @Valid @RequestBody InquiryUpdateRequest request) {
+        inquiryService.updateInquiry(userPrincipal.getUserId(), inquiryId, request);
+        return ResponseEntity.ok().build();
+    }
+
+    @Override
+    @DeleteMapping("/{inquiryId}")
+    public ResponseEntity<Void> deleteInquiry(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable Long inquiryId) {
+        inquiryService.deleteInquiry(userPrincipal.getUserId(), inquiryId);
+        return ResponseEntity.ok().build();
     }
 }
