@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.app.auth.entity.UserPrincipal;
@@ -15,6 +16,7 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.inquiry.dto.InquiryDetailResponse;
 import showroomz.api.app.inquiry.dto.InquiryListResponse;
 import showroomz.api.app.inquiry.dto.InquiryRegisterRequest;
+import showroomz.api.app.inquiry.dto.InquiryRegisterResponse;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
@@ -35,15 +37,17 @@ public interface InquiryControllerDocs {
     )
     @ApiResponses(value = {
             @ApiResponse(
-                    responseCode = "200",
-                    description = "등록 성공 - Status: 200 OK (생성된 문의 ID 반환)",
+                    responseCode = "201",
+                    description = "등록 성공 - Status: 201 Created (생성된 문의 ID 반환)",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = Long.class),
+                            schema = @Schema(implementation = InquiryRegisterResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "성공 예시",
-                                            value = "1"
+                                            value = "{\n" +
+                                                    "  \"inquiryId\": 1\n" +
+                                                    "}"
                                     )
                             }
                     )
@@ -121,7 +125,7 @@ public interface InquiryControllerDocs {
                     }
             )
     )
-    Long registerInquiry(
+    ResponseEntity<InquiryRegisterResponse> registerInquiry(
             @Parameter(hidden = true) UserPrincipal userPrincipal,
             @RequestBody InquiryRegisterRequest request
     );
@@ -140,7 +144,31 @@ public interface InquiryControllerDocs {
                     description = "조회 성공 - Status: 200 OK",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = PageResponse.class)
+                            schema = @Schema(implementation = PageResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"content\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"id\": 1,\n" +
+                                                    "      \"type\": \"DELIVERY\",\n" +
+                                                    "      \"category\": \"배송 지연\",\n" +
+                                                    "      \"content\": \"주문한 지 3일이 지났는데 아직 배송 준비 중입니다.\",\n" +
+                                                    "      \"status\": \"WAITING\",\n" +
+                                                    "      \"createdAt\": \"2025-02-07T10:30:00\"\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"pageInfo\": {\n" +
+                                                    "    \"currentPage\": 1,\n" +
+                                                    "    \"totalPages\": 5,\n" +
+                                                    "    \"totalResults\": 48,\n" +
+                                                    "    \"limit\": 10,\n" +
+                                                    "    \"hasNext\": true\n" +
+                                                    "  }\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
@@ -171,7 +199,43 @@ public interface InquiryControllerDocs {
                     description = "조회 성공 - Status: 200 OK",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = InquiryDetailResponse.class)
+                            schema = @Schema(implementation = InquiryDetailResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "답변 대기 예시",
+                                            value = "{\n" +
+                                                    "  \"id\": 1,\n" +
+                                                    "  \"type\": \"DELIVERY\",\n" +
+                                                    "  \"category\": \"배송 지연\",\n" +
+                                                    "  \"content\": \"주문한 지 3일이 지났는데 아직 배송 준비 중입니다. 배송 일정을 확인 부탁드립니다.\",\n" +
+                                                    "  \"imageUrls\": [\n" +
+                                                    "    \"https://example.com/inquiries/img1.jpg\"\n" +
+                                                    "  ],\n" +
+                                                    "  \"status\": \"WAITING\",\n" +
+                                                    "  \"answerContent\": null,\n" +
+                                                    "  \"answeredAt\": null,\n" +
+                                                    "  \"createdAt\": \"2025-02-07T10:30:00\"\n" +
+                                                    "}",
+                                            description = "답변 대기 중인 문의"
+                                    ),
+                                    @ExampleObject(
+                                            name = "답변 완료 예시",
+                                            value = "{\n" +
+                                                    "  \"id\": 1,\n" +
+                                                    "  \"type\": \"DELIVERY\",\n" +
+                                                    "  \"category\": \"배송 지연\",\n" +
+                                                    "  \"content\": \"주문한 지 3일이 지났는데 아직 배송 준비 중입니다. 배송 일정을 확인 부탁드립니다.\",\n" +
+                                                    "  \"imageUrls\": [\n" +
+                                                    "    \"https://example.com/inquiries/img1.jpg\"\n" +
+                                                    "  ],\n" +
+                                                    "  \"status\": \"ANSWERED\",\n" +
+                                                    "  \"answerContent\": \"죄송합니다. 해당 주문은 현재 출고 준비 중이며, 내일 발송 예정입니다.\",\n" +
+                                                    "  \"answeredAt\": \"2025-02-07T14:00:00\",\n" +
+                                                    "  \"createdAt\": \"2025-02-07T10:30:00\"\n" +
+                                                    "}",
+                                            description = "답변 완료된 문의"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(

@@ -2,6 +2,8 @@ package showroomz.api.app.inquiry.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.auth.entity.UserPrincipal;
@@ -9,6 +11,7 @@ import showroomz.api.app.docs.InquiryControllerDocs;
 import showroomz.api.app.inquiry.dto.InquiryDetailResponse;
 import showroomz.api.app.inquiry.dto.InquiryListResponse;
 import showroomz.api.app.inquiry.dto.InquiryRegisterRequest;
+import showroomz.api.app.inquiry.dto.InquiryRegisterResponse;
 import showroomz.api.app.inquiry.service.InquiryService;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
@@ -22,10 +25,11 @@ public class InquiryController implements InquiryControllerDocs {
 
     @Override
     @PostMapping
-    public Long registerInquiry(
+    public ResponseEntity<InquiryRegisterResponse> registerInquiry(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody InquiryRegisterRequest request) {
-        return inquiryService.registerInquiry(userPrincipal.getUserId(), request);
+        InquiryRegisterResponse response = inquiryService.registerInquiry(userPrincipal.getUserId(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @Override

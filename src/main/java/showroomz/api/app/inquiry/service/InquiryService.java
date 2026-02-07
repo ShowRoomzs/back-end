@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.inquiry.dto.InquiryDetailResponse;
 import showroomz.api.app.inquiry.dto.InquiryListResponse;
 import showroomz.api.app.inquiry.dto.InquiryRegisterRequest;
+import showroomz.api.app.inquiry.dto.InquiryRegisterResponse;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.inquiry.entity.OneToOneInquiry;
 import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
@@ -26,7 +27,7 @@ public class InquiryService {
 
     // 1:1 문의 등록
     @Transactional
-    public Long registerInquiry(Long userId, InquiryRegisterRequest request) {
+    public InquiryRegisterResponse registerInquiry(Long userId, InquiryRegisterRequest request) {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -39,7 +40,9 @@ public class InquiryService {
                 .build();
 
         inquiryRepository.save(inquiry);
-        return inquiry.getId();
+        return InquiryRegisterResponse.builder()
+                .inquiryId(inquiry.getId())
+                .build();
     }
 
     // 내 문의 내역 조회 (목록)
