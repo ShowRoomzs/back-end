@@ -11,10 +11,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.sql.SQLException;
@@ -38,6 +40,25 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(errorCode.getStatus())
                 .body(new ErrorResponse(errorCode.getCode(), message));
+    }
+
+    /** JSON 역직렬화 실패 시 (예: 잘못된 enum 값) 400 + BusinessException과 동일한 ErrorResponse 반환 */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        Throwable cause = e.getCause();
+        if (cause instanceof InvalidFormatException invalidFormat) {
+            Class<?> targetType = invalidFormat.getTargetType();
+            if (targetType != null && targetType.getSimpleName().equals("InquiryType")) {
+                log.warn("Invalid type: {}", invalidFormat.getValue());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ErrorResponse(ErrorCode.INVALID_INPUT_VALUE.getCode(),
+                                ErrorCode.INVALID_INPUT_VALUE.getMessage()));
+            }
+        }
+        log.warn("HttpMessageNotReadableException: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(ErrorCode.INVALID_INPUT_VALUE.getCode(),
+                        ErrorCode.INVALID_INPUT_VALUE.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
