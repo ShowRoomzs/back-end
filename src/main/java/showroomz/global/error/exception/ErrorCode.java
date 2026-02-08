@@ -108,7 +108,8 @@ public enum ErrorCode {
 
     /* 11. 1:1 문의 (Inquiry)
      */
-    INQUIRY_ALREADY_ANSWERED(HttpStatus.BAD_REQUEST, "INQUIRY_ALREADY_ANSWERED", "답변이 완료된 문의는 수정하거나 삭제할 수 없습니다.");
+    INQUIRY_ALREADY_ANSWERED(HttpStatus.BAD_REQUEST, "INQUIRY_ALREADY_ANSWERED", "답변이 완료된 문의는 수정하거나 삭제할 수 없습니다."),
+    INVALID_INQUIRY_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "올바르지 않은 문의 타입입니다. (DELIVERY, ORDER_PAYMENT, CANCEL_REFUND_EXCHANGE, USER_INFO, PRODUCT_CHECK, SERVICE)");
 
     private final HttpStatus status;
     private final String code;
