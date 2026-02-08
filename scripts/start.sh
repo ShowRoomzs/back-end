@@ -31,11 +31,11 @@ aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --
 echo "2. Pulling latest images..."
 # docker-compose가 환경변수를 인식하도록 설정
 export IMAGE_NAME=$FULL_IMAGE_NAME
-docker-compose pull
+docker compose pull
 
 echo "3. Starting containers..."
 # 변경된 컨테이너만 재시작 (DB 등은 유지)
-docker-compose up -d
+docker compose up -d
 
 # (선택사항) 공간 확보를 위해 사용하지 않는 구버전 이미지 삭제
 echo "4. Cleaning up old images..."
