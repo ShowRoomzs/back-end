@@ -10,6 +10,7 @@ import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.inquiry.dto.ProductInquiryListResponse;
 import showroomz.api.app.inquiry.dto.ProductInquiryRegisterRequest;
 import showroomz.api.app.inquiry.dto.ProductInquiryRegisterResponse;
+import showroomz.api.app.inquiry.dto.ProductInquiryUpdateRequest;
 import showroomz.api.app.inquiry.service.ProductInquiryService;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
@@ -37,5 +38,22 @@ public class ProductInquiryController {
             @Valid PagingRequest pagingRequest) {
         return productInquiryService.getMyInquiries(
                 userPrincipal.getUserId(), pagingRequest.toPageable());
+    }
+
+    @PatchMapping("/v1/user/product-inquiries/{inquiryId}")
+    public ResponseEntity<Void> updateInquiry(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable("inquiryId") Long inquiryId,
+            @Valid @RequestBody ProductInquiryUpdateRequest request) {
+        productInquiryService.updateInquiry(userPrincipal.getUserId(), inquiryId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/v1/user/product-inquiries/{inquiryId}")
+    public ResponseEntity<Void> deleteInquiry(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable("inquiryId") Long inquiryId) {
+        productInquiryService.deleteInquiry(userPrincipal.getUserId(), inquiryId);
+        return ResponseEntity.noContent().build();
     }
 }
