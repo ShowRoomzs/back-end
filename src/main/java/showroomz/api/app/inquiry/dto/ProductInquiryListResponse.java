@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 import showroomz.domain.inquiry.entity.ProductInquiry;
 import showroomz.domain.inquiry.type.InquiryStatus;
+import showroomz.domain.inquiry.type.InquiryType;
 import showroomz.domain.product.entity.ProductImage;
 
 import java.time.LocalDateTime;
@@ -18,6 +19,8 @@ public class ProductInquiryListResponse {
     private String shopName;
     private String productName;
     private String productImageUrl;
+    private InquiryType type;
+    private String category;
     private String content;
     private boolean secret;
     private InquiryStatus status;
@@ -40,6 +43,8 @@ public class ProductInquiryListResponse {
                 .shopName(inquiry.getProduct().getMarket().getMarketName())
                 .productName(inquiry.getProduct().getName())
                 .productImageUrl(imageUrl)
+                .type(inquiry.getType())
+                .category(inquiry.getCategory())
                 .content(inquiry.getContent())
                 .secret(inquiry.isSecret())
                 .status(inquiry.getStatus())

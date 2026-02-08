@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import showroomz.domain.common.BaseTimeEntity;
 import showroomz.domain.inquiry.type.InquiryStatus;
+import showroomz.domain.inquiry.type.InquiryType;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.product.entity.Product;
 
@@ -31,6 +32,13 @@ public class ProductInquiry extends BaseTimeEntity {
     @JoinColumn(name = "PRODUCT_ID", nullable = false)
     private Product product;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "TYPE", nullable = false)
+    private InquiryType type;
+
+    @Column(name = "CATEGORY", nullable = false, length = 50)
+    private String category;
+
     @Column(name = "CONTENT", nullable = false, columnDefinition = "TEXT")
     private String content;
 
@@ -48,9 +56,11 @@ public class ProductInquiry extends BaseTimeEntity {
     private InquiryStatus status;
 
     @Builder
-    public ProductInquiry(Users user, Product product, String content, boolean secret) {
+    public ProductInquiry(Users user, Product product, InquiryType type, String category, String content, boolean secret) {
         this.user = user;
         this.product = product;
+        this.type = type;
+        this.category = category;
         this.content = content;
         this.secret = secret;
         this.status = InquiryStatus.WAITING;
@@ -62,7 +72,9 @@ public class ProductInquiry extends BaseTimeEntity {
         this.status = InquiryStatus.ANSWERED;
     }
 
-    public void update(String content, boolean secret) {
+    public void update(InquiryType type, String category, String content, boolean secret) {
+        this.type = type;
+        this.category = category;
         this.content = content;
         this.secret = secret;
     }

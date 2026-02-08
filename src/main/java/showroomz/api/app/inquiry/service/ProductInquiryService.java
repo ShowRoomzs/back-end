@@ -37,6 +37,8 @@ public class ProductInquiryService {
         ProductInquiry inquiry = ProductInquiry.builder()
                 .user(user)
                 .product(product)
+                .type(request.getType())
+                .category(request.getCategory())
                 .content(request.getContent())
                 .secret(request.isSecret())
                 .build();
