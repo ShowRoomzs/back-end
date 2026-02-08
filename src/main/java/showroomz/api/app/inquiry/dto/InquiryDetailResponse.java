@@ -29,7 +29,7 @@ public class InquiryDetailResponse {
     @Schema(description = "첨부 이미지 URL 리스트")
     private List<String> imageUrls;
 
-    @Schema(description = "답변 상태")
+    @Schema(description = "답변 상태 (WAITING: 답변 대기, ANSWERED: 답변 완료)", allowableValues = {"WAITING", "ANSWERED"})
     private InquiryStatus status;
 
     @Schema(description = "답변 내용 (답변 대기 시 null)")

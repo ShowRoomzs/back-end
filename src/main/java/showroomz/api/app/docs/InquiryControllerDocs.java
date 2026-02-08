@@ -136,6 +136,9 @@ public interface InquiryControllerDocs {
             description = "현재 로그인한 사용자가 등록한 1:1 문의 목록을 최신순으로 페이징 조회합니다.\n\n" +
                     "**정렬 기준:**\n" +
                     "- 생성일(`createdAt`) 기준 내림차순\n\n" +
+                    "**status 값:**\n" +
+                    "- `WAITING`: 답변 대기\n" +
+                    "- `ANSWERED`: 답변 완료\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -155,8 +158,13 @@ public interface InquiryControllerDocs {
                                                     "      \"id\": 1,\n" +
                                                     "      \"type\": \"DELIVERY\",\n" +
                                                     "      \"category\": \"배송 지연\",\n" +
-                                                    "      \"content\": \"주문한 지 3일이 지났는데 아직 배송 준비 중입니다.\",\n" +
+                                                    "      \"content\": \"주문한 지 3일이 지났는데 아직 배송 준비 중입니다. 배송 일정을 확인 부탁드립니다.\",\n" +
+                                                    "      \"imageUrls\": [\n" +
+                                                    "        \"https://example.com/inquiries/img1.jpg\"\n" +
+                                                    "      ],\n" +
                                                     "      \"status\": \"WAITING\",\n" +
+                                                    "      \"answerContent\": null,\n" +
+                                                    "      \"answeredAt\": null,\n" +
                                                     "      \"createdAt\": \"2025-02-07T10:30:00\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
@@ -177,7 +185,16 @@ public interface InquiryControllerDocs {
                     description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             )
     })
@@ -191,6 +208,9 @@ public interface InquiryControllerDocs {
             summary = "문의 상세 조회",
             description = "특정 1:1 문의의 상세 정보(타입, 상세 유형, 내용, 이미지, 답변 상태/내용 등)를 조회합니다.\n\n" +
                     "- 본인이 등록한 문의만 조회할 수 있습니다.\n\n" +
+                    "**status 값:**\n" +
+                    "- `WAITING`: 답변 대기\n" +
+                    "- `ANSWERED`: 답변 완료\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -244,7 +264,16 @@ public interface InquiryControllerDocs {
                     description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
@@ -284,8 +313,8 @@ public interface InquiryControllerDocs {
     })
     InquiryDetailResponse getInquiryDetail(
             @Parameter(hidden = true) UserPrincipal userPrincipal,
-            @Parameter(description = "조회할 문의 ID", required = true, example = "1")
-            @PathVariable Long inquiryId
+            @Parameter(description = "조회할 문의 ID", required = true, example = "1", in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH)
+            @PathVariable("inquiryId") Long inquiryId
     );
 
     @Operation(
@@ -298,8 +327,8 @@ public interface InquiryControllerDocs {
     )
     @ApiResponses(value = {
             @ApiResponse(
-                    responseCode = "200",
-                    description = "수정 성공 - Status: 200 OK (응답 본문 없음)"
+                    responseCode = "204",
+                    description = "수정 성공 - Status: 204 No Content (응답 본문 없음)"
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -323,7 +352,16 @@ public interface InquiryControllerDocs {
                     description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
@@ -331,7 +369,16 @@ public interface InquiryControllerDocs {
                     description = "해당 문의에 대한 권한 없음 - Status: 403 Forbidden",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "권한 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ACCESS_DENIED\",\n" +
+                                                    "  \"message\": \"해당 리소스에 대한 접근 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
@@ -339,7 +386,16 @@ public interface InquiryControllerDocs {
                     description = "문의를 찾을 수 없음 - Status: 404 Not Found",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "문의 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"NOT_FOUND_DATA\",\n" +
+                                                    "  \"message\": \"데이터를 찾을 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             )
     })
@@ -353,14 +409,14 @@ public interface InquiryControllerDocs {
     )
     ResponseEntity<Void> updateInquiry(
             @Parameter(hidden = true) UserPrincipal userPrincipal,
-            @Parameter(description = "수정할 문의 ID", required = true, example = "1")
-            @PathVariable Long inquiryId,
+            @Parameter(description = "수정할 문의 ID", required = true, example = "1", in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH)
+            @PathVariable("inquiryId") Long inquiryId,
             @RequestBody InquiryUpdateRequest request
     );
 
     @Operation(
             summary = "문의 삭제",
-            description = "답변 대기 중인 1:1 문의를 삭제합니다. (물리 삭제)\n\n" +
+            description = "답변 대기 중인 1:1 문의를 삭제합니다.\n\n" +
                     "- 본인이 등록한 문의만 삭제할 수 있습니다.\n" +
                     "- 답변이 완료된 문의는 삭제할 수 없습니다.\n\n" +
                     "**권한:** USER\n" +
@@ -368,8 +424,8 @@ public interface InquiryControllerDocs {
     )
     @ApiResponses(value = {
             @ApiResponse(
-                    responseCode = "200",
-                    description = "삭제 성공 - Status: 200 OK (응답 본문 없음)"
+                    responseCode = "204",
+                    description = "삭제 성공 - Status: 204 No Content (응답 본문 없음)"
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -393,7 +449,16 @@ public interface InquiryControllerDocs {
                     description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
@@ -401,7 +466,16 @@ public interface InquiryControllerDocs {
                     description = "해당 문의에 대한 권한 없음 - Status: 403 Forbidden",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "권한 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ACCESS_DENIED\",\n" +
+                                                    "  \"message\": \"해당 리소스에 대한 접근 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
@@ -409,14 +483,23 @@ public interface InquiryControllerDocs {
                     description = "문의를 찾을 수 없음 - Status: 404 Not Found",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "문의 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"NOT_FOUND_DATA\",\n" +
+                                                    "  \"message\": \"데이터를 찾을 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             )
     })
     ResponseEntity<Void> deleteInquiry(
             @Parameter(hidden = true) UserPrincipal userPrincipal,
-            @Parameter(description = "삭제할 문의 ID", required = true, example = "1")
-            @PathVariable Long inquiryId
+            @Parameter(description = "삭제할 문의 ID", required = true, example = "1", in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH)
+            @PathVariable("inquiryId") Long inquiryId
     );
 }
 

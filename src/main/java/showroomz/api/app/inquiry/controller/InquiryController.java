@@ -45,7 +45,7 @@ public class InquiryController implements InquiryControllerDocs {
     @GetMapping("/{inquiryId}")
     public InquiryDetailResponse getInquiryDetail(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @PathVariable Long inquiryId) {
+            @PathVariable("inquiryId") Long inquiryId) {
         return inquiryService.getInquiryDetail(userPrincipal.getUserId(), inquiryId);
     }
 
@@ -53,18 +53,18 @@ public class InquiryController implements InquiryControllerDocs {
     @PatchMapping("/{inquiryId}")
     public ResponseEntity<Void> updateInquiry(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @PathVariable Long inquiryId,
+            @PathVariable("inquiryId") Long inquiryId,
             @Valid @RequestBody InquiryUpdateRequest request) {
         inquiryService.updateInquiry(userPrincipal.getUserId(), inquiryId, request);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @Override
     @DeleteMapping("/{inquiryId}")
     public ResponseEntity<Void> deleteInquiry(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @PathVariable Long inquiryId) {
+            @PathVariable("inquiryId") Long inquiryId) {
         inquiryService.deleteInquiry(userPrincipal.getUserId(), inquiryId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 }
