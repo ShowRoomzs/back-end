@@ -74,7 +74,16 @@ public interface ProductInquiryControllerDocs {
                     description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
@@ -82,7 +91,16 @@ public interface ProductInquiryControllerDocs {
                     description = "사용자 또는 상품을 찾을 수 없음 - Status: 404 Not Found",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "데이터 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"NOT_FOUND_DATA\",\n" +
+                                                    "  \"message\": \"데이터를 찾을 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             )
     })
@@ -173,7 +191,16 @@ public interface ProductInquiryControllerDocs {
                     description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             )
     })
@@ -318,7 +345,16 @@ public interface ProductInquiryControllerDocs {
                     description = "입력값 오류 또는 답변 완료된 문의 - Status: 400 Bad Request",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "답변 완료된 상품 문의",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INQUIRY_ALREADY_ANSWERED\",\n" +
+                                                    "  \"message\": \"답변이 완료된 문의는 수정하거나 삭제할 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
@@ -326,7 +362,16 @@ public interface ProductInquiryControllerDocs {
                     description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
@@ -334,7 +379,16 @@ public interface ProductInquiryControllerDocs {
                     description = "해당 문의에 대한 권한 없음 - Status: 403 Forbidden",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "권한 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ACCESS_DENIED\",\n" +
+                                                    "  \"message\": \"해당 리소스에 대한 접근 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
@@ -342,7 +396,16 @@ public interface ProductInquiryControllerDocs {
                     description = "상품 문의를 찾을 수 없음 - Status: 404 Not Found",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "상품 문의 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"NOT_FOUND_DATA\",\n" +
+                                                    "  \"message\": \"데이터를 찾을 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             )
     })
@@ -379,7 +442,16 @@ public interface ProductInquiryControllerDocs {
                     description = "답변 완료된 문의 - Status: 400 Bad Request",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "답변 완료된 상품 문의",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INQUIRY_ALREADY_ANSWERED\",\n" +
+                                                    "  \"message\": \"답변이 완료된 문의는 수정하거나 삭제할 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
@@ -387,7 +459,16 @@ public interface ProductInquiryControllerDocs {
                     description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
@@ -395,7 +476,16 @@ public interface ProductInquiryControllerDocs {
                     description = "해당 문의에 대한 권한 없음 - Status: 403 Forbidden",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "권한 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ACCESS_DENIED\",\n" +
+                                                    "  \"message\": \"해당 리소스에 대한 접근 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
@@ -403,7 +493,16 @@ public interface ProductInquiryControllerDocs {
                     description = "상품 문의를 찾을 수 없음 - Status: 404 Not Found",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "상품 문의 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"NOT_FOUND_DATA\",\n" +
+                                                    "  \"message\": \"데이터를 찾을 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             )
     })
