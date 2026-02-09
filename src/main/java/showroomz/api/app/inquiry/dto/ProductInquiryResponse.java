@@ -1,48 +1,66 @@
 package showroomz.api.app.inquiry.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 import showroomz.domain.inquiry.entity.ProductInquiry;
 import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.domain.inquiry.type.InquiryType;
-import showroomz.domain.product.entity.ProductImage;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
 
 @Getter
 @Builder
-public class ProductInquiryListResponse {
+@Schema(description = "상품 문의 응답 (목록/상세 공용)")
+public class ProductInquiryResponse {
 
+    @Schema(description = "상품 문의 ID")
     private Long inquiryId;
+
+    @Schema(description = "상품 ID")
     private Long productId;
+
+    @Schema(description = "쇼룸(마켓) 이름")
     private String shopName;
+
+    @Schema(description = "상품명")
     private String productName;
+
+    @Schema(description = "상품 대표 이미지 URL")
     private String productImageUrl;
+
+    @Schema(description = "문의 타입")
     private InquiryType type;
+
+    @Schema(description = "문의 카테고리")
     private String category;
+
+    @Schema(description = "문의 내용")
     private String content;
+
+    @Schema(description = "비밀글 여부")
     private boolean secret;
+
+    @Schema(description = "답변 상태")
     private InquiryStatus status;
+
+    @Schema(description = "답변 내용")
     private String answerContent;
+
+    @Schema(description = "문의 등록 일시")
     private LocalDateTime createdAt;
+
+    @Schema(description = "답변 일시")
     private LocalDateTime answeredAt;
 
-    public static ProductInquiryListResponse from(ProductInquiry inquiry) {
-        String imageUrl = inquiry.getProduct().getThumbnailUrl();
-        if (imageUrl == null && inquiry.getProduct().getProductImages() != null) {
-            imageUrl = inquiry.getProduct().getProductImages().stream()
-                    .min(Comparator.comparing(ProductImage::getOrder))
-                    .map(ProductImage::getUrl)
-                    .orElse(null);
-        }
-
-        return ProductInquiryListResponse.builder()
+    // 이미지 로직을 제거하고, 이미지는 항상 파라미터로 받도록 통일
+    public static ProductInquiryResponse of(ProductInquiry inquiry, String imageUrl) {
+        return ProductInquiryResponse.builder()
                 .inquiryId(inquiry.getId())
                 .productId(inquiry.getProduct().getProductId())
                 .shopName(inquiry.getProduct().getMarket().getMarketName())
                 .productName(inquiry.getProduct().getName())
-                .productImageUrl(imageUrl)
+                .productImageUrl(imageUrl) // Service에서 계산된 URL 주입
                 .type(inquiry.getType())
                 .category(inquiry.getCategory())
                 .content(inquiry.getContent())
@@ -54,3 +72,4 @@ public class ProductInquiryListResponse {
                 .build();
     }
 }
+

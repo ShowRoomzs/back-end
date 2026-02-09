@@ -5,7 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import showroomz.api.app.inquiry.dto.ProductInquiryListResponse;
+import showroomz.api.app.inquiry.dto.ProductInquiryResponse;
 import showroomz.api.app.inquiry.dto.ProductInquiryRegisterRequest;
 import showroomz.api.app.inquiry.dto.ProductInquiryUpdateRequest;
 import showroomz.api.app.user.repository.UserRepository;
@@ -14,6 +14,7 @@ import showroomz.domain.inquiry.repository.ProductInquiryRepository;
 import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.product.entity.Product;
+import showroomz.domain.product.entity.ProductImage;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.BusinessException;
@@ -49,9 +50,22 @@ public class ProductInquiryService {
         return inquiry.getId();
     }
 
-    public PageResponse<ProductInquiryListResponse> getMyInquiries(Long userId, Pageable pageable) {
+    public PageResponse<ProductInquiryResponse> getMyInquiries(Long userId, Pageable pageable) {
         Page<ProductInquiry> page = productInquiryRepository.findByUserId(userId, pageable);
-        return PageResponse.of(page.map(ProductInquiryListResponse::from));
+        return PageResponse.of(page.map(inquiry ->
+                ProductInquiryResponse.of(inquiry, resolveImageUrl(inquiry))));
+    }
+
+    public ProductInquiryResponse getInquiryDetail(Long userId, Long inquiryId) {
+        ProductInquiry inquiry = productInquiryRepository.findById(inquiryId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
+
+        if (!inquiry.getUser().getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+
+        String imageUrl = resolveImageUrl(inquiry);
+        return ProductInquiryResponse.of(inquiry, imageUrl);
     }
 
     @Transactional
@@ -89,5 +103,16 @@ public class ProductInquiryService {
         }
 
         productInquiryRepository.delete(inquiry);
+    }
+
+    private String resolveImageUrl(ProductInquiry inquiry) {
+        String imageUrl = inquiry.getProduct().getThumbnailUrl();
+        if (imageUrl == null && inquiry.getProduct().getProductImages() != null) {
+            imageUrl = inquiry.getProduct().getProductImages().stream()
+                    .min(java.util.Comparator.comparing(ProductImage::getOrder))
+                    .map(ProductImage::getUrl)
+                    .orElse(null);
+        }
+        return imageUrl;
     }
 }

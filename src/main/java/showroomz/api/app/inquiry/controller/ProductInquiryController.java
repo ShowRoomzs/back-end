@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.docs.ProductInquiryControllerDocs;
-import showroomz.api.app.inquiry.dto.ProductInquiryListResponse;
+import showroomz.api.app.inquiry.dto.ProductInquiryResponse;
 import showroomz.api.app.inquiry.dto.ProductInquiryRegisterRequest;
 import showroomz.api.app.inquiry.dto.ProductInquiryRegisterResponse;
 import showroomz.api.app.inquiry.dto.ProductInquiryUpdateRequest;
@@ -42,11 +42,19 @@ public class ProductInquiryController implements ProductInquiryControllerDocs {
 
     @GetMapping("/v1/user/product-inquiries")
     @Override
-    public PageResponse<ProductInquiryListResponse> getMyInquiries(
+    public PageResponse<ProductInquiryResponse> getMyInquiries(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid PagingRequest pagingRequest) {
         return productInquiryService.getMyInquiries(
                 userPrincipal.getUserId(), pagingRequest.toPageable());
+    }
+
+    @GetMapping("/v1/user/product-inquiries/{inquiryId}")
+    @Override
+    public ProductInquiryResponse getInquiryDetail(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable("inquiryId") Long inquiryId) {
+        return productInquiryService.getInquiryDetail(userPrincipal.getUserId(), inquiryId);
     }
 
     @PatchMapping("/v1/user/product-inquiries/{inquiryId}")
