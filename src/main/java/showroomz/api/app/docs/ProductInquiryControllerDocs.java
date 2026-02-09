@@ -57,7 +57,16 @@ public interface ProductInquiryControllerDocs {
                     description = "입력값 오류 - Status: 400 Bad Request",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "유효성 검증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT_VALUE\",\n" +
+                                                    "  \"message\": \"입력값이 올바르지 않습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
@@ -116,7 +125,38 @@ public interface ProductInquiryControllerDocs {
                     description = "조회 성공 - Status: 200 OK",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = PageResponse.class)
+                            schema = @Schema(implementation = PageResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "상품 문의 목록 예시",
+                                            value = "{\n" +
+                                                    "  \"content\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"inquiryId\": 1,\n" +
+                                                    "      \"productId\": 101,\n" +
+                                                    "      \"shopName\": \"모노 스튜디오\",\n" +
+                                                    "      \"productName\": \"오버핏 블레이저\",\n" +
+                                                    "      \"productImageUrl\": \"https://example.com/products/101/main.jpg\",\n" +
+                                                    "      \"type\": \"PRODUCT_CHECK\",\n" +
+                                                    "      \"category\": \"사이즈 문의\",\n" +
+                                                    "      \"content\": \"키 170에 보통 체형인데 M 사이즈가 맞을까요?\",\n" +
+                                                    "      \"secret\": false,\n" +
+                                                    "      \"status\": \"WAITING\",\n" +
+                                                    "      \"answerContent\": null,\n" +
+                                                    "      \"createdAt\": \"2025-02-07T10:30:00\",\n" +
+                                                    "      \"answeredAt\": null\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"pageInfo\": {\n" +
+                                                    "    \"currentPage\": 1,\n" +
+                                                    "    \"totalPages\": 3,\n" +
+                                                    "    \"totalResults\": 25,\n" +
+                                                    "    \"limit\": 10,\n" +
+                                                    "    \"hasNext\": true\n" +
+                                                    "  }\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
