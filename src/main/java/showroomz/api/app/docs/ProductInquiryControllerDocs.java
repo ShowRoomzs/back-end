@@ -330,6 +330,12 @@ public interface ProductInquiryControllerDocs {
     @Operation(
             summary = "상품 문의 수정",
             description = "답변 대기 중인 상품 문의의 내용을 수정합니다.\n\n" +
+                    "**필수 값:**\n" +
+                    "- `type`: 문의 타입 (DELIVERY, ORDER_PAYMENT, CANCEL_REFUND_EXCHANGE, USER_INFO, PRODUCT_CHECK, SERVICE)\n" +
+                    "- `category`: 문의 유형 (상세 사유 - 문자열)\n" +
+                    "- `content`: 문의 내용\n\n" +
+                    "**선택 값:**\n" +
+                    "- `secret`: 비밀글 여부 (기본값: false) 기획 확정 시 삭제될 수 있습니다.\n\n" +
                     "- 본인이 등록한 문의만 수정할 수 있습니다.\n" +
                     "- 답변이 완료된 문의는 수정할 수 없습니다.\n\n" +
                     "**권한:** USER\n" +
