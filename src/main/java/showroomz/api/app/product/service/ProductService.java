@@ -206,7 +206,7 @@ public class ProductService {
     /**
      * 사용자용 연관 상품 조회
      */
-    public ProductDto.ProductSearchResponse getRelatedProducts(
+    public PageResponse<ProductDto.ProductItem> getRelatedProducts(
             Long productId,
             Integer page,
             Integer limit,
@@ -242,10 +242,7 @@ public class ProductService {
                 .map(item -> convertToProductItem(item, currentUser))
                 .collect(Collectors.toList());
 
-        return ProductDto.ProductSearchResponse.builder()
-                .products(productItems)
-                .pageInfo(convertToPageInfo(relatedPage))
-                .build();
+        return new PageResponse<>(productItems, relatedPage);
     }
 
     /**
@@ -301,20 +298,6 @@ public class ProductService {
                 .wishCount(wishCount)
                 .reviewCount(reviewCount)
                 .isWished(isWished)
-                .build();
-    }
-
-    /**
-     * Page 객체를 PageInfo DTO로 변환
-     */
-    public ProductDto.PageInfo convertToPageInfo(Page<Product> page) {
-        return ProductDto.PageInfo.builder()
-                .currentPage(page.getNumber() + 1) // 0-based to 1-based
-                .pageSize(page.getSize())
-                .totalElements(page.getTotalElements())
-                .totalPages(page.getTotalPages())
-                .isLast(page.isLast())
-                .hasNext(page.hasNext())
                 .build();
     }
 

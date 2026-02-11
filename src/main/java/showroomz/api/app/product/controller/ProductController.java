@@ -77,14 +77,14 @@ public class ProductController implements UserProductControllerDocs {
 
     @Override
     @GetMapping("/{productId}/related")
-    public ResponseEntity<ProductDto.ProductSearchResponse> getRelatedProducts(
+    public ResponseEntity<PageResponse<ProductDto.ProductItem>> getRelatedProducts(
             @PathVariable Long productId,
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestParam(required = false, defaultValue = "1") Integer page,
             @RequestParam(required = false, defaultValue = "20") Integer limit
     ) {
         Users currentUser = resolveCurrentUser();
-        ProductDto.ProductSearchResponse response = productService.getRelatedProducts(
+        PageResponse<ProductDto.ProductItem> response = productService.getRelatedProducts(
                 productId,
                 page,
                 limit,

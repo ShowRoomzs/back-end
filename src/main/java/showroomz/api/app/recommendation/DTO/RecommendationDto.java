@@ -6,7 +6,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.domain.Page;
 import showroomz.api.app.product.DTO.ProductDto;
+import showroomz.global.dto.PageResponse;
 
 import java.util.List;
 
@@ -73,19 +75,18 @@ public class RecommendationDto {
     }
 
     @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
     @Schema(description = "통합 추천 응답")
-    public static class UnifiedRecommendationResponse {
+    public static class UnifiedRecommendationPageResponse extends PageResponse<ProductDto.ProductItem> {
         @Schema(description = "추천 마켓 목록")
-        private List<MarketRecommendationItem> recommendedMarkets;
+        private final List<MarketRecommendationItem> recommendedMarkets;
 
-        @Schema(description = "추천 상품 목록")
-        private List<ProductDto.ProductItem> recommendedProducts;
-
-        @Schema(description = "페이지 정보 (상품용)")
-        private ProductDto.PageInfo pageInfo;
+        public UnifiedRecommendationPageResponse(
+                List<ProductDto.ProductItem> content,
+                Page<?> page,
+                List<MarketRecommendationItem> recommendedMarkets
+        ) {
+            super(content, page);
+            this.recommendedMarkets = recommendedMarkets;
+        }
     }
 }

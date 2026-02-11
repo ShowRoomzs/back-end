@@ -16,12 +16,12 @@ public class RecommendationController implements RecommendationControllerDocs {
 
     @Override
     @GetMapping
-    public ResponseEntity<RecommendationDto.UnifiedRecommendationResponse> getRecommendations(
+    public ResponseEntity<RecommendationDto.UnifiedRecommendationPageResponse> getRecommendations(
             @RequestParam(value = "categoryId", required = false) Long categoryId,
             @RequestParam(value = "page", required = false) Integer page,
             @RequestParam(value = "limit", required = false) Integer limit
     ) {
-        RecommendationDto.UnifiedRecommendationResponse response = recommendationService.getUnifiedRecommendations(
+        RecommendationDto.UnifiedRecommendationPageResponse response = recommendationService.getUnifiedRecommendations(
                 categoryId, page, limit);
         return ResponseEntity.ok(response);
     }
