@@ -28,7 +28,7 @@ public interface RecommendationControllerDocs {
                     "- 최신순 정렬\n\n" +
                     "**응답 구조:**\n" +
                     "- recommendedMarkets: 추천 마켓 목록 (각 마켓에 대표 상품 3개 포함)\n" +
-                    "- recommendedProducts: 추천 상품 목록\n" +
+                    "- content: 추천 상품 목록\n" +
                     "- pageInfo: 페이지 정보 (상품용)\n\n" +
                     "**파라미터:**\n" +
                     "- categoryId: 카테고리 ID 필터 (선택사항, 마켓과 상품 모두에 적용)\n" +
@@ -43,7 +43,7 @@ public interface RecommendationControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = RecommendationDto.UnifiedRecommendationResponse.class),
+                            schema = @Schema(implementation = RecommendationDto.UnifiedRecommendationPageResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "통합 추천 응답 예시",
@@ -73,7 +73,7 @@ public interface RecommendationControllerDocs {
                                                     "      ]\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
-                                                    "  \"recommendedProducts\": [\n" +
+                                            "  \"content\": [\n" +
                                                     "    {\n" +
                                                     "      \"id\": 1,\n" +
                                                     "      \"productNumber\": \"SRZ-20251228-001\",\n" +
@@ -93,11 +93,10 @@ public interface RecommendationControllerDocs {
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
                                                     "    \"currentPage\": 1,\n" +
-                                                    "    \"pageSize\": 20,\n" +
-                                                    "    \"totalElements\": 150,\n" +
                                                     "    \"totalPages\": 8,\n" +
-                                                    "    \"isLast\": false,\n" +
-                                                    "    \"hasNext\": true\n" +
+                                            "    \"totalResults\": 150,\n" +
+                                            "    \"limit\": 20,\n" +
+                                            "    \"hasNext\": true\n" +
                                                     "  }\n" +
                                                     "}",
                                             description = "통합 추천 응답 (마켓 + 상품)"
@@ -123,7 +122,7 @@ public interface RecommendationControllerDocs {
                     )
             )
     })
-    ResponseEntity<RecommendationDto.UnifiedRecommendationResponse> getRecommendations(
+    ResponseEntity<RecommendationDto.UnifiedRecommendationPageResponse> getRecommendations(
             @Parameter(
                     name = "categoryId",
                     description = "카테고리 ID 필터 (마켓과 상품 모두에 적용)",

@@ -229,7 +229,7 @@ public class RecommendationService {
     /**
      * 통합 추천 조회 (마켓 + 상품)
      */
-    public RecommendationDto.UnifiedRecommendationResponse getUnifiedRecommendations(
+    public RecommendationDto.UnifiedRecommendationPageResponse getUnifiedRecommendations(
             Long categoryId,
             Integer page,
             Integer limit
@@ -306,21 +306,11 @@ public class RecommendationService {
                 .map(product -> convertToProductItem(product, user))
                 .collect(Collectors.toList());
 
-        // PageInfo 생성 (상품용)
-        ProductDto.PageInfo pageInfo = ProductDto.PageInfo.builder()
-                .currentPage(productPage.getNumber() + 1)
-                .pageSize(productPage.getSize())
-                .totalElements(productPage.getTotalElements())
-                .totalPages(productPage.getTotalPages())
-                .isLast(productPage.isLast())
-                .hasNext(productPage.hasNext())
-                .build();
-
-        return RecommendationDto.UnifiedRecommendationResponse.builder()
-                .recommendedMarkets(marketItems)
-                .recommendedProducts(productItems)
-                .pageInfo(pageInfo)
-                .build();
+        return new RecommendationDto.UnifiedRecommendationPageResponse(
+                productItems,
+                productPage,
+                marketItems
+        );
     }
 
     /**

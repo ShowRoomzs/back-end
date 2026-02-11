@@ -38,37 +38,35 @@ public class CartService {
     public CartDto.AddCartResponse addCart(String username, CartDto.AddCartRequest request) {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
-        ProductVariant variant = productVariantRepository.findByVariantId(request.getVariantId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.VARIANT_NOT_FOUND));
-
-        if (!Boolean.TRUE.equals(variant.getIsDisplay())) {
-            throw new BusinessException(ErrorCode.VARIANT_NOT_AVAILABLE);
-        }
-
-        int stock = variant.getStock() != null ? variant.getStock() : 0;
-        int addQuantity = request.getQuantity();
-
-        Cart cart = cartRepository.findByUserAndVariant(user, variant).orElse(null);
-        int finalQuantity = cart != null ? cart.getQuantity() + addQuantity : addQuantity;
-
-        if (finalQuantity > stock) {
-            throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK, "재고가 부족합니다");
-        }
-
-        if (cart == null) {
-            cart = new Cart(user, variant, addQuantity);
-        } else {
-            cart.updateQuantity(finalQuantity);
-        }
-
-        Cart saved = cartRepository.save(cart);
+        Cart saved = addCartForUser(user, request);
 
         return CartDto.AddCartResponse.builder()
                 .cartId(saved.getId())
-                .variantId(variant.getVariantId())
+                .variantId(saved.getVariant().getVariantId())
                 .quantity(saved.getQuantity())
                 .message("장바구니에 추가되었습니다.")
+                .build();
+    }
+
+    @Transactional
+    public CartDto.BulkAddCartResponse addCartBulk(String username, List<CartDto.AddCartRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "추가할 상품이 없습니다.");
+        }
+
+        Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        for (CartDto.AddCartRequest request : requests) {
+            if (request == null) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "잘못된 요청이 포함되어 있습니다.");
+            }
+            addCartForUser(user, request);
+        }
+
+        return CartDto.BulkAddCartResponse.builder()
+                .addedCount(requests.size())
+                .message("상품 " + requests.size() + "개가 장바구니에 추가되었습니다.")
                 .build();
     }
 
@@ -92,20 +90,7 @@ public class CartService {
                 .finalTotal(summaryData.finalTotal)
                 .build();
 
-        CartDto.PageInfo pageInfo = CartDto.PageInfo.builder()
-                .currentPage(cartPage.getNumber() + 1)
-                .pageSize(cartPage.getSize())
-                .totalElements(cartPage.getTotalElements())
-                .totalPages(cartPage.getTotalPages())
-                .isLast(cartPage.isLast())
-                .hasNext(cartPage.hasNext())
-                .build();
-
-        return CartDto.CartListResponse.builder()
-                .items(items)
-                .summary(summary)
-                .pageInfo(pageInfo)
-                .build();
+        return new CartDto.CartListResponse(items, cartPage, summary);
     }
 
     @Transactional
@@ -262,6 +247,33 @@ public class CartService {
                 .deliveryFee(product.getDeliveryFee() != null ? product.getDeliveryFee() : 0)
                 .stock(stockInfo)
                 .build();
+    }
+
+    private Cart addCartForUser(Users user, CartDto.AddCartRequest request) {
+        ProductVariant variant = productVariantRepository.findByVariantId(request.getVariantId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.VARIANT_NOT_FOUND));
+
+        if (!Boolean.TRUE.equals(variant.getIsDisplay())) {
+            throw new BusinessException(ErrorCode.VARIANT_NOT_AVAILABLE);
+        }
+
+        int stock = variant.getStock() != null ? variant.getStock() : 0;
+        int addQuantity = request.getQuantity();
+
+        Cart cart = cartRepository.findByUserAndVariant(user, variant).orElse(null);
+        int finalQuantity = cart != null ? cart.getQuantity() + addQuantity : addQuantity;
+
+        if (finalQuantity > stock) {
+            throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK, "재고가 부족합니다");
+        }
+
+        if (cart == null) {
+            cart = new Cart(user, variant, addQuantity);
+        } else {
+            cart.updateQuantity(finalQuantity);
+        }
+
+        return cartRepository.save(cart);
     }
 
     private String buildOptionName(List<ProductOption> options) {
