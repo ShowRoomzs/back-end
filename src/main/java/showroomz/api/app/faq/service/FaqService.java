@@ -3,7 +3,6 @@ package showroomz.api.app.faq.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import showroomz.api.app.faq.dto.FaqRegisterRequest;
 import showroomz.api.app.faq.dto.FaqResponse;
 import showroomz.domain.faq.entity.Faq;
 import showroomz.domain.faq.repository.FaqRepository;
@@ -32,19 +31,6 @@ public class FaqService {
         return faqs.stream()
                 .map(FaqResponse::from)
                 .collect(Collectors.toList());
-    }
-
-    // FAQ 등록 (주로 어드민 기능이지만 예시로 포함)
-    @Transactional
-    public Long registerFaq(FaqRegisterRequest request) {
-        Faq faq = Faq.builder()
-                .type(request.getType())
-                .category(request.getCategory())
-                .question(request.getQuestion())
-                .answer(request.getAnswer())
-                .build();
-
-        return faqRepository.save(faq).getId();
     }
 }
 

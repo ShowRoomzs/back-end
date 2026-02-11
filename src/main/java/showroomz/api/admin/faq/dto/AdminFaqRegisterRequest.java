@@ -1,4 +1,4 @@
-package showroomz.api.app.faq.dto;
+package showroomz.api.admin.faq.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -9,7 +9,7 @@ import showroomz.domain.inquiry.type.InquiryType;
 
 @Getter
 @NoArgsConstructor
-public class FaqRegisterRequest {
+public class AdminFaqRegisterRequest {
 
     @Schema(description = "질문 타입 (대분류)", example = "DELIVERY")
     @NotNull(message = "질문 타입을 선택해주세요.")
@@ -26,5 +26,8 @@ public class FaqRegisterRequest {
     @Schema(description = "답변", example = "평균 2~3일 소요됩니다.")
     @NotBlank(message = "답변 내용을 입력해주세요.")
     private String answer;
+
+    @Schema(description = "노출 여부", example = "true", nullable = true)
+    private Boolean isVisible = true; // 기본값 true
 }
 

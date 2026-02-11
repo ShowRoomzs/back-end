@@ -15,9 +15,9 @@ import showroomz.domain.inquiry.type.InquiryType;
 
 import java.util.List;
 
-@Tag(name = "FAQ API", description = "자주 묻는 질문 관련 API")
+@Tag(name = "Common - FAQ", description = "자주 묻는 질문 관련 API")
 @RestController
-@RequestMapping("/api/v1/faqs")
+@RequestMapping("/v1/common/faqs")
 @RequiredArgsConstructor
 public class FaqController {
 
@@ -27,7 +27,7 @@ public class FaqController {
     @GetMapping
     public ResponseEntity<List<FaqResponse>> getFaqList(
             @Parameter(description = "질문 타입 (DELIVERY, ORDER_PAYMENT 등)")
-            @RequestParam(required = false) InquiryType type) {
+            @RequestParam(value = "type", required = false) InquiryType type) {
 
         return ResponseEntity.ok(faqService.getFaqList(type));
     }
