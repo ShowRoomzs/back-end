@@ -21,6 +21,9 @@ public class CartDto {
     @Builder
     @Schema(description = "장바구니 추가 요청")
     public static class AddCartRequest {
+        @Schema(description = "상품 ID", example = "1")
+        private Long productId;
+
         @NotNull(message = "옵션(Variant) ID는 필수입니다.")
         @Schema(description = "옵션(Variant) ID", example = "1")
         private Long variantId;
@@ -47,6 +50,19 @@ public class CartDto {
         private Integer quantity;
 
         @Schema(description = "응답 메시지", example = "장바구니에 추가되었습니다.")
+        private String message;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "장바구니 다중 추가 응답")
+    public static class BulkAddCartResponse {
+        @Schema(description = "추가된 상품 수", example = "2")
+        private Integer addedCount;
+
+        @Schema(description = "응답 메시지", example = "상품 2개가 장바구니에 추가되었습니다.")
         private String message;
     }
 
