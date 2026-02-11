@@ -20,6 +20,13 @@ public interface AdminFaqControllerDocs {
     @Operation(
             summary = "FAQ 등록",
             description = "관리자가 새로운 FAQ를 등록합니다.\n\n" +
+                    "**질문 타입 (type):**\n" +
+                    "- `DELIVERY` : 배송\n" +
+                    "- `ORDER_PAYMENT` : 주문/결제\n" +
+                    "- `CANCEL_REFUND_EXCHANGE` : 취소/교환/환불\n" +
+                    "- `USER_INFO` : 회원정보\n" +
+                    "- `PRODUCT_CHECK` : 상품확인\n" +
+                    "- `SERVICE` : 서비스\n\n" +
                     "**노출 여부:**\n" +
                     "- `isVisible`을 생략하면 기본값 `true`로 저장됩니다.\n" +
                     "- `isVisible=false`로 등록하면 비공개 FAQ로 저장됩니다.\n\n" +

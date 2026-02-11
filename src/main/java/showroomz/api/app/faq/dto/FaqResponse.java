@@ -16,9 +16,6 @@ public class FaqResponse {
     @Schema(description = "질문 타입")
     private InquiryType type;
 
-    @Schema(description = "질문 타입 설명")
-    private String typeDescription;
-
     @Schema(description = "카테고리")
     private String category;
 
@@ -32,7 +29,6 @@ public class FaqResponse {
         return FaqResponse.builder()
                 .id(faq.getId())
                 .type(faq.getType())
-                .typeDescription(faq.getType().getDescription())
                 .category(faq.getCategory())
                 .question(faq.getQuestion())
                 .answer(faq.getAnswer())

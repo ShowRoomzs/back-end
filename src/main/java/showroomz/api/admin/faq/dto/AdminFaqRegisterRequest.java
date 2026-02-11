@@ -11,7 +11,11 @@ import showroomz.domain.inquiry.type.InquiryType;
 @NoArgsConstructor
 public class AdminFaqRegisterRequest {
 
-    @Schema(description = "질문 타입 (대분류)", example = "DELIVERY")
+    @Schema(
+            description = "질문 타입 (대분류). 허용값: DELIVERY(배송), ORDER_PAYMENT(주문/결제), CANCEL_REFUND_EXCHANGE(취소/교환/환불), USER_INFO(회원정보), PRODUCT_CHECK(상품확인), SERVICE(서비스)",
+            example = "DELIVERY",
+            allowableValues = {"DELIVERY", "ORDER_PAYMENT", "CANCEL_REFUND_EXCHANGE", "USER_INFO", "PRODUCT_CHECK", "SERVICE"}
+    )
     @NotNull(message = "질문 타입을 선택해주세요.")
     private InquiryType type;
 
