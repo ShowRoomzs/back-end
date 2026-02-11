@@ -92,20 +92,7 @@ public class CartService {
                 .finalTotal(summaryData.finalTotal)
                 .build();
 
-        CartDto.PageInfo pageInfo = CartDto.PageInfo.builder()
-                .currentPage(cartPage.getNumber() + 1)
-                .pageSize(cartPage.getSize())
-                .totalElements(cartPage.getTotalElements())
-                .totalPages(cartPage.getTotalPages())
-                .isLast(cartPage.isLast())
-                .hasNext(cartPage.hasNext())
-                .build();
-
-        return CartDto.CartListResponse.builder()
-                .items(items)
-                .summary(summary)
-                .pageInfo(pageInfo)
-                .build();
+        return new CartDto.CartListResponse(items, cartPage, summary);
     }
 
     @Transactional

@@ -68,7 +68,53 @@ public interface CartControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = CartDto.CartListResponse.class)
+                            schema = @Schema(implementation = CartDto.CartListResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "조회 성공 예시",
+                                            value = "{\n" +
+                                                    "  \"content\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"cartId\": 10,\n" +
+                                                    "      \"productId\": 1024,\n" +
+                                                    "      \"variantId\": 1,\n" +
+                                                    "      \"productName\": \"프리미엄 린넨 셔츠\",\n" +
+                                                    "      \"thumbnailUrl\": \"https://example.com/image.jpg\",\n" +
+                                                    "      \"marketId\": 5,\n" +
+                                                    "      \"marketName\": \"M 브라이튼\",\n" +
+                                                    "      \"optionName\": \"색상: 블랙 / 사이즈: L\",\n" +
+                                                    "      \"quantity\": 2,\n" +
+                                                    "      \"price\": {\n" +
+                                                    "        \"regularPrice\": 59000,\n" +
+                                                    "        \"discountRate\": 17,\n" +
+                                                    "        \"salePrice\": 49000,\n" +
+                                                    "        \"maxBenefitPrice\": 49000\n" +
+                                                    "      },\n" +
+                                                    "      \"deliveryFee\": 3000,\n" +
+                                                    "      \"stock\": {\n" +
+                                                    "        \"stock\": 10,\n" +
+                                                    "        \"isOutOfStock\": false,\n" +
+                                                    "        \"isOutOfStockForced\": false\n" +
+                                                    "      }\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"summary\": {\n" +
+                                                    "    \"regularTotal\": 200000,\n" +
+                                                    "    \"saleTotal\": 150000,\n" +
+                                                    "    \"discountTotal\": 50000,\n" +
+                                                    "    \"deliveryFeeTotal\": 3000,\n" +
+                                                    "    \"finalTotal\": 153000\n" +
+                                                    "  },\n" +
+                                                    "  \"pageInfo\": {\n" +
+                                                    "    \"currentPage\": 1,\n" +
+                                                    "    \"totalPages\": 1,\n" +
+                                                    "    \"totalResults\": 5,\n" +
+                                                    "    \"limit\": 20,\n" +
+                                                    "    \"hasNext\": false\n" +
+                                                    "  }\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(

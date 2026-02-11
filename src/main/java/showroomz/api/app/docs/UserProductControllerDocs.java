@@ -300,7 +300,7 @@ public interface UserProductControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ProductDto.ProductSearchResponse.class)
+                            schema = @Schema(implementation = PageResponse.class)
                     )
             ),
             @ApiResponse(
@@ -312,7 +312,7 @@ public interface UserProductControllerDocs {
                     )
             )
     })
-    ResponseEntity<ProductDto.ProductSearchResponse> getRelatedProducts(
+    ResponseEntity<PageResponse<ProductDto.ProductItem>> getRelatedProducts(
             @Parameter(description = "상품 ID", required = true)
             @PathVariable Long productId,
             @Parameter(description = "Authorization 헤더 (Optional)", required = false, hidden = true)
