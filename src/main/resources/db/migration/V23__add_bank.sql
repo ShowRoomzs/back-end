@@ -4,7 +4,7 @@ CREATE TABLE `bank` (
     `is_active` bit(1) NOT NULL,
     `display_order` int NOT NULL,
     PRIMARY KEY (`bank_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- 1. 주요 인터넷/시중 은행 (최상단 노출)
 INSERT INTO bank (bank_code, bank_name, is_active, display_order) VALUES ('090', '카카오뱅크', true, 1);
