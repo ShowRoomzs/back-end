@@ -20,6 +20,8 @@ import showroomz.api.app.cart.dto.CartDto;
 import showroomz.api.app.cart.service.CartService;
 import showroomz.api.app.docs.CartControllerDocs;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/v1/user/cart")
 @RequiredArgsConstructor
@@ -29,11 +31,11 @@ public class CartController implements CartControllerDocs {
 
     @Override
     @PostMapping
-    public ResponseEntity<CartDto.AddCartResponse> addCart(
+    public ResponseEntity<CartDto.BulkAddCartResponse> addCart(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @Valid @RequestBody CartDto.AddCartRequest request
+            @Valid @RequestBody List<CartDto.AddCartRequest> requests
     ) {
-        CartDto.AddCartResponse response = cartService.addCart(userPrincipal.getUsername(), request);
+        CartDto.BulkAddCartResponse response = cartService.addCartBulk(userPrincipal.getUsername(), requests);
         return ResponseEntity.ok(response);
     }
 
