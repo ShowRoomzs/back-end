@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -172,19 +173,31 @@ public class ProductService {
     }
 
     /**
-     * 옵션별 재고 및 가격 조회
+     * 옵션별 재고 및 가격 다중 조회 (IN 절로 1회 쿼리)
+     * 표준화: content + pageInfo 구조로 응답 (리스트 형태 일관성)
      */
-    public ProductDto.ProductVariantStockResponse getVariantStock(Long productId, Long variantId) {
-        Product product = productRepository.findByProductId(productId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
-
-        ProductVariant variant = productVariantRepository.findByVariantId(variantId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.VARIANT_NOT_FOUND));
-
-        if (variant.getProduct() == null || !variant.getProduct().getProductId().equals(product.getProductId())) {
-            throw new BusinessException(ErrorCode.INVALID_VARIANT_OPTIONS);
+    public PageResponse<ProductDto.ProductVariantStockResponse> getVariantStocks(Long productId, List<Long> variantIds) {
+        if (variantIds == null || variantIds.isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "variantIds는 필수이며 1개 이상이어야 합니다.");
         }
 
+        productRepository.findByProductId(productId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        List<ProductVariant> variants = productVariantRepository.findByProductIdAndVariantIdIn(productId, variantIds);
+
+        List<ProductDto.ProductVariantStockResponse> list = variants.stream()
+                .map(this::toVariantStockResponse)
+                .collect(Collectors.toList());
+
+        PageRequest pageRequest = PageRequest.of(0, Math.max(1, list.size()));
+        Page<ProductDto.ProductVariantStockResponse> page = new PageImpl<>(list, pageRequest, list.size());
+
+        return new PageResponse<>(list, page);
+    }
+
+    private ProductDto.ProductVariantStockResponse toVariantStockResponse(ProductVariant variant) {
+        Product product = variant.getProduct();
         Integer regularPrice = variant.getRegularPrice();
         Integer salePrice = variant.getSalePrice();
         Integer discountRate = calculateDiscountRate(regularPrice, salePrice);
@@ -195,10 +208,16 @@ public class ProductService {
                 .maxBenefitPrice(salePrice)
                 .build();
 
+        boolean isOutOfStockForced = Boolean.TRUE.equals(product != null && product.getIsOutOfStockForced());
+        int stock = variant.getStock() != null ? variant.getStock() : 0;
+        boolean isOutOfStock = isOutOfStockForced || stock <= 0;
+
         return ProductDto.ProductVariantStockResponse.builder()
-                .productId(product.getProductId())
+                .productId(product != null ? product.getProductId() : null)
                 .variantId(variant.getVariantId())
                 .stock(variant.getStock())
+                .isOutOfStock(isOutOfStock)
+                .isOutOfStockForced(isOutOfStockForced)
                 .price(priceInfo)
                 .build();
     }

@@ -19,16 +19,16 @@ public class ProductDto {
     @Builder
     @Schema(description = "상품 검색 요청")
     public static class ProductSearchRequest {
-        @Schema(description = "검색어", example = "화이트 린넨 셔츠")
+        @Schema(description = "검색어", example = "린넨")
         private String q;
 
         @Schema(description = "카테고리 ID", example = "1")
         private Long categoryId;
 
-        @Schema(description = "쇼룸 ID", example = "5")
+        @Schema(description = "마켓 ID", example = "5")
         private Long marketId;
 
-        @Schema(description = "필터 목록")
+        @Schema(description = "필터 목록 (JSON)")
         private List<FilterRequest> filters;
     }
 
@@ -39,16 +39,16 @@ public class ProductDto {
     @Builder
     @Schema(description = "필터 요청")
     public static class FilterRequest {
-        @Schema(description = "필터 키", example = "gender")
+        @Schema(description = "필터 키", example = "color")
         private String key;
 
-        @Schema(description = "필터 값 목록", example = "[\"MALE\", \"FEMALE\"]")
+        @Schema(description = "필터 값 목록", example = "[\"black\", \"white\"]")
         private List<String> values;
 
-        @Schema(description = "최소값 (RANGE)", example = "10000")
+        @Schema(description = "최소값 (숫자형 필터)")
         private Integer minValue;
 
-        @Schema(description = "최대값 (RANGE)", example = "100000")
+        @Schema(description = "최대값 (숫자형 필터)")
         private Integer maxValue;
     }
 
@@ -57,21 +57,7 @@ public class ProductDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @Schema(description = "상품 검색 응답")
-    public static class ProductSearchResponse {
-        @Schema(description = "상품 목록")
-        private List<ProductItem> products;
-
-        @Schema(description = "페이지 정보")
-        private PageInfo pageInfo;
-    }
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    @Schema(description = "상품 아이템")
+    @Schema(description = "상품 목록 항목")
     public static class ProductItem {
         @Schema(description = "상품 ID", example = "1024")
         private Long id;
@@ -97,10 +83,10 @@ public class ProductDto {
         @Schema(description = "카테고리명", example = "의류")
         private String categoryName;
 
-        @Schema(description = "쇼룸 ID", example = "5")
+        @Schema(description = "마켓 ID", example = "5")
         private Long marketId;
 
-        @Schema(description = "쇼룸명", example = "M 브라이튼")
+        @Schema(description = "마켓명", example = "M 브라이튼")
         private String marketName;
 
         @Schema(description = "가격 정보")
@@ -115,19 +101,19 @@ public class ProductDto {
         @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
         private String gender;
 
-        @Schema(description = "진열 상태", example = "true")
+        @Schema(description = "진열 여부", example = "true")
         private Boolean isDisplay;
 
         @Schema(description = "추천 상품 여부", example = "false")
         private Boolean isRecommended;
 
-        @Schema(description = "상품정보제공고시 (JSON 문자열)")
+        @Schema(description = "상품정보제공고시 (JSON)")
         private String productNotice;
 
-        @Schema(description = "상품 상세 설명 (HTML)")
+        @Schema(description = "상품 상세 설명", example = "<p>상품 상세 설명</p>")
         private String description;
 
-        @Schema(description = "태그 (JSON 문자열)")
+        @Schema(description = "태그 (JSON)", example = "[\"신상\", \"할인\"]")
         private String tags;
 
         @Schema(description = "배송 유형", example = "STANDARD")
@@ -157,7 +143,7 @@ public class ProductDto {
         @Schema(description = "리뷰 수", example = "850")
         private Long reviewCount;
 
-        @Schema(description = "찜 여부", example = "true")
+        @Schema(description = "찜 여부", example = "false")
         private Boolean isWished;
     }
 
@@ -265,13 +251,13 @@ public class ProductDto {
         @Schema(description = "배송 예상 일수", example = "3")
         private Integer deliveryEstimatedDays;
 
-        @Schema(description = "무료배송 여부", example = "false")
+        @Schema(description = "무료 배송 여부", example = "true")
         private Boolean isFreeDelivery;
 
         @Schema(description = "옵션 그룹 목록")
         private List<OptionGroupInfo> optionGroups;
 
-        @Schema(description = "옵션 조합 (Variant) 목록")
+        @Schema(description = "옵션 조합(Variant) 목록")
         private List<VariantInfo> variants;
 
         @Schema(description = "찜 여부", example = "false")
@@ -299,6 +285,12 @@ public class ProductDto {
 
         @Schema(description = "재고 수량", example = "10")
         private Integer stock;
+
+        @Schema(description = "재고 기반 품절 여부", example = "false")
+        private Boolean isOutOfStock;
+
+        @Schema(description = "관리자 강제 품절 여부", example = "false")
+        private Boolean isOutOfStockForced;
 
         @Schema(description = "가격 정보")
         private PriceInfo price;
@@ -377,13 +369,13 @@ public class ProductDto {
     @Builder
     @Schema(description = "페이지 정보")
     public static class PageInfo {
-        @Schema(description = "현재 페이지 번호", example = "1")
+        @Schema(description = "현재 페이지", example = "1")
         private Integer currentPage;
 
-        @Schema(description = "한 페이지당 보여줄 개수", example = "20")
+        @Schema(description = "페이지 크기", example = "20")
         private Integer pageSize;
 
-        @Schema(description = "검색 조건에 맞는 전체 상품 수", example = "1540")
+        @Schema(description = "전체 항목 수", example = "1540")
         private Long totalElements;
 
         @Schema(description = "전체 페이지 수", example = "77")

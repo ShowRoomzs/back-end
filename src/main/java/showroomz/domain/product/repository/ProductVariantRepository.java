@@ -17,4 +17,12 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
     List<ProductVariant> findByProductIdWithOptions(@Param("productId") Long productId);
 
     Optional<ProductVariant> findByVariantId(Long variantId);
+
+    @Query("SELECT v FROM ProductVariant v " +
+           "JOIN FETCH v.product " +
+           "WHERE v.product.productId = :productId AND v.variantId IN :variantIds")
+    List<ProductVariant> findByProductIdAndVariantIdIn(
+            @Param("productId") Long productId,
+            @Param("variantIds") List<Long> variantIds
+    );
 }
