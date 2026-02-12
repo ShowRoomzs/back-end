@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -174,9 +173,9 @@ public class ProductService {
 
     /**
      * 옵션별 재고 및 가격 다중 조회 (IN 절로 1회 쿼리)
-     * 표준화: content + pageInfo 구조로 응답 (리스트 형태 일관성)
+     * 페이징 미적용 - 요청한 variantIds에 해당하는 결과만 반환
      */
-    public PageResponse<ProductDto.ProductVariantStockResponse> getVariantStocks(Long productId, List<Long> variantIds) {
+    public ProductDto.VariantStockListResponse getVariantStocks(Long productId, List<Long> variantIds) {
         if (variantIds == null || variantIds.isEmpty()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "variantIds는 필수이며 1개 이상이어야 합니다.");
         }
@@ -190,10 +189,9 @@ public class ProductService {
                 .map(this::toVariantStockResponse)
                 .collect(Collectors.toList());
 
-        PageRequest pageRequest = PageRequest.of(0, Math.max(1, list.size()));
-        Page<ProductDto.ProductVariantStockResponse> page = new PageImpl<>(list, pageRequest, list.size());
-
-        return new PageResponse<>(list, page);
+        return ProductDto.VariantStockListResponse.builder()
+                .variants(list)
+                .build();
     }
 
     private ProductDto.ProductVariantStockResponse toVariantStockResponse(ProductVariant variant) {
