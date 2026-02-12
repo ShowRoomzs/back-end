@@ -97,11 +97,11 @@ public class ProductController implements UserProductControllerDocs {
 
     @Override
     @GetMapping("/{productId}/variants")
-    public ResponseEntity<PageResponse<ProductDto.ProductVariantStockResponse>> getVariantStocks(
+    public ResponseEntity<ProductDto.VariantStockListResponse> getVariantStocks(
             @PathVariable Long productId,
             @RequestParam List<Long> variantIds
     ) {
-        PageResponse<ProductDto.ProductVariantStockResponse> response = productService.getVariantStocks(productId, variantIds);
+        ProductDto.VariantStockListResponse response = productService.getVariantStocks(productId, variantIds);
         return ResponseEntity.ok(response);
     }
 

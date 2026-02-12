@@ -258,12 +258,12 @@ public interface UserProductControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = PageResponse.class),
+                            schema = @Schema(implementation = ProductDto.VariantStockListResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "다중 조회 성공 예시",
                                             value = "{\n" +
-                                                    "  \"content\": [\n" +
+                                                    "  \"variants\": [\n" +
                                                     "    {\n" +
                                                     "      \"productId\": 1024,\n" +
                                                     "      \"variantId\": 1,\n" +
@@ -290,14 +290,7 @@ public interface UserProductControllerDocs {
                                                     "        \"maxBenefitPrice\": 33900\n" +
                                                     "      }\n" +
                                                     "    }\n" +
-                                                    "  ],\n" +
-                                                    "  \"pageInfo\": {\n" +
-                                                    "    \"currentPage\": 1,\n" +
-                                                    "    \"totalPages\": 1,\n" +
-                                                    "    \"totalResults\": 2,\n" +
-                                                    "    \"limit\": 2,\n" +
-                                                    "    \"hasNext\": false\n" +
-                                                    "  }\n" +
+                                                    "  ]\n" +
                                                     "}"
                                     )
                             }
@@ -320,7 +313,7 @@ public interface UserProductControllerDocs {
                     )
             )
     })
-    ResponseEntity<PageResponse<ProductDto.ProductVariantStockResponse>> getVariantStocks(
+    ResponseEntity<ProductDto.VariantStockListResponse> getVariantStocks(
             @Parameter(description = "상품 ID", required = true, example = "1024")
             @PathVariable Long productId,
             @Parameter(description = "조회할 옵션(Variant) ID 목록 (여러 개 테스트: 1, 2, 3)", required = true, example = "1")

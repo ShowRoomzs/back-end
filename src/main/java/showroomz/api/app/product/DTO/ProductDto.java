@@ -275,6 +275,17 @@ public class ProductDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
+    @Schema(description = "옵션별 재고 다중 조회 응답 (페이징 없음)")
+    public static class VariantStockListResponse {
+        @Schema(description = "옵션별 재고/가격 목록")
+        private List<ProductVariantStockResponse> variants;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
     @Schema(description = "옵션별 재고/가격 조회 응답")
     public static class ProductVariantStockResponse {
         @Schema(description = "상품 ID", example = "1024")
