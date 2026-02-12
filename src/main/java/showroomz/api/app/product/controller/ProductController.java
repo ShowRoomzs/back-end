@@ -17,6 +17,8 @@ import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.util.List;
+
 @RestController("appProductController")
 @RequestMapping("/v1/common/products")
 @RequiredArgsConstructor
@@ -94,12 +96,12 @@ public class ProductController implements UserProductControllerDocs {
     }
 
     @Override
-    @GetMapping("/{productId}/variants/{variantId}")
-    public ResponseEntity<ProductDto.ProductVariantStockResponse> getVariantStock(
+    @GetMapping("/{productId}/variants")
+    public ResponseEntity<PageResponse<ProductDto.ProductVariantStockResponse>> getVariantStocks(
             @PathVariable Long productId,
-            @PathVariable Long variantId
+            @RequestParam List<Long> variantIds
     ) {
-        ProductDto.ProductVariantStockResponse response = productService.getVariantStock(productId, variantId);
+        PageResponse<ProductDto.ProductVariantStockResponse> response = productService.getVariantStocks(productId, variantIds);
         return ResponseEntity.ok(response);
     }
 
