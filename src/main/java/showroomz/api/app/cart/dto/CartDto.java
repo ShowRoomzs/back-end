@@ -7,9 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.domain.Page;
 import showroomz.api.app.product.DTO.ProductDto;
-import showroomz.global.dto.PageResponse;
 
 import java.util.List;
 
@@ -151,15 +149,16 @@ public class CartDto {
     }
 
     @Getter
-    @Schema(description = "장바구니 조회 응답")
-    public static class CartListResponse extends PageResponse<CartItem> {
-        @Schema(description = "요약 정보")
-        private final CartSummary summary;
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "장바구니 조회 응답 (페이징 미적용)")
+    public static class CartListResponse {
+        @Schema(description = "장바구니 항목 목록")
+        private List<CartItem> items;
 
-        public CartListResponse(List<CartItem> content, Page<?> page, CartSummary summary) {
-            super(content, page);
-            this.summary = summary;
-        }
+        @Schema(description = "요약 정보")
+        private CartSummary summary;
     }
 
     @Getter
