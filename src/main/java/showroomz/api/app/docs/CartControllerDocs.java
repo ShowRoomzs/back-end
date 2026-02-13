@@ -13,6 +13,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.cart.dto.CartDto;
 
@@ -188,8 +189,13 @@ public interface CartControllerDocs {
     );
 
     @Operation(
-            summary = "장바구니 개별 삭제",
-            description = "장바구니 항목을 삭제하고 요약 금액을 반환합니다.\n\n" +
+            summary = "장바구니 삭제 (개별/선택/전체 통합)",
+            description = "하나의 API로 장바구니 삭제를 처리합니다.\n\n" +
+                    "**동작 방식:**\n" +
+                    "- **개별 삭제:** cartItemIds=10 → 해당 ID 1개만 삭제\n" +
+                    "- **선택 삭제:** cartItemIds=10&cartItemIds=11&cartItemIds=12 → 지정한 ID들만 삭제\n" +
+                    "- **전체 삭제:** cartItemIds 생략 또는 비어있음 → 현재 사용자의 장바구니 전체 삭제\n\n" +
+                    "**보안:** 삭제 요청 시 해당 cartItemId가 현재 로그인한 유저의 소유인지 검증합니다. 타인의 장바구니 항목은 삭제할 수 없습니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -202,9 +208,11 @@ public interface CartControllerDocs {
                             schema = @Schema(implementation = CartDto.DeleteCartResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "성공 예시",
+                                            name = "선택 삭제 성공",
                                             value = "{\n" +
-                                                    "  \"deletedCartItemId\": 2,\n" +
+                                                    "  \"deletedCartItemIds\": [2, 3, 5],\n" +
+                                                    "  \"deletedCount\": 3,\n" +
+                                                    "  \"message\": \"3개 항목이 삭제되었습니다.\",\n" +
                                                     "  \"summary\": {\n" +
                                                     "    \"regularTotal\": 118000,\n" +
                                                     "    \"saleTotal\": 98000,\n" +
@@ -214,50 +222,13 @@ public interface CartControllerDocs {
                                                     "    \"expectedTotalPrice\": 98000\n" +
                                                     "  }\n" +
                                                     "}"
-                                    )
-                            }
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "삭제 권한 없음",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "장바구니 항목을 찾을 수 없음",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            )
-    })
-    ResponseEntity<CartDto.DeleteCartResponse> deleteCart(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long cartItemId
-    );
-
-    @Operation(
-            summary = "장바구니 전체 삭제",
-            description = "장바구니의 모든 항목을 삭제하고 요약 금액을 반환합니다.\n\n" +
-                    "**권한:** USER\n" +
-                    "**요청 헤더:** Authorization: Bearer {accessToken}"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "삭제 성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = CartDto.ClearCartResponse.class),
-                            examples = {
+                                    ),
                                     @ExampleObject(
-                                            name = "성공 예시",
+                                            name = "전체 삭제 성공",
                                             value = "{\n" +
-                                                    "  \"message\": \"장바구니가 비워졌습니다.\",\n" +
+                                                    "  \"deletedCartItemIds\": [1, 2, 3],\n" +
+                                                    "  \"deletedCount\": 3,\n" +
+                                                    "  \"message\": \"3개 항목이 삭제되었습니다.\",\n" +
                                                     "  \"summary\": {\n" +
                                                     "    \"regularTotal\": 0,\n" +
                                                     "    \"saleTotal\": 0,\n" +
@@ -271,6 +242,8 @@ public interface CartControllerDocs {
                                     @ExampleObject(
                                             name = "이미 비어 있음",
                                             value = "{\n" +
+                                                    "  \"deletedCartItemIds\": [],\n" +
+                                                    "  \"deletedCount\": 0,\n" +
                                                     "  \"message\": \"이미 장바구니가 비어 있습니다\",\n" +
                                                     "  \"summary\": {\n" +
                                                     "    \"regularTotal\": 0,\n" +
@@ -286,6 +259,14 @@ public interface CartControllerDocs {
                     )
             ),
             @ApiResponse(
+                    responseCode = "403",
+                    description = "삭제 권한 없음 (타인의 장바구니 항목 포함)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
                     responseCode = "401",
                     description = "인증 실패",
                     content = @Content(
@@ -294,7 +275,8 @@ public interface CartControllerDocs {
                     )
             )
     })
-    ResponseEntity<CartDto.ClearCartResponse> clearCart(
-            @AuthenticationPrincipal UserPrincipal principal
+    ResponseEntity<CartDto.DeleteCartResponse> deleteCart(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(value = "cartItemIds", required = false) List<Long> cartItemIds
     );
 }

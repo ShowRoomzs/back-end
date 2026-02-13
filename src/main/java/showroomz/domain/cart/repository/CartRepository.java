@@ -39,4 +39,9 @@ public interface CartRepository extends JpaRepository<Cart, Long> {
     long countByUser(Users user);
 
     void deleteByUser(Users user);
+
+    /**
+     * 로그인한 유저 소유의 장바구니 ID 목록 조회 (삭제 전 소유권 검증용)
+     */
+    List<Cart> findByIdInAndUser(List<Long> ids, Users user);
 }

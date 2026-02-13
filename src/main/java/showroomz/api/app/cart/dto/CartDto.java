@@ -126,25 +126,18 @@ public class CartDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @Schema(description = "장바구니 삭제 응답")
+    @Schema(description = "장바구니 삭제 응답 (개별/선택/전체 통합)")
     public static class DeleteCartResponse {
-        @Schema(description = "삭제된 장바구니 ID", example = "10")
-        private Long deletedCartItemId;
+        @Schema(description = "삭제된 장바구니 ID 목록")
+        private List<Long> deletedCartItemIds;
 
-        @Schema(description = "요약 정보")
-        private UpdateSummary summary;
-    }
+        @Schema(description = "삭제된 항목 수", example = "3")
+        private Integer deletedCount;
 
-    @Getter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    @Schema(description = "장바구니 전체 삭제 응답")
-    public static class ClearCartResponse {
-        @Schema(description = "응답 메시지", example = "장바구니가 비워졌습니다.")
+        @Schema(description = "응답 메시지", example = "3개 항목이 삭제되었습니다.")
         private String message;
 
-        @Schema(description = "요약 정보")
+        @Schema(description = "삭제 후 요약 정보")
         private UpdateSummary summary;
     }
 
