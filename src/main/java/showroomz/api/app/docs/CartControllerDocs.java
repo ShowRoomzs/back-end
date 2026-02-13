@@ -11,7 +11,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import showroomz.api.app.auth.entity.UserPrincipal;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PathVariable;
 import showroomz.api.app.auth.DTO.ErrorResponse;
@@ -85,7 +84,7 @@ public interface CartControllerDocs {
 
     @Operation(
             summary = "장바구니 조회",
-            description = "사용자의 장바구니 목록을 페이징하여 조회합니다.\n\n" +
+            description = "사용자의 장바구니 목록을 조회합니다. (페이징 미적용)\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -100,7 +99,7 @@ public interface CartControllerDocs {
                                     @ExampleObject(
                                             name = "조회 성공 예시",
                                             value = "{\n" +
-                                                    "  \"content\": [\n" +
+                                                    "  \"items\": [\n" +
                                                     "    {\n" +
                                                     "      \"cartId\": 10,\n" +
                                                     "      \"productId\": 1024,\n" +
@@ -131,13 +130,6 @@ public interface CartControllerDocs {
                                                     "    \"discountTotal\": 50000,\n" +
                                                     "    \"deliveryFeeTotal\": 3000,\n" +
                                                     "    \"finalTotal\": 153000\n" +
-                                                    "  },\n" +
-                                                    "  \"pageInfo\": {\n" +
-                                                    "    \"currentPage\": 1,\n" +
-                                                    "    \"totalPages\": 1,\n" +
-                                                    "    \"totalResults\": 5,\n" +
-                                                    "    \"limit\": 20,\n" +
-                                                    "    \"hasNext\": false\n" +
                                                     "  }\n" +
                                                     "}"
                                     )
@@ -154,9 +146,7 @@ public interface CartControllerDocs {
             )
     })
     ResponseEntity<CartDto.CartListResponse> getCart(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
-            @RequestParam(value = "limit", required = false, defaultValue = "20") Integer limit
+            @AuthenticationPrincipal UserPrincipal principal
     );
 
     @Operation(

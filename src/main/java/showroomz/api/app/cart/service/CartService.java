@@ -1,8 +1,6 @@
 package showroomz.api.app.cart.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,16 +69,16 @@ public class CartService {
     }
 
     @Transactional(readOnly = true)
-    public CartDto.CartListResponse getCart(String username, Pageable pageable) {
+    public CartDto.CartListResponse getCart(String username) {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        Page<Cart> cartPage = cartRepository.findByUser(user, pageable);
-        List<CartDto.CartItem> items = cartPage.getContent().stream()
+        List<Cart> carts = cartRepository.findAllByUser(user);
+        List<CartDto.CartItem> items = carts.stream()
                 .map(this::toCartItem)
                 .toList();
 
-        CartSummaryData summaryData = calculateSummary(cartPage.getContent());
+        CartSummaryData summaryData = calculateSummary(carts);
 
         CartDto.CartSummary summary = CartDto.CartSummary.builder()
                 .regularTotal(summaryData.regularTotal)
@@ -90,7 +88,10 @@ public class CartService {
                 .finalTotal(summaryData.finalTotal)
                 .build();
 
-        return new CartDto.CartListResponse(items, cartPage, summary);
+        return CartDto.CartListResponse.builder()
+                .items(items)
+                .summary(summary)
+                .build();
     }
 
     @Transactional
