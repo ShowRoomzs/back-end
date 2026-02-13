@@ -16,6 +16,8 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.global.dto.PageResponse;
 
+import java.util.List;
+
 @Tag(name = "Common - Product", description = "공용 상품 API")
 public interface UserProductControllerDocs {
 
@@ -240,11 +242,14 @@ public interface UserProductControllerDocs {
     );
 
     @Operation(
-            summary = "비회원/회원 옵션별 실시간 상품 재고 조회",
-            description = "상품 ID와 옵션(Variant) ID로 재고 및 가격 정보를 조회합니다.\n\n" +
+            summary = "비회원/회원 옵션별 실시간 상품 재고 다중 조회",
+            description = "상품 ID와 옵션(Variant) ID 목록으로 재고 및 가격 정보를 한 번에 조회합니다.\n\n" +
+                    "**쿼리 파라미터:**\n" +
+                    "- variantIds: 조회할 옵션 ID 목록 (예: variantIds=1&variantIds=2&variantIds=3)\n\n" +
                     "**참고사항:**\n" +
                     "- 비회원도 조회 가능합니다.\n" +
-                    "- 옵션이 해당 상품에 속하지 않는 경우 오류가 발생합니다.\n\n" +
+                    "- IN 절로 1회 쿼리하여 N+1을 방지합니다.\n" +
+                    "- 재고 수량, 품절 여부(isOutOfStock), 강제 품절 여부(isOutOfStockForced)를 포함합니다.\n\n" +
                     "**권한:** 선택사항 (게스트 가능)"
     )
     @ApiResponses(value = {
@@ -253,31 +258,66 @@ public interface UserProductControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ProductDto.ProductVariantStockResponse.class)
+                            schema = @Schema(implementation = ProductDto.VariantStockListResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "다중 조회 성공 예시",
+                                            value = "{\n" +
+                                                    "  \"variants\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"productId\": 1024,\n" +
+                                                    "      \"variantId\": 1,\n" +
+                                                    "      \"stock\": 10,\n" +
+                                                    "      \"isOutOfStock\": false,\n" +
+                                                    "      \"isOutOfStockForced\": false,\n" +
+                                                    "      \"price\": {\n" +
+                                                    "        \"regularPrice\": 113000,\n" +
+                                                    "        \"discountRate\": 70,\n" +
+                                                    "        \"salePrice\": 33900,\n" +
+                                                    "        \"maxBenefitPrice\": 33900\n" +
+                                                    "      }\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"productId\": 1024,\n" +
+                                                    "      \"variantId\": 2,\n" +
+                                                    "      \"stock\": 0,\n" +
+                                                    "      \"isOutOfStock\": true,\n" +
+                                                    "      \"isOutOfStockForced\": false,\n" +
+                                                    "      \"price\": {\n" +
+                                                    "        \"regularPrice\": 113000,\n" +
+                                                    "        \"discountRate\": 70,\n" +
+                                                    "        \"salePrice\": 33900,\n" +
+                                                    "        \"maxBenefitPrice\": 33900\n" +
+                                                    "      }\n" +
+                                                    "    }\n" +
+                                                    "  ]\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
-                    responseCode = "404",
-                    description = "상품 또는 옵션을 찾을 수 없음",
+                    responseCode = "400",
+                    description = "variantIds 누락 또는 잘못된 요청",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)
                     )
             ),
             @ApiResponse(
-                    responseCode = "400",
-                    description = "옵션이 상품에 속하지 않음",
+                    responseCode = "404",
+                    description = "상품을 찾을 수 없음",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)
                     )
             )
     })
-    ResponseEntity<ProductDto.ProductVariantStockResponse> getVariantStock(
-            @Parameter(description = "상품 ID", required = true)
+    ResponseEntity<ProductDto.VariantStockListResponse> getVariantStocks(
+            @Parameter(description = "상품 ID", required = true, example = "1024")
             @PathVariable Long productId,
-            @Parameter(description = "옵션(Variant) ID", required = true)
-            @PathVariable Long variantId
+            @Parameter(description = "조회할 옵션(Variant) ID 목록 (여러 개 테스트: 1, 2, 3)", required = true, example = "1")
+            @RequestParam List<Long> variantIds
     );
 
     @Operation(

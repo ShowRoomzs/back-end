@@ -75,6 +75,9 @@ public class SecurityConfig {
 
             // 검색 자동완성 (비로그인 허용)
             "/v1/user/search/autocomplete",
+
+            // FAQ 조회 API
+            "/v1/user/faqs"
     };
     /*
      * SecurityFilterChain 설정 (Spring Security 3.x 최신 방식)
