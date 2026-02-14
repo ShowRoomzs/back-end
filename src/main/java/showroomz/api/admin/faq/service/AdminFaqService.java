@@ -23,7 +23,6 @@ public class AdminFaqService {
     @Transactional
     public Long registerFaq(AdminFaqRegisterRequest request) {
         Faq faq = Faq.builder()
-                .type(request.getType())
                 .category(request.getCategory())
                 .question(request.getQuestion())
                 .answer(request.getAnswer())
@@ -35,7 +34,6 @@ public class AdminFaqService {
         Boolean requestedVisible = request.getIsVisible();
         if (requestedVisible != null && !requestedVisible) {
             savedFaq.update(
-                    request.getType(),
                     request.getCategory(),
                     request.getQuestion(),
                     request.getAnswer(),

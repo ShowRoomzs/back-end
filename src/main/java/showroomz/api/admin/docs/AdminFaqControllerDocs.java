@@ -20,13 +20,6 @@ public interface AdminFaqControllerDocs {
     @Operation(
             summary = "FAQ 등록",
             description = "관리자가 새로운 FAQ를 등록합니다.\n\n" +
-                    "**질문 타입 (type):**\n" +
-                    "- `DELIVERY` : 배송\n" +
-                    "- `ORDER_PAYMENT` : 주문/결제\n" +
-                    "- `CANCEL_REFUND_EXCHANGE` : 취소/교환/환불\n" +
-                    "- `USER_INFO` : 회원정보\n" +
-                    "- `PRODUCT_CHECK` : 상품확인\n" +
-                    "- `SERVICE` : 서비스\n\n" +
                     "**노출 여부:**\n" +
                     "- `isVisible`을 생략하면 기본값 `true`로 저장됩니다.\n" +
                     "- `isVisible=false`로 등록하면 비공개 FAQ로 저장됩니다.\n\n" +
@@ -85,7 +78,6 @@ public interface AdminFaqControllerDocs {
                             @ExampleObject(
                                     name = "공개 FAQ 등록",
                                     value = "{\n" +
-                                            "  \"type\": \"DELIVERY\",\n" +
                                             "  \"category\": \"배송 지연\",\n" +
                                             "  \"question\": \"배송은 얼마나 걸리나요?\",\n" +
                                             "  \"answer\": \"평균 2~3일 소요됩니다.\",\n" +
@@ -95,7 +87,6 @@ public interface AdminFaqControllerDocs {
                             @ExampleObject(
                                     name = "비공개 FAQ 등록",
                                     value = "{\n" +
-                                            "  \"type\": \"DELIVERY\",\n" +
                                             "  \"category\": \"배송 지연\",\n" +
                                             "  \"question\": \"(내부용) 특정 CS 대응 문구\",\n" +
                                             "  \"answer\": \"(내부용) 상황에 따라 안내\",\n" +

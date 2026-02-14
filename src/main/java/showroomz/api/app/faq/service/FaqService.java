@@ -6,7 +6,6 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.faq.dto.FaqResponse;
 import showroomz.domain.faq.entity.Faq;
 import showroomz.domain.faq.repository.FaqRepository;
-import showroomz.domain.inquiry.type.InquiryType;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,16 +17,9 @@ public class FaqService {
 
     private final FaqRepository faqRepository;
 
-    // FAQ 전체 목록 조회
-    public List<FaqResponse> getFaqList(InquiryType type) {
-        List<Faq> faqs;
-
-        if (type != null) {
-            faqs = faqRepository.findAllByTypeAndIsVisibleTrue(type);
-        } else {
-            faqs = faqRepository.findAllByIsVisibleTrue();
-        }
-
+    // FAQ 전체 목록 조회 (노출=true만)
+    public List<FaqResponse> getFaqList() {
+        List<Faq> faqs = faqRepository.findAllByIsVisibleTrue();
         return faqs.stream()
                 .map(FaqResponse::from)
                 .collect(Collectors.toList());
