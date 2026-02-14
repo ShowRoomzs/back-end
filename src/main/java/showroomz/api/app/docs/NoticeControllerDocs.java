@@ -61,7 +61,7 @@ public interface NoticeControllerDocs {
             )
     })
     ResponseEntity<PageResponse<NoticeResponse>> getNoticeList(
-            @Parameter(hidden = true) Pageable pageable
+            Pageable pageable
     );
 
     @Operation(
