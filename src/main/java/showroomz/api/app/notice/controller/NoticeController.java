@@ -31,7 +31,7 @@ public class NoticeController implements NoticeControllerDocs {
 
     @Override
     @GetMapping("/{noticeId}")
-    public ResponseEntity<NoticeDetailResponse> getNoticeDetail(@PathVariable Long noticeId) {
+    public ResponseEntity<NoticeDetailResponse> getNoticeDetail(@PathVariable("noticeId") Long noticeId) {
         return ResponseEntity.ok(noticeService.getNoticeDetail(noticeId));
     }
 }

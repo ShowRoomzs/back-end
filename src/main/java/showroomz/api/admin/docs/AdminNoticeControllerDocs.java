@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.admin.notice.dto.AdminNoticeRegisterRequest;
 import showroomz.api.app.auth.DTO.ErrorResponse;
-import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 
 @Tag(name = "Admin - Notice", description = "관리자 공지 관리 API\n\n")
 public interface AdminNoticeControllerDocs {
@@ -37,16 +36,20 @@ public interface AdminNoticeControllerDocs {
                     description = "입력값 오류 (제목/내용 필수)",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ValidationErrorResponse.class),
+                            schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "유효성 검증 실패",
+                                            name = "제목 필수",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"입력값이 올바르지 않습니다.\",\n" +
-                                                    "  \"errors\": [\n" +
-                                                    "    { \"field\": \"title\", \"reason\": \"제목은 필수 입력값입니다.\" }\n" +
-                                                    "  ]\n" +
+                                                    "  \"message\": \"제목은 필수 입력값입니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "내용 필수",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"내용은 필수 입력값입니다.\"\n" +
                                                     "}"
                                     )
                             }

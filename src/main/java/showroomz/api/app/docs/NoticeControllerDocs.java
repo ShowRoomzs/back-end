@@ -16,8 +16,7 @@ import showroomz.api.app.notice.dto.NoticeDetailResponse;
 import showroomz.api.app.notice.dto.NoticeResponse;
 import showroomz.global.dto.PageResponse;
 
-@Tag(name = "Common - Notice", description = "공용 공지 API\n\n" +
-        "노출 여부가 true인 공지만 목록/상세에 노출됩니다. 인증 없이 조회 가능합니다.")
+@Tag(name = "Common - Notice", description = "공용 공지 API\n\n")
 public interface NoticeControllerDocs {
 
     @Operation(
@@ -71,7 +70,10 @@ public interface NoticeControllerDocs {
                     "**동작 방식:**\n" +
                     "- 노출 여부(isVisible)가 true인 공지만 조회 가능합니다.\n" +
                     "- 비공개 공지는 404로 응답됩니다.\n\n" +
-                    "**권한:** 비회원/회원 모두 조회 가능 (인증 불필요)"
+                    "**권한:** 비회원/회원 모두 조회 가능 (인증 불필요)",
+            parameters = {
+                    @Parameter(name = "noticeId", description = "공지 ID", required = true, example = "1", in = ParameterIn.PATH)
+            }
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -108,7 +110,7 @@ public interface NoticeControllerDocs {
             )
     })
     ResponseEntity<NoticeDetailResponse> getNoticeDetail(
-            @Parameter(description = "공지 ID", required = true, example = "1", in = ParameterIn.PATH)
+            @Parameter(name = "noticeId", description = "공지 ID", required = true, example = "1", in = ParameterIn.PATH)
             Long noticeId
     );
 }
