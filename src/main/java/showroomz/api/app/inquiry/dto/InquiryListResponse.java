@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 import showroomz.domain.inquiry.entity.OneToOneInquiry;
+import showroomz.domain.inquiry.type.InquiryDetailType;
 import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.domain.inquiry.type.InquiryType;
 
@@ -20,8 +21,8 @@ public class InquiryListResponse {
     @Schema(description = "문의 타입 (대분류)")
     private InquiryType type;
 
-    @Schema(description = "문의 유형 (상세)")
-    private String category;
+    @Schema(description = "문의 상세 유형 (소분류)")
+    private InquiryDetailType detailType;
 
     @Schema(description = "문의 내용")
     private String content;
@@ -45,7 +46,7 @@ public class InquiryListResponse {
         return InquiryListResponse.builder()
                 .id(inquiry.getId())
                 .type(inquiry.getType())
-                .category(inquiry.getCategory())
+                .detailType(inquiry.getCategory())
                 .content(inquiry.getContent())
                 .imageUrls(inquiry.getImageUrls())
                 .status(inquiry.getStatus())

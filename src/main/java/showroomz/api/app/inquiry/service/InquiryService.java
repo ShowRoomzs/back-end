@@ -40,10 +40,15 @@ public class InquiryService {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
+        InquiryDetailType detailType = request.getDetailType();
+        if (detailType.getParentType() != request.getType()) {
+            throw new BusinessException(ErrorCode.INVALID_INQUIRY_DETAIL_TYPE);
+        }
+
         OneToOneInquiry inquiry = OneToOneInquiry.builder()
                 .user(user)
-                .type(request.getType())          // Enum (대분류)
-                .category(request.getCategory())  // String (상세 유형)
+                .type(request.getType())
+                .category(detailType)
                 .content(request.getContent())
                 .imageUrls(request.getImageUrls())
                 .build();
@@ -91,9 +96,14 @@ public class InquiryService {
             throw new BusinessException(ErrorCode.INQUIRY_ALREADY_ANSWERED);
         }
 
+        InquiryDetailType detailType = request.getDetailType();
+        if (detailType.getParentType() != request.getType()) {
+            throw new BusinessException(ErrorCode.INVALID_INQUIRY_DETAIL_TYPE);
+        }
+
         inquiry.update(
                 request.getType(),
-                request.getCategory(),
+                detailType,
                 request.getContent(),
                 request.getImageUrls()
         );
