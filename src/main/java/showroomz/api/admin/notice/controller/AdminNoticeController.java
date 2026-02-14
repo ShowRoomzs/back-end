@@ -24,6 +24,6 @@ public class AdminNoticeController implements AdminNoticeControllerDocs {
     @PostMapping
     public ResponseEntity<Void> registerNotice(@Valid @RequestBody AdminNoticeRegisterRequest request) {
         Long noticeId = adminNoticeService.registerNotice(request);
-        return ResponseEntity.created(URI.create("/v1/user/notices/" + noticeId)).build();
+        return ResponseEntity.created(URI.create("/v1/common/notices/" + noticeId)).build();
     }
 }

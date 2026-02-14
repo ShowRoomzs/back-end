@@ -16,7 +16,7 @@ import showroomz.api.app.notice.dto.NoticeDetailResponse;
 import showroomz.api.app.notice.dto.NoticeResponse;
 import showroomz.global.dto.PageResponse;
 
-@Tag(name = "User - Notice", description = "사용자 공지 API\n\n" +
+@Tag(name = "Common - Notice", description = "공용 공지 API\n\n" +
         "노출 여부가 true인 공지만 목록/상세에 노출됩니다. 인증 없이 조회 가능합니다.")
 public interface NoticeControllerDocs {
 

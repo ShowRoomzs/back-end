@@ -14,8 +14,7 @@ import showroomz.api.admin.notice.dto.AdminNoticeRegisterRequest;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 
-@Tag(name = "Admin - Notice", description = "관리자 공지 관리 API\n\n" +
-        "공지 등록 및 노출 여부 설정. 등록된 공지는 사용자 API(/v1/user/notices)에서 조회됩니다.")
+@Tag(name = "Admin - Notice", description = "관리자 공지 관리 API\n\n")
 public interface AdminNoticeControllerDocs {
 
     @Operation(
@@ -26,7 +25,7 @@ public interface AdminNoticeControllerDocs {
                     "- `false`: 비공개 공지 (관리자만 확인, 사용자에게 미노출)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
-                    "**응답:** 201 Created, Location 헤더에 생성된 공지 상세 조회 경로 반환 (`/v1/user/notices/{noticeId}`)"
+                    "**응답:** 201 Created, Location 헤더에 생성된 공지 상세 조회 경로 반환 (`/v1/common/notices/{noticeId}`)"
     )
     @ApiResponses(value = {
             @ApiResponse(
