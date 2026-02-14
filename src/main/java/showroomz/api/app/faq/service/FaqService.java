@@ -24,5 +24,10 @@ public class FaqService {
                 .map(FaqResponse::from)
                 .collect(Collectors.toList());
     }
+
+    // FAQ 카테고리 목록 조회 (노출=true인 FAQ에 존재하는 카테고리만, 중복 제거, 가나다순)
+    public List<String> getFaqCategories() {
+        return faqRepository.findDistinctCategoriesByIsVisibleTrue();
+    }
 }
 

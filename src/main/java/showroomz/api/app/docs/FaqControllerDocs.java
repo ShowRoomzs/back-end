@@ -45,5 +45,26 @@ public interface FaqControllerDocs {
             )
     })
     ResponseEntity<List<FaqResponse>> getFaqList();
+
+    @Operation(
+            summary = "FAQ 카테고리 목록 조회",
+            description = "노출 여부가 true인 FAQ에 사용된 카테고리 목록을 중복 없이 가나다순으로 조회합니다.\n\n" +
+                    "**권한:** 없음\n" +
+                    "**요청 헤더:** 없음"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    name = "성공 예시",
+                                    value = "[\n  \"배송 지연\",\n  \"교환/반품\",\n  \"주문/결제\"\n]"
+                            )
+                    )
+            )
+    })
+    ResponseEntity<List<String>> getFaqCategories();
 }
 

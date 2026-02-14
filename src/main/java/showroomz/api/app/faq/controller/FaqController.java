@@ -23,5 +23,11 @@ public class FaqController implements FaqControllerDocs {
     public ResponseEntity<List<FaqResponse>> getFaqList() {
         return ResponseEntity.ok(faqService.getFaqList());
     }
+
+    @Override
+    @GetMapping("/categories")
+    public ResponseEntity<List<String>> getFaqCategories() {
+        return ResponseEntity.ok(faqService.getFaqCategories());
+    }
 }
 
