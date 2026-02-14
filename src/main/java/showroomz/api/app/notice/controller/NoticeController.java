@@ -15,7 +15,7 @@ import showroomz.api.app.notice.service.NoticeService;
 import showroomz.global.dto.PageResponse;
 
 @RestController
-@RequestMapping("/v1/common/notices")
+@RequestMapping("/v1/user/notices")
 @RequiredArgsConstructor
 public class NoticeController {
 
