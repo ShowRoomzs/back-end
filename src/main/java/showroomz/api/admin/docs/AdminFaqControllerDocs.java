@@ -39,24 +39,10 @@ public interface AdminFaqControllerDocs {
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "카테고리 필수",
-                                            value = "{\n" +
-                                                    "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"카테고리를 선택해주세요.\"\n" +
-                                                    "}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "질문 필수",
+                                            name = "유효성 검증 실패",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
                                                     "  \"message\": \"질문 내용을 입력해주세요.\"\n" +
-                                                    "}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "답변 필수",
-                                            value = "{\n" +
-                                                    "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"답변 내용을 입력해주세요.\"\n" +
                                                     "}"
                                     )
                             }
