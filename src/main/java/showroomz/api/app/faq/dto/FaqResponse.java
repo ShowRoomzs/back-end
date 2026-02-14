@@ -12,7 +12,7 @@ public class FaqResponse {
     @Schema(description = "FAQ ID")
     private Long id;
 
-    @Schema(description = "카테고리")
+    @Schema(description = "카테고리 (enum 이름: DELIVERY, ORDER_PAYMENT 등)")
     private String category;
 
     @Schema(description = "질문")
@@ -24,7 +24,7 @@ public class FaqResponse {
     public static FaqResponse from(Faq faq) {
         return FaqResponse.builder()
                 .id(faq.getId())
-                .category(faq.getCategory().getDisplayName())
+                .category(faq.getCategory().name())
                 .question(faq.getQuestion())
                 .answer(faq.getAnswer())
                 .build();

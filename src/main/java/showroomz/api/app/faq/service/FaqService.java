@@ -38,10 +38,10 @@ public class FaqService {
         return faqs.stream().map(FaqResponse::from).collect(Collectors.toList());
     }
 
-    // FAQ 카테고리 고정 목록 (전체, 배송, ... 순서)
+    // FAQ 카테고리 고정 목록 (enum 이름 순서: ALL, DELIVERY, ...)
     public List<String> getFaqCategories() {
         return Arrays.stream(FaqCategory.values())
-                .map(FaqCategory::getDisplayName)
+                .map(FaqCategory::name)
                 .toList();
     }
 }
