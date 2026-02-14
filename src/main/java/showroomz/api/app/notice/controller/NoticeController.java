@@ -2,11 +2,9 @@ package showroomz.api.app.notice.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,6 +13,7 @@ import showroomz.api.app.notice.dto.NoticeDetailResponse;
 import showroomz.api.app.notice.dto.NoticeResponse;
 import showroomz.api.app.notice.service.NoticeService;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 @RestController
 @RequestMapping("/v1/common/notices")
@@ -26,8 +25,8 @@ public class NoticeController implements NoticeControllerDocs {
     @Override
     @GetMapping
     public ResponseEntity<PageResponse<NoticeResponse>> getNoticeList(
-            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(noticeService.getNoticeList(pageable));
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest) {
+        return ResponseEntity.ok(noticeService.getNoticeList(pagingRequest.toPageable()));
     }
 
     @Override

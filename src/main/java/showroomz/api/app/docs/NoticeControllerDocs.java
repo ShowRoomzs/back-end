@@ -9,8 +9,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import showroomz.global.dto.PagingRequest;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.notice.dto.NoticeDetailResponse;
 import showroomz.api.app.notice.dto.NoticeResponse;
@@ -61,7 +61,7 @@ public interface NoticeControllerDocs {
             )
     })
     ResponseEntity<PageResponse<NoticeResponse>> getNoticeList(
-            Pageable pageable
+            PagingRequest pagingRequest
     );
 
     @Operation(
