@@ -1,5 +1,6 @@
 package showroomz.api.admin.faq.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import java.util.Objects;
 @RestController
 @RequestMapping("/v1/admin/faqs")
 @RequiredArgsConstructor
+@Hidden
 public class AdminFaqController implements AdminFaqControllerDocs {
 
     private final AdminFaqService adminFaqService;
