@@ -17,9 +17,11 @@ public class FaqService {
 
     private final FaqRepository faqRepository;
 
-    // FAQ 전체 목록 조회 (노출=true만)
-    public List<FaqResponse> getFaqList() {
-        List<Faq> faqs = faqRepository.findAllByIsVisibleTrue();
+    // FAQ 목록 조회 (노출=true만). keyword가 있으면 질문 내용 기준 부분 일치 검색(대소문자 무시)
+    public List<FaqResponse> getFaqList(String keyword) {
+        List<Faq> faqs = (keyword == null || keyword.isBlank())
+                ? faqRepository.findAllByIsVisibleTrue()
+                : faqRepository.findAllByIsVisibleTrueAndQuestionContainingIgnoreCase(keyword.trim());
         return faqs.stream()
                 .map(FaqResponse::from)
                 .collect(Collectors.toList());

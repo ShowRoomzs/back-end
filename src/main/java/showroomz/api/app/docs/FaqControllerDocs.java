@@ -1,6 +1,8 @@
 package showroomz.api.app.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -17,9 +19,15 @@ public interface FaqControllerDocs {
 
     @Operation(
             summary = "FAQ 목록 조회",
-            description = "노출 여부가 true인 FAQ 전체 목록을 조회합니다.\n\n" +
+            description = "노출 여부가 true인 FAQ 목록을 조회합니다.\n\n" +
+                    "**검색:**\n" +
+                    "- `keyword`를 전달하면 질문(question) 내용에 해당 키워드가 포함된 FAQ만 반환합니다 (부분 일치, 대소문자 구분 없음).\n" +
+                    "- `keyword`를 생략하면 전체 목록을 반환합니다.\n\n" +
                     "**권한:** 없음\n" +
-                    "**요청 헤더:** 없음"
+                    "**요청 헤더:** 없음",
+            parameters = {
+                    @Parameter(name = "keyword", description = "질문 검색 키워드 (부분 일치, 선택)", required = false, example = "배송", in = ParameterIn.QUERY)
+            }
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -44,7 +52,7 @@ public interface FaqControllerDocs {
                     )
             )
     })
-    ResponseEntity<List<FaqResponse>> getFaqList();
+    ResponseEntity<List<FaqResponse>> getFaqList(String keyword);
 
     @Operation(
             summary = "FAQ 카테고리 목록 조회",

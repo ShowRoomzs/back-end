@@ -11,6 +11,9 @@ public interface FaqRepository extends JpaRepository<Faq, Long> {
     // 노출 가능한 FAQ 전체 목록 조회
     List<Faq> findAllByIsVisibleTrue();
 
+    // 노출 가능한 FAQ 중 질문(question)에 키워드 포함 (대소문자 무시)
+    List<Faq> findAllByIsVisibleTrueAndQuestionContainingIgnoreCase(String keyword);
+
     // 노출 가능한 FAQ의 카테고리 목록 (중복 제거, 가나다순)
     @Query("SELECT DISTINCT f.category FROM Faq f WHERE f.isVisible = true ORDER BY f.category")
     List<String> findDistinctCategoriesByIsVisibleTrue();
