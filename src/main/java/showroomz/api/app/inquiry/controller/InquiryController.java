@@ -8,6 +8,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.docs.InquiryControllerDocs;
+import showroomz.api.app.inquiry.dto.InquiryCategoryResponse;
 import showroomz.api.app.inquiry.dto.InquiryDetailResponse;
 import showroomz.api.app.inquiry.dto.InquiryListResponse;
 import showroomz.api.app.inquiry.dto.InquiryRegisterRequest;
@@ -16,6 +17,8 @@ import showroomz.api.app.inquiry.dto.InquiryUpdateRequest;
 import showroomz.api.app.inquiry.service.InquiryService;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/v1/user/inquiries")
@@ -66,5 +69,11 @@ public class InquiryController implements InquiryControllerDocs {
             @PathVariable("inquiryId") Long inquiryId) {
         inquiryService.deleteInquiry(userPrincipal.getUserId(), inquiryId);
         return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    @GetMapping("/categories")
+    public ResponseEntity<List<InquiryCategoryResponse>> getInquiryCategories() {
+        return ResponseEntity.ok(inquiryService.getInquiryCategories());
     }
 }
