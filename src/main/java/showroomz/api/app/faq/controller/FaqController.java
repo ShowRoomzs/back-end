@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import showroomz.api.app.docs.FaqControllerDocs;
 import showroomz.api.app.faq.dto.FaqResponse;
 import showroomz.api.app.faq.service.FaqService;
+import showroomz.domain.faq.type.FaqCategory;
 
 import java.util.List;
 
@@ -22,8 +23,11 @@ public class FaqController implements FaqControllerDocs {
     @Override
     @GetMapping
     public ResponseEntity<List<FaqResponse>> getFaqList(
-            @RequestParam(value = "keyword", required = false) String keyword) {
-        return ResponseEntity.ok(faqService.getFaqList(keyword));
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "category", required = false) String category) {
+        FaqCategory categoryEnum = FaqCategory.fromRequestParam(category);
+        List<FaqResponse> list = faqService.getFaqList(keyword, categoryEnum);
+        return ResponseEntity.ok(list);
     }
 
     @Override

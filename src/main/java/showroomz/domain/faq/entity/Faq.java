@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import showroomz.domain.common.BaseTimeEntity;
+import showroomz.domain.faq.type.FaqCategory;
 
 @Entity
 @Getter
@@ -18,9 +19,9 @@ public class Faq extends BaseTimeEntity {
     @Column(name = "FAQ_ID")
     private Long id;
 
-    // 카테고리 (소분류 - 직접 입력)
-    @Column(name = "CATEGORY", nullable = false, length = 50)
-    private String category;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "CATEGORY", nullable = false, length = 30)
+    private FaqCategory category;
 
     // 3. 질문 내용
     @Column(name = "QUESTION", nullable = false, columnDefinition = "TEXT")
@@ -35,14 +36,14 @@ public class Faq extends BaseTimeEntity {
     private boolean isVisible;
 
     @Builder
-    public Faq(String category, String question, String answer) {
+    public Faq(FaqCategory category, String question, String answer) {
         this.category = category;
         this.question = question;
         this.answer = answer;
         this.isVisible = true; // 기본값 노출
     }
 
-    public void update(String category, String question, String answer, boolean isVisible) {
+    public void update(FaqCategory category, String question, String answer, boolean isVisible) {
         this.category = category;
         this.question = question;
         this.answer = answer;

@@ -6,7 +6,9 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.faq.dto.FaqResponse;
 import showroomz.domain.faq.entity.Faq;
 import showroomz.domain.faq.repository.FaqRepository;
+import showroomz.domain.faq.type.FaqCategory;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -17,19 +19,30 @@ public class FaqService {
 
     private final FaqRepository faqRepository;
 
-    // FAQ 목록 조회 (노출=true만). keyword가 있으면 질문 내용 기준 부분 일치 검색(대소문자 무시)
-    public List<FaqResponse> getFaqList(String keyword) {
-        List<Faq> faqs = (keyword == null || keyword.isBlank())
-                ? faqRepository.findAllByIsVisibleTrue()
-                : faqRepository.findAllByIsVisibleTrueAndQuestionContainingIgnoreCase(keyword.trim());
-        return faqs.stream()
-                .map(FaqResponse::from)
-                .collect(Collectors.toList());
+    // FAQ 목록 조회 (노출=true만). category=전체/null이면 전체, keyword 있으면 질문 검색
+    public List<FaqResponse> getFaqList(String keyword, FaqCategory category) {
+        boolean hasKeyword = keyword != null && !keyword.isBlank();
+        String trimmedKeyword = (keyword == null) ? null : keyword.trim();
+        boolean filterByCategory = category != null && category.isPersistable();
+
+        List<Faq> faqs;
+        if (filterByCategory && hasKeyword) {
+            faqs = faqRepository.findAllByIsVisibleTrueAndCategoryAndQuestionContainingIgnoreCase(category, trimmedKeyword);
+        } else if (filterByCategory) {
+            faqs = faqRepository.findAllByIsVisibleTrueAndCategory(category);
+        } else if (hasKeyword) {
+            faqs = faqRepository.findAllByIsVisibleTrueAndQuestionContainingIgnoreCase(trimmedKeyword);
+        } else {
+            faqs = faqRepository.findAllByIsVisibleTrue();
+        }
+        return faqs.stream().map(FaqResponse::from).collect(Collectors.toList());
     }
 
-    // FAQ 카테고리 목록 조회 (노출=true인 FAQ에 존재하는 카테고리만, 중복 제거, 가나다순)
+    // FAQ 카테고리 고정 목록 (전체, 배송, ... 순서)
     public List<String> getFaqCategories() {
-        return faqRepository.findDistinctCategoriesByIsVisibleTrue();
+        return Arrays.stream(FaqCategory.values())
+                .map(FaqCategory::getDisplayName)
+                .toList();
     }
 }
 

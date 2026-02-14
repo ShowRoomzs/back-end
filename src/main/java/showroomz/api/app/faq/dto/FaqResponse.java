@@ -24,7 +24,7 @@ public class FaqResponse {
     public static FaqResponse from(Faq faq) {
         return FaqResponse.builder()
                 .id(faq.getId())
-                .category(faq.getCategory())
+                .category(faq.getCategory().getDisplayName())
                 .question(faq.getQuestion())
                 .answer(faq.getAnswer())
                 .build();

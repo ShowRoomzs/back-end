@@ -1,21 +1,19 @@
 package showroomz.domain.faq.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import showroomz.domain.faq.entity.Faq;
+import showroomz.domain.faq.type.FaqCategory;
 
 import java.util.List;
 
 public interface FaqRepository extends JpaRepository<Faq, Long> {
 
-    // 노출 가능한 FAQ 전체 목록 조회
     List<Faq> findAllByIsVisibleTrue();
 
-    // 노출 가능한 FAQ 중 질문(question)에 키워드 포함 (대소문자 무시)
+    List<Faq> findAllByIsVisibleTrueAndCategory(FaqCategory category);
+
     List<Faq> findAllByIsVisibleTrueAndQuestionContainingIgnoreCase(String keyword);
 
-    // 노출 가능한 FAQ의 카테고리 목록 (중복 제거, 가나다순)
-    @Query("SELECT DISTINCT f.category FROM Faq f WHERE f.isVisible = true ORDER BY f.category")
-    List<String> findDistinctCategoriesByIsVisibleTrue();
+    List<Faq> findAllByIsVisibleTrueAndCategoryAndQuestionContainingIgnoreCase(FaqCategory category, String keyword);
 }
 

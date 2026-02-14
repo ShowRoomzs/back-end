@@ -21,12 +21,13 @@ public interface FaqControllerDocs {
             summary = "FAQ 목록 조회",
             description = "노출 여부가 true인 FAQ 목록을 조회합니다.\n\n" +
                     "**검색:**\n" +
-                    "- `keyword`를 전달하면 질문(question) 내용에 해당 키워드가 포함된 FAQ만 반환합니다 (부분 일치, 대소문자 구분 없음).\n" +
-                    "- `keyword`를 생략하면 전체 목록을 반환합니다.\n\n" +
+                    "- `keyword`: 질문 내용 부분 일치 (대소문자 무시)\n" +
+                    "- `category`: 고정 카테고리 (전체, 배송, 취소/교환/반품, 상품/AS문의, 주문/결제, 서비스, 이용 안내, 회원 정보). 전체 또는 생략 시 전체 조회.\n\n" +
                     "**권한:** 없음\n" +
                     "**요청 헤더:** 없음",
             parameters = {
-                    @Parameter(name = "keyword", description = "질문 검색 키워드 (부분 일치, 선택)", required = false, example = "배송", in = ParameterIn.QUERY)
+                    @Parameter(name = "keyword", description = "질문 검색 키워드 (부분 일치, 선택)", required = false, example = "배송", in = ParameterIn.QUERY),
+                    @Parameter(name = "category", description = "카테고리 (전체/배송/취소·교환·반품 등)", required = false, example = "배송", in = ParameterIn.QUERY)
             }
     )
     @ApiResponses(value = {
@@ -42,7 +43,7 @@ public interface FaqControllerDocs {
                                             value = "[\n" +
                                                     "  {\n" +
                                                     "    \"id\": 1,\n" +
-                                                    "    \"category\": \"배송 지연\",\n" +
+                                                    "    \"category\": \"배송\",\n" +
                                                     "    \"question\": \"배송은 얼마나 걸리나요?\",\n" +
                                                     "    \"answer\": \"평균 2~3일 소요됩니다.\"\n" +
                                                     "  }\n" +
@@ -52,7 +53,7 @@ public interface FaqControllerDocs {
                     )
             )
     })
-    ResponseEntity<List<FaqResponse>> getFaqList(String keyword);
+    ResponseEntity<List<FaqResponse>> getFaqList(String keyword, String category);
 
     @Operation(
             summary = "FAQ 카테고리 목록 조회",
@@ -68,7 +69,7 @@ public interface FaqControllerDocs {
                             mediaType = "application/json",
                             examples = @ExampleObject(
                                     name = "성공 예시",
-                                    value = "[\n  \"배송 지연\",\n  \"교환/반품\",\n  \"주문/결제\"\n]"
+                                    value = "[\n  \"전체\",\n  \"배송\",\n  \"취소/교환/반품\",\n  \"상품/AS문의\",\n  \"주문/결제\",\n  \"서비스\",\n  \"이용 안내\",\n  \"회원 정보\"\n]"
                             )
                     )
             )
