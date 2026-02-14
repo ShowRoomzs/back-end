@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.admin.faq.dto.AdminFaqRegisterRequest;
 import showroomz.api.app.auth.DTO.ErrorResponse;
-import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 
 @Tag(name = "Admin - FAQ", description = "관리자 FAQ 관리 API")
 public interface AdminFaqControllerDocs {
@@ -34,19 +33,30 @@ public interface AdminFaqControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "입력값 오류",
+                    description = "입력값 오류 (유효성 검증 실패 시 첫 번째 필드 메시지 반환)",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ValidationErrorResponse.class),
+                            schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "유효성 검증 실패",
+                                            name = "카테고리 필수",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"입력값이 올바르지 않습니다.\",\n" +
-                                                    "  \"errors\": [\n" +
-                                                    "    { \"field\": \"question\", \"reason\": \"질문 내용을 입력해주세요.\" }\n" +
-                                                    "  ]\n" +
+                                                    "  \"message\": \"카테고리를 선택해주세요.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "질문 필수",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"질문 내용을 입력해주세요.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "답변 필수",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"답변 내용을 입력해주세요.\"\n" +
                                                     "}"
                                     )
                             }
