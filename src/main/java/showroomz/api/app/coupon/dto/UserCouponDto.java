@@ -43,15 +43,15 @@ public class UserCouponDto {
     @Schema(description = "최대 할인 금액 (원, 정률일 때만 사용, null이면 제한 없음)", example = "10000")
     private BigDecimal maxDiscountAmount;
 
-    @Schema(description = "쿠폰 유효 시작 일시", example = "2025-01-01T00:00:00", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "쿠폰 유효 시작 일시", example = "2026-01-01T00:00:00", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime validStartAt;
 
-    @Schema(description = "쿠폰 유효 종료 일시", example = "2025-12-31T23:59:59", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "쿠폰 유효 종료 일시", example = "2026-12-31T23:59:59", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime validEndAt;
 
-    @Schema(description = "쿠폰 등록 일시", example = "2025-01-15T14:30:00")
+    @Schema(description = "쿠폰 등록 일시", example = "2026-01-15T14:30:00")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime registeredAt;
 
