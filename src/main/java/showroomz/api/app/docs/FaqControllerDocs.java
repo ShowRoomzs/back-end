@@ -40,17 +40,19 @@ public interface FaqControllerDocs {
                             schema = @Schema(implementation = FaqResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "성공 예시",
+                                            name = "성공 예시 (실제 응답)",
                                             value = "[\n" +
                                                     "  {\n" +
                                                     "    \"id\": 1,\n" +
                                                     "    \"category\": \"DELIVERY\",\n" +
+                                                    "    \"categoryName\": \"배송\",\n" +
                                                     "    \"question\": \"배송은 얼마나 걸리나요?\",\n" +
                                                     "    \"answer\": \"평균 2~3일 소요됩니다.\"\n" +
                                                     "  },\n" +
                                                     "  {\n" +
                                                     "    \"id\": 2,\n" +
                                                     "    \"category\": \"ORDER_PAYMENT\",\n" +
+                                                    "    \"categoryName\": \"주문/결제\",\n" +
                                                     "    \"question\": \"결제 방법은 무엇이 있나요?\",\n" +
                                                     "    \"answer\": \"카드, 계좌이체, 간편결제를 이용하실 수 있습니다.\"\n" +
                                                     "  }\n" +
