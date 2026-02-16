@@ -18,7 +18,6 @@ import java.util.Objects;
 @RestController
 @RequestMapping("/v1/admin/faqs")
 @RequiredArgsConstructor
-@Hidden
 public class AdminFaqController implements AdminFaqControllerDocs {
 
     private final AdminFaqService adminFaqService;

@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.app.inquiry.dto.InquiryCategoryResponse;
 import showroomz.api.app.inquiry.dto.InquiryDetailResponse;
 import showroomz.api.app.inquiry.dto.InquiryListResponse;
 import showroomz.api.app.inquiry.dto.InquiryRegisterRequest;
@@ -13,8 +14,14 @@ import showroomz.api.app.inquiry.dto.InquiryUpdateRequest;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.inquiry.entity.OneToOneInquiry;
 import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
+import showroomz.domain.inquiry.type.InquiryDetailType;
 import showroomz.domain.inquiry.type.InquiryStatus;
+import showroomz.domain.inquiry.type.InquiryType;
 import showroomz.domain.member.user.entity.Users;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -33,10 +40,15 @@ public class InquiryService {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
+        InquiryDetailType detailType = request.getDetailType();
+        if (detailType.getParentType() != request.getType()) {
+            throw new BusinessException(ErrorCode.INVALID_INQUIRY_DETAIL_TYPE);
+        }
+
         OneToOneInquiry inquiry = OneToOneInquiry.builder()
                 .user(user)
-                .type(request.getType())          // Enum (대분류)
-                .category(request.getCategory())  // String (상세 유형)
+                .type(request.getType())
+                .category(detailType)
                 .content(request.getContent())
                 .imageUrls(request.getImageUrls())
                 .build();
@@ -84,9 +96,14 @@ public class InquiryService {
             throw new BusinessException(ErrorCode.INQUIRY_ALREADY_ANSWERED);
         }
 
+        InquiryDetailType detailType = request.getDetailType();
+        if (detailType.getParentType() != request.getType()) {
+            throw new BusinessException(ErrorCode.INVALID_INQUIRY_DETAIL_TYPE);
+        }
+
         inquiry.update(
                 request.getType(),
-                request.getCategory(),
+                detailType,
                 request.getContent(),
                 request.getImageUrls()
         );
@@ -107,5 +124,21 @@ public class InquiryService {
         }
 
         inquiryRepository.delete(inquiry);
+    }
+
+    /** 1:1 문의 카테고리 목록 조회 (대분류 + 소분류) */
+    public List<InquiryCategoryResponse> getInquiryCategories() {
+        return Arrays.stream(InquiryType.values())
+                .map(type -> new InquiryCategoryResponse(
+                        type.name(),
+                        type.getDescription(),
+                        InquiryDetailType.findByParentType(type).stream()
+                                .map(detail -> new InquiryCategoryResponse.DetailResponse(
+                                        detail.name(),
+                                        detail.getDescription()
+                                ))
+                                .collect(Collectors.toList())
+                ))
+                .collect(Collectors.toList());
     }
 }

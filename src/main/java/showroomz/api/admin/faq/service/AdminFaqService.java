@@ -4,8 +4,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.faq.dto.AdminFaqRegisterRequest;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.domain.faq.entity.Faq;
 import showroomz.domain.faq.repository.FaqRepository;
+import showroomz.domain.faq.type.FaqCategory;
+import showroomz.global.error.exception.ErrorCode;
 
 @Service
 @RequiredArgsConstructor
@@ -22,9 +25,12 @@ public class AdminFaqService {
      */
     @Transactional
     public Long registerFaq(AdminFaqRegisterRequest request) {
+        FaqCategory category = request.getCategory();
+        if (category == null || !category.isPersistable()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "카테고리는 전체(ALL)를 제외한 값이어야 합니다.");
+        }
         Faq faq = Faq.builder()
-                .type(request.getType())
-                .category(request.getCategory())
+                .category(category)
                 .question(request.getQuestion())
                 .answer(request.getAnswer())
                 .build();
@@ -34,13 +40,7 @@ public class AdminFaqService {
 
         Boolean requestedVisible = request.getIsVisible();
         if (requestedVisible != null && !requestedVisible) {
-            savedFaq.update(
-                    request.getType(),
-                    request.getCategory(),
-                    request.getQuestion(),
-                    request.getAnswer(),
-                    false
-            );
+            savedFaq.update(category, request.getQuestion(), request.getAnswer(), false);
         }
 
         return savedFaq.getId();

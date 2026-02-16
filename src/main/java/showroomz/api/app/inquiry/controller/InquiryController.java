@@ -21,7 +21,6 @@ import showroomz.global.dto.PagingRequest;
 @RestController
 @RequestMapping("/v1/user/inquiries")
 @RequiredArgsConstructor
-@Hidden
 public class InquiryController implements InquiryControllerDocs {
 
     private final InquiryService inquiryService;
@@ -52,7 +51,7 @@ public class InquiryController implements InquiryControllerDocs {
     }
 
     @Override
-    @PatchMapping("/{inquiryId}")
+    @PutMapping("/{inquiryId}")
     public ResponseEntity<Void> updateInquiry(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable("inquiryId") Long inquiryId,

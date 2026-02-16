@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.admin.faq.dto.AdminFaqRegisterRequest;
 import showroomz.api.app.auth.DTO.ErrorResponse;
-import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 
 @Tag(name = "Admin - FAQ", description = "관리자 FAQ 관리 API")
 public interface AdminFaqControllerDocs {
@@ -20,13 +19,7 @@ public interface AdminFaqControllerDocs {
     @Operation(
             summary = "FAQ 등록",
             description = "관리자가 새로운 FAQ를 등록합니다.\n\n" +
-                    "**질문 타입 (type):**\n" +
-                    "- `DELIVERY` : 배송\n" +
-                    "- `ORDER_PAYMENT` : 주문/결제\n" +
-                    "- `CANCEL_REFUND_EXCHANGE` : 취소/교환/환불\n" +
-                    "- `USER_INFO` : 회원정보\n" +
-                    "- `PRODUCT_CHECK` : 상품확인\n" +
-                    "- `SERVICE` : 서비스\n\n" +
+                    "**카테고리:** DELIVERY, CANCEL_EXCHANGE_REFUND, PRODUCT_AS, ORDER_PAYMENT, SERVICE, USAGE_GUIDE, MEMBER_INFO (전체/ALL 불가)\n\n" +
                     "**노출 여부:**\n" +
                     "- `isVisible`을 생략하면 기본값 `true`로 저장됩니다.\n" +
                     "- `isVisible=false`로 등록하면 비공개 FAQ로 저장됩니다.\n\n" +
@@ -40,19 +33,16 @@ public interface AdminFaqControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "입력값 오류",
+                    description = "입력값 오류 (유효성 검증 실패 시 첫 번째 필드 메시지 반환)",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ValidationErrorResponse.class),
+                            schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "유효성 검증 실패",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"입력값이 올바르지 않습니다.\",\n" +
-                                                    "  \"errors\": [\n" +
-                                                    "    { \"field\": \"question\", \"reason\": \"질문 내용을 입력해주세요.\" }\n" +
-                                                    "  ]\n" +
+                                                    "  \"message\": \"질문 내용을 입력해주세요.\"\n" +
                                                     "}"
                                     )
                             }
@@ -85,8 +75,7 @@ public interface AdminFaqControllerDocs {
                             @ExampleObject(
                                     name = "공개 FAQ 등록",
                                     value = "{\n" +
-                                            "  \"type\": \"DELIVERY\",\n" +
-                                            "  \"category\": \"배송 지연\",\n" +
+                                            "  \"category\": \"DELIVERY\",\n" +
                                             "  \"question\": \"배송은 얼마나 걸리나요?\",\n" +
                                             "  \"answer\": \"평균 2~3일 소요됩니다.\",\n" +
                                             "  \"isVisible\": true\n" +
@@ -95,8 +84,7 @@ public interface AdminFaqControllerDocs {
                             @ExampleObject(
                                     name = "비공개 FAQ 등록",
                                     value = "{\n" +
-                                            "  \"type\": \"DELIVERY\",\n" +
-                                            "  \"category\": \"배송 지연\",\n" +
+                                            "  \"category\": \"ORDER_PAYMENT\",\n" +
                                             "  \"question\": \"(내부용) 특정 CS 대응 문구\",\n" +
                                             "  \"answer\": \"(내부용) 상황에 따라 안내\",\n" +
                                             "  \"isVisible\": false\n" +

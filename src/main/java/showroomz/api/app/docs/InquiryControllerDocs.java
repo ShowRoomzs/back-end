@@ -28,8 +28,8 @@ public interface InquiryControllerDocs {
             summary = "1:1 문의 등록",
             description = "문의 타입(Enum)과 상세 유형(String), 내용을 입력하여 1:1 문의를 등록합니다.\n\n" +
                     "**필수 값:**\n" +
-                    "- `type`: 문의 타입 (DELIVERY, ORDER_PAYMENT, CANCEL_REFUND_EXCHANGE, USER_INFO, PRODUCT_CHECK, SERVICE)\n" +
-                    "- `category`: 문의 유형 (현재는 string 타입으로 임의값 입력, 추후 기획 시 enum으로 변경 예정)\n" +
+                    "- `type`: 문의 타입 (InquiryType - DELIVERY, ORDER_PAYMENT, CANCEL_REFUND_EXCHANGE, USER_INFO, PRODUCT_CHECK, SERVICE)\n" +
+                    "- `detailType`: 문의 상세 유형 (InquiryDetailType - 해당 대분류에 속한 소분류 코드, 예: DELIVERY_SCHEDULE)\n" +
                     "- `content`: 문의 내용\n\n" +
                     "**선택 값:**\n" +
                     "- `imageUrls`: 첨부 이미지 URL 리스트 (최대 10장)\n\n" +
@@ -113,10 +113,10 @@ public interface InquiryControllerDocs {
                     schema = @Schema(implementation = InquiryRegisterRequest.class),
                     examples = {
                             @ExampleObject(
-                                    name = "배송 지연 문의",
+                                    name = "배송 일정 문의",
                                     value = "{\n" +
                                             "  \"type\": \"DELIVERY\",\n" +
-                                            "  \"category\": \"배송 지연\",\n" +
+                                            "  \"detailType\": \"DELIVERY_SCHEDULE\",\n" +
                                             "  \"content\": \"주문한 지 3일이 지났는데 아직 배송 준비 중입니다. 배송 일정을 확인 부탁드립니다.\",\n" +
                                             "  \"imageUrls\": [\n" +
                                             "    \"https://example.com/inquiries/img1.jpg\"\n" +
@@ -157,7 +157,9 @@ public interface InquiryControllerDocs {
                                                     "    {\n" +
                                                     "      \"id\": 1,\n" +
                                                     "      \"type\": \"DELIVERY\",\n" +
-                                                    "      \"category\": \"배송 지연\",\n" +
+                                                    "      \"typeName\": \"배송\",\n" +
+                                                    "      \"detailType\": \"DELIVERY_SCHEDULE\",\n" +
+                                                    "      \"detailTypeName\": \"배송 일정\",\n" +
                                                     "      \"content\": \"주문한 지 3일이 지났는데 아직 배송 준비 중입니다. 배송 일정을 확인 부탁드립니다.\",\n" +
                                                     "      \"imageUrls\": [\n" +
                                                     "        \"https://example.com/inquiries/img1.jpg\"\n" +
@@ -227,7 +229,9 @@ public interface InquiryControllerDocs {
                                             value = "{\n" +
                                                     "  \"id\": 1,\n" +
                                                     "  \"type\": \"DELIVERY\",\n" +
-                                                    "  \"category\": \"배송 지연\",\n" +
+                                                    "  \"typeName\": \"배송\",\n" +
+                                                    "  \"detailType\": \"DELIVERY_SCHEDULE\",\n" +
+                                                    "  \"detailTypeName\": \"배송 일정\",\n" +
                                                     "  \"content\": \"주문한 지 3일이 지났는데 아직 배송 준비 중입니다. 배송 일정을 확인 부탁드립니다.\",\n" +
                                                     "  \"imageUrls\": [\n" +
                                                     "    \"https://example.com/inquiries/img1.jpg\"\n" +
@@ -244,7 +248,9 @@ public interface InquiryControllerDocs {
                                             value = "{\n" +
                                                     "  \"id\": 1,\n" +
                                                     "  \"type\": \"DELIVERY\",\n" +
-                                                    "  \"category\": \"배송 지연\",\n" +
+                                                    "  \"typeName\": \"배송\",\n" +
+                                                    "  \"detailType\": \"DELIVERY_SCHEDULE\",\n" +
+                                                    "  \"detailTypeName\": \"배송 일정\",\n" +
                                                     "  \"content\": \"주문한 지 3일이 지났는데 아직 배송 준비 중입니다. 배송 일정을 확인 부탁드립니다.\",\n" +
                                                     "  \"imageUrls\": [\n" +
                                                     "    \"https://example.com/inquiries/img1.jpg\"\n" +

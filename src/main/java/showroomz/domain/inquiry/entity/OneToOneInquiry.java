@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import showroomz.domain.common.BaseTimeEntity;
+import showroomz.domain.inquiry.type.InquiryDetailType;
 import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.domain.inquiry.type.InquiryType;
 import showroomz.domain.member.user.entity.Users;
@@ -34,9 +35,10 @@ public class OneToOneInquiry extends BaseTimeEntity {
     @Column(name = "TYPE", nullable = false)
     private InquiryType type;
 
-    // 2. 문의 유형 (상세 - String, 기획 미정으로 자유 입력)
+    // 2. 문의 유형 (상세 - InquiryDetailType)
+    @Enumerated(EnumType.STRING)
     @Column(name = "CATEGORY", nullable = false, length = 50)
-    private String category;
+    private InquiryDetailType category;
 
     @Column(name = "CONTENT", nullable = false, columnDefinition = "TEXT")
     private String content;
@@ -62,10 +64,10 @@ public class OneToOneInquiry extends BaseTimeEntity {
     private InquiryStatus status;
 
     @Builder
-    public OneToOneInquiry(Users user, InquiryType type, String category, String content, List<String> imageUrls) {
+    public OneToOneInquiry(Users user, InquiryType type, InquiryDetailType category, String content, List<String> imageUrls) {
         this.user = user;
         this.type = type;
-        this.category = category; // 상세 유형 저장
+        this.category = category;
         this.content = content;
         if (imageUrls != null) {
             this.imageUrls = imageUrls;
@@ -80,7 +82,7 @@ public class OneToOneInquiry extends BaseTimeEntity {
         this.status = InquiryStatus.ANSWERED;
     }
 
-    public void update(InquiryType type, String category, String content, List<String> imageUrls) {
+    public void update(InquiryType type, InquiryDetailType category, String content, List<String> imageUrls) {
         this.type = type;
         this.category = category;
         this.content = content;

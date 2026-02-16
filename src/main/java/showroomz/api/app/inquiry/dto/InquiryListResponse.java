@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 import showroomz.domain.inquiry.entity.OneToOneInquiry;
+import showroomz.domain.inquiry.type.InquiryDetailType;
 import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.domain.inquiry.type.InquiryType;
 
@@ -17,11 +18,17 @@ public class InquiryListResponse {
     @Schema(description = "문의 ID")
     private Long id;
 
-    @Schema(description = "문의 타입 (대분류)")
-    private InquiryType type;
+    @Schema(description = "문의 타입 코드 (대분류)", example = "DELIVERY")
+    private String type;
 
-    @Schema(description = "문의 유형 (상세)")
-    private String category;
+    @Schema(description = "문의 타입 한글명 (대분류)", example = "배송")
+    private String typeName;
+
+    @Schema(description = "문의 상세 유형 코드 (소분류)", example = "DELIVERY_SCHEDULE")
+    private String detailType;
+
+    @Schema(description = "문의 상세 유형 한글명 (소분류)", example = "배송 일정")
+    private String detailTypeName;
 
     @Schema(description = "문의 내용")
     private String content;
@@ -42,10 +49,14 @@ public class InquiryListResponse {
     private LocalDateTime createdAt;
 
     public static InquiryListResponse from(OneToOneInquiry inquiry) {
+        InquiryType type = inquiry.getType();
+        InquiryDetailType category = inquiry.getCategory();
         return InquiryListResponse.builder()
                 .id(inquiry.getId())
-                .type(inquiry.getType())
-                .category(inquiry.getCategory())
+                .type(type.name())
+                .typeName(type.getDescription())
+                .detailType(category.name())
+                .detailTypeName(category.getDescription())
                 .content(inquiry.getContent())
                 .imageUrls(inquiry.getImageUrls())
                 .status(inquiry.getStatus())

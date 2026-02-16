@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import showroomz.domain.inquiry.entity.ProductInquiry;
 import showroomz.domain.inquiry.type.InquiryStatus;
-import showroomz.domain.inquiry.type.InquiryType;
+import showroomz.domain.inquiry.type.ProductInquiryType;
 
 import java.time.LocalDateTime;
 
@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class ProductInquiryResponse {
 
     @Schema(description = "상품 문의 ID")
-    private Long inquiryId;
+    private Long id;
 
     @Schema(description = "상품 ID")
     private Long productId;
@@ -29,17 +29,14 @@ public class ProductInquiryResponse {
     @Schema(description = "상품 대표 이미지 URL")
     private String productImageUrl;
 
-    @Schema(description = "문의 타입")
-    private InquiryType type;
+    @Schema(description = "문의 타입 코드 (PRODUCT_INQUIRY, SIZE_INQUIRY, STOCK_INQUIRY)")
+    private ProductInquiryType type;
 
-    @Schema(description = "문의 카테고리")
-    private String category;
+    @Schema(description = "문의 타입 한글명", example = "사이즈 문의")
+    private String typeName;
 
     @Schema(description = "문의 내용")
     private String content;
-
-    @Schema(description = "비밀글 여부")
-    private boolean secret;
 
     @Schema(description = "답변 상태")
     private InquiryStatus status;
@@ -56,15 +53,14 @@ public class ProductInquiryResponse {
     // 이미지 로직을 제거하고, 이미지는 항상 파라미터로 받도록 통일
     public static ProductInquiryResponse of(ProductInquiry inquiry, String imageUrl) {
         return ProductInquiryResponse.builder()
-                .inquiryId(inquiry.getId())
+                .id(inquiry.getId())
                 .productId(inquiry.getProduct().getProductId())
                 .shopName(inquiry.getProduct().getMarket().getMarketName())
                 .productName(inquiry.getProduct().getName())
                 .productImageUrl(imageUrl) // Service에서 계산된 URL 주입
                 .type(inquiry.getType())
-                .category(inquiry.getCategory())
+                .typeName(inquiry.getType().getDescription())
                 .content(inquiry.getContent())
-                .secret(inquiry.isSecret())
                 .status(inquiry.getStatus())
                 .answerContent(inquiry.getAnswerContent())
                 .createdAt(inquiry.getCreatedAt())

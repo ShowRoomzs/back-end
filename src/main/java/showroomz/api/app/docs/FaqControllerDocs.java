@@ -2,6 +2,7 @@ package showroomz.api.app.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -9,10 +10,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestParam;
-import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.api.app.faq.dto.FaqCategoryItem;
 import showroomz.api.app.faq.dto.FaqResponse;
-import showroomz.domain.inquiry.type.InquiryType;
 
 import java.util.List;
 
@@ -21,12 +20,16 @@ public interface FaqControllerDocs {
 
     @Operation(
             summary = "FAQ 목록 조회",
-            description = "자주 묻는 질문(FAQ) 목록을 조회합니다.\n\n" +
-                    "**필터:**\n" +
-                    "- `type`을 전달하면 해당 타입의 FAQ만 반환합니다.\n" +
-                    "- `type`을 생략하면 전체(노출=true) FAQ를 반환합니다.\n\n" +
+            description = "노출 여부가 true인 FAQ 목록을 조회합니다.\n\n" +
+                    "**검색:**\n" +
+                    "- `keyword`: 질문 내용 부분 일치 (대소문자 무시)\n" +
+                    "- `category`: 고정 카테고리 (전체, 배송, 취소/교환/반품, 상품/AS문의, 주문/결제, 서비스, 이용 안내, 회원 정보). 전체 또는 생략 시 전체 조회.\n\n" +
                     "**권한:** 없음\n" +
-                    "**요청 헤더:** 없음"
+                    "**요청 헤더:** 없음",
+            parameters = {
+                    @Parameter(name = "keyword", description = "질문 검색 키워드 (부분 일치, 선택)", required = false, example = "배송", in = ParameterIn.QUERY),
+                    @Parameter(name = "category", description = "카테고리 enum (ALL, DELIVERY 등)", required = false, example = "DELIVERY", in = ParameterIn.QUERY)
+            }
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -37,32 +40,59 @@ public interface FaqControllerDocs {
                             schema = @Schema(implementation = FaqResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "성공 예시",
+                                            name = "성공 예시 (실제 응답)",
                                             value = "[\n" +
                                                     "  {\n" +
                                                     "    \"id\": 1,\n" +
-                                                    "    \"type\": \"DELIVERY\",\n" +
-                                                    "    \"category\": \"배송 지연\",\n" +
+                                                    "    \"category\": \"DELIVERY\",\n" +
+                                                    "    \"categoryName\": \"배송\",\n" +
                                                     "    \"question\": \"배송은 얼마나 걸리나요?\",\n" +
                                                     "    \"answer\": \"평균 2~3일 소요됩니다.\"\n" +
+                                                    "  },\n" +
+                                                    "  {\n" +
+                                                    "    \"id\": 2,\n" +
+                                                    "    \"category\": \"ORDER_PAYMENT\",\n" +
+                                                    "    \"categoryName\": \"주문/결제\",\n" +
+                                                    "    \"question\": \"결제 방법은 무엇이 있나요?\",\n" +
+                                                    "    \"answer\": \"카드, 계좌이체, 간편결제를 이용하실 수 있습니다.\"\n" +
                                                     "  }\n" +
                                                     "]"
                                     )
                             }
                     )
-            ),
+            )
+    })
+    ResponseEntity<List<FaqResponse>> getFaqList(String keyword, String category);
+
+    @Operation(
+            summary = "FAQ 카테고리 목록 조회",
+            description = "고정 FAQ 카테고리 목록을 key(enum 이름), description(한글 표시명) 형식으로 반환합니다.\n\n" +
+                    "**권한:** 없음\n" +
+                    "**요청 헤더:** 없음"
+    )
+    @ApiResponses(value = {
             @ApiResponse(
-                    responseCode = "400",
-                    description = "요청 파라미터 오류 (예: type 값이 enum에 없음)",
+                    responseCode = "200",
+                    description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = FaqCategoryItem.class),
+                            examples = @ExampleObject(
+                                    name = "성공 예시 (실제 응답)",
+                                    value = "[\n" +
+                                            "  { \"key\": \"ALL\", \"description\": \"전체\" },\n" +
+                                            "  { \"key\": \"DELIVERY\", \"description\": \"배송\" },\n" +
+                                            "  { \"key\": \"CANCEL_EXCHANGE_REFUND\", \"description\": \"취소/교환/반품\" },\n" +
+                                            "  { \"key\": \"PRODUCT_AS\", \"description\": \"상품/AS문의\" },\n" +
+                                            "  { \"key\": \"ORDER_PAYMENT\", \"description\": \"주문/결제\" },\n" +
+                                            "  { \"key\": \"SERVICE\", \"description\": \"서비스\" },\n" +
+                                            "  { \"key\": \"USAGE_GUIDE\", \"description\": \"이용 안내\" },\n" +
+                                            "  { \"key\": \"MEMBER_INFO\", \"description\": \"회원 정보\" }\n" +
+                                            "]"
+                            )
                     )
             )
     })
-    ResponseEntity<List<FaqResponse>> getFaqList(
-            @Parameter(description = "질문 타입 (DELIVERY, ORDER_PAYMENT 등)", required = false, example = "DELIVERY")
-            @RequestParam(value = "type", required = false) InquiryType type
-    );
+    ResponseEntity<List<FaqCategoryItem>> getFaqCategories();
 }
 
