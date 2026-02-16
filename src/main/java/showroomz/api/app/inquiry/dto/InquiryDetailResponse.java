@@ -18,11 +18,17 @@ public class InquiryDetailResponse {
     @Schema(description = "문의 ID")
     private Long id;
 
-    @Schema(description = "문의 타입 (대분류)")
-    private InquiryType type;
+    @Schema(description = "문의 타입 코드 (대분류)", example = "DELIVERY")
+    private String type;
 
-    @Schema(description = "문의 상세 유형 (소분류)")
-    private InquiryDetailType detailType;
+    @Schema(description = "문의 타입 한글명 (대분류)", example = "배송")
+    private String typeName;
+
+    @Schema(description = "문의 상세 유형 코드 (소분류)", example = "DELIVERY_SCHEDULE")
+    private String detailType;
+
+    @Schema(description = "문의 상세 유형 한글명 (소분류)", example = "배송 일정")
+    private String detailTypeName;
 
     @Schema(description = "문의 내용")
     private String content;
@@ -43,10 +49,14 @@ public class InquiryDetailResponse {
     private LocalDateTime createdAt;
 
     public static InquiryDetailResponse from(OneToOneInquiry inquiry) {
+        InquiryType type = inquiry.getType();
+        InquiryDetailType category = inquiry.getCategory();
         return InquiryDetailResponse.builder()
                 .id(inquiry.getId())
-                .type(inquiry.getType())
-                .detailType(inquiry.getCategory())
+                .type(type.name())
+                .typeName(type.getDescription())
+                .detailType(category.name())
+                .detailTypeName(category.getDescription())
                 .content(inquiry.getContent())
                 .imageUrls(inquiry.getImageUrls())
                 .status(inquiry.getStatus())

@@ -160,7 +160,9 @@ public interface InquiryControllerDocs {
                                                     "    {\n" +
                                                     "      \"id\": 1,\n" +
                                                     "      \"type\": \"DELIVERY\",\n" +
+                                                    "      \"typeName\": \"배송\",\n" +
                                                     "      \"detailType\": \"DELIVERY_SCHEDULE\",\n" +
+                                                    "      \"detailTypeName\": \"배송 일정\",\n" +
                                                     "      \"content\": \"주문한 지 3일이 지났는데 아직 배송 준비 중입니다. 배송 일정을 확인 부탁드립니다.\",\n" +
                                                     "      \"imageUrls\": [\n" +
                                                     "        \"https://example.com/inquiries/img1.jpg\"\n" +
@@ -230,7 +232,9 @@ public interface InquiryControllerDocs {
                                             value = "{\n" +
                                                     "  \"id\": 1,\n" +
                                                     "  \"type\": \"DELIVERY\",\n" +
+                                                    "  \"typeName\": \"배송\",\n" +
                                                     "  \"detailType\": \"DELIVERY_SCHEDULE\",\n" +
+                                                    "  \"detailTypeName\": \"배송 일정\",\n" +
                                                     "  \"content\": \"주문한 지 3일이 지났는데 아직 배송 준비 중입니다. 배송 일정을 확인 부탁드립니다.\",\n" +
                                                     "  \"imageUrls\": [\n" +
                                                     "    \"https://example.com/inquiries/img1.jpg\"\n" +
@@ -247,7 +251,9 @@ public interface InquiryControllerDocs {
                                             value = "{\n" +
                                                     "  \"id\": 1,\n" +
                                                     "  \"type\": \"DELIVERY\",\n" +
+                                                    "  \"typeName\": \"배송\",\n" +
                                                     "  \"detailType\": \"DELIVERY_SCHEDULE\",\n" +
+                                                    "  \"detailTypeName\": \"배송 일정\",\n" +
                                                     "  \"content\": \"주문한 지 3일이 지났는데 아직 배송 준비 중입니다. 배송 일정을 확인 부탁드립니다.\",\n" +
                                                     "  \"imageUrls\": [\n" +
                                                     "    \"https://example.com/inquiries/img1.jpg\"\n" +

@@ -47,6 +47,12 @@ public interface FaqControllerDocs {
                                                     "    \"category\": \"DELIVERY\",\n" +
                                                     "    \"question\": \"배송은 얼마나 걸리나요?\",\n" +
                                                     "    \"answer\": \"평균 2~3일 소요됩니다.\"\n" +
+                                                    "  },\n" +
+                                                    "  {\n" +
+                                                    "    \"id\": 2,\n" +
+                                                    "    \"category\": \"ORDER_PAYMENT\",\n" +
+                                                    "    \"question\": \"결제 방법은 무엇이 있나요?\",\n" +
+                                                    "    \"answer\": \"카드, 계좌이체, 간편결제를 이용하실 수 있습니다.\"\n" +
                                                     "  }\n" +
                                                     "]"
                                     )
@@ -70,12 +76,16 @@ public interface FaqControllerDocs {
                             mediaType = "application/json",
                             schema = @Schema(implementation = FaqCategoryItem.class),
                             examples = @ExampleObject(
-                                    name = "성공 예시",
+                                    name = "성공 예시 (실제 응답)",
                                     value = "[\n" +
                                             "  { \"key\": \"ALL\", \"description\": \"전체\" },\n" +
                                             "  { \"key\": \"DELIVERY\", \"description\": \"배송\" },\n" +
                                             "  { \"key\": \"CANCEL_EXCHANGE_REFUND\", \"description\": \"취소/교환/반품\" },\n" +
-                                            "  { \"key\": \"PRODUCT_AS\", \"description\": \"상품/AS문의\" }\n" +
+                                            "  { \"key\": \"PRODUCT_AS\", \"description\": \"상품/AS문의\" },\n" +
+                                            "  { \"key\": \"ORDER_PAYMENT\", \"description\": \"주문/결제\" },\n" +
+                                            "  { \"key\": \"SERVICE\", \"description\": \"서비스\" },\n" +
+                                            "  { \"key\": \"USAGE_GUIDE\", \"description\": \"이용 안내\" },\n" +
+                                            "  { \"key\": \"MEMBER_INFO\", \"description\": \"회원 정보\" }\n" +
                                             "]"
                             )
                     )
