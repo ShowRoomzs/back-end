@@ -32,9 +32,6 @@ public class ProductInquiryResponse {
     @Schema(description = "문의 타입")
     private InquiryType type;
 
-    @Schema(description = "문의 카테고리")
-    private String category;
-
     @Schema(description = "문의 내용")
     private String content;
 
@@ -59,7 +56,6 @@ public class ProductInquiryResponse {
                 .productName(inquiry.getProduct().getName())
                 .productImageUrl(imageUrl) // Service에서 계산된 URL 주입
                 .type(inquiry.getType())
-                .category(inquiry.getCategory())
                 .content(inquiry.getContent())
                 .status(inquiry.getStatus())
                 .answerContent(inquiry.getAnswerContent())

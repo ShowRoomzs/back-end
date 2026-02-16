@@ -41,7 +41,6 @@ public class ProductInquiryService {
                 .user(user)
                 .product(product)
                 .type(request.getType())
-                .category(request.getCategory())
                 .content(request.getContent())
                 .build();
 
@@ -82,7 +81,6 @@ public class ProductInquiryService {
 
         inquiry.update(
                 request.getType(),
-                request.getCategory(),
                 request.getContent()
         );
     }

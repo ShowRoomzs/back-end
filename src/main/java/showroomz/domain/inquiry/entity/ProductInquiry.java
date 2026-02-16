@@ -36,9 +36,6 @@ public class ProductInquiry extends BaseTimeEntity {
     @Column(name = "TYPE", nullable = false)
     private InquiryType type;
 
-    @Column(name = "CATEGORY", nullable = false, length = 50)
-    private String category;
-
     @Column(name = "CONTENT", nullable = false, columnDefinition = "TEXT")
     private String content;
 
@@ -53,11 +50,10 @@ public class ProductInquiry extends BaseTimeEntity {
     private InquiryStatus status;
 
     @Builder
-    public ProductInquiry(Users user, Product product, InquiryType type, String category, String content) {
+    public ProductInquiry(Users user, Product product, InquiryType type, String content) {
         this.user = user;
         this.product = product;
         this.type = type;
-        this.category = category;
         this.content = content;
         this.status = InquiryStatus.WAITING;
     }
@@ -68,9 +64,8 @@ public class ProductInquiry extends BaseTimeEntity {
         this.status = InquiryStatus.ANSWERED;
     }
 
-    public void update(InquiryType type, String category, String content) {
+    public void update(InquiryType type, String content) {
         this.type = type;
-        this.category = category;
         this.content = content;
     }
 }
