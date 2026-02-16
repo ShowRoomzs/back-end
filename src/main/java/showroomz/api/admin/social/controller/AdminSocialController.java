@@ -3,7 +3,8 @@ package showroomz.api.admin.social.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import showroomz.api.admin.docs.AdminSocialControllerDocs;
+
+import showroomz.api.admin.social.docs.AdminSocialControllerDocs;
 import showroomz.api.admin.social.service.SocialPolicyService;
 import showroomz.api.app.auth.entity.ProviderType;
 

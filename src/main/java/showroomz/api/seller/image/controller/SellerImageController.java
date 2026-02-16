@@ -12,7 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import showroomz.api.app.image.DTO.ImageUploadResponse;
 import showroomz.api.app.image.service.ImageService;
 import showroomz.api.app.image.type.ImageType;
-import showroomz.api.seller.docs.AdminImageControllerDocs;
+import showroomz.api.seller.image.docs.AdminImageControllerDocs;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 

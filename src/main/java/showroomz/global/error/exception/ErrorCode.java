@@ -118,6 +118,7 @@ public enum ErrorCode {
     COUPON_ALREADY_REGISTERED(HttpStatus.BAD_REQUEST, "COUPON_ALREADY_REGISTERED", "이미 등록된 쿠폰입니다."),
     COUPON_CODE_DUPLICATE(HttpStatus.BAD_REQUEST, "COUPON_CODE_DUPLICATE", "이미 사용 중인 쿠폰 코드입니다."),
     INVALID_COUPON_VALIDITY_PERIOD(HttpStatus.BAD_REQUEST, "INVALID_COUPON_VALIDITY_PERIOD", "유효 시작 일시는 유효 종료 일시보다 이전이어야 합니다.");
+    INVALID_INQUIRY_DETAIL_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "선택한 상세 유형이 문의 타입에 맞지 않습니다.");
 
     private final HttpStatus status;
     private final String code;

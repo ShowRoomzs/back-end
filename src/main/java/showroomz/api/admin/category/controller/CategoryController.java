@@ -7,8 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import showroomz.api.admin.category.DTO.CategoryDto;
+import showroomz.api.admin.category.docs.AdminCategoryControllerDocs;
 import showroomz.api.admin.category.service.CategoryService;
-import showroomz.api.admin.docs.AdminCategoryControllerDocs;
 
 @RestController
 @RequestMapping("/v1/admin")

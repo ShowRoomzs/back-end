@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import showroomz.api.admin.docs.AdminAuthControllerDocs;
+import showroomz.api.admin.auth.docs.AdminAuthControllerDocs;
 import showroomz.api.app.auth.DTO.RefreshTokenRequest;
 import showroomz.api.app.auth.DTO.TokenResponse;
 import showroomz.api.seller.auth.DTO.SellerLoginRequest;

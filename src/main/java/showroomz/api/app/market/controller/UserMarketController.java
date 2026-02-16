@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Hidden;
 import showroomz.api.app.auth.entity.UserPrincipal;
-import showroomz.api.app.docs.UserMarketControllerDocs;
 import showroomz.api.app.market.DTO.MarketDetailResponse;
 import showroomz.api.app.market.DTO.MarketListResponse;
+import showroomz.api.app.market.docs.UserMarketControllerDocs;
 import showroomz.api.app.market.service.UserMarketService;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;

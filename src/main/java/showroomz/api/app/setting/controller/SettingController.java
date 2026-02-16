@@ -6,9 +6,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import showroomz.api.app.auth.entity.UserPrincipal;
-import showroomz.api.app.docs.SettingControllerDocs;
 import showroomz.api.app.setting.DTO.NotificationSettingRequest;
 import showroomz.api.app.setting.DTO.NotificationSettingResponse;
+import showroomz.api.app.setting.docs.SettingControllerDocs;
 import showroomz.api.app.setting.service.SettingService;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;

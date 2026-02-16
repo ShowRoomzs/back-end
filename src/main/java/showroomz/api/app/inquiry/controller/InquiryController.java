@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.auth.entity.UserPrincipal;
-import showroomz.api.app.docs.InquiryControllerDocs;
+import showroomz.api.app.inquiry.docs.InquiryControllerDocs;
 import showroomz.api.app.inquiry.dto.InquiryDetailResponse;
 import showroomz.api.app.inquiry.dto.InquiryListResponse;
 import showroomz.api.app.inquiry.dto.InquiryRegisterRequest;
@@ -21,7 +21,6 @@ import showroomz.global.dto.PagingRequest;
 @RestController
 @RequestMapping("/v1/user/inquiries")
 @RequiredArgsConstructor
-@Hidden
 public class InquiryController implements InquiryControllerDocs {
 
     private final InquiryService inquiryService;
@@ -52,7 +51,7 @@ public class InquiryController implements InquiryControllerDocs {
     }
 
     @Override
-    @PatchMapping("/{inquiryId}")
+    @PutMapping("/{inquiryId}")
     public ResponseEntity<Void> updateInquiry(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable("inquiryId") Long inquiryId,

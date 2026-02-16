@@ -8,7 +8,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import showroomz.api.admin.docs.SuperAdminImageControllerDocs;
+
+import showroomz.api.admin.image.docs.SuperAdminImageControllerDocs;
 import showroomz.api.app.image.DTO.ImageUploadResponse;
 import showroomz.api.app.image.service.ImageService;
 import showroomz.api.app.image.type.ImageType;

@@ -8,7 +8,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import showroomz.api.admin.docs.AdminFaqControllerDocs;
+
+import showroomz.api.admin.faq.docs.AdminFaqControllerDocs;
 import showroomz.api.admin.faq.dto.AdminFaqRegisterRequest;
 import showroomz.api.admin.faq.service.AdminFaqService;
 
@@ -18,7 +19,6 @@ import java.util.Objects;
 @RestController
 @RequestMapping("/v1/admin/faqs")
 @RequiredArgsConstructor
-@Hidden
 public class AdminFaqController implements AdminFaqControllerDocs {
 
     private final AdminFaqService adminFaqService;
