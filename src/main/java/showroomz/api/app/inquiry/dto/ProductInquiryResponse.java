@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import showroomz.domain.inquiry.entity.ProductInquiry;
 import showroomz.domain.inquiry.type.InquiryStatus;
-import showroomz.domain.inquiry.type.InquiryType;
+import showroomz.domain.inquiry.type.ProductInquiryType;
 
 import java.time.LocalDateTime;
 
@@ -29,8 +29,8 @@ public class ProductInquiryResponse {
     @Schema(description = "상품 대표 이미지 URL")
     private String productImageUrl;
 
-    @Schema(description = "문의 타입")
-    private InquiryType type;
+    @Schema(description = "문의 타입 (PRODUCT_INQUIRY, SIZE_INQUIRY, STOCK_INQUIRY)")
+    private ProductInquiryType type;
 
     @Schema(description = "문의 내용")
     private String content;
