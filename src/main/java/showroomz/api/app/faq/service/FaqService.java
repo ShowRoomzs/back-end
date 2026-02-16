@@ -3,6 +3,7 @@ package showroomz.api.app.faq.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.app.faq.dto.FaqCategoryItem;
 import showroomz.api.app.faq.dto.FaqResponse;
 import showroomz.domain.faq.entity.Faq;
 import showroomz.domain.faq.repository.FaqRepository;
@@ -38,10 +39,10 @@ public class FaqService {
         return faqs.stream().map(FaqResponse::from).collect(Collectors.toList());
     }
 
-    // FAQ 카테고리 고정 목록 (enum 이름 순서: ALL, DELIVERY, ...)
-    public List<String> getFaqCategories() {
+    // FAQ 카테고리 고정 목록 (key: enum 이름, description: 한글 표시명)
+    public List<FaqCategoryItem> getFaqCategories() {
         return Arrays.stream(FaqCategory.values())
-                .map(FaqCategory::name)
+                .map(FaqCategoryItem::from)
                 .toList();
     }
 }

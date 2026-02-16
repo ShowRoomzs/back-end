@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import showroomz.api.app.faq.dto.FaqCategoryItem;
 import showroomz.api.app.faq.dto.FaqResponse;
 
 import java.util.List;
@@ -57,7 +58,7 @@ public interface FaqControllerDocs {
 
     @Operation(
             summary = "FAQ 카테고리 목록 조회",
-            description = "고정 FAQ 카테고리 enum 목록을 반환합니다. (ALL, DELIVERY, CANCEL_EXCHANGE_REFUND, PRODUCT_AS, ORDER_PAYMENT, SERVICE, USAGE_GUIDE, MEMBER_INFO)\n\n" +
+            description = "고정 FAQ 카테고리 목록을 key(enum 이름), description(한글 표시명) 형식으로 반환합니다.\n\n" +
                     "**권한:** 없음\n" +
                     "**요청 헤더:** 없음"
     )
@@ -67,13 +68,19 @@ public interface FaqControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
+                            schema = @Schema(implementation = FaqCategoryItem.class),
                             examples = @ExampleObject(
                                     name = "성공 예시",
-                                    value = "[\n  \"ALL\",\n  \"DELIVERY\",\n  \"CANCEL_EXCHANGE_REFUND\",\n  \"PRODUCT_AS\",\n  \"ORDER_PAYMENT\",\n  \"SERVICE\",\n  \"USAGE_GUIDE\",\n  \"MEMBER_INFO\"\n]"
+                                    value = "[\n" +
+                                            "  { \"key\": \"ALL\", \"description\": \"전체\" },\n" +
+                                            "  { \"key\": \"DELIVERY\", \"description\": \"배송\" },\n" +
+                                            "  { \"key\": \"CANCEL_EXCHANGE_REFUND\", \"description\": \"취소/교환/반품\" },\n" +
+                                            "  { \"key\": \"PRODUCT_AS\", \"description\": \"상품/AS문의\" }\n" +
+                                            "]"
                             )
                     )
             )
     })
-    ResponseEntity<List<String>> getFaqCategories();
+    ResponseEntity<List<FaqCategoryItem>> getFaqCategories();
 }
 
