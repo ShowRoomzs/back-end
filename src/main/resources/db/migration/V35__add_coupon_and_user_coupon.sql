@@ -1,4 +1,4 @@
--- coupon 테이블
+-- coupon 테이블.
 CREATE TABLE coupon (
     coupon_id BIGINT NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
