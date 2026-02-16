@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class ProductInquiryResponse {
 
     @Schema(description = "상품 문의 ID")
-    private Long inquiryId;
+    private Long id;
 
     @Schema(description = "상품 ID")
     private Long productId;
@@ -53,7 +53,7 @@ public class ProductInquiryResponse {
     // 이미지 로직을 제거하고, 이미지는 항상 파라미터로 받도록 통일
     public static ProductInquiryResponse of(ProductInquiry inquiry, String imageUrl) {
         return ProductInquiryResponse.builder()
-                .inquiryId(inquiry.getId())
+                .id(inquiry.getId())
                 .productId(inquiry.getProduct().getProductId())
                 .shopName(inquiry.getProduct().getMarket().getMarketName())
                 .productName(inquiry.getProduct().getName())

@@ -43,7 +43,7 @@ public interface ProductInquiryControllerDocs {
                                     @ExampleObject(
                                             name = "성공 예시",
                                             value = "{\n" +
-                                                    "  \"inquiryId\": 1\n" +
+                                                    "  \"id\": 1\n" +
                                                     "}"
                                     )
                             }
@@ -154,7 +154,7 @@ public interface ProductInquiryControllerDocs {
                                             value = "{\n" +
                                                     "  \"content\": [\n" +
                                                     "    {\n" +
-                                                    "      \"inquiryId\": 1,\n" +
+                                                    "      \"id\": 1,\n" +
                                                     "      \"productId\": 101,\n" +
                                                     "      \"shopName\": \"모노 스튜디오\",\n" +
                                                     "      \"productName\": \"오버핏 블레이저\",\n" +
@@ -225,7 +225,7 @@ public interface ProductInquiryControllerDocs {
                                     @ExampleObject(
                                             name = "답변 대기 예시",
                                             value = "{\n" +
-                                                    "  \"inquiryId\": 1,\n" +
+                                                    "  \"id\": 1,\n" +
                                                     "  \"productId\": 101,\n" +
                                                     "  \"shopName\": \"모노 스튜디오\",\n" +
                                                     "  \"productName\": \"오버핏 블레이저\",\n" +
@@ -243,7 +243,7 @@ public interface ProductInquiryControllerDocs {
                                     @ExampleObject(
                                             name = "답변 완료 예시",
                                             value = "{\n" +
-                                                    "  \"inquiryId\": 1,\n" +
+                                                    "  \"id\": 1,\n" +
                                                     "  \"productId\": 101,\n" +
                                                     "  \"shopName\": \"모노 스튜디오\",\n" +
                                                     "  \"productName\": \"오버핏 블레이저\",\n" +
