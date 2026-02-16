@@ -1,5 +1,5 @@
 -- coupon 테이블 (IF NOT EXISTS: feauture/coupon에서 이미 적용된 DB 호환)
-CREATE TABLE IF NOT EXISTS coupon (
+CREATE TABLE coupon (
     coupon_id BIGINT NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
     code VARCHAR(50) NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS coupon (
 ) ENGINE=InnoDB;
 
 -- user_coupon 테이블 (사용자-쿠폰 매핑)
-CREATE TABLE IF NOT EXISTS user_coupon (
+CREATE TABLE user_coupon (
     user_coupon_id BIGINT NOT NULL AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
     coupon_id BIGINT NOT NULL,
