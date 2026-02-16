@@ -1,5 +1,6 @@
 package showroomz.api.app.inquiry.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/v1/user/inquiries")
 @RequiredArgsConstructor
+@Hidden
 public class InquiryController implements InquiryControllerDocs {
 
     private final InquiryService inquiryService;

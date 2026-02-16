@@ -1,5 +1,6 @@
 package showroomz.api.app.inquiry.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,7 @@ import showroomz.global.dto.PagingRequest;
 
 @RestController
 @RequiredArgsConstructor
+@Hidden
 public class ProductInquiryController implements ProductInquiryControllerDocs {
 
     private final ProductInquiryService productInquiryService;

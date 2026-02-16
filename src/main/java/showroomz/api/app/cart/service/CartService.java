@@ -1,8 +1,6 @@
 package showroomz.api.app.cart.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +22,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -71,16 +70,16 @@ public class CartService {
     }
 
     @Transactional(readOnly = true)
-    public CartDto.CartListResponse getCart(String username, Pageable pageable) {
+    public CartDto.CartListResponse getCart(String username) {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        Page<Cart> cartPage = cartRepository.findByUser(user, pageable);
-        List<CartDto.CartItem> items = cartPage.getContent().stream()
+        List<Cart> carts = cartRepository.findAllByUser(user);
+        List<CartDto.CartItem> items = carts.stream()
                 .map(this::toCartItem)
                 .toList();
 
-        CartSummaryData summaryData = calculateSummary(cartPage.getContent());
+        CartSummaryData summaryData = calculateSummary(carts);
 
         CartDto.CartSummary summary = CartDto.CartSummary.builder()
                 .regularTotal(summaryData.regularTotal)
@@ -90,7 +89,10 @@ public class CartService {
                 .finalTotal(summaryData.finalTotal)
                 .build();
 
-        return new CartDto.CartListResponse(items, cartPage, summary);
+        return CartDto.CartListResponse.builder()
+                .items(items)
+                .summary(summary)
+                .build();
     }
 
     @Transactional
@@ -159,27 +161,51 @@ public class CartService {
                 .build();
     }
 
+    /**
+     * 장바구니 삭제 (개별/선택/전체 통합)
+     * - cartItemIds가 null 또는 비어있으면: 전체 삭제
+     * - cartItemIds가 있으면: 해당 ID들만 삭제 (본인 소유 검증 후 deleteAllByIdInBatch)
+     */
     @Transactional
-    public CartDto.DeleteCartResponse deleteCart(String username, Long cartItemId) {
+    public CartDto.DeleteCartResponse deleteCart(String username, List<Long> cartItemIds) {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        if (cartItemId == null) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "장바구니 항목 ID가 필요합니다.");
+        List<Long> deletedIds;
+        String message;
+
+        if (cartItemIds == null || cartItemIds.isEmpty()) {
+            // 전체 삭제
+            long count = cartRepository.countByUser(user);
+            if (count == 0) {
+                return CartDto.DeleteCartResponse.builder()
+                        .deletedCartItemIds(List.of())
+                        .deletedCount(0)
+                        .message("이미 장바구니가 비어 있습니다")
+                        .summary(emptySummary())
+                        .build();
+            }
+            List<Cart> allCarts = cartRepository.findAllByUser(user);
+            deletedIds = allCarts.stream().map(Cart::getId).toList();
+            cartRepository.deleteByUser(user);
+            message = count == 1 ? "1개 항목이 삭제되었습니다." : count + "개 항목이 삭제되었습니다.";
+        } else {
+            // 선택 삭제: 본인 소유 검증 후 삭제
+            List<Cart> toDelete = cartRepository.findByIdInAndUser(cartItemIds, user);
+            if (toDelete.size() != cartItemIds.size()) {
+                Set<Long> foundIds = toDelete.stream().map(Cart::getId).collect(Collectors.toSet());
+                List<Long> unauthorized = cartItemIds.stream().filter(id -> !foundIds.contains(id)).toList();
+                throw new BusinessException(ErrorCode.FORBIDDEN,
+                        "장바구니 항목을 찾을 수 없거나 삭제 권한이 없습니다. cartItemIds: " + unauthorized);
+            }
+            deletedIds = toDelete.stream().map(Cart::getId).toList();
+            cartRepository.deleteAllByIdInBatch(deletedIds);
+            int count = deletedIds.size();
+            message = count == 1 ? "1개 항목이 삭제되었습니다." : count + "개 항목이 삭제되었습니다.";
         }
 
-        Cart cart = cartRepository.findById(cartItemId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.CART_ITEM_NOT_FOUND));
-
-        if (!cart.getUser().getId().equals(user.getId())) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "본인의 장바구니 항목만 삭제할 수 있습니다.");
-        }
-
-        cartRepository.delete(cart);
-
-        List<Cart> carts = cartRepository.findAllByUser(user);
-        CartSummaryData summaryData = calculateSummary(carts);
-
+        List<Cart> remainingCarts = cartRepository.findAllByUser(user);
+        CartSummaryData summaryData = calculateSummary(remainingCarts);
         CartDto.UpdateSummary summary = CartDto.UpdateSummary.builder()
                 .regularTotal(summaryData.regularTotal)
                 .saleTotal(summaryData.saleTotal)
@@ -190,29 +216,10 @@ public class CartService {
                 .build();
 
         return CartDto.DeleteCartResponse.builder()
-                .deletedCartItemId(cartItemId)
+                .deletedCartItemIds(deletedIds)
+                .deletedCount(deletedIds.size())
+                .message(message)
                 .summary(summary)
-                .build();
-    }
-
-    @Transactional
-    public CartDto.ClearCartResponse clearCart(String username) {
-        Users user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
-        long count = cartRepository.countByUser(user);
-        if (count == 0) {
-            return CartDto.ClearCartResponse.builder()
-                    .message("이미 장바구니가 비어 있습니다")
-                    .summary(emptySummary())
-                    .build();
-        }
-
-        cartRepository.deleteByUser(user);
-
-        return CartDto.ClearCartResponse.builder()
-                .message("장바구니가 비워졌습니다.")
-                .summary(emptySummary())
                 .build();
     }
 
