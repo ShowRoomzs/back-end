@@ -30,8 +30,6 @@ public interface ProductInquiryControllerDocs {
                     "- `type`: 문의 타입 (DELIVERY, ORDER_PAYMENT, CANCEL_REFUND_EXCHANGE, USER_INFO, PRODUCT_CHECK, SERVICE)\n" +
                     "- `category`: 문의 유형 (상세 사유 - 문자열)\n" +
                     "- `content`: 문의 내용\n\n" +
-                    "**선택 값:**\n" +
-                    "- `secret`: 비밀글 여부 (기본값: false) 기획 확정 시 삭제될 수 있습니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -116,8 +114,7 @@ public interface ProductInquiryControllerDocs {
                                     value = "{\n" +
                                             "  \"type\": \"PRODUCT_CHECK\",\n" +
                                             "  \"category\": \"사이즈 문의\",\n" +
-                                            "  \"content\": \"키 170에 보통 체형인데 M 사이즈가 맞을까요?\",\n" +
-                                            "  \"secret\": false\n" +
+                                            "  \"content\": \"키 170에 보통 체형인데 M 사이즈가 맞을까요?\"\n" +
                                             "}"
                             )
                     }
@@ -139,7 +136,7 @@ public interface ProductInquiryControllerDocs {
                     "- `shopName`: 쇼룸(마켓) 이름\n" +
                     "- `productName`: 상품명\n" +
                     "- `productImageUrl`: 상품 대표 이미지 URL\n" +
-                    "- `type`, `category`, `content`, `secret`, `status`, `answerContent`, `createdAt`, `answeredAt`\n\n" +
+                    "- `type`, `category`, `content`, `status`, `answerContent`, `createdAt`, `answeredAt`\n\n" +
                     "**status 값:**\n" +
                     "- `WAITING`: 답변 대기\n" +
                     "- `ANSWERED`: 답변 완료\n\n" +
@@ -167,7 +164,6 @@ public interface ProductInquiryControllerDocs {
                                                     "      \"type\": \"PRODUCT_CHECK\",\n" +
                                                     "      \"category\": \"사이즈 문의\",\n" +
                                                     "      \"content\": \"키 170에 보통 체형인데 M 사이즈가 맞을까요?\",\n" +
-                                                    "      \"secret\": false,\n" +
                                                     "      \"status\": \"WAITING\",\n" +
                                                     "      \"answerContent\": null,\n" +
                                                     "      \"createdAt\": \"2025-02-07T10:30:00\",\n" +
@@ -212,7 +208,7 @@ public interface ProductInquiryControllerDocs {
 
     @Operation(
             summary = "상품 문의 상세 조회",
-            description = "특정 상품 문의의 상세 정보(상품 정보, 타입, 상세 유형, 내용, 비밀글 여부, 답변 상태/내용 등)를 조회합니다.\n\n" +
+            description = "특정 상품 문의의 상세 정보(상품 정보, 타입, 상세 유형, 내용, 답변 상태/내용 등)를 조회합니다.\n\n" +
                     "- 본인이 등록한 문의만 조회할 수 있습니다.\n\n" +
                     "**status 값:**\n" +
                     "- `WAITING`: 답변 대기\n" +
@@ -239,7 +235,6 @@ public interface ProductInquiryControllerDocs {
                                                     "  \"type\": \"PRODUCT_CHECK\",\n" +
                                                     "  \"category\": \"사이즈 문의\",\n" +
                                                     "  \"content\": \"키 170에 보통 체형인데 M 사이즈가 맞을까요?\",\n" +
-                                                    "  \"secret\": false,\n" +
                                                     "  \"status\": \"WAITING\",\n" +
                                                     "  \"answerContent\": null,\n" +
                                                     "  \"createdAt\": \"2025-02-07T10:30:00\",\n" +
@@ -258,7 +253,6 @@ public interface ProductInquiryControllerDocs {
                                                     "  \"type\": \"PRODUCT_CHECK\",\n" +
                                                     "  \"category\": \"사이즈 문의\",\n" +
                                                     "  \"content\": \"키 170에 보통 체형인데 M 사이즈가 맞을까요?\",\n" +
-                                                    "  \"secret\": false,\n" +
                                                     "  \"status\": \"ANSWERED\",\n" +
                                                     "  \"answerContent\": \"안녕하세요, 해당 상품은 키 170 기준 M 사이즈를 가장 많이 구매하셨습니다.\",\n" +
                                                     "  \"createdAt\": \"2025-02-07T10:30:00\",\n" +
@@ -334,8 +328,6 @@ public interface ProductInquiryControllerDocs {
                     "- `type`: 문의 타입 (DELIVERY, ORDER_PAYMENT, CANCEL_REFUND_EXCHANGE, USER_INFO, PRODUCT_CHECK, SERVICE)\n" +
                     "- `category`: 문의 유형 (상세 사유 - 문자열)\n" +
                     "- `content`: 문의 내용\n\n" +
-                    "**선택 값:**\n" +
-                    "- `secret`: 비밀글 여부 (기본값: false) 기획 확정 시 삭제될 수 있습니다.\n\n" +
                     "- 본인이 등록한 문의만 수정할 수 있습니다.\n" +
                     "- 답변이 완료된 문의는 수정할 수 없습니다.\n\n" +
                     "**권한:** USER\n" +

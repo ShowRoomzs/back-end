@@ -42,9 +42,6 @@ public class ProductInquiry extends BaseTimeEntity {
     @Column(name = "CONTENT", nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "IS_SECRET")
-    private boolean secret;
-
     @Column(name = "ANSWER_CONTENT", columnDefinition = "TEXT")
     private String answerContent;
 
@@ -56,13 +53,12 @@ public class ProductInquiry extends BaseTimeEntity {
     private InquiryStatus status;
 
     @Builder
-    public ProductInquiry(Users user, Product product, InquiryType type, String category, String content, boolean secret) {
+    public ProductInquiry(Users user, Product product, InquiryType type, String category, String content) {
         this.user = user;
         this.product = product;
         this.type = type;
         this.category = category;
         this.content = content;
-        this.secret = secret;
         this.status = InquiryStatus.WAITING;
     }
 
@@ -72,10 +68,9 @@ public class ProductInquiry extends BaseTimeEntity {
         this.status = InquiryStatus.ANSWERED;
     }
 
-    public void update(InquiryType type, String category, String content, boolean secret) {
+    public void update(InquiryType type, String category, String content) {
         this.type = type;
         this.category = category;
         this.content = content;
-        this.secret = secret;
     }
 }

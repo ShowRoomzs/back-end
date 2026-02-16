@@ -43,7 +43,6 @@ public class ProductInquiryService {
                 .type(request.getType())
                 .category(request.getCategory())
                 .content(request.getContent())
-                .secret(request.isSecret())
                 .build();
 
         productInquiryRepository.save(inquiry);
@@ -84,8 +83,7 @@ public class ProductInquiryService {
         inquiry.update(
                 request.getType(),
                 request.getCategory(),
-                request.getContent(),
-                request.isSecret()
+                request.getContent()
         );
     }
 

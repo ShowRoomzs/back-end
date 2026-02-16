@@ -38,9 +38,6 @@ public class ProductInquiryResponse {
     @Schema(description = "문의 내용")
     private String content;
 
-    @Schema(description = "비밀글 여부")
-    private boolean secret;
-
     @Schema(description = "답변 상태")
     private InquiryStatus status;
 
@@ -64,7 +61,6 @@ public class ProductInquiryResponse {
                 .type(inquiry.getType())
                 .category(inquiry.getCategory())
                 .content(inquiry.getContent())
-                .secret(inquiry.isSecret())
                 .status(inquiry.getStatus())
                 .answerContent(inquiry.getAnswerContent())
                 .createdAt(inquiry.getCreatedAt())
