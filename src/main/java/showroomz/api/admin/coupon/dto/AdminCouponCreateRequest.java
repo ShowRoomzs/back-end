@@ -49,11 +49,11 @@ public class AdminCouponCreateRequest {
 
     @NotNull(message = "유효 시작 일시는 필수입니다.")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    @Schema(description = "쿠폰 유효 시작 일시 (validFrom)", example = "2025-01-01T00:00:00", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "쿠폰 유효 시작 일시 (validFrom)", example = "2026-01-01T00:00:00", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime validFrom;
 
     @NotNull(message = "유효 종료 일시는 필수입니다.")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    @Schema(description = "쿠폰 유효 종료 일시 (validTo, validFrom 이후여야 함)", example = "2025-12-31T23:59:59", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "쿠폰 유효 종료 일시 (validTo, validFrom 이후여야 함)", example = "2026-12-31T23:59:59", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime validTo;
 }
