@@ -77,10 +77,7 @@ public class SecurityConfig {
             "/v1/user/search/autocomplete",
 
             // FAQ 조회 API
-            "/v1/user/faqs",
-
-            // 1:1 문의 카테고리 목록 (폼 선택용, 비로그인 허용)
-            "/v1/user/inquiries/categories"
+            "/v1/user/faqs"
     };
     /*
      * SecurityFilterChain 설정 (Spring Security 3.x 최신 방식)
