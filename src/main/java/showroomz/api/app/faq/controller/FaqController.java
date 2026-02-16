@@ -17,7 +17,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/v1/common/faqs")
 @RequiredArgsConstructor
-@Hidden
 public class FaqController implements FaqControllerDocs {
 
     private final FaqService faqService;

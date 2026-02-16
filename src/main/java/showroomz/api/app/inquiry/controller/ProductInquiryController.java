@@ -25,7 +25,6 @@ import showroomz.global.dto.PagingRequest;
 
 @RestController
 @RequiredArgsConstructor
-@Hidden
 public class ProductInquiryController implements ProductInquiryControllerDocs {
 
     private final ProductInquiryService productInquiryService;

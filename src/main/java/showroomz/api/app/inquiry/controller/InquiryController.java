@@ -24,7 +24,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/v1/user/inquiries")
 @RequiredArgsConstructor
-@Hidden
 public class InquiryController implements InquiryControllerDocs {
 
     private final InquiryService inquiryService;
