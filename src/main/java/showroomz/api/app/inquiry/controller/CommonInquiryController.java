@@ -5,7 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import showroomz.api.app.docs.CommonInquiryControllerDocs;
+
+import showroomz.api.app.inquiry.docs.CommonInquiryControllerDocs;
 import showroomz.api.app.inquiry.dto.InquiryCategoryResponse;
 import showroomz.api.app.inquiry.service.InquiryService;
 

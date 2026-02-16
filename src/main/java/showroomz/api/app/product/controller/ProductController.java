@@ -8,8 +8,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import showroomz.api.app.auth.entity.UserPrincipal;
-import showroomz.api.app.docs.UserProductControllerDocs;
 import showroomz.api.app.product.DTO.ProductDto;
+import showroomz.api.app.product.docs.UserProductControllerDocs;
 import showroomz.api.app.product.service.ProductService;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.member.user.entity.Users;

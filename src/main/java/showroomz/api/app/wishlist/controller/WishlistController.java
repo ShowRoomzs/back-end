@@ -5,8 +5,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import org.springframework.web.bind.annotation.*;
-import showroomz.api.app.docs.WishlistControllerDocs;
+
 import showroomz.api.app.product.DTO.ProductDto;
+import showroomz.api.app.wishlist.docs.WishlistControllerDocs;
 import showroomz.api.app.wishlist.service.WishlistService;
 import showroomz.global.dto.PageResponse;
 

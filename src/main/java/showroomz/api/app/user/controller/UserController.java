@@ -10,13 +10,13 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
-import showroomz.api.app.docs.UserControllerDocs;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.RefundAccountRequest;
 import showroomz.api.app.user.DTO.RefundAccountResponse;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
 import showroomz.api.app.user.DTO.UserProfileResponse;
+import showroomz.api.app.user.docs.UserControllerDocs;
 import showroomz.api.app.user.service.UserService;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.error.exception.BusinessException;
