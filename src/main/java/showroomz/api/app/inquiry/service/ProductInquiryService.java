@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.app.inquiry.dto.InquiryCategoryResponse;
 import showroomz.api.app.inquiry.dto.ProductInquiryResponse;
 import showroomz.api.app.inquiry.dto.ProductInquiryRegisterRequest;
 import showroomz.api.app.inquiry.dto.ProductInquiryUpdateRequest;
@@ -12,6 +13,7 @@ import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.inquiry.entity.ProductInquiry;
 import showroomz.domain.inquiry.repository.ProductInquiryRepository;
 import showroomz.domain.inquiry.type.InquiryStatus;
+import showroomz.domain.inquiry.type.ProductInquiryType;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductImage;
@@ -99,6 +101,17 @@ public class ProductInquiryService {
         }
 
         productInquiryRepository.delete(inquiry);
+    }
+
+    /** 상품 문의 타입 목록 조회 (1:1 문의 카테고리 API와 동일한 형식: key, description, details는 빈 목록) */
+    public java.util.List<InquiryCategoryResponse> getProductInquiryCategories() {
+        return java.util.Arrays.stream(ProductInquiryType.values())
+                .map(type -> new InquiryCategoryResponse(
+                        type.name(),
+                        type.getDescription(),
+                        java.util.Collections.emptyList()
+                ))
+                .toList();
     }
 
     private String resolveImageUrl(ProductInquiry inquiry) {
