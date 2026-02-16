@@ -44,7 +44,7 @@ public class UserCouponService {
     }
 
     @Transactional
-    public void registerCoupon(String username, String code) {
+    public UserCoupon registerCoupon(String username, String code) {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -60,6 +60,7 @@ public class UserCouponService {
             throw new BusinessException(ErrorCode.COUPON_ALREADY_REGISTERED);
         }
 
-        userCouponRepository.save(new UserCoupon(user, coupon));
+        UserCoupon userCoupon = userCouponRepository.save(new UserCoupon(user, coupon));
+        return userCoupon;
     }
 }

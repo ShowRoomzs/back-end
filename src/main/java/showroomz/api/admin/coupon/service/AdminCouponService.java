@@ -21,7 +21,7 @@ public class AdminCouponService {
      * - validFrom < validTo 선후 관계 검증
      */
     @Transactional
-    public Long createCoupon(AdminCouponCreateRequest request) {
+    public Coupon createCoupon(AdminCouponCreateRequest request) {
         if (couponRepository.existsByCode(request.getCouponCode())) {
             throw new BusinessException(ErrorCode.COUPON_CODE_DUPLICATE);
         }
@@ -39,6 +39,6 @@ public class AdminCouponService {
                 request.getValidFrom(),
                 request.getValidTo()
         );
-        return couponRepository.save(coupon).getId();
+        return couponRepository.save(coupon);
     }
 }

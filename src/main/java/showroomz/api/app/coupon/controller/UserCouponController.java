@@ -8,10 +8,13 @@ import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.coupon.dto.CouponRegisterRequest;
 import showroomz.api.app.coupon.dto.UserCouponDto;
+import showroomz.api.app.coupon.dto.UserCouponRegisterResponse;
 import showroomz.api.app.coupon.service.UserCouponService;
 import showroomz.api.app.docs.UserCouponControllerDocs;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
+
+import java.net.URI;
 
 @RestController
 @RequestMapping("/v1/user/coupons")
@@ -31,10 +34,17 @@ public class UserCouponController implements UserCouponControllerDocs {
 
     @Override
     @PostMapping
-    public ResponseEntity<Void> registerCoupon(
+    public ResponseEntity<UserCouponRegisterResponse> registerCoupon(
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody CouponRegisterRequest request) {
-        userCouponService.registerCoupon(principal.getUsername(), request.getCode());
-        return ResponseEntity.noContent().build();
+        var userCoupon = userCouponService.registerCoupon(principal.getUsername(), request.getCode());
+        var coupon = userCoupon.getCoupon();
+        URI location = URI.create("/v1/user/coupons/" + userCoupon.getId());
+        UserCouponRegisterResponse response = UserCouponRegisterResponse.builder()
+                .message("쿠폰이 정상적으로 등록되었습니다.")
+                .userCouponId(userCoupon.getId())
+                .name(coupon.getName())
+                .build();
+        return ResponseEntity.created(location).body(response);
     }
 }

@@ -13,6 +13,7 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.coupon.dto.CouponRegisterRequest;
 import showroomz.api.app.coupon.dto.UserCouponDto;
+import showroomz.api.app.coupon.dto.UserCouponRegisterResponse;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
@@ -65,8 +66,12 @@ public interface UserCouponControllerDocs {
     )
     @ApiResponses(value = {
             @ApiResponse(
-                    responseCode = "204",
-                    description = "등록 성공 (No Content)"
+                    responseCode = "201",
+                    description = "등록 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = UserCouponRegisterResponse.class)
+                    )
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -95,7 +100,7 @@ public interface UserCouponControllerDocs {
                     )
             )
     })
-    ResponseEntity<Void> registerCoupon(
+    ResponseEntity<UserCouponRegisterResponse> registerCoupon(
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody CouponRegisterRequest request
     );

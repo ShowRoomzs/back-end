@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "관리자 쿠폰 생성 요청 (관리자 전용 API)")
+@Schema(description = "관리자 쿠폰 생성 요청")
 public class AdminCouponCreateRequest {
 
     @NotBlank(message = "쿠폰 이름은 필수입니다.")

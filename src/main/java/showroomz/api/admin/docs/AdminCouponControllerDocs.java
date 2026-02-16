@@ -10,9 +10,10 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.admin.coupon.dto.AdminCouponCreateRequest;
+import showroomz.api.admin.coupon.dto.AdminCouponCreateResponse;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 
-@Tag(name = "Admin - Coupon", description = "관리자 쿠폰 관리 API (관리자 전용)")
+@Tag(name = "Admin - Coupon", description = "관리자 쿠폰 관리 API")
 public interface AdminCouponControllerDocs {
 
     @Operation(
@@ -27,7 +28,11 @@ public interface AdminCouponControllerDocs {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "201",
-                    description = "생성 성공 - Location 헤더에 생성된 쿠폰 경로 반환"
+                    description = "생성 성공 - Location 헤더에 생성된 쿠폰 경로 반환, 본문에 message, id, name 포함",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AdminCouponCreateResponse.class)
+                    )
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -54,5 +59,5 @@ public interface AdminCouponControllerDocs {
                     )
             )
     })
-    ResponseEntity<Void> createCoupon(@Valid @RequestBody AdminCouponCreateRequest request);
+    ResponseEntity<AdminCouponCreateResponse> createCoupon(@Valid @RequestBody AdminCouponCreateRequest request);
 }
