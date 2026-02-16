@@ -6,8 +6,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import showroomz.api.admin.docs.AdminMarketManagementControllerDocs;
+
 import showroomz.api.admin.market.DTO.AdminMarketDto;
+import showroomz.api.admin.market.docs.AdminMarketManagementControllerDocs;
 import showroomz.api.admin.market.service.AdminService;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;

@@ -6,11 +6,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import showroomz.api.admin.docs.LoginHistoryControllerDocs;
+
 import showroomz.api.admin.history.DTO.LocationFilterResponse;
 import showroomz.api.admin.history.DTO.LoginHistoryResponse;
 import showroomz.api.admin.history.DTO.LoginHistorySearchCondition;
 import showroomz.api.admin.history.service.LoginHistoryService;
+import showroomz.api.admin.user.docs.LoginHistoryControllerDocs;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 

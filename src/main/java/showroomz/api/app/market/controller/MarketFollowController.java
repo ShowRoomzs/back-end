@@ -6,8 +6,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import showroomz.api.app.auth.entity.UserPrincipal;
-import showroomz.api.app.docs.MarketFollowControllerDocs;
 import showroomz.api.app.market.DTO.FollowingMarketResponse;
+import showroomz.api.app.market.docs.MarketFollowControllerDocs;
 import showroomz.api.app.market.service.MarketFollowService;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;

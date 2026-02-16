@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import showroomz.api.admin.filter.DTO.FilterDto;
-import showroomz.api.common.docs.CommonFilterControllerDocs;
+import showroomz.api.common.filter.docs.CommonFilterControllerDocs;
 import showroomz.api.common.filter.service.CommonFilterService;
 
 import java.util.List;

@@ -12,8 +12,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
-import showroomz.api.app.docs.ImageControllerDocs;
 import showroomz.api.app.image.DTO.ImageUploadResponse;
+import showroomz.api.app.image.docs.ImageControllerDocs;
 import showroomz.api.app.image.service.ImageService;
 import showroomz.api.app.image.type.ImageType;
 import showroomz.global.error.exception.BusinessException;

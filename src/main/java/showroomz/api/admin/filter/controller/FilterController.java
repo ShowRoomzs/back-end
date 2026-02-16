@@ -10,8 +10,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import showroomz.api.admin.docs.AdminFilterControllerDocs;
+
 import showroomz.api.admin.filter.DTO.FilterDto;
+import showroomz.api.admin.filter.docs.AdminFilterControllerDocs;
 import showroomz.api.admin.filter.service.FilterService;
 
 @RestController

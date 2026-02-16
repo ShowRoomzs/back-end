@@ -8,7 +8,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import showroomz.api.app.docs.NoticeControllerDocs;
+
+import showroomz.api.app.notice.docs.NoticeControllerDocs;
 import showroomz.api.app.notice.dto.NoticeDetailResponse;
 import showroomz.api.app.notice.dto.NoticeResponse;
 import showroomz.api.app.notice.service.NoticeService;

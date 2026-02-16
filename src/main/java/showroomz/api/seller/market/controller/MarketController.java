@@ -7,8 +7,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import showroomz.api.app.auth.entity.UserPrincipal;
-import showroomz.api.seller.docs.MarketControllerDocs;
 import showroomz.api.seller.market.DTO.MarketDto;
+import showroomz.api.seller.market.docs.MarketControllerDocs;
 import showroomz.api.seller.market.service.MarketService;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;

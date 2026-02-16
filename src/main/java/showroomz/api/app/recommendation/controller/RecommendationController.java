@@ -3,8 +3,9 @@ package showroomz.api.app.recommendation.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import showroomz.api.app.docs.RecommendationControllerDocs;
+
 import showroomz.api.app.recommendation.DTO.RecommendationDto;
+import showroomz.api.app.recommendation.docs.RecommendationControllerDocs;
 import showroomz.api.app.recommendation.service.RecommendationService;
 
 @RestController

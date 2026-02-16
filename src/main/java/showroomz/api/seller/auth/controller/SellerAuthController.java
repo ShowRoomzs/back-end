@@ -18,9 +18,9 @@ import showroomz.api.app.auth.DTO.TokenResponse;
 import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.DTO.SellerLoginRequest;
 import showroomz.api.seller.auth.DTO.SellerSignUpRequest;
+import showroomz.api.seller.auth.docs.SellerAuthControllerDocs;
 import showroomz.api.seller.auth.DTO.CreatorSignUpRequest;
 import showroomz.api.seller.auth.service.SellerService;
-import showroomz.api.seller.docs.SellerAuthControllerDocs;
 import showroomz.global.utils.HeaderUtil;
 
 import java.util.Map;

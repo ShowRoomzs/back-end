@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import showroomz.api.admin.category.DTO.CategoryDto;
 import showroomz.api.admin.category.service.CategoryService;
-import showroomz.api.common.docs.CommonCategoryControllerDocs;
+import showroomz.api.common.category.docs.CommonCategoryControllerDocs;
 
 import java.util.List;
 

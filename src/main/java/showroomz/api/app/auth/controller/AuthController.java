@@ -8,6 +8,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import showroomz.api.app.auth.DTO.*;
+import showroomz.api.app.auth.docs.AuthControllerDocs;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.auth.refreshToken.UserRefreshToken;
@@ -17,7 +18,6 @@ import showroomz.api.app.auth.service.SocialLoginService;
 import showroomz.api.app.auth.service.SocialLoginService.SocialLoginResult;
 import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
-import showroomz.api.app.docs.AuthControllerDocs;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.WithdrawalRequest;
 import showroomz.api.app.user.repository.UserRepository;

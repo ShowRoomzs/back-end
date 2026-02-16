@@ -6,7 +6,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import showroomz.api.app.docs.SearchControllerDocs;
+
+import showroomz.api.app.search.docs.SearchControllerDocs;
 import showroomz.api.app.search.dto.AutoCompleteResponse;
 import showroomz.api.app.search.service.SearchService;
 
