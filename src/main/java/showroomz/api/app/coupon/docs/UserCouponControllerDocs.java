@@ -1,4 +1,4 @@
-package showroomz.api.app.docs;
+package showroomz.api.app.coupon.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

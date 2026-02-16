@@ -6,11 +6,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.api.app.coupon.docs.UserCouponControllerDocs;
 import showroomz.api.app.coupon.dto.CouponRegisterRequest;
 import showroomz.api.app.coupon.dto.UserCouponDto;
 import showroomz.api.app.coupon.dto.UserCouponRegisterResponse;
 import showroomz.api.app.coupon.service.UserCouponService;
-import showroomz.api.app.docs.UserCouponControllerDocs;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
