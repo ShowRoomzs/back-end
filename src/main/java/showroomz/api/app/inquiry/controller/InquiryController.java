@@ -54,7 +54,7 @@ public class InquiryController implements InquiryControllerDocs {
     }
 
     @Override
-    @PatchMapping("/{inquiryId}")
+    @PutMapping("/{inquiryId}")
     public ResponseEntity<Void> updateInquiry(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable("inquiryId") Long inquiryId,
