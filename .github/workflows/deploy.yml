@@ -48,7 +48,7 @@ jobs:
       run: |
         # 1. 커밋 메시지에 예외 키워드가 있는지 확인
         COMMIT_MSG=$(git log -1 --pretty=%B)
-        if [[ "$COMMIT_MSG" == *"[fix-db]"* ]]; then
+        if [[ "$COMMIT_MSG" == *"fix:db"* ]]; then
           echo "⚠️ '[fix-db]' keyword detected. Skipping migration integrity check."
           exit 0
         fi
