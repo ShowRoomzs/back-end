@@ -160,6 +160,7 @@ public interface ProductInquiryControllerDocs {
                                                     "      \"productName\": \"오버핏 블레이저\",\n" +
                                                     "      \"productImageUrl\": \"https://example.com/products/101/main.jpg\",\n" +
                                                     "      \"type\": \"SIZE_INQUIRY\",\n" +
+                                                    "      \"typeName\": \"사이즈 문의\",\n" +
                                                     "      \"content\": \"키 170에 보통 체형인데 M 사이즈가 맞을까요?\",\n" +
                                                     "      \"status\": \"WAITING\",\n" +
                                                     "      \"answerContent\": null,\n" +
@@ -230,6 +231,7 @@ public interface ProductInquiryControllerDocs {
                                                     "  \"productName\": \"오버핏 블레이저\",\n" +
                                                     "  \"productImageUrl\": \"https://example.com/products/101/main.jpg\",\n" +
                                                     "  \"type\": \"SIZE_INQUIRY\",\n" +
+                                                    "  \"typeName\": \"사이즈 문의\",\n" +
                                                     "  \"content\": \"키 170에 보통 체형인데 M 사이즈가 맞을까요?\",\n" +
                                                     "  \"status\": \"WAITING\",\n" +
                                                     "  \"answerContent\": null,\n" +
@@ -247,6 +249,7 @@ public interface ProductInquiryControllerDocs {
                                                     "  \"productName\": \"오버핏 블레이저\",\n" +
                                                     "  \"productImageUrl\": \"https://example.com/products/101/main.jpg\",\n" +
                                                     "  \"type\": \"SIZE_INQUIRY\",\n" +
+                                                    "  \"typeName\": \"사이즈 문의\",\n" +
                                                     "  \"content\": \"키 170에 보통 체형인데 M 사이즈가 맞을까요?\",\n" +
                                                     "  \"status\": \"ANSWERED\",\n" +
                                                     "  \"answerContent\": \"안녕하세요, 해당 상품은 키 170 기준 M 사이즈를 가장 많이 구매하셨습니다.\",\n" +
