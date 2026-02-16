@@ -40,6 +40,53 @@ jobs:
     steps:
     - name: 소스 코드 체크아웃
       uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # [필수] 전체 커밋 히스토리를 가져와야 비교 가능
+
+    # [개선됨] Flyway 무결성 검사 (예외 처리 추가)
+    - name: Check Flyway Migration Integrity
+      run: |
+        # 1. 커밋 메시지에 예외 키워드가 있는지 확인
+        COMMIT_MSG=$(git log -1 --pretty=%B)
+        if [[ "$COMMIT_MSG" == *"[fix-db]"* ]]; then
+          echo "⚠️ '[fix-db]' keyword detected. Skipping migration integrity check."
+          exit 0
+        fi
+
+        # 2. 비교 대상 커밋 설정 (푸시된 커밋 전체 범위를 확인)
+        BASE_SHA=${{ github.event.before }}
+        
+        # 새 브랜치 생성 등의 경우 BASE_SHA가 000... 일 수 있음. 이 경우 HEAD^로 대체
+        if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" == "0000000000000000000000000000000000000000" ]; then
+          BASE_SHA="HEAD^"
+        fi
+
+        echo "🔍 Checking changes from $BASE_SHA to HEAD..."
+
+        # 3. 변경된 마이그레이션 파일 감지
+        CHANGED_FILES=$(git diff --name-status $BASE_SHA HEAD -- src/main/resources/db/migration)
+        
+        if [ -z "$CHANGED_FILES" ]; then
+          echo "✅ No migration files changed."
+        else
+          echo "⚠️ Detected changes in migration files:"
+          echo "$CHANGED_FILES"
+          
+          # 'A'(Added)가 아닌 변경사항(M:수정, D:삭제 등)이 있는지 필터링
+          INVALID_CHANGES=$(echo "$CHANGED_FILES" | grep -v '^A')
+          
+          if [ -n "$INVALID_CHANGES" ]; then
+            echo "❌ Error: Existing Flyway migration files have been modified or deleted!"
+            echo "Flyway migrations must be immutable."
+            echo "👉 If you actually need to fix a failed migration, include '[fix-db]' in your commit message."
+            echo "Invalid changes:"
+            echo "$INVALID_CHANGES"
+            exit 1
+          else
+            echo "✅ Only new migration files added. Integrity check passed."
+          fi
+        fi
+      shell: bash
 
     - name: Java 21 설정
       uses: actions/setup-java@v3
