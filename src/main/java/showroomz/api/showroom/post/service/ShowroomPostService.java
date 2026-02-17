@@ -1,4 +1,4 @@
-package showroomz.api.seller.post.service;
+package showroomz.api.showroom.post.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -7,7 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.seller.auth.repository.SellerRepository;
-import showroomz.api.seller.post.DTO.PostDto;
+import showroomz.api.showroom.post.DTO.PostDto;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
@@ -22,7 +22,7 @@ import showroomz.global.error.exception.ErrorCode;
 @RequiredArgsConstructor
 @Slf4j
 @Transactional
-public class PostService {
+public class ShowroomPostService {
 
     private final PostRepository postRepository;
     private final SellerRepository sellerRepository;

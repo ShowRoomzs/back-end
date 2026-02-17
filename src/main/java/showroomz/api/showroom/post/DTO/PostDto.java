@@ -1,4 +1,4 @@
-package showroomz.api.seller.post.DTO;
+package showroomz.api.showroom.post.DTO;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;

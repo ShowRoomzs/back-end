@@ -1,4 +1,4 @@
-package showroomz.api.seller.post.docs;
+package showroomz.api.showroom.post.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -11,7 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.app.auth.DTO.ErrorResponse;
-import showroomz.api.seller.post.DTO.PostDto;
+import showroomz.api.showroom.post.DTO.PostDto;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 

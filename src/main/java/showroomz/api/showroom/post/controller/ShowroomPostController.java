@@ -1,4 +1,4 @@
-package showroomz.api.seller.post.controller;
+package showroomz.api.showroom.post.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -7,20 +7,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.auth.entity.UserPrincipal;
-import showroomz.api.seller.post.DTO.PostDto;
-import showroomz.api.seller.post.docs.PostControllerDocs;
-import showroomz.api.seller.post.service.PostService;
+import showroomz.api.showroom.post.DTO.PostDto;
+import showroomz.api.showroom.post.docs.PostControllerDocs;
+import showroomz.api.showroom.post.service.ShowroomPostService;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
-@RestController("sellerPostController")
+@RestController
 @RequestMapping("/v1/seller/posts")
 @RequiredArgsConstructor
-public class PostController implements PostControllerDocs {
+public class ShowroomPostController implements PostControllerDocs {
 
-    private final PostService postService;
+    private final ShowroomPostService postService;
 
     private String getCurrentSellerEmail() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();

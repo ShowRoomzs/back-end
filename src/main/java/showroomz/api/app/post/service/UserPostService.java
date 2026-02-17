@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @Transactional
-public class PostService {
+public class UserPostService {
 
     private final PostRepository postRepository;
     private final PostWishlistRepository postWishlistRepository;

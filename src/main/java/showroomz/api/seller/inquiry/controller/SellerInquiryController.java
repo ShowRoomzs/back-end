@@ -19,7 +19,6 @@ import showroomz.global.error.exception.ErrorCode;
 @RestController
 @RequestMapping("/v1/seller/inquiries")
 @RequiredArgsConstructor
-@Hidden
 public class SellerInquiryController {
 
     private final SellerInquiryService sellerInquiryService;

@@ -7,15 +7,15 @@ import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.post.DTO.PostDto;
 import showroomz.api.app.post.docs.PostControllerDocs;
-import showroomz.api.app.post.service.PostService;
+import showroomz.api.app.post.service.UserPostService;
 import showroomz.global.dto.PageResponse;
 
-@RestController("userPostController")
+@RestController
 @RequestMapping("/v1/user/posts")
 @RequiredArgsConstructor
-public class PostController implements PostControllerDocs {
+public class UserPostController implements PostControllerDocs {
 
-    private final PostService postService;
+    private final UserPostService postService;
 
     @Override
     @GetMapping("/{postId}")
