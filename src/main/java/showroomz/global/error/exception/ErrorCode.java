@@ -119,7 +119,16 @@ public enum ErrorCode {
     COUPON_CODE_DUPLICATE(HttpStatus.BAD_REQUEST, "COUPON_CODE_DUPLICATE", "이미 사용 중인 쿠폰 코드입니다."),
     INVALID_COUPON_VALIDITY_PERIOD(HttpStatus.BAD_REQUEST, "INVALID_COUPON_VALIDITY_PERIOD", "유효 시작 일시는 유효 종료 일시보다 이전이어야 합니다."),
 
-    INVALID_INQUIRY_DETAIL_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "선택한 상세 유형이 문의 타입에 맞지 않습니다.");
+    INVALID_INQUIRY_DETAIL_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "선택한 상세 유형이 문의 타입에 맞지 않습니다."),
+
+    /* 13. 게시글 (Post)
+     */
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_NOT_FOUND", "존재하지 않는 게시글입니다."),
+    POST_ACCESS_DENIED(HttpStatus.FORBIDDEN, "POST_ACCESS_DENIED", "해당 게시글에 대한 권한이 없습니다."),
+
+    /* 14. 위시리스트 (Wishlist)
+     */
+    WISHLIST_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "WISHLIST_ALREADY_EXISTS", "이미 위시리스트에 추가된 항목입니다.");
 
     private final HttpStatus status;
     private final String code;
