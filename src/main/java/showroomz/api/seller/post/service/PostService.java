@@ -3,9 +3,7 @@ package showroomz.api.seller.post.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.seller.auth.repository.SellerRepository;
@@ -96,10 +94,8 @@ public class PostService {
         Market market = marketRepository.findBySeller(seller)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
 
-        // 3. Pageable 생성
-        int page = pagingRequest.getPage() != null ? pagingRequest.getPage() : 0;
-        int limit = pagingRequest.getLimit() != null ? pagingRequest.getLimit() : 20;
-        Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
+        // 3. Pageable 생성 (PagingRequest는 page 1-based, size 기본값 적용)
+        Pageable pageable = pagingRequest.toPageable();
 
         // 4. Post 목록 조회
         Page<Post> postPage = postRepository.findByMarketId(market.getId(), pageable);
