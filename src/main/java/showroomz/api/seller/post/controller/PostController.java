@@ -15,7 +15,7 @@ import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
-@RestController
+@RestController("sellerPostController")
 @RequestMapping("/v1/seller/posts")
 @RequiredArgsConstructor
 public class PostController implements PostControllerDocs {

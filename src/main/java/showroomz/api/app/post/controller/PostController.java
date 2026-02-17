@@ -10,7 +10,7 @@ import showroomz.api.app.post.docs.PostControllerDocs;
 import showroomz.api.app.post.service.PostService;
 import showroomz.global.dto.PageResponse;
 
-@RestController
+@RestController("userPostController")
 @RequestMapping("/v1/user/posts")
 @RequiredArgsConstructor
 public class PostController implements PostControllerDocs {
