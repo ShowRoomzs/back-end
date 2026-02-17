@@ -9,8 +9,10 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
 import io.swagger.v3.oas.annotations.Hidden;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.api.seller.inquiry.docs.SellerInquiryControllerDocs;
 import showroomz.api.seller.inquiry.dto.SellerInquiryAnswerRequest;
 import showroomz.api.seller.inquiry.service.SellerInquiryService;
 import showroomz.global.error.exception.BusinessException;
@@ -19,10 +21,12 @@ import showroomz.global.error.exception.ErrorCode;
 @RestController
 @RequestMapping("/v1/seller/inquiries")
 @RequiredArgsConstructor
-public class SellerInquiryController {
+@Hidden
+public class SellerInquiryController implements SellerInquiryControllerDocs {
 
     private final SellerInquiryService sellerInquiryService;
 
+    @Override
     @PatchMapping("/{inquiryId}/answer")
     public ResponseEntity<Void> registerAnswer(
             @PathVariable("inquiryId") Long inquiryId,
