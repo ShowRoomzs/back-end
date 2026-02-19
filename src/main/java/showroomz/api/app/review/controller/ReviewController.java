@@ -20,7 +20,7 @@ import showroomz.global.dto.PageResponse;
 
 @Tag(name = "User - Review", description = "사용자 리뷰 관리 API")
 @RestController
-@RequestMapping("/v1/reviews")
+@RequestMapping("/v1/user/reviews")
 @RequiredArgsConstructor
 public class ReviewController {
 
