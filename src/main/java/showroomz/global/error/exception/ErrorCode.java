@@ -126,7 +126,7 @@ public enum ErrorCode {
      ORDER_PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_PRODUCT_NOT_FOUND", "주문 상품을 찾을 수 없습니다."),
      REVIEW_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "REVIEW_ALREADY_EXISTS", "이미 해당 주문 상품에 리뷰를 작성하셨습니다."),
      ORDER_PRODUCT_NOT_WRITABLE(HttpStatus.BAD_REQUEST, "ORDER_PRODUCT_NOT_WRITABLE", "리뷰 작성이 가능한 상태가 아닙니다. (구매 확정 완료 상품만 리뷰 작성 가능)"),
-     ORDER_PRODUCT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ORDER_PRODUCT_ACCESS_DENIED", "해당 주문 상품에 대한 권한이 없습니다.");
+     ORDER_PRODUCT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ORDER_PRODUCT_ACCESS_DENIED", "해당 주문 상품에 대한 권한이 없습니다."),
 
     /* 14. 게시글 (Post)
      */
