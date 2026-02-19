@@ -113,9 +113,6 @@ public class SecurityConfig {
 
                 // USER 권한
                 .requestMatchers("/v1/user/**").hasAnyAuthority(RoleType.USER.getCode())
-
-                // 리뷰 API (USER 권한)
-                .requestMatchers("/v1/reviews/**").hasAnyAuthority(RoleType.USER.getCode())
                 
                 .anyRequest().authenticated()
             );
