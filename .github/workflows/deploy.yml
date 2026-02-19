@@ -72,8 +72,8 @@ jobs:
           echo "⚠️ Detected changes in migration files:"
           echo "$CHANGED_FILES"
           
-          # 'A'(Added)가 아닌 변경사항(M:수정, D:삭제 등)이 있는지 필터링
-          INVALID_CHANGES=$(echo "$CHANGED_FILES" | grep -v '^A')
+          # [수정된 부분] 빈 줄(^$)을 추가로 제외하고, 종료 코드 1로 인한 스크립트 중단을 방지(|| true)
+          INVALID_CHANGES=$(echo "$CHANGED_FILES" | grep -v -E '^A|^$' || true)
           
           if [ -n "$INVALID_CHANGES" ]; then
             echo "❌ Error: Existing Flyway migration files have been modified or deleted!"
