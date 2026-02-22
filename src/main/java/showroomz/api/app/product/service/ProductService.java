@@ -22,6 +22,8 @@ import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.product.type.ProductGender;
 import showroomz.domain.filter.entity.Filter;
 import showroomz.domain.filter.repository.FilterRepository;
+import showroomz.domain.review.entity.Review;
+import showroomz.domain.review.repository.ReviewRepository;
 import showroomz.domain.product.repository.ProductFilterCriteria;
 import showroomz.domain.product.repository.ProductOptionGroupRepository;
 import showroomz.domain.product.repository.ProductRepository;
@@ -33,7 +35,9 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.utils.RelativeTimeFormatter;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -54,6 +58,7 @@ public class ProductService {
     private final MarketFollowRepository marketFollowRepository;
     private final WishlistRepository wishlistRepository;
     private final WishlistService wishlistService;
+    private final ReviewRepository reviewRepository;
     private final ObjectMapper objectMapper;
     private static final String DEFAULT_SORT = "RECOMMEND";
     private static final String SORT_FILTER_KEY = "sort";
@@ -140,6 +145,8 @@ public class ProductService {
 
         String createdAt = product.getCreatedAt() != null ? product.getCreatedAt().toString() : null;
 
+        ProductDto.ReviewInfo reviewInfo = buildReviewInfo(productId);
+
         return ProductDto.ProductDetailResponse.builder()
                 .id(product.getProductId())
                 .productNumber(product.getProductNumber())
@@ -168,6 +175,7 @@ public class ProductService {
                 .isWished(isWished)
                 .isFollowing(isFollowing)
                 .createdAt(createdAt)
+                .reviewInfo(reviewInfo)
                 .build();
     }
 
@@ -499,6 +507,36 @@ public class ProductService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private ProductDto.ReviewInfo buildReviewInfo(Long productId) {
+        long totalCount = reviewRepository.countByProductId(productId);
+        Double avgRaw = reviewRepository.findAverageRatingByProductId(productId);
+        double averageRating = (avgRaw != null) ? Math.round(avgRaw * 10.0) / 10.0 : 0.0;
+
+        List<Review> topReviews = reviewRepository.findTop3ByProductIdOrderByCreatedAtDesc(
+                productId, PageRequest.of(0, 3));
+
+        List<ProductDto.ReviewPreviewItem> previews = new ArrayList<>();
+        for (Review r : topReviews) {
+            String userName = r.getUser() != null ? r.getUser().getNickname() : null;
+            List<String> imageUrls = r.getImageUrlsOrdered();
+            String createdAtRel = RelativeTimeFormatter.format(r.getCreatedAt());
+            previews.add(ProductDto.ReviewPreviewItem.builder()
+                    .reviewId(r.getId())
+                    .userName(userName)
+                    .rating(r.getRating())
+                    .content(r.getContent())
+                    .imageUrls(imageUrls)
+                    .createdAt(createdAtRel)
+                    .build());
+        }
+
+        return ProductDto.ReviewInfo.builder()
+                .totalCount(totalCount)
+                .averageRating(averageRating)
+                .reviews(previews)
+                .build();
     }
 
     private static class FilterParsingResult {

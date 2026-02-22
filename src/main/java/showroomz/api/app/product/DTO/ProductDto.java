@@ -268,6 +268,52 @@ public class ProductDto {
 
         @Schema(description = "등록일", example = "2025-12-28T14:30:00Z")
         private String createdAt;
+
+        @Schema(description = "리뷰 정보 (전체 개수, 평균 별점, 최신 3개 미리보기)")
+        private ReviewInfo reviewInfo;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "리뷰 정보 (상품 상세용)")
+    public static class ReviewInfo {
+        @Schema(description = "전체 리뷰 개수", example = "42")
+        private long totalCount;
+
+        @Schema(description = "평균 별점 (소수점 1자리)", example = "4.5")
+        private Double averageRating;
+
+        @Schema(description = "최신 리뷰 3개 (미리보기용)")
+        private List<ReviewPreviewItem> reviews;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "리뷰 미리보기 항목")
+    public static class ReviewPreviewItem {
+        @Schema(description = "리뷰 ID", example = "1")
+        private Long reviewId;
+
+        @Schema(description = "작성자 닉네임", example = "쇼핑러버")
+        private String userName;
+
+        @Schema(description = "평점 (1-5)", example = "5")
+        private Integer rating;
+
+        @Schema(description = "리뷰 내용")
+        private String content;
+
+        @Schema(description = "리뷰 이미지 URL 목록")
+        private List<String> imageUrls;
+
+        @Schema(description = "작성 일시 (상대적 포맷)", example = "1일 전")
+        private String createdAt;
     }
 
     @Getter
