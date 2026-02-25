@@ -16,6 +16,7 @@ import showroomz.api.app.auth.token.AuthTokenProvider;
 import showroomz.api.app.image.DTO.ImageUploadResponse;
 import showroomz.api.app.image.service.ImageService;
 import showroomz.api.app.image.type.ImageType;
+import showroomz.api.app.image.type.UploadContext;
 import showroomz.api.seller.image.controller.SellerImageController;
 import showroomz.global.config.SecurityConfig;
 import showroomz.global.error.exception.BusinessException;
@@ -63,7 +64,7 @@ class AdminImageControllerTest {
         String type = "MARKET";
         String expectedUrl = "https://s3.ap-northeast-2.amazonaws.com/bucket/uploads/market/market.jpg";
 
-        given(imageService.uploadImage(any(), eq(ImageType.MARKET)))
+        given(imageService.uploadImage(any(), eq(ImageType.MARKET), eq(UploadContext.SELLER)))
                 .willReturn(new ImageUploadResponse(expectedUrl));
 
         // when
@@ -93,7 +94,7 @@ class AdminImageControllerTest {
         String type = "PRODUCT";
         String expectedUrl = "https://s3.ap-northeast-2.amazonaws.com/bucket/uploads/product/product.png";
 
-        given(imageService.uploadImage(any(), eq(ImageType.PRODUCT)))
+        given(imageService.uploadImage(any(), eq(ImageType.PRODUCT), eq(UploadContext.SELLER)))
                 .willReturn(new ImageUploadResponse(expectedUrl));
 
         // when
@@ -170,7 +171,7 @@ class AdminImageControllerTest {
         String type = "MARKET";
 
         // Service에서 BusinessException 발생시킴
-        given(imageService.uploadImage(any(), eq(ImageType.MARKET)))
+        given(imageService.uploadImage(any(), eq(ImageType.MARKET), eq(UploadContext.SELLER)))
                 .willThrow(new BusinessException(ErrorCode.EMPTY_FILE_EXCEPTION));
 
         // when

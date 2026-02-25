@@ -16,6 +16,7 @@ import showroomz.api.app.image.DTO.ImageUploadResponse;
 import showroomz.api.app.image.docs.ImageControllerDocs;
 import showroomz.api.app.image.service.ImageService;
 import showroomz.api.app.image.type.ImageType;
+import showroomz.api.app.image.type.UploadContext;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.HeaderUtil;
@@ -59,9 +60,9 @@ public class ImageController implements ImageControllerDocs {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
-        // 4. 파일 업로드 (서비스 내부에서 BusinessException 발생 가능)
-        ImageUploadResponse response = imageService.uploadImage(file, imageType);
-        
+        // 4. 파일 업로드 (유저 폴더: uploads/user/{type}/)
+        ImageUploadResponse response = imageService.uploadImage(file, imageType, UploadContext.USER);
+
         return ResponseEntity.ok(response);
     }
 }

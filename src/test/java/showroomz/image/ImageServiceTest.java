@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import showroomz.api.app.image.DTO.ImageUploadResponse;
 import showroomz.api.app.image.service.ImageService;
 import showroomz.api.app.image.type.ImageType;
+import showroomz.api.app.image.type.UploadContext;
 import showroomz.global.config.properties.S3Properties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -96,12 +97,12 @@ class ImageServiceTest {
                 .thenReturn(PutObjectResponse.builder().build());
 
         // when
-        ImageUploadResponse response = imageService.uploadImage(validImageFile, ImageType.PROFILE);
+        ImageUploadResponse response = imageService.uploadImage(validImageFile, ImageType.PROFILE, UploadContext.USER);
 
         // then
         assertThat(response.getImageUrl()).isNotNull();
         assertThat(response.getImageUrl()).contains("d1234567890.cloudfront.net");
-        assertThat(response.getImageUrl()).contains("uploads/profile/");
+        assertThat(response.getImageUrl()).contains("uploads/user/profile/");
         verify(s3Client, times(1)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
 
@@ -114,12 +115,28 @@ class ImageServiceTest {
                 .thenReturn(PutObjectResponse.builder().build());
 
         // when
-        ImageUploadResponse response = imageService.uploadImage(validImageFile, ImageType.REVIEW);
+        ImageUploadResponse response = imageService.uploadImage(validImageFile, ImageType.REVIEW, UploadContext.USER);
 
         // then
         assertThat(response.getImageUrl()).isNotNull();
         assertThat(response.getImageUrl()).contains("test-bucket.s3.ap-northeast-2.amazonaws.com");
-        assertThat(response.getImageUrl()).contains("uploads/review/");
+        assertThat(response.getImageUrl()).contains("uploads/user/review/");
+        verify(s3Client, times(1)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+    }
+
+    @Test
+    @DisplayName("INQUIRY 타입 이미지 업로드 성공 (유저 폴더)")
+    void 문의_이미지_업로드_성공() throws Exception {
+        // given
+        when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+                .thenReturn(PutObjectResponse.builder().build());
+
+        // when
+        ImageUploadResponse response = imageService.uploadImage(validImageFile, ImageType.INQUIRY, UploadContext.USER);
+
+        // then
+        assertThat(response.getImageUrl()).isNotNull();
+        assertThat(response.getImageUrl()).contains("uploads/user/inquiry/");
         verify(s3Client, times(1)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
 
@@ -127,7 +144,7 @@ class ImageServiceTest {
     @DisplayName("빈 파일 업로드 시 예외 발생")
     void 빈_파일_업로드_예외() {
         // when & then
-        assertThatThrownBy(() -> imageService.uploadImage(emptyFile, ImageType.PROFILE))
+        assertThatThrownBy(() -> imageService.uploadImage(emptyFile, ImageType.PROFILE, UploadContext.USER))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(exception -> {
                     BusinessException ex = (BusinessException) exception;
@@ -140,7 +157,7 @@ class ImageServiceTest {
     @DisplayName("null 파일 업로드 시 예외 발생")
     void null_파일_업로드_예외() {
         // when & then
-        assertThatThrownBy(() -> imageService.uploadImage(null, ImageType.PROFILE))
+        assertThatThrownBy(() -> imageService.uploadImage(null, ImageType.PROFILE, UploadContext.USER))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(exception -> {
                     BusinessException ex = (BusinessException) exception;
@@ -153,7 +170,7 @@ class ImageServiceTest {
     @DisplayName("파일 크기 초과 시 예외 발생")
     void 파일_크기_초과_예외() {
         // when & then
-        assertThatThrownBy(() -> imageService.uploadImage(largeImageFile, ImageType.PROFILE))
+        assertThatThrownBy(() -> imageService.uploadImage(largeImageFile, ImageType.PROFILE, UploadContext.USER))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(exception -> {
                     BusinessException ex = (BusinessException) exception;
@@ -166,7 +183,7 @@ class ImageServiceTest {
     @DisplayName("잘못된 파일 형식 시 예외 발생")
     void 잘못된_파일_형식_예외() {
         // when & then
-        assertThatThrownBy(() -> imageService.uploadImage(invalidFormatFile, ImageType.PROFILE))
+        assertThatThrownBy(() -> imageService.uploadImage(invalidFormatFile, ImageType.PROFILE, UploadContext.USER))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(exception -> {
                     BusinessException ex = (BusinessException) exception;
@@ -187,7 +204,7 @@ class ImageServiceTest {
         );
 
         // when & then
-        assertThatThrownBy(() -> imageService.uploadImage(fileWithNullName, ImageType.PROFILE))
+        assertThatThrownBy(() -> imageService.uploadImage(fileWithNullName, ImageType.PROFILE, UploadContext.USER))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(exception -> {
                     BusinessException ex = (BusinessException) exception;
@@ -210,11 +227,11 @@ class ImageServiceTest {
                 .thenReturn(PutObjectResponse.builder().build());
 
         // when
-        ImageUploadResponse response = imageService.uploadImage(pngFile, ImageType.PRODUCT);
+        ImageUploadResponse response = imageService.uploadImage(pngFile, ImageType.PRODUCT, UploadContext.SELLER);
 
         // then
         assertThat(response.getImageUrl()).isNotNull();
-        assertThat(response.getImageUrl()).contains("uploads/product/");
+        assertThat(response.getImageUrl()).contains("uploads/seller/product/");
         verify(s3Client, times(1)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
 
@@ -232,11 +249,11 @@ class ImageServiceTest {
                 .thenReturn(PutObjectResponse.builder().build());
 
         // when
-        ImageUploadResponse response = imageService.uploadImage(gifFile, ImageType.REVIEW);
+        ImageUploadResponse response = imageService.uploadImage(gifFile, ImageType.REVIEW, UploadContext.USER);
 
         // then
         assertThat(response.getImageUrl()).isNotNull();
-        assertThat(response.getImageUrl()).contains("uploads/review/");
+        assertThat(response.getImageUrl()).contains("uploads/user/review/");
         verify(s3Client, times(1)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
 
@@ -251,7 +268,7 @@ class ImageServiceTest {
                         .build());
 
         // when & then
-        assertThatThrownBy(() -> imageService.uploadImage(validImageFile, ImageType.PROFILE))
+        assertThatThrownBy(() -> imageService.uploadImage(validImageFile, ImageType.PROFILE, UploadContext.USER))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(exception -> {
                     BusinessException ex = (BusinessException) exception;
@@ -271,7 +288,7 @@ class ImageServiceTest {
         when(fileWithIOException.getInputStream()).thenThrow(new IOException("IO error"));
 
         // when & then
-        assertThatThrownBy(() -> imageService.uploadImage(fileWithIOException, ImageType.PROFILE))
+        assertThatThrownBy(() -> imageService.uploadImage(fileWithIOException, ImageType.PROFILE, UploadContext.USER))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(exception -> {
                     BusinessException ex = (BusinessException) exception;

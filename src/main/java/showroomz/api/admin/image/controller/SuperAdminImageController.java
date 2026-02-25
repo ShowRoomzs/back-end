@@ -13,6 +13,7 @@ import showroomz.api.admin.image.docs.SuperAdminImageControllerDocs;
 import showroomz.api.app.image.DTO.ImageUploadResponse;
 import showroomz.api.app.image.service.ImageService;
 import showroomz.api.app.image.type.ImageType;
+import showroomz.api.app.image.type.UploadContext;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -40,7 +41,8 @@ public class SuperAdminImageController implements SuperAdminImageControllerDocs 
             throw new BusinessException(ErrorCode.INVALID_IMAGE_TYPE);
         }
 
-        ImageUploadResponse response = imageService.uploadImage(file, imageType);
+        // 어드민 폴더: uploads/admin/{type}/
+        ImageUploadResponse response = imageService.uploadImage(file, imageType, UploadContext.ADMIN);
         return ResponseEntity.ok(response);
     }
 }

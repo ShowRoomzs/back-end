@@ -18,6 +18,7 @@ import showroomz.api.app.image.DTO.ImageUploadResponse;
 import showroomz.api.app.image.controller.ImageController;
 import showroomz.api.app.image.service.ImageService;
 import showroomz.api.app.image.type.ImageType;
+import showroomz.api.app.image.type.UploadContext;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.error.exception.GlobalExceptionHandler;
@@ -71,7 +72,7 @@ class ImageControllerTest {
         String imageUrl = "https://d1234567890.cloudfront.net/uploads/profile/uuid-test.jpg";
 
         when(tokenProvider.convertAuthToken(accessToken)).thenReturn(validAuthToken);
-        when(imageService.uploadImage(any(), any(ImageType.class)))
+        when(imageService.uploadImage(any(), any(ImageType.class), any(UploadContext.class)))
                 .thenReturn(new ImageUploadResponse(imageUrl));
 
         // when & then
@@ -148,7 +149,7 @@ class ImageControllerTest {
         );
 
         when(tokenProvider.convertAuthToken(accessToken)).thenReturn(validAuthToken);
-        when(imageService.uploadImage(any(), any(ImageType.class)))
+        when(imageService.uploadImage(any(), any(ImageType.class), any(UploadContext.class)))
                 .thenThrow(new BusinessException(ErrorCode.INVALID_FILE_EXTENSION));
 
         // when & then
@@ -168,7 +169,7 @@ class ImageControllerTest {
         // given
         String accessToken = "valid_access_token";
         when(tokenProvider.convertAuthToken(accessToken)).thenReturn(validAuthToken);
-        when(imageService.uploadImage(any(), any(ImageType.class)))
+        when(imageService.uploadImage(any(), any(ImageType.class), any(UploadContext.class)))
                 .thenThrow(new BusinessException(ErrorCode.FILE_SIZE_EXCEEDED));
 
         // when & then
@@ -195,7 +196,7 @@ class ImageControllerTest {
         );
 
         when(tokenProvider.convertAuthToken(accessToken)).thenReturn(validAuthToken);
-        when(imageService.uploadImage(any(), any(ImageType.class)))
+        when(imageService.uploadImage(any(), any(ImageType.class), any(UploadContext.class)))
                 .thenThrow(new BusinessException(ErrorCode.EMPTY_FILE_EXCEPTION));
 
         // when & then
@@ -217,7 +218,7 @@ class ImageControllerTest {
         String imageUrl = "https://d1234567890.cloudfront.net/uploads/review/uuid-review.jpg";
 
         when(tokenProvider.convertAuthToken(accessToken)).thenReturn(validAuthToken);
-        when(imageService.uploadImage(any(), any(ImageType.class)))
+        when(imageService.uploadImage(any(), any(ImageType.class), any(UploadContext.class)))
                 .thenReturn(new ImageUploadResponse(imageUrl));
 
         // when & then
@@ -274,7 +275,7 @@ class ImageControllerTest {
         String imageUrl = "https://d1234567890.cloudfront.net/uploads/profile/uuid-test.jpg";
 
         when(tokenProvider.convertAuthToken(accessToken)).thenReturn(validAuthToken);
-        when(imageService.uploadImage(any(), any(ImageType.class)))
+        when(imageService.uploadImage(any(), any(ImageType.class), any(UploadContext.class)))
                 .thenReturn(new ImageUploadResponse(imageUrl));
 
         // when & then

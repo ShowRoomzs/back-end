@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import showroomz.api.app.image.DTO.ImageUploadResponse;
 import showroomz.api.app.image.service.ImageService;
 import showroomz.api.app.image.type.ImageType;
+import showroomz.api.app.image.type.UploadContext;
 import showroomz.api.seller.image.docs.AdminImageControllerDocs;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -41,8 +42,8 @@ public class SellerImageController implements AdminImageControllerDocs {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_TYPE);
         }
 
-        // 2. 업로드 (Service는 기존 로직 재사용)
-        ImageUploadResponse response = imageService.uploadImage(file, imageType);
+        // 2. 업로드 (셀러 폴더: uploads/seller/{type}/)
+        ImageUploadResponse response = imageService.uploadImage(file, imageType, UploadContext.SELLER);
         return ResponseEntity.ok(response);
     }
 }

@@ -10,6 +10,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import showroomz.api.app.image.DTO.ImageUploadResponse;
 import showroomz.api.app.image.type.ImageType;
+import showroomz.api.app.image.type.UploadContext;
 import showroomz.global.config.properties.S3Properties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -34,7 +35,7 @@ public class ImageService {
     private static final long MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "gif");
 
-    public ImageUploadResponse uploadImage(MultipartFile file, ImageType type) {
+    public ImageUploadResponse uploadImage(MultipartFile file, ImageType type, UploadContext context) {
         // 1. 파일 존재 여부 확인
         if (file == null || file.isEmpty()) {
             throw new BusinessException(ErrorCode.EMPTY_FILE_EXCEPTION);
@@ -61,10 +62,10 @@ public class ImageService {
             validateMarketImage(file);
         }
 
-        // 5. S3에 업로드
+        // 5. S3에 업로드 (어드민/유저/셀러별 폴더 구분)
         try {
             String fileName = generateFileName(type, extension);
-            String s3Key = getS3Key(type, fileName);
+            String s3Key = getS3Key(type, fileName, context);
             String imageUrl = uploadToS3(file, s3Key);
 
             return new ImageUploadResponse(imageUrl);
@@ -88,9 +89,10 @@ public class ImageService {
         return uuid + "." + extension;
     }
 
-    private String getS3Key(ImageType type, String fileName) {
-        String folder = type.name().toLowerCase();
-        return "uploads/" + folder + "/" + fileName;
+    private String getS3Key(ImageType type, String fileName, UploadContext context) {
+        String contextFolder = context.name().toLowerCase();
+        String typeFolder = type.name().toLowerCase();
+        return "uploads/" + contextFolder + "/" + typeFolder + "/" + fileName;
     }
 
     private String uploadToS3(MultipartFile file, String s3Key) throws IOException {
