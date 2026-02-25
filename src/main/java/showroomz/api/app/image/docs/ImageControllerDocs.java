@@ -25,7 +25,8 @@ public interface ImageControllerDocs {
             description = "파일을 받아 S3에 업로드하고, 업로드된 이미지의 URL을 반환합니다.\n\n" +
                     "**이미지 타입별 제약사항:**\n" +
                     "- `PROFILE`: 프로필 이미지 (최대 20MB)\n" +
-                    "- `REVIEW`: 리뷰 이미지 (최대 20MB)\n\n" +
+                    "- `REVIEW`: 리뷰 이미지 (최대 20MB)\n" +
+                    "- `INQUIRY`: 1:1 문의 첨부 이미지 (최대 20MB)\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -57,7 +58,7 @@ public interface ImageControllerDocs {
                                             name = "유효하지 않은 이미지 타입",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW)\"\n" +
+                                                    "  \"message\": \"유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, INQUIRY)\"\n" +
                                                     "}"
                                     ),
                                     @ExampleObject(
@@ -165,7 +166,8 @@ public interface ImageControllerDocs {
             @Parameter(
                     description = "업로드할 이미지의 용도 (필수)\n" +
                             "- `PROFILE`: 프로필 이미지\n" +
-                            "- `REVIEW`: 리뷰 이미지",
+                            "- `REVIEW`: 리뷰 이미지\n" +
+                            "- `INQUIRY`: 1:1 문의 첨부 이미지",
                     required = true,
                     example = "PROFILE"
             )
