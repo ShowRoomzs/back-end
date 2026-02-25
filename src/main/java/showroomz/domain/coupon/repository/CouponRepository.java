@@ -7,7 +7,7 @@ import showroomz.domain.coupon.entity.Coupon;
 import java.util.Optional;
 
 @Repository
-public interface CouponRepository extends JpaRepository<Coupon, Long> {
+public interface CouponRepository extends JpaRepository<Coupon, Long>, CouponRepositoryCustom {
 
     Optional<Coupon> findByCode(String code);
 
