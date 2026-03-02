@@ -25,4 +25,6 @@ public class InquiryUpdateRequest {
 
     @Size(max = 10, message = "이미지는 최대 10장까지 첨부 가능합니다.")
     private List<String> imageUrls;
+
+    private Long orderId;
 }
