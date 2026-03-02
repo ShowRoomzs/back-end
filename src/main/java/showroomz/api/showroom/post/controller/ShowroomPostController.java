@@ -16,7 +16,7 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 @RestController
-@RequestMapping("/v1/seller/posts")
+@RequestMapping("/v1/creator/posts")
 @RequiredArgsConstructor
 public class ShowroomPostController implements PostControllerDocs {
 

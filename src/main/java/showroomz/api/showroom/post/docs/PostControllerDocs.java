@@ -15,12 +15,12 @@ import showroomz.api.showroom.post.DTO.PostDto;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "Seller Post", description = "판매자 게시글 관리 API")
+@Tag(name = "Creator - Post", description = "크리에이터 게시글 관리 API")
 public interface PostControllerDocs {
 
     @Operation(
             summary = "게시글 작성",
-            description = "판매자가 새로운 게시글을 작성합니다.\n\n" +
+            description = "크리에이터가 새로운 게시글을 작성합니다.\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -46,7 +46,7 @@ public interface PostControllerDocs {
 
     @Operation(
             summary = "게시글 상세 조회",
-            description = "판매자가 자신의 게시글 상세 정보를 조회합니다.\n\n" +
+            description = "크리에이터가 자신의 게시글 상세 정보를 조회합니다.\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -58,7 +58,7 @@ public interface PostControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "403",
-                    description = "권한 없음 (다른 판매자의 게시글)",
+                    description = "권한 없음 (다른 크리에이터의 게시글)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))
             ),
             @ApiResponse(
@@ -71,7 +71,7 @@ public interface PostControllerDocs {
 
     @Operation(
             summary = "게시글 목록 조회",
-            description = "판매자가 자신의 게시글 목록을 조회합니다.\n\n" +
+            description = "크리에이터가 자신의 게시글 목록을 조회합니다.\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -91,7 +91,7 @@ public interface PostControllerDocs {
 
     @Operation(
             summary = "게시글 수정",
-            description = "판매자가 자신의 게시글을 수정합니다.\n\n" +
+            description = "크리에이터가 자신의 게시글을 수정합니다.\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -103,7 +103,7 @@ public interface PostControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "403",
-                    description = "권한 없음 (다른 판매자의 게시글)",
+                    description = "권한 없음 (다른 크리에이터의 게시글)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))
             ),
             @ApiResponse(
@@ -118,7 +118,7 @@ public interface PostControllerDocs {
 
     @Operation(
             summary = "게시글 삭제",
-            description = "판매자가 자신의 게시글을 삭제합니다.\n\n" +
+            description = "크리에이터가 자신의 게시글을 삭제합니다.\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -129,7 +129,7 @@ public interface PostControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "403",
-                    description = "권한 없음 (다른 판매자의 게시글)",
+                    description = "권한 없음 (다른 크리에이터의 게시글)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))
             ),
             @ApiResponse(
