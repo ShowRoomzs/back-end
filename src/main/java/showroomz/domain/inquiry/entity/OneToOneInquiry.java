@@ -52,6 +52,9 @@ public class OneToOneInquiry extends BaseTimeEntity {
     @Column(name = "IMAGE_URL", length = 512)
     private List<String> imageUrls = new ArrayList<>();
 
+    @Column(name = "ORDER_ID")
+    private Long orderId;
+
     // 답변 관련 필드
     @Column(name = "ANSWER_CONTENT", columnDefinition = "TEXT")
     private String answerContent;
@@ -64,7 +67,7 @@ public class OneToOneInquiry extends BaseTimeEntity {
     private InquiryStatus status;
 
     @Builder
-    public OneToOneInquiry(Users user, InquiryType type, InquiryDetailType category, String content, List<String> imageUrls) {
+    public OneToOneInquiry(Users user, InquiryType type, InquiryDetailType category, String content, List<String> imageUrls, Long orderId) {
         this.user = user;
         this.type = type;
         this.category = category;
@@ -72,6 +75,7 @@ public class OneToOneInquiry extends BaseTimeEntity {
         if (imageUrls != null) {
             this.imageUrls = imageUrls;
         }
+        this.orderId = orderId;
         this.status = InquiryStatus.WAITING;
     }
 
@@ -82,10 +86,11 @@ public class OneToOneInquiry extends BaseTimeEntity {
         this.status = InquiryStatus.ANSWERED;
     }
 
-    public void update(InquiryType type, InquiryDetailType category, String content, List<String> imageUrls) {
+    public void update(InquiryType type, InquiryDetailType category, String content, List<String> imageUrls, Long orderId) {
         this.type = type;
         this.category = category;
         this.content = content;
         this.imageUrls = imageUrls != null ? imageUrls : new ArrayList<>();
+        this.orderId = orderId;
     }
 }

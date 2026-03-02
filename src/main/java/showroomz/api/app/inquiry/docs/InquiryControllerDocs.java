@@ -32,7 +32,8 @@ public interface InquiryControllerDocs {
                     "- `detailType`: 문의 상세 유형 (InquiryDetailType - 해당 대분류에 속한 소분류 코드, 예: DELIVERY_SCHEDULE)\n" +
                     "- `content`: 문의 내용\n\n" +
                     "**선택 값:**\n" +
-                    "- `imageUrls`: 첨부 이미지 URL 리스트 (최대 10장)\n\n" +
+                    "- `imageUrls`: 첨부 이미지 URL 리스트 (최대 10장)\n" +
+                    "- `orderId`: 주문 번호 (주문 변경, 취소/교환/환불, 불량/하자, AS 문의 시 **필수**)\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -65,6 +66,13 @@ public interface InquiryControllerDocs {
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
                                                     "  \"message\": \"입력값이 올바르지 않습니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "주문 번호 필수",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"해당 문의 유형에는 주문 번호가 필수입니다.\"\n" +
                                                     "}"
                                     )
                             }
@@ -113,7 +121,7 @@ public interface InquiryControllerDocs {
                     schema = @Schema(implementation = InquiryRegisterRequest.class),
                     examples = {
                             @ExampleObject(
-                                    name = "배송 일정 문의",
+                                    name = "배송 일정 문의 (orderId 선택)",
                                     value = "{\n" +
                                             "  \"type\": \"DELIVERY\",\n" +
                                             "  \"detailType\": \"DELIVERY_SCHEDULE\",\n" +
@@ -121,6 +129,18 @@ public interface InquiryControllerDocs {
                                             "  \"imageUrls\": [\n" +
                                             "    \"https://example.com/inquiries/img1.jpg\"\n" +
                                             "  ]\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "취소/교환/환불 문의 (orderId 필수)",
+                                    value = "{\n" +
+                                            "  \"type\": \"CANCEL_REFUND_EXCHANGE\",\n" +
+                                            "  \"detailType\": \"ORDER_CANCEL\",\n" +
+                                            "  \"content\": \"주문을 취소하고 싶습니다.\",\n" +
+                                            "  \"imageUrls\": [\n" +
+                                            "    \"https://example.com/inquiries/img1.jpg\"\n" +
+                                            "  ],\n" +
+                                            "  \"orderId\": 123456\n" +
                                             "}"
                             )
                     }
@@ -164,6 +184,7 @@ public interface InquiryControllerDocs {
                                                     "      \"imageUrls\": [\n" +
                                                     "        \"https://example.com/inquiries/img1.jpg\"\n" +
                                                     "      ],\n" +
+                                                    "      \"orderId\": null,\n" +
                                                     "      \"status\": \"WAITING\",\n" +
                                                     "      \"answerContent\": null,\n" +
                                                     "      \"answeredAt\": null,\n" +
@@ -236,6 +257,7 @@ public interface InquiryControllerDocs {
                                                     "  \"imageUrls\": [\n" +
                                                     "    \"https://example.com/inquiries/img1.jpg\"\n" +
                                                     "  ],\n" +
+                                                    "  \"orderId\": null,\n" +
                                                     "  \"status\": \"WAITING\",\n" +
                                                     "  \"answerContent\": null,\n" +
                                                     "  \"answeredAt\": null,\n" +
@@ -255,6 +277,7 @@ public interface InquiryControllerDocs {
                                                     "  \"imageUrls\": [\n" +
                                                     "    \"https://example.com/inquiries/img1.jpg\"\n" +
                                                     "  ],\n" +
+                                                    "  \"orderId\": null,\n" +
                                                     "  \"status\": \"ANSWERED\",\n" +
                                                     "  \"answerContent\": \"죄송합니다. 해당 주문은 현재 출고 준비 중이며, 내일 발송 예정입니다.\",\n" +
                                                     "  \"answeredAt\": \"2025-02-07T14:00:00\",\n" +
@@ -327,7 +350,8 @@ public interface InquiryControllerDocs {
             summary = "문의 수정",
             description = "답변 대기 중인 1:1 문의의 내용을 수정합니다.\n\n" +
                     "- 본인이 등록한 문의만 수정할 수 있습니다.\n" +
-                    "- 답변이 완료된 문의는 수정할 수 없습니다.\n\n" +
+                    "- 답변이 완료된 문의는 수정할 수 없습니다.\n" +
+                    "- 주문 변경, 취소/교환/환불, 불량/하자, AS 문의인 경우 `orderId`(주문 번호)가 필수입니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -348,6 +372,13 @@ public interface InquiryControllerDocs {
                                             value = "{\n" +
                                                     "  \"code\": \"INQUIRY_ALREADY_ANSWERED\",\n" +
                                                     "  \"message\": \"답변이 완료된 문의는 수정하거나 삭제할 수 없습니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "주문 번호 필수",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"해당 문의 유형에는 주문 번호가 필수입니다.\"\n" +
                                                     "}"
                                     )
                             }
@@ -406,11 +437,25 @@ public interface InquiryControllerDocs {
             )
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "문의 수정 요청 바디",
+            description = "문의 수정 요청 바디 (주문 변경/취소·교환·환불/불량·하자/AS 문의 시 orderId 필수)",
             required = true,
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = InquiryUpdateRequest.class)
+                    schema = @Schema(implementation = InquiryUpdateRequest.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "수정 예시 (orderId 포함)",
+                                    value = "{\n" +
+                                            "  \"type\": \"CANCEL_REFUND_EXCHANGE\",\n" +
+                                            "  \"detailType\": \"ORDER_CANCEL\",\n" +
+                                            "  \"content\": \"주문 취소 요청 내용을 수정합니다.\",\n" +
+                                            "  \"imageUrls\": [\n" +
+                                            "    \"https://example.com/inquiries/img1.jpg\"\n" +
+                                            "  ],\n" +
+                                            "  \"orderId\": 123456\n" +
+                                            "}"
+                            )
+                    }
             )
     )
     ResponseEntity<Void> updateInquiry(
