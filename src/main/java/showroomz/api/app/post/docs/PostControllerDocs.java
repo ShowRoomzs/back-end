@@ -46,7 +46,7 @@ public interface PostControllerDocs {
             description = "전시 중인 게시글 목록을 조회합니다.\n\n" +
                     "로그인한 사용자의 경우 각 게시글의 위시리스트 여부(isWishlisted)가 포함됩니다.\n" +
                     "비로그인 사용자도 조회 가능하며, 이 경우 isWishlisted는 false로 반환됩니다.\n\n" +
-                    "marketId를 전달하면 해당 마켓의 게시글만 조회됩니다."
+                    "showroomId를 전달하면 해당 쇼룸의 게시글만 조회됩니다."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -61,8 +61,8 @@ public interface PostControllerDocs {
             @RequestParam(value = "page", required = false) Integer page,
             @Parameter(description = "페이지당 항목 수", example = "20")
             @RequestParam(value = "limit", required = false) Integer limit,
-            @Parameter(description = "마켓 ID (특정 마켓의 게시글만 조회)")
-            @RequestParam(value = "marketId", required = false) Long marketId);
+            @Parameter(description = "쇼룸 ID (특정 쇼룸의 게시글만 조회)")
+            @RequestParam(value = "showroomId", required = false) Long showroomId);
 
     @Operation(
             summary = "게시글 위시리스트 추가",

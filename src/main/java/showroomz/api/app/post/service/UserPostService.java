@@ -62,9 +62,9 @@ public class UserPostService {
         Market market = post.getMarket();
         return PostDto.PostDetailResponse.builder()
                 .postId(post.getId())
-                .marketId(market.getId())
-                .marketName(market.getMarketName())
-                .marketImageUrl(market.getMarketImageUrl())
+                .showroomId(market.getId())
+                .showroomName(market.getMarketName())
+                .showroomImageUrl(market.getMarketImageUrl())
                 .title(post.getTitle())
                 .content(post.getContent())
                 .imageUrl(post.getImageUrl())
@@ -76,7 +76,7 @@ public class UserPostService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<PostDto.PostListItem> getPostList(String username, Integer page, Integer limit, Long marketId) {
+    public PageResponse<PostDto.PostListItem> getPostList(String username, Integer page, Integer limit, Long showroomId) {
         // 1. Pageable 생성
         int pageNum = page != null ? page : 0;
         int limitNum = limit != null ? limit : 20;
@@ -84,8 +84,8 @@ public class UserPostService {
 
         // 2. Post 목록 조회
         Page<Post> postPage;
-        if (marketId != null) {
-            postPage = postRepository.findDisplayedPostsByMarketId(marketId, pageable);
+        if (showroomId != null) {
+            postPage = postRepository.findDisplayedPostsByMarketId(showroomId, pageable);
         } else {
             postPage = postRepository.findDisplayedPosts(pageable);
         }
@@ -113,9 +113,9 @@ public class UserPostService {
             Market market = post.getMarket();
             return PostDto.PostListItem.builder()
                     .postId(post.getId())
-                    .marketId(market.getId())
-                    .marketName(market.getMarketName())
-                    .marketImageUrl(market.getMarketImageUrl())
+                    .showroomId(market.getId())
+                    .showroomName(market.getMarketName())
+                    .showroomImageUrl(market.getMarketImageUrl())
                     .title(post.getTitle())
                     .imageUrl(post.getImageUrl())
                     .viewCount(post.getViewCount())
@@ -179,9 +179,9 @@ public class UserPostService {
             Market market = post.getMarket();
             return PostDto.PostListItem.builder()
                     .postId(post.getId())
-                    .marketId(market.getId())
-                    .marketName(market.getMarketName())
-                    .marketImageUrl(market.getMarketImageUrl())
+                    .showroomId(market.getId())
+                    .showroomName(market.getMarketName())
+                    .showroomImageUrl(market.getMarketImageUrl())
                     .title(post.getTitle())
                     .imageUrl(post.getImageUrl())
                     .viewCount(post.getViewCount())

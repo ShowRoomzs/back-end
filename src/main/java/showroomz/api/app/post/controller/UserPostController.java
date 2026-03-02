@@ -33,9 +33,9 @@ public class UserPostController implements PostControllerDocs {
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(value = "page", required = false) Integer page,
             @RequestParam(value = "limit", required = false) Integer limit,
-            @RequestParam(value = "marketId", required = false) Long marketId) {
+            @RequestParam(value = "showroomId", required = false) Long showroomId) {
         String username = userPrincipal != null ? userPrincipal.getUsername() : null;
-        PageResponse<PostDto.PostListItem> response = postService.getPostList(username, page, limit, marketId);
+        PageResponse<PostDto.PostListItem> response = postService.getPostList(username, page, limit, showroomId);
         return ResponseEntity.ok(response);
     }
 

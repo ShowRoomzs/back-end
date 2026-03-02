@@ -16,9 +16,9 @@ public class PostDto {
     @AllArgsConstructor
     public static class PostDetailResponse {
         private Long postId;
-        private Long marketId;
-        private String marketName;
-        private String marketImageUrl;
+        private Long showroomId;
+        private String showroomName;
+        private String showroomImageUrl;
         private String title;
         private String content;
         private String imageUrl;
@@ -38,9 +38,9 @@ public class PostDto {
     @AllArgsConstructor
     public static class PostListItem {
         private Long postId;
-        private Long marketId;
-        private String marketName;
-        private String marketImageUrl;
+        private Long showroomId;
+        private String showroomName;
+        private String showroomImageUrl;
         private String title;
         private String imageUrl;
         private Long viewCount;
