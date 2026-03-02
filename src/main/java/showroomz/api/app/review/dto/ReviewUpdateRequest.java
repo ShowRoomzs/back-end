@@ -9,12 +9,8 @@ import java.util.List;
 
 @Getter
 @NoArgsConstructor
-@Schema(description = "리뷰 등록 요청")
-public class ReviewRegisterRequest {
-
-    @NotNull(message = "주문 상품 ID는 필수입니다.")
-    @Schema(description = "주문 상품 ID", example = "1", requiredMode = Schema.RequiredMode.REQUIRED)
-    private Long orderProductId;
+@Schema(description = "리뷰 수정 요청")
+public class ReviewUpdateRequest {
 
     @NotNull(message = "평점은 필수입니다.")
     @Min(value = 1, message = "평점은 1 이상이어야 합니다.")
@@ -27,14 +23,6 @@ public class ReviewRegisterRequest {
     @Schema(description = "리뷰 내용 (20자 이상)", example = "상품 품질이 매우 좋고 배송도 빨라서 만족스럽습니다. 다음에도 구매할 예정입니다.", requiredMode = Schema.RequiredMode.REQUIRED)
     private String content;
 
-    @Schema(description = "리뷰 이미지 URL 목록", example = "[\"https://example.com/img1.jpg\", \"https://example.com/img2.jpg\"]")
+    @Schema(description = "리뷰 이미지 URL 목록 (기존 이미지 삭제 후 새 이미지로 교체)", example = "[\"https://example.com/img1.jpg\", \"https://example.com/img2.jpg\"]")
     private List<String> imageUrls;
-
-    @NotNull(message = "프로모션 활용 동의 여부는 필수입니다.")
-    @Schema(description = "프로모션 활용 동의 여부", example = "false", requiredMode = Schema.RequiredMode.REQUIRED)
-    private Boolean isPromotionAgreed;
-
-    @NotNull(message = "개인정보 수집 동의 여부는 필수입니다.")
-    @Schema(description = "개인정보 수집 동의 여부", example = "true", requiredMode = Schema.RequiredMode.REQUIRED)
-    private Boolean isPersonalInfoAgreed;
 }

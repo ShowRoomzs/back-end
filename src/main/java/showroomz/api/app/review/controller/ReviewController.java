@@ -2,6 +2,7 @@ package showroomz.api.app.review.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,14 +16,16 @@ import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.review.dto.ReviewDto;
 import showroomz.api.app.review.dto.ReviewRegisterRequest;
 import showroomz.api.app.review.dto.ReviewRegisterResponse;
+import showroomz.api.app.review.dto.ReviewUpdateRequest;
+import showroomz.api.app.review.docs.ReviewControllerDocs;
 import showroomz.api.app.review.service.ReviewService;
 import showroomz.global.dto.PageResponse;
 
-@Tag(name = "User - Review", description = "사용자 리뷰 관리 API")
+@Tag(name = "User - Review")
 @RestController
 @RequestMapping("/v1/user/reviews")
 @RequiredArgsConstructor
-public class ReviewController {
+public class ReviewController implements ReviewControllerDocs {
 
     private final ReviewService reviewService;
 
@@ -53,6 +56,40 @@ public class ReviewController {
         int pageSize = size != null && size > 0 ? size : 20;
         var pageable = PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
         PageResponse<ReviewDto.ReviewItem> response = reviewService.getMyReviews(userPrincipal.getUserId(), pageable);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "사용자 리뷰 수정", parameters = {
+            @Parameter(name = "reviewId", description = "리뷰 ID", required = true, example = "1", in = ParameterIn.PATH)
+    })
+    @PutMapping("/{reviewId}")
+    public ResponseEntity<ReviewDto.UpdateResponse> updateReview(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable("reviewId") Long reviewId,
+            @Valid @RequestBody ReviewUpdateRequest request) {
+        ReviewDto.UpdateResponse response = reviewService.updateReview(userPrincipal.getUserId(), reviewId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "사용자 리뷰 삭제", parameters = {
+            @Parameter(name = "reviewId", description = "리뷰 ID", required = true, example = "1", in = ParameterIn.PATH)
+    })
+    @DeleteMapping("/{reviewId}")
+    public ResponseEntity<ReviewDto.DeleteResponse> deleteReview(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable("reviewId") Long reviewId) {
+        ReviewDto.DeleteResponse response = reviewService.deleteReview(userPrincipal.getUserId(), reviewId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "사용자 리뷰 좋아요 토글", parameters = {
+            @Parameter(name = "reviewId", description = "리뷰 ID", required = true, example = "1", in = ParameterIn.PATH)
+    })
+    @PostMapping("/{reviewId}/likes")
+    public ResponseEntity<ReviewDto.LikeToggleResponse> toggleLike(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable("reviewId") Long reviewId) {
+        ReviewDto.LikeToggleResponse response = reviewService.toggleLike(userPrincipal.getUserId(), reviewId);
         return ResponseEntity.ok(response);
     }
 }

@@ -2,6 +2,7 @@ package showroomz.api.app.review.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -10,15 +11,17 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.review.dto.ReviewDto;
 import showroomz.api.app.review.dto.ReviewRegisterRequest;
 import showroomz.api.app.review.dto.ReviewRegisterResponse;
+import showroomz.api.app.review.dto.ReviewUpdateRequest;
 import showroomz.global.dto.PageResponse;
 
-@Tag(name = "User - Review 사용자 리뷰 관리 API", description = "사용자 리뷰 관리 API")
+@Tag(name = "User - Review")
 public interface ReviewControllerDocs {
 
     @Operation(
@@ -78,7 +81,7 @@ public interface ReviewControllerDocs {
     @Operation(
             summary = "사용자 리뷰 작성",
             description = "주문 상품에 대한 리뷰를 등록합니다.\n\n" +
-                    "**요청 바디:** orderProductId(Long), rating(Integer 1-5), content(String, 20자 이상), imageUrls(List), isPromotionAgreed(Boolean)\n\n" +
+                    "**요청 바디:** orderProductId(Long), rating(Integer 1-5), content(String, 20자 이상), imageUrls(List), isPromotionAgreed(Boolean), isPersonalInfoAgreed(Boolean)\n\n" +
                     "**유효성 검사:** 리뷰 내용은 반드시 20자 이상이어야 합니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
@@ -213,5 +216,182 @@ public interface ReviewControllerDocs {
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal,
             @Parameter(description = "페이지 번호 (1부터 시작)", example = "1") Integer page,
             @Parameter(description = "페이지당 항목 수", example = "20") Integer size
+    );
+
+    @Operation(
+            summary = "사용자 리뷰 수정",
+            description = "본인이 작성한 리뷰를 수정합니다.\n\n" +
+                    "**경로 파라미터:** reviewId - 수정할 리뷰 ID\n\n" +
+                    "**요청 바디:** rating(Integer 1-5), content(String, 20자 이상), imageUrls(List<String>)\n\n" +
+                    "**로직:** 기존 이미지를 삭제하고 새로운 imageUrls로 교체합니다.\n\n" +
+                    "**권한:** USER (리뷰 작성자만)\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}",
+            parameters = {
+                    @Parameter(name = "reviewId", description = "리뷰 ID", required = true, example = "1", in = ParameterIn.PATH)
+            }
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "수정 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ReviewDto.UpdateResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\n" +
+                                            "  \"reviewId\": 501,\n" +
+                                            "  \"message\": \"리뷰가 성공적으로 수정되었습니다.\"\n" +
+                                            "}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "유효성 검증 실패 - Status: 400 Bad Request",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "해당 리뷰에 대한 수정 권한 없음 - Status: 403 Forbidden",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\n" +
+                                            "  \"code\": \"REVIEW_ACCESS_DENIED\",\n" +
+                                            "  \"message\": \"해당 리뷰에 대한 수정/삭제 권한이 없습니다.\"\n" +
+                                            "}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "리뷰를 찾을 수 없음 - Status: 404 Not Found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<ReviewDto.UpdateResponse> updateReview(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "리뷰 ID", required = true) @PathVariable Long reviewId,
+            @RequestBody ReviewUpdateRequest request
+    );
+
+    @Operation(
+            summary = "사용자 리뷰 삭제",
+            description = "본인이 작성한 리뷰를 삭제합니다. 연관된 ReviewImage, ReviewLike도 함께 삭제됩니다.\n\n" +
+                    "**경로 파라미터:** reviewId - 삭제할 리뷰 ID\n\n" +
+                    "**권한:** USER (리뷰 작성자만)\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}",
+            parameters = {
+                    @Parameter(name = "reviewId", description = "리뷰 ID", required = true, example = "1", in = ParameterIn.PATH)
+            }
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "삭제 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ReviewDto.DeleteResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\n" +
+                                            "  \"reviewId\": 501,\n" +
+                                            "  \"message\": \"리뷰가 성공적으로 삭제되었습니다.\"\n" +
+                                            "}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "해당 리뷰에 대한 삭제 권한 없음 - Status: 403 Forbidden",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "리뷰를 찾을 수 없음 - Status: 404 Not Found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<ReviewDto.DeleteResponse> deleteReview(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "리뷰 ID", required = true) @PathVariable Long reviewId
+    );
+
+    @Operation(
+            summary = "사용자 리뷰 좋아요 토글",
+            description = "리뷰에 좋아요를 누르거나 취소합니다.\n\n" +
+                    "**경로 파라미터:** reviewId - 좋아요 토글할 리뷰 ID\n\n" +
+                    "**로직:** 이미 좋아요를 눌렀다면 취소, 누르지 않았다면 좋아요 추가\n\n" +
+                    "**응답:** reviewId, isLiked(현재 유저 좋아요 여부), likeCount(총 좋아요 수)\n\n" +
+                    "**권한:** USER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}",
+            parameters = {
+                    @Parameter(name = "reviewId", description = "리뷰 ID", required = true, example = "1", in = ParameterIn.PATH)
+            }
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "토글 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ReviewDto.LikeToggleResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\n" +
+                                            "  \"reviewId\": 1,\n" +
+                                            "  \"isLiked\": true,\n" +
+                                            "  \"likeCount\": 25\n" +
+                                            "}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "리뷰를 찾을 수 없음 - Status: 404 Not Found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<ReviewDto.LikeToggleResponse> toggleLike(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "리뷰 ID", required = true) @PathVariable Long reviewId
     );
 }

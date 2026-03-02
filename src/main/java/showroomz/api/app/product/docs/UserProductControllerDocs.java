@@ -221,7 +221,21 @@ public interface UserProductControllerDocs {
                                                     "  ],\n" +
                                                     "  \"isWished\": false,\n" +
                                                     "  \"isFollowing\": false,\n" +
-                                                    "  \"createdAt\": \"2025-12-28T14:30:00Z\"\n" +
+                                                    "  \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
+                                                    "  \"reviewInfo\": {\n" +
+                                                    "    \"totalCount\": 42,\n" +
+                                                    "    \"averageRating\": 4.5,\n" +
+                                                    "    \"reviews\": [\n" +
+                                                    "      {\n" +
+                                                    "        \"reviewId\": 1,\n" +
+                                                    "        \"userName\": \"쇼핑러버\",\n" +
+                                                    "        \"rating\": 5,\n" +
+                                                    "        \"content\": \"너무 만족합니다!\",\n" +
+                                                    "        \"imageUrls\": [\"https://example.com/review1.jpg\"],\n" +
+                                                    "        \"createdAt\": \"1일 전\"\n" +
+                                                    "      }\n" +
+                                                    "    ]\n" +
+                                                    "  }\n" +
                                                     "}"
                                     )
                             }
@@ -237,8 +251,8 @@ public interface UserProductControllerDocs {
             )
     })
     ResponseEntity<ProductDto.ProductDetailResponse> getProductDetail(
-            @Parameter(description = "상품 ID", required = true)
-            @PathVariable Long productId
+            @Parameter(name = "productId", description = "상품 ID", required = true, example = "1")
+            @PathVariable("productId") Long productId
     );
 
     @Operation(
@@ -314,8 +328,8 @@ public interface UserProductControllerDocs {
             )
     })
     ResponseEntity<ProductDto.VariantStockListResponse> getVariantStocks(
-            @Parameter(description = "상품 ID", required = true, example = "1024")
-            @PathVariable Long productId,
+            @Parameter(name = "productId", description = "상품 ID", required = true, example = "1024")
+            @PathVariable("productId") Long productId,
             @Parameter(description = "조회할 옵션(Variant) ID 목록 (여러 개 테스트: 1, 2, 3)", required = true, example = "1")
             @RequestParam List<Long> variantIds
     );
@@ -353,8 +367,8 @@ public interface UserProductControllerDocs {
             )
     })
     ResponseEntity<PageResponse<ProductDto.ProductItem>> getRelatedProducts(
-            @Parameter(description = "상품 ID", required = true)
-            @PathVariable Long productId,
+            @Parameter(name = "productId", description = "상품 ID", required = true, example = "1")
+            @PathVariable("productId") Long productId,
             @Parameter(description = "Authorization 헤더 (Optional)", required = false, hidden = true)
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @Parameter(description = "페이지 번호 (기본값: 1)", required = false, example = "1")

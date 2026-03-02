@@ -11,17 +11,21 @@ import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.app.review.dto.ReviewDto;
 import showroomz.api.app.review.dto.ReviewRegisterRequest;
 import showroomz.api.app.review.dto.ReviewRegisterResponse;
+import showroomz.api.app.review.dto.ReviewUpdateRequest;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.order.entity.OrderProduct;
 import showroomz.domain.order.repository.OrderProductRepository;
 import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.domain.review.entity.Review;
 import showroomz.domain.review.entity.ReviewImage;
+import showroomz.domain.review.entity.ReviewLike;
+import showroomz.domain.review.repository.ReviewLikeRepository;
 import showroomz.domain.review.repository.ReviewRepository;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -33,6 +37,7 @@ public class ReviewService {
     private final UserRepository userRepository;
     private final OrderProductRepository orderProductRepository;
     private final ReviewRepository reviewRepository;
+    private final ReviewLikeRepository reviewLikeRepository;
 
     public PageResponse<ReviewDto.WritableItem> getWritableList(Long userId) {
         List<OrderProduct> list = orderProductRepository.findWritableByUserId(
@@ -75,6 +80,7 @@ public class ReviewService {
                 .rating(request.getRating())
                 .content(request.getContent())
                 .isPromotionAgreed(request.getIsPromotionAgreed())
+                .isPersonalInfoAgreed(request.getIsPersonalInfoAgreed())
                 .build();
 
         List<String> imageUrls = request.getImageUrls();
@@ -101,5 +107,89 @@ public class ReviewService {
         return new PageResponse<>(
                 page.getContent().stream().map(ReviewDto.ReviewItem::from).toList(),
                 page);
+    }
+
+    @Transactional
+    public ReviewDto.UpdateResponse updateReview(Long userId, Long reviewId, ReviewUpdateRequest request) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REVIEW_NOT_FOUND));
+
+        validateReviewAuthor(review, userId);
+
+        review.update(request.getRating(), request.getContent());
+
+        List<String> imageUrls = request.getImageUrls();
+        List<ReviewImage> newImages = new ArrayList<>();
+        if (imageUrls != null && !imageUrls.isEmpty()) {
+            newImages = IntStream.range(0, imageUrls.size())
+                    .mapToObj(i -> ReviewImage.builder()
+                            .review(review)
+                            .url(imageUrls.get(i))
+                            .sequence(i)
+                            .build())
+                    .toList();
+        }
+        review.replaceImages(newImages);
+
+        Review saved = reviewRepository.save(review);
+        return ReviewDto.UpdateResponse.builder()
+                .reviewId(saved.getId())
+                .message("리뷰가 성공적으로 수정되었습니다.")
+                .build();
+    }
+
+    @Transactional
+    public ReviewDto.DeleteResponse deleteReview(Long userId, Long reviewId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REVIEW_NOT_FOUND));
+
+        validateReviewAuthor(review, userId);
+
+        Long deletedReviewId = review.getId();
+        reviewRepository.delete(review);
+
+        return ReviewDto.DeleteResponse.builder()
+                .reviewId(deletedReviewId)
+                .message("리뷰가 성공적으로 삭제되었습니다.")
+                .build();
+    }
+
+    @Transactional
+    public ReviewDto.LikeToggleResponse toggleLike(Long userId, Long reviewId) {
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        Review review = reviewRepository.findByIdForUpdate(reviewId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REVIEW_NOT_FOUND));
+
+        boolean alreadyLiked = reviewLikeRepository.existsByReview_IdAndUser_Id(reviewId, userId);
+
+        if (alreadyLiked) {
+            reviewLikeRepository.deleteByReview_IdAndUser_Id(reviewId, userId);
+            review.decreaseLikeCount();
+            return ReviewDto.LikeToggleResponse.builder()
+                    .reviewId(review.getId())
+                    .isLiked(false)
+                    .likeCount(review.getLikeCount())
+                    .build();
+        } else {
+            ReviewLike reviewLike = ReviewLike.builder()
+                    .review(review)
+                    .user(user)
+                    .build();
+            reviewLikeRepository.save(reviewLike);
+            review.increaseLikeCount();
+            return ReviewDto.LikeToggleResponse.builder()
+                    .reviewId(review.getId())
+                    .isLiked(true)
+                    .likeCount(review.getLikeCount())
+                    .build();
+        }
+    }
+
+    private void validateReviewAuthor(Review review, Long userId) {
+        if (!review.getUser().getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.REVIEW_ACCESS_DENIED);
+        }
     }
 }

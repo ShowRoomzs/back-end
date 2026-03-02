@@ -104,4 +104,49 @@ public class ReviewDto {
                     .build();
         }
     }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "리뷰 좋아요 토글 응답")
+    public static class LikeToggleResponse {
+
+        @Schema(description = "리뷰 ID")
+        private Long reviewId;
+
+        @Schema(description = "현재 유저의 좋아요 여부 (true: 좋아요 누름, false: 좋아요 취소)")
+        private Boolean isLiked;
+
+        @Schema(description = "리뷰의 총 좋아요 수")
+        private Integer likeCount;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "리뷰 수정 응답")
+    public static class UpdateResponse {
+
+        @Schema(description = "수정된 리뷰 ID")
+        private Long reviewId;
+
+        @Schema(description = "결과 메시지")
+        private String message;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "리뷰 삭제 응답")
+    public static class DeleteResponse {
+
+        @Schema(description = "삭제된 리뷰 ID")
+        private Long reviewId;
+
+        @Schema(description = "결과 메시지")
+        private String message;
+    }
 }
