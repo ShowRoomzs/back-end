@@ -34,6 +34,17 @@ public class InquiryService {
     private final OneToOneInquiryRepository inquiryRepository;
     private final UserRepository userRepository;
 
+    private void validateOrderIdRequirement(InquiryType type, InquiryDetailType detailType, Long orderId) {
+        boolean isOrderIdRequired = (type == InquiryType.CANCEL_REFUND_EXCHANGE)
+                || (detailType == InquiryDetailType.ORDER_CHANGE)
+                || (detailType == InquiryDetailType.DEFECT)
+                || (detailType == InquiryDetailType.AS);
+
+        if (isOrderIdRequired && orderId == null) {
+            throw new BusinessException(ErrorCode.ORDER_ID_REQUIRED);
+        }
+    }
+
     // 1:1 문의 등록
     @Transactional
     public InquiryRegisterResponse registerInquiry(Long userId, InquiryRegisterRequest request) {
@@ -45,12 +56,15 @@ public class InquiryService {
             throw new BusinessException(ErrorCode.INVALID_INQUIRY_DETAIL_TYPE);
         }
 
+        validateOrderIdRequirement(request.getType(), detailType, request.getOrderId());
+
         OneToOneInquiry inquiry = OneToOneInquiry.builder()
                 .user(user)
                 .type(request.getType())
                 .category(detailType)
                 .content(request.getContent())
                 .imageUrls(request.getImageUrls())
+                .orderId(request.getOrderId())
                 .build();
 
         inquiryRepository.save(inquiry);
@@ -101,11 +115,14 @@ public class InquiryService {
             throw new BusinessException(ErrorCode.INVALID_INQUIRY_DETAIL_TYPE);
         }
 
+        validateOrderIdRequirement(request.getType(), detailType, request.getOrderId());
+
         inquiry.update(
                 request.getType(),
                 detailType,
                 request.getContent(),
-                request.getImageUrls()
+                request.getImageUrls(),
+                request.getOrderId()
         );
     }
 

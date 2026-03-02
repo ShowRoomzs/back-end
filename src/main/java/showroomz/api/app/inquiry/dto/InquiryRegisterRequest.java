@@ -30,4 +30,7 @@ public class InquiryRegisterRequest {
     @Schema(description = "첨부 이미지 URL 리스트 (최대 10장)")
     @Size(max = 10, message = "이미지는 최대 10장까지 첨부 가능합니다.")
     private List<String> imageUrls;
+
+    @Schema(description = "주문 번호 (주문 변경, 취소/교환/환불, 불량/하자, AS 문의 시 필수)", example = "123456")
+    private Long orderId;
 }
