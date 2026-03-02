@@ -36,6 +36,9 @@ public class InquiryListResponse {
     @Schema(description = "첨부 이미지 URL 리스트")
     private List<String> imageUrls;
 
+    @Schema(description = "주문 번호 (주문 관련 문의 시에만 존재)")
+    private Long orderId;
+
     @Schema(description = "답변 상태 (WAITING: 답변 대기, ANSWERED: 답변 완료)", allowableValues = {"WAITING", "ANSWERED"})
     private InquiryStatus status;
 
@@ -59,6 +62,7 @@ public class InquiryListResponse {
                 .detailTypeName(category.getDescription())
                 .content(inquiry.getContent())
                 .imageUrls(inquiry.getImageUrls())
+                .orderId(inquiry.getOrderId())
                 .status(inquiry.getStatus())
                 .answerContent(inquiry.getAnswerContent())
                 .answeredAt(inquiry.getAnsweredAt())
