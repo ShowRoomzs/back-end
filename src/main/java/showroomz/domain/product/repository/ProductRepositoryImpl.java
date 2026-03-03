@@ -276,6 +276,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
 
         BooleanBuilder where = new BooleanBuilder();
         where.and(product.isDisplay.isTrue());
+        where.and(product.isRecommended.isTrue());
 
         // 카테고리 필터
         if (categoryIds != null && !categoryIds.isEmpty()) {

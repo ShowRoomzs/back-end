@@ -99,5 +99,16 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
             Pageable pageable
     );
 
+    /**
+     * 여러 마켓의 전시 중인 상품 일괄 조회 (Batch Fetching)
+     * - isDisplay=true인 상품만
+     * - 마켓별 정렬: isRecommended DESC, createdAt DESC
+     * - Market JOIN FETCH로 N+1 방지
+     */
+    @Query("SELECT p FROM Product p JOIN FETCH p.market " +
+           "WHERE p.market.id IN :marketIds AND p.isDisplay = true " +
+           "ORDER BY p.market.id, p.isRecommended DESC, p.createdAt DESC")
+    List<Product> findByMarketIdInAndIsDisplayTrue(@Param("marketIds") List<Long> marketIds);
+
 }
 
