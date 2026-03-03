@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.common.market.docs.CommonMarketControllerDocs;
 import showroomz.api.common.market.dto.MarketRecommendationResponse;
+import showroomz.api.common.market.dto.PopularProductResponse;
 import showroomz.api.common.market.service.CommonMarketService;
 
 @RestController
@@ -23,6 +24,15 @@ public class CommonMarketController implements CommonMarketControllerDocs {
     ) {
         MarketRecommendationResponse response = commonMarketService.getRecommendedMarkets(
                 categoryId, page, limit);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @GetMapping("/{marketId}/products/popular")
+    public ResponseEntity<PopularProductResponse> getPopularProducts(
+            @PathVariable("marketId") Long marketId
+    ) {
+        PopularProductResponse response = commonMarketService.getPopularProducts(marketId);
         return ResponseEntity.ok(response);
     }
 }

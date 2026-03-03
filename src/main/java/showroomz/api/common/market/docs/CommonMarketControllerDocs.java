@@ -2,6 +2,7 @@ package showroomz.api.common.market.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -9,9 +10,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.common.market.dto.MarketRecommendationResponse;
+import showroomz.api.common.market.dto.PopularProductResponse;
 
 @Tag(name = "Common - Market", description = "공용 마켓 API")
 public interface CommonMarketControllerDocs {
@@ -91,5 +94,41 @@ public interface CommonMarketControllerDocs {
             @RequestParam(value = "page", required = false) Integer page,
             @Parameter(description = "페이지당 항목 수 (기본값: 20)", example = "20")
             @RequestParam(value = "limit", required = false) Integer limit
+    );
+
+    @Operation(
+            summary = "비회원/회원 특정 쇼룸의 인기 상품 Top10 조회",
+            description = "특정 마켓(쇼룸)의 인기 상품 상위 10개를 조회합니다.\n\n" +
+                    "**정렬 기준:**\n" +
+                    "1. Wishlist 수 많은 순 (DESC)\n" +
+                    "2. 최신 등록일(createdAt) 순 (DESC)\n\n" +
+                    "**필터링:** 해당 마켓에 속한 상품 중 전시 중(isDisplay=true)인 상품만 대상\n\n" +
+                    "**응답 구조:**\n" +
+                    "- content: 상품 리스트 (id, name, marketName, representativeImageUrl, price, wishCount, isWished, reviewCount, tags 등)\n" +
+                    "- pageInfo: 고정값 (currentPage=1, totalPages=1, totalResults, limit=10, hasNext=false)\n\n" +
+                    "**권한:** 비회원/회원 공통 (로그인 시 isWished 반영, 비회원은 false)\n\n" +
+                    "**파라미터:** marketId (경로) - 조회할 마켓(쇼룸) ID (필수)"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PopularProductResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<PopularProductResponse> getPopularProducts(
+            @Parameter(name = "marketId", description = "조회할 마켓(쇼룸) ID - 해당 마켓의 인기 상품 Top 10 반환", example = "1", required = true, in = ParameterIn.PATH)
+            @PathVariable("marketId") Long marketId
     );
 }

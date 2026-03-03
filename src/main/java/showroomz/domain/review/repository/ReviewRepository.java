@@ -49,4 +49,17 @@ public interface ReviewRepository extends JpaRepository<Review, Long>, ReviewRep
     List<Review> findTop3ByProductIdOrderByCreatedAtDesc(
             @Param("productId") Long productId,
             Pageable pageable);
+
+    /**
+     * 상품별 리뷰 수 일괄 조회 (Batch Fetching)
+     * @return List of [productId, count]
+     */
+    @Query("""
+            SELECT v.product.productId, COUNT(r) FROM Review r
+            JOIN r.orderProduct op
+            JOIN op.variant v
+            WHERE v.product.productId IN :productIds
+            GROUP BY v.product.productId
+            """)
+    List<Object[]> countByProductIds(@Param("productIds") List<Long> productIds);
 }

@@ -8,7 +8,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.api.common.market.dto.MarketRecommendationResponse;
+import showroomz.api.common.market.dto.PopularProductResponse;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketFollowRepository;
@@ -20,8 +22,12 @@ import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductImage;
 import showroomz.domain.product.repository.ProductImageRepository;
 import showroomz.domain.product.repository.ProductRepository;
+import showroomz.domain.product.repository.ProductVariantRepository;
+import showroomz.domain.review.repository.ReviewRepository;
+import showroomz.domain.wishlist.repository.WishlistRepository;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,8 +44,12 @@ public class CommonMarketService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final ProductImageRepository productImageRepository;
+    private final WishlistRepository wishlistRepository;
+    private final ReviewRepository reviewRepository;
+    private final ProductVariantRepository productVariantRepository;
 
     private static final int MAX_IMAGE_COUNT = 3;
+    private static final int POPULAR_PRODUCT_LIMIT = 10;
 
     /**
      * 추천 마켓(쇼룸) 목록 조회
@@ -98,6 +108,140 @@ public class CommonMarketService {
                 .toList();
 
         return MarketRecommendationResponse.of(items, marketPage);
+    }
+
+    /**
+     * 특정 쇼룸(Market) 인기 상품 Top 10 조회
+     * - 정렬: Wishlist 수 DESC → createdAt DESC
+     * - 필터: isDisplay=true
+     * - 비회원: isWished=false, 회원: SecurityContext 기반 매핑
+     */
+    public PopularProductResponse getPopularProducts(Long marketId) {
+        Users currentUser = resolveCurrentUser();
+        Long currentUserId = currentUser != null ? currentUser.getId() : null;
+
+        List<Product> products = productRepository.findPopularProductsByMarketId(marketId, POPULAR_PRODUCT_LIMIT);
+        if (products.isEmpty()) {
+            return PopularProductResponse.of(List.of());
+        }
+
+        List<Long> productIds = products.stream().map(Product::getProductId).distinct().toList();
+
+        // Batch: 대표 이미지
+        Map<Long, String> repImageMap = productImageRepository.findRepresentativeImagesByProductIdIn(productIds)
+                .stream()
+                .collect(Collectors.toMap(pi -> pi.getProduct().getProductId(), ProductImage::getUrl, (a, b) -> a));
+
+        // Batch: wishCount
+        Map<Long, Long> wishCountMap = toMapFromCountQuery(
+                wishlistRepository.countWishlistByProductIds(productIds));
+
+        // Batch: reviewCount
+        Map<Long, Long> reviewCountMap = toMapFromCountQuery(
+                reviewRepository.countByProductIds(productIds));
+
+        // Batch: isWished (로그인 시)
+        Set<Long> wishedProductIds = currentUserId != null
+                ? wishlistRepository.findProductIdsWishedByUserAndProductIdIn(currentUserId, productIds)
+                : Set.of();
+
+        // Batch: 재고 합계 (StockStatus용)
+        Map<Long, Long> stockSumMap = toMapFromCountQuery(
+                productVariantRepository.sumStockByProductIds(productIds));
+
+        List<ProductDto.ProductItem> items = products.stream()
+                .map(p -> toProductItem(p, repImageMap, wishCountMap, reviewCountMap, wishedProductIds, stockSumMap))
+                .toList();
+
+        return PopularProductResponse.of(items);
+    }
+
+    private Map<Long, Long> toMapFromCountQuery(List<Object[]> rows) {
+        Map<Long, Long> map = new HashMap<>();
+        if (rows != null) {
+            for (Object[] row : rows) {
+                if (row.length >= 2 && row[0] instanceof Long productId && row[1] instanceof Number count) {
+                    map.put(productId, count.longValue());
+                }
+            }
+        }
+        return map;
+    }
+
+    private ProductDto.ProductItem toProductItem(
+            Product product,
+            Map<Long, String> repImageMap,
+            Map<Long, Long> wishCountMap,
+            Map<Long, Long> reviewCountMap,
+            Set<Long> wishedProductIds,
+            Map<Long, Long> stockSumMap) {
+        Long productId = product.getProductId();
+        Integer regularPrice = product.getRegularPrice();
+        Integer salePrice = product.getSalePrice();
+        int discountRate = calculateDiscountRate(regularPrice, salePrice);
+
+        ProductDto.PriceInfo priceInfo = ProductDto.PriceInfo.builder()
+                .regularPrice(regularPrice)
+                .discountRate(discountRate)
+                .salePrice(salePrice)
+                .maxBenefitPrice(salePrice)
+                .build();
+
+        String representativeImageUrl = repImageMap.getOrDefault(productId, product.getThumbnailUrl());
+        Long wishCount = wishCountMap.getOrDefault(productId, 0L);
+        Long reviewCount = reviewCountMap.getOrDefault(productId, 0L);
+        Boolean isWished = wishedProductIds.contains(productId);
+
+        return ProductDto.ProductItem.builder()
+                .id(productId)
+                .productNumber(product.getProductNumber())
+                .name(product.getName())
+                .sellerProductCode(product.getSellerProductCode())
+                .representativeImageUrl(representativeImageUrl)
+                .thumbnailUrl(product.getThumbnailUrl())
+                .categoryId(product.getCategory() != null ? product.getCategory().getCategoryId() : null)
+                .categoryName(product.getCategory() != null ? product.getCategory().getName() : null)
+                .marketId(product.getMarket() != null ? product.getMarket().getId() : null)
+                .marketName(product.getMarket() != null ? product.getMarket().getMarketName() : null)
+                .price(priceInfo)
+                .discountRate(discountRate)
+                .purchasePrice(product.getPurchasePrice())
+                .gender(product.getGender() != null ? product.getGender().name() : null)
+                .isDisplay(product.getIsDisplay())
+                .isRecommended(product.getIsRecommended())
+                .productNotice(product.getProductNotice())
+                .description(product.getDescription())
+                .tags(product.getTags())
+                .deliveryType(product.getDeliveryType())
+                .deliveryFee(product.getDeliveryFee())
+                .deliveryFreeThreshold(product.getDeliveryFreeThreshold())
+                .deliveryEstimatedDays(product.getDeliveryEstimatedDays())
+                .createdAt(product.getCreatedAt() != null ? product.getCreatedAt().toString() : null)
+                .status(buildStockStatus(product, stockSumMap.getOrDefault(product.getProductId(), 0L)))
+                .likeCount(0L)
+                .wishCount(wishCount)
+                .reviewCount(reviewCount)
+                .isWished(isWished)
+                .build();
+    }
+
+    private ProductDto.StockStatus buildStockStatus(Product product, long totalStock) {
+        boolean isOutOfStockForced = Boolean.TRUE.equals(product.getIsOutOfStockForced());
+        boolean hasStock = totalStock > 0;
+        boolean isOutOfStock = isOutOfStockForced || !hasStock;
+        return ProductDto.StockStatus.builder()
+                .isOutOfStock(isOutOfStock)
+                .isOutOfStockForced(isOutOfStockForced)
+                .build();
+    }
+
+    private int calculateDiscountRate(Integer regularPrice, Integer salePrice) {
+        if (regularPrice == null || salePrice == null || regularPrice <= 0) {
+            return 0;
+        }
+        double rate = ((double) (regularPrice - salePrice) / regularPrice) * 100.0;
+        int rounded = (int) Math.round(rate);
+        return Math.max(0, Math.min(rounded, 100));
     }
 
     /**
