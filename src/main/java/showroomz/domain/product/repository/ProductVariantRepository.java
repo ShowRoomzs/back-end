@@ -25,4 +25,12 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
             @Param("productId") Long productId,
             @Param("variantIds") List<Long> variantIds
     );
+
+    /**
+     * 상품별 재고 합계 일괄 조회 (Batch Fetching)
+     * @return List of [productId, stockSum]
+     */
+    @Query("SELECT v.product.productId, COALESCE(SUM(v.stock), 0) FROM ProductVariant v " +
+           "WHERE v.product.productId IN :productIds GROUP BY v.product.productId")
+    List<Object[]> sumStockByProductIds(@Param("productIds") List<Long> productIds);
 }
