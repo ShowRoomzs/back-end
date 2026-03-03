@@ -12,7 +12,7 @@ import showroomz.domain.review.entity.Review;
 import java.util.List;
 import java.util.Optional;
 
-public interface ReviewRepository extends JpaRepository<Review, Long> {
+public interface ReviewRepository extends JpaRepository<Review, Long>, ReviewRepositoryCustom {
 
     Page<Review> findByUser_IdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
