@@ -23,14 +23,15 @@ public interface CommonMarketControllerDocs {
                     "- isRecommended=true인 상품이 있는 마켓 우선 정렬\n" +
                     "- 승인된(APPROVED) 판매자의 마켓만 조회\n\n" +
                     "**응답 구조:**\n" +
-                    "- content: 추천 마켓 목록\n" +
+                    "- content: 추천 마켓 목록 (representativeProducts: productId + imageUrl, 이미지 클릭 시 상세 페이지 이동용)\n" +
                     "- pageInfo: 페이징 메타데이터 (currentPage, totalPages, totalResults, limit, hasNext)\n\n" +
                     "**파라미터:**\n" +
                     "- categoryId: 대표 카테고리 ID 필터 (선택)\n" +
                     "- page: 페이지 번호 (1부터 시작, 기본값: 1)\n" +
                     "- limit: 페이지당 항목 수 (기본값: 20)\n\n" +
                     "**권한:** 비회원/USER (Authorization 헤더 선택)\n" +
-                    "**isFollowing:** 로그인 시 본인 팔로우 여부 반영, 비회원은 false"
+                    "**isFollowing:** 로그인 시 본인 팔로우 여부 반영, 비회원은 false\n\n" +
+                    "**representativeProducts:** 기획안 4-2 - 상품 이미지 클릭 시 상세 페이지 이동을 위해 productId 포함"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -49,10 +50,10 @@ public interface CommonMarketControllerDocs {
                                                     "      \"marketName\": \"M 브라이튼\",\n" +
                                                     "      \"sellerId\": 1,\n" +
                                                     "      \"marketImageUrl\": \"https://example.com/market.jpg\",\n" +
-                                                    "      \"representativeImageUrls\": [\n" +
-                                                    "        \"https://example.com/product1.jpg\",\n" +
-                                                    "        \"https://example.com/product2.jpg\",\n" +
-                                                    "        \"https://example.com/product3.jpg\"\n" +
+                                                    "      \"representativeProducts\": [\n" +
+                                                    "        { \"productId\": 1024, \"imageUrl\": \"https://example.com/product1.jpg\" },\n" +
+                                                    "        { \"productId\": 1025, \"imageUrl\": \"https://example.com/product2.jpg\" },\n" +
+                                                    "        { \"productId\": 1026, \"imageUrl\": \"https://example.com/product3.jpg\" }\n" +
                                                     "      ],\n" +
                                                     "      \"marketDescription\": \"브랜드 소개\",\n" +
                                                     "      \"marketUrl\": \"https://example.com\",\n" +

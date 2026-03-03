@@ -69,11 +69,12 @@ public class CommonMarketService {
 
         List<Long> marketIds = marketList.stream().map(MarketListResponse::getShopId).toList();
 
-        // Batch Fetching: 마켓별 대표 상품 이미지 최대 3개 추출
-        // 상품 0개 마켓은 map에 포함하지 않음 (기획안 4-2: 추천 알고리즘에서 제외)
-        Map<Long, List<String>> marketImageUrlsMap = buildMarketRepresentativeImageUrls(marketIds);
+        // Batch Fetching: 마켓별 대표 상품(Product ID + 이미지 URL) 최대 3개 추출
+        // 상품 0개 마켓은 map에 포함하지 않음 (기획안 4-2: 추천 알고리즘에서 제외, 이미지 클릭 시 상세 페이지 이동용 productId 포함)
+        Map<Long, List<MarketRecommendationResponse.RepresentativeProduct>> marketRepProductsMap =
+                buildMarketRepresentativeProducts(marketIds);
         List<Long> validMarketIds = marketIds.stream()
-                .filter(marketImageUrlsMap::containsKey)
+                .filter(marketRepProductsMap::containsKey)
                 .toList();
 
         if (validMarketIds.isEmpty()) {
@@ -93,20 +94,21 @@ public class CommonMarketService {
                 .map(market -> toRecommendationItem(
                         market,
                         followingMarketIds.contains(market.getId()),
-                        marketImageUrlsMap.get(market.getId())))
+                        marketRepProductsMap.get(market.getId())))
                 .toList();
 
         return MarketRecommendationResponse.of(items, marketPage);
     }
 
     /**
-     * 마켓별 대표 상품 이미지 URL 최대 3개 추출 (Batch Fetching)
+     * 마켓별 대표 상품(Product ID + 이미지 URL) 최대 3개 추출 (Batch Fetching)
      * - 우선순위: isRecommended=true 우선 → isRecommended=false 최신순
      * - 상품 이미지: ProductImage order=0 또는 Product.thumbnailUrl
      * - 3개 미만이면 있는 만큼만, 3개 이상이면 3개만
-     * - 상품 0개 마켓은 제외 (기획안 4-2: 추천 알고리즘에서 제외)
+     * - 상품 0개 마켓은 제외 (기획안 4-2: 추천 알고리즘에서 제외, 이미지 클릭 시 상세 페이지 이동용 productId 포함)
      */
-    private Map<Long, List<String>> buildMarketRepresentativeImageUrls(List<Long> marketIds) {
+    private Map<Long, List<MarketRecommendationResponse.RepresentativeProduct>> buildMarketRepresentativeProducts(
+            List<Long> marketIds) {
         List<Product> products = productRepository.findByMarketIdInAndIsDisplayTrue(marketIds);
         if (products.isEmpty()) {
             return Map.of();
@@ -121,30 +123,36 @@ public class CommonMarketService {
         Map<Long, List<Product>> productsByMarket = products.stream()
                 .collect(Collectors.groupingBy(p -> p.getMarket().getId(), LinkedHashMap::new, Collectors.toList()));
 
-        Map<Long, List<String>> result = new LinkedHashMap<>();
+        Map<Long, List<MarketRecommendationResponse.RepresentativeProduct>> result = new LinkedHashMap<>();
         for (Long marketId : marketIds) {
             List<Product> marketProducts = productsByMarket.getOrDefault(marketId, List.of());
             if (marketProducts.isEmpty()) {
                 continue; // 상품 0개 마켓 제외 (기획안 4-2)
             }
             // 이미 정렬됨: isRecommended DESC, createdAt DESC
-            List<String> urls = new ArrayList<>();
+            List<MarketRecommendationResponse.RepresentativeProduct> repProducts = new ArrayList<>();
             for (Product p : marketProducts) {
-                if (urls.size() >= MAX_IMAGE_COUNT) break;
+                if (repProducts.size() >= MAX_IMAGE_COUNT) break;
                 String url = productImageMap.containsKey(p.getProductId())
                         ? productImageMap.get(p.getProductId())
                         : (p.getThumbnailUrl() != null ? p.getThumbnailUrl() : "");
                 if (url != null && !url.isBlank()) {
-                    urls.add(url);
+                    repProducts.add(MarketRecommendationResponse.RepresentativeProduct.builder()
+                            .productId(p.getProductId())
+                            .imageUrl(url)
+                            .build());
                 }
             }
-            result.put(marketId, urls);
+            if (!repProducts.isEmpty()) {
+                result.put(marketId, repProducts);
+            }
         }
         return result;
     }
 
     private MarketRecommendationResponse.MarketRecommendationItem toRecommendationItem(
-            Market market, boolean isFollowing, List<String> representativeImageUrls) {
+            Market market, boolean isFollowing,
+            List<MarketRecommendationResponse.RepresentativeProduct> representativeProducts) {
         long followCount = marketFollowRepository.countByMarket(market);
 
         return MarketRecommendationResponse.MarketRecommendationItem.builder()
@@ -152,7 +160,7 @@ public class CommonMarketService {
                 .marketName(market.getMarketName())
                 .sellerId(market.getSeller() != null ? market.getSeller().getId() : null)
                 .marketImageUrl(market.getMarketImageUrl())
-                .representativeImageUrls(representativeImageUrls != null ? representativeImageUrls : List.of())
+                .representativeProducts(representativeProducts != null ? representativeProducts : List.of())
                 .marketDescription(market.getMarketDescription())
                 .marketUrl(market.getMarketUrl())
                 .shopType(market.getShopType())
