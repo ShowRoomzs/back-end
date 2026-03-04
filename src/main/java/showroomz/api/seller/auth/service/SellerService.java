@@ -354,8 +354,7 @@ public class SellerService {
                 accessTokenExpiresInSeconds,
                 refreshTokenExpiresInSeconds,
                 false,
-                admin.getRoleType().toString(),
-                toShopTypeString(admin.getRoleType())
+                admin.getRoleType().toString()
         );
     }
 
@@ -479,18 +478,8 @@ public class SellerService {
                 accessTokenExpiresInSeconds,
                 refreshTokenExpiresInSeconds,
                 false,
-                admin.getRoleType().toString(),
-                toShopTypeString(admin.getRoleType())
+                admin.getRoleType().toString()
         );
-    }
-
-    /**
-     * RoleType → ShopType 문자열 변환 (ADMIN은 null 반환)
-     */
-    private String toShopTypeString(RoleType roleType) {
-        if (roleType == RoleType.CREATOR) return "SHOWROOM";
-        if (roleType == RoleType.SELLER) return "MARKET";
-        return null;
     }
 
     /**
