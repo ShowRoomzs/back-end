@@ -119,7 +119,7 @@ public class SellerService {
             throw new BusinessException(ErrorCode.DUPLICATE_MARKET_NAME);
         }
 
-        // 4. Seller 생성 (활동명 포함)
+        // 4. Seller 생성 (활동명 포함, 크리에이터 권한 부여)
         LocalDateTime now = LocalDateTime.now();
         Seller seller = new Seller(
                 request.getEmail(),
@@ -129,6 +129,7 @@ public class SellerService {
                 request.getActivityName(),
                 now
         );
+        seller.setRoleType(RoleType.CREATOR);
         Seller savedSeller = adminRepository.save(seller);
 
         // 5. Market 생성 (타입: SHOWROOM, CS 번호는 개인 연락처 사용)
@@ -189,11 +190,12 @@ public class SellerService {
             throw new BusinessException(ErrorCode.DUPLICATE_MARKET_NAME);
         }
 
-        // Seller 정보 업데이트 (활동명 포함)
+        // Seller 정보 업데이트 (활동명 포함, 크리에이터 권한 복구)
         seller.setPassword(passwordEncoder.encode(request.getPassword()));
         seller.setName(request.getSellerName());
         seller.setPhoneNumber(request.getSellerContact());
         seller.setActivityName(request.getActivityName());
+        seller.setRoleType(RoleType.CREATOR);
         seller.setStatus(SellerStatus.PENDING); // 상태를 다시 PENDING으로 변경
         seller.setRejectionReason(null); // 반려 사유 초기화
         seller.setModifiedAt(LocalDateTime.now());
@@ -352,7 +354,7 @@ public class SellerService {
 
         // 8. 응답 반환 (마지막 인자에 role, shopType 추가)
         String shopType = null;
-        if (admin.getRoleType() == RoleType.SELLER) {
+        if (admin.getRoleType() == RoleType.SELLER || admin.getRoleType() == RoleType.CREATOR) {
             Market market = marketRepository.findBySeller(admin).orElse(null);
             if (market != null && market.getShopType() != null) {
                 shopType = market.getShopType().name();
@@ -426,8 +428,8 @@ public class SellerService {
             adminRefreshTokenRepository.delete(adminRefreshToken);
         }
 
-        // 5. [수정] 판매자인 경우에만 마켓 삭제
-        if (user.getRoleType() == RoleType.SELLER) {
+        // 5. 판매자 또는 크리에이터인 경우에만 마켓 삭제
+        if (user.getRoleType() == RoleType.SELLER || user.getRoleType() == RoleType.CREATOR) {
             marketRepository.findBySeller(user).ifPresent(marketRepository::delete);
         }
 
@@ -484,9 +486,9 @@ public class SellerService {
         long accessTokenExpiresInSeconds = accessTokenExpiry / 1000;
         long refreshTokenExpiresInSeconds = refreshTokenExpiry / 1000;
 
-        // 판매자인 경우에만 샵 타입 조회 (어드민은 null 반환)
+        // 판매자 또는 크리에이터인 경우에만 샵 타입 조회 (어드민은 null 반환)
         String shopType = null;
-        if (admin.getRoleType() == RoleType.SELLER) {
+        if (admin.getRoleType() == RoleType.SELLER || admin.getRoleType() == RoleType.CREATOR) {
             Market market = marketRepository.findBySeller(admin).orElse(null);
             if (market != null && market.getShopType() != null) {
                 shopType = market.getShopType().name();
