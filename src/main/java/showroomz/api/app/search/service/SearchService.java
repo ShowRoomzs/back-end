@@ -6,8 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.search.dto.AutoCompleteResponse;
+import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.seller.auth.type.SellerStatus;
-import showroomz.domain.market.type.ShopType;
 
 import java.util.List;
 
@@ -50,7 +50,7 @@ public class SearchService {
                 ))
                 .from(market)
                 .where(market.marketName.contains(keyword)
-                        .and(market.shopType.eq(ShopType.MARKET))
+                        .and(market.seller.roleType.eq(RoleType.SELLER))
                         .and(market.seller.status.eq(SellerStatus.APPROVED)))
                 .orderBy(market.marketName.length().asc())
                 .limit(3)
@@ -64,7 +64,7 @@ public class SearchService {
                 ))
                 .from(market)
                 .where(market.marketName.contains(keyword)
-                        .and(market.shopType.eq(ShopType.SHOWROOM))
+                        .and(market.seller.roleType.eq(RoleType.CREATOR))
                         .and(market.seller.status.eq(SellerStatus.APPROVED)))
                 .orderBy(market.marketName.length().asc())
                 .limit(3)
