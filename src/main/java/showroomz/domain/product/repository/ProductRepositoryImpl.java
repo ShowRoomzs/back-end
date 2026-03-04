@@ -11,6 +11,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.QProduct;
+import showroomz.domain.wishlist.entitiy.QWishlist;
 import showroomz.domain.product.entity.QProductOption;
 import showroomz.domain.product.entity.QProductOptionGroup;
 import showroomz.domain.product.type.ProductGender;
@@ -276,6 +277,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
 
         BooleanBuilder where = new BooleanBuilder();
         where.and(product.isDisplay.isTrue());
+        where.and(product.isRecommended.isTrue());
 
         // 카테고리 필터
         if (categoryIds != null && !categoryIds.isEmpty()) {
@@ -308,5 +310,28 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                 .fetch();
 
         return new PageImpl<>(content, pageable, total);
+    }
+
+    @Override
+    public List<Product> findPopularProductsByMarketId(Long marketId, int limit) {
+        if (marketId == null || limit <= 0) {
+            return List.of();
+        }
+        QProduct product = QProduct.product;
+        QWishlist wishlist = QWishlist.wishlist;
+
+        return queryFactory
+                .selectFrom(product)
+                .leftJoin(product.market).fetchJoin()
+                .leftJoin(product.category).fetchJoin()
+                .leftJoin(wishlist).on(wishlist.product.eq(product))
+                .where(
+                        product.market.id.eq(marketId),
+                        product.isDisplay.isTrue()
+                )
+                .groupBy(product)
+                .orderBy(wishlist.count().desc(), product.createdAt.desc())
+                .limit(limit)
+                .fetch();
     }
 }

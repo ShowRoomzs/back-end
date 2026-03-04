@@ -3,10 +3,14 @@ package showroomz.domain.market.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import showroomz.domain.market.entity.MarketFollow;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.user.entity.Users;
+
+import java.util.Set;
 
 @Repository
 public interface MarketFollowRepository extends JpaRepository<MarketFollow, Long> {
@@ -24,5 +28,11 @@ public interface MarketFollowRepository extends JpaRepository<MarketFollow, Long
 
     // 유저의 팔로우 목록 조회 (페이징)
     Page<MarketFollow> findByUser(Users user, Pageable pageable);
+
+    @Query("SELECT mf.market.id FROM MarketFollow mf WHERE mf.user.id = :userId AND mf.market.id IN :marketIds")
+    Set<Long> findMarketIdsByUserAndMarketIdIn(
+            @Param("userId") Long userId,
+            @Param("marketIds") java.util.List<Long> marketIds
+    );
 }
 

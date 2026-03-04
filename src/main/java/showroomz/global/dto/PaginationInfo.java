@@ -18,5 +18,16 @@ public class PaginationInfo {
         this.limit = page.getSize();
         this.hasNext = page.hasNext();
     }
+
+    /**
+     * 고정 페이징 값으로 생성 (예: Top 10 응답 등)
+     */
+    public PaginationInfo(int currentPage, int totalPages, long totalResults, int limit, boolean hasNext) {
+        this.currentPage = currentPage;
+        this.totalPages = totalPages;
+        this.totalResults = totalResults;
+        this.limit = limit;
+        this.hasNext = hasNext;
+    }
 }
 

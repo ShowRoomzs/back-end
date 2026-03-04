@@ -12,7 +12,7 @@ import showroomz.domain.review.entity.Review;
 import java.util.List;
 import java.util.Optional;
 
-public interface ReviewRepository extends JpaRepository<Review, Long> {
+public interface ReviewRepository extends JpaRepository<Review, Long>, ReviewRepositoryCustom {
 
     Page<Review> findByUser_IdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
@@ -49,4 +49,17 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findTop3ByProductIdOrderByCreatedAtDesc(
             @Param("productId") Long productId,
             Pageable pageable);
+
+    /**
+     * 상품별 리뷰 수 일괄 조회 (Batch Fetching)
+     * @return List of [productId, count]
+     */
+    @Query("""
+            SELECT v.product.productId, COUNT(r) FROM Review r
+            JOIN r.orderProduct op
+            JOIN op.variant v
+            WHERE v.product.productId IN :productIds
+            GROUP BY v.product.productId
+            """)
+    List<Object[]> countByProductIds(@Param("productIds") List<Long> productIds);
 }
