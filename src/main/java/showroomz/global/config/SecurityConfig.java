@@ -104,13 +104,13 @@ public class SecurityConfig {
                 // ADMIN 전용
                 .requestMatchers("/v1/admin/**").hasAnyAuthority(RoleType.ADMIN.getCode())
 
-                // SELLER auth - logout, withdraw, images는 ADMIN과 SELLER 모두 접근 가능
+                // SELLER auth - logout, withdraw, images는 ADMIN과 SELLER, CREATOR 모두 접근 가능
                 .requestMatchers("/v1/seller/auth/logout", "/v1/seller/auth/withdraw", "/v1/seller/images")
-                    .hasAnyAuthority(RoleType.ADMIN.getCode(), RoleType.SELLER.getCode())
+                    .hasAnyAuthority(RoleType.ADMIN.getCode(), RoleType.SELLER.getCode(), RoleType.CREATOR.getCode())
 
                 // SELLER 권한
                 .requestMatchers("/v1/seller/**").hasAnyAuthority(RoleType.SELLER.getCode())
-                .requestMatchers("/v1/creator/**").hasAnyAuthority(RoleType.SELLER.getCode())
+                .requestMatchers("/v1/creator/**").hasAnyAuthority(RoleType.CREATOR.getCode())
 
                 // USER 권한
                 .requestMatchers("/v1/user/**").hasAnyAuthority(RoleType.USER.getCode())
