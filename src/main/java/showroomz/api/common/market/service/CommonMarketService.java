@@ -307,7 +307,7 @@ public class CommonMarketService {
                 .representativeProducts(representativeProducts != null ? representativeProducts : List.of())
                 .marketDescription(market.getMarketDescription())
                 .marketUrl(market.getMarketUrl())
-                .shopType(market.getShopType())
+                .shopType(market.getSeller().getRoleType())
                 .followCount(followCount)
                 .isFollowing(isFollowing)
                 .mainCategoryId(market.getMainCategory() != null ? market.getMainCategory().getCategoryId() : null)

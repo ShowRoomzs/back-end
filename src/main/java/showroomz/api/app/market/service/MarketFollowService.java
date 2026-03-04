@@ -91,7 +91,7 @@ public class MarketFollowService {
                             .shopId(market.getId())
                             .shopName(market.getMarketName())
                             .shopImageUrl(market.getMarketImageUrl())
-                            .shopType(market.getShopType())
+                            .shopType(market.getSeller().getRoleType())
                             .build();
                 })
                 .toList();

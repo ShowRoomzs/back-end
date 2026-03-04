@@ -61,7 +61,7 @@ public class UserMarketService {
                 .shopImageUrl(market.getMarketImageUrl())
                 .shopDescription(market.getMarketDescription())
                 .shopUrl(market.getMarketUrl())
-                .shopType(market.getShopType())
+                .shopType(market.getSeller().getRoleType())
                 .mainCategoryId(mainCategory != null ? mainCategory.getCategoryId() : null)
                 .mainCategoryName(mainCategory != null ? mainCategory.getName() : null)
                 .snsLinks(snsLinks)
