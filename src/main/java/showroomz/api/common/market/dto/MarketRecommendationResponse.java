@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Page;
 import showroomz.global.dto.PaginationInfo;
-import showroomz.api.app.auth.entity.RoleType;
+import showroomz.domain.market.type.ShopType;
 
 import java.util.List;
 
@@ -56,8 +56,8 @@ public class MarketRecommendationResponse {
         @Schema(description = "마켓 URL")
         private String marketUrl;
 
-        @Schema(description = "판매자 유형", allowableValues = {"SELLER", "CREATOR"})
-        private RoleType shopType;
+        @Schema(description = "쇼룸 유형", allowableValues = {"MARKET", "SHOWROOM"})
+        private ShopType shopType;
 
         @Schema(description = "팔로워 수", example = "1200")
         private Long followCount;

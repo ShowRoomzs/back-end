@@ -5,9 +5,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.market.DTO.FollowingMarketResponse;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.entity.MarketFollow;
+import showroomz.domain.market.type.ShopType;
 import showroomz.domain.market.repository.MarketFollowRepository;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.api.app.user.repository.UserRepository;
@@ -91,12 +93,16 @@ public class MarketFollowService {
                             .shopId(market.getId())
                             .shopName(market.getMarketName())
                             .shopImageUrl(market.getMarketImageUrl())
-                            .shopType(market.getSeller().getRoleType())
+                            .shopType(toShopType(market.getSeller().getRoleType()))
                             .build();
                 })
                 .toList();
 
         return new PageResponse<>(content, follows);
+    }
+
+    private ShopType toShopType(RoleType roleType) {
+        return roleType == RoleType.CREATOR ? ShopType.SHOWROOM : ShopType.MARKET;
     }
 }
 

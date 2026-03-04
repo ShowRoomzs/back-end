@@ -6,10 +6,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.market.DTO.MarketDetailResponse;
 import showroomz.api.app.market.DTO.MarketListResponse;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
+import showroomz.domain.market.type.ShopType;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketFollowRepository;
@@ -61,7 +63,7 @@ public class UserMarketService {
                 .shopImageUrl(market.getMarketImageUrl())
                 .shopDescription(market.getMarketDescription())
                 .shopUrl(market.getMarketUrl())
-                .shopType(market.getSeller().getRoleType())
+                .shopType(toShopType(market.getSeller().getRoleType()))
                 .mainCategoryId(mainCategory != null ? mainCategory.getCategoryId() : null)
                 .mainCategoryName(mainCategory != null ? mainCategory.getName() : null)
                 .snsLinks(snsLinks)
@@ -77,6 +79,10 @@ public class UserMarketService {
         Page<MarketListResponse> page = marketRepository.findAllForUser(
                 mainCategoryId, keyword, SellerStatus.APPROVED, pageable);
         return new PageResponse<>(page.getContent(), page);
+    }
+
+    private ShopType toShopType(RoleType roleType) {
+        return roleType == RoleType.CREATOR ? ShopType.SHOWROOM : ShopType.MARKET;
     }
 }
 

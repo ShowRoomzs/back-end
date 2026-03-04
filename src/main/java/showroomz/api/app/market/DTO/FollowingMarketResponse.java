@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import showroomz.api.app.auth.entity.RoleType;
+import showroomz.domain.market.type.ShopType;
 
 @Getter
 @Builder
@@ -14,5 +14,5 @@ public class FollowingMarketResponse {
     private Long shopId;
     private String shopName;
     private String shopImageUrl;
-    private RoleType shopType;
+    private ShopType shopType;
 }

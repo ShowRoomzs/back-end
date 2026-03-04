@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import showroomz.api.app.auth.entity.RoleType;
+import showroomz.domain.market.type.ShopType;
 
 import java.util.List;
 
@@ -19,7 +19,7 @@ public class MarketDetailResponse {
     private String shopImageUrl;
     private String shopDescription;
     private String shopUrl;
-    private RoleType shopType;
+    private ShopType shopType;
     private Long mainCategoryId;
     private String mainCategoryName;
 

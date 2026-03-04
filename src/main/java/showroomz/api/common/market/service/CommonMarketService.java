@@ -7,8 +7,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.product.DTO.ProductDto;
+import showroomz.domain.market.type.ShopType;
 import showroomz.api.common.market.dto.MarketRecommendationResponse;
 import showroomz.api.common.market.dto.PopularProductResponse;
 import showroomz.api.seller.auth.type.SellerStatus;
@@ -307,7 +309,7 @@ public class CommonMarketService {
                 .representativeProducts(representativeProducts != null ? representativeProducts : List.of())
                 .marketDescription(market.getMarketDescription())
                 .marketUrl(market.getMarketUrl())
-                .shopType(market.getSeller().getRoleType())
+                .shopType(toShopType(market.getSeller().getRoleType()))
                 .followCount(followCount)
                 .isFollowing(isFollowing)
                 .mainCategoryId(market.getMainCategory() != null ? market.getMainCategory().getCategoryId() : null)
@@ -327,5 +329,9 @@ public class CommonMarketService {
 
     private Long resolveMainCategoryId(Long categoryId) {
         return categoryId;
+    }
+
+    private ShopType toShopType(RoleType roleType) {
+        return roleType == RoleType.CREATOR ? ShopType.SHOWROOM : ShopType.MARKET;
     }
 }
