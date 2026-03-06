@@ -3,6 +3,7 @@ package showroomz.api.app.post.docs;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -29,12 +30,47 @@ public interface PostControllerDocs {
             @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
-                    content = @Content(schema = @Schema(implementation = PostDto.PostDetailResponse.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PostDto.PostDetailResponse.class),
+                            examples = @ExampleObject(
+                                    name = "success",
+                                    summary = "게시글 상세 조회 성공",
+                                    value = """
+                                            {
+                                              "postId": 123,
+                                              "showroomId": 10,
+                                              "showroomName": "쇼룸 A",
+                                              "showroomImageUrl": "https://cdn.example.com/showrooms/10.png",
+                                              "title": "신상품 출시 소식",
+                                              "content": "이번 주 신상품을 소개합니다.",
+                                              "imageUrl": "https://cdn.example.com/posts/123.jpg",
+                                              "viewCount": 532,
+                                              "isWishlisted": true,
+                                              "createdAt": "2026-03-04T12:34:56",
+                                              "modifiedAt": "2026-03-04T13:10:00"
+                                            }
+                                            """
+                            )
+                    )
             ),
             @ApiResponse(
                     responseCode = "404",
                     description = "게시글을 찾을 수 없음",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "notFound",
+                                    summary = "게시글 미존재",
+                                    value = """
+                                            {
+                                              "code": "POST_NOT_FOUND",
+                                              "message": "게시글을 찾을 수 없습니다."
+                                            }
+                                            """
+                            )
+                    )
             )
     })
     ResponseEntity<PostDto.PostDetailResponse> getPostById(
@@ -51,7 +87,49 @@ public interface PostControllerDocs {
             @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
-                    content = @Content(schema = @Schema(implementation = PageResponse.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PageResponse.class),
+                            examples = @ExampleObject(
+                                    name = "success",
+                                    summary = "게시글 목록 조회 성공",
+                                    value = """
+                                            {
+                                              "content": [
+                                                {
+                                                  "postId": 123,
+                                                  "showroomId": 10,
+                                                  "showroomName": "쇼룸 A",
+                                                  "showroomImageUrl": "https://cdn.example.com/showrooms/10.png",
+                                                  "title": "신상품 출시 소식",
+                                                  "imageUrl": "https://cdn.example.com/posts/123.jpg",
+                                                  "viewCount": 532,
+                                                  "isWishlisted": true,
+                                                  "createdAt": "2026-03-04T12:34:56"
+                                                },
+                                                {
+                                                  "postId": 122,
+                                                  "showroomId": 12,
+                                                  "showroomName": "쇼룸 B",
+                                                  "showroomImageUrl": "https://cdn.example.com/showrooms/12.png",
+                                                  "title": "봄 시즌 할인 안내",
+                                                  "imageUrl": "https://cdn.example.com/posts/122.jpg",
+                                                  "viewCount": 214,
+                                                  "isWishlisted": false,
+                                                  "createdAt": "2026-03-03T09:00:00"
+                                                }
+                                              ],
+                                              "pageInfo": {
+                                                "currentPage": 1,
+                                                "totalPages": 5,
+                                                "totalResults": 87,
+                                                "limit": 20,
+                                                "hasNext": true
+                                              }
+                                            }
+                                            """
+                            )
+                    )
             )
     })
     ResponseEntity<PageResponse<PostDto.PostListItem>> getPostList(
@@ -71,7 +149,38 @@ public interface PostControllerDocs {
             @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
-                    content = @Content(schema = @Schema(implementation = PageResponse.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PageResponse.class),
+                            examples = @ExampleObject(
+                                    name = "success",
+                                    summary = "쇼룸별 게시글 목록 조회 성공",
+                                    value = """
+                                            {
+                                              "content": [
+                                                {
+                                                  "postId": 123,
+                                                  "showroomId": 10,
+                                                  "showroomName": "쇼룸 A",
+                                                  "showroomImageUrl": "https://cdn.example.com/showrooms/10.png",
+                                                  "title": "신상품 출시 소식",
+                                                  "imageUrl": "https://cdn.example.com/posts/123.jpg",
+                                                  "viewCount": 532,
+                                                  "isWishlisted": true,
+                                                  "createdAt": "2026-03-04T12:34:56"
+                                                }
+                                              ],
+                                              "pageInfo": {
+                                                "currentPage": 1,
+                                                "totalPages": 2,
+                                                "totalResults": 21,
+                                                "limit": 20,
+                                                "hasNext": true
+                                              }
+                                            }
+                                            """
+                            )
+                    )
             )
     })
     ResponseEntity<PageResponse<PostDto.PostListItem>> getPostListByShowroom(
@@ -145,7 +254,38 @@ public interface PostControllerDocs {
             @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
-                    content = @Content(schema = @Schema(implementation = PageResponse.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PageResponse.class),
+                            examples = @ExampleObject(
+                                    name = "success",
+                                    summary = "위시리스트 게시글 목록 조회 성공",
+                                    value = """
+                                            {
+                                              "content": [
+                                                {
+                                                  "postId": 123,
+                                                  "showroomId": 10,
+                                                  "showroomName": "쇼룸 A",
+                                                  "showroomImageUrl": "https://cdn.example.com/showrooms/10.png",
+                                                  "title": "신상품 출시 소식",
+                                                  "imageUrl": "https://cdn.example.com/posts/123.jpg",
+                                                  "viewCount": 532,
+                                                  "isWishlisted": true,
+                                                  "createdAt": "2026-03-04T12:34:56"
+                                                }
+                                              ],
+                                              "pageInfo": {
+                                                "currentPage": 1,
+                                                "totalPages": 1,
+                                                "totalResults": 1,
+                                                "limit": 20,
+                                                "hasNext": false
+                                              }
+                                            }
+                                            """
+                            )
+                    )
             ),
             @ApiResponse(
                     responseCode = "401",
