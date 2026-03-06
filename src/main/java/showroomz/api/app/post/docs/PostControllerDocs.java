@@ -45,8 +45,7 @@ public interface PostControllerDocs {
             summary = "게시글 목록 조회",
             description = "전시 중인 게시글 목록을 조회합니다.\n\n" +
                     "로그인한 사용자의 경우 각 게시글의 위시리스트 여부(isWishlisted)가 포함됩니다.\n" +
-                    "비로그인 사용자도 조회 가능하며, 이 경우 isWishlisted는 false로 반환됩니다.\n\n" +
-                    "showroomId를 전달하면 해당 쇼룸의 게시글만 조회됩니다."
+                    "비로그인 사용자도 조회 가능하며, 이 경우 isWishlisted는 false로 반환됩니다."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -60,9 +59,29 @@ public interface PostControllerDocs {
             @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
             @RequestParam(value = "page", required = false) Integer page,
             @Parameter(description = "페이지당 항목 수", example = "20")
-            @RequestParam(value = "limit", required = false) Integer limit,
-            @Parameter(description = "쇼룸 ID (특정 쇼룸의 게시글만 조회)")
-            @RequestParam(value = "showroomId", required = false) Long showroomId);
+            @RequestParam(value = "limit", required = false) Integer limit);
+
+    @Operation(
+            summary = "쇼룸별 게시글 목록 조회",
+            description = "전시 중인 게시글 목록을 쇼룸 기준으로 조회합니다.\n\n" +
+                    "로그인한 사용자의 경우 각 게시글의 위시리스트 여부(isWishlisted)가 포함됩니다.\n" +
+                    "비로그인 사용자도 조회 가능하며, 이 경우 isWishlisted는 false로 반환됩니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = PageResponse.class))
+            )
+    })
+    ResponseEntity<PageResponse<PostDto.PostListItem>> getPostListByShowroom(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @Parameter(description = "쇼룸 ID", example = "1")
+            @PathVariable Long showroomId,
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
+            @RequestParam(value = "page", required = false) Integer page,
+            @Parameter(description = "페이지당 항목 수", example = "20")
+            @RequestParam(value = "limit", required = false) Integer limit);
 
     @Operation(
             summary = "게시글 위시리스트 추가",

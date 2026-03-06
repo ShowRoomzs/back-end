@@ -11,14 +11,14 @@ import showroomz.api.app.post.service.UserPostService;
 import showroomz.global.dto.PageResponse;
 
 @RestController
-@RequestMapping("/v1/user/posts")
+@RequestMapping("/v1/user/showroom")
 @RequiredArgsConstructor
 public class UserPostController implements PostControllerDocs {
 
     private final UserPostService postService;
 
     @Override
-    @GetMapping("/{postId}")
+    @GetMapping("/posts/{postId}")
     public ResponseEntity<PostDto.PostDetailResponse> getPostById(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long postId) {
@@ -32,15 +32,26 @@ public class UserPostController implements PostControllerDocs {
     public ResponseEntity<PageResponse<PostDto.PostListItem>> getPostList(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(value = "page", required = false) Integer page,
-            @RequestParam(value = "limit", required = false) Integer limit,
-            @RequestParam(value = "showroomId", required = false) Long showroomId) {
+            @RequestParam(value = "limit", required = false) Integer limit) {
+        String username = userPrincipal != null ? userPrincipal.getUsername() : null;
+        PageResponse<PostDto.PostListItem> response = postService.getPostList(username, page, limit, null);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @GetMapping("/{showroomId}/posts")
+    public ResponseEntity<PageResponse<PostDto.PostListItem>> getPostListByShowroom(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable Long showroomId,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "limit", required = false) Integer limit) {
         String username = userPrincipal != null ? userPrincipal.getUsername() : null;
         PageResponse<PostDto.PostListItem> response = postService.getPostList(username, page, limit, showroomId);
         return ResponseEntity.ok(response);
     }
 
     @Override
-    @PostMapping("/{postId}/wishlist")
+    @PostMapping("/posts/{postId}/wishlist")
     public ResponseEntity<Void> addPostToWishlist(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long postId) {
@@ -49,7 +60,7 @@ public class UserPostController implements PostControllerDocs {
     }
 
     @Override
-    @DeleteMapping("/{postId}/wishlist")
+    @DeleteMapping("/posts/{postId}/wishlist")
     public ResponseEntity<Void> removePostFromWishlist(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long postId) {
@@ -58,7 +69,7 @@ public class UserPostController implements PostControllerDocs {
     }
 
     @Override
-    @GetMapping("/wishlist")
+    @GetMapping("/posts/wishlist")
     public ResponseEntity<PageResponse<PostDto.PostListItem>> getWishlistedPosts(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(value = "page", required = false) Integer page,
