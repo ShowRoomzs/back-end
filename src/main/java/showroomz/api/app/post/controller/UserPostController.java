@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import io.swagger.v3.oas.annotations.Hidden;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.post.DTO.PostDto;
 import showroomz.api.app.post.docs.PostControllerDocs;
@@ -29,6 +31,7 @@ public class UserPostController implements PostControllerDocs {
 
     @Override
     @GetMapping
+    @Hidden 
     public ResponseEntity<PageResponse<PostDto.PostListItem>> getPostList(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(value = "page", required = false) Integer page,
