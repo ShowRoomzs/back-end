@@ -2,7 +2,6 @@ package showroomz.api.showroom.post.DTO;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -83,6 +82,7 @@ public class PostDto {
         private String content;
         private String imageUrl;
         private Long viewCount;
+        private Long wishlistCount;
         private Boolean isDisplay;
         
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
@@ -101,6 +101,7 @@ public class PostDto {
         private String title;
         private String imageUrl;
         private Long viewCount;
+        private Long wishlistCount;
         private Boolean isDisplay;
         
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")

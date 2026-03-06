@@ -70,6 +70,7 @@ public class UserPostService {
                 .imageUrl(post.getImageUrl())
                 .viewCount(post.getViewCount())
                 .isWishlisted(isWishlisted)
+                .wishlistCount(post.getWishlistCount())
                 .createdAt(post.getCreatedAt())
                 .modifiedAt(post.getModifiedAt())
                 .build();
@@ -120,6 +121,7 @@ public class UserPostService {
                     .imageUrl(post.getImageUrl())
                     .viewCount(post.getViewCount())
                     .isWishlisted(finalWishlistMap.getOrDefault(post.getId(), false))
+                    .wishlistCount(post.getWishlistCount())
                     .createdAt(post.getCreatedAt())
                     .build();
         });
@@ -149,6 +151,7 @@ public class UserPostService {
         // 5. 위시리스트에 추가
         PostWishlist postWishlist = new PostWishlist(user, post);
         postWishlistRepository.save(postWishlist);
+        post.incrementWishlistCount();
     }
 
     public void removePostFromWishlist(String username, Long postId) {
@@ -156,8 +159,13 @@ public class UserPostService {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // 2. 위시리스트에서 삭제
+        // 2. Post 조회
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
+
+        // 3. 위시리스트에서 삭제
         postWishlistRepository.deleteByUserIdAndPostId(user.getId(), postId);
+        post.decrementWishlistCount();
     }
 
     @Transactional(readOnly = true)
@@ -186,6 +194,7 @@ public class UserPostService {
                     .imageUrl(post.getImageUrl())
                     .viewCount(post.getViewCount())
                     .isWishlisted(true)
+                    .wishlistCount(post.getWishlistCount())
                     .createdAt(post.getCreatedAt())
                     .build();
         });

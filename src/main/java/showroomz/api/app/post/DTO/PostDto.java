@@ -24,6 +24,7 @@ public class PostDto {
         private String imageUrl;
         private Long viewCount;
         private Boolean isWishlisted;
+        private Long wishlistCount;
         
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
         private LocalDateTime createdAt;
@@ -45,6 +46,7 @@ public class PostDto {
         private String imageUrl;
         private Long viewCount;
         private Boolean isWishlisted;
+        private Long wishlistCount;
         
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
         private LocalDateTime createdAt;

@@ -34,6 +34,10 @@ public class Post extends BaseTimeEntity {
     @Column(name = "view_count", nullable = false)
     private Long viewCount = 0L;
 
+    // 위시리스트 카운트 컬럼
+    @Column(name = "wishlist_count", nullable = false)
+    private Long wishlistCount = 0L;
+
     @Column(name = "is_display", nullable = false)
     private Boolean isDisplay = true;
 
@@ -43,6 +47,7 @@ public class Post extends BaseTimeEntity {
         this.content = content;
         this.imageUrl = imageUrl;
         this.viewCount = 0L;
+        this.wishlistCount = 0L;
         this.isDisplay = true;
     }
 
@@ -63,6 +68,16 @@ public class Post extends BaseTimeEntity {
 
     public void incrementViewCount() {
         this.viewCount++;
+    }
+
+    public void incrementWishlistCount() {
+        this.wishlistCount++;
+    }
+
+    public void decrementWishlistCount() {
+        if (this.wishlistCount > 0) {
+            this.wishlistCount--;
+        }
     }
 
     public void updateDisplayStatus(Boolean isDisplay) {
