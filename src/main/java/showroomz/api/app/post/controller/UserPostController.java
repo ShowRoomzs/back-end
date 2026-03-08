@@ -32,24 +32,24 @@ public class UserPostController implements PostControllerDocs {
     @Override
     @GetMapping
     @Hidden 
-    public ResponseEntity<PageResponse<PostDto.PostListItem>> getPostList(
+    public ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getPostList(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(value = "page", required = false) Integer page,
             @RequestParam(value = "limit", required = false) Integer limit) {
         String username = userPrincipal != null ? userPrincipal.getUsername() : null;
-        PageResponse<PostDto.PostListItem> response = postService.getPostList(username, page, limit, null);
+        PageResponse<PostDto.FeedItemResponse> response = postService.getPostList(username, page, limit, null);
         return ResponseEntity.ok(response);
     }
 
     @Override
     @GetMapping("/{showroomId}/posts")
-    public ResponseEntity<PageResponse<PostDto.PostListItem>> getPostListByShowroom(
+    public ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getPostListByShowroom(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long showroomId,
             @RequestParam(value = "page", required = false) Integer page,
             @RequestParam(value = "limit", required = false) Integer limit) {
         String username = userPrincipal != null ? userPrincipal.getUsername() : null;
-        PageResponse<PostDto.PostListItem> response = postService.getPostList(username, page, limit, showroomId);
+        PageResponse<PostDto.FeedItemResponse> response = postService.getPostList(username, page, limit, showroomId);
         return ResponseEntity.ok(response);
     }
 
@@ -73,11 +73,11 @@ public class UserPostController implements PostControllerDocs {
 
     @Override
     @GetMapping("/posts/wishlist")
-    public ResponseEntity<PageResponse<PostDto.PostListItem>> getWishlistedPosts(
+    public ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getWishlistedPosts(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(value = "page", required = false) Integer page,
             @RequestParam(value = "limit", required = false) Integer limit) {
-        PageResponse<PostDto.PostListItem> response = postService.getWishlistedPosts(
+        PageResponse<PostDto.FeedItemResponse> response = postService.getWishlistedPosts(
                 userPrincipal.getUsername(), page, limit);
         return ResponseEntity.ok(response);
     }

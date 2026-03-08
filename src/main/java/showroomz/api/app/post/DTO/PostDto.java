@@ -33,6 +33,17 @@ public class PostDto {
         private LocalDateTime modifiedAt;
     }
 
+    /** PostListItem을 감싸는 피드 아이템 래퍼. contentType으로 추후 추첨 등 확장 가능 */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FeedItemResponse {
+        @Builder.Default
+        private String contentType = "POST";
+        private PostListItem post;
+    }
+
     @Getter
     @Builder
     @NoArgsConstructor

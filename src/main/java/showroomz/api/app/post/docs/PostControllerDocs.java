@@ -97,26 +97,34 @@ public interface PostControllerDocs {
                                             {
                                               "content": [
                                                 {
-                                                  "postId": 123,
-                                                  "showroomId": 10,
-                                                  "showroomName": "쇼룸 A",
-                                                  "showroomImageUrl": "https://cdn.example.com/showrooms/10.png",
-                                                  "title": "신상품 출시 소식",
-                                                  "imageUrl": "https://cdn.example.com/posts/123.jpg",
-                                                  "viewCount": 532,
-                                                  "isWishlisted": true,
-                                                  "createdAt": "2026-03-04T12:34:56"
+                                                  "contentType": "POST",
+                                                  "post": {
+                                                    "postId": 123,
+                                                    "showroomId": 10,
+                                                    "showroomName": "쇼룸 A",
+                                                    "showroomImageUrl": "https://cdn.example.com/showrooms/10.png",
+                                                    "title": "신상품 출시 소식",
+                                                    "imageUrl": "https://cdn.example.com/posts/123.jpg",
+                                                    "viewCount": 532,
+                                                    "isWishlisted": true,
+                                                    "wishlistCount": 12,
+                                                    "createdAt": "2026-03-04T12:34:56"
+                                                  }
                                                 },
                                                 {
-                                                  "postId": 122,
-                                                  "showroomId": 12,
-                                                  "showroomName": "쇼룸 B",
-                                                  "showroomImageUrl": "https://cdn.example.com/showrooms/12.png",
-                                                  "title": "봄 시즌 할인 안내",
-                                                  "imageUrl": "https://cdn.example.com/posts/122.jpg",
-                                                  "viewCount": 214,
-                                                  "isWishlisted": false,
-                                                  "createdAt": "2026-03-03T09:00:00"
+                                                  "contentType": "POST",
+                                                  "post": {
+                                                    "postId": 122,
+                                                    "showroomId": 12,
+                                                    "showroomName": "쇼룸 B",
+                                                    "showroomImageUrl": "https://cdn.example.com/showrooms/12.png",
+                                                    "title": "봄 시즌 할인 안내",
+                                                    "imageUrl": "https://cdn.example.com/posts/122.jpg",
+                                                    "viewCount": 214,
+                                                    "isWishlisted": false,
+                                                    "wishlistCount": 5,
+                                                    "createdAt": "2026-03-03T09:00:00"
+                                                  }
                                                 }
                                               ],
                                               "pageInfo": {
@@ -132,7 +140,7 @@ public interface PostControllerDocs {
                     )
             )
     })
-    ResponseEntity<PageResponse<PostDto.PostListItem>> getPostList(
+    ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getPostList(
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
             @RequestParam(value = "page", required = false) Integer page,
@@ -159,15 +167,19 @@ public interface PostControllerDocs {
                                             {
                                               "content": [
                                                 {
-                                                  "postId": 123,
-                                                  "showroomId": 10,
-                                                  "showroomName": "쇼룸 A",
-                                                  "showroomImageUrl": "https://cdn.example.com/showrooms/10.png",
-                                                  "title": "신상품 출시 소식",
-                                                  "imageUrl": "https://cdn.example.com/posts/123.jpg",
-                                                  "viewCount": 532,
-                                                  "isWishlisted": true,
-                                                  "createdAt": "2026-03-04T12:34:56"
+                                                  "contentType": "POST",
+                                                  "post": {
+                                                    "postId": 123,
+                                                    "showroomId": 10,
+                                                    "showroomName": "쇼룸 A",
+                                                    "showroomImageUrl": "https://cdn.example.com/showrooms/10.png",
+                                                    "title": "신상품 출시 소식",
+                                                    "imageUrl": "https://cdn.example.com/posts/123.jpg",
+                                                    "viewCount": 532,
+                                                    "isWishlisted": true,
+                                                    "wishlistCount": 12,
+                                                    "createdAt": "2026-03-04T12:34:56"
+                                                  }
                                                 }
                                               ],
                                               "pageInfo": {
@@ -183,7 +195,7 @@ public interface PostControllerDocs {
                     )
             )
     })
-    ResponseEntity<PageResponse<PostDto.PostListItem>> getPostListByShowroom(
+    ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getPostListByShowroom(
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Parameter(description = "쇼룸 ID", example = "1")
             @PathVariable Long showroomId,
@@ -264,15 +276,19 @@ public interface PostControllerDocs {
                                             {
                                               "content": [
                                                 {
-                                                  "postId": 123,
-                                                  "showroomId": 10,
-                                                  "showroomName": "쇼룸 A",
-                                                  "showroomImageUrl": "https://cdn.example.com/showrooms/10.png",
-                                                  "title": "신상품 출시 소식",
-                                                  "imageUrl": "https://cdn.example.com/posts/123.jpg",
-                                                  "viewCount": 532,
-                                                  "isWishlisted": true,
-                                                  "createdAt": "2026-03-04T12:34:56"
+                                                  "contentType": "POST",
+                                                  "post": {
+                                                    "postId": 123,
+                                                    "showroomId": 10,
+                                                    "showroomName": "쇼룸 A",
+                                                    "showroomImageUrl": "https://cdn.example.com/showrooms/10.png",
+                                                    "title": "신상품 출시 소식",
+                                                    "imageUrl": "https://cdn.example.com/posts/123.jpg",
+                                                    "viewCount": 532,
+                                                    "isWishlisted": true,
+                                                    "wishlistCount": 12,
+                                                    "createdAt": "2026-03-04T12:34:56"
+                                                  }
                                                 }
                                               ],
                                               "pageInfo": {
@@ -293,7 +309,7 @@ public interface PostControllerDocs {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))
             )
     })
-    ResponseEntity<PageResponse<PostDto.PostListItem>> getWishlistedPosts(
+    ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getWishlistedPosts(
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
             @RequestParam(value = "page", required = false) Integer page,

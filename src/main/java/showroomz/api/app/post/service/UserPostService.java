@@ -77,8 +77,7 @@ public class UserPostService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<PostDto.PostListItem> getPostList(String username, Integer page, Integer limit, Long showroomId) {
-        // 1. Pageable 생성
+    public PageResponse<PostDto.FeedItemResponse> getPostList(String username, Integer page, Integer limit, Long showroomId) {
         int pageNum = page != null ? page : 0;
         int limitNum = limit != null ? limit : 20;
         Pageable pageable = PageRequest.of(pageNum, limitNum, Sort.by(Sort.Direction.DESC, "createdAt"));
@@ -110,9 +109,9 @@ public class UserPostService {
 
         // 4. DTO 변환
         final Map<Long, Boolean> finalWishlistMap = wishlistMap;
-        Page<PostDto.PostListItem> dtoPage = postPage.map(post -> {
+        Page<PostDto.FeedItemResponse> dtoPage = postPage.map(post -> {
             Market market = post.getMarket();
-            return PostDto.PostListItem.builder()
+            PostDto.PostListItem postItem = PostDto.PostListItem.builder()
                     .postId(post.getId())
                     .showroomId(market.getId())
                     .showroomName(market.getMarketName())
@@ -123,6 +122,10 @@ public class UserPostService {
                     .isWishlisted(finalWishlistMap.getOrDefault(post.getId(), false))
                     .wishlistCount(post.getWishlistCount())
                     .createdAt(post.getCreatedAt())
+                    .build();
+            return PostDto.FeedItemResponse.builder()
+                    .contentType("POST")
+                    .post(postItem)
                     .build();
         });
 
@@ -169,8 +172,7 @@ public class UserPostService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<PostDto.PostListItem> getWishlistedPosts(String username, Integer page, Integer limit) {
-        // 1. User 조회
+    public PageResponse<PostDto.FeedItemResponse> getWishlistedPosts(String username, Integer page, Integer limit) {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -182,10 +184,9 @@ public class UserPostService {
         // 3. 위시리스트 조회
         Page<Post> postPage = postWishlistRepository.findWishlistedPostsByUserId(user.getId(), pageable);
 
-        // 4. DTO 변환 (모두 위시리스트에 있으므로 isWishlisted = true)
-        Page<PostDto.PostListItem> dtoPage = postPage.map(post -> {
+        Page<PostDto.FeedItemResponse> dtoPage = postPage.map(post -> {
             Market market = post.getMarket();
-            return PostDto.PostListItem.builder()
+            PostDto.PostListItem postItem = PostDto.PostListItem.builder()
                     .postId(post.getId())
                     .showroomId(market.getId())
                     .showroomName(market.getMarketName())
@@ -196,6 +197,10 @@ public class UserPostService {
                     .isWishlisted(true)
                     .wishlistCount(post.getWishlistCount())
                     .createdAt(post.getCreatedAt())
+                    .build();
+            return PostDto.FeedItemResponse.builder()
+                    .contentType("POST")
+                    .post(postItem)
                     .build();
         });
 
