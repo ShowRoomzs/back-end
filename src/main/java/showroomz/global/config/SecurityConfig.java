@@ -110,6 +110,8 @@ public class SecurityConfig {
 
                 // SELLER 권한
                 .requestMatchers("/v1/seller/**").hasAnyAuthority(RoleType.SELLER.getCode())
+
+                // CREATOR 권한
                 .requestMatchers("/v1/creator/**").hasAnyAuthority(RoleType.CREATOR.getCode())
 
                 // USER 권한
