@@ -6,6 +6,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import showroomz.domain.common.BaseTimeEntity;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.product.entity.Product;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -40,6 +44,9 @@ public class Post extends BaseTimeEntity {
 
     @Column(name = "is_display", nullable = false)
     private Boolean isDisplay = true;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PostProduct> postProducts = new ArrayList<>();
 
     public Post(Market market, String title, String content, String imageUrl) {
         this.market = market;
@@ -82,5 +89,13 @@ public class Post extends BaseTimeEntity {
 
     public void updateDisplayStatus(Boolean isDisplay) {
         this.isDisplay = isDisplay;
+    }
+
+    public void addProduct(Product product) {
+        this.postProducts.add(new PostProduct(this, product));
+    }
+
+    public void clearProducts() {
+        this.postProducts.clear();
     }
 }

@@ -13,10 +13,14 @@ import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.repository.PostRepository;
+import showroomz.domain.product.entity.Product;
+import showroomz.domain.product.repository.ProductRepository;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -27,21 +31,46 @@ public class ShowroomPostService {
     private final PostRepository postRepository;
     private final SellerRepository sellerRepository;
     private final MarketRepository marketRepository;
+    private final ProductRepository productRepository;
 
     public PostDto.CreatePostResponse createPost(String sellerEmail, PostDto.CreatePostRequest request) {
-        // 1. Seller 조회
+        // 1. 이미지와 상품 등록 중복 및 누락 검증 (둘 중 하나만 가능)
+        boolean hasImage = request.getImageUrl() != null && !request.getImageUrl().isBlank();
+        boolean hasProducts = request.getProductIds() != null && !request.getProductIds().isEmpty();
+
+        if (hasImage && hasProducts) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+
+        // 2. Seller 조회
         Seller seller = sellerRepository.findByEmail(sellerEmail)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // 2. Market 조회
+        // 3. Market 조회
         Market market = marketRepository.findBySeller(seller)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
 
-        // 3. Post 생성
+        // 4. Post 생성
         Post post = new Post(market, request.getTitle(), request.getContent(), request.getImageUrl());
+
+        // 5. 상품이 입력된 경우 검증 및 추가
+        if (hasProducts) {
+            List<Product> products = productRepository.findAllById(request.getProductIds());
+            if (products.size() != request.getProductIds().size()) {
+                throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
+            }
+            for (Product product : products) {
+                if (!product.getMarket().getId().equals(market.getId())) {
+                    throw new BusinessException(ErrorCode.FORBIDDEN);
+                }
+                post.addProduct(product);
+            }
+        }
+
         Post savedPost = postRepository.save(post);
 
-        // 4. Response 생성
+        // 6. Response 생성
         return PostDto.CreatePostResponse.builder()
                 .postId(savedPost.getId())
                 .title(savedPost.getTitle())
@@ -134,10 +163,34 @@ public class ShowroomPostService {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
-        // 4. Post 업데이트
+        // 4. 이미지·상품 둘 다 넘어온 경우 검증
+        boolean hasImage = request.getImageUrl() != null && !request.getImageUrl().isBlank();
+        boolean hasProducts = request.getProductIds() != null && !request.getProductIds().isEmpty();
+        if (hasImage && hasProducts) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        // 5. Post 기본 정보 업데이트
         post.update(request.getTitle(), request.getContent(), request.getImageUrl(), request.getIsDisplay());
 
-        // 5. Response 생성
+        // 6. 상품 목록 수정 요청이 있으면 기존 매핑 제거 후 재등록
+        if (request.getProductIds() != null) {
+            post.clearProducts();
+            if (!request.getProductIds().isEmpty()) {
+                List<Product> products = productRepository.findAllById(request.getProductIds());
+                if (products.size() != request.getProductIds().size()) {
+                    throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
+                }
+                for (Product product : products) {
+                    if (!product.getMarket().getId().equals(market.getId())) {
+                        throw new BusinessException(ErrorCode.FORBIDDEN);
+                    }
+                    post.addProduct(product);
+                }
+            }
+        }
+
+        // 7. Response 생성
         return PostDto.UpdatePostResponse.builder()
                 .postId(post.getId())
                 .title(post.getTitle())

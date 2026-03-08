@@ -7,8 +7,26 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class PostDto {
+
+    /** 포스트에 등록된 상품 한 건 응답 */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PostProductResponse {
+        private Long productId;
+        private String productImageUrl;
+        private String marketName;
+        private String productName;
+        private Integer discountRate;
+        private Integer price;
+        private Long wishlistCount;
+        private Long reviewCount;
+        private Boolean isWishlisted;
+    }
 
     @Getter
     @Builder
@@ -25,10 +43,12 @@ public class PostDto {
         private Long viewCount;
         private Boolean isWishlisted;
         private Long wishlistCount;
-        
+        /** 포스트에 등록된 상품 목록 */
+        private List<PostProductResponse> registeredProducts;
+
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
         private LocalDateTime createdAt;
-        
+
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
         private LocalDateTime modifiedAt;
     }

@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class PostDto {
 
@@ -24,6 +25,9 @@ public class PostDto {
         private String content;
 
         private String imageUrl;
+
+        /** 등록할 상품 ID 목록 (이미지 등록과 둘 중 하나만 가능) */
+        private List<Long> productIds;
     }
 
     @Getter
@@ -53,6 +57,9 @@ public class PostDto {
         private String imageUrl;
 
         private Boolean isDisplay;
+
+        /** 수정할 상품 ID 목록 (제공 시 기존 매핑 제거 후 재등록) */
+        private List<Long> productIds;
     }
 
     @Getter
