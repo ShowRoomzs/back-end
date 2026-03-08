@@ -20,9 +20,10 @@ public interface PostControllerDocs {
 
     @Operation(
             summary = "게시글 작성",
-            description = "크리에이터가 새로운 게시글을 작성합니다.\n\n" +
-                    "**권한:** SELLER\n" +
-                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+            description = "크리에이터가 새로운 게시글을 작성합니다. 포스트에 본인 마켓 상품을 등록할 수 있습니다.\n\n" +
+                    "- **productIds**: 등록할 상품 ID 목록 (본인 마켓 상품만 가능, 이미지 등록과 둘 중 하나만 가능)\n" +
+                    "- **권한:** SELLER\n" +
+                    "- **요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -91,9 +92,10 @@ public interface PostControllerDocs {
 
     @Operation(
             summary = "게시글 수정",
-            description = "크리에이터가 자신의 게시글을 수정합니다.\n\n" +
-                    "**권한:** SELLER\n" +
-                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+            description = "크리에이터가 자신의 게시글을 수정합니다. 포스트에 등록된 상품 목록을 변경할 수 있습니다.\n\n" +
+                    "- **productIds**: 수정할 상품 ID 목록 (제공 시 기존 매핑 제거 후 재등록, 본인 마켓 상품만 가능)\n" +
+                    "- **권한:** SELLER\n" +
+                    "- **요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(

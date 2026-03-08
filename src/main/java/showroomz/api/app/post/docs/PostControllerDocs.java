@@ -23,8 +23,9 @@ public interface PostControllerDocs {
     @Operation(
             summary = "게시글 상세 조회",
             description = "게시글의 상세 정보를 조회합니다. 조회 시 조회수가 1 증가합니다.\n\n" +
-                    "로그인한 사용자의 경우 위시리스트 여부(isWishlisted)가 포함됩니다.\n" +
-                    "비로그인 사용자도 조회 가능하며, 이 경우 isWishlisted는 false로 반환됩니다."
+                    "- **registeredProducts**: 포스트에 등록된 상품 목록 (상품 ID, 이미지, 마켓명, 상품명, 할인율, 가격, 위시/리뷰 수 등)\n" +
+                    "- 로그인한 사용자의 경우 위시리스트 여부(isWishlisted)가 포함됩니다.\n" +
+                    "- 비로그인 사용자도 조회 가능하며, 이 경우 isWishlisted는 false로 반환됩니다."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -48,6 +49,19 @@ public interface PostControllerDocs {
                                               "viewCount": 532,
                                               "isWishlisted": true,
                                               "wishlistCount": 12,
+                                              "registeredProducts": [
+                                                {
+                                                  "productId": 1,
+                                                  "productImageUrl": "https://cdn.example.com/products/1.jpg",
+                                                  "marketName": "쇼룸 A",
+                                                  "productName": "프리미엄 린넨 셔츠",
+                                                  "discountRate": 10,
+                                                  "price": 29900,
+                                                  "wishlistCount": 5,
+                                                  "reviewCount": 12,
+                                                  "isWishlisted": true
+                                                }
+                                              ],
                                               "createdAt": "2026-03-04T12:34:56",
                                               "modifiedAt": "2026-03-04T13:10:00"
                                             }
