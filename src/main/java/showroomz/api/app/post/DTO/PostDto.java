@@ -56,8 +56,8 @@ public class PostDto {
         private String title;
         @Schema(description = "본문 내용")
         private String content;
-        @Schema(description = "게시글 대표 이미지 URL")
-        private String imageUrl;
+        @Schema(description = "게시글 이미지 URL 목록 (다중 이미지)")
+        private List<String> imageUrls;
         @Schema(description = "조회수")
         private Long viewCount;
         @Schema(description = "현재 사용자 위시리스트 여부")
@@ -105,8 +105,8 @@ public class PostDto {
         private String showroomImageUrl;
         @Schema(description = "제목")
         private String title;
-        @Schema(description = "게시글 대표 이미지 URL")
-        private String imageUrl;
+        @Schema(description = "게시글 이미지 URL 목록 (다중 이미지)")
+        private List<String> imageUrls;
         @Schema(description = "조회수")
         private Long viewCount;
         @Schema(description = "현재 사용자 위시리스트 여부")

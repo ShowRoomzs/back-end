@@ -34,14 +34,13 @@ public class ShowroomPostService {
     private final ProductRepository productRepository;
 
     public PostDto.CreatePostResponse createPost(String sellerEmail, PostDto.CreatePostRequest request) {
-        // 1. 이미지와 상품 등록 중복 및 누락 검증 (둘 중 하나만 가능)
-        boolean hasImage = request.getImageUrl() != null && !request.getImageUrl().isBlank();
+        // 1. 다중 이미지 컬렉션 검증 및 상품 등록 중복 검증 (둘 중 하나만 가능)
+        boolean hasImage = request.getImageUrls() != null && !request.getImageUrls().isEmpty();
         boolean hasProducts = request.getProductIds() != null && !request.getProductIds().isEmpty();
 
         if (hasImage && hasProducts) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
-
 
         // 2. Seller 조회
         Seller seller = sellerRepository.findByEmail(sellerEmail)
@@ -51,8 +50,8 @@ public class ShowroomPostService {
         Market market = marketRepository.findBySeller(seller)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
 
-        // 4. Post 생성
-        Post post = new Post(market, request.getTitle(), request.getContent(), request.getImageUrl());
+        // 4. Post 생성 (다중 이미지 리스트 전달)
+        Post post = new Post(market, request.getTitle(), request.getContent(), request.getImageUrls());
 
         // 5. 상품이 입력된 경우 검증 및 추가
         if (hasProducts) {
@@ -70,12 +69,12 @@ public class ShowroomPostService {
 
         Post savedPost = postRepository.save(post);
 
-        // 6. Response 생성
+        // 6. Response 생성 (다중 이미지 리스트 맵핑)
         return PostDto.CreatePostResponse.builder()
                 .postId(savedPost.getId())
                 .title(savedPost.getTitle())
                 .content(savedPost.getContent())
-                .imageUrl(savedPost.getImageUrl())
+                .imageUrls(savedPost.getImageUrls())
                 .createdAt(savedPost.getCreatedAt())
                 .build();
     }
@@ -105,7 +104,7 @@ public class ShowroomPostService {
                 .marketName(market.getMarketName())
                 .title(post.getTitle())
                 .content(post.getContent())
-                .imageUrl(post.getImageUrl())
+                .imageUrls(post.getImageUrls())
                 .viewCount(post.getViewCount())
                 .wishlistCount(post.getWishlistCount())
                 .isDisplay(post.getIsDisplay())
@@ -130,12 +129,12 @@ public class ShowroomPostService {
         // 4. Post 목록 조회
         Page<Post> postPage = postRepository.findByMarketId(market.getId(), pageable);
 
-        // 5. DTO 변환
+        // 5. DTO 변환 (post.getImageUrls() 전체 리스트 전달)
         Page<PostDto.PostListItem> dtoPage = postPage.map(post ->
                 PostDto.PostListItem.builder()
                         .postId(post.getId())
                         .title(post.getTitle())
-                        .imageUrl(post.getImageUrl())
+                        .imageUrls(post.getImageUrls())
                         .viewCount(post.getViewCount())
                         .wishlistCount(post.getWishlistCount())
                         .isDisplay(post.getIsDisplay())
@@ -163,15 +162,15 @@ public class ShowroomPostService {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
-        // 4. 이미지·상품 둘 다 넘어온 경우 검증
-        boolean hasImage = request.getImageUrl() != null && !request.getImageUrl().isBlank();
+        // 4. 다중 이미지 배열 컬렉션 검증
+        boolean hasImage = request.getImageUrls() != null && !request.getImageUrls().isEmpty();
         boolean hasProducts = request.getProductIds() != null && !request.getProductIds().isEmpty();
         if (hasImage && hasProducts) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
-        // 5. Post 기본 정보 업데이트
-        post.update(request.getTitle(), request.getContent(), request.getImageUrl(), request.getIsDisplay());
+        // 5. Post 기본 정보 업데이트 (List 파라미터 전달)
+        post.update(request.getTitle(), request.getContent(), request.getImageUrls(), request.getIsDisplay());
 
         // 6. 상품 목록 수정 요청이 있으면 기존 매핑 제거 후 재등록
         if (request.getProductIds() != null) {
@@ -195,7 +194,7 @@ public class ShowroomPostService {
                 .postId(post.getId())
                 .title(post.getTitle())
                 .content(post.getContent())
-                .imageUrl(post.getImageUrl())
+                .imageUrls(post.getImageUrls())
                 .isDisplay(post.getIsDisplay())
                 .modifiedAt(post.getModifiedAt())
                 .build();

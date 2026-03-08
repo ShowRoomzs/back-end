@@ -32,8 +32,10 @@ public class Post extends BaseTimeEntity {
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
+    @ElementCollection
+    @CollectionTable(name = "post_images", joinColumns = @JoinColumn(name = "post_id"))
     @Column(name = "image_url", length = 512)
-    private String imageUrl;
+    private List<String> imageUrls = new ArrayList<>();
 
     @Column(name = "view_count", nullable = false)
     private Long viewCount = 0L;
@@ -48,25 +50,28 @@ public class Post extends BaseTimeEntity {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostProduct> postProducts = new ArrayList<>();
 
-    public Post(Market market, String title, String content, String imageUrl) {
+    public Post(Market market, String title, String content, List<String> imageUrls) {
         this.market = market;
         this.title = title;
         this.content = content;
-        this.imageUrl = imageUrl;
+        if (imageUrls != null) {
+            this.imageUrls.addAll(imageUrls);
+        }
         this.viewCount = 0L;
         this.wishlistCount = 0L;
         this.isDisplay = true;
     }
 
-    public void update(String title, String content, String imageUrl, Boolean isDisplay) {
+    public void update(String title, String content, List<String> imageUrls, Boolean isDisplay) {
         if (title != null) {
             this.title = title;
         }
         if (content != null) {
             this.content = content;
         }
-        if (imageUrl != null) {
-            this.imageUrl = imageUrl;
+        if (imageUrls != null) {
+            this.imageUrls.clear();
+            this.imageUrls.addAll(imageUrls);
         }
         if (isDisplay != null) {
             this.isDisplay = isDisplay;

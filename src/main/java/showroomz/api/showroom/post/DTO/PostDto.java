@@ -28,8 +28,8 @@ public class PostDto {
         @Schema(description = "본문 내용", example = "이번 주 신상품을 소개합니다.")
         private String content;
 
-        @Schema(description = "게시글 대표 이미지 URL")
-        private String imageUrl;
+        @Schema(description = "게시글 이미지 URL 목록 (다중 이미지)")
+        private List<String> imageUrls;
 
         @Schema(description = "포스트에 등록할 상품 ID 목록 (본인 마켓 상품만 가능, 이미지 등록과 둘 중 하나만 가능)")
         private List<Long> productIds;
@@ -47,8 +47,8 @@ public class PostDto {
         private String title;
         @Schema(description = "본문 내용")
         private String content;
-        @Schema(description = "게시글 대표 이미지 URL")
-        private String imageUrl;
+        @Schema(description = "게시글 이미지 URL 목록 (다중 이미지)")
+        private List<String> imageUrls;
 
         @Schema(description = "생성 일시", example = "2026-03-04T12:34:56")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
@@ -68,8 +68,8 @@ public class PostDto {
         @Schema(description = "본문 내용")
         private String content;
 
-        @Schema(description = "게시글 대표 이미지 URL")
-        private String imageUrl;
+        @Schema(description = "게시글 이미지 URL 목록 (다중 이미지)")
+        private List<String> imageUrls;
 
         @Schema(description = "전시 여부")
         private Boolean isDisplay;
@@ -90,8 +90,8 @@ public class PostDto {
         private String title;
         @Schema(description = "본문 내용")
         private String content;
-        @Schema(description = "게시글 대표 이미지 URL")
-        private String imageUrl;
+        @Schema(description = "게시글 이미지 URL 목록 (다중 이미지)")
+        private List<String> imageUrls;
         @Schema(description = "전시 여부")
         private Boolean isDisplay;
 
@@ -116,8 +116,8 @@ public class PostDto {
         private String title;
         @Schema(description = "본문 내용")
         private String content;
-        @Schema(description = "게시글 대표 이미지 URL")
-        private String imageUrl;
+        @Schema(description = "게시글 이미지 URL 목록 (다중 이미지)")
+        private List<String> imageUrls;
         @Schema(description = "조회수")
         private Long viewCount;
         @Schema(description = "위시리스트 수")
@@ -144,8 +144,8 @@ public class PostDto {
         private Long postId;
         @Schema(description = "제목")
         private String title;
-        @Schema(description = "게시글 대표 이미지 URL")
-        private String imageUrl;
+        @Schema(description = "게시글 이미지 URL 목록 (다중 이미지)")
+        private List<String> imageUrls;
         @Schema(description = "조회수")
         private Long viewCount;
         @Schema(description = "위시리스트 수")
