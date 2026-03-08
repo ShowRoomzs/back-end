@@ -47,6 +47,7 @@ public interface PostControllerDocs {
                                               "imageUrl": "https://cdn.example.com/posts/123.jpg",
                                               "viewCount": 532,
                                               "isWishlisted": true,
+                                              "wishlistCount": 12,
                                               "createdAt": "2026-03-04T12:34:56",
                                               "modifiedAt": "2026-03-04T13:10:00"
                                             }
