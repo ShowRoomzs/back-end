@@ -53,6 +53,16 @@ public class UserPostController implements PostControllerDocs {
     }
 
     @Override
+    @GetMapping("/feed/following")
+    public ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getFollowingFeed(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            PagingRequest pagingRequest) {
+        PageResponse<PostDto.FeedItemResponse> response = postService.getFollowingFeed(
+                userPrincipal.getUsername(), pagingRequest);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
     @PostMapping("/posts/{postId}/wishlist")
     public ResponseEntity<Void> addPostToWishlist(
             @AuthenticationPrincipal UserPrincipal userPrincipal,

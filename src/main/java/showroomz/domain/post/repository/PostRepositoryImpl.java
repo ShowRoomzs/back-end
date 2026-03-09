@@ -78,4 +78,32 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
+
+    @Override
+    public Page<Post> findDisplayedPostsByMarketIds(List<Long> marketIds, Pageable pageable) {
+        if (marketIds == null || marketIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        List<Post> content = queryFactory
+                .selectFrom(post)
+                .where(
+                        post.market.id.in(marketIds),
+                        post.isDisplay.eq(true)
+                )
+                .orderBy(post.createdAt.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        JPAQuery<Long> countQuery = queryFactory
+                .select(post.count())
+                .from(post)
+                .where(
+                        post.market.id.in(marketIds),
+                        post.isDisplay.eq(true)
+                );
+
+        return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
+    }
 }

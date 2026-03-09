@@ -216,6 +216,63 @@ public interface PostControllerDocs {
             PagingRequest pagingRequest);
 
     @Operation(
+            summary = "팔로잉 피드 조회",
+            description = "사용자가 팔로우하는 쇼룸들의 전시 중인 게시글 목록을 최신순으로 조회합니다.\n\n" +
+                    "**권한:** USER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PageResponse.class),
+                            examples = @ExampleObject(
+                                    name = "success",
+                                    summary = "팔로잉 피드 조회 성공",
+                                    value = """
+                                            {
+                                              "content": [
+                                                {
+                                                  "contentType": "POST",
+                                                  "post": {
+                                                    "postId": 123,
+                                                    "showroomId": 10,
+                                                    "showroomName": "쇼룸 A",
+                                                    "showroomImageUrl": "https://cdn.example.com/showrooms/10.png",
+                                                    "title": "신상품 출시 소식",
+                                                    "imageUrls": ["https://cdn.example.com/posts/123.jpg"],
+                                                    "viewCount": 532,
+                                                    "isWishlisted": true,
+                                                    "wishlistCount": 12,
+                                                    "createdAt": "2026-03-04T12:34:56"
+                                                  }
+                                                }
+                                              ],
+                                              "pageInfo": {
+                                                "currentPage": 1,
+                                                "totalPages": 2,
+                                                "totalResults": 21,
+                                                "limit": 20,
+                                                "hasNext": true
+                                              }
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getFollowingFeed(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
+            PagingRequest pagingRequest);
+
+    @Operation(
             summary = "게시글 위시리스트 추가",
             description = "게시글을 위시리스트에 추가합니다.\n\n" +
                     "**권한:** USER\n" +

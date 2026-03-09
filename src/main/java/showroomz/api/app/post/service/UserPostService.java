@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.post.DTO.PostDto;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.market.repository.MarketFollowRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.entity.PostProduct;
@@ -38,6 +39,7 @@ public class UserPostService {
 
     private final PostRepository postRepository;
     private final PostWishlistRepository postWishlistRepository;
+    private final MarketFollowRepository marketFollowRepository;
     private final UserRepository userRepository;
     private final WishlistRepository wishlistRepository;
     private final ReviewRepository reviewRepository;
@@ -202,6 +204,58 @@ public class UserPostService {
                     .wishlistCount(post.getWishlistCount())
                     .createdAt(post.getCreatedAt())
                     .build();
+            return PostDto.FeedItemResponse.builder()
+                    .contentType("POST")
+                    .post(postItem)
+                    .build();
+        });
+
+        return new PageResponse<>(dtoPage);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<PostDto.FeedItemResponse> getFollowingFeed(String username, PagingRequest pagingRequest) {
+        Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        List<Long> followingMarketIds = marketFollowRepository.findMarketIdsByUserId(user.getId());
+        Pageable pageable = pagingRequest.toPageable();
+
+        if (followingMarketIds.isEmpty()) {
+            return new PageResponse<>(Page.empty(pageable));
+        }
+
+        Page<Post> postPage = postRepository.findDisplayedPostsByMarketIds(followingMarketIds, pageable);
+
+        List<Long> postIds = postPage.getContent().stream()
+                .map(Post::getId)
+                .collect(Collectors.toList());
+
+        Map<Long, Boolean> wishlistMap = Map.of();
+        if (!postIds.isEmpty()) {
+            List<Long> wishlistedPostIds = postWishlistRepository
+                    .findWishlistedPostIdsByUserIdAndPostIds(user.getId(), postIds);
+
+            wishlistMap = wishlistedPostIds.stream()
+                    .collect(Collectors.toMap(id -> id, id -> true));
+        }
+
+        final Map<Long, Boolean> finalWishlistMap = wishlistMap;
+        Page<PostDto.FeedItemResponse> dtoPage = postPage.map(post -> {
+            Market market = post.getMarket();
+            PostDto.PostListItem postItem = PostDto.PostListItem.builder()
+                    .postId(post.getId())
+                    .showroomId(market.getId())
+                    .showroomName(market.getMarketName())
+                    .showroomImageUrl(market.getMarketImageUrl())
+                    .title(post.getTitle())
+                    .imageUrls(post.getImageUrls())
+                    .viewCount(post.getViewCount())
+                    .isWishlisted(finalWishlistMap.getOrDefault(post.getId(), false))
+                    .wishlistCount(post.getWishlistCount())
+                    .createdAt(post.getCreatedAt())
+                    .build();
+
             return PostDto.FeedItemResponse.builder()
                     .contentType("POST")
                     .post(postItem)
