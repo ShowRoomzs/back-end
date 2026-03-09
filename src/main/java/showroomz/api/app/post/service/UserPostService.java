@@ -3,9 +3,7 @@ package showroomz.api.app.post.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.post.DTO.PostDto;
@@ -21,6 +19,7 @@ import showroomz.domain.product.entity.Product;
 import showroomz.domain.review.repository.ReviewRepository;
 import showroomz.domain.wishlist.repository.WishlistRepository;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -159,10 +158,8 @@ public class UserPostService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<PostDto.FeedItemResponse> getPostList(String username, Integer page, Integer limit, Long showroomId) {
-        int pageNum = page != null ? page : 0;
-        int limitNum = limit != null ? limit : 20;
-        Pageable pageable = PageRequest.of(pageNum, limitNum, Sort.by(Sort.Direction.DESC, "createdAt"));
+    public PageResponse<PostDto.FeedItemResponse> getPostList(String username, PagingRequest pagingRequest, Long showroomId) {
+        Pageable pageable = pagingRequest.toPageable();
 
         // 2. Post 목록 조회
         Page<Post> postPage;
@@ -254,14 +251,12 @@ public class UserPostService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<PostDto.FeedItemResponse> getWishlistedPosts(String username, Integer page, Integer limit) {
+    public PageResponse<PostDto.FeedItemResponse> getWishlistedPosts(String username, PagingRequest pagingRequest) {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         // 2. Pageable 생성
-        int pageNum = page != null ? page : 0;
-        int limitNum = limit != null ? limit : 20;
-        Pageable pageable = PageRequest.of(pageNum, limitNum);
+        Pageable pageable = pagingRequest.toPageable();
 
         // 3. 위시리스트 조회
         Page<Post> postPage = postWishlistRepository.findWishlistedPostsByUserId(user.getId(), pageable);

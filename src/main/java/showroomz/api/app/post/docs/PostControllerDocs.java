@@ -11,11 +11,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.post.DTO.PostDto;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "User Post", description = "유저 게시글 조회 및 위시리스트 API")
 public interface PostControllerDocs {
@@ -157,10 +157,7 @@ public interface PostControllerDocs {
     })
     ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getPostList(
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
-            @RequestParam(value = "page", required = false) Integer page,
-            @Parameter(description = "페이지당 항목 수", example = "20")
-            @RequestParam(value = "limit", required = false) Integer limit);
+            PagingRequest pagingRequest);
 
     @Operation(
             summary = "쇼룸별 게시글 목록 조회",
@@ -214,10 +211,7 @@ public interface PostControllerDocs {
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Parameter(description = "쇼룸 ID", example = "1")
             @PathVariable Long showroomId,
-            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
-            @RequestParam(value = "page", required = false) Integer page,
-            @Parameter(description = "페이지당 항목 수", example = "20")
-            @RequestParam(value = "limit", required = false) Integer limit);
+            PagingRequest pagingRequest);
 
     @Operation(
             summary = "게시글 위시리스트 추가",
@@ -326,8 +320,5 @@ public interface PostControllerDocs {
     })
     ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getWishlistedPosts(
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
-            @RequestParam(value = "page", required = false) Integer page,
-            @Parameter(description = "페이지당 항목 수", example = "20")
-            @RequestParam(value = "limit", required = false) Integer limit);
+            PagingRequest pagingRequest);
 }

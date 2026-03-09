@@ -11,6 +11,7 @@ import showroomz.api.app.post.DTO.PostDto;
 import showroomz.api.app.post.docs.PostControllerDocs;
 import showroomz.api.app.post.service.UserPostService;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 @RestController
 @RequestMapping("/v1/user/showroom")
@@ -34,10 +35,9 @@ public class UserPostController implements PostControllerDocs {
     @Hidden 
     public ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getPostList(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @RequestParam(value = "page", required = false) Integer page,
-            @RequestParam(value = "limit", required = false) Integer limit) {
+            PagingRequest pagingRequest) {
         String username = userPrincipal != null ? userPrincipal.getUsername() : null;
-        PageResponse<PostDto.FeedItemResponse> response = postService.getPostList(username, page, limit, null);
+        PageResponse<PostDto.FeedItemResponse> response = postService.getPostList(username, pagingRequest, null);
         return ResponseEntity.ok(response);
     }
 
@@ -46,10 +46,9 @@ public class UserPostController implements PostControllerDocs {
     public ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getPostListByShowroom(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long showroomId,
-            @RequestParam(value = "page", required = false) Integer page,
-            @RequestParam(value = "limit", required = false) Integer limit) {
+            PagingRequest pagingRequest) {
         String username = userPrincipal != null ? userPrincipal.getUsername() : null;
-        PageResponse<PostDto.FeedItemResponse> response = postService.getPostList(username, page, limit, showroomId);
+        PageResponse<PostDto.FeedItemResponse> response = postService.getPostList(username, pagingRequest, showroomId);
         return ResponseEntity.ok(response);
     }
 
@@ -75,10 +74,9 @@ public class UserPostController implements PostControllerDocs {
     @GetMapping("/posts/wishlist")
     public ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getWishlistedPosts(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @RequestParam(value = "page", required = false) Integer page,
-            @RequestParam(value = "limit", required = false) Integer limit) {
+            PagingRequest pagingRequest) {
         PageResponse<PostDto.FeedItemResponse> response = postService.getWishlistedPosts(
-                userPrincipal.getUsername(), page, limit);
+                userPrincipal.getUsername(), pagingRequest);
         return ResponseEntity.ok(response);
     }
 }
