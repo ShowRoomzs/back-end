@@ -125,6 +125,19 @@ public interface PostControllerDocs {
                                                     "viewCount": 532,
                                                     "isWishlisted": true,
                                                     "wishlistCount": 12,
+                                                    "registeredProducts": [
+                                                      {
+                                                        "productId": 1,
+                                                        "productImageUrl": "https://cdn.example.com/products/1.jpg",
+                                                        "marketName": "쇼룸 A",
+                                                        "productName": "프리미엄 린넨 셔츠",
+                                                        "discountRate": 10,
+                                                        "price": 29900,
+                                                        "wishlistCount": 5,
+                                                        "reviewCount": 12,
+                                                        "isWishlisted": true
+                                                      }
+                                                    ],
                                                     "createdAt": "2026-03-04T12:34:56"
                                                   }
                                                 },
@@ -140,6 +153,19 @@ public interface PostControllerDocs {
                                                     "viewCount": 214,
                                                     "isWishlisted": false,
                                                     "wishlistCount": 5,
+                                                    "registeredProducts": [
+                                                      {
+                                                        "productId": 2,
+                                                        "productImageUrl": "https://cdn.example.com/products/2.jpg",
+                                                        "marketName": "쇼룸 B",
+                                                        "productName": "코튼 자켓",
+                                                        "discountRate": 15,
+                                                        "price": 45900,
+                                                        "wishlistCount": 3,
+                                                        "reviewCount": 8,
+                                                        "isWishlisted": false
+                                                      }
+                                                    ],
                                                     "createdAt": "2026-03-03T09:00:00"
                                                   }
                                                 }
@@ -192,6 +218,19 @@ public interface PostControllerDocs {
                                                     "viewCount": 532,
                                                     "isWishlisted": true,
                                                     "wishlistCount": 12,
+                                                    "registeredProducts": [
+                                                      {
+                                                        "productId": 1,
+                                                        "productImageUrl": "https://cdn.example.com/products/1.jpg",
+                                                        "marketName": "쇼룸 A",
+                                                        "productName": "프리미엄 린넨 셔츠",
+                                                        "discountRate": 10,
+                                                        "price": 29900,
+                                                        "wishlistCount": 5,
+                                                        "reviewCount": 12,
+                                                        "isWishlisted": true
+                                                      }
+                                                    ],
                                                     "createdAt": "2026-03-04T12:34:56"
                                                   }
                                                 }

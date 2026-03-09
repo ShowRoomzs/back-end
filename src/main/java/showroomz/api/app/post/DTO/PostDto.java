@@ -113,6 +113,8 @@ public class PostDto {
         private Boolean isWishlisted;
         @Schema(description = "위시리스트 수")
         private Long wishlistCount;
+        @Schema(description = "포스트에 등록된 상품 목록")
+        private List<PostProductResponse> registeredProducts;
 
         @Schema(description = "생성 일시", example = "2026-03-04T12:34:56")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")

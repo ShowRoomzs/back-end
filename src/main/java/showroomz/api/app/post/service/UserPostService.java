@@ -173,8 +173,9 @@ public class UserPostService {
 
         // 3. 위시리스트 여부 확인 (로그인 사용자만)
         Map<Long, Boolean> wishlistMap = Map.of();
+        Users user = null;
         if (username != null) {
-            Users user = userRepository.findByUsername(username).orElse(null);
+            user = userRepository.findByUsername(username).orElse(null);
             if (user != null) {
                 List<Long> postIds = postPage.getContent().stream()
                         .map(Post::getId)
@@ -190,8 +191,10 @@ public class UserPostService {
 
         // 4. DTO 변환
         final Map<Long, Boolean> finalWishlistMap = wishlistMap;
+        final Users finalUser = user;
         Page<PostDto.FeedItemResponse> dtoPage = postPage.map(post -> {
             Market market = post.getMarket();
+            List<PostDto.PostProductResponse> registeredProducts = buildRegisteredProducts(post, finalUser);
             PostDto.PostListItem postItem = PostDto.PostListItem.builder()
                     .postId(post.getId())
                     .showroomId(market.getId())
@@ -202,6 +205,7 @@ public class UserPostService {
                     .viewCount(post.getViewCount())
                     .isWishlisted(finalWishlistMap.getOrDefault(post.getId(), false))
                     .wishlistCount(post.getWishlistCount())
+                    .registeredProducts(registeredProducts)
                     .createdAt(post.getCreatedAt())
                     .build();
             return PostDto.FeedItemResponse.builder()
@@ -243,6 +247,7 @@ public class UserPostService {
         final Map<Long, Boolean> finalWishlistMap = wishlistMap;
         Page<PostDto.FeedItemResponse> dtoPage = postPage.map(post -> {
             Market market = post.getMarket();
+            List<PostDto.PostProductResponse> registeredProducts = buildRegisteredProducts(post, user);
             PostDto.PostListItem postItem = PostDto.PostListItem.builder()
                     .postId(post.getId())
                     .showroomId(market.getId())
@@ -253,6 +258,7 @@ public class UserPostService {
                     .viewCount(post.getViewCount())
                     .isWishlisted(finalWishlistMap.getOrDefault(post.getId(), false))
                     .wishlistCount(post.getWishlistCount())
+                    .registeredProducts(registeredProducts)
                     .createdAt(post.getCreatedAt())
                     .build();
 
@@ -317,6 +323,7 @@ public class UserPostService {
 
         Page<PostDto.FeedItemResponse> dtoPage = postPage.map(post -> {
             Market market = post.getMarket();
+            List<PostDto.PostProductResponse> registeredProducts = buildRegisteredProducts(post, user);
             PostDto.PostListItem postItem = PostDto.PostListItem.builder()
                     .postId(post.getId())
                     .showroomId(market.getId())
@@ -327,6 +334,7 @@ public class UserPostService {
                     .viewCount(post.getViewCount())
                     .isWishlisted(true)
                     .wishlistCount(post.getWishlistCount())
+                    .registeredProducts(registeredProducts)
                     .createdAt(post.getCreatedAt())
                     .build();
             return PostDto.FeedItemResponse.builder()

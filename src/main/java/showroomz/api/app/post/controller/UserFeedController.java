@@ -59,6 +59,19 @@ public class UserFeedController {
                                                     "viewCount": 532,
                                                     "isWishlisted": true,
                                                     "wishlistCount": 12,
+                                                    "registeredProducts": [
+                                                      {
+                                                        "productId": 1,
+                                                        "productImageUrl": "https://cdn.example.com/products/1.jpg",
+                                                        "marketName": "쇼룸 A",
+                                                        "productName": "프리미엄 린넨 셔츠",
+                                                        "discountRate": 10,
+                                                        "price": 29900,
+                                                        "wishlistCount": 5,
+                                                        "reviewCount": 12,
+                                                        "isWishlisted": true
+                                                      }
+                                                    ],
                                                     "createdAt": "2026-03-04T12:34:56"
                                                   }
                                                 }
@@ -121,6 +134,19 @@ public class UserFeedController {
                                                     "viewCount": 532,
                                                     "isWishlisted": true,
                                                     "wishlistCount": 12,
+                                                    "registeredProducts": [
+                                                      {
+                                                        "productId": 1,
+                                                        "productImageUrl": "https://cdn.example.com/products/1.jpg",
+                                                        "marketName": "쇼룸 A",
+                                                        "productName": "프리미엄 린넨 셔츠",
+                                                        "discountRate": 10,
+                                                        "price": 29900,
+                                                        "wishlistCount": 5,
+                                                        "reviewCount": 12,
+                                                        "isWishlisted": true
+                                                      }
+                                                    ],
                                                     "createdAt": "2026-03-04T12:34:56"
                                                   }
                                                 }
