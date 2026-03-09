@@ -1,31 +1,67 @@
--- post 테이블 생성
-CREATE TABLE post (
-    post_id BIGINT NOT NULL AUTO_INCREMENT,
-    market_id BIGINT NOT NULL,
-    title VARCHAR(200) NOT NULL,
+
+create table post (
+    is_display bit not null,
+    created_at datetime(6),
+    market_id bigint not null,
+    modified_at datetime(6),
+    post_id bigint not null auto_increment,
+    view_count bigint not null,
+    wishlist_count bigint not null,
+    title varchar(200) not null,
     content TEXT,
-    image_url VARCHAR(512),
-    view_count BIGINT NOT NULL DEFAULT 0,
-    is_display TINYINT(1) NOT NULL DEFAULT 1,
-    created_at DATETIME(6) DEFAULT NULL,
-    modified_at DATETIME(6) DEFAULT NULL,
-    PRIMARY KEY (post_id),
-    CONSTRAINT fk_post_market FOREIGN KEY (market_id) REFERENCES market (market_id)
-) ENGINE=InnoDB;
+    primary key (post_id)
+) engine=InnoDB;
 
--- post_wishlist 테이블 생성
-CREATE TABLE post_wishlist (
-    post_wishlist_id BIGINT NOT NULL AUTO_INCREMENT,
-    user_id BIGINT NOT NULL,
-    post_id BIGINT NOT NULL,
-    created_at DATETIME(6) DEFAULT NULL,
-    PRIMARY KEY (post_wishlist_id),
-    UNIQUE KEY post_wishlist_uk (user_id, post_id),
-    CONSTRAINT fk_post_wishlist_user FOREIGN KEY (user_id) REFERENCES users (user_id),
-    CONSTRAINT fk_post_wishlist_post FOREIGN KEY (post_id) REFERENCES post (post_id)
-) ENGINE=InnoDB;
+create table post_images (
+    post_id bigint not null,
+    image_url varchar(512)
+) engine=InnoDB;
 
--- 인덱스 생성 (조회 성능 최적화)
-CREATE INDEX idx_post_market_id ON post (market_id);
-CREATE INDEX idx_post_created_at ON post (created_at);
-CREATE INDEX idx_post_wishlist_post_id ON post_wishlist (post_id);
+create table post_product (
+    post_id bigint not null,
+    post_product_id bigint not null auto_increment,
+    product_id bigint not null,
+    primary key (post_product_id)
+) engine=InnoDB;
+
+create table post_wishlist (
+    created_at datetime(6),
+    post_id bigint not null,
+    post_wishlist_id bigint not null auto_increment,
+    user_id bigint not null,
+    primary key (post_wishlist_id)
+) engine=InnoDB;
+
+alter table post_wishlist 
+    add constraint post_wishlist_uk unique (user_id, post_id);
+
+
+alter table post 
+    add constraint FKl8xkjvcym3fq9lervw5tm6do9 
+    foreign key (market_id) 
+    references market (market_id);
+
+alter table post_images 
+    add constraint FK4436mqgshkhub17yvq5ku91f7 
+    foreign key (post_id) 
+    references post (post_id);
+
+alter table post_product 
+    add constraint FKamrwvf18xpi2alsfvww5usjed 
+    foreign key (post_id) 
+    references post (post_id);
+
+alter table post_product 
+    add constraint FKq3iw3rc3cjqp9tgel6bmycdie 
+    foreign key (product_id) 
+    references product (product_id);
+
+alter table post_wishlist 
+    add constraint FKv14tlisj3jqd6ejyrryd7nl8 
+    foreign key (post_id) 
+    references post (post_id);
+
+alter table post_wishlist 
+    add constraint FKj5pl9ls0txnfcsdfnsi3852q5 
+    foreign key (user_id) 
+    references users (user_id);
