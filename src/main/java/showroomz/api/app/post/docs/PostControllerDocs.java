@@ -2,6 +2,7 @@ package showroomz.api.app.post.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -90,7 +91,8 @@ public interface PostControllerDocs {
     })
     ResponseEntity<PostDto.PostDetailResponse> getPostById(
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @PathVariable Long postId);
+            @Parameter(description = "게시글 ID", required = true, example = "123", in = ParameterIn.PATH)
+            @PathVariable("postId") Long postId);
 
     @Operation(
             summary = "게시글 목록 조회",
@@ -209,8 +211,8 @@ public interface PostControllerDocs {
     })
     ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getPostListByShowroom(
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @Parameter(description = "쇼룸 ID", example = "1")
-            @PathVariable Long showroomId,
+            @Parameter(description = "쇼룸 ID", required = true, example = "1", in = ParameterIn.PATH)
+            @PathVariable("showroomId") Long showroomId,
             PagingRequest pagingRequest);
 
     @Operation(
@@ -242,7 +244,8 @@ public interface PostControllerDocs {
     })
     ResponseEntity<Void> addPostToWishlist(
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @PathVariable Long postId);
+            @Parameter(description = "게시글 ID", required = true, example = "123", in = ParameterIn.PATH)
+            @PathVariable("postId") Long postId);
 
     @Operation(
             summary = "게시글 위시리스트 제거",
@@ -263,7 +266,8 @@ public interface PostControllerDocs {
     })
     ResponseEntity<Void> removePostFromWishlist(
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @PathVariable Long postId);
+            @Parameter(description = "게시글 ID", required = true, example = "123", in = ParameterIn.PATH)
+            @PathVariable("postId") Long postId);
 
     @Operation(
             summary = "위시리스트 게시글 목록 조회",

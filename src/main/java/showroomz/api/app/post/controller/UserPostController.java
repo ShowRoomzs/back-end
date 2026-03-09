@@ -24,7 +24,7 @@ public class UserPostController implements PostControllerDocs {
     @GetMapping("/posts/{postId}")
     public ResponseEntity<PostDto.PostDetailResponse> getPostById(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @PathVariable Long postId) {
+            @PathVariable("postId") Long postId) {
         String username = userPrincipal != null ? userPrincipal.getUsername() : null;
         PostDto.PostDetailResponse response = postService.getPostById(username, postId);
         return ResponseEntity.ok(response);
@@ -45,7 +45,7 @@ public class UserPostController implements PostControllerDocs {
     @GetMapping("/{showroomId}/posts")
     public ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getPostListByShowroom(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @PathVariable Long showroomId,
+            @PathVariable("showroomId") Long showroomId,
             PagingRequest pagingRequest) {
         String username = userPrincipal != null ? userPrincipal.getUsername() : null;
         PageResponse<PostDto.FeedItemResponse> response = postService.getPostList(username, pagingRequest, showroomId);
@@ -56,7 +56,7 @@ public class UserPostController implements PostControllerDocs {
     @PostMapping("/posts/{postId}/wishlist")
     public ResponseEntity<Void> addPostToWishlist(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @PathVariable Long postId) {
+            @PathVariable("postId") Long postId) {
         postService.addPostToWishlist(userPrincipal.getUsername(), postId);
         return ResponseEntity.noContent().build();
     }
@@ -65,7 +65,7 @@ public class UserPostController implements PostControllerDocs {
     @DeleteMapping("/posts/{postId}/wishlist")
     public ResponseEntity<Void> removePostFromWishlist(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @PathVariable Long postId) {
+            @PathVariable("postId") Long postId) {
         postService.removePostFromWishlist(userPrincipal.getUsername(), postId);
         return ResponseEntity.noContent().build();
     }
