@@ -68,10 +68,22 @@ public class UserPostService {
             }
         }
 
-        // 5. 포스트에 등록된 상품 목록 DTO 변환
-        List<PostDto.PostProductResponse> registeredProducts = buildRegisteredProducts(post, user);
+        // 5. 단일 포스트에 대한 상품 ID 목록 추출 및 일괄 조회
+        List<Long> productIds = post.getPostProducts().stream()
+                .map(pp -> pp.getProduct().getProductId())
+                .collect(Collectors.toList());
 
-        // 6. Response 생성
+        Map<Long, Long> wishlistCountMap = toWishlistCountMap(productIds);
+        Map<Long, Long> reviewCountMap = toReviewCountMap(productIds);
+        Set<Long> wishedProductIds = user != null && !productIds.isEmpty()
+                ? wishlistRepository.findProductIdsWishedByUserAndProductIdIn(user.getId(), productIds)
+                : Collections.emptySet();
+
+        // 6. 포스트에 등록된 상품 목록 DTO 변환 (메모리 매핑)
+        List<PostDto.PostProductResponse> registeredProducts = buildRegisteredProducts(
+                post, wishlistCountMap, reviewCountMap, wishedProductIds);
+
+        // 7. Response 생성
         Market market = post.getMarket();
         return PostDto.PostDetailResponse.builder()
                 .postId(post.getId())
@@ -90,50 +102,8 @@ public class UserPostService {
                 .build();
     }
 
-    /**
-     * 포스트에 등록된 상품 목록을 DTO로 변환 (위시/리뷰 수 배치 조회)
-     */
-    private List<PostDto.PostProductResponse> buildRegisteredProducts(Post post, Users user) {
-        List<PostProduct> postProducts = post.getPostProducts();
-        if (postProducts == null || postProducts.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<Long> productIds = postProducts.stream()
-                .map(pp -> pp.getProduct().getProductId())
-                .collect(Collectors.toList());
-
-        Map<Long, Long> wishlistCountMap = toWishlistCountMap(productIds);
-        Map<Long, Long> reviewCountMap = toReviewCountMap(productIds);
-        Set<Long> wishedProductIds = user != null
-                ? wishlistRepository.findProductIdsWishedByUserAndProductIdIn(user.getId(), productIds)
-                : Collections.emptySet();
-
-        List<PostDto.PostProductResponse> result = new ArrayList<>();
-        for (PostProduct pp : postProducts) {
-            Product product = pp.getProduct();
-            Long pid = product.getProductId();
-            Integer regularPrice = product.getRegularPrice();
-            Integer salePrice = product.getSalePrice();
-            Integer discountRate = calculateDiscountRate(regularPrice, salePrice);
-
-            result.add(PostDto.PostProductResponse.builder()
-                    .productId(pid)
-                    .productImageUrl(product.getThumbnailUrl())
-                    .marketName(product.getMarket() != null ? product.getMarket().getMarketName() : null)
-                    .productName(product.getName())
-                    .discountRate(discountRate)
-                    .price(salePrice != null ? salePrice : product.getRegularPrice())
-                    .wishlistCount(wishlistCountMap.getOrDefault(pid, 0L))
-                    .reviewCount(reviewCountMap.getOrDefault(pid, 0L))
-                    .isWishlisted(wishedProductIds.contains(pid))
-                    .build());
-        }
-        return result;
-    }
-
     private Map<Long, Long> toWishlistCountMap(List<Long> productIds) {
-        if (productIds.isEmpty()) {
+        if (productIds == null || productIds.isEmpty()) {
             return Collections.emptyMap();
         }
         List<Object[]> rows = wishlistRepository.countWishlistByProductIds(productIds);
@@ -142,7 +112,7 @@ public class UserPostService {
     }
 
     private Map<Long, Long> toReviewCountMap(List<Long> productIds) {
-        if (productIds.isEmpty()) {
+        if (productIds == null || productIds.isEmpty()) {
             return Collections.emptyMap();
         }
         List<Object[]> rows = reviewRepository.countByProductIds(productIds);
@@ -189,12 +159,20 @@ public class UserPostService {
             }
         }
 
-        // 4. DTO 변환
+        // 4. 상품 데이터 일괄 조회 (N+1 최적화)
+        List<Long> allProductIds = extractAllProductIds(postPage.getContent());
+        Map<Long, Long> globalWishlistCountMap = toWishlistCountMap(allProductIds);
+        Map<Long, Long> globalReviewCountMap = toReviewCountMap(allProductIds);
+        Set<Long> globalWishedProductIds = user != null && !allProductIds.isEmpty()
+                ? wishlistRepository.findProductIdsWishedByUserAndProductIdIn(user.getId(), allProductIds)
+                : Collections.emptySet();
+
+        // 5. DTO 변환
         final Map<Long, Boolean> finalWishlistMap = wishlistMap;
-        final Users finalUser = user;
         Page<PostDto.FeedItemResponse> dtoPage = postPage.map(post -> {
             Market market = post.getMarket();
-            List<PostDto.PostProductResponse> registeredProducts = buildRegisteredProducts(post, finalUser);
+            List<PostDto.PostProductResponse> registeredProducts = buildRegisteredProducts(
+                    post, globalWishlistCountMap, globalReviewCountMap, globalWishedProductIds);
             PostDto.PostListItem postItem = PostDto.PostListItem.builder()
                     .postId(post.getId())
                     .showroomId(market.getId())
@@ -244,10 +222,19 @@ public class UserPostService {
                     .collect(Collectors.toMap(id -> id, id -> true));
         }
 
+        // 3. 상품 데이터 일괄 조회 (N+1 최적화)
+        List<Long> allProductIds = extractAllProductIds(postPage.getContent());
+        Map<Long, Long> globalWishlistCountMap = toWishlistCountMap(allProductIds);
+        Map<Long, Long> globalReviewCountMap = toReviewCountMap(allProductIds);
+        Set<Long> globalWishedProductIds = !allProductIds.isEmpty()
+                ? wishlistRepository.findProductIdsWishedByUserAndProductIdIn(user.getId(), allProductIds)
+                : Collections.emptySet();
+
         final Map<Long, Boolean> finalWishlistMap = wishlistMap;
         Page<PostDto.FeedItemResponse> dtoPage = postPage.map(post -> {
             Market market = post.getMarket();
-            List<PostDto.PostProductResponse> registeredProducts = buildRegisteredProducts(post, user);
+            List<PostDto.PostProductResponse> registeredProducts = buildRegisteredProducts(
+                    post, globalWishlistCountMap, globalReviewCountMap, globalWishedProductIds);
             PostDto.PostListItem postItem = PostDto.PostListItem.builder()
                     .postId(post.getId())
                     .showroomId(market.getId())
@@ -321,9 +308,18 @@ public class UserPostService {
         // 3. 위시리스트 조회
         Page<Post> postPage = postWishlistRepository.findWishlistedPostsByUserId(user.getId(), pageable);
 
+        // 4. 상품 데이터 일괄 조회 (N+1 최적화)
+        List<Long> allProductIds = extractAllProductIds(postPage.getContent());
+        Map<Long, Long> globalWishlistCountMap = toWishlistCountMap(allProductIds);
+        Map<Long, Long> globalReviewCountMap = toReviewCountMap(allProductIds);
+        Set<Long> globalWishedProductIds = !allProductIds.isEmpty()
+                ? wishlistRepository.findProductIdsWishedByUserAndProductIdIn(user.getId(), allProductIds)
+                : Collections.emptySet();
+
         Page<PostDto.FeedItemResponse> dtoPage = postPage.map(post -> {
             Market market = post.getMarket();
-            List<PostDto.PostProductResponse> registeredProducts = buildRegisteredProducts(post, user);
+            List<PostDto.PostProductResponse> registeredProducts = buildRegisteredProducts(
+                    post, globalWishlistCountMap, globalReviewCountMap, globalWishedProductIds);
             PostDto.PostListItem postItem = PostDto.PostListItem.builder()
                     .postId(post.getId())
                     .showroomId(market.getId())
@@ -344,5 +340,54 @@ public class UserPostService {
         });
 
         return new PageResponse<>(dtoPage);
+    }
+
+    /**
+     * 조회된 여러 Post 엔티티 내부의 상품 ID를 중복 없이 수집합니다.
+     */
+    private List<Long> extractAllProductIds(List<Post> posts) {
+        return posts.stream()
+                .filter(post -> post.getPostProducts() != null)
+                .flatMap(post -> post.getPostProducts().stream())
+                .map(pp -> pp.getProduct().getProductId())
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 미리 조회한 집계 맵과 Set을 사용해 포스트 상품 목록을 DTO로 변환합니다.
+     */
+    private List<PostDto.PostProductResponse> buildRegisteredProducts(
+            Post post,
+            Map<Long, Long> wishlistCountMap,
+            Map<Long, Long> reviewCountMap,
+            Set<Long> wishedProductIds) {
+
+        List<PostProduct> postProducts = post.getPostProducts();
+        if (postProducts == null || postProducts.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<PostDto.PostProductResponse> result = new ArrayList<>();
+        for (PostProduct pp : postProducts) {
+            Product product = pp.getProduct();
+            Long pid = product.getProductId();
+            Integer regularPrice = product.getRegularPrice();
+            Integer salePrice = product.getSalePrice();
+            Integer discountRate = calculateDiscountRate(regularPrice, salePrice);
+
+            result.add(PostDto.PostProductResponse.builder()
+                    .productId(pid)
+                    .productImageUrl(product.getThumbnailUrl())
+                    .marketName(product.getMarket() != null ? product.getMarket().getMarketName() : null)
+                    .productName(product.getName())
+                    .discountRate(discountRate)
+                    .price(salePrice != null ? salePrice : product.getRegularPrice())
+                    .wishlistCount(wishlistCountMap.getOrDefault(pid, 0L))
+                    .reviewCount(reviewCountMap.getOrDefault(pid, 0L))
+                    .isWishlisted(wishedProductIds.contains(pid))
+                    .build());
+        }
+        return result;
     }
 }
