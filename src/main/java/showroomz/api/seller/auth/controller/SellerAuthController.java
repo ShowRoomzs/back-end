@@ -19,7 +19,6 @@ import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.DTO.SellerLoginRequest;
 import showroomz.api.seller.auth.DTO.SellerSignUpRequest;
 import showroomz.api.seller.auth.docs.SellerAuthControllerDocs;
-import showroomz.api.seller.auth.DTO.CreatorSignUpRequest;
 import showroomz.api.seller.auth.service.SellerService;
 import showroomz.global.utils.HeaderUtil;
 
@@ -36,14 +35,6 @@ public class SellerAuthController implements SellerAuthControllerDocs {
     @PostMapping("/signup")
     public ResponseEntity<?> registerAdmin(@Valid @RequestBody SellerSignUpRequest request) {
         return ResponseEntity.status(201).body(sellerService.registerAdmin(request));
-    }
-
-    /**
-     * 크리에이터(쇼룸) 회원가입
-     */
-    @PostMapping("/signup/showroom")
-    public ResponseEntity<?> registerCreator(@Valid @RequestBody CreatorSignUpRequest request) {
-        return ResponseEntity.status(201).body(sellerService.registerCreator(request));
     }
 
     @Override
