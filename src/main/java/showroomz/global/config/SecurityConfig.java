@@ -77,7 +77,10 @@ public class SecurityConfig {
             "/v1/user/search/autocomplete",
 
             // FAQ 조회 API
-            "/v1/user/faqs"
+            "/v1/user/faqs",
+
+            // 쇼룸 게시글 조회 API
+            "/v1/user/showroom/*/posts", "/v1/user/showroom/posts/*",
     };
     /*
      * SecurityFilterChain 설정 (Spring Security 3.x 최신 방식)
