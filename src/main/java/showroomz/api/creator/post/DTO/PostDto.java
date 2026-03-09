@@ -1,4 +1,4 @@
-package showroomz.api.showroom.post.DTO;
+package showroomz.api.creator.post.DTO;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;

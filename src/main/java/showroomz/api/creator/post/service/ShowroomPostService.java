@@ -1,4 +1,4 @@
-package showroomz.api.showroom.post.service;
+package showroomz.api.creator.post.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -6,8 +6,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import showroomz.api.creator.post.DTO.PostDto;
 import showroomz.api.seller.auth.repository.SellerRepository;
-import showroomz.api.showroom.post.DTO.PostDto;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;

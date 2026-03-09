@@ -1,4 +1,4 @@
-package showroomz.api.showroom.post.controller;
+package showroomz.api.creator.post.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -7,9 +7,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.auth.entity.UserPrincipal;
-import showroomz.api.showroom.post.DTO.PostDto;
-import showroomz.api.showroom.post.docs.PostControllerDocs;
-import showroomz.api.showroom.post.service.ShowroomPostService;
+import showroomz.api.creator.post.DTO.PostDto;
+import showroomz.api.creator.post.docs.PostControllerDocs;
+import showroomz.api.creator.post.service.ShowroomPostService;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
