@@ -262,11 +262,15 @@ public class ShowroomPostService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
-        // 5. Post 기본 정보 업데이트 (List 파라미터 전달)
-        post.update(request.getTitle(), request.getContent(), request.getImageUrls(), request.getIsDisplay());
-
-        // 6. 상품 목록 수정 요청이 있으면 기존 매핑 제거 후 재등록
+        // 5. 업데이트 규칙
+        // - productIds가 제공되면: 기존 이미지 삭제 + 상품 매핑을 해당 목록으로 교체
+        // - imageUrls가 제공되면: 기존 상품 매핑 삭제 + 이미지 목록을 해당 목록으로 교체
+        // - 둘 다 미제공이면: 제목/본문/전시여부만 부분 수정
         if (request.getProductIds() != null) {
+            // 상품 모드로 전환/수정: 기존 이미지 삭제
+            post.update(request.getTitle(), request.getContent(), Collections.emptyList(), request.getIsDisplay());
+
+            // 상품 매핑 교체
             post.clearProducts();
             if (!request.getProductIds().isEmpty()) {
                 List<Long> productIds = Objects.requireNonNull(request.getProductIds());
@@ -281,6 +285,15 @@ public class ShowroomPostService {
                     post.addProduct(product);
                 }
             }
+        } else if (request.getImageUrls() != null) {
+            // 이미지 모드로 전환/수정: 기존 상품 매핑 삭제
+            post.clearProducts();
+
+            // 이미지 목록 교체 (빈 배열이면 이미지 전체 삭제)
+            post.update(request.getTitle(), request.getContent(), request.getImageUrls(), request.getIsDisplay());
+        } else {
+            // 미디어/상품 변경 없이 기본 필드만 부분 수정
+            post.update(request.getTitle(), request.getContent(), null, request.getIsDisplay());
         }
 
         // 7. Response 생성
