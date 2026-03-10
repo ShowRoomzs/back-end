@@ -13,15 +13,24 @@ import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.post.entity.Post;
+import showroomz.domain.post.entity.PostProduct;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductRepository;
+import showroomz.domain.review.repository.ReviewRepository;
+import showroomz.domain.wishlist.repository.WishlistRepository;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +42,8 @@ public class ShowroomPostService {
     private final SellerRepository sellerRepository;
     private final MarketRepository marketRepository;
     private final ProductRepository productRepository;
+    private final WishlistRepository wishlistRepository;
+    private final ReviewRepository reviewRepository;
 
     public PostDto.CreatePostResponse createPost(String sellerEmail, PostDto.CreatePostRequest request) {
         // 1. 다중 이미지 컬렉션 검증 및 상품 등록 중복 검증 (둘 중 하나만 가능)
@@ -56,8 +67,9 @@ public class ShowroomPostService {
 
         // 5. 상품이 입력된 경우 검증 및 추가
         if (hasProducts) {
-            List<Product> products = productRepository.findAllById(request.getProductIds());
-            if (products.size() != request.getProductIds().size()) {
+            List<Long> productIds = Objects.requireNonNull(request.getProductIds());
+            List<Product> products = productRepository.findAllById(productIds);
+            if (products.size() != productIds.size()) {
                 throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
             }
             for (Product product : products) {
@@ -90,15 +102,30 @@ public class ShowroomPostService {
         Market market = marketRepository.findBySeller(seller)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
 
-        // 3. Post 조회 및 권한 확인
-        Post post = postRepository.findById(postId)
+        // 3. Post 조회 (등록 상품 목록 포함, N+1 방지) 및 권한 확인
+        Post post = postRepository.findByIdWithPostProductsAndProducts(postId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
 
         if (!post.getMarket().getId().equals(market.getId())) {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
-        // 4. Response 생성
+        // 4. 단일 포스트에 대한 상품 ID 목록 추출 및 일괄 집계 조회
+        List<Long> productIds = post.getPostProducts() == null ? Collections.emptyList()
+                : post.getPostProducts().stream()
+                .map(pp -> pp.getProduct().getProductId())
+                .collect(Collectors.toList());
+
+        Map<Long, Long> wishlistCountMap = toWishlistCountMap(productIds);
+        Map<Long, Long> reviewCountMap = toReviewCountMap(productIds);
+
+        // 크리에이터 컨텍스트에서는 "내 위시 여부"가 의미 없으므로 항상 false 처리
+        Set<Long> wishedProductIds = Collections.emptySet();
+
+        List<PostDto.PostProductResponse> registeredProducts = buildRegisteredProducts(
+                post, wishlistCountMap, reviewCountMap, wishedProductIds);
+
+        // 5. Response 생성
         return PostDto.PostDetailResponse.builder()
                 .postId(post.getId())
                 .marketId(market.getId())
@@ -109,9 +136,77 @@ public class ShowroomPostService {
                 .viewCount(post.getViewCount())
                 .wishlistCount(post.getWishlistCount())
                 .isDisplay(post.getIsDisplay())
+                .registeredProducts(registeredProducts)
                 .createdAt(post.getCreatedAt())
                 .modifiedAt(post.getModifiedAt())
                 .build();
+    }
+
+    private Map<Long, Long> toWishlistCountMap(List<Long> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Object[]> rows = wishlistRepository.countWishlistByProductIds(productIds);
+        return rows.stream()
+                .collect(Collectors.toMap(
+                        row -> Long.valueOf(((Number) row[0]).longValue()),
+                        row -> ((Number) row[1]).longValue()
+                ));
+    }
+
+    private Map<Long, Long> toReviewCountMap(List<Long> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Object[]> rows = reviewRepository.countByProductIds(productIds);
+        return rows.stream()
+                .collect(Collectors.toMap(
+                        row -> Long.valueOf(((Number) row[0]).longValue()),
+                        row -> ((Number) row[1]).longValue()
+                ));
+    }
+
+    private Integer calculateDiscountRate(Integer regularPrice, Integer salePrice) {
+        if (regularPrice == null || salePrice == null || regularPrice <= 0) {
+            return 0;
+        }
+        double rate = ((double) (regularPrice - salePrice) / regularPrice) * 100.0;
+        int rounded = (int) Math.round(rate);
+        return Math.max(0, Math.min(rounded, 100));
+    }
+
+    private List<PostDto.PostProductResponse> buildRegisteredProducts(
+            Post post,
+            Map<Long, Long> wishlistCountMap,
+            Map<Long, Long> reviewCountMap,
+            Set<Long> wishedProductIds) {
+
+        List<PostProduct> postProducts = post.getPostProducts();
+        if (postProducts == null || postProducts.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<PostDto.PostProductResponse> result = new ArrayList<>();
+        for (PostProduct pp : postProducts) {
+            Product product = pp.getProduct();
+            Long pid = product.getProductId();
+            Integer regularPrice = product.getRegularPrice();
+            Integer salePrice = product.getSalePrice();
+            Integer discountRate = calculateDiscountRate(regularPrice, salePrice);
+
+            result.add(PostDto.PostProductResponse.builder()
+                    .productId(pid)
+                    .productImageUrl(product.getThumbnailUrl())
+                    .marketName(product.getMarket() != null ? product.getMarket().getMarketName() : null)
+                    .productName(product.getName())
+                    .discountRate(discountRate)
+                    .price(salePrice != null ? salePrice : product.getRegularPrice())
+                    .wishlistCount(wishlistCountMap.getOrDefault(pid, 0L))
+                    .reviewCount(reviewCountMap.getOrDefault(pid, 0L))
+                    .isWishlisted(wishedProductIds.contains(pid))
+                    .build());
+        }
+        return result;
     }
 
     @Transactional(readOnly = true)
@@ -156,7 +251,8 @@ public class ShowroomPostService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
 
         // 3. Post 조회 및 권한 확인
-        Post post = postRepository.findById(postId)
+        Long safePostId = Objects.requireNonNull(postId);
+        Post post = postRepository.findById(safePostId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
 
         if (!post.getMarket().getId().equals(market.getId())) {
@@ -177,8 +273,9 @@ public class ShowroomPostService {
         if (request.getProductIds() != null) {
             post.clearProducts();
             if (!request.getProductIds().isEmpty()) {
-                List<Product> products = productRepository.findAllById(request.getProductIds());
-                if (products.size() != request.getProductIds().size()) {
+                List<Long> productIds = Objects.requireNonNull(request.getProductIds());
+                List<Product> products = productRepository.findAllById(productIds);
+                if (products.size() != productIds.size()) {
                     throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
                 }
                 for (Product product : products) {
@@ -211,7 +308,8 @@ public class ShowroomPostService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
 
         // 3. Post 조회 및 권한 확인
-        Post post = postRepository.findById(postId)
+        Long safePostId = Objects.requireNonNull(postId);
+        Post post = postRepository.findById(safePostId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
 
         if (!post.getMarket().getId().equals(market.getId())) {

@@ -14,6 +14,32 @@ import java.util.List;
 
 public class PostDto {
 
+    @Schema(description = "포스트에 등록된 상품 한 건 응답 (크리에이터용)")
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PostProductResponse {
+        @Schema(description = "상품 ID", example = "1")
+        private Long productId;
+        @Schema(description = "상품 대표 이미지 URL")
+        private String productImageUrl;
+        @Schema(description = "마켓명")
+        private String marketName;
+        @Schema(description = "상품명")
+        private String productName;
+        @Schema(description = "할인율 (%)", example = "10")
+        private Integer discountRate;
+        @Schema(description = "가격", example = "29900")
+        private Integer price;
+        @Schema(description = "위시리스트 수")
+        private Long wishlistCount;
+        @Schema(description = "리뷰 수")
+        private Long reviewCount;
+        @Schema(description = "현재 사용자 위시리스트 여부 (크리에이터 컨텍스트에서는 항상 false)")
+        private Boolean isWishlisted;
+    }
+
     @Schema(description = "게시글 작성 요청 (포스트에 상품 등록 가능)")
     @Getter
     @Builder
@@ -124,6 +150,8 @@ public class PostDto {
         private Long wishlistCount;
         @Schema(description = "전시 여부")
         private Boolean isDisplay;
+        @Schema(description = "포스트에 등록된 상품 목록")
+        private List<PostProductResponse> registeredProducts;
 
         @Schema(description = "생성 일시", example = "2026-03-04T12:34:56")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
