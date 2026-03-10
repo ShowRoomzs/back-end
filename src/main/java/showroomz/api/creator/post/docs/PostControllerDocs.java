@@ -254,12 +254,7 @@ public interface PostControllerDocs {
                                     summary = "게시글 수정 성공",
                                     value = """
                                             {
-                                              "postId": 1,
-                                              "title": "수정된 제목",
-                                              "content": "수정된 본문",
-                                              "imageUrls": ["https://cdn.example.com/posts/1.jpg"],
-                                              "isDisplay": true,
-                                              "modifiedAt": "2026-03-04T13:00:00"
+                                              "postId": 1
                                             }
                                             """
                             )

@@ -112,18 +112,6 @@ public class PostDto {
     public static class UpdatePostResponse {
         @Schema(description = "게시글 ID", example = "1")
         private Long postId;
-        @Schema(description = "제목")
-        private String title;
-        @Schema(description = "본문 내용")
-        private String content;
-        @Schema(description = "게시글 이미지 URL 목록 (다중 이미지)")
-        private List<String> imageUrls;
-        @Schema(description = "전시 여부")
-        private Boolean isDisplay;
-
-        @Schema(description = "수정 일시", example = "2026-03-04T13:00:00")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
-        private LocalDateTime modifiedAt;
     }
 
     @Schema(description = "게시글 상세 응답 (크리에이터용)")

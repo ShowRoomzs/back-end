@@ -290,11 +290,6 @@ public class ShowroomPostService {
         // 7. Response 생성
         return PostDto.UpdatePostResponse.builder()
                 .postId(post.getId())
-                .title(post.getTitle())
-                .content(post.getContent())
-                .imageUrls(post.getImageUrls())
-                .isDisplay(post.getIsDisplay())
-                .modifiedAt(post.getModifiedAt())
                 .build();
     }
 
