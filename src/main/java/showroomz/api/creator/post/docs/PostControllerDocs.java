@@ -75,7 +75,7 @@ public interface PostControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "403",
-                    description = "권한 없음 (CREATOR 아님)",
+                    description = "권한 없음 (CREATOR 아님 / 본인 쇼룸 상품 또는 굿즈 아님)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))
             ),
             @ApiResponse(
@@ -166,7 +166,7 @@ public interface PostControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "403",
-                    description = "권한 없음 (다른 크리에이터의 게시글)",
+                    description = "권한 없음 (다른 크리에이터의 게시글 / 본인 쇼룸 상품 또는 굿즈 아님)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))
             ),
             @ApiResponse(

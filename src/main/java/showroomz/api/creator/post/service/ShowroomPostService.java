@@ -74,7 +74,7 @@ public class ShowroomPostService {
             }
             for (Product product : products) {
                 if (!product.getMarket().getId().equals(market.getId())) {
-                    throw new BusinessException(ErrorCode.FORBIDDEN);
+                    throw new BusinessException(ErrorCode.FORBIDDEN, "해당 쇼룸에 등록되지 않은 상품입니다.");
                 }
                 post.addProduct(product);
             }
@@ -280,7 +280,7 @@ public class ShowroomPostService {
                 }
                 for (Product product : products) {
                     if (!product.getMarket().getId().equals(market.getId())) {
-                        throw new BusinessException(ErrorCode.FORBIDDEN);
+                        throw new BusinessException(ErrorCode.FORBIDDEN, "해당 쇼룸에 등록되지 않은 상품입니다.");
                     }
                     post.addProduct(product);
                 }
