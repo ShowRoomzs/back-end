@@ -14,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.app.auth.DTO.ErrorResponse;
-import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.creator.post.DTO.PostDto;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
@@ -56,17 +55,14 @@ public interface PostControllerDocs {
                     description = "입력값 검증 실패",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ValidationErrorResponse.class),
+                            schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(
                                     name = "validationError",
                                     summary = "제목 누락",
                                     value = """
                                             {
                                               "code": "INVALID_INPUT",
-                                              "message": "입력값이 올바르지 않습니다.",
-                                              "errors": [
-                                                { "field": "title", "reason": "제목은 필수입니다." }
-                                              ]
+                                              "message": "제목은 필수입니다."
                                             }
                                             """
                             )
@@ -272,7 +268,20 @@ public interface PostControllerDocs {
             @ApiResponse(
                     responseCode = "400",
                     description = "입력값 검증 실패",
-                    content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "validationError",
+                                    summary = "제목 길이 초과",
+                                    value = """
+                                            {
+                                              "code": "INVALID_INPUT",
+                                              "message": "제목은 최대 200자입니다."
+                                            }
+                                            """
+                            )
+                    )
             ),
             @ApiResponse(
                     responseCode = "403",
