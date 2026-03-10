@@ -267,7 +267,7 @@ public interface SellerAuthControllerDocs {
                             schema = @Schema(implementation = TokenResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "성공 예시",
+                                            name = "일반 판매자 로그인 성공",
                                             value = "{\n" +
                                                     "  \"tokenType\": \"Bearer\",\n" +
                                                     "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ...\",\n" +
@@ -276,6 +276,18 @@ public interface SellerAuthControllerDocs {
                                                     "  \"refreshTokenExpiresIn\": 1209600,\n" +
                                                     "  \"isNewMember\": false,\n" +
                                                     "  \"role\": \"SELLER\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "크리에이터 로그인 성공",
+                                            value = "{\n" +
+                                                    "  \"tokenType\": \"Bearer\",\n" +
+                                                    "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ...\",\n" +
+                                                    "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...\",\n" +
+                                                    "  \"accessTokenExpiresIn\": 3600,\n" +
+                                                    "  \"refreshTokenExpiresIn\": 1209600,\n" +
+                                                    "  \"isNewMember\": false,\n" +
+                                                    "  \"role\": \"CREATOR\"\n" +
                                                     "}"
                                     )
                             }
@@ -359,6 +371,13 @@ public interface SellerAuthControllerDocs {
                                     value = "{\n" +
                                             "  \"email\": \"seller@example.com\",\n" +
                                             "  \"password\": \"Seller123!\"\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "크리에이터 로그인",
+                                    value = "{\n" +
+                                            "  \"email\": \"creator11@example.com\",\n" +
+                                            "  \"password\": \"Creator123!\"\n" +
                                             "}"
                             ),
                             @ExampleObject(
