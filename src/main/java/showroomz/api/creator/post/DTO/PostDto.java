@@ -69,16 +69,6 @@ public class PostDto {
     public static class CreatePostResponse {
         @Schema(description = "게시글 ID", example = "1")
         private Long postId;
-        @Schema(description = "제목")
-        private String title;
-        @Schema(description = "본문 내용")
-        private String content;
-        @Schema(description = "게시글 이미지 URL 목록 (다중 이미지)")
-        private List<String> imageUrls;
-
-        @Schema(description = "생성 일시", example = "2026-03-04T12:34:56")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
-        private LocalDateTime createdAt;
     }
 
     @Schema(description = "게시글 수정 요청 (포스트에 등록된 상품 목록 변경 가능)")

@@ -40,11 +40,7 @@ public interface PostControllerDocs {
                                     summary = "게시글 작성 성공",
                                     value = """
                                             {
-                                              "postId": 1,
-                                              "title": "신상품 출시 소식",
-                                              "content": "이번 주 신상품을 소개합니다.",
-                                              "imageUrls": ["https://cdn.example.com/posts/1.jpg"],
-                                              "createdAt": "2026-03-04T12:34:56"
+                                              "postId": 1
                                             }
                                             """
                             )

@@ -85,10 +85,6 @@ public class ShowroomPostService {
         // 6. Response 생성 (다중 이미지 리스트 맵핑)
         return PostDto.CreatePostResponse.builder()
                 .postId(savedPost.getId())
-                .title(savedPost.getTitle())
-                .content(savedPost.getContent())
-                .imageUrls(savedPost.getImageUrls())
-                .createdAt(savedPost.getCreatedAt())
                 .build();
     }
 
