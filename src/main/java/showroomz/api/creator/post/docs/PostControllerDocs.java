@@ -300,17 +300,35 @@ public interface PostControllerDocs {
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = PostDto.UpdatePostRequest.class),
-                    examples = @ExampleObject(
-                            name = "요청 예시",
-                            value = """
-                                    {
-                                      "title": "수정된 제목",
-                                      "content": "수정된 본문",
-                                      "isDisplay": true,
-                                      "productIds": [101, 102]
-                                    }
-                                    """
-                    )
+                    examples = {
+                            @ExampleObject(
+                                    name = "이미지 게시글 수정",
+                                    summary = "이미지 URL 목록으로 수정",
+                                    value = """
+                                            {
+                                              "title": "수정된 제목",
+                                              "content": "수정된 본문",
+                                              "imageUrls": [
+                                                "https://cdn.example.com/posts/1-1.jpg",
+                                                "https://cdn.example.com/posts/1-2.jpg"
+                                              ],
+                                              "isDisplay": true
+                                            }
+                                            """
+                            ),
+                            @ExampleObject(
+                                    name = "상품 등록 게시글 수정",
+                                    summary = "상품 ID 목록으로 매핑 변경",
+                                    value = """
+                                            {
+                                              "title": "수정된 제목",
+                                              "content": "수정된 본문",
+                                              "productIds": [101, 102],
+                                              "isDisplay": true
+                                            }
+                                            """
+                            )
+                    }
             )
     )
     ResponseEntity<PostDto.UpdatePostResponse> updatePost(
