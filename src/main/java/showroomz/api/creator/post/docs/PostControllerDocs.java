@@ -68,7 +68,7 @@ public interface PostControllerDocs {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))
             )
     })
-    ResponseEntity<PostDto.PostDetailResponse> getPostById(@PathVariable Long postId);
+    ResponseEntity<PostDto.PostDetailResponse> getPostById(@PathVariable("postId") Long postId);
 
     @Operation(
             summary = "게시글 목록 조회",
@@ -115,7 +115,7 @@ public interface PostControllerDocs {
             )
     })
     ResponseEntity<PostDto.UpdatePostResponse> updatePost(
-            @PathVariable Long postId,
+            @PathVariable("postId") Long postId,
             @Valid @RequestBody PostDto.UpdatePostRequest request);
 
     @Operation(
@@ -140,5 +140,5 @@ public interface PostControllerDocs {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))
             )
     })
-    ResponseEntity<Void> deletePost(@PathVariable Long postId);
+    ResponseEntity<Void> deletePost(@PathVariable("postId") Long postId);
 }

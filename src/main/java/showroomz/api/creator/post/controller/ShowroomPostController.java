@@ -42,7 +42,7 @@ public class ShowroomPostController implements PostControllerDocs {
     @Override
     @GetMapping("/{postId}")
     public ResponseEntity<PostDto.PostDetailResponse> getPostById(
-            @PathVariable Long postId) {
+            @PathVariable("postId") Long postId) {
         String sellerEmail = getCurrentSellerEmail();
         PostDto.PostDetailResponse response = postService.getPostById(sellerEmail, postId);
         return ResponseEntity.ok(response);
@@ -60,7 +60,7 @@ public class ShowroomPostController implements PostControllerDocs {
     @Override
     @PutMapping("/{postId}")
     public ResponseEntity<PostDto.UpdatePostResponse> updatePost(
-            @PathVariable Long postId,
+            @PathVariable("postId") Long postId,
             @Valid @RequestBody PostDto.UpdatePostRequest request) {
         String sellerEmail = getCurrentSellerEmail();
         PostDto.UpdatePostResponse response = postService.updatePost(sellerEmail, postId, request);
@@ -69,7 +69,7 @@ public class ShowroomPostController implements PostControllerDocs {
 
     @Override
     @DeleteMapping("/{postId}")
-    public ResponseEntity<Void> deletePost(@PathVariable Long postId) {
+    public ResponseEntity<Void> deletePost(@PathVariable("postId") Long postId) {
         String sellerEmail = getCurrentSellerEmail();
         postService.deletePost(sellerEmail, postId);
         return ResponseEntity.noContent().build();
