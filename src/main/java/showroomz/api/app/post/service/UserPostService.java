@@ -274,7 +274,8 @@ public class UserPostService {
 
         // 4. 이미 위시리스트에 있는지 확인
         if (postWishlistRepository.existsByUserIdAndPostId(user.getId(), postId)) {
-            throw new BusinessException(ErrorCode.WISHLIST_ALREADY_EXISTS);
+            // 멱등성: 이미 찜 되어 있으면 성공(204)로 처리
+            return;
         }
 
         // 5. 위시리스트에 추가
@@ -292,7 +293,11 @@ public class UserPostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
 
-        // 3. 위시리스트에서 삭제
+        // 3. 멱등성: 없으면 그냥 성공(204)로 처리
+        if (!postWishlistRepository.existsByUserIdAndPostId(user.getId(), postId)) {
+            return;
+        }
+
         postWishlistRepository.deleteByUserIdAndPostId(user.getId(), postId);
         post.decrementWishlistCount();
     }

@@ -25,7 +25,7 @@ public class PostWishlistRepositoryImpl implements PostWishlistRepositoryCustom 
         List<Post> content = queryFactory
                 .select(postWishlist.post)
                 .from(postWishlist)
-                .join(postWishlist.post, post).fetchJoin()
+                .join(postWishlist.post, post)
                 .where(
                         postWishlist.user.id.eq(userId),
                         post.isDisplay.eq(true)

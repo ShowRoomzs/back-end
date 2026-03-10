@@ -113,7 +113,7 @@ public class SecurityConfig {
                     .hasAnyAuthority(RoleType.ADMIN.getCode(), RoleType.SELLER.getCode(), RoleType.CREATOR.getCode())
 
                 // SELLER 권한
-                .requestMatchers("/v1/seller/**").hasAnyAuthority(RoleType.SELLER.getCode())
+                .requestMatchers("/v1/seller/**").hasAnyAuthority(RoleType.SELLER.getCode(), RoleType.CREATOR.getCode())
 
                 // CREATOR 권한
                 .requestMatchers("/v1/creator/**").hasAnyAuthority(RoleType.CREATOR.getCode())
