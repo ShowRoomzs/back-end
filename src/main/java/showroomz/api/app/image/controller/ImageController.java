@@ -55,7 +55,7 @@ public class ImageController implements ImageControllerDocs {
         }
 
         // 3. 일반 유저는 PROFILE, REVIEW, INQUIRY만 가능하도록 제한
-        if (imageType == ImageType.MARKET || imageType == ImageType.PRODUCT) {
+        if (imageType == ImageType.POST || imageType == ImageType.MARKET || imageType == ImageType.PRODUCT || imageType == ImageType.CATEGORY) {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 

@@ -4,6 +4,7 @@ public enum ImageType {
     PROFILE,
     REVIEW,
     INQUIRY,
+    POST,
     PRODUCT,
     MARKET,
     CATEGORY
