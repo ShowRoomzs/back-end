@@ -36,7 +36,7 @@ public class SuperAdminImageController implements SuperAdminImageControllerDocs 
             throw new BusinessException(ErrorCode.INVALID_IMAGE_TYPE);
         }
 
-        if (imageType != ImageType.CATEGORY) {
+        if (!ImageType.ADMIN_ALLOWED_TYPES.contains(imageType)) {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_TYPE);
         }
 

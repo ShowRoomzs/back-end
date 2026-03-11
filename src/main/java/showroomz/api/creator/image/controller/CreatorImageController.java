@@ -35,8 +35,8 @@ public class CreatorImageController implements CreatorImageControllerDocs {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_TYPE);
         }
 
-        // 크리에이터 업로드 허용 타입: POST(게시글), PRODUCT(상품), MARKET(마켓 대표)
-        if (imageType != ImageType.POST && imageType != ImageType.PRODUCT && imageType != ImageType.MARKET) {
+        // 크리에이터 업로드 허용 타입 검증
+        if (!ImageType.CREATOR_ALLOWED_TYPES.contains(imageType)) {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_TYPE);
         }
 
