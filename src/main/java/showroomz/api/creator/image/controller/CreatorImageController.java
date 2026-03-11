@@ -1,4 +1,4 @@
-package showroomz.api.admin.image.controller;
+package showroomz.api.creator.image.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -8,27 +8,26 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
-import showroomz.api.admin.image.docs.SuperAdminImageControllerDocs;
 import showroomz.api.app.image.DTO.ImageUploadResponse;
 import showroomz.api.app.image.service.ImageService;
 import showroomz.api.app.image.type.ImageType;
+import showroomz.api.creator.image.docs.CreatorImageControllerDocs;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 @RestController
-@RequestMapping("/v1/admin/images")
+@RequestMapping("/v1/creator/images")
 @RequiredArgsConstructor
-public class SuperAdminImageController implements SuperAdminImageControllerDocs {
+public class CreatorImageController implements CreatorImageControllerDocs {
 
     private final ImageService imageService;
 
     @Override
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ImageUploadResponse> uploadCategoryImage(
+    public ResponseEntity<ImageUploadResponse> uploadImage(
             @RequestParam("type") String typeParam,
-            @RequestParam("file") MultipartFile file) {
-
+            @RequestParam("file") MultipartFile file
+    ) {
         ImageType imageType;
         try {
             imageType = ImageType.valueOf(typeParam.toUpperCase());
@@ -36,7 +35,8 @@ public class SuperAdminImageController implements SuperAdminImageControllerDocs 
             throw new BusinessException(ErrorCode.INVALID_IMAGE_TYPE);
         }
 
-        if (!ImageType.ADMIN_ALLOWED_TYPES.contains(imageType)) {
+        // 크리에이터 업로드 허용 타입 검증
+        if (!ImageType.CREATOR_ALLOWED_TYPES.contains(imageType)) {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_TYPE);
         }
 
@@ -44,3 +44,4 @@ public class SuperAdminImageController implements SuperAdminImageControllerDocs 
         return ResponseEntity.ok(response);
     }
 }
+

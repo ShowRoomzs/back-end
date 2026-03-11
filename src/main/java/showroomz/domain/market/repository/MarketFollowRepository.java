@@ -10,6 +10,7 @@ import showroomz.domain.market.entity.MarketFollow;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.user.entity.Users;
 
+import java.util.List;
 import java.util.Set;
 
 @Repository
@@ -34,5 +35,8 @@ public interface MarketFollowRepository extends JpaRepository<MarketFollow, Long
             @Param("userId") Long userId,
             @Param("marketIds") java.util.List<Long> marketIds
     );
+
+    @Query("SELECT mf.market.id FROM MarketFollow mf WHERE mf.user.id = :userId")
+    List<Long> findMarketIdsByUserId(@Param("userId") Long userId);
 }
 

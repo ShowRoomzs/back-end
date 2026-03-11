@@ -71,7 +71,7 @@ public enum ErrorCode {
 
     /* * 7. 이미지 (Image)
      */
-    INVALID_IMAGE_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, INQUIRY, PRODUCT, MARKET)"),
+    INVALID_IMAGE_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, INQUIRY, POST, PRODUCT, MARKET, CATEGORY)"),
     EMPTY_FILE_EXCEPTION(HttpStatus.BAD_REQUEST, "EMPTY_FILE", "업로드할 파일이 존재하지 않습니다."),
     INVALID_FILE_EXTENSION(HttpStatus.BAD_REQUEST, "INVALID_FILE_TYPE", "지원하지 않는 이미지 형식입니다"),
     FILE_SIZE_EXCEEDED(HttpStatus.PAYLOAD_TOO_LARGE, "FILE_SIZE_EXCEEDED", "이미지 용량은 최대 20MB까지 등록 가능합니다."),
@@ -122,15 +122,23 @@ public enum ErrorCode {
 
     INVALID_INQUIRY_DETAIL_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "선택한 상세 유형이 문의 타입에 맞지 않습니다."),
 
-    /* 13. 리뷰 (Review)
+     /* 13. 리뷰 (Review)
      */
     ORDER_PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_PRODUCT_NOT_FOUND", "주문 상품을 찾을 수 없습니다."),
     REVIEW_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "REVIEW_ALREADY_EXISTS", "이미 해당 주문 상품에 리뷰를 작성하셨습니다."),
     ORDER_PRODUCT_NOT_WRITABLE(HttpStatus.BAD_REQUEST, "ORDER_PRODUCT_NOT_WRITABLE", "리뷰 작성이 가능한 상태가 아닙니다. (구매 확정 완료 상품만 리뷰 작성 가능)"),
     ORDER_PRODUCT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ORDER_PRODUCT_ACCESS_DENIED", "해당 주문 상품에 대한 권한이 없습니다."),
     REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "REVIEW_NOT_FOUND", "리뷰를 찾을 수 없습니다."),
-    REVIEW_ACCESS_DENIED(HttpStatus.FORBIDDEN, "REVIEW_ACCESS_DENIED", "해당 리뷰에 대한 수정/삭제 권한이 없습니다.");
+    REVIEW_ACCESS_DENIED(HttpStatus.FORBIDDEN, "REVIEW_ACCESS_DENIED", "해당 리뷰에 대한 수정/삭제 권한이 없습니다."),
 
+   /* 14. 게시글 (Post)
+     */
+   POST_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_NOT_FOUND", "존재하지 않는 게시글입니다."),
+   POST_ACCESS_DENIED(HttpStatus.FORBIDDEN, "POST_ACCESS_DENIED", "해당 게시글에 대한 권한이 없습니다."),
+
+   /* 15. 위시리스트 (Wishlist)
+    */
+   WISHLIST_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "WISHLIST_ALREADY_EXISTS", "이미 위시리스트에 추가된 항목입니다.");    
     private final HttpStatus status;
     private final String code;
     private final String message;

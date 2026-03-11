@@ -29,7 +29,7 @@ public class SellerImageController implements AdminImageControllerDocs {
             @RequestParam("type") String typeParam,
             @RequestParam("file") MultipartFile file) {
 
-        // 1. 이미지 타입 검증 (MARKET, PRODUCT 등 관리자 전용 타입만 허용)
+        // 1. 이미지 타입 검증
         ImageType imageType;
         try {
             imageType = ImageType.valueOf(typeParam.toUpperCase());
@@ -37,7 +37,7 @@ public class SellerImageController implements AdminImageControllerDocs {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_TYPE);
         }
 
-        if (imageType != ImageType.MARKET && imageType != ImageType.PRODUCT) {
+        if (!ImageType.SELLER_ALLOWED_TYPES.contains(imageType)) {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_TYPE);
         }
 

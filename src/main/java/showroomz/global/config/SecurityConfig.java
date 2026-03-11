@@ -78,7 +78,10 @@ public class SecurityConfig {
             "/v1/user/search/autocomplete",
 
             // FAQ 조회 API
-            "/v1/user/faqs"
+            "/v1/user/faqs",
+
+            // 쇼룸 게시글 조회 API
+            "/v1/user/showroom/*/posts", "/v1/user/showroom/posts/*",
     };
     /*
      * SecurityFilterChain 설정 (Spring Security 3.x 최신 방식)
@@ -109,8 +112,11 @@ public class SecurityConfig {
                 .requestMatchers("/v1/seller/auth/logout", "/v1/seller/auth/withdraw", "/v1/seller/images")
                     .hasAnyAuthority(RoleType.ADMIN.getCode(), RoleType.SELLER.getCode(), RoleType.CREATOR.getCode())
 
-                // SELLER / CREATOR 권한
+                // SELLER 권한
                 .requestMatchers("/v1/seller/**").hasAnyAuthority(RoleType.SELLER.getCode(), RoleType.CREATOR.getCode())
+
+                // CREATOR 권한
+                .requestMatchers("/v1/creator/**").hasAnyAuthority(RoleType.CREATOR.getCode())
 
                 // USER 권한
                 .requestMatchers("/v1/user/**").hasAnyAuthority(RoleType.USER.getCode())

@@ -54,8 +54,8 @@ public class ImageController implements ImageControllerDocs {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_TYPE);
         }
 
-        // 3. 일반 유저는 PROFILE, REVIEW, INQUIRY만 가능하도록 제한
-        if (imageType == ImageType.MARKET || imageType == ImageType.PRODUCT) {
+        // 3. 일반 유저 허용 타입 검증
+        if (!ImageType.USER_ALLOWED_TYPES.contains(imageType)) {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
