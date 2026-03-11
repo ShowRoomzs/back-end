@@ -24,7 +24,7 @@ public interface PostControllerDocs {
     @Operation(
             summary = "게시글 작성",
             description = "크리에이터가 새로운 게시글을 작성합니다. 포스트에 본인 마켓 상품을 등록할 수 있습니다.\n\n" +
-                    "- **productIds**: 등록할 상품 ID 목록 (본인 마켓 상품만 가능, 이미지 등록과 둘 중 하나만 가능)\n" +
+                    "- **productIds**: 등록할 상품 ID 목록 (본인 마켓 상품만 가능, 이미지 등록과 둘 중 하나만 가능, 현재는 크리에이터도 셀러 상품 등록 API를 통해 상품 등록 가능합니다. 추후 변경될 수 있습니다.)\n" +
                     "- **권한:** CREATOR\n" +
                     "- **요청 헤더:** Authorization: Bearer {accessToken}"
     )
