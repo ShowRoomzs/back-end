@@ -14,7 +14,7 @@ import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
 @RestController
-@RequestMapping("/v1/user/showroom")
+@RequestMapping("/v1/user/showrooms")
 @RequiredArgsConstructor
 public class UserPostController implements PostControllerDocs {
 
