@@ -17,12 +17,12 @@ import showroomz.api.admin.market.DTO.AdminMarketDto;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.seller.auth.DTO.SellerDto;
 
-@Tag(name = "Admin - Seller", description = "관리자 마켓(브랜드) 가입 관리 API")
+@Tag(name = "Admin - Seller", description = "관리자 마켓 가입 관리 API")
 public interface AdminMarketControllerDocs {
 
     @Operation(
-            summary = "마켓 가입 신청 관리 목록 조회 (SELLER 전용)",
-            description = "일반 브랜드(SELLER) 가입 신청 내역을 조회합니다. 크리에이터(CREATOR) 신청은 `/v1/admin/creators/applications` 를 사용하세요.\n\n" +
+            summary = "마켓 가입 신청 관리 목록 조회",
+            description = "마켓 가입 신청 내역을 조회합니다.\n\n" +
                     "**필터 기능:**\n" +
                     "- **status**: 판매자 상태 (PENDING: 승인 대기, APPROVED: 승인, REJECTED: 반려, null: 전체)\n" +
                     "- **startDate / endDate**: 신청일 기준 조회 기간 (YYYY-MM-DD)\n" +
@@ -91,8 +91,8 @@ public interface AdminMarketControllerDocs {
     );
 
     @Operation(
-            summary = "마켓 판매자 상세 정보 조회 (SELLER 전용)",
-            description = "특정 마켓 판매자(SELLER)의 상세 정보를 조회합니다. 크리에이터 상세는 `/v1/admin/creators/{sellerId}` 를 사용하세요.\n\n" +
+            summary = "마켓 판매자 상세 정보 조회",
+            description = "특정 마켓 판매자의 상세 정보를 조회합니다.\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -135,8 +135,8 @@ public interface AdminMarketControllerDocs {
     );
 
     @Operation(
-            summary = "마켓 판매자 계정 상태 변경 (승인/반려, SELLER 전용)",
-            description = "회원가입을 신청한 마켓 판매자(SELLER) 계정의 상태를 변경합니다. 크리에이터 승인은 `/v1/admin/creators/{sellerId}/status` 를 사용하세요.\n\n" +
+            summary = "마켓 판매자 계정 상태 변경 (승인/반려)",
+            description = "회원가입을 신청한 마켓 판매자(SELLER) 계정의 상태를 변경합니다. \n\n" +
                     "**상태값:**\n" +
                     "- `APPROVED`: 승인 (로그인 가능)\n" +
                     "- `REJECTED`: 반려 (로그인 불가)\n\n" +
