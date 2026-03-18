@@ -5,6 +5,7 @@ import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.market.type.SnsType;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -278,7 +279,10 @@ public class AdminMarketDto {
         @Schema(description = "활동명 (크리에이터 활동 채널명)", example = "감성크리에이터지수")
         private String activityName;
 
-        @Schema(description = "플랫폼 URL (인스타그램, 유튜브 등)", example = "https://instagram.com/creator_jisu")
+        @Schema(description = "플랫폼 유형", allowableValues = {"INSTAGRAM", "TIKTOK", "X", "YOUTUBE"}, example = "INSTAGRAM")
+        private SnsType platformType;
+
+        @Schema(description = "플랫폼 URL", example = "https://instagram.com/creator_jisu")
         private String platformUrl;
 
         @Schema(description = "이름 (본명)", example = "김지수")

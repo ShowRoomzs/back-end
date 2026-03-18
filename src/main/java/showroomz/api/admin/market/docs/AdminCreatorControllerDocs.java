@@ -108,6 +108,7 @@ public interface AdminCreatorControllerDocs {
                                                     "  \"email\": \"creator@example.com\",\n" +
                                                     "  \"showroomName\": \"감성 룩북\",\n" +
                                                     "  \"activityName\": \"감성크리에이터지수\",\n" +
+                                                    "  \"platformType\": \"INSTAGRAM\",\n" +
                                                     "  \"platformUrl\": \"https://instagram.com/creator_jisu\",\n" +
                                                     "  \"name\": \"김지수\",\n" +
                                                     "  \"phoneNumber\": \"010-1111-2222\",\n" +

@@ -13,6 +13,7 @@ import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
+import showroomz.domain.market.type.SnsType;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.BusinessException;
@@ -241,12 +242,16 @@ public class AdminService {
         String platformUrl = market.getSnsLinks().isEmpty()
                 ? null
                 : market.getSnsLinks().get(0).getSnsUrl();
+        SnsType platformType = market.getSnsLinks().isEmpty()
+                ? null
+                : market.getSnsLinks().get(0).getSnsType();
 
         return AdminMarketDto.CreatorDetailResponse.builder()
                 .creatorId(seller.getId())
                 .email(seller.getEmail())
                 .showroomName(market.getMarketName())
                 .activityName(seller.getActivityName())
+                .platformType(platformType)
                 .platformUrl(platformUrl)
                 .name(seller.getName())
                 .phoneNumber(seller.getPhoneNumber())
