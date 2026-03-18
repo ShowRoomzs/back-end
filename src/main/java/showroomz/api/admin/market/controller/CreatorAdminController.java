@@ -39,19 +39,19 @@ public class CreatorAdminController implements AdminCreatorControllerDocs {
     }
 
     @Override
-    @GetMapping("/{sellerId}")
+    @GetMapping("/{creatorId}")
     public ResponseEntity<AdminMarketDto.CreatorDetailResponse> getCreatorDetail(
-            @PathVariable("sellerId") Long sellerId) {
+            @PathVariable("creatorId") Long creatorId) {
 
-        AdminMarketDto.CreatorDetailResponse response = adminService.getCreatorDetail(sellerId);
+        AdminMarketDto.CreatorDetailResponse response = adminService.getCreatorDetail(creatorId);
 
         return ResponseEntity.ok(response);
     }
 
     @Override
-    @PatchMapping("/{sellerId}/status")
+    @PatchMapping("/{creatorId}/status")
     public ResponseEntity<Void> updateCreatorStatus(
-            @PathVariable("sellerId") Long sellerId,
+            @PathVariable("creatorId") Long creatorId,
             @RequestBody SellerDto.UpdateStatusRequest request) {
 
         SellerStatus status;
@@ -62,7 +62,7 @@ public class CreatorAdminController implements AdminCreatorControllerDocs {
         }
 
         adminService.updateCreatorStatus(
-                sellerId,
+                creatorId,
                 status,
                 request.getRejectionReasonType(),
                 request.getRejectionReasonDetail()

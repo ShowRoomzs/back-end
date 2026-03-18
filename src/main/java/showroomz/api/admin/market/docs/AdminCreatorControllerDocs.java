@@ -139,12 +139,12 @@ public interface AdminCreatorControllerDocs {
     })
     ResponseEntity<AdminMarketDto.CreatorDetailResponse> getCreatorDetail(
             @Parameter(
-                    description = "조회할 크리에이터 판매자 ID",
+                    description = "조회할 크리에이터 ID",
                     required = true,
                     example = "5",
                     in = ParameterIn.PATH
             )
-            @PathVariable Long sellerId
+            @PathVariable Long creatorId
     );
 
     @Operation(
@@ -223,12 +223,12 @@ public interface AdminCreatorControllerDocs {
     )
     ResponseEntity<Void> updateCreatorStatus(
             @Parameter(
-                    description = "상태를 변경할 크리에이터(Seller) ID",
+                    description = "상태를 변경할 크리에이터 ID",
                     required = true,
                     example = "5",
                     in = ParameterIn.PATH
             )
-            @PathVariable Long sellerId,
+            @PathVariable Long creatorId,
             @RequestBody SellerDto.UpdateStatusRequest request
     );
 }
