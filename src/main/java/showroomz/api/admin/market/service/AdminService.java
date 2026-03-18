@@ -41,15 +41,18 @@ public class AdminService {
         Seller seller = sellerRepository.findById(sellerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
+        if (seller.getRoleType() != RoleType.SELLER) {
+            throw new BusinessException(ErrorCode.ACCOUNT_ROLE_MISMATCH);
+        }
+
         if (seller.getStatus() != SellerStatus.PENDING) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new BusinessException(ErrorCode.ACCOUNT_NOT_PENDING);
         }
 
         seller.setStatus(status);
         
         if (status == SellerStatus.APPROVED) {
             seller.setRejectionReason(null);
-            // 승인 메일 발송
             mailService.sendApprovalEmail(seller.getEmail(), seller.getName());
             
         } else if (status == SellerStatus.REJECTED) {
@@ -72,8 +75,12 @@ public class AdminService {
         Seller seller = sellerRepository.findById(sellerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
+        if (seller.getRoleType() != RoleType.CREATOR) {
+            throw new BusinessException(ErrorCode.ACCOUNT_ROLE_MISMATCH);
+        }
+
         if (seller.getStatus() != SellerStatus.PENDING) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new BusinessException(ErrorCode.ACCOUNT_NOT_PENDING);
         }
 
         seller.setStatus(status);
