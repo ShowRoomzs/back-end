@@ -27,7 +27,7 @@ public class CreatorAdminController implements AdminCreatorControllerDocs {
     @GetMapping
     public ResponseEntity<PageResponse<AdminMarketDto.CreatorApplicationResponse>> getCreatorApplications(
             @ModelAttribute PagingRequest pagingRequest,
-            @ModelAttribute AdminMarketDto.SearchCondition searchCondition) {
+            @ModelAttribute AdminMarketDto.CreatorSearchCondition searchCondition) {
 
         Sort sort = Sort.by(Sort.Direction.DESC, "seller.createdAt");
         Pageable pageable = pagingRequest.toPageable(sort);

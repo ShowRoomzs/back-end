@@ -238,10 +238,10 @@ public class AdminMarketDto {
     @AllArgsConstructor
     @Schema(description = "크리에이터 가입 신청 목록 응답")
     public static class CreatorApplicationResponse {
-        @Schema(description = "가입 신청 PK (판매자 ID)", example = "5")
-        private Long sellerId;
+        @Schema(description = "가입 신청 PK (크리에이터 ID)", example = "5")
+        private Long creatorId;
 
-        @Schema(description = "쇼룸명", example = "감성 룩북")
+        @Schema(description = "쇼룸명 (크리에이터명)", example = "감성 룩북")
         private String showroomName;
 
         @Schema(description = "신청일", example = "2024-03-01T14:00:00")
@@ -266,8 +266,8 @@ public class AdminMarketDto {
     @AllArgsConstructor
     @Schema(description = "크리에이터 가입 신청 상세 응답")
     public static class CreatorDetailResponse {
-        @Schema(description = "가입 신청 PK (판매자 ID)", example = "5")
-        private Long sellerId;
+        @Schema(description = "가입 신청 PK (크리에이터 ID)", example = "5")
+        private Long creatorId;
 
         @Schema(description = "이메일", example = "creator@example.com")
         private String email;
@@ -294,18 +294,76 @@ public class AdminMarketDto {
         private String rejectionReason;
     }
 
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "크리에이터 가입 신청 목록 검색 조건")
+    public static class CreatorSearchCondition {
+
+        @Schema(description = "크리에이터 상태 (NULL 또는 비워둘 시 전체 조회)", example = "PENDING")
+        private SellerStatus status;
+
+        @Schema(description = "조회 시작일 (YYYY-MM-DD)", example = "2024-01-01")
+        @DateTimeFormat(pattern = "yyyy-MM-dd")
+        private LocalDate startDate;
+
+        @Schema(description = "조회 종료일 (YYYY-MM-DD)", example = "2024-12-31")
+        @DateTimeFormat(pattern = "yyyy-MM-dd")
+        private LocalDate endDate;
+
+        @Schema(description = "검색어 (부분 일치 검색, keywordType과 함께 사용)", example = "김지수")
+        private String keyword;
+
+        @Schema(
+                description = "검색 타입\n" +
+                        "- CREATOR_ID: 크리에이터 ID로 검색\n" +
+                        "- SHOWROOM_NAME: 크리에이터명(쇼룸명)으로 검색\n" +
+                        "- NAME: 이름(본명)으로 검색\n" +
+                        "- PHONE_NUMBER: 전화번호로 검색",
+                example = "NAME",
+                allowableValues = {"CREATOR_ID", "SHOWROOM_NAME", "NAME", "PHONE_NUMBER"}
+        )
+        private CreatorKeywordType keywordType;
+    }
+
     /**
-     * 검색 타입 Enum
+     * 마켓 검색 타입 Enum
      */
     @Getter
     @AllArgsConstructor
-    @Schema(description = "키워드 검색 타입")
+    @Schema(description = "마켓 키워드 검색 타입")
     public enum KeywordType {
         SELLER_ID("신청 ID"),
-        MARKET_NAME("마켓명/쇼룸명"),
+        MARKET_NAME("마켓명"),
         NAME("담당자 이름"),
         PHONE_NUMBER("연락처");
 
         private final String description;
+    }
+
+    /**
+     * 크리에이터 검색 타입 Enum
+     */
+    @Getter
+    @AllArgsConstructor
+    @Schema(description = "크리에이터 키워드 검색 타입")
+    public enum CreatorKeywordType {
+        CREATOR_ID("크리에이터 ID"),
+        SHOWROOM_NAME("크리에이터명(쇼룸명)"),
+        NAME("이름(본명)"),
+        PHONE_NUMBER("전화번호");
+
+        private final String description;
+
+        /** Repository 쿼리에서 사용하는 keywordType 문자열로 변환 */
+        public String toQueryType() {
+            return switch (this) {
+                case CREATOR_ID   -> "SELLER_ID";
+                case SHOWROOM_NAME -> "MARKET_NAME";
+                case NAME          -> "NAME";
+                case PHONE_NUMBER  -> "PHONE_NUMBER";
+            };
+        }
     }
 }

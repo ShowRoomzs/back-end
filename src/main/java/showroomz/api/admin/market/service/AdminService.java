@@ -182,7 +182,7 @@ public class AdminService {
      */
     @Transactional(readOnly = true)
     public PageResponse<AdminMarketDto.CreatorApplicationResponse> getCreatorApplications(
-            AdminMarketDto.SearchCondition condition, Pageable pageable) {
+            AdminMarketDto.CreatorSearchCondition condition, Pageable pageable) {
 
         LocalDateTime startDateTime = condition.getStartDate() != null
                 ? condition.getStartDate().atStartOfDay()
@@ -192,7 +192,7 @@ public class AdminService {
                 : null;
 
         String keywordTypeStr = condition.getKeywordType() != null
-                ? condition.getKeywordType().name()
+                ? condition.getKeywordType().toQueryType()
                 : null;
 
         Page<Market> marketPage = marketRepository.searchApplications(
@@ -207,7 +207,7 @@ public class AdminService {
 
         List<AdminMarketDto.CreatorApplicationResponse> content = marketPage.getContent().stream()
                 .map(market -> AdminMarketDto.CreatorApplicationResponse.builder()
-                        .sellerId(market.getSeller().getId())
+                        .creatorId(market.getSeller().getId())
                         .showroomName(market.getMarketName())
                         .createdAt(market.getSeller().getCreatedAt())
                         .name(market.getSeller().getName())
@@ -236,7 +236,7 @@ public class AdminService {
                 : market.getSnsLinks().get(0).getSnsUrl();
 
         return AdminMarketDto.CreatorDetailResponse.builder()
-                .sellerId(seller.getId())
+                .creatorId(seller.getId())
                 .email(seller.getEmail())
                 .showroomName(market.getMarketName())
                 .activityName(seller.getActivityName())

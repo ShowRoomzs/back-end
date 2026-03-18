@@ -27,7 +27,7 @@ public interface AdminCreatorControllerDocs {
                     "- **status**: 크리에이터 상태 (PENDING: 승인 대기, APPROVED: 승인, REJECTED: 반려, null: 전체)\n" +
                     "- **startDate / endDate**: 신청일 기준 조회 기간 (YYYY-MM-DD)\n" +
                     "- **keyword**: 검색어 (부분 일치 검색)\n" +
-                    "- **keywordType**: 검색 타입 (SELLER_ID: 신청 ID, MARKET_NAME: 쇼룸명, NAME: 이름(본명), PHONE_NUMBER: 연락처)\n\n" +
+                    "- **keywordType**: 검색 타입 (CREATOR_ID: 크리에이터 ID, SHOWROOM_NAME: 크리에이터명(쇼룸명), NAME: 이름(본명), PHONE_NUMBER: 전화번호)\n\n" +
                     "**반환 정보:**\n" +
                     "- 가입 신청 PK, 쇼룸명, 신청일, 이름(본명), 전화번호\n" +
                     "- 현재 승인 상태 및 반려 사유 (반려된 경우)\n\n" +
@@ -50,7 +50,7 @@ public interface AdminCreatorControllerDocs {
                                             value = "{\n" +
                                                     "  \"content\": [\n" +
                                                     "    {\n" +
-                                                    "      \"sellerId\": 5,\n" +
+                                                    "      \"creatorId\": 5,\n" +
                                                     "      \"showroomName\": \"감성 룩북\",\n" +
                                                     "      \"createdAt\": \"2024-03-01T14:00:00\",\n" +
                                                     "      \"name\": \"김지수\",\n" +
@@ -59,7 +59,7 @@ public interface AdminCreatorControllerDocs {
                                                     "      \"rejectionReason\": null\n" +
                                                     "    },\n" +
                                                     "    {\n" +
-                                                    "      \"sellerId\": 6,\n" +
+                                                    "      \"creatorId\": 6,\n" +
                                                     "      \"showroomName\": \"트렌디 피드\",\n" +
                                                     "      \"createdAt\": \"2024-02-20T09:30:00\",\n" +
                                                     "      \"name\": \"박서준\",\n" +
@@ -83,7 +83,7 @@ public interface AdminCreatorControllerDocs {
     })
     ResponseEntity<showroomz.global.dto.PageResponse<AdminMarketDto.CreatorApplicationResponse>> getCreatorApplications(
             @ParameterObject showroomz.global.dto.PagingRequest pagingRequest,
-            @ParameterObject AdminMarketDto.SearchCondition searchCondition
+            @ParameterObject AdminMarketDto.CreatorSearchCondition searchCondition
     );
 
     @Operation(
@@ -104,7 +104,7 @@ public interface AdminCreatorControllerDocs {
                                     @ExampleObject(
                                             name = "크리에이터 상세 조회 예시",
                                             value = "{\n" +
-                                                    "  \"sellerId\": 5,\n" +
+                                                    "  \"creatorId\": 5,\n" +
                                                     "  \"email\": \"creator@example.com\",\n" +
                                                     "  \"showroomName\": \"감성 룩북\",\n" +
                                                     "  \"activityName\": \"감성크리에이터지수\",\n" +
