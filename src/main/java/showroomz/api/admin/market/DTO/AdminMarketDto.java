@@ -232,6 +232,68 @@ public class AdminMarketDto {
         private String snsUrl;
     }
 
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "크리에이터 가입 신청 목록 응답")
+    public static class CreatorApplicationResponse {
+        @Schema(description = "가입 신청 PK (판매자 ID)", example = "5")
+        private Long sellerId;
+
+        @Schema(description = "쇼룸명", example = "감성 룩북")
+        private String showroomName;
+
+        @Schema(description = "신청일", example = "2024-03-01T14:00:00")
+        private LocalDateTime createdAt;
+
+        @Schema(description = "이름 (본명)", example = "김지수")
+        private String name;
+
+        @Schema(description = "전화번호", example = "010-1111-2222")
+        private String phoneNumber;
+
+        @Schema(description = "상태 (PENDING, APPROVED, REJECTED)", example = "PENDING")
+        private SellerStatus status;
+
+        @Schema(description = "거부 사유 (반려 시)", example = "플랫폼 확인 불가")
+        private String rejectionReason;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "크리에이터 가입 신청 상세 응답")
+    public static class CreatorDetailResponse {
+        @Schema(description = "가입 신청 PK (판매자 ID)", example = "5")
+        private Long sellerId;
+
+        @Schema(description = "이메일", example = "creator@example.com")
+        private String email;
+
+        @Schema(description = "쇼룸명", example = "감성 룩북")
+        private String showroomName;
+
+        @Schema(description = "활동명 (크리에이터 활동 채널명)", example = "감성크리에이터지수")
+        private String activityName;
+
+        @Schema(description = "플랫폼 URL (인스타그램, 유튜브 등)", example = "https://instagram.com/creator_jisu")
+        private String platformUrl;
+
+        @Schema(description = "이름 (본명)", example = "김지수")
+        private String name;
+
+        @Schema(description = "전화번호", example = "010-1111-2222")
+        private String phoneNumber;
+
+        @Schema(description = "상태 (PENDING, APPROVED, REJECTED)", example = "PENDING")
+        private SellerStatus status;
+
+        @Schema(description = "거부 사유 (반려 시)", example = "플랫폼 확인 불가")
+        private String rejectionReason;
+    }
+
     /**
      * 검색 타입 Enum
      */
@@ -240,7 +302,7 @@ public class AdminMarketDto {
     @Schema(description = "키워드 검색 타입")
     public enum KeywordType {
         SELLER_ID("신청 ID"),
-        MARKET_NAME("마켓명"),
+        MARKET_NAME("마켓명/쇼룸명"),
         NAME("담당자 이름"),
         PHONE_NUMBER("연락처");
 
