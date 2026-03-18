@@ -8,10 +8,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import showroomz.api.admin.market.DTO.AdminMarketDto;
 import showroomz.api.admin.market.type.RejectionReasonType;
+import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
+import showroomz.domain.market.type.SnsType;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.BusinessException;
@@ -32,7 +34,7 @@ public class AdminService {
     private final MailService mailService;
 
     /**
-     * 판매자(관리자) 계정 승인/반려 처리
+     * 마켓(SELLER) 계정 승인/반려 처리
      */
     @Transactional
     public void updateAdminStatus(Long sellerId, SellerStatus status, 
@@ -40,15 +42,18 @@ public class AdminService {
         Seller seller = sellerRepository.findById(sellerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
+        if (seller.getRoleType() != RoleType.SELLER) {
+            throw new BusinessException(ErrorCode.ACCOUNT_ROLE_MISMATCH);
+        }
+
         if (seller.getStatus() != SellerStatus.PENDING) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new BusinessException(ErrorCode.ACCOUNT_NOT_PENDING);
         }
 
         seller.setStatus(status);
         
         if (status == SellerStatus.APPROVED) {
             seller.setRejectionReason(null);
-            // 승인 메일 발송
             mailService.sendApprovalEmail(seller.getEmail(), seller.getName());
             
         } else if (status == SellerStatus.REJECTED) {
@@ -59,6 +64,38 @@ public class AdminService {
             mailService.sendRejectionEmail(seller.getEmail(), seller.getName(), finalReason);
         }
         
+        seller.setModifiedAt(LocalDateTime.now());
+    }
+
+    /**
+     * 크리에이터(CREATOR) 계정 승인/반려 처리
+     */
+    @Transactional
+    public void updateCreatorStatus(Long sellerId, SellerStatus status,
+                                    RejectionReasonType reasonType, String reasonDetail) {
+        Seller seller = sellerRepository.findById(sellerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (seller.getRoleType() != RoleType.CREATOR) {
+            throw new BusinessException(ErrorCode.ACCOUNT_ROLE_MISMATCH);
+        }
+
+        if (seller.getStatus() != SellerStatus.PENDING) {
+            throw new BusinessException(ErrorCode.ACCOUNT_NOT_PENDING);
+        }
+
+        seller.setStatus(status);
+
+        if (status == SellerStatus.APPROVED) {
+            seller.setRejectionReason(null);
+            mailService.sendCreatorApprovalEmail(seller.getEmail(), seller.getName());
+
+        } else if (status == SellerStatus.REJECTED) {
+            String finalReason = resolveRejectionReason(reasonType, reasonDetail);
+            seller.setRejectionReason(finalReason);
+            mailService.sendCreatorRejectionEmail(seller.getEmail(), seller.getName(), finalReason);
+        }
+
         seller.setModifiedAt(LocalDateTime.now());
     }
 
@@ -103,7 +140,7 @@ public class AdminService {
     }
 
     /**
-     * 마켓 가입 신청 목록 조회 (검색 필터 적용)
+     * 마켓(SELLER) 가입 신청 목록 조회 (검색 필터 적용)
      */
     @Transactional(readOnly = true)
     public PageResponse<AdminMarketDto.ApplicationResponse> getMarketApplications(
@@ -122,6 +159,7 @@ public class AdminService {
                 : null;
 
         Page<Market> marketPage = marketRepository.searchApplications(
+                RoleType.SELLER,
                 condition.getStatus(),
                 startDateTime,
                 endDateTime,
@@ -145,6 +183,81 @@ public class AdminService {
                 .collect(Collectors.toList());
 
         return new PageResponse<>(content, marketPage);
+    }
+
+    /**
+     * 크리에이터(CREATOR) 가입 신청 목록 조회 (검색 필터 적용)
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<AdminMarketDto.CreatorApplicationResponse> getCreatorApplications(
+            AdminMarketDto.CreatorSearchCondition condition, Pageable pageable) {
+
+        LocalDateTime startDateTime = condition.getStartDate() != null
+                ? condition.getStartDate().atStartOfDay()
+                : null;
+        LocalDateTime endDateTime = condition.getEndDate() != null
+                ? condition.getEndDate().atTime(LocalTime.MAX)
+                : null;
+
+        String keywordTypeStr = condition.getKeywordType() != null
+                ? condition.getKeywordType().toQueryType()
+                : null;
+
+        Page<Market> marketPage = marketRepository.searchApplications(
+                RoleType.CREATOR,
+                condition.getStatus(),
+                startDateTime,
+                endDateTime,
+                condition.getKeyword(),
+                keywordTypeStr,
+                pageable
+        );
+
+        List<AdminMarketDto.CreatorApplicationResponse> content = marketPage.getContent().stream()
+                .map(market -> AdminMarketDto.CreatorApplicationResponse.builder()
+                        .creatorId(market.getSeller().getId())
+                        .showroomName(market.getMarketName())
+                        .createdAt(market.getSeller().getCreatedAt())
+                        .name(market.getSeller().getName())
+                        .phoneNumber(market.getSeller().getPhoneNumber())
+                        .status(market.getSeller().getStatus())
+                        .rejectionReason(market.getSeller().getRejectionReason())
+                        .build())
+                .collect(Collectors.toList());
+
+        return new PageResponse<>(content, marketPage);
+    }
+
+    /**
+     * 크리에이터 상세 정보 조회
+     */
+    @Transactional(readOnly = true)
+    public AdminMarketDto.CreatorDetailResponse getCreatorDetail(Long sellerId) {
+        Seller seller = sellerRepository.findById(sellerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        Market market = marketRepository.findBySeller(seller)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
+
+        String platformUrl = market.getSnsLinks().isEmpty()
+                ? null
+                : market.getSnsLinks().get(0).getSnsUrl();
+        SnsType platformType = market.getSnsLinks().isEmpty()
+                ? null
+                : market.getSnsLinks().get(0).getSnsType();
+
+        return AdminMarketDto.CreatorDetailResponse.builder()
+                .creatorId(seller.getId())
+                .email(seller.getEmail())
+                .showroomName(market.getMarketName())
+                .activityName(seller.getActivityName())
+                .platformType(platformType)
+                .platformUrl(platformUrl)
+                .name(seller.getName())
+                .phoneNumber(seller.getPhoneNumber())
+                .status(seller.getStatus())
+                .rejectionReason(seller.getRejectionReason())
+                .build();
     }
 
     /**

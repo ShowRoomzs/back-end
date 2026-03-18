@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import showroomz.api.admin.market.DTO.AdminMarketDto;
+import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.market.DTO.MarketListResponse;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.market.entity.Market;
@@ -44,9 +45,10 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
     // Seller의 Status가 PENDING인 마켓 목록 조회 (페이징)
     Page<Market> findAllBySeller_Status(SellerStatus status, Pageable pageable);
 
-    // 검색 조건(상태, 기간, 키워드)에 따른 마켓 목록 조회
+    // 검색 조건(roleType, 상태, 기간, 키워드)에 따른 가입 신청 목록 조회
     @Query("SELECT m FROM Market m JOIN FETCH m.seller s " +
-           "WHERE (:status IS NULL OR s.status = :status) " +
+           "WHERE s.roleType = :roleType " +
+           "AND (:status IS NULL OR s.status = :status) " +
            "AND (:startDate IS NULL OR s.createdAt >= :startDate) " +
            "AND (:endDate IS NULL OR s.createdAt <= :endDate) " +
            "AND (:keyword IS NULL OR :keyword = '' OR " +
@@ -55,7 +57,8 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
            "    (:keywordType = 'NAME'         AND s.name LIKE CONCAT('%', :keyword, '%')) OR " +
            "    (:keywordType = 'PHONE_NUMBER' AND s.phoneNumber LIKE CONCAT('%', :keyword, '%'))" +
            ")")
-    Page<Market> searchApplications(@Param("status") SellerStatus status,
+    Page<Market> searchApplications(@Param("roleType") RoleType roleType,
+                                    @Param("status") SellerStatus status,
                                     @Param("startDate") LocalDateTime startDate,
                                     @Param("endDate") LocalDateTime endDate,
                                     @Param("keyword") String keyword,

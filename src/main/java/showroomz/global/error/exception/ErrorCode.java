@@ -63,6 +63,8 @@ public enum ErrorCode {
     ACCOUNT_NOT_APPROVED(HttpStatus.FORBIDDEN, "ACCOUNT_NOT_APPROVED", "관리자 승인 대기 중인 계정입니다."),
     ACCOUNT_REJECTED(HttpStatus.FORBIDDEN, "ACCOUNT_REJECTED", "가입 승인이 반려된 계정입니다."),
     ACCOUNT_REJECTED_WITH_REASON(HttpStatus.FORBIDDEN, "ACCOUNT_REJECTED_WITH_REASON", "가입 승인이 반려된 계정입니다."),
+    ACCOUNT_NOT_PENDING(HttpStatus.BAD_REQUEST, "ACCOUNT_NOT_PENDING", "승인 대기 상태인 계정만 처리할 수 있습니다."),
+    ACCOUNT_ROLE_MISMATCH(HttpStatus.BAD_REQUEST, "ACCOUNT_ROLE_MISMATCH", "해당 계정의 유형이 올바르지 않습니다."),
 
     /* * 6. 마켓 (Market) 
      */

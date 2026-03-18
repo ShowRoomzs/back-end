@@ -54,6 +54,41 @@ public class MailService {
         sendEmail(to, subject, text);
     }
 
+    @Async
+    public void sendCreatorApprovalEmail(String to, String name) {
+        String subject = "[Showroomz] 크리에이터 입점 신청이 승인되었습니다.";
+        String text = String.format("""
+                <html>
+                <body>
+                    <h2>안녕하세요, %s님.</h2>
+                    <p>축하합니다! Showroomz 크리에이터 입점 신청이 <strong>승인</strong>되었습니다.</p>
+                    <p>지금 바로 로그인하여 쇼룸을 꾸미고 활동을 시작해보세요.</p>
+                    <br/>
+                    <a href="https://showroomz.co.kr/seller/login">크리에이터 센터 바로가기</a>
+                </body>
+                </html>
+                """, name);
+
+        sendEmail(to, subject, text);
+    }
+
+    @Async
+    public void sendCreatorRejectionEmail(String to, String name, String reason) {
+        String subject = "[Showroomz] 크리에이터 입점 신청이 반려되었습니다.";
+        String text = String.format("""
+                <html>
+                <body>
+                    <h2>안녕하세요, %s님.</h2>
+                    <p>아쉽게도 Showroomz 크리에이터 입점 신청이 <strong>반려</strong>되었습니다.</p>
+                    <p><strong>반려 사유:</strong> %s</p>
+                    <p>내용을 보완하여 다시 신청해주시면 신속히 검토하겠습니다.</p>
+                </body>
+                </html>
+                """, name, reason);
+
+        sendEmail(to, subject, text);
+    }
+
     private void sendEmail(String to, String subject, String text) {
         try {
             MimeMessage mimeMessage = javaMailSender.createMimeMessage();
