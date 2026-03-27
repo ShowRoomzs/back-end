@@ -9,6 +9,8 @@ import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.coupon.docs.UserCouponControllerDocs;
 import showroomz.api.app.coupon.dto.CouponDownloadResponse;
 import showroomz.api.app.coupon.dto.CouponRegisterRequest;
+import showroomz.api.app.coupon.dto.CouponUseRequest;
+import showroomz.api.app.coupon.dto.CouponUseResponse;
 import showroomz.api.app.coupon.dto.UserCouponDto;
 import showroomz.api.app.coupon.dto.UserCouponRegisterResponse;
 import showroomz.api.app.coupon.service.UserCouponService;
@@ -39,6 +41,17 @@ public class UserCouponController implements UserCouponControllerDocs {
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable("couponId") Long couponId) {
         CouponDownloadResponse response = userCouponService.downloadCoupon(principal.getUsername(), couponId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @PostMapping("/{userCouponId}/use")
+    public ResponseEntity<CouponUseResponse> useCoupon(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable("userCouponId") Long userCouponId,
+            @Valid @RequestBody CouponUseRequest request) {
+        CouponUseResponse response = userCouponService.useCoupon(
+                principal.getUsername(), userCouponId, request.getOrderAmount());
         return ResponseEntity.ok(response);
     }
 

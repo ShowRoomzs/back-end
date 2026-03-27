@@ -7,10 +7,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.coupon.dto.CouponDownloadResponse;
+import showroomz.api.app.coupon.dto.CouponUseResponse;
 import showroomz.api.app.coupon.dto.UserCouponDto;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.coupon.entity.Coupon;
 import showroomz.domain.coupon.entity.UserCoupon;
+import showroomz.domain.coupon.type.DiscountType;
 import showroomz.domain.coupon.repository.CouponRepository;
 import showroomz.domain.coupon.repository.UserCouponRepository;
 import showroomz.domain.member.user.entity.Users;
@@ -19,6 +21,8 @@ import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,6 +34,57 @@ public class UserCouponService {
     private final UserRepository userRepository;
     private final CouponRepository couponRepository;
     private final UserCouponRepository userCouponRepository;
+
+    @Transactional(readOnly = true)
+    public CouponUseResponse useCoupon(String username, Long userCouponId, BigDecimal orderAmount) {
+        Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        UserCoupon userCoupon = userCouponRepository.findByIdAndUserIdWithCoupon(userCouponId, user.getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_COUPON_NOT_FOUND));
+
+        Coupon coupon = userCoupon.getCoupon();
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(coupon.getStartAt()) || now.isAfter(coupon.getEndAt())) {
+            throw new BusinessException(ErrorCode.COUPON_EXPIRED);
+        }
+
+        BigDecimal minOrder = coupon.getMinOrderAmount();
+        if (minOrder != null && orderAmount.compareTo(minOrder) < 0) {
+            throw new BusinessException(ErrorCode.COUPON_MIN_ORDER_AMOUNT_NOT_MET);
+        }
+
+        BigDecimal discountAmount = calculateDiscountAmount(coupon, orderAmount);
+        BigDecimal finalOrderAmount = orderAmount.subtract(discountAmount);
+        if (finalOrderAmount.compareTo(BigDecimal.ZERO) < 0) {
+            finalOrderAmount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        } else {
+            finalOrderAmount = finalOrderAmount.setScale(2, RoundingMode.HALF_UP);
+        }
+
+        return CouponUseResponse.builder()
+                .userCouponId(userCouponId)
+                .discountAmount(discountAmount)
+                .finalOrderAmount(finalOrderAmount)
+                .message("쿠폰이 성공적으로 적용되었습니다.")
+                .build();
+    }
+
+    private static BigDecimal calculateDiscountAmount(Coupon coupon, BigDecimal orderAmount) {
+        if (coupon.getDiscountType() == DiscountType.FIXED_AMOUNT) {
+            return coupon.getDiscountValue().min(orderAmount).setScale(2, RoundingMode.HALF_UP);
+        }
+        BigDecimal raw = orderAmount.multiply(coupon.getDiscountValue())
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        BigDecimal maxDiscount = coupon.getMaxDiscountAmount();
+        if (maxDiscount != null && raw.compareTo(maxDiscount) > 0) {
+            raw = maxDiscount;
+        }
+        if (raw.compareTo(orderAmount) > 0) {
+            raw = orderAmount;
+        }
+        return raw.setScale(2, RoundingMode.HALF_UP);
+    }
 
     @Transactional(readOnly = true)
     public PageResponse<UserCouponDto> getMyCoupons(String username, PagingRequest pagingRequest) {
