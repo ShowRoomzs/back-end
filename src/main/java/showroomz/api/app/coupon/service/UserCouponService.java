@@ -8,13 +8,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.coupon.dto.CouponDownloadResponse;
 import showroomz.api.app.coupon.dto.CouponUseResponse;
+import showroomz.api.app.coupon.dto.ProductApplicableCouponDto;
 import showroomz.api.app.coupon.dto.UserCouponDto;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.coupon.entity.Coupon;
 import showroomz.domain.coupon.entity.UserCoupon;
-import showroomz.domain.coupon.type.DiscountType;
 import showroomz.domain.coupon.repository.CouponRepository;
 import showroomz.domain.coupon.repository.UserCouponRepository;
+import showroomz.domain.coupon.type.DiscountType;
+import showroomz.domain.coupon.type.UserCouponStatus;
+import showroomz.domain.product.entity.Product;
+import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
@@ -34,6 +38,26 @@ public class UserCouponService {
     private final UserRepository userRepository;
     private final CouponRepository couponRepository;
     private final UserCouponRepository userCouponRepository;
+    private final ProductRepository productRepository;
+
+    @Transactional(readOnly = true)
+    public List<ProductApplicableCouponDto> getApplicableCouponsForProduct(String username, Long productId) {
+        Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        Product product = productRepository.findByProductIdWithMarketAndSeller(productId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        Long sellerId = product.getMarket().getSeller().getId();
+        LocalDateTime now = LocalDateTime.now();
+
+        List<UserCoupon> userCoupons = userCouponRepository.findApplicableForProductCheckout(
+                user.getId(), sellerId, UserCouponStatus.AVAILABLE, now);
+
+        return userCoupons.stream()
+                .map(ProductApplicableCouponDto::from)
+                .toList();
+    }
 
     @Transactional(readOnly = true)
     public CouponUseResponse useCoupon(String username, Long userCouponId, BigDecimal orderAmount) {

@@ -9,8 +9,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.coupon.dto.AdminCouponCreateRequest;
 import showroomz.api.admin.coupon.dto.AdminCouponResponse;
+import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.domain.coupon.entity.Coupon;
 import showroomz.domain.coupon.repository.CouponRepository;
+import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.coupon.type.CouponStatus;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.BusinessException;
@@ -23,6 +25,7 @@ import java.util.List;
 public class AdminCouponService {
 
     private final CouponRepository couponRepository;
+    private final SellerRepository sellerRepository;
 
     /**
      * 관리자 쿠폰 목록 조회 (status 필터링, 최신 등록순 페이징)
@@ -59,6 +62,11 @@ public class AdminCouponService {
         Integer totalQty = request.getTotalQuantity();
         Integer remainingQty = (totalQty != null) ? totalQty : null;
 
+        Seller seller = request.getSellerId() != null
+                ? sellerRepository.findById(request.getSellerId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.SELLER_NOT_FOUND))
+                : null;
+
         Coupon coupon = new Coupon(
                 request.getName(),
                 request.getCouponCode(),
@@ -69,7 +77,8 @@ public class AdminCouponService {
                 request.getValidFrom(),
                 request.getValidTo(),
                 totalQty,
-                remainingQty
+                remainingQty,
+                seller
         );
         return couponRepository.save(coupon);
     }

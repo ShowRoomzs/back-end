@@ -70,6 +70,7 @@ public enum ErrorCode {
      */
     DUPLICATE_MARKET_NAME(HttpStatus.BAD_REQUEST, "DUPLICATE_MARKET_NAME", "이미 사용 중인 마켓명입니다."),
     MARKET_NOT_FOUND(HttpStatus.NOT_FOUND, "MARKET_NOT_FOUND", "존재하지 않는 마켓입니다."),
+    SELLER_NOT_FOUND(HttpStatus.NOT_FOUND, "SELLER_NOT_FOUND", "존재하지 않는 판매자입니다."),
 
     /* * 7. 이미지 (Image)
      */

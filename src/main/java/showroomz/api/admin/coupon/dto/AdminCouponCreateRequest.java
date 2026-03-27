@@ -61,4 +61,7 @@ public class AdminCouponCreateRequest {
     @Min(value = 1, message = "총 발급 수량은 1 이상이어야 합니다.")
     @Schema(description = "총 발급 수량 (null이면 무제한)", example = "1000")
     private Integer totalQuantity;
+
+    @Schema(description = "발행 판매자 ID (상품 결제 시 동일 판매자 상품에만 적용, null이면 판매자 미연결)", example = "1")
+    private Long sellerId;
 }

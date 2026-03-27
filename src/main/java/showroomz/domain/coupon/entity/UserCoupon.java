@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import showroomz.domain.coupon.type.UserCouponStatus;
 import showroomz.domain.member.user.entity.Users;
 
 import java.time.LocalDateTime;
@@ -33,6 +34,10 @@ public class UserCoupon {
     @JoinColumn(name = "coupon_id", nullable = false)
     private Coupon coupon;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private UserCouponStatus status;
+
     @CreatedDate
     @Column(name = "registered_at", updatable = false)
     private LocalDateTime registeredAt;
@@ -40,5 +45,6 @@ public class UserCoupon {
     public UserCoupon(Users user, Coupon coupon) {
         this.user = user;
         this.coupon = coupon;
+        this.status = UserCouponStatus.AVAILABLE;
     }
 }
