@@ -34,10 +34,15 @@ public interface UserCouponRepository extends JpaRepository<UserCoupon, Long> {
             AND s.id = :sellerId
             AND c.startAt <= :now
             AND c.endAt >= :now
+            AND (
+                NOT EXISTS (SELECT 1 FROM CouponProduct cp0 WHERE cp0.coupon = c)
+                OR EXISTS (SELECT 1 FROM CouponProduct cp1 WHERE cp1.coupon = c AND cp1.product.productId = :productId)
+            )
             """)
     List<UserCoupon> findApplicableForProductCheckout(
             @Param("userId") Long userId,
             @Param("sellerId") Long sellerId,
+            @Param("productId") Long productId,
             @Param("status") UserCouponStatus status,
             @Param("now") LocalDateTime now);
 }
