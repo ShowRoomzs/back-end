@@ -12,8 +12,10 @@ import showroomz.domain.coupon.type.UserCouponStatus;
 import showroomz.domain.member.user.entity.Users;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface UserCouponRepository extends JpaRepository<UserCoupon, Long> {
@@ -45,4 +47,7 @@ public interface UserCouponRepository extends JpaRepository<UserCoupon, Long> {
             @Param("productId") Long productId,
             @Param("status") UserCouponStatus status,
             @Param("now") LocalDateTime now);
+
+    @Query("SELECT uc.coupon.id FROM UserCoupon uc WHERE uc.user.id = :userId AND uc.coupon.id IN :couponIds")
+    Set<Long> findCouponIdsIssuedToUser(@Param("userId") Long userId, @Param("couponIds") Collection<Long> couponIds);
 }
