@@ -3,6 +3,7 @@ package showroomz.api.admin.coupon.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -56,4 +57,11 @@ public class AdminCouponCreateRequest {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @Schema(description = "쿠폰 유효 종료 일시 (validTo, validFrom 이후여야 함)", example = "2026-12-31T23:59:59", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime validTo;
+
+    @Min(value = 1, message = "총 발급 수량은 1 이상이어야 합니다.")
+    @Schema(description = "총 발급 수량 (null이면 무제한)", example = "1000")
+    private Integer totalQuantity;
+
+    @Schema(description = "발행 판매자 ID (상품 결제 시 동일 판매자 상품에만 적용, null이면 판매자 미연결)", example = "1")
+    private Long sellerId;
 }

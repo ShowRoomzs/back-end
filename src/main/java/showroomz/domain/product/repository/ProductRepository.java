@@ -18,6 +18,9 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     Optional<Product> findByProductId(Long productId);
     Optional<Product> findByProductNumber(String productNumber);
 
+    @Query("SELECT p FROM Product p JOIN FETCH p.market m JOIN FETCH m.seller WHERE p.productId = :productId")
+    Optional<Product> findByProductIdWithMarketAndSeller(@Param("productId") Long productId);
+
     @Query("SELECT DISTINCT p FROM Product p " +
            "LEFT JOIN FETCH p.market " +
            "LEFT JOIN FETCH p.category " +

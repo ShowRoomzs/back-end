@@ -70,6 +70,7 @@ public enum ErrorCode {
      */
     DUPLICATE_MARKET_NAME(HttpStatus.BAD_REQUEST, "DUPLICATE_MARKET_NAME", "이미 사용 중인 마켓명입니다."),
     MARKET_NOT_FOUND(HttpStatus.NOT_FOUND, "MARKET_NOT_FOUND", "존재하지 않는 마켓입니다."),
+    SELLER_NOT_FOUND(HttpStatus.NOT_FOUND, "SELLER_NOT_FOUND", "존재하지 않는 판매자입니다."),
 
     /* * 7. 이미지 (Image)
      */
@@ -118,8 +119,11 @@ public enum ErrorCode {
      */
     COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "COUPON_NOT_FOUND", "존재하지 않거나 유효하지 않은 쿠폰 코드입니다."),
     COUPON_EXPIRED(HttpStatus.BAD_REQUEST, "COUPON_EXPIRED", "만료되었거나 아직 사용 기간이 아닌 쿠폰입니다."),
+    COUPON_QUANTITY_EXHAUSTED(HttpStatus.BAD_REQUEST, "COUPON_QUANTITY_EXHAUSTED", "발급 가능한 쿠폰 수량이 모두 소진되었습니다."),
     COUPON_ALREADY_REGISTERED(HttpStatus.BAD_REQUEST, "COUPON_ALREADY_REGISTERED", "이미 등록된 쿠폰입니다."),
     COUPON_CODE_DUPLICATE(HttpStatus.BAD_REQUEST, "COUPON_CODE_DUPLICATE", "이미 사용 중인 쿠폰 코드입니다."),
+    USER_COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_COUPON_NOT_FOUND", "보유하지 않은 사용자 쿠폰입니다."),
+    COUPON_MIN_ORDER_AMOUNT_NOT_MET(HttpStatus.BAD_REQUEST, "COUPON_MIN_ORDER_AMOUNT_NOT_MET", "최소 주문 금액을 충족하지 않습니다."),
     INVALID_COUPON_VALIDITY_PERIOD(HttpStatus.BAD_REQUEST, "INVALID_COUPON_VALIDITY_PERIOD", "유효 시작 일시는 유효 종료 일시보다 이전이어야 합니다."),
 
     INVALID_INQUIRY_DETAIL_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "선택한 상세 유형이 문의 타입에 맞지 않습니다."),
