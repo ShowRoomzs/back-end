@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import showroomz.domain.product.entity.Product;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +21,9 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     @Query("SELECT p FROM Product p JOIN FETCH p.market m JOIN FETCH m.seller WHERE p.productId = :productId")
     Optional<Product> findByProductIdWithMarketAndSeller(@Param("productId") Long productId);
+
+    @Query("SELECT p FROM Product p WHERE p.productId IN :productIds AND p.market.seller.id = :sellerId")
+    List<Product> findAllByProductIdsAndSellerId(@Param("productIds") Collection<Long> productIds, @Param("sellerId") Long sellerId);
 
     @Query("SELECT DISTINCT p FROM Product p " +
            "LEFT JOIN FETCH p.market " +

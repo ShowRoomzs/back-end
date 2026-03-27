@@ -89,6 +89,7 @@ public enum ErrorCode {
      */
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND", "존재하지 않는 카테고리입니다."),
     PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", "존재하지 않는 상품입니다."),
+    PRODUCT_NOT_OWNED_BY_SELLER(HttpStatus.FORBIDDEN, "PRODUCT_NOT_OWNED_BY_SELLER", "해당 판매자 소유의 상품이 아닙니다."),
     PRODUCT_LIST_EMPTY(HttpStatus.NOT_FOUND, "PRODUCT_LIST_EMPTY", "해당 상품이 존재하지 않습니다."),
     VARIANT_NOT_FOUND(HttpStatus.NOT_FOUND, "VARIANT_NOT_FOUND", "존재하지 않는 옵션입니다."),
     VARIANT_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "VARIANT_NOT_AVAILABLE", "노출되지 않는 옵션입니다."),

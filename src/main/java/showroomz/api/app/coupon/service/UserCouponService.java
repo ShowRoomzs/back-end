@@ -52,7 +52,7 @@ public class UserCouponService {
         LocalDateTime now = LocalDateTime.now();
 
         List<UserCoupon> userCoupons = userCouponRepository.findApplicableForProductCheckout(
-                user.getId(), sellerId, UserCouponStatus.AVAILABLE, now);
+                user.getId(), sellerId, productId, UserCouponStatus.AVAILABLE, now);
 
         return userCoupons.stream()
                 .map(ProductApplicableCouponDto::from)

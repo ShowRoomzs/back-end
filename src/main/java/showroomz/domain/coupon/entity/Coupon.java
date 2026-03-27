@@ -10,6 +10,8 @@ import showroomz.domain.member.seller.entity.Seller;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -56,6 +58,9 @@ public class Coupon extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id")
     private Seller seller;
+
+    @OneToMany(mappedBy = "coupon", fetch = FetchType.LAZY)
+    private List<CouponProduct> couponProducts = new ArrayList<>();
 
     public Coupon(String name, String code, DiscountType discountType, BigDecimal discountValue,
                   BigDecimal minOrderAmount, BigDecimal maxDiscountAmount,
