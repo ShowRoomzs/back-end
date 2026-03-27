@@ -108,7 +108,8 @@ public interface AdminCouponControllerDocs {
             description = "관리자가 새 쿠폰을 생성합니다. 생성된 쿠폰 코드는 사용자가 POST /v1/user/coupons로 등록할 수 있습니다.\n\n" +
                     "**검증:**\n" +
                     "- 쿠폰 코드(couponCode) 중복 시 COUPON_CODE_DUPLICATE (400)\n" +
-                    "- validFrom이 validTo보다 같거나 이후이면 INVALID_COUPON_VALIDITY_PERIOD (400)\n\n" +
+                    "- validFrom이 validTo보다 같거나 이후이면 INVALID_COUPON_VALIDITY_PERIOD (400)\n" +
+                    "- totalQuantity: 미입력(null)이면 무제한, 입력 시 1 이상이며 잔여 수량은 동일 값으로 초기화\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )

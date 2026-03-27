@@ -118,6 +118,7 @@ public enum ErrorCode {
      */
     COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "COUPON_NOT_FOUND", "존재하지 않거나 유효하지 않은 쿠폰 코드입니다."),
     COUPON_EXPIRED(HttpStatus.BAD_REQUEST, "COUPON_EXPIRED", "만료되었거나 아직 사용 기간이 아닌 쿠폰입니다."),
+    COUPON_QUANTITY_EXHAUSTED(HttpStatus.BAD_REQUEST, "COUPON_QUANTITY_EXHAUSTED", "발급 가능한 쿠폰 수량이 모두 소진되었습니다."),
     COUPON_ALREADY_REGISTERED(HttpStatus.BAD_REQUEST, "COUPON_ALREADY_REGISTERED", "이미 등록된 쿠폰입니다."),
     COUPON_CODE_DUPLICATE(HttpStatus.BAD_REQUEST, "COUPON_CODE_DUPLICATE", "이미 사용 중인 쿠폰 코드입니다."),
     INVALID_COUPON_VALIDITY_PERIOD(HttpStatus.BAD_REQUEST, "INVALID_COUPON_VALIDITY_PERIOD", "유효 시작 일시는 유효 종료 일시보다 이전이어야 합니다."),

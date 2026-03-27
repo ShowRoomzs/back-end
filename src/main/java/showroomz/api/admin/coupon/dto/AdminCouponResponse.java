@@ -69,8 +69,8 @@ public class AdminCouponResponse {
                 .minimumOrderPrice(coupon.getMinOrderAmount())
                 .validFrom(coupon.getStartAt())
                 .validUntil(coupon.getEndAt())
-                .totalQuantity(null)  // 현재 스키마에 수량 제한 없음
-                .remainingQuantity(null)
+                .totalQuantity(coupon.getTotalQuantity())
+                .remainingQuantity(coupon.getRemainingQuantity())
                 .status(status)
                 .createdAt(coupon.getCreatedAt())
                 .build();

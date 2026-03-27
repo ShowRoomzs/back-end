@@ -56,6 +56,9 @@ public class AdminCouponService {
             throw new BusinessException(ErrorCode.INVALID_COUPON_VALIDITY_PERIOD);
         }
 
+        Integer totalQty = request.getTotalQuantity();
+        Integer remainingQty = (totalQty != null) ? totalQty : null;
+
         Coupon coupon = new Coupon(
                 request.getName(),
                 request.getCouponCode(),
@@ -64,7 +67,9 @@ public class AdminCouponService {
                 request.getMinOrderAmount(),
                 request.getMaxDiscountAmount(),
                 request.getValidFrom(),
-                request.getValidTo()
+                request.getValidTo(),
+                totalQty,
+                remainingQty
         );
         return couponRepository.save(coupon);
     }

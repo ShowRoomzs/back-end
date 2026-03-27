@@ -46,9 +46,16 @@ public class Coupon extends BaseTimeEntity {
     @Column(name = "end_at", nullable = false)
     private LocalDateTime endAt;
 
+    @Column(name = "total_quantity")
+    private Integer totalQuantity;
+
+    @Column(name = "remaining_quantity")
+    private Integer remainingQuantity;
+
     public Coupon(String name, String code, DiscountType discountType, BigDecimal discountValue,
                   BigDecimal minOrderAmount, BigDecimal maxDiscountAmount,
-                  LocalDateTime startAt, LocalDateTime endAt) {
+                  LocalDateTime startAt, LocalDateTime endAt,
+                  Integer totalQuantity, Integer remainingQuantity) {
         this.name = name;
         this.code = code;
         this.discountType = discountType;
@@ -57,5 +64,14 @@ public class Coupon extends BaseTimeEntity {
         this.maxDiscountAmount = maxDiscountAmount;
         this.startAt = startAt;
         this.endAt = endAt;
+        this.totalQuantity = totalQuantity;
+        this.remainingQuantity = remainingQuantity;
+    }
+
+    public void decreaseRemainingForIssuance() {
+        if (remainingQuantity == null) {
+            return;
+        }
+        this.remainingQuantity = remainingQuantity - 1;
     }
 }

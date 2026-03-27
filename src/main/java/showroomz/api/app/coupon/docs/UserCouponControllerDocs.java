@@ -1,6 +1,8 @@
 package showroomz.api.app.coupon.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -11,6 +13,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.api.app.coupon.dto.CouponDownloadResponse;
 import showroomz.api.app.coupon.dto.CouponRegisterRequest;
 import showroomz.api.app.coupon.dto.UserCouponDto;
 import showroomz.api.app.coupon.dto.UserCouponRegisterResponse;
@@ -55,11 +58,70 @@ public interface UserCouponControllerDocs {
     );
 
     @Operation(
+            summary = "사용자 쿠폰 다운로드",
+            description = "쿠폰 ID로 쿠폰을 다운로드(발급)하여 내 쿠폰함에 담습니다.\n\n" +
+                    "**검증:**\n" +
+                    "- 존재하지 않는 쿠폰: COUPON_NOT_FOUND\n" +
+                    "- 유효기간 외(비활성): COUPON_EXPIRED\n" +
+                    "- 발급 수량 소진: COUPON_QUANTITY_EXHAUSTED\n" +
+                    "- 이미 발급받은 쿠폰: COUPON_ALREADY_REGISTERED\n\n" +
+                    "**동시성:** 쿠폰 행 비관적 락(PESSIMISTIC_WRITE)으로 발급 처리 직렬화\n\n" +
+                    "**권한:** USER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "발급 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CouponDownloadResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "만료/기간 외, 수량 소진, 이미 발급됨",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 정보가 유효하지 않음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "존재하지 않는 쿠폰",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<CouponDownloadResponse> downloadCoupon(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(
+                    name = "couponId",
+                    description = "다운로드(발급)할 쿠폰 ID",
+                    required = true,
+                    example = "1",
+                    in = ParameterIn.PATH
+            )
+            @org.springframework.web.bind.annotation.PathVariable("couponId") Long couponId
+    );
+
+    @Operation(
             summary = "사용자 쿠폰 등록",
             description = "쿠폰 코드로 쿠폰을 내 쿠폰함에 등록합니다.\n\n" +
                     "**검증:**\n" +
                     "- 존재하지 않는 코드: COUPON_NOT_FOUND\n" +
                     "- 유효기간 외: COUPON_EXPIRED\n" +
+                    "- 발급 수량 소진: COUPON_QUANTITY_EXHAUSTED\n" +
                     "- 이미 등록된 쿠폰: COUPON_ALREADY_REGISTERED\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
@@ -75,7 +137,7 @@ public interface UserCouponControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "잘못된 요청 (만료/기간 외, 이미 등록됨)",
+                    description = "잘못된 요청 (만료/기간 외, 수량 소진, 이미 등록됨)",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),

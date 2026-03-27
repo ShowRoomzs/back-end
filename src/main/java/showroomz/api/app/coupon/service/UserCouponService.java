@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.app.coupon.dto.CouponDownloadResponse;
 import showroomz.api.app.coupon.dto.UserCouponDto;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.coupon.entity.Coupon;
@@ -48,7 +49,7 @@ public class UserCouponService {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        Coupon coupon = couponRepository.findByCode(code)
+        Coupon coupon = couponRepository.findByCodeForUpdate(code)
                 .orElseThrow(() -> new BusinessException(ErrorCode.COUPON_NOT_FOUND));
 
         LocalDateTime now = LocalDateTime.now();
@@ -60,7 +61,44 @@ public class UserCouponService {
             throw new BusinessException(ErrorCode.COUPON_ALREADY_REGISTERED);
         }
 
+        assertRemainingStock(coupon);
+
+        coupon.decreaseRemainingForIssuance();
         UserCoupon userCoupon = userCouponRepository.save(new UserCoupon(user, coupon));
         return userCoupon;
+    }
+
+    @Transactional
+    public CouponDownloadResponse downloadCoupon(String username, Long couponId) {
+        Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        Coupon coupon = couponRepository.findByIdForUpdate(couponId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.COUPON_NOT_FOUND));
+
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(coupon.getStartAt()) || now.isAfter(coupon.getEndAt())) {
+            throw new BusinessException(ErrorCode.COUPON_EXPIRED);
+        }
+
+        if (userCouponRepository.existsByUserAndCoupon(user, coupon)) {
+            throw new BusinessException(ErrorCode.COUPON_ALREADY_REGISTERED);
+        }
+
+        assertRemainingStock(coupon);
+
+        coupon.decreaseRemainingForIssuance();
+        UserCoupon saved = userCouponRepository.save(new UserCoupon(user, coupon));
+        return CouponDownloadResponse.builder()
+                .userCouponId(saved.getId())
+                .message("쿠폰이 성공적으로 발급되었습니다.")
+                .build();
+    }
+
+    private static void assertRemainingStock(Coupon coupon) {
+        Integer remaining = coupon.getRemainingQuantity();
+        if (remaining != null && remaining <= 0) {
+            throw new BusinessException(ErrorCode.COUPON_QUANTITY_EXHAUSTED);
+        }
     }
 }
