@@ -59,6 +59,7 @@ public class UserService {
                 user.getId(),
                 user.getEmail(),
                 user.getNickname(),
+                user.getName(),
                 user.getProfileImageUrl(),
                 user.getPhoneNumber(),
                 user.getBirthday(),
