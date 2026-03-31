@@ -23,6 +23,12 @@ public class AppleOAuth2UserInfo extends OAuth2UserInfo {
     }
 
     @Override
+    public String getRealName() {
+        Object name = attributes.get("name");
+        return name != null ? name.toString() : null;
+    }
+
+    @Override
     public String getEmail() {
         return (String) attributes.get("email");
     }
