@@ -108,7 +108,13 @@ public class SocialLoginService {
             isNewMember = true;
         } else {
             // [기존 유저 존재]
-            
+
+            // 네이버 실명이 아직 저장되지 않은 경우 업데이트
+            if (userInfo.getRealName() != null && !userInfo.getRealName().isEmpty()
+                    && (user.getName() == null || user.getName().isEmpty())) {
+                user.setName(userInfo.getRealName());
+            }
+
             // 탈퇴 회원(WITHDRAWN)인 경우 재가입(복구) 처리
             if (user.getStatus() == UserStatus.WITHDRAWN) {
                 // 1. 상태 복구: 탈퇴 -> 정상
@@ -291,6 +297,7 @@ public class SocialLoginService {
                 now,
                 now
         );
+        user.setName(userInfo.getRealName());
         return userRepository.save(user);
     }
 
