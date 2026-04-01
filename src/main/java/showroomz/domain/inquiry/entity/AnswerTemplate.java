@@ -46,4 +46,11 @@ public class AnswerTemplate extends BaseTimeEntity {
         this.content = content;
         this.isActive = isActive;
     }
+
+    public void update(String title, MarketInquiryFilterType category, String content, boolean isActive) {
+        this.title = title;
+        this.category = category;
+        this.content = content;
+        this.isActive = isActive;
+    }
 }

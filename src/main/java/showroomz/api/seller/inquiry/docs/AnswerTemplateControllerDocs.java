@@ -11,12 +11,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.api.seller.inquiry.dto.AnswerTemplateDeleteRequest;
 import showroomz.api.seller.inquiry.dto.AnswerTemplateDto;
 import showroomz.api.seller.inquiry.dto.AnswerTemplateRegisterRequest;
 import showroomz.api.seller.inquiry.dto.AnswerTemplateRegisterResponse;
+import showroomz.api.seller.inquiry.dto.AnswerTemplateUpdateRequest;
 import showroomz.api.seller.inquiry.type.MarketInquiryFilterType;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
@@ -251,5 +254,149 @@ public interface AnswerTemplateControllerDocs {
 
             @Parameter(description = "페이징 요청 정보 (page: 1부터 시작, size: 페이지당 항목 수)")
             @ModelAttribute PagingRequest pagingRequest
+    );
+
+    @Operation(
+            summary = "답변 템플릿 단건 조회",
+            description = "특정 답변 템플릿의 상세 정보를 조회합니다.\n\n" +
+                    "**권한:** SELLER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
+                    "- 본인이 등록한 템플릿만 조회할 수 있습니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AnswerTemplateDto.class),
+                            examples = @ExampleObject(
+                                    value = "{\n" +
+                                            "  \"templateId\": 1,\n" +
+                                            "  \"title\": \"재입고 안내 템플릿\",\n" +
+                                            "  \"category\": \"STOCK\",\n" +
+                                            "  \"categoryName\": \"재고/재입고 문의\",\n" +
+                                            "  \"content\": \"안녕하세요, 해당 상품은 다음 주 중 재입고 예정입니다.\",\n" +
+                                            "  \"createdAt\": \"2026-04-01T10:30:00\",\n" +
+                                            "  \"modifiedAt\": \"2026-04-01T12:00:00\"\n" +
+                                            "}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "템플릿을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = "{\n  \"code\": \"NOT_FOUND_DATA\",\n  \"message\": \"데이터를 찾을 수 없습니다.\"\n}")
+                    )
+            )
+    })
+    ResponseEntity<AnswerTemplateDto> getTemplate(
+            @Parameter(description = "템플릿 ID", required = true, example = "1")
+            @PathVariable("templateId") Long templateId
+    );
+
+    @Operation(
+            summary = "답변 템플릿 수정",
+            description = "특정 답변 템플릿의 내용을 수정합니다.\n\n" +
+                    "**권한:** SELLER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
+                    "- 본인이 등록한 템플릿만 수정할 수 있습니다.\n" +
+                    "- 모든 필드는 필수 입력입니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "수정 성공"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "입력값 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(name = "제목 30자 초과", value = "{\n  \"code\": \"INVALID_INPUT\",\n  \"message\": \"템플릿 제목은 최대 30자까지 입력 가능합니다.\"\n}"),
+                                    @ExampleObject(name = "답변 내용 1000자 초과", value = "{\n  \"code\": \"INVALID_INPUT\",\n  \"message\": \"답변 내용은 최대 1000자까지 입력 가능합니다.\"\n}")
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "템플릿을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = "{\n  \"code\": \"NOT_FOUND_DATA\",\n  \"message\": \"데이터를 찾을 수 없습니다.\"\n}")
+                    )
+            )
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "템플릿 수정 요청 바디",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = AnswerTemplateUpdateRequest.class),
+                    examples = @ExampleObject(
+                            value = "{\n" +
+                                    "  \"title\": \"재입고 안내 - 수정본\",\n" +
+                                    "  \"category\": \"STOCK\",\n" +
+                                    "  \"content\": \"안녕하세요, 해당 상품은 이번 주 내로 재입고 예정입니다.\",\n" +
+                                    "  \"isActive\": true\n" +
+                                    "}"
+                    )
+            )
+    )
+    ResponseEntity<Void> updateTemplate(
+            @Parameter(description = "템플릿 ID", required = true, example = "1")
+            @PathVariable("templateId") Long templateId,
+            @Valid @RequestBody AnswerTemplateUpdateRequest request
+    );
+
+    @Operation(
+            summary = "답변 템플릿 삭제",
+            description = "템플릿 ID 목록을 전달하여 여러 템플릿을 한 번에 삭제합니다.\n\n" +
+                    "**권한:** SELLER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
+                    "- 본인이 등록한 템플릿만 삭제할 수 있습니다.\n" +
+                    "- 목록 중 본인 소유가 아닌 ID는 무시됩니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "삭제 성공"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "입력값 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = "{\n  \"code\": \"INVALID_INPUT\",\n  \"message\": \"삭제할 템플릿 ID를 하나 이상 입력해주세요.\"\n}")
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "삭제할 템플릿 ID 목록",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = AnswerTemplateDeleteRequest.class),
+                    examples = @ExampleObject(value = "{\n  \"templateIds\": [1, 2, 3]\n}")
+            )
+    )
+    ResponseEntity<Void> deleteTemplates(
+            @Valid @RequestBody AnswerTemplateDeleteRequest request
     );
 }
