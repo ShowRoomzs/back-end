@@ -180,7 +180,8 @@ public interface SellerInquiryControllerDocs {
                     "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
                     "**제약사항:**\n" +
                     "- 이미 답변이 등록된 문의는 다시 답변할 수 없습니다.\n" +
-                    "- 본인 마켓의 상품 문의에만 답변 가능합니다."
+                    "- 본인 마켓의 상품 문의에만 답변 가능합니다.\n" +
+                    "- 답변 내용은 최대 500자까지 입력 가능합니다."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -189,7 +190,7 @@ public interface SellerInquiryControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "이미 답변 완료된 문의",
+                    description = "입력값 오류 또는 이미 답변 완료된 문의",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -199,6 +200,13 @@ public interface SellerInquiryControllerDocs {
                                             value = "{\n" +
                                                     "  \"code\": \"INQUIRY_ALREADY_ANSWERED\",\n" +
                                                     "  \"message\": \"답변이 완료된 문의는 수정하거나 삭제할 수 없습니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "답변 내용 500자 초과",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"답변 내용은 최대 500자까지 입력 가능합니다.\"\n" +
                                                     "}"
                                     )
                             }
