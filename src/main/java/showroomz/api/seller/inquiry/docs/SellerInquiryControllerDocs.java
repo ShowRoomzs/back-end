@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.api.seller.inquiry.dto.ProductInquiryDetailResponse;
 import showroomz.api.seller.inquiry.dto.SellerInquiryAnswerRequest;
 import showroomz.api.seller.inquiry.dto.SellerInquiryListResponse;
 import showroomz.api.seller.inquiry.dto.SellerInquirySearchCondition;
@@ -58,6 +59,71 @@ public interface SellerInquiryControllerDocs {
     ResponseEntity<SellerInquiryListResponse> getInquiries(
             @ModelAttribute SellerInquirySearchCondition condition,
             @ModelAttribute PagingRequest pagingRequest
+    );
+
+    @Operation(
+            summary = "상품 문의 상세 조회",
+            description = "본인 마켓 상품에 등록된 특정 상품 문의의 상세 정보를 조회합니다.\n\n" +
+                    "**권한:** SELLER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
+                    "**포함 정보:**\n" +
+                    "- 고객명(실명 우선, 없으면 닉네임)\n" +
+                    "- 고객 이메일\n" +
+                    "- 문의 정보 및 답변 내용\n" +
+                    "- 상품 가격/노출/강제 품절 상태\n" +
+                    "- 판매 상태(판매중, 품절, 미진열)"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "상품 문의 상세 조회 성공"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 (다른 마켓의 상품 문의)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "권한 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"FORBIDDEN\",\n" +
+                                                    "  \"message\": \"접근 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "문의를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "문의 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"NOT_FOUND_DATA\",\n" +
+                                                    "  \"message\": \"데이터를 찾을 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<ProductInquiryDetailResponse> getInquiryDetail(
+            @Parameter(description = "문의 ID", required = true, example = "1")
+            @PathVariable("inquiryId") Long inquiryId
     );
 
     @Operation(

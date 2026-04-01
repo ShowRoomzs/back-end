@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Hidden;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.seller.inquiry.docs.SellerInquiryControllerDocs;
+import showroomz.api.seller.inquiry.dto.ProductInquiryDetailResponse;
 import showroomz.api.seller.inquiry.dto.SellerInquiryAnswerRequest;
 import showroomz.api.seller.inquiry.dto.SellerInquiryListResponse;
 import showroomz.api.seller.inquiry.dto.SellerInquirySearchCondition;
@@ -38,6 +39,15 @@ public class SellerInquiryController implements SellerInquiryControllerDocs {
             @ModelAttribute PagingRequest pagingRequest) {
         String sellerEmail = getCurrentSellerEmail();
         SellerInquiryListResponse response = sellerInquiryService.getMarketInquiries(sellerEmail, condition, pagingRequest);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @GetMapping("/{inquiryId}")
+    public ResponseEntity<ProductInquiryDetailResponse> getInquiryDetail(
+            @PathVariable("inquiryId") Long inquiryId) {
+        String sellerEmail = getCurrentSellerEmail();
+        ProductInquiryDetailResponse response = sellerInquiryService.getInquiryDetail(sellerEmail, inquiryId);
         return ResponseEntity.ok(response);
     }
 

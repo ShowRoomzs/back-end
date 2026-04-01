@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.seller.auth.repository.SellerRepository;
+import showroomz.api.seller.inquiry.dto.ProductInquiryDetailResponse;
 import showroomz.api.seller.inquiry.dto.SellerInquiryListResponse;
 import showroomz.api.seller.inquiry.dto.SellerInquirySearchCondition;
 import showroomz.api.seller.inquiry.repository.SellerInquiryQueryRepository;
@@ -64,5 +65,24 @@ public class SellerInquiryService {
         }
 
         inquiry.registerAnswer(answerContent);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductInquiryDetailResponse getInquiryDetail(String sellerEmail, Long inquiryId) {
+        ProductInquiry inquiry = productInquiryRepository.findByIdWithUserAndProduct(inquiryId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
+
+        Seller seller = sellerRepository.findByEmail(sellerEmail)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_AUTH_INFO));
+
+        Long myMarketId = marketRepository.findBySeller(seller)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA))
+                .getId();
+
+        if (!inquiry.getProduct().getMarket().getId().equals(myMarketId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+
+        return ProductInquiryDetailResponse.from(inquiry);
     }
 }
