@@ -9,14 +9,56 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.seller.inquiry.dto.SellerInquiryAnswerRequest;
+import showroomz.api.seller.inquiry.dto.SellerInquiryListResponse;
+import showroomz.api.seller.inquiry.dto.SellerInquirySearchCondition;
 
 @Tag(name = "Seller - Inquiry", description = "판매자 상품 문의 답변 API")
 public interface SellerInquiryControllerDocs {
+
+    @Operation(
+            summary = "판매자 문의 목록 조회",
+            description = "본인 마켓 기준으로 상품 문의와 1:1 문의를 통합 조회합니다.\n\n" +
+                    "**권한:** SELLER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
+                    "**검색 조건:**\n" +
+                    "- 기간(startDate, endDate)\n" +
+                    "- 문의 유형(inquiryTypes)\n" +
+                    "- 답변 상태(status)\n" +
+                    "- 키워드(keyword: 내용, 고객명, 상품명 통합 검색)"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "문의 목록 조회 성공"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "판매자 마켓을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<SellerInquiryListResponse> getInquiries(
+            @ModelAttribute SellerInquirySearchCondition condition,
+            Pageable pageable
+    );
 
     @Operation(
             summary = "상품 문의 답변 등록",
