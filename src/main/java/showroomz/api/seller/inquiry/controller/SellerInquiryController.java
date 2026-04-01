@@ -19,6 +19,7 @@ import showroomz.api.seller.inquiry.dto.SellerInquiryAnswerRequest;
 import showroomz.api.seller.inquiry.dto.SellerInquiryListResponse;
 import showroomz.api.seller.inquiry.dto.SellerInquirySearchCondition;
 import showroomz.api.seller.inquiry.service.SellerInquiryService;
+import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -33,9 +34,10 @@ public class SellerInquiryController implements SellerInquiryControllerDocs {
     @Override
     @GetMapping
     public ResponseEntity<SellerInquiryListResponse> getInquiries(
-            @ModelAttribute SellerInquirySearchCondition condition) {
+            @ModelAttribute SellerInquirySearchCondition condition,
+            @ModelAttribute PagingRequest pagingRequest) {
         String sellerEmail = getCurrentSellerEmail();
-        SellerInquiryListResponse response = sellerInquiryService.getMarketInquiries(sellerEmail, condition);
+        SellerInquiryListResponse response = sellerInquiryService.getMarketInquiries(sellerEmail, condition, pagingRequest);
         return ResponseEntity.ok(response);
     }
 

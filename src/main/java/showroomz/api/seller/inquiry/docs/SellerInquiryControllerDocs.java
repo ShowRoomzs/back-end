@@ -17,6 +17,7 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.seller.inquiry.dto.SellerInquiryAnswerRequest;
 import showroomz.api.seller.inquiry.dto.SellerInquiryListResponse;
 import showroomz.api.seller.inquiry.dto.SellerInquirySearchCondition;
+import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "Seller - Inquiry", description = "판매자 상품 문의 답변 API")
 public interface SellerInquiryControllerDocs {
@@ -55,7 +56,8 @@ public interface SellerInquiryControllerDocs {
             )
     })
     ResponseEntity<SellerInquiryListResponse> getInquiries(
-            @ModelAttribute SellerInquirySearchCondition condition
+            @ModelAttribute SellerInquirySearchCondition condition,
+            @ModelAttribute PagingRequest pagingRequest
     );
 
     @Operation(

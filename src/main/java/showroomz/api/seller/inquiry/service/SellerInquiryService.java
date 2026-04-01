@@ -13,6 +13,7 @@ import showroomz.domain.inquiry.repository.ProductInquiryRepository;
 import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -27,7 +28,10 @@ public class SellerInquiryService {
     private final SellerInquiryQueryRepository sellerInquiryQueryRepository;
 
     @Transactional(readOnly = true)
-    public SellerInquiryListResponse getMarketInquiries(String sellerEmail, SellerInquirySearchCondition condition) {
+    public SellerInquiryListResponse getMarketInquiries(
+            String sellerEmail,
+            SellerInquirySearchCondition condition,
+            PagingRequest pagingRequest) {
         Seller seller = sellerRepository.findByEmail(sellerEmail)
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_AUTH_INFO));
 
@@ -35,7 +39,7 @@ public class SellerInquiryService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA))
                 .getId();
 
-        Pageable pageable = condition.toPageable();
+        Pageable pageable = pagingRequest.toPageable();
 
         return sellerInquiryQueryRepository.searchMarketInquiries(myMarketId, condition, pageable);
     }
