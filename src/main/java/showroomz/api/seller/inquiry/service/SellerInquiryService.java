@@ -27,15 +27,15 @@ public class SellerInquiryService {
     private final SellerInquiryQueryRepository sellerInquiryQueryRepository;
 
     @Transactional(readOnly = true)
-    public SellerInquiryListResponse getMarketInquiries(String sellerEmail,
-                                                        SellerInquirySearchCondition condition,
-                                                        Pageable pageable) {
+    public SellerInquiryListResponse getMarketInquiries(String sellerEmail, SellerInquirySearchCondition condition) {
         Seller seller = sellerRepository.findByEmail(sellerEmail)
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_AUTH_INFO));
 
         Long myMarketId = marketRepository.findBySeller(seller)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA))
                 .getId();
+
+        Pageable pageable = condition.toPageable();
 
         return sellerInquiryQueryRepository.searchMarketInquiries(myMarketId, condition, pageable);
     }

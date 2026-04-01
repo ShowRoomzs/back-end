@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -56,8 +55,7 @@ public interface SellerInquiryControllerDocs {
             )
     })
     ResponseEntity<SellerInquiryListResponse> getInquiries(
-            @ModelAttribute SellerInquirySearchCondition condition,
-            Pageable pageable
+            @ModelAttribute SellerInquirySearchCondition condition
     );
 
     @Operation(

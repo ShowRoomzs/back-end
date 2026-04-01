@@ -6,6 +6,7 @@ import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
 import showroomz.api.seller.inquiry.type.MarketInquiryFilterType;
 import showroomz.domain.inquiry.type.InquiryStatus;
+import showroomz.global.dto.PagingRequest;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -13,7 +14,7 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-public class SellerInquirySearchCondition {
+public class SellerInquirySearchCondition extends PagingRequest {
 
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate startDate;

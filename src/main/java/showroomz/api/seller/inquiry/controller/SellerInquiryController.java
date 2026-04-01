@@ -3,7 +3,6 @@ package showroomz.api.seller.inquiry.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -34,11 +33,9 @@ public class SellerInquiryController implements SellerInquiryControllerDocs {
     @Override
     @GetMapping
     public ResponseEntity<SellerInquiryListResponse> getInquiries(
-            @ModelAttribute SellerInquirySearchCondition condition,
-            Pageable pageable) {
+            @ModelAttribute SellerInquirySearchCondition condition) {
         String sellerEmail = getCurrentSellerEmail();
-        SellerInquiryListResponse response =
-                sellerInquiryService.getMarketInquiries(sellerEmail, condition, pageable);
+        SellerInquiryListResponse response = sellerInquiryService.getMarketInquiries(sellerEmail, condition);
         return ResponseEntity.ok(response);
     }
 

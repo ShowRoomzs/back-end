@@ -100,11 +100,7 @@ public class SellerInquiryQueryRepository {
         List<SellerInquiryDto> content = jdbcTemplate.query(baseSql.toString(), params, inquiryRowMapper());
         Page<SellerInquiryDto> page = new PageImpl<>(content, pageable, totalCount);
 
-        return SellerInquiryListResponse.builder()
-                .totalCount(totalCount)
-                .waitingCount(waitingCount)
-                .inquiries(page)
-                .build();
+        return new SellerInquiryListResponse(totalCount, waitingCount, page);
     }
 
     private void appendConditions(StringBuilder sql,
