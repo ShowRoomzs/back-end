@@ -11,10 +11,12 @@ import org.springframework.stereotype.Repository;
 import showroomz.api.seller.inquiry.dto.SellerInquiryDto;
 import showroomz.api.seller.inquiry.dto.SellerInquiryListResponse;
 import showroomz.api.seller.inquiry.dto.SellerInquirySearchCondition;
+import showroomz.api.seller.inquiry.type.MarketInquiryFilterType;
 import showroomz.domain.inquiry.type.InquiryStatus;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -29,47 +31,49 @@ public class SellerInquiryQueryRepository {
                                                            Pageable pageable) {
         StringBuilder baseSql = new StringBuilder();
         baseSql.append("SELECT * FROM ( ")
-                .append("  SELECT pi.PRODUCT_INQUIRY_ID AS id, 'PRODUCT' AS source, ")
+                .append("  SELECT pi.product_inquiry_id AS id, 'PRODUCT' AS source, ")
                 .append("         CASE ")
-                .append("              WHEN pi.TYPE = 'PRODUCT_INQUIRY' THEN '상품 문의' ")
-                .append("              WHEN pi.TYPE = 'SIZE_INQUIRY' THEN '사이즈 문의' ")
-                .append("              WHEN pi.TYPE = 'STOCK_INQUIRY' THEN '재고/재입고 문의' ")
-                .append("         END AS type_str, ")
-                .append("         pi.CONTENT AS content, COALESCE(u.NAME, u.NICKNAME) AS customer_name, ")
-                .append("         p.NAME AS product_name, pi.CREATED_AT AS created_at, pi.STATUS AS status ")
-                .append("  FROM PRODUCT_INQUIRY pi ")
-                .append("  JOIN USERS u ON pi.USER_ID = u.USER_ID ")
-                .append("  JOIN PRODUCT p ON pi.PRODUCT_ID = p.PRODUCT_ID ")
-                .append("  WHERE p.MARKET_ID = :marketId ")
+                .append("              WHEN pi.type = 'PRODUCT_INQUIRY' THEN 'PRODUCT' ")
+                .append("              WHEN pi.type = 'SIZE_INQUIRY' THEN 'SIZE' ")
+                .append("              WHEN pi.type = 'STOCK_INQUIRY' THEN 'STOCK' ")
+                .append("         END AS filter_type, ")
+                .append("         pi.content AS content, COALESCE(u.name, u.nickname) AS customer_name, ")
+                .append("         p.name AS product_name, pi.created_at AS created_at, pi.status AS status ")
+                .append("  FROM product_inquiry pi ")
+                .append("  JOIN users u ON pi.user_id = u.user_id ")
+                .append("  JOIN product p ON pi.product_id = p.product_id ")
+                .append("  WHERE p.market_id = :marketId ")
                 .append("  UNION ALL ")
-                .append("  SELECT o2o.INQUIRY_ID AS id, 'ONE_TO_ONE' AS source, ")
+                .append("  SELECT o2o.inquiry_id AS id, 'ONE_TO_ONE' AS source, ")
                 .append("         CASE ")
-                .append("              WHEN o2o.TYPE = 'DELIVERY' THEN '배송' ")
-                .append("              WHEN o2o.TYPE = 'ORDER_PAYMENT' THEN '주문/결제' ")
-                .append("              WHEN o2o.TYPE = 'CANCEL_REFUND_EXCHANGE' THEN '취소/교환/환불' ")
-                .append("              WHEN o2o.CATEGORY IN ('DEFECT', 'AS') THEN '불량/AS' ")
-                .append("         END AS type_str, ")
-                .append("         o2o.CONTENT AS content, COALESCE(u.NAME, u.NICKNAME) AS customer_name, ")
+                .append("              WHEN o2o.type = 'DELIVERY' THEN 'DELIVERY' ")
+                .append("              WHEN o2o.type = 'ORDER_PAYMENT' THEN 'ORDER_PAYMENT' ")
+                .append("              WHEN o2o.type = 'CANCEL_REFUND_EXCHANGE' THEN 'CANCEL_REFUND_EXCHANGE' ")
+                .append("              WHEN o2o.category IN ('DEFECT', 'AS') THEN 'DEFECT_AS' ")
+                .append("         END AS filter_type, ")
+                .append("         o2o.content AS content, COALESCE(u.name, u.nickname) AS customer_name, ")
                 .append("         ( ")
-                .append("             SELECT p2.NAME ")
-                .append("             FROM ORDER_PRODUCT op2 ")
-                .append("             JOIN PRODUCT p2 ON op2.PRODUCT_ID = p2.PRODUCT_ID ")
-                .append("             WHERE op2.ORDER_ID = o2o.ORDER_ID ")
-                .append("               AND p2.MARKET_ID = :marketId ")
-                .append("             ORDER BY p2.PRODUCT_ID ")
+                .append("             SELECT p2.name ")
+                .append("             FROM order_product op2 ")
+                .append("             JOIN product_variant pv2 ON op2.variant_id = pv2.variant_id ")
+                .append("             JOIN product p2 ON pv2.product_id = p2.product_id ")
+                .append("             WHERE op2.order_id = o2o.order_id ")
+                .append("               AND p2.market_id = :marketId ")
+                .append("             ORDER BY p2.product_id ")
                 .append("             LIMIT 1 ")
                 .append("         ) AS product_name, ")
-                .append("         o2o.CREATED_AT AS created_at, o2o.STATUS AS status ")
-                .append("  FROM ONE_TO_ONE_INQUIRY o2o ")
-                .append("  JOIN USERS u ON o2o.USER_ID = u.USER_ID ")
-                .append("  WHERE (o2o.TYPE IN ('DELIVERY', 'ORDER_PAYMENT', 'CANCEL_REFUND_EXCHANGE') ")
-                .append("         OR o2o.CATEGORY IN ('DEFECT', 'AS')) ")
+                .append("         o2o.created_at AS created_at, o2o.status AS status ")
+                .append("  FROM one_to_one_inquiry o2o ")
+                .append("  JOIN users u ON o2o.user_id = u.user_id ")
+                .append("  WHERE (o2o.type IN ('DELIVERY', 'ORDER_PAYMENT', 'CANCEL_REFUND_EXCHANGE') ")
+                .append("         OR o2o.category IN ('DEFECT', 'AS')) ")
                 .append("    AND EXISTS ( ")
                 .append("         SELECT 1 ")
-                .append("         FROM ORDER_PRODUCT op ")
-                .append("         JOIN PRODUCT p ON op.PRODUCT_ID = p.PRODUCT_ID ")
-                .append("         WHERE op.ORDER_ID = o2o.ORDER_ID ")
-                .append("           AND p.MARKET_ID = :marketId ")
+                .append("         FROM order_product op ")
+                .append("         JOIN product_variant pv ON op.variant_id = pv.variant_id ")
+                .append("         JOIN product p ON pv.product_id = p.product_id ")
+                .append("         WHERE op.order_id = o2o.order_id ")
+                .append("           AND p.market_id = :marketId ")
                 .append("    ) ")
                 .append(") AS combined ")
                 .append("WHERE 1 = 1 ");
@@ -119,8 +123,12 @@ public class SellerInquiryQueryRepository {
             params.addValue("endDate", condition.getEndDate().atTime(LocalTime.MAX));
         }
         if (condition.getInquiryTypes() != null && !condition.getInquiryTypes().isEmpty()) {
-            sql.append(" AND combined.type_str IN (:inquiryTypes) ");
-            params.addValue("inquiryTypes", condition.getInquiryTypes());
+            List<String> typeNames = new ArrayList<>();
+            for (MarketInquiryFilterType inquiryType : condition.getInquiryTypes()) {
+                typeNames.add(inquiryType.name());
+            }
+            sql.append(" AND combined.filter_type IN (:inquiryTypes) ");
+            params.addValue("inquiryTypes", typeNames);
         }
         if (condition.getStatus() != null) {
             sql.append(" AND combined.status = :status ");
@@ -138,7 +146,7 @@ public class SellerInquiryQueryRepository {
         return (rs, rowNum) -> SellerInquiryDto.builder()
                 .inquiryId(rs.getLong("id"))
                 .source(rs.getString("source"))
-                .inquiryType(rs.getString("type_str"))
+                .inquiryType(MarketInquiryFilterType.valueOf(rs.getString("filter_type")).getDescription())
                 .content(rs.getString("content"))
                 .customerName(rs.getString("customer_name"))
                 .productName(rs.getString("product_name"))
