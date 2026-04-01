@@ -5,15 +5,22 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.seller.inquiry.docs.AnswerTemplateControllerDocs;
+import showroomz.api.seller.inquiry.dto.AnswerTemplateDto;
 import showroomz.api.seller.inquiry.dto.AnswerTemplateRegisterRequest;
 import showroomz.api.seller.inquiry.dto.AnswerTemplateRegisterResponse;
 import showroomz.api.seller.inquiry.service.AnswerTemplateService;
+import showroomz.api.seller.inquiry.type.MarketInquiryFilterType;
+import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -31,6 +38,17 @@ public class AnswerTemplateController implements AnswerTemplateControllerDocs {
         String sellerEmail = getCurrentSellerEmail();
         AnswerTemplateRegisterResponse response = answerTemplateService.registerTemplate(sellerEmail, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Override
+    @GetMapping
+    public ResponseEntity<PageResponse<AnswerTemplateDto>> getTemplates(
+            @RequestParam(required = false) MarketInquiryFilterType category,
+            @RequestParam(required = false) String keyword,
+            @ModelAttribute PagingRequest pagingRequest) {
+        String sellerEmail = getCurrentSellerEmail();
+        PageResponse<AnswerTemplateDto> response = answerTemplateService.getTemplates(sellerEmail, category, keyword, pagingRequest);
+        return ResponseEntity.ok(response);
     }
 
     private String getCurrentSellerEmail() {
