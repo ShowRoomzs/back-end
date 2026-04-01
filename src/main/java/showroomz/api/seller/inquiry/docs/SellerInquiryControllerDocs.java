@@ -71,12 +71,59 @@ public interface SellerInquiryControllerDocs {
                     "- 고객 이메일\n" +
                     "- 문의 정보 및 답변 내용\n" +
                     "- 상품 가격/노출/강제 품절 상태\n" +
-                    "- 판매 상태(판매중, 품절, 미진열)"
+                    "- 판매 상태 코드(`ON_SALE`, `UNAVAILABLE`)\n\n" +
+                    "**saleStatus 규칙:**\n" +
+                    "- `ON_SALE`: 진열 중이며 강제 품절이 아닌 상태\n" +
+                    "- `UNAVAILABLE`: 미진열이거나 강제 품절인 상태"
     )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "상품 문의 상세 조회 성공"
+                    description = "상품 문의 상세 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProductInquiryDetailResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "판매중 상품 문의",
+                                            value = "{\n" +
+                                                    "  \"inquiryId\": 1,\n" +
+                                                    "  \"type\": \"PRODUCT_INQUIRY\",\n" +
+                                                    "  \"customerName\": \"홍길동\",\n" +
+                                                    "  \"email\": \"user@example.com\",\n" +
+                                                    "  \"createdAt\": \"2026-04-01T10:30:00\",\n" +
+                                                    "  \"content\": \"이 상품 재입고 예정이 있나요?\",\n" +
+                                                    "  \"answerContent\": null,\n" +
+                                                    "  \"productName\": \"오버핏 셔츠\",\n" +
+                                                    "  \"productCode\": \"SRZ-20260401-001\",\n" +
+                                                    "  \"regularPrice\": 59000,\n" +
+                                                    "  \"salePrice\": 49000,\n" +
+                                                    "  \"isDisplay\": true,\n" +
+                                                    "  \"isOutOfStockForced\": false,\n" +
+                                                    "  \"saleStatus\": \"ON_SALE\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "판매불가 상품 문의",
+                                            value = "{\n" +
+                                                    "  \"inquiryId\": 2,\n" +
+                                                    "  \"type\": \"STOCK_INQUIRY\",\n" +
+                                                    "  \"customerName\": \"쇼룸러버\",\n" +
+                                                    "  \"email\": \"lover@example.com\",\n" +
+                                                    "  \"createdAt\": \"2026-04-01T11:00:00\",\n" +
+                                                    "  \"content\": \"품절 해제 예정이 있나요?\",\n" +
+                                                    "  \"answerContent\": \"현재 재입고 일정은 미정입니다.\",\n" +
+                                                    "  \"productName\": \"와이드 데님 팬츠\",\n" +
+                                                    "  \"productCode\": \"SRZ-20260401-002\",\n" +
+                                                    "  \"regularPrice\": 69000,\n" +
+                                                    "  \"salePrice\": 59000,\n" +
+                                                    "  \"isDisplay\": false,\n" +
+                                                    "  \"isOutOfStockForced\": true,\n" +
+                                                    "  \"saleStatus\": \"UNAVAILABLE\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
             ),
             @ApiResponse(
                     responseCode = "401",
