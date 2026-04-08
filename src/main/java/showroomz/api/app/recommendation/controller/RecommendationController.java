@@ -1,12 +1,14 @@
 package showroomz.api.app.recommendation.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.api.app.recommendation.docs.RecommendationControllerDocs;
 import showroomz.api.app.recommendation.service.RecommendationService;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 @RestController
 @RequestMapping("/v1/common/products/recommendations")
@@ -19,11 +21,10 @@ public class RecommendationController implements RecommendationControllerDocs {
     @GetMapping
     public ResponseEntity<PageResponse<ProductDto.ProductItem>> getRecommendations(
             @RequestParam(value = "categoryId", required = false) Long categoryId,
-            @RequestParam(value = "page", required = false) Integer page,
-            @RequestParam(value = "limit", required = false) Integer limit
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest
     ) {
         PageResponse<ProductDto.ProductItem> response = recommendationService.getRecommendedProducts(
-                categoryId, page, limit);
+                categoryId, pagingRequest);
         return ResponseEntity.ok(response);
     }
 }

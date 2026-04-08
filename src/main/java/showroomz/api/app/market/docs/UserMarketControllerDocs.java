@@ -62,7 +62,7 @@ public interface UserMarketControllerDocs {
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 1,\n" +
                                                     "    \"totalResults\": 11,\n" +
-                                                    "    \"limit\": 20,\n" +
+                                                    "    \"size\": 20,\n" +
                                                     "    \"hasNext\": false\n" +
                                                     "  }\n" +
                                                     "}",

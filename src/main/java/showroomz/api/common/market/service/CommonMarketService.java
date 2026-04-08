@@ -27,6 +27,7 @@ import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.domain.review.repository.ReviewRepository;
 import showroomz.domain.wishlist.repository.WishlistRepository;
+import showroomz.global.dto.PagingRequest;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,14 +61,13 @@ public class CommonMarketService {
      */
     public MarketRecommendationResponse getRecommendedMarkets(
             Long categoryId,
-            Integer page,
-            Integer limit
+            PagingRequest pagingRequest
     ) {
         Users currentUser = resolveCurrentUser();
         Long currentUserId = currentUser != null ? currentUser.getId() : null;
 
-        int pageNumber = (page != null && page > 0) ? page - 1 : 0;
-        int pageSize = (limit != null && limit > 0) ? limit : 20;
+        int pageNumber = pagingRequest.getPage() > 0 ? pagingRequest.getPage() - 1 : 0;
+        int pageSize = pagingRequest.getSize() > 0 ? pagingRequest.getSize() : 20;
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
 
         Long mainCategoryId = resolveMainCategoryId(categoryId);

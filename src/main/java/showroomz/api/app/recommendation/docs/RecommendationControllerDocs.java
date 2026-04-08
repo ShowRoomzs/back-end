@@ -9,11 +9,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "Common - Product", description = "공용 상품 API")
 public interface RecommendationControllerDocs {
@@ -28,11 +30,11 @@ public interface RecommendationControllerDocs {
                     "- isRecommended DESC, createdAt DESC 정렬\n\n" +
                     "**응답 구조:**\n" +
                     "- content: 추천 상품 목록\n" +
-                    "- pageInfo: 페이징 메타데이터 (currentPage, totalPages, totalResults, limit, hasNext)\n\n" +
+                    "- pageInfo: 페이징 메타데이터 (currentPage, totalPages, totalResults, size, hasNext)\n\n" +
                     "**파라미터:**\n" +
                     "- categoryId: 카테고리 ID 필터 (선택, 하위 카테고리 포함)\n" +
                     "- page: 페이지 번호 (1부터 시작, 기본값: 1)\n" +
-                    "- limit: 페이지당 항목 수 (기본값: 20)\n\n" +
+                    "- size: 페이지당 항목 수 (기본값: 20)\n\n" +
                     "**권한:** 비회원/USER (Authorization 헤더 선택)\n" +
                     "**isWished:** 로그인 시 본인 찜 여부 반영, 비회원은 false"
     )
@@ -69,7 +71,7 @@ public interface RecommendationControllerDocs {
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 8,\n" +
                                                     "    \"totalResults\": 150,\n" +
-                                                    "    \"limit\": 20,\n" +
+                                                    "    \"size\": 20,\n" +
                                                     "    \"hasNext\": true\n" +
                                                     "  }\n" +
                                                     "}"
@@ -103,19 +105,6 @@ public interface RecommendationControllerDocs {
                     in = ParameterIn.QUERY
             )
             @RequestParam(value = "categoryId", required = false) Long categoryId,
-            @Parameter(
-                    name = "page",
-                    description = "페이지 번호 (1부터 시작, 상품용)",
-                    example = "1",
-                    in = ParameterIn.QUERY
-            )
-            @RequestParam(value = "page", required = false) Integer page,
-            @Parameter(
-                    name = "limit",
-                    description = "페이지당 항목 수 (상품용)",
-                    example = "20",
-                    in = ParameterIn.QUERY
-            )
-            @RequestParam(value = "limit", required = false) Integer limit
+            @ParameterObject PagingRequest pagingRequest
     );
 }

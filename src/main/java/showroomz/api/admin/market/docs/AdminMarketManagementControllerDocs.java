@@ -73,7 +73,7 @@ public interface AdminMarketManagementControllerDocs {
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 5,\n" +
                                                     "    \"totalResults\": 42,\n" +
-                                                    "    \"limit\": 20,\n" +
+                                                    "    \"size\": 20,\n" +
                                                     "    \"hasNext\": true\n" +
                                                     "  }\n" +
                                                     "}"
