@@ -19,6 +19,8 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     Optional<Product> findByProductId(Long productId);
     Optional<Product> findByProductNumber(String productNumber);
 
+    List<Product> findByProductIdIn(Collection<Long> productIds);
+
     @Query("SELECT p FROM Product p JOIN FETCH p.market m JOIN FETCH m.seller WHERE p.productId = :productId")
     Optional<Product> findByProductIdWithMarketAndSeller(@Param("productId") Long productId);
 
