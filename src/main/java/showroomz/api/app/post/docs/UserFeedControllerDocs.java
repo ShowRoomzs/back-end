@@ -71,7 +71,7 @@ public interface UserFeedControllerDocs {
                                                 "currentPage": 1,
                                                 "totalPages": 2,
                                                 "totalResults": 21,
-                                                "limit": 20,
+                                                "size": 20,
                                                 "hasNext": true
                                               }
                                             }
@@ -141,7 +141,7 @@ public interface UserFeedControllerDocs {
                                                 "currentPage": 1,
                                                 "totalPages": 1,
                                                 "totalResults": 1,
-                                                "limit": 20,
+                                                "size": 20,
                                                 "hasNext": false
                                               }
                                             }

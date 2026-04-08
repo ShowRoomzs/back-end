@@ -52,7 +52,7 @@ public interface NoticeControllerDocs {
                                             "    \"currentPage\": 1,\n" +
                                             "    \"totalPages\": 1,\n" +
                                             "    \"totalResults\": 1,\n" +
-                                            "    \"limit\": 20,\n" +
+                                            "    \"size\": 20,\n" +
                                             "    \"hasNext\": false\n" +
                                             "  }\n" +
                                             "}"

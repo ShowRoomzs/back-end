@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 import java.util.List;
 
@@ -36,8 +38,8 @@ public interface UserProductControllerDocs {
                     "- PRICE_ASC: 가격 낮은순 (salePrice ASC)\n" +
                     "- PRICE_DESC: 가격 높은순 (salePrice DESC)\n\n" +
                     "**페이징:**\n" +
-                    "- page: 페이지 번호 (기본값: 1)\n" +
-                    "- limit: 페이지당 항목 수 (기본값: 20)\n\n" +
+                    "- page: 페이지 번호 (1부터 시작, 기본값: 1)\n" +
+                    "- size: 페이지당 항목 수 (기본값: 20)\n\n" +
                     "**참고사항:**\n" +
                     "- 진열된 상품(isDisplay = true)만 조회됩니다.\n" +
                     "- Authorization 헤더가 없어도 조회 가능합니다 (게스트 검색).\n" +
@@ -100,7 +102,7 @@ public interface UserProductControllerDocs {
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 77,\n" +
                                                     "    \"totalResults\": 1540,\n" +
-                                                    "    \"limit\": 20,\n" +
+                                                    "    \"size\": 20,\n" +
                                                     "    \"hasNext\": true\n" +
                                                     "  }\n" +
                                                     "}"
@@ -145,10 +147,7 @@ public interface UserProductControllerDocs {
                     required = false
             )
             @RequestParam(required = false) String filters,
-            @Parameter(description = "페이지 번호 (기본값: 1)", required = false, example = "1")
-            @RequestParam(required = false, defaultValue = "1") Integer page,
-            @Parameter(description = "페이지당 항목 수 (기본값: 20)", required = false, example = "20")
-            @RequestParam(required = false, defaultValue = "20") Integer limit
+            @ParameterObject PagingRequest pagingRequest
     );
 
     @Operation(

@@ -3,6 +3,7 @@ package showroomz.api.app.product.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import showroomz.api.app.product.service.ProductService;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -36,8 +38,7 @@ public class ProductController implements UserProductControllerDocs {
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Long marketId,
             @RequestParam(required = false) String filters,
-            @RequestParam(required = false, defaultValue = "1") Integer page,
-            @RequestParam(required = false, defaultValue = "20") Integer limit
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest
     ) {
         java.util.List<ProductDto.FilterRequest> filterRequests = null;
         if (filters != null && !filters.isBlank()) {
@@ -60,8 +61,7 @@ public class ProductController implements UserProductControllerDocs {
 
         PageResponse<ProductDto.ProductItem> response = productService.searchProducts(
                 request,
-                page,
-                limit,
+                pagingRequest,
                 currentUser
         );
 

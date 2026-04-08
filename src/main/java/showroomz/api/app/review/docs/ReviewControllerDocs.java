@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +21,7 @@ import showroomz.api.app.review.dto.ReviewRegisterRequest;
 import showroomz.api.app.review.dto.ReviewRegisterResponse;
 import showroomz.api.app.review.dto.ReviewUpdateRequest;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "User - Review")
 public interface ReviewControllerDocs {
@@ -57,7 +59,7 @@ public interface ReviewControllerDocs {
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 1,\n" +
                                                     "    \"totalResults\": 5,\n" +
-                                                    "    \"limit\": 20,\n" +
+                                                    "    \"size\": 20,\n" +
                                                     "    \"hasNext\": false\n" +
                                                     "  }\n" +
                                                     "}"
@@ -161,9 +163,7 @@ public interface ReviewControllerDocs {
             summary = "사용자 리뷰 목록 조회",
             description = "현재 로그인한 사용자가 작성한 리뷰를 최신순으로 페이징하여 조회합니다.\n\n" +
                     "**응답:** content 내부에 reviewId, rating, content, imageUrls, createdAt, product 정보(상품명, 옵션명) 포함\n\n" +
-                    "**페이징 파라미터:**\n" +
-                    "- page: 페이지 번호 (1부터 시작) - 기본값: 1\n" +
-                    "- size: 페이지당 항목 수 - 기본값: 20\n\n" +
+                    "**페이징:** page, size (PagingRequest — page는 1부터, 기본값 page=1, size=20)\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -195,7 +195,7 @@ public interface ReviewControllerDocs {
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 1,\n" +
                                                     "    \"totalResults\": 10,\n" +
-                                                    "    \"limit\": 20,\n" +
+                                                    "    \"size\": 20,\n" +
                                                     "    \"hasNext\": false\n" +
                                                     "  }\n" +
                                                     "}"
@@ -214,8 +214,7 @@ public interface ReviewControllerDocs {
     })
     ResponseEntity<PageResponse<ReviewDto.ReviewItem>> getMyReviews(
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal,
-            @Parameter(description = "페이지 번호 (1부터 시작)", example = "1") Integer page,
-            @Parameter(description = "페이지당 항목 수", example = "20") Integer size
+            @ParameterObject PagingRequest pagingRequest
     );
 
     @Operation(

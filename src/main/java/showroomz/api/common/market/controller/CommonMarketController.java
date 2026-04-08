@@ -1,12 +1,14 @@
 package showroomz.api.common.market.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.common.market.docs.CommonMarketControllerDocs;
 import showroomz.api.common.market.dto.MarketRecommendationResponse;
 import showroomz.api.common.market.dto.PopularProductResponse;
 import showroomz.api.common.market.service.CommonMarketService;
+import showroomz.global.dto.PagingRequest;
 
 @RestController
 @RequestMapping("/v1/common/markets")
@@ -19,11 +21,10 @@ public class CommonMarketController implements CommonMarketControllerDocs {
     @GetMapping("/recommendations")
     public ResponseEntity<MarketRecommendationResponse> getRecommendedMarkets(
             @RequestParam(value = "categoryId", required = false) Long categoryId,
-            @RequestParam(value = "page", required = false) Integer page,
-            @RequestParam(value = "limit", required = false) Integer limit
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest
     ) {
         MarketRecommendationResponse response = commonMarketService.getRecommendedMarkets(
-                categoryId, page, limit);
+                categoryId, pagingRequest);
         return ResponseEntity.ok(response);
     }
 

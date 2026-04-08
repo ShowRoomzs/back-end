@@ -72,7 +72,7 @@ public interface AdminCreatorControllerDocs {
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 2,\n" +
                                                     "    \"totalResults\": 15,\n" +
-                                                    "    \"limit\": 20,\n" +
+                                                    "    \"size\": 20,\n" +
                                                     "    \"hasNext\": false\n" +
                                                     "  }\n" +
                                                     "}"

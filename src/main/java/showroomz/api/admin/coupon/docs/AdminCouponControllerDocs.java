@@ -72,7 +72,7 @@ public interface AdminCouponControllerDocs {
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 5,\n" +
                                                     "    \"totalResults\": 42,\n" +
-                                                    "    \"limit\": 10,\n" +
+                                                    "    \"size\": 10,\n" +
                                                     "    \"hasNext\": true\n" +
                                                     "  }\n" +
                                                     "}"

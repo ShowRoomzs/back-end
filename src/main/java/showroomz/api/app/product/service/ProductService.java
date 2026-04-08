@@ -35,6 +35,7 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 import showroomz.global.utils.RelativeTimeFormatter;
 
 import java.util.ArrayList;
@@ -68,14 +69,12 @@ public class ProductService {
      */
     public PageResponse<ProductDto.ProductItem> searchProducts(
             ProductDto.ProductSearchRequest request,
-            Integer page,
-            Integer limit,
+            PagingRequest pagingRequest,
             Users currentUser // 좋아요 여부 확인용 (null 가능)
     ) {
-        // 페이징 설정 (page는 1부터 시작)
-        int pageNumber = (page != null && page > 0) ? page - 1 : 0;
-        int pageSize = (limit != null && limit > 0) ? limit : 20;
-
+        // 페이징: 정렬은 filters의 sort(쿼리DSL sortType)로 처리 — Pageable에는 offset/size만 반영
+        int pageNumber = pagingRequest.getPage() > 0 ? pagingRequest.getPage() - 1 : 0;
+        int pageSize = pagingRequest.getSize() > 0 ? pagingRequest.getSize() : 20;
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
 
         // 카테고리 ID 처리 (하위 카테고리 포함)

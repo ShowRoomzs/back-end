@@ -348,7 +348,7 @@ public interface ProductControllerDocs {
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 10,\n" +
                                                     "    \"totalResults\": 195,\n" +
-                                                    "    \"limit\": 20,\n" +
+                                                    "    \"size\": 20,\n" +
                                                     "    \"hasNext\": true\n" +
                                                     "  }\n" +
                                                     "}"
