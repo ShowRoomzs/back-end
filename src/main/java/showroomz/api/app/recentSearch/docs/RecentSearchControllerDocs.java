@@ -39,7 +39,7 @@ public interface RecentSearchControllerDocs {
                     "  - `createdAt`: 검색 시각 (UTC 기준)\n" +
                     "- `pageInfo`: 페이징 정보\n" +
                     "  - `currentPage`: 현재 페이지 번호\n" +
-                    "  - `limit`: 페이지당 항목 수\n" +
+                    "  - `size`: 페이지당 항목 수\n" +
                     "  - `totalResults`: 전체 항목 수\n" +
                     "  - `totalPages`: 전체 페이지 수\n" +
                     "  - `hasNext`: 다음 페이지 존재 여부\n\n" +
@@ -78,7 +78,7 @@ public interface RecentSearchControllerDocs {
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 1,\n" +
                                                     "    \"totalResults\": 15,\n" +
-                                                    "    \"limit\": 20,\n" +
+                                                    "    \"size\": 20,\n" +
                                                     "    \"hasNext\": false\n" +
                                                     "  }\n" +
                                                     "}"
@@ -91,7 +91,7 @@ public interface RecentSearchControllerDocs {
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 0,\n" +
                                                     "    \"totalResults\": 0,\n" +
-                                                    "    \"limit\": 20,\n" +
+                                                    "    \"size\": 20,\n" +
                                                     "    \"hasNext\": false\n" +
                                                     "  }\n" +
                                                     "}"

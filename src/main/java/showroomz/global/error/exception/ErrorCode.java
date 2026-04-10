@@ -145,7 +145,13 @@ public enum ErrorCode {
 
    /* 15. 위시리스트 (Wishlist)
     */
-   WISHLIST_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "WISHLIST_ALREADY_EXISTS", "이미 위시리스트에 추가된 항목입니다.");    
+   WISHLIST_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "WISHLIST_ALREADY_EXISTS", "이미 위시리스트에 추가된 항목입니다."),
+
+   /* 16. 관리자 상품 공지 (ProductAnnouncement) */
+   PRODUCT_ANNOUNCEMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT_ANNOUNCEMENT_NOT_FOUND", "상품 공지사항을 찾을 수 없습니다."),
+   PRODUCT_ANNOUNCEMENT_TARGET_REQUIRED(HttpStatus.BAD_REQUEST, "PRODUCT_ANNOUNCEMENT_TARGET_REQUIRED", "지정 노출(SPECIFIC)인 경우 대상 상품 ID가 1개 이상 필요합니다."),
+   PRODUCT_ANNOUNCEMENT_TARGET_NOT_ALLOWED_FOR_ALL(HttpStatus.BAD_REQUEST, "PRODUCT_ANNOUNCEMENT_TARGET_NOT_ALLOWED_FOR_ALL", "전체 노출(ALL)인 경우 대상 상품 ID를 지정할 수 없습니다."),
+   PRODUCT_NOT_FOUND_FOR_ANNOUNCEMENT(HttpStatus.BAD_REQUEST, "PRODUCT_NOT_FOUND_FOR_ANNOUNCEMENT", "존재하지 않는 상품 ID가 포함되어 있습니다.");
     private final HttpStatus status;
     private final String code;
     private final String message;

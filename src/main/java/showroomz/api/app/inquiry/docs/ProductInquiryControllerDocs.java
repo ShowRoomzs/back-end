@@ -172,7 +172,7 @@ public interface ProductInquiryControllerDocs {
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 3,\n" +
                                                     "    \"totalResults\": 25,\n" +
-                                                    "    \"limit\": 10,\n" +
+                                                    "    \"size\": 10,\n" +
                                                     "    \"hasNext\": true\n" +
                                                     "  }\n" +
                                                     "}"

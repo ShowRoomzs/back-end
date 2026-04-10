@@ -589,7 +589,7 @@ public class ProductDto {
         private Long totalResults;
 
         @Schema(description = "페이지당 개수", example = "50")
-        private Integer limit;
+        private Integer size;
     }
 
     @Getter

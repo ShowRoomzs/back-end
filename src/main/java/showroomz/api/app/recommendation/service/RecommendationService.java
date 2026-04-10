@@ -11,6 +11,7 @@ import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductRepository;
@@ -37,14 +38,13 @@ public class RecommendationService {
      */
     public PageResponse<ProductDto.ProductItem> getRecommendedProducts(
             Long categoryId,
-            Integer page,
-            Integer limit
+            PagingRequest pagingRequest
     ) {
         Users user = resolveCurrentUser();
         ProductGender userGender = resolveUserGender(user);
 
-        int pageNumber = (page != null && page > 0) ? page - 1 : 0;
-        int pageSize = (limit != null && limit > 0) ? limit : 20;
+        int pageNumber = pagingRequest.getPage() > 0 ? pagingRequest.getPage() - 1 : 0;
+        int pageSize = pagingRequest.getSize() > 0 ? pagingRequest.getSize() : 20;
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
         List<Long> categoryIds = resolveCategoryIds(categoryId);
 

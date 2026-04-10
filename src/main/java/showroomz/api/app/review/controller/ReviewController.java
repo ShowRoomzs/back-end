@@ -6,8 +6,7 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,6 +19,7 @@ import showroomz.api.app.review.dto.ReviewUpdateRequest;
 import showroomz.api.app.review.docs.ReviewControllerDocs;
 import showroomz.api.app.review.service.ReviewService;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "User - Review")
 @RestController
@@ -50,12 +50,10 @@ public class ReviewController implements ReviewControllerDocs {
     @GetMapping
     public ResponseEntity<PageResponse<ReviewDto.ReviewItem>> getMyReviews(
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @Parameter(description = "페이지 번호 (1부터 시작)", example = "1") @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
-            @Parameter(description = "페이지당 항목 수", example = "20") @RequestParam(value = "size", required = false, defaultValue = "20") Integer size) {
-        int pageNumber = page != null && page > 0 ? page - 1 : 0;
-        int pageSize = size != null && size > 0 ? size : 20;
-        var pageable = PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
-        PageResponse<ReviewDto.ReviewItem> response = reviewService.getMyReviews(userPrincipal.getUserId(), pageable);
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest) {
+        PageResponse<ReviewDto.ReviewItem> response = reviewService.getMyReviews(
+                userPrincipal.getUserId(),
+                pagingRequest.toPageable());
         return ResponseEntity.ok(response);
     }
 

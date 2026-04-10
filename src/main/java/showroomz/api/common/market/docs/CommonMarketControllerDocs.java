@@ -9,12 +9,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.common.market.dto.MarketRecommendationResponse;
 import showroomz.api.common.market.dto.PopularProductResponse;
+import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "Common - Market", description = "공용 마켓 API")
 public interface CommonMarketControllerDocs {
@@ -27,11 +29,11 @@ public interface CommonMarketControllerDocs {
                     "- 승인된(APPROVED) 판매자의 마켓만 조회\n\n" +
                     "**응답 구조:**\n" +
                     "- content: 추천 마켓 목록 (representativeProducts: productId + imageUrl, 이미지 클릭 시 상세 페이지 이동용)\n" +
-                    "- pageInfo: 페이징 메타데이터 (currentPage, totalPages, totalResults, limit, hasNext)\n\n" +
+                    "- pageInfo: 페이징 메타데이터 (currentPage, totalPages, totalResults, size, hasNext)\n\n" +
                     "**파라미터:**\n" +
                     "- categoryId: 대표 카테고리 ID 필터 (선택)\n" +
                     "- page: 페이지 번호 (1부터 시작, 기본값: 1)\n" +
-                    "- limit: 페이지당 항목 수 (기본값: 20)\n\n" +
+                    "- size: 페이지당 항목 수 (기본값: 20)\n\n" +
                     "**권한:** 비회원/USER (Authorization 헤더 선택)\n" +
                     "**isFollowing:** 로그인 시 본인 팔로우 여부 반영, 비회원은 false\n\n" +
                     "**representativeProducts:** 기획안 4-2 - 상품 이미지 클릭 시 상세 페이지 이동을 위해 productId 포함"
@@ -70,7 +72,7 @@ public interface CommonMarketControllerDocs {
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 5,\n" +
                                                     "    \"totalResults\": 80,\n" +
-                                                    "    \"limit\": 20,\n" +
+                                                    "    \"size\": 20,\n" +
                                                     "    \"hasNext\": true\n" +
                                                     "  }\n" +
                                                     "}"
@@ -90,10 +92,7 @@ public interface CommonMarketControllerDocs {
     ResponseEntity<MarketRecommendationResponse> getRecommendedMarkets(
             @Parameter(description = "대표 카테고리 ID 필터 (선택)", example = "1")
             @RequestParam(value = "categoryId", required = false) Long categoryId,
-            @Parameter(description = "페이지 번호 (1부터 시작, 기본값: 1)", example = "1")
-            @RequestParam(value = "page", required = false) Integer page,
-            @Parameter(description = "페이지당 항목 수 (기본값: 20)", example = "20")
-            @RequestParam(value = "limit", required = false) Integer limit
+            @ParameterObject PagingRequest pagingRequest
     );
 
     @Operation(
@@ -105,7 +104,7 @@ public interface CommonMarketControllerDocs {
                     "**필터링:** 해당 마켓에 속한 상품 중 전시 중(isDisplay=true)인 상품만 대상\n\n" +
                     "**응답 구조:**\n" +
                     "- content: 상품 리스트 (id, name, marketName, representativeImageUrl, price, wishCount, isWished, reviewCount, tags 등)\n" +
-                    "- pageInfo: 고정값 (currentPage=1, totalPages=1, totalResults, limit=10, hasNext=false)\n\n" +
+                    "- pageInfo: 고정값 (currentPage=1, totalPages=1, totalResults, size=10, hasNext=false)\n\n" +
                     "**권한:** 비회원/회원 공통 (로그인 시 isWished 반영, 비회원은 false)\n\n" +
                     "**파라미터:** marketId (경로) - 조회할 마켓(쇼룸) ID (필수)"
     )
