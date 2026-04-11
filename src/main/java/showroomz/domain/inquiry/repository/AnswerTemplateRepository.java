@@ -20,16 +20,17 @@ public interface AnswerTemplateRepository extends JpaRepository<AnswerTemplate, 
 
     @Query(value = "SELECT at FROM AnswerTemplate at " +
                    "WHERE at.seller.id = :sellerId " +
-                   "AND at.isActive = true " +
+                   "AND (:isActive IS NULL OR at.isActive = :isActive) " +
                    "AND (:category IS NULL OR at.category = :category) " +
                    "AND (:keyword IS NULL OR :keyword = '' OR at.title LIKE %:keyword%)",
            countQuery = "SELECT COUNT(at) FROM AnswerTemplate at " +
                         "WHERE at.seller.id = :sellerId " +
-                        "AND at.isActive = true " +
+                        "AND (:isActive IS NULL OR at.isActive = :isActive) " +
                         "AND (:category IS NULL OR at.category = :category) " +
                         "AND (:keyword IS NULL OR :keyword = '' OR at.title LIKE %:keyword%)")
-    Page<AnswerTemplate> findActiveTemplates(
+    Page<AnswerTemplate> findTemplates(
             @Param("sellerId") Long sellerId,
+            @Param("isActive") Boolean isActive,
             @Param("category") MarketInquiryFilterType category,
             @Param("keyword") String keyword,
             Pageable pageable
