@@ -108,7 +108,14 @@ public class SocialLoginService {
             isNewMember = true;
         } else {
             // [기존 유저 존재]
-            
+
+            // 실명이 아직 저장되지 않은 경우 업데이트 (애플은 클라이언트 파라미터 우선)
+            String incomingRealName = (name != null && !name.isEmpty()) ? name : userInfo.getRealName();
+            if (incomingRealName != null && !incomingRealName.isEmpty()
+                    && (user.getName() == null || user.getName().isEmpty())) {
+                user.setName(incomingRealName);
+            }
+
             // 탈퇴 회원(WITHDRAWN)인 경우 재가입(복구) 처리
             if (user.getStatus() == UserStatus.WITHDRAWN) {
                 // 1. 상태 복구: 탈퇴 -> 정상
@@ -291,6 +298,9 @@ public class SocialLoginService {
                 now,
                 now
         );
+        // 애플은 JWT에 name이 없으므로 클라이언트에서 받은 name 파라미터를 실명으로 우선 사용
+        String realName = (name != null && !name.isEmpty()) ? name : userInfo.getRealName();
+        user.setName(realName);
         return userRepository.save(user);
     }
 

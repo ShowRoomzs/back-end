@@ -48,6 +48,7 @@ public interface UserControllerDocs {
                                                     "  \"id\": 1,\n" +
                                                     "  \"email\": \"string\",\n" +
                                                     "  \"nickname\": \"string\",\n" +
+                                                    "  \"name\": \"홍길동\",\n" +
                                                     "  \"profileImageUrl\": \"https://k.kakaocdn.net/img_640x640.jpg\",\n" +
                                                     "  \"phoneNumber\": \"010-1234-5678\",\n" +
                                                     "  \"birthday\": \"YYYY-MM-DD\",\n" +
@@ -66,6 +67,7 @@ public interface UserControllerDocs {
                                                     "  \"id\": 1,\n" +
                                                     "  \"email\": \"string\",\n" +
                                                     "  \"nickname\": \"string\",\n" +
+                                                    "  \"name\": \"홍길동\",\n" +
                                                     "  \"profileImageUrl\": null,\n" +
                                                     "  \"phoneNumber\": \"010-1234-5678\",\n" +
                                                     "  \"birthday\": \"YYYY-MM-DD\",\n" +
@@ -231,6 +233,7 @@ public interface UserControllerDocs {
                                                     "  \"id\": 1,\n" +
                                                     "  \"email\": \"string\",\n" +
                                                     "  \"nickname\": \"string\",\n" +
+                                                    "  \"name\": \"홍길동\",\n" +
                                                     "  \"profileImageUrl\": \"https://k.kakaocdn.net/dn/.../img_640x640.jpg\",\n" +
                                                     "  \"phoneNumber\": \"010-1234-5678\",\n" +
                                                     "  \"birthday\": \"YYYY-MM-DD\",\n" +

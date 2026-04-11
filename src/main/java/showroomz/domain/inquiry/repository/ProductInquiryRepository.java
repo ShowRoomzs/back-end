@@ -23,4 +23,11 @@ public interface ProductInquiryRepository extends JpaRepository<ProductInquiry, 
            "ORDER BY pi.createdAt DESC",
            countQuery = "SELECT COUNT(pi) FROM ProductInquiry pi WHERE pi.product.market.id = :marketId")
     Page<ProductInquiry> findByMarketId(@Param("marketId") Long marketId, Pageable pageable);
+
+    @Query("SELECT pi FROM ProductInquiry pi " +
+           "JOIN FETCH pi.user u " +
+           "JOIN FETCH pi.product p " +
+           "JOIN FETCH p.market m " +
+           "WHERE pi.id = :inquiryId")
+    java.util.Optional<ProductInquiry> findByIdWithUserAndProduct(@Param("inquiryId") Long inquiryId);
 }

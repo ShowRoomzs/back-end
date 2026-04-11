@@ -4,6 +4,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,8 +15,12 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Hidden;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.seller.inquiry.docs.SellerInquiryControllerDocs;
+import showroomz.api.seller.inquiry.dto.ProductInquiryDetailResponse;
 import showroomz.api.seller.inquiry.dto.SellerInquiryAnswerRequest;
+import showroomz.api.seller.inquiry.dto.SellerInquiryListResponse;
+import showroomz.api.seller.inquiry.dto.SellerInquirySearchCondition;
 import showroomz.api.seller.inquiry.service.SellerInquiryService;
+import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -25,6 +31,25 @@ import showroomz.global.error.exception.ErrorCode;
 public class SellerInquiryController implements SellerInquiryControllerDocs {
 
     private final SellerInquiryService sellerInquiryService;
+
+    @Override
+    @GetMapping
+    public ResponseEntity<SellerInquiryListResponse> getInquiries(
+            @ModelAttribute SellerInquirySearchCondition condition,
+            @ModelAttribute PagingRequest pagingRequest) {
+        String sellerEmail = getCurrentSellerEmail();
+        SellerInquiryListResponse response = sellerInquiryService.getMarketInquiries(sellerEmail, condition, pagingRequest);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @GetMapping("/{inquiryId}")
+    public ResponseEntity<ProductInquiryDetailResponse> getInquiryDetail(
+            @PathVariable("inquiryId") Long inquiryId) {
+        String sellerEmail = getCurrentSellerEmail();
+        ProductInquiryDetailResponse response = sellerInquiryService.getInquiryDetail(sellerEmail, inquiryId);
+        return ResponseEntity.ok(response);
+    }
 
     @Override
     @PatchMapping("/{inquiryId}/answer")
