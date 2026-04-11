@@ -50,6 +50,7 @@ public class AnswerTemplateService {
 
     @Transactional(readOnly = true)
     public PageResponse<AnswerTemplateDto> getTemplates(String sellerEmail,
+                                                        Boolean includeInactive,
                                                         MarketInquiryFilterType category,
                                                         String keyword,
                                                         PagingRequest pagingRequest) {
@@ -57,9 +58,11 @@ public class AnswerTemplateService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_AUTH_INFO));
 
         String trimmedKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
+        Boolean isActive = Boolean.TRUE.equals(includeInactive) ? null : Boolean.TRUE;
 
-        Page<AnswerTemplate> page = answerTemplateRepository.findActiveTemplates(
+        Page<AnswerTemplate> page = answerTemplateRepository.findTemplates(
                 seller.getId(),
+                isActive,
                 category,
                 trimmedKeyword,
                 pagingRequest.toPageable(Sort.by(Sort.Direction.DESC, "modifiedAt"))

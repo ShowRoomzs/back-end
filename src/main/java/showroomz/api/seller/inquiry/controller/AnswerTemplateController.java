@@ -48,11 +48,12 @@ public class AnswerTemplateController implements AnswerTemplateControllerDocs {
     @Override
     @GetMapping
     public ResponseEntity<PageResponse<AnswerTemplateDto>> getTemplates(
+            @RequestParam(value = "includeInactive", required = false, defaultValue = "false") Boolean includeInactive,
             @RequestParam(value = "category", required = false) MarketInquiryFilterType category,
             @RequestParam(value = "keyword", required = false) String keyword,
             @ModelAttribute PagingRequest pagingRequest) {
         String sellerEmail = getCurrentSellerEmail();
-        PageResponse<AnswerTemplateDto> response = answerTemplateService.getTemplates(sellerEmail, category, keyword, pagingRequest);
+        PageResponse<AnswerTemplateDto> response = answerTemplateService.getTemplates(sellerEmail, includeInactive, category, keyword, pagingRequest);
         return ResponseEntity.ok(response);
     }
 

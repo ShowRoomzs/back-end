@@ -1,5 +1,6 @@
 package showroomz.api.seller.inquiry.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,6 +35,10 @@ public class AnswerTemplateDto {
     @Schema(description = "수정일시", example = "2026-04-01T12:00:00")
     private LocalDateTime modifiedAt;
 
+    @JsonProperty("isActive")
+    @Schema(description = "활성 여부", example = "true")
+    private boolean isActive;
+
     public static AnswerTemplateDto from(AnswerTemplate template) {
         return AnswerTemplateDto.builder()
                 .templateId(template.getId())
@@ -43,6 +48,7 @@ public class AnswerTemplateDto {
                 .content(template.getContent())
                 .createdAt(template.getCreatedAt())
                 .modifiedAt(template.getModifiedAt())
+                .isActive(template.isActive())
                 .build();
     }
 }

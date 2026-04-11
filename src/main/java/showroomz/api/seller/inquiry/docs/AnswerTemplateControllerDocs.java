@@ -149,10 +149,11 @@ public interface AnswerTemplateControllerDocs {
 
     @Operation(
             summary = "답변 템플릿 목록 조회",
-            description = "사용 중인(isActive=true) 본인 마켓의 답변 템플릿 목록을 페이징 조회합니다.\n\n" +
+            description = "본인 마켓의 답변 템플릿 목록을 페이징 조회합니다.\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
                     "**필터 조건 (선택):**\n" +
+                    "- `includeInactive`: 미사용(isActive=false) 템플릿 포함 여부. `true` 설정 시 사용/미사용 템플릿 모두 조회, `false`(기본값) 설정 시 사용 중인(isActive=true) 템플릿만 조회\n" +
                     "- `category`: 카테고리로 필터링. 미입력 시 전체 조회\n" +
                     "- `keyword`: 템플릿 제목 검색 (부분 일치). 미입력 시 전체 조회\n\n" +
                     "**페이징:**\n" +
@@ -188,7 +189,8 @@ public interface AnswerTemplateControllerDocs {
                                                     "      \"categoryName\": \"재고/재입고 문의\",\n" +
                                                     "      \"content\": \"안녕하세요, 해당 상품은 다음 주 중 재입고 예정입니다.\",\n" +
                                                     "      \"createdAt\": \"2026-04-01T10:30:00\",\n" +
-                                                    "      \"modifiedAt\": \"2026-04-01T12:00:00\"\n" +
+                                                    "      \"modifiedAt\": \"2026-04-01T12:00:00\",\n" +
+                                                    "      \"isActive\": true\n" +
                                                     "    },\n" +
                                                     "    {\n" +
                                                     "      \"templateId\": 2,\n" +
@@ -197,7 +199,8 @@ public interface AnswerTemplateControllerDocs {
                                                     "      \"categoryName\": \"배송\",\n" +
                                                     "      \"content\": \"평균 배송 기간은 영업일 기준 2~3일입니다.\",\n" +
                                                     "      \"createdAt\": \"2026-04-01T09:00:00\",\n" +
-                                                    "      \"modifiedAt\": \"2026-04-01T09:00:00\"\n" +
+                                                    "      \"modifiedAt\": \"2026-04-01T09:00:00\",\n" +
+                                                    "      \"isActive\": true\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
@@ -244,6 +247,11 @@ public interface AnswerTemplateControllerDocs {
             )
     })
     ResponseEntity<PageResponse<AnswerTemplateDto>> getTemplates(
+            @Parameter(description = "미사용 템플릿 포함 여부. true 시 사용/미사용 모두 조회, false(기본값) 시 사용 중인 템플릿만 조회",
+                    example = "false",
+                    schema = @Schema(defaultValue = "false"))
+            @RequestParam(value = "includeInactive", required = false, defaultValue = "false") Boolean includeInactive,
+
             @Parameter(description = "카테고리 필터. 미입력 시 전체 조회",
                     example = "STOCK",
                     schema = @Schema(allowableValues = {"PRODUCT", "SIZE", "STOCK", "DELIVERY", "ORDER_PAYMENT", "CANCEL_REFUND_EXCHANGE", "DEFECT_AS"}))
@@ -278,7 +286,8 @@ public interface AnswerTemplateControllerDocs {
                                             "  \"categoryName\": \"재고/재입고 문의\",\n" +
                                             "  \"content\": \"안녕하세요, 해당 상품은 다음 주 중 재입고 예정입니다.\",\n" +
                                             "  \"createdAt\": \"2026-04-01T10:30:00\",\n" +
-                                            "  \"modifiedAt\": \"2026-04-01T12:00:00\"\n" +
+                                            "  \"modifiedAt\": \"2026-04-01T12:00:00\",\n" +
+                                            "  \"isActive\": true\n" +
                                             "}"
                             )
                     )
