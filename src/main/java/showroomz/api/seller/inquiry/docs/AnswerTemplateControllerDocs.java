@@ -247,10 +247,10 @@ public interface AnswerTemplateControllerDocs {
             @Parameter(description = "카테고리 필터. 미입력 시 전체 조회",
                     example = "STOCK",
                     schema = @Schema(allowableValues = {"PRODUCT", "SIZE", "STOCK", "DELIVERY", "ORDER_PAYMENT", "CANCEL_REFUND_EXCHANGE", "DEFECT_AS"}))
-            @RequestParam(required = false) MarketInquiryFilterType category,
+            @RequestParam(value = "category", required = false) MarketInquiryFilterType category,
 
             @Parameter(description = "템플릿 제목 검색어 (부분 일치). 미입력 시 전체 조회", example = "재입고")
-            @RequestParam(required = false) String keyword,
+            @RequestParam(value = "keyword", required = false) String keyword,
 
             @Parameter(description = "페이징 요청 정보 (page: 1부터 시작, size: 페이지당 항목 수)")
             @ModelAttribute PagingRequest pagingRequest
