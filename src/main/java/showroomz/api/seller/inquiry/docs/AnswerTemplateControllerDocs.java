@@ -188,7 +188,8 @@ public interface AnswerTemplateControllerDocs {
                                                     "      \"categoryName\": \"재고/재입고 문의\",\n" +
                                                     "      \"content\": \"안녕하세요, 해당 상품은 다음 주 중 재입고 예정입니다.\",\n" +
                                                     "      \"createdAt\": \"2026-04-01T10:30:00\",\n" +
-                                                    "      \"modifiedAt\": \"2026-04-01T12:00:00\"\n" +
+                                                    "      \"modifiedAt\": \"2026-04-01T12:00:00\",\n" +
+                                                    "      \"isActive\": true\n" +
                                                     "    },\n" +
                                                     "    {\n" +
                                                     "      \"templateId\": 2,\n" +
@@ -197,7 +198,8 @@ public interface AnswerTemplateControllerDocs {
                                                     "      \"categoryName\": \"배송\",\n" +
                                                     "      \"content\": \"평균 배송 기간은 영업일 기준 2~3일입니다.\",\n" +
                                                     "      \"createdAt\": \"2026-04-01T09:00:00\",\n" +
-                                                    "      \"modifiedAt\": \"2026-04-01T09:00:00\"\n" +
+                                                    "      \"modifiedAt\": \"2026-04-01T09:00:00\",\n" +
+                                                    "      \"isActive\": true\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
@@ -278,7 +280,8 @@ public interface AnswerTemplateControllerDocs {
                                             "  \"categoryName\": \"재고/재입고 문의\",\n" +
                                             "  \"content\": \"안녕하세요, 해당 상품은 다음 주 중 재입고 예정입니다.\",\n" +
                                             "  \"createdAt\": \"2026-04-01T10:30:00\",\n" +
-                                            "  \"modifiedAt\": \"2026-04-01T12:00:00\"\n" +
+                                            "  \"modifiedAt\": \"2026-04-01T12:00:00\",\n" +
+                                            "  \"isActive\": true\n" +
                                             "}"
                             )
                     )
