@@ -70,6 +70,7 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
      * - 마켓명, 카테고리 필터링
      * - 등록된 상품 수(productCount) 포함
      * - 승인된(APPROVED) 판매자만 조회
+     * - 쇼룸(CREATOR) 제외, 일반 마켓(SELLER)만 조회
      * - 수정됨: LEFT JOIN을 사용하여 mainCategory가 null인 마켓도 포함
      */
     @Query("SELECT new showroomz.api.admin.market.DTO.AdminMarketDto$MarketResponse(" +
@@ -83,6 +84,7 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
            "JOIN m.seller s " +
            "LEFT JOIN m.mainCategory c " +
            "WHERE s.status = :approvedStatus " +
+           "AND s.roleType = showroomz.api.app.auth.entity.RoleType.SELLER " +
            "AND (:mainCategoryId IS NULL OR c.categoryId = :mainCategoryId) " +
            "AND (:marketName IS NULL OR :marketName = '' OR m.marketName LIKE CONCAT('%', :marketName, '%'))")
     Page<AdminMarketDto.MarketResponse> findMarketsWithProductCount(
