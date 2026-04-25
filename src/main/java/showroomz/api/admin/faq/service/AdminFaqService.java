@@ -56,6 +56,7 @@ public class AdminFaqService {
     public void reorderFaqs(FaqReorderRequest request) {
         List<Long> requestedFaqIds = request.getFaqIds();
         validateDuplicateIds(requestedFaqIds);
+        validateAllFaqIdsProvided(requestedFaqIds);
 
         List<Faq> existingFaqs = faqRepository.findAllByIdIn(requestedFaqIds);
         if (existingFaqs.size() != requestedFaqIds.size()) {
@@ -115,6 +116,13 @@ public class AdminFaqService {
         Set<Long> uniqueFaqIds = new HashSet<>(requestedFaqIds);
         if (uniqueFaqIds.size() != requestedFaqIds.size()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "중복된 FAQ ID는 허용되지 않습니다.");
+        }
+    }
+
+    private void validateAllFaqIdsProvided(List<Long> requestedFaqIds) {
+        long totalFaqCount = faqRepository.count();
+        if (requestedFaqIds.size() < totalFaqCount) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "FAQ 정렬 변경 시 전체 FAQ ID를 모두 전달해야 합니다.");
         }
     }
 }

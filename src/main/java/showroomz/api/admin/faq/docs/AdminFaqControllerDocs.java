@@ -97,6 +97,7 @@ public interface AdminFaqControllerDocs {
             description = "관리자가 FAQ ID 목록 순서대로 노출 순서를 일괄 변경합니다.\n\n" +
                     "**동작 규칙:**\n" +
                     "- 배열 인덱스 순서를 기준으로 displayOrder가 1부터 재부여됩니다.\n" +
+                    "- 전체 FAQ ID를 모두 전달해야 하며, 전체 개수보다 적으면 오류가 발생합니다.\n" +
                     "- 요청한 FAQ ID는 모두 존재해야 하며, 중복 ID는 허용되지 않습니다.\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
