@@ -164,7 +164,7 @@ public interface AdminFaqControllerDocs {
                     "**카테고리 조회:**\n" +
                     "- 카테고리 값(`category`)은 Common API `GET /v1/common/faqs/categories`를 사용해 조회하세요.\n\n" +
                     "**필터 조건:** 카테고리, 질문/답변 키워드 (복합 적용 가능)\n\n" +
-                    "**정렬:** 등록일 최신순\n\n" +
+                    "**정렬:** 노출 순서(displayOrder) 오름차순\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )

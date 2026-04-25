@@ -3,7 +3,6 @@ package showroomz.api.admin.faq.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.faq.dto.AdminFaqListRequest;
@@ -80,7 +79,7 @@ public class AdminFaqService {
     }
 
     public PageResponse<AdminFaqListResponse> getFaqs(AdminFaqListRequest request, PagingRequest pagingRequest) {
-        Pageable pageable = pagingRequest.toPageable(Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = pagingRequest.toPageable();
         FaqCategory category = request.getCategory();
         if (category == FaqCategory.ALL) {
             category = null;

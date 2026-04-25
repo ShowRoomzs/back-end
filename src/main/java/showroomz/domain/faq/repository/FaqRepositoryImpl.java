@@ -27,7 +27,7 @@ public class FaqRepositoryImpl implements FaqRepositoryCustom {
                         eqCategory(category),
                         containsKeyword(keyword)
                 )
-                .orderBy(faq.createdAt.desc())
+                .orderBy(faq.displayOrder.asc(), faq.id.asc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
