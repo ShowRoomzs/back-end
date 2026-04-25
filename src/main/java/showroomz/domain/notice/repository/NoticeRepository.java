@@ -12,4 +12,6 @@ public interface NoticeRepository extends JpaRepository<Notice, Long> {
     Page<Notice> findAllByIsVisibleTrue(Pageable pageable);
 
     Optional<Notice> findByIdAndIsVisibleTrue(Long id);
+
+    Page<Notice> findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(String title, String content, Pageable pageable);
 }

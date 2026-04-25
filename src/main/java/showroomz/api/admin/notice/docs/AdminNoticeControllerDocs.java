@@ -1,6 +1,7 @@
 package showroomz.api.admin.notice.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -9,9 +10,16 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import showroomz.api.admin.notice.dto.AdminNoticeDetailResponse;
+import showroomz.api.admin.notice.dto.AdminNoticeListResponse;
 import showroomz.api.admin.notice.dto.AdminNoticeRegisterRequest;
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "Admin - Notice", description = "관리자 공지 관리 API\n\n")
 public interface AdminNoticeControllerDocs {
@@ -99,4 +107,40 @@ public interface AdminNoticeControllerDocs {
             )
     )
     ResponseEntity<Void> registerNotice(@Valid @RequestBody AdminNoticeRegisterRequest request);
+
+    @Operation(
+            summary = "공지 목록 조회 및 검색",
+            description = "관리자가 전체 공지사항 목록을 페이징하여 조회합니다.\n\n" +
+                    "검색어(keyword)를 파라미터로 전달할 경우, 제목 또는 내용에 해당 키워드가 포함된 공지사항을 필터링하여 반환합니다.\n" +
+                    "검색어를 생략하면 조건 없이 전체 데이터베이스의 공지사항 목록이 내림차순(최신순)으로 제공됩니다.\n\n" +
+                    "비공개 상태(isVisible=false)로 등록된 공지를 포함한 모든 공지사항을 확인합니다."
+    )
+    ResponseEntity<PageResponse<AdminNoticeListResponse>> getNotices(
+            @Parameter(description = "검색어 (제목 또는 내용에 포함될 키워드)", required = false)
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @Parameter(description = "페이징 요청 객체 (page, size 값을 쿼리 파라미터로 전달)")
+            @ModelAttribute PagingRequest pagingRequest
+    );
+
+    @Operation(
+            summary = "공지 상세 조회",
+            description = "관리자가 특정 공지사항의 제목과 내용을 상세 조회합니다."
+    )
+    ResponseEntity<AdminNoticeDetailResponse> getNotice(
+            @Parameter(description = "조회할 공지사항 ID", required = true)
+            @PathVariable("noticeId") Long noticeId
+    );
+
+    @Operation(
+            summary = "공지 삭제",
+            description = "관리자가 특정 공지사항을 단일 삭제합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "삭제 성공 (반환 데이터 없음)"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 공지사항")
+    })
+    ResponseEntity<Void> deleteNotice(
+            @Parameter(description = "삭제할 공지사항 ID", required = true)
+            @PathVariable("noticeId") Long noticeId
+    );
 }
