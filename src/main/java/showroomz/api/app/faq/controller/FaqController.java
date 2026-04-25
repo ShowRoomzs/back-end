@@ -16,7 +16,7 @@ import showroomz.domain.faq.type.FaqCategory;
 import java.util.List;
 
 @RestController
-@RequestMapping("/v1/common/faqs")
+@RequestMapping("/v1/user/faqs")
 @RequiredArgsConstructor
 public class FaqController implements FaqControllerDocs {
 

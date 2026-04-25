@@ -15,7 +15,7 @@ import showroomz.api.app.faq.dto.FaqResponse;
 
 import java.util.List;
 
-@Tag(name = "Common - FAQ", description = "자주 묻는 질문(FAQ) 조회 API")
+@Tag(name = "User - FAQ", description = "자주 묻는 질문(FAQ) 조회 API")
 public interface FaqControllerDocs {
 
     @Operation(
