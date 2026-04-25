@@ -2,15 +2,15 @@ package showroomz.api.admin.notice.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import showroomz.api.admin.notice.docs.AdminNoticeControllerDocs;
@@ -18,6 +18,8 @@ import showroomz.api.admin.notice.dto.AdminNoticeDetailResponse;
 import showroomz.api.admin.notice.dto.AdminNoticeListResponse;
 import showroomz.api.admin.notice.dto.AdminNoticeRegisterRequest;
 import showroomz.api.admin.notice.service.AdminNoticeService;
+import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 import java.net.URI;
 
@@ -37,8 +39,10 @@ public class AdminNoticeController implements AdminNoticeControllerDocs {
 
     @Override
     @GetMapping
-    public ResponseEntity<Page<AdminNoticeListResponse>> getNotices(Pageable pageable) {
-        Page<AdminNoticeListResponse> response = adminNoticeService.getNotices(pageable);
+    public ResponseEntity<PageResponse<AdminNoticeListResponse>> getNotices(
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @ModelAttribute PagingRequest pagingRequest) {
+        PageResponse<AdminNoticeListResponse> response = adminNoticeService.getNotices(keyword, pagingRequest);
         return ResponseEntity.ok(response);
     }
 

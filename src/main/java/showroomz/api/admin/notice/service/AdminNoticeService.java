@@ -10,6 +10,8 @@ import showroomz.api.admin.notice.dto.AdminNoticeListResponse;
 import showroomz.api.admin.notice.dto.AdminNoticeRegisterRequest;
 import showroomz.domain.notice.entity.Notice;
 import showroomz.domain.notice.repository.NoticeRepository;
+import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -31,9 +33,18 @@ public class AdminNoticeService {
         return noticeRepository.save(notice).getId();
     }
 
-    public Page<AdminNoticeListResponse> getNotices(Pageable pageable) {
-        return noticeRepository.findAll(pageable)
-                .map(AdminNoticeListResponse::from);
+    public PageResponse<AdminNoticeListResponse> getNotices(String keyword, PagingRequest pagingRequest) {
+        Pageable pageable = pagingRequest.toPageable();
+        Page<Notice> noticePage;
+
+        if (keyword == null || keyword.trim().isEmpty()) {
+            noticePage = noticeRepository.findAll(pageable);
+        } else {
+            noticePage = noticeRepository.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(keyword, keyword, pageable);
+        }
+
+        Page<AdminNoticeListResponse> dtoPage = noticePage.map(AdminNoticeListResponse::from);
+        return new PageResponse<>(dtoPage);
     }
 
     public AdminNoticeDetailResponse getNotice(Long noticeId) {

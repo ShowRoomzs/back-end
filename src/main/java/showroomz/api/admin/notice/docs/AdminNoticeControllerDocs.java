@@ -9,15 +9,17 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.admin.notice.dto.AdminNoticeDetailResponse;
 import showroomz.api.admin.notice.dto.AdminNoticeListResponse;
 import showroomz.api.admin.notice.dto.AdminNoticeRegisterRequest;
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "Admin - Notice", description = "관리자 공지 관리 API\n\n")
 public interface AdminNoticeControllerDocs {
@@ -107,11 +109,18 @@ public interface AdminNoticeControllerDocs {
     ResponseEntity<Void> registerNotice(@Valid @RequestBody AdminNoticeRegisterRequest request);
 
     @Operation(
-            summary = "공지 목록 조회",
+            summary = "공지 목록 조회 및 검색",
             description = "관리자가 전체 공지사항 목록을 페이징하여 조회합니다.\n\n" +
-                    "비공개 공지(isVisible=false)를 포함한 모든 공지사항을 확인합니다."
+                    "검색어(keyword)를 파라미터로 전달할 경우, 제목 또는 내용에 해당 키워드가 포함된 공지사항을 필터링하여 반환합니다.\n" +
+                    "검색어를 생략하면 조건 없이 전체 데이터베이스의 공지사항 목록이 내림차순(최신순)으로 제공됩니다.\n\n" +
+                    "비공개 상태(isVisible=false)로 등록된 공지를 포함한 모든 공지사항을 확인합니다."
     )
-    ResponseEntity<Page<AdminNoticeListResponse>> getNotices(Pageable pageable);
+    ResponseEntity<PageResponse<AdminNoticeListResponse>> getNotices(
+            @Parameter(description = "검색어 (제목 또는 내용에 포함될 키워드)", required = false)
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @Parameter(description = "페이징 요청 객체 (page, size 값을 쿼리 파라미터로 전달)")
+            @ModelAttribute PagingRequest pagingRequest
+    );
 
     @Operation(
             summary = "공지 상세 조회",
