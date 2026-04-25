@@ -1,6 +1,7 @@
 package showroomz.api.admin.notice.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -8,8 +9,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import showroomz.api.admin.notice.dto.AdminNoticeDetailResponse;
+import showroomz.api.admin.notice.dto.AdminNoticeListResponse;
 import showroomz.api.admin.notice.dto.AdminNoticeRegisterRequest;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 
@@ -99,4 +105,33 @@ public interface AdminNoticeControllerDocs {
             )
     )
     ResponseEntity<Void> registerNotice(@Valid @RequestBody AdminNoticeRegisterRequest request);
+
+    @Operation(
+            summary = "공지 목록 조회",
+            description = "관리자가 전체 공지사항 목록을 페이징하여 조회합니다.\n\n" +
+                    "비공개 공지(isVisible=false)를 포함한 모든 공지사항을 확인합니다."
+    )
+    ResponseEntity<Page<AdminNoticeListResponse>> getNotices(Pageable pageable);
+
+    @Operation(
+            summary = "공지 상세 조회",
+            description = "관리자가 특정 공지사항의 제목과 내용을 상세 조회합니다."
+    )
+    ResponseEntity<AdminNoticeDetailResponse> getNotice(
+            @Parameter(description = "조회할 공지사항 ID", required = true)
+            @PathVariable("noticeId") Long noticeId
+    );
+
+    @Operation(
+            summary = "공지 삭제",
+            description = "관리자가 특정 공지사항을 단일 삭제합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "삭제 성공 (반환 데이터 없음)"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 공지사항")
+    })
+    ResponseEntity<Void> deleteNotice(
+            @Parameter(description = "삭제할 공지사항 ID", required = true)
+            @PathVariable("noticeId") Long noticeId
+    );
 }
