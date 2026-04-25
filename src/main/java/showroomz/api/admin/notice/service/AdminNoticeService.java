@@ -12,6 +12,8 @@ import showroomz.domain.notice.entity.Notice;
 import showroomz.domain.notice.repository.NoticeRepository;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
+import showroomz.global.error.exception.BusinessException;
+import showroomz.global.error.exception.ErrorCode;
 
 @Service
 @RequiredArgsConstructor
@@ -49,7 +51,7 @@ public class AdminNoticeService {
 
     public AdminNoticeDetailResponse getNotice(Long noticeId) {
         Notice notice = noticeRepository.findById(noticeId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 공지사항을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
         return AdminNoticeDetailResponse.from(notice);
     }
@@ -57,7 +59,7 @@ public class AdminNoticeService {
     @Transactional
     public void deleteNotice(Long noticeId) {
         Notice notice = noticeRepository.findById(noticeId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 공지사항을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
         noticeRepository.delete(notice);
     }
