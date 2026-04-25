@@ -50,6 +50,13 @@ public class AdminFaqController implements AdminFaqControllerDocs {
     }
 
     @Override
+    @GetMapping("/{faqId}")
+    public ResponseEntity<AdminFaqListResponse> getFaq(@PathVariable("faqId") Long faqId) {
+        AdminFaqListResponse response = adminFaqService.getFaq(faqId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
     @GetMapping
     public ResponseEntity<PageResponse<AdminFaqListResponse>> getFaqs(
             @ModelAttribute AdminFaqListRequest request,

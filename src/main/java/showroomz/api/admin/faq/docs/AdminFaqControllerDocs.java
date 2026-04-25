@@ -159,6 +159,46 @@ public interface AdminFaqControllerDocs {
     ResponseEntity<Void> reorderFaqs(@Valid @RequestBody FaqReorderRequest request);
 
     @Operation(
+            summary = "FAQ 단일 조회",
+            description = "관리자가 FAQ를 단건 조회합니다.\n\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 (ADMIN 권한 필요)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "존재하지 않는 FAQ",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<AdminFaqListResponse> getFaq(
+            @Parameter(description = "FAQ ID", required = true) Long faqId
+    );
+
+    @Operation(
             summary = "FAQ 목록 조회",
             description = "관리자가 FAQ 목록을 조회합니다.\n\n" +
                     "**카테고리 조회:**\n" +

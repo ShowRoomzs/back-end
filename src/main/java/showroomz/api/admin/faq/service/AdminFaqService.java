@@ -78,6 +78,12 @@ public class AdminFaqService {
                 .orElse(1);
     }
 
+    public AdminFaqListResponse getFaq(Long faqId) {
+        Faq faq = faqRepository.findById(faqId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA, "존재하지 않는 FAQ입니다."));
+        return AdminFaqListResponse.from(faq);
+    }
+
     public PageResponse<AdminFaqListResponse> getFaqs(AdminFaqListRequest request, PagingRequest pagingRequest) {
         Pageable pageable = pagingRequest.toPageable();
         FaqCategory category = request.getCategory();
