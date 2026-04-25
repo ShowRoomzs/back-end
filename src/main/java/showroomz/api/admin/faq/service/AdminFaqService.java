@@ -81,20 +81,11 @@ public class AdminFaqService {
     public PageResponse<AdminFaqListResponse> getFaqs(AdminFaqListRequest request, PagingRequest pagingRequest) {
         Pageable pageable = pagingRequest.toPageable(Sort.by(Sort.Direction.DESC, "createdAt"));
         FaqCategory category = request.getCategory();
-        String keyword = request.getKeyword();
-        boolean hasCategory = category != null && category != FaqCategory.ALL;
-        boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
-
-        Page<Faq> faqPage;
-        if (hasCategory && hasKeyword) {
-            faqPage = faqRepository.findByCategoryAndKeyword(category, keyword.trim(), pageable);
-        } else if (hasCategory) {
-            faqPage = faqRepository.findByCategory(category, pageable);
-        } else if (hasKeyword) {
-            faqPage = faqRepository.findByKeyword(keyword.trim(), pageable);
-        } else {
-            faqPage = faqRepository.findAll(pageable);
+        if (category == FaqCategory.ALL) {
+            category = null;
         }
+        String keyword = request.getKeyword();
+        Page<Faq> faqPage = faqRepository.findAdminFaqList(category, keyword, pageable);
 
         return new PageResponse<>(faqPage.map(AdminFaqListResponse::from));
     }
