@@ -1,6 +1,7 @@
 package showroomz.api.admin.faq.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -10,9 +11,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
+import showroomz.api.admin.faq.dto.AdminFaqListRequest;
+import showroomz.api.admin.faq.dto.AdminFaqListResponse;
 import showroomz.api.admin.faq.dto.AdminFaqRegisterRequest;
+import showroomz.api.admin.faq.dto.AdminFaqUpdateRequest;
 import showroomz.api.admin.faq.dto.FaqReorderRequest;
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "Admin - FAQ", description = "관리자 FAQ 관리 API")
 public interface AdminFaqControllerDocs {
@@ -147,5 +153,157 @@ public interface AdminFaqControllerDocs {
             )
     )
     ResponseEntity<Void> reorderFaqs(@Valid @RequestBody FaqReorderRequest request);
+
+    @Operation(
+            summary = "FAQ 목록 조회",
+            description = "관리자가 FAQ 목록을 조회합니다.\n\n" +
+                    "**필터 조건:** 카테고리, 질문/답변 키워드 (복합 적용 가능)\n\n" +
+                    "**정렬:** 등록일 최신순\n\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 (ADMIN 권한 필요)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<PageResponse<AdminFaqListResponse>> getFaqs(
+            @Parameter(description = "조회 필터 (카테고리, 키워드)") AdminFaqListRequest request,
+            @Parameter(description = "페이징 요청 (page, size)") PagingRequest pagingRequest
+    );
+
+    @Operation(
+            summary = "FAQ 수정",
+            description = "관리자가 FAQ의 카테고리, 질문, 답변을 수정합니다.\n\n" +
+                    "**카테고리:** DELIVERY, CANCEL_EXCHANGE_REFUND, PRODUCT_AS, ORDER_PAYMENT, SERVICE, USAGE_GUIDE, MEMBER_INFO (전체/ALL 불가)\n\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "수정 성공"
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "입력값 오류 (유효성 검증 실패 시 첫 번째 필드 메시지 반환)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "유효성 검증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"질문 내용을 입력해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 (ADMIN 권한 필요)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "존재하지 않는 FAQ",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "FAQ 수정 요청 바디",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = AdminFaqUpdateRequest.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "FAQ 수정",
+                                    value = "{\n" +
+                                            "  \"category\": \"DELIVERY\",\n" +
+                                            "  \"question\": \"배송은 얼마나 걸리나요?\",\n" +
+                                            "  \"answer\": \"평균 3~5일 소요됩니다.\"\n" +
+                                            "}"
+                            )
+                    }
+            )
+    )
+    ResponseEntity<Void> updateFaq(
+            @Parameter(description = "FAQ ID", required = true) Long faqId,
+            @Valid @RequestBody AdminFaqUpdateRequest request
+    );
+
+    @Operation(
+            summary = "FAQ 단일 삭제",
+            description = "관리자가 FAQ를 단건 삭제합니다.\n\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "삭제 성공"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 (ADMIN 권한 필요)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "존재하지 않는 FAQ",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<Void> deleteFaq(
+            @Parameter(description = "FAQ ID", required = true) Long faqId
+    );
 }
 

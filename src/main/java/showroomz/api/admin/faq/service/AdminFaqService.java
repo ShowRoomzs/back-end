@@ -1,10 +1,18 @@
 package showroomz.api.admin.faq.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.admin.faq.dto.AdminFaqListRequest;
+import showroomz.api.admin.faq.dto.AdminFaqListResponse;
 import showroomz.api.admin.faq.dto.AdminFaqRegisterRequest;
+import showroomz.api.admin.faq.dto.AdminFaqUpdateRequest;
 import showroomz.api.admin.faq.dto.FaqReorderRequest;
+import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.domain.faq.entity.Faq;
 import showroomz.domain.faq.repository.FaqRepository;
@@ -68,6 +76,48 @@ public class AdminFaqService {
         return faqRepository.findTopByOrderByDisplayOrderDescIdDesc()
                 .map(faq -> faq.getDisplayOrder() + 1)
                 .orElse(1);
+    }
+
+    public PageResponse<AdminFaqListResponse> getFaqs(AdminFaqListRequest request, PagingRequest pagingRequest) {
+        Pageable pageable = pagingRequest.toPageable(Sort.by(Sort.Direction.DESC, "createdAt"));
+        FaqCategory category = request.getCategory();
+        String keyword = request.getKeyword();
+        boolean hasCategory = category != null && category != FaqCategory.ALL;
+        boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
+
+        Page<Faq> faqPage;
+        if (hasCategory && hasKeyword) {
+            faqPage = faqRepository.findByCategoryAndKeyword(category, keyword.trim(), pageable);
+        } else if (hasCategory) {
+            faqPage = faqRepository.findByCategory(category, pageable);
+        } else if (hasKeyword) {
+            faqPage = faqRepository.findByKeyword(keyword.trim(), pageable);
+        } else {
+            faqPage = faqRepository.findAll(pageable);
+        }
+
+        return new PageResponse<>(faqPage.map(AdminFaqListResponse::from));
+    }
+
+    @Transactional
+    public void updateFaq(Long faqId, AdminFaqUpdateRequest request) {
+        Faq faq = faqRepository.findById(faqId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA, "존재하지 않는 FAQ입니다."));
+
+        FaqCategory category = request.getCategory();
+        if (category == null || !category.isPersistable()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "카테고리는 전체(ALL)를 제외한 값이어야 합니다.");
+        }
+
+        faq.update(category, request.getQuestion(), request.getAnswer());
+    }
+
+    @Transactional
+    public void deleteFaq(Long faqId) {
+        Faq faq = faqRepository.findById(faqId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA, "존재하지 않는 FAQ입니다."));
+
+        faqRepository.delete(faq);
     }
 
     private void validateDuplicateIds(List<Long> requestedFaqIds) {
