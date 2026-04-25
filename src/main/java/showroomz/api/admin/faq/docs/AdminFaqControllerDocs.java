@@ -213,8 +213,8 @@ public interface AdminFaqControllerDocs {
             )
     })
     ResponseEntity<PageResponse<AdminFaqListResponse>> getFaqs(
-            @Parameter(description = "조회 필터 (카테고리, 키워드)") AdminFaqListRequest request,
-            @Parameter(description = "페이징 요청 (page, size)") PagingRequest pagingRequest
+            @Parameter(hidden = true) AdminFaqListRequest request,
+            @Parameter(hidden = true) PagingRequest pagingRequest
     );
 
     @Operation(
