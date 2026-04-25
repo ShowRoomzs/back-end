@@ -5,15 +5,20 @@ import showroomz.domain.faq.entity.Faq;
 import showroomz.domain.faq.type.FaqCategory;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface FaqRepository extends JpaRepository<Faq, Long> {
 
-    List<Faq> findAllByIsVisibleTrue();
+    List<Faq> findAllByIsVisibleTrueOrderByDisplayOrderAscIdAsc();
 
-    List<Faq> findAllByIsVisibleTrueAndCategory(FaqCategory category);
+    List<Faq> findAllByIsVisibleTrueAndCategoryOrderByDisplayOrderAscIdAsc(FaqCategory category);
 
-    List<Faq> findAllByIsVisibleTrueAndQuestionContainingIgnoreCase(String keyword);
+    List<Faq> findAllByIsVisibleTrueAndQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(String keyword);
 
-    List<Faq> findAllByIsVisibleTrueAndCategoryAndQuestionContainingIgnoreCase(FaqCategory category, String keyword);
+    List<Faq> findAllByIdIn(List<Long> ids);
+
+    Optional<Faq> findTopByOrderByDisplayOrderDescIdDesc();
+
+    List<Faq> findAllByIsVisibleTrueAndCategoryAndQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(FaqCategory category, String keyword);
 }
 

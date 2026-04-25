@@ -28,13 +28,13 @@ public class FaqService {
 
         List<Faq> faqs;
         if (filterByCategory && hasKeyword) {
-            faqs = faqRepository.findAllByIsVisibleTrueAndCategoryAndQuestionContainingIgnoreCase(category, trimmedKeyword);
+            faqs = faqRepository.findAllByIsVisibleTrueAndCategoryAndQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(category, trimmedKeyword);
         } else if (filterByCategory) {
-            faqs = faqRepository.findAllByIsVisibleTrueAndCategory(category);
+            faqs = faqRepository.findAllByIsVisibleTrueAndCategoryOrderByDisplayOrderAscIdAsc(category);
         } else if (hasKeyword) {
-            faqs = faqRepository.findAllByIsVisibleTrueAndQuestionContainingIgnoreCase(trimmedKeyword);
+            faqs = faqRepository.findAllByIsVisibleTrueAndQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(trimmedKeyword);
         } else {
-            faqs = faqRepository.findAllByIsVisibleTrue();
+            faqs = faqRepository.findAllByIsVisibleTrueOrderByDisplayOrderAscIdAsc();
         }
         return faqs.stream().map(FaqResponse::from).collect(Collectors.toList());
     }

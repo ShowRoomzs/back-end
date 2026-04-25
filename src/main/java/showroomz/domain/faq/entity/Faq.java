@@ -31,15 +31,19 @@ public class Faq extends BaseTimeEntity {
     @Column(name = "ANSWER", nullable = false, columnDefinition = "TEXT")
     private String answer;
 
+    @Column(name = "DISPLAY_ORDER", nullable = false)
+    private Integer displayOrder;
+
     // 노출 여부 (필요 시 사용)
     @Column(name = "IS_VISIBLE")
     private boolean isVisible;
 
     @Builder
-    public Faq(FaqCategory category, String question, String answer) {
+    public Faq(FaqCategory category, String question, String answer, Integer displayOrder) {
         this.category = category;
         this.question = question;
         this.answer = answer;
+        this.displayOrder = displayOrder == null ? 0 : displayOrder;
         this.isVisible = true; // 기본값 노출
     }
 
@@ -48,5 +52,9 @@ public class Faq extends BaseTimeEntity {
         this.question = question;
         this.answer = answer;
         this.isVisible = isVisible;
+    }
+
+    public void updateDisplayOrder(Integer newOrder) {
+        this.displayOrder = newOrder;
     }
 }
