@@ -25,12 +25,6 @@ public class AdminFaqService {
 
     private final FaqRepository faqRepository;
 
-    /**
-     * FAQ 등록
-     *
-     * 주의: 현재 {@link Faq}의 {@code @Builder} 생성자는 {@code isVisible}을 기본 {@code true}로 설정합니다.
-     * 따라서 관리자가 비공개(false)로 등록하려면 저장 후 update로 노출 여부를 변경합니다.
-     */
     @Transactional
     public Long registerFaq(AdminFaqRegisterRequest request) {
         FaqCategory category = request.getCategory();
@@ -46,11 +40,6 @@ public class AdminFaqService {
 
         @SuppressWarnings("null")
         Faq savedFaq = faqRepository.save(faq);
-
-        Boolean requestedVisible = request.getIsVisible();
-        if (requestedVisible != null && !requestedVisible) {
-            savedFaq.update(category, request.getQuestion(), request.getAnswer(), false);
-        }
 
         return savedFaq.getId();
     }

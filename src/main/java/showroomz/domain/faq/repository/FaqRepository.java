@@ -9,16 +9,16 @@ import java.util.Optional;
 
 public interface FaqRepository extends JpaRepository<Faq, Long> {
 
-    List<Faq> findAllByIsVisibleTrueOrderByDisplayOrderAscIdAsc();
+    List<Faq> findAllByOrderByDisplayOrderAscIdAsc();
 
-    List<Faq> findAllByIsVisibleTrueAndCategoryOrderByDisplayOrderAscIdAsc(FaqCategory category);
+    List<Faq> findAllByCategoryOrderByDisplayOrderAscIdAsc(FaqCategory category);
 
-    List<Faq> findAllByIsVisibleTrueAndQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(String keyword);
+    List<Faq> findAllByQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(String keyword);
 
     List<Faq> findAllByIdIn(List<Long> ids);
 
     Optional<Faq> findTopByOrderByDisplayOrderDescIdDesc();
 
-    List<Faq> findAllByIsVisibleTrueAndCategoryAndQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(FaqCategory category, String keyword);
+    List<Faq> findAllByCategoryAndQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(FaqCategory category, String keyword);
 }
 

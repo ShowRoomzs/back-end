@@ -19,7 +19,7 @@ public interface FaqControllerDocs {
 
     @Operation(
             summary = "FAQ 목록 조회",
-            description = "노출 여부가 true인 FAQ 목록을 조회합니다.\n\n" +
+            description = "FAQ 목록을 조회합니다.\n\n" +
                     "**카테고리 조회:**\n" +
                     "- 카테고리 값(`category`)은 Common API `GET /v1/common/faqs/categories`로 조회.\n\n" +
                     "**검색:**\n" +

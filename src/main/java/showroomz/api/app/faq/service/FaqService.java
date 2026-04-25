@@ -20,7 +20,7 @@ public class FaqService {
 
     private final FaqRepository faqRepository;
 
-    // FAQ 목록 조회 (노출=true만). category=전체/null이면 전체, keyword 있으면 질문 검색
+    // FAQ 목록 조회. category=전체/null이면 전체, keyword 있으면 질문 검색
     public List<FaqResponse> getFaqList(String keyword, FaqCategory category) {
         boolean hasKeyword = keyword != null && !keyword.isBlank();
         String trimmedKeyword = (keyword == null) ? null : keyword.trim();
@@ -28,13 +28,13 @@ public class FaqService {
 
         List<Faq> faqs;
         if (filterByCategory && hasKeyword) {
-            faqs = faqRepository.findAllByIsVisibleTrueAndCategoryAndQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(category, trimmedKeyword);
+            faqs = faqRepository.findAllByCategoryAndQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(category, trimmedKeyword);
         } else if (filterByCategory) {
-            faqs = faqRepository.findAllByIsVisibleTrueAndCategoryOrderByDisplayOrderAscIdAsc(category);
+            faqs = faqRepository.findAllByCategoryOrderByDisplayOrderAscIdAsc(category);
         } else if (hasKeyword) {
-            faqs = faqRepository.findAllByIsVisibleTrueAndQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(trimmedKeyword);
+            faqs = faqRepository.findAllByQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(trimmedKeyword);
         } else {
-            faqs = faqRepository.findAllByIsVisibleTrueOrderByDisplayOrderAscIdAsc();
+            faqs = faqRepository.findAllByOrderByDisplayOrderAscIdAsc();
         }
         return faqs.stream().map(FaqResponse::from).collect(Collectors.toList());
     }

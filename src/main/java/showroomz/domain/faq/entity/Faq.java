@@ -11,7 +11,12 @@ import showroomz.domain.faq.type.FaqCategory;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "FAQ")
+@Table(
+        name = "FAQ",
+        indexes = {
+                @Index(name = "idx_faq_display_order", columnList = "DISPLAY_ORDER")
+        }
+)
 public class Faq extends BaseTimeEntity {
 
     @Id
@@ -34,24 +39,18 @@ public class Faq extends BaseTimeEntity {
     @Column(name = "DISPLAY_ORDER", nullable = false)
     private Integer displayOrder;
 
-    // 노출 여부 (필요 시 사용)
-    @Column(name = "IS_VISIBLE")
-    private boolean isVisible;
-
     @Builder
     public Faq(FaqCategory category, String question, String answer, Integer displayOrder) {
         this.category = category;
         this.question = question;
         this.answer = answer;
         this.displayOrder = displayOrder == null ? 0 : displayOrder;
-        this.isVisible = true; // 기본값 노출
     }
 
-    public void update(FaqCategory category, String question, String answer, boolean isVisible) {
+    public void update(FaqCategory category, String question, String answer) {
         this.category = category;
         this.question = question;
         this.answer = answer;
-        this.isVisible = isVisible;
     }
 
     public void updateDisplayOrder(Integer newOrder) {

@@ -22,8 +22,5 @@ public class AdminFaqRegisterRequest {
     @Schema(description = "답변", example = "평균 2~3일 소요됩니다.")
     @NotBlank(message = "답변 내용을 입력해주세요.")
     private String answer;
-
-    @Schema(description = "노출 여부", example = "true", nullable = true)
-    private Boolean isVisible = true; // 기본값 true
 }
 
