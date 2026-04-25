@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import showroomz.api.app.faq.docs.FaqControllerDocs;
-import showroomz.api.app.faq.dto.FaqCategoryItem;
 import showroomz.api.app.faq.dto.FaqResponse;
 import showroomz.api.app.faq.service.FaqService;
 import showroomz.domain.faq.type.FaqCategory;
@@ -16,7 +15,7 @@ import showroomz.domain.faq.type.FaqCategory;
 import java.util.List;
 
 @RestController
-@RequestMapping("/v1/common/faqs")
+@RequestMapping("/v1/user/faqs")
 @RequiredArgsConstructor
 public class FaqController implements FaqControllerDocs {
 
@@ -30,12 +29,6 @@ public class FaqController implements FaqControllerDocs {
         FaqCategory categoryEnum = FaqCategory.fromRequestParam(category);
         List<FaqResponse> list = faqService.getFaqList(keyword, categoryEnum);
         return ResponseEntity.ok(list);
-    }
-
-    @Override
-    @GetMapping("/categories")
-    public ResponseEntity<List<FaqCategoryItem>> getFaqCategories() {
-        return ResponseEntity.ok(faqService.getFaqCategories());
     }
 }
 

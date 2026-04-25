@@ -9,9 +9,10 @@ import showroomz.domain.faq.type.FaqCategory;
 
 @Getter
 @NoArgsConstructor
-public class AdminFaqRegisterRequest {
+public class AdminFaqUpdateRequest {
 
-    @Schema(description = "카테고리 (ALL 제외)", example = "DELIVERY", allowableValues = {"DELIVERY", "CANCEL_EXCHANGE_REFUND", "PRODUCT_AS", "ORDER_PAYMENT", "SERVICE", "USAGE_GUIDE", "MEMBER_INFO"})
+    @Schema(description = "카테고리 (ALL 제외)", example = "DELIVERY",
+            allowableValues = {"DELIVERY", "CANCEL_EXCHANGE_REFUND", "PRODUCT_AS", "ORDER_PAYMENT", "SERVICE", "USAGE_GUIDE", "MEMBER_INFO"})
     @NotNull(message = "카테고리를 선택해주세요.")
     private FaqCategory category;
 
@@ -23,4 +24,3 @@ public class AdminFaqRegisterRequest {
     @NotBlank(message = "답변 내용을 입력해주세요.")
     private String answer;
 }
-
