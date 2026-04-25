@@ -2,6 +2,7 @@ package showroomz.api.admin.faq.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -26,7 +27,9 @@ public interface AdminFaqControllerDocs {
     @Operation(
             summary = "FAQ 등록",
             description = "관리자가 새로운 FAQ를 등록합니다.\n\n" +
-                    "**카테고리:** DELIVERY, CANCEL_EXCHANGE_REFUND, PRODUCT_AS, ORDER_PAYMENT, SERVICE, USAGE_GUIDE, MEMBER_INFO (전체/ALL 불가)\n\n" +
+                    "**카테고리 조회:**\n" +
+                    "- 카테고리 값(`category`)은 Common API `GET /v1/common/faqs/categories`를 사용해 조회하세요.\n\n" +
+                    "**카테고리:** ALL, DELIVERY, CANCEL_EXCHANGE_REFUND, PRODUCT_AS, ORDER_PAYMENT, SERVICE, USAGE_GUIDE, MEMBER_INFO\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -157,6 +160,8 @@ public interface AdminFaqControllerDocs {
     @Operation(
             summary = "FAQ 목록 조회",
             description = "관리자가 FAQ 목록을 조회합니다.\n\n" +
+                    "**카테고리 조회:**\n" +
+                    "- 카테고리 값(`category`)은 Common API `GET /v1/common/faqs/categories`를 사용해 조회하세요.\n\n" +
                     "**필터 조건:** 카테고리, 질문/답변 키워드 (복합 적용 가능)\n\n" +
                     "**정렬:** 등록일 최신순\n\n" +
                     "**권한:** ADMIN\n" +
@@ -182,6 +187,29 @@ public interface AdminFaqControllerDocs {
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)
                     )
+            )
+    })
+    @Parameters({
+            @Parameter(
+                    name = "category",
+                    description = "카테고리 필터 (미입력/ALL 시 전체)",
+                    example = "DELIVERY",
+                    schema = @Schema(allowableValues = {"ALL", "DELIVERY", "CANCEL_EXCHANGE_REFUND", "PRODUCT_AS", "ORDER_PAYMENT", "SERVICE", "USAGE_GUIDE", "MEMBER_INFO"})
+            ),
+            @Parameter(
+                    name = "keyword",
+                    description = "질문 또는 답변 키워드 필터",
+                    example = "배송"
+            ),
+            @Parameter(
+                    name = "page",
+                    description = "페이지 번호 (1부터 시작)",
+                    example = "1"
+            ),
+            @Parameter(
+                    name = "size",
+                    description = "페이지당 항목 수",
+                    example = "20"
             )
     })
     ResponseEntity<PageResponse<AdminFaqListResponse>> getFaqs(
