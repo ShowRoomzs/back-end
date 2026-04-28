@@ -169,23 +169,41 @@ public interface SellerAuthControllerDocs {
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "관리자(판매자) 회원가입 정보\n\n" +
-                    "**계정 정보:**\n" +
+                    "**[1차] 계정/마켓 정보:**\n" +
                     "- email: 필수, 아이디로 사용되는 이메일\n" +
-                    "- password: 필수, 8~16자, 영문+숫자+특수문자 조합\n" +
-                    "- passwordConfirm: 필수, 비밀번호 재입력\n\n" +
-                    "**판매자 정보:**\n" +
+                    "- password / passwordConfirm: 필수, 8~16자 영문+숫자+특수문자 조합\n" +
                     "- sellerName: 필수, 판매 담당자 이름\n" +
-                    "- sellerContact: 필수, 판매 담당자 연락처 (010-1234-5678 형식)\n\n" +
-                    "**마켓 정보:**\n" +
-                    "- marketName: 필수, 마켓명 (공백/특수문자 불가, 한글 또는 영문 중 하나만 사용)\n" +
-                    "- csNumber: 필수, 고객센터 전화번호 (02-1234-5678 형식)",
+                    "- sellerContact: 필수, 판매 담당자 연락처\n" +
+                    "- marketName: 필수, 마켓명 (공백/특수문자 불가)\n" +
+                    "- csNumber: 필수, 고객센터 전화번호\n\n" +
+                    "**[2차] 사업자 기본 정보:**\n" +
+                    "- businessType: 필수, 사업자 구분 (예: 개인사업자)\n" +
+                    "- representativeName: 필수, 대표자명\n" +
+                    "- representativeContact: 필수, 대표자 연락처\n" +
+                    "- companyName: 필수, 상호명(법인명)\n" +
+                    "- businessRegistrationNumber: 필수, 사업자등록번호\n" +
+                    "- businessCondition: 필수, 업태/종목\n" +
+                    "- businessAddress: 필수, 사업장 주소\n" +
+                    "- detailAddress: 선택, 상세 주소\n" +
+                    "- taxEmail: 필수, 세금계산서 수신 이메일\n" +
+                    "- businessLicenseImageUrl: 필수, 사업자등록증 사본 URL\n" +
+                    "- mailOrderRegImageUrl: 선택, 통신판매업 신고증 사본 URL\n" +
+                    "- mailOrderRegNumber: 선택, 통신판매업 신고번호\n\n" +
+                    "**[3차] 정산 계좌 및 약관 동의:**\n" +
+                    "- bankName: 필수, 정산 은행명\n" +
+                    "- accountHolder: 필수, 예금주명\n" +
+                    "- accountNumber: 필수, 계좌번호\n" +
+                    "- bankbookImageUrl: 필수, 통장 사본 URL\n" +
+                    "- agreePrivacyPolicy: 필수, 개인정보 처리방침 동의 여부 (true)\n" +
+                    "- agreeTermsOfService: 필수, 서비스 이용약관 동의 여부 (true)\n" +
+                    "- agreeOperationPolicy: 필수, 운영정책 동의 여부 (true)",
             required = true,
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = SellerSignUpRequest.class),
                     examples = {
                             @ExampleObject(
-                                    name = "요청 예시",
+                                    name = "요청 예시 (1~3차 전체 포함)",
                                     value = "{\n" +
                                             "  \"email\": \"seller@example.com\",\n" +
                                             "  \"password\": \"Seller123!\",\n" +
@@ -193,7 +211,26 @@ public interface SellerAuthControllerDocs {
                                             "  \"sellerName\": \"김담당\",\n" +
                                             "  \"sellerContact\": \"010-1234-5678\",\n" +
                                             "  \"marketName\": \"쇼룸즈\",\n" +
-                                            "  \"csNumber\": \"02-1234-5678\"\n" +
+                                            "  \"csNumber\": \"02-1234-5678\",\n" +
+                                            "  \"businessType\": \"개인사업자\",\n" +
+                                            "  \"representativeName\": \"홍길동\",\n" +
+                                            "  \"representativeContact\": \"010-1234-5678\",\n" +
+                                            "  \"companyName\": \"쇼룸즈 컴퍼니\",\n" +
+                                            "  \"businessRegistrationNumber\": \"123-45-67890\",\n" +
+                                            "  \"businessCondition\": \"도소매업 / 전자상거래\",\n" +
+                                            "  \"businessAddress\": \"서울특별시 강남구 테헤란로 123\",\n" +
+                                            "  \"detailAddress\": \"10층 1001호\",\n" +
+                                            "  \"taxEmail\": \"tax@example.com\",\n" +
+                                            "  \"businessLicenseImageUrl\": \"https://s3.amazonaws.com/bucket/license.jpg\",\n" +
+                                            "  \"mailOrderRegImageUrl\": \"https://s3.amazonaws.com/bucket/mail_order.jpg\",\n" +
+                                            "  \"mailOrderRegNumber\": \"제 2024-서울강남-1234호\",\n" +
+                                            "  \"bankName\": \"국민은행\",\n" +
+                                            "  \"accountHolder\": \"홍길동\",\n" +
+                                            "  \"accountNumber\": \"123456-01-123456\",\n" +
+                                            "  \"bankbookImageUrl\": \"https://s3.amazonaws.com/bucket/bankbook.jpg\",\n" +
+                                            "  \"agreePrivacyPolicy\": true,\n" +
+                                            "  \"agreeTermsOfService\": true,\n" +
+                                            "  \"agreeOperationPolicy\": true\n" +
                                             "}"
                             )
                     }
