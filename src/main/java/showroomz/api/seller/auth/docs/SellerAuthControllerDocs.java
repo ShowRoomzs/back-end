@@ -188,7 +188,9 @@ public interface SellerAuthControllerDocs {
                     "- taxEmail: 필수, 세금계산서 수신 이메일\n" +
                     "- businessLicenseImageUrl: 필수, 사업자등록증 사본 URL\n" +
                     "- mailOrderRegImageUrl: 선택, 통신판매업 신고증 사본 URL\n" +
-                    "- mailOrderRegNumber: 선택, 통신판매업 신고번호\n\n" +
+                    "- mailOrderRegNumberYear: 선택, 통신판매업 신고번호(년도)\n" +
+                    "- mailOrderRegNumberRegion: 선택, 통신판매업 신고번호(지역)\n" +
+                    "- mailOrderRegNumberSeq: 선택, 통신판매업 신고번호(일련번호)\n\n" +
                     "**[3차] 정산 계좌 및 약관 동의:**\n" +
                     "- bankName: 필수, 정산 은행명\n" +
                     "- accountHolder: 필수, 예금주명\n" +
@@ -223,7 +225,9 @@ public interface SellerAuthControllerDocs {
                                             "  \"taxEmail\": \"tax@example.com\",\n" +
                                             "  \"businessLicenseImageUrl\": \"https://s3.amazonaws.com/bucket/license.jpg\",\n" +
                                             "  \"mailOrderRegImageUrl\": \"https://s3.amazonaws.com/bucket/mail_order.jpg\",\n" +
-                                            "  \"mailOrderRegNumber\": \"제 2024-서울강남-1234호\",\n" +
+                                            "  \"mailOrderRegNumberYear\": \"2024\",\n" +
+                                            "  \"mailOrderRegNumberRegion\": \"서울강남\",\n" +
+                                            "  \"mailOrderRegNumberSeq\": \"1234\",\n" +
                                             "  \"bankName\": \"국민은행\",\n" +
                                             "  \"accountHolder\": \"홍길동\",\n" +
                                             "  \"accountNumber\": \"123456-01-123456\",\n" +
