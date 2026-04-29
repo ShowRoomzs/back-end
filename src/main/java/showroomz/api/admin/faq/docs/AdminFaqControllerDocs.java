@@ -101,6 +101,9 @@ public interface AdminFaqControllerDocs {
                     "**동작 규칙:**\n" +
                     "- 일부 FAQ만 전달해도 됩니다. 요청에 포함된 FAQ만 순서가 갱신됩니다.\n" +
                     "- `reorderList` 안의 `faqId`는 서로 중복될 수 없습니다.\n" +
+                    "- `reorderList` 안의 `displayOrder`는 서로 중복될 수 없습니다.\n" +
+                    "- `displayOrder`는 1 이상, 전체 FAQ 개수 이하 범위만 허용됩니다.\n" +
+                    "- 업데이트 대상(`reorderList`의 faqId) 외 FAQ와 `displayOrder`가 충돌하면 실패합니다.\n" +
                     "- 요청한 모든 `faqId`는 DB에 존재해야 합니다.\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
@@ -112,7 +115,7 @@ public interface AdminFaqControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "입력값 오류 (빈 reorderList, null faqId·displayOrder, 중복 faqId 등)",
+                    description = "입력값 오류 (빈 reorderList, null faqId·displayOrder, 중복 faqId/displayOrder, displayOrder 범위 초과, 기존 데이터와 순서 충돌 등)",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)
