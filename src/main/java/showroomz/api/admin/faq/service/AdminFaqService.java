@@ -63,8 +63,11 @@ public class AdminFaqService {
                 .map(FaqReorderRequest.FaqOrderDto::getDisplayOrder)
                 .collect(Collectors.toList());
 
+        long totalFaqCount = faqRepository.count();
+
         validateDuplicateIds(requestedFaqIds);
         validateDuplicateOrdersInRequest(requestedOrders);
+        validateOrderRange(requestedOrders, totalFaqCount);
         validateOrderConflictWithDatabase(requestedOrders, requestedFaqIds);
 
         List<Faq> existingFaqs = faqRepository.findAllByIdIn(requestedFaqIds);
@@ -139,6 +142,17 @@ public class AdminFaqService {
         Set<Integer> uniqueOrders = new HashSet<>(requestedOrders);
         if (uniqueOrders.size() != requestedOrders.size()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "요청 데이터 내에 중복된 정렬 순서(displayOrder)가 존재합니다.");
+        }
+    }
+
+    private void validateOrderRange(List<Integer> requestedOrders, long totalFaqCount) {
+        for (Integer order : requestedOrders) {
+            if (order < 1 || order > totalFaqCount) {
+                throw new BusinessException(
+                        ErrorCode.INVALID_INPUT_VALUE,
+                        String.format("변경할 순서는 1부터 전체 FAQ 개수(%d) 사이여야 합니다.", totalFaqCount)
+                );
+            }
         }
     }
 
