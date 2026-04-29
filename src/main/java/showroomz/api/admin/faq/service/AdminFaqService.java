@@ -117,7 +117,9 @@ public class AdminFaqService {
         Faq faq = faqRepository.findById(faqId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA, "존재하지 않는 FAQ입니다."));
 
+        Integer deletedOrder = faq.getDisplayOrder();
         faqRepository.delete(faq);
+        faqRepository.shiftOrderDownAfterDelete(deletedOrder);
     }
 
     private void validateDuplicateIds(List<Long> requestedFaqIds) {

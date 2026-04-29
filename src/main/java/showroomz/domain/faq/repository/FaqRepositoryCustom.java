@@ -8,4 +8,6 @@ import showroomz.domain.faq.type.FaqCategory;
 public interface FaqRepositoryCustom {
 
     Page<Faq> findAdminFaqList(FaqCategory category, String keyword, Pageable pageable);
+
+    void shiftOrderDownAfterDelete(Integer deletedOrder);
 }
