@@ -94,11 +94,14 @@ public interface AdminFaqControllerDocs {
 
     @Operation(
             summary = "FAQ 노출 순서 변경",
-            description = "관리자가 FAQ ID 목록 순서대로 노출 순서를 일괄 변경합니다.\n\n" +
+            description = "관리자가 `reorderList`에 담긴 FAQ별 `displayOrder`를 반영해 노출 순서를 변경합니다.\n\n" +
+                    "**요청 바디:**\n" +
+                    "- `reorderList`: `{ \"faqId\": number, \"displayOrder\": number }` 객체 배열 (비어 있을 수 없음)\n" +
+                    "- 각 항목의 `displayOrder` 값이 해당 FAQ에 그대로 저장됩니다.\n\n" +
                     "**동작 규칙:**\n" +
-                    "- 배열 인덱스 순서를 기준으로 displayOrder가 1부터 재부여됩니다.\n" +
-                    "- 전체 FAQ ID를 모두 전달해야 하며, 전체 개수보다 적으면 오류가 발생합니다.\n" +
-                    "- 요청한 FAQ ID는 모두 존재해야 하며, 중복 ID는 허용되지 않습니다.\n\n" +
+                    "- 일부 FAQ만 전달해도 됩니다. 요청에 포함된 FAQ만 순서가 갱신됩니다.\n" +
+                    "- `reorderList` 안의 `faqId`는 서로 중복될 수 없습니다.\n" +
+                    "- 요청한 모든 `faqId`는 DB에 존재해야 합니다.\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -109,7 +112,7 @@ public interface AdminFaqControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "입력값 오류 (빈 배열, null ID, 중복 ID 등)",
+                    description = "입력값 오류 (빈 reorderList, null faqId·displayOrder, 중복 faqId 등)",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)
@@ -141,16 +144,30 @@ public interface AdminFaqControllerDocs {
             )
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "FAQ 정렬 순서 요청 바디",
+            description = "변경할 FAQ와 노출 순서 목록. `reorderList`에 `faqId`와 적용할 `displayOrder`를 쌍으로 넣습니다.",
             required = true,
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = FaqReorderRequest.class),
                     examples = {
                             @ExampleObject(
-                                    name = "FAQ 순서 변경",
+                                    name = "일부 FAQ만 순서 변경",
                                     value = "{\n" +
-                                            "  \"faqIds\": [5, 2, 7, 1]\n" +
+                                            "  \"reorderList\": [\n" +
+                                            "    { \"faqId\": 5, \"displayOrder\": 10 },\n" +
+                                            "    { \"faqId\": 2, \"displayOrder\": 20 }\n" +
+                                            "  ]\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "여러 FAQ 순서 일괄 반영",
+                                    value = "{\n" +
+                                            "  \"reorderList\": [\n" +
+                                            "    { \"faqId\": 5, \"displayOrder\": 1 },\n" +
+                                            "    { \"faqId\": 2, \"displayOrder\": 2 },\n" +
+                                            "    { \"faqId\": 7, \"displayOrder\": 3 },\n" +
+                                            "    { \"faqId\": 1, \"displayOrder\": 4 }\n" +
+                                            "  ]\n" +
                                             "}"
                             )
                     }
