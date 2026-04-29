@@ -27,6 +27,9 @@ public class AdminFaqListResponse {
     @Schema(description = "답변", example = "평균 2~3일 소요됩니다.")
     private String answer;
 
+    @Schema(description = "노출 순서", example = "1")
+    private Integer displayOrder;
+
     @Schema(description = "등록일")
     private LocalDateTime createdAt;
 
@@ -40,6 +43,7 @@ public class AdminFaqListResponse {
                 .categoryDisplayName(faq.getCategory().getDisplayName())
                 .question(faq.getQuestion())
                 .answer(faq.getAnswer())
+                .displayOrder(faq.getDisplayOrder())
                 .createdAt(faq.getCreatedAt())
                 .modifiedAt(faq.getModifiedAt())
                 .build();
