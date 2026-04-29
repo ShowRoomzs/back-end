@@ -59,7 +59,13 @@ public class AdminFaqService {
                 .map(FaqReorderRequest.FaqOrderDto::getFaqId)
                 .collect(Collectors.toList());
 
+        List<Integer> requestedOrders = reorderList.stream()
+                .map(FaqReorderRequest.FaqOrderDto::getDisplayOrder)
+                .collect(Collectors.toList());
+
         validateDuplicateIds(requestedFaqIds);
+        validateDuplicateOrdersInRequest(requestedOrders);
+        validateOrderConflictWithDatabase(requestedOrders, requestedFaqIds);
 
         List<Faq> existingFaqs = faqRepository.findAllByIdIn(requestedFaqIds);
         if (existingFaqs.size() != requestedFaqIds.size()) {
@@ -126,6 +132,20 @@ public class AdminFaqService {
         Set<Long> uniqueFaqIds = new HashSet<>(requestedFaqIds);
         if (uniqueFaqIds.size() != requestedFaqIds.size()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "중복된 FAQ ID는 허용되지 않습니다.");
+        }
+    }
+
+    private void validateDuplicateOrdersInRequest(List<Integer> requestedOrders) {
+        Set<Integer> uniqueOrders = new HashSet<>(requestedOrders);
+        if (uniqueOrders.size() != requestedOrders.size()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "요청 데이터 내에 중복된 정렬 순서(displayOrder)가 존재합니다.");
+        }
+    }
+
+    private void validateOrderConflictWithDatabase(List<Integer> requestedOrders, List<Long> requestedFaqIds) {
+        boolean hasDuplicate = faqRepository.existsByDisplayOrderInAndIdNotIn(requestedOrders, requestedFaqIds);
+        if (hasDuplicate) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "요청한 정렬 순서가 이미 다른 FAQ 데이터에서 사용 중입니다. 화면을 새로고침한 후 다시 시도해주세요.");
         }
     }
 }
