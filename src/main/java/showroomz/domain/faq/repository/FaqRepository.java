@@ -20,5 +20,7 @@ public interface FaqRepository extends JpaRepository<Faq, Long>, FaqRepositoryCu
     Optional<Faq> findTopByOrderByDisplayOrderDescIdDesc();
 
     List<Faq> findAllByCategoryAndQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(FaqCategory category, String keyword);
+
+    boolean existsByDisplayOrderInAndIdNotIn(List<Integer> displayOrders, List<Long> ids);
 }
 

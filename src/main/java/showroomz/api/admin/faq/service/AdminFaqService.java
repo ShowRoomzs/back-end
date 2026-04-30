@@ -53,9 +53,22 @@ public class AdminFaqService {
 
     @Transactional
     public void reorderFaqs(FaqReorderRequest request) {
-        List<Long> requestedFaqIds = request.getFaqIds();
+        List<FaqReorderRequest.FaqOrderDto> reorderList = request.getReorderList();
+
+        List<Long> requestedFaqIds = reorderList.stream()
+                .map(FaqReorderRequest.FaqOrderDto::getFaqId)
+                .collect(Collectors.toList());
+
+        List<Integer> requestedOrders = reorderList.stream()
+                .map(FaqReorderRequest.FaqOrderDto::getDisplayOrder)
+                .collect(Collectors.toList());
+
+        long totalFaqCount = faqRepository.count();
+
         validateDuplicateIds(requestedFaqIds);
-        validateAllFaqIdsProvided(requestedFaqIds);
+        validateDuplicateOrdersInRequest(requestedOrders);
+        validateOrderRange(requestedOrders, totalFaqCount);
+        validateOrderConflictWithDatabase(requestedOrders, requestedFaqIds);
 
         List<Faq> existingFaqs = faqRepository.findAllByIdIn(requestedFaqIds);
         if (existingFaqs.size() != requestedFaqIds.size()) {
@@ -65,10 +78,9 @@ public class AdminFaqService {
         Map<Long, Faq> faqMap = existingFaqs.stream()
                 .collect(Collectors.toMap(Faq::getId, Function.identity()));
 
-        for (int i = 0; i < requestedFaqIds.size(); i++) {
-            Long faqId = requestedFaqIds.get(i);
-            Faq faq = faqMap.get(faqId);
-            faq.updateDisplayOrder(i + 1);
+        for (FaqReorderRequest.FaqOrderDto orderDto : reorderList) {
+            Faq faq = faqMap.get(orderDto.getFaqId());
+            faq.updateDisplayOrder(orderDto.getDisplayOrder());
         }
     }
 
@@ -114,7 +126,9 @@ public class AdminFaqService {
         Faq faq = faqRepository.findById(faqId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA, "존재하지 않는 FAQ입니다."));
 
+        Integer deletedOrder = faq.getDisplayOrder();
         faqRepository.delete(faq);
+        faqRepository.shiftOrderDownAfterDelete(deletedOrder);
     }
 
     private void validateDuplicateIds(List<Long> requestedFaqIds) {
@@ -124,10 +138,28 @@ public class AdminFaqService {
         }
     }
 
-    private void validateAllFaqIdsProvided(List<Long> requestedFaqIds) {
-        long totalFaqCount = faqRepository.count();
-        if (requestedFaqIds.size() < totalFaqCount) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "FAQ 정렬 변경 시 전체 FAQ ID를 모두 전달해야 합니다.");
+    private void validateDuplicateOrdersInRequest(List<Integer> requestedOrders) {
+        Set<Integer> uniqueOrders = new HashSet<>(requestedOrders);
+        if (uniqueOrders.size() != requestedOrders.size()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "요청 데이터 내에 중복된 정렬 순서(displayOrder)가 존재합니다.");
+        }
+    }
+
+    private void validateOrderRange(List<Integer> requestedOrders, long totalFaqCount) {
+        for (Integer order : requestedOrders) {
+            if (order < 1 || order > totalFaqCount) {
+                throw new BusinessException(
+                        ErrorCode.INVALID_INPUT_VALUE,
+                        String.format("변경할 순서는 1부터 전체 FAQ 개수(%d) 사이여야 합니다.", totalFaqCount)
+                );
+            }
+        }
+    }
+
+    private void validateOrderConflictWithDatabase(List<Integer> requestedOrders, List<Long> requestedFaqIds) {
+        boolean hasDuplicate = faqRepository.existsByDisplayOrderInAndIdNotIn(requestedOrders, requestedFaqIds);
+        if (hasDuplicate) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "요청한 정렬 순서가 이미 다른 FAQ 데이터에서 사용 중입니다. 화면을 새로고침한 후 다시 시도해주세요.");
         }
     }
 }

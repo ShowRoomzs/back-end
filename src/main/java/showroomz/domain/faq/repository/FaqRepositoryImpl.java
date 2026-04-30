@@ -3,6 +3,8 @@ package showroomz.domain.faq.repository;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +20,9 @@ import static showroomz.domain.faq.entity.QFaq.faq;
 public class FaqRepositoryImpl implements FaqRepositoryCustom {
 
     private final JPAQueryFactory queryFactory;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Override
     public Page<Faq> findAdminFaqList(FaqCategory category, String keyword, Pageable pageable) {
@@ -41,6 +46,17 @@ public class FaqRepositoryImpl implements FaqRepositoryCustom {
                 );
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
+    }
+
+    @Override
+    public void shiftOrderDownAfterDelete(Integer deletedOrder) {
+        queryFactory.update(faq)
+                .set(faq.displayOrder, faq.displayOrder.subtract(1))
+                .where(faq.displayOrder.gt(deletedOrder))
+                .execute();
+
+        entityManager.flush();
+        entityManager.clear();
     }
 
     private BooleanExpression eqCategory(FaqCategory category) {
