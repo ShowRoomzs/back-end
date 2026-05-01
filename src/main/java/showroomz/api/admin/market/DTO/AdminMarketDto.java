@@ -39,9 +39,10 @@ public class AdminMarketDto {
                         "- SELLER_ID: 신청 ID로 검색\n" +
                         "- MARKET_NAME: 마켓명으로 검색\n" +
                         "- NAME: 담당자 이름으로 검색\n" +
-                        "- PHONE_NUMBER: 연락처로 검색",
+                        "- PHONE_NUMBER: 연락처로 검색\n" +
+                        "- BUSINESS_NUMBER: 사업자 등록번호로 검색",
                 example = "NAME",
-                allowableValues = {"SELLER_ID", "MARKET_NAME", "NAME", "PHONE_NUMBER"}
+                allowableValues = {"SELLER_ID", "MARKET_NAME", "NAME", "PHONE_NUMBER", "BUSINESS_NUMBER"}
         )
         private KeywordType keywordType;
     }
@@ -124,6 +125,15 @@ public class AdminMarketDto {
 
         @Schema(description = "가입 신청일", example = "2024-01-01T12:00:00")
         private LocalDateTime createdAt;
+
+        @Schema(description = "사업자 구분", example = "법인사업자")
+        private String businessType;
+
+        @Schema(description = "사업자 등록번호", example = "123-45-67890")
+        private String businessNumber;
+
+        @Schema(description = "신청 처리 일시", example = "2024-01-02T15:30:00")
+        private LocalDateTime processedAt;
     }
 
     // 상세 조회를 위한 DTO 분리 (필드는 동일하지만 추후 확장을 위해 분리)
@@ -341,7 +351,8 @@ public class AdminMarketDto {
         SELLER_ID("신청 ID"),
         MARKET_NAME("마켓명"),
         NAME("담당자 이름"),
-        PHONE_NUMBER("연락처");
+        PHONE_NUMBER("연락처"),
+        BUSINESS_NUMBER("사업자 등록번호");
 
         private final String description;
     }

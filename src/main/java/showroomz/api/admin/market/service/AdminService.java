@@ -63,7 +63,8 @@ public class AdminService {
             // 반려 메일 발송
             mailService.sendRejectionEmail(seller.getEmail(), seller.getName(), finalReason);
         }
-        
+
+        seller.setProcessedAt(LocalDateTime.now());
         seller.setModifiedAt(LocalDateTime.now());
     }
 
@@ -96,6 +97,7 @@ public class AdminService {
             mailService.sendCreatorRejectionEmail(seller.getEmail(), seller.getName(), finalReason);
         }
 
+        seller.setProcessedAt(LocalDateTime.now());
         seller.setModifiedAt(LocalDateTime.now());
     }
 
@@ -179,6 +181,9 @@ public class AdminService {
                         .status(market.getSeller().getStatus())
                         .rejectionReason(market.getSeller().getRejectionReason())
                         .createdAt(market.getSeller().getCreatedAt())
+                        .businessType(market.getSeller().getBusinessType())
+                        .businessNumber(market.getSeller().getBusinessRegistrationNumber())
+                        .processedAt(market.getSeller().getProcessedAt())
                         .build())
                 .collect(Collectors.toList());
 

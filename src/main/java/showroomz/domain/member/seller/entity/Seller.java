@@ -118,6 +118,9 @@ public class Seller {
     @NotNull
     private SellerStatus status;
 
+    @Column(name = "PROCESSED_AT")
+    private LocalDateTime processedAt;
+
     @Column(name = "REJECTION_REASON", length = 500)
     @Size(max = 500)
     private String rejectionReason; // 거부 사유
