@@ -27,9 +27,11 @@ public interface AdminMarketControllerDocs {
                     "- **status**: 판매자 상태 (PENDING: 승인 대기, APPROVED: 승인, REJECTED: 반려, null: 전체)\n" +
                     "- **startDate / endDate**: 신청일 기준 조회 기간 (YYYY-MM-DD)\n" +
                     "- **keyword**: 검색어 (부분 일치 검색)\n" +
-                    "- **keywordType**: 검색 타입 (SELLER_ID: 신청 ID, MARKET_NAME: 마켓명, NAME: 담당자 이름, PHONE_NUMBER: 연락처)\n\n" +
+                    "- **keywordType**: 검색 타입 (SELLER_ID: 신청 ID, MARKET_NAME: 마켓명, NAME: 담당자 이름, PHONE_NUMBER: 연락처, BUSINESS_NUMBER: 사업자 등록번호)\n\n" +
                     "**반환 정보:**\n" +
                     "- 판매자 및 마켓 기본 정보\n" +
+                    "- **businessType**, **businessNumber**: 판매자(Seller)에 등록된 사업자 구분·사업자 등록번호\n" +
+                    "- **processedAt**: 관리자가 승인/반려 처리한 일시 (미처리 시 null)\n" +
                     "- 현재 승인 상태 및 반려 사유 (반려된 경우)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
@@ -58,7 +60,10 @@ public interface AdminMarketControllerDocs {
                                                     "      \"phoneNumber\": \"010-1234-5678\",\n" +
                                                     "      \"status\": \"PENDING\",\n" +
                                                     "      \"rejectionReason\": null,\n" +
-                                                    "      \"createdAt\": \"2024-01-15T10:30:00Z\"\n" +
+                                                    "      \"createdAt\": \"2024-01-15T10:30:00\",\n" +
+                                                    "      \"businessType\": \"개인사업자\",\n" +
+                                                    "      \"businessNumber\": \"123-45-67890\",\n" +
+                                                    "      \"processedAt\": null\n" +
                                                     "    },\n" +
                                                     "    {\n" +
                                                     "      \"sellerId\": 2,\n" +
@@ -69,7 +74,10 @@ public interface AdminMarketControllerDocs {
                                                     "      \"phoneNumber\": \"010-9876-5432\",\n" +
                                                     "      \"status\": \"REJECTED\",\n" +
                                                     "      \"rejectionReason\": \"사업자 등록증 식별 불가\",\n" +
-                                                    "      \"createdAt\": \"2024-01-10T09:00:00Z\"\n" +
+                                                    "      \"createdAt\": \"2024-01-10T09:00:00\",\n" +
+                                                    "      \"businessType\": \"법인사업자\",\n" +
+                                                    "      \"businessNumber\": \"987-65-43210\",\n" +
+                                                    "      \"processedAt\": \"2024-01-11T14:20:00\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
