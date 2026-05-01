@@ -8,8 +8,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import showroomz.api.admin.market.DTO.AdminMarketDto;
-import showroomz.api.admin.seller.DTO.UpdateReviewMemoRequest;
+import showroomz.api.admin.market.DTO.AdminSellerDetailResponse;
+import showroomz.api.admin.market.DTO.UpdateReviewMemoRequest;
 import showroomz.api.admin.market.docs.AdminMarketControllerDocs;
+import showroomz.api.admin.market.service.AdminSellerService;
 import showroomz.api.admin.market.service.AdminService;
 import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.type.SellerStatus;
@@ -24,6 +26,7 @@ import showroomz.global.error.exception.ErrorCode;
 public class SellerAdminController implements AdminMarketControllerDocs {
 
     private final AdminService adminService;
+    private final AdminSellerService adminSellerService;
 
     @Override
     @GetMapping("/sellers/applications")
@@ -43,11 +46,10 @@ public class SellerAdminController implements AdminMarketControllerDocs {
 
     @Override
     @GetMapping("/sellers/{sellerId}")
-    public ResponseEntity<AdminMarketDto.MarketDetailResponse> getMarketDetail(
+    public ResponseEntity<AdminSellerDetailResponse> getMarketDetail(
             @PathVariable("sellerId") Long sellerId) {
-        
-        AdminMarketDto.MarketDetailResponse response = adminService.getMarketDetail(sellerId);
-        
+
+        AdminSellerDetailResponse response = adminSellerService.getSellerDetail(sellerId);
         return ResponseEntity.ok(response);
     }
 

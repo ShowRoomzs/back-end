@@ -16,7 +16,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import jakarta.validation.Valid;
 import showroomz.api.admin.market.DTO.AdminMarketDto;
-import showroomz.api.admin.seller.DTO.UpdateReviewMemoRequest;
+import showroomz.api.admin.market.DTO.AdminSellerDetailResponse;
+import showroomz.api.admin.market.DTO.UpdateReviewMemoRequest;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.seller.auth.DTO.SellerDto;
 
@@ -102,8 +103,8 @@ public interface AdminMarketControllerDocs {
     );
 
     @Operation(
-            summary = "마켓 판매자 상세 정보 조회",
-            description = "특정 마켓 판매자의 상세 정보를 조회합니다.\n\n" +
+            summary = "입점 신청 판매자 상세 조회",
+            description = "판매자의 사업자 정보, 정산 정보, 검토 상태를 포함한 상세 정보를 조회합니다.\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -113,7 +114,7 @@ public interface AdminMarketControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = AdminMarketDto.MarketDetailResponse.class)
+                            schema = @Schema(implementation = AdminSellerDetailResponse.class)
                     )
             ),
             @ApiResponse(
@@ -135,7 +136,7 @@ public interface AdminMarketControllerDocs {
                     )
             )
     })
-    ResponseEntity<AdminMarketDto.MarketDetailResponse> getMarketDetail(
+    ResponseEntity<AdminSellerDetailResponse> getMarketDetail(
             @Parameter(
                     description = "조회할 판매자 ID",
                     required = true,
