@@ -101,6 +101,22 @@ public class AdminService {
         seller.setModifiedAt(LocalDateTime.now());
     }
 
+    /**
+     * 셀러 검토 메모 수정
+     */
+    @Transactional
+    public void updateReviewMemo(Long sellerId, String reviewMemo) {
+        Seller seller = sellerRepository.findById(sellerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (seller.getRoleType() != RoleType.SELLER) {
+            throw new BusinessException(ErrorCode.ACCOUNT_ROLE_MISMATCH);
+        }
+
+        seller.setReviewMemo(reviewMemo);
+        seller.setModifiedAt(LocalDateTime.now());
+    }
+
     private String resolveRejectionReason(RejectionReasonType type, String detail) {
         if (type == null) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE); // 반려 시 타입 필수
@@ -136,6 +152,7 @@ public class AdminService {
                 .phoneNumber(seller.getPhoneNumber())
                 .status(seller.getStatus())
                 .rejectionReason(seller.getRejectionReason())
+                .reviewMemo(seller.getReviewMemo())
                 .csNumber(market.getCsNumber())
                 .createdAt(seller.getCreatedAt())
                 .build();

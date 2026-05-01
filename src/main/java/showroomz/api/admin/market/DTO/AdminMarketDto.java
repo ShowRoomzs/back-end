@@ -167,6 +167,9 @@ public class AdminMarketDto {
         @Schema(description = "거부 사유 (반려 시)", example = "서류 미비")
         private String rejectionReason;
 
+        @Schema(description = "관리자용 검토 메모 (최대 500자)", example = "서류 확인 완료", maxLength = 500)
+        private String reviewMemo;
+
         @Schema(description = "고객센터 전화번호", example = "02-1234-5678")
         private String csNumber;
 

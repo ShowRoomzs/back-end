@@ -13,7 +13,10 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+
+import jakarta.validation.Valid;
 import showroomz.api.admin.market.DTO.AdminMarketDto;
+import showroomz.api.admin.seller.DTO.UpdateReviewMemoRequest;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.seller.auth.DTO.SellerDto;
 
@@ -230,5 +233,58 @@ public interface AdminMarketControllerDocs {
             )
             @PathVariable Long sellerId,
             @RequestBody SellerDto.UpdateStatusRequest request
+    );
+
+    @Operation(
+            summary = "셀러 검토 메모 수정",
+            description = "관리자가 특정 셀러의 심사 검토 메모를 수정합니다.\n\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "수정 성공",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "입력값 오류 (메모 길이 초과 등)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "판매자를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = UpdateReviewMemoRequest.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "검토 메모 수정",
+                                    value = "{\n  \"reviewMemo\": \"서류 확인 완료, 마켓 URL 보완 필요\"\n}"
+                            )
+                    }
+            )
+    )
+    ResponseEntity<Void> updateReviewMemo(
+            @Parameter(
+                    description = "검토 메모를 수정할 판매자(Seller) ID",
+                    required = true,
+                    example = "1",
+                    in = ParameterIn.PATH
+            )
+            @PathVariable Long sellerId,
+            @Valid @RequestBody UpdateReviewMemoRequest request
     );
 }

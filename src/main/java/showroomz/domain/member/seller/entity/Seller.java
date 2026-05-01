@@ -125,6 +125,10 @@ public class Seller {
     @Size(max = 500)
     private String rejectionReason; // 거부 사유
 
+    @Column(name = "REVIEW_MEMO", length = 500)
+    @Size(max = 500)
+    private String reviewMemo; // 관리자용 검토 메모
+
     @Column(name = "CREATED_AT")
     @NotNull
     private LocalDateTime createdAt;

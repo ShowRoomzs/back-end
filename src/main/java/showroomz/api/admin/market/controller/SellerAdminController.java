@@ -1,5 +1,6 @@
 package showroomz.api.admin.market.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -7,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import showroomz.api.admin.market.DTO.AdminMarketDto;
+import showroomz.api.admin.seller.DTO.UpdateReviewMemoRequest;
 import showroomz.api.admin.market.docs.AdminMarketControllerDocs;
 import showroomz.api.admin.market.service.AdminService;
 import showroomz.api.seller.auth.DTO.SellerDto;
@@ -70,6 +72,16 @@ public class SellerAdminController implements AdminMarketControllerDocs {
                 request.getRejectionReasonDetail()
         );
         
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    @PatchMapping("/sellers/{sellerId}/review-memo")
+    public ResponseEntity<Void> updateReviewMemo(
+            @PathVariable("sellerId") Long sellerId,
+            @Valid @RequestBody UpdateReviewMemoRequest request) {
+
+        adminService.updateReviewMemo(sellerId, request.getReviewMemo());
         return ResponseEntity.noContent().build();
     }
 }
