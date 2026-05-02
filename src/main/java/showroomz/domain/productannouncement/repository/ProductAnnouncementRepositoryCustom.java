@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 public interface ProductAnnouncementRepositoryCustom {
 
     Page<ProductAnnouncement> search(
+            Long marketId,
             Pageable pageable,
             String keyword,
             String category,

@@ -1,4 +1,4 @@
-package showroomz.api.admin.productannouncement.dto;
+package showroomz.api.seller.productannouncement.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -15,7 +15,7 @@ import java.util.List;
 @Getter
 @Builder
 @Schema(description = "상품 공지 상세 응답")
-public class AdminProductAnnouncementDetailResponse {
+public class SellerProductAnnouncementDetailResponse {
 
     private final Long id;
     private final String category;
@@ -48,12 +48,12 @@ public class AdminProductAnnouncementDetailResponse {
         }
     }
 
-    public static AdminProductAnnouncementDetailResponse from(ProductAnnouncement e) {
+    public static SellerProductAnnouncementDetailResponse from(ProductAnnouncement e) {
         List<TargetProductItem> targets = e.getTargets().stream()
                 .map(ProductAnnouncementTarget::getProduct)
                 .map(TargetProductItem::from)
                 .toList();
-        return AdminProductAnnouncementDetailResponse.builder()
+        return SellerProductAnnouncementDetailResponse.builder()
                 .id(e.getId())
                 .category(e.getCategory())
                 .title(e.getTitle())
