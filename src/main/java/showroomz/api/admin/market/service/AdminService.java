@@ -50,22 +50,29 @@ public class AdminService {
             throw new BusinessException(ErrorCode.ACCOUNT_NOT_PENDING);
         }
 
+        LocalDateTime processedAt = LocalDateTime.now();
+        String marketName = marketRepository.findBySeller(seller)
+                .map(Market::getMarketName)
+                .filter(n -> n != null && !n.isBlank())
+                .orElse(seller.getName());
+
         seller.setStatus(status);
-        
+
         if (status == SellerStatus.APPROVED) {
             seller.setRejectionReason(null);
-            mailService.sendApprovalEmail(seller.getEmail(), seller.getName());
-            
+            mailService.sendApprovalEmail(seller.getEmail(), marketName, processedAt);
+
         } else if (status == SellerStatus.REJECTED) {
-            // 반려 사유 결정 로직
             String finalReason = resolveRejectionReason(reasonType, reasonDetail);
             seller.setRejectionReason(finalReason);
-            // 반려 메일 발송
-            mailService.sendRejectionEmail(seller.getEmail(), seller.getName(), finalReason);
+            String mailSummary = reasonType.getDescription();
+            String mailDetail = reasonType == RejectionReasonType.OTHER ? finalReason : "";
+            mailService.sendRejectionEmail(
+                    seller.getEmail(), marketName, processedAt, mailSummary, mailDetail);
         }
 
-        seller.setProcessedAt(LocalDateTime.now());
-        seller.setModifiedAt(LocalDateTime.now());
+        seller.setProcessedAt(processedAt);
+        seller.setModifiedAt(processedAt);
     }
 
     /**
