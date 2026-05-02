@@ -75,7 +75,7 @@ public class MailService {
         if (reasonDetail != null && !reasonDetail.isBlank()) {
             detailBlock = HtmlUtils.htmlEscape(reasonDetail.strip());
         } else {
-            detailBlock = "(운영자가 입력한 추가 사유가 이 곳에 표시됩니다.)";
+            detailBlock = "";
         }
         String subject = "[SHOWROOMZ] 입점 신청이 반려되었습니다.";
         String text = String.format("""

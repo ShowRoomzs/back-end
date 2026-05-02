@@ -158,10 +158,12 @@ public interface AdminCreatorControllerDocs {
                     "- REJECTED 상태일 때 `rejectionReasonType` 필드는 필수입니다.\n" +
                     "- `rejectionReasonType`이 `OTHER`일 경우 `rejectionReasonDetail` 필드도 필수입니다.\n\n" +
                     "**반려 사유 타입:**\n" +
-                    "- `BUSINESS_INFO_UNVERIFIED`: 사업자정보 확인 불가\n" +
-                    "- `CRITERIA_NOT_MET`: 입점 기준 미달성\n" +
-                    "- `INAPPROPRIATE_MARKET_NAME`: 마켓명 부적절\n" +
-                    "- `OTHER`: 기타(직접 작성) - 이 경우 `rejectionReasonDetail` 필수\n\n" +
+                    "- `INSUFFICIENT_DOCUMENTS`: 서류 미비\n" +
+                    "- `BUSINESS_REG_NUMBER_MISMATCH`: 사업자등록번호 불일치\n" +
+                    "- `MAIL_ORDER_REPORT_INCOMPLETE`: 통신판매업신고 미완료\n" +
+                    "- `BANK_ACCOUNT_ERROR`: 계좌 정보 오류\n" +
+                    "- `DUPLICATE_APPLICATION`: 중복 신청\n" +
+                    "- `OTHER`: 기타 - 이 경우 `rejectionReasonDetail` 필수\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -213,7 +215,7 @@ public interface AdminCreatorControllerDocs {
                             ),
                             @ExampleObject(
                                     name = "반려 요청 예시 (사전 정의된 사유)",
-                                    value = "{\n  \"status\": \"REJECTED\",\n  \"rejectionReasonType\": \"CRITERIA_NOT_MET\"\n}"
+                                    value = "{\n  \"status\": \"REJECTED\",\n  \"rejectionReasonType\": \"INSUFFICIENT_DOCUMENTS\"\n}"
                             ),
                             @ExampleObject(
                                     name = "반려 요청 예시 (기타 사유)",
