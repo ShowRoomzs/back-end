@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import showroomz.domain.common.BaseTimeEntity;
+import showroomz.domain.market.entity.Market;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.productannouncement.type.ExposureType;
 import showroomz.domain.productannouncement.type.ProductAnnouncementDisplayStatus;
@@ -54,11 +55,16 @@ public class ProductAnnouncement extends BaseTimeEntity {
     @Column(name = "display_status", nullable = false, length = 20)
     private ProductAnnouncementDisplayStatus displayStatus;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "market_id", nullable = false)
+    private Market market;
+
     @OneToMany(mappedBy = "announcement", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductAnnouncementTarget> targets = new ArrayList<>();
 
     @Builder
     public ProductAnnouncement(
+            Market market,
             String category,
             String title,
             String content,
@@ -69,6 +75,7 @@ public class ProductAnnouncement extends BaseTimeEntity {
             boolean popup,
             ProductAnnouncementDisplayStatus displayStatus
     ) {
+        this.market = market;
         this.category = category;
         this.title = title;
         this.content = content;

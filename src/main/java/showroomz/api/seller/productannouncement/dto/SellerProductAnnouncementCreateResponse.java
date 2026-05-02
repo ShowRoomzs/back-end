@@ -1,4 +1,4 @@
-package showroomz.api.admin.productannouncement.dto;
+package showroomz.api.seller.productannouncement.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -7,7 +7,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 @Schema(description = "상품 공지 등록 응답")
-public class AdminProductAnnouncementCreateResponse {
+public class SellerProductAnnouncementCreateResponse {
 
     @Schema(description = "생성된 공지 ID", example = "103")
     private final Long announcementId;
