@@ -20,14 +20,13 @@ import showroomz.api.app.image.DTO.ImageUploadResponse;
 public interface AdminImageControllerDocs {
 
     @Operation(
-            summary = "관리자 전용 이미지 업로드",
-            description = "관리자(판매자)만 사용 가능한 이미지 업로드 API입니다. MARKET과 PRODUCT 타입만 업로드할 수 있습니다.\n\n" +
-                    "**이미지 타입별 제약사항:**\n" +
-                    "- `PRODUCT`: 상품 이미지 (최대 20MB)\n" +
-                    "- `MARKET`: 마켓 대표 이미지\n" +
-                    "  - 최소 해상도: 160×160px 이상\n" +
-                    "  - 비율: 정비율(1:1)만 허용\n" +
-                    "  - 최대 크기: 20MB\n\n" +
+            summary = "셀러 이미지 업로드",
+            description = "판매자(셀러) 전용 멀티파트 이미지 업로드 API입니다.\n\n" +
+                    "**허용 `type`:** `MARKET`, `PRODUCT`, `SIGNUP_DOCUMENT` (그 외 값은 거부)\n\n" +
+                    "**이미지 타입별 제약:**\n" +
+                    "- `PRODUCT`: 상품 이미지 — jpg, jpeg, png, gif, 최대 20MB\n" +
+                    "- `MARKET`: 마켓 대표 이미지 — 동일 형식·용량, **최소 160×160px, 정사각형(1:1)**\n" +
+                    "- `SIGNUP_DOCUMENT`: 판매자 회원가입 증빙(사업자·통신판매 등) — 이미지 파일만, **해상도·비율 제약 없음** (PRODUCT와 동일 검증)\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -59,7 +58,7 @@ public interface AdminImageControllerDocs {
                                             name = "유효하지 않은 이미지 타입",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, PRODUCT, MARKET)\"\n" +
+                                                    "  \"message\": \"유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, INQUIRY, POST, PRODUCT, MARKET, CATEGORY)\"\n" +
                                                     "}"
                                     ),
                                     @ExampleObject(
@@ -168,7 +167,8 @@ public interface AdminImageControllerDocs {
             @Parameter(
                     description = "업로드할 이미지의 용도 (필수)\n" +
                             "- `PRODUCT`: 상품 이미지\n" +
-                            "- `MARKET`: 마켓 대표 이미지 (160×160px 이상, 정비율 필수)\n\n",
+                            "- `MARKET`: 마켓 대표 이미지 (160×160px 이상, 1:1)\n" +
+                            "- `SIGNUP_DOCUMENT`: 회원가입 증빙 서류 이미지\n\n",
                     required = true,
                     example = "MARKET"
             )
