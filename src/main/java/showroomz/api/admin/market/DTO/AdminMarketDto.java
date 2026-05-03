@@ -123,8 +123,8 @@ public class AdminMarketDto {
         @Schema(description = "마켓(판매자) 계정 상태", example = "APPROVED")
         private SellerStatus status;
 
-        @Schema(description = "입점일", example = "2024-01-01T10:00:00")
-        private LocalDateTime createdAt;
+        @Schema(description = "관리자 처리 일시 (승인/반려 등, 미처리 시 null)", example = "2024-01-01T10:00:00")
+        private LocalDateTime processedDate;
     }
 
     @Getter

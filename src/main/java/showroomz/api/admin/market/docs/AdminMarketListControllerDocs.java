@@ -30,7 +30,8 @@ public interface AdminMarketListControllerDocs {
                     "- status: 판매자 계정 상태 (미입력 시 전체)\n\n" +
                     "**응답:**\n" +
                     "- totalSalesAmount: 누적 판매액 (미구현, 현재 0 고정)\n" +
-                    "- status: 판매자(마켓) 계정 상태\n\n" +
+                    "- status: 판매자(마켓) 계정 상태\n" +
+                    "- processedDate: 입점일\n\n" +
                     "**페이징:**\n" +
                     "- page: 1부터 시작 (기본 1)\n" +
                     "- size: 페이지 크기 (기본 20)\n\n" +
@@ -67,7 +68,7 @@ public interface AdminMarketListControllerDocs {
                                                     "      \"productCount\": 120,\n" +
                                                     "      \"totalSalesAmount\": 0,\n" +
                                                     "      \"status\": \"APPROVED\",\n" +
-                                                    "      \"createdAt\": \"2024-01-01T10:00:00\"\n" +
+                                                    "      \"processedDate\": \"2024-01-01T10:00:00\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +

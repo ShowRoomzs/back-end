@@ -81,7 +81,7 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
            "(SELECT COUNT(p) FROM Product p WHERE p.market = m), " +
            "0L, " +
            "s.status, " +
-           "s.createdAt) " +
+           "s.processedAt) " +
            "FROM Market m " +
            "JOIN m.seller s " +
            "LEFT JOIN m.mainCategory c " +
