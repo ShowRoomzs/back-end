@@ -59,7 +59,7 @@ public class AdminMarketController implements AdminMarketListControllerDocs,
     @Override
     @PatchMapping("/{marketId}/status")
     public ResponseEntity<Map<String, String>> updateMarketStatus(
-            @PathVariable Long marketId,
+            @PathVariable("marketId") Long marketId,
             @Valid @RequestBody AdminMarketDto.UpdateMarketStatusRequest request) {
 
         adminMarketService.updateMarketStatus(marketId, request);

@@ -134,12 +134,14 @@ public interface AdminMarketStatusControllerDocs {
     )
     ResponseEntity<Map<String, String>> updateMarketStatus(
             @Parameter(
+                    name = "marketId",
                     description = "대상 마켓 ID",
                     required = true,
                     example = "10",
-                    in = ParameterIn.PATH
+                    in = ParameterIn.PATH,
+                    schema = @Schema(type = "integer", format = "int64")
             )
-            @PathVariable Long marketId,
+            @PathVariable("marketId") Long marketId,
             @Valid @RequestBody AdminMarketDto.UpdateMarketStatusRequest request
     );
 }
