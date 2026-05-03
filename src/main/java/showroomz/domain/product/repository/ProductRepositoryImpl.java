@@ -9,13 +9,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.support.PageableExecutionUtils;
+import showroomz.domain.market.entity.QMarket;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.QProduct;
 import showroomz.domain.wishlist.entitiy.QWishlist;
 import showroomz.domain.product.entity.QProductOption;
 import showroomz.domain.product.entity.QProductOptionGroup;
 import showroomz.domain.product.type.ProductGender;
+import showroomz.domain.product.type.ProductInspectionStatus;
 
+import java.time.Instant;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -310,6 +314,59 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                 .fetch();
 
         return new PageImpl<>(content, pageable, total);
+    }
+
+    @Override
+    public Page<Product> searchAdminInspection(
+            ProductInspectionStatus inspectionStatus,
+            Instant createdFrom,
+            Instant createdTo,
+            String keyword,
+            Long marketId,
+            Pageable pageable
+    ) {
+        QProduct product = QProduct.product;
+        QMarket market = QMarket.market;
+
+        BooleanBuilder where = new BooleanBuilder();
+        if (inspectionStatus != null) {
+            where.and(product.inspectionStatus.eq(inspectionStatus));
+        }
+        if (createdFrom != null) {
+            where.and(product.createdAt.goe(createdFrom));
+        }
+        if (createdTo != null) {
+            where.and(product.createdAt.loe(createdTo));
+        }
+        if (marketId != null) {
+            where.and(product.market.id.eq(marketId));
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            String k = keyword.trim();
+            where.and(
+                    product.name.containsIgnoreCase(k)
+                            .or(product.productNumber.containsIgnoreCase(k))
+                            .or(product.sellerProductCode.containsIgnoreCase(k))
+                            .or(market.marketName.containsIgnoreCase(k))
+            );
+        }
+
+        List<Product> content = queryFactory
+                .selectFrom(product)
+                .leftJoin(product.market, market)
+                .where(where)
+                .orderBy(product.createdAt.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        JPAQuery<Long> countQuery = queryFactory
+                .select(product.count())
+                .from(product)
+                .leftJoin(product.market, market)
+                .where(where);
+
+        return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
 
     @Override

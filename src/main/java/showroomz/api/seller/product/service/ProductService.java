@@ -16,6 +16,7 @@ import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.product.entity.*;
 import showroomz.domain.product.repository.ProductRepository;
+import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
@@ -75,6 +76,7 @@ public class ProductService {
         product.setDeliveryFreeThreshold(request.getDeliveryFreeThreshold() != null ? request.getDeliveryFreeThreshold() : 0);
         product.setDeliveryEstimatedDays(request.getDeliveryEstimatedDays() != null ? request.getDeliveryEstimatedDays() : 1);
         product.setProductNumber(productNumber);
+        product.setInspectionStatus(ProductInspectionStatus.WAITING);
 
         // 5. 태그 JSON 변환
         if (request.getTags() != null && !request.getTags().isEmpty()) {
