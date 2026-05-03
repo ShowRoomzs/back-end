@@ -7,6 +7,8 @@ import lombok.Setter;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.product.type.ProductGender;
+import showroomz.domain.product.type.ProductInspectionStatus;
+import showroomz.domain.product.type.ProductRejectReasonType;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -62,6 +64,20 @@ public class Product {
 
     @Column(name = "is_recommended", nullable = false)
     private Boolean isRecommended = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "inspection_status", nullable = false, length = 32)
+    private ProductInspectionStatus inspectionStatus = ProductInspectionStatus.WAITING;
+
+    @Column(name = "admin_memo", length = 500)
+    private String adminMemo;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reject_reason_type", length = 64)
+    private ProductRejectReasonType rejectReasonType;
+
+    @Column(name = "reject_detail", length = 500)
+    private String rejectDetail;
 
     @Column(name = "product_notice", columnDefinition = "json")
     private String productNotice;
