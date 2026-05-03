@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.domain.market.type.MarketStatus;
 import showroomz.domain.market.type.SnsType;
 
 import java.util.ArrayList;
@@ -30,6 +31,10 @@ public class Market {
 
     @Column(name = "MARKET_NAME", nullable = false, unique = true)
     private String marketName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 32)
+    private MarketStatus status = MarketStatus.ACTIVE;
 
     @Column(name = "CS_NUMBER", nullable = false)
     private String csNumber;

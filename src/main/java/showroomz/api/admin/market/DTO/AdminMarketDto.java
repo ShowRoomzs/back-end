@@ -1,10 +1,12 @@
 package showroomz.api.admin.market.DTO;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.market.type.MarketStatus;
 import showroomz.domain.market.type.SnsType;
 
 import java.time.LocalDate;
@@ -59,6 +61,18 @@ public class AdminMarketDto {
 
         @Schema(description = "마켓명 검색어", example = "멋쟁이")
         private String marketName;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "마켓 운영 상태 변경 요청")
+    public static class UpdateMarketStatusRequest {
+
+        @NotNull(message = "변경할 마켓 상태를 입력해주세요.")
+        @Schema(description = "마켓 상태 (ACTIVE: 활성, SUSPENDED: 정지)", example = "ACTIVE", allowableValues = {"ACTIVE", "SUSPENDED"})
+        private MarketStatus status;
     }
 
     @Getter

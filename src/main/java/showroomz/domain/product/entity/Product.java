@@ -59,6 +59,9 @@ public class Product {
     @Column(name = "is_display", nullable = false)
     private Boolean isDisplay = true;
 
+    @Column(name = "previous_is_display")
+    private Boolean previousIsDisplay;
+
     @Column(name = "is_out_of_stock_forced", nullable = false)
     private Boolean isOutOfStockForced = false;
 

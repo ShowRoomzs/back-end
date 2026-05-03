@@ -1,0 +1,5 @@
+ALTER TABLE market
+    ADD COLUMN status VARCHAR(32) NOT NULL DEFAULT 'ACTIVE';
+
+ALTER TABLE product
+    ADD COLUMN previous_is_display bit(1) DEFAULT NULL;

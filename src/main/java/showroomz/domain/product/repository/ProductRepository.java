@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import showroomz.domain.market.entity.Market;
 import showroomz.domain.product.entity.Product;
 
 import java.time.Instant;
@@ -36,6 +37,8 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     
     // 특정 마켓의 상품만 조회
     Page<Product> findByMarket_Id(Long marketId, Pageable pageable);
+
+    List<Product> findAllByMarket(Market market);
     
     // 검색어로 상품 검색 (상품명, 상품번호, 판매자코드)
     @Query("SELECT p FROM Product p WHERE p.market.id = :marketId " +
