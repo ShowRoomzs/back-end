@@ -77,7 +77,7 @@ public interface AdminMarketControllerDocs {
                                                     "      \"marketName\": \"빈티지 샵\",\n" +
                                                     "      \"phoneNumber\": \"010-9876-5432\",\n" +
                                                     "      \"status\": \"REJECTED\",\n" +
-                                                    "      \"rejectionReason\": \"사업자 등록증 식별 불가\",\n" +
+                                                    "      \"rejectionReason\": \"INSUFFICIENT_DOCUMENTS\",\n" +
                                                     "      \"createdAt\": \"2024-01-10T09:00:00\",\n" +
                                                     "      \"businessType\": \"법인사업자\",\n" +
                                                     "      \"businessNumber\": \"987-65-43210\",\n" +
@@ -152,17 +152,17 @@ public interface AdminMarketControllerDocs {
                     "**상태값:**\n" +
                     "- `APPROVED`: 승인 (로그인 가능)\n" +
                     "- `REJECTED`: 반려 (로그인 불가)\n\n" +
-                    "**반려 사유:**\n" +
-                    "- REJECTED 상태일 때 `rejectionReasonType` 필드는 필수입니다.\n" +
-                    "- `rejectionReasonType`이 `OTHER`일 경우 `rejectionReasonDetail` 필드도 필수입니다.\n" +
-                    "- APPROVED 상태로 변경 시 반려 사유 관련 필드는 무시됩니다.\n\n" +
-                    "**반려 사유 타입:**\n" +
+                    "**요청 필드:**\n" +
+                    "- `status`: `APPROVED` 또는 `REJECTED` (필수)\n" +
+                    "- `rejectionReasonType`: **`status`가 `REJECTED`일 때 필수.** DB `rejectionReason`에는 enum 이름(예: `INSUFFICIENT_DOCUMENTS`)이 저장됩니다.\n" +
+                    "- `rejectionReasonDetail`: **선택.** 전달 시 DB `rejectionReasonDetail`에 저장하고, `null`이면 해당 컬럼을 비웁니다. \n\n" +
+                    "**`rejectionReasonType` 목록:**\n" +
                     "- `INSUFFICIENT_DOCUMENTS`: 서류 미비\n" +
                     "- `BUSINESS_REG_NUMBER_MISMATCH`: 사업자등록번호 불일치\n" +
                     "- `MAIL_ORDER_REPORT_INCOMPLETE`: 통신판매업신고 미완료\n" +
                     "- `BANK_ACCOUNT_ERROR`: 계좌 정보 오류\n" +
                     "- `DUPLICATE_APPLICATION`: 중복 신청\n" +
-                    "- `OTHER`: 기타 - 이 경우 `rejectionReasonDetail` 필수\n\n" +
+                    "- `OTHER`: 기타 (상세는 `rejectionReasonDetail`에 선택 입력)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -174,7 +174,7 @@ public interface AdminMarketControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "잘못된 상태값 요청 또는 PENDING 상태가 아님",
+                    description = "잘못된 상태값, 반려 시 `rejectionReasonType` 누락, 또는 PENDING이 아닌 계정 처리 시도 등",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -184,8 +184,12 @@ public interface AdminMarketControllerDocs {
                                             value = "{\"code\": \"INVALID_INPUT\", \"message\": \"입력값이 올바르지 않습니다.\"}"
                                     ),
                                     @ExampleObject(
-                                            name = "PENDING 상태가 아님",
+                                            name = "반려인데 rejectionReasonType 없음",
                                             value = "{\"code\": \"INVALID_INPUT\", \"message\": \"입력값이 올바르지 않습니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "PENDING 상태가 아님",
+                                            value = "{\"code\": \"ACCOUNT_NOT_PENDING\", \"message\": \"승인 대기 상태인 계정만 처리할 수 있습니다.\"}"
                                     )
                             }
                     )
@@ -221,7 +225,7 @@ public interface AdminMarketControllerDocs {
                                     value = "{\n  \"status\": \"REJECTED\",\n  \"rejectionReasonType\": \"INSUFFICIENT_DOCUMENTS\"\n}"
                             ),
                             @ExampleObject(
-                                    name = "반려 요청 예시 (기타 사유)",
+                                    name = "반려 (타입 + 상세)",
                                     value = "{\n  \"status\": \"REJECTED\",\n  \"rejectionReasonType\": \"OTHER\",\n  \"rejectionReasonDetail\": \"사업자 등록증이 흐릿합니다.\"\n}"
                             )
                     }

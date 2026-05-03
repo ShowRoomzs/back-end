@@ -123,7 +123,11 @@ public class Seller {
 
     @Column(name = "REJECTION_REASON", length = 500)
     @Size(max = 500)
-    private String rejectionReason; // 거부 사유
+    private String rejectionReason; // 반려 사유 타입(Type) 저장용
+
+    @Column(name = "REJECTION_REASON_DETAIL", length = 1000)
+    @Size(max = 1000)
+    private String rejectionReasonDetail; // 선택적 상세 사유
 
     @Column(name = "REVIEW_MEMO", length = 500)
     @Size(max = 500)

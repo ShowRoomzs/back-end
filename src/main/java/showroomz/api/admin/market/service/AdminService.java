@@ -50,25 +50,23 @@ public class AdminService {
             throw new BusinessException(ErrorCode.ACCOUNT_NOT_PENDING);
         }
 
+        validateRejectionReasonTypeWhenRejected(status, reasonType);
+
         LocalDateTime processedAt = LocalDateTime.now();
         String marketName = marketRepository.findBySeller(seller)
                 .map(Market::getMarketName)
                 .filter(n -> n != null && !n.isBlank())
                 .orElse(seller.getName());
 
-        seller.setStatus(status);
+        applySellerStatusAndRejectionFields(seller, status, reasonType, reasonDetail);
 
         if (status == SellerStatus.APPROVED) {
-            seller.setRejectionReason(null);
             mailService.sendApprovalEmail(seller.getEmail(), marketName, processedAt);
 
         } else if (status == SellerStatus.REJECTED) {
-            String finalReason = resolveRejectionReason(reasonType, reasonDetail);
-            seller.setRejectionReason(finalReason);
-            String mailSummary = reasonType.getDescription();
-            String mailDetail = reasonType == RejectionReasonType.OTHER ? finalReason : "";
+            String mailDetail = reasonDetail != null && !reasonDetail.isBlank() ? reasonDetail.strip() : "";
             mailService.sendRejectionEmail(
-                    seller.getEmail(), marketName, processedAt, mailSummary, mailDetail);
+                    seller.getEmail(), marketName, processedAt, reasonType.getDescription(), mailDetail);
         }
 
         seller.setProcessedAt(processedAt);
@@ -92,16 +90,16 @@ public class AdminService {
             throw new BusinessException(ErrorCode.ACCOUNT_NOT_PENDING);
         }
 
-        seller.setStatus(status);
+        validateRejectionReasonTypeWhenRejected(status, reasonType);
+
+        applySellerStatusAndRejectionFields(seller, status, reasonType, reasonDetail);
 
         if (status == SellerStatus.APPROVED) {
-            seller.setRejectionReason(null);
             mailService.sendCreatorApprovalEmail(seller.getEmail(), seller.getName());
 
         } else if (status == SellerStatus.REJECTED) {
-            String finalReason = resolveRejectionReason(reasonType, reasonDetail);
-            seller.setRejectionReason(finalReason);
-            mailService.sendCreatorRejectionEmail(seller.getEmail(), seller.getName(), finalReason);
+            mailService.sendCreatorRejectionEmail(
+                    seller.getEmail(), seller.getName(), buildCreatorRejectionMailReason(reasonType, reasonDetail));
         }
 
         seller.setProcessedAt(LocalDateTime.now());
@@ -124,18 +122,34 @@ public class AdminService {
         seller.setModifiedAt(LocalDateTime.now());
     }
 
-    private String resolveRejectionReason(RejectionReasonType type, String detail) {
-        if (type == null) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE); // 반려 시 타입 필수
+    private void applySellerStatusAndRejectionFields(Seller seller, SellerStatus newStatus,
+                                                     RejectionReasonType reasonType, String reasonDetail) {
+        seller.setStatus(newStatus);
+        seller.setRejectionReasonDetail(reasonDetail);
+
+        if (newStatus == SellerStatus.REJECTED) {
+            seller.setRejectionReason(reasonType.name());
+        } else {
+            seller.setRejectionReason(null);
         }
-        
+    }
+
+    private void validateRejectionReasonTypeWhenRejected(SellerStatus status, RejectionReasonType reasonType) {
+        if (status == SellerStatus.REJECTED && reasonType == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private String buildCreatorRejectionMailReason(RejectionReasonType type, String detail) {
+        String detailText = (detail == null || detail.isBlank()) ? "" : detail.strip();
+        boolean hasDetail = !detailText.isEmpty();
+
         if (type == RejectionReasonType.OTHER) {
-            if (detail == null || detail.isBlank()) {
-                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE); // 기타 선택 시 상세 사유 필수
-            }
-            return detail;
+            return hasDetail ? detailText : type.getDescription();
         }
-        
+        if (hasDetail) {
+            return type.getDescription() + " - " + detailText;
+        }
         return type.getDescription();
     }
 

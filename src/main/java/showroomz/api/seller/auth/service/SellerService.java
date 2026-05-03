@@ -19,6 +19,7 @@ import showroomz.api.seller.auth.DTO.CreatorSignUpRequest;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshToken;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshTokenRepository;
 import showroomz.api.seller.auth.repository.SellerRepository;
+import showroomz.api.admin.market.type.RejectionReasonType;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.api.seller.market.service.MarketService;
 import showroomz.domain.market.entity.Market;
@@ -316,14 +317,34 @@ public class SellerService {
             throw new BusinessException(ErrorCode.ACCOUNT_NOT_APPROVED);
         }
         if (seller.getStatus() == SellerStatus.REJECTED) {
-            String rejectionReason = seller.getRejectionReason();
-            if (rejectionReason != null && !rejectionReason.isBlank()) {
-                // 반려 사유가 있는 경우: 유저 친화적인 메시지로 변경
-                String userFriendlyMessage = String.format("가입 승인이 반려되었습니다. 반려 사유: %s", rejectionReason);
+            String reasonText = formatRejectionReasonForUser(
+                    seller.getRejectionReason(), seller.getRejectionReasonDetail());
+            if (reasonText != null && !reasonText.isBlank()) {
+                String userFriendlyMessage = String.format("가입 승인이 반려되었습니다. 반려 사유: %s", reasonText);
                 throw new BusinessException(ErrorCode.ACCOUNT_REJECTED_WITH_REASON, userFriendlyMessage);
             }
             throw new BusinessException(ErrorCode.ACCOUNT_REJECTED);
         }
+    }
+
+    private String formatRejectionReasonForUser(String rejectionReasonCode, String rejectionReasonDetail) {
+        StringBuilder sb = new StringBuilder();
+        if (rejectionReasonCode != null && !rejectionReasonCode.isBlank()) {
+            String typeText = rejectionReasonCode;
+            try {
+                typeText = RejectionReasonType.valueOf(rejectionReasonCode).getDescription();
+            } catch (IllegalArgumentException ignored) {
+                // enum 이름이 아닌 기존 저장 문자열(설명 등)은 그대로 표시
+            }
+            sb.append(typeText);
+        }
+        if (rejectionReasonDetail != null && !rejectionReasonDetail.isBlank()) {
+            if (sb.length() > 0) {
+                sb.append(" - ");
+            }
+            sb.append(rejectionReasonDetail);
+        }
+        return sb.toString();
     }
 
     @Transactional
