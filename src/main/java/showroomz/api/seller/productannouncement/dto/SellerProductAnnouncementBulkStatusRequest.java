@@ -1,4 +1,4 @@
-package showroomz.api.admin.productannouncement.dto;
+package showroomz.api.seller.productannouncement.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
@@ -12,7 +12,7 @@ import java.util.List;
 @Getter
 @Setter
 @Schema(description = "상품 공지 노출 상태 일괄 변경 요청")
-public class AdminProductAnnouncementBulkStatusRequest {
+public class SellerProductAnnouncementBulkStatusRequest {
 
     @NotEmpty
     @Schema(description = "대상 공지 ID 목록", example = "[1, 2]")

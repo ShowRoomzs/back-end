@@ -9,6 +9,7 @@ import showroomz.domain.productannouncement.entity.ProductAnnouncement;
 import showroomz.domain.productannouncement.type.ProductAnnouncementDisplayStatus;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -18,18 +19,24 @@ public interface ProductAnnouncementRepository extends JpaRepository<ProductAnno
             SELECT DISTINCT a FROM ProductAnnouncement a
             LEFT JOIN FETCH a.targets t
             LEFT JOIN FETCH t.product
-            WHERE a.id = :id
+            WHERE a.id = :id AND a.market.id = :marketId
             """)
-    Optional<ProductAnnouncement> findByIdWithTargetsAndProducts(@Param("id") Long id);
+    Optional<ProductAnnouncement> findByIdWithTargetsAndProductsAndMarketId(
+            @Param("id") Long id,
+            @Param("marketId") Long marketId
+    );
+
+    List<ProductAnnouncement> findAllByIdInAndMarket_Id(Collection<Long> ids, Long marketId);
 
     @Modifying(clearAutomatically = true)
-    @Query("DELETE FROM ProductAnnouncement p WHERE p.id IN :ids")
-    int deleteByIdIn(@Param("ids") Collection<Long> ids);
+    @Query("DELETE FROM ProductAnnouncement p WHERE p.id IN :ids AND p.market.id = :marketId")
+    int deleteByIdInAndMarketId(@Param("ids") Collection<Long> ids, @Param("marketId") Long marketId);
 
     @Modifying(clearAutomatically = true)
-    @Query("UPDATE ProductAnnouncement p SET p.displayStatus = :status WHERE p.id IN :ids")
-    int updateDisplayStatusByIdIn(
+    @Query("UPDATE ProductAnnouncement p SET p.displayStatus = :status WHERE p.id IN :ids AND p.market.id = :marketId")
+    int updateDisplayStatusByIdInAndMarketId(
             @Param("ids") Collection<Long> ids,
-            @Param("status") ProductAnnouncementDisplayStatus status
+            @Param("status") ProductAnnouncementDisplayStatus status,
+            @Param("marketId") Long marketId
     );
 }

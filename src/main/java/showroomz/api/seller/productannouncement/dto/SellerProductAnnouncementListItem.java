@@ -1,4 +1,4 @@
-package showroomz.api.admin.productannouncement.dto;
+package showroomz.api.seller.productannouncement.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Getter
 @Builder
 @Schema(description = "상품 공지 목록 항목")
-public class AdminProductAnnouncementListItem {
+public class SellerProductAnnouncementListItem {
 
     private final Long id;
     private final String category;
@@ -25,8 +25,8 @@ public class AdminProductAnnouncementListItem {
     private final boolean popup;
     private final LocalDateTime createdAt;
 
-    public static AdminProductAnnouncementListItem from(ProductAnnouncement e) {
-        return AdminProductAnnouncementListItem.builder()
+    public static SellerProductAnnouncementListItem from(ProductAnnouncement e) {
+        return SellerProductAnnouncementListItem.builder()
                 .id(e.getId())
                 .category(e.getCategory())
                 .title(e.getTitle())

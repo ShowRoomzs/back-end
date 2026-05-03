@@ -1,4 +1,4 @@
-package showroomz.api.admin.productannouncement.dto;
+package showroomz.api.seller.productannouncement.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -14,7 +14,7 @@ import java.util.List;
 @Getter
 @Setter
 @Schema(description = "상품 공지 등록 요청")
-public class AdminProductAnnouncementCreateRequest {
+public class SellerProductAnnouncementCreateRequest {
 
     @NotBlank
     @Schema(description = "카테고리", example = "배송")

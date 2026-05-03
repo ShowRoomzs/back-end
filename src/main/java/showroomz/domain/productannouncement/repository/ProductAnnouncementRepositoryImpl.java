@@ -24,6 +24,7 @@ public class ProductAnnouncementRepositoryImpl implements ProductAnnouncementRep
 
     @Override
     public Page<ProductAnnouncement> search(
+            Long marketId,
             Pageable pageable,
             String keyword,
             String category,
@@ -33,6 +34,7 @@ public class ProductAnnouncementRepositoryImpl implements ProductAnnouncementRep
     ) {
         QProductAnnouncement pa = QProductAnnouncement.productAnnouncement;
         BooleanBuilder where = new BooleanBuilder();
+        where.and(pa.market.id.eq(marketId));
 
         if (StringUtils.hasText(keyword)) {
             String k = keyword.trim();
