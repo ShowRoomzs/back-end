@@ -34,10 +34,10 @@ public class ProductController implements UserProductControllerDocs {
     @GetMapping
     public ResponseEntity<PageResponse<ProductDto.ProductItem>> searchProducts(
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false) Long categoryId,
-            @RequestParam(required = false) Long marketId,
-            @RequestParam(required = false) String filters,
+            @RequestParam(name = "q", required = false) String q,
+            @RequestParam(name = "categoryId", required = false) Long categoryId,
+            @RequestParam(name = "marketId", required = false) Long marketId,
+            @RequestParam(name = "filters", required = false) String filters,
             @ParameterObject @ModelAttribute PagingRequest pagingRequest
     ) {
         java.util.List<ProductDto.FilterRequest> filterRequests = null;
@@ -82,8 +82,8 @@ public class ProductController implements UserProductControllerDocs {
     public ResponseEntity<PageResponse<ProductDto.ProductItem>> getRelatedProducts(
             @PathVariable("productId") Long productId,
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestParam(required = false, defaultValue = "1") Integer page,
-            @RequestParam(required = false, defaultValue = "20") Integer limit
+            @RequestParam(name = "page", required = false, defaultValue = "1") Integer page,
+            @RequestParam(name = "limit", required = false, defaultValue = "20") Integer limit
     ) {
         Users currentUser = resolveCurrentUser();
         PageResponse<ProductDto.ProductItem> response = productService.getRelatedProducts(
@@ -99,7 +99,7 @@ public class ProductController implements UserProductControllerDocs {
     @GetMapping("/{productId}/variants")
     public ResponseEntity<ProductDto.VariantStockListResponse> getVariantStocks(
             @PathVariable("productId") Long productId,
-            @RequestParam List<Long> variantIds
+            @RequestParam(name = "variantIds") List<Long> variantIds
     ) {
         ProductDto.VariantStockListResponse response = productService.getVariantStocks(productId, variantIds);
         return ResponseEntity.ok(response);
