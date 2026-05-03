@@ -27,7 +27,7 @@ public interface AdminMarketListControllerDocs {
                     "- mainCategoryId: 대표(메인) 카테고리 ID (통합 검색과 별도, 미입력 시 전체)\n" +
                     "- keywordType + keyword: MARKET_ID, MARKET_NAME, MANAGER_NAME, CONTACT (부분 일치)\n" +
                     "- 카테고리 조건과 키워드 조건은 AND로 결합됩니다.\n" +
-                    "- status: 마켓 운영 상태 ACTIVE, SUSPENDED (미입력 시 전체)\n\n" +
+                    "- status: 마켓 운영 상태 ACTIVE, SUSPENDED, DORMANT(휴면), WITHDRAWN(탈퇴) (미입력 시 전체)\n\n" +
                     "**응답:**\n" +
                     "- totalSalesAmount: 누적 판매액 (미구현, 현재 0 고정)\n" +
                     "- status: 판매자(마켓) 계정 상태\n" +
@@ -43,7 +43,7 @@ public interface AdminMarketListControllerDocs {
                     @Parameter(name = "mainCategoryId", description = "대표 카테고리 ID 필터", example = "1", in = ParameterIn.QUERY),
                     @Parameter(name = "keywordType", description = "검색 타입", example = "MARKET_NAME", in = ParameterIn.QUERY),
                     @Parameter(name = "keyword", description = "검색어", example = "멋쟁이", in = ParameterIn.QUERY),
-                    @Parameter(name = "status", description = "마켓 운영 상태 필터 (ACTIVE, SUSPENDED)", example = "ACTIVE", in = ParameterIn.QUERY)
+                    @Parameter(name = "status", description = "마켓 운영 상태 필터 (ACTIVE, SUSPENDED, DORMANT, WITHDRAWN)", example = "ACTIVE", in = ParameterIn.QUERY)
             }
     )
     @ApiResponses(value = {
