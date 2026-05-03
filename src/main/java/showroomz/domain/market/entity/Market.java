@@ -57,6 +57,9 @@ public class Market {
     @OneToMany(mappedBy = "market", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MarketSns> snsLinks = new ArrayList<>();
 
+    @Column(name = "admin_memo", columnDefinition = "TEXT")
+    private String adminMemo;
+
     public Market(Seller seller, String marketName, String csNumber) {
         this.seller = seller;
         this.marketName = marketName;
@@ -71,5 +74,9 @@ public class Market {
 
     public void clearSnsLinks() {
         this.snsLinks.clear();
+    }
+
+    public void updateAdminMemo(String adminMemo) {
+        this.adminMemo = adminMemo;
     }
 }

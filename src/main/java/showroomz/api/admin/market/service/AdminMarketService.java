@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.market.DTO.AdminMarketDto;
+import showroomz.api.admin.market.DTO.MarketAdminDto;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.market.type.MarketStatus;
@@ -51,5 +52,12 @@ public class AdminMarketService {
                 }
             }
         }
+    }
+
+    @Transactional
+    public void updateMarketAdminMemo(Long marketId, MarketAdminDto.UpdateAdminMemoRequest request) {
+        Market market = marketRepository.findById(marketId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
+        market.updateAdminMemo(request.getAdminMemo());
     }
 }

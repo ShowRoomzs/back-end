@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import showroomz.api.admin.market.DTO.AdminMarketDto;
+import showroomz.api.admin.market.DTO.MarketAdminDto;
+import showroomz.api.admin.market.docs.AdminMarketMemoControllerDocs;
 import showroomz.api.admin.market.docs.AdminMarketStatusControllerDocs;
 import showroomz.api.admin.market.service.AdminMarketService;
 import showroomz.domain.market.type.MarketStatus;
@@ -18,9 +20,18 @@ import java.util.Map;
 @RestController
 @RequestMapping("/v1/admin/markets")
 @RequiredArgsConstructor
-public class AdminMarketController implements AdminMarketStatusControllerDocs {
+public class AdminMarketController implements AdminMarketStatusControllerDocs, AdminMarketMemoControllerDocs {
 
     private final AdminMarketService adminMarketService;
+
+    @Override
+    @PatchMapping("/{marketId}/memo")
+    public ResponseEntity<Void> updateMarketAdminMemo(
+            @PathVariable("marketId") Long marketId,
+            @RequestBody MarketAdminDto.UpdateAdminMemoRequest request) {
+        adminMarketService.updateMarketAdminMemo(marketId, request);
+        return ResponseEntity.noContent().build();
+    }
 
     @Override
     @PatchMapping("/{marketId}/status")
