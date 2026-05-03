@@ -281,6 +281,8 @@ public class SellerService {
         // 3. 계정 승인 상태 검증
         validateSellerStatus(seller);
 
+        seller.setLastLoginAt(LocalDateTime.now());
+
         return issueTokenResponse(seller);
     }
 
@@ -307,6 +309,8 @@ public class SellerService {
         if (admin.getStatus() == SellerStatus.PENDING) {
              throw new BusinessException(ErrorCode.ACCOUNT_NOT_APPROVED);
         }
+
+        admin.setLastLoginAt(LocalDateTime.now());
 
         return issueTokenResponse(admin);
     }

@@ -141,6 +141,10 @@ public class Seller {
     @NotNull
     private LocalDateTime modifiedAt;
 
+    // 최근 접속일
+    @Column(name = "LAST_LOGIN_AT")
+    private LocalDateTime lastLoginAt;
+
     // 생성자 편의 메서드
     public Seller(String email, String password, String name, String phoneNumber, LocalDateTime now) {
         this.email = email;
