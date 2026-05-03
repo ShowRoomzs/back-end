@@ -33,6 +33,9 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
     
     Optional<Market> findBySeller(Seller seller);
 
+    @Query("SELECT m FROM Market m JOIN FETCH m.seller WHERE m.id = :id")
+    Optional<Market> findByIdWithSeller(@Param("id") Long id);
+
     /**
      * ID와 판매자 상태로 마켓 조회 (유저용 상세 조회 시 승인된 Shop만 조회)
      */
