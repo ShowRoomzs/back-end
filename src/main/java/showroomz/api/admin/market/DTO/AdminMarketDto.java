@@ -1,10 +1,11 @@
 package showroomz.api.admin.market.DTO;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
 import showroomz.api.seller.auth.type.SellerStatus;
-import showroomz.domain.market.entity.Market;
+import showroomz.domain.market.type.MarketStatus;
 import showroomz.domain.market.type.SnsType;
 
 import java.time.LocalDate;
@@ -52,13 +53,42 @@ public class AdminMarketDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Schema(description = "어드민 마켓 목록 검색 조건")
-    public static class MarketListSearchCondition {
+    public static class MarketSearchRequest {
 
-        @Schema(description = "대표 카테고리 ID 필터", example = "1")
+        @Schema(description = "대표(메인) 카테고리 ID 필터 (통합 검색과 별도, 미입력 시 전체)", example = "1")
         private Long mainCategoryId;
 
-        @Schema(description = "마켓명 검색어", example = "멋쟁이")
-        private String marketName;
+        @Schema(
+                description = "검색 타입\n" +
+                        "- MARKET_ID: 마켓 ID\n" +
+                        "- MARKET_NAME: 마켓명\n" +
+                        "- MANAGER_NAME: 담당자명\n" +
+                        "- CONTACT: 연락처(전화번호)",
+                example = "MARKET_NAME",
+                allowableValues = {"MARKET_ID", "MARKET_NAME", "MANAGER_NAME", "CONTACT"}
+        )
+        private String keywordType;
+
+        @Schema(description = "검색어 (부분 일치, keywordType과 함께 사용)", example = "멋쟁이")
+        private String keyword;
+
+        @Schema(
+                description = "마켓 운영 상태 필터 (ACTIVE, SUSPENDED, DORMANT, WITHDRAWN, 미입력 시 전체)",
+                example = "ACTIVE"
+        )
+        private MarketStatus status;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "마켓 운영 상태 변경 요청")
+    public static class UpdateMarketStatusRequest {
+
+        @NotNull(message = "변경할 마켓 상태를 입력해주세요.")
+        @Schema(description = "마켓 상태 (ACTIVE: 활성, SUSPENDED: 정지)", example = "ACTIVE", allowableValues = {"ACTIVE", "SUSPENDED"})
+        private MarketStatus status;
     }
 
     @Getter
@@ -89,8 +119,14 @@ public class AdminMarketDto {
         @Schema(description = "등록 상품 수", example = "120")
         private Long productCount;
 
-        @Schema(description = "입점일", example = "2024-01-01T10:00:00")
-        private LocalDateTime createdAt;
+        @Schema(description = "누적 판매액 (미구현, 현재 0 고정)", example = "0")
+        private Long totalSalesAmount;
+
+        @Schema(description = "마켓 운영 상태 (ACTIVE, SUSPENDED, DORMANT, WITHDRAWN)", example = "ACTIVE")
+        private MarketStatus marketStatus;
+
+        @Schema(description = "관리자 처리 일시 (승인/반려 등, 미처리 시 null)", example = "2024-01-01T10:00:00")
+        private LocalDateTime processedDate;
     }
 
     @Getter
@@ -169,25 +205,95 @@ public class AdminMarketDto {
         @Schema(description = "SNS 링크 목록")
         private List<SnsLinkResponse> snsLinks;
 
-        // Entity -> DTO 변환 편의 메서드
-        public static MarketAdminDetailResponse from(Market market) {
-            // SNS 링크 변환
-            List<SnsLinkResponse> links = market.getSnsLinks().stream()
-                    .map(sns -> new SnsLinkResponse(sns.getSnsType().name(), sns.getSnsUrl()))
-                    .collect(java.util.stream.Collectors.toList());
+        @Schema(description = "등록 상품 수 (검수 대기 포함)", example = "48")
+        private Long registeredProductCount;
 
-            return MarketAdminDetailResponse.builder()
-                    .marketId(market.getId())
-                    .marketName(market.getMarketName())
-                    .csNumber(market.getCsNumber())
-                    .marketImageUrl(market.getMarketImageUrl())
-                    .marketDescription(market.getMarketDescription())
-                    .marketUrl(market.getMarketUrl())
-                    .mainCategoryId(market.getMainCategory() != null ? market.getMainCategory().getCategoryId() : null)
-                    .mainCategoryName(market.getMainCategory() != null ? market.getMainCategory().getName() : null)
-                    .snsLinks(links)
-                    .build();
-        }
+        @Schema(description = "검수 대기 중인 상품 수", example = "3")
+        private Long pendingInspectionProductCount;
+
+        @Schema(description = "누적 판매액(원, 더미)", example = "12450000")
+        private Long totalSalesAmount;
+
+        @Schema(description = "이번 달 누적 판매액(원, 더미)", example = "1230000")
+        private Long monthlySalesAmount;
+
+        @Schema(description = "누적 주문 수(더미)", example = "842")
+        private Long totalOrderCount;
+
+        @Schema(description = "이번 달 누적 주문 수(더미)", example = "67")
+        private Long monthlyOrderCount;
+
+        @Schema(description = "입점일(판매자 승인 처리 일시, 미승인 시 null)", example = "2024-01-02T15:30:00")
+        private LocalDateTime processedDate;
+
+        @Schema(description = "운영 기간(입점일 기준 경과 개월 수, 입점일 없으면 0)", example = "14")
+        private int operatingMonths;
+
+        @Schema(description = "현재 마켓 운영 상태 (ACTIVE, SUSPENDED)", example = "ACTIVE")
+        private MarketStatus marketStatus;
+
+        @Schema(description = "관리자 메모")
+        private String adminMemo;
+
+        @Schema(description = "셀러 가입일", example = "2024-01-01T12:00:00")
+        private LocalDateTime joinedAt;
+
+        @Schema(description = "최근 정산일(더미)", example = "2026-04-25")
+        private LocalDate lastSettlementDate;
+
+        @Schema(description = "미정산액(원, 더미)", example = "340000")
+        private Long unsettledAmount;
+
+        @Schema(description = "최근 로그인 일시", example = "2026-05-02T09:15:00")
+        private LocalDateTime lastLoginAt;
+
+        @Schema(description = "사업자 구분", example = "법인사업자")
+        private String businessType;
+
+        @Schema(description = "대표자명", example = "홍길동")
+        private String representativeName;
+
+        @Schema(description = "대표자 연락처", example = "010-1111-2222")
+        private String representativeContact;
+
+        @Schema(description = "사업자등록증 상호명", example = "(주)멋쟁이")
+        private String companyName;
+
+        @Schema(description = "사업자 등록번호", example = "123-45-67890")
+        private String businessRegistrationNumber;
+
+        @Schema(description = "업태", example = "도소매")
+        private String businessCondition;
+
+        @Schema(description = "사업장 주소", example = "서울특별시 강남구 테헤란로 123")
+        private String businessAddress;
+
+        @Schema(description = "상세 주소", example = "OO빌딩 5층")
+        private String detailAddress;
+
+        @Schema(description = "세금계산서용 이메일", example = "tax@example.com")
+        private String taxEmail;
+
+        @Schema(description = "사업자등록증 사본 URL")
+        private String businessLicenseImageUrl;
+
+        @Schema(description = "통신판매업 신고증 사본 URL")
+        private String mailOrderRegImageUrl;
+
+        @Schema(description = "통신판매업 신고번호", example = "2024-서울강남-01234")
+        private String mailOrderRegNumber;
+
+        @Schema(description = "은행명", example = "국민은행")
+        private String bankName;
+
+        @Schema(description = "예금주명", example = "홍길동")
+        private String accountHolder;
+
+        @Schema(description = "계좌번호", example = "123456-78-901234")
+        private String accountNumber;
+
+        @Schema(description = "통장 사본 URL")
+        private String bankbookImageUrl;
     }
 
     @Getter

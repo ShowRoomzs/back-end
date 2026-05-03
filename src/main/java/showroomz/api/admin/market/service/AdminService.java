@@ -15,13 +15,17 @@ import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.market.type.SnsType;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.domain.product.repository.ProductRepository;
+import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.service.MailService;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,8 +33,17 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdminService {
 
+    /** 정산·판매 실적 연동 전까지 관리자 상세용 더미 값 */
+    private static final long DUMMY_TOTAL_SALES_AMOUNT = 12_450_000L;
+    private static final long DUMMY_MONTHLY_SALES_AMOUNT = 1_230_000L;
+    private static final long DUMMY_TOTAL_ORDER_COUNT = 842L;
+    private static final long DUMMY_MONTHLY_ORDER_COUNT = 67L;
+    private static final LocalDate DUMMY_LAST_SETTLEMENT_DATE = LocalDate.of(2026, 4, 25);
+    private static final long DUMMY_UNSETTLED_AMOUNT = 340_000L;
+
     private final SellerRepository sellerRepository;
     private final MarketRepository marketRepository;
+    private final ProductRepository productRepository;
     private final MailService mailService;
 
     /**
@@ -278,32 +291,74 @@ public class AdminService {
     }
 
     /**
-     * 마켓 목록 조회 (어드민용)
-     */
-    @Transactional(readOnly = true)
-    public PageResponse<AdminMarketDto.MarketResponse> getMarkets(
-            AdminMarketDto.MarketListSearchCondition condition, Pageable pageable) {
-
-        Page<AdminMarketDto.MarketResponse> page = marketRepository.findMarketsWithProductCount(
-                condition.getMainCategoryId(),
-                condition.getMarketName(),
-                SellerStatus.APPROVED,
-                pageable
-        );
-
-        return new PageResponse<>(page.getContent(), page);
-    }
-
-    /**
      * 마켓 정보 관리용 상세 조회
      */
     @Transactional(readOnly = true)
     public AdminMarketDto.MarketAdminDetailResponse getMarketInfo(Long marketId) {
-        // SellerId가 아니라 MarketId로 조회하는 경우가 많음 (어드민 마켓 목록에서 클릭해서 들어오므로)
-        Market market = marketRepository.findById(marketId)
+        Market market = marketRepository.findByIdWithSeller(marketId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
-        
-        return AdminMarketDto.MarketAdminDetailResponse.from(market);
+
+        long registeredCount = productRepository.countByMarket_Id(marketId);
+        long pendingInspectionCount = productRepository.countByMarket_IdAndInspectionStatus(
+                marketId, ProductInspectionStatus.WAITING);
+
+        Seller seller = market.getSeller();
+        LocalDateTime processedAt = seller.getProcessedAt();
+        int operatingMonths = computeOperatingMonths(processedAt);
+
+        List<AdminMarketDto.SnsLinkResponse> snsLinks = market.getSnsLinks().stream()
+                .map(sns -> new AdminMarketDto.SnsLinkResponse(sns.getSnsType().name(), sns.getSnsUrl()))
+                .collect(Collectors.toList());
+
+        return AdminMarketDto.MarketAdminDetailResponse.builder()
+                .marketId(market.getId())
+                .marketName(market.getMarketName())
+                .csNumber(market.getCsNumber())
+                .marketImageUrl(market.getMarketImageUrl())
+                .marketDescription(market.getMarketDescription())
+                .marketUrl(market.getMarketUrl())
+                .mainCategoryId(market.getMainCategory() != null ? market.getMainCategory().getCategoryId() : null)
+                .mainCategoryName(market.getMainCategory() != null ? market.getMainCategory().getName() : null)
+                .snsLinks(snsLinks)
+                .registeredProductCount(registeredCount)
+                .pendingInspectionProductCount(pendingInspectionCount)
+                .totalSalesAmount(DUMMY_TOTAL_SALES_AMOUNT)
+                .monthlySalesAmount(DUMMY_MONTHLY_SALES_AMOUNT)
+                .totalOrderCount(DUMMY_TOTAL_ORDER_COUNT)
+                .monthlyOrderCount(DUMMY_MONTHLY_ORDER_COUNT)
+                .processedDate(processedAt)
+                .operatingMonths(operatingMonths)
+                .marketStatus(market.getStatus())
+                .adminMemo(market.getAdminMemo())
+                .joinedAt(seller.getCreatedAt())
+                .lastSettlementDate(DUMMY_LAST_SETTLEMENT_DATE)
+                .unsettledAmount(DUMMY_UNSETTLED_AMOUNT)
+                .lastLoginAt(seller.getLastLoginAt())
+                .businessType(seller.getBusinessType())
+                .representativeName(seller.getRepresentativeName())
+                .representativeContact(seller.getRepresentativeContact())
+                .companyName(seller.getCompanyName())
+                .businessRegistrationNumber(seller.getBusinessRegistrationNumber())
+                .businessCondition(seller.getBusinessCondition())
+                .businessAddress(seller.getBusinessAddress())
+                .detailAddress(seller.getDetailAddress())
+                .taxEmail(seller.getTaxEmail())
+                .businessLicenseImageUrl(seller.getBusinessLicenseImageUrl())
+                .mailOrderRegImageUrl(seller.getMailOrderRegImageUrl())
+                .mailOrderRegNumber(seller.getMailOrderRegNumber())
+                .bankName(seller.getBankName())
+                .accountHolder(seller.getAccountHolder())
+                .accountNumber(seller.getAccountNumber())
+                .bankbookImageUrl(seller.getBankbookImageUrl())
+                .build();
+    }
+
+    private static int computeOperatingMonths(LocalDateTime processedAt) {
+        if (processedAt == null) {
+            return 0;
+        }
+        long months = ChronoUnit.MONTHS.between(processedAt.toLocalDate(), LocalDate.now());
+        return (int) Math.max(0, months);
     }
 }
 

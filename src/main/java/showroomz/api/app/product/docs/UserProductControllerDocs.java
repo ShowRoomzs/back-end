@@ -131,11 +131,11 @@ public interface UserProductControllerDocs {
             @Parameter(description = "Authorization 헤더 (Optional)", required = false, hidden = true)
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @Parameter(description = "검색 조건", required = false)
-            @RequestParam(required = false) String q,
+            @RequestParam(name = "q", required = false) String q,
             @Parameter(description = "카테고리 ID", required = false)
-            @RequestParam(required = false) Long categoryId,
+            @RequestParam(name = "categoryId", required = false) Long categoryId,
             @Parameter(description = "쇼룸 ID", required = false)
-            @RequestParam(required = false) Long marketId,
+            @RequestParam(name = "marketId", required = false) Long marketId,
             @Parameter(
                     description = "필터 목록 (JSON 배열 문자열). 정렬 조건은 key: 'sort'로 포함하여 전달합니다.\n" +
                             "- sort=RECOMMEND: 추천순 (isRecommended DESC, createdAt DESC)\n" +
@@ -146,7 +146,7 @@ public interface UserProductControllerDocs {
                             "예: [{\"key\":\"gender\",\"values\":[\"MALE\"]},{\"key\":\"sort\",\"values\":[\"RECOMMEND\"]}]",
                     required = false
             )
-            @RequestParam(required = false) String filters,
+            @RequestParam(name = "filters", required = false) String filters,
             @ParameterObject PagingRequest pagingRequest
     );
 
@@ -330,7 +330,7 @@ public interface UserProductControllerDocs {
             @Parameter(name = "productId", description = "상품 ID", required = true, example = "1024")
             @PathVariable("productId") Long productId,
             @Parameter(description = "조회할 옵션(Variant) ID 목록 (여러 개 테스트: 1, 2, 3)", required = true, example = "1")
-            @RequestParam List<Long> variantIds
+            @RequestParam(name = "variantIds") List<Long> variantIds
     );
 
     @Operation(
@@ -371,8 +371,8 @@ public interface UserProductControllerDocs {
             @Parameter(description = "Authorization 헤더 (Optional)", required = false, hidden = true)
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @Parameter(description = "페이지 번호 (기본값: 1)", required = false, example = "1")
-            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(name = "page", required = false, defaultValue = "1") Integer page,
             @Parameter(description = "페이지당 항목 수 (기본값: 20)", required = false, example = "20")
-            @RequestParam(required = false, defaultValue = "20") Integer limit
+            @RequestParam(name = "limit", required = false, defaultValue = "20") Integer limit
     );
 }

@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.domain.market.type.MarketStatus;
 import showroomz.domain.market.type.SnsType;
 
 import java.util.ArrayList;
@@ -31,6 +32,10 @@ public class Market {
     @Column(name = "MARKET_NAME", nullable = false, unique = true)
     private String marketName;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 32)
+    private MarketStatus status = MarketStatus.ACTIVE;
+
     @Column(name = "CS_NUMBER", nullable = false)
     private String csNumber;
 
@@ -52,6 +57,9 @@ public class Market {
     @OneToMany(mappedBy = "market", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MarketSns> snsLinks = new ArrayList<>();
 
+    @Column(name = "admin_memo", columnDefinition = "TEXT")
+    private String adminMemo;
+
     public Market(Seller seller, String marketName, String csNumber) {
         this.seller = seller;
         this.marketName = marketName;
@@ -66,5 +74,9 @@ public class Market {
 
     public void clearSnsLinks() {
         this.snsLinks.clear();
+    }
+
+    public void updateAdminMemo(String adminMemo) {
+        this.adminMemo = adminMemo;
     }
 }
