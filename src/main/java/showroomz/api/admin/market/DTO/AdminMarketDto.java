@@ -72,8 +72,8 @@ public class AdminMarketDto {
         @Schema(description = "검색어 (부분 일치, keywordType과 함께 사용)", example = "멋쟁이")
         private String keyword;
 
-        @Schema(description = "판매자(마켓) 계정 상태 필터 (미입력 시 전체)", example = "APPROVED")
-        private SellerStatus status;
+        @Schema(description = "마켓 운영 상태 필터 (ACTIVE, SUSPENDED, 미입력 시 전체)", example = "ACTIVE")
+        private MarketStatus status;
     }
 
     @Getter
