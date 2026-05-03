@@ -22,7 +22,7 @@ public interface AdminMarketListControllerDocs {
 
     @Operation(
             summary = "마켓 목록 조회",
-            description = "어드민용 마켓 목록을 조회합니다. 대표 카테고리·검색·마켓 운영 상태로 필터링할 수 있습니다.\n\n" +
+            description = "어드민용 마켓 목록을 조회합니다. **판매자 승인(APPROVED) 완료된 마켓만** 반환합니다. 대표 카테고리·검색·마켓 운영 상태로 필터링할 수 있습니다.\n\n" +
                     "**필터/검색:**\n" +
                     "- mainCategoryId: 대표(메인) 카테고리 ID (통합 검색과 별도, 미입력 시 전체)\n" +
                     "- keywordType + keyword: MARKET_ID, MARKET_NAME, MANAGER_NAME, CONTACT (부분 일치)\n" +
@@ -30,7 +30,7 @@ public interface AdminMarketListControllerDocs {
                     "- status: 마켓 운영 상태 ACTIVE, SUSPENDED, DORMANT(휴면), WITHDRAWN(탈퇴) (미입력 시 전체)\n\n" +
                     "**응답:**\n" +
                     "- totalSalesAmount: 누적 판매액 (미구현, 현재 0 고정)\n" +
-                    "- status: 판매자(마켓) 계정 상태\n" +
+                    "- marketStatus: 마켓 운영 상태 (ACTIVE, SUSPENDED, DORMANT, WITHDRAWN)\n" +
                     "- processedDate: 입점일\n\n" +
                     "**페이징:**\n" +
                     "- page: 1부터 시작 (기본 1)\n" +
@@ -67,7 +67,7 @@ public interface AdminMarketListControllerDocs {
                                                     "      \"phoneNumber\": \"010-1234-5678\",\n" +
                                                     "      \"productCount\": 120,\n" +
                                                     "      \"totalSalesAmount\": 0,\n" +
-                                                    "      \"status\": \"APPROVED\",\n" +
+                                                    "      \"marketStatus\": \"ACTIVE\",\n" +
                                                     "      \"processedDate\": \"2024-01-01T10:00:00\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +

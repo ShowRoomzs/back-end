@@ -122,8 +122,8 @@ public class AdminMarketDto {
         @Schema(description = "누적 판매액 (미구현, 현재 0 고정)", example = "0")
         private Long totalSalesAmount;
 
-        @Schema(description = "마켓(판매자) 계정 상태", example = "APPROVED")
-        private SellerStatus status;
+        @Schema(description = "마켓 운영 상태 (ACTIVE, SUSPENDED, DORMANT, WITHDRAWN)", example = "ACTIVE")
+        private MarketStatus marketStatus;
 
         @Schema(description = "관리자 처리 일시 (승인/반려 등, 미처리 시 null)", example = "2024-01-01T10:00:00")
         private LocalDateTime processedDate;

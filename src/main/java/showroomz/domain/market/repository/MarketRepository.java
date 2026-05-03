@@ -72,9 +72,10 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
 
     /**
      * 어드민 마켓 목록 조회
+     * - 판매자 승인(APPROVED)된 마켓만 조회
      * - 메인 카테고리 필터와 키워드 검색을 AND로 결합 (교집합)
      * - 키워드 타입별 검색, 마켓 운영 상태(MarketStatus) 필터
-     * - 등록 상품 수, 누적 판매액(더미 0), 판매자 계정 상태 포함
+     * - 등록 상품 수, 누적 판매액(더미 0), 마켓 운영 상태 포함
      * - LEFT JOIN으로 mainCategory가 없는 마켓도 포함
      */
     @Query("SELECT new showroomz.api.admin.market.DTO.AdminMarketDto$MarketResponse(" +
@@ -84,12 +85,13 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
            "s.name, s.phoneNumber, " +
            "(SELECT COUNT(p) FROM Product p WHERE p.market = m), " +
            "0L, " +
-           "s.status, " +
+           "m.status, " +
            "s.processedAt) " +
            "FROM Market m " +
            "JOIN m.seller s " +
            "LEFT JOIN m.mainCategory c " +
-           "WHERE (:status IS NULL OR m.status = :status) " +
+           "WHERE s.status = :approvedSellerStatus " +
+           "AND (:status IS NULL OR m.status = :status) " +
            "AND (:mainCategoryId IS NULL OR c.categoryId = :mainCategoryId) " +
            "AND (:keyword IS NULL OR :keyword = '' OR " +
            "    (:keywordType = 'MARKET_ID'    AND CAST(m.id AS string) LIKE CONCAT('%', :keyword, '%')) OR " +
@@ -102,6 +104,7 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
             @Param("keywordType") String keywordType,
             @Param("keyword") String keyword,
             @Param("status") MarketStatus status,
+            @Param("approvedSellerStatus") SellerStatus approvedSellerStatus,
             Pageable pageable);
 
     /**

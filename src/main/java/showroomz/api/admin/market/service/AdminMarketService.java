@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.market.DTO.AdminMarketDto;
 import showroomz.api.admin.market.DTO.MarketAdminDto;
+import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.market.type.MarketStatus;
@@ -32,6 +33,7 @@ public class AdminMarketService {
                 request.getKeywordType(),
                 request.getKeyword(),
                 request.getStatus(),
+                SellerStatus.APPROVED,
                 pageable);
     }
 
