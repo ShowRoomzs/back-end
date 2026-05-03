@@ -30,15 +30,15 @@ public class SellerDto {
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    @Schema(description = "판매자 계정 상태 변경 요청")
+    @Schema(description = "셀러 상태 업데이트 요청 DTO")
     public static class UpdateStatusRequest {
-        @Schema(description = "변경할 상태 (APPROVED: 승인, REJECTED: 반려)", example = "APPROVED")
+        @Schema(description = "승인 상태 (APPROVED: 승인, REJECTED: 반려)", example = "APPROVED")
         private String status;
 
-        @Schema(description = "반려 사유 타입 (반려 시 필수)", example = "BUSINESS_INFO_UNVERIFIED")
+        @Schema(description = "반려 사유 타입 (status가 REJECTED일 때 필수)", example = "INSUFFICIENT_DOCUMENTS")
         private RejectionReasonType rejectionReasonType;
 
-        @Schema(description = "반려 사유 상세 (사유 타입이 OTHER일 경우 필수)", example = "사업자 등록증이 흐릿합니다.")
+        @Schema(description = "상세 사유 (상태와 무관하게 선택적으로 입력, 반려 시 항상 저장됨)", example = "추가적인 상세 사유입니다.")
         private String rejectionReasonDetail;
     }
 

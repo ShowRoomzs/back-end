@@ -6,10 +6,12 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum RejectionReasonType {
-    BUSINESS_INFO_UNVERIFIED("사업자정보 확인 불가"),
-    CRITERIA_NOT_MET("입점 기준 미달성"),
-    INAPPROPRIATE_MARKET_NAME("마켓명 부적절"),
-    OTHER("기타(직접 작성)");
+    INSUFFICIENT_DOCUMENTS("서류 미비"),
+    BUSINESS_REG_NUMBER_MISMATCH("사업자등록번호 불일치"),
+    MAIL_ORDER_REPORT_INCOMPLETE("통신판매업신고 미완료"),
+    BANK_ACCOUNT_ERROR("계좌 정보 오류"),
+    DUPLICATE_APPLICATION("중복 신청"),
+    OTHER("기타");
 
     private final String description;
 }

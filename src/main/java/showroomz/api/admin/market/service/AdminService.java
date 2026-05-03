@@ -50,21 +50,27 @@ public class AdminService {
             throw new BusinessException(ErrorCode.ACCOUNT_NOT_PENDING);
         }
 
-        seller.setStatus(status);
-        
+        validateRejectionReasonTypeWhenRejected(status, reasonType);
+
+        LocalDateTime processedAt = LocalDateTime.now();
+        String marketName = marketRepository.findBySeller(seller)
+                .map(Market::getMarketName)
+                .filter(n -> n != null && !n.isBlank())
+                .orElse(seller.getName());
+
+        applySellerStatusAndRejectionFields(seller, status, reasonType, reasonDetail);
+
         if (status == SellerStatus.APPROVED) {
-            seller.setRejectionReason(null);
-            mailService.sendApprovalEmail(seller.getEmail(), seller.getName());
-            
+            mailService.sendApprovalEmail(seller.getEmail(), marketName, processedAt);
+
         } else if (status == SellerStatus.REJECTED) {
-            // 반려 사유 결정 로직
-            String finalReason = resolveRejectionReason(reasonType, reasonDetail);
-            seller.setRejectionReason(finalReason);
-            // 반려 메일 발송
-            mailService.sendRejectionEmail(seller.getEmail(), seller.getName(), finalReason);
+            String mailDetail = reasonDetail != null && !reasonDetail.isBlank() ? reasonDetail.strip() : "";
+            mailService.sendRejectionEmail(
+                    seller.getEmail(), marketName, processedAt, reasonType.getDescription(), mailDetail);
         }
-        
-        seller.setModifiedAt(LocalDateTime.now());
+
+        seller.setProcessedAt(processedAt);
+        seller.setModifiedAt(processedAt);
     }
 
     /**
@@ -84,59 +90,67 @@ public class AdminService {
             throw new BusinessException(ErrorCode.ACCOUNT_NOT_PENDING);
         }
 
-        seller.setStatus(status);
+        validateRejectionReasonTypeWhenRejected(status, reasonType);
+
+        applySellerStatusAndRejectionFields(seller, status, reasonType, reasonDetail);
 
         if (status == SellerStatus.APPROVED) {
-            seller.setRejectionReason(null);
             mailService.sendCreatorApprovalEmail(seller.getEmail(), seller.getName());
 
         } else if (status == SellerStatus.REJECTED) {
-            String finalReason = resolveRejectionReason(reasonType, reasonDetail);
-            seller.setRejectionReason(finalReason);
-            mailService.sendCreatorRejectionEmail(seller.getEmail(), seller.getName(), finalReason);
+            mailService.sendCreatorRejectionEmail(
+                    seller.getEmail(), seller.getName(), buildCreatorRejectionMailReason(reasonType, reasonDetail));
         }
 
+        seller.setProcessedAt(LocalDateTime.now());
         seller.setModifiedAt(LocalDateTime.now());
     }
 
-    private String resolveRejectionReason(RejectionReasonType type, String detail) {
-        if (type == null) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE); // 반려 시 타입 필수
-        }
-        
-        if (type == RejectionReasonType.OTHER) {
-            if (detail == null || detail.isBlank()) {
-                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE); // 기타 선택 시 상세 사유 필수
-            }
-            return detail;
-        }
-        
-        return type.getDescription();
-    }
-
     /**
-     * 판매자 상세 정보 조회
+     * 셀러 검토 메모 수정
      */
-    @Transactional(readOnly = true)
-    public AdminMarketDto.MarketDetailResponse getMarketDetail(Long sellerId) {
+    @Transactional
+    public void updateReviewMemo(Long sellerId, String reviewMemo) {
         Seller seller = sellerRepository.findById(sellerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        Market market = marketRepository.findBySeller(seller)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
+        if (seller.getRoleType() != RoleType.SELLER) {
+            throw new BusinessException(ErrorCode.ACCOUNT_ROLE_MISMATCH);
+        }
 
-        return AdminMarketDto.MarketDetailResponse.builder()
-                .sellerId(seller.getId())
-                .marketId(market.getId())
-                .email(seller.getEmail())
-                .name(seller.getName())
-                .marketName(market.getMarketName())
-                .phoneNumber(seller.getPhoneNumber())
-                .status(seller.getStatus())
-                .rejectionReason(seller.getRejectionReason())
-                .csNumber(market.getCsNumber())
-                .createdAt(seller.getCreatedAt())
-                .build();
+        seller.setReviewMemo(reviewMemo);
+        seller.setModifiedAt(LocalDateTime.now());
+    }
+
+    private void applySellerStatusAndRejectionFields(Seller seller, SellerStatus newStatus,
+                                                     RejectionReasonType reasonType, String reasonDetail) {
+        seller.setStatus(newStatus);
+        seller.setRejectionReasonDetail(reasonDetail);
+
+        if (newStatus == SellerStatus.REJECTED) {
+            seller.setRejectionReason(reasonType.name());
+        } else {
+            seller.setRejectionReason(null);
+        }
+    }
+
+    private void validateRejectionReasonTypeWhenRejected(SellerStatus status, RejectionReasonType reasonType) {
+        if (status == SellerStatus.REJECTED && reasonType == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private String buildCreatorRejectionMailReason(RejectionReasonType type, String detail) {
+        String detailText = (detail == null || detail.isBlank()) ? "" : detail.strip();
+        boolean hasDetail = !detailText.isEmpty();
+
+        if (type == RejectionReasonType.OTHER) {
+            return hasDetail ? detailText : type.getDescription();
+        }
+        if (hasDetail) {
+            return type.getDescription() + " - " + detailText;
+        }
+        return type.getDescription();
     }
 
     /**
@@ -179,6 +193,9 @@ public class AdminService {
                         .status(market.getSeller().getStatus())
                         .rejectionReason(market.getSeller().getRejectionReason())
                         .createdAt(market.getSeller().getCreatedAt())
+                        .businessType(market.getSeller().getBusinessType())
+                        .businessNumber(market.getSeller().getBusinessRegistrationNumber())
+                        .processedAt(market.getSeller().getProcessedAt())
                         .build())
                 .collect(Collectors.toList());
 

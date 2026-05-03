@@ -13,7 +13,11 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+
+import jakarta.validation.Valid;
 import showroomz.api.admin.market.DTO.AdminMarketDto;
+import showroomz.api.admin.market.DTO.AdminSellerDetailResponse;
+import showroomz.api.admin.market.DTO.UpdateReviewMemoRequest;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.seller.auth.DTO.SellerDto;
 
@@ -27,9 +31,11 @@ public interface AdminMarketControllerDocs {
                     "- **status**: 판매자 상태 (PENDING: 승인 대기, APPROVED: 승인, REJECTED: 반려, null: 전체)\n" +
                     "- **startDate / endDate**: 신청일 기준 조회 기간 (YYYY-MM-DD)\n" +
                     "- **keyword**: 검색어 (부분 일치 검색)\n" +
-                    "- **keywordType**: 검색 타입 (SELLER_ID: 신청 ID, MARKET_NAME: 마켓명, NAME: 담당자 이름, PHONE_NUMBER: 연락처)\n\n" +
+                    "- **keywordType**: 검색 타입 (SELLER_ID: 신청 ID, MARKET_NAME: 마켓명, NAME: 담당자 이름, PHONE_NUMBER: 연락처, BUSINESS_NUMBER: 사업자 등록번호)\n\n" +
                     "**반환 정보:**\n" +
                     "- 판매자 및 마켓 기본 정보\n" +
+                    "- **businessType**, **businessNumber**: 판매자(Seller)에 등록된 사업자 구분·사업자 등록번호\n" +
+                    "- **processedAt**: 관리자가 승인/반려 처리한 일시 (미처리 시 null)\n" +
                     "- 현재 승인 상태 및 반려 사유 (반려된 경우)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
@@ -58,7 +64,10 @@ public interface AdminMarketControllerDocs {
                                                     "      \"phoneNumber\": \"010-1234-5678\",\n" +
                                                     "      \"status\": \"PENDING\",\n" +
                                                     "      \"rejectionReason\": null,\n" +
-                                                    "      \"createdAt\": \"2024-01-15T10:30:00Z\"\n" +
+                                                    "      \"createdAt\": \"2024-01-15T10:30:00\",\n" +
+                                                    "      \"businessType\": \"개인사업자\",\n" +
+                                                    "      \"businessNumber\": \"123-45-67890\",\n" +
+                                                    "      \"processedAt\": null\n" +
                                                     "    },\n" +
                                                     "    {\n" +
                                                     "      \"sellerId\": 2,\n" +
@@ -68,8 +77,11 @@ public interface AdminMarketControllerDocs {
                                                     "      \"marketName\": \"빈티지 샵\",\n" +
                                                     "      \"phoneNumber\": \"010-9876-5432\",\n" +
                                                     "      \"status\": \"REJECTED\",\n" +
-                                                    "      \"rejectionReason\": \"사업자 등록증 식별 불가\",\n" +
-                                                    "      \"createdAt\": \"2024-01-10T09:00:00Z\"\n" +
+                                                    "      \"rejectionReason\": \"INSUFFICIENT_DOCUMENTS\",\n" +
+                                                    "      \"createdAt\": \"2024-01-10T09:00:00\",\n" +
+                                                    "      \"businessType\": \"법인사업자\",\n" +
+                                                    "      \"businessNumber\": \"987-65-43210\",\n" +
+                                                    "      \"processedAt\": \"2024-01-11T14:20:00\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
@@ -91,8 +103,8 @@ public interface AdminMarketControllerDocs {
     );
 
     @Operation(
-            summary = "마켓 판매자 상세 정보 조회",
-            description = "특정 마켓 판매자의 상세 정보를 조회합니다.\n\n" +
+            summary = "입점 신청 판매자 상세 조회",
+            description = "판매자의 사업자 정보, 정산 정보, 검토 상태를 포함한 상세 정보를 조회합니다.\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -102,7 +114,7 @@ public interface AdminMarketControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = AdminMarketDto.MarketDetailResponse.class)
+                            schema = @Schema(implementation = AdminSellerDetailResponse.class)
                     )
             ),
             @ApiResponse(
@@ -124,7 +136,7 @@ public interface AdminMarketControllerDocs {
                     )
             )
     })
-    ResponseEntity<AdminMarketDto.MarketDetailResponse> getMarketDetail(
+    ResponseEntity<AdminSellerDetailResponse> getMarketDetail(
             @Parameter(
                     description = "조회할 판매자 ID",
                     required = true,
@@ -140,15 +152,17 @@ public interface AdminMarketControllerDocs {
                     "**상태값:**\n" +
                     "- `APPROVED`: 승인 (로그인 가능)\n" +
                     "- `REJECTED`: 반려 (로그인 불가)\n\n" +
-                    "**반려 사유:**\n" +
-                    "- REJECTED 상태일 때 `rejectionReasonType` 필드는 필수입니다.\n" +
-                    "- `rejectionReasonType`이 `OTHER`일 경우 `rejectionReasonDetail` 필드도 필수입니다.\n" +
-                    "- APPROVED 상태로 변경 시 반려 사유 관련 필드는 무시됩니다.\n\n" +
-                    "**반려 사유 타입:**\n" +
-                    "- `BUSINESS_INFO_UNVERIFIED`: 사업자정보 확인 불가\n" +
-                    "- `CRITERIA_NOT_MET`: 입점 기준 미달성\n" +
-                    "- `INAPPROPRIATE_MARKET_NAME`: 마켓명 부적절\n" +
-                    "- `OTHER`: 기타(직접 작성) - 이 경우 `rejectionReasonDetail` 필수\n\n" +
+                    "**요청 필드:**\n" +
+                    "- `status`: `APPROVED` 또는 `REJECTED` (필수)\n" +
+                    "- `rejectionReasonType`: **`status`가 `REJECTED`일 때 필수.** DB `rejectionReason`에는 enum 이름(예: `INSUFFICIENT_DOCUMENTS`)이 저장됩니다.\n" +
+                    "- `rejectionReasonDetail`: **선택.** 전달 시 DB `rejectionReasonDetail`에 저장하고, `null`이면 해당 컬럼을 비웁니다. \n\n" +
+                    "**`rejectionReasonType` 목록:**\n" +
+                    "- `INSUFFICIENT_DOCUMENTS`: 서류 미비\n" +
+                    "- `BUSINESS_REG_NUMBER_MISMATCH`: 사업자등록번호 불일치\n" +
+                    "- `MAIL_ORDER_REPORT_INCOMPLETE`: 통신판매업신고 미완료\n" +
+                    "- `BANK_ACCOUNT_ERROR`: 계좌 정보 오류\n" +
+                    "- `DUPLICATE_APPLICATION`: 중복 신청\n" +
+                    "- `OTHER`: 기타 (상세는 `rejectionReasonDetail`에 선택 입력)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -160,7 +174,7 @@ public interface AdminMarketControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "잘못된 상태값 요청 또는 PENDING 상태가 아님",
+                    description = "잘못된 상태값, 반려 시 `rejectionReasonType` 누락, 또는 PENDING이 아닌 계정 처리 시도 등",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -170,8 +184,12 @@ public interface AdminMarketControllerDocs {
                                             value = "{\"code\": \"INVALID_INPUT\", \"message\": \"입력값이 올바르지 않습니다.\"}"
                                     ),
                                     @ExampleObject(
-                                            name = "PENDING 상태가 아님",
+                                            name = "반려인데 rejectionReasonType 없음",
                                             value = "{\"code\": \"INVALID_INPUT\", \"message\": \"입력값이 올바르지 않습니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "PENDING 상태가 아님",
+                                            value = "{\"code\": \"ACCOUNT_NOT_PENDING\", \"message\": \"승인 대기 상태인 계정만 처리할 수 있습니다.\"}"
                                     )
                             }
                     )
@@ -204,10 +222,10 @@ public interface AdminMarketControllerDocs {
                             ),
                             @ExampleObject(
                                     name = "반려 요청 예시 (사전 정의된 사유)",
-                                    value = "{\n  \"status\": \"REJECTED\",\n  \"rejectionReasonType\": \"BUSINESS_INFO_UNVERIFIED\"\n}"
+                                    value = "{\n  \"status\": \"REJECTED\",\n  \"rejectionReasonType\": \"INSUFFICIENT_DOCUMENTS\"\n}"
                             ),
                             @ExampleObject(
-                                    name = "반려 요청 예시 (기타 사유)",
+                                    name = "반려 (타입 + 상세)",
                                     value = "{\n  \"status\": \"REJECTED\",\n  \"rejectionReasonType\": \"OTHER\",\n  \"rejectionReasonDetail\": \"사업자 등록증이 흐릿합니다.\"\n}"
                             )
                     }
@@ -222,5 +240,58 @@ public interface AdminMarketControllerDocs {
             )
             @PathVariable Long sellerId,
             @RequestBody SellerDto.UpdateStatusRequest request
+    );
+
+    @Operation(
+            summary = "셀러 검토 메모 수정",
+            description = "관리자가 특정 셀러의 심사 검토 메모를 수정합니다.\n\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "수정 성공",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "입력값 오류 (메모 길이 초과 등)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "판매자를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = UpdateReviewMemoRequest.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "검토 메모 수정",
+                                    value = "{\n  \"reviewMemo\": \"서류 확인 완료, 마켓 URL 보완 필요\"\n}"
+                            )
+                    }
+            )
+    )
+    ResponseEntity<Void> updateReviewMemo(
+            @Parameter(
+                    description = "검토 메모를 수정할 판매자(Seller) ID",
+                    required = true,
+                    example = "1",
+                    in = ParameterIn.PATH
+            )
+            @PathVariable Long sellerId,
+            @Valid @RequestBody UpdateReviewMemoRequest request
     );
 }

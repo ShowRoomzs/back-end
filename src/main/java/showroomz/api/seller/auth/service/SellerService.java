@@ -19,6 +19,7 @@ import showroomz.api.seller.auth.DTO.CreatorSignUpRequest;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshToken;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshTokenRepository;
 import showroomz.api.seller.auth.repository.SellerRepository;
+import showroomz.api.admin.market.type.RejectionReasonType;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.api.seller.market.service.MarketService;
 import showroomz.domain.market.entity.Market;
@@ -72,7 +73,7 @@ public class SellerService {
              throw new BusinessException(ErrorCode.DUPLICATE_MARKET_NAME);
         }
 
-        // 4. Admins 엔티티 생성 (생성자에서 Status = PENDING으로 설정됨)
+        // 4. Seller 엔티티 생성
         LocalDateTime now = LocalDateTime.now();
         Seller admin = new Seller(
                 request.getEmail(),
@@ -81,7 +82,9 @@ public class SellerService {
                 request.getSellerContact(),
                 now
         );
-        
+
+        mapBusinessAndTermsInfo(admin, request);
+
         Seller savedAdmin = adminRepository.save(admin);
 
         // 5. Market 엔티티 생성 및 URL 자동 할당
@@ -163,7 +166,9 @@ public class SellerService {
         seller.setStatus(SellerStatus.PENDING); // 상태를 다시 PENDING으로 변경
         seller.setRejectionReason(null); // 반려 사유 초기화
         seller.setModifiedAt(LocalDateTime.now());
-        
+
+        mapBusinessAndTermsInfo(seller, request);
+
         // Market 정보 업데이트
         market.setMarketName(request.getMarketName());
         market.setCsNumber(request.getCsNumber());
@@ -171,6 +176,42 @@ public class SellerService {
         // Dirty Checking으로 트랜잭션 종료 시 자동 Update 쿼리 실행
 
         return Map.of("message", "재가입 신청이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.");
+    }
+
+    private void mapBusinessAndTermsInfo(Seller seller, SellerSignUpRequest request) {
+        seller.setBusinessType(request.getBusinessType());
+        seller.setRepresentativeName(request.getRepresentativeName());
+        seller.setRepresentativeContact(request.getRepresentativeContact());
+        seller.setCompanyName(request.getCompanyName());
+        seller.setBusinessRegistrationNumber(request.getBusinessRegistrationNumber());
+        seller.setBusinessCondition(request.getBusinessCondition());
+        seller.setBusinessAddress(request.getBusinessAddress());
+        seller.setDetailAddress(request.getDetailAddress());
+        seller.setTaxEmail(request.getTaxEmail());
+        seller.setBusinessLicenseImageUrl(request.getBusinessLicenseImageUrl());
+
+        if ("간이과세자".equals(request.getBusinessType())) {
+            seller.setMailOrderRegImageUrl(null);
+            seller.setMailOrderRegNumber(null);
+        } else {
+            seller.setMailOrderRegImageUrl(request.getMailOrderRegImageUrl());
+            String formattedRegNum = String.format(
+                    "제 %s - %s - %s 호",
+                    request.getMailOrderRegNumberYear(),
+                    request.getMailOrderRegNumberRegion(),
+                    request.getMailOrderRegNumberSeq()
+            );
+            seller.setMailOrderRegNumber(formattedRegNum);
+        }
+
+        seller.setBankName(request.getBankName());
+        seller.setAccountHolder(request.getAccountHolder());
+        seller.setAccountNumber(request.getAccountNumber());
+        seller.setBankbookImageUrl(request.getBankbookImageUrl());
+
+        seller.setAgreePrivacyPolicy(request.getAgreePrivacyPolicy());
+        seller.setAgreeTermsOfService(request.getAgreeTermsOfService());
+        seller.setAgreeOperationPolicy(request.getAgreeOperationPolicy());
     }
 
     /**
@@ -276,14 +317,34 @@ public class SellerService {
             throw new BusinessException(ErrorCode.ACCOUNT_NOT_APPROVED);
         }
         if (seller.getStatus() == SellerStatus.REJECTED) {
-            String rejectionReason = seller.getRejectionReason();
-            if (rejectionReason != null && !rejectionReason.isBlank()) {
-                // 반려 사유가 있는 경우: 유저 친화적인 메시지로 변경
-                String userFriendlyMessage = String.format("가입 승인이 반려되었습니다. 반려 사유: %s", rejectionReason);
+            String reasonText = formatRejectionReasonForUser(
+                    seller.getRejectionReason(), seller.getRejectionReasonDetail());
+            if (reasonText != null && !reasonText.isBlank()) {
+                String userFriendlyMessage = String.format("가입 승인이 반려되었습니다. 반려 사유: %s", reasonText);
                 throw new BusinessException(ErrorCode.ACCOUNT_REJECTED_WITH_REASON, userFriendlyMessage);
             }
             throw new BusinessException(ErrorCode.ACCOUNT_REJECTED);
         }
+    }
+
+    private String formatRejectionReasonForUser(String rejectionReasonCode, String rejectionReasonDetail) {
+        StringBuilder sb = new StringBuilder();
+        if (rejectionReasonCode != null && !rejectionReasonCode.isBlank()) {
+            String typeText = rejectionReasonCode;
+            try {
+                typeText = RejectionReasonType.valueOf(rejectionReasonCode).getDescription();
+            } catch (IllegalArgumentException ignored) {
+                // enum 이름이 아닌 기존 저장 문자열(설명 등)은 그대로 표시
+            }
+            sb.append(typeText);
+        }
+        if (rejectionReasonDetail != null && !rejectionReasonDetail.isBlank()) {
+            if (sb.length() > 0) {
+                sb.append(" - ");
+            }
+            sb.append(rejectionReasonDetail);
+        }
+        return sb.toString();
     }
 
     @Transactional

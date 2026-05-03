@@ -48,6 +48,66 @@ public class Seller {
     @Column(name = "ACTIVITY_NAME", length = 100)
     private String activityName;
 
+    // 사업자 기본 정보
+    @Column(name = "BUSINESS_TYPE", length = 50)
+    private String businessType;
+
+    @Column(name = "REPRESENTATIVE_NAME", length = 64)
+    private String representativeName;
+
+    @Column(name = "REPRESENTATIVE_CONTACT", length = 20)
+    private String representativeContact;
+
+    @Column(name = "COMPANY_NAME", length = 100)
+    private String companyName;
+
+    @Column(name = "BUSINESS_REG_NUMBER", length = 20)
+    private String businessRegistrationNumber;
+
+    @Column(name = "BUSINESS_CONDITION", length = 100)
+    private String businessCondition;
+
+    @Column(name = "BUSINESS_ADDRESS", length = 255)
+    private String businessAddress;
+
+    @Column(name = "DETAIL_ADDRESS", length = 255)
+    private String detailAddress;
+
+    @Column(name = "TAX_EMAIL", length = 512)
+    private String taxEmail;
+
+    @Column(name = "BUSINESS_LICENSE_URL", length = 1024)
+    private String businessLicenseImageUrl;
+
+    @Column(name = "MAIL_ORDER_REG_URL", length = 1024)
+    private String mailOrderRegImageUrl;
+
+    @Column(name = "MAIL_ORDER_REG_NUM", length = 100)
+    private String mailOrderRegNumber;
+
+    // 정산 계좌 정보
+    @Column(name = "BANK_NAME", length = 50)
+    private String bankName;
+
+    @Column(name = "ACCOUNT_HOLDER", length = 64)
+    private String accountHolder;
+
+    @Column(name = "ACCOUNT_NUMBER", length = 100)
+    private String accountNumber;
+
+    @Column(name = "BANKBOOK_URL", length = 1024)
+    private String bankbookImageUrl;
+
+    // 약관 동의 내역
+    @Column(name = "AGREE_PRIVACY_POLICY")
+    private Boolean agreePrivacyPolicy;
+
+    @Column(name = "AGREE_TERMS_OF_SERVICE")
+    private Boolean agreeTermsOfService;
+
+    @Column(name = "AGREE_OPERATION_POLICY")
+    private Boolean agreeOperationPolicy;
+
     @Column(name = "ROLE_TYPE", length = 20)
     @Enumerated(EnumType.STRING)
     @NotNull
@@ -58,9 +118,20 @@ public class Seller {
     @NotNull
     private SellerStatus status;
 
+    @Column(name = "PROCESSED_AT")
+    private LocalDateTime processedAt;
+
     @Column(name = "REJECTION_REASON", length = 500)
     @Size(max = 500)
-    private String rejectionReason; // 거부 사유
+    private String rejectionReason; // 반려 사유 타입(Type) 저장용
+
+    @Column(name = "REJECTION_REASON_DETAIL", length = 1000)
+    @Size(max = 1000)
+    private String rejectionReasonDetail; // 선택적 상세 사유
+
+    @Column(name = "REVIEW_MEMO", length = 500)
+    @Size(max = 500)
+    private String reviewMemo; // 관리자용 검토 메모
 
     @Column(name = "CREATED_AT")
     @NotNull

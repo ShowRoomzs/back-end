@@ -65,7 +65,7 @@ public interface AdminCreatorControllerDocs {
                                                     "      \"name\": \"박서준\",\n" +
                                                     "      \"phoneNumber\": \"010-3333-4444\",\n" +
                                                     "      \"status\": \"REJECTED\",\n" +
-                                                    "      \"rejectionReason\": \"플랫폼 확인 불가\"\n" +
+                                                    "      \"rejectionReason\": \"INSUFFICIENT_DOCUMENTS\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
@@ -154,14 +154,17 @@ public interface AdminCreatorControllerDocs {
                     "**상태값:**\n" +
                     "- `APPROVED`: 승인 (로그인 가능, 크리에이터 입점 승인 메일 발송)\n" +
                     "- `REJECTED`: 반려 (로그인 불가, 반려 사유 메일 발송)\n\n" +
-                    "**반려 사유:**\n" +
-                    "- REJECTED 상태일 때 `rejectionReasonType` 필드는 필수입니다.\n" +
-                    "- `rejectionReasonType`이 `OTHER`일 경우 `rejectionReasonDetail` 필드도 필수입니다.\n\n" +
-                    "**반려 사유 타입:**\n" +
-                    "- `BUSINESS_INFO_UNVERIFIED`: 사업자정보 확인 불가\n" +
-                    "- `CRITERIA_NOT_MET`: 입점 기준 미달성\n" +
-                    "- `INAPPROPRIATE_MARKET_NAME`: 마켓명 부적절\n" +
-                    "- `OTHER`: 기타(직접 작성) - 이 경우 `rejectionReasonDetail` 필수\n\n" +
+                    "**요청 필드:**\n" +
+                    "- `status`: `APPROVED` 또는 `REJECTED` (필수)\n" +
+                    "- `rejectionReasonType`: **`status`가 `REJECTED`일 때 필수.** DB `rejectionReason`에는 enum 이름이 저장됩니다.\n" +
+                    "- `rejectionReasonDetail`: **선택.** 전달 시 저장, `null`이면 컬럼 비움. \n\n" +
+                    "**`rejectionReasonType` 목록:**\n" +
+                    "- `INSUFFICIENT_DOCUMENTS`: 서류 미비\n" +
+                    "- `BUSINESS_REG_NUMBER_MISMATCH`: 사업자등록번호 불일치\n" +
+                    "- `MAIL_ORDER_REPORT_INCOMPLETE`: 통신판매업신고 미완료\n" +
+                    "- `BANK_ACCOUNT_ERROR`: 계좌 정보 오류\n" +
+                    "- `DUPLICATE_APPLICATION`: 중복 신청\n" +
+                    "- `OTHER`: 기타 (`rejectionReasonDetail` 선택 입력)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -181,6 +184,14 @@ public interface AdminCreatorControllerDocs {
                                     @ExampleObject(
                                             name = "잘못된 상태값",
                                             value = "{\"code\": \"INVALID_INPUT\", \"message\": \"입력값이 올바르지 않습니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "반려인데 rejectionReasonType 없음",
+                                            value = "{\"code\": \"INVALID_INPUT\", \"message\": \"입력값이 올바르지 않습니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "PENDING 상태가 아님",
+                                            value = "{\"code\": \"ACCOUNT_NOT_PENDING\", \"message\": \"승인 대기 상태인 계정만 처리할 수 있습니다.\"}"
                                     )
                             }
                     )
@@ -213,7 +224,7 @@ public interface AdminCreatorControllerDocs {
                             ),
                             @ExampleObject(
                                     name = "반려 요청 예시 (사전 정의된 사유)",
-                                    value = "{\n  \"status\": \"REJECTED\",\n  \"rejectionReasonType\": \"CRITERIA_NOT_MET\"\n}"
+                                    value = "{\n  \"status\": \"REJECTED\",\n  \"rejectionReasonType\": \"INSUFFICIENT_DOCUMENTS\"\n}"
                             ),
                             @ExampleObject(
                                     name = "반려 요청 예시 (기타 사유)",

@@ -17,15 +17,15 @@ import org.springframework.context.annotation.Profile;
                 description = """
                         테스트용 JWT
                         
-                        - 유효기간: 3/8일까지
+                        - 유효기간: 7/1일까지
                         
                         - 샘플 토큰:
                         
-                          USER   : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfVVNFUiIsImV4cCI6MTc3MzAzNjgzMH0.gpYsAkzzuPkXPb-JuwvBY_5OkkMzh4-4OHBCxxZYhrk
+                          USER   : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfVVNFUiIsImV4cCI6MTc4Mjc5Njg0MX0.uSJgR2ZOFHWIPrZ_PQdCdLsSvhKZ1H-UVzpaKYJURuE
                           
-                          SELLER : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfU0VMTEVSIiwiZXhwIjoxNzczMDM2ODMwfQ.E6XYiAqVRE5f-P0oSMO08o_vPVj9-E9bUSZLboRN4M8
+                          SELLER : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfU0VMTEVSIiwiZXhwIjoxNzgyNzk2ODQyfQ.Y5B0BGRzLEIwiBCiem4-8dAcaKeDm9RF0ifCFOAq4vY
                           
-                          ADMIN  : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfQURNSU4iLCJleHAiOjE3NzMwMzY4MzB9.vP2P5Rf6mr3_vC3upehi6uKf8H6rvFbOg7VDt2hn6S4
+                          ADMIN  : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfQURNSU4iLCJleHAiOjE3ODI3OTY4NDJ9.sCtz_DWMz_4wyUQmO0jfRBmktA62zXqA2wRZ0Edi5pc
                         """,
                 version = "v1"
         ),

@@ -55,7 +55,8 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
            "    (:keywordType = 'SELLER_ID'    AND CAST(s.id AS string) LIKE CONCAT('%', :keyword, '%')) OR " +
            "    (:keywordType = 'MARKET_NAME'  AND m.marketName LIKE CONCAT('%', :keyword, '%')) OR " +
            "    (:keywordType = 'NAME'         AND s.name LIKE CONCAT('%', :keyword, '%')) OR " +
-           "    (:keywordType = 'PHONE_NUMBER' AND s.phoneNumber LIKE CONCAT('%', :keyword, '%'))" +
+           "    (:keywordType = 'PHONE_NUMBER' AND s.phoneNumber LIKE CONCAT('%', :keyword, '%')) OR " +
+           "    (:keywordType = 'BUSINESS_NUMBER' AND s.businessRegistrationNumber IS NOT NULL AND s.businessRegistrationNumber LIKE CONCAT('%', :keyword, '%'))" +
            ")")
     Page<Market> searchApplications(@Param("roleType") RoleType roleType,
                                     @Param("status") SellerStatus status,
