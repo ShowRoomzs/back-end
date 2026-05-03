@@ -1,2 +1,2 @@
 -- 반려 상세 사유 (선택)
-ALTER TABLE SELLER ADD COLUMN REJECTION_REASON_DETAIL VARCHAR(1000) NULL COMMENT '반려 상세 사유';
+alter table seller add column rejection_reason_detail varchar(1000) null comment '반려 상세 사유';
