@@ -1,6 +1,8 @@
 package showroomz.api.admin.market.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.market.DTO.AdminMarketDto;
@@ -21,6 +23,17 @@ public class AdminMarketService {
 
     private final MarketRepository marketRepository;
     private final ProductRepository productRepository;
+
+    @Transactional(readOnly = true)
+    public Page<AdminMarketDto.MarketResponse> getMarkets(
+            AdminMarketDto.MarketSearchRequest request, Pageable pageable) {
+        return marketRepository.searchAdminMarkets(
+                request.getMainCategoryId(),
+                request.getKeywordType(),
+                request.getKeyword(),
+                request.getStatus(),
+                pageable);
+    }
 
     @Transactional
     public void updateMarketStatus(Long marketId, AdminMarketDto.UpdateMarketStatusRequest request) {

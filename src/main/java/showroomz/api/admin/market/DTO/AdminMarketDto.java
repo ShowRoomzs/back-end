@@ -54,13 +54,27 @@ public class AdminMarketDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Schema(description = "어드민 마켓 목록 검색 조건")
-    public static class MarketListSearchCondition {
+    public static class MarketSearchRequest {
 
-        @Schema(description = "대표 카테고리 ID 필터", example = "1")
+        @Schema(description = "대표(메인) 카테고리 ID 필터 (통합 검색과 별도, 미입력 시 전체)", example = "1")
         private Long mainCategoryId;
 
-        @Schema(description = "마켓명 검색어", example = "멋쟁이")
-        private String marketName;
+        @Schema(
+                description = "검색 타입\n" +
+                        "- MARKET_ID: 마켓 ID\n" +
+                        "- MARKET_NAME: 마켓명\n" +
+                        "- MANAGER_NAME: 담당자명\n" +
+                        "- CONTACT: 연락처(전화번호)",
+                example = "MARKET_NAME",
+                allowableValues = {"MARKET_ID", "MARKET_NAME", "MANAGER_NAME", "CONTACT"}
+        )
+        private String keywordType;
+
+        @Schema(description = "검색어 (부분 일치, keywordType과 함께 사용)", example = "멋쟁이")
+        private String keyword;
+
+        @Schema(description = "판매자(마켓) 계정 상태 필터 (미입력 시 전체)", example = "APPROVED")
+        private SellerStatus status;
     }
 
     @Getter
@@ -102,6 +116,12 @@ public class AdminMarketDto {
 
         @Schema(description = "등록 상품 수", example = "120")
         private Long productCount;
+
+        @Schema(description = "누적 판매액 (미구현, 현재 0 고정)", example = "0")
+        private Long totalSalesAmount;
+
+        @Schema(description = "마켓(판매자) 계정 상태", example = "APPROVED")
+        private SellerStatus status;
 
         @Schema(description = "입점일", example = "2024-01-01T10:00:00")
         private LocalDateTime createdAt;

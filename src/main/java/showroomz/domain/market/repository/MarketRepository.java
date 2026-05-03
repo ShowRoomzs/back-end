@@ -68,11 +68,10 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
 
     /**
      * 어드민 마켓 목록 조회
-     * - 마켓명, 카테고리 필터링
-     * - 등록된 상품 수(productCount) 포함
-     * - 승인된(APPROVED) 판매자만 조회
-     * - 쇼룸(CREATOR) 제외, 일반 마켓(SELLER)만 조회
-     * - 수정됨: LEFT JOIN을 사용하여 mainCategory가 null인 마켓도 포함
+     * - 메인 카테고리 필터와 키워드 검색을 AND로 결합 (교집합)
+     * - 키워드 타입별 검색, 판매자 계정 상태 필터
+     * - 등록 상품 수, 누적 판매액(더미 0), 계정 상태 포함
+     * - LEFT JOIN으로 mainCategory가 없는 마켓도 포함
      */
     @Query("SELECT new showroomz.api.admin.market.DTO.AdminMarketDto$MarketResponse(" +
            "m.id, m.marketName, " +
@@ -80,18 +79,25 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
            "c.name, " +
            "s.name, s.phoneNumber, " +
            "(SELECT COUNT(p) FROM Product p WHERE p.market = m), " +
+           "0L, " +
+           "s.status, " +
            "s.createdAt) " +
            "FROM Market m " +
            "JOIN m.seller s " +
            "LEFT JOIN m.mainCategory c " +
-           "WHERE s.status = :approvedStatus " +
-           "AND s.roleType = showroomz.api.app.auth.entity.RoleType.SELLER " +
+           "WHERE (:status IS NULL OR s.status = :status) " +
            "AND (:mainCategoryId IS NULL OR c.categoryId = :mainCategoryId) " +
-           "AND (:marketName IS NULL OR :marketName = '' OR m.marketName LIKE CONCAT('%', :marketName, '%'))")
-    Page<AdminMarketDto.MarketResponse> findMarketsWithProductCount(
+           "AND (:keyword IS NULL OR :keyword = '' OR " +
+           "    (:keywordType = 'MARKET_ID'    AND CAST(m.id AS string) LIKE CONCAT('%', :keyword, '%')) OR " +
+           "    (:keywordType = 'MARKET_NAME'  AND m.marketName LIKE CONCAT('%', :keyword, '%')) OR " +
+           "    (:keywordType = 'MANAGER_NAME' AND s.name LIKE CONCAT('%', :keyword, '%')) OR " +
+           "    (:keywordType = 'CONTACT'      AND s.phoneNumber LIKE CONCAT('%', :keyword, '%'))" +
+           ")")
+    Page<AdminMarketDto.MarketResponse> searchAdminMarkets(
             @Param("mainCategoryId") Long mainCategoryId,
-            @Param("marketName") String marketName,
-            @Param("approvedStatus") SellerStatus approvedStatus,
+            @Param("keywordType") String keywordType,
+            @Param("keyword") String keyword,
+            @Param("status") SellerStatus status,
             Pageable pageable);
 
     /**
