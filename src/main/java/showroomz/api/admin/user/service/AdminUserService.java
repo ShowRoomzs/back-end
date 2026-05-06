@@ -7,6 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.user.DTO.AdminUserDto;
+import showroomz.api.admin.user.dto.AdminUserMemoUpdateRequest;
 import showroomz.api.admin.user.repository.UserSpecification;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.member.user.entity.Users;
@@ -50,5 +51,13 @@ public class AdminUserService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         return AdminUserDto.UserDetailResponse.from(user);
+    }
+
+    @Transactional
+    public void updateAdminMemo(Long userId, AdminUserMemoUpdateRequest request) {
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        user.updateAdminMemo(request.getAdminMemo());
     }
 }

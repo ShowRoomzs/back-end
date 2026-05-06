@@ -1,0 +1,2 @@
+ALTER TABLE users
+    ADD COLUMN admin_memo VARCHAR(500) NULL;

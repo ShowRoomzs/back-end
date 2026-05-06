@@ -115,6 +115,10 @@ public class Users {
     @Embedded
     private RefundAccount refundAccount; // 환불 계좌 정보 (null 가능)
 
+    @Column(name = "ADMIN_MEMO", length = 500)
+    @Size(max = 500)
+    private String adminMemo;
+
     public Users(
             @NotNull @Size(max = 64) String username,
             @NotNull @Size(max = 100) String nickname,
@@ -160,6 +164,10 @@ public class Users {
             this.notificationSetting = new NotificationSetting();
         }
         this.notificationSetting.update(smsAgree, nightPushAgree, showroomPushAgree, marketPushAgree);
+    }
+
+    public void updateAdminMemo(String adminMemo) {
+        this.adminMemo = adminMemo;
     }
 }
 
