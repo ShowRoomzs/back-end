@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import showroomz.api.app.auth.entity.ProviderType;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -22,7 +24,13 @@ public class SocialLoginPolicy {
     @Column(nullable = false)
     private boolean isActive; // true: 활성, false: 일시 중단
 
-    public void updateStatus(boolean isActive) {
-        this.isActive = isActive;
+    @Column
+    private LocalDateTime statusChangedAt;
+
+    public void updateStatus(boolean newActive) {
+        if (this.id == null || this.isActive != newActive) {
+            this.isActive = newActive;
+            this.statusChangedAt = LocalDateTime.now();
+        }
     }
 }

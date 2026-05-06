@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import showroomz.api.admin.social.docs.AdminSocialControllerDocs;
+import showroomz.api.admin.social.dto.AdminSocialProviderStatusResponse;
 import showroomz.api.admin.social.service.SocialPolicyService;
 import showroomz.api.app.auth.entity.ProviderType;
 
@@ -19,8 +20,8 @@ public class AdminSocialController implements AdminSocialControllerDocs {
 
     @Override
     @GetMapping("/status")
-    public ResponseEntity<Map<String, Boolean>> getAllSocialStatuses() {
-        Map<String, Boolean> statuses = socialPolicyService.getAllProviderStatuses();
+    public ResponseEntity<Map<String, AdminSocialProviderStatusResponse>> getAllSocialStatuses() {
+        Map<String, AdminSocialProviderStatusResponse> statuses = socialPolicyService.getAllProviderStatuses();
         return ResponseEntity.ok(statuses);
     }
 

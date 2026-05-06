@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.domain.social.entity.SocialLoginPolicy;
 import showroomz.domain.social.repository.SocialLoginPolicyRepository;
+import showroomz.api.admin.social.dto.AdminSocialProviderStatusResponse;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -58,27 +59,26 @@ public class SocialPolicyService {
      * 전체 소셜 로그인 상태 조회 (관리자용)
      */
     @Transactional(readOnly = true)
-    public Map<String, Boolean> getAllProviderStatuses() {
-        Map<String, Boolean> statusMap = new HashMap<>();
-        
-        // 지원하는 ProviderType 목록
+    public Map<String, AdminSocialProviderStatusResponse> getAllProviderStatuses() {
+        Map<String, AdminSocialProviderStatusResponse> statusMap = new HashMap<>();
+
         ProviderType[] supportedProviders = {
             ProviderType.GOOGLE,
             ProviderType.NAVER,
             ProviderType.KAKAO,
             ProviderType.APPLE
         };
-        
+
         for (ProviderType providerType : supportedProviders) {
             SocialLoginPolicy policy = policyRepository.findByProviderType(providerType)
                     .orElseGet(() -> SocialLoginPolicy.builder()
                             .providerType(providerType)
-                            .isActive(true) // 기본값: 활성
+                            .isActive(true)
                             .build());
-            
-            statusMap.put(providerType.name(), policy.isActive());
+
+            statusMap.put(providerType.name(), AdminSocialProviderStatusResponse.from(policy));
         }
-        
+
         return statusMap;
     }
 }
