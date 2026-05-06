@@ -97,9 +97,6 @@ public class AdminUserDto {
         @Schema(description = "성별", example = "MALE")
         private String gender;
 
-        @Schema(description = "전화번호 (더미값)", example = "010-0000-0000")
-        private String phoneNumber;
-
         @Schema(description = "기본 배송지 (더미값)", example = "서울특별시 강남구 테헤란로")
         private String defaultAddress;
 
@@ -121,7 +118,6 @@ public class AdminUserDto {
                     .birthday(user.getBirthday())
                     .gender(user.getGender())
                     // 요청하신 대로 더미 값으로 설정 (DB에 값이 있어도 더미 반환)
-                    .phoneNumber("010-0000-0000")
                     .defaultAddress("서울특별시 강남구 테헤란로 123, 101호")
                     .createdAt(user.getCreatedAt())
                     .marketingAgree(user.isMarketingAgree())
