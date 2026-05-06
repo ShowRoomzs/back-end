@@ -15,8 +15,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.admin.user.DTO.AdminUserDto;
+import showroomz.api.admin.user.dto.AdminUserMemoUpdateRequest;
 import showroomz.api.admin.user.service.AdminUserService;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
@@ -190,5 +192,52 @@ public class UserAdminController {
             @PathVariable("userId") Long userId) {
         AdminUserDto.UserDetailResponse response = adminUserService.getUserDetail(userId);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "유저 관리자 메모 수정",
+            description = "특정 유저에 대한 관리자 메모를 수정합니다. (최대 500자)\n\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "메모 수정 성공"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 입력값 (500자 초과 등)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "유저를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "유저 없음",
+                                            value = "{\"code\": \"USER_NOT_FOUND\", \"message\": \"존재하지 않는 회원입니다.\"}"
+                                    )
+                            }
+                    )
+            )
+    })
+    @PatchMapping("/{userId}/memo")
+    public ResponseEntity<Void> updateAdminMemo(
+            @Parameter(
+                    description = "유저 ID",
+                    required = true,
+                    example = "1",
+                    in = ParameterIn.PATH
+            )
+            @PathVariable("userId") Long userId,
+            @Valid @RequestBody AdminUserMemoUpdateRequest request) {
+
+        adminUserService.updateAdminMemo(userId, request);
+
+        return ResponseEntity.noContent().build();
     }
 }

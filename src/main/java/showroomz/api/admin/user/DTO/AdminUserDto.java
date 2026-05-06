@@ -109,6 +109,9 @@ public class AdminUserDto {
         @Schema(description = "프로필 사진 URL", example = "https://example.com/profile.jpg")
         private String profileImageUrl;
 
+        @Schema(description = "관리자 메모 (내부용)", example = "모니터링 대상")
+        private String adminMemo;
+
         public static UserDetailResponse from(Users user) {
             return UserDetailResponse.builder()
                     .userId(user.getId())
@@ -122,6 +125,7 @@ public class AdminUserDto {
                     .createdAt(user.getCreatedAt())
                     .marketingAgree(user.isMarketingAgree())
                     .profileImageUrl(user.getProfileImageUrl())
+                    .adminMemo(user.getAdminMemo())
                     .build();
         }
     }
