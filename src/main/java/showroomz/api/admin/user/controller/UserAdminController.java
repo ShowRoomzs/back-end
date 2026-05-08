@@ -71,6 +71,6 @@ public class UserAdminController implements UserAdminControllerDocs {
 
         adminUserService.updateUserStatus(userId, request);
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 }

@@ -227,8 +227,8 @@ public interface UserAdminControllerDocs {
     )
     @ApiResponses(value = {
             @ApiResponse(
-                    responseCode = "200",
-                    description = "유저 상태 변경 완료"
+                    responseCode = "204",
+                    description = "유저 상태 변경 완료 (응답 본문 없음)"
             ),
             @ApiResponse(
                     responseCode = "400",
