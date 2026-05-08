@@ -10,6 +10,7 @@ import showroomz.domain.member.user.type.UserStatus;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class AdminUserDto {
 
@@ -92,6 +93,19 @@ public class AdminUserDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    @Schema(description = "상태 변경 이력 응답")
+    public static class UserStatusHistoryDto {
+        @Schema(description = "변경 후 상태", example = "NORMAL")
+        private UserStatus status;
+
+        @Schema(description = "상태 변경 일시", example = "2024-01-01T10:00:00")
+        private LocalDateTime changedAt;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     @Schema(description = "유저 상세 정보 응답")
     public static class UserDetailResponse {
         @Schema(description = "유저 ID", example = "1")
@@ -127,7 +141,56 @@ public class AdminUserDto {
         @Schema(description = "관리자 메모 (내부용)", example = "모니터링 대상")
         private String adminMemo;
 
-        public static UserDetailResponse from(Users user) {
+        @Schema(description = "누적 구매액 (더미값)", example = "1500000")
+        private Long totalPurchaseAmount;
+
+        @Schema(description = "이번달 구매액 (더미값)", example = "300000")
+        private Long thisMonthPurchaseAmount;
+
+        @Schema(description = "누적 주문수 (더미값)", example = "15")
+        private Integer totalOrderCount;
+
+        @Schema(description = "이번달 주문수 (더미값)", example = "3")
+        private Integer thisMonthOrderCount;
+
+        @Schema(description = "평균 주문 금액 (더미값)", example = "100000")
+        private Long averageOrderAmount;
+
+        @Schema(description = "최근 주문일 (더미값)", example = "2024-05-01T14:30:00")
+        private LocalDateTime lastOrderDate;
+
+        @Schema(description = "상품 위시리스트 수", example = "12")
+        private Long productWishlistCount;
+
+        @Schema(description = "팔로우 쇼룸 수", example = "5")
+        private Long followedShowroomCount;
+
+        @Schema(description = "작성 리뷰 수", example = "7")
+        private Long writtenReviewCount;
+
+        @Schema(description = "문의 내역 수", example = "2")
+        private Long inquiryCount;
+
+        @Schema(description = "상태 변경 이력")
+        private List<UserStatusHistoryDto> statusHistory;
+
+        public static UserDetailResponse of(
+                Users user,
+                Long wishlistCount,
+                Long followedShowroomCount,
+                Long reviewCount,
+                Long inquiryCount,
+                List<UserStatusHistoryDto> statusHistory) {
+
+            Long dummyTotalPurchaseAmount = 1500000L;
+            Long dummyThisMonthPurchaseAmount = 300000L;
+            Integer dummyTotalOrderCount = 15;
+            Integer dummyThisMonthOrderCount = 3;
+            Long dummyAverageOrderAmount = dummyTotalOrderCount > 0
+                    ? dummyTotalPurchaseAmount / dummyTotalOrderCount
+                    : 0L;
+            LocalDateTime dummyLastOrderDate = LocalDateTime.now().minusDays(5);
+
             return UserDetailResponse.builder()
                     .userId(user.getId())
                     .nickname(user.getNickname())
@@ -135,12 +198,22 @@ public class AdminUserDto {
                     .status(user.getStatus())
                     .birthday(user.getBirthday())
                     .gender(user.getGender())
-                    // 요청하신 대로 더미 값으로 설정 (DB에 값이 있어도 더미 반환)
                     .defaultAddress("서울특별시 강남구 테헤란로 123, 101호")
                     .createdAt(user.getCreatedAt())
                     .marketingAgree(user.isMarketingAgree())
                     .profileImageUrl(user.getProfileImageUrl())
                     .adminMemo(user.getAdminMemo())
+                    .totalPurchaseAmount(dummyTotalPurchaseAmount)
+                    .thisMonthPurchaseAmount(dummyThisMonthPurchaseAmount)
+                    .totalOrderCount(dummyTotalOrderCount)
+                    .thisMonthOrderCount(dummyThisMonthOrderCount)
+                    .averageOrderAmount(dummyAverageOrderAmount)
+                    .lastOrderDate(dummyLastOrderDate)
+                    .productWishlistCount(wishlistCount)
+                    .followedShowroomCount(followedShowroomCount)
+                    .writtenReviewCount(reviewCount)
+                    .inquiryCount(inquiryCount)
+                    .statusHistory(statusHistory)
                     .build();
         }
     }
