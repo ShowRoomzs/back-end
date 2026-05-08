@@ -23,7 +23,10 @@ public class AdminUserDto {
         @Schema(description = "가입 채널 (GOOGLE, NAVER, KAKAO, APPLE)", example = "GOOGLE")
         private ProviderType providerType;
 
-        @Schema(description = "활동 상태 (NORMAL, DORMANT, WITHDRAWN)", example = "NORMAL")
+        @Schema(
+                description = "활동 상태 (NORMAL: 정상, DORMANT: 휴면, WITHDRAWN: 탈퇴, SUSPENDED: 정지)",
+                example = "NORMAL",
+                allowableValues = {"NORMAL", "DORMANT", "WITHDRAWN", "SUSPENDED"})
         private UserStatus status;
 
         @Schema(description = "가입일 조회 시작 날짜 (yyyy-MM-dd)", example = "2024-01-01")

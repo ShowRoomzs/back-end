@@ -29,7 +29,7 @@ public interface UserAdminControllerDocs {
             description = "가입 채널, 가입일, 활동 상태별 필터링 및 페이징 조회\n\n" +
                     "**필터 기능:**\n" +
                     "- providerType: 가입 채널 (GOOGLE, NAVER, KAKAO, APPLE)\n" +
-                    "- status: 활동 상태 (NORMAL, DORMANT, WITHDRAWN)\n" +
+                    "- status: 활동 상태 (NORMAL, DORMANT, WITHDRAWN, SUSPENDED)\n" +
                     "- startDate / endDate: 가입일 기준 조회 기간 (YYYY-MM-DD)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
@@ -51,7 +51,7 @@ public interface UserAdminControllerDocs {
                             description = "활동 상태",
                             example = "NORMAL",
                             in = ParameterIn.QUERY,
-                            schema = @Schema(allowableValues = {"NORMAL", "DORMANT", "WITHDRAWN"})
+                            schema = @Schema(allowableValues = {"NORMAL", "DORMANT", "WITHDRAWN", "SUSPENDED"})
                     ),
                     @Parameter(name = "startDate", description = "가입일 조회 시작 날짜 (yyyy-MM-dd)", example = "2024-01-01", in = ParameterIn.QUERY),
                     @Parameter(name = "endDate", description = "가입일 조회 종료 날짜 (yyyy-MM-dd)", example = "2024-12-31", in = ParameterIn.QUERY)
