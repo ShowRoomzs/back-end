@@ -13,7 +13,9 @@ import showroomz.api.app.user.DTO.WithdrawalRequest;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.bank.entity.Bank;
 import showroomz.domain.bank.repository.BankRepository;
+import showroomz.domain.history.entity.UserStatusHistory;
 import showroomz.domain.history.entity.WithdrawalHistory;
+import showroomz.domain.history.repository.UserStatusHistoryRepository;
 import showroomz.domain.history.repository.WithdrawalHistoryRepository;
 import showroomz.domain.market.repository.MarketFollowRepository;
 import showroomz.domain.member.user.entity.Users;
@@ -32,6 +34,7 @@ public class UserService {
     private final BankRepository bankRepository;
     private final MarketFollowRepository marketFollowRepository;
     private final WithdrawalHistoryRepository withdrawalHistoryRepository;
+    private final UserStatusHistoryRepository userStatusHistoryRepository;
 
     public Optional<Users> getUser(String username) {
         return userRepository.findByUsername(username);
@@ -240,6 +243,9 @@ public class UserService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "탈퇴 유의사항에 동의해야 합니다.");
         }
 
+        // 기존 상태 임시 저장 (히스토리 기록용)
+        UserStatus previousStatus = user.getStatus();
+
         // 2. 탈퇴 히스토리 저장
         withdrawalHistoryRepository.save(WithdrawalHistory.builder()
                 .userId(user.getId())
@@ -250,6 +256,14 @@ public class UserService {
 
         // 3. 회원 상태 변경 (논리 삭제)
         user.updateStatus(UserStatus.WITHDRAWN);
+
+        // 4. 유저 상태 변경 히스토리 저장
+        userStatusHistoryRepository.save(UserStatusHistory.builder()
+                .user(user)
+                .previousStatus(previousStatus)
+                .newStatus(UserStatus.WITHDRAWN)
+                .reason(request.getCustomReason() != null ? request.getCustomReason() : (request.getReason() != null ? request.getReason().name() : null))
+                .build());
 
         // (선택 사항) 개인정보 보호를 위한 중요 정보 마스킹/삭제 처리
         // 탈퇴한 회원의 개인정보를 즉시 파기해야 한다면 아래와 같이 처리합니다.
