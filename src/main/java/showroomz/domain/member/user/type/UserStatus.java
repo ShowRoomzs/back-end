@@ -8,7 +8,8 @@ import lombok.Getter;
 public enum UserStatus {
     NORMAL("정상"),
     DORMANT("휴면"),
-    WITHDRAWN("탈퇴");
+    WITHDRAWN("탈퇴"),
+    SUSPENDED("정지");
 
     private final String description;
 }

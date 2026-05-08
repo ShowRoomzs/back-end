@@ -17,7 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import showroomz.api.app.auth.DTO.ErrorResponse;
-import showroomz.api.admin.user.DTO.AdminUserDto;
+import showroomz.api.admin.user.dto.AdminUserDto;
 import showroomz.api.admin.user.dto.AdminUserMemoUpdateRequest;
 import showroomz.api.admin.user.service.AdminUserService;
 import showroomz.global.dto.PageResponse;
@@ -239,5 +239,44 @@ public class UserAdminController {
         adminUserService.updateAdminMemo(userId, request);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
+            summary = "일반 유저 상태 변경 (정지/활성 처리)",
+            description = "특정 유저의 계정 상태를 활성(NORMAL) 또는 정지(SUSPENDED) 상태로 변경 처리합니다.\n\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "유저 상태 변경 완료"
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 상태 값 요청 (NORMAL, SUSPENDED 이외의 값)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "해당 ID의 유저를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    @PatchMapping("/{userId}/status")
+    public ResponseEntity<Void> updateUserStatus(
+            @Parameter(description = "상태를 변경할 대상 유저의 식별자(ID)", required = true, example = "1", in = ParameterIn.PATH)
+            @PathVariable("userId") Long userId,
+            @RequestBody AdminUserDto.UserStatusUpdateRequest request) {
+
+        adminUserService.updateUserStatus(userId, request);
+
+        return ResponseEntity.ok().build();
     }
 }

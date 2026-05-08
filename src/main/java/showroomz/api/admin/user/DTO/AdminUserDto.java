@@ -1,4 +1,4 @@
-package showroomz.api.admin.user.DTO;
+package showroomz.api.admin.user.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -31,6 +31,16 @@ public class AdminUserDto {
         @Schema(description = "가입일 조회 종료 날짜 (yyyy-MM-dd)", example = "2024-12-31")
         @DateTimeFormat(pattern = "yyyy-MM-dd")
         private LocalDate endDate;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "유저 상태 변경 요청")
+    public static class UserStatusUpdateRequest {
+        @Schema(description = "변경할 상태 (NORMAL, SUSPENDED만 가능)", example = "SUSPENDED")
+        private UserStatus status;
     }
 
     @Getter

@@ -2,7 +2,7 @@ package showroomz.api.admin.user.repository;
 
 import org.springframework.data.jpa.domain.Specification;
 import jakarta.persistence.criteria.Predicate;
-import showroomz.api.admin.user.DTO.AdminUserDto;
+import showroomz.api.admin.user.dto.AdminUserDto;
 import showroomz.domain.member.user.entity.Users;
 
 import java.util.ArrayList;
