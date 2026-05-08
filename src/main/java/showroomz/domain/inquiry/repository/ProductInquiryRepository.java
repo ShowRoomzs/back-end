@@ -9,6 +9,8 @@ import showroomz.domain.inquiry.entity.ProductInquiry;
 
 public interface ProductInquiryRepository extends JpaRepository<ProductInquiry, Long> {
 
+    long countByUser_Id(Long userId);
+
     @Query(value = "SELECT DISTINCT pi FROM ProductInquiry pi " +
            "JOIN FETCH pi.product p " +
            "JOIN FETCH p.market m " +

@@ -2,7 +2,7 @@ package showroomz.api.admin.user.repository;
 
 import org.springframework.data.jpa.domain.Specification;
 import jakarta.persistence.criteria.Predicate;
-import showroomz.api.admin.user.DTO.AdminUserDto;
+import showroomz.api.admin.user.dto.AdminUserDto;
 import showroomz.domain.member.user.entity.Users;
 
 import java.util.ArrayList;
@@ -13,6 +13,16 @@ public class UserSpecification {
     public static Specification<Users> search(AdminUserDto.SearchCondition condition) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+
+            if (condition.getNickname() != null && !condition.getNickname().trim().isEmpty()) {
+                String keyword = condition.getNickname().trim();
+                predicates.add(cb.like(root.get("nickname"), "%" + keyword + "%"));
+            }
+
+            if (condition.getEmail() != null && !condition.getEmail().trim().isEmpty()) {
+                String keyword = condition.getEmail().trim();
+                predicates.add(cb.like(root.get("email"), "%" + keyword + "%"));
+            }
 
             // 1. 가입 채널 필터
             if (condition.getProviderType() != null) {

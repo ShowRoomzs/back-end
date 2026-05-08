@@ -14,6 +14,8 @@ import java.util.Optional;
 
 public interface ReviewRepository extends JpaRepository<Review, Long>, ReviewRepositoryCustom {
 
+    long countByUser_Id(Long userId);
+
     Page<Review> findByUser_IdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
     boolean existsByOrderProduct_Id(Long orderProductId);

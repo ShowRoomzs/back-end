@@ -15,6 +15,8 @@ import java.util.Set;
 
 @Repository
 public interface WishlistRepository extends JpaRepository<Wishlist, Long>, WishlistRepositoryCustom {
+    long countByUser_Id(Long userId);
+
     boolean existsByUserAndProduct(Users user, Product product);
 
     Optional<Wishlist> findByUserAndProduct(Users user, Product product);
