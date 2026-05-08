@@ -14,6 +14,16 @@ public class UserSpecification {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+            if (condition.getNickname() != null && !condition.getNickname().trim().isEmpty()) {
+                String keyword = condition.getNickname().trim();
+                predicates.add(cb.like(root.get("nickname"), "%" + keyword + "%"));
+            }
+
+            if (condition.getEmail() != null && !condition.getEmail().trim().isEmpty()) {
+                String keyword = condition.getEmail().trim();
+                predicates.add(cb.like(root.get("email"), "%" + keyword + "%"));
+            }
+
             // 1. 가입 채널 필터
             if (condition.getProviderType() != null) {
                 predicates.add(cb.equal(root.get("providerType"), condition.getProviderType()));

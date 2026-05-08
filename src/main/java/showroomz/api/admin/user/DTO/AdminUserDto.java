@@ -20,6 +20,12 @@ public class AdminUserDto {
     @AllArgsConstructor
     @Schema(description = "유저 목록 검색 조건")
     public static class SearchCondition {
+        @Schema(description = "닉네임 검색 (부분 일치)", example = "홍길동")
+        private String nickname;
+
+        @Schema(description = "이메일 검색 (부분 일치)", example = "user@example.com")
+        private String email;
+
         @Schema(description = "가입 채널 (GOOGLE, NAVER, KAKAO, APPLE)", example = "GOOGLE")
         private ProviderType providerType;
 

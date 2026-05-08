@@ -26,8 +26,10 @@ public interface UserAdminControllerDocs {
 
     @Operation(
             summary = "일반 유저 목록 조회",
-            description = "가입 채널, 가입일, 활동 상태별 필터링 및 페이징 조회\n\n" +
+            description = "닉네임, 이메일, 가입 채널, 가입일, 활동 상태별 필터링 및 페이징 조회\n\n" +
                     "**필터 기능:**\n" +
+                    "- nickname: 닉네임 검색 (부분 일치)\n" +
+                    "- email: 이메일 검색 (부분 일치)\n" +
                     "- providerType: 가입 채널 (GOOGLE, NAVER, KAKAO, APPLE)\n" +
                     "- status: 활동 상태 (NORMAL, DORMANT, WITHDRAWN, SUSPENDED)\n" +
                     "- startDate / endDate: 가입일 기준 조회 기간 (YYYY-MM-DD)\n\n" +
@@ -39,6 +41,8 @@ public interface UserAdminControllerDocs {
             parameters = {
                     @Parameter(name = "page", description = "페이지 번호 (1부터 시작)", example = "1", in = ParameterIn.QUERY),
                     @Parameter(name = "size", description = "페이지당 항목 수", example = "20", in = ParameterIn.QUERY),
+                    @Parameter(name = "nickname", description = "닉네임 검색 (부분 일치)", example = "홍길동", in = ParameterIn.QUERY),
+                    @Parameter(name = "email", description = "이메일 검색 (부분 일치)", example = "user@example.com", in = ParameterIn.QUERY),
                     @Parameter(
                             name = "providerType",
                             description = "가입 채널",
