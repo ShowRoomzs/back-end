@@ -7,6 +7,7 @@ import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.member.user.type.UserStatus;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -70,6 +71,9 @@ public class AdminUserDto {
         @Schema(description = "활동 상태", example = "NORMAL")
         private UserStatus status;
 
+        @Schema(description = "누적 구매액 (원, 더미)", example = "1234567")
+        private BigDecimal totalPurchaseAmount;
+
         public static UserResponse from(Users user) {
             return UserResponse.builder()
                     .userId(user.getId())
@@ -79,6 +83,7 @@ public class AdminUserDto {
                     .createdAt(user.getCreatedAt())
                     .lastLoginAt(user.getLastLoginAt())
                     .status(user.getStatus())
+                    .totalPurchaseAmount(new BigDecimal("1234567"))
                     .build();
         }
     }

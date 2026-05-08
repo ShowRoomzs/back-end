@@ -83,7 +83,8 @@ public class UserAdminController {
                                                     "      \"providerType\": \"GOOGLE\",\n" +
                                                     "      \"createdAt\": \"2024-01-01T10:00:00Z\",\n" +
                                                     "      \"lastLoginAt\": \"2024-01-15T14:30:00Z\",\n" +
-                                                    "      \"status\": \"NORMAL\"\n" +
+                                                    "      \"status\": \"NORMAL\",\n" +
+                                                    "      \"totalPurchaseAmount\": 1234567\n" +
                                                     "    },\n" +
                                                     "    {\n" +
                                                     "      \"userId\": 2,\n" +
@@ -92,7 +93,8 @@ public class UserAdminController {
                                                     "      \"providerType\": \"NAVER\",\n" +
                                                     "      \"createdAt\": \"2024-01-05T09:00:00Z\",\n" +
                                                     "      \"lastLoginAt\": \"2024-01-20T16:45:00Z\",\n" +
-                                                    "      \"status\": \"NORMAL\"\n" +
+                                                    "      \"status\": \"NORMAL\",\n" +
+                                                    "      \"totalPurchaseAmount\": 1234567\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
