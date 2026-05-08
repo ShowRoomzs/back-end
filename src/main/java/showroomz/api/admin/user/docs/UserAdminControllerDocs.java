@@ -139,6 +139,7 @@ public interface UserAdminControllerDocs {
     @Operation(
             summary = "일반 유저 상세 조회",
             description = "유저 ID를 통해 상세 정보를 조회합니다.\n\n" +
+            "주문 내역은 추후 개발 시 추가할 예정입니다.\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
