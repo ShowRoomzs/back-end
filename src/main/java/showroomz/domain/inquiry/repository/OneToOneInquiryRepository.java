@@ -8,6 +8,8 @@ import showroomz.domain.member.user.entity.Users;
 
 public interface OneToOneInquiryRepository extends JpaRepository<OneToOneInquiry, Long> {
 
+    long countByUser_Id(Long userId);
+
     // 내 문의 내역 조회 (페이징)
     Page<OneToOneInquiry> findByUserOrderByCreatedAtDesc(Users user, Pageable pageable);
 }
