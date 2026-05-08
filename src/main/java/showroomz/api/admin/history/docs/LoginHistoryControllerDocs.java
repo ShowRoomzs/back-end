@@ -1,4 +1,4 @@
-package showroomz.api.admin.user.docs;
+package showroomz.api.admin.history.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

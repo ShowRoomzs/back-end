@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 import showroomz.api.admin.history.DTO.LocationFilterResponse;
 import showroomz.api.admin.history.DTO.LoginHistoryResponse;
 import showroomz.api.admin.history.DTO.LoginHistorySearchCondition;
+import showroomz.api.admin.history.docs.LoginHistoryControllerDocs;
 import showroomz.api.admin.history.service.LoginHistoryService;
-import showroomz.api.admin.user.docs.LoginHistoryControllerDocs;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
