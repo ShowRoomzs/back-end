@@ -1,0 +1,16 @@
+ALTER TABLE coupon
+    CHANGE COLUMN code coupon_issue_number VARCHAR(50) NOT NULL,
+    CHANGE COLUMN discount_type discount_unit VARCHAR(20) NOT NULL,
+    CHANGE COLUMN start_at issue_start_date DATETIME(6) NOT NULL,
+    CHANGE COLUMN end_at issue_end_date DATETIME(6) NOT NULL,
+    MODIFY COLUMN max_discount_amount INT NULL,
+    ADD COLUMN coupon_type VARCHAR(20) NOT NULL DEFAULT 'DIRECT' AFTER coupon_issue_number,
+    ADD COLUMN target_audience VARCHAR(20) NOT NULL DEFAULT 'GENERAL' AFTER coupon_type,
+    ADD COLUMN showroom_id BIGINT NULL AFTER target_audience,
+    ADD COLUMN is_quantity_limited TINYINT(1) NOT NULL DEFAULT 0 AFTER showroom_id,
+    ADD COLUMN is_min_order_amount_limited TINYINT(1) NOT NULL DEFAULT 0 AFTER max_discount_amount,
+    ADD COLUMN validity_type VARCHAR(30) NOT NULL DEFAULT 'PERIOD' AFTER issue_end_date,
+    ADD COLUMN valid_start_date DATETIME(6) NULL AFTER validity_type,
+    ADD COLUMN valid_end_date DATETIME(6) NULL AFTER valid_start_date,
+    ADD COLUMN valid_days INT NULL AFTER valid_end_date,
+    ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'WAITING' AFTER valid_days;

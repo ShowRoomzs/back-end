@@ -100,7 +100,7 @@ public class UserCouponService {
         }
         BigDecimal raw = orderAmount.multiply(coupon.getDiscountValue())
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-        BigDecimal maxDiscount = coupon.getMaxDiscountAmount();
+        BigDecimal maxDiscount = coupon.getMaxDiscountAmount() == null ? null : BigDecimal.valueOf(coupon.getMaxDiscountAmount());
         if (maxDiscount != null && raw.compareTo(maxDiscount) > 0) {
             raw = maxDiscount;
         }

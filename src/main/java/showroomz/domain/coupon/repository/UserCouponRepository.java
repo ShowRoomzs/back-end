@@ -34,8 +34,8 @@ public interface UserCouponRepository extends JpaRepository<UserCoupon, Long> {
             WHERE uc.user.id = :userId
             AND uc.status = :status
             AND s.id = :sellerId
-            AND c.startAt <= :now
-            AND c.endAt >= :now
+            AND c.issueStartDate <= :now
+            AND c.issueEndDate >= :now
             AND (
                 NOT EXISTS (SELECT 1 FROM CouponProduct cp0 WHERE cp0.coupon = c)
                 OR EXISTS (SELECT 1 FROM CouponProduct cp1 WHERE cp1.coupon = c AND cp1.product.productId = :productId)
@@ -50,4 +50,9 @@ public interface UserCouponRepository extends JpaRepository<UserCoupon, Long> {
 
     @Query("SELECT uc.coupon.id FROM UserCoupon uc WHERE uc.user.id = :userId AND uc.coupon.id IN :couponIds")
     Set<Long> findCouponIdsIssuedToUser(@Param("userId") Long userId, @Param("couponIds") Collection<Long> couponIds);
+
+    long countByCouponId(Long couponId);
+
+    @Query("SELECT COUNT(uc) FROM UserCoupon uc WHERE uc.coupon.id = :couponId AND uc.status = showroomz.domain.coupon.type.UserCouponStatus.USED")
+    long countByCouponIdAndStatusUsed(@Param("couponId") Long couponId);
 }

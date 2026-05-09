@@ -16,8 +16,8 @@ public interface CouponProductRepository extends JpaRepository<CouponProduct, Lo
     @Query("""
             SELECT cp.coupon FROM CouponProduct cp
             WHERE cp.product.productId = :productId
-            AND cp.coupon.startAt <= :now
-            AND cp.coupon.endAt >= :now
+            AND cp.coupon.issueStartDate <= :now
+            AND cp.coupon.issueEndDate >= :now
             ORDER BY cp.coupon.createdAt DESC
             """)
     List<Coupon> findActiveCouponsForProduct(@Param("productId") Long productId, @Param("now") LocalDateTime now);

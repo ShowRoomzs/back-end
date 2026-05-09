@@ -65,7 +65,7 @@ public class UserCouponDto {
                 .discountType(coupon.getDiscountType())
                 .discountValue(coupon.getDiscountValue())
                 .minOrderAmount(coupon.getMinOrderAmount())
-                .maxDiscountAmount(coupon.getMaxDiscountAmount())
+                .maxDiscountAmount(coupon.getMaxDiscountAmount() == null ? null : BigDecimal.valueOf(coupon.getMaxDiscountAmount()))
                 .validStartAt(coupon.getStartAt())
                 .validEndAt(coupon.getEndAt())
                 .registeredAt(userCoupon.getRegisteredAt())

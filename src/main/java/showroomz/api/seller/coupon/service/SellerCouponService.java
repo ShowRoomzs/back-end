@@ -10,6 +10,11 @@ import showroomz.domain.coupon.entity.Coupon;
 import showroomz.domain.coupon.entity.CouponProduct;
 import showroomz.domain.coupon.repository.CouponProductRepository;
 import showroomz.domain.coupon.repository.CouponRepository;
+import showroomz.domain.coupon.type.CouponStatus;
+import showroomz.domain.coupon.type.CouponType;
+import showroomz.domain.coupon.type.DiscountUnit;
+import showroomz.domain.coupon.type.TargetAudience;
+import showroomz.domain.coupon.type.ValidityType;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductRepository;
@@ -52,12 +57,22 @@ public class SellerCouponService {
         Coupon coupon = new Coupon(
                 request.getName(),
                 request.getCouponCode(),
-                request.getDiscountType(),
+                CouponType.DIRECT,
+                TargetAudience.GENERAL,
+                null,
+                totalQty != null,
+                request.getDiscountType() == showroomz.domain.coupon.type.DiscountType.PERCENTAGE ? DiscountUnit.PERCENT : DiscountUnit.AMOUNT,
                 request.getDiscountValue(),
                 request.getMinOrderAmount(),
-                request.getMaxDiscountAmount(),
+                request.getMaxDiscountAmount() == null ? null : request.getMaxDiscountAmount().intValue(),
+                request.getMinOrderAmount() != null,
                 request.getValidFrom(),
                 request.getValidTo(),
+                ValidityType.PERIOD,
+                request.getValidFrom(),
+                request.getValidTo(),
+                null,
+                CouponStatus.ACTIVE,
                 totalQty,
                 remainingQty,
                 seller
