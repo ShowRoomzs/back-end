@@ -7,8 +7,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
+import org.springframework.util.StringUtils;
 import showroomz.domain.coupon.entity.Coupon;
 import showroomz.domain.coupon.type.CouponStatus;
+import showroomz.domain.coupon.type.TargetAudience;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,12 +23,18 @@ public class CouponRepositoryImpl implements CouponRepositoryCustom {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<Coupon> findAllWithStatusFilter(CouponStatus status, Pageable pageable) {
-        LocalDateTime now = LocalDateTime.now();
-
+    public Page<Coupon> searchAdminCoupons(String searchType, String keyword, TargetAudience targetAudience,
+                                           CouponStatus status, LocalDateTime dateFrom, LocalDateTime dateTo,
+                                           Pageable pageable) {
         List<Coupon> content = queryFactory
                 .selectFrom(coupon)
-                .where(statusCondition(status, now))
+                .where(
+                        searchCondition(searchType, keyword),
+                        targetAudienceCondition(targetAudience),
+                        statusCondition(status),
+                        dateFromCondition(dateFrom),
+                        dateToCondition(dateTo)
+                )
                 .orderBy(coupon.createdAt.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -35,26 +43,41 @@ public class CouponRepositoryImpl implements CouponRepositoryCustom {
         JPAQuery<Long> countQuery = queryFactory
                 .select(coupon.count())
                 .from(coupon)
-                .where(statusCondition(status, now));
+                .where(
+                        searchCondition(searchType, keyword),
+                        targetAudienceCondition(targetAudience),
+                        statusCondition(status),
+                        dateFromCondition(dateFrom),
+                        dateToCondition(dateTo)
+                );
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
 
-    /**
-     * status별 동적 조건
-     * - ACTIVE: startAt <= now AND endAt >= now
-     * - EXPIRED: endAt < now
-     * - SCHEDULED: startAt > now
-     * - null: 전체 조회
-     */
-    private BooleanExpression statusCondition(CouponStatus status, LocalDateTime now) {
-        if (status == null) {
+    private BooleanExpression searchCondition(String searchType, String keyword) {
+        if (!StringUtils.hasText(keyword)) {
             return null;
         }
-        return switch (status) {
-            case ACTIVE -> coupon.startAt.loe(now).and(coupon.endAt.goe(now));
-            case EXPIRED -> coupon.endAt.lt(now);
-            case SCHEDULED -> coupon.startAt.gt(now);
-        };
+        String normalized = keyword.trim();
+        if ("couponIssueNumber".equalsIgnoreCase(searchType)) {
+            return coupon.couponIssueNumber.containsIgnoreCase(normalized);
+        }
+        return coupon.name.containsIgnoreCase(normalized);
+    }
+
+    private BooleanExpression targetAudienceCondition(TargetAudience targetAudience) {
+        return targetAudience == null ? null : coupon.targetAudience.eq(targetAudience);
+    }
+
+    private BooleanExpression statusCondition(CouponStatus status) {
+        return status == null ? null : coupon.status.eq(status);
+    }
+
+    private BooleanExpression dateFromCondition(LocalDateTime dateFrom) {
+        return dateFrom == null ? null : coupon.issueStartDate.goe(dateFrom);
+    }
+
+    private BooleanExpression dateToCondition(LocalDateTime dateTo) {
+        return dateTo == null ? null : coupon.issueEndDate.loe(dateTo);
     }
 }

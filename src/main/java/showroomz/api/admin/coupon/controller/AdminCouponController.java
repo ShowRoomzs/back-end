@@ -2,16 +2,15 @@ package showroomz.api.admin.coupon.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import showroomz.api.admin.coupon.dto.AdminCouponCreateRequest;
-import showroomz.api.admin.coupon.dto.AdminCouponCreateResponse;
-import showroomz.api.admin.coupon.dto.AdminCouponResponse;
+import showroomz.api.admin.coupon.dto.*;
 import showroomz.api.admin.coupon.service.AdminCouponService;
 import showroomz.api.admin.coupon.docs.AdminCouponControllerDocs;
 import showroomz.domain.coupon.entity.Coupon;
-import showroomz.domain.coupon.type.CouponStatus;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 import java.net.URI;
 import java.util.Objects;
@@ -26,25 +25,10 @@ public class AdminCouponController implements AdminCouponControllerDocs {
     @Override
     @GetMapping
     public ResponseEntity<PageResponse<AdminCouponResponse>> getCouponList(
-            @RequestParam(name = "page", required = false, defaultValue = "0") Integer page,
-            @RequestParam(name = "size", required = false, defaultValue = "10") Integer size,
-            @RequestParam(name = "status", required = false) String status) {
-
-        CouponStatus statusEnum = parseCouponStatus(status);
-        PageResponse<AdminCouponResponse> response = adminCouponService.getCouponList(
-                page, size, statusEnum);
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest,
+            @ParameterObject @ModelAttribute AdminCouponSearchCondition condition) {
+        PageResponse<AdminCouponResponse> response = adminCouponService.getCouponList(pagingRequest, condition);
         return ResponseEntity.ok(response);
-    }
-
-    private static CouponStatus parseCouponStatus(String status) {
-        if (status == null || status.isBlank()) {
-            return null;
-        }
-        try {
-            return CouponStatus.valueOf(status.toUpperCase().trim());
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
     }
 
     @Override
@@ -58,5 +42,30 @@ public class AdminCouponController implements AdminCouponControllerDocs {
                 .name(coupon.getName())
                 .build();
         return ResponseEntity.created(location).body(response);
+    }
+
+    @Override
+    @GetMapping("/{couponId}")
+    public ResponseEntity<AdminCouponDetailResponse> getCouponDetail(@PathVariable Long couponId) {
+        return ResponseEntity.ok(adminCouponService.getCouponDetail(couponId));
+    }
+
+    @Override
+    @PutMapping("/{couponId}")
+    public ResponseEntity<Void> updateCoupon(@PathVariable Long couponId, @Valid @RequestBody AdminCouponUpdateRequest request) {
+        adminCouponService.updateCoupon(couponId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    @PatchMapping("/bulk-stop")
+    public ResponseEntity<AdminCouponBulkResponse> bulkStop(@Valid @RequestBody AdminCouponBulkRequest request) {
+        return ResponseEntity.ok(adminCouponService.bulkStop(request.getCouponIds()));
+    }
+
+    @Override
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<AdminCouponBulkResponse> bulkDelete(@Valid @RequestBody AdminCouponBulkRequest request) {
+        return ResponseEntity.ok(adminCouponService.bulkDelete(request.getCouponIds()));
     }
 }

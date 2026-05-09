@@ -4,11 +4,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import showroomz.domain.coupon.entity.Coupon;
 import showroomz.domain.coupon.type.CouponStatus;
+import showroomz.domain.coupon.type.TargetAudience;
+
+import java.time.LocalDateTime;
 
 public interface CouponRepositoryCustom {
 
-    /**
-     * 관리자용 쿠폰 목록 조회 (status 필터링, createdAt DESC 정렬)
-     */
-    Page<Coupon> findAllWithStatusFilter(CouponStatus status, Pageable pageable);
+    Page<Coupon> searchAdminCoupons(String searchType, String keyword, TargetAudience targetAudience,
+                                    CouponStatus status, LocalDateTime dateFrom, LocalDateTime dateTo,
+                                    Pageable pageable);
 }
