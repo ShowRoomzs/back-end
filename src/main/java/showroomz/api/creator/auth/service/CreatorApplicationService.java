@@ -10,6 +10,8 @@ import showroomz.api.admin.creator.dto.CreatorApplicationResponse;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.creator.auth.DTO.CreatorApplicationRequest;
+import showroomz.domain.history.entity.CreatorApplicationHistory;
+import showroomz.domain.history.repository.CreatorApplicationHistoryRepository;
 import showroomz.domain.member.creator.entity.CreatorApplication;
 import showroomz.domain.member.creator.repository.CreatorApplicationRepository;
 import showroomz.domain.member.creator.type.CreatorApplicationStatus;
@@ -26,6 +28,7 @@ public class CreatorApplicationService {
     private final CreatorApplicationRepository creatorApplicationRepository;
     private final UserRepository userRepository;
     private final MailService mailService;
+    private final CreatorApplicationHistoryRepository applicationHistoryRepository;
 
     @Transactional
     public void apply(Long userId, CreatorApplicationRequest request) {
@@ -71,10 +74,18 @@ public class CreatorApplicationService {
             throw new BusinessException(ErrorCode.INVALID_APPLICATION_STATUS);
         }
 
+        CreatorApplicationStatus previousStatus = application.getStatus();
+
         application.approve();
 
         Users user = application.getUser();
         user.updateRoleType(RoleType.CREATOR);
+
+        applicationHistoryRepository.save(CreatorApplicationHistory.builder()
+                .application(application)
+                .previousStatus(previousStatus)
+                .newStatus(CreatorApplicationStatus.APPROVED)
+                .build());
 
         mailService.sendCreatorApprovalEmail(
                 user.getEmail(),
@@ -92,6 +103,8 @@ public class CreatorApplicationService {
             throw new BusinessException(ErrorCode.INVALID_APPLICATION_STATUS);
         }
 
+        CreatorApplicationStatus previousStatus = application.getStatus();
+
         String reasonSummary = request.getRejectReasonType().getDescription();
         String reasonDetail = request.getRejectReasonDetail();
 
@@ -101,6 +114,13 @@ public class CreatorApplicationService {
         }
 
         application.reject(fullRejectReason);
+
+        applicationHistoryRepository.save(CreatorApplicationHistory.builder()
+                .application(application)
+                .previousStatus(previousStatus)
+                .newStatus(CreatorApplicationStatus.REJECTED)
+                .reason(fullRejectReason)
+                .build());
 
         Users user = application.getUser();
         mailService.sendCreatorRejectionEmail(
