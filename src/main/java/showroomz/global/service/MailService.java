@@ -23,6 +23,7 @@ public class MailService {
 
     private static final String SELLER_ADMIN_LOGIN_URL = "https://showroomz.co.kr/seller/login";
     private static final String SELLER_REAPPLY_URL = "https://showroomz.co.kr/seller/signup";
+    private static final String CREATOR_LOGIN_URL = "https://showroomz.co.kr/creator/login";
     private static final String OPS_TEAM = "SHOWROOMZ 운영팀";
     private static final DateTimeFormatter SELLER_MAIL_DATETIME =
             DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm");
@@ -111,36 +112,55 @@ public class MailService {
     }
 
     @Async
-    public void sendCreatorApprovalEmail(String to, String name) {
-        String subject = "[Showroomz] 크리에이터 입점 신청이 승인되었습니다.";
+    public void sendCreatorApprovalEmail(String to, String nickname, LocalDateTime processedAt) {
+        String safeName = HtmlUtils.htmlEscape(nickname);
+        String when = processedAt.format(SELLER_MAIL_DATETIME);
+        String subject = "[SHOWROOMZ] 크리에이터 입점 신청이 승인되었습니다.";
         String text = String.format("""
                 <html>
-                <body>
-                    <h2>안녕하세요, %s님.</h2>
-                    <p>축하합니다! Showroomz 크리에이터 입점 신청이 <strong>승인</strong>되었습니다.</p>
-                    <p>지금 바로 로그인하여 쇼룸을 꾸미고 활동을 시작해보세요.</p>
-                    <br/>
-                    <a href="https://showroomz.co.kr/seller/login">크리에이터 센터 바로가기</a>
+                <body style="font-family: sans-serif; line-height: 1.6; color: #222;">
+                    <p>안녕하세요, %s 크리에이터님.</p>
+                    <p>SHOWROOMZ 크리에이터 입점 신청이 승인되었습니다. 지금 바로 쇼룸을 꾸미고 활동을 시작해 보세요.</p>
+                    <p><strong>■ 승인 정보</strong><br/>
+                    활동명: %s<br/>
+                    승인일시: %s<br/>
+                    <p><strong>■ 시작하기</strong><br/>
+                    아래 버튼을 클릭하여 크리에이터 센터에 접속해 주세요.</p>
+                    <p><a href="%s" style="display:inline-block;padding:10px 18px;background:#111;color:#fff;text-decoration:none;border-radius:4px;">크리에이터 센터 바로가기</a></p>
+                    <p>감사합니다.<br/>%s 드림</p>
                 </body>
                 </html>
-                """, name);
+                """,
+                safeName, safeName, when, CREATOR_LOGIN_URL, OPS_TEAM);
 
         sendEmail(to, subject, text);
     }
 
     @Async
-    public void sendCreatorRejectionEmail(String to, String name, String reason) {
-        String subject = "[Showroomz] 크리에이터 입점 신청이 반려되었습니다.";
+    public void sendCreatorRejectionEmail(String to, String nickname, LocalDateTime processedAt,
+                                          String reasonSummary, String reasonDetail) {
+        String safeName = HtmlUtils.htmlEscape(nickname);
+        String safeSummary = HtmlUtils.htmlEscape(reasonSummary);
+        String when = processedAt.format(SELLER_MAIL_DATETIME);
+        String detailBlock = (reasonDetail != null && !reasonDetail.isBlank())
+                ? HtmlUtils.htmlEscape(reasonDetail.strip()) : "내용 없음";
+
+        String subject = "[SHOWROOMZ] 크리에이터 입점 신청이 반려되었습니다.";
         String text = String.format("""
                 <html>
-                <body>
-                    <h2>안녕하세요, %s님.</h2>
-                    <p>아쉽게도 Showroomz 크리에이터 입점 신청이 <strong>반려</strong>되었습니다.</p>
-                    <p><strong>반려 사유:</strong> %s</p>
-                    <p>내용을 보완하여 다시 신청해주시면 신속히 검토하겠습니다.</p>
+                <body style="font-family: sans-serif; line-height: 1.6; color: #222;">
+                    <p>안녕하세요, %s님.</p>
+                    <p>SHOWROOMZ 크리에이터 입점 신청을 검토한 결과, 아래와 같은 사유로 반려 처리되었습니다.</p>
+                    <p><strong>■ 반려 정보</strong><br/>
+                    반려일시: %s<br/>
+                    <p><strong>■ 반려 사유</strong>: %s</p>
+                    <p><strong>■ 상세 내용</strong><br/>%s</p>
+                    <p>내용을 보완하여 마이페이지에서 다시 신청해주시면 신속히 검토하겠습니다.</p>
+                    <p>감사합니다.<br/>%s 드림</p>
                 </body>
                 </html>
-                """, name, reason);
+                """,
+                safeName, when, safeSummary, detailBlock, OPS_TEAM);
 
         sendEmail(to, subject, text);
     }
