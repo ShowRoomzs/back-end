@@ -55,7 +55,7 @@ public interface AdminCreatorApplicationControllerDocs {
                                                     "    {\n" +
                                                     "      \"applicationId\": 12,\n" +
                                                     "      \"nickname\": \"뷰티마스터\",\n" +
-                                                    "      \"email\": \"user@showroomz.shop\",\n" +
+                                                    "      \"email\": \"business@creator.com\",\n" +
                                                     "      \"snsType\": \"YOUTUBE\",\n" +
                                                     "      \"channelUrl\": \"https://youtube.com/c/example\",\n" +
                                                     "      \"followerCount\": 155000,\n" +
@@ -67,7 +67,7 @@ public interface AdminCreatorApplicationControllerDocs {
                                                     "    {\n" +
                                                     "      \"applicationId\": 11,\n" +
                                                     "      \"nickname\": \"패션크리에이터\",\n" +
-                                                    "      \"email\": \"creator@showroomz.shop\",\n" +
+                                                    "      \"email\": \"contact@creator.com\",\n" +
                                                     "      \"snsType\": \"INSTAGRAM\",\n" +
                                                     "      \"channelUrl\": \"https://instagram.com/example\",\n" +
                                                     "      \"followerCount\": 82000,\n" +
@@ -113,7 +113,7 @@ public interface AdminCreatorApplicationControllerDocs {
                     "**처리 내용:**\n" +
                     "- 지원서 상태를 `APPROVED`로 변경\n" +
                     "- 유저 역할(RoleType)을 `CREATOR`로 변경\n" +
-                    "- 승인 이력 저장 및 승인 안내 메일 발송\n\n" +
+                    "- 승인 이력 저장 및 신청 시 입력한 업무 이메일(businessEmail)로 승인 안내 메일 발송\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -170,7 +170,7 @@ public interface AdminCreatorApplicationControllerDocs {
             description = "검수 대기(PENDING) 상태의 지원서를 반려하고 안내 메일을 발송합니다.\n\n" +
                     "**처리 내용:**\n" +
                     "- 지원서 상태를 `REJECTED`로 변경\n" +
-                    "- 반려 사유 저장 및 반려 안내 메일 발송\n\n" +
+                    "- 반려 사유 저장 및 신청 시 입력한 업무 이메일(businessEmail)로 반려 안내 메일 발송\n\n" +
                     "**요청 필드:**\n" +
                     "- `rejectReasonType`: 반려 사유 유형 (필수)\n" +
                     "- `rejectReasonDetail`: 상세 반려 사유 (선택, `OTHER` 선택 시 권장)\n\n" +

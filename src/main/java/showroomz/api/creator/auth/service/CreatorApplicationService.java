@@ -91,7 +91,7 @@ public class CreatorApplicationService {
                 .build());
 
         mailService.sendCreatorApprovalEmail(
-                user.getEmail(),
+                application.getBusinessEmail(),
                 user.getNickname(),
                 application.getProcessedAt()
         );
@@ -127,7 +127,7 @@ public class CreatorApplicationService {
 
         Users user = application.getUser();
         mailService.sendCreatorRejectionEmail(
-                user.getEmail(),
+                application.getBusinessEmail(),
                 user.getNickname(),
                 application.getProcessedAt(),
                 reasonSummary,
