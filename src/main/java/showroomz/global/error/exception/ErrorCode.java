@@ -35,6 +35,7 @@ public enum ErrorCode {
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "비밀번호가 일치하지 않습니다."),
     ALREADY_REGISTERED(HttpStatus.BAD_REQUEST, "ALREADY_REGISTERED", "이미 회원가입이 완료된 사용자입니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "존재하지 않는 회원입니다."),
+    CREATOR_NOT_FOUND(HttpStatus.NOT_FOUND, "CREATOR_NOT_FOUND", "존재하지 않는 크리에이터입니다."),
     
     // UserController 유효성 검증 에러 추가
     INVALID_AUTH_INFO(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "인증 정보가 유효하지 않습니다. 다시 로그인해주세요."),
