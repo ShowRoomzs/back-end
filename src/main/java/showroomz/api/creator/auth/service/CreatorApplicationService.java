@@ -11,7 +11,9 @@ import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.creator.auth.DTO.CreatorApplicationRequest;
 import showroomz.domain.history.entity.CreatorApplicationHistory;
 import showroomz.domain.history.repository.CreatorApplicationHistoryRepository;
+import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.entity.CreatorApplication;
+import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.creator.repository.CreatorApplicationRepository;
 import showroomz.domain.member.creator.type.CreatorApplicationStatus;
 import showroomz.domain.member.user.entity.Users;
@@ -28,6 +30,7 @@ public class CreatorApplicationService {
 
     private final CreatorApplicationRepository creatorApplicationRepository;
     private final UserRepository userRepository;
+    private final CreatorRepository creatorRepository;
     private final MailService mailService;
     private final CreatorApplicationHistoryRepository applicationHistoryRepository;
 
@@ -83,6 +86,15 @@ public class CreatorApplicationService {
 
         Users user = application.getUser();
         user.updateRoleType(RoleType.CREATOR);
+
+        Creator creator = Creator.builder()
+                .user(user)
+                .snsType(application.getSnsType())
+                .channelUrl(application.getChannelUrl())
+                .followerCount(application.getFollowerCount())
+                .businessEmail(application.getBusinessEmail())
+                .build();
+        creatorRepository.save(creator);
 
         applicationHistoryRepository.save(CreatorApplicationHistory.builder()
                 .application(application)
