@@ -2,15 +2,15 @@ package showroomz.api.admin.creator.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.admin.creator.dto.CreatorApplicationRejectRequest;
 import showroomz.api.admin.creator.dto.CreatorApplicationResponse;
 import showroomz.api.admin.creator.docs.AdminCreatorApplicationControllerDocs;
 import showroomz.api.creator.auth.service.CreatorApplicationService;
+import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 
 @RestController
 @RequestMapping("/v1/admin/creator/applications")
@@ -21,9 +21,9 @@ public class AdminCreatorApplicationController implements AdminCreatorApplicatio
 
     @Override
     @GetMapping
-    public ResponseEntity<Page<CreatorApplicationResponse>> getApplications(
-            @PageableDefault(size = 10) Pageable pageable) {
-        return ResponseEntity.ok(creatorApplicationService.getApplications(pageable));
+    public ResponseEntity<PageResponse<CreatorApplicationResponse>> getApplications(
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest) {
+        return ResponseEntity.ok(creatorApplicationService.getApplications(pagingRequest));
     }
 
     @Override

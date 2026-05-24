@@ -2,7 +2,6 @@ package showroomz.api.creator.auth.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.creator.dto.CreatorApplicationRejectRequest;
@@ -16,6 +15,8 @@ import showroomz.domain.member.creator.entity.CreatorApplication;
 import showroomz.domain.member.creator.repository.CreatorApplicationRepository;
 import showroomz.domain.member.creator.type.CreatorApplicationStatus;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.service.MailService;
@@ -60,9 +61,11 @@ public class CreatorApplicationService {
         creatorApplicationRepository.save(application);
     }
 
-    public Page<CreatorApplicationResponse> getApplications(Pageable pageable) {
-        return creatorApplicationRepository.findAllWithUser(pageable)
+    public PageResponse<CreatorApplicationResponse> getApplications(PagingRequest pagingRequest) {
+        Page<CreatorApplicationResponse> page = creatorApplicationRepository
+                .findAllWithUser(pagingRequest.toPageable())
                 .map(CreatorApplicationResponse::new);
+        return new PageResponse<>(page);
     }
 
     @Transactional
