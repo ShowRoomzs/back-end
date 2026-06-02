@@ -121,7 +121,7 @@ public class SecurityConfig {
                 .requestMatchers("/v1/creator/**").hasAnyAuthority(RoleType.CREATOR.getCode())
 
                 // USER 권한
-                .requestMatchers("/v1/user/**").hasAnyAuthority(RoleType.USER.getCode())
+                .requestMatchers("/v1/user/**").hasAnyAuthority(RoleType.USER.getCode(), RoleType.CREATOR.getCode())
                 
                 .anyRequest().authenticated()
             );
