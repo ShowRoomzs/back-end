@@ -15,7 +15,7 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 @RestController
-@RequestMapping("/v1/user/shops")
+@RequestMapping("/v1/user")
 @RequiredArgsConstructor
 public class MarketFollowController implements MarketFollowControllerDocs {
 
@@ -23,7 +23,7 @@ public class MarketFollowController implements MarketFollowControllerDocs {
 
     // 찜 하기 (추가) - 성공 시 204 No Content
     @Override
-    @PostMapping("/{shopId}/follow")
+    @PostMapping("/shops/{shopId}/follow")
     public ResponseEntity<Void> followMarket(
         @PathVariable("shopId") Long shopId) {
         
@@ -35,7 +35,7 @@ public class MarketFollowController implements MarketFollowControllerDocs {
 
     // 찜 취소 (삭제) - 성공 시 204 No Content
     @Override
-    @DeleteMapping("/{shopId}/follow")
+    @DeleteMapping("/shops/{shopId}/follow")
     public ResponseEntity<Void> unfollowMarket(
         @PathVariable("shopId") Long shopId) {
         
@@ -47,13 +47,41 @@ public class MarketFollowController implements MarketFollowControllerDocs {
 
     // 팔로우 목록 조회
     @Override
-    @GetMapping("/following")
+    @GetMapping("/shops/following")
     public ResponseEntity<PageResponse<FollowingMarketResponse>> getFollowedMarkets(
             @ModelAttribute PagingRequest pagingRequest) {
 
         String username = getUsername();
         return ResponseEntity.ok(marketFollowService.getFollowedMarkets(username, pagingRequest));
     }
+
+    /**
+     * 크리에이터 쇼룸 팔로우 (찜 하기)
+     */
+    @PostMapping("/showrooms/{showroomId}/follow")
+    public ResponseEntity<Void> followShowroom(@PathVariable Long showroomId) {
+        marketFollowService.followCreator(getUsername(), showroomId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 크리에이터 쇼룸 팔로우 취소 (찜 취소)
+     */
+    @DeleteMapping("/showrooms/{showroomId}/follow")
+    public ResponseEntity<Void> unfollowShowroom(@PathVariable Long showroomId) {
+        marketFollowService.unfollowCreator(getUsername(), showroomId);
+        return ResponseEntity.ok().build();
+    }
+
+    // /**
+    //  * 팔로우한 마켓 및 쇼룸 목록 조회 (통합 페이징)
+    //  */
+    // @GetMapping("/follows/shops")
+    // public ResponseEntity<PageResponse<FollowingMarketResponse>> getFollowedShops(
+    //         @ModelAttribute PagingRequest pagingRequest
+    // ) {
+    //     return ResponseEntity.ok(marketFollowService.getFollowedMarkets(getUsername(), pagingRequest));
+    // }
 
     private String getUsername() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
