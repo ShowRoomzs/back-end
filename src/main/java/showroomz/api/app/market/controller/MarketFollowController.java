@@ -58,19 +58,21 @@ public class MarketFollowController implements MarketFollowControllerDocs {
     /**
      * 크리에이터 쇼룸 팔로우 (찜 하기)
      */
+    @Override
     @PostMapping("/showrooms/{showroomId}/follow")
     public ResponseEntity<Void> followShowroom(@PathVariable Long showroomId) {
         marketFollowService.followCreator(getUsername(), showroomId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     /**
      * 크리에이터 쇼룸 팔로우 취소 (찜 취소)
      */
+    @Override
     @DeleteMapping("/showrooms/{showroomId}/follow")
     public ResponseEntity<Void> unfollowShowroom(@PathVariable Long showroomId) {
         marketFollowService.unfollowCreator(getUsername(), showroomId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     // /**

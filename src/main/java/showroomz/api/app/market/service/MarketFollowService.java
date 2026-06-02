@@ -64,7 +64,7 @@ public class MarketFollowService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         Creator creator = creatorRepository.findById(creatorId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND)); // 추후 CREATOR_NOT_FOUND 에러코드 추가 권장
+                .orElseThrow(() -> new BusinessException(ErrorCode.CREATOR_NOT_FOUND));
 
         if (!creatorFollowRepository.existsByUserAndCreator(user, creator)) {
             CreatorFollow creatorFollow = new CreatorFollow(user, creator);
@@ -96,7 +96,7 @@ public class MarketFollowService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         Creator creator = creatorRepository.findById(creatorId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCode.CREATOR_NOT_FOUND));
 
         if (creatorFollowRepository.existsByUserAndCreator(user, creator)) {
             creatorFollowRepository.deleteByUserAndCreator(user, creator);

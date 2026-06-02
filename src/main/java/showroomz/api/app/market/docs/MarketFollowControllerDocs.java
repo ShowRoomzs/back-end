@@ -196,5 +196,119 @@ public interface MarketFollowControllerDocs {
     ResponseEntity<PageResponse<FollowingMarketResponse>> getFollowedMarkets(
             @Parameter(hidden = true) PagingRequest pagingRequest
     );
+
+    @Operation(
+            summary = "쇼룸(크리에이터) 팔로우",
+            description = "크리에이터 쇼룸을 팔로우(찜)합니다.\n\n" +
+                    "**동작 방식:**\n" +
+                    "- 이미 팔로우 중이면 아무 동작도 하지 않음\n" +
+                    "- 팔로우하지 않았으면 팔로우 추가\n\n" +
+                    "**권한:** USER/CREATOR (로그인 필수)\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}",
+            parameters = {
+                    @Parameter(name = "showroomId", description = "쇼룸(크리에이터) ID", required = true, example = "1", in = ParameterIn.PATH)
+            }
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "팔로우 성공 (No Content)"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 정보 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_AUTH_INFO\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "크리에이터를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "크리에이터 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"CREATOR_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 크리에이터입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<Void> followShowroom(
+            @Parameter(description = "쇼룸(크리에이터) ID", required = true, example = "1", in = ParameterIn.PATH)
+            Long showroomId
+    );
+
+    @Operation(
+            summary = "쇼룸(크리에이터) 팔로우 취소",
+            description = "크리에이터 쇼룸 팔로우(찜)를 취소합니다.\n\n" +
+                    "**동작 방식:**\n" +
+                    "- 팔로우 중이면 팔로우 삭제\n" +
+                    "- 팔로우하지 않았으면 아무 동작도 하지 않음\n\n" +
+                    "**권한:** USER/CREATOR (로그인 필수)\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}",
+            parameters = {
+                    @Parameter(name = "showroomId", description = "쇼룸(크리에이터) ID", required = true, example = "1", in = ParameterIn.PATH)
+            }
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "팔로우 취소 성공 (No Content)"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 정보 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_AUTH_INFO\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "크리에이터를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "크리에이터 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"CREATOR_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 크리에이터입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<Void> unfollowShowroom(
+            @Parameter(description = "쇼룸(크리에이터) ID", required = true, example = "1", in = ParameterIn.PATH)
+            Long showroomId
+    );
 }
 
