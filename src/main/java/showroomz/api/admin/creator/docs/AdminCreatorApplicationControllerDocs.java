@@ -118,7 +118,7 @@ public interface AdminCreatorApplicationControllerDocs {
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "승인 성공"),
+            @ApiResponse(responseCode = "204", description = "승인 성공"),
             @ApiResponse(
                     responseCode = "400",
                     description = "PENDING 상태가 아닌 지원서",
@@ -182,7 +182,7 @@ public interface AdminCreatorApplicationControllerDocs {
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "반려 성공"),
+            @ApiResponse(responseCode = "204", description = "반려 성공"),
             @ApiResponse(
                     responseCode = "400",
                     description = "입력값 오류 또는 PENDING 상태가 아님",
