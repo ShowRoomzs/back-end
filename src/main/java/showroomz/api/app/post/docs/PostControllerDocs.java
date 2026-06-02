@@ -174,7 +174,7 @@ public interface PostControllerDocs {
                                                 "currentPage": 1,
                                                 "totalPages": 5,
                                                 "totalResults": 87,
-                                                "size": 20,
+                                                "limit": 20,
                                                 "hasNext": true
                                               }
                                             }
@@ -239,7 +239,7 @@ public interface PostControllerDocs {
                                                 "currentPage": 1,
                                                 "totalPages": 2,
                                                 "totalResults": 21,
-                                                "size": 20,
+                                                "limit": 20,
                                                 "hasNext": true
                                               }
                                             }

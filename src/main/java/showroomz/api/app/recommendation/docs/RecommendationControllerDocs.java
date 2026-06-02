@@ -30,7 +30,7 @@ public interface RecommendationControllerDocs {
                     "- isRecommended DESC, createdAt DESC 정렬\n\n" +
                     "**응답 구조:**\n" +
                     "- content: 추천 상품 목록\n" +
-                    "- pageInfo: 페이징 메타데이터 (currentPage, totalPages, totalResults, size, hasNext)\n\n" +
+                    "- pageInfo: 페이징 메타데이터 (currentPage, totalPages, totalResults, limit, hasNext)\n\n" +
                     "**파라미터:**\n" +
                     "- categoryId: 카테고리 ID 필터 (선택, 하위 카테고리 포함)\n" +
                     "- page: 페이지 번호 (1부터 시작, 기본값: 1)\n" +
@@ -71,7 +71,7 @@ public interface RecommendationControllerDocs {
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 8,\n" +
                                                     "    \"totalResults\": 150,\n" +
-                                                    "    \"size\": 20,\n" +
+                                                    "    \"limit\": 20,\n" +
                                                     "    \"hasNext\": true\n" +
                                                     "  }\n" +
                                                     "}"
