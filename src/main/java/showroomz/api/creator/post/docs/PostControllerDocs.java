@@ -208,7 +208,7 @@ public interface PostControllerDocs {
                                                 "currentPage": 1,
                                                 "totalPages": 1,
                                                 "totalResults": 1,
-                                                "size": 20,
+                                                "limit": 20,
                                                 "hasNext": false
                                               }
                                             }
