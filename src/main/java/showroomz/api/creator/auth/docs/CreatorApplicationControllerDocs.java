@@ -40,7 +40,7 @@ public interface CreatorApplicationControllerDocs {
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "신청 접수 성공"),
+            @ApiResponse(responseCode = "204", description = "신청 접수 성공"),
             @ApiResponse(
                     responseCode = "400",
                     description = "입력값 오류, 중복 신청, 또는 이미 크리에이터",

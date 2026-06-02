@@ -27,6 +27,6 @@ public class CreatorApplicationController implements CreatorApplicationControlle
             @Valid @RequestBody CreatorApplicationRequest request) {
 
         creatorApplicationService.apply(userPrincipal.getUserId(), request);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 }
