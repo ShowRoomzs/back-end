@@ -8,7 +8,8 @@ import lombok.RequiredArgsConstructor;
 public enum OrderProductStatus {
     PENDING("주문 대기"),
     PURCHASE_CONFIRMED("구매 확정"),
-    CANCELLED("취소");
+    CANCELLED("취소"),
+    RETURNED("반품");
 
     private final String description;
 }

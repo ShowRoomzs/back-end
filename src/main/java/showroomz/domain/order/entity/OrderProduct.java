@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import showroomz.domain.common.BaseTimeEntity;
+import showroomz.domain.groupbuy.entity.GroupBuyPost;
 import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.review.entity.Review;
@@ -13,6 +14,11 @@ import showroomz.domain.review.entity.Review;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+/**
+ * 주문 항목 — SKU 단위(취소·반품 단위).
+ * 어느 공구 게시물(쇼룸·공구)을 통해 구매했는지와 담을 때의 공구가 스냅샷(price)을 보관한다.
+ * 다른 옵션(SKU)은 별개 항목이라 각각 독립 취소·환불 가능.
+ */
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -27,6 +33,16 @@ public class OrderProduct extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
+
+    /** 소속 하위주문(공구별 배송·정산 단위) */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sub_order_id")
+    private SubOrder subOrder;
+
+    /** 구매 경로 — 어느 공구 게시물(쇼룸+공구)을 통해 구매했는지 (공구가 적용 근거) */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_buy_post_id")
+    private GroupBuyPost groupBuyPost;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "variant_id", nullable = false)
@@ -58,10 +74,13 @@ public class OrderProduct extends BaseTimeEntity {
     private Review review;
 
     @Builder
-    public OrderProduct(Order order, ProductVariant variant, String productName, String optionName,
+    public OrderProduct(Order order, SubOrder subOrder, GroupBuyPost groupBuyPost,
+                        ProductVariant variant, String productName, String optionName,
                         Integer quantity, Integer price, String imageUrl, LocalDateTime orderDate,
                         OrderProductStatus status) {
         this.order = order;
+        this.subOrder = subOrder;
+        this.groupBuyPost = groupBuyPost;
         this.variant = variant;
         this.productName = productName;
         this.optionName = optionName;
