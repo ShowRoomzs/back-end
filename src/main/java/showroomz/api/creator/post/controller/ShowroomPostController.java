@@ -22,7 +22,7 @@ public class ShowroomPostController implements PostControllerDocs {
 
     private final ShowroomPostService postService;
 
-    private String getCurrentSellerEmail() {
+    private String getCurrentUserEmail() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal == null || !(principal instanceof UserPrincipal)) {
             throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
@@ -34,8 +34,8 @@ public class ShowroomPostController implements PostControllerDocs {
     @PostMapping
     public ResponseEntity<PostDto.CreatePostResponse> createPost(
             @Valid @RequestBody PostDto.CreatePostRequest request) {
-        String sellerEmail = getCurrentSellerEmail();
-        PostDto.CreatePostResponse response = postService.createPost(sellerEmail, request);
+        String userEmail = getCurrentUserEmail();
+        PostDto.CreatePostResponse response = postService.createPost(userEmail, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -43,8 +43,8 @@ public class ShowroomPostController implements PostControllerDocs {
     @GetMapping("/{postId}")
     public ResponseEntity<PostDto.PostDetailResponse> getPostById(
             @PathVariable("postId") Long postId) {
-        String sellerEmail = getCurrentSellerEmail();
-        PostDto.PostDetailResponse response = postService.getPostById(sellerEmail, postId);
+        String userEmail = getCurrentUserEmail();
+        PostDto.PostDetailResponse response = postService.getPostById(userEmail, postId);
         return ResponseEntity.ok(response);
     }
 
@@ -52,8 +52,8 @@ public class ShowroomPostController implements PostControllerDocs {
     @GetMapping
     public ResponseEntity<PageResponse<PostDto.PostListItem>> getPostList(
             PagingRequest pagingRequest) {
-        String sellerEmail = getCurrentSellerEmail();
-        PageResponse<PostDto.PostListItem> response = postService.getPostList(sellerEmail, pagingRequest);
+        String userEmail = getCurrentUserEmail();
+        PageResponse<PostDto.PostListItem> response = postService.getPostList(userEmail, pagingRequest);
         return ResponseEntity.ok(response);
     }
 
@@ -62,16 +62,16 @@ public class ShowroomPostController implements PostControllerDocs {
     public ResponseEntity<PostDto.UpdatePostResponse> updatePost(
             @PathVariable("postId") Long postId,
             @Valid @RequestBody PostDto.UpdatePostRequest request) {
-        String sellerEmail = getCurrentSellerEmail();
-        PostDto.UpdatePostResponse response = postService.updatePost(sellerEmail, postId, request);
+        String userEmail = getCurrentUserEmail();
+        PostDto.UpdatePostResponse response = postService.updatePost(userEmail, postId, request);
         return ResponseEntity.ok(response);
     }
 
     @Override
     @DeleteMapping("/{postId}")
     public ResponseEntity<Void> deletePost(@PathVariable("postId") Long postId) {
-        String sellerEmail = getCurrentSellerEmail();
-        postService.deletePost(sellerEmail, postId);
+        String userEmail = getCurrentUserEmail();
+        postService.deletePost(userEmail, postId);
         return ResponseEntity.noContent().build();
     }
 }

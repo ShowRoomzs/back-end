@@ -30,6 +30,9 @@ public interface MarketFollowRepository extends JpaRepository<MarketFollow, Long
     // 유저의 팔로우 목록 조회 (페이징)
     Page<MarketFollow> findByUser(Users user, Pageable pageable);
 
+    // 서비스 단 병합을 위해 전체 리스트 조회
+    List<MarketFollow> findByUser(Users user);
+
     @Query("SELECT mf.market.id FROM MarketFollow mf WHERE mf.user.id = :userId AND mf.market.id IN :marketIds")
     Set<Long> findMarketIdsByUserAndMarketIdIn(
             @Param("userId") Long userId,

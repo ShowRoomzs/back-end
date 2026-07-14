@@ -47,7 +47,6 @@ public class SecurityConfig {
             "/v1/user/auth/refresh",
             "/v1/user/auth/local/signup", "/v1/user/auth/local/login",
             "/v1/seller/auth/signup", "/v1/seller/auth/login",
-            "/v1/creator/auth/signup",
             "/v1/seller/auth/refresh",
             "/v1/admin/auth/login",
             "/v1/admin/auth/refresh",
@@ -115,11 +114,14 @@ public class SecurityConfig {
                 // SELLER 권한
                 .requestMatchers("/v1/seller/**").hasAnyAuthority(RoleType.SELLER.getCode(), RoleType.CREATOR.getCode())
 
+                // 크리에이터 권한 신청 (로그인한 일반 유저)
+                .requestMatchers("/v1/creator/application").hasAnyAuthority(RoleType.USER.getCode())
+
                 // CREATOR 권한
                 .requestMatchers("/v1/creator/**").hasAnyAuthority(RoleType.CREATOR.getCode())
 
                 // USER 권한
-                .requestMatchers("/v1/user/**").hasAnyAuthority(RoleType.USER.getCode())
+                .requestMatchers("/v1/user/**").hasAnyAuthority(RoleType.USER.getCode(), RoleType.CREATOR.getCode())
                 
                 .anyRequest().authenticated()
             );

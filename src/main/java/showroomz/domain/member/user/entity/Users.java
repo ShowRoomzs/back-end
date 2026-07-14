@@ -169,5 +169,9 @@ public class Users {
     public void updateAdminMemo(String adminMemo) {
         this.adminMemo = adminMemo;
     }
+
+    public void updateRoleType(RoleType newRoleType) {
+        this.roleType = newRoleType;
+    }
 }
 

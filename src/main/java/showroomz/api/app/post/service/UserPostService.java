@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.post.DTO.PostDto;
 import showroomz.api.app.user.repository.UserRepository;
-import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketFollowRepository;
+import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.entity.PostProduct;
@@ -84,12 +84,13 @@ public class UserPostService {
                 post, wishlistCountMap, reviewCountMap, wishedProductIds);
 
         // 7. Response 생성
-        Market market = post.getMarket();
+        Creator creator = post.getCreator();
+        Users creatorUser = creator.getUser();
         return PostDto.PostDetailResponse.builder()
                 .postId(post.getId())
-                .showroomId(market.getId())
-                .showroomName(market.getMarketName())
-                .showroomImageUrl(market.getMarketImageUrl())
+                .showroomId(creator.getId())
+                .showroomName(creatorUser.getNickname())
+                .showroomImageUrl(creatorUser.getProfileImageUrl())
                 .title(post.getTitle())
                 .content(post.getContent())
                 .imageUrls(post.getImageUrls())
@@ -136,7 +137,7 @@ public class UserPostService {
         // 2. Post 목록 조회
         Page<Post> postPage;
         if (showroomId != null) {
-            postPage = postRepository.findDisplayedPostsByMarketId(showroomId, pageable);
+            postPage = postRepository.findDisplayedPostsByCreatorId(showroomId, pageable);
         } else {
             postPage = postRepository.findDisplayedPosts(pageable);
         }
@@ -170,14 +171,15 @@ public class UserPostService {
         // 5. DTO 변환
         final Map<Long, Boolean> finalWishlistMap = wishlistMap;
         Page<PostDto.FeedItemResponse> dtoPage = postPage.map(post -> {
-            Market market = post.getMarket();
+            Creator creator = post.getCreator();
+            Users creatorUser = creator.getUser();
             List<PostDto.PostProductResponse> registeredProducts = buildRegisteredProducts(
                     post, globalWishlistCountMap, globalReviewCountMap, globalWishedProductIds);
             PostDto.PostListItem postItem = PostDto.PostListItem.builder()
                     .postId(post.getId())
-                    .showroomId(market.getId())
-                    .showroomName(market.getMarketName())
-                    .showroomImageUrl(market.getMarketImageUrl())
+                    .showroomId(creator.getId())
+                    .showroomName(creatorUser.getNickname())
+                    .showroomImageUrl(creatorUser.getProfileImageUrl())
                     .title(post.getTitle())
                     .imageUrls(post.getImageUrls())
                     .viewCount(post.getViewCount())
@@ -207,7 +209,7 @@ public class UserPostService {
             return new PageResponse<>(Page.empty(pageable));
         }
 
-        Page<Post> postPage = postRepository.findDisplayedPostsByMarketIds(followingMarketIds, pageable);
+        Page<Post> postPage = postRepository.findDisplayedPostsByFollowingMarketIds(followingMarketIds, pageable);
 
         List<Long> postIds = postPage.getContent().stream()
                 .map(Post::getId)
@@ -232,14 +234,15 @@ public class UserPostService {
 
         final Map<Long, Boolean> finalWishlistMap = wishlistMap;
         Page<PostDto.FeedItemResponse> dtoPage = postPage.map(post -> {
-            Market market = post.getMarket();
+            Creator creator = post.getCreator();
+            Users creatorUser = creator.getUser();
             List<PostDto.PostProductResponse> registeredProducts = buildRegisteredProducts(
                     post, globalWishlistCountMap, globalReviewCountMap, globalWishedProductIds);
             PostDto.PostListItem postItem = PostDto.PostListItem.builder()
                     .postId(post.getId())
-                    .showroomId(market.getId())
-                    .showroomName(market.getMarketName())
-                    .showroomImageUrl(market.getMarketImageUrl())
+                    .showroomId(creator.getId())
+                    .showroomName(creatorUser.getNickname())
+                    .showroomImageUrl(creatorUser.getProfileImageUrl())
                     .title(post.getTitle())
                     .imageUrls(post.getImageUrls())
                     .viewCount(post.getViewCount())
@@ -322,14 +325,15 @@ public class UserPostService {
                 : Collections.emptySet();
 
         Page<PostDto.FeedItemResponse> dtoPage = postPage.map(post -> {
-            Market market = post.getMarket();
+            Creator creator = post.getCreator();
+            Users creatorUser = creator.getUser();
             List<PostDto.PostProductResponse> registeredProducts = buildRegisteredProducts(
                     post, globalWishlistCountMap, globalReviewCountMap, globalWishedProductIds);
             PostDto.PostListItem postItem = PostDto.PostListItem.builder()
                     .postId(post.getId())
-                    .showroomId(market.getId())
-                    .showroomName(market.getMarketName())
-                    .showroomImageUrl(market.getMarketImageUrl())
+                    .showroomId(creator.getId())
+                    .showroomName(creatorUser.getNickname())
+                    .showroomImageUrl(creatorUser.getProfileImageUrl())
                     .title(post.getTitle())
                     .imageUrls(post.getImageUrls())
                     .viewCount(post.getViewCount())

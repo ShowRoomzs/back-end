@@ -1,10 +1,13 @@
 package showroomz.domain.post.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import showroomz.domain.post.entity.Post;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<Post, Long>, PostRepositoryCustom {
@@ -15,4 +18,10 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
            "LEFT JOIN FETCH pp.product " +
            "WHERE p.id = :postId")
     Optional<Post> findByIdWithPostProductsAndProducts(@Param("postId") Long postId);
+
+    Page<Post> findByCreatorId(Long creatorId, Pageable pageable);
+
+    @Query("SELECT p FROM Post p WHERE p.isDisplay = true AND p.creator.user.email IN " +
+           "(SELECT m.seller.email FROM Market m WHERE m.id IN :marketIds)")
+    Page<Post> findDisplayedPostsByFollowingMarketIds(@Param("marketIds") List<Long> marketIds, Pageable pageable);
 }

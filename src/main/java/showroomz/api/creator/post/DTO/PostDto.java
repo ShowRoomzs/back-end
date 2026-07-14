@@ -112,10 +112,10 @@ public class PostDto {
     public static class PostDetailResponse {
         @Schema(description = "게시글 ID", example = "1")
         private Long postId;
-        @Schema(description = "마켓 ID", example = "1")
-        private Long marketId;
-        @Schema(description = "마켓명")
-        private String marketName;
+        @Schema(description = "크리에이터 ID", example = "1")
+        private Long creatorId;
+        @Schema(description = "크리에이터명")
+        private String creatorName;
         @Schema(description = "제목")
         private String title;
         @Schema(description = "본문 내용")

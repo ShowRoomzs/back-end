@@ -132,8 +132,8 @@ public interface PostControllerDocs {
                                     value = """
                                             {
                                               "postId": 1,
-                                              "marketId": 1,
-                                              "marketName": "쇼룸 A",
+                                              "creatorId": 1,
+                                              "creatorName": "크리에이터닉네임",
                                               "title": "신상품 출시 소식",
                                               "content": "이번 주 신상품을 소개합니다.",
                                               "imageUrls": ["https://cdn.example.com/posts/1.jpg"],

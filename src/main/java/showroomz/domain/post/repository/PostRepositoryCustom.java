@@ -7,8 +7,7 @@ import showroomz.domain.post.entity.Post;
 import java.util.List;
 
 public interface PostRepositoryCustom {
-    Page<Post> findByMarketId(Long marketId, Pageable pageable);
     Page<Post> findDisplayedPosts(Pageable pageable);
-    Page<Post> findDisplayedPostsByMarketId(Long marketId, Pageable pageable);
-    Page<Post> findDisplayedPostsByMarketIds(List<Long> marketIds, Pageable pageable);
+    Page<Post> findDisplayedPostsByCreatorId(Long creatorId, Pageable pageable);
+    Page<Post> findDisplayedPostsByCreatorIds(List<Long> creatorIds, Pageable pageable);
 }
