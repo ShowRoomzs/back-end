@@ -20,24 +20,6 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<Post> findByMarketId(Long marketId, Pageable pageable) {
-        List<Post> content = queryFactory
-                .selectFrom(post)
-                .where(post.market.id.eq(marketId))
-                .orderBy(post.createdAt.desc())
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .fetch();
-
-        JPAQuery<Long> countQuery = queryFactory
-                .select(post.count())
-                .from(post)
-                .where(post.market.id.eq(marketId));
-
-        return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
-    }
-
-    @Override
     public Page<Post> findDisplayedPosts(Pageable pageable) {
         List<Post> content = queryFactory
                 .selectFrom(post)
@@ -56,11 +38,11 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
     }
 
     @Override
-    public Page<Post> findDisplayedPostsByMarketId(Long marketId, Pageable pageable) {
+    public Page<Post> findDisplayedPostsByCreatorId(Long creatorId, Pageable pageable) {
         List<Post> content = queryFactory
                 .selectFrom(post)
                 .where(
-                        post.market.id.eq(marketId),
+                        post.creator.id.eq(creatorId),
                         post.isDisplay.eq(true)
                 )
                 .orderBy(post.createdAt.desc())
@@ -72,7 +54,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                 .select(post.count())
                 .from(post)
                 .where(
-                        post.market.id.eq(marketId),
+                        post.creator.id.eq(creatorId),
                         post.isDisplay.eq(true)
                 );
 
@@ -80,15 +62,15 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
     }
 
     @Override
-    public Page<Post> findDisplayedPostsByMarketIds(List<Long> marketIds, Pageable pageable) {
-        if (marketIds == null || marketIds.isEmpty()) {
+    public Page<Post> findDisplayedPostsByCreatorIds(List<Long> creatorIds, Pageable pageable) {
+        if (creatorIds == null || creatorIds.isEmpty()) {
             return Page.empty(pageable);
         }
 
         List<Post> content = queryFactory
                 .selectFrom(post)
                 .where(
-                        post.market.id.in(marketIds),
+                        post.creator.id.in(creatorIds),
                         post.isDisplay.eq(true)
                 )
                 .orderBy(post.createdAt.desc())
@@ -100,7 +82,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                 .select(post.count())
                 .from(post)
                 .where(
-                        post.market.id.in(marketIds),
+                        post.creator.id.in(creatorIds),
                         post.isDisplay.eq(true)
                 );
 

@@ -107,16 +107,22 @@ public class AdminService {
 
         applySellerStatusAndRejectionFields(seller, status, reasonType, reasonDetail);
 
+        LocalDateTime processedAt = LocalDateTime.now();
+        seller.setProcessedAt(processedAt);
+
         if (status == SellerStatus.APPROVED) {
-            mailService.sendCreatorApprovalEmail(seller.getEmail(), seller.getName());
+            mailService.sendCreatorApprovalEmail(seller.getEmail(), seller.getName(), processedAt);
 
         } else if (status == SellerStatus.REJECTED) {
+            String reasonSummary = reasonType != null ? reasonType.getDescription() : "";
             mailService.sendCreatorRejectionEmail(
-                    seller.getEmail(), seller.getName(), buildCreatorRejectionMailReason(reasonType, reasonDetail));
+                    seller.getEmail(),
+                    seller.getName(),
+                    processedAt,
+                    reasonSummary,
+                    reasonDetail);
         }
-
-        seller.setProcessedAt(LocalDateTime.now());
-        seller.setModifiedAt(LocalDateTime.now());
+        seller.setModifiedAt(processedAt);
     }
 
     /**
@@ -151,19 +157,6 @@ public class AdminService {
         if (status == SellerStatus.REJECTED && reasonType == null) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
-    }
-
-    private String buildCreatorRejectionMailReason(RejectionReasonType type, String detail) {
-        String detailText = (detail == null || detail.isBlank()) ? "" : detail.strip();
-        boolean hasDetail = !detailText.isEmpty();
-
-        if (type == RejectionReasonType.OTHER) {
-            return hasDetail ? detailText : type.getDescription();
-        }
-        if (hasDetail) {
-            return type.getDescription() + " - " + detailText;
-        }
-        return type.getDescription();
     }
 
     /**

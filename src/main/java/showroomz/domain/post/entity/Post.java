@@ -5,7 +5,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import showroomz.domain.common.BaseTimeEntity;
-import showroomz.domain.market.entity.Market;
+import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.product.entity.Product;
 
 import java.util.ArrayList;
@@ -23,8 +23,8 @@ public class Post extends BaseTimeEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "market_id", nullable = false)
-    private Market market;
+    @JoinColumn(name = "creator_id", nullable = false)
+    private Creator creator;
 
     @Column(name = "title", nullable = false, length = 200)
     private String title;
@@ -40,7 +40,6 @@ public class Post extends BaseTimeEntity {
     @Column(name = "view_count", nullable = false)
     private Long viewCount = 0L;
 
-    // 위시리스트 카운트 컬럼
     @Column(name = "wishlist_count", nullable = false)
     private Long wishlistCount = 0L;
 
@@ -50,8 +49,8 @@ public class Post extends BaseTimeEntity {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostProduct> postProducts = new ArrayList<>();
 
-    public Post(Market market, String title, String content, List<String> imageUrls) {
-        this.market = market;
+    public Post(Creator creator, String title, String content, List<String> imageUrls) {
+        this.creator = creator;
         this.title = title;
         this.content = content;
         if (imageUrls != null) {
