@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -16,6 +17,25 @@ import java.time.LocalDateTime;
 @Builder
 @Schema(description = "관리자용 판매자 상세 검토 정보 응답")
 public class AdminSellerDetailResponse {
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "입점 신청 처리 이력 항목")
+    public static class ProcessingHistoryItem {
+
+        @Schema(description = "처리 유형", example = "APPLICATION_RECEIVED",
+                allowableValues = {"APPLICATION_RECEIVED", "APPLICATION_APPROVED", "APPLICATION_REJECTED"})
+        private String type;
+
+        @Schema(description = "처리 내용", example = "신청 접수")
+        private String label;
+
+        @Schema(description = "처리 일시", example = "2026-07-10T14:22:00")
+        private LocalDateTime processedAt;
+    }
 
     @Schema(description = "판매자 계정 이메일", example = "seller@example.com")
     private String email;
@@ -79,6 +99,9 @@ public class AdminSellerDetailResponse {
 
     @Schema(description = "신청 처리일", example = "2024-05-02T15:30:00")
     private LocalDateTime processedDate;
+
+    @Schema(description = "처리 이력 (신청 접수, 신청 승인/반려 등 시간순)")
+    private List<ProcessingHistoryItem> processingHistory;
 
     @Schema(description = "검토 메모", example = "서류 확인 완료, 통신판매업 신고번호 이상 없음")
     private String reviewMemo;

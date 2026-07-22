@@ -105,6 +105,10 @@ public interface AdminMarketControllerDocs {
     @Operation(
             summary = "입점 신청 판매자 상세 조회",
             description = "판매자의 사업자 정보, 정산 정보, 검토 상태를 포함한 상세 정보를 조회합니다.\n\n" +
+                    "**처리 이력 (`processingHistory`):**\n" +
+                    "- `APPLICATION_RECEIVED` (신청 접수): 가입 신청일 (`createdAt`)\n" +
+                    "- `APPLICATION_APPROVED` (신청 승인): 승인 처리일 (`processedAt`, 승인된 경우만)\n" +
+                    "- `APPLICATION_REJECTED` (신청 반려): 반려 처리일 (`processedAt`, 반려된 경우만)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )

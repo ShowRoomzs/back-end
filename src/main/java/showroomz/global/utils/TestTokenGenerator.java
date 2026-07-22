@@ -64,7 +64,7 @@ public class TestTokenGenerator {
         // application.yml의 app.auth.tokenSecret 값을 여기에 입력하세요
         String tokenSecret = System.getenv("TOKEN_SECRET");
         if (tokenSecret == null || tokenSecret.isEmpty()) {
-            tokenSecret = "your-token-secret-key-minimum-32-characters-long"; // 기본값 (실제로는 환경변수나 설정에서 가져와야 함)
+            tokenSecret = "926D96C90030DD58429D2751AC1BDBBC926D96C90030DD58429D2751AC1BDBBC"; // 기본값 (실제로는 환경변수나 설정에서 가져와야 함)
             System.out.println("⚠️  TOKEN_SECRET 환경변수가 설정되지 않았습니다. 기본값을 사용합니다.");
             System.out.println("   환경변수 설정: export TOKEN_SECRET='your-secret-key'\n");
         }
