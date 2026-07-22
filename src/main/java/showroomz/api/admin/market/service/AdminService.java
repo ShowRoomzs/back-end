@@ -74,6 +74,7 @@ public class AdminService {
         applySellerStatusAndRejectionFields(seller, status, reasonType, reasonDetail);
 
         if (status == SellerStatus.APPROVED) {
+            seller.setIsNewMember(true);
             mailService.sendApprovalEmail(seller.getEmail(), marketName, processedAt);
 
         } else if (status == SellerStatus.REJECTED) {

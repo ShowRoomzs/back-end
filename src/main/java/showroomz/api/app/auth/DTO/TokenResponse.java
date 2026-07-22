@@ -33,6 +33,11 @@ public class TokenResponse {
 
     // 신규 회원용 생성자
     public TokenResponse(String registerToken) {
+        this(registerToken, "GUEST");
+    }
+
+    // 신규 회원용 생성자 (권한 지정)
+    public TokenResponse(String registerToken, String role) {
         this.isNewMember = true;
         this.registerToken = registerToken;
         this.tokenType = null;
@@ -40,6 +45,6 @@ public class TokenResponse {
         this.refreshToken = null;
         this.accessTokenExpiresIn = null;
         this.refreshTokenExpiresIn = null;
-        this.role = "GUEST"; // 필요하다면 기본값 설정
+        this.role = role;
     }
 }

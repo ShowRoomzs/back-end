@@ -60,6 +60,40 @@ public class Market {
     @Column(name = "admin_memo", columnDefinition = "TEXT")
     private String adminMemo;
 
+    // 배송/반품 설정 (승인 후 필수 정보 입력 시 저장)
+    @Column(name = "shipping_recipient_name", length = 64)
+    private String shippingRecipientName;
+
+    @Column(name = "shipping_contact", length = 20)
+    private String shippingContact;
+
+    @Column(name = "shipping_address", length = 255)
+    private String shippingAddress;
+
+    @Column(name = "shipping_detail_address", length = 255)
+    private String shippingDetailAddress;
+
+    @Column(name = "default_delivery_fee")
+    private Integer defaultDeliveryFee;
+
+    @Column(name = "free_shipping_threshold")
+    private Integer freeShippingThreshold;
+
+    @Column(name = "remote_area_surcharge", nullable = false)
+    private Integer remoteAreaSurcharge = 0;
+
+    @Column(name = "delivery_method", nullable = false, length = 50)
+    private String deliveryMethod = "택배";
+
+    @Column(name = "shipping_lead_days")
+    private Integer shippingLeadDays;
+
+    @Column(name = "return_fee", nullable = false)
+    private Integer returnFee = 3000;
+
+    @Column(name = "exchange_fee", nullable = false)
+    private Integer exchangeFee = 6000;
+
     public Market(Seller seller, String marketName, String csNumber) {
         this.seller = seller;
         this.marketName = marketName;

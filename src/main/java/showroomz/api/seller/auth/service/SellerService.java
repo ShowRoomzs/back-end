@@ -16,6 +16,7 @@ import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.DTO.SellerLoginRequest;
 import showroomz.api.seller.auth.DTO.SellerSignUpRequest;
 import showroomz.api.seller.auth.DTO.CreatorSignUpRequest;
+import showroomz.api.seller.auth.DTO.SellerCompleteRegistrationRequest;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshToken;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshTokenRepository;
 import showroomz.api.seller.auth.repository.SellerRepository;
@@ -48,6 +49,7 @@ public class SellerService {
     private final SellerRefreshTokenRepository adminRefreshTokenRepository;
 
     private final static long THREE_DAYS_MSEC = 259200000;
+    private final static long REGISTER_TOKEN_EXPIRY_MSEC = 5 * 60 * 1000;
 
     @Transactional
     public Map<String, String> registerAdmin(SellerSignUpRequest request) {
@@ -283,7 +285,78 @@ public class SellerService {
 
         seller.setLastLoginAt(LocalDateTime.now());
 
+        if (Boolean.TRUE.equals(seller.getIsNewMember())) {
+            return createRegisterTokenResponse(seller);
+        }
+
         return issueTokenResponse(seller);
+    }
+
+    /**
+     * [판매자용] 승인 후 필수 정보(배송 설정) 입력 완료
+     */
+    @Transactional
+    public TokenResponse completeRegistration(String registerTokenStr, SellerCompleteRegistrationRequest request) {
+        if (registerTokenStr == null || registerTokenStr.isEmpty()) {
+            throw new BusinessException(ErrorCode.REGISTER_EXPIRED);
+        }
+
+        AuthToken registerToken = tokenProvider.convertAuthToken(registerTokenStr);
+        if (!registerToken.validate()) {
+            throw new BusinessException(ErrorCode.REGISTER_EXPIRED);
+        }
+
+        Claims claims = registerToken.getTokenClaims();
+        if (claims == null) {
+            throw new BusinessException(ErrorCode.REGISTER_EXPIRED);
+        }
+
+        String email = claims.getSubject();
+        Seller seller = adminRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (seller.getRoleType() != RoleType.SELLER) {
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
+        validateSellerStatus(seller);
+
+        if (!Boolean.TRUE.equals(seller.getIsNewMember())) {
+            throw new BusinessException(ErrorCode.ALREADY_REGISTERED);
+        }
+
+        Market market = marketRepository.findBySeller(seller)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
+
+        market.setShippingRecipientName(request.getRecipientName());
+        market.setShippingContact(request.getContact());
+        market.setShippingAddress(request.getAddress());
+        market.setShippingDetailAddress(request.getDetailAddress());
+        market.setDefaultDeliveryFee(request.getDefaultDeliveryFee());
+        market.setFreeShippingThreshold(
+                request.getFreeShippingThreshold() != null ? request.getFreeShippingThreshold() : 0
+        );
+        market.setRemoteAreaSurcharge(
+                request.getRemoteAreaSurcharge() != null ? request.getRemoteAreaSurcharge() : 0
+        );
+        market.setDeliveryMethod("택배");
+        market.setShippingLeadDays(request.getShippingLeadDays());
+        market.setReturnFee(request.getReturnFee() != null ? request.getReturnFee() : 3000);
+        market.setExchangeFee(request.getExchangeFee() != null ? request.getExchangeFee() : 6000);
+
+        seller.setIsNewMember(false);
+        seller.setModifiedAt(LocalDateTime.now());
+
+        return issueTokenResponse(seller);
+    }
+
+    private TokenResponse createRegisterTokenResponse(Seller seller) {
+        Date now = new Date();
+        AuthToken registerToken = tokenProvider.createAuthToken(
+                seller.getEmail(),
+                new Date(now.getTime() + REGISTER_TOKEN_EXPIRY_MSEC)
+        );
+        return new TokenResponse(registerToken.getToken(), seller.getRoleType().toString());
     }
 
     /**
@@ -389,6 +462,10 @@ public class SellerService {
         // 5. Admin 정보 조회
         Seller admin = adminRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (Boolean.TRUE.equals(admin.getIsNewMember())) {
+            throw new BusinessException(ErrorCode.REGISTER_EXPIRED);
+        }
 
         // 6. 새로운 Access Token 생성 (공통 메서드 사용)
         AuthToken newAccessToken = createAccessToken(admin, now);

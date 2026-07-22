@@ -145,6 +145,10 @@ public class Seller {
     @Column(name = "LAST_LOGIN_AT")
     private LocalDateTime lastLoginAt;
 
+    // 승인 후 필수 정보(배송 설정 등) 입력 전 여부
+    @Column(name = "IS_NEW_MEMBER", nullable = false)
+    private Boolean isNewMember = true;
+
     // 생성자 편의 메서드
     public Seller(String email, String password, String name, String phoneNumber, LocalDateTime now) {
         this.email = email;
