@@ -221,14 +221,10 @@ ALTER TABLE users MODIFY COLUMN role_type ENUM('ADMIN', 'CREATOR', 'GUEST', 'SEL
 -- =======================================================================
 
 -- 기존 테이블 Unique 제약조건 교체 (JPA 로그에 있는 구 인덱스 드랍 포함)
-ALTER TABLE cart DROP INDEX cart_uk;
+CREATE INDEX idx_cart_user_id ON cart(user_id);
+ALTER TABLE cart DROP INDEX user_id;
 ALTER TABLE cart ADD CONSTRAINT cart_uk UNIQUE (user_id, variant_id, group_buy_post_id);
 
-ALTER TABLE review_like DROP INDEX UKkv2edtmavhobw9aeu18khjer5;
-ALTER TABLE review_like ADD CONSTRAINT review_like_uk UNIQUE (review_id, user_id);
-
-ALTER TABLE wishlist DROP INDEX wishlist_uk;
-ALTER TABLE wishlist ADD CONSTRAINT wishlist_uk UNIQUE (user_id, product_id);
 
 -- 신규 테이블 Unique 제약조건 추가
 ALTER TABLE communication_thread ADD CONSTRAINT communication_thread_uk UNIQUE (seller_id, creator_id);
