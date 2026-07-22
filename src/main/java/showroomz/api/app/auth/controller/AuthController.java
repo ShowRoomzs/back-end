@@ -22,8 +22,6 @@ import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.WithdrawalRequest;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.app.user.service.UserService;
-import showroomz.domain.member.creator.entity.Creator;
-import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.config.properties.AppProperties;
 import showroomz.global.error.exception.BusinessException;
@@ -50,7 +48,6 @@ public class AuthController implements AuthControllerDocs {
     private final UserService userService;
     private final SocialLoginService socialLoginService;
     private final AuthService authService;
-    private final CreatorRepository creatorRepository;
     
     private final static long THREE_DAYS_MSEC = 259200000;
     private final static long REGISTER_TOKEN_EXPIRY_MSEC = 5 * 60 * 1000;
@@ -123,23 +120,15 @@ public class AuthController implements AuthControllerDocs {
 
         Users user = result.getUser();
 
-        // 5. 크리에이터인 경우 추가 정보 미입력 여부(isNewMember)를 토큰 응답에 포함
-        boolean creatorIsNewMember = false;
-        if (user.getRoleType() == RoleType.CREATOR) {
-            Creator creator = creatorRepository.findByUser_Id(user.getId())
-                    .orElseThrow(() -> new BusinessException(ErrorCode.CREATOR_NOT_FOUND));
-            creatorIsNewMember = Boolean.TRUE.equals(creator.getIsNewMember());
-        }
-
-        // 6. 기존 회원인 경우 일반 토큰 반환 (크리에이터 isNewMember여도 access/refresh 발급)
+        // 5. 기존 회원인 경우 일반 토큰 반환
         TokenResponse tokenResponse = authService.generateTokens(
                 user.getUsername(),
                 user.getRoleType(),
                 user.getId(),
-                creatorIsNewMember
+                false
         );
 
-        // 7. 로그인 이력 저장
+        // 6. 로그인 이력 저장
         String clientIp = ClientUtils.getRemoteIP(request);
         String userAgent = ClientUtils.getUserAgent(request);
         authService.saveLoginHistory(user.getId(), clientIp, userAgent);

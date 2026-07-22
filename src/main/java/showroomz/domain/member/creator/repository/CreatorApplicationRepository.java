@@ -7,9 +7,13 @@ import org.springframework.data.jpa.repository.Query;
 import showroomz.domain.member.creator.entity.CreatorApplication;
 import showroomz.domain.member.creator.type.CreatorApplicationStatus;
 
+import java.util.Optional;
+
 public interface CreatorApplicationRepository extends JpaRepository<CreatorApplication, Long> {
 
     boolean existsByUser_IdAndStatus(Long userId, CreatorApplicationStatus status);
+
+    Optional<CreatorApplication> findTopByUser_IdOrderByCreatedAtDesc(Long userId);
 
     @Query(value = "select ca from CreatorApplication ca join fetch ca.user",
             countQuery = "select count(ca) from CreatorApplication ca")

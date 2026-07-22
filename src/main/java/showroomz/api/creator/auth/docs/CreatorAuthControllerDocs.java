@@ -1,7 +1,6 @@
 package showroomz.api.creator.auth.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -9,23 +8,123 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.api.app.auth.DTO.SocialLoginRequest;
 import showroomz.api.app.auth.DTO.TokenResponse;
-import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.creator.auth.DTO.CreatorCompleteRegistrationRequest;
 
 @Tag(name = "Creator - Auth", description = "크리에이터 인증/추가정보 API")
-@SecurityRequirement(name = "Authorization")
 public interface CreatorAuthControllerDocs {
 
     @Operation(
+            summary = "크리에이터 소셜 로그인",
+            description = "카카오, 네이버, 구글, 애플 소셜 로그인으로 크리에이터 계정을 인증합니다.\n\n" +
+                    "**유저 로그인과의 차이:**\n" +
+                    "- 승인된 크리에이터(`role=CREATOR`)만 로그인 가능\n" +
+                    "- 신청이 반려된 경우 로그인 불가, 반려 사유를 응답\n" +
+                    "- 승인 대기(PENDING)인 경우 로그인 불가\n\n" +
+                    "**추가 정보 미입력 (`isNewMember=true`):**\n" +
+                    "- 셀러와 동일하게 `registerToken`만 반환 (access/refresh 미발급, 5분 유효)\n" +
+                    "- 이후 `POST /v1/creator/auth/complete-registration`으로 추가 정보 입력"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "로그인 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = TokenResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "추가 정보 입력 완료",
+                                            value = "{\n" +
+                                                    "  \"tokenType\": \"Bearer\",\n" +
+                                                    "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9...\",\n" +
+                                                    "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...\",\n" +
+                                                    "  \"accessTokenExpiresIn\": 3600,\n" +
+                                                    "  \"refreshTokenExpiresIn\": 1209600,\n" +
+                                                    "  \"isNewMember\": false,\n" +
+                                                    "  \"role\": \"CREATOR\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "추가 정보 미입력",
+                                            value = "{\n" +
+                                                    "  \"isNewMember\": true,\n" +
+                                                    "  \"registerToken\": \"eyJhbGciOiJIUzI1Ni...\",\n" +
+                                                    "  \"role\": \"CREATOR\"\n" +
+                                                    "}",
+                                            description = "관리자 승인 직후 첫 로그인 시 registerToken(5분 유효)이 반환됩니다."
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "승인 대기 / 반려",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "승인 대기",
+                                            value = "{\"code\": \"ACCOUNT_NOT_APPROVED\", \"message\": \"관리자 승인 대기 중인 계정입니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "반려 (사유 포함)",
+                                            value = "{\"code\": \"ACCOUNT_REJECTED_WITH_REASON\", \"message\": \"가입 승인이 반려되었습니다. 반려 사유: 팔로워 수 기준 미달 - 제출하신 채널의 팔로워 수가 기준에 미달합니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "반려 (사유 없음)",
+                                            value = "{\"code\": \"ACCOUNT_REJECTED\", \"message\": \"가입 승인이 반려된 계정입니다.\"}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "크리에이터 아님 / 입력값 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "크리에이터 아님",
+                                            value = "{\"code\": \"ACCOUNT_ROLE_MISMATCH\", \"message\": \"해당 계정의 유형이 올바르지 않습니다.\"}"
+                                    )
+                            }
+                    )
+            )
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "소셜 로그인 요청",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = SocialLoginRequest.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "카카오 로그인",
+                                    value = "{\n" +
+                                            "  \"providerType\": \"KAKAO\",\n" +
+                                            "  \"token\": \"kakao-access-token\"\n" +
+                                            "}"
+                            )
+                    }
+            )
+    )
+    ResponseEntity<TokenResponse> socialLogin(
+            HttpServletRequest request,
+            @Valid @RequestBody SocialLoginRequest socialLoginRequest);
+
+    @Operation(
             summary = "크리에이터 추가 정보 입력 (승인 후 최초)",
-            description = "관리자 승인 후 소셜 로그인에서 받은 accessToken으로 추가 정보를 등록합니다.\n\n" +
-                    "**요청 헤더:** `Authorization: Bearer {accessToken}`\n\n" +
+            description = "관리자 승인 후 크리에이터 소셜 로그인에서 받은 `registerToken`으로 추가 정보를 등록합니다.\n\n" +
+                    "**요청 헤더:** `Authorization: Bearer {registerToken}`\n\n" +
                     "**필수 필드:**\n" +
                     "- `showroomName`: 쇼룸명 (중복 불가)\n" +
                     "- `businessType`: `INDIVIDUAL`(개인/비사업자) 또는 `BUSINESS`(개인사업자/법인)\n" +
@@ -35,8 +134,7 @@ public interface CreatorAuthControllerDocs {
                     "**사업자(`BUSINESS`) 선택 시 추가 필수:**\n" +
                     "- `businessRegistrationNumber`: 사업자등록번호 (예: 123-45-67890)\n" +
                     "- `businessLicenseImageUrl`: 사업자등록증 URL\n\n" +
-                    "**완료 후:** `isNewMember`가 `false`로 변경되며 access/refresh 토큰이 재발급됩니다.\n\n" +
-                    "**권한:** CREATOR"
+                    "**완료 후:** `isNewMember`가 `false`로 변경되며 access/refresh 토큰이 발급됩니다."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -81,14 +179,14 @@ public interface CreatorAuthControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "인증 필요",
+                    description = "registerToken 누락 또는 만료",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "인증 실패",
-                                            value = "{\"code\": \"UNAUTHORIZED\", \"message\": \"인증 정보가 유효하지 않습니다.\"}"
+                                            name = "토큰 만료",
+                                            value = "{\"code\": \"UNAUTHORIZED\", \"message\": \"회원가입 유효 시간이 만료되었습니다. 다시 로그인해주세요.\"}"
                                     )
                             }
                     )
@@ -126,7 +224,8 @@ public interface CreatorAuthControllerDocs {
                     }
             )
     )
+    @SecurityRequirement(name = "Authorization")
     ResponseEntity<TokenResponse> completeRegistration(
-            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
+            HttpServletRequest request,
             @Valid @RequestBody CreatorCompleteRegistrationRequest registrationRequest);
 }
