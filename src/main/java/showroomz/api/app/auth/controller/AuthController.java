@@ -22,6 +22,8 @@ import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.WithdrawalRequest;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.app.user.service.UserService;
+import showroomz.domain.member.creator.entity.Creator;
+import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.config.properties.AppProperties;
 import showroomz.global.error.exception.BusinessException;
@@ -48,8 +50,10 @@ public class AuthController implements AuthControllerDocs {
     private final UserService userService;
     private final SocialLoginService socialLoginService;
     private final AuthService authService;
+    private final CreatorRepository creatorRepository;
     
     private final static long THREE_DAYS_MSEC = 259200000;
+    private final static long REGISTER_TOKEN_EXPIRY_MSEC = 5 * 60 * 1000;
 
     @Override
     @PostMapping("/social/login")
@@ -99,13 +103,12 @@ public class AuthController implements AuthControllerDocs {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
-        // 4. 신규 회원인 경우 registerToken 반환 (5분 유효)
+        // 4. 신규 회원(GUEST)인 경우 registerToken 반환 (5분 유효)
         if (result.isNewMember()) {
             Date now = new Date();
-            long registerTokenExpiry = 5 * 60 * 1000; // 5분
             AuthToken registerToken = tokenProvider.createAuthToken(
                     result.getUser().getUsername(),
-                    new Date(now.getTime() + registerTokenExpiry)
+                    new Date(now.getTime() + REGISTER_TOKEN_EXPIRY_MSEC)
             );
             
             // 신규 회원이지만 Users 엔티티는 생성된 상태이므로 로그인 이력 저장
@@ -118,20 +121,28 @@ public class AuthController implements AuthControllerDocs {
             return ResponseEntity.ok(new TokenResponse(registerToken.getToken()));
         }
 
-        // 5. 기존 회원인 경우 일반 토큰 반환
+        Users user = result.getUser();
+
+        // 5. 크리에이터인 경우 추가 정보 미입력 여부(isNewMember)를 토큰 응답에 포함
+        boolean creatorIsNewMember = false;
+        if (user.getRoleType() == RoleType.CREATOR) {
+            Creator creator = creatorRepository.findByUser_Id(user.getId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.CREATOR_NOT_FOUND));
+            creatorIsNewMember = Boolean.TRUE.equals(creator.getIsNewMember());
+        }
+
+        // 6. 기존 회원인 경우 일반 토큰 반환 (크리에이터 isNewMember여도 access/refresh 발급)
         TokenResponse tokenResponse = authService.generateTokens(
-                result.getUser().getUsername(),
-                result.getUser().getRoleType(),
-                result.getUser().getId(),
-                false
+                user.getUsername(),
+                user.getRoleType(),
+                user.getId(),
+                creatorIsNewMember
         );
 
-        // 6. 로그인 이력 저장
+        // 7. 로그인 이력 저장
         String clientIp = ClientUtils.getRemoteIP(request);
         String userAgent = ClientUtils.getUserAgent(request);
-        if (result.getUser() != null) {
-            authService.saveLoginHistory(result.getUser().getId(), clientIp, userAgent);
-        }
+        authService.saveLoginHistory(user.getId(), clientIp, userAgent);
 
         return ResponseEntity.ok(tokenResponse);
     }

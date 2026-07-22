@@ -10,4 +10,8 @@ public interface CreatorRepository extends JpaRepository<Creator, Long> {
     Optional<Creator> findByUser_Id(Long userId);
 
     Optional<Creator> findByUser(Users user);
+
+    boolean existsByShowroomName(String showroomName);
+
+    boolean existsByShowroomNameAndIdNot(String showroomName, Long id);
 }

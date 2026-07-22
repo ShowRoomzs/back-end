@@ -95,6 +95,7 @@ public class CreatorApplicationService {
                 .accountId(application.getAccountId())
                 .followerCount(application.getFollowerCount())
                 .businessEmail(application.getBusinessEmail())
+                .isNewMember(true)
                 .build();
         creatorRepository.save(creator);
 

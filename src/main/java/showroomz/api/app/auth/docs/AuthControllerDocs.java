@@ -25,7 +25,10 @@ public interface AuthControllerDocs {
             summary = "소셜 로그인",
             description = "카카오, 네이버, 구글, 애플 소셜 로그인을 처리합니다. 신규 회원인 경우 registerToken을 반환하고, 기존 회원인 경우 accessToken과 refreshToken을 반환합니다.\n\n" +
                     "**registerToken 유효기간:** 5분 (회원가입 완료에 사용)\n" +
-                    "**role:** 사용자 권한 (USER, GUEST)"
+                    "**role:** 사용자 권한 (USER, GUEST, CREATOR)\n\n" +
+                    "**크리에이터 추가 정보 미입력:**\n" +
+                    "- 관리자 승인 직후 `role=CREATOR`이고 `isNewMember=true`여도 access/refresh 토큰을 바로 발급합니다.\n" +
+                    "- 프론트는 `isNewMember`를 확인해 `POST /v1/creator/auth/complete-registration`으로 추가 정보를 입력합니다."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -36,7 +39,7 @@ public interface AuthControllerDocs {
                             schema = @Schema(implementation = TokenResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "성공 시",
+                                            name = "일반 회원",
                                             value = "{\n" +
                                                     "  \"tokenType\": \"Bearer\",\n" +
                                                     "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ...\",\n" +
@@ -46,6 +49,31 @@ public interface AuthControllerDocs {
                                                     "  \"isNewMember\": false,\n" +
                                                     "  \"role\": \"USER\"\n" +
                                                     "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "크리에이터 (추가 정보 입력 완료)",
+                                            value = "{\n" +
+                                                    "  \"tokenType\": \"Bearer\",\n" +
+                                                    "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ...\",\n" +
+                                                    "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...\",\n" +
+                                                    "  \"accessTokenExpiresIn\": 3600,\n" +
+                                                    "  \"refreshTokenExpiresIn\": 1209600,\n" +
+                                                    "  \"isNewMember\": false,\n" +
+                                                    "  \"role\": \"CREATOR\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "크리에이터 (추가 정보 미입력)",
+                                            value = "{\n" +
+                                                    "  \"tokenType\": \"Bearer\",\n" +
+                                                    "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ...\",\n" +
+                                                    "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...\",\n" +
+                                                    "  \"accessTokenExpiresIn\": 3600,\n" +
+                                                    "  \"refreshTokenExpiresIn\": 1209600,\n" +
+                                                    "  \"isNewMember\": true,\n" +
+                                                    "  \"role\": \"CREATOR\"\n" +
+                                                    "}",
+                                            description = "access/refresh 토큰을 바로 발급하며, isNewMember=true로 추가 정보 입력을 유도합니다."
                                     )
                             }
                     )

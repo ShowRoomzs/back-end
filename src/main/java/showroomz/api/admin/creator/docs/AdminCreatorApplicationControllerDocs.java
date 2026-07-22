@@ -115,6 +115,7 @@ public interface AdminCreatorApplicationControllerDocs {
                     "**처리 내용:**\n" +
                     "- 지원서 상태를 `APPROVED`로 변경\n" +
                     "- 유저 역할(RoleType)을 `CREATOR`로 변경\n" +
+                    "- 크리에이터 `isNewMember`를 `true`로 설정 (추가 정보 입력 필요)\n" +
                     "- 승인 이력 저장 및 신청 시 입력한 업무 이메일(businessEmail)로 승인 안내 메일 발송\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
