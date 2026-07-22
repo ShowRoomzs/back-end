@@ -58,6 +58,7 @@ public interface AdminCreatorApplicationControllerDocs {
                                                     "      \"email\": \"business@creator.com\",\n" +
                                                     "      \"snsType\": \"YOUTUBE\",\n" +
                                                     "      \"channelUrl\": \"https://youtube.com/c/example\",\n" +
+                                                    "      \"accountId\": \"example\",\n" +
                                                     "      \"followerCount\": 155000,\n" +
                                                     "      \"appliedAt\": \"2024-03-01T14:00:00\",\n" +
                                                     "      \"processedAt\": null,\n" +
@@ -70,6 +71,7 @@ public interface AdminCreatorApplicationControllerDocs {
                                                     "      \"email\": \"contact@creator.com\",\n" +
                                                     "      \"snsType\": \"INSTAGRAM\",\n" +
                                                     "      \"channelUrl\": \"https://instagram.com/example\",\n" +
+                                                    "      \"accountId\": \"example\",\n" +
                                                     "      \"followerCount\": 82000,\n" +
                                                     "      \"appliedAt\": \"2024-02-20T09:30:00\",\n" +
                                                     "      \"processedAt\": \"2024-02-21T10:00:00\",\n" +

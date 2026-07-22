@@ -34,6 +34,9 @@ public class Creator extends BaseTimeEntity {
     @Column(name = "CHANNEL_URL", nullable = false, length = 512)
     private String channelUrl;
 
+    @Column(name = "ACCOUNT_ID", nullable = false, length = 100)
+    private String accountId;
+
     @Column(name = "FOLLOWER_COUNT", nullable = false)
     private Integer followerCount;
 

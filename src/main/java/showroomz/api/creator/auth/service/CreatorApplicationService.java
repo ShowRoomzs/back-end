@@ -53,6 +53,7 @@ public class CreatorApplicationService {
                 user,
                 request.getSnsType(),
                 request.getChannelUrl(),
+                request.getAccountId(),
                 request.getFollowerCount(),
                 request.getBusinessEmail()
         );
@@ -91,6 +92,7 @@ public class CreatorApplicationService {
                 .user(user)
                 .snsType(application.getSnsType())
                 .channelUrl(application.getChannelUrl())
+                .accountId(application.getAccountId())
                 .followerCount(application.getFollowerCount())
                 .businessEmail(application.getBusinessEmail())
                 .build();
