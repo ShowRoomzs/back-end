@@ -27,9 +27,9 @@ public interface CreatorAuthControllerDocs {
             summary = "크리에이터 소셜 로그인",
             description = "카카오, 네이버, 구글, 애플 소셜 로그인으로 크리에이터 계정을 인증합니다.\n\n" +
                     "**유저 로그인과의 차이:**\n" +
-                    "- 승인된 크리에이터(`role=CREATOR`)만 로그인 가능\n" +
-                    "- 신청이 반려된 경우 로그인 불가, 반려 사유를 응답\n" +
-                    "- 승인 대기(PENDING)인 경우 로그인 불가\n\n" +
+                    "- 승인된 크리에이터(`role=CREATOR`)만 크리에이터 토큰 발급\n" +
+                    "- 신청 이력이 없거나 신청이 반려된 경우: **USER** access/refresh 토큰과 함께 사유(`code`, `message`) 반환\n" +
+                    "- 승인 대기(PENDING)인 경우 로그인 불가 (403)\n\n" +
                     "**추가 정보 미입력 (`isNewMember=true`):**\n" +
                     "- 셀러와 동일하게 `registerToken`만 반환 (access/refresh 미발급, 5분 유효)\n" +
                     "- 이후 `POST /v1/creator/auth/complete-registration`으로 추가 정보 입력"
@@ -37,7 +37,7 @@ public interface CreatorAuthControllerDocs {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "로그인 성공",
+                    description = "로그인 성공 (크리에이터 토큰 또는 사유와 함께 유저 토큰)",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = TokenResponse.class),
@@ -62,13 +62,41 @@ public interface CreatorAuthControllerDocs {
                                                     "  \"role\": \"CREATOR\"\n" +
                                                     "}",
                                             description = "관리자 승인 직후 첫 로그인 시 registerToken(5분 유효)이 반환됩니다."
+                                    ),
+                                    @ExampleObject(
+                                            name = "신청 이력 없음 (유저 토큰)",
+                                            value = "{\n" +
+                                                    "  \"tokenType\": \"Bearer\",\n" +
+                                                    "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9...\",\n" +
+                                                    "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...\",\n" +
+                                                    "  \"accessTokenExpiresIn\": 3600,\n" +
+                                                    "  \"refreshTokenExpiresIn\": 1209600,\n" +
+                                                    "  \"isNewMember\": false,\n" +
+                                                    "  \"role\": \"USER\",\n" +
+                                                    "  \"code\": \"ACCOUNT_ROLE_MISMATCH\",\n" +
+                                                    "  \"message\": \"크리에이터 권한 신청 이력이 없습니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "신청 반려 (유저 토큰 + 반려 사유)",
+                                            value = "{\n" +
+                                                    "  \"tokenType\": \"Bearer\",\n" +
+                                                    "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9...\",\n" +
+                                                    "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...\",\n" +
+                                                    "  \"accessTokenExpiresIn\": 3600,\n" +
+                                                    "  \"refreshTokenExpiresIn\": 1209600,\n" +
+                                                    "  \"isNewMember\": false,\n" +
+                                                    "  \"role\": \"USER\",\n" +
+                                                    "  \"code\": \"ACCOUNT_REJECTED_WITH_REASON\",\n" +
+                                                    "  \"message\": \"팔로워 수 기준 미달 - 제출하신 채널의 팔로워 수가 기준에 미달합니다.\"\n" +
+                                                    "}"
                                     )
                             }
                     )
             ),
             @ApiResponse(
                     responseCode = "403",
-                    description = "승인 대기 / 반려",
+                    description = "승인 대기",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -76,27 +104,19 @@ public interface CreatorAuthControllerDocs {
                                     @ExampleObject(
                                             name = "승인 대기",
                                             value = "{\"code\": \"ACCOUNT_NOT_APPROVED\", \"message\": \"관리자 승인 대기 중인 계정입니다.\"}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "반려 (사유 포함)",
-                                            value = "{\"code\": \"ACCOUNT_REJECTED_WITH_REASON\", \"message\": \"팔로워 수 기준 미달 - 제출하신 채널의 팔로워 수가 기준에 미달합니다.\"}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "반려 (사유 없음)",
-                                            value = "{\"code\": \"ACCOUNT_REJECTED\", \"message\": \"가입 승인이 반려된 계정입니다.\"}"
                                     )
                             }
                     )
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "크리에이터 아님 / 입력값 오류",
+                    description = "입력값 오류 / USER가 아닌 비크리에이터 계정",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "크리에이터 아님",
+                                            name = "계정 유형 불일치",
                                             value = "{\"code\": \"ACCOUNT_ROLE_MISMATCH\", \"message\": \"해당 계정의 유형이 올바르지 않습니다.\"}"
                                     )
                             }

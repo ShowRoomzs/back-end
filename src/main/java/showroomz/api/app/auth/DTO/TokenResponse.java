@@ -1,6 +1,7 @@
 package showroomz.api.app.auth.DTO;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -18,6 +19,12 @@ public class TokenResponse {
     private Boolean isNewMember;
     private String registerToken; // 신규 회원(GUEST)일 때만 제공 (5분 유효)
     private String role; // 권한 정보 (예: "SELLER", "CREATOR", "ADMIN", "GUEST", "USER")
+
+    @Schema(description = "크리에이터 로그인 시 크리에이터 권한이 아닌 경우의 사유 코드 (예: ACCOUNT_ROLE_MISMATCH, ACCOUNT_REJECTED)")
+    private String code;
+
+    @Schema(description = "크리에이터 로그인 시 크리에이터 권한이 아닌 경우의 사유 메시지 (반려 사유 등)")
+    private String message;
 
     // 기존 회원용 생성자
     public TokenResponse(String accessToken, String refreshToken, long accessTokenExpiresIn, long refreshTokenExpiresIn, boolean isNewMember, String role) {

@@ -50,7 +50,10 @@ public class CreatorAuthService {
         SocialLoginResult result = authService.authenticateSocial(socialLoginRequest, false);
         Users user = result.getUser();
 
-        validateCreatorLoginEligibility(user.getId(), user.getRoleType());
+        TokenResponse ineligibleResponse = resolveIneligibleCreatorLogin(user, request);
+        if (ineligibleResponse != null) {
+            return ineligibleResponse;
+        }
 
         Creator creator = creatorRepository.findByUser_Id(user.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.CREATOR_NOT_FOUND));
@@ -167,26 +170,75 @@ public class CreatorAuthService {
         return new TokenResponse(registerToken.getToken(), RoleType.CREATOR.toString());
     }
 
-    private void validateCreatorLoginEligibility(Long userId, RoleType roleType) {
-        creatorApplicationRepository.findTopByUser_IdOrderByCreatedAtDesc(userId)
-                .ifPresent(this::validateApplicationStatus);
+    /**
+     * 크리에이터 권한이 아닌 로그인 시도 처리.
+     * - 신청 이력 없음 / 반려: USER access·refresh 토큰 + 사유(code/message) 반환
+     * - 승인 대기(PENDING): 기존과 동일하게 예외
+     * - 승인된 크리에이터: null 반환 후 정상 크리에이터 로그인 진행
+     */
+    private TokenResponse resolveIneligibleCreatorLogin(Users user, HttpServletRequest request) {
+        var latestApplication = creatorApplicationRepository
+                .findTopByUser_IdOrderByCreatedAtDesc(user.getId());
 
-        if (roleType != RoleType.CREATOR) {
-            throw new BusinessException(ErrorCode.ACCOUNT_ROLE_MISMATCH);
+        if (latestApplication.isPresent()) {
+            CreatorApplication application = latestApplication.get();
+            if (application.getStatus() == CreatorApplicationStatus.PENDING) {
+                throw new BusinessException(ErrorCode.ACCOUNT_NOT_APPROVED);
+            }
+            if (application.getStatus() == CreatorApplicationStatus.REJECTED) {
+                String rejectReason = application.getRejectReason();
+                if (rejectReason != null && !rejectReason.isBlank()) {
+                    return issueUserTokenWithReason(
+                            user, request, ErrorCode.ACCOUNT_REJECTED_WITH_REASON, rejectReason);
+                }
+                return issueUserTokenWithReason(
+                        user, request, ErrorCode.ACCOUNT_REJECTED, ErrorCode.ACCOUNT_REJECTED.getMessage());
+            }
+            // APPROVED
+            if (user.getRoleType() != RoleType.CREATOR) {
+                return issueUserTokenWithReason(
+                        user, request, ErrorCode.ACCOUNT_ROLE_MISMATCH, ErrorCode.ACCOUNT_ROLE_MISMATCH.getMessage());
+            }
+            return null;
         }
+
+        // 신청 이력 없음
+        if (user.getRoleType() != RoleType.CREATOR) {
+            return issueUserTokenWithReason(
+                    user,
+                    request,
+                    ErrorCode.ACCOUNT_ROLE_MISMATCH,
+                    "크리에이터 권한 신청 이력이 없습니다."
+            );
+        }
+        return null;
     }
 
-    private void validateApplicationStatus(CreatorApplication application) {
-        if (application.getStatus() == CreatorApplicationStatus.PENDING) {
-            throw new BusinessException(ErrorCode.ACCOUNT_NOT_APPROVED);
+    private TokenResponse issueUserTokenWithReason(
+            Users user,
+            HttpServletRequest request,
+            ErrorCode errorCode,
+            String message
+    ) {
+        if (user.getRoleType() != RoleType.USER) {
+            throw new BusinessException(errorCode, message);
         }
-        if (application.getStatus() == CreatorApplicationStatus.REJECTED) {
-            String rejectReason = application.getRejectReason();
-            if (rejectReason != null && !rejectReason.isBlank()) {
-                throw new BusinessException(ErrorCode.ACCOUNT_REJECTED_WITH_REASON, rejectReason);
-            }
-            throw new BusinessException(ErrorCode.ACCOUNT_REJECTED);
-        }
+
+        authService.saveLoginHistory(
+                user.getId(),
+                ClientUtils.getRemoteIP(request),
+                ClientUtils.getUserAgent(request)
+        );
+
+        TokenResponse response = authService.generateTokens(
+                user.getUsername(),
+                RoleType.USER,
+                user.getId(),
+                false
+        );
+        response.setCode(errorCode.getCode());
+        response.setMessage(message);
+        return response;
     }
 
     private void validateBusinessFields(CreatorCompleteRegistrationRequest request) {
