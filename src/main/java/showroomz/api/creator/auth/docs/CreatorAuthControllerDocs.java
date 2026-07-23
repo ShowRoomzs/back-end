@@ -76,7 +76,7 @@ public interface CreatorAuthControllerDocs {
                                     ),
                                     @ExampleObject(
                                             name = "반려 (사유 포함)",
-                                            value = "{\"code\": \"ACCOUNT_REJECTED_WITH_REASON\", \"message\": \"가입 승인이 반려되었습니다. 반려 사유: 팔로워 수 기준 미달 - 제출하신 채널의 팔로워 수가 기준에 미달합니다.\"}"
+                                            value = "{\"code\": \"ACCOUNT_REJECTED_WITH_REASON\", \"message\": \"팔로워 수 기준 미달 - 제출하신 채널의 팔로워 수가 기준에 미달합니다.\"}"
                                     ),
                                     @ExampleObject(
                                             name = "반려 (사유 없음)",

@@ -147,10 +147,7 @@ public class CreatorAuthService {
         if (application.getStatus() == CreatorApplicationStatus.REJECTED) {
             String rejectReason = application.getRejectReason();
             if (rejectReason != null && !rejectReason.isBlank()) {
-                throw new BusinessException(
-                        ErrorCode.ACCOUNT_REJECTED_WITH_REASON,
-                        String.format("가입 승인이 반려되었습니다. 반려 사유: %s", rejectReason)
-                );
+                throw new BusinessException(ErrorCode.ACCOUNT_REJECTED_WITH_REASON, rejectReason);
             }
             throw new BusinessException(ErrorCode.ACCOUNT_REJECTED);
         }

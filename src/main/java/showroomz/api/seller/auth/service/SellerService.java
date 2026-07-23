@@ -397,8 +397,7 @@ public class SellerService {
             String reasonText = formatRejectionReasonForUser(
                     seller.getRejectionReason(), seller.getRejectionReasonDetail());
             if (reasonText != null && !reasonText.isBlank()) {
-                String userFriendlyMessage = String.format("가입 승인이 반려되었습니다. 반려 사유: %s", reasonText);
-                throw new BusinessException(ErrorCode.ACCOUNT_REJECTED_WITH_REASON, userFriendlyMessage);
+                throw new BusinessException(ErrorCode.ACCOUNT_REJECTED_WITH_REASON, reasonText);
             }
             throw new BusinessException(ErrorCode.ACCOUNT_REJECTED);
         }
