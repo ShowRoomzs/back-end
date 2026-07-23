@@ -4,12 +4,14 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.creator.auth.DTO.CreatorApplicationRequest;
+import showroomz.api.creator.auth.DTO.MyCreatorApplicationResponse;
 import showroomz.api.creator.auth.docs.CreatorApplicationControllerDocs;
 import showroomz.api.creator.auth.service.CreatorApplicationService;
 
@@ -19,6 +21,16 @@ import showroomz.api.creator.auth.service.CreatorApplicationService;
 public class CreatorApplicationController implements CreatorApplicationControllerDocs {
 
     private final CreatorApplicationService creatorApplicationService;
+
+    @Override
+    @GetMapping
+    public ResponseEntity<MyCreatorApplicationResponse> getMyRejectedApplication(
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        MyCreatorApplicationResponse response =
+                creatorApplicationService.getMyRejectedApplication(userPrincipal.getUserId());
+        return ResponseEntity.ok(response);
+    }
 
     @Override
     @PostMapping

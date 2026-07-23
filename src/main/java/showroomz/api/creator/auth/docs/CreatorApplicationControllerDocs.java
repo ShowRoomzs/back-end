@@ -16,10 +16,76 @@ import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.creator.auth.DTO.CreatorApplicationRequest;
+import showroomz.api.creator.auth.DTO.MyCreatorApplicationResponse;
 
 @Tag(name = "Creator - Application", description = "크리에이터 권한 신청 API")
 @SecurityRequirement(name = "Authorization")
 public interface CreatorApplicationControllerDocs {
+
+    @Operation(
+            summary = "내 반려된 크리에이터 지원서 조회",
+            description = "로그인한 일반 유저(USER)의 가장 최근 반려(REJECTED) 지원서를 조회합니다.\n\n" +
+                    "**용도:** 크리에이터 로그인 후 신청이 반려된 경우, 제출했던 지원서 내용과 반려 사유를 확인\n\n" +
+                    "**권한:** ROLE_USER (USER access token 필수)\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = MyCreatorApplicationResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "반려된 지원서",
+                                            value = "{\n" +
+                                                    "  \"applicationId\": 12,\n" +
+                                                    "  \"snsType\": \"INSTAGRAM\",\n" +
+                                                    "  \"channelUrl\": \"https://instagram.com/my_channel\",\n" +
+                                                    "  \"accountId\": \"my_channel\",\n" +
+                                                    "  \"followerCount\": 10000,\n" +
+                                                    "  \"businessEmail\": \"business@creator.com\",\n" +
+                                                    "  \"appliedAt\": \"2026-07-20T10:00:00\",\n" +
+                                                    "  \"processedAt\": \"2026-07-22T15:30:00\",\n" +
+                                                    "  \"status\": \"REJECTED\",\n" +
+                                                    "  \"rejectReason\": \"팔로워 수 기준 미달 - 제출하신 채널의 팔로워 수가 기준에 미달합니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "반려된 지원서 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "지원서 없음",
+                                            value = "{\"code\": \"APPLICATION_NOT_FOUND\", \"message\": \"존재하지 않는 신청입니다.\"}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 필요",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\"code\": \"UNAUTHORIZED\", \"message\": \"인증 정보가 유효하지 않습니다.\"}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<MyCreatorApplicationResponse> getMyRejectedApplication(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal);
 
     @Operation(
             summary = "크리에이터 권한 신청",
