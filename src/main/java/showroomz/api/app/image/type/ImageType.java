@@ -17,7 +17,7 @@ public enum ImageType {
             EnumSet.of(PROFILE, REVIEW, INQUIRY);
 
     public static final Set<ImageType> SELLER_ALLOWED_TYPES =
-            EnumSet.of(MARKET, PRODUCT, SIGNUP_DOCUMENT);
+            EnumSet.of(MARKET, PRODUCT);
 
     public static final Set<ImageType> CREATOR_ALLOWED_TYPES =
             EnumSet.of(POST, PRODUCT, MARKET);

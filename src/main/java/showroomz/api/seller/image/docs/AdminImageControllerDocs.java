@@ -22,11 +22,11 @@ public interface AdminImageControllerDocs {
     @Operation(
             summary = "셀러 이미지 업로드",
             description = "판매자(셀러) 전용 멀티파트 이미지 업로드 API입니다.\n\n" +
-                    "**허용 `type`:** `MARKET`, `PRODUCT`, `SIGNUP_DOCUMENT` (그 외 값은 거부)\n\n" +
+                    "**허용 `type`:** `MARKET`, `PRODUCT` (그 외 값은 거부)\n\n" +
                     "**이미지 타입별 제약:**\n" +
                     "- `PRODUCT`: 상품 이미지 — jpg, jpeg, png, gif, 최대 20MB\n" +
-                    "- `MARKET`: 마켓 대표 이미지 — 동일 형식·용량, **최소 160×160px, 정사각형(1:1)**\n" +
-                    "- `SIGNUP_DOCUMENT`: 판매자 회원가입 증빙(사업자·통신판매 등) — 이미지 파일만, **해상도·비율 제약 없음** (PRODUCT와 동일 검증)\n\n" +
+                    "- `MARKET`: 마켓 대표 이미지 — 동일 형식·용량, **최소 160×160px, 정사각형(1:1)**\n\n" +
+                    "**회원가입 증빙 서류:** `POST /v1/seller/auth/signup-documents` (인증 불필요)\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -167,8 +167,8 @@ public interface AdminImageControllerDocs {
             @Parameter(
                     description = "업로드할 이미지의 용도 (필수)\n" +
                             "- `PRODUCT`: 상품 이미지\n" +
-                            "- `MARKET`: 마켓 대표 이미지 (160×160px 이상, 1:1)\n" +
-                            "- `SIGNUP_DOCUMENT`: 회원가입 증빙 서류 이미지\n\n",
+                            "- `MARKET`: 마켓 대표 이미지 (160×160px 이상, 1:1)\n\n" +
+                            "회원가입 증빙은 `POST /v1/seller/auth/signup-documents`를 사용하세요.\n\n",
                     required = true,
                     example = "MARKET"
             )

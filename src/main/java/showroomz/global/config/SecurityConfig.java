@@ -52,6 +52,7 @@ public class SecurityConfig {
             "/v1/seller/auth/signup", "/v1/seller/auth/login",
             "/v1/seller/auth/complete-registration",
             "/v1/seller/auth/refresh",
+            "/v1/seller/auth/signup-documents",
             "/v1/admin/auth/login",
             "/v1/admin/auth/refresh",
 
