@@ -21,9 +21,10 @@ public interface CommonImageControllerDocs {
     @Operation(
             summary = "공개 이미지 업로드",
             description = "인증 없이 업로드 가능한 이미지 API입니다.\n\n" +
-                    "**허용 `type`:** `SIGNUP_DOCUMENT` (그 외 값은 거부)\n\n" +
+                    "**허용 `type`:** `SIGNUP_DOCUMENT`, `CREATOR_DOCUMENT` (그 외 값은 거부)\n\n" +
                     "**타입별 용도:**\n" +
-                    "- `SIGNUP_DOCUMENT`: 판매자 회원가입 증빙(사업자등록증·통신판매업신고증·통장사본 등)\n\n" +
+                    "- `SIGNUP_DOCUMENT`: 판매자 회원가입 증빙(사업자등록증·통신판매업신고증·통장사본 등)\n" +
+                    "- `CREATOR_DOCUMENT`: 크리에이터 추가 정보(사업자등록증·통장사본 등)\n\n" +
                     "**제약:** jpg, jpeg, png, gif / 최대 20MB / 해상도·비율 제약 없음\n\n" +
                     "**권한:** 인증 불필요"
     )
@@ -36,9 +37,15 @@ public interface CommonImageControllerDocs {
                             schema = @Schema(implementation = ImageUploadResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "성공",
+                                            name = "판매자 회원가입 증빙",
                                             value = "{\n" +
                                                     "  \"imageUrl\": \"https://s3.ap-northeast-2.amazonaws.com/bucket-name/uploads/signup_document/uuid.jpg\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "크리에이터 추가 정보",
+                                            value = "{\n" +
+                                                    "  \"imageUrl\": \"https://s3.ap-northeast-2.amazonaws.com/bucket-name/uploads/creator_document/uuid.jpg\"\n" +
                                                     "}"
                                     )
                             }
@@ -53,7 +60,7 @@ public interface CommonImageControllerDocs {
                             examples = {
                                     @ExampleObject(
                                             name = "유효하지 않은 타입",
-                                            value = "{\"code\": \"INVALID_INPUT\", \"message\": \"유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, INQUIRY, POST, PRODUCT, MARKET, CATEGORY)\"}"
+                                            value = "{\"code\": \"INVALID_INPUT\", \"message\": \"유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, INQUIRY, POST, PRODUCT, MARKET, CATEGORY, SIGNUP_DOCUMENT, CREATOR_DOCUMENT)\"}"
                                     ),
                                     @ExampleObject(
                                             name = "빈 파일",
@@ -69,9 +76,11 @@ public interface CommonImageControllerDocs {
     })
     ResponseEntity<ImageUploadResponse> uploadPublicImage(
             @Parameter(
-                    description = "업로드 용도\n- `SIGNUP_DOCUMENT`: 회원가입 증빙 서류",
+                    description = "업로드 용도\n" +
+                            "- `SIGNUP_DOCUMENT`: 판매자 회원가입 증빙 서류\n" +
+                            "- `CREATOR_DOCUMENT`: 크리에이터 추가 정보 서류",
                     required = true,
-                    example = "SIGNUP_DOCUMENT"
+                    example = "CREATOR_DOCUMENT"
             )
             @RequestParam("type") String typeParam,
 

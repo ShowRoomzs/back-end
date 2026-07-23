@@ -213,6 +213,7 @@ public interface CreatorAuthControllerDocs {
                     "**사업자(`BUSINESS`) 선택 시 추가 필수:**\n" +
                     "- `businessRegistrationNumber`: 사업자등록번호 (예: 123-45-67890)\n" +
                     "- `businessLicenseImageUrl`: 사업자등록증 URL\n\n" +
+                    "**이미지 업로드:** `POST /v1/common/images?type=CREATOR_DOCUMENT` (인증 불필요)\n\n" +
                     "**완료 후:** `isNewMember`가 `false`로 변경되며 access/refresh 토큰이 발급됩니다."
     )
     @ApiResponses(value = {
