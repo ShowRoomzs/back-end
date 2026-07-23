@@ -1,4 +1,4 @@
-package showroomz.api.seller.image.docs;
+package showroomz.api.common.image.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -15,15 +15,17 @@ import org.springframework.web.multipart.MultipartFile;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.image.DTO.ImageUploadResponse;
 
-@Tag(name = "Seller - Auth", description = "Seller Auth API")
-public interface SellerSignupDocumentControllerDocs {
+@Tag(name = "Image", description = "Image Upload API")
+public interface CommonImageControllerDocs {
 
     @Operation(
-            summary = "회원가입 증빙 서류 이미지 업로드 (공개)",
-            description = "판매자 회원가입 전 사업자등록증·통신판매업신고증·통장사본 등 증빙 서류를 업로드합니다.\n\n" +
-                    "**타입:** `SIGNUP_DOCUMENT` 고정 (별도 type 파라미터 없음)\n\n" +
+            summary = "공개 이미지 업로드",
+            description = "인증 없이 업로드 가능한 이미지 API입니다.\n\n" +
+                    "**허용 `type`:** `SIGNUP_DOCUMENT` (그 외 값은 거부)\n\n" +
+                    "**타입별 용도:**\n" +
+                    "- `SIGNUP_DOCUMENT`: 판매자 회원가입 증빙(사업자등록증·통신판매업신고증·통장사본 등)\n\n" +
                     "**제약:** jpg, jpeg, png, gif / 최대 20MB / 해상도·비율 제약 없음\n\n" +
-                    "**권한:** 인증 불필요 (회원가입 전용 공개 API)"
+                    "**권한:** 인증 불필요"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -50,6 +52,10 @@ public interface SellerSignupDocumentControllerDocs {
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
+                                            name = "유효하지 않은 타입",
+                                            value = "{\"code\": \"INVALID_INPUT\", \"message\": \"유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, INQUIRY, POST, PRODUCT, MARKET, CATEGORY)\"}"
+                                    ),
+                                    @ExampleObject(
                                             name = "빈 파일",
                                             value = "{\"code\": \"EMPTY_FILE\", \"message\": \"업로드할 파일이 존재하지 않습니다.\"}"
                                     ),
@@ -61,7 +67,14 @@ public interface SellerSignupDocumentControllerDocs {
                     )
             )
     })
-    ResponseEntity<ImageUploadResponse> uploadSignupDocument(
+    ResponseEntity<ImageUploadResponse> uploadPublicImage(
+            @Parameter(
+                    description = "업로드 용도\n- `SIGNUP_DOCUMENT`: 회원가입 증빙 서류",
+                    required = true,
+                    example = "SIGNUP_DOCUMENT"
+            )
+            @RequestParam("type") String typeParam,
+
             @Parameter(
                     description = "업로드할 이미지 파일",
                     required = true,

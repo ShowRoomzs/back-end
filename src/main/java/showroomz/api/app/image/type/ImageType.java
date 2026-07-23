@@ -24,5 +24,9 @@ public enum ImageType {
 
     public static final Set<ImageType> ADMIN_ALLOWED_TYPES =
             EnumSet.of(CATEGORY);
+
+    /** 비로그인(공개) 업로드 허용 타입 */
+    public static final Set<ImageType> PUBLIC_ALLOWED_TYPES =
+            EnumSet.of(SIGNUP_DOCUMENT);
 }
 
