@@ -161,12 +161,14 @@ public interface AdminCreatorApplicationControllerDocs {
     })
     ResponseEntity<Void> approveApplication(
             @Parameter(
+                    name = "applicationId",
                     description = "승인할 지원서 ID",
                     required = true,
                     example = "12",
-                    in = ParameterIn.PATH
+                    in = ParameterIn.PATH,
+                    schema = @Schema(type = "integer", format = "int64")
             )
-            @PathVariable Long applicationId);
+            @PathVariable("applicationId") Long applicationId);
 
     @Operation(
             summary = "크리에이터 지원 반려",
@@ -258,11 +260,13 @@ public interface AdminCreatorApplicationControllerDocs {
     )
     ResponseEntity<Void> rejectApplication(
             @Parameter(
+                    name = "applicationId",
                     description = "반려할 지원서 ID",
                     required = true,
                     example = "12",
-                    in = ParameterIn.PATH
+                    in = ParameterIn.PATH,
+                    schema = @Schema(type = "integer", format = "int64")
             )
-            @PathVariable Long applicationId,
+            @PathVariable("applicationId") Long applicationId,
             @Valid @RequestBody CreatorApplicationRejectRequest request);
 }

@@ -28,7 +28,7 @@ public class AdminCreatorApplicationController implements AdminCreatorApplicatio
 
     @Override
     @PostMapping("/{applicationId}/approve")
-    public ResponseEntity<Void> approveApplication(@PathVariable Long applicationId) {
+    public ResponseEntity<Void> approveApplication(@PathVariable("applicationId") Long applicationId) {
         creatorApplicationService.approve(applicationId);
         return ResponseEntity.noContent().build();
     }
@@ -36,7 +36,7 @@ public class AdminCreatorApplicationController implements AdminCreatorApplicatio
     @Override
     @PostMapping("/{applicationId}/reject")
     public ResponseEntity<Void> rejectApplication(
-            @PathVariable Long applicationId,
+            @PathVariable("applicationId") Long applicationId,
             @Valid @RequestBody CreatorApplicationRejectRequest request) {
         creatorApplicationService.reject(applicationId, request);
         return ResponseEntity.noContent().build();
