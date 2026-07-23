@@ -262,6 +262,21 @@ public class SellerService {
     }
 
     /**
+     * 사업자등록번호 중복 확인 (승인·심사대기만 대상, 반려·탈퇴 제외)
+     */
+    @Transactional(readOnly = true)
+    public SellerDto.CheckBusinessRegistrationNumberResponse checkBusinessRegistrationNumber(
+            String businessRegistrationNumber) {
+        if (adminRepository.existsByBusinessRegistrationNumberAndStatusNotRejected(
+                businessRegistrationNumber, SellerStatus.REJECTED)) {
+            return new SellerDto.CheckBusinessRegistrationNumberResponse(
+                    false, "DUPLICATE", "이미 사용 중인 사업자등록번호입니다.");
+        }
+        return new SellerDto.CheckBusinessRegistrationNumberResponse(
+                true, "AVAILABLE", "사용 가능한 사업자등록번호입니다.");
+    }
+
+    /**
      * [판매자용] 로그인
      */
     @Transactional

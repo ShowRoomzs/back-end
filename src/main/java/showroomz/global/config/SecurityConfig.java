@@ -57,6 +57,7 @@ public class SecurityConfig {
 
             // 중복 확인 (인증 불필요)
             "/v1/seller/auth/check-email",
+            "/v1/seller/auth/check-business-registration-number",
             "/v1/user/check-nickname",
             "/v1/seller/markets/check-name",
 

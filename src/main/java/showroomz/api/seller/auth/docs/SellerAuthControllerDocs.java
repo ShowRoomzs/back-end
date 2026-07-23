@@ -291,6 +291,53 @@ public interface SellerAuthControllerDocs {
     );
 
     @Operation(
+            summary = "사업자등록번호 중복 체크",
+            description = "마켓 회원가입 시 사용할 사업자등록번호의 중복 여부를 확인합니다.\n\n" +
+                    "**조회 대상:** 승인(APPROVED)·심사대기(PENDING) 계정만 중복으로 판단합니다.\n" +
+                    "**제외:** 반려(REJECTED)·탈퇴 계정은 재사용 가능합니다.\n\n" +
+                    "**응답:**\n" +
+                    "- `isAvailable`: true면 사용 가능, false면 중복\n" +
+                    "- `code`: 응답 코드 (AVAILABLE: 사용 가능, DUPLICATE: 중복)\n" +
+                    "- `message`: 결과 메시지"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "중복 체크 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = SellerDto.CheckBusinessRegistrationNumberResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "사용 가능한 경우",
+                                            value = "{\n" +
+                                                    "  \"isAvailable\": true,\n" +
+                                                    "  \"code\": \"AVAILABLE\",\n" +
+                                                    "  \"message\": \"사용 가능한 사업자등록번호입니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "중복인 경우",
+                                            value = "{\n" +
+                                                    "  \"isAvailable\": false,\n" +
+                                                    "  \"code\": \"DUPLICATE\",\n" +
+                                                    "  \"message\": \"이미 사용 중인 사업자등록번호입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<SellerDto.CheckBusinessRegistrationNumberResponse> checkBusinessRegistrationNumber(
+            @Parameter(
+                    description = "중복 체크할 사업자등록번호 (- 포함)",
+                    required = true,
+                    example = "123-45-67890"
+            )
+            @RequestParam String businessRegistrationNumber
+    );
+
+    @Operation(
             summary = "판매자 로그인",
             description = "이메일과 비밀번호로 판매자 계정에 로그인합니다.\n\n" +
                     "**응답:**\n" +

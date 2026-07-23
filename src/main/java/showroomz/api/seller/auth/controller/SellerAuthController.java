@@ -46,6 +46,13 @@ public class SellerAuthController implements SellerAuthControllerDocs {
     }
 
     @Override
+    @GetMapping("/check-business-registration-number")
+    public ResponseEntity<SellerDto.CheckBusinessRegistrationNumberResponse> checkBusinessRegistrationNumber(
+            @RequestParam("businessRegistrationNumber") String businessRegistrationNumber) {
+        return ResponseEntity.ok(sellerService.checkBusinessRegistrationNumber(businessRegistrationNumber));
+    }
+
+    @Override
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody SellerLoginRequest request) {
         TokenResponse tokenResponse = sellerService.loginSeller(request);
