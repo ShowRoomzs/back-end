@@ -26,7 +26,7 @@ public interface AdminImageControllerDocs {
                     "**이미지 타입별 제약:**\n" +
                     "- `PRODUCT`: 상품 이미지 — jpg, jpeg, png, gif, 최대 20MB\n" +
                     "- `MARKET`: 마켓 대표 이미지 — 동일 형식·용량, **최소 160×160px, 정사각형(1:1)**\n\n" +
-                    "**회원가입 증빙 서류:** `POST /v1/seller/auth/signup-documents` (인증 불필요)\n\n" +
+                    "**회원가입 증빙 서류:** `POST /v1/common/images?type=SIGNUP_DOCUMENT` (인증 불필요)\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -168,7 +168,7 @@ public interface AdminImageControllerDocs {
                     description = "업로드할 이미지의 용도 (필수)\n" +
                             "- `PRODUCT`: 상품 이미지\n" +
                             "- `MARKET`: 마켓 대표 이미지 (160×160px 이상, 1:1)\n\n" +
-                            "회원가입 증빙은 `POST /v1/seller/auth/signup-documents`를 사용하세요.\n\n",
+                            "회원가입 증빙은 `POST /v1/common/images?type=SIGNUP_DOCUMENT`를 사용하세요.\n\n",
                     required = true,
                     example = "MARKET"
             )

@@ -52,7 +52,6 @@ public class SecurityConfig {
             "/v1/seller/auth/signup", "/v1/seller/auth/login",
             "/v1/seller/auth/complete-registration",
             "/v1/seller/auth/refresh",
-            "/v1/seller/auth/signup-documents",
             "/v1/admin/auth/login",
             "/v1/admin/auth/refresh",
 
@@ -61,6 +60,9 @@ public class SecurityConfig {
             "/v1/seller/auth/check-business-registration-number",
             "/v1/user/check-nickname",
             "/v1/seller/markets/check-name",
+
+            // 공용 공개 이미지 업로드 (비로그인, type whitelist)
+            "/v1/common/images",
 
             // 공용 상품 목록 조회 (비회원 허용)
             "/v1/common/products",
