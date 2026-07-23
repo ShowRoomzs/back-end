@@ -1,6 +1,7 @@
 package showroomz.api.creator.auth.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -12,10 +13,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.SocialLoginRequest;
 import showroomz.api.app.auth.DTO.TokenResponse;
 import showroomz.api.creator.auth.DTO.CreatorCompleteRegistrationRequest;
+import showroomz.api.creator.auth.DTO.ShowroomNameCheckResponse;
 
 @Tag(name = "Creator - Auth", description = "크리에이터 인증/추가정보 API")
 public interface CreatorAuthControllerDocs {
@@ -122,11 +125,67 @@ public interface CreatorAuthControllerDocs {
             @Valid @RequestBody SocialLoginRequest socialLoginRequest);
 
     @Operation(
+            summary = "쇼룸명 중복 확인",
+            description = "`complete-registration`에서 사용할 쇼룸명의 형식·중복 여부를 확인합니다.\n\n" +
+                    "**규칙:**\n" +
+                    "- 공백/특수문자 불가\n" +
+                    "- 한글(+숫자) 또는 영문(+숫자)만 사용 (혼용 불가)\n\n" +
+                    "**응답:**\n" +
+                    "- `isAvailable`: true면 사용 가능\n" +
+                    "- `code`: `AVAILABLE` / `DUPLICATE` / `INVALID_FORMAT`\n" +
+                    "- `message`: 결과 메시지"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "중복 체크 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ShowroomNameCheckResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "사용 가능",
+                                            value = "{\n" +
+                                                    "  \"isAvailable\": true,\n" +
+                                                    "  \"code\": \"AVAILABLE\",\n" +
+                                                    "  \"message\": \"사용 가능한 쇼룸명입니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "중복",
+                                            value = "{\n" +
+                                                    "  \"isAvailable\": false,\n" +
+                                                    "  \"code\": \"DUPLICATE\",\n" +
+                                                    "  \"message\": \"이미 사용 중인 쇼룸명입니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "형식 오류",
+                                            value = "{\n" +
+                                                    "  \"isAvailable\": false,\n" +
+                                                    "  \"code\": \"INVALID_FORMAT\",\n" +
+                                                    "  \"message\": \"쇼룸명은 공백과 특수문자를 사용할 수 없으며, 한글 또는 영문 중 하나만 사용해야 합니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<ShowroomNameCheckResponse> checkShowroomName(
+            @Parameter(
+                    description = "검사할 쇼룸명",
+                    required = true,
+                    example = "myshowroom"
+            )
+            @RequestParam("showroomName") String showroomName
+    );
+
+    @Operation(
             summary = "크리에이터 추가 정보 입력 (승인 후 최초)",
             description = "관리자 승인 후 크리에이터 소셜 로그인에서 받은 `registerToken`으로 추가 정보를 등록합니다.\n\n" +
                     "**요청 헤더:** `Authorization: Bearer {registerToken}`\n\n" +
                     "**필수 필드:**\n" +
-                    "- `showroomName`: 쇼룸명 (중복 불가)\n" +
+                    "- `showroomName`: 쇼룸명 (중복 불가, 사전 확인: `GET /v1/creator/auth/check-showroom-name`)\n" +
                     "- `businessType`: `INDIVIDUAL`(개인/비사업자) 또는 `BUSINESS`(개인사업자/법인)\n" +
                     "- `bankName`: 은행명\n" +
                     "- `accountNumber`: 계좌번호 (하이픈 없이 숫자만)\n" +

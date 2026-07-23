@@ -14,6 +14,7 @@ import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.creator.auth.DTO.CreatorCompleteRegistrationRequest;
+import showroomz.api.creator.auth.DTO.ShowroomNameCheckResponse;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.entity.CreatorApplication;
 import showroomz.domain.member.creator.repository.CreatorApplicationRepository;
@@ -26,6 +27,7 @@ import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.ClientUtils;
 
 import java.util.Date;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +35,8 @@ import java.util.Date;
 public class CreatorAuthService {
 
     private static final long REGISTER_TOKEN_EXPIRY_MSEC = 5 * 60 * 1000;
+    private static final Pattern SHOWROOM_NAME_PATTERN =
+            Pattern.compile("^([가-힣0-9]+|[a-zA-Z0-9]+)$");
 
     private final CreatorRepository creatorRepository;
     private final CreatorApplicationRepository creatorApplicationRepository;
@@ -119,6 +123,38 @@ public class CreatorAuthService {
                 user.getRoleType(),
                 user.getId(),
                 false
+        );
+    }
+
+    public ShowroomNameCheckResponse checkShowroomName(String showroomName) {
+        if (showroomName == null || showroomName.isBlank()) {
+            return new ShowroomNameCheckResponse(
+                    false,
+                    "INVALID_FORMAT",
+                    "쇼룸명은 필수 입력값입니다."
+            );
+        }
+
+        if (!SHOWROOM_NAME_PATTERN.matcher(showroomName).matches()) {
+            return new ShowroomNameCheckResponse(
+                    false,
+                    "INVALID_FORMAT",
+                    "쇼룸명은 공백과 특수문자를 사용할 수 없으며, 한글 또는 영문 중 하나만 사용해야 합니다."
+            );
+        }
+
+        if (creatorRepository.existsByShowroomName(showroomName)) {
+            return new ShowroomNameCheckResponse(
+                    false,
+                    "DUPLICATE",
+                    "이미 사용 중인 쇼룸명입니다."
+            );
+        }
+
+        return new ShowroomNameCheckResponse(
+                true,
+                "AVAILABLE",
+                "사용 가능한 쇼룸명입니다."
         );
     }
 

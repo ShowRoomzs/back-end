@@ -48,6 +48,7 @@ public class SecurityConfig {
             "/v1/user/auth/local/signup", "/v1/user/auth/local/login",
             "/v1/creator/auth/social/login",
             "/v1/creator/auth/complete-registration",
+            "/v1/creator/auth/check-showroom-name",
             "/v1/seller/auth/signup", "/v1/seller/auth/login",
             "/v1/seller/auth/complete-registration",
             "/v1/seller/auth/refresh",
