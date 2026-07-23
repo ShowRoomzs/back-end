@@ -61,7 +61,7 @@ public class Seller {
     @Column(name = "COMPANY_NAME", length = 100)
     private String companyName;
 
-    @Column(name = "BUSINESS_REG_NUMBER", length = 20)
+    @Column(name = "BUSINESS_REG_NUMBER", length = 128)
     private String businessRegistrationNumber;
 
     @Column(name = "BUSINESS_CONDITION", length = 100)

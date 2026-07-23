@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.common.BaseTimeEntity;
+import showroomz.global.utils.BusinessRegistrationNumberHasher;
 
 import java.time.LocalDateTime;
 
@@ -51,7 +52,7 @@ public class SellerApplication extends BaseTimeEntity {
     @Column(name = "company_name", length = 100)
     private String companyName;
 
-    @Column(name = "business_reg_number", length = 20)
+    @Column(name = "business_reg_number", length = 128)
     private String businessRegistrationNumber;
 
     @Column(name = "business_condition", length = 100)
@@ -151,5 +152,6 @@ public class SellerApplication extends BaseTimeEntity {
         this.rejectReason = rejectReason;
         this.rejectReasonDetail = rejectReasonDetail;
         this.processedAt = LocalDateTime.now();
+        this.businessRegistrationNumber = BusinessRegistrationNumberHasher.hash(this.businessRegistrationNumber);
     }
 }

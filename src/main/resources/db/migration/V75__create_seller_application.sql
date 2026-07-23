@@ -9,7 +9,7 @@ CREATE TABLE seller_application (
     representative_name VARCHAR(64),
     representative_contact VARCHAR(20),
     company_name VARCHAR(100),
-    business_reg_number VARCHAR(20),
+    business_reg_number VARCHAR(128),
     business_condition VARCHAR(100),
     business_address VARCHAR(255),
     detail_address VARCHAR(255),

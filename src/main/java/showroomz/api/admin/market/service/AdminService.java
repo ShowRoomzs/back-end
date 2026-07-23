@@ -92,6 +92,8 @@ public class AdminService {
         } else if (status == SellerStatus.REJECTED) {
             String mailDetail = reasonDetail != null && !reasonDetail.isBlank() ? reasonDetail.strip() : "";
             application.reject(reasonType.name(), reasonDetail);
+            // 반려 시 계정·신청서 모두 사업자등록번호를 해시로 보관
+            seller.setBusinessRegistrationNumber(application.getBusinessRegistrationNumber());
             historyReason = reasonType.getDescription();
             if (!mailDetail.isEmpty()) {
                 historyReason += " - " + mailDetail;
