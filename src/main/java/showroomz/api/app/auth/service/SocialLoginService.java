@@ -69,37 +69,19 @@ public class SocialLoginService {
 
     @Transactional
     public SocialLoginResult loginOrSignup(ProviderType providerType, String accessToken, String name) {
-        // [추가된 로직] 로그인 프로세스 시작 전 상태 검증
-        // 일시 중단 상태라면 예외(BusinessException)가 발생하여 가입/로그인 모두 차단됨
-        socialPolicyService.validateProviderActive(providerType);
+        OAuth2UserInfo userInfo = resolveOAuthUserInfo(providerType, accessToken);
 
-        // 1. [보안 추가] 구글의 경우 토큰이 우리 앱의 것인지 검증
-        if (providerType == ProviderType.GOOGLE) {
-            verifyGoogleToken(accessToken);
-        }
-
-        // 2. 유저 정보 가져오기
-        Map<String, Object> attributes = getUserAttributes(providerType, accessToken);
-        OAuth2UserInfo userInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(providerType, attributes);
-
-        if (userInfo.getId() == null) {
-            throw new IllegalArgumentException("유저 정보를 가져오는데 실패했습니다.");
-        }
-
-        // 3. 회원가입 or 로그인 처리
         String username = userInfo.getId();
         Users user = userRepository.findByUsername(username).orElse(null);
         boolean isNewMember = false;
 
         if (user == null) {
             // [신규 가입]
-            // 이메일이 이미 다른 계정에서 사용 중인지 확인
             String email = userInfo.getEmail();
             if (email != null && !email.isEmpty() && userRepository.existsByEmail(email)) {
                 throw new IllegalArgumentException("이미 다른 계정에서 사용 중인 이메일입니다.");
             }
-            
-            // 애플의 경우 name이 제공되면 사용
+
             if (providerType == ProviderType.APPLE && name != null && !name.isEmpty()) {
                 user = createUser(userInfo, providerType, name);
             } else {
@@ -107,14 +89,7 @@ public class SocialLoginService {
             }
             isNewMember = true;
         } else {
-            // [기존 유저 존재]
-
-            // 실명이 아직 저장되지 않은 경우 업데이트 (애플은 클라이언트 파라미터 우선)
-            String incomingRealName = (name != null && !name.isEmpty()) ? name : userInfo.getRealName();
-            if (incomingRealName != null && !incomingRealName.isEmpty()
-                    && (user.getName() == null || user.getName().isEmpty())) {
-                user.setName(incomingRealName);
-            }
+            applyIncomingRealNameIfAbsent(user, userInfo, name);
 
             // 탈퇴 회원(WITHDRAWN)인 경우 재가입(복구) 처리
             if (user.getStatus() == UserStatus.WITHDRAWN) {
@@ -126,21 +101,62 @@ public class SocialLoginService {
                 //    - isNewMember를 true로 설정하여 프론트엔드가 가입 화면(약관/닉네임)을 띄우게 함
                 user.setRoleType(RoleType.GUEST);
                 isNewMember = true;
-
-                // 3. (선택사항) 기존 정보 초기화
-                //    완전한 '새 출발'을 위해 기존 닉네임이나 동의 내역 등을 초기화할 수 있습니다.
-                // user.setNickname(userInfo.getName()); // 소셜 이름으로 리셋
-                // user.setMarketingAgree(false);        // 마케팅 동의 리셋
-                
-            } else {
-                // 정상 회원인 경우
-                if (user.getRoleType() == RoleType.GUEST) {
-                    isNewMember = true;
-                }
+            } else if (user.getRoleType() == RoleType.GUEST) {
+                isNewMember = true;
             }
         }
 
         return new SocialLoginResult(user, isNewMember);
+    }
+
+    /**
+     * 기존 계정만 조회하는 로그인 전용 처리.
+     * 계정이 없으면 IllegalArgumentException을 발생시키며 GUEST를 생성하지 않는다.
+     */
+    @Transactional
+    public SocialLoginResult loginOnly(ProviderType providerType, String accessToken) {
+        return loginOnly(providerType, accessToken, null);
+    }
+
+    @Transactional
+    public SocialLoginResult loginOnly(ProviderType providerType, String accessToken, String name) {
+        OAuth2UserInfo userInfo = resolveOAuthUserInfo(providerType, accessToken);
+
+        Users user = userRepository.findByUsername(userInfo.getId())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+        if (user.getStatus() == UserStatus.WITHDRAWN) {
+            throw new IllegalArgumentException("탈퇴한 회원입니다.");
+        }
+
+        applyIncomingRealNameIfAbsent(user, userInfo, name);
+
+        boolean isNewMember = user.getRoleType() == RoleType.GUEST;
+        return new SocialLoginResult(user, isNewMember);
+    }
+
+    private OAuth2UserInfo resolveOAuthUserInfo(ProviderType providerType, String accessToken) {
+        socialPolicyService.validateProviderActive(providerType);
+
+        if (providerType == ProviderType.GOOGLE) {
+            verifyGoogleToken(accessToken);
+        }
+
+        Map<String, Object> attributes = getUserAttributes(providerType, accessToken);
+        OAuth2UserInfo userInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(providerType, attributes);
+
+        if (userInfo.getId() == null) {
+            throw new IllegalArgumentException("유저 정보를 가져오는데 실패했습니다.");
+        }
+        return userInfo;
+    }
+
+    private void applyIncomingRealNameIfAbsent(Users user, OAuth2UserInfo userInfo, String name) {
+        String incomingRealName = (name != null && !name.isEmpty()) ? name : userInfo.getRealName();
+        if (incomingRealName != null && !incomingRealName.isEmpty()
+                && (user.getName() == null || user.getName().isEmpty())) {
+            user.setName(incomingRealName);
+        }
     }
 
     /**

@@ -25,7 +25,8 @@ public interface AuthControllerDocs {
             summary = "소셜 로그인",
             description = "카카오, 네이버, 구글, 애플 소셜 로그인을 처리합니다. 신규 회원인 경우 registerToken을 반환하고, 기존 회원인 경우 accessToken과 refreshToken을 반환합니다.\n\n" +
                     "**registerToken 유효기간:** 5분 (회원가입 완료에 사용)\n" +
-                    "**role:** 사용자 권한 (USER, GUEST)"
+                    "**role:** 사용자 권한 (USER, GUEST)\n\n" +
+                    "**크리에이터 로그인:** `POST /v1/creator/auth/social/login`을 사용하세요."
     )
     @ApiResponses(value = {
             @ApiResponse(

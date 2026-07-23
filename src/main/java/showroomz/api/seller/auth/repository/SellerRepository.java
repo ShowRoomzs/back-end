@@ -23,5 +23,16 @@ public interface SellerRepository extends JpaRepository<Seller, Long> {
            "WHERE s.email = :email AND s.status != :rejectedStatus")
     boolean existsByEmailAndStatusNotRejected(@Param("email") String email, 
                                                @Param("rejectedStatus") SellerStatus rejectedStatus);
+
+    /**
+     * REJECTED 상태가 아닌 사업자등록번호 존재 여부 확인
+     * 반려·탈퇴 계정의 사업자등록번호는 재사용 가능하도록 제외
+     */
+    @Query("SELECT CASE WHEN COUNT(s) > 0 THEN true ELSE false END FROM Seller s " +
+           "WHERE s.businessRegistrationNumber = :businessRegistrationNumber " +
+           "AND s.status != :rejectedStatus")
+    boolean existsByBusinessRegistrationNumberAndStatusNotRejected(
+            @Param("businessRegistrationNumber") String businessRegistrationNumber,
+            @Param("rejectedStatus") SellerStatus rejectedStatus);
 }
 

@@ -4,10 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import showroomz.api.app.auth.DTO.SocialLoginRequest;
 import showroomz.api.app.auth.DTO.TokenResponse;
+import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.auth.refreshToken.UserRefreshToken;
 import showroomz.api.app.auth.refreshToken.UserRefreshTokenRepository;
+import showroomz.api.app.auth.service.SocialLoginService.SocialLoginResult;
 import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
 import showroomz.api.app.user.repository.UserRepository;
@@ -15,6 +18,8 @@ import showroomz.domain.history.entity.LoginHistory;
 import showroomz.domain.history.repository.LoginHistoryRepository;
 import showroomz.domain.history.type.LoginStatus;
 import showroomz.global.config.properties.AppProperties;
+import showroomz.global.error.exception.BusinessException;
+import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.service.GeoLocationService;
 import showroomz.global.service.GeoLocationService.GeoLocation;
 
@@ -28,10 +33,59 @@ public class AuthService {
     private final AppProperties appProperties;
     private final AuthTokenProvider tokenProvider;
     private final UserRefreshTokenRepository userRefreshTokenRepository;
-    // 사용자 정보 업데이트를 위한 Repository
     private final UserRepository userRepository;
     private final LoginHistoryRepository loginHistoryRepository;
     private final GeoLocationService geoLocationService;
+    private final SocialLoginService socialLoginService;
+
+    /**
+     * 소셜 로그인 공통 진입점.
+     *
+     * @param request     소셜 로그인 요청
+     * @param allowSignup true면 계정 없을 때 가입(GUEST 생성), false면 기존 계정만 조회
+     */
+    @Transactional
+    public SocialLoginResult authenticateSocial(SocialLoginRequest request, boolean allowSignup) {
+        if (request.getToken() == null || request.getToken().isEmpty()) {
+            throw new BusinessException(ErrorCode.MISSING_TOKEN);
+        }
+        if (request.getProviderType() == null || request.getProviderType().isEmpty()) {
+            throw new BusinessException(ErrorCode.MISSING_PROVIDER_TYPE);
+        }
+
+        ProviderType providerType;
+        try {
+            providerType = ProviderType.valueOf(request.getProviderType().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.INVALID_SOCIAL_PROVIDER);
+        }
+
+        try {
+            if (providerType == ProviderType.APPLE && request.getName() != null) {
+                return allowSignup
+                        ? socialLoginService.loginOrSignup(providerType, request.getToken(), request.getName())
+                        : socialLoginService.loginOnly(providerType, request.getToken(), request.getName());
+            }
+            return allowSignup
+                    ? socialLoginService.loginOrSignup(providerType, request.getToken())
+                    : socialLoginService.loginOnly(providerType, request.getToken());
+        } catch (IllegalArgumentException e) {
+            String message = e.getMessage();
+            if (message != null && message.contains("탈퇴")) {
+                throw new BusinessException(ErrorCode.USER_WITHDRAWN);
+            }
+            if (message != null && message.contains("존재하지 않는 회원")) {
+                throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+            }
+            if (message != null && (message.contains("유효하지 않은") || message.contains("토큰") || message.contains("만료"))) {
+                throw new BusinessException(ErrorCode.INVALID_ACCESS_TOKEN);
+            }
+            if (message != null && message.contains("이미 다른 계정에서 사용 중인 이메일")) {
+                throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
+            }
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
 
     /**
      * 토큰 생성 및 DB 저장
@@ -43,14 +97,12 @@ public class AuthService {
      */
     public TokenResponse generateTokens(String username, RoleType roleType, Long userPk, boolean isNewMember) {
         Date now = new Date();
-        
-        // 최근 접속일 업데이트 로직
+
         userRepository.findByUsername(username).ifPresent(user -> {
             user.setLastLoginAt(LocalDateTime.now());
             userRepository.save(user);
         });
-        
-        // Access Token 생성
+
         long accessTokenExpiry = appProperties.getAuth().getTokenExpiry();
         AuthToken accessToken = tokenProvider.createAuthToken(
                 username,
@@ -59,14 +111,12 @@ public class AuthService {
                 new Date(now.getTime() + accessTokenExpiry)
         );
 
-        // Refresh Token 생성
         long refreshTokenExpiry = appProperties.getAuth().getRefreshTokenExpiry();
         AuthToken refreshToken = tokenProvider.createAuthToken(
                 username,
                 new Date(now.getTime() + refreshTokenExpiry)
         );
 
-        // DB 저장/업데이트
         UserRefreshToken userRefreshToken = userRefreshTokenRepository.findByUserId(username);
         if (userRefreshToken == null) {
             userRefreshToken = new UserRefreshToken(username, refreshToken.getToken());
@@ -76,7 +126,6 @@ public class AuthService {
             userRefreshTokenRepository.saveAndFlush(userRefreshToken);
         }
 
-        // 밀리초를 초로 변환
         long accessTokenExpiresInSeconds = accessTokenExpiry / 1000;
         long refreshTokenExpiresInSeconds = refreshTokenExpiry / 1000;
 
@@ -86,7 +135,7 @@ public class AuthService {
                 accessTokenExpiresInSeconds,
                 refreshTokenExpiresInSeconds,
                 isNewMember,
-                roleType.toString() // 권한 정보 추가
+                roleType.toString()
         );
     }
 
@@ -99,10 +148,8 @@ public class AuthService {
     @Transactional
     public void saveLoginHistory(Long userId, String ip, String userAgent) {
         userRepository.findById(userId).ifPresent(user -> {
-            // 1. IP로 위치 정보 조회
             GeoLocation location = geoLocationService.getLocation(ip);
 
-            // 2. 이력 엔티티 생성
             LoginHistory history = LoginHistory.builder()
                     .user(user)
                     .clientIp(ip)
@@ -112,9 +159,7 @@ public class AuthService {
                     .status(LoginStatus.SUCCESS)
                     .build();
 
-            // 3. 저장
             loginHistoryRepository.save(history);
         });
     }
 }
-

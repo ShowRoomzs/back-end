@@ -27,6 +27,7 @@ public interface CreatorApplicationControllerDocs {
                     "**필수 정보:**\n" +
                     "- `snsType`: SNS 플랫폼 (INSTAGRAM, TIKTOK, X, YOUTUBE)\n" +
                     "- `channelUrl`: 채널 주소(URL)\n" +
+                    "- `accountId`: 계정 아이디 (SNS 계정명)\n" +
                     "- `followerCount`: 팔로워 수 (0 이상)\n" +
                     "- `businessEmail`: 업무 이메일\n" +
                     "- `agreeTermsOfService`: 서비스 이용약관 동의 (true 필수)\n" +
@@ -90,6 +91,7 @@ public interface CreatorApplicationControllerDocs {
                                     value = "{\n" +
                                             "  \"snsType\": \"INSTAGRAM\",\n" +
                                             "  \"channelUrl\": \"https://instagram.com/my_channel\",\n" +
+                                            "  \"accountId\": \"my_channel\",\n" +
                                             "  \"followerCount\": 10000,\n" +
                                             "  \"businessEmail\": \"business@creator.com\",\n" +
                                             "  \"agreeTermsOfService\": true,\n" +
@@ -103,6 +105,7 @@ public interface CreatorApplicationControllerDocs {
                                     value = "{\n" +
                                             "  \"snsType\": \"YOUTUBE\",\n" +
                                             "  \"channelUrl\": \"https://youtube.com/c/my_channel\",\n" +
+                                            "  \"accountId\": \"my_channel\",\n" +
                                             "  \"followerCount\": 50000,\n" +
                                             "  \"businessEmail\": \"contact@creator.com\",\n" +
                                             "  \"agreeTermsOfService\": true,\n" +

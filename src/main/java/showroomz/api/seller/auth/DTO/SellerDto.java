@@ -30,6 +30,20 @@ public class SellerDto {
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
+    @Schema(description = "사업자등록번호 중복 확인 응답")
+    public static class CheckBusinessRegistrationNumberResponse {
+        @Schema(description = "사용 가능 여부", example = "true")
+        private boolean isAvailable;
+        @Schema(description = "응답 코드", example = "AVAILABLE")
+        private String code;
+        @Schema(description = "메시지", example = "사용 가능한 사업자등록번호입니다.")
+        private String message;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     @Schema(description = "셀러 상태 업데이트 요청 DTO")
     public static class UpdateStatusRequest {
         @Schema(description = "승인 상태 (APPROVED: 승인, REJECTED: 반려)", example = "APPROVED")

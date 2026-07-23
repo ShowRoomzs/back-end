@@ -46,13 +46,18 @@ public class SecurityConfig {
             "/v1/user/auth/social/signup", 
             "/v1/user/auth/refresh",
             "/v1/user/auth/local/signup", "/v1/user/auth/local/login",
+            "/v1/creator/auth/social/login",
+            "/v1/creator/auth/complete-registration",
+            "/v1/creator/auth/check-showroom-name",
             "/v1/seller/auth/signup", "/v1/seller/auth/login",
+            "/v1/seller/auth/complete-registration",
             "/v1/seller/auth/refresh",
             "/v1/admin/auth/login",
             "/v1/admin/auth/refresh",
 
             // 중복 확인 (인증 불필요)
             "/v1/seller/auth/check-email",
+            "/v1/seller/auth/check-business-registration-number",
             "/v1/user/check-nickname",
             "/v1/seller/markets/check-name",
 

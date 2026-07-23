@@ -13,6 +13,7 @@ import showroomz.api.app.auth.DTO.TokenResponse;
 import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.DTO.SellerLoginRequest;
 import showroomz.api.seller.auth.DTO.SellerSignUpRequest;
+import showroomz.api.seller.auth.DTO.SellerCompleteRegistrationRequest;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
@@ -290,10 +291,59 @@ public interface SellerAuthControllerDocs {
     );
 
     @Operation(
+            summary = "사업자등록번호 중복 체크",
+            description = "마켓 회원가입 시 사용할 사업자등록번호의 중복 여부를 확인합니다.\n\n" +
+                    "**조회 대상:** 승인(APPROVED)·심사대기(PENDING) 계정만 중복으로 판단합니다.\n" +
+                    "**제외:** 반려(REJECTED)·탈퇴 계정은 재사용 가능합니다.\n\n" +
+                    "**응답:**\n" +
+                    "- `isAvailable`: true면 사용 가능, false면 중복\n" +
+                    "- `code`: 응답 코드 (AVAILABLE: 사용 가능, DUPLICATE: 중복)\n" +
+                    "- `message`: 결과 메시지"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "중복 체크 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = SellerDto.CheckBusinessRegistrationNumberResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "사용 가능한 경우",
+                                            value = "{\n" +
+                                                    "  \"isAvailable\": true,\n" +
+                                                    "  \"code\": \"AVAILABLE\",\n" +
+                                                    "  \"message\": \"사용 가능한 사업자등록번호입니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "중복인 경우",
+                                            value = "{\n" +
+                                                    "  \"isAvailable\": false,\n" +
+                                                    "  \"code\": \"DUPLICATE\",\n" +
+                                                    "  \"message\": \"이미 사용 중인 사업자등록번호입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<SellerDto.CheckBusinessRegistrationNumberResponse> checkBusinessRegistrationNumber(
+            @Parameter(
+                    description = "중복 체크할 사업자등록번호 (- 포함)",
+                    required = true,
+                    example = "123-45-67890"
+            )
+            @RequestParam String businessRegistrationNumber
+    );
+
+    @Operation(
             summary = "판매자 로그인",
             description = "이메일과 비밀번호로 판매자 계정에 로그인합니다.\n\n" +
                     "**응답:**\n" +
-                    "- `role`: 판매자 권한 (SELLER: 일반 브랜드, CREATOR: 크리에이터)\n\n" +
+                    "- `role`: 판매자 권한 (SELLER: 일반 브랜드, CREATOR: 크리에이터)\n" +
+                    "- `isNewMember`: 승인 후 필수 정보(배송 설정) 미입력 시 `true`\n" +
+                    "- `isNewMember`가 `true`이면 `registerToken`만 반환되며, access/refresh 토큰은 발급되지 않습니다.\n\n" +
                     "**제약사항:**\n" +
                     "- 승인 완료(APPROVED)된 계정만 로그인할 수 있습니다.\n" +
                     "- 승인 대기(PENDING) 또는 반려(REJECTED)된 계정은 403 Forbidden 에러가 발생합니다.\n" +
@@ -330,6 +380,15 @@ public interface SellerAuthControllerDocs {
                                                     "  \"isNewMember\": false,\n" +
                                                     "  \"role\": \"CREATOR\"\n" +
                                                     "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "승인 후 필수 정보 미입력 (신규 회원)",
+                                            value = "{\n" +
+                                                    "  \"isNewMember\": true,\n" +
+                                                    "  \"registerToken\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ...\",\n" +
+                                                    "  \"role\": \"SELLER\"\n" +
+                                                    "}",
+                                            description = "관리자 승인 직후 첫 로그인 시 registerToken(5분 유효)이 반환됩니다."
                                     )
                             }
                     )
@@ -390,7 +449,7 @@ public interface SellerAuthControllerDocs {
                                             name = "승인 반려됨 (반려 사유 포함)",
                                             value = "{\n" +
                                                     "  \"code\": \"ACCOUNT_REJECTED_WITH_REASON\",\n" +
-                                                    "  \"message\": \"가입 승인이 반려되었습니다. 반려 사유: 서류 미비로 인한 가입 승인 반려\"\n" +
+                                                    "  \"message\": \"서류 미비로 인한 가입 승인 반려\"\n" +
                                                     "}",
                                             description = "반려 사유가 있는 경우, message 필드에 반려 사유가 포함됩니다."
                                     )
@@ -432,6 +491,101 @@ public interface SellerAuthControllerDocs {
             )
     )
     ResponseEntity<TokenResponse> login(@RequestBody SellerLoginRequest request);
+
+    @Operation(
+            summary = "판매자 필수 정보(배송 설정) 입력 완료",
+            description = "관리자 승인 후 첫 로그인에서 받은 `registerToken`으로 배송/반품 필수 정보를 등록합니다.\n\n" +
+                    "**요청 헤더:** `Authorization: Bearer {registerToken}`\n\n" +
+                    "**필수 입력:**\n" +
+                    "- 담당자명(수취인), 연락처, 주소, 상세 주소\n" +
+                    "- 기본 배송비, 출고 소요일\n\n" +
+                    "**선택 입력 (기본값):**\n" +
+                    "- 무료배송 기준금액 (미입력 시 0원)\n" +
+                    "- 도서산간 추가비 (미입력 시 0원)\n" +
+                    "- 반품비 (미입력 시 3000원)\n" +
+                    "- 교환비 (미입력 시 6000원)\n" +
+                    "- 배송 방법은 항상 `택배`로 저장됩니다.\n\n" +
+                    "**완료 후:** `isNewMember`가 `false`로 변경되며 access/refresh 토큰이 발급됩니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "필수 정보 입력 완료 및 토큰 발급",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = TokenResponse.class),
+                            examples = @ExampleObject(
+                                    name = "완료 후 토큰 발급",
+                                    value = "{\n" +
+                                            "  \"tokenType\": \"Bearer\",\n" +
+                                            "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ...\",\n" +
+                                            "  \"refreshToken\": \"dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...\",\n" +
+                                            "  \"accessTokenExpiresIn\": 3600,\n" +
+                                            "  \"refreshTokenExpiresIn\": 1209600,\n" +
+                                            "  \"isNewMember\": false,\n" +
+                                            "  \"role\": \"SELLER\"\n" +
+                                            "}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "registerToken 누락 또는 만료",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "토큰 만료",
+                                    value = "{\n" +
+                                            "  \"code\": \"UNAUTHORIZED\",\n" +
+                                            "  \"message\": \"회원가입 유효 시간이 만료되었습니다. 다시 로그인해주세요.\"\n" +
+                                            "}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "이미 필수 정보 입력 완료",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "이미 완료",
+                                    value = "{\n" +
+                                            "  \"code\": \"ALREADY_REGISTERED\",\n" +
+                                            "  \"message\": \"이미 회원가입이 완료된 사용자입니다.\"\n" +
+                                            "}"
+                            )
+                    )
+            )
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "배송/반품 필수 정보",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = SellerCompleteRegistrationRequest.class),
+                    examples = @ExampleObject(
+                            name = "필수 정보 입력 예시",
+                            value = "{\n" +
+                                    "  \"recipientName\": \"김담당\",\n" +
+                                    "  \"contact\": \"010-1234-5678\",\n" +
+                                    "  \"address\": \"서울특별시 강남구 테헤란로 123\",\n" +
+                                    "  \"detailAddress\": \"4층 401호\",\n" +
+                                    "  \"defaultDeliveryFee\": 3000,\n" +
+                                    "  \"freeShippingThreshold\": 50000,\n" +
+                                    "  \"remoteAreaSurcharge\": 3000,\n" +
+                                    "  \"shippingLeadDays\": 3,\n" +
+                                    "  \"returnFee\": 3000,\n" +
+                                    "  \"exchangeFee\": 6000\n" +
+                                    "}"
+                    )
+            )
+    )
+    ResponseEntity<TokenResponse> completeRegistration(
+            HttpServletRequest request,
+            @RequestBody SellerCompleteRegistrationRequest registrationRequest
+    );
 
     @Operation(
             summary = "Access Token 재발급",

@@ -3,6 +3,7 @@ package showroomz.api.seller.auth.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,6 +19,7 @@ import showroomz.api.app.auth.DTO.TokenResponse;
 import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.DTO.SellerLoginRequest;
 import showroomz.api.seller.auth.DTO.SellerSignUpRequest;
+import showroomz.api.seller.auth.DTO.SellerCompleteRegistrationRequest;
 import showroomz.api.seller.auth.docs.SellerAuthControllerDocs;
 import showroomz.api.seller.auth.service.SellerService;
 import showroomz.global.utils.HeaderUtil;
@@ -44,11 +46,27 @@ public class SellerAuthController implements SellerAuthControllerDocs {
     }
 
     @Override
+    @GetMapping("/check-business-registration-number")
+    public ResponseEntity<SellerDto.CheckBusinessRegistrationNumberResponse> checkBusinessRegistrationNumber(
+            @RequestParam("businessRegistrationNumber") String businessRegistrationNumber) {
+        return ResponseEntity.ok(sellerService.checkBusinessRegistrationNumber(businessRegistrationNumber));
+    }
+
+    @Override
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody SellerLoginRequest request) {
-        // [수정] 판매자 전용 로그인 메서드 호출
         TokenResponse tokenResponse = sellerService.loginSeller(request);
         return ResponseEntity.ok(tokenResponse);
+    }
+
+    @Override
+    @PostMapping("/complete-registration")
+    public ResponseEntity<TokenResponse> completeRegistration(
+            HttpServletRequest request,
+            @Valid @RequestBody SellerCompleteRegistrationRequest registrationRequest) {
+        String registerToken = HeaderUtil.getAccessToken(request);
+        TokenResponse tokenResponse = sellerService.completeRegistration(registerToken, registrationRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).body(tokenResponse);
     }
 
     @Override

@@ -16,6 +16,7 @@ import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.DTO.SellerLoginRequest;
 import showroomz.api.seller.auth.DTO.SellerSignUpRequest;
 import showroomz.api.seller.auth.DTO.CreatorSignUpRequest;
+import showroomz.api.seller.auth.DTO.SellerCompleteRegistrationRequest;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshToken;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshTokenRepository;
 import showroomz.api.seller.auth.repository.SellerRepository;
@@ -25,6 +26,8 @@ import showroomz.api.seller.market.service.MarketService;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.domain.member.seller.entity.SellerApplication;
+import showroomz.domain.member.seller.repository.SellerApplicationRepository;
 import showroomz.global.config.properties.AppProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -42,12 +45,14 @@ public class SellerService {
     private final SellerRepository adminRepository;
     private final MarketRepository marketRepository;
     private final MarketService marketService;
+    private final SellerApplicationRepository sellerApplicationRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthTokenProvider tokenProvider;
     private final AppProperties appProperties;
     private final SellerRefreshTokenRepository adminRefreshTokenRepository;
 
     private final static long THREE_DAYS_MSEC = 259200000;
+    private final static long REGISTER_TOKEN_EXPIRY_MSEC = 5 * 60 * 1000;
 
     @Transactional
     public Map<String, String> registerAdmin(SellerSignUpRequest request) {
@@ -89,6 +94,9 @@ public class SellerService {
 
         // 5. Market 엔티티 생성 및 URL 자동 할당
         marketService.createMarket(savedAdmin, request.getMarketName(), request.getCsNumber());
+
+        // 6. 입점 신청서 적재
+        createPendingApplication(savedAdmin, request.getMarketName(), request.getCsNumber());
 
         // 토큰을 발급하지 않고 승인 대기 메시지 리턴
         return Map.of("message", "회원가입 신청이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.");
@@ -149,6 +157,10 @@ public class SellerService {
      * 반려된 판매자 재가입 처리 (정보 업데이트 및 상태 변경) [추가됨]
      */
     private Map<String, String> reRegisterRejectedSeller(Seller seller, SellerSignUpRequest request) {
+        if (sellerApplicationRepository.existsBySeller_IdAndStatus(seller.getId(), SellerStatus.PENDING)) {
+            throw new BusinessException(ErrorCode.DUPLICATE_APPLICATION);
+        }
+
         // 기존 마켓 정보 조회
         Market market = marketRepository.findBySeller(seller)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -159,12 +171,14 @@ public class SellerService {
             throw new BusinessException(ErrorCode.DUPLICATE_MARKET_NAME);
         }
 
-        // Seller 정보 업데이트
+        // Seller 정보 업데이트 (기존 REJECTED 신청서는 유지)
         seller.setPassword(passwordEncoder.encode(request.getPassword()));
         seller.setName(request.getSellerName());
         seller.setPhoneNumber(request.getSellerContact());
-        seller.setStatus(SellerStatus.PENDING); // 상태를 다시 PENDING으로 변경
-        seller.setRejectionReason(null); // 반려 사유 초기화
+        seller.setStatus(SellerStatus.PENDING);
+        seller.setRejectionReason(null);
+        seller.setRejectionReasonDetail(null);
+        seller.setProcessedAt(null);
         seller.setModifiedAt(LocalDateTime.now());
 
         mapBusinessAndTermsInfo(seller, request);
@@ -173,9 +187,14 @@ public class SellerService {
         market.setMarketName(request.getMarketName());
         market.setCsNumber(request.getCsNumber());
 
-        // Dirty Checking으로 트랜잭션 종료 시 자동 Update 쿼리 실행
+        // 새 입점 신청서 생성
+        createPendingApplication(seller, request.getMarketName(), request.getCsNumber());
 
         return Map.of("message", "재가입 신청이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.");
+    }
+
+    private void createPendingApplication(Seller seller, String marketName, String csNumber) {
+        sellerApplicationRepository.save(SellerApplication.createFrom(seller, marketName, csNumber));
     }
 
     private void mapBusinessAndTermsInfo(Seller seller, SellerSignUpRequest request) {
@@ -260,6 +279,21 @@ public class SellerService {
     }
 
     /**
+     * 사업자등록번호 중복 확인 (승인·심사대기만 대상, 반려·탈퇴 제외)
+     */
+    @Transactional(readOnly = true)
+    public SellerDto.CheckBusinessRegistrationNumberResponse checkBusinessRegistrationNumber(
+            String businessRegistrationNumber) {
+        if (adminRepository.existsByBusinessRegistrationNumberAndStatusNotRejected(
+                businessRegistrationNumber, SellerStatus.REJECTED)) {
+            return new SellerDto.CheckBusinessRegistrationNumberResponse(
+                    false, "DUPLICATE", "이미 사용 중인 사업자등록번호입니다.");
+        }
+        return new SellerDto.CheckBusinessRegistrationNumberResponse(
+                true, "AVAILABLE", "사용 가능한 사업자등록번호입니다.");
+    }
+
+    /**
      * [판매자용] 로그인
      */
     @Transactional
@@ -283,7 +317,78 @@ public class SellerService {
 
         seller.setLastLoginAt(LocalDateTime.now());
 
+        if (Boolean.TRUE.equals(seller.getIsNewMember())) {
+            return createRegisterTokenResponse(seller);
+        }
+
         return issueTokenResponse(seller);
+    }
+
+    /**
+     * [판매자용] 승인 후 필수 정보(배송 설정) 입력 완료
+     */
+    @Transactional
+    public TokenResponse completeRegistration(String registerTokenStr, SellerCompleteRegistrationRequest request) {
+        if (registerTokenStr == null || registerTokenStr.isEmpty()) {
+            throw new BusinessException(ErrorCode.REGISTER_EXPIRED);
+        }
+
+        AuthToken registerToken = tokenProvider.convertAuthToken(registerTokenStr);
+        if (!registerToken.validate()) {
+            throw new BusinessException(ErrorCode.REGISTER_EXPIRED);
+        }
+
+        Claims claims = registerToken.getTokenClaims();
+        if (claims == null) {
+            throw new BusinessException(ErrorCode.REGISTER_EXPIRED);
+        }
+
+        String email = claims.getSubject();
+        Seller seller = adminRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (seller.getRoleType() != RoleType.SELLER) {
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
+        validateSellerStatus(seller);
+
+        if (!Boolean.TRUE.equals(seller.getIsNewMember())) {
+            throw new BusinessException(ErrorCode.ALREADY_REGISTERED);
+        }
+
+        Market market = marketRepository.findBySeller(seller)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
+
+        market.setShippingRecipientName(request.getRecipientName());
+        market.setShippingContact(request.getContact());
+        market.setShippingAddress(request.getAddress());
+        market.setShippingDetailAddress(request.getDetailAddress());
+        market.setDefaultDeliveryFee(request.getDefaultDeliveryFee());
+        market.setFreeShippingThreshold(
+                request.getFreeShippingThreshold() != null ? request.getFreeShippingThreshold() : 0
+        );
+        market.setRemoteAreaSurcharge(
+                request.getRemoteAreaSurcharge() != null ? request.getRemoteAreaSurcharge() : 0
+        );
+        market.setDeliveryMethod("택배");
+        market.setShippingLeadDays(request.getShippingLeadDays());
+        market.setReturnFee(request.getReturnFee() != null ? request.getReturnFee() : 3000);
+        market.setExchangeFee(request.getExchangeFee() != null ? request.getExchangeFee() : 6000);
+
+        seller.setIsNewMember(false);
+        seller.setModifiedAt(LocalDateTime.now());
+
+        return issueTokenResponse(seller);
+    }
+
+    private TokenResponse createRegisterTokenResponse(Seller seller) {
+        Date now = new Date();
+        AuthToken registerToken = tokenProvider.createAuthToken(
+                seller.getEmail(),
+                new Date(now.getTime() + REGISTER_TOKEN_EXPIRY_MSEC)
+        );
+        return new TokenResponse(registerToken.getToken(), seller.getRoleType().toString());
     }
 
     /**
@@ -324,8 +429,7 @@ public class SellerService {
             String reasonText = formatRejectionReasonForUser(
                     seller.getRejectionReason(), seller.getRejectionReasonDetail());
             if (reasonText != null && !reasonText.isBlank()) {
-                String userFriendlyMessage = String.format("가입 승인이 반려되었습니다. 반려 사유: %s", reasonText);
-                throw new BusinessException(ErrorCode.ACCOUNT_REJECTED_WITH_REASON, userFriendlyMessage);
+                throw new BusinessException(ErrorCode.ACCOUNT_REJECTED_WITH_REASON, reasonText);
             }
             throw new BusinessException(ErrorCode.ACCOUNT_REJECTED);
         }
@@ -389,6 +493,10 @@ public class SellerService {
         // 5. Admin 정보 조회
         Seller admin = adminRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (Boolean.TRUE.equals(admin.getIsNewMember())) {
+            throw new BusinessException(ErrorCode.REGISTER_EXPIRED);
+        }
 
         // 6. 새로운 Access Token 생성 (공통 메서드 사용)
         AuthToken newAccessToken = createAccessToken(admin, now);

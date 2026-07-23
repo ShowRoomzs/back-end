@@ -36,6 +36,9 @@ public class CreatorApplication extends BaseTimeEntity {
     @Column(name = "CHANNEL_URL", nullable = false, length = 512)
     private String channelUrl;
 
+    @Column(name = "ACCOUNT_ID", nullable = false, length = 100)
+    private String accountId;
+
     @Column(name = "FOLLOWER_COUNT", nullable = false)
     private Integer followerCount;
 
@@ -56,12 +59,14 @@ public class CreatorApplication extends BaseTimeEntity {
             Users user,
             SnsType snsType,
             String channelUrl,
+            String accountId,
             Integer followerCount,
             String businessEmail) {
         return CreatorApplication.builder()
                 .user(user)
                 .snsType(snsType)
                 .channelUrl(channelUrl)
+                .accountId(accountId)
                 .followerCount(followerCount)
                 .businessEmail(businessEmail)
                 .status(CreatorApplicationStatus.PENDING)

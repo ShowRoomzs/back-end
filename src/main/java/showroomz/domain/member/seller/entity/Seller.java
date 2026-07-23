@@ -61,7 +61,7 @@ public class Seller {
     @Column(name = "COMPANY_NAME", length = 100)
     private String companyName;
 
-    @Column(name = "BUSINESS_REG_NUMBER", length = 20)
+    @Column(name = "BUSINESS_REG_NUMBER", length = 128)
     private String businessRegistrationNumber;
 
     @Column(name = "BUSINESS_CONDITION", length = 100)
@@ -144,6 +144,10 @@ public class Seller {
     // 최근 접속일
     @Column(name = "LAST_LOGIN_AT")
     private LocalDateTime lastLoginAt;
+
+    // 승인 후 필수 정보(배송 설정 등) 입력 전 여부
+    @Column(name = "IS_NEW_MEMBER", nullable = false)
+    private Boolean isNewMember = true;
 
     // 생성자 편의 메서드
     public Seller(String email, String password, String name, String phoneNumber, LocalDateTime now) {

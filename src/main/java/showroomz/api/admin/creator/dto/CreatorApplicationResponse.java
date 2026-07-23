@@ -27,6 +27,9 @@ public class CreatorApplicationResponse {
     @Schema(description = "활동 채널 주소", example = "https://youtube.com/c/example")
     private final String channelUrl;
 
+    @Schema(description = "계정 아이디", example = "my_channel")
+    private final String accountId;
+
     @Schema(description = "팔로워 수", example = "155000")
     private final Integer followerCount;
 
@@ -48,6 +51,7 @@ public class CreatorApplicationResponse {
         this.email = ca.getBusinessEmail();
         this.snsType = ca.getSnsType();
         this.channelUrl = ca.getChannelUrl();
+        this.accountId = ca.getAccountId();
         this.followerCount = ca.getFollowerCount();
         this.appliedAt = ca.getCreatedAt();
         this.processedAt = ca.getProcessedAt();

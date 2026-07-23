@@ -58,6 +58,7 @@ public interface AdminCreatorApplicationControllerDocs {
                                                     "      \"email\": \"business@creator.com\",\n" +
                                                     "      \"snsType\": \"YOUTUBE\",\n" +
                                                     "      \"channelUrl\": \"https://youtube.com/c/example\",\n" +
+                                                    "      \"accountId\": \"example\",\n" +
                                                     "      \"followerCount\": 155000,\n" +
                                                     "      \"appliedAt\": \"2024-03-01T14:00:00\",\n" +
                                                     "      \"processedAt\": null,\n" +
@@ -70,6 +71,7 @@ public interface AdminCreatorApplicationControllerDocs {
                                                     "      \"email\": \"contact@creator.com\",\n" +
                                                     "      \"snsType\": \"INSTAGRAM\",\n" +
                                                     "      \"channelUrl\": \"https://instagram.com/example\",\n" +
+                                                    "      \"accountId\": \"example\",\n" +
                                                     "      \"followerCount\": 82000,\n" +
                                                     "      \"appliedAt\": \"2024-02-20T09:30:00\",\n" +
                                                     "      \"processedAt\": \"2024-02-21T10:00:00\",\n" +
@@ -113,6 +115,7 @@ public interface AdminCreatorApplicationControllerDocs {
                     "**처리 내용:**\n" +
                     "- 지원서 상태를 `APPROVED`로 변경\n" +
                     "- 유저 역할(RoleType)을 `CREATOR`로 변경\n" +
+                    "- 크리에이터 `isNewMember`를 `true`로 설정 (추가 정보 입력 필요)\n" +
                     "- 승인 이력 저장 및 신청 시 입력한 업무 이메일(businessEmail)로 승인 안내 메일 발송\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
@@ -158,12 +161,14 @@ public interface AdminCreatorApplicationControllerDocs {
     })
     ResponseEntity<Void> approveApplication(
             @Parameter(
+                    name = "applicationId",
                     description = "승인할 지원서 ID",
                     required = true,
                     example = "12",
-                    in = ParameterIn.PATH
+                    in = ParameterIn.PATH,
+                    schema = @Schema(type = "integer", format = "int64")
             )
-            @PathVariable Long applicationId);
+            @PathVariable("applicationId") Long applicationId);
 
     @Operation(
             summary = "크리에이터 지원 반려",
@@ -255,11 +260,13 @@ public interface AdminCreatorApplicationControllerDocs {
     )
     ResponseEntity<Void> rejectApplication(
             @Parameter(
+                    name = "applicationId",
                     description = "반려할 지원서 ID",
                     required = true,
                     example = "12",
-                    in = ParameterIn.PATH
+                    in = ParameterIn.PATH,
+                    schema = @Schema(type = "integer", format = "int64")
             )
-            @PathVariable Long applicationId,
+            @PathVariable("applicationId") Long applicationId,
             @Valid @RequestBody CreatorApplicationRejectRequest request);
 }

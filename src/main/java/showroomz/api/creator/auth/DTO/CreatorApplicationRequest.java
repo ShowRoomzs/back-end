@@ -22,6 +22,10 @@ public class CreatorApplicationRequest {
     @Schema(description = "채널 주소(URL)", example = "https://instagram.com/my_channel")
     private String channelUrl;
 
+    @NotBlank(message = "계정 아이디는 필수 입력값입니다.")
+    @Schema(description = "계정 아이디 (SNS 계정명)", example = "my_channel")
+    private String accountId;
+
     @NotNull(message = "팔로워 수는 필수 입력값입니다.")
     @Min(value = 0, message = "팔로워 수는 0 이상이어야 합니다.")
     @Schema(description = "팔로워 수", example = "10000")

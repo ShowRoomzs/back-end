@@ -21,11 +21,11 @@ import org.springframework.context.annotation.Profile;
                         
                         - 샘플 토큰:
                         
-                          USER   : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfVVNFUiIsImV4cCI6MTc4Mjc5Njg0MX0.uSJgR2ZOFHWIPrZ_PQdCdLsSvhKZ1H-UVzpaKYJURuE
+                          USER   : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfVVNFUiIsImV4cCI6MTc4OTkwMjIyNH0.tUYe7QOqQoFlin4US3O6QGSu9opEJ4vVGLHAqcQ6tvo
                           
-                          SELLER : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfU0VMTEVSIiwiZXhwIjoxNzgyNzk2ODQyfQ.Y5B0BGRzLEIwiBCiem4-8dAcaKeDm9RF0ifCFOAq4vY
+                          SELLER : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfU0VMTEVSIiwiZXhwIjoxNzg5OTAyMjI1fQ.bEiXbs2Lr02eVHX6VcXZkpRQBJrKANTu20UlGfu_UTc
                           
-                          ADMIN  : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfQURNSU4iLCJleHAiOjE3ODI3OTY4NDJ9.sCtz_DWMz_4wyUQmO0jfRBmktA62zXqA2wRZ0Edi5pc
+                          ADMIN  : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6IlJPTEVfQURNSU4iLCJleHAiOjE3ODk5MDIyMjV9.uQmJ_lowuDD6U3vCwrc7tIUhqY0VgIGpoK8McJt7fH4
                         """,
                 version = "v1"
         ),
