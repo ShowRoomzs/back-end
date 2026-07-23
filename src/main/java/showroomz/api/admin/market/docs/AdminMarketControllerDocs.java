@@ -36,6 +36,7 @@ public interface AdminMarketControllerDocs {
                     "- 판매자 및 마켓 기본 정보\n" +
                     "- **businessType**, **businessNumber**: 판매자(Seller)에 등록된 사업자 구분·사업자 등록번호\n" +
                     "- **processedAt**: 관리자가 승인/반려 처리한 일시 (미처리 시 null)\n" +
+                    "- **elapsedTime**: 신청일(`createdAt`)부터 현재까지 경과 시간 (`11h`, `3일 11h`)\n" +
                     "- 현재 승인 상태 및 반려 사유 (반려된 경우)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
@@ -65,6 +66,7 @@ public interface AdminMarketControllerDocs {
                                                     "      \"status\": \"PENDING\",\n" +
                                                     "      \"rejectionReason\": null,\n" +
                                                     "      \"createdAt\": \"2024-01-15T10:30:00\",\n" +
+                                                    "      \"elapsedTime\": \"11h\",\n" +
                                                     "      \"businessType\": \"개인사업자\",\n" +
                                                     "      \"businessNumber\": \"123-45-67890\",\n" +
                                                     "      \"processedAt\": null\n" +
@@ -79,6 +81,7 @@ public interface AdminMarketControllerDocs {
                                                     "      \"status\": \"REJECTED\",\n" +
                                                     "      \"rejectionReason\": \"INSUFFICIENT_DOCUMENTS\",\n" +
                                                     "      \"createdAt\": \"2024-01-10T09:00:00\",\n" +
+                                                    "      \"elapsedTime\": \"3일 11h\",\n" +
                                                     "      \"businessType\": \"법인사업자\",\n" +
                                                     "      \"businessNumber\": \"987-65-43210\",\n" +
                                                     "      \"processedAt\": \"2024-01-11T14:20:00\"\n" +

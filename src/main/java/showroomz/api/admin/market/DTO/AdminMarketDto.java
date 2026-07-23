@@ -162,6 +162,9 @@ public class AdminMarketDto {
         @Schema(description = "가입 신청일", example = "2024-01-01T12:00:00")
         private LocalDateTime createdAt;
 
+        @Schema(description = "신청 후 경과 시간 (예: 11h, 3일 11h)", example = "3일 11h")
+        private String elapsedTime;
+
         @Schema(description = "사업자 구분", example = "법인사업자")
         private String businessType;
 
