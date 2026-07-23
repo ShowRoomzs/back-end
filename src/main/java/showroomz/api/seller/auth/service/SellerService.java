@@ -26,6 +26,8 @@ import showroomz.api.seller.market.service.MarketService;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.domain.member.seller.entity.SellerApplication;
+import showroomz.domain.member.seller.repository.SellerApplicationRepository;
 import showroomz.global.config.properties.AppProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -43,6 +45,7 @@ public class SellerService {
     private final SellerRepository adminRepository;
     private final MarketRepository marketRepository;
     private final MarketService marketService;
+    private final SellerApplicationRepository sellerApplicationRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthTokenProvider tokenProvider;
     private final AppProperties appProperties;
@@ -91,6 +94,9 @@ public class SellerService {
 
         // 5. Market 엔티티 생성 및 URL 자동 할당
         marketService.createMarket(savedAdmin, request.getMarketName(), request.getCsNumber());
+
+        // 6. 입점 신청서 적재
+        createPendingApplication(savedAdmin, request.getMarketName(), request.getCsNumber());
 
         // 토큰을 발급하지 않고 승인 대기 메시지 리턴
         return Map.of("message", "회원가입 신청이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.");
@@ -151,6 +157,10 @@ public class SellerService {
      * 반려된 판매자 재가입 처리 (정보 업데이트 및 상태 변경) [추가됨]
      */
     private Map<String, String> reRegisterRejectedSeller(Seller seller, SellerSignUpRequest request) {
+        if (sellerApplicationRepository.existsBySeller_IdAndStatus(seller.getId(), SellerStatus.PENDING)) {
+            throw new BusinessException(ErrorCode.DUPLICATE_APPLICATION);
+        }
+
         // 기존 마켓 정보 조회
         Market market = marketRepository.findBySeller(seller)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -161,12 +171,14 @@ public class SellerService {
             throw new BusinessException(ErrorCode.DUPLICATE_MARKET_NAME);
         }
 
-        // Seller 정보 업데이트
+        // Seller 정보 업데이트 (기존 REJECTED 신청서는 유지)
         seller.setPassword(passwordEncoder.encode(request.getPassword()));
         seller.setName(request.getSellerName());
         seller.setPhoneNumber(request.getSellerContact());
-        seller.setStatus(SellerStatus.PENDING); // 상태를 다시 PENDING으로 변경
-        seller.setRejectionReason(null); // 반려 사유 초기화
+        seller.setStatus(SellerStatus.PENDING);
+        seller.setRejectionReason(null);
+        seller.setRejectionReasonDetail(null);
+        seller.setProcessedAt(null);
         seller.setModifiedAt(LocalDateTime.now());
 
         mapBusinessAndTermsInfo(seller, request);
@@ -175,9 +187,14 @@ public class SellerService {
         market.setMarketName(request.getMarketName());
         market.setCsNumber(request.getCsNumber());
 
-        // Dirty Checking으로 트랜잭션 종료 시 자동 Update 쿼리 실행
+        // 새 입점 신청서 생성
+        createPendingApplication(seller, request.getMarketName(), request.getCsNumber());
 
         return Map.of("message", "재가입 신청이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.");
+    }
+
+    private void createPendingApplication(Seller seller, String marketName, String csNumber) {
+        sellerApplicationRepository.save(SellerApplication.createFrom(seller, marketName, csNumber));
     }
 
     private void mapBusinessAndTermsInfo(Seller seller, SellerSignUpRequest request) {

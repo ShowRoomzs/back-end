@@ -11,10 +11,14 @@ import showroomz.api.admin.market.type.RejectionReasonType;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
+import showroomz.domain.history.entity.SellerApplicationHistory;
+import showroomz.domain.history.repository.SellerApplicationHistoryRepository;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.market.type.SnsType;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.domain.member.seller.entity.SellerApplication;
+import showroomz.domain.member.seller.repository.SellerApplicationRepository;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.global.dto.PageResponse;
@@ -45,6 +49,8 @@ public class AdminService {
     private final MarketRepository marketRepository;
     private final ProductRepository productRepository;
     private final MailService mailService;
+    private final SellerApplicationRepository sellerApplicationRepository;
+    private final SellerApplicationHistoryRepository sellerApplicationHistoryRepository;
 
     /**
      * 마켓(SELLER) 계정 승인/반려 처리
@@ -65,6 +71,11 @@ public class AdminService {
 
         validateRejectionReasonTypeWhenRejected(status, reasonType);
 
+        SellerApplication application = sellerApplicationRepository
+                .findTopBySeller_IdAndStatusOrderByCreatedAtDesc(sellerId, SellerStatus.PENDING)
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPLICATION_NOT_FOUND));
+
+        SellerStatus previousStatus = application.getStatus();
         LocalDateTime processedAt = LocalDateTime.now();
         String marketName = marketRepository.findBySeller(seller)
                 .map(Market::getMarketName)
@@ -73,15 +84,28 @@ public class AdminService {
 
         applySellerStatusAndRejectionFields(seller, status, reasonType, reasonDetail);
 
+        String historyReason = null;
         if (status == SellerStatus.APPROVED) {
+            application.approve();
             seller.setIsNewMember(true);
             mailService.sendApprovalEmail(seller.getEmail(), marketName, processedAt);
-
         } else if (status == SellerStatus.REJECTED) {
             String mailDetail = reasonDetail != null && !reasonDetail.isBlank() ? reasonDetail.strip() : "";
+            application.reject(reasonType.name(), reasonDetail);
+            historyReason = reasonType.getDescription();
+            if (!mailDetail.isEmpty()) {
+                historyReason += " - " + mailDetail;
+            }
             mailService.sendRejectionEmail(
                     seller.getEmail(), marketName, processedAt, reasonType.getDescription(), mailDetail);
         }
+
+        sellerApplicationHistoryRepository.save(SellerApplicationHistory.builder()
+                .application(application)
+                .previousStatus(previousStatus)
+                .newStatus(status)
+                .reason(historyReason)
+                .build());
 
         seller.setProcessedAt(processedAt);
         seller.setModifiedAt(processedAt);
