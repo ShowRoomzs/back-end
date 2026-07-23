@@ -7,10 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.auth.DTO.SocialLoginRequest;
 import showroomz.api.app.auth.DTO.TokenResponse;
-import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.auth.service.AuthService;
-import showroomz.api.app.auth.service.SocialLoginService;
 import showroomz.api.app.auth.service.SocialLoginService.SocialLoginResult;
 import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
@@ -39,52 +37,15 @@ public class CreatorAuthService {
     private final CreatorRepository creatorRepository;
     private final CreatorApplicationRepository creatorApplicationRepository;
     private final UserRepository userRepository;
-    private final SocialLoginService socialLoginService;
     private final AuthService authService;
     private final AuthTokenProvider tokenProvider;
 
     @Transactional
     public TokenResponse socialLogin(HttpServletRequest request, SocialLoginRequest socialLoginRequest) {
-        if (socialLoginRequest.getToken() == null || socialLoginRequest.getToken().isEmpty()) {
-            throw new BusinessException(ErrorCode.MISSING_TOKEN);
-        }
-        if (socialLoginRequest.getProviderType() == null || socialLoginRequest.getProviderType().isEmpty()) {
-            throw new BusinessException(ErrorCode.MISSING_PROVIDER_TYPE);
-        }
-
-        ProviderType providerType;
-        try {
-            providerType = ProviderType.valueOf(socialLoginRequest.getProviderType().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.INVALID_SOCIAL_PROVIDER);
-        }
-
-        SocialLoginResult result;
-        try {
-            if (providerType == ProviderType.APPLE && socialLoginRequest.getName() != null) {
-                result = socialLoginService.loginOrSignup(
-                        providerType,
-                        socialLoginRequest.getToken(),
-                        socialLoginRequest.getName()
-                );
-            } else {
-                result = socialLoginService.loginOrSignup(
-                        providerType,
-                        socialLoginRequest.getToken()
-                );
-            }
-        } catch (IllegalArgumentException e) {
-            String message = e.getMessage();
-            if (message.contains("유효하지 않은") || message.contains("토큰") || message.contains("만료")) {
-                throw new BusinessException(ErrorCode.INVALID_ACCESS_TOKEN);
-            }
-            if (message.contains("이미 다른 계정에서 사용 중인 이메일")) {
-                throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
-            }
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
-        }
-
+        // 가입 없이 기존 계정만 조회 (계정 없으면 예외, GUEST 생성 없음)
+        SocialLoginResult result = authService.authenticateSocial(socialLoginRequest, false);
         Users user = result.getUser();
+
         validateCreatorLoginEligibility(user.getId(), user.getRoleType());
 
         Creator creator = creatorRepository.findByUser_Id(user.getId())

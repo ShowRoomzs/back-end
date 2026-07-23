@@ -9,12 +9,10 @@ import org.springframework.web.bind.annotation.*;
 
 import showroomz.api.app.auth.DTO.*;
 import showroomz.api.app.auth.docs.AuthControllerDocs;
-import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.auth.refreshToken.UserRefreshToken;
 import showroomz.api.app.auth.refreshToken.UserRefreshTokenRepository;
 import showroomz.api.app.auth.service.AuthService;
-import showroomz.api.app.auth.service.SocialLoginService;
 import showroomz.api.app.auth.service.SocialLoginService.SocialLoginResult;
 import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
@@ -46,7 +44,6 @@ public class AuthController implements AuthControllerDocs {
     private final UserRefreshTokenRepository userRefreshTokenRepository;
     private final UserRepository userRepository;
     private final UserService userService;
-    private final SocialLoginService socialLoginService;
     private final AuthService authService;
     
     private final static long THREE_DAYS_MSEC = 259200000;
@@ -57,70 +54,28 @@ public class AuthController implements AuthControllerDocs {
     public ResponseEntity<?> socialLogin(
             HttpServletRequest request,
             @RequestBody @Valid SocialLoginRequest socialLoginRequest) {
-        // 1. 필수 파라미터 검증
-        if (socialLoginRequest.getToken() == null || socialLoginRequest.getToken().isEmpty()) {
-            throw new BusinessException(ErrorCode.MISSING_TOKEN);
-        }
 
-        if (socialLoginRequest.getProviderType() == null || socialLoginRequest.getProviderType().isEmpty()) {
-            throw new BusinessException(ErrorCode.MISSING_PROVIDER_TYPE);
-        }
+        SocialLoginResult result = authService.authenticateSocial(socialLoginRequest, true);
 
-        // 2. ProviderType 변환
-        ProviderType providerType;
-        try {
-            providerType = ProviderType.valueOf(socialLoginRequest.getProviderType().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.INVALID_SOCIAL_PROVIDER);
-        }
-
-        // 3. 소셜 로그인 처리 (애플의 경우 name 전달)
-        SocialLoginResult result;
-        try {
-            if (providerType == ProviderType.APPLE && socialLoginRequest.getName() != null) {
-                result = socialLoginService.loginOrSignup(
-                        providerType,
-                        socialLoginRequest.getToken(),
-                        socialLoginRequest.getName()
-                );
-            } else {
-                result = socialLoginService.loginOrSignup(
-                        providerType,
-                        socialLoginRequest.getToken()
-                );
-            }
-        } catch (IllegalArgumentException e) {
-            String message = e.getMessage();
-            if (message.contains("유효하지 않은") || message.contains("토큰") || message.contains("만료")) {
-                throw new BusinessException(ErrorCode.INVALID_ACCESS_TOKEN);
-            }
-            if (message.contains("이미 다른 계정에서 사용 중인 이메일")) {
-                throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
-            }
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
-        }
-
-        // 4. 신규 회원(GUEST)인 경우 registerToken 반환 (5분 유효)
+        // 신규 회원(GUEST)인 경우 registerToken 반환 (5분 유효)
         if (result.isNewMember()) {
             Date now = new Date();
             AuthToken registerToken = tokenProvider.createAuthToken(
                     result.getUser().getUsername(),
                     new Date(now.getTime() + REGISTER_TOKEN_EXPIRY_MSEC)
             );
-            
-            // 신규 회원이지만 Users 엔티티는 생성된 상태이므로 로그인 이력 저장
+
             String clientIp = ClientUtils.getRemoteIP(request);
             String userAgent = ClientUtils.getUserAgent(request);
             if (result.getUser() != null) {
                 authService.saveLoginHistory(result.getUser().getId(), clientIp, userAgent);
             }
-            
+
             return ResponseEntity.ok(new TokenResponse(registerToken.getToken()));
         }
 
         Users user = result.getUser();
 
-        // 5. 기존 회원인 경우 일반 토큰 반환
         TokenResponse tokenResponse = authService.generateTokens(
                 user.getUsername(),
                 user.getRoleType(),
@@ -128,7 +83,6 @@ public class AuthController implements AuthControllerDocs {
                 false
         );
 
-        // 6. 로그인 이력 저장
         String clientIp = ClientUtils.getRemoteIP(request);
         String userAgent = ClientUtils.getUserAgent(request);
         authService.saveLoginHistory(user.getId(), clientIp, userAgent);
