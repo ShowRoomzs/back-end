@@ -9,6 +9,8 @@ import java.time.temporal.ChronoUnit;
  */
 public final class RelativeTimeFormatter {
 
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
+
     private RelativeTimeFormatter() {
     }
 
@@ -16,7 +18,7 @@ public final class RelativeTimeFormatter {
         if (dateTime == null) {
             return null;
         }
-        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        LocalDateTime now = LocalDateTime.now(SEOUL);
         long seconds = ChronoUnit.SECONDS.between(dateTime, now);
 
         if (seconds < 0) {
@@ -47,5 +49,25 @@ public final class RelativeTimeFormatter {
         }
         long years = seconds / 31536000;
         return (years == 1 ? "1년 전" : years + "년 전");
+    }
+
+    /**
+     * 신청 시각부터 현재까지 경과 시간.
+     * 예: {@code 11h}, {@code 3일 11h}
+     */
+    public static String formatElapsed(LocalDateTime from) {
+        if (from == null) {
+            return null;
+        }
+        long totalHours = ChronoUnit.HOURS.between(from, LocalDateTime.now(SEOUL));
+        if (totalHours < 0) {
+            totalHours = 0;
+        }
+        long days = totalHours / 24;
+        long hours = totalHours % 24;
+        if (days == 0) {
+            return hours + "h";
+        }
+        return days + "일 " + hours + "h";
     }
 }

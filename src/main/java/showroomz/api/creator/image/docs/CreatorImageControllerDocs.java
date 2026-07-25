@@ -25,6 +25,8 @@ public interface CreatorImageControllerDocs {
                     "- `POST`: 게시글 이미지\n" +
                     "- `PRODUCT`: 상품 이미지\n" +
                     "- `MARKET`: 마켓 대표 이미지 (160×160px 이상, 정비율(1:1) 필수)\n\n" +
+                    "**추가 정보 서류(사업자등록증·통장사본 등):**\n" +
+                    "`POST /v1/common/images?type=CREATOR_DOCUMENT` (인증 불필요)\n\n" +
                     "**권한:** CREATOR\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -57,7 +59,7 @@ public interface CreatorImageControllerDocs {
                                             value = """
                                                     {
                                                       "code": "INVALID_INPUT",
-                                                      "message": "유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, INQUIRY, POST, PRODUCT, MARKET, CATEGORY)"
+                                                      "message": "유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, INQUIRY, POST, PRODUCT, MARKET, CATEGORY, SIGNUP_DOCUMENT, CREATOR_DOCUMENT)"
                                                     }
                                                     """
                                     ),

@@ -9,6 +9,7 @@ import showroomz.api.admin.creator.dto.CreatorApplicationResponse;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.creator.auth.DTO.CreatorApplicationRequest;
+import showroomz.api.creator.auth.DTO.MyCreatorApplicationResponse;
 import showroomz.domain.history.entity.CreatorApplicationHistory;
 import showroomz.domain.history.repository.CreatorApplicationHistoryRepository;
 import showroomz.domain.member.creator.entity.Creator;
@@ -63,6 +64,14 @@ public class CreatorApplicationService {
         user.setMarketingAgree(Boolean.TRUE.equals(request.getAgreeMarketingPolicy()));
 
         creatorApplicationRepository.save(application);
+    }
+
+    public MyCreatorApplicationResponse getMyRejectedApplication(Long userId) {
+        CreatorApplication application = creatorApplicationRepository
+                .findTopByUser_IdAndStatusOrderByCreatedAtDesc(userId, CreatorApplicationStatus.REJECTED)
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPLICATION_NOT_FOUND));
+
+        return new MyCreatorApplicationResponse(application);
     }
 
     public PageResponse<CreatorApplicationResponse> getApplications(PagingRequest pagingRequest) {

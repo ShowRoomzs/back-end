@@ -11,7 +11,8 @@ public enum ImageType {
     PRODUCT,
     MARKET,
     CATEGORY,
-    SIGNUP_DOCUMENT; // 판매자 회원가입 증빙 서류 전용 카테고리
+    SIGNUP_DOCUMENT, // 판매자 회원가입 증빙 서류
+    CREATOR_DOCUMENT; // 크리에이터 추가 정보(사업자등록증·통장사본 등)
 
     public static final Set<ImageType> USER_ALLOWED_TYPES =
             EnumSet.of(PROFILE, REVIEW, INQUIRY);
@@ -27,6 +28,5 @@ public enum ImageType {
 
     /** 비로그인(공개) 업로드 허용 타입 */
     public static final Set<ImageType> PUBLIC_ALLOWED_TYPES =
-            EnumSet.of(SIGNUP_DOCUMENT);
+            EnumSet.of(SIGNUP_DOCUMENT, CREATOR_DOCUMENT);
 }
-

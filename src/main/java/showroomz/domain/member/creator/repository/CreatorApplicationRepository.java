@@ -15,6 +15,9 @@ public interface CreatorApplicationRepository extends JpaRepository<CreatorAppli
 
     Optional<CreatorApplication> findTopByUser_IdOrderByCreatedAtDesc(Long userId);
 
+    Optional<CreatorApplication> findTopByUser_IdAndStatusOrderByCreatedAtDesc(
+            Long userId, CreatorApplicationStatus status);
+
     @Query(value = "select ca from CreatorApplication ca join fetch ca.user",
             countQuery = "select count(ca) from CreatorApplication ca")
     Page<CreatorApplication> findAllWithUser(Pageable pageable);
