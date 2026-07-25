@@ -344,10 +344,12 @@ public interface SellerAuthControllerDocs {
                     "- `role`: 판매자 권한 (SELLER: 일반 브랜드, CREATOR: 크리에이터)\n" +
                     "- `isNewMember`: 승인 후 필수 정보(배송 설정) 미입력 시 `true`\n" +
                     "- `isNewMember`가 `true`이면 `registerToken`만 반환되며, access/refresh 토큰은 발급되지 않습니다.\n\n" +
-                    "**제약사항:**\n" +
-                    "- 승인 완료(APPROVED)된 계정만 로그인할 수 있습니다.\n" +
-                    "- 승인 대기(PENDING) 또는 반려(REJECTED)된 계정은 403 Forbidden 에러가 발생합니다.\n" +
-                    "- 반려(REJECTED)된 계정의 경우, 반려 사유가 있으면 응답의 `message` 필드에 반려 사유가 포함됩니다."
+                    "**오류 메시지:**\n" +
+                    "- 이메일 미입력: `이메일을 입력해 주세요.`\n" +
+                    "- 비밀번호 미입력: `비밀번호를 입력해 주세요.`\n" +
+                    "- 미가입·탈퇴·심사대기·반려: `등록되지 않은 이메일입니다.`\n" +
+                    "- 승인 계정 + 비밀번호 불일치: `비밀번호가 일치하지 않습니다.`\n" +
+                    "- 서버 오류: `일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.`"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -395,16 +397,23 @@ public interface SellerAuthControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "입력값 형식 오류",
+                    description = "입력값 누락",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "입력값 오류 예시",
+                                            name = "이메일 미입력",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"이메일을 입력해주세요.\"\n" +
+                                                    "  \"message\": \"이메일을 입력해 주세요.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "비밀번호 미입력",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"비밀번호를 입력해 주세요.\"\n" +
                                                     "}"
                                     )
                             }
@@ -412,46 +421,43 @@ public interface SellerAuthControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "로그인 실패 - 아이디 또는 비밀번호 오류",
+                    description = "로그인 실패",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "비밀번호 오류",
-                                            value = "{\"code\": \"UNAUTHORIZED\", \"message\": \"아이디 또는 비밀번호가 올바르지 않습니다.\"}"
+                                            name = "등록되지 않은 이메일",
+                                            value = "{\n" +
+                                                    "  \"code\": \"EMAIL_NOT_REGISTERED\",\n" +
+                                                    "  \"message\": \"등록되지 않은 이메일입니다.\"\n" +
+                                                    "}",
+                                            description = "미가입·탈퇴·심사대기·반려 계정 포함"
+                                    ),
+                                    @ExampleObject(
+                                            name = "비밀번호 불일치",
+                                            value = "{\n" +
+                                                    "  \"code\": \"PASSWORD_MISMATCH\",\n" +
+                                                    "  \"message\": \"비밀번호가 일치하지 않습니다.\"\n" +
+                                                    "}",
+                                            description = "승인된 이메일은 맞지만 비밀번호가 틀린 경우"
                                     )
                             }
                     )
             ),
             @ApiResponse(
-                    responseCode = "403",
-                    description = "로그인 실패 - 계정 미승인",
+                    responseCode = "500",
+                    description = "서버 일시 오류",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "승인 대기 중",
+                                            name = "서버 일시 오류",
                                             value = "{\n" +
-                                                    "  \"code\": \"ACCOUNT_NOT_APPROVED\",\n" +
-                                                    "  \"message\": \"관리자 승인 대기 중인 계정입니다.\"\n" +
+                                                    "  \"code\": \"INTERNAL_SERVER_ERROR\",\n" +
+                                                    "  \"message\": \"일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.\"\n" +
                                                     "}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "승인 반려됨 (반려 사유 없음)",
-                                            value = "{\n" +
-                                                    "  \"code\": \"ACCOUNT_REJECTED\",\n" +
-                                                    "  \"message\": \"가입 승인이 반려된 계정입니다.\"\n" +
-                                                    "}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "승인 반려됨 (반려 사유 포함)",
-                                            value = "{\n" +
-                                                    "  \"code\": \"ACCOUNT_REJECTED_WITH_REASON\",\n" +
-                                                    "  \"message\": \"서류 미비로 인한 가입 승인 반려\"\n" +
-                                                    "}",
-                                            description = "반려 사유가 있는 경우, message 필드에 반려 사유가 포함됩니다."
                                     )
                             }
                     )

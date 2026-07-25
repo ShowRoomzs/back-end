@@ -9,10 +9,10 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class SellerLoginRequest {
-    @NotBlank(message = "이메일을 입력해주세요.")
+    @NotBlank(message = "이메일을 입력해 주세요.")
     private String email;
 
-    @NotBlank(message = "비밀번호를 입력해주세요.")
+    @NotBlank(message = "비밀번호를 입력해 주세요.")
     private String password;
 }
 

@@ -295,25 +295,27 @@ public class SellerService {
 
     /**
      * [판매자용] 로그인
+     * - 미가입·탈퇴·심사대기·반려: 등록되지 않은 이메일
+     * - 승인 계정 + 비밀번호 불일치: 비밀번호가 일치하지 않습니다
      */
     @Transactional
     public TokenResponse loginSeller(SellerLoginRequest request) {
-        Seller seller = adminRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
+        Seller seller = adminRepository.findByEmail(request.getEmail()).orElse(null);
 
-        // 1. RoleType 확인 (관리자가 판매자 페이지로 로그인하는 것 방지)
-        // TODO: 프론트엔드에서 관리자 로그인을 /v1/admin/auth/login으로 변경하면 주석 해제
-        // if (seller.getRoleType() != RoleType.SELLER) {
-        //     throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
-        // }
-
-        // 2. 비밀번호 검증
-        if (!passwordEncoder.matches(request.getPassword(), seller.getPassword())) {
-            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
+        // 미가입·탈퇴(삭제)·심사대기·반려 계정은 동일 메시지
+        if (seller == null || seller.getStatus() != SellerStatus.APPROVED) {
+            throw new BusinessException(ErrorCode.EMAIL_NOT_REGISTERED);
         }
 
-        // 3. 계정 승인 상태 검증
-        validateSellerStatus(seller);
+        // RoleType 확인 (관리자가 판매자 페이지로 로그인하는 것 방지)
+        // TODO: 프론트엔드에서 관리자 로그인을 /v1/admin/auth/login으로 변경하면 주석 해제
+        // if (seller.getRoleType() != RoleType.SELLER) {
+        //     throw new BusinessException(ErrorCode.EMAIL_NOT_REGISTERED);
+        // }
+
+        if (!passwordEncoder.matches(request.getPassword(), seller.getPassword())) {
+            throw new BusinessException(ErrorCode.LOGIN_PASSWORD_MISMATCH);
+        }
 
         seller.setLastLoginAt(LocalDateTime.now());
 
