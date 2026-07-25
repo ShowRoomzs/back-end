@@ -51,8 +51,11 @@ public class SellerSignUpRequest {
     private String marketName;
 
     @NotBlank(message = "고객센터 전화번호는 필수 입력값입니다.")
-    @Pattern(regexp = "^\\d{2,3}-\\d{3,4}-\\d{4}$", message = "올바른 전화번호 형식이 아닙니다.")
-    @Schema(description = "고객센터 전화번호", example = "02-1234-5678")
+    @Pattern(
+            regexp = "^(\\d{4}-\\d{4}|\\d{2,4}-\\d{3,4}-\\d{4}|\\d{3,4})$",
+            message = "올바른 전화번호 형식이 아닙니다."
+    )
+    @Schema(description = "고객센터 전화번호 (예: 02-1234-5678, 1588-1234, 0507-1234-5678)", example = "02-1234-5678")
     private String csNumber;
 
     // 4. 사업자 정보
