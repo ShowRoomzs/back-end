@@ -119,7 +119,9 @@ public interface AdminMarketControllerDocs {
                     "- 반려된 신청서는 브랜드명·사업자등록번호 해시만 보존된 상태로 반환\n\n" +
                     "**추가 응답 필드:**\n" +
                     "- `applicationId`, `sellerId`\n" +
-                    "- `processorLoginId`: 해당 신청서를 승인/반려한 운영자 로그인 아이디(이메일) (심사대기 시 null)\n\n" +
+                    "- `processorLoginId`: 해당 신청서를 승인/반려한 운영자 로그인 아이디(이메일) (심사대기 시 null)\n" +
+                    "- `rejectionReason`: 반려 사유 타입 enum 이름 (예: `INSUFFICIENT_DOCUMENTS`, 미반려 시 null)\n" +
+                    "- `rejectionReasonDetail`: 반려 상세 사유 (미입력·미반려 시 null)\n\n" +
                     "**처리 이력 (`processingHistory`):** 동일 판매자의 신청 접수/승인/반려 이력 (재신청 포함 누적)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"

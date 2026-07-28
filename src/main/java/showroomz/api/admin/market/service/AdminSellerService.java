@@ -46,6 +46,8 @@ public class AdminSellerService {
                 .email(rejected ? null : seller.getEmail())
                 .marketName(application.getMarketName())
                 .status(application.getStatus().name())
+                .rejectionReason(application.getRejectReason())
+                .rejectionReasonDetail(application.getRejectReasonDetail())
                 .businessType(application.getBusinessType())
                 .representativeName(application.getRepresentativeName())
                 .representativeContact(application.getRepresentativeContact())

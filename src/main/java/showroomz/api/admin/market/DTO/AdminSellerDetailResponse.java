@@ -52,6 +52,12 @@ public class AdminSellerDetailResponse {
     @Schema(description = "판매자 승인 상태", example = "PENDING")
     private String status;
 
+    @Schema(description = "반려 사유 타입 (반려 시, enum 이름)", example = "INSUFFICIENT_DOCUMENTS")
+    private String rejectionReason;
+
+    @Schema(description = "반려 상세 사유 (반려 시, 선택)", example = "사업자 등록증이 흐릿합니다.")
+    private String rejectionReasonDetail;
+
     @Schema(description = "사업자 구분", example = "개인사업자")
     private String businessType;
 
