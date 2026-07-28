@@ -37,6 +37,12 @@ public class AdminSellerDetailResponse {
         private LocalDateTime processedAt;
     }
 
+    @Schema(description = "입점 신청서 ID", example = "100")
+    private Long applicationId;
+
+    @Schema(description = "판매자 ID", example = "1")
+    private Long sellerId;
+
     @Schema(description = "판매자 계정 이메일", example = "seller@example.com")
     private String email;
 

@@ -115,15 +115,16 @@ public interface AdminMarketControllerDocs {
     );
 
     @Operation(
-            summary = "입점 신청 판매자 상세 조회",
-            description = "판매자의 사업자 정보, 정산 정보, 검토 상태를 포함한 상세 정보를 조회합니다.\n\n" +
+            summary = "입점 신청서 상세 조회",
+            description = "입점 신청서(`seller_application`) ID로 상세 정보를 조회합니다.\n\n" +
+                    "**조회 단위:** 신청서 1건 (`applicationId`)\n" +
+                    "- 사업자·정산 정보는 해당 신청서 스냅샷 기준\n" +
+                    "- 반려된 신청서는 브랜드명·사업자등록번호 해시만 보존된 상태로 반환\n\n" +
                     "**추가 응답 필드:**\n" +
+                    "- `applicationId`, `sellerId`\n" +
                     "- `elapsedTime`: 신청일(`applicationDate`)부터 현재까지 경과 시간 (`11h`, `2일 19h`)\n" +
-                    "- `processorId`: 승인/반려 처리한 운영자(ADMIN) ID (심사대기 시 null)\n\n" +
-                    "**처리 이력 (`processingHistory`):** `seller_application` / `seller_application_history` 기반\n" +
-                    "- `APPLICATION_RECEIVED` (신청 접수): 입점 신청서 생성 시각 (재신청 포함 누적)\n" +
-                    "- `APPLICATION_APPROVED` (신청 승인): 승인 이력 시각\n" +
-                    "- `APPLICATION_REJECTED` (신청 반려): 반려 이력 시각 (반려 신청서는 별도 행으로 유지)\n\n" +
+                    "- `processorId`: 해당 신청서를 승인/반려한 운영자(ADMIN) ID (심사대기 시 null)\n\n" +
+                    "**처리 이력 (`processingHistory`):** 동일 판매자의 신청 접수/승인/반려 이력 (재신청 포함 누적)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -138,18 +139,14 @@ public interface AdminMarketControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "판매자 또는 마켓을 찾을 수 없음",
+                    description = "신청서를 찾을 수 없음",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "판매자 없음",
-                                            value = "{\"code\": \"USER_NOT_FOUND\", \"message\": \"존재하지 않는 회원입니다.\"}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "마켓 없음",
-                                            value = "{\"code\": \"MARKET_NOT_FOUND\", \"message\": \"존재하지 않는 마켓입니다.\"}"
+                                            name = "신청서 없음",
+                                            value = "{\"code\": \"APPLICATION_NOT_FOUND\", \"message\": \"존재하지 않는 신청입니다.\"}"
                                     )
                             }
                     )
@@ -157,12 +154,12 @@ public interface AdminMarketControllerDocs {
     })
     ResponseEntity<AdminSellerDetailResponse> getMarketDetail(
             @Parameter(
-                    description = "조회할 판매자 ID",
+                    description = "조회할 입점 신청서 ID",
                     required = true,
-                    example = "1",
+                    example = "100",
                     in = ParameterIn.PATH
             )
-            @PathVariable Long sellerId
+            @PathVariable Long applicationId
     );
 
     @Operation(

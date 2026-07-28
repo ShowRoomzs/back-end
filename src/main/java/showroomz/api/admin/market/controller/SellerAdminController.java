@@ -46,11 +46,11 @@ public class SellerAdminController implements AdminMarketControllerDocs {
     }
 
     @Override
-    @GetMapping("/sellers/{sellerId}")
+    @GetMapping("/sellers/applications/{applicationId}")
     public ResponseEntity<AdminSellerDetailResponse> getMarketDetail(
-            @PathVariable("sellerId") Long sellerId) {
+            @PathVariable("applicationId") Long applicationId) {
 
-        AdminSellerDetailResponse response = adminSellerService.getSellerDetail(sellerId);
+        AdminSellerDetailResponse response = adminSellerService.getApplicationDetail(applicationId);
         return ResponseEntity.ok(response);
     }
 

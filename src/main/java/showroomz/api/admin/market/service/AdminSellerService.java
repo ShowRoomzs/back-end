@@ -7,12 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.market.DTO.AdminSellerDetailResponse;
 import showroomz.api.admin.market.DTO.AdminSellerDetailResponse.ProcessingHistoryItem;
 import showroomz.api.app.auth.entity.RoleType;
-import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.history.entity.SellerApplicationHistory;
 import showroomz.domain.history.repository.SellerApplicationHistoryRepository;
-import showroomz.domain.market.entity.Market;
-import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.member.seller.entity.SellerApplication;
 import showroomz.domain.member.seller.repository.SellerApplicationRepository;
@@ -20,7 +17,6 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.RelativeTimeFormatter;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,77 +25,66 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class AdminSellerService {
 
-    private final SellerRepository sellerRepository;
-    private final MarketRepository marketRepository;
     private final SellerApplicationRepository sellerApplicationRepository;
     private final SellerApplicationHistoryRepository sellerApplicationHistoryRepository;
 
-    public AdminSellerDetailResponse getSellerDetail(Long sellerId) {
-        Seller seller = sellerRepository.findById(sellerId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+    public AdminSellerDetailResponse getApplicationDetail(Long applicationId) {
+        SellerApplication application = sellerApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPLICATION_NOT_FOUND));
 
+        Seller seller = application.getSeller();
         if (seller.getRoleType() != RoleType.SELLER) {
             throw new BusinessException(ErrorCode.ACCOUNT_ROLE_MISMATCH);
         }
 
-        Market market = marketRepository.findBySeller(seller)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
-
-        SellerApplication latestApplication = sellerApplicationRepository
-                .findTopBySeller_IdOrderByCreatedAtDesc(sellerId)
-                .orElse(null);
-
-        boolean rejected = seller.getStatus() == SellerStatus.REJECTED;
-
-        LocalDateTime applicationDate = latestApplication != null
-                ? latestApplication.getCreatedAt()
-                : seller.getCreatedAt();
+        boolean rejected = application.getStatus() == SellerStatus.REJECTED;
 
         return AdminSellerDetailResponse.builder()
+                .applicationId(application.getId())
+                .sellerId(seller.getId())
                 .email(rejected ? null : seller.getEmail())
-                .marketName(market.getMarketName())
-                .status(seller.getStatus().name())
-                .businessType(seller.getBusinessType())
-                .representativeName(seller.getRepresentativeName())
-                .representativeContact(seller.getRepresentativeContact())
-                .businessCompanyName(seller.getCompanyName())
-                .businessRegistrationNumber(rejected ? null : seller.getBusinessRegistrationNumber())
-                .businessRegistrationNumberHash(rejected ? seller.getBusinessRegistrationNumber() : null)
-                .businessCategory(seller.getBusinessCondition())
-                .businessAddress(seller.getBusinessAddress())
-                .businessDetailAddress(seller.getDetailAddress())
-                .taxEmail(seller.getTaxEmail())
-                .businessLicenseImageUrl(seller.getBusinessLicenseImageUrl())
-                .mailOrderLicenseImageUrl(seller.getMailOrderRegImageUrl())
-                .mailOrderSalesNumber(seller.getMailOrderRegNumber())
-                .settlementBankName(seller.getBankName())
-                .accountHolderName(seller.getAccountHolder())
-                .accountNumber(seller.getAccountNumber())
-                .bankBookImageUrl(seller.getBankbookImageUrl())
-                .applicationDate(applicationDate)
-                .elapsedTime(RelativeTimeFormatter.formatElapsed(applicationDate))
-                .processedDate(latestApplication != null
-                        ? latestApplication.getProcessedAt()
-                        : seller.getProcessedAt())
-                .processorId(resolveProcessorId(sellerId, seller.getStatus()))
-                .processingHistory(buildProcessingHistory(sellerId))
+                .marketName(application.getMarketName())
+                .status(application.getStatus().name())
+                .businessType(application.getBusinessType())
+                .representativeName(application.getRepresentativeName())
+                .representativeContact(application.getRepresentativeContact())
+                .businessCompanyName(application.getCompanyName())
+                .businessRegistrationNumber(rejected ? null : application.getBusinessRegistrationNumber())
+                .businessRegistrationNumberHash(rejected ? application.getBusinessRegistrationNumber() : null)
+                .businessCategory(application.getBusinessCondition())
+                .businessAddress(application.getBusinessAddress())
+                .businessDetailAddress(application.getDetailAddress())
+                .taxEmail(application.getTaxEmail())
+                .businessLicenseImageUrl(application.getBusinessLicenseImageUrl())
+                .mailOrderLicenseImageUrl(application.getMailOrderRegImageUrl())
+                .mailOrderSalesNumber(application.getMailOrderRegNumber())
+                .settlementBankName(application.getBankName())
+                .accountHolderName(application.getAccountHolder())
+                .accountNumber(application.getAccountNumber())
+                .bankBookImageUrl(application.getBankbookImageUrl())
+                .applicationDate(application.getCreatedAt())
+                .elapsedTime(RelativeTimeFormatter.formatElapsed(application.getCreatedAt()))
+                .processedDate(application.getProcessedAt())
+                .processorId(resolveProcessorId(application))
+                .processingHistory(buildProcessingHistory(seller.getId()))
                 .reviewMemo(seller.getReviewMemo())
                 .build();
     }
 
-    private Long resolveProcessorId(Long sellerId, SellerStatus status) {
-        if (status != SellerStatus.APPROVED && status != SellerStatus.REJECTED) {
+    private Long resolveProcessorId(SellerApplication application) {
+        if (application.getStatus() != SellerStatus.APPROVED
+                && application.getStatus() != SellerStatus.REJECTED) {
             return null;
         }
 
-        List<SellerApplicationHistory> histories =
-                sellerApplicationHistoryRepository.findBySellerIdAndNewStatusInOrderByCreatedAtDesc(
-                        sellerId, List.of(SellerStatus.APPROVED, SellerStatus.REJECTED));
-
-        if (histories.isEmpty()) {
-            return null;
-        }
-        return histories.get(0).getProcessedBy();
+        return sellerApplicationHistoryRepository
+                .findByApplication_IdOrderByCreatedAtAsc(application.getId())
+                .stream()
+                .filter(h -> h.getNewStatus() == SellerStatus.APPROVED
+                        || h.getNewStatus() == SellerStatus.REJECTED)
+                .reduce((first, second) -> second)
+                .map(SellerApplicationHistory::getProcessedBy)
+                .orElse(null);
     }
 
     private List<ProcessingHistoryItem> buildProcessingHistory(Long sellerId) {
