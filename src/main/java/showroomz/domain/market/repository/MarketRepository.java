@@ -70,27 +70,7 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
                                     @Param("keywordType") String keywordType,
                                     Pageable pageable);
 
-    /**
-     * 판매자 가입 신청 목록 조회 (브랜드명/마켓명 검색 + 상태 필터)
-     */
-    @Query("SELECT m FROM Market m JOIN FETCH m.seller s " +
-           "WHERE s.roleType = :roleType " +
-           "AND (:status IS NULL OR s.status = :status) " +
-           "AND (:keyword IS NULL OR :keyword = '' OR m.marketName LIKE CONCAT('%', :keyword, '%'))")
-    Page<Market> searchSellerApplications(@Param("roleType") RoleType roleType,
-                                          @Param("status") SellerStatus status,
-                                          @Param("keyword") String keyword,
-                                          Pageable pageable);
-
-    /**
-     * 판매자 가입 신청 상태별 건수 (브랜드명 검색 반영, 상태 필터 미반영)
-     */
-    @Query("SELECT s.status, COUNT(m) FROM Market m JOIN m.seller s " +
-           "WHERE s.roleType = :roleType " +
-           "AND (:keyword IS NULL OR :keyword = '' OR m.marketName LIKE CONCAT('%', :keyword, '%')) " +
-           "GROUP BY s.status")
-    List<Object[]> countSellerApplicationsByStatus(@Param("roleType") RoleType roleType,
-                                                   @Param("keyword") String keyword);
+    List<Market> findBySeller_IdIn(List<Long> sellerIds);
 
     /**
      * 어드민 마켓 목록 조회

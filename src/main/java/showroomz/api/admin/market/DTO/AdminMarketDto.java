@@ -23,7 +23,7 @@ public class AdminMarketDto {
     public static class SearchCondition {
 
         @Schema(
-                description = "판매자 상태 필터 (PENDING: 심사대기, APPROVED: 승인, REJECTED: 반려, 미입력 시 전체)",
+                description = "신청서 상태 필터 (PENDING: 심사대기, APPROVED: 승인, REJECTED: 반려, 미입력 시 전체)",
                 example = "PENDING",
                 allowableValues = {"PENDING", "APPROVED", "REJECTED"}
         )
@@ -157,6 +157,9 @@ public class AdminMarketDto {
     @AllArgsConstructor
     @Schema(description = "마켓 가입 신청 정보 응답")
     public static class ApplicationResponse {
+        @Schema(description = "입점 신청서 ID", example = "100")
+        private Long applicationId;
+
         @Schema(description = "판매자 ID", example = "1")
         private Long sellerId;
 

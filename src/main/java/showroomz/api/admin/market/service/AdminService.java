@@ -189,7 +189,7 @@ public class AdminService {
     }
 
     /**
-     * 마켓(SELLER) 가입 신청 목록 조회 (브랜드명 검색 + 상태 필터, 상태별 건수 포함)
+     * 마켓(SELLER) 가입 신청 목록 조회 (신청서 단위, 브랜드명 검색 + 상태 필터, 상태별 건수 포함)
      */
     @Transactional(readOnly = true)
     public AdminMarketDto.ApplicationListResponse getMarketApplications(
@@ -197,28 +197,37 @@ public class AdminService {
 
         String keyword = condition.getKeyword();
 
-        Page<Market> marketPage = marketRepository.searchSellerApplications(
+        Page<SellerApplication> applicationPage = sellerApplicationRepository.searchSellerApplications(
                 RoleType.SELLER,
                 condition.getStatus(),
                 keyword,
                 pageable
         );
 
-        List<AdminMarketDto.ApplicationResponse> content = marketPage.getContent().stream()
-                .map(market -> AdminMarketDto.ApplicationResponse.builder()
-                        .sellerId(market.getSeller().getId())
-                        .marketId(market.getId())
-                        .email(market.getSeller().getEmail())
-                        .name(market.getSeller().getName())
-                        .marketName(market.getMarketName())
-                        .phoneNumber(market.getSeller().getPhoneNumber())
-                        .status(market.getSeller().getStatus())
-                        .rejectionReason(market.getSeller().getRejectionReason())
-                        .createdAt(market.getSeller().getCreatedAt())
-                        .elapsedTime(RelativeTimeFormatter.formatElapsed(market.getSeller().getCreatedAt()))
-                        .businessType(market.getSeller().getBusinessType())
-                        .businessNumber(market.getSeller().getBusinessRegistrationNumber())
-                        .processedAt(market.getSeller().getProcessedAt())
+        List<Long> sellerIds = applicationPage.getContent().stream()
+                .map(app -> app.getSeller().getId())
+                .distinct()
+                .collect(Collectors.toList());
+
+        var marketIdBySellerId = marketRepository.findBySeller_IdIn(sellerIds).stream()
+                .collect(Collectors.toMap(m -> m.getSeller().getId(), Market::getId, (a, b) -> a));
+
+        List<AdminMarketDto.ApplicationResponse> content = applicationPage.getContent().stream()
+                .map(app -> AdminMarketDto.ApplicationResponse.builder()
+                        .applicationId(app.getId())
+                        .sellerId(app.getSeller().getId())
+                        .marketId(marketIdBySellerId.get(app.getSeller().getId()))
+                        .email(app.getSeller().getEmail())
+                        .name(app.getSellerName())
+                        .marketName(app.getMarketName())
+                        .phoneNumber(app.getSellerContact())
+                        .status(app.getStatus())
+                        .rejectionReason(app.getRejectReason())
+                        .createdAt(app.getCreatedAt())
+                        .elapsedTime(RelativeTimeFormatter.formatElapsed(app.getCreatedAt()))
+                        .businessType(app.getBusinessType())
+                        .businessNumber(app.getBusinessRegistrationNumber())
+                        .processedAt(app.getProcessedAt())
                         .build())
                 .collect(Collectors.toList());
 
@@ -226,7 +235,7 @@ public class AdminService {
 
         return AdminMarketDto.ApplicationListResponse.builder()
                 .content(content)
-                .pageInfo(new PaginationInfo(marketPage))
+                .pageInfo(new PaginationInfo(applicationPage))
                 .statusCounts(statusCounts)
                 .build();
     }
@@ -236,7 +245,7 @@ public class AdminService {
         long approved = 0L;
         long rejected = 0L;
 
-        List<Object[]> rows = marketRepository.countSellerApplicationsByStatus(RoleType.SELLER, keyword);
+        List<Object[]> rows = sellerApplicationRepository.countByStatus(RoleType.SELLER, keyword);
         for (Object[] row : rows) {
             SellerStatus status = (SellerStatus) row[0];
             long count = ((Number) row[1]).longValue();

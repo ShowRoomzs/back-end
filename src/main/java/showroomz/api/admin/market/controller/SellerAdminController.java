@@ -33,8 +33,8 @@ public class SellerAdminController implements AdminMarketControllerDocs {
             @ModelAttribute PagingRequest pagingRequest,
             @ModelAttribute AdminMarketDto.SearchCondition searchCondition) {
         
-        // 정렬 기준: 신청일 최신순
-        Sort sort = Sort.by(Sort.Direction.DESC, "seller.createdAt");
+        // 정렬 기준: 신청서 생성일 최신순
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
         Pageable pageable = pagingRequest.toPageable(sort);
         
         AdminMarketDto.ApplicationListResponse response = 
