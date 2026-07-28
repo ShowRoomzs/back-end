@@ -93,15 +93,20 @@ public class AdminService {
             mailService.sendApprovalEmail(seller.getEmail(), marketName, processedAt);
         } else if (status == SellerStatus.REJECTED) {
             String mailDetail = reasonDetail != null && !reasonDetail.isBlank() ? reasonDetail.strip() : "";
+            String recipientEmail = seller.getEmail();
+
+            // 반려 메일 발송 후 신청서·계정·마켓 개인정보를 파기 (브랜드명 + 사업자등록번호 해시만 보존)
+            mailService.sendRejectionEmail(
+                    recipientEmail, marketName, processedAt, reasonType.getDescription(), mailDetail);
+
             application.reject(reasonType.name(), reasonDetail);
-            // 반려 시 계정·신청서 모두 사업자등록번호를 해시로 보관
-            seller.setBusinessRegistrationNumber(application.getBusinessRegistrationNumber());
+            seller.purgePersonalDataOnRejection(application.getBusinessRegistrationNumber());
+            marketRepository.findBySeller(seller).ifPresent(Market::purgePersonalDataOnRejection);
+
             historyReason = reasonType.getDescription();
             if (!mailDetail.isEmpty()) {
                 historyReason += " - " + mailDetail;
             }
-            mailService.sendRejectionEmail(
-                    seller.getEmail(), marketName, processedAt, reasonType.getDescription(), mailDetail);
         }
 
         sellerApplicationHistoryRepository.save(SellerApplicationHistory.builder()

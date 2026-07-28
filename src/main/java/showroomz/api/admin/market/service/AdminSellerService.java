@@ -47,15 +47,18 @@ public class AdminSellerService {
                 .findTopBySeller_IdOrderByCreatedAtDesc(sellerId)
                 .orElse(null);
 
+        boolean rejected = seller.getStatus() == SellerStatus.REJECTED;
+
         return AdminSellerDetailResponse.builder()
-                .email(seller.getEmail())
+                .email(rejected ? null : seller.getEmail())
                 .marketName(market.getMarketName())
                 .status(seller.getStatus().name())
                 .businessType(seller.getBusinessType())
                 .representativeName(seller.getRepresentativeName())
                 .representativeContact(seller.getRepresentativeContact())
                 .businessCompanyName(seller.getCompanyName())
-                .businessRegistrationNumber(seller.getBusinessRegistrationNumber())
+                .businessRegistrationNumber(rejected ? null : seller.getBusinessRegistrationNumber())
+                .businessRegistrationNumberHash(rejected ? seller.getBusinessRegistrationNumber() : null)
                 .businessCategory(seller.getBusinessCondition())
                 .businessAddress(seller.getBusinessAddress())
                 .businessDetailAddress(seller.getDetailAddress())

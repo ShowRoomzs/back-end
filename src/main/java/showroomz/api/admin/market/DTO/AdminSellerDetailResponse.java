@@ -58,8 +58,11 @@ public class AdminSellerDetailResponse {
     @Schema(description = "사업자등록증 상호명", example = "(주)쇼룸즈")
     private String businessCompanyName;
 
-    @Schema(description = "사업자 등록번호", example = "123-45-67890")
+    @Schema(description = "사업자 등록번호 (반려 시 null/파기)", example = "123-45-67890")
     private String businessRegistrationNumber;
+
+    @Schema(description = "사업자등록번호 일방향 해시 (반려 시에만 반환, 복원 불가)", example = "a3f9c210...")
+    private String businessRegistrationNumberHash;
 
     @Schema(description = "업태", example = "도매 및 소매업")
     private String businessCategory;

@@ -166,7 +166,7 @@ public interface AdminMarketControllerDocs {
             description = "회원가입을 신청한 마켓 판매자(SELLER) 계정의 상태를 변경합니다. \n\n" +
                     "**상태값:**\n" +
                     "- `APPROVED`: 승인 (로그인 가능)\n" +
-                    "- `REJECTED`: 반려 (로그인 불가)\n\n" +
+                    "- `REJECTED`: 반려 (로그인 불가). 신청서·계정·마켓의 개인·사업자·정산 정보를 즉시 파기하고, **브랜드명**과 **사업자등록번호 일방향 해시**만 보존합니다.\n\n" +
                     "**요청 필드:**\n" +
                     "- `status`: `APPROVED` 또는 `REJECTED` (필수)\n" +
                     "- `rejectionReasonType`: **`status`가 `REJECTED`일 때 필수.** DB `rejectionReason`에는 enum 이름(예: `INSUFFICIENT_DOCUMENTS`)이 저장됩니다.\n" +

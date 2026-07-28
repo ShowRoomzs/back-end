@@ -173,5 +173,34 @@ public class Seller {
         this.createdAt = now;
         this.modifiedAt = now;
     }
+
+    /**
+     * 반려 시 개인·사업자·정산 정보를 파기합니다.
+     * 재가입 식별용 이메일/비밀번호와 사업자등록번호 해시만 유지합니다.
+     */
+    public void purgePersonalDataOnRejection(String hashedBusinessRegistrationNumber) {
+        this.name = "파기됨";
+        this.phoneNumber = null;
+        this.activityName = null;
+        this.businessType = null;
+        this.representativeName = null;
+        this.representativeContact = null;
+        this.companyName = null;
+        this.businessRegistrationNumber = hashedBusinessRegistrationNumber;
+        this.businessCondition = null;
+        this.businessAddress = null;
+        this.detailAddress = null;
+        this.taxEmail = null;
+        this.businessLicenseImageUrl = null;
+        this.mailOrderRegImageUrl = null;
+        this.mailOrderRegNumber = null;
+        this.bankName = null;
+        this.accountHolder = null;
+        this.accountNumber = null;
+        this.bankbookImageUrl = null;
+        this.agreePrivacyPolicy = null;
+        this.agreeTermsOfService = null;
+        this.agreeOperationPolicy = null;
+    }
 }
 
