@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.market.DTO.AdminSellerDetailResponse;
 import showroomz.api.admin.market.DTO.AdminSellerDetailResponse.ProcessingHistoryItem;
 import showroomz.api.app.auth.entity.RoleType;
+import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.history.entity.SellerApplicationHistory;
 import showroomz.domain.history.repository.SellerApplicationHistoryRepository;
@@ -25,6 +26,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class AdminSellerService {
 
+    private final SellerRepository sellerRepository;
     private final SellerApplicationRepository sellerApplicationRepository;
     private final SellerApplicationHistoryRepository sellerApplicationHistoryRepository;
 
@@ -65,25 +67,33 @@ public class AdminSellerService {
                 .applicationDate(application.getCreatedAt())
                 .elapsedTime(RelativeTimeFormatter.formatElapsed(application.getCreatedAt()))
                 .processedDate(application.getProcessedAt())
-                .processorId(resolveProcessorId(application))
+                .processorLoginId(resolveProcessorLoginId(application))
                 .processingHistory(buildProcessingHistory(seller.getId()))
                 .reviewMemo(seller.getReviewMemo())
                 .build();
     }
 
-    private Long resolveProcessorId(SellerApplication application) {
+    private String resolveProcessorLoginId(SellerApplication application) {
         if (application.getStatus() != SellerStatus.APPROVED
                 && application.getStatus() != SellerStatus.REJECTED) {
             return null;
         }
 
-        return sellerApplicationHistoryRepository
+        Long processedBy = sellerApplicationHistoryRepository
                 .findByApplication_IdOrderByCreatedAtAsc(application.getId())
                 .stream()
                 .filter(h -> h.getNewStatus() == SellerStatus.APPROVED
                         || h.getNewStatus() == SellerStatus.REJECTED)
                 .reduce((first, second) -> second)
                 .map(SellerApplicationHistory::getProcessedBy)
+                .orElse(null);
+
+        if (processedBy == null) {
+            return null;
+        }
+
+        return sellerRepository.findById(processedBy)
+                .map(Seller::getEmail)
                 .orElse(null);
     }
 

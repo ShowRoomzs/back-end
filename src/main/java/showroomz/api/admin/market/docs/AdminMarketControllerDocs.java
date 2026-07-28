@@ -123,7 +123,7 @@ public interface AdminMarketControllerDocs {
                     "**추가 응답 필드:**\n" +
                     "- `applicationId`, `sellerId`\n" +
                     "- `elapsedTime`: 신청일(`applicationDate`)부터 현재까지 경과 시간 (`11h`, `2일 19h`)\n" +
-                    "- `processorId`: 해당 신청서를 승인/반려한 운영자(ADMIN) ID (심사대기 시 null)\n\n" +
+                    "- `processorLoginId`: 해당 신청서를 승인/반려한 운영자 로그인 아이디(이메일) (심사대기 시 null)\n\n" +
                     "**처리 이력 (`processingHistory`):** 동일 판매자의 신청 접수/승인/반려 이력 (재신청 포함 누적)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"

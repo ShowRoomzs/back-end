@@ -112,8 +112,8 @@ public class AdminSellerDetailResponse {
     @Schema(description = "신청 처리일", example = "2024-05-02T15:30:00")
     private LocalDateTime processedDate;
 
-    @Schema(description = "처리자(운영자) ID — 승인/반려 시에만 반환", example = "3")
-    private Long processorId;
+    @Schema(description = "처리자(운영자) 로그인 아이디(이메일) — 승인/반려 시에만 반환", example = "admin@showroomz.com")
+    private String processorLoginId;
 
     @Schema(description = "처리 이력 (신청 접수, 신청 승인/반려 등 시간순)")
     private List<ProcessingHistoryItem> processingHistory;
