@@ -16,7 +16,6 @@ import showroomz.domain.member.seller.entity.SellerApplication;
 import showroomz.domain.member.seller.repository.SellerApplicationRepository;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
-import showroomz.global.utils.RelativeTimeFormatter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +64,6 @@ public class AdminSellerService {
                 .accountNumber(application.getAccountNumber())
                 .bankBookImageUrl(application.getBankbookImageUrl())
                 .applicationDate(application.getCreatedAt())
-                .elapsedTime(RelativeTimeFormatter.formatElapsed(application.getCreatedAt()))
                 .processedDate(application.getProcessedAt())
                 .processorLoginId(resolveProcessorLoginId(application))
                 .processingHistory(buildProcessingHistory(seller.getId()))

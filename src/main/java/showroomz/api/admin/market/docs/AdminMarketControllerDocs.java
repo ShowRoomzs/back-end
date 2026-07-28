@@ -36,7 +36,6 @@ public interface AdminMarketControllerDocs {
                     "- 판매자 및 마켓 기본 정보 (신청서 스냅샷 기준)\n" +
                     "- **businessType**, **businessNumber**: 해당 신청서에 저장된 사업자 구분·사업자 등록번호\n" +
                     "- **processedAt**: 관리자가 승인/반려 처리한 일시 (미처리 시 null)\n" +
-                    "- **elapsedTime**: 신청일(`createdAt`)부터 현재까지 경과 시간 (`11h`, `3일 11h`)\n" +
                     "- 신청서 승인 상태 및 반려 사유 (반려된 경우)\n" +
                     "- **statusCounts**: 상태별 신청서 건수 (all / pending / approved / rejected). 브랜드명 검색어는 반영되며, status 필터는 반영되지 않음\n\n" +
                     "**권한:** ADMIN\n" +
@@ -68,7 +67,6 @@ public interface AdminMarketControllerDocs {
                                                     "      \"status\": \"PENDING\",\n" +
                                                     "      \"rejectionReason\": null,\n" +
                                                     "      \"createdAt\": \"2024-01-15T10:30:00\",\n" +
-                                                    "      \"elapsedTime\": \"11h\",\n" +
                                                     "      \"businessType\": \"개인사업자\",\n" +
                                                     "      \"businessNumber\": \"123-45-67890\",\n" +
                                                     "      \"processedAt\": null\n" +
@@ -84,7 +82,6 @@ public interface AdminMarketControllerDocs {
                                                     "      \"status\": \"REJECTED\",\n" +
                                                     "      \"rejectionReason\": \"INSUFFICIENT_DOCUMENTS\",\n" +
                                                     "      \"createdAt\": \"2024-01-10T09:00:00\",\n" +
-                                                    "      \"elapsedTime\": \"3일 11h\",\n" +
                                                     "      \"businessType\": \"개인사업자\",\n" +
                                                     "      \"businessNumber\": \"hashed-business-number\",\n" +
                                                     "      \"processedAt\": \"2024-01-11T14:20:00\"\n" +
@@ -122,7 +119,6 @@ public interface AdminMarketControllerDocs {
                     "- 반려된 신청서는 브랜드명·사업자등록번호 해시만 보존된 상태로 반환\n\n" +
                     "**추가 응답 필드:**\n" +
                     "- `applicationId`, `sellerId`\n" +
-                    "- `elapsedTime`: 신청일(`applicationDate`)부터 현재까지 경과 시간 (`11h`, `2일 19h`)\n" +
                     "- `processorLoginId`: 해당 신청서를 승인/반려한 운영자 로그인 아이디(이메일) (심사대기 시 null)\n\n" +
                     "**처리 이력 (`processingHistory`):** 동일 판매자의 신청 접수/승인/반려 이력 (재신청 포함 누적)\n\n" +
                     "**권한:** ADMIN\n" +
