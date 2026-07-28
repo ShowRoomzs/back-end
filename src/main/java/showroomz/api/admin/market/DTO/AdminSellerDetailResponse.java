@@ -37,6 +37,12 @@ public class AdminSellerDetailResponse {
         private LocalDateTime processedAt;
     }
 
+    @Schema(description = "입점 신청서 ID", example = "100")
+    private Long applicationId;
+
+    @Schema(description = "판매자 ID", example = "1")
+    private Long sellerId;
+
     @Schema(description = "판매자 계정 이메일", example = "seller@example.com")
     private String email;
 
@@ -58,8 +64,11 @@ public class AdminSellerDetailResponse {
     @Schema(description = "사업자등록증 상호명", example = "(주)쇼룸즈")
     private String businessCompanyName;
 
-    @Schema(description = "사업자 등록번호", example = "123-45-67890")
+    @Schema(description = "사업자 등록번호 (반려 시 null/파기)", example = "123-45-67890")
     private String businessRegistrationNumber;
+
+    @Schema(description = "사업자등록번호 일방향 해시 (반려 시에만 반환, 복원 불가)", example = "a3f9c210...")
+    private String businessRegistrationNumberHash;
 
     @Schema(description = "업태", example = "도매 및 소매업")
     private String businessCategory;
@@ -97,8 +106,14 @@ public class AdminSellerDetailResponse {
     @Schema(description = "신청 접수일", example = "2024-05-01T10:00:00")
     private LocalDateTime applicationDate;
 
+    @Schema(description = "신청일로부터 경과 시간 (예: 11h, 2일 19h)", example = "2일 19h")
+    private String elapsedTime;
+
     @Schema(description = "신청 처리일", example = "2024-05-02T15:30:00")
     private LocalDateTime processedDate;
+
+    @Schema(description = "처리자(운영자) 로그인 아이디(이메일) — 승인/반려 시에만 반환", example = "admin@showroomz.com")
+    private String processorLoginId;
 
     @Schema(description = "처리 이력 (신청 접수, 신청 승인/반려 등 시간순)")
     private List<ProcessingHistoryItem> processingHistory;

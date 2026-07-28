@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import showroomz.api.admin.market.DTO.AdminMarketDto;
@@ -13,9 +14,9 @@ import showroomz.api.admin.market.DTO.UpdateReviewMemoRequest;
 import showroomz.api.admin.market.docs.AdminMarketControllerDocs;
 import showroomz.api.admin.market.service.AdminSellerService;
 import showroomz.api.admin.market.service.AdminService;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.type.SellerStatus;
-import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -30,26 +31,26 @@ public class SellerAdminController implements AdminMarketControllerDocs {
 
     @Override
     @GetMapping("/sellers/applications")
-    public ResponseEntity<PageResponse<AdminMarketDto.ApplicationResponse>> getMarketApplications(
+    public ResponseEntity<AdminMarketDto.ApplicationListResponse> getMarketApplications(
             @ModelAttribute PagingRequest pagingRequest,
             @ModelAttribute AdminMarketDto.SearchCondition searchCondition) {
         
-        // 정렬 기준: 신청일 최신순
-        Sort sort = Sort.by(Sort.Direction.DESC, "seller.createdAt");
+        // 정렬 기준: 신청서 생성일 최신순
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
         Pageable pageable = pagingRequest.toPageable(sort);
         
-        PageResponse<AdminMarketDto.ApplicationResponse> response = 
+        AdminMarketDto.ApplicationListResponse response = 
                 adminService.getMarketApplications(searchCondition, pageable);
         
         return ResponseEntity.ok(response);
     }
 
     @Override
-    @GetMapping("/sellers/{sellerId}")
+    @GetMapping("/sellers/applications/{applicationId}")
     public ResponseEntity<AdminSellerDetailResponse> getMarketDetail(
-            @PathVariable("sellerId") Long sellerId) {
+            @PathVariable("applicationId") Long applicationId) {
 
-        AdminSellerDetailResponse response = adminSellerService.getSellerDetail(sellerId);
+        AdminSellerDetailResponse response = adminSellerService.getApplicationDetail(applicationId);
         return ResponseEntity.ok(response);
     }
 
@@ -57,7 +58,8 @@ public class SellerAdminController implements AdminMarketControllerDocs {
     @PatchMapping("/sellers/{sellerId}/status")
     public ResponseEntity<Void> updateSellerStatus(
             @PathVariable("sellerId") Long sellerId,
-            @RequestBody SellerDto.UpdateStatusRequest request) {
+            @RequestBody SellerDto.UpdateStatusRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
 
         SellerStatus status;
         try {
@@ -66,12 +68,16 @@ public class SellerAdminController implements AdminMarketControllerDocs {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
-        // DTO에서 Enum과 Detail을 꺼내서 전달
+        if (principal == null || principal.getUserId() == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
         adminService.updateAdminStatus(
-                sellerId, 
-                status, 
-                request.getRejectionReasonType(), 
-                request.getRejectionReasonDetail()
+                sellerId,
+                status,
+                request.getRejectionReasonType(),
+                request.getRejectionReasonDetail(),
+                principal.getUserId()
         );
         
         return ResponseEntity.noContent().build();

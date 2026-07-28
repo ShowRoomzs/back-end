@@ -100,6 +100,16 @@ public class Market {
         this.csNumber = csNumber;
     }
 
+    /**
+     * 반려 시 브랜드명만 보존하고 고객센터 연락처 등 부가 정보를 파기합니다.
+     */
+    public void purgePersonalDataOnRejection() {
+        this.csNumber = "파기됨";
+        this.marketImageUrl = null;
+        this.marketDescription = null;
+        clearSnsLinks();
+    }
+
     // 연관관계 편의 메서드
     public void addSnsLink(SnsType type, String url) {
         MarketSns sns = new MarketSns(this, type, url);

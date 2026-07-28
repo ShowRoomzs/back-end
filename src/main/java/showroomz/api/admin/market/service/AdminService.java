@@ -22,6 +22,7 @@ import showroomz.domain.member.seller.repository.SellerApplicationRepository;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PaginationInfo;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.service.MailService;
@@ -58,7 +59,8 @@ public class AdminService {
      */
     @Transactional
     public void updateAdminStatus(Long sellerId, SellerStatus status, 
-                                  RejectionReasonType reasonType, String reasonDetail) {
+                                  RejectionReasonType reasonType, String reasonDetail,
+                                  Long processorId) {
         Seller seller = sellerRepository.findById(sellerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -92,15 +94,20 @@ public class AdminService {
             mailService.sendApprovalEmail(seller.getEmail(), marketName, processedAt);
         } else if (status == SellerStatus.REJECTED) {
             String mailDetail = reasonDetail != null && !reasonDetail.isBlank() ? reasonDetail.strip() : "";
+            String recipientEmail = seller.getEmail();
+
+            // 반려 메일 발송 후 신청서·계정·마켓 개인정보를 파기 (브랜드명 + 사업자등록번호 해시만 보존)
+            mailService.sendRejectionEmail(
+                    recipientEmail, marketName, processedAt, reasonType.getDescription(), mailDetail);
+
             application.reject(reasonType.name(), reasonDetail);
-            // 반려 시 계정·신청서 모두 사업자등록번호를 해시로 보관
-            seller.setBusinessRegistrationNumber(application.getBusinessRegistrationNumber());
+            seller.purgePersonalDataOnRejection(application.getBusinessRegistrationNumber());
+            marketRepository.findBySeller(seller).ifPresent(Market::purgePersonalDataOnRejection);
+
             historyReason = reasonType.getDescription();
             if (!mailDetail.isEmpty()) {
                 historyReason += " - " + mailDetail;
             }
-            mailService.sendRejectionEmail(
-                    seller.getEmail(), marketName, processedAt, reasonType.getDescription(), mailDetail);
         }
 
         sellerApplicationHistoryRepository.save(SellerApplicationHistory.builder()
@@ -108,6 +115,7 @@ public class AdminService {
                 .previousStatus(previousStatus)
                 .newStatus(status)
                 .reason(historyReason)
+                .processedBy(processorId)
                 .build());
 
         seller.setProcessedAt(processedAt);
@@ -188,53 +196,79 @@ public class AdminService {
     }
 
     /**
-     * 마켓(SELLER) 가입 신청 목록 조회 (검색 필터 적용)
+     * 마켓(SELLER) 가입 신청 목록 조회 (신청서 단위, 브랜드명 검색 + 상태 필터, 상태별 건수 포함)
      */
     @Transactional(readOnly = true)
-    public PageResponse<AdminMarketDto.ApplicationResponse> getMarketApplications(
+    public AdminMarketDto.ApplicationListResponse getMarketApplications(
             AdminMarketDto.SearchCondition condition, Pageable pageable) {
 
-        LocalDateTime startDateTime = condition.getStartDate() != null 
-                ? condition.getStartDate().atStartOfDay() 
-                : null;
-        LocalDateTime endDateTime = condition.getEndDate() != null 
-                ? condition.getEndDate().atTime(LocalTime.MAX) 
-                : null;
+        String keyword = condition.getKeyword();
 
-        // Enum 타입을 String으로 변환 (null 체크 포함)
-        String keywordTypeStr = condition.getKeywordType() != null 
-                ? condition.getKeywordType().name() 
-                : null;
-
-        Page<Market> marketPage = marketRepository.searchApplications(
+        Page<SellerApplication> applicationPage = sellerApplicationRepository.searchSellerApplications(
                 RoleType.SELLER,
                 condition.getStatus(),
-                startDateTime,
-                endDateTime,
-                condition.getKeyword(),
-                keywordTypeStr,
+                keyword,
                 pageable
         );
 
-        List<AdminMarketDto.ApplicationResponse> content = marketPage.getContent().stream()
-                .map(market -> AdminMarketDto.ApplicationResponse.builder()
-                        .sellerId(market.getSeller().getId())
-                        .marketId(market.getId())
-                        .email(market.getSeller().getEmail())
-                        .name(market.getSeller().getName())
-                        .marketName(market.getMarketName())
-                        .phoneNumber(market.getSeller().getPhoneNumber())
-                        .status(market.getSeller().getStatus())
-                        .rejectionReason(market.getSeller().getRejectionReason())
-                        .createdAt(market.getSeller().getCreatedAt())
-                        .elapsedTime(RelativeTimeFormatter.formatElapsed(market.getSeller().getCreatedAt()))
-                        .businessType(market.getSeller().getBusinessType())
-                        .businessNumber(market.getSeller().getBusinessRegistrationNumber())
-                        .processedAt(market.getSeller().getProcessedAt())
+        List<Long> sellerIds = applicationPage.getContent().stream()
+                .map(app -> app.getSeller().getId())
+                .distinct()
+                .collect(Collectors.toList());
+
+        var marketIdBySellerId = marketRepository.findBySeller_IdIn(sellerIds).stream()
+                .collect(Collectors.toMap(m -> m.getSeller().getId(), Market::getId, (a, b) -> a));
+
+        List<AdminMarketDto.ApplicationResponse> content = applicationPage.getContent().stream()
+                .map(app -> AdminMarketDto.ApplicationResponse.builder()
+                        .applicationId(app.getId())
+                        .sellerId(app.getSeller().getId())
+                        .marketId(marketIdBySellerId.get(app.getSeller().getId()))
+                        .email(app.getSeller().getEmail())
+                        .name(app.getSellerName())
+                        .marketName(app.getMarketName())
+                        .phoneNumber(app.getSellerContact())
+                        .status(app.getStatus())
+                        .rejectionReason(app.getRejectReason())
+                        .createdAt(app.getCreatedAt())
+                        .elapsedTime(RelativeTimeFormatter.formatElapsed(app.getCreatedAt()))
+                        .businessType(app.getBusinessType())
+                        .businessNumber(app.getBusinessRegistrationNumber())
+                        .processedAt(app.getProcessedAt())
                         .build())
                 .collect(Collectors.toList());
 
-        return new PageResponse<>(content, marketPage);
+        AdminMarketDto.ApplicationStatusCounts statusCounts = buildApplicationStatusCounts(keyword);
+
+        return AdminMarketDto.ApplicationListResponse.builder()
+                .content(content)
+                .pageInfo(new PaginationInfo(applicationPage))
+                .statusCounts(statusCounts)
+                .build();
+    }
+
+    private AdminMarketDto.ApplicationStatusCounts buildApplicationStatusCounts(String keyword) {
+        long pending = 0L;
+        long approved = 0L;
+        long rejected = 0L;
+
+        List<Object[]> rows = sellerApplicationRepository.countByStatus(RoleType.SELLER, keyword);
+        for (Object[] row : rows) {
+            SellerStatus status = (SellerStatus) row[0];
+            long count = ((Number) row[1]).longValue();
+            switch (status) {
+                case PENDING -> pending = count;
+                case APPROVED -> approved = count;
+                case REJECTED -> rejected = count;
+            }
+        }
+
+        return AdminMarketDto.ApplicationStatusCounts.builder()
+                .all(pending + approved + rejected)
+                .pending(pending)
+                .approved(approved)
+                .rejected(rejected)
+                .build();
     }
 
     /**

@@ -147,11 +147,39 @@ public class SellerApplication extends BaseTimeEntity {
         this.rejectReasonDetail = null;
     }
 
+    /**
+     * 반려 처리: 브랜드명({@code marketName})과 사업자등록번호 해시만 보존하고 나머지 신청 데이터를 파기합니다.
+     */
     public void reject(String rejectReason, String rejectReasonDetail) {
         this.status = SellerStatus.REJECTED;
         this.rejectReason = rejectReason;
         this.rejectReasonDetail = rejectReasonDetail;
         this.processedAt = LocalDateTime.now();
         this.businessRegistrationNumber = BusinessRegistrationNumberHasher.hash(this.businessRegistrationNumber);
+        purgePersonalData();
+    }
+
+    private void purgePersonalData() {
+        this.csNumber = null;
+        this.sellerName = null;
+        this.sellerContact = null;
+        this.businessType = null;
+        this.representativeName = null;
+        this.representativeContact = null;
+        this.companyName = null;
+        this.businessCondition = null;
+        this.businessAddress = null;
+        this.detailAddress = null;
+        this.taxEmail = null;
+        this.businessLicenseImageUrl = null;
+        this.mailOrderRegImageUrl = null;
+        this.mailOrderRegNumber = null;
+        this.bankName = null;
+        this.accountHolder = null;
+        this.accountNumber = null;
+        this.bankbookImageUrl = null;
+        this.agreePrivacyPolicy = null;
+        this.agreeTermsOfService = null;
+        this.agreeOperationPolicy = null;
     }
 }

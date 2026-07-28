@@ -35,15 +35,21 @@ public class SellerApplicationHistory extends BaseTimeEntity {
     @Column(name = "reason", length = 500)
     private String reason;
 
+    /** 승인/반려 처리 운영자(ADMIN) seller_id */
+    @Column(name = "processed_by")
+    private Long processedBy;
+
     @Builder
     public SellerApplicationHistory(
             SellerApplication application,
             SellerStatus previousStatus,
             SellerStatus newStatus,
-            String reason) {
+            String reason,
+            Long processedBy) {
         this.application = application;
         this.previousStatus = previousStatus;
         this.newStatus = newStatus;
         this.reason = reason;
+        this.processedBy = processedBy;
     }
 }

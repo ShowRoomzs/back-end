@@ -70,6 +70,8 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
                                     @Param("keywordType") String keywordType,
                                     Pageable pageable);
 
+    List<Market> findBySeller_IdIn(List<Long> sellerIds);
+
     /**
      * 어드민 마켓 목록 조회
      * - 판매자 승인(APPROVED)된 마켓만 조회

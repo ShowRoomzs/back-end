@@ -19,6 +19,7 @@ import showroomz.api.admin.market.DTO.AdminMarketDto;
 import showroomz.api.admin.market.DTO.AdminSellerDetailResponse;
 import showroomz.api.admin.market.DTO.UpdateReviewMemoRequest;
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.seller.auth.DTO.SellerDto;
 
 @Tag(name = "Admin - Seller", description = "관리자 마켓 가입 관리 API")
@@ -28,16 +29,16 @@ public interface AdminMarketControllerDocs {
             summary = "마켓 가입 신청 관리 목록 조회",
             description = "마켓 가입 신청 내역을 조회합니다.\n\n" +
                     "**필터 기능:**\n" +
-                    "- **status**: 판매자 상태 (PENDING: 승인 대기, APPROVED: 승인, REJECTED: 반려, null: 전체)\n" +
-                    "- **startDate / endDate**: 신청일 기준 조회 기간 (YYYY-MM-DD)\n" +
-                    "- **keyword**: 검색어 (부분 일치 검색)\n" +
-                    "- **keywordType**: 검색 타입 (SELLER_ID: 신청 ID, MARKET_NAME: 마켓명, NAME: 담당자 이름, PHONE_NUMBER: 연락처, BUSINESS_NUMBER: 사업자 등록번호)\n\n" +
+                    "- **status**: 신청서 상태 (PENDING: 심사대기, APPROVED: 승인, REJECTED: 반려, 미입력: 전체)\n" +
+                    "- **keyword**: 브랜드명(마켓명) 부분 일치 검색\n\n" +
                     "**반환 정보:**\n" +
-                    "- 판매자 및 마켓 기본 정보\n" +
-                    "- **businessType**, **businessNumber**: 판매자(Seller)에 등록된 사업자 구분·사업자 등록번호\n" +
+                    "- **applicationId**: 입점 신청서 ID\n" +
+                    "- 판매자 및 마켓 기본 정보 (신청서 스냅샷 기준)\n" +
+                    "- **businessType**, **businessNumber**: 해당 신청서에 저장된 사업자 구분·사업자 등록번호\n" +
                     "- **processedAt**: 관리자가 승인/반려 처리한 일시 (미처리 시 null)\n" +
                     "- **elapsedTime**: 신청일(`createdAt`)부터 현재까지 경과 시간 (`11h`, `3일 11h`)\n" +
-                    "- 현재 승인 상태 및 반려 사유 (반려된 경우)\n\n" +
+                    "- 신청서 승인 상태 및 반려 사유 (반려된 경우)\n" +
+                    "- **statusCounts**: 상태별 신청서 건수 (all / pending / approved / rejected). 브랜드명 검색어는 반영되며, status 필터는 반영되지 않음\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
                     "**페이징 파라미터:**\n" +
@@ -50,13 +51,14 @@ public interface AdminMarketControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = showroomz.global.dto.PageResponse.class),
+                            schema = @Schema(implementation = AdminMarketDto.ApplicationListResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "목록 조회 예시",
                                             value = "{\n" +
                                                     "  \"content\": [\n" +
                                                     "    {\n" +
+                                                    "      \"applicationId\": 100,\n" +
                                                     "      \"sellerId\": 1,\n" +
                                                     "      \"marketId\": 10,\n" +
                                                     "      \"email\": \"seller@example.com\",\n" +
@@ -72,18 +74,19 @@ public interface AdminMarketControllerDocs {
                                                     "      \"processedAt\": null\n" +
                                                     "    },\n" +
                                                     "    {\n" +
-                                                    "      \"sellerId\": 2,\n" +
-                                                    "      \"marketId\": 11,\n" +
-                                                    "      \"email\": \"rejected@example.com\",\n" +
-                                                    "      \"name\": \"김철수\",\n" +
-                                                    "      \"marketName\": \"빈티지 샵\",\n" +
-                                                    "      \"phoneNumber\": \"010-9876-5432\",\n" +
+                                                    "      \"applicationId\": 99,\n" +
+                                                    "      \"sellerId\": 1,\n" +
+                                                    "      \"marketId\": 10,\n" +
+                                                    "      \"email\": \"seller@example.com\",\n" +
+                                                    "      \"name\": \"홍길동\",\n" +
+                                                    "      \"marketName\": \"멋쟁이 옷장\",\n" +
+                                                    "      \"phoneNumber\": \"010-1234-5678\",\n" +
                                                     "      \"status\": \"REJECTED\",\n" +
                                                     "      \"rejectionReason\": \"INSUFFICIENT_DOCUMENTS\",\n" +
                                                     "      \"createdAt\": \"2024-01-10T09:00:00\",\n" +
                                                     "      \"elapsedTime\": \"3일 11h\",\n" +
-                                                    "      \"businessType\": \"법인사업자\",\n" +
-                                                    "      \"businessNumber\": \"987-65-43210\",\n" +
+                                                    "      \"businessType\": \"개인사업자\",\n" +
+                                                    "      \"businessNumber\": \"hashed-business-number\",\n" +
                                                     "      \"processedAt\": \"2024-01-11T14:20:00\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
@@ -91,8 +94,14 @@ public interface AdminMarketControllerDocs {
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 5,\n" +
                                                     "    \"totalResults\": 42,\n" +
-                                                    "    \"size\": 20,\n" +
+                                                    "    \"limit\": 20,\n" +
                                                     "    \"hasNext\": true\n" +
+                                                    "  },\n" +
+                                                    "  \"statusCounts\": {\n" +
+                                                    "    \"all\": 42,\n" +
+                                                    "    \"pending\": 10,\n" +
+                                                    "    \"approved\": 25,\n" +
+                                                    "    \"rejected\": 7\n" +
                                                     "  }\n" +
                                                     "}"
                                     )
@@ -100,18 +109,22 @@ public interface AdminMarketControllerDocs {
                     )
             )
     })
-    ResponseEntity<showroomz.global.dto.PageResponse<AdminMarketDto.ApplicationResponse>> getMarketApplications(
+    ResponseEntity<AdminMarketDto.ApplicationListResponse> getMarketApplications(
             @ParameterObject showroomz.global.dto.PagingRequest pagingRequest,
             @ParameterObject AdminMarketDto.SearchCondition searchCondition
     );
 
     @Operation(
-            summary = "입점 신청 판매자 상세 조회",
-            description = "판매자의 사업자 정보, 정산 정보, 검토 상태를 포함한 상세 정보를 조회합니다.\n\n" +
-                    "**처리 이력 (`processingHistory`):** `seller_application` / `seller_application_history` 기반\n" +
-                    "- `APPLICATION_RECEIVED` (신청 접수): 입점 신청서 생성 시각 (재신청 포함 누적)\n" +
-                    "- `APPLICATION_APPROVED` (신청 승인): 승인 이력 시각\n" +
-                    "- `APPLICATION_REJECTED` (신청 반려): 반려 이력 시각 (반려 신청서는 별도 행으로 유지)\n\n" +
+            summary = "입점 신청서 상세 조회",
+            description = "입점 신청서(`seller_application`) ID로 상세 정보를 조회합니다.\n\n" +
+                    "**조회 단위:** 신청서 1건 (`applicationId`)\n" +
+                    "- 사업자·정산 정보는 해당 신청서 스냅샷 기준\n" +
+                    "- 반려된 신청서는 브랜드명·사업자등록번호 해시만 보존된 상태로 반환\n\n" +
+                    "**추가 응답 필드:**\n" +
+                    "- `applicationId`, `sellerId`\n" +
+                    "- `elapsedTime`: 신청일(`applicationDate`)부터 현재까지 경과 시간 (`11h`, `2일 19h`)\n" +
+                    "- `processorLoginId`: 해당 신청서를 승인/반려한 운영자 로그인 아이디(이메일) (심사대기 시 null)\n\n" +
+                    "**처리 이력 (`processingHistory`):** 동일 판매자의 신청 접수/승인/반려 이력 (재신청 포함 누적)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -126,18 +139,14 @@ public interface AdminMarketControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "판매자 또는 마켓을 찾을 수 없음",
+                    description = "신청서를 찾을 수 없음",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "판매자 없음",
-                                            value = "{\"code\": \"USER_NOT_FOUND\", \"message\": \"존재하지 않는 회원입니다.\"}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "마켓 없음",
-                                            value = "{\"code\": \"MARKET_NOT_FOUND\", \"message\": \"존재하지 않는 마켓입니다.\"}"
+                                            name = "신청서 없음",
+                                            value = "{\"code\": \"APPLICATION_NOT_FOUND\", \"message\": \"존재하지 않는 신청입니다.\"}"
                                     )
                             }
                     )
@@ -145,12 +154,12 @@ public interface AdminMarketControllerDocs {
     })
     ResponseEntity<AdminSellerDetailResponse> getMarketDetail(
             @Parameter(
-                    description = "조회할 판매자 ID",
+                    description = "조회할 입점 신청서 ID",
                     required = true,
-                    example = "1",
+                    example = "100",
                     in = ParameterIn.PATH
             )
-            @PathVariable Long sellerId
+            @PathVariable Long applicationId
     );
 
     @Operation(
@@ -158,7 +167,7 @@ public interface AdminMarketControllerDocs {
             description = "회원가입을 신청한 마켓 판매자(SELLER) 계정의 상태를 변경합니다. \n\n" +
                     "**상태값:**\n" +
                     "- `APPROVED`: 승인 (로그인 가능)\n" +
-                    "- `REJECTED`: 반려 (로그인 불가)\n\n" +
+                    "- `REJECTED`: 반려 (로그인 불가). 신청서·계정·마켓의 개인·사업자·정산 정보를 즉시 파기하고, **브랜드명**과 **사업자등록번호 일방향 해시**만 보존합니다.\n\n" +
                     "**요청 필드:**\n" +
                     "- `status`: `APPROVED` 또는 `REJECTED` (필수)\n" +
                     "- `rejectionReasonType`: **`status`가 `REJECTED`일 때 필수.** DB `rejectionReason`에는 enum 이름(예: `INSUFFICIENT_DOCUMENTS`)이 저장됩니다.\n" +
@@ -246,7 +255,8 @@ public interface AdminMarketControllerDocs {
                     in = ParameterIn.PATH
             )
             @PathVariable Long sellerId,
-            @RequestBody SellerDto.UpdateStatusRequest request
+            @RequestBody SellerDto.UpdateStatusRequest request,
+            @Parameter(hidden = true) UserPrincipal principal
     );
 
     @Operation(
