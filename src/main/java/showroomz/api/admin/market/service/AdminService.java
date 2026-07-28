@@ -59,7 +59,8 @@ public class AdminService {
      */
     @Transactional
     public void updateAdminStatus(Long sellerId, SellerStatus status, 
-                                  RejectionReasonType reasonType, String reasonDetail) {
+                                  RejectionReasonType reasonType, String reasonDetail,
+                                  Long processorId) {
         Seller seller = sellerRepository.findById(sellerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -114,6 +115,7 @@ public class AdminService {
                 .previousStatus(previousStatus)
                 .newStatus(status)
                 .reason(historyReason)
+                .processedBy(processorId)
                 .build());
 
         seller.setProcessedAt(processedAt);

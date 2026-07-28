@@ -19,6 +19,7 @@ import showroomz.api.admin.market.DTO.AdminMarketDto;
 import showroomz.api.admin.market.DTO.AdminSellerDetailResponse;
 import showroomz.api.admin.market.DTO.UpdateReviewMemoRequest;
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.seller.auth.DTO.SellerDto;
 
 @Tag(name = "Admin - Seller", description = "관리자 마켓 가입 관리 API")
@@ -116,6 +117,9 @@ public interface AdminMarketControllerDocs {
     @Operation(
             summary = "입점 신청 판매자 상세 조회",
             description = "판매자의 사업자 정보, 정산 정보, 검토 상태를 포함한 상세 정보를 조회합니다.\n\n" +
+                    "**추가 응답 필드:**\n" +
+                    "- `elapsedTime`: 신청일(`applicationDate`)부터 현재까지 경과 시간 (`11h`, `2일 19h`)\n" +
+                    "- `processorId`: 승인/반려 처리한 운영자(ADMIN) ID (심사대기 시 null)\n\n" +
                     "**처리 이력 (`processingHistory`):** `seller_application` / `seller_application_history` 기반\n" +
                     "- `APPLICATION_RECEIVED` (신청 접수): 입점 신청서 생성 시각 (재신청 포함 누적)\n" +
                     "- `APPLICATION_APPROVED` (신청 승인): 승인 이력 시각\n" +
@@ -254,7 +258,8 @@ public interface AdminMarketControllerDocs {
                     in = ParameterIn.PATH
             )
             @PathVariable Long sellerId,
-            @RequestBody SellerDto.UpdateStatusRequest request
+            @RequestBody SellerDto.UpdateStatusRequest request,
+            @Parameter(hidden = true) UserPrincipal principal
     );
 
     @Operation(

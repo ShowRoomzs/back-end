@@ -18,7 +18,9 @@ import showroomz.domain.member.seller.entity.SellerApplication;
 import showroomz.domain.member.seller.repository.SellerApplicationRepository;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.RelativeTimeFormatter;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,6 +51,10 @@ public class AdminSellerService {
 
         boolean rejected = seller.getStatus() == SellerStatus.REJECTED;
 
+        LocalDateTime applicationDate = latestApplication != null
+                ? latestApplication.getCreatedAt()
+                : seller.getCreatedAt();
+
         return AdminSellerDetailResponse.builder()
                 .email(rejected ? null : seller.getEmail())
                 .marketName(market.getMarketName())
@@ -70,15 +76,30 @@ public class AdminSellerService {
                 .accountHolderName(seller.getAccountHolder())
                 .accountNumber(seller.getAccountNumber())
                 .bankBookImageUrl(seller.getBankbookImageUrl())
-                .applicationDate(latestApplication != null
-                        ? latestApplication.getCreatedAt()
-                        : seller.getCreatedAt())
+                .applicationDate(applicationDate)
+                .elapsedTime(RelativeTimeFormatter.formatElapsed(applicationDate))
                 .processedDate(latestApplication != null
                         ? latestApplication.getProcessedAt()
                         : seller.getProcessedAt())
+                .processorId(resolveProcessorId(sellerId, seller.getStatus()))
                 .processingHistory(buildProcessingHistory(sellerId))
                 .reviewMemo(seller.getReviewMemo())
                 .build();
+    }
+
+    private Long resolveProcessorId(Long sellerId, SellerStatus status) {
+        if (status != SellerStatus.APPROVED && status != SellerStatus.REJECTED) {
+            return null;
+        }
+
+        List<SellerApplicationHistory> histories =
+                sellerApplicationHistoryRepository.findBySellerIdAndNewStatusInOrderByCreatedAtDesc(
+                        sellerId, List.of(SellerStatus.APPROVED, SellerStatus.REJECTED));
+
+        if (histories.isEmpty()) {
+            return null;
+        }
+        return histories.get(0).getProcessedBy();
     }
 
     private List<ProcessingHistoryItem> buildProcessingHistory(Long sellerId) {
