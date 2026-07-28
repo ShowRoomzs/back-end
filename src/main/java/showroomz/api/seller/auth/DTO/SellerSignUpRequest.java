@@ -43,11 +43,11 @@ public class SellerSignUpRequest {
     private String sellerContact;
 
     // 3. 마켓 정보
-    @NotBlank(message = "마켓명은 필수 입력값입니다.")
-    // 공백 불가, 특수문자 불가, 한/영 혼용 불가 (한글만 or 영문만, 숫자는 허용한다고 가정)
-    @Pattern(regexp = "^([가-힣0-9]+|[a-zA-Z0-9]+)$", 
-             message = "마켓명은 공백과 특수문자를 사용할 수 없으며, 한글 또는 영문 중 하나만 사용해야 합니다.")
-    @Schema(description = "마켓명", example = "쇼룸즈")
+    @NotBlank(message = "브랜드명은 필수 입력값입니다.")
+    // 공백·특수문자 불가 (한글/영문/숫자 허용, 한·영 혼용 가능)
+    @Pattern(regexp = "^[가-힣a-zA-Z0-9]+$",
+             message = "브랜드명 공백·특수문자를 제외하고 입력해 주세요.")
+    @Schema(description = "브랜드명", example = "쇼룸즈")
     private String marketName;
 
     @NotBlank(message = "고객센터 전화번호는 필수 입력값입니다.")

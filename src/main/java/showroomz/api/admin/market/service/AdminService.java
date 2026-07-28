@@ -26,7 +26,6 @@ import showroomz.global.dto.PaginationInfo;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.service.MailService;
-import showroomz.global.utils.RelativeTimeFormatter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -231,7 +230,6 @@ public class AdminService {
                         .status(app.getStatus())
                         .rejectionReason(app.getRejectReason())
                         .createdAt(app.getCreatedAt())
-                        .elapsedTime(RelativeTimeFormatter.formatElapsed(app.getCreatedAt()))
                         .businessType(app.getBusinessType())
                         .businessNumber(app.getBusinessRegistrationNumber())
                         .processedAt(app.getProcessedAt())

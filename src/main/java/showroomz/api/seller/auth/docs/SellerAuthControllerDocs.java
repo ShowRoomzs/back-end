@@ -88,10 +88,10 @@ public interface SellerAuthControllerDocs {
                                                     "}"
                                     ),
                                     @ExampleObject(
-                                            name = "마켓명 오류",
+                                            name = "브랜드명 오류",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"마켓명은 공백과 특수문자를 사용할 수 없으며, 한글 또는 영문 중 하나만 사용해야 합니다.\"\n" +
+                                                    "  \"message\": \"브랜드명 공백·특수문자를 제외하고 입력해 주세요.\"\n" +
                                                     "}"
                                     )
                             }
@@ -175,7 +175,7 @@ public interface SellerAuthControllerDocs {
                     "- password / passwordConfirm: 필수, 8~16자 영문+숫자+특수문자 조합\n" +
                     "- sellerName: 필수, 판매 담당자 이름\n" +
                     "- sellerContact: 필수, 판매 담당자 연락처\n" +
-                    "- marketName: 필수, 마켓명 (공백/특수문자 불가)\n" +
+                    "- marketName: 필수, 브랜드명 (공백·특수문자 제외)\n" +
                     "- csNumber: 필수, 고객센터 전화번호\n\n" +
                     "**[2차] 사업자 기본 정보:**\n" +
                     "- businessType: 필수, 사업자 구분 (예: 개인사업자)\n" +
