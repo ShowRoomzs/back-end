@@ -22,6 +22,7 @@ import showroomz.domain.member.seller.repository.SellerApplicationRepository;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PaginationInfo;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.service.MailService;
@@ -188,31 +189,18 @@ public class AdminService {
     }
 
     /**
-     * 마켓(SELLER) 가입 신청 목록 조회 (검색 필터 적용)
+     * 마켓(SELLER) 가입 신청 목록 조회 (브랜드명 검색 + 상태 필터, 상태별 건수 포함)
      */
     @Transactional(readOnly = true)
-    public PageResponse<AdminMarketDto.ApplicationResponse> getMarketApplications(
+    public AdminMarketDto.ApplicationListResponse getMarketApplications(
             AdminMarketDto.SearchCondition condition, Pageable pageable) {
 
-        LocalDateTime startDateTime = condition.getStartDate() != null 
-                ? condition.getStartDate().atStartOfDay() 
-                : null;
-        LocalDateTime endDateTime = condition.getEndDate() != null 
-                ? condition.getEndDate().atTime(LocalTime.MAX) 
-                : null;
+        String keyword = condition.getKeyword();
 
-        // Enum 타입을 String으로 변환 (null 체크 포함)
-        String keywordTypeStr = condition.getKeywordType() != null 
-                ? condition.getKeywordType().name() 
-                : null;
-
-        Page<Market> marketPage = marketRepository.searchApplications(
+        Page<Market> marketPage = marketRepository.searchSellerApplications(
                 RoleType.SELLER,
                 condition.getStatus(),
-                startDateTime,
-                endDateTime,
-                condition.getKeyword(),
-                keywordTypeStr,
+                keyword,
                 pageable
         );
 
@@ -234,7 +222,37 @@ public class AdminService {
                         .build())
                 .collect(Collectors.toList());
 
-        return new PageResponse<>(content, marketPage);
+        AdminMarketDto.ApplicationStatusCounts statusCounts = buildApplicationStatusCounts(keyword);
+
+        return AdminMarketDto.ApplicationListResponse.builder()
+                .content(content)
+                .pageInfo(new PaginationInfo(marketPage))
+                .statusCounts(statusCounts)
+                .build();
+    }
+
+    private AdminMarketDto.ApplicationStatusCounts buildApplicationStatusCounts(String keyword) {
+        long pending = 0L;
+        long approved = 0L;
+        long rejected = 0L;
+
+        List<Object[]> rows = marketRepository.countSellerApplicationsByStatus(RoleType.SELLER, keyword);
+        for (Object[] row : rows) {
+            SellerStatus status = (SellerStatus) row[0];
+            long count = ((Number) row[1]).longValue();
+            switch (status) {
+                case PENDING -> pending = count;
+                case APPROVED -> approved = count;
+                case REJECTED -> rejected = count;
+            }
+        }
+
+        return AdminMarketDto.ApplicationStatusCounts.builder()
+                .all(pending + approved + rejected)
+                .pending(pending)
+                .approved(approved)
+                .rejected(rejected)
+                .build();
     }
 
     /**

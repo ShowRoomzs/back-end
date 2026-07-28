@@ -15,7 +15,6 @@ import showroomz.api.admin.market.service.AdminSellerService;
 import showroomz.api.admin.market.service.AdminService;
 import showroomz.api.seller.auth.DTO.SellerDto;
 import showroomz.api.seller.auth.type.SellerStatus;
-import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -30,7 +29,7 @@ public class SellerAdminController implements AdminMarketControllerDocs {
 
     @Override
     @GetMapping("/sellers/applications")
-    public ResponseEntity<PageResponse<AdminMarketDto.ApplicationResponse>> getMarketApplications(
+    public ResponseEntity<AdminMarketDto.ApplicationListResponse> getMarketApplications(
             @ModelAttribute PagingRequest pagingRequest,
             @ModelAttribute AdminMarketDto.SearchCondition searchCondition) {
         
@@ -38,7 +37,7 @@ public class SellerAdminController implements AdminMarketControllerDocs {
         Sort sort = Sort.by(Sort.Direction.DESC, "seller.createdAt");
         Pageable pageable = pagingRequest.toPageable(sort);
         
-        PageResponse<AdminMarketDto.ApplicationResponse> response = 
+        AdminMarketDto.ApplicationListResponse response = 
                 adminService.getMarketApplications(searchCondition, pageable);
         
         return ResponseEntity.ok(response);

@@ -7,6 +7,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.market.type.MarketStatus;
 import showroomz.domain.market.type.SnsType;
+import showroomz.global.dto.PaginationInfo;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -20,32 +21,53 @@ public class AdminMarketDto {
     @AllArgsConstructor
     @Schema(description = "마켓 가입 신청 목록 검색 조건")
     public static class SearchCondition {
-        
-        @Schema(description = "판매자 상태 (NULL 또는 비워둘 시 전체 조회)", example = "PENDING")
-        private SellerStatus status;
-
-        @Schema(description = "조회 시작일 (YYYY-MM-DD)", example = "2024-01-01")
-        @DateTimeFormat(pattern = "yyyy-MM-dd")
-        private LocalDate startDate;
-
-        @Schema(description = "조회 종료일 (YYYY-MM-DD)", example = "2024-12-31")
-        @DateTimeFormat(pattern = "yyyy-MM-dd")
-        private LocalDate endDate;
-
-        @Schema(description = "검색어 (부분 일치 검색, keywordType과 함께 사용)", example = "홍길동")
-        private String keyword;
 
         @Schema(
-                description = "검색 타입\n" +
-                        "- SELLER_ID: 신청 ID로 검색\n" +
-                        "- MARKET_NAME: 마켓명으로 검색\n" +
-                        "- NAME: 담당자 이름으로 검색\n" +
-                        "- PHONE_NUMBER: 연락처로 검색\n" +
-                        "- BUSINESS_NUMBER: 사업자 등록번호로 검색",
-                example = "NAME",
-                allowableValues = {"SELLER_ID", "MARKET_NAME", "NAME", "PHONE_NUMBER", "BUSINESS_NUMBER"}
+                description = "판매자 상태 필터 (PENDING: 심사대기, APPROVED: 승인, REJECTED: 반려, 미입력 시 전체)",
+                example = "PENDING",
+                allowableValues = {"PENDING", "APPROVED", "REJECTED"}
         )
-        private KeywordType keywordType;
+        private SellerStatus status;
+
+        @Schema(description = "브랜드명(마켓명) 검색어 (부분 일치)", example = "멋쟁이 옷장")
+        private String keyword;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "상태별 신청서 건수")
+    public static class ApplicationStatusCounts {
+
+        @Schema(description = "전체 건수", example = "42")
+        private long all;
+
+        @Schema(description = "심사대기 건수", example = "10")
+        private long pending;
+
+        @Schema(description = "승인 건수", example = "25")
+        private long approved;
+
+        @Schema(description = "반려 건수", example = "7")
+        private long rejected;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "마켓 가입 신청 목록 응답 (상태별 건수 포함)")
+    public static class ApplicationListResponse {
+
+        @Schema(description = "신청 목록")
+        private List<ApplicationResponse> content;
+
+        @Schema(description = "페이징 정보")
+        private PaginationInfo pageInfo;
+
+        @Schema(description = "상태별 신청서 건수 (검색어 반영, 상태 필터 미반영)")
+        private ApplicationStatusCounts statusCounts;
     }
 
     @Getter
@@ -410,22 +432,6 @@ public class AdminMarketDto {
                 allowableValues = {"CREATOR_ID", "SHOWROOM_NAME", "NAME", "PHONE_NUMBER"}
         )
         private CreatorKeywordType keywordType;
-    }
-
-    /**
-     * 마켓 검색 타입 Enum
-     */
-    @Getter
-    @AllArgsConstructor
-    @Schema(description = "마켓 키워드 검색 타입")
-    public enum KeywordType {
-        SELLER_ID("신청 ID"),
-        MARKET_NAME("마켓명"),
-        NAME("담당자 이름"),
-        PHONE_NUMBER("연락처"),
-        BUSINESS_NUMBER("사업자 등록번호");
-
-        private final String description;
     }
 
     /**
