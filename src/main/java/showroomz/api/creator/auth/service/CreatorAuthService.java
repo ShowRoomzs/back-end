@@ -26,6 +26,7 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.ClientUtils;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.regex.Pattern;
 
@@ -172,7 +173,8 @@ public class CreatorAuthService {
 
     /**
      * 크리에이터 권한이 아닌 로그인 시도 처리.
-     * - 신청 이력 없음 / 반려: USER access·refresh 토큰 + 사유(code/message) 반환
+     * - 신청 이력 없음 / 반려 후 재신청 가능일 경과: USER access·refresh 토큰 + 사유(code/message) 반환
+     * - 반려(재신청 가능일 이전): 토큰 없이 code(ACCOUNT_REJECTED), rejectReasonType, rejectReasonDetail, reapplyAvailableAt 반환
      * - 승인 대기(PENDING): 기존과 동일하게 예외
      * - 승인된 크리에이터: null 반환 후 정상 크리에이터 로그인 진행
      */
@@ -186,13 +188,10 @@ public class CreatorAuthService {
                 throw new BusinessException(ErrorCode.ACCOUNT_NOT_APPROVED);
             }
             if (application.getStatus() == CreatorApplicationStatus.REJECTED) {
-                String rejectReason = application.getRejectReason();
-                if (rejectReason != null && !rejectReason.isBlank()) {
-                    return issueUserTokenWithReason(
-                            user, request, ErrorCode.ACCOUNT_REJECTED_WITH_REASON, rejectReason);
+                if (!LocalDateTime.now().isBefore(application.resolveReapplyAvailableAt())) {
+                    return issueNoApplicationHistoryResponse(user, request);
                 }
-                return issueUserTokenWithReason(
-                        user, request, ErrorCode.ACCOUNT_REJECTED, ErrorCode.ACCOUNT_REJECTED.getMessage());
+                return createRejectedApplicationResponse(application);
             }
             // APPROVED
             if (user.getRoleType() != RoleType.CREATOR) {
@@ -203,15 +202,29 @@ public class CreatorAuthService {
         }
 
         // 신청 이력 없음
-        if (user.getRoleType() != RoleType.CREATOR) {
-            return issueUserTokenWithReason(
-                    user,
-                    request,
-                    ErrorCode.ACCOUNT_ROLE_MISMATCH,
-                    "크리에이터 권한 신청 이력이 없습니다."
-            );
+        return issueNoApplicationHistoryResponse(user, request);
+    }
+
+    private TokenResponse issueNoApplicationHistoryResponse(Users user, HttpServletRequest request) {
+        if (user.getRoleType() == RoleType.CREATOR) {
+            return null;
         }
-        return null;
+        return issueUserTokenWithReason(
+                user,
+                request,
+                ErrorCode.ACCOUNT_ROLE_MISMATCH,
+                "크리에이터 권한 신청 이력이 없습니다."
+        );
+    }
+
+    private TokenResponse createRejectedApplicationResponse(CreatorApplication application) {
+        TokenResponse response = new TokenResponse();
+        response.setTokenType(null);
+        response.setCode(ErrorCode.ACCOUNT_REJECTED.getCode());
+        response.setRejectReasonType(application.getRejectReasonType());
+        response.setRejectReasonDetail(application.getRejectReasonDetail());
+        response.setReapplyAvailableAt(application.resolveReapplyAvailableAt());
+        return response;
     }
 
     private TokenResponse issueUserTokenWithReason(

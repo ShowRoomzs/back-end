@@ -175,7 +175,8 @@ public interface AdminCreatorApplicationControllerDocs {
             description = "검수 대기(PENDING) 상태의 지원서를 반려하고 안내 메일을 발송합니다.\n\n" +
                     "**처리 내용:**\n" +
                     "- 지원서 상태를 `REJECTED`로 변경\n" +
-                    "- 반려 사유 저장 및 신청 시 입력한 업무 이메일(businessEmail)로 반려 안내 메일 발송\n\n" +
+                    "- 반려 사유 저장 및 신청 시 입력한 업무 이메일(businessEmail)로 반려 안내 메일 발송\n" +
+                    "- 신청자는 반려 처리일로부터 14일 이후 재신청 가능\n\n" +
                     "**요청 필드:**\n" +
                     "- `rejectReasonType`: 반려 사유 유형 (필수)\n" +
                     "- `rejectReasonDetail`: 상세 반려 사유 (선택, `OTHER` 선택 시 권장)\n\n" +

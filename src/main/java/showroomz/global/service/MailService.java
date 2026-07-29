@@ -155,7 +155,8 @@ public class MailService {
                     반려일시: %s<br/>
                     <p><strong>■ 반려 사유</strong>: %s</p>
                     <p><strong>■ 상세 내용</strong><br/>%s</p>
-                    <p>내용을 보완하여 마이페이지에서 다시 신청해주시면 신속히 검토하겠습니다.</p>
+                    <p><strong>■ 재신청 안내</strong><br/>
+                    반려일로부터 14일이 지난 이후 마이페이지에서 다시 신청하실 수 있습니다. 내용을 보완하여 재신청해 주시면 신속히 검토하겠습니다.</p>
                     <p>감사합니다.<br/>%s 드림</p>
                 </body>
                 </html>

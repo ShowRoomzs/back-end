@@ -20,6 +20,8 @@ import java.time.LocalDateTime;
 @Builder
 public class CreatorApplication extends BaseTimeEntity {
 
+    public static final int REAPPLY_COOLDOWN_DAYS = 14;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "CREATOR_APPLICATION_ID")
@@ -55,6 +57,12 @@ public class CreatorApplication extends BaseTimeEntity {
     @Column(name = "REJECT_REASON", length = 500)
     private String rejectReason;
 
+    @Column(name = "REJECT_REASON_TYPE", length = 50)
+    private String rejectReasonType;
+
+    @Column(name = "REJECT_REASON_DETAIL", length = 1000)
+    private String rejectReasonDetail;
+
     public static CreatorApplication createApplication(
             Users user,
             SnsType snsType,
@@ -78,9 +86,17 @@ public class CreatorApplication extends BaseTimeEntity {
         this.processedAt = LocalDateTime.now();
     }
 
-    public void reject(String rejectReason) {
+    public void reject(String rejectReasonType, String rejectReasonDetail, String rejectReason) {
         this.status = CreatorApplicationStatus.REJECTED;
+        this.rejectReasonType = rejectReasonType;
+        this.rejectReasonDetail = rejectReasonDetail;
         this.rejectReason = rejectReason;
         this.processedAt = LocalDateTime.now();
+    }
+
+    /** 반려 처리일 기준 재신청 가능 일시 (처리일 없으면 신청일 기준) */
+    public LocalDateTime resolveReapplyAvailableAt() {
+        LocalDateTime rejectedAt = processedAt != null ? processedAt : getCreatedAt();
+        return rejectedAt.plusDays(REAPPLY_COOLDOWN_DAYS);
     }
 }

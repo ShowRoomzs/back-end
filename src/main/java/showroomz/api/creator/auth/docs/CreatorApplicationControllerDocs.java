@@ -26,6 +26,7 @@ public interface CreatorApplicationControllerDocs {
             summary = "내 반려된 크리에이터 지원서 조회",
             description = "로그인한 일반 유저(USER)의 가장 최근 반려(REJECTED) 지원서를 조회합니다.\n\n" +
                     "**용도:** 크리에이터 로그인 후 신청이 반려된 경우, 제출했던 지원서 내용과 반려 사유를 확인\n\n" +
+                    "**재신청:** `reapplyAvailableAt`(반려 처리일 + 14일) 이후 `canReapply`가 true이며, 이때부터 새 신청이 가능합니다.\n\n" +
                     "**권한:** ROLE_USER (USER access token 필수)\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -49,7 +50,9 @@ public interface CreatorApplicationControllerDocs {
                                                     "  \"appliedAt\": \"2026-07-20T10:00:00\",\n" +
                                                     "  \"processedAt\": \"2026-07-22T15:30:00\",\n" +
                                                     "  \"status\": \"REJECTED\",\n" +
-                                                    "  \"rejectReason\": \"팔로워 수 기준 미달 - 제출하신 채널의 팔로워 수가 기준에 미달합니다.\"\n" +
+                                                    "  \"rejectReason\": \"팔로워 수 기준 미달 - 제출하신 채널의 팔로워 수가 기준에 미달합니다.\",\n" +
+                                                    "  \"reapplyAvailableAt\": \"2026-08-05T15:30:00\",\n" +
+                                                    "  \"canReapply\": false\n" +
                                                     "}"
                                     )
                             }
@@ -93,7 +96,7 @@ public interface CreatorApplicationControllerDocs {
                     "**필수 정보:**\n" +
                     "- `snsType`: SNS 플랫폼 (INSTAGRAM, TIKTOK, X, YOUTUBE)\n" +
                     "- `channelUrl`: 채널 주소(URL)\n" +
-                    "- `accountId`: 계정 아이디 (SNS 계정명)\n" +
+                    "- `accountId`: 계정 아이디 (영문 소문자·숫자·마침표(.)·밑줄(_)만 가능, 최대 30자)\n" +
                     "- `followerCount`: 팔로워 수 (0 이상)\n" +
                     "- `businessEmail`: 업무 이메일\n" +
                     "- `agreeTermsOfService`: 서비스 이용약관 동의 (true 필수)\n" +
@@ -102,7 +105,8 @@ public interface CreatorApplicationControllerDocs {
                     "- `agreeMarketingPolicy`: 마케팅 목적 개인정보 수집·이용 동의 (true/false)\n\n" +
                     "**신청 제한:**\n" +
                     "- 이미 CREATOR 권한인 유저는 신청 불가\n" +
-                    "- PENDING 상태의 지원서가 이미 존재하면 중복 신청 불가\n\n" +
+                    "- PENDING 상태의 지원서가 이미 존재하면 중복 신청 불가\n" +
+                    "- 최근 신청이 반려(REJECTED)된 경우, 반려 처리일(`processedAt`)로부터 14일이 지나야 재신청 가능\n\n" +
                     "**권한:** ROLE_USER (로그인 필수)\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -110,7 +114,7 @@ public interface CreatorApplicationControllerDocs {
             @ApiResponse(responseCode = "204", description = "신청 접수 성공"),
             @ApiResponse(
                     responseCode = "400",
-                    description = "입력값 오류, 중복 신청, 또는 이미 크리에이터",
+                    description = "입력값 오류, 중복 신청, 재신청 쿨다운, 또는 이미 크리에이터",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -122,6 +126,10 @@ public interface CreatorApplicationControllerDocs {
                                     @ExampleObject(
                                             name = "중복 신청",
                                             value = "{\"code\": \"DUPLICATE_APPLICATION\", \"message\": \"이미 검수 대기 중인 신청이 있습니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "재신청 쿨다운",
+                                            value = "{\"code\": \"APPLICATION_REAPPLY_COOLDOWN\", \"message\": \"반려일로부터 14일이 지나야 다시 신청할 수 있습니다.\"}"
                                     ),
                                     @ExampleObject(
                                             name = "이미 크리에이터",

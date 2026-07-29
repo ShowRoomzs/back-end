@@ -42,7 +42,13 @@ public class MyCreatorApplicationResponse {
     @Schema(description = "반려 사유", example = "팔로워 수 기준 미달 - 제출하신 채널의 팔로워 수가 기준에 미달합니다.")
     private final String rejectReason;
 
-    public MyCreatorApplicationResponse(CreatorApplication ca) {
+    @Schema(description = "재신청 가능 일시 (반려 처리일 + 14일)", example = "2026-08-05T15:30:00")
+    private final LocalDateTime reapplyAvailableAt;
+
+    @Schema(description = "현재 재신청 가능 여부", example = "false")
+    private final boolean canReapply;
+
+    public MyCreatorApplicationResponse(CreatorApplication ca, LocalDateTime reapplyAvailableAt) {
         this.applicationId = ca.getId();
         this.snsType = ca.getSnsType();
         this.channelUrl = ca.getChannelUrl();
@@ -53,5 +59,7 @@ public class MyCreatorApplicationResponse {
         this.processedAt = ca.getProcessedAt();
         this.status = ca.getStatus();
         this.rejectReason = ca.getRejectReason();
+        this.reapplyAvailableAt = reapplyAvailableAt;
+        this.canReapply = !LocalDateTime.now().isBefore(reapplyAvailableAt);
     }
 }

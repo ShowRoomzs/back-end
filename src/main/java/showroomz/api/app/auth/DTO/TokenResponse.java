@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,8 +25,17 @@ public class TokenResponse {
     @Schema(description = "크리에이터 로그인 시 크리에이터 권한이 아닌 경우의 사유 코드 (예: ACCOUNT_ROLE_MISMATCH, ACCOUNT_REJECTED)")
     private String code;
 
-    @Schema(description = "크리에이터 로그인 시 크리에이터 권한이 아닌 경우의 사유 메시지 (반려 사유 등)")
+    @Schema(description = "크리에이터 로그인 시 크리에이터 권한이 아닌 경우의 사유 메시지")
     private String message;
+
+    @Schema(description = "크리에이터 신청 반려 사유 유형 (반려 계정 로그인 시)", example = "FOLLOWER_COUNT_SHORTFALL")
+    private String rejectReasonType;
+
+    @Schema(description = "크리에이터 신청 반려 상세 사유 (반려 계정 로그인 시)", example = "제출하신 채널의 팔로워 수가 기준에 미달합니다.")
+    private String rejectReasonDetail;
+
+    @Schema(description = "크리에이터 재신청 가능 일시 (반려 계정 로그인 시, 반려 처리일 + 14일)")
+    private LocalDateTime reapplyAvailableAt;
 
     // 기존 회원용 생성자
     public TokenResponse(String accessToken, String refreshToken, long accessTokenExpiresIn, long refreshTokenExpiresIn, boolean isNewMember, String role) {
