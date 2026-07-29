@@ -28,8 +28,8 @@ public interface CreatorAuthControllerDocs {
             description = "카카오, 네이버, 구글, 애플 소셜 로그인으로 크리에이터 계정을 인증합니다.\n\n" +
                     "**유저 로그인과의 차이:**\n" +
                     "- 승인된 크리에이터(`role=CREATOR`)만 크리에이터 토큰 발급\n" +
-                    "- 신청 이력이 없는 경우: **USER** access/refresh 토큰과 함께 사유(`code`, `message`) 반환\n" +
-                    "- 신청 반려 시: 토큰 없이 `code`(ACCOUNT_REJECTED), `rejectReasonType`, `rejectReasonDetail`, `reapplyAvailableAt`(반려일+14일) 반환\n" +
+                    "- 신청 이력이 없는 경우(또는 반려 후 재신청 가능일이 지난 경우): **USER** access/refresh 토큰과 함께 사유(`code`, `message`) 반환\n" +
+                    "- 신청 반려 시(재신청 가능일 이전): 토큰 없이 `code`(ACCOUNT_REJECTED), `rejectReasonType`, `rejectReasonDetail`, `reapplyAvailableAt`(반려일+14일) 반환\n" +
                     "- 승인 대기(PENDING)인 경우 로그인 불가 (403)\n\n" +
                     "**추가 정보 미입력 (`isNewMember=true`):**\n" +
                     "- 셀러와 동일하게 `registerToken`만 반환 (access/refresh 미발급, 5분 유효)\n" +
