@@ -82,9 +82,6 @@ public class Market {
     @Column(name = "remote_area_surcharge", nullable = false)
     private Integer remoteAreaSurcharge = 0;
 
-    @Column(name = "delivery_method", nullable = false, length = 50)
-    private String deliveryMethod = "택배";
-
     @Column(name = "shipping_lead_days")
     private Integer shippingLeadDays;
 

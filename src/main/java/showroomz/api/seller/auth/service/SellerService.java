@@ -373,7 +373,6 @@ public class SellerService {
         market.setRemoteAreaSurcharge(
                 request.getRemoteAreaSurcharge() != null ? request.getRemoteAreaSurcharge() : 0
         );
-        market.setDeliveryMethod("택배");
         market.setShippingLeadDays(request.getShippingLeadDays());
         market.setReturnFee(request.getReturnFee() != null ? request.getReturnFee() : 3000);
         market.setExchangeFee(request.getExchangeFee() != null ? request.getExchangeFee() : 6000);
