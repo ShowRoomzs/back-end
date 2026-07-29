@@ -49,6 +49,12 @@ public class AdminSellerDetailResponse {
     @Schema(description = "마켓명", example = "쇼룸즈")
     private String marketName;
 
+    @Schema(description = "고객센터 전화", example = "02-1234-5678")
+    private String csNumber;
+
+    @Schema(description = "판매 담당자", example = "김판매")
+    private String sellerName;
+
     @Schema(description = "판매자 승인 상태", example = "PENDING")
     private String status;
 
