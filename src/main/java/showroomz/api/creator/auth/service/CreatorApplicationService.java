@@ -24,6 +24,8 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.service.MailService;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -50,6 +52,8 @@ public class CreatorApplicationService {
             throw new BusinessException(ErrorCode.DUPLICATE_APPLICATION);
         }
 
+        validateReapplyCooldown(userId);
+
         CreatorApplication application = CreatorApplication.createApplication(
                 user,
                 request.getSnsType(),
@@ -71,7 +75,17 @@ public class CreatorApplicationService {
                 .findTopByUser_IdAndStatusOrderByCreatedAtDesc(userId, CreatorApplicationStatus.REJECTED)
                 .orElseThrow(() -> new BusinessException(ErrorCode.APPLICATION_NOT_FOUND));
 
-        return new MyCreatorApplicationResponse(application);
+        return new MyCreatorApplicationResponse(application, application.resolveReapplyAvailableAt());
+    }
+
+    private void validateReapplyCooldown(Long userId) {
+        creatorApplicationRepository
+                .findTopByUser_IdAndStatusOrderByCreatedAtDesc(userId, CreatorApplicationStatus.REJECTED)
+                .ifPresent(rejected -> {
+                    if (LocalDateTime.now().isBefore(rejected.resolveReapplyAvailableAt())) {
+                        throw new BusinessException(ErrorCode.APPLICATION_REAPPLY_COOLDOWN);
+                    }
+                });
     }
 
     public PageResponse<CreatorApplicationResponse> getApplications(PagingRequest pagingRequest) {

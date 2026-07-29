@@ -29,6 +29,7 @@ public interface CreatorAuthControllerDocs {
                     "**유저 로그인과의 차이:**\n" +
                     "- 승인된 크리에이터(`role=CREATOR`)만 크리에이터 토큰 발급\n" +
                     "- 신청 이력이 없거나 신청이 반려된 경우: **USER** access/refresh 토큰과 함께 사유(`code`, `message`) 반환\n" +
+                    "- 신청 반려 시 추가로 `rejectReason`(반려 사유), `reapplyAvailableAt`(재신청 가능일, 반려일+14일) 반환\n" +
                     "- 승인 대기(PENDING)인 경우 로그인 불가 (403)\n\n" +
                     "**추가 정보 미입력 (`isNewMember=true`):**\n" +
                     "- 셀러와 동일하게 `registerToken`만 반환 (access/refresh 미발급, 5분 유효)\n" +
@@ -78,7 +79,7 @@ public interface CreatorAuthControllerDocs {
                                                     "}"
                                     ),
                                     @ExampleObject(
-                                            name = "신청 반려 (유저 토큰 + 반려 사유)",
+                                            name = "신청 반려 (유저 토큰 + 반려 사유·재신청일)",
                                             value = "{\n" +
                                                     "  \"tokenType\": \"Bearer\",\n" +
                                                     "  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9...\",\n" +
@@ -88,7 +89,9 @@ public interface CreatorAuthControllerDocs {
                                                     "  \"isNewMember\": false,\n" +
                                                     "  \"role\": \"USER\",\n" +
                                                     "  \"code\": \"ACCOUNT_REJECTED_WITH_REASON\",\n" +
-                                                    "  \"message\": \"팔로워 수 기준 미달 - 제출하신 채널의 팔로워 수가 기준에 미달합니다.\"\n" +
+                                                    "  \"message\": \"팔로워 수 기준 미달 - 제출하신 채널의 팔로워 수가 기준에 미달합니다.\",\n" +
+                                                    "  \"rejectReason\": \"팔로워 수 기준 미달 - 제출하신 채널의 팔로워 수가 기준에 미달합니다.\",\n" +
+                                                    "  \"reapplyAvailableAt\": \"2026-08-05T15:30:00\"\n" +
                                                     "}"
                                     )
                             }
