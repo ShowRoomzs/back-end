@@ -154,7 +154,11 @@ public class CreatorApplicationService {
             fullRejectReason += " - " + reasonDetail;
         }
 
-        application.reject(fullRejectReason);
+        application.reject(
+                request.getRejectReasonType().name(),
+                reasonDetail,
+                fullRejectReason
+        );
 
         applicationHistoryRepository.save(CreatorApplicationHistory.builder()
                 .application(application)
