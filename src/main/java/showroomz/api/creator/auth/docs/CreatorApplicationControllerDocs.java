@@ -96,7 +96,7 @@ public interface CreatorApplicationControllerDocs {
                     "**필수 정보:**\n" +
                     "- `snsType`: SNS 플랫폼 (INSTAGRAM, TIKTOK, X, YOUTUBE)\n" +
                     "- `channelUrl`: 채널 주소(URL)\n" +
-                    "- `accountId`: 계정 아이디 (SNS 계정명)\n" +
+                    "- `accountId`: 계정 아이디 (영문 소문자·숫자·마침표(.)·밑줄(_)만 가능, 최대 30자)\n" +
                     "- `followerCount`: 팔로워 수 (0 이상)\n" +
                     "- `businessEmail`: 업무 이메일\n" +
                     "- `agreeTermsOfService`: 서비스 이용약관 동의 (true 필수)\n" +
