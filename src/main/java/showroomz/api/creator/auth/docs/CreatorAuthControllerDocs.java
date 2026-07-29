@@ -29,7 +29,7 @@ public interface CreatorAuthControllerDocs {
                     "**유저 로그인과의 차이:**\n" +
                     "- 승인된 크리에이터(`role=CREATOR`)만 크리에이터 토큰 발급\n" +
                     "- 신청 이력이 없는 경우: **USER** access/refresh 토큰과 함께 사유(`code`, `message`) 반환\n" +
-                    "- 신청 반려 시: 토큰 없이 `rejectReasonType`, `rejectReasonDetail`, `reapplyAvailableAt`(반려일+14일)만 반환\n" +
+                    "- 신청 반려 시: 토큰 없이 `code`(ACCOUNT_REJECTED), `rejectReasonType`, `rejectReasonDetail`, `reapplyAvailableAt`(반려일+14일) 반환\n" +
                     "- 승인 대기(PENDING)인 경우 로그인 불가 (403)\n\n" +
                     "**추가 정보 미입력 (`isNewMember=true`):**\n" +
                     "- 셀러와 동일하게 `registerToken`만 반환 (access/refresh 미발급, 5분 유효)\n" +
@@ -79,8 +79,9 @@ public interface CreatorAuthControllerDocs {
                                                     "}"
                                     ),
                                     @ExampleObject(
-                                            name = "신청 반려 (반려 사유·재신청일만)",
+                                            name = "신청 반려 (반려 사유·재신청일)",
                                             value = "{\n" +
+                                                    "  \"code\": \"ACCOUNT_REJECTED\",\n" +
                                                     "  \"rejectReasonType\": \"FOLLOWER_COUNT_SHORTFALL\",\n" +
                                                     "  \"rejectReasonDetail\": \"제출하신 채널의 팔로워 수가 기준에 미달합니다.\",\n" +
                                                     "  \"reapplyAvailableAt\": \"2026-08-05T15:30:00\"\n" +

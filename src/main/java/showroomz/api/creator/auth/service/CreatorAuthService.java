@@ -173,7 +173,7 @@ public class CreatorAuthService {
     /**
      * 크리에이터 권한이 아닌 로그인 시도 처리.
      * - 신청 이력 없음: USER access·refresh 토큰 + 사유(code/message) 반환
-     * - 반려: 토큰 없이 rejectReasonType, rejectReasonDetail, reapplyAvailableAt만 반환
+     * - 반려: 토큰 없이 code(ACCOUNT_REJECTED), rejectReasonType, rejectReasonDetail, reapplyAvailableAt 반환
      * - 승인 대기(PENDING): 기존과 동일하게 예외
      * - 승인된 크리에이터: null 반환 후 정상 크리에이터 로그인 진행
      */
@@ -212,6 +212,7 @@ public class CreatorAuthService {
     private TokenResponse createRejectedApplicationResponse(CreatorApplication application) {
         TokenResponse response = new TokenResponse();
         response.setTokenType(null);
+        response.setCode(ErrorCode.ACCOUNT_REJECTED.getCode());
         response.setRejectReasonType(application.getRejectReasonType());
         response.setRejectReasonDetail(application.getRejectReasonDetail());
         response.setReapplyAvailableAt(application.resolveReapplyAvailableAt());
