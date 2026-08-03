@@ -129,6 +129,11 @@ public class SocialLoginService {
             throw new IllegalArgumentException("탈퇴한 회원입니다.");
         }
 
+        // 앱 회원가입 미완료(GUEST)는 로그인 전용 플로우에서 미가입으로 처리
+        if (user.getRoleType() == RoleType.GUEST) {
+            throw new IllegalArgumentException("존재하지 않는 회원입니다.");
+        }
+
         applyIncomingRealNameIfAbsent(user, userInfo, name);
 
         boolean isNewMember = user.getRoleType() == RoleType.GUEST;
