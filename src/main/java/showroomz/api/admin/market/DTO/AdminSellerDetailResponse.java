@@ -103,7 +103,7 @@ public class AdminSellerDetailResponse {
     @Schema(description = "통신판매업 신고번호", example = "2024-서울강남-12345")
     private String mailOrderSalesNumber;
 
-    @Schema(description = "정산은행명", example = "국민은행")
+    @Schema(description = "정산은행명 (가입 시 bankCode로 조회한 은행명)", example = "KB국민은행")
     private String settlementBankName;
 
     @Schema(description = "예금주명", example = "홍길동")
