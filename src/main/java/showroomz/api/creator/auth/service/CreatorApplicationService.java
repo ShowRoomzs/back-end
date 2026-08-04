@@ -66,7 +66,9 @@ public class CreatorApplicationService {
                 request.getChannelUrl(),
                 request.getAccountId(),
                 request.getFollowerCount(),
-                request.getBusinessEmail()
+                request.getBusinessEmail(),
+                // 본인인증 연동 전: 신청서에 더미 연락처 저장 (USERS가 아닌 CREATOR_APPLICATION에 보관)
+                CreatorApplicationDetailResponse.DUMMY_PHONE_NUMBER
         );
 
         user.setServiceAgree(Boolean.TRUE.equals(request.getAgreeTermsOfService()));
@@ -164,8 +166,8 @@ public class CreatorApplicationService {
                 .rejectReasonDetail(application.getRejectReasonDetail())
                 .name(rejected ? null : CreatorApplicationDetailResponse.DUMMY_REAL_NAME)
                 .birthday(rejected ? null : CreatorApplicationDetailResponse.DUMMY_BIRTHDAY)
-                .phoneNumber(rejected ? null : CreatorApplicationDetailResponse.DUMMY_PHONE_NUMBER)
-                .phoneNumberHash(rejected ? user.getPhoneNumber() : null)
+                .phoneNumber(rejected ? null : application.getPhoneNumber())
+                .phoneNumberHash(rejected ? application.getPhoneNumber() : null)
                 .verificationMethod(CreatorApplicationDetailResponse.VERIFICATION_METHOD_PASS)
                 .verificationMethodLabel(CreatorApplicationDetailResponse.VERIFICATION_METHOD_PASS_LABEL)
                 .snsType(application.getSnsType())
@@ -292,9 +294,9 @@ public class CreatorApplicationService {
                 reasonDetail
         );
 
-        String phoneHash = BusinessRegistrationNumberHasher.hash(user.getPhoneNumber());
-        user.purgeIdentityAndAgreementsOnCreatorRejection(phoneHash);
-        application.purgePersonalData();
+        String phoneHash = BusinessRegistrationNumberHasher.hash(application.getPhoneNumber());
+        user.purgeIdentityAndAgreementsOnCreatorRejection();
+        application.purgePersonalData(phoneHash);
 
         applicationHistoryRepository.save(CreatorApplicationHistory.builder()
                 .application(application)
