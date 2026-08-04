@@ -18,6 +18,7 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.SocialLoginRequest;
 import showroomz.api.app.auth.DTO.TokenResponse;
 import showroomz.api.creator.auth.DTO.CreatorCompleteRegistrationRequest;
+import showroomz.api.creator.auth.DTO.CreatorRegistrationInfoResponse;
 import showroomz.api.creator.auth.DTO.ShowroomNameCheckResponse;
 
 @Tag(name = "Creator - Auth", description = "크리에이터 인증/추가정보 API")
@@ -195,6 +196,59 @@ public interface CreatorAuthControllerDocs {
             )
             @RequestParam("showroomName") String showroomName
     );
+
+    @Operation(
+            summary = "추가 정보 입력용 계정·본인확인 정보 조회",
+            description = "관리자 승인 후 소셜 로그인에서 받은 `registerToken`으로 계정 아이디·본인확인 실명을 조회합니다.\n\n" +
+                    "**요청 헤더:** `Authorization: Bearer {registerToken}`\n\n" +
+                    "**응답:**\n" +
+                    "- `accountId`: 신청 시 등록한 SNS 계정 아이디\n" +
+                    "- `realName`: 본인확인 실명\n\n" +
+                    "**권한:** registerToken (추가 정보 미입력 상태만)"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CreatorRegistrationInfoResponse.class),
+                            examples = @ExampleObject(
+                                    name = "성공",
+                                    value = "{\n" +
+                                            "  \"accountId\": \"my_channel\",\n" +
+                                            "  \"realName\": \"홍길동\"\n" +
+                                            "}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "이미 추가 정보 등록 완료",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "이미 등록 완료",
+                                    value = "{\"code\": \"ALREADY_REGISTERED\", \"message\": \"이미 회원가입이 완료된 사용자입니다.\"}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "registerToken 누락 또는 만료",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "토큰 만료",
+                                    value = "{\"code\": \"UNAUTHORIZED\", \"message\": \"회원가입 유효 시간이 만료되었습니다. 다시 로그인해주세요.\"}"
+                            )
+                    )
+            )
+    })
+    @SecurityRequirement(name = "Authorization")
+    ResponseEntity<CreatorRegistrationInfoResponse> getRegistrationInfo(HttpServletRequest request);
 
     @Operation(
             summary = "크리에이터 추가 정보 입력 (승인 후 최초)",

@@ -14,6 +14,7 @@ import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.creator.auth.DTO.CreatorCompleteRegistrationRequest;
+import showroomz.api.creator.auth.DTO.CreatorRegistrationInfoResponse;
 import showroomz.api.creator.auth.DTO.ShowroomNameCheckResponse;
 import showroomz.domain.bank.entity.Bank;
 import showroomz.domain.bank.repository.BankRepository;
@@ -84,6 +85,39 @@ public class CreatorAuthService {
 
     @Transactional
     public TokenResponse completeRegistration(String registerTokenStr, CreatorCompleteRegistrationRequest request) {
+        Creator creator = resolveNewCreatorFromRegisterToken(registerTokenStr);
+        Users user = creator.getUser();
+
+        validateBusinessFields(request);
+        validateShowroomNameAvailable(request.getShowroomName());
+
+        Bank bank = bankRepository.findById(request.getBankCode())
+                .orElseThrow(() -> new BusinessException(ErrorCode.BANK_NOT_FOUND));
+
+        boolean isBusiness = request.getBusinessType() == CreatorBusinessType.BUSINESS;
+        creator.completeRegistration(
+                request.getShowroomName(),
+                request.getBusinessType(),
+                isBusiness ? request.getBusinessRegistrationNumber() : null,
+                isBusiness ? request.getBusinessLicenseImageUrl() : null,
+                bank.getName(),
+                request.getAccountNumber(),
+                request.getBankBookImageUrl()
+        );
+
+        return authService.generateTokens(
+                user.getUsername(),
+                user.getRoleType(),
+                user.getId(),
+                false
+        );
+    }
+
+    public CreatorRegistrationInfoResponse getRegistrationInfo(String registerTokenStr) {
+        return CreatorRegistrationInfoResponse.from(resolveNewCreatorFromRegisterToken(registerTokenStr));
+    }
+
+    private Creator resolveNewCreatorFromRegisterToken(String registerTokenStr) {
         if (registerTokenStr == null || registerTokenStr.isEmpty()) {
             throw new BusinessException(ErrorCode.REGISTER_EXPIRED);
         }
@@ -113,29 +147,7 @@ public class CreatorAuthService {
             throw new BusinessException(ErrorCode.ALREADY_REGISTERED);
         }
 
-        validateBusinessFields(request);
-        validateShowroomNameAvailable(request.getShowroomName());
-
-        Bank bank = bankRepository.findById(request.getBankCode())
-                .orElseThrow(() -> new BusinessException(ErrorCode.BANK_NOT_FOUND));
-
-        boolean isBusiness = request.getBusinessType() == CreatorBusinessType.BUSINESS;
-        creator.completeRegistration(
-                request.getShowroomName(),
-                request.getBusinessType(),
-                isBusiness ? request.getBusinessRegistrationNumber() : null,
-                isBusiness ? request.getBusinessLicenseImageUrl() : null,
-                bank.getName(),
-                request.getAccountNumber(),
-                request.getBankBookImageUrl()
-        );
-
-        return authService.generateTokens(
-                user.getUsername(),
-                user.getRoleType(),
-                user.getId(),
-                false
-        );
+        return creator;
     }
 
     public ShowroomNameCheckResponse checkShowroomName(String showroomName) {
