@@ -144,8 +144,8 @@ public interface CreatorAuthControllerDocs {
             summary = "쇼룸명 중복 확인",
             description = "`complete-registration`에서 사용할 쇼룸명의 형식·중복 여부를 확인합니다.\n\n" +
                     "**규칙:**\n" +
-                    "- 공백/특수문자 불가\n" +
-                    "- 한글(+숫자) 또는 영문(+숫자)만 사용 (혼용 불가)\n\n" +
+                    "- 2~20자\n" +
+                    "- 한글·영문·숫자·공백만 허용 (이모지·특수문자 불가)\n\n" +
                     "**응답:**\n" +
                     "- `isAvailable`: true면 사용 가능\n" +
                     "- `code`: `AVAILABLE` / `DUPLICATE` / `INVALID_FORMAT`\n" +
@@ -180,7 +180,7 @@ public interface CreatorAuthControllerDocs {
                                             value = "{\n" +
                                                     "  \"isAvailable\": false,\n" +
                                                     "  \"code\": \"INVALID_FORMAT\",\n" +
-                                                    "  \"message\": \"쇼룸명은 공백과 특수문자를 사용할 수 없으며, 한글 또는 영문 중 하나만 사용해야 합니다.\"\n" +
+                                                    "  \"message\": \"쇼룸명은 2~20자, 한글·영문·숫자·공백만 사용할 수 있습니다.\"\n" +
                                                     "}"
                                     )
                             }
@@ -201,10 +201,10 @@ public interface CreatorAuthControllerDocs {
             description = "관리자 승인 후 크리에이터 소셜 로그인에서 받은 `registerToken`으로 추가 정보를 등록합니다.\n\n" +
                     "**요청 헤더:** `Authorization: Bearer {registerToken}`\n\n" +
                     "**필수 필드:**\n" +
-                    "- `showroomName`: 쇼룸명 (중복 불가, 사전 확인: `GET /v1/creator/auth/check-showroom-name`)\n" +
-                    "- `businessType`: `INDIVIDUAL`(개인/비사업자) 또는 `BUSINESS`(개인사업자/법인)\n" +
+                    "- `showroomName`: 쇼룸명 (2~20자, 한글·영문·숫자·공백만, 중복 불가, 사전 확인: `GET /v1/creator/auth/check-showroom-name`)\n" +
+                    "- `businessType`: `INDIVIDUAL`(개인/비사업자, 기본값) 또는 `BUSINESS`(개인사업자/법인)\n" +
                     "- `bankCode`: 은행 표준 코드 (`GET /v1/common/banks` 조회)\n" +
-                    "- `accountNumber`: 계좌번호 (하이픈 없이 숫자만)\n" +
+                    "- `accountNumber`: 계좌번호 (하이픈 없이 숫자 10~16자리)\n" +
                     "- `bankBookImageUrl`: 통장 사본 URL\n\n" +
                     "**사업자(`BUSINESS`) 선택 시 추가 필수:**\n" +
                     "- `businessRegistrationNumber`: 사업자등록번호 (예: 123-45-67890)\n" +
@@ -278,7 +278,7 @@ public interface CreatorAuthControllerDocs {
                             @ExampleObject(
                                     name = "개인(비사업자)",
                                     value = "{\n" +
-                                            "  \"showroomName\": \"myshowroom\",\n" +
+                                            "  \"showroomName\": \"마이 쇼룸\",\n" +
                                             "  \"businessType\": \"INDIVIDUAL\",\n" +
                                             "  \"bankCode\": \"004\",\n" +
                                             "  \"accountNumber\": \"12345678901234\",\n" +

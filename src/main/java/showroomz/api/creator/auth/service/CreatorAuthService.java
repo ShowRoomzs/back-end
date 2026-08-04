@@ -39,7 +39,9 @@ public class CreatorAuthService {
 
     private static final long REGISTER_TOKEN_EXPIRY_MSEC = 5 * 60 * 1000;
     private static final Pattern SHOWROOM_NAME_PATTERN =
-            Pattern.compile("^([가-힣0-9]+|[a-zA-Z0-9]+)$");
+            Pattern.compile("^[가-힣a-zA-Z0-9 ]{2,20}$");
+    private static final String SHOWROOM_NAME_FORMAT_MESSAGE =
+            "쇼룸명은 2~20자, 한글·영문·숫자·공백만 사용할 수 있습니다.";
 
     private final CreatorRepository creatorRepository;
     private final CreatorApplicationRepository creatorApplicationRepository;
@@ -149,7 +151,7 @@ public class CreatorAuthService {
             return new ShowroomNameCheckResponse(
                     false,
                     "INVALID_FORMAT",
-                    "쇼룸명은 공백과 특수문자를 사용할 수 없으며, 한글 또는 영문 중 하나만 사용해야 합니다."
+                    SHOWROOM_NAME_FORMAT_MESSAGE
             );
         }
 
