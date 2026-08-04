@@ -42,6 +42,7 @@ public interface CreatorApplicationControllerDocs {
                                             name = "반려된 지원서",
                                             value = "{\n" +
                                                     "  \"applicationId\": 12,\n" +
+                                                    "  \"name\": \"홍길동\",\n" +
                                                     "  \"snsType\": \"INSTAGRAM\",\n" +
                                                     "  \"channelUrl\": \"https://instagram.com/my_channel\",\n" +
                                                     "  \"accountId\": \"my_channel\",\n" +

@@ -12,8 +12,14 @@ import java.time.LocalDateTime;
 @Schema(description = "내 크리에이터 지원서 응답")
 public class MyCreatorApplicationResponse {
 
+    /** 본인인증 연동 전까지 사용하는 더미 실명 */
+    private static final String DUMMY_REAL_NAME = "홍길동";
+
     @Schema(description = "지원 신청 일련번호", example = "12")
     private final Long applicationId;
+
+    @Schema(description = "실명 (본인인증 연동 전 더미)", example = "홍길동")
+    private final String name;
 
     @Schema(description = "활동 SNS 플랫폼", example = "INSTAGRAM")
     private final SnsType snsType;
@@ -50,6 +56,7 @@ public class MyCreatorApplicationResponse {
 
     public MyCreatorApplicationResponse(CreatorApplication ca, LocalDateTime reapplyAvailableAt) {
         this.applicationId = ca.getId();
+        this.name = DUMMY_REAL_NAME;
         this.snsType = ca.getSnsType();
         this.channelUrl = ca.getChannelUrl();
         this.accountId = ca.getAccountId();
