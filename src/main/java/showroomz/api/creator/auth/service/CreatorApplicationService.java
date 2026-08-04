@@ -14,6 +14,7 @@ import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.creator.auth.DTO.CreatorApplicationRequest;
 import showroomz.api.creator.auth.DTO.MyCreatorApplicationResponse;
+import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.domain.history.entity.CreatorApplicationHistory;
 import showroomz.domain.history.repository.CreatorApplicationHistoryRepository;
 import showroomz.domain.member.creator.entity.Creator;
@@ -21,6 +22,7 @@ import showroomz.domain.member.creator.entity.CreatorApplication;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.creator.repository.CreatorApplicationRepository;
 import showroomz.domain.member.creator.type.CreatorApplicationStatus;
+import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
@@ -42,6 +44,7 @@ public class CreatorApplicationService {
     private final CreatorRepository creatorRepository;
     private final MailService mailService;
     private final CreatorApplicationHistoryRepository applicationHistoryRepository;
+    private final SellerRepository sellerRepository;
 
     @Transactional
     public void apply(Long userId, CreatorApplicationRequest request) {
@@ -306,13 +309,14 @@ public class CreatorApplicationService {
             throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
 
-        Users admin = userRepository.findById(adminUserId)
+        // 관리자(SUPER/ADMIN/SELLER)는 Seller 테이블에 존재
+        Seller admin = sellerRepository.findById(adminUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        if (admin.getEmail() != null && !admin.getEmail().isBlank()) {
-            return admin.getEmail();
+        if (admin.getEmail() == null || admin.getEmail().isBlank()) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
-        return admin.getUsername();
+        return admin.getEmail();
     }
 
     private void validateRequiredAgreements(CreatorApplicationRequest request) {
