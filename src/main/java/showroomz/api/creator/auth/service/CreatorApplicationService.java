@@ -288,17 +288,6 @@ public class CreatorApplicationService {
         );
 
         Users user = application.getUser();
-        String recipientEmail = application.getBusinessEmail();
-
-        // 반려 메일 발송 후 개인정보 파기 (연락처는 일방향 해시만 보존)
-        mailService.sendCreatorRejectionEmail(
-                recipientEmail,
-                user.getNickname(),
-                application.getProcessedAt(),
-                reasonSummary,
-                reasonDetail
-        );
-
         String phoneHash = BusinessRegistrationNumberHasher.hash(application.getPhoneNumber());
         user.purgeAgreementsOnCreatorRejection();
         application.purgePersonalData(phoneHash);
