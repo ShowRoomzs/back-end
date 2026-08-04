@@ -15,6 +15,8 @@ import showroomz.api.app.auth.token.AuthTokenProvider;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.creator.auth.DTO.CreatorCompleteRegistrationRequest;
 import showroomz.api.creator.auth.DTO.ShowroomNameCheckResponse;
+import showroomz.domain.bank.entity.Bank;
+import showroomz.domain.bank.repository.BankRepository;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.entity.CreatorApplication;
 import showroomz.domain.member.creator.repository.CreatorApplicationRepository;
@@ -42,6 +44,7 @@ public class CreatorAuthService {
     private final CreatorRepository creatorRepository;
     private final CreatorApplicationRepository creatorApplicationRepository;
     private final UserRepository userRepository;
+    private final BankRepository bankRepository;
     private final AuthService authService;
     private final AuthTokenProvider tokenProvider;
 
@@ -111,13 +114,16 @@ public class CreatorAuthService {
         validateBusinessFields(request);
         validateShowroomNameAvailable(request.getShowroomName());
 
+        Bank bank = bankRepository.findById(request.getBankCode())
+                .orElseThrow(() -> new BusinessException(ErrorCode.BANK_NOT_FOUND));
+
         boolean isBusiness = request.getBusinessType() == CreatorBusinessType.BUSINESS;
         creator.completeRegistration(
                 request.getShowroomName(),
                 request.getBusinessType(),
                 isBusiness ? request.getBusinessRegistrationNumber() : null,
                 isBusiness ? request.getBusinessLicenseImageUrl() : null,
-                request.getBankName(),
+                bank.getName(),
                 request.getAccountNumber(),
                 request.getBankBookImageUrl()
         );

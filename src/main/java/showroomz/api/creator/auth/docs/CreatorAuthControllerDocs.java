@@ -203,7 +203,7 @@ public interface CreatorAuthControllerDocs {
                     "**필수 필드:**\n" +
                     "- `showroomName`: 쇼룸명 (중복 불가, 사전 확인: `GET /v1/creator/auth/check-showroom-name`)\n" +
                     "- `businessType`: `INDIVIDUAL`(개인/비사업자) 또는 `BUSINESS`(개인사업자/법인)\n" +
-                    "- `bankName`: 은행명\n" +
+                    "- `bankCode`: 은행 표준 코드 (`GET /v1/common/banks` 조회)\n" +
                     "- `accountNumber`: 계좌번호 (하이픈 없이 숫자만)\n" +
                     "- `bankBookImageUrl`: 통장 사본 URL\n\n" +
                     "**사업자(`BUSINESS`) 선택 시 추가 필수:**\n" +
@@ -280,7 +280,7 @@ public interface CreatorAuthControllerDocs {
                                     value = "{\n" +
                                             "  \"showroomName\": \"myshowroom\",\n" +
                                             "  \"businessType\": \"INDIVIDUAL\",\n" +
-                                            "  \"bankName\": \"국민은행\",\n" +
+                                            "  \"bankCode\": \"004\",\n" +
                                             "  \"accountNumber\": \"12345678901234\",\n" +
                                             "  \"bankBookImageUrl\": \"https://s3.../bankbook.jpg\"\n" +
                                             "}"
@@ -292,7 +292,7 @@ public interface CreatorAuthControllerDocs {
                                             "  \"businessType\": \"BUSINESS\",\n" +
                                             "  \"businessRegistrationNumber\": \"123-45-67890\",\n" +
                                             "  \"businessLicenseImageUrl\": \"https://s3.../license.jpg\",\n" +
-                                            "  \"bankName\": \"국민은행\",\n" +
+                                            "  \"bankCode\": \"004\",\n" +
                                             "  \"accountNumber\": \"12345678901234\",\n" +
                                             "  \"bankBookImageUrl\": \"https://s3.../bankbook.jpg\"\n" +
                                             "}"
