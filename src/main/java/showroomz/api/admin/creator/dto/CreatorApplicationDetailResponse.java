@@ -63,8 +63,12 @@ public class CreatorApplicationDetailResponse {
     @Schema(description = "처리 운영자 이메일 (승인/반려 시에만)", example = "admin@showroomz.com")
     private String processorEmail;
 
-    @Schema(description = "반려 사유 (반려 시에만)", example = "팔로워 수 기준 미달 - 제출하신 채널의 팔로워 수가 기준에 미달합니다.")
-    private String rejectReason;
+    @Schema(description = "반려 사유 유형 (반려 시에만)", example = "FOLLOWER_COUNT_SHORTFALL",
+            allowableValues = {"CHANNEL_INFO_MISMATCH", "FOLLOWER_COUNT_SHORTFALL", "OTHER"})
+    private String rejectReasonType;
+
+    @Schema(description = "반려 상세 사유 (반려 시에만, 선택)", example = "제출하신 채널의 팔로워 수가 기준에 미달합니다.")
+    private String rejectReasonDetail;
 
     // ── 본인 인증 (더미) ──
 

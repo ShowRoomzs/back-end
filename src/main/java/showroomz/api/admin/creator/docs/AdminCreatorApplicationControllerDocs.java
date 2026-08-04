@@ -118,7 +118,7 @@ public interface AdminCreatorApplicationControllerDocs {
                     "- 본인 인증: 실명·생년월일·연락처(더미), 인증 수단(PASS)\n" +
                     "- 플랫폼: SNS 유형, 채널 주소, 계정 아이디, 팔로워 수, 업무용 이메일, 마케팅 수신 동의\n" +
                     "- 처리 이력: 신청 접수 / 승인 처리 / 반려 처리 (승인·반려 시 운영자 이메일 포함)\n" +
-                    "- 심사 상태: 신청번호, 상태, 신청일, 처리 운영자 이메일\n\n" +
+                    "- 심사 상태: 신청번호, 상태, 신청일, 처리 운영자 이메일, 반려 유형·상세\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -138,7 +138,8 @@ public interface AdminCreatorApplicationControllerDocs {
                                                     "  \"appliedAt\": \"2026-07-13T18:04:00\",\n" +
                                                     "  \"processedAt\": \"2026-07-09T11:20:00\",\n" +
                                                     "  \"processorEmail\": \"admin@showroomz.com\",\n" +
-                                                    "  \"rejectReason\": null,\n" +
+                                                    "  \"rejectReasonType\": null,\n" +
+                                                    "  \"rejectReasonDetail\": null,\n" +
                                                     "  \"name\": \"홍길동\",\n" +
                                                     "  \"birthday\": \"1990-01-01\",\n" +
                                                     "  \"phoneNumber\": \"010-1234-5678\",\n" +
