@@ -26,6 +26,7 @@ import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.service.MailService;
+import showroomz.global.utils.BusinessRegistrationNumberHasher;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -151,6 +152,7 @@ public class CreatorApplicationService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.APPLICATION_NOT_FOUND));
 
         Users user = application.getUser();
+        boolean rejected = application.getStatus() == CreatorApplicationStatus.REJECTED;
 
         return CreatorApplicationDetailResponse.builder()
                 .applicationId(application.getId())
@@ -160,9 +162,10 @@ public class CreatorApplicationService {
                 .processorEmail(application.getProcessorEmail())
                 .rejectReasonType(application.getRejectReasonType())
                 .rejectReasonDetail(application.getRejectReasonDetail())
-                .name(CreatorApplicationDetailResponse.DUMMY_REAL_NAME)
-                .birthday(CreatorApplicationDetailResponse.DUMMY_BIRTHDAY)
-                .phoneNumber(CreatorApplicationDetailResponse.DUMMY_PHONE_NUMBER)
+                .name(rejected ? null : CreatorApplicationDetailResponse.DUMMY_REAL_NAME)
+                .birthday(rejected ? null : CreatorApplicationDetailResponse.DUMMY_BIRTHDAY)
+                .phoneNumber(rejected ? null : CreatorApplicationDetailResponse.DUMMY_PHONE_NUMBER)
+                .phoneNumberHash(rejected ? user.getPhoneNumber() : null)
                 .verificationMethod(CreatorApplicationDetailResponse.VERIFICATION_METHOD_PASS)
                 .verificationMethodLabel(CreatorApplicationDetailResponse.VERIFICATION_METHOD_PASS_LABEL)
                 .snsType(application.getSnsType())
@@ -170,7 +173,7 @@ public class CreatorApplicationService {
                 .accountId(application.getAccountId())
                 .followerCount(application.getFollowerCount())
                 .businessEmail(application.getBusinessEmail())
-                .marketingAgree(user.isMarketingAgree())
+                .marketingAgree(rejected ? null : user.isMarketingAgree())
                 .processingHistory(buildProcessingHistory(application))
                 .build();
     }
@@ -277,6 +280,22 @@ public class CreatorApplicationService {
                 processorEmail
         );
 
+        Users user = application.getUser();
+        String recipientEmail = application.getBusinessEmail();
+
+        // 반려 메일 발송 후 개인정보 파기 (연락처는 일방향 해시만 보존)
+        mailService.sendCreatorRejectionEmail(
+                recipientEmail,
+                user.getNickname(),
+                application.getProcessedAt(),
+                reasonSummary,
+                reasonDetail
+        );
+
+        String phoneHash = BusinessRegistrationNumberHasher.hash(user.getPhoneNumber());
+        user.purgeIdentityAndAgreementsOnCreatorRejection(phoneHash);
+        application.purgePersonalData();
+
         applicationHistoryRepository.save(CreatorApplicationHistory.builder()
                 .application(application)
                 .previousStatus(previousStatus)
@@ -284,15 +303,6 @@ public class CreatorApplicationService {
                 .reason(fullRejectReason)
                 .processorEmail(processorEmail)
                 .build());
-
-        Users user = application.getUser();
-        mailService.sendCreatorRejectionEmail(
-                application.getBusinessEmail(),
-                user.getNickname(),
-                application.getProcessedAt(),
-                reasonSummary,
-                reasonDetail
-        );
     }
 
     private String resolveProcessorEmail(Long adminUserId) {

@@ -72,14 +72,17 @@ public class CreatorApplicationDetailResponse {
 
     // ── 본인 인증 (더미) ──
 
-    @Schema(description = "실명 (본인인증 연동 전 더미)", example = "홍길동")
+    @Schema(description = "실명 (반려 시 null/파기, 본인인증 연동 전 더미)", example = "홍길동")
     private String name;
 
-    @Schema(description = "생년월일 (본인인증 연동 전 더미, YYYY-MM-DD)", example = "1990-01-01")
+    @Schema(description = "생년월일 (반려 시 null/파기, 본인인증 연동 전 더미, YYYY-MM-DD)", example = "1990-01-01")
     private String birthday;
 
-    @Schema(description = "연락처 (본인인증 연동 전 더미)", example = "010-1234-5678")
+    @Schema(description = "연락처 (반려 시 null/파기, 본인인증 연동 전 더미)", example = "010-1234-5678")
     private String phoneNumber;
+
+    @Schema(description = "연락처 일방향 해시 (반려 시에만)", example = "a3f9c210...")
+    private String phoneNumberHash;
 
     @Schema(description = "인증 수단 코드 (현재 PASS만 예정)", example = "PASS")
     private String verificationMethod;
@@ -98,13 +101,13 @@ public class CreatorApplicationDetailResponse {
     @Schema(description = "계정 아이디", example = "my_channel")
     private String accountId;
 
-    @Schema(description = "팔로워 수", example = "10000")
+    @Schema(description = "팔로워 수 (반려 시 null/파기)", example = "10000")
     private Integer followerCount;
 
-    @Schema(description = "업무용 이메일", example = "business@creator.com")
+    @Schema(description = "업무용 이메일 (반려 시 null/파기)", example = "business@creator.com")
     private String businessEmail;
 
-    @Schema(description = "마케팅 정보 수신 동의", example = "true")
+    @Schema(description = "마케팅 정보 수신 동의 (반려 시 null/파기)", example = "true")
     private Boolean marketingAgree;
 
     // ── 처리 이력 ──

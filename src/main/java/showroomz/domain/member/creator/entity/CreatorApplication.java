@@ -99,6 +99,14 @@ public class CreatorApplication extends BaseTimeEntity {
         this.processorEmail = processorEmail;
     }
 
+    /**
+     * 반려 후 개인정보 파기: 팔로워 수·업무용 이메일
+     */
+    public void purgePersonalData() {
+        this.followerCount = null;
+        this.businessEmail = null;
+    }
+
     /** 반려 처리일 기준 재신청 가능 일시 (처리일 없으면 신청일 기준) */
     public LocalDateTime resolveReapplyAvailableAt() {
         LocalDateTime rejectedAt = processedAt != null ? processedAt : getCreatedAt();

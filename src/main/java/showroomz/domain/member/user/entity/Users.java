@@ -44,9 +44,9 @@ public class Users {
     @Size(max = 64)
     private String name; // 실명(판매자 이름)
 
-    @Column(name = "PHONE_NUMBER", length = 20)
-    @Size(max = 20)
-    private String phoneNumber; // 연락처
+    @Column(name = "PHONE_NUMBER", length = 128)
+    @Size(max = 128)
+    private String phoneNumber; // 연락처 (크리에이터 신청 반려 시 일방향 해시)
 
     @JsonIgnore
     @Column(name = "PASSWORD", length = 128)
@@ -172,6 +172,19 @@ public class Users {
 
     public void updateRoleType(RoleType newRoleType) {
         this.roleType = newRoleType;
+    }
+
+    /**
+     * 크리에이터 입점 신청 반려 시 본인인증·약관 동의 정보를 파기합니다.
+     * 연락처는 일방향 해시로 치환합니다.
+     */
+    public void purgeIdentityAndAgreementsOnCreatorRejection(String phoneNumberHash) {
+        this.name = null;
+        this.birthday = null;
+        this.phoneNumber = phoneNumberHash;
+        this.serviceAgree = false;
+        this.privacyAgree = false;
+        this.marketingAgree = false;
     }
 }
 
