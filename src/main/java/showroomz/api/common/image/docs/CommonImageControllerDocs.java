@@ -25,7 +25,7 @@ public interface CommonImageControllerDocs {
                     "**타입별 용도:**\n" +
                     "- `SIGNUP_DOCUMENT`: 판매자 회원가입 증빙(사업자등록증·통신판매업신고증·통장사본 등)\n" +
                     "- `CREATOR_DOCUMENT`: 크리에이터 추가 정보(사업자등록증·통장사본 등)\n\n" +
-                    "**제약:** jpg, jpeg, png, gif / 최대 20MB / 해상도·비율 제약 없음\n\n" +
+                    "**제약:** jpg, jpeg, png, pdf / 최대 20MB / 해상도·비율 제약 없음\n\n" +
                     "**권한:** 인증 불필요"
     )
     @ApiResponses(value = {
@@ -85,7 +85,7 @@ public interface CommonImageControllerDocs {
             @RequestParam("type") String typeParam,
 
             @Parameter(
-                    description = "업로드할 이미지 파일",
+                    description = "업로드할 파일 (jpg, jpeg, png, pdf / 최대 20MB)",
                     required = true,
                     content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE)
             )

@@ -26,7 +26,7 @@ public interface CreatorImageControllerDocs {
                     "- `PRODUCT`: 상품 이미지\n" +
                     "- `MARKET`: 마켓 대표 이미지 (160×160px 이상, 정비율(1:1) 필수)\n\n" +
                     "**추가 정보 서류(사업자등록증·통장사본 등):**\n" +
-                    "`POST /v1/common/images?type=CREATOR_DOCUMENT` (인증 불필요)\n\n" +
+                    "`POST /v1/common/images?type=CREATOR_DOCUMENT` (jpg, jpeg, png, pdf / 최대 20MB, 인증 불필요)\n\n" +
                     "**권한:** CREATOR\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
