@@ -17,10 +17,10 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.admin.creator.dto.CreatorApplicationDetailResponse;
+import showroomz.api.admin.creator.dto.CreatorApplicationListResponse;
 import showroomz.api.admin.creator.dto.CreatorApplicationRejectRequest;
-import showroomz.api.admin.creator.dto.CreatorApplicationResponse;
+import showroomz.api.admin.creator.dto.CreatorApplicationSearchCondition;
 import showroomz.api.app.auth.DTO.ErrorResponse;
-import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "Admin - Creator Application", description = "크리에이터 지원서 관리 API")
@@ -30,13 +30,17 @@ public interface AdminCreatorApplicationControllerDocs {
     @Operation(
             summary = "크리에이터 지원서 목록 조회",
             description = "관리자용 크리에이터 지원서 페이징 목록을 조회합니다.\n\n" +
+                    "**필터:**\n" +
+                    "- `status`: PENDING(심사대기) / APPROVED(승인) / REJECTED(반려) / 미입력(전체)\n\n" +
+                    "**검색:**\n" +
+                    "- `keyword`: 활동명·계정 아이디를 한 번에 부분 일치(OR) 검색\n\n" +
+                    "**응답:** 목록 + 페이징 + 상태별 건수(`statusCounts`, 검색어 반영·상태 필터 미반영)\n\n" +
                     "**정렬:** 신청일 최신순 (createdAt 내림차순)\n\n" +
                     "**권한:** ADMIN\n" +
-                    "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
-                    "**페이징 파라미터:**\n" +
-                    "- page: 페이지 번호 (1부터 시작, 기본값: 1)\n" +
-                    "- size: 페이지당 항목 수 (기본값: 20)",
+                    "**요청 헤더:** Authorization: Bearer {accessToken}",
             parameters = {
+                    @Parameter(name = "status", description = "신청 상태 (미입력 시 전체)", example = "PENDING", in = ParameterIn.QUERY),
+                    @Parameter(name = "keyword", description = "활동명·계정 아이디 통합 검색어", example = "뷰티마스터", in = ParameterIn.QUERY),
                     @Parameter(name = "page", description = "페이지 번호 (1부터 시작)", example = "1", in = ParameterIn.QUERY),
                     @Parameter(name = "size", description = "페이지당 항목 수", example = "20", in = ParameterIn.QUERY)
             }
@@ -47,7 +51,7 @@ public interface AdminCreatorApplicationControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = PageResponse.class),
+                            schema = @Schema(implementation = CreatorApplicationListResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "지원서 목록 조회 예시",
@@ -55,7 +59,7 @@ public interface AdminCreatorApplicationControllerDocs {
                                                     "  \"content\": [\n" +
                                                     "    {\n" +
                                                     "      \"applicationId\": 12,\n" +
-                                                    "      \"nickname\": \"뷰티마스터\",\n" +
+                                                    "      \"activityName\": \"뷰티마스터\",\n" +
                                                     "      \"email\": \"business@creator.com\",\n" +
                                                     "      \"snsType\": \"YOUTUBE\",\n" +
                                                     "      \"channelUrl\": \"https://youtube.com/c/example\",\n" +
@@ -65,19 +69,6 @@ public interface AdminCreatorApplicationControllerDocs {
                                                     "      \"processedAt\": null,\n" +
                                                     "      \"status\": \"PENDING\",\n" +
                                                     "      \"rejectReason\": null\n" +
-                                                    "    },\n" +
-                                                    "    {\n" +
-                                                    "      \"applicationId\": 11,\n" +
-                                                    "      \"nickname\": \"패션크리에이터\",\n" +
-                                                    "      \"email\": \"contact@creator.com\",\n" +
-                                                    "      \"snsType\": \"INSTAGRAM\",\n" +
-                                                    "      \"channelUrl\": \"https://instagram.com/example\",\n" +
-                                                    "      \"accountId\": \"example\",\n" +
-                                                    "      \"followerCount\": 82000,\n" +
-                                                    "      \"appliedAt\": \"2024-02-20T09:30:00\",\n" +
-                                                    "      \"processedAt\": \"2024-02-21T10:00:00\",\n" +
-                                                    "      \"status\": \"REJECTED\",\n" +
-                                                    "      \"rejectReason\": \"팔로워 수 기준 미달 - 제출하신 채널의 팔로워 수가 기준에 미달합니다.\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
@@ -86,6 +77,12 @@ public interface AdminCreatorApplicationControllerDocs {
                                                     "    \"totalResults\": 15,\n" +
                                                     "    \"size\": 20,\n" +
                                                     "    \"hasNext\": false\n" +
+                                                    "  },\n" +
+                                                    "  \"statusCounts\": {\n" +
+                                                    "    \"all\": 42,\n" +
+                                                    "    \"pending\": 10,\n" +
+                                                    "    \"approved\": 25,\n" +
+                                                    "    \"rejected\": 7\n" +
                                                     "  }\n" +
                                                     "}"
                                     )
@@ -107,7 +104,8 @@ public interface AdminCreatorApplicationControllerDocs {
                     )
             )
     })
-    ResponseEntity<PageResponse<CreatorApplicationResponse>> getApplications(
+    ResponseEntity<CreatorApplicationListResponse> getApplications(
+            @ParameterObject @ModelAttribute CreatorApplicationSearchCondition condition,
             @ParameterObject @ModelAttribute PagingRequest pagingRequest);
 
     @Operation(

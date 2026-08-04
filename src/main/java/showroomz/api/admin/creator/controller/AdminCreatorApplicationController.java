@@ -6,11 +6,11 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.admin.creator.dto.CreatorApplicationDetailResponse;
+import showroomz.api.admin.creator.dto.CreatorApplicationListResponse;
 import showroomz.api.admin.creator.dto.CreatorApplicationRejectRequest;
-import showroomz.api.admin.creator.dto.CreatorApplicationResponse;
+import showroomz.api.admin.creator.dto.CreatorApplicationSearchCondition;
 import showroomz.api.admin.creator.docs.AdminCreatorApplicationControllerDocs;
 import showroomz.api.creator.auth.service.CreatorApplicationService;
-import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
 @RestController
@@ -22,9 +22,10 @@ public class AdminCreatorApplicationController implements AdminCreatorApplicatio
 
     @Override
     @GetMapping
-    public ResponseEntity<PageResponse<CreatorApplicationResponse>> getApplications(
+    public ResponseEntity<CreatorApplicationListResponse> getApplications(
+            @ParameterObject @ModelAttribute CreatorApplicationSearchCondition condition,
             @ParameterObject @ModelAttribute PagingRequest pagingRequest) {
-        return ResponseEntity.ok(creatorApplicationService.getApplications(pagingRequest));
+        return ResponseEntity.ok(creatorApplicationService.getApplications(condition, pagingRequest));
     }
 
     @Override

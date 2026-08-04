@@ -6,8 +6,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.creator.dto.CreatorApplicationDetailResponse;
 import showroomz.api.admin.creator.dto.CreatorApplicationDetailResponse.ProcessingHistoryItem;
+import showroomz.api.admin.creator.dto.CreatorApplicationListResponse;
 import showroomz.api.admin.creator.dto.CreatorApplicationRejectRequest;
 import showroomz.api.admin.creator.dto.CreatorApplicationResponse;
+import showroomz.api.admin.creator.dto.CreatorApplicationSearchCondition;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.creator.auth.DTO.CreatorApplicationRequest;
@@ -20,7 +22,7 @@ import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.creator.repository.CreatorApplicationRepository;
 import showroomz.domain.member.creator.type.CreatorApplicationStatus;
 import showroomz.domain.member.user.entity.Users;
-import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PaginationInfo;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -92,11 +94,57 @@ public class CreatorApplicationService {
                 });
     }
 
-    public PageResponse<CreatorApplicationResponse> getApplications(PagingRequest pagingRequest) {
-        Page<CreatorApplicationResponse> page = creatorApplicationRepository
-                .findAllWithUser(pagingRequest.toPageable())
-                .map(CreatorApplicationResponse::new);
-        return new PageResponse<>(page);
+    public CreatorApplicationListResponse getApplications(
+            CreatorApplicationSearchCondition condition,
+            PagingRequest pagingRequest) {
+
+        String keyword = normalizeKeyword(condition.getKeyword());
+
+        Page<CreatorApplication> applicationPage = creatorApplicationRepository.search(
+                condition.getStatus(),
+                keyword,
+                pagingRequest.toPageable()
+        );
+
+        List<CreatorApplicationResponse> content = applicationPage.getContent().stream()
+                .map(CreatorApplicationResponse::new)
+                .toList();
+
+        return CreatorApplicationListResponse.builder()
+                .content(content)
+                .pageInfo(new PaginationInfo(applicationPage))
+                .statusCounts(buildStatusCounts(keyword))
+                .build();
+    }
+
+    private CreatorApplicationListResponse.StatusCounts buildStatusCounts(String keyword) {
+        long pending = 0L;
+        long approved = 0L;
+        long rejected = 0L;
+
+        for (Object[] row : creatorApplicationRepository.countByStatus(keyword)) {
+            CreatorApplicationStatus status = (CreatorApplicationStatus) row[0];
+            long count = ((Number) row[1]).longValue();
+            switch (status) {
+                case PENDING -> pending = count;
+                case APPROVED -> approved = count;
+                case REJECTED -> rejected = count;
+            }
+        }
+
+        return CreatorApplicationListResponse.StatusCounts.builder()
+                .all(pending + approved + rejected)
+                .pending(pending)
+                .approved(approved)
+                .rejected(rejected)
+                .build();
+    }
+
+    private static String normalizeKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+        return keyword.trim();
     }
 
     public CreatorApplicationDetailResponse getApplicationDetail(Long applicationId) {
