@@ -41,11 +41,23 @@ public class CreatorApplication extends BaseTimeEntity {
     @Column(name = "ACCOUNT_ID", nullable = false, length = 100)
     private String accountId;
 
-    @Column(name = "FOLLOWER_COUNT", nullable = false)
+    @Column(name = "FOLLOWER_COUNT")
     private Integer followerCount;
 
-    @Column(name = "BUSINESS_EMAIL", nullable = false, length = 512)
+    @Column(name = "BUSINESS_EMAIL", length = 512)
     private String businessEmail;
+
+    /** 신청 시 실명 (반려 시 파기) */
+    @Column(name = "REAL_NAME", length = 64)
+    private String realName;
+
+    /** 신청 시 생년월일 YYYY-MM-DD (반려 시 파기) */
+    @Column(name = "BIRTHDAY", length = 10)
+    private String birthday;
+
+    /** 신청 시 연락처 (반려 시 일방향 해시로 치환) */
+    @Column(name = "PHONE_NUMBER", length = 128)
+    private String phoneNumber;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "STATUS", nullable = false, length = 20)
@@ -53,6 +65,9 @@ public class CreatorApplication extends BaseTimeEntity {
 
     @Column(name = "PROCESSED_AT")
     private LocalDateTime processedAt;
+
+    @Column(name = "PROCESSOR_EMAIL", length = 512)
+    private String processorEmail;
 
     @Column(name = "REJECT_REASON", length = 500)
     private String rejectReason;
@@ -69,7 +84,10 @@ public class CreatorApplication extends BaseTimeEntity {
             String channelUrl,
             String accountId,
             Integer followerCount,
-            String businessEmail) {
+            String businessEmail,
+            String realName,
+            String birthday,
+            String phoneNumber) {
         return CreatorApplication.builder()
                 .user(user)
                 .snsType(snsType)
@@ -77,21 +95,37 @@ public class CreatorApplication extends BaseTimeEntity {
                 .accountId(accountId)
                 .followerCount(followerCount)
                 .businessEmail(businessEmail)
+                .realName(realName)
+                .birthday(birthday)
+                .phoneNumber(phoneNumber)
                 .status(CreatorApplicationStatus.PENDING)
                 .build();
     }
 
-    public void approve() {
+    public void approve(String processorEmail) {
         this.status = CreatorApplicationStatus.APPROVED;
         this.processedAt = LocalDateTime.now();
+        this.processorEmail = processorEmail;
     }
 
-    public void reject(String rejectReasonType, String rejectReasonDetail, String rejectReason) {
+    public void reject(String rejectReasonType, String rejectReasonDetail, String rejectReason, String processorEmail) {
         this.status = CreatorApplicationStatus.REJECTED;
         this.rejectReasonType = rejectReasonType;
         this.rejectReasonDetail = rejectReasonDetail;
         this.rejectReason = rejectReason;
         this.processedAt = LocalDateTime.now();
+        this.processorEmail = processorEmail;
+    }
+
+    /**
+     * 반려 후 개인정보 파기: 실명·생년월일·팔로워 수·업무용 이메일 삭제, 연락처는 일방향 해시만 보존
+     */
+    public void purgePersonalData(String phoneNumberHash) {
+        this.realName = null;
+        this.birthday = null;
+        this.followerCount = null;
+        this.businessEmail = null;
+        this.phoneNumber = phoneNumberHash;
     }
 
     /** 반려 처리일 기준 재신청 가능 일시 (처리일 없으면 신청일 기준) */

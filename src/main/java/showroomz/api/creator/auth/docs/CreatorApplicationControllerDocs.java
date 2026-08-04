@@ -42,6 +42,7 @@ public interface CreatorApplicationControllerDocs {
                                             name = "반려된 지원서",
                                             value = "{\n" +
                                                     "  \"applicationId\": 12,\n" +
+                                                    "  \"name\": \"홍길동\",\n" +
                                                     "  \"snsType\": \"INSTAGRAM\",\n" +
                                                     "  \"channelUrl\": \"https://instagram.com/my_channel\",\n" +
                                                     "  \"accountId\": \"my_channel\",\n" +
@@ -50,7 +51,7 @@ public interface CreatorApplicationControllerDocs {
                                                     "  \"appliedAt\": \"2026-07-20T10:00:00\",\n" +
                                                     "  \"processedAt\": \"2026-07-22T15:30:00\",\n" +
                                                     "  \"status\": \"REJECTED\",\n" +
-                                                    "  \"rejectReason\": \"팔로워 수 기준 미달 - 제출하신 채널의 팔로워 수가 기준에 미달합니다.\",\n" +
+                                                    "  \"rejectReason\": \"허위 팔로워 의심\",\n" +
                                                     "  \"reapplyAvailableAt\": \"2026-08-05T15:30:00\",\n" +
                                                     "  \"canReapply\": false\n" +
                                                     "}"

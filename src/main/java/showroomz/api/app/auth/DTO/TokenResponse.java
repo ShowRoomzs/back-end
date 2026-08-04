@@ -28,7 +28,7 @@ public class TokenResponse {
     @Schema(description = "크리에이터 로그인 시 크리에이터 권한이 아닌 경우의 사유 메시지")
     private String message;
 
-    @Schema(description = "크리에이터 신청 반려 사유 유형 (반려 계정 로그인 시)", example = "FOLLOWER_COUNT_SHORTFALL")
+    @Schema(description = "크리에이터 신청 반려 사유 유형 (반려 계정 로그인 시)", example = "SUSPECTED_FAKE_FOLLOWERS")
     private String rejectReasonType;
 
     @Schema(description = "크리에이터 신청 반려 상세 사유 (반려 계정 로그인 시)", example = "제출하신 채널의 팔로워 수가 기준에 미달합니다.")

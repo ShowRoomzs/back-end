@@ -44,6 +44,15 @@ public class Creator extends BaseTimeEntity {
     @Column(name = "BUSINESS_EMAIL", nullable = false, length = 512)
     private String businessEmail;
 
+    @Column(name = "REAL_NAME", length = 64)
+    private String realName;
+
+    @Column(name = "BIRTHDAY", length = 10)
+    private String birthday;
+
+    @Column(name = "PHONE_NUMBER", length = 20)
+    private String phoneNumber;
+
     @Column(name = "IS_NEW_MEMBER", nullable = false)
     @Builder.Default
     private Boolean isNewMember = true;

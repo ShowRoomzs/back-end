@@ -116,9 +116,10 @@ public class SellerSignUpRequest {
     private String mailOrderRegNumberSeq;
 
     // 5. 정산 정보
-    @NotBlank(message = "은행명을 선택해주세요.")
-    @Schema(description = "정산 계좌 은행명", example = "국민은행")
-    private String bankName;
+    @NotBlank(message = "은행 코드는 필수 입력값입니다.")
+    @Pattern(regexp = "^\\d{3}$", message = "은행 코드는 3자리 숫자여야 합니다.")
+    @Schema(description = "은행 표준 코드 (GET /v1/common/banks 조회)", example = "004")
+    private String bankCode;
 
     @NotBlank(message = "예금주명을 입력해주세요.")
     @Schema(description = "정산 계좌 예금주명 (법인일 경우 법인명)", example = "홍길동")

@@ -23,6 +23,8 @@ import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.admin.market.type.RejectionReasonType;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.api.seller.market.service.MarketService;
+import showroomz.domain.bank.entity.Bank;
+import showroomz.domain.bank.repository.BankRepository;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
@@ -46,6 +48,7 @@ public class SellerService {
     private final MarketRepository marketRepository;
     private final MarketService marketService;
     private final SellerApplicationRepository sellerApplicationRepository;
+    private final BankRepository bankRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthTokenProvider tokenProvider;
     private final AppProperties appProperties;
@@ -223,7 +226,10 @@ public class SellerService {
             seller.setMailOrderRegNumber(formattedRegNum);
         }
 
-        seller.setBankName(request.getBankName());
+        Bank bank = bankRepository.findById(request.getBankCode())
+                .orElseThrow(() -> new BusinessException(ErrorCode.BANK_NOT_FOUND));
+
+        seller.setBankName(bank.getName());
         seller.setAccountHolder(request.getAccountHolder());
         seller.setAccountNumber(request.getAccountNumber());
         seller.setBankbookImageUrl(request.getBankbookImageUrl());

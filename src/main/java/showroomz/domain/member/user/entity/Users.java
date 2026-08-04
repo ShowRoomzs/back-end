@@ -173,5 +173,15 @@ public class Users {
     public void updateRoleType(RoleType newRoleType) {
         this.roleType = newRoleType;
     }
+
+    /**
+     * 크리에이터 입점 신청 반려 시 약관 동의 이력을 파기합니다.
+     * (실명·생년월일·연락처는 CreatorApplication에서 파기/해시)
+     */
+    public void purgeAgreementsOnCreatorRejection() {
+        this.serviceAgree = false;
+        this.privacyAgree = false;
+        this.marketingAgree = false;
+    }
 }
 

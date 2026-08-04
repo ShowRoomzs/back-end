@@ -308,7 +308,7 @@ public class AdminMarketDto {
         @Schema(description = "통신판매업 신고번호", example = "2024-서울강남-01234")
         private String mailOrderRegNumber;
 
-        @Schema(description = "은행명", example = "국민은행")
+        @Schema(description = "은행명 (가입 시 bankCode로 조회한 은행명)", example = "KB국민은행")
         private String bankName;
 
         @Schema(description = "예금주명", example = "홍길동")

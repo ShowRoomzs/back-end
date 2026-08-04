@@ -33,6 +33,8 @@ public class ImageService {
 
     private static final long MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "gif");
+    /** 브랜드·인플루언서 가입/추가정보 서류 */
+    private static final List<String> DOCUMENT_ALLOWED_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "pdf");
 
     public ImageUploadResponse uploadImage(MultipartFile file, ImageType type) {
         // 1. 파일 존재 여부 확인
@@ -52,7 +54,7 @@ public class ImageService {
         }
 
         String extension = getFileExtension(originalFilename);
-        if (!ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
+        if (!getAllowedExtensions(type).contains(extension.toLowerCase())) {
             throw new BusinessException(ErrorCode.INVALID_FILE_EXTENSION);
         }
 
@@ -73,6 +75,13 @@ public class ImageService {
             throw new BusinessException(ErrorCode.FILE_UPLOAD_ERROR);
         }
         // uploadToS3 내부에서 발생하는 BusinessException(S3 관련)은 그대로 전파됨
+    }
+
+    private List<String> getAllowedExtensions(ImageType type) {
+        if (type == ImageType.SIGNUP_DOCUMENT || type == ImageType.CREATOR_DOCUMENT) {
+            return DOCUMENT_ALLOWED_EXTENSIONS;
+        }
+        return ALLOWED_EXTENSIONS;
     }
 
     private String getFileExtension(String filename) {

@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
@@ -14,20 +15,21 @@ import showroomz.domain.member.creator.type.CreatorBusinessType;
 public class CreatorCompleteRegistrationRequest {
 
     @NotBlank(message = "쇼룸명은 필수 입력값입니다.")
+    @Size(min = 2, max = 20, message = "쇼룸명은 2~20자로 입력해주세요.")
     @Pattern(
-            regexp = "^([가-힣0-9]+|[a-zA-Z0-9]+)$",
-            message = "쇼룸명은 공백과 특수문자를 사용할 수 없으며, 한글 또는 영문 중 하나만 사용해야 합니다."
+            regexp = "^[가-힣a-zA-Z0-9 ]+$",
+            message = "쇼룸명은 한글·영문·숫자·공백만 사용할 수 있습니다."
     )
-    @Schema(description = "쇼룸명 (중복 불가)", example = "myshowroom")
+    @Schema(description = "쇼룸명 (2~20자, 한글·영문·숫자·공백만, 중복 불가)", example = "마이 쇼룸")
     private String showroomName;
 
     @NotNull(message = "사업자 여부는 필수 입력값입니다.")
     @Schema(
-            description = "사업자 여부 (INDIVIDUAL: 개인/비사업자, BUSINESS: 개인사업자/법인)",
-            example = "BUSINESS",
+            description = "사업자 여부 (기본값 INDIVIDUAL: 개인/비사업자, BUSINESS: 개인사업자/법인)",
+            example = "INDIVIDUAL",
             allowableValues = {"INDIVIDUAL", "BUSINESS"}
     )
-    private CreatorBusinessType businessType;
+    private CreatorBusinessType businessType = CreatorBusinessType.INDIVIDUAL;
 
     @Pattern(
             regexp = "^\\d{3}-\\d{2}-\\d{5}$",
@@ -39,13 +41,17 @@ public class CreatorCompleteRegistrationRequest {
     @Schema(description = "사업자등록증 URL (사업자 선택 시 필수)", example = "https://s3.../license.jpg")
     private String businessLicenseImageUrl;
 
-    @NotBlank(message = "은행명은 필수 입력값입니다.")
-    @Schema(description = "은행명", example = "국민은행")
-    private String bankName;
+    @NotBlank(message = "은행 코드는 필수 입력값입니다.")
+    @Size(min = 3, max = 3, message = "은행 코드는 3자리여야 합니다.")
+    @Schema(description = "은행 표준 코드 (GET /v1/common/banks 조회)", example = "004")
+    private String bankCode;
 
     @NotBlank(message = "계좌번호는 필수 입력값입니다.")
-    @Pattern(regexp = "^[0-9]+$", message = "계좌번호는 하이픈 없이 숫자만 입력해주세요.")
-    @Schema(description = "계좌번호 (하이픈 없이 숫자만)", example = "12345678901234")
+    @Pattern(
+            regexp = "^[0-9]{10,16}$",
+            message = "계좌번호는 하이픈 없이 숫자 10~16자리로 입력해주세요."
+    )
+    @Schema(description = "계좌번호 (하이픈 없이 숫자 10~16자리)", example = "12345678901234")
     private String accountNumber;
 
     @NotBlank(message = "통장 사본 URL은 필수 입력값입니다.")

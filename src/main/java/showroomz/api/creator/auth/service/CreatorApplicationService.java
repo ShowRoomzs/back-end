@@ -4,12 +4,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.admin.creator.dto.CreatorApplicationDetailResponse;
+import showroomz.api.admin.creator.dto.CreatorApplicationDetailResponse.ProcessingHistoryItem;
+import showroomz.api.admin.creator.dto.CreatorApplicationListResponse;
 import showroomz.api.admin.creator.dto.CreatorApplicationRejectRequest;
 import showroomz.api.admin.creator.dto.CreatorApplicationResponse;
+import showroomz.api.admin.creator.dto.CreatorApplicationSearchCondition;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.creator.auth.DTO.CreatorApplicationRequest;
 import showroomz.api.creator.auth.DTO.MyCreatorApplicationResponse;
+import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.domain.history.entity.CreatorApplicationHistory;
 import showroomz.domain.history.repository.CreatorApplicationHistoryRepository;
 import showroomz.domain.member.creator.entity.Creator;
@@ -17,14 +22,17 @@ import showroomz.domain.member.creator.entity.CreatorApplication;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.creator.repository.CreatorApplicationRepository;
 import showroomz.domain.member.creator.type.CreatorApplicationStatus;
+import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.member.user.entity.Users;
-import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.service.MailService;
+import showroomz.global.utils.BusinessRegistrationNumberHasher;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +44,7 @@ public class CreatorApplicationService {
     private final CreatorRepository creatorRepository;
     private final MailService mailService;
     private final CreatorApplicationHistoryRepository applicationHistoryRepository;
+    private final SellerRepository sellerRepository;
 
     @Transactional
     public void apply(Long userId, CreatorApplicationRequest request) {
@@ -60,7 +69,11 @@ public class CreatorApplicationService {
                 request.getChannelUrl(),
                 request.getAccountId(),
                 request.getFollowerCount(),
-                request.getBusinessEmail()
+                request.getBusinessEmail(),
+                // 본인인증 연동 전: 신청서에 더미 본인인증 정보 저장
+                CreatorApplicationDetailResponse.DUMMY_REAL_NAME,
+                CreatorApplicationDetailResponse.DUMMY_BIRTHDAY,
+                CreatorApplicationDetailResponse.DUMMY_PHONE_NUMBER
         );
 
         user.setServiceAgree(Boolean.TRUE.equals(request.getAgreeTermsOfService()));
@@ -88,15 +101,125 @@ public class CreatorApplicationService {
                 });
     }
 
-    public PageResponse<CreatorApplicationResponse> getApplications(PagingRequest pagingRequest) {
-        Page<CreatorApplicationResponse> page = creatorApplicationRepository
-                .findAllWithUser(pagingRequest.toPageable())
-                .map(CreatorApplicationResponse::new);
-        return new PageResponse<>(page);
+    public CreatorApplicationListResponse getApplications(
+            CreatorApplicationSearchCondition condition,
+            PagingRequest pagingRequest) {
+
+        String keyword = normalizeKeyword(condition.getKeyword());
+
+        Page<CreatorApplication> applicationPage = creatorApplicationRepository.search(
+                condition.getStatus(),
+                keyword,
+                pagingRequest.toPageable()
+        );
+
+        List<CreatorApplicationResponse> content = applicationPage.getContent().stream()
+                .map(CreatorApplicationResponse::new)
+                .toList();
+
+        return new CreatorApplicationListResponse(
+                content,
+                applicationPage,
+                buildStatusCounts(keyword)
+        );
+    }
+
+    private CreatorApplicationListResponse.StatusCounts buildStatusCounts(String keyword) {
+        long pending = 0L;
+        long approved = 0L;
+        long rejected = 0L;
+
+        for (Object[] row : creatorApplicationRepository.countByStatus(keyword)) {
+            CreatorApplicationStatus status = (CreatorApplicationStatus) row[0];
+            long count = ((Number) row[1]).longValue();
+            switch (status) {
+                case PENDING -> pending = count;
+                case APPROVED -> approved = count;
+                case REJECTED -> rejected = count;
+            }
+        }
+
+        return CreatorApplicationListResponse.StatusCounts.builder()
+                .all(pending + approved + rejected)
+                .pending(pending)
+                .approved(approved)
+                .rejected(rejected)
+                .build();
+    }
+
+    private static String normalizeKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+        return keyword.trim();
+    }
+
+    public CreatorApplicationDetailResponse getApplicationDetail(Long applicationId) {
+        CreatorApplication application = creatorApplicationRepository.findByIdWithUser(applicationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPLICATION_NOT_FOUND));
+
+        Users user = application.getUser();
+        boolean rejected = application.getStatus() == CreatorApplicationStatus.REJECTED;
+
+        return CreatorApplicationDetailResponse.builder()
+                .applicationId(application.getId())
+                .status(application.getStatus())
+                .appliedAt(application.getCreatedAt())
+                .processedAt(application.getProcessedAt())
+                .processorEmail(application.getProcessorEmail())
+                .rejectReasonType(application.getRejectReasonType())
+                .rejectReasonDetail(application.getRejectReasonDetail())
+                .name(rejected ? null : application.getRealName())
+                .birthday(rejected ? null : application.getBirthday())
+                .phoneNumber(rejected ? null : application.getPhoneNumber())
+                .phoneNumberHash(rejected ? application.getPhoneNumber() : null)
+                .verificationMethod(CreatorApplicationDetailResponse.VERIFICATION_METHOD_PASS)
+                .verificationMethodLabel(CreatorApplicationDetailResponse.VERIFICATION_METHOD_PASS_LABEL)
+                .snsType(application.getSnsType())
+                .channelUrl(application.getChannelUrl())
+                .accountId(application.getAccountId())
+                .followerCount(application.getFollowerCount())
+                .businessEmail(application.getBusinessEmail())
+                .marketingAgree(rejected ? null : user.isMarketingAgree())
+                .processingHistory(buildProcessingHistory(application))
+                .build();
+    }
+
+    private List<ProcessingHistoryItem> buildProcessingHistory(CreatorApplication application) {
+        List<ProcessingHistoryItem> history = new ArrayList<>();
+
+        history.add(ProcessingHistoryItem.builder()
+                .type("APPLICATION_RECEIVED")
+                .label("신청 접수")
+                .processedAt(application.getCreatedAt())
+                .build());
+
+        List<CreatorApplicationHistory> statusHistories =
+                applicationHistoryRepository.findByApplication_IdOrderByCreatedAtAsc(application.getId());
+
+        for (CreatorApplicationHistory statusHistory : statusHistories) {
+            if (statusHistory.getNewStatus() == CreatorApplicationStatus.APPROVED) {
+                history.add(ProcessingHistoryItem.builder()
+                        .type("APPLICATION_APPROVED")
+                        .label("승인 처리")
+                        .processedAt(statusHistory.getCreatedAt())
+                        .processorEmail(statusHistory.getProcessorEmail())
+                        .build());
+            } else if (statusHistory.getNewStatus() == CreatorApplicationStatus.REJECTED) {
+                history.add(ProcessingHistoryItem.builder()
+                        .type("APPLICATION_REJECTED")
+                        .label("반려 처리")
+                        .processedAt(statusHistory.getCreatedAt())
+                        .processorEmail(statusHistory.getProcessorEmail())
+                        .build());
+            }
+        }
+
+        return history;
     }
 
     @Transactional
-    public void approve(Long applicationId) {
+    public void approve(Long applicationId, Long adminUserId) {
         CreatorApplication application = creatorApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.APPLICATION_NOT_FOUND));
 
@@ -104,9 +227,10 @@ public class CreatorApplicationService {
             throw new BusinessException(ErrorCode.INVALID_APPLICATION_STATUS);
         }
 
+        String processorEmail = resolveProcessorEmail(adminUserId);
         CreatorApplicationStatus previousStatus = application.getStatus();
 
-        application.approve();
+        application.approve(processorEmail);
 
         Users user = application.getUser();
         user.updateRoleType(RoleType.CREATOR);
@@ -118,6 +242,9 @@ public class CreatorApplicationService {
                 .accountId(application.getAccountId())
                 .followerCount(application.getFollowerCount())
                 .businessEmail(application.getBusinessEmail())
+                .realName(application.getRealName())
+                .birthday(application.getBirthday())
+                .phoneNumber(application.getPhoneNumber())
                 .isNewMember(true)
                 .build();
         creatorRepository.save(creator);
@@ -126,6 +253,7 @@ public class CreatorApplicationService {
                 .application(application)
                 .previousStatus(previousStatus)
                 .newStatus(CreatorApplicationStatus.APPROVED)
+                .processorEmail(processorEmail)
                 .build());
 
         mailService.sendCreatorApprovalEmail(
@@ -136,7 +264,7 @@ public class CreatorApplicationService {
     }
 
     @Transactional
-    public void reject(Long applicationId, CreatorApplicationRejectRequest request) {
+    public void reject(Long applicationId, CreatorApplicationRejectRequest request, Long adminUserId) {
         CreatorApplication application = creatorApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.APPLICATION_NOT_FOUND));
 
@@ -144,6 +272,7 @@ public class CreatorApplicationService {
             throw new BusinessException(ErrorCode.INVALID_APPLICATION_STATUS);
         }
 
+        String processorEmail = resolveProcessorEmail(adminUserId);
         CreatorApplicationStatus previousStatus = application.getStatus();
 
         String reasonSummary = request.getRejectReasonType().getDescription();
@@ -157,24 +286,37 @@ public class CreatorApplicationService {
         application.reject(
                 request.getRejectReasonType().name(),
                 reasonDetail,
-                fullRejectReason
+                fullRejectReason,
+                processorEmail
         );
+
+        Users user = application.getUser();
+        String phoneHash = BusinessRegistrationNumberHasher.hash(application.getPhoneNumber());
+        user.purgeAgreementsOnCreatorRejection();
+        application.purgePersonalData(phoneHash);
 
         applicationHistoryRepository.save(CreatorApplicationHistory.builder()
                 .application(application)
                 .previousStatus(previousStatus)
                 .newStatus(CreatorApplicationStatus.REJECTED)
                 .reason(fullRejectReason)
+                .processorEmail(processorEmail)
                 .build());
+    }
 
-        Users user = application.getUser();
-        mailService.sendCreatorRejectionEmail(
-                application.getBusinessEmail(),
-                user.getNickname(),
-                application.getProcessedAt(),
-                reasonSummary,
-                reasonDetail
-        );
+    private String resolveProcessorEmail(Long adminUserId) {
+        if (adminUserId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        // 관리자(SUPER/ADMIN/SELLER)는 Seller 테이블에 존재
+        Seller admin = sellerRepository.findById(adminUserId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (admin.getEmail() == null || admin.getEmail().isBlank()) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        return admin.getEmail();
     }
 
     private void validateRequiredAgreements(CreatorApplicationRequest request) {

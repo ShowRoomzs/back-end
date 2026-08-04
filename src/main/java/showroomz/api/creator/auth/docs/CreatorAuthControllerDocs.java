@@ -18,6 +18,7 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.SocialLoginRequest;
 import showroomz.api.app.auth.DTO.TokenResponse;
 import showroomz.api.creator.auth.DTO.CreatorCompleteRegistrationRequest;
+import showroomz.api.creator.auth.DTO.CreatorRegistrationInfoResponse;
 import showroomz.api.creator.auth.DTO.ShowroomNameCheckResponse;
 
 @Tag(name = "Creator - Auth", description = "크리에이터 인증/추가정보 API")
@@ -82,7 +83,7 @@ public interface CreatorAuthControllerDocs {
                                             name = "신청 반려 (반려 사유·재신청일)",
                                             value = "{\n" +
                                                     "  \"code\": \"ACCOUNT_REJECTED\",\n" +
-                                                    "  \"rejectReasonType\": \"FOLLOWER_COUNT_SHORTFALL\",\n" +
+                                                    "  \"rejectReasonType\": \"SUSPECTED_FAKE_FOLLOWERS\",\n" +
                                                     "  \"rejectReasonDetail\": \"제출하신 채널의 팔로워 수가 기준에 미달합니다.\",\n" +
                                                     "  \"reapplyAvailableAt\": \"2026-08-05T15:30:00\"\n" +
                                                     "}"
@@ -144,8 +145,8 @@ public interface CreatorAuthControllerDocs {
             summary = "쇼룸명 중복 확인",
             description = "`complete-registration`에서 사용할 쇼룸명의 형식·중복 여부를 확인합니다.\n\n" +
                     "**규칙:**\n" +
-                    "- 공백/특수문자 불가\n" +
-                    "- 한글(+숫자) 또는 영문(+숫자)만 사용 (혼용 불가)\n\n" +
+                    "- 2~20자\n" +
+                    "- 한글·영문·숫자·공백만 허용 (이모지·특수문자 불가)\n\n" +
                     "**응답:**\n" +
                     "- `isAvailable`: true면 사용 가능\n" +
                     "- `code`: `AVAILABLE` / `DUPLICATE` / `INVALID_FORMAT`\n" +
@@ -180,7 +181,7 @@ public interface CreatorAuthControllerDocs {
                                             value = "{\n" +
                                                     "  \"isAvailable\": false,\n" +
                                                     "  \"code\": \"INVALID_FORMAT\",\n" +
-                                                    "  \"message\": \"쇼룸명은 공백과 특수문자를 사용할 수 없으며, 한글 또는 영문 중 하나만 사용해야 합니다.\"\n" +
+                                                    "  \"message\": \"쇼룸명은 2~20자, 한글·영문·숫자·공백만 사용할 수 있습니다.\"\n" +
                                                     "}"
                                     )
                             }
@@ -197,19 +198,72 @@ public interface CreatorAuthControllerDocs {
     );
 
     @Operation(
+            summary = "추가 정보 입력용 계정·본인확인 정보 조회",
+            description = "관리자 승인 후 소셜 로그인에서 받은 `registerToken`으로 계정 아이디·본인확인 실명을 조회합니다.\n\n" +
+                    "**요청 헤더:** `Authorization: Bearer {registerToken}`\n\n" +
+                    "**응답:**\n" +
+                    "- `accountId`: 신청 시 등록한 SNS 계정 아이디\n" +
+                    "- `realName`: 본인확인 실명\n\n" +
+                    "**권한:** registerToken (추가 정보 미입력 상태만)"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CreatorRegistrationInfoResponse.class),
+                            examples = @ExampleObject(
+                                    name = "성공",
+                                    value = "{\n" +
+                                            "  \"accountId\": \"my_channel\",\n" +
+                                            "  \"realName\": \"홍길동\"\n" +
+                                            "}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "이미 추가 정보 등록 완료",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "이미 등록 완료",
+                                    value = "{\"code\": \"ALREADY_REGISTERED\", \"message\": \"이미 회원가입이 완료된 사용자입니다.\"}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "registerToken 누락 또는 만료",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "토큰 만료",
+                                    value = "{\"code\": \"UNAUTHORIZED\", \"message\": \"회원가입 유효 시간이 만료되었습니다. 다시 로그인해주세요.\"}"
+                            )
+                    )
+            )
+    })
+    @SecurityRequirement(name = "Authorization")
+    ResponseEntity<CreatorRegistrationInfoResponse> getRegistrationInfo(HttpServletRequest request);
+
+    @Operation(
             summary = "크리에이터 추가 정보 입력 (승인 후 최초)",
             description = "관리자 승인 후 크리에이터 소셜 로그인에서 받은 `registerToken`으로 추가 정보를 등록합니다.\n\n" +
                     "**요청 헤더:** `Authorization: Bearer {registerToken}`\n\n" +
                     "**필수 필드:**\n" +
-                    "- `showroomName`: 쇼룸명 (중복 불가, 사전 확인: `GET /v1/creator/auth/check-showroom-name`)\n" +
-                    "- `businessType`: `INDIVIDUAL`(개인/비사업자) 또는 `BUSINESS`(개인사업자/법인)\n" +
-                    "- `bankName`: 은행명\n" +
-                    "- `accountNumber`: 계좌번호 (하이픈 없이 숫자만)\n" +
+                    "- `showroomName`: 쇼룸명 (2~20자, 한글·영문·숫자·공백만, 중복 불가, 사전 확인: `GET /v1/creator/auth/check-showroom-name`)\n" +
+                    "- `businessType`: `INDIVIDUAL`(개인/비사업자, 기본값) 또는 `BUSINESS`(개인사업자/법인)\n" +
+                    "- `bankCode`: 은행 표준 코드 (`GET /v1/common/banks` 조회)\n" +
+                    "- `accountNumber`: 계좌번호 (하이픈 없이 숫자 10~16자리)\n" +
                     "- `bankBookImageUrl`: 통장 사본 URL\n\n" +
                     "**사업자(`BUSINESS`) 선택 시 추가 필수:**\n" +
                     "- `businessRegistrationNumber`: 사업자등록번호 (예: 123-45-67890)\n" +
                     "- `businessLicenseImageUrl`: 사업자등록증 URL\n\n" +
-                    "**이미지 업로드:** `POST /v1/common/images?type=CREATOR_DOCUMENT` (인증 불필요)\n\n" +
+                    "**서류 업로드:** `POST /v1/common/images?type=CREATOR_DOCUMENT` (jpg, jpeg, png, pdf / 최대 20MB, 인증 불필요)\n\n" +
                     "**완료 후:** `isNewMember`가 `false`로 변경되며 access/refresh 토큰이 발급됩니다."
     )
     @ApiResponses(value = {
@@ -278,9 +332,9 @@ public interface CreatorAuthControllerDocs {
                             @ExampleObject(
                                     name = "개인(비사업자)",
                                     value = "{\n" +
-                                            "  \"showroomName\": \"myshowroom\",\n" +
+                                            "  \"showroomName\": \"마이 쇼룸\",\n" +
                                             "  \"businessType\": \"INDIVIDUAL\",\n" +
-                                            "  \"bankName\": \"국민은행\",\n" +
+                                            "  \"bankCode\": \"004\",\n" +
                                             "  \"accountNumber\": \"12345678901234\",\n" +
                                             "  \"bankBookImageUrl\": \"https://s3.../bankbook.jpg\"\n" +
                                             "}"
@@ -292,7 +346,7 @@ public interface CreatorAuthControllerDocs {
                                             "  \"businessType\": \"BUSINESS\",\n" +
                                             "  \"businessRegistrationNumber\": \"123-45-67890\",\n" +
                                             "  \"businessLicenseImageUrl\": \"https://s3.../license.jpg\",\n" +
-                                            "  \"bankName\": \"국민은행\",\n" +
+                                            "  \"bankCode\": \"004\",\n" +
                                             "  \"accountNumber\": \"12345678901234\",\n" +
                                             "  \"bankBookImageUrl\": \"https://s3.../bankbook.jpg\"\n" +
                                             "}"

@@ -15,8 +15,8 @@ public class CreatorApplicationResponse {
     @Schema(description = "지원 신청 일련번호", example = "12")
     private final Long applicationId;
 
-    @Schema(description = "유저 닉네임", example = "뷰티마스터")
-    private final String nickname;
+    @Schema(description = "활동명 (유저 닉네임)", example = "뷰티마스터")
+    private final String activityName;
 
     @Schema(description = "업무 이메일(지원서 제출 이메일)", example = "business@creator.com")
     private final String email;
@@ -47,7 +47,7 @@ public class CreatorApplicationResponse {
 
     public CreatorApplicationResponse(CreatorApplication ca) {
         this.applicationId = ca.getId();
-        this.nickname = ca.getUser().getNickname();
+        this.activityName = ca.getUser().getNickname();
         this.email = ca.getBusinessEmail();
         this.snsType = ca.getSnsType();
         this.channelUrl = ca.getChannelUrl();

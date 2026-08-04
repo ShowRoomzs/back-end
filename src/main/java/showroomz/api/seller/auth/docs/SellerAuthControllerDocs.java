@@ -193,7 +193,7 @@ public interface SellerAuthControllerDocs {
                     "- mailOrderRegNumberRegion: 선택, 통신판매업 신고번호(지역)\n" +
                     "- mailOrderRegNumberSeq: 선택, 통신판매업 신고번호(일련번호)\n\n" +
                     "**[3차] 정산 계좌 및 약관 동의:**\n" +
-                    "- bankName: 필수, 정산 은행명\n" +
+                    "- bankCode: 필수, 은행 표준 코드 (`GET /v1/common/banks` 조회, 서버에서 은행명으로 저장)\n" +
                     "- accountHolder: 필수, 예금주명\n" +
                     "- accountNumber: 필수, 계좌번호\n" +
                     "- bankbookImageUrl: 필수, 통장 사본 URL\n" +
@@ -229,7 +229,7 @@ public interface SellerAuthControllerDocs {
                                             "  \"mailOrderRegNumberYear\": \"2024\",\n" +
                                             "  \"mailOrderRegNumberRegion\": \"서울강남\",\n" +
                                             "  \"mailOrderRegNumberSeq\": \"1234\",\n" +
-                                            "  \"bankName\": \"국민은행\",\n" +
+                                            "  \"bankCode\": \"004\",\n" +
                                             "  \"accountHolder\": \"홍길동\",\n" +
                                             "  \"accountNumber\": \"123456-01-123456\",\n" +
                                             "  \"bankbookImageUrl\": \"https://s3.amazonaws.com/bucket/bankbook.jpg\",\n" +

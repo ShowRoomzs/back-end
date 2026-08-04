@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import showroomz.api.app.auth.DTO.SocialLoginRequest;
 import showroomz.api.app.auth.DTO.TokenResponse;
 import showroomz.api.creator.auth.DTO.CreatorCompleteRegistrationRequest;
+import showroomz.api.creator.auth.DTO.CreatorRegistrationInfoResponse;
 import showroomz.api.creator.auth.DTO.ShowroomNameCheckResponse;
 import showroomz.api.creator.auth.docs.CreatorAuthControllerDocs;
 import showroomz.api.creator.auth.service.CreatorAuthService;
@@ -40,6 +41,13 @@ public class CreatorAuthController implements CreatorAuthControllerDocs {
     public ResponseEntity<ShowroomNameCheckResponse> checkShowroomName(
             @RequestParam("showroomName") String showroomName) {
         return ResponseEntity.ok(creatorAuthService.checkShowroomName(showroomName));
+    }
+
+    @Override
+    @GetMapping("/registration-info")
+    public ResponseEntity<CreatorRegistrationInfoResponse> getRegistrationInfo(HttpServletRequest request) {
+        String registerToken = HeaderUtil.getAccessToken(request);
+        return ResponseEntity.ok(creatorAuthService.getRegistrationInfo(registerToken));
     }
 
     @Override

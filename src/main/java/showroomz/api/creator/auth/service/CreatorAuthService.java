@@ -14,7 +14,10 @@ import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.creator.auth.DTO.CreatorCompleteRegistrationRequest;
+import showroomz.api.creator.auth.DTO.CreatorRegistrationInfoResponse;
 import showroomz.api.creator.auth.DTO.ShowroomNameCheckResponse;
+import showroomz.domain.bank.entity.Bank;
+import showroomz.domain.bank.repository.BankRepository;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.entity.CreatorApplication;
 import showroomz.domain.member.creator.repository.CreatorApplicationRepository;
@@ -37,11 +40,14 @@ public class CreatorAuthService {
 
     private static final long REGISTER_TOKEN_EXPIRY_MSEC = 5 * 60 * 1000;
     private static final Pattern SHOWROOM_NAME_PATTERN =
-            Pattern.compile("^([가-힣0-9]+|[a-zA-Z0-9]+)$");
+            Pattern.compile("^[가-힣a-zA-Z0-9 ]{2,20}$");
+    private static final String SHOWROOM_NAME_FORMAT_MESSAGE =
+            "쇼룸명은 2~20자, 한글·영문·숫자·공백만 사용할 수 있습니다.";
 
     private final CreatorRepository creatorRepository;
     private final CreatorApplicationRepository creatorApplicationRepository;
     private final UserRepository userRepository;
+    private final BankRepository bankRepository;
     private final AuthService authService;
     private final AuthTokenProvider tokenProvider;
 
@@ -79,6 +85,39 @@ public class CreatorAuthService {
 
     @Transactional
     public TokenResponse completeRegistration(String registerTokenStr, CreatorCompleteRegistrationRequest request) {
+        Creator creator = resolveNewCreatorFromRegisterToken(registerTokenStr);
+        Users user = creator.getUser();
+
+        validateBusinessFields(request);
+        validateShowroomNameAvailable(request.getShowroomName());
+
+        Bank bank = bankRepository.findById(request.getBankCode())
+                .orElseThrow(() -> new BusinessException(ErrorCode.BANK_NOT_FOUND));
+
+        boolean isBusiness = request.getBusinessType() == CreatorBusinessType.BUSINESS;
+        creator.completeRegistration(
+                request.getShowroomName(),
+                request.getBusinessType(),
+                isBusiness ? request.getBusinessRegistrationNumber() : null,
+                isBusiness ? request.getBusinessLicenseImageUrl() : null,
+                bank.getName(),
+                request.getAccountNumber(),
+                request.getBankBookImageUrl()
+        );
+
+        return authService.generateTokens(
+                user.getUsername(),
+                user.getRoleType(),
+                user.getId(),
+                false
+        );
+    }
+
+    public CreatorRegistrationInfoResponse getRegistrationInfo(String registerTokenStr) {
+        return CreatorRegistrationInfoResponse.from(resolveNewCreatorFromRegisterToken(registerTokenStr));
+    }
+
+    private Creator resolveNewCreatorFromRegisterToken(String registerTokenStr) {
         if (registerTokenStr == null || registerTokenStr.isEmpty()) {
             throw new BusinessException(ErrorCode.REGISTER_EXPIRED);
         }
@@ -108,26 +147,7 @@ public class CreatorAuthService {
             throw new BusinessException(ErrorCode.ALREADY_REGISTERED);
         }
 
-        validateBusinessFields(request);
-        validateShowroomNameAvailable(request.getShowroomName());
-
-        boolean isBusiness = request.getBusinessType() == CreatorBusinessType.BUSINESS;
-        creator.completeRegistration(
-                request.getShowroomName(),
-                request.getBusinessType(),
-                isBusiness ? request.getBusinessRegistrationNumber() : null,
-                isBusiness ? request.getBusinessLicenseImageUrl() : null,
-                request.getBankName(),
-                request.getAccountNumber(),
-                request.getBankBookImageUrl()
-        );
-
-        return authService.generateTokens(
-                user.getUsername(),
-                user.getRoleType(),
-                user.getId(),
-                false
-        );
+        return creator;
     }
 
     public ShowroomNameCheckResponse checkShowroomName(String showroomName) {
@@ -143,7 +163,7 @@ public class CreatorAuthService {
             return new ShowroomNameCheckResponse(
                     false,
                     "INVALID_FORMAT",
-                    "쇼룸명은 공백과 특수문자를 사용할 수 없으며, 한글 또는 영문 중 하나만 사용해야 합니다."
+                    SHOWROOM_NAME_FORMAT_MESSAGE
             );
         }
 

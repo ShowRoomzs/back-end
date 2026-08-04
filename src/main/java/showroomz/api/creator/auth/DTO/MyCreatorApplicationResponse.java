@@ -12,8 +12,14 @@ import java.time.LocalDateTime;
 @Schema(description = "내 크리에이터 지원서 응답")
 public class MyCreatorApplicationResponse {
 
+    /** 본인인증 연동 전까지 사용하는 더미 실명 */
+    private static final String DUMMY_REAL_NAME = "홍길동";
+
     @Schema(description = "지원 신청 일련번호", example = "12")
     private final Long applicationId;
+
+    @Schema(description = "실명 (본인인증 연동 전 더미)", example = "홍길동")
+    private final String name;
 
     @Schema(description = "활동 SNS 플랫폼", example = "INSTAGRAM")
     private final SnsType snsType;
@@ -39,7 +45,7 @@ public class MyCreatorApplicationResponse {
     @Schema(description = "신청 상태 (PENDING, APPROVED, REJECTED)", example = "REJECTED")
     private final CreatorApplicationStatus status;
 
-    @Schema(description = "반려 사유", example = "팔로워 수 기준 미달 - 제출하신 채널의 팔로워 수가 기준에 미달합니다.")
+    @Schema(description = "반려 사유", example = "허위 팔로워 의심")
     private final String rejectReason;
 
     @Schema(description = "재신청 가능 일시 (반려 처리일 + 14일)", example = "2026-08-05T15:30:00")
@@ -50,6 +56,7 @@ public class MyCreatorApplicationResponse {
 
     public MyCreatorApplicationResponse(CreatorApplication ca, LocalDateTime reapplyAvailableAt) {
         this.applicationId = ca.getId();
+        this.name = DUMMY_REAL_NAME;
         this.snsType = ca.getSnsType();
         this.channelUrl = ca.getChannelUrl();
         this.accountId = ca.getAccountId();
