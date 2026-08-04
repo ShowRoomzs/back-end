@@ -175,12 +175,10 @@ public class Users {
     }
 
     /**
-     * 크리에이터 입점 신청 반려 시 본인인증·약관 동의 정보를 파기합니다.
-     * (연락처는 CreatorApplication에 저장·해시하므로 Users에서는 다루지 않음)
+     * 크리에이터 입점 신청 반려 시 약관 동의 이력을 파기합니다.
+     * (실명·생년월일·연락처는 CreatorApplication에서 파기/해시)
      */
-    public void purgeIdentityAndAgreementsOnCreatorRejection() {
-        this.name = null;
-        this.birthday = null;
+    public void purgeAgreementsOnCreatorRejection() {
         this.serviceAgree = false;
         this.privacyAgree = false;
         this.marketingAgree = false;

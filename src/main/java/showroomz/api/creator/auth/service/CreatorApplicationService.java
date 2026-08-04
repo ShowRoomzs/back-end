@@ -67,7 +67,9 @@ public class CreatorApplicationService {
                 request.getAccountId(),
                 request.getFollowerCount(),
                 request.getBusinessEmail(),
-                // 본인인증 연동 전: 신청서에 더미 연락처 저장 (USERS가 아닌 CREATOR_APPLICATION에 보관)
+                // 본인인증 연동 전: 신청서에 더미 본인인증 정보 저장
+                CreatorApplicationDetailResponse.DUMMY_REAL_NAME,
+                CreatorApplicationDetailResponse.DUMMY_BIRTHDAY,
                 CreatorApplicationDetailResponse.DUMMY_PHONE_NUMBER
         );
 
@@ -164,8 +166,8 @@ public class CreatorApplicationService {
                 .processorEmail(application.getProcessorEmail())
                 .rejectReasonType(application.getRejectReasonType())
                 .rejectReasonDetail(application.getRejectReasonDetail())
-                .name(rejected ? null : CreatorApplicationDetailResponse.DUMMY_REAL_NAME)
-                .birthday(rejected ? null : CreatorApplicationDetailResponse.DUMMY_BIRTHDAY)
+                .name(rejected ? null : application.getRealName())
+                .birthday(rejected ? null : application.getBirthday())
                 .phoneNumber(rejected ? null : application.getPhoneNumber())
                 .phoneNumberHash(rejected ? application.getPhoneNumber() : null)
                 .verificationMethod(CreatorApplicationDetailResponse.VERIFICATION_METHOD_PASS)
@@ -237,6 +239,9 @@ public class CreatorApplicationService {
                 .accountId(application.getAccountId())
                 .followerCount(application.getFollowerCount())
                 .businessEmail(application.getBusinessEmail())
+                .realName(application.getRealName())
+                .birthday(application.getBirthday())
+                .phoneNumber(application.getPhoneNumber())
                 .isNewMember(true)
                 .build();
         creatorRepository.save(creator);
@@ -295,7 +300,7 @@ public class CreatorApplicationService {
         );
 
         String phoneHash = BusinessRegistrationNumberHasher.hash(application.getPhoneNumber());
-        user.purgeIdentityAndAgreementsOnCreatorRejection();
+        user.purgeAgreementsOnCreatorRejection();
         application.purgePersonalData(phoneHash);
 
         applicationHistoryRepository.save(CreatorApplicationHistory.builder()
