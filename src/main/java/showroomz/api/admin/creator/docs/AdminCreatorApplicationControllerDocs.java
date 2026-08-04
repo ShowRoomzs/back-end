@@ -34,7 +34,8 @@ public interface AdminCreatorApplicationControllerDocs {
                     "- `status`: PENDING(심사대기) / APPROVED(승인) / REJECTED(반려) / 미입력(전체)\n\n" +
                     "**검색:**\n" +
                     "- `keyword`: 활동명·계정 아이디를 한 번에 부분 일치(OR) 검색\n\n" +
-                    "**응답:** 목록 + 페이징 + 상태별 건수(`statusCounts`, 검색어 반영·상태 필터 미반영)\n\n" +
+                    "**응답:** 글로벌 `PageResponse`(`content` + `pageInfo`) + 상태별 건수(`statusCounts`)\n" +
+                    "- `statusCounts`: 검색어 반영, 상태 필터 미반영\n\n" +
                     "**정렬:** 신청일 최신순 (createdAt 내림차순)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}",

@@ -5,25 +5,25 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import showroomz.global.dto.PaginationInfo;
+import org.springframework.data.domain.Page;
+import showroomz.global.dto.PageResponse;
 
 import java.util.List;
 
 @Getter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@Schema(description = "크리에이터 지원서 목록 응답 (상태별 건수 포함)")
-public class CreatorApplicationListResponse {
-
-    @Schema(description = "지원서 목록")
-    private List<CreatorApplicationResponse> content;
-
-    @Schema(description = "페이징 정보")
-    private PaginationInfo pageInfo;
+@Schema(description = "크리에이터 지원서 목록 응답 (글로벌 PageResponse + 상태별 건수)")
+public class CreatorApplicationListResponse extends PageResponse<CreatorApplicationResponse> {
 
     @Schema(description = "상태별 지원서 건수 (검색어 반영, 상태 필터 미반영)")
-    private StatusCounts statusCounts;
+    private final StatusCounts statusCounts;
+
+    public CreatorApplicationListResponse(
+            List<CreatorApplicationResponse> content,
+            Page<?> page,
+            StatusCounts statusCounts) {
+        super(content, page);
+        this.statusCounts = statusCounts;
+    }
 
     @Getter
     @Builder

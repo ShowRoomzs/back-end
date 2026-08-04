@@ -22,7 +22,6 @@ import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.creator.repository.CreatorApplicationRepository;
 import showroomz.domain.member.creator.type.CreatorApplicationStatus;
 import showroomz.domain.member.user.entity.Users;
-import showroomz.global.dto.PaginationInfo;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -110,11 +109,11 @@ public class CreatorApplicationService {
                 .map(CreatorApplicationResponse::new)
                 .toList();
 
-        return CreatorApplicationListResponse.builder()
-                .content(content)
-                .pageInfo(new PaginationInfo(applicationPage))
-                .statusCounts(buildStatusCounts(keyword))
-                .build();
+        return new CreatorApplicationListResponse(
+                content,
+                applicationPage,
+                buildStatusCounts(keyword)
+        );
     }
 
     private CreatorApplicationListResponse.StatusCounts buildStatusCounts(String keyword) {
