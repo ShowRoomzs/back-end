@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,6 +22,7 @@ import showroomz.api.admin.creator.dto.CreatorApplicationListResponse;
 import showroomz.api.admin.creator.dto.CreatorApplicationRejectRequest;
 import showroomz.api.admin.creator.dto.CreatorApplicationSearchCondition;
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "Admin - Creator Application", description = "크리에이터 지원서 관리 API")
@@ -115,8 +117,8 @@ public interface AdminCreatorApplicationControllerDocs {
                     "**포함 정보:**\n" +
                     "- 본인 인증: 실명·생년월일·연락처(더미), 인증 수단(PASS)\n" +
                     "- 플랫폼: SNS 유형, 채널 주소, 계정 아이디, 팔로워 수, 업무용 이메일, 마케팅 수신 동의\n" +
-                    "- 처리 이력: 신청 접수 / 승인 / 반려\n" +
-                    "- 심사 상태: 신청번호, 상태, 신청일\n\n" +
+                    "- 처리 이력: 신청 접수 / 승인 처리 / 반려 처리 (승인·반려 시 운영자 이메일 포함)\n" +
+                    "- 심사 상태: 신청번호, 상태, 신청일, 처리 운영자 이메일\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -132,9 +134,10 @@ public interface AdminCreatorApplicationControllerDocs {
                                             name = "입점 신청 상세 예시",
                                             value = "{\n" +
                                                     "  \"applicationId\": 12,\n" +
-                                                    "  \"status\": \"PENDING\",\n" +
+                                                    "  \"status\": \"APPROVED\",\n" +
                                                     "  \"appliedAt\": \"2026-07-13T18:04:00\",\n" +
-                                                    "  \"processedAt\": null,\n" +
+                                                    "  \"processedAt\": \"2026-07-09T11:20:00\",\n" +
+                                                    "  \"processorEmail\": \"admin@showroomz.com\",\n" +
                                                     "  \"rejectReason\": null,\n" +
                                                     "  \"name\": \"홍길동\",\n" +
                                                     "  \"birthday\": \"1990-01-01\",\n" +
@@ -151,7 +154,14 @@ public interface AdminCreatorApplicationControllerDocs {
                                                     "    {\n" +
                                                     "      \"type\": \"APPLICATION_RECEIVED\",\n" +
                                                     "      \"label\": \"신청 접수\",\n" +
-                                                    "      \"processedAt\": \"2026-07-13T18:04:00\"\n" +
+                                                    "      \"processedAt\": \"2026-07-13T18:04:00\",\n" +
+                                                    "      \"processorEmail\": null\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"type\": \"APPLICATION_APPROVED\",\n" +
+                                                    "      \"label\": \"승인 처리\",\n" +
+                                                    "      \"processedAt\": \"2026-07-09T11:20:00\",\n" +
+                                                    "      \"processorEmail\": \"admin@showroomz.com\"\n" +
                                                     "    }\n" +
                                                     "  ]\n" +
                                                     "}"
@@ -204,6 +214,7 @@ public interface AdminCreatorApplicationControllerDocs {
             description = "검수 대기(PENDING) 상태의 지원서를 승인하고 유저 권한을 CREATOR로 승격합니다.\n\n" +
                     "**처리 내용:**\n" +
                     "- 지원서 상태를 `APPROVED`로 변경\n" +
+                    "- 처리 운영자 이메일을 지원서·이력에 저장\n" +
                     "- 유저 역할(RoleType)을 `CREATOR`로 변경\n" +
                     "- 크리에이터 `isNewMember`를 `true`로 설정 (추가 정보 입력 필요)\n" +
                     "- 승인 이력 저장 및 신청 시 입력한 업무 이메일(businessEmail)로 승인 안내 메일 발송\n\n" +
@@ -258,13 +269,15 @@ public interface AdminCreatorApplicationControllerDocs {
                     in = ParameterIn.PATH,
                     schema = @Schema(type = "integer", format = "int64")
             )
-            @PathVariable("applicationId") Long applicationId);
+            @PathVariable("applicationId") Long applicationId,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal);
 
     @Operation(
             summary = "크리에이터 지원 반려",
             description = "검수 대기(PENDING) 상태의 지원서를 반려하고 안내 메일을 발송합니다.\n\n" +
                     "**처리 내용:**\n" +
                     "- 지원서 상태를 `REJECTED`로 변경\n" +
+                    "- 처리 운영자 이메일을 지원서·이력에 저장\n" +
                     "- 반려 사유 저장 및 신청 시 입력한 업무 이메일(businessEmail)로 반려 안내 메일 발송\n" +
                     "- 신청자는 반려 처리일로부터 14일 이후 재신청 가능\n\n" +
                     "**요청 필드:**\n" +
@@ -359,5 +372,6 @@ public interface AdminCreatorApplicationControllerDocs {
                     schema = @Schema(type = "integer", format = "int64")
             )
             @PathVariable("applicationId") Long applicationId,
-            @Valid @RequestBody CreatorApplicationRejectRequest request);
+            @Valid @RequestBody CreatorApplicationRejectRequest request,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal);
 }

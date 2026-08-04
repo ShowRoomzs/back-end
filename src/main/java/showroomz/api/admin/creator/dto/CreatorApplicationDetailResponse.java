@@ -32,15 +32,18 @@ public class CreatorApplicationDetailResponse {
     @Schema(description = "처리 이력 항목")
     public static class ProcessingHistoryItem {
 
-        @Schema(description = "처리 유형", example = "APPLICATION_RECEIVED",
+        @Schema(description = "처리 유형", example = "APPLICATION_APPROVED",
                 allowableValues = {"APPLICATION_RECEIVED", "APPLICATION_APPROVED", "APPLICATION_REJECTED"})
         private String type;
 
-        @Schema(description = "처리 내용", example = "신청 접수")
+        @Schema(description = "처리 내용", example = "승인 처리")
         private String label;
 
-        @Schema(description = "처리 일시", example = "2026-07-13T18:04:00")
+        @Schema(description = "처리 일시", example = "2026-07-09T11:20:00")
         private LocalDateTime processedAt;
+
+        @Schema(description = "처리 운영자 이메일 (승인/반려 시에만)", example = "admin@showroomz.com")
+        private String processorEmail;
     }
 
     // ── 심사 상태 ──
@@ -56,6 +59,9 @@ public class CreatorApplicationDetailResponse {
 
     @Schema(description = "승인/반려 처리 일시", example = "2026-07-15T10:00:00")
     private LocalDateTime processedAt;
+
+    @Schema(description = "처리 운영자 이메일 (승인/반려 시에만)", example = "admin@showroomz.com")
+    private String processorEmail;
 
     @Schema(description = "반려 사유 (반려 시에만)", example = "팔로워 수 기준 미달 - 제출하신 채널의 팔로워 수가 기준에 미달합니다.")
     private String rejectReason;

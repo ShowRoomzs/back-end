@@ -157,6 +157,7 @@ public class CreatorApplicationService {
                 .status(application.getStatus())
                 .appliedAt(application.getCreatedAt())
                 .processedAt(application.getProcessedAt())
+                .processorEmail(application.getProcessorEmail())
                 .rejectReason(application.getRejectReason())
                 .name(CreatorApplicationDetailResponse.DUMMY_REAL_NAME)
                 .birthday(CreatorApplicationDetailResponse.DUMMY_BIRTHDAY)
@@ -189,14 +190,16 @@ public class CreatorApplicationService {
             if (statusHistory.getNewStatus() == CreatorApplicationStatus.APPROVED) {
                 history.add(ProcessingHistoryItem.builder()
                         .type("APPLICATION_APPROVED")
-                        .label("신청 승인")
+                        .label("승인 처리")
                         .processedAt(statusHistory.getCreatedAt())
+                        .processorEmail(statusHistory.getProcessorEmail())
                         .build());
             } else if (statusHistory.getNewStatus() == CreatorApplicationStatus.REJECTED) {
                 history.add(ProcessingHistoryItem.builder()
                         .type("APPLICATION_REJECTED")
-                        .label("신청 반려")
+                        .label("반려 처리")
                         .processedAt(statusHistory.getCreatedAt())
+                        .processorEmail(statusHistory.getProcessorEmail())
                         .build());
             }
         }
@@ -205,7 +208,7 @@ public class CreatorApplicationService {
     }
 
     @Transactional
-    public void approve(Long applicationId) {
+    public void approve(Long applicationId, Long adminUserId) {
         CreatorApplication application = creatorApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.APPLICATION_NOT_FOUND));
 
@@ -213,9 +216,10 @@ public class CreatorApplicationService {
             throw new BusinessException(ErrorCode.INVALID_APPLICATION_STATUS);
         }
 
+        String processorEmail = resolveProcessorEmail(adminUserId);
         CreatorApplicationStatus previousStatus = application.getStatus();
 
-        application.approve();
+        application.approve(processorEmail);
 
         Users user = application.getUser();
         user.updateRoleType(RoleType.CREATOR);
@@ -235,6 +239,7 @@ public class CreatorApplicationService {
                 .application(application)
                 .previousStatus(previousStatus)
                 .newStatus(CreatorApplicationStatus.APPROVED)
+                .processorEmail(processorEmail)
                 .build());
 
         mailService.sendCreatorApprovalEmail(
@@ -245,7 +250,7 @@ public class CreatorApplicationService {
     }
 
     @Transactional
-    public void reject(Long applicationId, CreatorApplicationRejectRequest request) {
+    public void reject(Long applicationId, CreatorApplicationRejectRequest request, Long adminUserId) {
         CreatorApplication application = creatorApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.APPLICATION_NOT_FOUND));
 
@@ -253,6 +258,7 @@ public class CreatorApplicationService {
             throw new BusinessException(ErrorCode.INVALID_APPLICATION_STATUS);
         }
 
+        String processorEmail = resolveProcessorEmail(adminUserId);
         CreatorApplicationStatus previousStatus = application.getStatus();
 
         String reasonSummary = request.getRejectReasonType().getDescription();
@@ -266,7 +272,8 @@ public class CreatorApplicationService {
         application.reject(
                 request.getRejectReasonType().name(),
                 reasonDetail,
-                fullRejectReason
+                fullRejectReason,
+                processorEmail
         );
 
         applicationHistoryRepository.save(CreatorApplicationHistory.builder()
@@ -274,6 +281,7 @@ public class CreatorApplicationService {
                 .previousStatus(previousStatus)
                 .newStatus(CreatorApplicationStatus.REJECTED)
                 .reason(fullRejectReason)
+                .processorEmail(processorEmail)
                 .build());
 
         Users user = application.getUser();
@@ -284,6 +292,20 @@ public class CreatorApplicationService {
                 reasonSummary,
                 reasonDetail
         );
+    }
+
+    private String resolveProcessorEmail(Long adminUserId) {
+        if (adminUserId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        Users admin = userRepository.findById(adminUserId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (admin.getEmail() != null && !admin.getEmail().isBlank()) {
+            return admin.getEmail();
+        }
+        return admin.getUsername();
     }
 
     private void validateRequiredAgreements(CreatorApplicationRequest request) {

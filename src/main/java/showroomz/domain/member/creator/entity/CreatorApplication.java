@@ -54,6 +54,9 @@ public class CreatorApplication extends BaseTimeEntity {
     @Column(name = "PROCESSED_AT")
     private LocalDateTime processedAt;
 
+    @Column(name = "PROCESSOR_EMAIL", length = 512)
+    private String processorEmail;
+
     @Column(name = "REJECT_REASON", length = 500)
     private String rejectReason;
 
@@ -81,17 +84,19 @@ public class CreatorApplication extends BaseTimeEntity {
                 .build();
     }
 
-    public void approve() {
+    public void approve(String processorEmail) {
         this.status = CreatorApplicationStatus.APPROVED;
         this.processedAt = LocalDateTime.now();
+        this.processorEmail = processorEmail;
     }
 
-    public void reject(String rejectReasonType, String rejectReasonDetail, String rejectReason) {
+    public void reject(String rejectReasonType, String rejectReasonDetail, String rejectReason, String processorEmail) {
         this.status = CreatorApplicationStatus.REJECTED;
         this.rejectReasonType = rejectReasonType;
         this.rejectReasonDetail = rejectReasonDetail;
         this.rejectReason = rejectReason;
         this.processedAt = LocalDateTime.now();
+        this.processorEmail = processorEmail;
     }
 
     /** 반려 처리일 기준 재신청 가능 일시 (처리일 없으면 신청일 기준) */

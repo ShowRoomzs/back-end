@@ -35,15 +35,21 @@ public class CreatorApplicationHistory extends BaseTimeEntity {
     @Column(name = "reason", length = 500)
     private String reason;
 
+    /** 승인/반려 처리 운영자 이메일 */
+    @Column(name = "processor_email", length = 512)
+    private String processorEmail;
+
     @Builder
     public CreatorApplicationHistory(
             CreatorApplication application,
             CreatorApplicationStatus previousStatus,
             CreatorApplicationStatus newStatus,
-            String reason) {
+            String reason,
+            String processorEmail) {
         this.application = application;
         this.previousStatus = previousStatus;
         this.newStatus = newStatus;
         this.reason = reason;
+        this.processorEmail = processorEmail;
     }
 }
