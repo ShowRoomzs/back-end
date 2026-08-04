@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import showroomz.api.admin.creator.dto.CreatorApplicationDetailResponse;
 import showroomz.api.admin.creator.dto.CreatorApplicationRejectRequest;
 import showroomz.api.admin.creator.dto.CreatorApplicationResponse;
 import showroomz.api.app.auth.DTO.ErrorResponse;
@@ -108,6 +109,96 @@ public interface AdminCreatorApplicationControllerDocs {
     })
     ResponseEntity<PageResponse<CreatorApplicationResponse>> getApplications(
             @ParameterObject @ModelAttribute PagingRequest pagingRequest);
+
+    @Operation(
+            summary = "크리에이터 입점 신청 상세 조회",
+            description = "관리자용 크리에이터 입점 신청 상세 정보를 조회합니다.\n\n" +
+                    "**포함 정보:**\n" +
+                    "- 본인 인증: 실명·생년월일·연락처(더미), 인증 수단(PASS)\n" +
+                    "- 플랫폼: SNS 유형, 채널 주소, 계정 아이디, 팔로워 수, 업무용 이메일, 마케팅 수신 동의\n" +
+                    "- 처리 이력: 신청 접수 / 승인 / 반려\n" +
+                    "- 심사 상태: 신청번호, 상태, 신청일\n\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CreatorApplicationDetailResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "입점 신청 상세 예시",
+                                            value = "{\n" +
+                                                    "  \"applicationId\": 12,\n" +
+                                                    "  \"status\": \"PENDING\",\n" +
+                                                    "  \"appliedAt\": \"2026-07-13T18:04:00\",\n" +
+                                                    "  \"processedAt\": null,\n" +
+                                                    "  \"rejectReason\": null,\n" +
+                                                    "  \"name\": \"홍길동\",\n" +
+                                                    "  \"birthday\": \"1990-01-01\",\n" +
+                                                    "  \"phoneNumber\": \"010-1234-5678\",\n" +
+                                                    "  \"verificationMethod\": \"PASS\",\n" +
+                                                    "  \"verificationMethodLabel\": \"휴대폰 본인인증(PASS)\",\n" +
+                                                    "  \"snsType\": \"INSTAGRAM\",\n" +
+                                                    "  \"channelUrl\": \"https://instagram.com/my_channel\",\n" +
+                                                    "  \"accountId\": \"my_channel\",\n" +
+                                                    "  \"followerCount\": 10000,\n" +
+                                                    "  \"businessEmail\": \"business@creator.com\",\n" +
+                                                    "  \"marketingAgree\": true,\n" +
+                                                    "  \"processingHistory\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"type\": \"APPLICATION_RECEIVED\",\n" +
+                                                    "      \"label\": \"신청 접수\",\n" +
+                                                    "      \"processedAt\": \"2026-07-13T18:04:00\"\n" +
+                                                    "    }\n" +
+                                                    "  ]\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "지원서 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "신청 없음",
+                                            value = "{\"code\": \"APPLICATION_NOT_FOUND\", \"message\": \"존재하지 않는 신청입니다.\"}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "권한 없음",
+                                            value = "{\"code\": \"FORBIDDEN\", \"message\": \"접근 권한이 없습니다.\"}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<CreatorApplicationDetailResponse> getApplicationDetail(
+            @Parameter(
+                    name = "applicationId",
+                    description = "조회할 지원서 ID",
+                    required = true,
+                    example = "12",
+                    in = ParameterIn.PATH,
+                    schema = @Schema(type = "integer", format = "int64")
+            )
+            @PathVariable("applicationId") Long applicationId);
 
     @Operation(
             summary = "크리에이터 지원 승인",

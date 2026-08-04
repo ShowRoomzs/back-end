@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.admin.creator.dto.CreatorApplicationDetailResponse;
+import showroomz.api.admin.creator.dto.CreatorApplicationDetailResponse.ProcessingHistoryItem;
 import showroomz.api.admin.creator.dto.CreatorApplicationRejectRequest;
 import showroomz.api.admin.creator.dto.CreatorApplicationResponse;
 import showroomz.api.app.auth.entity.RoleType;
@@ -25,6 +27,8 @@ import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.service.MailService;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -93,6 +97,64 @@ public class CreatorApplicationService {
                 .findAllWithUser(pagingRequest.toPageable())
                 .map(CreatorApplicationResponse::new);
         return new PageResponse<>(page);
+    }
+
+    public CreatorApplicationDetailResponse getApplicationDetail(Long applicationId) {
+        CreatorApplication application = creatorApplicationRepository.findByIdWithUser(applicationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPLICATION_NOT_FOUND));
+
+        Users user = application.getUser();
+
+        return CreatorApplicationDetailResponse.builder()
+                .applicationId(application.getId())
+                .status(application.getStatus())
+                .appliedAt(application.getCreatedAt())
+                .processedAt(application.getProcessedAt())
+                .rejectReason(application.getRejectReason())
+                .name(CreatorApplicationDetailResponse.DUMMY_REAL_NAME)
+                .birthday(CreatorApplicationDetailResponse.DUMMY_BIRTHDAY)
+                .phoneNumber(CreatorApplicationDetailResponse.DUMMY_PHONE_NUMBER)
+                .verificationMethod(CreatorApplicationDetailResponse.VERIFICATION_METHOD_PASS)
+                .verificationMethodLabel(CreatorApplicationDetailResponse.VERIFICATION_METHOD_PASS_LABEL)
+                .snsType(application.getSnsType())
+                .channelUrl(application.getChannelUrl())
+                .accountId(application.getAccountId())
+                .followerCount(application.getFollowerCount())
+                .businessEmail(application.getBusinessEmail())
+                .marketingAgree(user.isMarketingAgree())
+                .processingHistory(buildProcessingHistory(application))
+                .build();
+    }
+
+    private List<ProcessingHistoryItem> buildProcessingHistory(CreatorApplication application) {
+        List<ProcessingHistoryItem> history = new ArrayList<>();
+
+        history.add(ProcessingHistoryItem.builder()
+                .type("APPLICATION_RECEIVED")
+                .label("신청 접수")
+                .processedAt(application.getCreatedAt())
+                .build());
+
+        List<CreatorApplicationHistory> statusHistories =
+                applicationHistoryRepository.findByApplication_IdOrderByCreatedAtAsc(application.getId());
+
+        for (CreatorApplicationHistory statusHistory : statusHistories) {
+            if (statusHistory.getNewStatus() == CreatorApplicationStatus.APPROVED) {
+                history.add(ProcessingHistoryItem.builder()
+                        .type("APPLICATION_APPROVED")
+                        .label("신청 승인")
+                        .processedAt(statusHistory.getCreatedAt())
+                        .build());
+            } else if (statusHistory.getNewStatus() == CreatorApplicationStatus.REJECTED) {
+                history.add(ProcessingHistoryItem.builder()
+                        .type("APPLICATION_REJECTED")
+                        .label("신청 반려")
+                        .processedAt(statusHistory.getCreatedAt())
+                        .build());
+            }
+        }
+
+        return history;
     }
 
     @Transactional

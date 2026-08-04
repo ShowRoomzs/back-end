@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import showroomz.api.admin.creator.dto.CreatorApplicationDetailResponse;
 import showroomz.api.admin.creator.dto.CreatorApplicationRejectRequest;
 import showroomz.api.admin.creator.dto.CreatorApplicationResponse;
 import showroomz.api.admin.creator.docs.AdminCreatorApplicationControllerDocs;
@@ -24,6 +25,13 @@ public class AdminCreatorApplicationController implements AdminCreatorApplicatio
     public ResponseEntity<PageResponse<CreatorApplicationResponse>> getApplications(
             @ParameterObject @ModelAttribute PagingRequest pagingRequest) {
         return ResponseEntity.ok(creatorApplicationService.getApplications(pagingRequest));
+    }
+
+    @Override
+    @GetMapping("/{applicationId}")
+    public ResponseEntity<CreatorApplicationDetailResponse> getApplicationDetail(
+            @PathVariable("applicationId") Long applicationId) {
+        return ResponseEntity.ok(creatorApplicationService.getApplicationDetail(applicationId));
     }
 
     @Override
