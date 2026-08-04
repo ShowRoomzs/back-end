@@ -287,8 +287,9 @@ public interface AdminCreatorApplicationControllerDocs {
                     "- `rejectReasonType`: 반려 사유 유형 (필수)\n" +
                     "- `rejectReasonDetail`: 상세 반려 사유 (선택, `OTHER` 선택 시 권장)\n\n" +
                     "**`rejectReasonType` 목록:**\n" +
-                    "- `CHANNEL_INFO_MISMATCH`: 채널 정보 미일치 또는 확인 불가\n" +
-                    "- `FOLLOWER_COUNT_SHORTFALL`: 팔로워 수 기준 미달\n" +
+                    "- `CHANNEL_PERFORMANCE_UNVERIFIABLE`: 채널 실적 확인 불가\n" +
+                    "- `IDENTITY_INFO_MISMATCH`: 본인 인증 정보 불일치\n" +
+                    "- `SUSPECTED_FAKE_FOLLOWERS`: 허위 팔로워 의심\n" +
                     "- `OTHER`: 기타 (`rejectReasonDetail` 선택 입력)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
@@ -344,15 +345,21 @@ public interface AdminCreatorApplicationControllerDocs {
                     schema = @Schema(implementation = CreatorApplicationRejectRequest.class),
                     examples = {
                             @ExampleObject(
-                                    name = "채널 정보 미일치",
+                                    name = "채널 실적 확인 불가",
                                     value = "{\n" +
-                                            "  \"rejectReasonType\": \"CHANNEL_INFO_MISMATCH\"\n" +
+                                            "  \"rejectReasonType\": \"CHANNEL_PERFORMANCE_UNVERIFIABLE\"\n" +
                                             "}"
                             ),
                             @ExampleObject(
-                                    name = "팔로워 수 기준 미달",
+                                    name = "본인 인증 정보 불일치",
                                     value = "{\n" +
-                                            "  \"rejectReasonType\": \"FOLLOWER_COUNT_SHORTFALL\"\n" +
+                                            "  \"rejectReasonType\": \"IDENTITY_INFO_MISMATCH\"\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "허위 팔로워 의심",
+                                    value = "{\n" +
+                                            "  \"rejectReasonType\": \"SUSPECTED_FAKE_FOLLOWERS\"\n" +
                                             "}"
                             ),
                             @ExampleObject(

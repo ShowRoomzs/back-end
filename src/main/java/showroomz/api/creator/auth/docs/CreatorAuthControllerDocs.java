@@ -82,7 +82,7 @@ public interface CreatorAuthControllerDocs {
                                             name = "신청 반려 (반려 사유·재신청일)",
                                             value = "{\n" +
                                                     "  \"code\": \"ACCOUNT_REJECTED\",\n" +
-                                                    "  \"rejectReasonType\": \"FOLLOWER_COUNT_SHORTFALL\",\n" +
+                                                    "  \"rejectReasonType\": \"SUSPECTED_FAKE_FOLLOWERS\",\n" +
                                                     "  \"rejectReasonDetail\": \"제출하신 채널의 팔로워 수가 기준에 미달합니다.\",\n" +
                                                     "  \"reapplyAvailableAt\": \"2026-08-05T15:30:00\"\n" +
                                                     "}"

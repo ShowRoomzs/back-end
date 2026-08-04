@@ -6,8 +6,9 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum CreatorRejectionReasonType {
-    CHANNEL_INFO_MISMATCH("채널 정보 미일치 또는 확인 불가"),
-    FOLLOWER_COUNT_SHORTFALL("팔로워 수 기준 미달"),
+    CHANNEL_PERFORMANCE_UNVERIFIABLE("채널 실적 확인 불가"),
+    IDENTITY_INFO_MISMATCH("본인 인증 정보 불일치"),
+    SUSPECTED_FAKE_FOLLOWERS("허위 팔로워 의심"),
     OTHER("기타");
 
     private final String description;

@@ -45,7 +45,7 @@ public class MyCreatorApplicationResponse {
     @Schema(description = "신청 상태 (PENDING, APPROVED, REJECTED)", example = "REJECTED")
     private final CreatorApplicationStatus status;
 
-    @Schema(description = "반려 사유", example = "팔로워 수 기준 미달 - 제출하신 채널의 팔로워 수가 기준에 미달합니다.")
+    @Schema(description = "반려 사유", example = "허위 팔로워 의심")
     private final String rejectReason;
 
     @Schema(description = "재신청 가능 일시 (반려 처리일 + 14일)", example = "2026-08-05T15:30:00")

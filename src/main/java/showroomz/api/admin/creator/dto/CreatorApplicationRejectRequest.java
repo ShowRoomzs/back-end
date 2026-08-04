@@ -12,7 +12,7 @@ import showroomz.api.admin.creator.type.CreatorRejectionReasonType;
 public class CreatorApplicationRejectRequest {
 
     @NotNull(message = "반려 사유(유형) 선택은 필수입니다.")
-    @Schema(description = "반려 사유 유형", example = "CHANNEL_INFO_MISMATCH")
+    @Schema(description = "반려 사유 유형", example = "CHANNEL_PERFORMANCE_UNVERIFIABLE")
     private CreatorRejectionReasonType rejectReasonType;
 
     @Schema(description = "기타/상세 반려 사유 (선택사항)", example = "제출하신 인스타그램 계정이 비공개 상태입니다.")
