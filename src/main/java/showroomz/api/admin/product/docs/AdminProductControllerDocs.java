@@ -96,7 +96,8 @@ public interface AdminProductControllerDocs {
                     "- 사유: PRODUCT_NOTICE_ERROR(상품 정보 제공 고시 오류), AD_DISPLAY_VIOLATION(표시/광고 위반 의심), " +
                     "BRAND_REQUEST(브랜드 요청), OTHER(기타)\n" +
                     "- hideDetail(상세 사유)은 선택\n" +
-                    "- 처리 이력에 미진열 사유+상세사유가 묶여 기록됨\n\n" +
+                    "- 처리 이력에 미진열 사유+상세사유가 묶여 기록됨\n" +
+                    "- 이미 미진열(HIDDEN) 상태면 이력 저장 없이 성공 응답만 반환\n\n" +
                     "**다시 진열 (DISPLAY):**\n" +
                     "- 미진열 사유 필드 초기\n" +
                     "- 처리 이력에 '다시 진열' 기록\n" +
