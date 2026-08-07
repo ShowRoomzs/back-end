@@ -14,6 +14,7 @@ import java.util.List;
 import showroomz.api.common.product.dto.ProductProcessingHistoryDto;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGender;
+import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.domain.product.type.ProductHideReasonType;
 
 public class ProductDto {
@@ -317,16 +318,24 @@ public class ProductDto {
         @Schema(description = "상품명", example = "프리미엄 린넨 셔츠")
         private String name;
 
-        @Schema(description = "가격 정보")
-        private PriceInfo price;
+        @Schema(description = "판매가", example = "59000")
+        private Integer regularPrice;
 
         @Schema(description = "등록일", example = "2025-12-28T14:30:00Z")
         private String createdAt;
+
+        @Schema(description = "수정일", example = "2026-01-05T10:00:00Z")
+        private String modifiedAt;
 
         @Schema(description = "진열 상태 (DISPLAY: 진열, HIDDEN: 미진열, PENDING_REVIEW: 재검토 대기, HIDE_REQUEST: 미진열 요청)",
                 example = "DISPLAY",
                 allowableValues = {"DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"})
         private ProductDisplayStatus displayStatus;
+
+        @Schema(description = "공구 상태 (더미). PREPARING: 준비중, READY: 준비완료, IN_PROGRESS: 진행중, NOT_CONNECTED: 연결없음",
+                example = "PREPARING",
+                allowableValues = {"PREPARING", "READY", "IN_PROGRESS", "NOT_CONNECTED"})
+        private ProductGroupBuyStatus groupBuyStatus;
 
         @Schema(description = "품절 상태", example = "IN_STOCK")
         private String stockStatus;
@@ -342,7 +351,7 @@ public class ProductDto {
     @Builder
     @Schema(description = "가격 정보")
     public static class PriceInfo {
-        @Schema(description = "판매가 (정가)", example = "59000")
+        @Schema(description = "판매가", example = "59000")
         private Integer regularPrice;
     }
 

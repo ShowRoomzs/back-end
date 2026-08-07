@@ -99,6 +99,9 @@ public class Product {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "modified_at")
+    private Instant modifiedAt;
+
     // 상품 번호 (SRZ-YYYYMMDD-XXX 형식)
     @Column(name = "product_number", unique = true, length = 50)
     private String productNumber;
@@ -114,9 +117,18 @@ public class Product {
 
     @PrePersist
     protected void onCreate() {
+        Instant now = Instant.now();
         if (createdAt == null) {
-            createdAt = Instant.now();
+            createdAt = now;
         }
+        if (modifiedAt == null) {
+            modifiedAt = now;
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        modifiedAt = Instant.now();
     }
 }
 

@@ -323,6 +323,15 @@ public interface ProductControllerDocs {
     @Operation(
             summary = "상품 목록 조회 (페이징, 필터링, 검색)",
             description = "백스테이지에서 판매자가 자신의 상품 목록을 조회합니다. 페이징, 카테고리, 진열상태, 품절상태 필터 및 검색 기능을 지원합니다.\n\n" +
+                    "**응답 필드:**\n" +
+                    "- regularPrice: 판매가\n" +
+                    "- createdAt: 등록일\n" +
+                    "- modifiedAt: 수정일\n" +
+                    "- groupBuyStatus: 공구 상태 (더미)\n" +
+                    "  - PREPARING: 준비중\n" +
+                    "  - READY: 준비완료\n" +
+                    "  - IN_PROGRESS: 진행중\n" +
+                    "  - NOT_CONNECTED: 연결없음\n\n" +
                     "**필터 파라미터:**\n" +
                     "- categoryId: 최종 선택된 카테고리 ID (선택사항)\n" +
                     "- displayStatus: 진열 상태 (ALL, DISPLAY, HIDDEN, PENDING_REVIEW, HIDE_REQUEST) - 기본값: ALL\n" +
@@ -358,11 +367,11 @@ public interface ProductControllerDocs {
                                                     "      \"sellerProductCode\": \"PROD-ABC-001\",\n" +
                                                     "      \"thumbnailUrl\": \"https://example.com/thumbnail.jpg\",\n" +
                                                     "      \"name\": \"프리미엄 린넨 셔츠\",\n" +
-                                                    "      \"price\": {\n" +
-                                                    "        \"regularPrice\": 59000\n" +
-                                                    "      },\n" +
+                                                    "      \"regularPrice\": 59000,\n" +
                                                     "      \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
+                                                    "      \"modifiedAt\": \"2026-01-05T10:00:00Z\",\n" +
                                                     "      \"displayStatus\": \"DISPLAY\",\n" +
+                                                    "      \"groupBuyStatus\": \"PREPARING\",\n" +
                                                     "      \"stockStatus\": \"IN_STOCK\",\n" +
                                                     "      \"isOutOfStockForced\": false\n" +
                                                     "    }\n" +

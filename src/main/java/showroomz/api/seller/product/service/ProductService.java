@@ -18,6 +18,7 @@ import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.product.entity.*;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.type.ProductDisplayStatus;
+import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.domain.product.type.ProductHideReasonType;
 import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.api.seller.auth.repository.SellerRepository;
@@ -705,26 +706,32 @@ public class ProductService {
         ProductDisplayStatus displayStatus = product.getDisplayStatus() != null
                 ? product.getDisplayStatus()
                 : ProductDisplayStatus.DISPLAY;
-        
-        // 가격 정보
-        ProductDto.PriceInfo priceInfo = ProductDto.PriceInfo.builder()
-                .regularPrice(product.getRegularPrice())
-                .build();
-        
-        // 등록일 포맷팅 (ISO 8601 형식)
-        String createdAtStr = product.getCreatedAt() != null 
-                ? product.getCreatedAt().toString() 
+
+        // 등록일/수정일 포맷팅 (ISO 8601 형식)
+        String createdAtStr = product.getCreatedAt() != null
+                ? product.getCreatedAt().toString()
                 : null;
-        
+        String modifiedAtStr = product.getModifiedAt() != null
+                ? product.getModifiedAt().toString()
+                : createdAtStr;
+
+        // 공구 상태 (더미) — productId 기준으로 순환
+        ProductGroupBuyStatus[] groupBuyStatuses = ProductGroupBuyStatus.values();
+        ProductGroupBuyStatus groupBuyStatus = groupBuyStatuses[
+                (int) (Math.floorMod(product.getProductId() != null ? product.getProductId() : 0L, groupBuyStatuses.length))
+        ];
+
         return ProductDto.ProductListItem.builder()
                 .productId(product.getProductId())
                 .productNumber(product.getProductNumber())
                 .sellerProductCode(product.getSellerProductCode())
                 .thumbnailUrl(product.getThumbnailUrl())
                 .name(product.getName())
-                .price(priceInfo)
+                .regularPrice(product.getRegularPrice())
                 .createdAt(createdAtStr)
+                .modifiedAt(modifiedAtStr)
                 .displayStatus(displayStatus)
+                .groupBuyStatus(groupBuyStatus)
                 .stockStatus(stockStatus)
                 .isOutOfStockForced(product.getIsOutOfStockForced())
                 .build();
