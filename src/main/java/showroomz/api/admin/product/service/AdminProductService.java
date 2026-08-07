@@ -115,6 +115,11 @@ public class AdminProductService {
 
         ProductDisplayStatus previous = product.getDisplayStatus();
 
+        // 이미 동일 상태면 이력 저장 없이 성공 처리 (멱등)
+        if (next == previous) {
+            return;
+        }
+
         if (next == ProductDisplayStatus.HIDDEN) {
             if (hideReasonType == null) {
                 throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "미진열 처리 시 hideReasonType은 필수입니다.");

@@ -99,7 +99,8 @@ public interface AdminProductControllerDocs {
                     "- 처리 이력에 미진열 사유+상세사유가 묶여 기록됨\n\n" +
                     "**다시 진열 (DISPLAY):**\n" +
                     "- 미진열 사유 필드 초기\n" +
-                    "- 처리 이력에 '다시 진열' 기록\n\n" +
+                    "- 처리 이력에 '다시 진열' 기록\n" +
+                    "- 이미 진열(DISPLAY) 상태면 이력 저장 없이 성공 응답만 반환\n\n" +
                     "**권한:** ADMIN"
     )
     @ApiResponses(value = {
@@ -180,7 +181,8 @@ public interface AdminProductControllerDocs {
 
     @Operation(
             summary = "관리자 상품 미진열 / 다시 진열 일괄 처리",
-            description = "여러 상품을 일괄 미진열 처리하거나 다시 진열합니다.\n\n**권한:** ADMIN"
+            description = "여러 상품을 일괄 미진열 처리하거나 다시 진열합니다.\n\n" +
+                    "이미 동일 진열 상태인 상품은 이력 저장 없이 성공으로 포함됩니다.\n\n**권한:** ADMIN"
     )
     @ApiResponses(value = {
             @ApiResponse(
