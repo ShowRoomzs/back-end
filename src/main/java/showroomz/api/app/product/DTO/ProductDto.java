@@ -95,9 +95,6 @@ public class ProductDto {
         @Schema(description = "할인율 (%)", example = "70")
         private Integer discountRate;
 
-        @Schema(description = "매입가", example = "30000")
-        private Integer purchasePrice;
-
         @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
         private String gender;
 

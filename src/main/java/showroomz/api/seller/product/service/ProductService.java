@@ -63,10 +63,10 @@ public class ProductService {
         product.setName(request.getName());
         product.setSellerProductCode(request.getSellerProductCode());
         product.setRegularPrice(request.getRegularPrice());
-        product.setSalePrice(request.getSalePrice());
+        // 할인가는 계약 단계에서 결정 — 등록 시점에는 판매가와 동일하게 저장
+        product.setSalePrice(request.getRegularPrice());
         product.setGender(request.getGender());
-        product.setPurchasePrice(request.getPurchasePrice());
-        product.setIsDisplay(request.getIsDisplay() != null ? request.getIsDisplay() : true);
+        product.setIsDisplay(true);
         product.setIsOutOfStockForced(request.getIsOutOfStockForced() != null ? request.getIsOutOfStockForced() : false);
         product.setIsRecommended(false);
         product.setDescription(request.getDescription());
@@ -186,8 +186,8 @@ public class ProductService {
                 ProductVariant variant = new ProductVariant(
                         product,
                         variantName,
-                        request.getRegularPrice(), // 기본 가격
-                        variantRequest.getSalePrice(),
+                        variantRequest.getRegularPrice(),
+                        variantRequest.getRegularPrice(),
                         variantRequest.getStock(),
                         variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false,
                         variantRequest.getIsDisplay()
@@ -202,7 +202,7 @@ public class ProductService {
                     product,
                     null,
                     request.getRegularPrice(),
-                    request.getSalePrice(),
+                    request.getRegularPrice(),
                     0,
                     true,
                     true
@@ -552,14 +552,10 @@ public class ProductService {
         if (request.getIsOutOfStockForced() != null) {
             product.setIsOutOfStockForced(request.getIsOutOfStockForced());
         }
-        if (request.getPurchasePrice() != null) {
-            product.setPurchasePrice(request.getPurchasePrice());
-        }
         if (request.getRegularPrice() != null) {
             product.setRegularPrice(request.getRegularPrice());
-        }
-        if (request.getSalePrice() != null) {
-            product.setSalePrice(request.getSalePrice());
+            // 할인가는 계약 단계에서 결정 — 수정 시점에는 판매가와 동일하게 저장
+            product.setSalePrice(request.getRegularPrice());
         }
         if (request.getGender() != null) {
             product.setGender(request.getGender());
@@ -672,15 +668,11 @@ public class ProductService {
                 String variantName = variantRequest.getOptionNames().stream()
                         .collect(Collectors.joining(" / "));
                 
-                Integer variantRegularPrice = request.getRegularPrice() != null 
-                        ? request.getRegularPrice() 
-                        : product.getRegularPrice();
-                
                 ProductVariant variant = new ProductVariant(
                         product,
                         variantName,
-                        variantRegularPrice,
-                        variantRequest.getSalePrice(),
+                        variantRequest.getRegularPrice(),
+                        variantRequest.getRegularPrice(),
                         variantRequest.getStock(),
                         variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false,
                         variantRequest.getIsDisplay()
@@ -730,9 +722,7 @@ public class ProductService {
         
         // 가격 정보
         ProductDto.PriceInfo priceInfo = ProductDto.PriceInfo.builder()
-                .purchasePrice(product.getPurchasePrice())
                 .regularPrice(product.getRegularPrice())
-                .salePrice(product.getSalePrice())
                 .build();
         
         // 등록일 포맷팅 (ISO 8601 형식)
@@ -803,7 +793,6 @@ public class ProductService {
                             .variantId(variant.getVariantId())
                             .name(variant.getName())
                             .regularPrice(variant.getRegularPrice())
-                            .salePrice(variant.getSalePrice())
                             .stock(variant.getStock())
                             .isRepresentative(variant.getIsRepresentative())
                             .isDisplay(variant.getIsDisplay())
@@ -824,9 +813,7 @@ public class ProductService {
                 .representativeImageUrl(representativeImageUrl)
                 .coverImageUrls(coverImageUrls)
                 .regularPrice(product.getRegularPrice())
-                .salePrice(product.getSalePrice())
                 .gender(product.getGender())
-                .purchasePrice(product.getPurchasePrice())
                 .isDisplay(product.getIsDisplay())
                 .isOutOfStockForced(product.getIsOutOfStockForced())
                 .isRecommended(product.getIsRecommended())

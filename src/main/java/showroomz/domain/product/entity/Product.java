@@ -53,9 +53,6 @@ public class Product {
     @Column(name = "gender", length = 10)
     private ProductGender gender;
 
-    @Column(name = "purchase_price")
-    private Integer purchasePrice;
-
     @Column(name = "is_display", nullable = false)
     private Boolean isDisplay = true;
 

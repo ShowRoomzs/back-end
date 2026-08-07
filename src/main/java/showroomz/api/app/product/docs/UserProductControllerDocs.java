@@ -76,7 +76,6 @@ public interface UserProductControllerDocs {
                                                     "        \"maxBenefitPrice\": 31000\n" +
                                                     "      },\n" +
                                                     "      \"discountRate\": 70,\n" +
-"      \"purchasePrice\": 30000,\n" +
 "      \"gender\": \"UNISEX\",\n" +
 "      \"isDisplay\": true,\n" +
 "      \"isRecommended\": false,\n" +

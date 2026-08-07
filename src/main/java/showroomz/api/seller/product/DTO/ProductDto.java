@@ -34,31 +34,16 @@ public class ProductDto {
         @Schema(description = "판매자 상품 코드", example = "PROD-001")
         private String sellerProductCode;
 
-        @Schema(description = "진열 상태", example = "true")
-        private Boolean isDisplay = true;
-
         @Schema(description = "강제 품절 처리 여부", example = "false")
         private Boolean isOutOfStockForced = false;
 
-        @Min(value = 0, message = "매입가는 0 이상이어야 합니다.")
-        @Schema(description = "매입가", example = "30000")
-        private Integer purchasePrice;
-
-        @NotNull(message = "판매가(할인 전)는 필수 입력값입니다.")
+        @NotNull(message = "판매가는 필수 입력값입니다.")
         @Min(value = 0, message = "판매가는 0 이상이어야 합니다.")
-        @Schema(description = "판매가 (할인 전)", example = "59000")
+        @Schema(description = "판매가 (정가)", example = "59000")
         private Integer regularPrice;
-
-        @NotNull(message = "할인 판매가는 필수 입력값입니다.")
-        @Min(value = 0, message = "할인 판매가는 0 이상이어야 합니다.")
-        @Schema(description = "할인 판매가 (최종가)", example = "49000")
-        private Integer salePrice;
 
         @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
         private ProductGender gender;
-
-        @Schema(description = "할인 설정 여부", example = "true")
-        private Boolean isDiscount = false;
 
         @Schema(description = "대표 이미지 URL", example = "https://example.com/image.jpg")
         private String representativeImageUrl;
@@ -183,8 +168,8 @@ public class ProductDto {
 
         @NotNull(message = "판매가는 필수 입력값입니다.")
         @Min(value = 0, message = "판매가는 0 이상이어야 합니다.")
-        @Schema(description = "옵션가 포함 최종가", example = "50000")
-        private Integer salePrice;
+        @Schema(description = "판매가 (옵션가 포함)", example = "50000")
+        private Integer regularPrice;
 
         @NotNull(message = "재고 수량은 필수 입력값입니다.")
         @Min(value = 0, message = "재고 수량은 0 이상이어야 합니다.")
@@ -238,17 +223,9 @@ public class ProductDto {
         @Schema(description = "강제 품절 처리 여부", example = "false")
         private Boolean isOutOfStockForced;
 
-        @Min(value = 0, message = "매입가는 0 이상이어야 합니다.")
-        @Schema(description = "매입가", example = "30000")
-        private Integer purchasePrice;
-
         @Min(value = 0, message = "판매가는 0 이상이어야 합니다.")
-        @Schema(description = "판매가 (할인 전)", example = "59000")
+        @Schema(description = "판매가 (정가)", example = "59000")
         private Integer regularPrice;
-
-        @Min(value = 0, message = "할인 판매가는 0 이상이어야 합니다.")
-        @Schema(description = "할인 판매가 (최종가)", example = "49000")
-        private Integer salePrice;
 
         @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
         private ProductGender gender;
@@ -390,14 +367,8 @@ public class ProductDto {
     @Builder
     @Schema(description = "가격 정보")
     public static class PriceInfo {
-        @Schema(description = "매입가", example = "25000")
-        private Integer purchasePrice;
-
-        @Schema(description = "판매가", example = "59000")
+        @Schema(description = "판매가 (정가)", example = "59000")
         private Integer regularPrice;
-
-        @Schema(description = "할인 판매가", example = "49000")
-        private Integer salePrice;
     }
 
     @Getter
@@ -437,17 +408,11 @@ public class ProductDto {
         @Schema(description = "커버 이미지 URL 목록", example = "[\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\"]")
         private List<String> coverImageUrls;
 
-        @Schema(description = "정가", example = "59000")
+        @Schema(description = "판매가 (정가)", example = "59000")
         private Integer regularPrice;
-
-        @Schema(description = "할인 판매가", example = "49000")
-        private Integer salePrice;
 
         @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
         private ProductGender gender;
-
-        @Schema(description = "매입가", example = "30000")
-        private Integer purchasePrice;
 
         @Schema(description = "진열 상태", example = "true")
         private Boolean isDisplay;
@@ -553,11 +518,8 @@ public class ProductDto {
         @Schema(description = "옵션 조합명", example = "S, Black")
         private String name;
 
-        @Schema(description = "판매가", example = "50000")
+        @Schema(description = "판매가 (옵션가 포함)", example = "50000")
         private Integer regularPrice;
-
-        @Schema(description = "할인 판매가", example = "49000")
-        private Integer salePrice;
 
         @Schema(description = "재고 수량", example = "100")
         private Integer stock;

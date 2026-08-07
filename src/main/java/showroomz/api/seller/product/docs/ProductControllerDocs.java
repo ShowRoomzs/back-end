@@ -27,8 +27,7 @@ public interface ProductControllerDocs {
                     "**필수 항목:**\n" +
                     "- categoryId: 카테고리 ID (예: 1, 2, 3)\n" +
                     "- name: 상품명\n" +
-                    "- regularPrice: 판매가 (할인 전)\n" +
-                    "- salePrice: 할인 판매가 (최종가)\n" +
+                    "- regularPrice: 판매가 (정가). 할인가는 계약 단계에서 결정됩니다.\n" +
                     "- variants: 옵션 목록 (조합된 결과)\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
@@ -132,11 +131,8 @@ public interface ProductControllerDocs {
                                             "  \"categoryId\": 1,\n" +
                                             "  \"name\": \"프리미엄 린넨 셔츠\",\n" +
                                             "  \"sellerProductCode\": \"PROD-001\",\n" +
-                                            "  \"purchasePrice\": 30000,\n" +
                                             "  \"regularPrice\": 59000,\n" +
-                                            "  \"salePrice\": 49000,\n" +
                                             "  \"gender\": \"UNISEX\",\n" +
-                                            "  \"isDiscount\": true,\n" +
                                             "  \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
                                             "  \"coverImageUrls\": [\n" +
                                             "    \"https://example.com/image1.jpg\",\n" +
@@ -173,7 +169,7 @@ public interface ProductControllerDocs {
                                             "  \"variants\": [\n" +
                                             "    {\n" +
                                             "      \"optionNames\": [\"Free\"],\n" +
-                                            "      \"salePrice\": 49000,\n" +
+                                            "      \"regularPrice\": 59000,\n" +
                                             "      \"stock\": 999,\n" +
                                             "      \"isDisplay\": true,\n" +
                                             "      \"isRepresentative\": true\n" +
@@ -216,8 +212,6 @@ public interface ProductControllerDocs {
                                                     "  \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
                                                     "  \"coverImageUrls\": [\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\"],\n" +
                                                     "  \"regularPrice\": 59000,\n" +
-                                                    "  \"salePrice\": 49000,\n" +
-                                                    "  \"purchasePrice\": 25000,\n" +
                                                     "  \"gender\": \"UNISEX\",\n" +
                                                     "  \"isDisplay\": true,\n" +
                                                     "  \"isOutOfStockForced\": false,\n" +
@@ -253,7 +247,6 @@ public interface ProductControllerDocs {
                                                     "      \"variantId\": 1,\n" +
                                                     "      \"name\": \"S / Black\",\n" +
                                                     "      \"regularPrice\": 50000,\n" +
-                                                    "      \"salePrice\": 49000,\n" +
                                                     "      \"stock\": 100,\n" +
                                                     "      \"isRepresentative\": true,\n" +
                                                     "      \"isDisplay\": true,\n" +
@@ -334,9 +327,7 @@ public interface ProductControllerDocs {
                                                     "      \"thumbnailUrl\": \"https://example.com/thumbnail.jpg\",\n" +
                                                     "      \"name\": \"프리미엄 린넨 셔츠\",\n" +
                                                     "      \"price\": {\n" +
-                                                    "        \"purchasePrice\": 25000,\n" +
-                                                    "        \"regularPrice\": 59000,\n" +
-                                                    "        \"salePrice\": 49000\n" +
+                                                    "        \"regularPrice\": 59000\n" +
                                                     "      },\n" +
                                                     "      \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
                                                     "      \"displayStatus\": \"DISPLAY\",\n" +
@@ -389,9 +380,7 @@ public interface ProductControllerDocs {
                     "- sellerProductCode: 판매자 상품 코드\n" +
                     "- isDisplay: 진열 상태\n" +
                     "- isOutOfStockForced: 강제 품절 처리 여부\n" +
-                    "- purchasePrice: 매입가\n" +
-                    "- regularPrice: 판매가 (할인 전)\n" +
-                    "- salePrice: 할인 판매가 (최종가)\n" +
+                    "- regularPrice: 판매가 (정가). 할인가는 계약 단계에서 결정됩니다.\n" +
                     "- representativeImageUrl: 대표 이미지 URL\n" +
                     "- coverImageUrls: 커버 이미지 URL 목록\n" +
                     "- description: 상세 설명\n" +
@@ -507,8 +496,7 @@ public interface ProductControllerDocs {
                                     value = "{\n" +
                                             "  \"name\": \"수정된 상품명\",\n" +
                                             "  \"regularPrice\": 69000,\n" +
-                                            "  \"salePrice\": 59000,\n" +
-                                                    "  \"gender\": \"UNISEX\",\n" +
+                                            "  \"gender\": \"UNISEX\",\n" +
                                             "  \"isDisplay\": true\n" +
                                             "}",
                                     description = "일부 필드만 수정하는 예시"
@@ -519,9 +507,7 @@ public interface ProductControllerDocs {
                                             "  \"categoryId\": 1,\n" +
                                             "  \"name\": \"프리미엄 린넨 셔츠\",\n" +
                                             "  \"sellerProductCode\": \"PROD-001\",\n" +
-                                            "  \"purchasePrice\": 30000,\n" +
                                             "  \"regularPrice\": 59000,\n" +
-                                            "  \"salePrice\": 49000,\n" +
                                             "  \"gender\": \"UNISEX\",\n" +
                                             "  \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
                                             "  \"coverImageUrls\": [\n" +
@@ -559,7 +545,7 @@ public interface ProductControllerDocs {
                                             "  \"variants\": [\n" +
                                             "    {\n" +
                                             "      \"optionNames\": [\"Free\"],\n" +
-                                            "      \"salePrice\": 49000,\n" +
+                                            "      \"regularPrice\": 59000,\n" +
                                             "      \"stock\": 999,\n" +
                                             "      \"isDisplay\": true,\n" +
                                             "      \"isRepresentative\": true\n" +

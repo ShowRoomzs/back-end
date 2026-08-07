@@ -105,7 +105,6 @@ public class RecommendationService {
                 .marketName(product.getMarket() != null ? product.getMarket().getMarketName() : null)
                 .price(priceInfo)
                 .discountRate(discountRate)
-                .purchasePrice(product.getPurchasePrice())
                 .gender(product.getGender() != null ? product.getGender().name() : null)
                 .isDisplay(product.getIsDisplay())
                 .isRecommended(product.getIsRecommended())

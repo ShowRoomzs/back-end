@@ -96,7 +96,6 @@ public class AdminProductInspectionDto {
         private Integer regularPrice;
         private Integer salePrice;
         private ProductGender gender;
-        private Integer purchasePrice;
         private Boolean isDisplay;
         private Boolean isOutOfStockForced;
         private Boolean isRecommended;
