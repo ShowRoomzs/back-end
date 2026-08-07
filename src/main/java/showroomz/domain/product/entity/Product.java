@@ -96,21 +96,6 @@ public class Product {
     @Column(name = "description", columnDefinition = "text")
     private String description;
 
-    @Column(name = "tags", columnDefinition = "json")
-    private String tags;
-
-    @Column(name = "delivery_type", length = 100)
-    private String deliveryType;
-
-    @Column(name = "delivery_fee")
-    private Integer deliveryFee;
-
-    @Column(name = "delivery_free_threshold")
-    private Integer deliveryFreeThreshold;
-
-    @Column(name = "delivery_estimated_days")
-    private Integer deliveryEstimatedDays;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

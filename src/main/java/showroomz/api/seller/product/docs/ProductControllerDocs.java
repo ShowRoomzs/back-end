@@ -139,11 +139,6 @@ public interface ProductControllerDocs {
                                             "    \"https://example.com/image2.jpg\"\n" +
                                             "  ],\n" +
                                             "  \"description\": \"<p>상품 상세 설명</p>\",\n" +
-                                            "  \"tags\": [\"신상\", \"할인\", \"인기\"],\n" +
-                                            "  \"deliveryType\": \"STANDARD\",\n" +
-                                            "  \"deliveryFee\": 3000,\n" +
-                                            "  \"deliveryFreeThreshold\": 50000,\n" +
-                                            "  \"deliveryEstimatedDays\": 3,\n" +
                                             "  \"productNotice\": {\n" +
                                             "    \"capacityWeight\": \"제품 상세 참고\",\n" +
                                             "    \"mainSpecs\": \"제품 상세 참고\",\n" +
@@ -219,11 +214,6 @@ public interface ProductControllerDocs {
                                                     "  \"isRecommended\": false,\n" +
                                                     "  \"productNotice\": \"{\\\"origin\\\":\\\"대한민국\\\",\\\"ingredients\\\":\\\"제품 상세 참고\\\"}\",\n" +
                                                     "  \"description\": \"<p>상품 상세 설명</p>\",\n" +
-                                                    "  \"tags\": \"[\\\"신상\\\", \\\"할인\\\"]\",\n" +
-                                                    "  \"deliveryType\": \"STANDARD\",\n" +
-                                                    "  \"deliveryFee\": 3000,\n" +
-                                                    "  \"deliveryFreeThreshold\": 50000,\n" +
-                                                    "  \"deliveryEstimatedDays\": 3,\n" +
                                                     "  \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
                                                     "  \"optionGroups\": [\n" +
                                                     "    {\n" +
@@ -388,11 +378,6 @@ public interface ProductControllerDocs {
                     "- representativeImageUrl: 대표 이미지 URL\n" +
                     "- coverImageUrls: 커버 이미지 URL 목록\n" +
                     "- description: 상세 설명\n" +
-                    "- tags: 태그 목록\n" +
-                    "- deliveryType: 배송 유형\n" +
-                    "- deliveryFee: 배송비\n" +
-                    "- deliveryFreeThreshold: 무료 배송 최소 금액\n" +
-                    "- deliveryEstimatedDays: 배송 예상 일수\n" +
                     "- productNotice: 상품정보제공고시\n" +
                     "- optionGroups: 옵션 그룹 목록 (variants와 함께 제공해야 함)\n" +
                     "- variants: 옵션 목록 (optionGroups와 함께 제공해야 함)\n\n" +
@@ -519,11 +504,6 @@ public interface ProductControllerDocs {
                                             "    \"https://example.com/image2.jpg\"\n" +
                                             "  ],\n" +
                                             "  \"description\": \"<p>상품 상세 설명</p>\",\n" +
-                                            "  \"tags\": [\"신상\", \"할인\", \"인기\"],\n" +
-                                            "  \"deliveryType\": \"STANDARD\",\n" +
-                                            "  \"deliveryFee\": 3000,\n" +
-                                            "  \"deliveryFreeThreshold\": 50000,\n" +
-                                            "  \"deliveryEstimatedDays\": 3,\n" +
                                             "  \"productNotice\": {\n" +
                                             "    \"capacityWeight\": \"제품 상세 참고\",\n" +
                                             "    \"mainSpecs\": \"제품 상세 참고\",\n" +

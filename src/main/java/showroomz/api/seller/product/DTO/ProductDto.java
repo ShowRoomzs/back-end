@@ -61,24 +61,6 @@ public class ProductDto {
         @Schema(description = "인스타그램 Embed 태그", example = "<blockquote>...</blockquote>")
         private String instagramEmbedTag;
 
-        @Schema(description = "태그 목록", example = "[\"신상\", \"할인\", \"인기\"]")
-        private List<String> tags;
-
-        @Schema(description = "배송 유형", example = "STANDARD")
-        private String deliveryType;
-
-        @Min(value = 0, message = "배송비는 0 이상이어야 합니다.")
-        @Schema(description = "배송비", example = "3000")
-        private Integer deliveryFee;
-
-        @Min(value = 0, message = "무료 배송 최소 금액은 0 이상이어야 합니다.")
-        @Schema(description = "무료 배송 최소 금액", example = "50000")
-        private Integer deliveryFreeThreshold;
-
-        @Min(value = 1, message = "배송 예상 일수는 1 이상이어야 합니다.")
-        @Schema(description = "배송 예상 일수", example = "3")
-        private Integer deliveryEstimatedDays;
-
         @Valid
         @Schema(description = "상품정보제공고시")
         private ProductNoticeRequest productNotice;
@@ -246,24 +228,6 @@ public class ProductDto {
 
         @Schema(description = "에디터 상세 설명 (HTML)", example = "<p>상품 상세 설명</p>")
         private String description;
-
-        @Schema(description = "태그 목록", example = "[\"신상\", \"할인\", \"인기\"]")
-        private List<String> tags;
-
-        @Schema(description = "배송 유형", example = "STANDARD")
-        private String deliveryType;
-
-        @Min(value = 0, message = "배송비는 0 이상이어야 합니다.")
-        @Schema(description = "배송비", example = "3000")
-        private Integer deliveryFee;
-
-        @Min(value = 0, message = "무료 배송 최소 금액은 0 이상이어야 합니다.")
-        @Schema(description = "무료 배송 최소 금액", example = "50000")
-        private Integer deliveryFreeThreshold;
-
-        @Min(value = 1, message = "배송 예상 일수는 1 이상이어야 합니다.")
-        @Schema(description = "배송 예상 일수", example = "3")
-        private Integer deliveryEstimatedDays;
 
         @Valid
         @Schema(description = "상품정보제공고시")
@@ -447,21 +411,6 @@ public class ProductDto {
 
         @Schema(description = "상품 상세 설명 (HTML)", example = "<p>상품 상세 설명</p>")
         private String description;
-
-        @Schema(description = "태그 (JSON 문자열)", example = "[\"신상\", \"할인\", \"인기\"]")
-        private String tags;
-
-        @Schema(description = "배송 유형", example = "STANDARD")
-        private String deliveryType;
-
-        @Schema(description = "배송비", example = "3000")
-        private Integer deliveryFee;
-
-        @Schema(description = "무료 배송 최소 금액", example = "50000")
-        private Integer deliveryFreeThreshold;
-
-        @Schema(description = "배송 예상 일수", example = "3")
-        private Integer deliveryEstimatedDays;
 
         @Schema(description = "등록일", example = "2025-12-28T14:30:00Z")
         private String createdAt;

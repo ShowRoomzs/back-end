@@ -110,21 +110,6 @@ public class ProductDto {
         @Schema(description = "상품 상세 설명", example = "<p>상품 상세 설명</p>")
         private String description;
 
-        @Schema(description = "태그 (JSON)", example = "[\"신상\", \"할인\"]")
-        private String tags;
-
-        @Schema(description = "배송 유형", example = "STANDARD")
-        private String deliveryType;
-
-        @Schema(description = "배송비", example = "3000")
-        private Integer deliveryFee;
-
-        @Schema(description = "무료 배송 최소 금액", example = "50000")
-        private Integer deliveryFreeThreshold;
-
-        @Schema(description = "배송 예상 일수", example = "3")
-        private Integer deliveryEstimatedDays;
-
         @Schema(description = "등록일", example = "2025-12-28T14:30:00Z")
         private String createdAt;
 
@@ -221,9 +206,6 @@ public class ProductDto {
         @Schema(description = "상품정보제공고시 (JSON 객체)")
         private JsonNode productNotice;
 
-        @Schema(description = "태그 (JSON 배열)")
-        private JsonNode tags;
-
         @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
         private String gender;
 
@@ -235,18 +217,6 @@ public class ProductDto {
 
         @Schema(description = "할인 판매가", example = "33900")
         private Integer salePrice;
-
-        @Schema(description = "배송 유형", example = "STANDARD")
-        private String deliveryType;
-
-        @Schema(description = "배송비", example = "3000")
-        private Integer deliveryFee;
-
-        @Schema(description = "무료 배송 최소 금액", example = "50000")
-        private Integer deliveryFreeThreshold;
-
-        @Schema(description = "배송 예상 일수", example = "3")
-        private Integer deliveryEstimatedDays;
 
         @Schema(description = "무료 배송 여부", example = "true")
         private Boolean isFreeDelivery;

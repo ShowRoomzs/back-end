@@ -105,11 +105,6 @@ public class AdminProductInspectionDto {
         private Boolean isRecommended;
         private String productNotice;
         private String description;
-        private String tags;
-        private String deliveryType;
-        private Integer deliveryFee;
-        private Integer deliveryFreeThreshold;
-        private Integer deliveryEstimatedDays;
         private String createdAt;
         private ProductInspectionStatus inspectionStatus;
         private String adminMemo;

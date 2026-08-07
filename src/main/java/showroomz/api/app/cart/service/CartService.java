@@ -248,7 +248,7 @@ public class CartService {
                 .optionName(buildOptionName(variant.getOptions()))
                 .quantity(cart.getQuantity())
                 .price(priceInfo)
-                .deliveryFee(product.getDeliveryFee() != null ? product.getDeliveryFee() : 0)
+                .deliveryFee(market != null && market.getDefaultDeliveryFee() != null ? market.getDefaultDeliveryFee() : 0)
                 .stock(stockInfo)
                 .build();
     }
@@ -342,11 +342,11 @@ public class CartService {
                     key -> new MarketShippingAccumulator()
             );
             acc.saleTotal += sale * quantity;
-            Integer deliveryFee = product.getDeliveryFee();
+            Integer deliveryFee = market != null ? market.getDefaultDeliveryFee() : null;
             if (deliveryFee != null && deliveryFee > acc.maxDeliveryFee) {
                 acc.maxDeliveryFee = deliveryFee;
             }
-            Integer threshold = product.getDeliveryFreeThreshold();
+            Integer threshold = market != null ? market.getFreeShippingThreshold() : null;
             if (threshold != null) {
                 if (acc.minFreeThreshold == null || threshold < acc.minFreeThreshold) {
                     acc.minFreeThreshold = threshold;

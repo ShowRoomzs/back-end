@@ -110,11 +110,6 @@ public class RecommendationService {
                 .isRecommended(product.getIsRecommended())
                 .productNotice(product.getProductNotice())
                 .description(product.getDescription())
-                .tags(product.getTags())
-                .deliveryType(product.getDeliveryType())
-                .deliveryFee(product.getDeliveryFee())
-                .deliveryFreeThreshold(product.getDeliveryFreeThreshold())
-                .deliveryEstimatedDays(product.getDeliveryEstimatedDays())
                 .createdAt(product.getCreatedAt() != null ? product.getCreatedAt().toString() : null)
                 .status(buildStockStatus(product))
                 .likeCount(0L) // TODO: 실제 좋아요 수 조회

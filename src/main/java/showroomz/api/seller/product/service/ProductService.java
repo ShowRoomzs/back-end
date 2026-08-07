@@ -74,26 +74,10 @@ public class ProductService {
         product.setIsOutOfStockForced(request.getIsOutOfStockForced() != null ? request.getIsOutOfStockForced() : false);
         product.setIsRecommended(false);
         product.setDescription(request.getDescription());
-        product.setDeliveryType(request.getDeliveryType() != null ? request.getDeliveryType() : "STANDARD");
-        // 배송 정보 기본값 설정 (배포 DB의 NOT NULL 제약조건 대응)
-        product.setDeliveryFee(request.getDeliveryFee() != null ? request.getDeliveryFee() : 0);
-        product.setDeliveryFreeThreshold(request.getDeliveryFreeThreshold() != null ? request.getDeliveryFreeThreshold() : 0);
-        product.setDeliveryEstimatedDays(request.getDeliveryEstimatedDays() != null ? request.getDeliveryEstimatedDays() : 1);
         product.setProductNumber(productNumber);
         product.setInspectionStatus(ProductInspectionStatus.WAITING);
 
-        // 5. 태그 JSON 변환
-        if (request.getTags() != null && !request.getTags().isEmpty()) {
-            try {
-                String tagsJson = objectMapper.writeValueAsString(request.getTags());
-                product.setTags(tagsJson);
-            } catch (Exception e) {
-                log.error("태그 JSON 변환 실패", e);
-                throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
-            }
-        }
-
-        // 6. 상품정보제공고시 JSON 변환
+        // 5. 상품정보제공고시 JSON 변환
         if (request.getProductNotice() != null) {
             try {
                 String productNoticeJson = objectMapper.writeValueAsString(request.getProductNotice());
@@ -104,12 +88,12 @@ public class ProductService {
             }
         }
 
-        // 7. 대표 이미지 설정
+        // 6. 대표 이미지 설정
         if (request.getRepresentativeImageUrl() != null) {
             product.setThumbnailUrl(request.getRepresentativeImageUrl());
         }
 
-        // 8. 이미지 저장
+        // 7. 이미지 저장
         List<ProductImage> productImages = new ArrayList<>();
         int imageOrder = 0;
         
@@ -130,7 +114,7 @@ public class ProductService {
         
         product.setProductImages(productImages);
 
-        // 9. 옵션 그룹 및 옵션 생성
+        // 8. 옵션 그룹 및 옵션 생성
         Map<String, Map<String, ProductOption>> optionMap = new HashMap<>(); // 그룹명 -> (옵션명 -> ProductOption)
         
         if (request.getOptionGroups() != null && !request.getOptionGroups().isEmpty()) {
@@ -148,7 +132,7 @@ public class ProductService {
             }
         }
 
-        // 10. Variant 생성 및 옵션 매핑
+        // 9. Variant 생성 및 옵션 매핑
         boolean hasVariantRequests = request.getVariants() != null && !request.getVariants().isEmpty();
         boolean hasOptionGroups = request.getOptionGroups() != null && !request.getOptionGroups().isEmpty();
 
@@ -212,11 +196,11 @@ public class ProductService {
             product.getVariants().add(variant);
         }
 
-        // 11. Product 저장
+        // 10. Product 저장
         Product savedProduct = productRepository.save(product);
         processingHistoryService.recordCreated(savedProduct);
 
-        // 12. 응답 생성
+        // 11. 응답 생성
         return ProductDto.CreateProductResponse.builder()
                 .productId(savedProduct.getProductId())
                 .productNumber(savedProduct.getProductNumber())
@@ -569,31 +553,8 @@ public class ProductService {
         if (request.getDescription() != null) {
             product.setDescription(request.getDescription());
         }
-        if (request.getDeliveryType() != null) {
-            product.setDeliveryType(request.getDeliveryType());
-        }
-        if (request.getDeliveryFee() != null) {
-            product.setDeliveryFee(request.getDeliveryFee());
-        }
-        if (request.getDeliveryFreeThreshold() != null) {
-            product.setDeliveryFreeThreshold(request.getDeliveryFreeThreshold());
-        }
-        if (request.getDeliveryEstimatedDays() != null) {
-            product.setDeliveryEstimatedDays(request.getDeliveryEstimatedDays());
-        }
 
-        // 5. 태그 JSON 변환 (제공된 경우)
-        if (request.getTags() != null) {
-            try {
-                String tagsJson = objectMapper.writeValueAsString(request.getTags());
-                product.setTags(tagsJson);
-            } catch (Exception e) {
-                log.error("태그 JSON 변환 실패", e);
-                throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
-            }
-        }
-
-        // 6. 상품정보제공고시 JSON 변환 (제공된 경우)
+        // 5. 상품정보제공고시 JSON 변환 (제공된 경우)
         if (request.getProductNotice() != null) {
             try {
                 String productNoticeJson = objectMapper.writeValueAsString(request.getProductNotice());
@@ -604,7 +565,7 @@ public class ProductService {
             }
         }
 
-        // 7. 이미지 업데이트 (제공된 경우)
+        // 6. 이미지 업데이트 (제공된 경우)
         if (request.getRepresentativeImageUrl() != null || request.getCoverImageUrls() != null) {
             // 기존 이미지 삭제 (orphanRemoval을 위해 기존 컬렉션을 유지하고 clear 후 addAll 사용)
             List<ProductImage> existingImages = product.getProductImages();
@@ -629,7 +590,7 @@ public class ProductService {
             }
         }
 
-        // 8. 옵션 그룹 및 옵션 업데이트 (제공된 경우)
+        // 7. 옵션 그룹 및 옵션 업데이트 (제공된 경우)
         if (request.getOptionGroups() != null && request.getVariants() != null) {
             // 기존 옵션 그룹 및 variant 삭제
             product.getOptionGroups().clear();
@@ -691,7 +652,7 @@ public class ProductService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
-        // 9. Product 저장
+        // 8. Product 저장
         Product savedProduct = productRepository.save(product);
 
         int newTotalStock = sumVariantStock(savedProduct);
@@ -712,7 +673,7 @@ public class ProductService {
             productRepository.save(savedProduct);
         }
 
-        // 10. 응답 생성
+        // 9. 응답 생성
         return ProductDto.UpdateProductResponse.builder()
                 .productId(savedProduct.getProductId())
                 .productNumber(savedProduct.getProductNumber())
@@ -846,11 +807,6 @@ public class ProductService {
                 .isRecommended(product.getIsRecommended())
                 .productNotice(product.getProductNotice())
                 .description(product.getDescription())
-                .tags(product.getTags())
-                .deliveryType(product.getDeliveryType())
-                .deliveryFee(product.getDeliveryFee())
-                .deliveryFreeThreshold(product.getDeliveryFreeThreshold())
-                .deliveryEstimatedDays(product.getDeliveryEstimatedDays())
                 .createdAt(createdAtStr)
                 .optionGroups(optionGroups)
                 .variants(variants)
@@ -904,11 +860,6 @@ public class ProductService {
                 || request.getRegularPrice() != null
                 || request.getGender() != null
                 || request.getDescription() != null
-                || request.getDeliveryType() != null
-                || request.getDeliveryFee() != null
-                || request.getDeliveryFreeThreshold() != null
-                || request.getDeliveryEstimatedDays() != null
-                || request.getTags() != null
                 || request.getProductNotice() != null
                 || request.getRepresentativeImageUrl() != null
                 || request.getCoverImageUrls() != null;

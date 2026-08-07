@@ -81,11 +81,6 @@ public interface UserProductControllerDocs {
 "      \"isRecommended\": false,\n" +
 "      \"productNotice\": \"{\\\"origin\\\":\\\"한국\\\"}\",\n" +
 "      \"description\": \"<p>상품 상세 설명</p>\",\n" +
-"      \"tags\": \"[\\\"신상\\\", \\\"할인\\\"]\",\n" +
-"      \"deliveryType\": \"STANDARD\",\n" +
-"      \"deliveryFee\": 3000,\n" +
-"      \"deliveryFreeThreshold\": 50000,\n" +
-"      \"deliveryEstimatedDays\": 3,\n" +
                                                     "      \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
                                                     "      \"status\": {\n" +
                                                     "        \"isOutOfStock\": false,\n" +
@@ -155,7 +150,7 @@ public interface UserProductControllerDocs {
                     "**참고사항:**\n" +
                     "- 대표 이미지: 상품 이미지 중 order == 0\n" +
                     "- 커버 이미지: 상품 이미지 중 order >= 1\n" +
-                    "- 무료배송 여부는 deliveryFreeThreshold 기준으로 계산됩니다.\n" +
+                    "- 무료배송 여부는 마켓의 무료배송 기준 금액으로 계산됩니다.\n" +
                     "- 로그인한 사용자는 isWished, isFollowing 정보가 포함됩니다.\n\n" +
                     "**권한:** 선택사항 (게스트 가능)"
     )
@@ -185,15 +180,10 @@ public interface UserProductControllerDocs {
                                                     "  ],\n" +
                                                     "  \"description\": \"<p>상품 상세 설명</p>\",\n" +
                                                     "  \"productNotice\": {\"origin\":\"한국\"},\n" +
-                                                    "  \"tags\": [\"신상\", \"할인\"],\n" +
                                                     "  \"gender\": \"UNISEX\",\n" +
                                                     "  \"isRecommended\": false,\n" +
                                                     "  \"regularPrice\": 113000,\n" +
                                                     "  \"salePrice\": 33900,\n" +
-                                                    "  \"deliveryType\": \"STANDARD\",\n" +
-                                                    "  \"deliveryFee\": 3000,\n" +
-                                                    "  \"deliveryFreeThreshold\": 50000,\n" +
-                                                    "  \"deliveryEstimatedDays\": 3,\n" +
                                                     "  \"isFreeDelivery\": false,\n" +
                                                     "  \"optionGroups\": [\n" +
                                                     "    {\n" +
