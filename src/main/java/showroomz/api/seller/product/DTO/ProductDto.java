@@ -11,11 +11,13 @@ import lombok.Setter;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
 import showroomz.api.common.product.dto.ProductProcessingHistoryDto;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGender;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.domain.product.type.ProductHideReasonType;
+import showroomz.global.dto.PageResponse;
 
 public class ProductDto {
 
@@ -266,23 +268,18 @@ public class ProductDto {
     @AllArgsConstructor
     @Schema(description = "상품 목록 조회 요청 (필터)")
     public static class ProductListRequest {
-        @Schema(description = "카테고리 ID (최종 선택된 카테고리)", example = "3")
-        private Long categoryId;
-
         @Schema(description = "진열 상태 (ALL: 전체, DISPLAY: 진열, HIDDEN: 미진열, PENDING_REVIEW: 재검토 대기, HIDE_REQUEST: 미진열 요청)",
                 example = "ALL",
                 allowableValues = {"ALL", "DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"})
         private String displayStatus = "ALL";
 
-        @Schema(description = "품절 상태 (ALL: 전체, OUT_OF_STOCK: 품절, IN_STOCK: 품절 아님)", example = "ALL", allowableValues = {"ALL", "OUT_OF_STOCK", "IN_STOCK"})
-        private String stockStatus = "ALL";
+        @Schema(description = "공구 상태 (ALL: 전체, PREPARING: 준비중, READY: 준비완료, IN_PROGRESS: 진행중, NOT_CONNECTED: 연결없음)",
+                example = "ALL",
+                allowableValues = {"ALL", "PREPARING", "READY", "IN_PROGRESS", "NOT_CONNECTED"})
+        private String groupBuyStatus = "ALL";
 
-        @Schema(description = "검색어", example = "멋진코트")
+        @Schema(description = "검색어 (상품명 또는 브랜드 상품코드 일치 시 반환)", example = "멋진코트")
         private String keyword;
-
-        @Schema(description = "검색 타입 (productNumber: 상품 번호, sellerProductCode: 판매자 상품 코드, name: 상품명)", 
-                example = "name", allowableValues = {"productNumber", "sellerProductCode", "name"})
-        private String keywordType;
 
         @Schema(description = "정렬 (CREATED_AT: 등록일순, MODIFIED_AT: 수정일순, STOCK_ASC: 재고 적은순) - 기본값: CREATED_AT",
                 example = "CREATED_AT",
@@ -291,14 +288,41 @@ public class ProductDto {
     }
 
     @Getter
-    @Setter
+    @Schema(description = "상품 목록 조회 응답 (글로벌 PageResponse + 진열 상태별 건수)")
+    public static class ProductListResponse extends PageResponse<ProductListItem> {
+
+        @Schema(description = "진열 상태별 상품 건수 (검색어·공구상태 반영, 진열상태 필터 미반영)")
+        private final DisplayStatusCounts displayStatusCounts;
+
+        public ProductListResponse(
+                List<ProductListItem> content,
+                Page<?> page,
+                DisplayStatusCounts displayStatusCounts) {
+            super(content, page);
+            this.displayStatusCounts = displayStatusCounts;
+        }
+    }
+
+    @Getter
+    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Builder
-    @Schema(description = "상품 목록 조회 응답")
-    public static class ProductListResponse {
-        @Schema(description = "상품 목록")
-        private List<ProductListItem> products;
+    @Schema(description = "진열 상태별 상품 건수")
+    public static class DisplayStatusCounts {
+        @Schema(description = "전체 건수", example = "195")
+        private long all;
+
+        @Schema(description = "진열 건수", example = "120")
+        private long display;
+
+        @Schema(description = "미진열 건수", example = "40")
+        private long hidden;
+
+        @Schema(description = "재검토 대기 건수", example = "20")
+        private long pendingReview;
+
+        @Schema(description = "미진열 요청 건수", example = "15")
+        private long hideRequest;
     }
 
     @Getter

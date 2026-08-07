@@ -13,7 +13,6 @@ import showroomz.api.seller.product.docs.ProductControllerDocs;
 import showroomz.api.seller.product.service.ProductService;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
-import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
 @RestController("sellerProductController")
@@ -52,11 +51,11 @@ public class ProductController implements ProductControllerDocs {
 
     @Override
     @GetMapping
-    public ResponseEntity<PageResponse<ProductDto.ProductListItem>> getProductList(
+    public ResponseEntity<ProductDto.ProductListResponse> getProductList(
             ProductDto.ProductListRequest request,
             PagingRequest pagingRequest) {
         String adminEmail = getCurrentAdminEmail();
-        PageResponse<ProductDto.ProductListItem> response = productService.getProductList(adminEmail, request, pagingRequest);
+        ProductDto.ProductListResponse response = productService.getProductList(adminEmail, request, pagingRequest);
         return ResponseEntity.ok(response);
     }
 

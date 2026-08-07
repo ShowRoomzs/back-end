@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.seller.product.DTO.ProductDto;
-import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "Seller - Product", description = "Seller Product API")
@@ -324,7 +323,9 @@ public interface ProductControllerDocs {
 
     @Operation(
             summary = "상품 목록 조회 (페이징, 필터링, 검색)",
-            description = "백스테이지에서 판매자가 자신의 상품 목록을 조회합니다. 페이징, 카테고리, 진열상태, 품절상태 필터 및 검색 기능을 지원합니다.\n\n" +
+            description = "백스테이지에서 판매자가 자신의 상품 목록을 조회합니다. 페이징, 진열상태, 공구상태 필터 및 검색 기능을 지원합니다.\n\n" +
+                    "**응답:** 글로벌 `PageResponse`(`content` + `pageInfo`) + 진열 상태별 건수(`displayStatusCounts`)\n" +
+                    "- `displayStatusCounts`: 검색어·공구상태 반영, 진열상태 필터 미반영\n\n" +
                     "**응답 필드:**\n" +
                     "- regularPrice: 판매가\n" +
                     "- createdAt: 등록일\n" +
@@ -336,21 +337,23 @@ public interface ProductControllerDocs {
                     "  - IN_PROGRESS: 진행중\n" +
                     "  - NOT_CONNECTED: 연결없음\n\n" +
                     "**필터 파라미터:**\n" +
-                    "- categoryId: 최종 선택된 카테고리 ID (선택사항)\n" +
                     "- displayStatus: 진열 상태 (ALL, DISPLAY, HIDDEN, PENDING_REVIEW, HIDE_REQUEST) - 기본값: ALL\n" +
                     "  - DISPLAY: 진열\n" +
                     "  - HIDDEN: 미진열\n" +
                     "  - PENDING_REVIEW: 재검토 대기\n" +
                     "  - HIDE_REQUEST: 미진열 요청\n" +
-                    "- stockStatus: 품절 상태 (ALL, OUT_OF_STOCK, IN_STOCK) - 기본값: ALL\n\n" +
+                    "- groupBuyStatus: 공구 상태 (ALL, PREPARING, READY, IN_PROGRESS, NOT_CONNECTED) - 기본값: ALL\n" +
+                    "  - PREPARING: 준비중\n" +
+                    "  - READY: 준비완료\n" +
+                    "  - IN_PROGRESS: 진행중\n" +
+                    "  - NOT_CONNECTED: 연결없음\n\n" +
                     "**정렬 파라미터:**\n" +
                     "- sortType: 정렬 기준 (기본값: CREATED_AT)\n" +
                     "  - CREATED_AT: 등록일순 (최신순)\n" +
                     "  - MODIFIED_AT: 수정일순 (최신순)\n" +
                     "  - STOCK_ASC: 재고 적은순\n\n" +
                     "**검색 파라미터:**\n" +
-                    "- keyword: 검색어 (선택사항)\n" +
-                    "- keywordType: 검색 타입 (productNumber: 상품 번호, sellerProductCode: 판매자 상품 코드, name: 상품명) - keywordType이 없으면 전체 검색\n\n" +
+                    "- keyword: 검색어 (상품명 또는 브랜드 상품코드 일치 시 반환)\n\n" +
                     "**페이징 파라미터:**\n" +
                     "- page: 페이지 번호 (1부터 시작) - 기본값: 1\n" +
                     "- size: 페이지당 항목 수 - 기본값: 20\n\n" +
@@ -363,7 +366,7 @@ public interface ProductControllerDocs {
                     description = "상품 목록 조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = PageResponse.class),
+                            schema = @Schema(implementation = ProductDto.ProductListResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "성공 예시",
@@ -388,8 +391,15 @@ public interface ProductControllerDocs {
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 10,\n" +
                                                     "    \"totalResults\": 195,\n" +
-                                                    "    \"size\": 20,\n" +
+                                                    "    \"limit\": 20,\n" +
                                                     "    \"hasNext\": true\n" +
+                                                    "  },\n" +
+                                                    "  \"displayStatusCounts\": {\n" +
+                                                    "    \"all\": 195,\n" +
+                                                    "    \"display\": 120,\n" +
+                                                    "    \"hidden\": 40,\n" +
+                                                    "    \"pendingReview\": 20,\n" +
+                                                    "    \"hideRequest\": 15\n" +
                                                     "  }\n" +
                                                     "}"
                                     )
@@ -413,8 +423,8 @@ public interface ProductControllerDocs {
                     )
             )
     })
-    ResponseEntity<PageResponse<ProductDto.ProductListItem>> getProductList(
-            @Parameter(description = "필터 조건 (카테고리, 진열상태, 품절상태)")
+    ResponseEntity<ProductDto.ProductListResponse> getProductList(
+            @Parameter(description = "필터 조건 (진열상태, 공구상태, 검색어, 정렬)")
             ProductDto.ProductListRequest request,
             @Parameter(description = "페이징 정보 (페이지 번호, 페이지 크기)")
             PagingRequest pagingRequest

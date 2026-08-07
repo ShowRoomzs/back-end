@@ -11,7 +11,6 @@ import showroomz.api.common.product.service.ProductProcessingHistoryService;
 import showroomz.api.seller.product.DTO.ProductDto;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.category.repository.CategoryRepository;
-import showroomz.api.seller.category.service.CategoryService;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
@@ -24,7 +23,6 @@ import showroomz.domain.product.type.ProductHideReasonType;
 import showroomz.domain.product.type.ProductListSortType;
 import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.api.seller.auth.repository.SellerRepository;
-import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -44,7 +42,6 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductVariantRepository productVariantRepository;
     private final CategoryRepository categoryRepository;
-    private final CategoryService categoryService;
     private final SellerRepository adminRepository;
     private final MarketRepository marketRepository;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
@@ -242,7 +239,7 @@ public class ProductService {
 
 
     @Transactional(readOnly = true)
-    public PageResponse<ProductDto.ProductListItem> getProductList(String adminEmail, ProductDto.ProductListRequest request, PagingRequest pagingRequest) {
+    public ProductDto.ProductListResponse getProductList(String adminEmail, ProductDto.ProductListRequest request, PagingRequest pagingRequest) {
         // 1. Admin과 Market 조회
         Seller admin = adminRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -254,59 +251,77 @@ public class ProductService {
         Pageable pageable = pagingRequest.toPageable(Sort.unsorted());
         
         // 3. 필터 파라미터 설정
-        Long categoryId = request != null ? request.getCategoryId() : null;
         ProductDisplayStatus displayStatusFilter = resolveDisplayStatusFilter(
                 request != null ? request.getDisplayStatus() : null);
-        String stockStatus = (request != null && request.getStockStatus() != null) 
-                ? request.getStockStatus() : "ALL";
-        String keyword = (request != null && request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) 
+        ProductGroupBuyStatus groupBuyStatusFilter = resolveGroupBuyStatusFilter(
+                request != null ? request.getGroupBuyStatus() : null);
+        String keyword = (request != null && request.getKeyword() != null && !request.getKeyword().trim().isEmpty())
                 ? request.getKeyword().trim() : null;
-        String keywordType = (request != null && request.getKeywordType() != null && !request.getKeywordType().trim().isEmpty()) 
-                ? request.getKeywordType().trim() : null;
         ProductListSortType sortType = resolveSortType(request != null ? request.getSortType() : null);
         
-        // 4. 카테고리 필터링 처리: 상위 카테고리인 경우 모든 하위 카테고리 ID를 포함
-        List<Long> categoryIds = null;
-        if (categoryId != null) {
-            // 해당 카테고리와 모든 하위 카테고리 ID를 조회
-            categoryIds = categoryService.getAllSubCategoryIds(categoryId);
-            // 빈 리스트인 경우 null로 변환 (JPQL에서 IN ()는 에러 발생)
-            if (categoryIds != null && categoryIds.isEmpty()) {
-                categoryIds = null;
-            }
-        }
-        
-        // 5. 필터링된 상품 조회 (모든 필터는 쿼리에서 처리)
+        // 4. 필터링된 상품 조회
         Page<Product> productPage = productRepository.searchSellerProducts(
                 market.getId(),
-                categoryIds,
                 displayStatusFilter,
-                stockStatus,
+                groupBuyStatusFilter,
                 keyword,
-                keywordType,
                 sortType,
                 pageable
         );
 
-        // 6. 상품별 재고 합계 일괄 조회
+        // 5. 상품별 재고 합계 일괄 조회
         List<Long> productIds = productPage.getContent().stream()
                 .map(Product::getProductId)
                 .collect(Collectors.toList());
         Map<Long, Integer> stockSumMap = toStockSumMap(
                 productIds.isEmpty() ? List.of() : productVariantRepository.sumStockByProductIds(productIds));
 
-        // 7. ProductListItem으로 변환
+        // 6. ProductListItem으로 변환
         List<ProductDto.ProductListItem> productList = productPage.getContent().stream()
                 .map(product -> convertToProductListItem(
                         product,
                         stockSumMap.getOrDefault(product.getProductId(), 0)))
                 .collect(Collectors.toList());
+
+        // 7. 진열 상태별 건수 (검색어·공구상태 반영, 진열상태 필터 미반영)
+        ProductDto.DisplayStatusCounts displayStatusCounts = buildDisplayStatusCounts(
+                market.getId(), groupBuyStatusFilter, keyword);
         
-        // 8. PageResponse 생성
-        return new PageResponse<>(
-                productList,
-                productPage
-        );
+        return new ProductDto.ProductListResponse(productList, productPage, displayStatusCounts);
+    }
+
+    private ProductDto.DisplayStatusCounts buildDisplayStatusCounts(
+            Long marketId,
+            ProductGroupBuyStatus groupBuyStatus,
+            String keyword
+    ) {
+        long display = 0L;
+        long hidden = 0L;
+        long pendingReview = 0L;
+        long hideRequest = 0L;
+
+        List<Object[]> rows = productRepository.countSellerProductsByDisplayStatus(
+                marketId, groupBuyStatus, keyword);
+        for (Object[] row : rows) {
+            if (row.length < 2 || !(row[0] instanceof ProductDisplayStatus status) || !(row[1] instanceof Number countNum)) {
+                continue;
+            }
+            long count = countNum.longValue();
+            switch (status) {
+                case DISPLAY -> display = count;
+                case HIDDEN -> hidden = count;
+                case PENDING_REVIEW -> pendingReview = count;
+                case HIDE_REQUEST -> hideRequest = count;
+            }
+        }
+
+        return ProductDto.DisplayStatusCounts.builder()
+                .all(display + hidden + pendingReview + hideRequest)
+                .display(display)
+                .hidden(hidden)
+                .pendingReview(pendingReview)
+                .hideRequest(hideRequest)
+                .build();
     }
     
     @Transactional(readOnly = true)
@@ -918,6 +933,17 @@ public class ProductService {
             return ProductDisplayStatus.valueOf(displayStatus.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "유효하지 않은 진열 상태입니다.");
+        }
+    }
+
+    private ProductGroupBuyStatus resolveGroupBuyStatusFilter(String groupBuyStatus) {
+        if (groupBuyStatus == null || groupBuyStatus.isBlank() || "ALL".equalsIgnoreCase(groupBuyStatus)) {
+            return null;
+        }
+        try {
+            return ProductGroupBuyStatus.valueOf(groupBuyStatus.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "유효하지 않은 공구 상태입니다.");
         }
     }
 

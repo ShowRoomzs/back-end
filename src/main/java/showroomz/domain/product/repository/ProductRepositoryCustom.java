@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGender;
+import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.domain.product.type.ProductListSortType;
 
@@ -58,12 +59,21 @@ public interface ProductRepositoryCustom {
      */
     Page<Product> searchSellerProducts(
             Long marketId,
-            List<Long> categoryIds,
             ProductDisplayStatus displayStatus,
-            String stockStatus,
+            ProductGroupBuyStatus groupBuyStatus,
             String keyword,
-            String keywordType,
             ProductListSortType sortType,
             Pageable pageable
+    );
+
+    /**
+     * 셀러 백스테이지 진열 상태별 상품 건수
+     * - keyword, groupBuyStatus 반영 / displayStatus 필터 미반영
+     * @return [ProductDisplayStatus, count]
+     */
+    List<Object[]> countSellerProductsByDisplayStatus(
+            Long marketId,
+            ProductGroupBuyStatus groupBuyStatus,
+            String keyword
     );
 }
