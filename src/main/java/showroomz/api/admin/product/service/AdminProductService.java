@@ -9,7 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.product.DTO.AdminProductDto;
 import showroomz.api.admin.product.DTO.AdminProductSearchCondition;
 import showroomz.api.common.product.service.ProductProcessingHistoryService;
+import showroomz.api.seller.product.DTO.ProductDto;
 import showroomz.domain.product.entity.Product;
+import showroomz.domain.product.entity.ProductImage;
+import showroomz.domain.product.entity.ProductOption;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.domain.product.type.ProductDisplayStatus;
@@ -21,6 +24,7 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +81,89 @@ public class AdminProductService {
                 groupBuyStatusFilter, keyword);
 
         return new AdminProductDto.ProductListResponse(productList, productPage, displayStatusCounts);
+    }
+
+    /**
+     * 관리자 상품 상세 조회 (브랜드 개별 조회와 동일, 마켓 소유권 검증 없음)
+     */
+    @Transactional(readOnly = true)
+    public ProductDto.ProductDetailResponse getProductById(Long productId) {
+        Product product = productRepository.findByProductId(productId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+        return convertToProductDetailResponse(product);
+    }
+
+    private ProductDto.ProductDetailResponse convertToProductDetailResponse(Product product) {
+        String createdAtStr = product.getCreatedAt() != null
+                ? product.getCreatedAt().toString()
+                : null;
+
+        String representativeImageUrl = product.getThumbnailUrl();
+
+        List<String> coverImageUrls = product.getProductImages().stream()
+                .filter(image -> image.getOrder() != null && image.getOrder() >= 1)
+                .sorted(Comparator.comparing(ProductImage::getOrder))
+                .map(ProductImage::getUrl)
+                .collect(Collectors.toList());
+
+        List<ProductDto.OptionGroupInfo> optionGroups = product.getOptionGroups().stream()
+                .map(group -> {
+                    List<ProductDto.OptionInfo> options = group.getOptions().stream()
+                            .map(option -> ProductDto.OptionInfo.builder()
+                                    .optionId(option.getOptionId())
+                                    .name(option.getName())
+                                    .price(option.getPrice())
+                                    .build())
+                            .collect(Collectors.toList());
+
+                    return ProductDto.OptionGroupInfo.builder()
+                            .optionGroupId(group.getOptionGroupId())
+                            .name(group.getName())
+                            .options(options)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        List<ProductDto.VariantInfo> variants = product.getVariants().stream()
+                .map(variant -> {
+                    List<Long> optionIds = variant.getOptions().stream()
+                            .map(ProductOption::getOptionId)
+                            .collect(Collectors.toList());
+
+                    return ProductDto.VariantInfo.builder()
+                            .variantId(variant.getVariantId())
+                            .name(variant.getName())
+                            .regularPrice(variant.getRegularPrice())
+                            .stock(variant.getStock())
+                            .isRepresentative(variant.getIsRepresentative())
+                            .optionIds(optionIds)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return ProductDto.ProductDetailResponse.builder()
+                .productId(product.getProductId())
+                .productNumber(product.getProductNumber())
+                .marketId(product.getMarket() != null ? product.getMarket().getId() : null)
+                .marketName(product.getMarket() != null ? product.getMarket().getMarketName() : null)
+                .categoryId(product.getCategory() != null ? product.getCategory().getCategoryId() : null)
+                .categoryName(product.getCategory() != null ? product.getCategory().getName() : null)
+                .name(product.getName())
+                .sellerProductCode(product.getSellerProductCode())
+                .representativeImageUrl(representativeImageUrl)
+                .coverImageUrls(coverImageUrls)
+                .regularPrice(product.getRegularPrice())
+                .displayStatus(product.getDisplayStatus())
+                .groupBuyStatus(resolveDummyGroupBuyStatus(product.getProductId()))
+                .latestHideInfo(processingHistoryService.getLatestHideInfo(product))
+                .processingHistory(processingHistoryService.getHistoryItems(product.getProductId()))
+                .isRecommended(product.getIsRecommended())
+                .productNotice(product.getProductNotice())
+                .description(product.getDescription())
+                .createdAt(createdAtStr)
+                .optionGroups(optionGroups)
+                .variants(variants)
+                .build();
     }
 
     private AdminProductDto.DisplayStatusCounts buildDisplayStatusCounts(

@@ -12,6 +12,7 @@ import showroomz.api.admin.product.DTO.AdminProductSearchCondition;
 import showroomz.api.admin.product.docs.AdminProductControllerDocs;
 import showroomz.api.admin.product.service.AdminProductService;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.api.seller.product.DTO.ProductDto;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -30,6 +31,15 @@ public class AdminProductController implements AdminProductControllerDocs {
             @ParameterObject @ModelAttribute PagingRequest pagingRequest
     ) {
         AdminProductDto.ProductListResponse response = adminProductService.getProductList(condition, pagingRequest);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @GetMapping("/{productId}")
+    public ResponseEntity<ProductDto.ProductDetailResponse> getProductById(
+            @PathVariable Long productId
+    ) {
+        ProductDto.ProductDetailResponse response = adminProductService.getProductById(productId);
         return ResponseEntity.ok(response);
     }
 

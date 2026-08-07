@@ -19,6 +19,7 @@ import showroomz.api.admin.product.DTO.AdminProductSearchCondition;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.api.seller.product.DTO.ProductDto;
 import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "Admin - Product", description = "관리자 상품 관리 API")
@@ -115,6 +116,148 @@ public interface AdminProductControllerDocs {
     ResponseEntity<AdminProductDto.ProductListResponse> getProductList(
             @ParameterObject @ModelAttribute AdminProductSearchCondition condition,
             @ParameterObject @ModelAttribute PagingRequest pagingRequest
+    );
+
+    @Operation(
+            summary = "관리자 상품 개별 조회",
+            description = "관리자가 특정 상품의 상세 정보를 조회합니다. 브랜드 개별 상품 조회와 동일한 응답이며, 마켓 소유권 제한 없이 조회합니다.\n\n" +
+                    "- `displayStatus=HIDDEN`인 경우 `latestHideInfo`에 가장 최근 미진열 사유·상세사유·일시·운영자명이 포함됩니다.\n" +
+                    "- `groupBuyStatus`(더미): PREPARING(준비중), READY(준비완료), IN_PROGRESS(진행중), NOT_CONNECTED(연결없음)\n\n" +
+                    "**processingHistory.historyType (상품 처리 이력):**\n" +
+                    "- `PRODUCT_CREATED` → 상품 등록\n" +
+                    "- `PRODUCT_INFO_UPDATED` → 브랜드가 상품 정보 수정\n" +
+                    "- `STOCK_UPDATED` → 재고 수량 수정\n" +
+                    "- `HIDDEN` → 미진열 처리\n" +
+                    "- `REDISPLAYED` → 다시 진열\n" +
+                    "- `HIDE_REQUESTED` → 미진열 요청\n" +
+                    "- `PENDING_REVIEW` → 재검토 대기\n\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "상품 개별 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProductDto.ProductDetailResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"productId\": 1,\n" +
+                                                    "  \"productNumber\": \"SRZ-20251228-001\",\n" +
+                                                    "  \"marketId\": 1,\n" +
+                                                    "  \"marketName\": \"프리미엄 쇼핑몰\",\n" +
+                                                    "  \"categoryId\": 1,\n" +
+                                                    "  \"categoryName\": \"의류\",\n" +
+                                                    "  \"name\": \"프리미엄 린넨 셔츠\",\n" +
+                                                    "  \"sellerProductCode\": \"PROD-ABC-001\",\n" +
+                                                    "  \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
+                                                    "  \"coverImageUrls\": [\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\"],\n" +
+                                                    "  \"regularPrice\": 59000,\n" +
+                                                    "  \"displayStatus\": \"HIDDEN\",\n" +
+                                                    "  \"groupBuyStatus\": \"PREPARING\",\n" +
+                                                    "  \"latestHideInfo\": {\n" +
+                                                    "    \"hideReasonType\": \"PRODUCT_NOTICE_ERROR\",\n" +
+                                                    "    \"hideReasonDescription\": \"상품 정보 제공 고시 오류\",\n" +
+                                                    "    \"hideDetail\": \"성분 표기 누락\",\n" +
+                                                    "    \"hiddenAt\": \"2026-06-20T11:20:00Z\",\n" +
+                                                    "    \"processorName\": \"admin@showroomz.com\"\n" +
+                                                    "  },\n" +
+                                                    "  \"isRecommended\": false,\n" +
+                                                    "  \"productNotice\": \"{\\\"origin\\\":\\\"대한민국\\\",\\\"ingredients\\\":\\\"제품 상세 참고\\\"}\",\n" +
+                                                    "  \"description\": \"<p>상품 상세 설명</p>\",\n" +
+                                                    "  \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
+                                                    "  \"optionGroups\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"optionGroupId\": 1,\n" +
+                                                    "      \"name\": \"사이즈\",\n" +
+                                                    "      \"options\": [\n" +
+                                                    "        {\n" +
+                                                    "          \"optionId\": 1,\n" +
+                                                    "          \"name\": \"S\",\n" +
+                                                    "          \"price\": 0\n" +
+                                                    "        },\n" +
+                                                    "        {\n" +
+                                                    "          \"optionId\": 2,\n" +
+                                                    "          \"name\": \"M\",\n" +
+                                                    "          \"price\": 0\n" +
+                                                    "        }\n" +
+                                                    "      ]\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"variants\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"variantId\": 1,\n" +
+                                                    "      \"name\": \"S / Black\",\n" +
+                                                    "      \"regularPrice\": 50000,\n" +
+                                                    "      \"stock\": 100,\n" +
+                                                    "      \"isRepresentative\": true,\n" +
+                                                    "      \"optionIds\": [1, 2]\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"processingHistory\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"historyId\": 2,\n" +
+                                                    "      \"historyType\": \"HIDDEN\",\n" +
+                                                    "      \"title\": \"미진열 처리\",\n" +
+                                                    "      \"previousDisplayStatus\": \"DISPLAY\",\n" +
+                                                    "      \"newDisplayStatus\": \"HIDDEN\",\n" +
+                                                    "      \"hideReason\": {\n" +
+                                                    "        \"reasonType\": \"PRODUCT_NOTICE_ERROR\",\n" +
+                                                    "        \"reasonDescription\": \"상품 정보 제공 고시 오류\",\n" +
+                                                    "        \"detail\": \"성분 표기 누락\"\n" +
+                                                    "      },\n" +
+                                                    "      \"stockQuantity\": null,\n" +
+                                                    "      \"processorName\": \"admin@showroomz.com\",\n" +
+                                                    "      \"createdAt\": \"2026-06-20T11:20:00Z\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"historyId\": 1,\n" +
+                                                    "      \"historyType\": \"PRODUCT_CREATED\",\n" +
+                                                    "      \"title\": \"상품 등록\",\n" +
+                                                    "      \"previousDisplayStatus\": null,\n" +
+                                                    "      \"newDisplayStatus\": \"DISPLAY\",\n" +
+                                                    "      \"hideReason\": null,\n" +
+                                                    "      \"stockQuantity\": null,\n" +
+                                                    "      \"processorName\": null,\n" +
+                                                    "      \"createdAt\": \"2026-06-12T10:05:00Z\"\n" +
+                                                    "    }\n" +
+                                                    "  ]\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 (ADMIN 권한 필요)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "상품을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<ProductDto.ProductDetailResponse> getProductById(
+            @Parameter(description = "조회할 상품 ID", required = true, example = "1")
+            @PathVariable Long productId
     );
 
     @Operation(
