@@ -183,6 +183,7 @@ public interface ProductControllerDocs {
     @Operation(
             summary = "상품 개별 조회",
             description = "백스테이지에서 판매자가 특정 상품의 상세 정보를 조회합니다. 상품의 모든 정보와 처리 이력(`processingHistory`)을 포함합니다.\n\n" +
+                    "- `displayStatus=HIDDEN`인 경우 `latestHideInfo`에 가장 최근 미진열 사유·상세사유·일시·운영자명이 포함됩니다.\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -209,7 +210,16 @@ public interface ProductControllerDocs {
                                                     "  \"coverImageUrls\": [\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\"],\n" +
                                                     "  \"regularPrice\": 59000,\n" +
                                                     "  \"gender\": \"UNISEX\",\n" +
-                                                    "  \"displayStatus\": \"DISPLAY\",\n" +
+                                                    "  \"displayStatus\": \"HIDDEN\",\n" +
+                                                    "  \"hideReasonType\": \"PRODUCT_NOTICE_ERROR\",\n" +
+                                                    "  \"hideDetail\": \"성분 표기 누락\",\n" +
+                                                    "  \"latestHideInfo\": {\n" +
+                                                    "    \"hideReasonType\": \"PRODUCT_NOTICE_ERROR\",\n" +
+                                                    "    \"hideReasonDescription\": \"상품 정보 제공 고시 오류\",\n" +
+                                                    "    \"hideDetail\": \"성분 표기 누락\",\n" +
+                                                    "    \"hiddenAt\": \"2026-06-20T11:20:00Z\",\n" +
+                                                    "    \"processorName\": \"김운영 운영자\"\n" +
+                                                    "  },\n" +
                                                     "  \"isOutOfStockForced\": false,\n" +
                                                     "  \"isRecommended\": false,\n" +
                                                     "  \"productNotice\": \"{\\\"origin\\\":\\\"대한민국\\\",\\\"ingredients\\\":\\\"제품 상세 참고\\\"}\",\n" +
@@ -244,17 +254,6 @@ public interface ProductControllerDocs {
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"processingHistory\": [\n" +
-                                                    "    {\n" +
-                                                    "      \"historyId\": 3,\n" +
-                                                    "      \"historyType\": \"REDISPLAYED\",\n" +
-                                                    "      \"title\": \"다시 진열\",\n" +
-                                                    "      \"previousDisplayStatus\": \"HIDDEN\",\n" +
-                                                    "      \"newDisplayStatus\": \"DISPLAY\",\n" +
-                                                    "      \"hideReason\": null,\n" +
-                                                    "      \"stockQuantity\": null,\n" +
-                                                    "      \"processorName\": \"김운영 운영자\",\n" +
-                                                    "      \"createdAt\": \"2026-06-25T09:00:00Z\"\n" +
-                                                    "    },\n" +
                                                     "    {\n" +
                                                     "      \"historyId\": 2,\n" +
                                                     "      \"historyType\": \"HIDDEN\",\n" +

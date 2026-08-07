@@ -68,4 +68,28 @@ public class ProductProcessingHistoryDto {
         @Schema(description = "처리 시각 (ISO-8601)", example = "2026-06-20T11:20:00Z")
         private String createdAt;
     }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "최근 미진열 정보 (displayStatus=HIDDEN일 때만)")
+    public static class LatestHideInfo {
+        @Schema(description = "미진열 사유 타입", example = "PRODUCT_NOTICE_ERROR",
+                allowableValues = {"PRODUCT_NOTICE_ERROR", "AD_DISPLAY_VIOLATION", "BRAND_REQUEST", "OTHER"})
+        private ProductHideReasonType hideReasonType;
+
+        @Schema(description = "미진열 사유 설명", example = "상품 정보 제공 고시 오류")
+        private String hideReasonDescription;
+
+        @Schema(description = "미진열 상세 사유", example = "성분 표기 누락")
+        private String hideDetail;
+
+        @Schema(description = "미진열 일시 (ISO-8601)", example = "2026-06-20T11:20:00Z")
+        private String hiddenAt;
+
+        @Schema(description = "미진열 처리 운영자명", example = "김운영 운영자")
+        private String processorName;
+    }
 }

@@ -400,6 +400,9 @@ public class ProductDto {
         @Schema(description = "미진열 상세 사유", example = "성분 표기 누락")
         private String hideDetail;
 
+        @Schema(description = "최근 미진열 정보 (displayStatus=HIDDEN일 때만, 가장 최근 HIDDEN 이력 기준)")
+        private ProductProcessingHistoryDto.LatestHideInfo latestHideInfo;
+
         @Schema(description = "강제 품절 처리 여부", example = "false")
         private Boolean isOutOfStockForced;
 

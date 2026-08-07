@@ -171,6 +171,58 @@ public class ProductProcessingHistoryService {
         return toHistoryItems(histories);
     }
 
+    /**
+     * 미진열(HIDDEN) 상태일 때만 가장 최근 미진열 이력을 반환합니다.
+     */
+    @Transactional(readOnly = true)
+    public ProductProcessingHistoryDto.LatestHideInfo getLatestHideInfo(Product product) {
+        if (product == null || product.getDisplayStatus() != ProductDisplayStatus.HIDDEN) {
+            return null;
+        }
+
+        return historyRepository
+                .findFirstByProduct_ProductIdAndHistoryTypeOrderByCreatedAtDesc(
+                        product.getProductId(), ProductProcessingHistoryType.HIDDEN)
+                .map(this::toLatestHideInfo)
+                .orElseGet(() -> {
+                    if (product.getHideReasonType() == null && !StringUtils.hasText(product.getHideDetail())) {
+                        return null;
+                    }
+                    return ProductProcessingHistoryDto.LatestHideInfo.builder()
+                            .hideReasonType(product.getHideReasonType())
+                            .hideReasonDescription(
+                                    product.getHideReasonType() != null
+                                            ? product.getHideReasonType().getDescription()
+                                            : null)
+                            .hideDetail(product.getHideDetail())
+                            .hiddenAt(null)
+                            .processorName(null)
+                            .build();
+                });
+    }
+
+    private ProductProcessingHistoryDto.LatestHideInfo toLatestHideInfo(ProductProcessingHistory history) {
+        String processorName = null;
+        if (history.getProcessedBy() != null) {
+            processorName = sellerRepository.findById(history.getProcessedBy())
+                    .map(Seller::getName)
+                    .filter(StringUtils::hasText)
+                    .map(name -> name + " 운영자")
+                    .orElse(null);
+        }
+
+        return ProductProcessingHistoryDto.LatestHideInfo.builder()
+                .hideReasonType(history.getHideReasonType())
+                .hideReasonDescription(
+                        history.getHideReasonType() != null
+                                ? history.getHideReasonType().getDescription()
+                                : null)
+                .hideDetail(history.getHideDetail())
+                .hiddenAt(history.getCreatedAt() != null ? history.getCreatedAt().toString() : null)
+                .processorName(processorName)
+                .build();
+    }
+
     private List<ProductProcessingHistoryDto.HistoryItem> toHistoryItems(List<ProductProcessingHistory> histories) {
         Set<Long> processorIds = histories.stream()
                 .map(ProductProcessingHistory::getProcessedBy)

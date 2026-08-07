@@ -802,6 +802,7 @@ public class ProductService {
                 .displayStatus(product.getDisplayStatus())
                 .hideReasonType(product.getHideReasonType())
                 .hideDetail(product.getHideDetail())
+                .latestHideInfo(processingHistoryService.getLatestHideInfo(product))
                 .processingHistory(processingHistoryService.getHistoryItems(product.getProductId()))
                 .isOutOfStockForced(product.getIsOutOfStockForced())
                 .isRecommended(product.getIsRecommended())
