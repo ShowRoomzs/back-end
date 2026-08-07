@@ -434,7 +434,10 @@ public class ProductDto {
         @Schema(description = "옵션 조합 (Variant) 목록")
         private List<VariantInfo> variants;
 
-        @Schema(description = "처리 이력 (브랜드/어드민 공유, 최신순)")
+        @Schema(description = "처리 이력 (브랜드/어드민 공유, 최신순). "
+                + "historyType: PRODUCT_CREATED(상품 등록), PRODUCT_INFO_UPDATED(브랜드가 상품 정보 수정), "
+                + "STOCK_UPDATED(재고 수량 수정), HIDDEN(미진열 처리), REDISPLAYED(다시 진열), "
+                + "HIDE_REQUESTED(미진열 요청), PENDING_REVIEW(재검토 대기)")
         private List<ProductProcessingHistoryDto.HistoryItem> processingHistory;
     }
 

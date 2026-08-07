@@ -222,6 +222,14 @@ public interface ProductControllerDocs {
             description = "백스테이지에서 판매자가 특정 상품의 상세 정보를 조회합니다. 상품의 모든 정보와 처리 이력(`processingHistory`)을 포함합니다.\n\n" +
                     "- `displayStatus=HIDDEN`인 경우 `latestHideInfo`에 가장 최근 미진열 사유·상세사유·일시·운영자명이 포함됩니다.\n" +
                     "- `groupBuyStatus`(더미): PREPARING(준비중), READY(준비완료), IN_PROGRESS(진행중), NOT_CONNECTED(연결없음)\n\n" +
+                    "**processingHistory.historyType (상품 처리 이력):**\n" +
+                    "- `PRODUCT_CREATED` → 상품 등록\n" +
+                    "- `PRODUCT_INFO_UPDATED` → 브랜드가 상품 정보 수정\n" +
+                    "- `STOCK_UPDATED` → 재고 수량 수정\n" +
+                    "- `HIDDEN` → 미진열 처리\n" +
+                    "- `REDISPLAYED` → 다시 진열\n" +
+                    "- `HIDE_REQUESTED` → 미진열 요청\n" +
+                    "- `PENDING_REVIEW` → 재검토 대기\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )

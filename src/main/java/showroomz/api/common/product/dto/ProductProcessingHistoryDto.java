@@ -40,20 +40,42 @@ public class ProductProcessingHistoryDto {
         @Schema(description = "이력 ID", example = "1")
         private Long historyId;
 
-        @Schema(description = "이력 유형", example = "HIDDEN",
+        @Schema(
+                description = "이력 유형. "
+                        + "PRODUCT_CREATED(상품 등록), "
+                        + "PRODUCT_INFO_UPDATED(브랜드가 상품 정보 수정), "
+                        + "STOCK_UPDATED(재고 수량 수정), "
+                        + "HIDDEN(미진열 처리), "
+                        + "REDISPLAYED(다시 진열), "
+                        + "HIDE_REQUESTED(미진열 요청), "
+                        + "PENDING_REVIEW(재검토 대기)",
+                example = "HIDDEN",
+                implementation = ProductProcessingHistoryType.class,
                 allowableValues = {
-                        "PRODUCT_CREATED", "PRODUCT_INFO_UPDATED", "STOCK_UPDATED",
-                        "HIDDEN", "REDISPLAYED", "HIDE_REQUESTED", "PENDING_REVIEW"
-                })
+                        "PRODUCT_CREATED",
+                        "PRODUCT_INFO_UPDATED",
+                        "STOCK_UPDATED",
+                        "HIDDEN",
+                        "REDISPLAYED",
+                        "HIDE_REQUESTED",
+                        "PENDING_REVIEW"
+                }
+        )
         private ProductProcessingHistoryType historyType;
 
-        @Schema(description = "이력 표시 제목", example = "미진열 처리")
+        @Schema(description = "이력 표시 제목 (historyType.description)", example = "미진열 처리")
         private String title;
 
-        @Schema(description = "변경 전 진열 상태")
+        @Schema(
+                description = "변경 전 진열 상태. DISPLAY(진열), HIDDEN(미진열), PENDING_REVIEW(재검토 대기), HIDE_REQUEST(미진열 요청)",
+                allowableValues = {"DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"}
+        )
         private ProductDisplayStatus previousDisplayStatus;
 
-        @Schema(description = "변경 후 진열 상태")
+        @Schema(
+                description = "변경 후 진열 상태. DISPLAY(진열), HIDDEN(미진열), PENDING_REVIEW(재검토 대기), HIDE_REQUEST(미진열 요청)",
+                allowableValues = {"DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"}
+        )
         private ProductDisplayStatus newDisplayStatus;
 
         @Schema(description = "미진열 사유 (미진열 처리 시에만, 사유+상세 묶음)")
