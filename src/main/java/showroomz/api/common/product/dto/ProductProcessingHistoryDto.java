@@ -84,7 +84,8 @@ public class ProductProcessingHistoryDto {
         @Schema(description = "재고 수량 (재고 수정 이력 시)", example = "120")
         private Integer stockQuantity;
 
-        @Schema(description = "처리자 표시명 (어드민 처리 시 '이름 운영자')", example = "김운영 운영자")
+        @Schema(description = "처리자 표시 (미진열 처리: 운영자 이메일, 그 외 어드민 처리: '이름 운영자')",
+                example = "admin@showroomz.com")
         private String processorName;
 
         @Schema(description = "처리 시각 (ISO-8601)", example = "2026-06-20T11:20:00Z")
@@ -111,7 +112,7 @@ public class ProductProcessingHistoryDto {
         @Schema(description = "미진열 일시 (ISO-8601)", example = "2026-06-20T11:20:00Z")
         private String hiddenAt;
 
-        @Schema(description = "미진열 처리 운영자명", example = "김운영 운영자")
+        @Schema(description = "미진열 처리 운영자 이메일", example = "admin@showroomz.com")
         private String processorName;
     }
 }

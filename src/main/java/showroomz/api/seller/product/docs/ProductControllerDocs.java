@@ -265,7 +265,7 @@ public interface ProductControllerDocs {
                                                     "    \"hideReasonDescription\": \"상품 정보 제공 고시 오류\",\n" +
                                                     "    \"hideDetail\": \"성분 표기 누락\",\n" +
                                                     "    \"hiddenAt\": \"2026-06-20T11:20:00Z\",\n" +
-                                                    "    \"processorName\": \"김운영 운영자\"\n" +
+                                                    "    \"processorName\": \"admin@showroomz.com\"\n" +
                                                     "  },\n" +
                                                     "  \"isRecommended\": false,\n" +
                                                     "  \"productNotice\": \"{\\\"origin\\\":\\\"대한민국\\\",\\\"ingredients\\\":\\\"제품 상세 참고\\\"}\",\n" +
@@ -312,7 +312,7 @@ public interface ProductControllerDocs {
                                                     "        \"detail\": \"성분 표기 누락\"\n" +
                                                     "      },\n" +
                                                     "      \"stockQuantity\": null,\n" +
-                                                    "      \"processorName\": \"김운영 운영자\",\n" +
+                                                    "      \"processorName\": \"admin@showroomz.com\",\n" +
                                                     "      \"createdAt\": \"2026-06-20T11:20:00Z\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +

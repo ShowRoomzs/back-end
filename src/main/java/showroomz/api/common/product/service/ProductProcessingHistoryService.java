@@ -205,9 +205,8 @@ public class ProductProcessingHistoryService {
         String processorName = null;
         if (history.getProcessedBy() != null) {
             processorName = sellerRepository.findById(history.getProcessedBy())
-                    .map(Seller::getName)
+                    .map(Seller::getEmail)
                     .filter(StringUtils::hasText)
-                    .map(name -> name + " 운영자")
                     .orElse(null);
         }
 
@@ -229,19 +228,19 @@ public class ProductProcessingHistoryService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Map<Long, String> processorNames = processorIds.isEmpty()
+        Map<Long, Seller> processors = processorIds.isEmpty()
                 ? Map.of()
                 : sellerRepository.findAllById(processorIds).stream()
-                .collect(Collectors.toMap(Seller::getId, Seller::getName, (a, b) -> a));
+                .collect(Collectors.toMap(Seller::getId, s -> s, (a, b) -> a));
 
         return histories.stream()
-                .map(h -> toHistoryItem(h, processorNames))
+                .map(h -> toHistoryItem(h, processors))
                 .collect(Collectors.toList());
     }
 
     private ProductProcessingHistoryDto.HistoryItem toHistoryItem(
             ProductProcessingHistory history,
-            Map<Long, String> processorNames
+            Map<Long, Seller> processors
     ) {
         ProductProcessingHistoryDto.HideReason hideReason = null;
         if (history.getHistoryType() == ProductProcessingHistoryType.HIDDEN
@@ -253,13 +252,7 @@ public class ProductProcessingHistoryService {
                     .build();
         }
 
-        String processorName = null;
-        if (history.getProcessedBy() != null) {
-            String name = processorNames.get(history.getProcessedBy());
-            if (StringUtils.hasText(name)) {
-                processorName = name + " 운영자";
-            }
-        }
+        String processorName = resolveProcessorDisplayName(history, processors);
 
         return ProductProcessingHistoryDto.HistoryItem.builder()
                 .historyId(history.getId())
@@ -272,5 +265,28 @@ public class ProductProcessingHistoryService {
                 .processorName(processorName)
                 .createdAt(history.getCreatedAt() != null ? history.getCreatedAt().toString() : null)
                 .build();
+    }
+
+    /**
+     * 미진열 처리(HIDDEN)는 운영자 이메일, 그 외 어드민 처리는 '이름 운영자'로 표시.
+     */
+    private String resolveProcessorDisplayName(
+            ProductProcessingHistory history,
+            Map<Long, Seller> processors
+    ) {
+        if (history.getProcessedBy() == null) {
+            return null;
+        }
+        Seller processor = processors.get(history.getProcessedBy());
+        if (processor == null) {
+            return null;
+        }
+        if (history.getHistoryType() == ProductProcessingHistoryType.HIDDEN) {
+            return StringUtils.hasText(processor.getEmail()) ? processor.getEmail() : null;
+        }
+        if (StringUtils.hasText(processor.getName())) {
+            return processor.getName() + " 운영자";
+        }
+        return null;
     }
 }
