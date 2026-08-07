@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.product.entity.Product;
-import showroomz.domain.product.type.ProductInspectionStatus;
+import showroomz.domain.product.type.ProductDisplayStatus;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -43,8 +43,6 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     long countByMarket_Id(Long marketId);
 
-    long countByMarket_IdAndInspectionStatus(Long marketId, ProductInspectionStatus inspectionStatus);
-    
     // 검색어로 상품 검색 (상품명, 상품번호, 판매자코드)
     @Query("SELECT p FROM Product p WHERE p.market.id = :marketId " +
            "AND (p.name LIKE %:searchTerm% OR p.productNumber LIKE %:searchTerm% OR p.sellerProductCode LIKE %:searchTerm%)")
@@ -69,13 +67,12 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     // Market별 상품 조회 (페이징, 필터링, 검색 포함)
     // 품절 상태는 variants의 stock 합계를 기반으로 계산
     // categoryIds는 상위 카테고리를 포함한 모든 하위 카테고리 ID 리스트
+    // displayStatus가 null이면 전체 조회
     @Query("SELECT DISTINCT p FROM Product p " +
            "LEFT JOIN p.variants v " +
            "WHERE p.market.id = :marketId " +
            "AND (:categoryIds IS NULL OR p.category.categoryId IN :categoryIds) " +
-           "AND (:displayStatus = 'ALL' OR " +
-           "     (:displayStatus = 'DISPLAY' AND p.isDisplay = true) OR " +
-           "     (:displayStatus = 'HIDDEN' AND p.isDisplay = false)) " +
+           "AND (:displayStatus IS NULL OR p.displayStatus = :displayStatus) " +
            "AND (p.isOutOfStockForced = true OR " +
            "     (:stockStatus = 'ALL') OR " +
            "     (:stockStatus = 'OUT_OF_STOCK' AND (p.isOutOfStockForced = true OR " +
@@ -90,7 +87,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     Page<Product> findByMarketIdWithFilters(
             @Param("marketId") Long marketId,
             @Param("categoryIds") List<Long> categoryIds,
-            @Param("displayStatus") String displayStatus,
+            @Param("displayStatus") ProductDisplayStatus displayStatus,
             @Param("stockStatus") String stockStatus,
             @Param("keyword") String keyword,
             @Param("keywordType") String keywordType,
@@ -100,32 +97,36 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     /**
      * 마켓별 대표 상품 3개 조회
      * - isRecommended=true 우선, 그 다음 최신순
-     * - isDisplay=true인 상품만
+     * - displayStatus=DISPLAY인 상품만
      * - 카테고리 필터링 지원
      */
     @Query("SELECT p FROM Product p " +
            "LEFT JOIN FETCH p.productImages " +
            "LEFT JOIN FETCH p.category " +
            "WHERE p.market.id = :marketId " +
-           "AND p.isDisplay = true " +
+           "AND p.displayStatus = :displayStatus " +
            "AND (:categoryIds IS NULL OR p.category.categoryId IN :categoryIds) " +
            "ORDER BY p.isRecommended DESC, p.createdAt DESC")
     List<Product> findTop3RepresentativeProductsByMarket(
             @Param("marketId") Long marketId,
             @Param("categoryIds") List<Long> categoryIds,
+            @Param("displayStatus") ProductDisplayStatus displayStatus,
             Pageable pageable
     );
 
     /**
      * 여러 마켓의 전시 중인 상품 일괄 조회 (Batch Fetching)
-     * - isDisplay=true인 상품만
+     * - displayStatus=DISPLAY인 상품만
      * - 마켓별 정렬: isRecommended DESC, createdAt DESC
      * - Market JOIN FETCH로 N+1 방지
      */
     @Query("SELECT p FROM Product p JOIN FETCH p.market " +
-           "WHERE p.market.id IN :marketIds AND p.isDisplay = true " +
+           "WHERE p.market.id IN :marketIds AND p.displayStatus = :displayStatus " +
            "ORDER BY p.market.id, p.isRecommended DESC, p.createdAt DESC")
-    List<Product> findByMarketIdInAndIsDisplayTrue(@Param("marketIds") List<Long> marketIds);
+    List<Product> findByMarketIdInAndDisplayStatus(
+            @Param("marketIds") List<Long> marketIds,
+            @Param("displayStatus") ProductDisplayStatus displayStatus
+    );
 
 }
 

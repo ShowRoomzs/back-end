@@ -9,6 +9,8 @@ import showroomz.api.app.search.dto.AutoCompleteResponse;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.seller.auth.type.SellerStatus;
 
+import showroomz.domain.product.type.ProductDisplayStatus;
+
 import java.util.List;
 
 import static showroomz.domain.market.entity.QMarket.market;
@@ -37,7 +39,7 @@ public class SearchService {
                 ))
                 .from(product)
                 .where(product.name.contains(keyword)
-                        .and(product.isDisplay.isTrue()))
+                        .and(product.displayStatus.eq(ProductDisplayStatus.DISPLAY)))
                 .orderBy(product.name.length().asc())
                 .limit(5)
                 .fetch();

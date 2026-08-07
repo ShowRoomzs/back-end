@@ -8,14 +8,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.seller.product.DTO.ProductDto;
-import showroomz.global.dto.PageResponse;
+import showroomz.api.seller.product.DTO.SellerProductSearchCondition;
 import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "Seller - Product", description = "Seller Product API")
@@ -23,13 +25,15 @@ public interface ProductControllerDocs {
 
     @Operation(
             summary = "상품 등록",
-            description = "백스테이지 관리자가 새로운 상품을 등록합니다. 카테고리, 가격, 옵션 조합(재고/판매가), 이미지, 상세 설명 및 공시 정보를 모두 포함합니다.\n\n" +
+            description = "백스테이지 관리자가 새로운 상품을 등록합니다. 카테고리, 가격, 옵션 조합(재고/판매가), 이미지, 상세 설명 및 공시 정보를 포함합니다.\n\n" +
                     "**필수 항목:**\n" +
-                    "- categoryId: 카테고리 ID (예: 1, 2, 3)\n" +
+                    "- categoryId: 카테고리 ID\n" +
                     "- name: 상품명\n" +
-                    "- regularPrice: 판매가 (할인 전)\n" +
-                    "- salePrice: 할인 판매가 (최종가)\n" +
-                    "- variants: 옵션 목록 (조합된 결과)\n\n" +
+                    "- regularPrice: 판매가 (정가). 할인가는 계약 단계에서 결정됩니다.\n\n" +
+                    "**옵션 / 재고:**\n" +
+                    "- 옵션 없는 상품: `optionGroups`·`variants` 생략(또는 빈 배열)하고 `stock`만 입력\n" +
+                    "- 옵션 있는 상품: `optionGroups` + `variants`를 함께 전달 (`variants[].stock`에 조합별 재고)\n" +
+                    "- `optionGroups`만 있고 `variants`가 없으면 400 오류\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -120,44 +124,70 @@ public interface ProductControllerDocs {
             )
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "상품 등록 정보",
+            description = "상품 등록 정보. 옵션 없는 상품은 stock만, 옵션 있는 상품은 optionGroups+variants를 사용합니다.",
             required = true,
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = ProductDto.CreateProductRequest.class),
                     examples = {
                             @ExampleObject(
-                                    name = "요청 예시",
+                                    name = "옵션 없이 재고만 등록",
+                                    summary = "optionGroups/variants 없이 stock만 입력",
+                                    description = "단일 재고 상품. optionGroups·variants를 보내지 않고 stock으로 재고를 등록합니다.",
                                     value = "{\n" +
                                             "  \"categoryId\": 1,\n" +
                                             "  \"name\": \"프리미엄 린넨 셔츠\",\n" +
                                             "  \"sellerProductCode\": \"PROD-001\",\n" +
-                                            "  \"purchasePrice\": 30000,\n" +
                                             "  \"regularPrice\": 59000,\n" +
-                                            "  \"salePrice\": 49000,\n" +
-                                            "  \"gender\": \"UNISEX\",\n" +
-                                            "  \"isDiscount\": true,\n" +
+                                            "  \"stock\": 999,\n" +
                                             "  \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
                                             "  \"coverImageUrls\": [\n" +
                                             "    \"https://example.com/image1.jpg\",\n" +
                                             "    \"https://example.com/image2.jpg\"\n" +
                                             "  ],\n" +
                                             "  \"description\": \"<p>상품 상세 설명</p>\",\n" +
-                                            "  \"tags\": [\"신상\", \"할인\", \"인기\"],\n" +
-                                            "  \"deliveryType\": \"STANDARD\",\n" +
-                                            "  \"deliveryFee\": 3000,\n" +
-                                            "  \"deliveryFreeThreshold\": 50000,\n" +
-                                            "  \"deliveryEstimatedDays\": 3,\n" +
                                             "  \"productNotice\": {\n" +
+                                            "    \"capacityWeight\": \"제품 상세 참고\",\n" +
+                                            "    \"mainSpecs\": \"제품 상세 참고\",\n" +
+                                            "    \"expirationPeriod\": \"제품 상세 참고\",\n" +
+                                            "    \"usageMethod\": \"제품 상세 참고\",\n" +
+                                            "    \"manufacturerSeller\": \"제품 상세 참고\",\n" +
                                             "    \"origin\": \"제품 상세 참고\",\n" +
-                                            "    \"material\": \"제품 상세 참고\",\n" +
-                                            "    \"color\": \"제품 상세 참고\",\n" +
-                                            "    \"size\": \"제품 상세 참고\",\n" +
-                                            "    \"manufacturer\": \"제품 상세 참고\",\n" +
-                                            "    \"washingMethod\": \"제품 상세 참고\",\n" +
-                                            "    \"manufactureDate\": \"제품 상세 참고\",\n" +
-                                            "    \"asInfo\": \"제품 상세 참고\",\n" +
-                                            "    \"qualityAssurance\": \"제품 상세 참고\"\n" +
+                                            "    \"ingredients\": \"제품 상세 참고\",\n" +
+                                            "    \"functionalCosmeticApproval\": \"제품 상세 참고\",\n" +
+                                            "    \"precautions\": \"제품 상세 참고\",\n" +
+                                            "    \"qualityAssurance\": \"제품 상세 참고\",\n" +
+                                            "    \"customerServicePhone\": \"제품 상세 참고\"\n" +
+                                            "  }\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "옵션(사이즈 Free) 포함 등록",
+                                    summary = "optionGroups + variants로 재고 등록",
+                                    description = "옵션 그룹과 조합(variant)을 함께 전달합니다. 재고는 variants[].stock에 넣습니다.",
+                                    value = "{\n" +
+                                            "  \"categoryId\": 1,\n" +
+                                            "  \"name\": \"프리미엄 린넨 셔츠\",\n" +
+                                            "  \"sellerProductCode\": \"PROD-001\",\n" +
+                                            "  \"regularPrice\": 59000,\n" +
+                                            "  \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
+                                            "  \"coverImageUrls\": [\n" +
+                                            "    \"https://example.com/image1.jpg\",\n" +
+                                            "    \"https://example.com/image2.jpg\"\n" +
+                                            "  ],\n" +
+                                            "  \"description\": \"<p>상품 상세 설명</p>\",\n" +
+                                            "  \"productNotice\": {\n" +
+                                            "    \"capacityWeight\": \"제품 상세 참고\",\n" +
+                                            "    \"mainSpecs\": \"제품 상세 참고\",\n" +
+                                            "    \"expirationPeriod\": \"제품 상세 참고\",\n" +
+                                            "    \"usageMethod\": \"제품 상세 참고\",\n" +
+                                            "    \"manufacturerSeller\": \"제품 상세 참고\",\n" +
+                                            "    \"origin\": \"제품 상세 참고\",\n" +
+                                            "    \"ingredients\": \"제품 상세 참고\",\n" +
+                                            "    \"functionalCosmeticApproval\": \"제품 상세 참고\",\n" +
+                                            "    \"precautions\": \"제품 상세 참고\",\n" +
+                                            "    \"qualityAssurance\": \"제품 상세 참고\",\n" +
+                                            "    \"customerServicePhone\": \"제품 상세 참고\"\n" +
                                             "  },\n" +
                                             "  \"optionGroups\": [\n" +
                                             "    {\n" +
@@ -173,9 +203,8 @@ public interface ProductControllerDocs {
                                             "  \"variants\": [\n" +
                                             "    {\n" +
                                             "      \"optionNames\": [\"Free\"],\n" +
-                                            "      \"salePrice\": 49000,\n" +
+                                            "      \"regularPrice\": 59000,\n" +
                                             "      \"stock\": 999,\n" +
-                                            "      \"isDisplay\": true,\n" +
                                             "      \"isRepresentative\": true\n" +
                                             "    }\n" +
                                             "  ]\n" +
@@ -190,7 +219,17 @@ public interface ProductControllerDocs {
 
     @Operation(
             summary = "상품 개별 조회",
-            description = "백스테이지에서 판매자가 특정 상품의 상세 정보를 조회합니다. 상품의 모든 정보를 포함합니다.\n\n" +
+            description = "백스테이지에서 판매자가 특정 상품의 상세 정보를 조회합니다. 상품의 모든 정보와 처리 이력(`processingHistory`)을 포함합니다.\n\n" +
+                    "- `displayStatus=HIDDEN`인 경우 `latestHideInfo`에 가장 최근 미진열 사유·상세사유·일시·운영자명이 포함됩니다.\n" +
+                    "- `groupBuyStatus`(더미): PREPARING(준비중), READY(준비완료), IN_PROGRESS(진행중), NOT_CONNECTED(연결없음)\n\n" +
+                    "**processingHistory.historyType (상품 처리 이력):**\n" +
+                    "- `PRODUCT_CREATED` → 상품 등록\n" +
+                    "- `PRODUCT_INFO_UPDATED` → 브랜드가 상품 정보 수정\n" +
+                    "- `STOCK_UPDATED` → 재고 수량 수정\n" +
+                    "- `HIDDEN` → 미진열 처리\n" +
+                    "- `REDISPLAYED` → 다시 진열\n" +
+                    "- `HIDE_REQUESTED` → 미진열 요청\n" +
+                    "- `PENDING_REVIEW` → 재검토 대기\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -216,19 +255,18 @@ public interface ProductControllerDocs {
                                                     "  \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
                                                     "  \"coverImageUrls\": [\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\"],\n" +
                                                     "  \"regularPrice\": 59000,\n" +
-                                                    "  \"salePrice\": 49000,\n" +
-                                                    "  \"purchasePrice\": 25000,\n" +
-                                                    "  \"gender\": \"UNISEX\",\n" +
-                                                    "  \"isDisplay\": true,\n" +
-                                                    "  \"isOutOfStockForced\": false,\n" +
+                                                    "  \"displayStatus\": \"HIDDEN\",\n" +
+                                                    "  \"groupBuyStatus\": \"PREPARING\",\n" +
+                                                    "  \"latestHideInfo\": {\n" +
+                                                    "    \"hideReasonType\": \"PRODUCT_NOTICE_ERROR\",\n" +
+                                                    "    \"hideReasonDescription\": \"상품 정보 제공 고시 오류\",\n" +
+                                                    "    \"hideDetail\": \"성분 표기 누락\",\n" +
+                                                    "    \"hiddenAt\": \"2026-06-20T11:20:00Z\",\n" +
+                                                    "    \"processorName\": \"admin@showroomz.com\"\n" +
+                                                    "  },\n" +
                                                     "  \"isRecommended\": false,\n" +
-                                                    "  \"productNotice\": \"{\\\"origin\\\":\\\"대한민국\\\",\\\"material\\\":\\\"면 100%\\\"}\",\n" +
+                                                    "  \"productNotice\": \"{\\\"origin\\\":\\\"대한민국\\\",\\\"ingredients\\\":\\\"제품 상세 참고\\\"}\",\n" +
                                                     "  \"description\": \"<p>상품 상세 설명</p>\",\n" +
-                                                    "  \"tags\": \"[\\\"신상\\\", \\\"할인\\\"]\",\n" +
-                                                    "  \"deliveryType\": \"STANDARD\",\n" +
-                                                    "  \"deliveryFee\": 3000,\n" +
-                                                    "  \"deliveryFreeThreshold\": 50000,\n" +
-                                                    "  \"deliveryEstimatedDays\": 3,\n" +
                                                     "  \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
                                                     "  \"optionGroups\": [\n" +
                                                     "    {\n" +
@@ -253,11 +291,37 @@ public interface ProductControllerDocs {
                                                     "      \"variantId\": 1,\n" +
                                                     "      \"name\": \"S / Black\",\n" +
                                                     "      \"regularPrice\": 50000,\n" +
-                                                    "      \"salePrice\": 49000,\n" +
                                                     "      \"stock\": 100,\n" +
                                                     "      \"isRepresentative\": true,\n" +
-                                                    "      \"isDisplay\": true,\n" +
                                                     "      \"optionIds\": [1, 2]\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"processingHistory\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"historyId\": 2,\n" +
+                                                    "      \"historyType\": \"HIDDEN\",\n" +
+                                                    "      \"title\": \"미진열 처리\",\n" +
+                                                    "      \"previousDisplayStatus\": \"DISPLAY\",\n" +
+                                                    "      \"newDisplayStatus\": \"HIDDEN\",\n" +
+                                                    "      \"hideReason\": {\n" +
+                                                    "        \"reasonType\": \"PRODUCT_NOTICE_ERROR\",\n" +
+                                                    "        \"reasonDescription\": \"상품 정보 제공 고시 오류\",\n" +
+                                                    "        \"detail\": \"성분 표기 누락\"\n" +
+                                                    "      },\n" +
+                                                    "      \"stockQuantity\": null,\n" +
+                                                    "      \"processorName\": \"admin@showroomz.com\",\n" +
+                                                    "      \"createdAt\": \"2026-06-20T11:20:00Z\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"historyId\": 1,\n" +
+                                                    "      \"historyType\": \"PRODUCT_CREATED\",\n" +
+                                                    "      \"title\": \"상품 등록\",\n" +
+                                                    "      \"previousDisplayStatus\": null,\n" +
+                                                    "      \"newDisplayStatus\": \"DISPLAY\",\n" +
+                                                    "      \"hideReason\": null,\n" +
+                                                    "      \"stockQuantity\": null,\n" +
+                                                    "      \"processorName\": null,\n" +
+                                                    "      \"createdAt\": \"2026-06-12T10:05:00Z\"\n" +
                                                     "    }\n" +
                                                     "  ]\n" +
                                                     "}"
@@ -301,17 +365,25 @@ public interface ProductControllerDocs {
 
     @Operation(
             summary = "상품 목록 조회 (페이징, 필터링, 검색)",
-            description = "백스테이지에서 판매자가 자신의 상품 목록을 조회합니다. 페이징, 카테고리, 진열상태, 품절상태 필터 및 검색 기능을 지원합니다.\n\n" +
-                    "**필터 파라미터:**\n" +
-                    "- categoryId: 최종 선택된 카테고리 ID (선택사항)\n" +
-                    "- displayStatus: 진열 상태 (ALL, DISPLAY, HIDDEN) - 기본값: ALL\n" +
-                    "- stockStatus: 품절 상태 (ALL, OUT_OF_STOCK, IN_STOCK) - 기본값: ALL\n\n" +
-                    "**검색 파라미터:**\n" +
-                    "- keyword: 검색어 (선택사항)\n" +
-                    "- keywordType: 검색 타입 (productNumber: 상품 번호, sellerProductCode: 판매자 상품 코드, name: 상품명) - keywordType이 없으면 전체 검색\n\n" +
-                    "**페이징 파라미터:**\n" +
-                    "- page: 페이지 번호 (1부터 시작) - 기본값: 1\n" +
-                    "- size: 페이지당 항목 수 - 기본값: 20\n\n" +
+            description = "백스테이지에서 판매자가 자신의 상품 목록을 조회합니다. 페이징, 진열상태, 공구상태 필터 및 검색 기능을 지원합니다.\n\n" +
+                    "**응답:** 글로벌 `PageResponse`(`content` + `pageInfo`) + 진열 상태별 건수(`displayStatusCounts`)\n" +
+                    "- `displayStatusCounts`: 검색어·공구상태 반영, 진열상태 필터 미반영\n\n" +
+                    "**응답 필드:**\n" +
+                    "- regularPrice: 판매가\n" +
+                    "- createdAt: 등록일\n" +
+                    "- modifiedAt: 수정일\n" +
+                    "- stock: 재고 수량 (옵션 재고 합계)\n" +
+                    "- groupBuyStatus: 공구 상태 (더미)\n" +
+                    "  - PREPARING: 준비중\n" +
+                    "  - READY: 준비완료\n" +
+                    "  - IN_PROGRESS: 진행중\n" +
+                    "  - NOT_CONNECTED: 연결없음\n\n" +
+                    "**검색 조건 (Query):**\n" +
+                    "- displayStatus: 진열 상태 (DISPLAY, HIDDEN, PENDING_REVIEW, HIDE_REQUEST, 미입력 시 전체)\n" +
+                    "- groupBuyStatus: 공구 상태 (PREPARING, READY, IN_PROGRESS, NOT_CONNECTED, 미입력 시 전체)\n" +
+                    "- keyword: 검색어 (상품명 또는 브랜드 상품코드)\n" +
+                    "- sortType: 정렬 (CREATED_AT, MODIFIED_AT, STOCK_ASC, 미입력 시 CREATED_AT)\n" +
+                    "- page / size: 페이징\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -321,7 +393,7 @@ public interface ProductControllerDocs {
                     description = "상품 목록 조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = PageResponse.class),
+                            schema = @Schema(implementation = ProductDto.ProductListResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "성공 예시",
@@ -333,23 +405,27 @@ public interface ProductControllerDocs {
                                                     "      \"sellerProductCode\": \"PROD-ABC-001\",\n" +
                                                     "      \"thumbnailUrl\": \"https://example.com/thumbnail.jpg\",\n" +
                                                     "      \"name\": \"프리미엄 린넨 셔츠\",\n" +
-                                                    "      \"price\": {\n" +
-                                                    "        \"purchasePrice\": 25000,\n" +
-                                                    "        \"regularPrice\": 59000,\n" +
-                                                    "        \"salePrice\": 49000\n" +
-                                                    "      },\n" +
+                                                    "      \"regularPrice\": 59000,\n" +
                                                     "      \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
+                                                    "      \"modifiedAt\": \"2026-01-05T10:00:00Z\",\n" +
                                                     "      \"displayStatus\": \"DISPLAY\",\n" +
-                                                    "      \"stockStatus\": \"IN_STOCK\",\n" +
-                                                    "      \"isOutOfStockForced\": false\n" +
+                                                    "      \"groupBuyStatus\": \"PREPARING\",\n" +
+                                                    "      \"stock\": 100\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 10,\n" +
                                                     "    \"totalResults\": 195,\n" +
-                                                    "    \"size\": 20,\n" +
+                                                    "    \"limit\": 20,\n" +
                                                     "    \"hasNext\": true\n" +
+                                                    "  },\n" +
+                                                    "  \"displayStatusCounts\": {\n" +
+                                                    "    \"all\": 195,\n" +
+                                                    "    \"display\": 120,\n" +
+                                                    "    \"hidden\": 40,\n" +
+                                                    "    \"pendingReview\": 20,\n" +
+                                                    "    \"hideRequest\": 15\n" +
                                                     "  }\n" +
                                                     "}"
                                     )
@@ -373,38 +449,35 @@ public interface ProductControllerDocs {
                     )
             )
     })
-    ResponseEntity<PageResponse<ProductDto.ProductListItem>> getProductList(
-            @Parameter(description = "필터 조건 (카테고리, 진열상태, 품절상태)")
-            ProductDto.ProductListRequest request,
-            @Parameter(description = "페이징 정보 (페이지 번호, 페이지 크기)")
-            PagingRequest pagingRequest
+    ResponseEntity<ProductDto.ProductListResponse> getProductList(
+            @ParameterObject @ModelAttribute SellerProductSearchCondition condition,
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest
     );
 
     @Operation(
             summary = "상품 수정",
-            description = "백스테이지 관리자가 기존 상품의 정보를 수정합니다. 수정하고 싶은 필드만 제공하면 해당 필드만 업데이트됩니다.\n\n" +
+            description = "백스테이지 판매자가 기존 상품의 정보를 수정합니다. 수정하고 싶은 필드만 제공하면 해당 필드만 업데이트됩니다.\n\n" +
+                    "**진열·공구 상태별 수정 규칙:**\n" +
+                    "- 진열 + 공구 진행 아님: 전부 수정 가능\n" +
+                    "- 진열 + 공구 진행 중: 옵션·재고만 수정 가능 (상품 정보 수정 시 `PRODUCT_EDIT_RESTRICTED`)\n" +
+                    "- 미진열(운영자 사유) + 공구 무관: 전부 수정 가능 → 저장 시 `PENDING_REVIEW`(재검토 대기)로 전환 → 운영자 검토 후 진열\n" +
+                    "- 미진열(브랜드 요청) + 공구 무관: 전부 수정 가능 → 재검토 대기 전환 없음(미진열 유지) → 운영자 검토 후 진열\n" +
+                    "- 재고 수량: 모든 상태에서 수정 가능 (`variants`만 전달하면 재고만 갱신)\n\n" +
                     "**수정 가능한 항목:**\n" +
                     "- categoryId: 카테고리 ID\n" +
                     "- name: 상품명\n" +
                     "- sellerProductCode: 판매자 상품 코드\n" +
-                    "- isDisplay: 진열 상태\n" +
-                    "- isOutOfStockForced: 강제 품절 처리 여부\n" +
-                    "- purchasePrice: 매입가\n" +
-                    "- regularPrice: 판매가 (할인 전)\n" +
-                    "- salePrice: 할인 판매가 (최종가)\n" +
+                    "- displayStatus: 진열 상태 (DISPLAY, HIDDEN, PENDING_REVIEW, HIDE_REQUEST)\n" +
+                    "- regularPrice: 판매가 (정가). 할인가는 계약 단계에서 결정됩니다.\n" +
                     "- representativeImageUrl: 대표 이미지 URL\n" +
                     "- coverImageUrls: 커버 이미지 URL 목록\n" +
                     "- description: 상세 설명\n" +
-                    "- tags: 태그 목록\n" +
-                    "- deliveryType: 배송 유형\n" +
-                    "- deliveryFee: 배송비\n" +
-                    "- deliveryFreeThreshold: 무료 배송 최소 금액\n" +
-                    "- deliveryEstimatedDays: 배송 예상 일수\n" +
                     "- productNotice: 상품정보제공고시\n" +
                     "- optionGroups: 옵션 그룹 목록 (variants와 함께 제공해야 함)\n" +
-                    "- variants: 옵션 목록 (optionGroups와 함께 제공해야 함)\n\n" +
+                    "- variants: 옵션 목록 (optionGroups와 함께 제공 시 옵션 전체 교체, variants만 제공 시 재고만 갱신)\n\n" +
                     "**주의사항:**\n" +
-                    "- optionGroups와 variants는 함께 제공해야 합니다.\n" +
+                    "- 옵션 구조를 변경할 때는 optionGroups와 variants를 함께 제공해야 합니다.\n" +
+                    "- 재고만 변경할 때는 variants만 제공하고, 기존 옵션명(`optionNames`)과 일치해야 합니다.\n" +
                     "- 이미지를 수정하는 경우, representativeImageUrl 또는 coverImageUrls를 제공하면 기존 이미지가 모두 삭제되고 새로운 이미지로 교체됩니다.\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
@@ -431,7 +504,7 @@ public interface ProductControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "입력값 형식 오류",
+                    description = "입력값 형식 오류 또는 수정 제한",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ValidationErrorResponse.class),
@@ -447,6 +520,13 @@ public interface ProductControllerDocs {
                                                     "      \"reason\": \"판매가는 0 이상이어야 합니다.\"\n" +
                                                     "    }\n" +
                                                     "  ]\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "진열+공구 진행 중 상품 정보 수정 제한",
+                                            value = "{\n" +
+                                                    "  \"code\": \"PRODUCT_EDIT_RESTRICTED\",\n" +
+                                                    "  \"message\": \"진열 중이며 공구 진행 중인 상품은 옵션·재고만 수정할 수 있습니다.\"\n" +
                                                     "}"
                                     )
                             }
@@ -507,11 +587,24 @@ public interface ProductControllerDocs {
                                     value = "{\n" +
                                             "  \"name\": \"수정된 상품명\",\n" +
                                             "  \"regularPrice\": 69000,\n" +
-                                            "  \"salePrice\": 59000,\n" +
-                                                    "  \"gender\": \"UNISEX\",\n" +
-                                            "  \"isDisplay\": true\n" +
+                                            "  \"gender\": \"UNISEX\",\n" +
+                                            "  \"displayStatus\": \"DISPLAY\"\n" +
                                             "}",
                                     description = "일부 필드만 수정하는 예시"
+                            ),
+                            @ExampleObject(
+                                    name = "요청 예시 (재고만 수정)",
+                                    value = "{\n" +
+                                            "  \"variants\": [\n" +
+                                            "    {\n" +
+                                            "      \"optionNames\": [\"Free\"],\n" +
+                                            "      \"regularPrice\": 59000,\n" +
+                                            "      \"stock\": 50,\n" +
+                                            "      \"isRepresentative\": true\n" +
+                                            "    }\n" +
+                                            "  ]\n" +
+                                            "}",
+                                    description = "optionGroups 없이 variants만 전달하면 기존 옵션의 재고만 갱신합니다."
                             ),
                             @ExampleObject(
                                     name = "요청 예시 (전체 필드 수정)",
@@ -519,9 +612,7 @@ public interface ProductControllerDocs {
                                             "  \"categoryId\": 1,\n" +
                                             "  \"name\": \"프리미엄 린넨 셔츠\",\n" +
                                             "  \"sellerProductCode\": \"PROD-001\",\n" +
-                                            "  \"purchasePrice\": 30000,\n" +
                                             "  \"regularPrice\": 59000,\n" +
-                                            "  \"salePrice\": 49000,\n" +
                                             "  \"gender\": \"UNISEX\",\n" +
                                             "  \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
                                             "  \"coverImageUrls\": [\n" +
@@ -529,21 +620,18 @@ public interface ProductControllerDocs {
                                             "    \"https://example.com/image2.jpg\"\n" +
                                             "  ],\n" +
                                             "  \"description\": \"<p>상품 상세 설명</p>\",\n" +
-                                            "  \"tags\": [\"신상\", \"할인\", \"인기\"],\n" +
-                                            "  \"deliveryType\": \"STANDARD\",\n" +
-                                            "  \"deliveryFee\": 3000,\n" +
-                                            "  \"deliveryFreeThreshold\": 50000,\n" +
-                                            "  \"deliveryEstimatedDays\": 3,\n" +
                                             "  \"productNotice\": {\n" +
+                                            "    \"capacityWeight\": \"제품 상세 참고\",\n" +
+                                            "    \"mainSpecs\": \"제품 상세 참고\",\n" +
+                                            "    \"expirationPeriod\": \"제품 상세 참고\",\n" +
+                                            "    \"usageMethod\": \"제품 상세 참고\",\n" +
+                                            "    \"manufacturerSeller\": \"제품 상세 참고\",\n" +
                                             "    \"origin\": \"제품 상세 참고\",\n" +
-                                            "    \"material\": \"제품 상세 참고\",\n" +
-                                            "    \"color\": \"제품 상세 참고\",\n" +
-                                            "    \"size\": \"제품 상세 참고\",\n" +
-                                            "    \"manufacturer\": \"제품 상세 참고\",\n" +
-                                            "    \"washingMethod\": \"제품 상세 참고\",\n" +
-                                            "    \"manufactureDate\": \"제품 상세 참고\",\n" +
-                                            "    \"asInfo\": \"제품 상세 참고\",\n" +
-                                            "    \"qualityAssurance\": \"제품 상세 참고\"\n" +
+                                            "    \"ingredients\": \"제품 상세 참고\",\n" +
+                                            "    \"functionalCosmeticApproval\": \"제품 상세 참고\",\n" +
+                                            "    \"precautions\": \"제품 상세 참고\",\n" +
+                                            "    \"qualityAssurance\": \"제품 상세 참고\",\n" +
+                                            "    \"customerServicePhone\": \"제품 상세 참고\"\n" +
                                             "  },\n" +
                                             "  \"optionGroups\": [\n" +
                                             "    {\n" +
@@ -559,9 +647,8 @@ public interface ProductControllerDocs {
                                             "  \"variants\": [\n" +
                                             "    {\n" +
                                             "      \"optionNames\": [\"Free\"],\n" +
-                                            "      \"salePrice\": 49000,\n" +
+                                            "      \"regularPrice\": 59000,\n" +
                                             "      \"stock\": 999,\n" +
-                                            "      \"isDisplay\": true,\n" +
                                             "      \"isRepresentative\": true\n" +
                                             "    }\n" +
                                             "  ]\n" +
@@ -579,6 +666,82 @@ public interface ProductControllerDocs {
             )
             @PathVariable Long productId,
             @RequestBody ProductDto.UpdateProductRequest request
+    );
+
+    @Operation(
+            summary = "상품 개별 삭제",
+            description = "백스테이지에서 판매자가 본인 마켓의 상품 1건을 삭제합니다.\n\n" +
+                    "**권한:** SELLER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "상품 삭제 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProductDto.DeleteProductResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"productId\": 1,\n" +
+                                                    "  \"message\": \"상품이 성공적으로 삭제되었습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 (본인의 상품이 아님)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "권한 없음 예시",
+                                            value = "{\n" +
+                                                    "  \"code\": \"FORBIDDEN\",\n" +
+                                                    "  \"message\": \"접근 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "상품을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "상품 없음 예시",
+                                            value = "{\n" +
+                                                    "  \"code\": \"PRODUCT_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"상품을 찾을 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<ProductDto.DeleteProductResponse> deleteProduct(
+            @Parameter(
+                    description = "삭제할 상품 ID",
+                    required = true,
+                    example = "1"
+            )
+            @PathVariable Long productId
     );
 
     @Operation(
@@ -766,18 +929,20 @@ public interface ProductControllerDocs {
     );
 
     @Operation(
-            summary = "상품 일괄 미진열/진열 처리",
+            summary = "상품 일괄 진열 상태 변경",
             description = "선택된 여러 상품의 진열 상태를 지정한 값으로 일괄 변경합니다.\n\n" +
-                    "**동작 방식:**\n" +
-                    "- `isDisplayed: true` → 진열 처리\n" +
-                    "- `isDisplayed: false` → 미진열 처리\n\n" +
+                    "**진열 상태 값:**\n" +
+                    "- `DISPLAY` → 진열\n" +
+                    "- `HIDDEN` → 미진열\n" +
+                    "- `PENDING_REVIEW` → 재검토 대기\n" +
+                    "- `HIDE_REQUEST` → 미진열 요청\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "일괄 미진열/진열 처리 성공",
+                    description = "일괄 진열 상태 변경 성공",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProductDto.BatchUpdateResponse.class),
@@ -845,14 +1010,21 @@ public interface ProductControllerDocs {
                                     name = "진열 처리 요청 예시",
                                     value = "{\n" +
                                             "  \"productIds\": [1, 2, 3],\n" +
-                                            "  \"isDisplayed\": true\n" +
+                                            "  \"displayStatus\": \"DISPLAY\"\n" +
                                             "}"
                             ),
                             @ExampleObject(
                                     name = "미진열 처리 요청 예시",
                                     value = "{\n" +
                                             "  \"productIds\": [1, 2, 3],\n" +
-                                            "  \"isDisplayed\": false\n" +
+                                            "  \"displayStatus\": \"HIDDEN\"\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "미진열 요청 처리 예시",
+                                    value = "{\n" +
+                                            "  \"productIds\": [1, 2, 3],\n" +
+                                            "  \"displayStatus\": \"HIDE_REQUEST\"\n" +
                                             "}"
                             )
                     }

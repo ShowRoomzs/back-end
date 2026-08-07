@@ -49,7 +49,6 @@ public class MailService {
                     <p><a href="%s" style="display:inline-block;padding:10px 18px;background:#111;color:#fff;text-decoration:none;border-radius:4px;">마켓 어드민 바로가기</a></p>
                     <p><strong>■ 이용 안내</strong><br/>
                     상품 등록은 마켓 어드민 &gt; 상품 관리 &gt; 상품 등록에서 진행하실 수 있습니다.<br/>
-                    등록하신 상품은 SHOWROOMZ 운영팀의 상품 검수 후 노출됩니다.<br/>
                     정산은 매월 말일 기준으로 익월 15일에 등록하신 계좌로 지급됩니다.<br/>
                     서비스 이용 중 문의 사항은 마켓 어드민 내 1:1 문의를 이용해 주세요.</p>
                     <p>감사합니다.<br/>%s 드림</p>

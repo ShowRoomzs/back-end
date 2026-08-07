@@ -7,21 +7,26 @@ import org.springframework.transaction.annotation.Transactional;
 
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.api.common.product.service.ProductProcessingHistoryService;
 import showroomz.api.seller.product.DTO.ProductDto;
+import showroomz.api.seller.product.DTO.SellerProductSearchCondition;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.category.repository.CategoryRepository;
-import showroomz.api.seller.category.service.CategoryService;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.product.entity.*;
 import showroomz.domain.product.repository.ProductRepository;
-import showroomz.domain.product.type.ProductInspectionStatus;
+import showroomz.domain.product.repository.ProductVariantRepository;
+import showroomz.domain.product.type.ProductDisplayStatus;
+import showroomz.domain.product.type.ProductGroupBuyStatus;
+import showroomz.domain.product.type.ProductHideReasonType;
+import showroomz.domain.product.type.ProductListSortType;
 import showroomz.api.seller.auth.repository.SellerRepository;
-import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -35,11 +40,12 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final ProductVariantRepository productVariantRepository;
     private final CategoryRepository categoryRepository;
-    private final CategoryService categoryService;
     private final SellerRepository adminRepository;
     private final MarketRepository marketRepository;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    private final ProductProcessingHistoryService processingHistoryService;
 
     public ProductDto.CreateProductResponse createProduct(String adminEmail, ProductDto.CreateProductRequest request) {
         // 1. 카테고리 조회 및 검증 (카테고리 ID로 조회)
@@ -63,33 +69,15 @@ public class ProductService {
         product.setName(request.getName());
         product.setSellerProductCode(request.getSellerProductCode());
         product.setRegularPrice(request.getRegularPrice());
-        product.setSalePrice(request.getSalePrice());
-        product.setGender(request.getGender());
-        product.setPurchasePrice(request.getPurchasePrice());
-        product.setIsDisplay(request.getIsDisplay() != null ? request.getIsDisplay() : true);
-        product.setIsOutOfStockForced(request.getIsOutOfStockForced() != null ? request.getIsOutOfStockForced() : false);
+        // 할인가는 계약 단계에서 결정 — 등록 시점에는 판매가와 동일하게 저장
+        product.setSalePrice(request.getRegularPrice());
+        product.setDisplayStatus(ProductDisplayStatus.DISPLAY);
+        product.setIsOutOfStockForced(false);
         product.setIsRecommended(false);
         product.setDescription(request.getDescription());
-        product.setDeliveryType(request.getDeliveryType() != null ? request.getDeliveryType() : "STANDARD");
-        // 배송 정보 기본값 설정 (배포 DB의 NOT NULL 제약조건 대응)
-        product.setDeliveryFee(request.getDeliveryFee() != null ? request.getDeliveryFee() : 0);
-        product.setDeliveryFreeThreshold(request.getDeliveryFreeThreshold() != null ? request.getDeliveryFreeThreshold() : 0);
-        product.setDeliveryEstimatedDays(request.getDeliveryEstimatedDays() != null ? request.getDeliveryEstimatedDays() : 1);
         product.setProductNumber(productNumber);
-        product.setInspectionStatus(ProductInspectionStatus.WAITING);
 
-        // 5. 태그 JSON 변환
-        if (request.getTags() != null && !request.getTags().isEmpty()) {
-            try {
-                String tagsJson = objectMapper.writeValueAsString(request.getTags());
-                product.setTags(tagsJson);
-            } catch (Exception e) {
-                log.error("태그 JSON 변환 실패", e);
-                throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
-            }
-        }
-
-        // 6. 상품정보제공고시 JSON 변환
+        // 5. 상품정보제공고시 JSON 변환
         if (request.getProductNotice() != null) {
             try {
                 String productNoticeJson = objectMapper.writeValueAsString(request.getProductNotice());
@@ -100,12 +88,12 @@ public class ProductService {
             }
         }
 
-        // 7. 대표 이미지 설정
+        // 6. 대표 이미지 설정
         if (request.getRepresentativeImageUrl() != null) {
             product.setThumbnailUrl(request.getRepresentativeImageUrl());
         }
 
-        // 8. 이미지 저장
+        // 7. 이미지 저장
         List<ProductImage> productImages = new ArrayList<>();
         int imageOrder = 0;
         
@@ -126,7 +114,7 @@ public class ProductService {
         
         product.setProductImages(productImages);
 
-        // 9. 옵션 그룹 및 옵션 생성
+        // 8. 옵션 그룹 및 옵션 생성
         Map<String, Map<String, ProductOption>> optionMap = new HashMap<>(); // 그룹명 -> (옵션명 -> ProductOption)
         
         if (request.getOptionGroups() != null && !request.getOptionGroups().isEmpty()) {
@@ -144,7 +132,7 @@ public class ProductService {
             }
         }
 
-        // 10. Variant 생성 및 옵션 매핑
+        // 9. Variant 생성 및 옵션 매핑
         boolean hasVariantRequests = request.getVariants() != null && !request.getVariants().isEmpty();
         boolean hasOptionGroups = request.getOptionGroups() != null && !request.getOptionGroups().isEmpty();
 
@@ -186,34 +174,34 @@ public class ProductService {
                 ProductVariant variant = new ProductVariant(
                         product,
                         variantName,
-                        request.getRegularPrice(), // 기본 가격
-                        variantRequest.getSalePrice(),
+                        variantRequest.getRegularPrice(),
+                        variantRequest.getRegularPrice(),
                         variantRequest.getStock(),
-                        variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false,
-                        variantRequest.getIsDisplay()
+                        variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false
                 );
                 
                 variant.setOptions(variantOptions);
                 product.getVariants().add(variant);
             }
         } else {
-            // 옵션이 없는 경우 단일 Variant 생성
+            // 옵션이 없는 경우: stock으로 단일 Variant 생성
+            int stock = request.getStock() != null ? request.getStock() : 0;
             ProductVariant variant = new ProductVariant(
                     product,
                     null,
                     request.getRegularPrice(),
-                    request.getSalePrice(),
-                    0,
-                    true,
+                    request.getRegularPrice(),
+                    stock,
                     true
             );
             product.getVariants().add(variant);
         }
 
-        // 11. Product 저장
+        // 10. Product 저장
         Product savedProduct = productRepository.save(product);
+        processingHistoryService.recordCreated(savedProduct);
 
-        // 12. 응답 생성
+        // 11. 응답 생성
         return ProductDto.CreateProductResponse.builder()
                 .productId(savedProduct.getProductId())
                 .productNumber(savedProduct.getProductNumber())
@@ -250,7 +238,11 @@ public class ProductService {
 
 
     @Transactional(readOnly = true)
-    public PageResponse<ProductDto.ProductListItem> getProductList(String adminEmail, ProductDto.ProductListRequest request, PagingRequest pagingRequest) {
+    public ProductDto.ProductListResponse getProductList(
+            String adminEmail,
+            SellerProductSearchCondition condition,
+            PagingRequest pagingRequest
+    ) {
         // 1. Admin과 Market 조회
         Seller admin = adminRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -258,55 +250,81 @@ public class ProductService {
         Market market = marketRepository.findBySeller(admin)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         
-        // 2. 페이징 정보 생성
-        Pageable pageable = pagingRequest.toPageable();
+        // 2. 페이징 정보 생성 (정렬은 쿼리에서 처리)
+        Pageable pageable = pagingRequest.toPageable(Sort.unsorted());
         
         // 3. 필터 파라미터 설정
-        Long categoryId = request != null ? request.getCategoryId() : null;
-        String displayStatus = (request != null && request.getDisplayStatus() != null) 
-                ? request.getDisplayStatus() : "ALL";
-        String stockStatus = (request != null && request.getStockStatus() != null) 
-                ? request.getStockStatus() : "ALL";
-        String keyword = (request != null && request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) 
-                ? request.getKeyword().trim() : null;
-        String keywordType = (request != null && request.getKeywordType() != null && !request.getKeywordType().trim().isEmpty()) 
-                ? request.getKeywordType().trim() : null;
+        ProductDisplayStatus displayStatusFilter = condition != null ? condition.getDisplayStatus() : null;
+        ProductGroupBuyStatus groupBuyStatusFilter = condition != null ? condition.getGroupBuyStatus() : null;
+        String keyword = (condition != null && condition.getKeyword() != null && !condition.getKeyword().trim().isEmpty())
+                ? condition.getKeyword().trim() : null;
+        ProductListSortType sortType = condition != null && condition.getSortType() != null
+                ? condition.getSortType()
+                : ProductListSortType.CREATED_AT;
         
-        // 4. 카테고리 필터링 처리: 상위 카테고리인 경우 모든 하위 카테고리 ID를 포함
-        List<Long> categoryIds = null;
-        if (categoryId != null) {
-            // 해당 카테고리와 모든 하위 카테고리 ID를 조회
-            categoryIds = categoryService.getAllSubCategoryIds(categoryId);
-            // 빈 리스트인 경우 null로 변환 (JPQL에서 IN ()는 에러 발생)
-            if (categoryIds != null && categoryIds.isEmpty()) {
-                categoryIds = null;
-            }
-        }
-        
-        // 5. 필터링된 상품 조회 (모든 필터는 쿼리에서 처리)
-        Page<Product> productPage = productRepository.findByMarketIdWithFilters(
+        // 4. 필터링된 상품 조회
+        Page<Product> productPage = productRepository.searchSellerProducts(
                 market.getId(),
-                categoryIds,
-                displayStatus,
-                stockStatus,
+                displayStatusFilter,
+                groupBuyStatusFilter,
                 keyword,
-                keywordType,
+                sortType,
                 pageable
         );
-        
-        // 5. ProductListItem으로 변환
-        List<ProductDto.ProductListItem> productList = productPage.getContent().stream()
-                .map(product -> {
-                    String calculatedStockStatus = calculateStockStatus(product, null);
-                    return convertToProductListItem(product, calculatedStockStatus);
-                })
+
+        // 5. 상품별 재고 합계 일괄 조회
+        List<Long> productIds = productPage.getContent().stream()
+                .map(Product::getProductId)
                 .collect(Collectors.toList());
+        Map<Long, Integer> stockSumMap = toStockSumMap(
+                productIds.isEmpty() ? List.of() : productVariantRepository.sumStockByProductIds(productIds));
+
+        // 6. ProductListItem으로 변환
+        List<ProductDto.ProductListItem> productList = productPage.getContent().stream()
+                .map(product -> convertToProductListItem(
+                        product,
+                        stockSumMap.getOrDefault(product.getProductId(), 0)))
+                .collect(Collectors.toList());
+
+        // 7. 진열 상태별 건수 (검색어·공구상태 반영, 진열상태 필터 미반영)
+        ProductDto.DisplayStatusCounts displayStatusCounts = buildDisplayStatusCounts(
+                market.getId(), groupBuyStatusFilter, keyword);
         
-        // 7. PageResponse 생성
-        return new PageResponse<>(
-                productList,
-                productPage
-        );
+        return new ProductDto.ProductListResponse(productList, productPage, displayStatusCounts);
+    }
+
+    private ProductDto.DisplayStatusCounts buildDisplayStatusCounts(
+            Long marketId,
+            ProductGroupBuyStatus groupBuyStatus,
+            String keyword
+    ) {
+        long display = 0L;
+        long hidden = 0L;
+        long pendingReview = 0L;
+        long hideRequest = 0L;
+
+        List<Object[]> rows = productRepository.countSellerProductsByDisplayStatus(
+                marketId, groupBuyStatus, keyword);
+        for (Object[] row : rows) {
+            if (row.length < 2 || !(row[0] instanceof ProductDisplayStatus status) || !(row[1] instanceof Number countNum)) {
+                continue;
+            }
+            long count = countNum.longValue();
+            switch (status) {
+                case DISPLAY -> display = count;
+                case HIDDEN -> hidden = count;
+                case PENDING_REVIEW -> pendingReview = count;
+                case HIDE_REQUEST -> hideRequest = count;
+            }
+        }
+
+        return ProductDto.DisplayStatusCounts.builder()
+                .all(display + hidden + pendingReview + hideRequest)
+                .display(display)
+                .hidden(hidden)
+                .pendingReview(pendingReview)
+                .hideRequest(hideRequest)
+                .build();
     }
     
     @Transactional(readOnly = true)
@@ -332,6 +350,31 @@ public class ProductService {
         
         // 5. 응답 생성 (모든 필드 포함)
         return convertToProductDetailResponse(product, stockStatus);
+    }
+
+    /**
+     * 상품 개별 삭제
+     */
+    public ProductDto.DeleteProductResponse deleteProduct(String adminEmail, Long productId) {
+        Seller admin = adminRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        Market market = marketRepository.findBySeller(admin)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        Product product = productRepository.findByProductId(productId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        if (product.getMarket() == null || !product.getMarket().getId().equals(market.getId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+
+        productRepository.delete(product);
+
+        return ProductDto.DeleteProductResponse.builder()
+                .productId(productId)
+                .message("상품이 성공적으로 삭제되었습니다.")
+                .build();
     }
 
     /**
@@ -482,8 +525,9 @@ public class ProductService {
             if (product.getMarket() == null || !product.getMarket().getId().equals(market.getId())) {
                 unauthorizedProductIds.add(product.getProductId());
             } else {
-                // 요청받은 상태로 명시적 설정
-                product.setIsDisplay(request.getIsDisplayed());
+                // 요청된 상태로 명시적 설정
+                ProductDisplayStatus previous = product.getDisplayStatus();
+                applySellerDisplayStatusChange(product, previous, request.getDisplayStatus());
                 processedProductIds.add(product.getProductId());
             }
         }
@@ -501,12 +545,9 @@ public class ProductService {
         productRepository.saveAll(products);
         
         // 5. 응답 메시지 생성
-        String message;
-        if (request.getIsDisplayed()) {
-            message = String.format("%d개의 상품이 성공적으로 진열 처리되었습니다.", processedProductIds.size());
-        } else {
-            message = String.format("%d개의 상품이 성공적으로 미진열 처리되었습니다.", processedProductIds.size());
-        }
+        String message = String.format("%d개의 상품이 성공적으로 %s 처리되었습니다.",
+                processedProductIds.size(),
+                request.getDisplayStatus().getDescription());
         
         // 6. 응답 생성
         return ProductDto.BatchUpdateResponse.builder()
@@ -532,6 +573,15 @@ public class ProductService {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
+        ProductDisplayStatus previousDisplayStatus = product.getDisplayStatus();
+        int previousTotalStock = sumVariantStock(product);
+        boolean hasInfoChange = hasProductInfoChange(request);
+        boolean hasOptionStructureUpdate = request.getOptionGroups() != null && request.getVariants() != null;
+        boolean hasStockOnlyUpdate = !hasOptionStructureUpdate && request.getVariants() != null;
+        boolean hasVariantUpdate = hasOptionStructureUpdate || hasStockOnlyUpdate;
+
+        validateSellerProductEdit(product, hasInfoChange);
+
         // 3. 카테고리 업데이트 (제공된 경우)
         if (request.getCategoryId() != null) {
             Category category = categoryRepository.findByCategoryId(request.getCategoryId())
@@ -546,20 +596,13 @@ public class ProductService {
         if (request.getSellerProductCode() != null) {
             product.setSellerProductCode(request.getSellerProductCode());
         }
-        if (request.getIsDisplay() != null) {
-            product.setIsDisplay(request.getIsDisplay());
-        }
-        if (request.getIsOutOfStockForced() != null) {
-            product.setIsOutOfStockForced(request.getIsOutOfStockForced());
-        }
-        if (request.getPurchasePrice() != null) {
-            product.setPurchasePrice(request.getPurchasePrice());
+        if (request.getDisplayStatus() != null) {
+            applySellerDisplayStatusChange(product, product.getDisplayStatus(), request.getDisplayStatus());
         }
         if (request.getRegularPrice() != null) {
             product.setRegularPrice(request.getRegularPrice());
-        }
-        if (request.getSalePrice() != null) {
-            product.setSalePrice(request.getSalePrice());
+            // 할인가는 계약 단계에서 결정 — 수정 시점에는 판매가와 동일하게 저장
+            product.setSalePrice(request.getRegularPrice());
         }
         if (request.getGender() != null) {
             product.setGender(request.getGender());
@@ -567,31 +610,8 @@ public class ProductService {
         if (request.getDescription() != null) {
             product.setDescription(request.getDescription());
         }
-        if (request.getDeliveryType() != null) {
-            product.setDeliveryType(request.getDeliveryType());
-        }
-        if (request.getDeliveryFee() != null) {
-            product.setDeliveryFee(request.getDeliveryFee());
-        }
-        if (request.getDeliveryFreeThreshold() != null) {
-            product.setDeliveryFreeThreshold(request.getDeliveryFreeThreshold());
-        }
-        if (request.getDeliveryEstimatedDays() != null) {
-            product.setDeliveryEstimatedDays(request.getDeliveryEstimatedDays());
-        }
 
-        // 5. 태그 JSON 변환 (제공된 경우)
-        if (request.getTags() != null) {
-            try {
-                String tagsJson = objectMapper.writeValueAsString(request.getTags());
-                product.setTags(tagsJson);
-            } catch (Exception e) {
-                log.error("태그 JSON 변환 실패", e);
-                throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
-            }
-        }
-
-        // 6. 상품정보제공고시 JSON 변환 (제공된 경우)
+        // 5. 상품정보제공고시 JSON 변환 (제공된 경우)
         if (request.getProductNotice() != null) {
             try {
                 String productNoticeJson = objectMapper.writeValueAsString(request.getProductNotice());
@@ -602,7 +622,7 @@ public class ProductService {
             }
         }
 
-        // 7. 이미지 업데이트 (제공된 경우)
+        // 6. 이미지 업데이트 (제공된 경우)
         if (request.getRepresentativeImageUrl() != null || request.getCoverImageUrls() != null) {
             // 기존 이미지 삭제 (orphanRemoval을 위해 기존 컬렉션을 유지하고 clear 후 addAll 사용)
             List<ProductImage> existingImages = product.getProductImages();
@@ -627,8 +647,8 @@ public class ProductService {
             }
         }
 
-        // 8. 옵션 그룹 및 옵션 업데이트 (제공된 경우)
-        if (request.getOptionGroups() != null && request.getVariants() != null) {
+        // 7. 옵션 그룹 및 옵션 업데이트 (제공된 경우) / 재고만 업데이트
+        if (hasOptionStructureUpdate) {
             // 기존 옵션 그룹 및 variant 삭제
             product.getOptionGroups().clear();
             product.getVariants().clear();
@@ -672,32 +692,48 @@ public class ProductService {
                 String variantName = variantRequest.getOptionNames().stream()
                         .collect(Collectors.joining(" / "));
                 
-                Integer variantRegularPrice = request.getRegularPrice() != null 
-                        ? request.getRegularPrice() 
-                        : product.getRegularPrice();
-                
                 ProductVariant variant = new ProductVariant(
                         product,
                         variantName,
-                        variantRegularPrice,
-                        variantRequest.getSalePrice(),
+                        variantRequest.getRegularPrice(),
+                        variantRequest.getRegularPrice(),
                         variantRequest.getStock(),
-                        variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false,
-                        variantRequest.getIsDisplay()
+                        variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false
                 );
                 
                 variant.setOptions(variantOptions);
                 product.getVariants().add(variant);
             }
-        } else if (request.getVariants() != null) {
-            // variants만 제공된 경우 (옵션 그룹은 유지하고 variant만 업데이트)
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        } else if (hasStockOnlyUpdate) {
+            updateExistingVariantStocks(product, request.getVariants());
         }
 
-        // 9. Product 저장
+        // 8. Product 저장
         Product savedProduct = productRepository.save(product);
 
-        // 10. 응답 생성
+        int newTotalStock = sumVariantStock(savedProduct);
+        boolean stockChanged = hasVariantUpdate && previousTotalStock != newTotalStock;
+        boolean displayOnlyChange = request.getDisplayStatus() != null
+                && !hasInfoChange
+                && !hasVariantUpdate;
+
+        if (!displayOnlyChange) {
+            boolean shouldRecordProcessing = hasInfoChange || hasOptionStructureUpdate || stockChanged;
+            if (shouldRecordProcessing) {
+                // 미진열(브랜드 요청 제외)이면 재검토 대기로 전환. 브랜드 요청 미진열은 상태 유지.
+                processingHistoryService.moveToPendingReviewIfNeeded(savedProduct);
+                if (stockChanged && !hasInfoChange && !hasOptionStructureUpdate) {
+                    processingHistoryService.recordStockUpdated(
+                            savedProduct, previousDisplayStatus, newTotalStock);
+                } else if (hasInfoChange || hasOptionStructureUpdate) {
+                    processingHistoryService.recordBrandInfoUpdated(
+                            savedProduct, previousDisplayStatus);
+                }
+                productRepository.save(savedProduct);
+            }
+        }
+
+        // 9. 응답 생성
         return ProductDto.UpdateProductResponse.builder()
                 .productId(savedProduct.getProductId())
                 .productNumber(savedProduct.getProductNumber())
@@ -722,35 +758,53 @@ public class ProductService {
     }
     
     /**
+     * 상품별 재고 합계 맵 변환
+     */
+    private Map<Long, Integer> toStockSumMap(List<Object[]> rows) {
+        Map<Long, Integer> map = new HashMap<>();
+        if (rows == null) {
+            return map;
+        }
+        for (Object[] row : rows) {
+            if (row.length >= 2 && row[0] instanceof Long productId && row[1] instanceof Number sum) {
+                map.put(productId, sum.intValue());
+            }
+        }
+        return map;
+    }
+
+    /**
      * Product 엔티티를 ProductListItem DTO로 변환
      */
-    private ProductDto.ProductListItem convertToProductListItem(Product product, String stockStatus) {
-        // 진열 상태 변환
-        String displayStatus = Boolean.TRUE.equals(product.getIsDisplay()) ? "DISPLAY" : "HIDDEN";
-        
-        // 가격 정보
-        ProductDto.PriceInfo priceInfo = ProductDto.PriceInfo.builder()
-                .purchasePrice(product.getPurchasePrice())
-                .regularPrice(product.getRegularPrice())
-                .salePrice(product.getSalePrice())
-                .build();
-        
-        // 등록일 포맷팅 (ISO 8601 형식)
-        String createdAtStr = product.getCreatedAt() != null 
-                ? product.getCreatedAt().toString() 
+    private ProductDto.ProductListItem convertToProductListItem(Product product, Integer stock) {
+        // 진열 상태
+        ProductDisplayStatus displayStatus = product.getDisplayStatus() != null
+                ? product.getDisplayStatus()
+                : ProductDisplayStatus.DISPLAY;
+
+        // 등록일/수정일 포맷팅 (ISO 8601 형식)
+        String createdAtStr = product.getCreatedAt() != null
+                ? product.getCreatedAt().toString()
                 : null;
-        
+        String modifiedAtStr = product.getModifiedAt() != null
+                ? product.getModifiedAt().toString()
+                : createdAtStr;
+
+        // 공구 상태 (더미) — productId 기준으로 순환
+        ProductGroupBuyStatus groupBuyStatus = resolveDummyGroupBuyStatus(product.getProductId());
+
         return ProductDto.ProductListItem.builder()
                 .productId(product.getProductId())
                 .productNumber(product.getProductNumber())
                 .sellerProductCode(product.getSellerProductCode())
                 .thumbnailUrl(product.getThumbnailUrl())
                 .name(product.getName())
-                .price(priceInfo)
+                .regularPrice(product.getRegularPrice())
                 .createdAt(createdAtStr)
+                .modifiedAt(modifiedAtStr)
                 .displayStatus(displayStatus)
-                .stockStatus(stockStatus)
-                .isOutOfStockForced(product.getIsOutOfStockForced())
+                .groupBuyStatus(groupBuyStatus)
+                .stock(stock)
                 .build();
     }
     
@@ -803,10 +857,8 @@ public class ProductService {
                             .variantId(variant.getVariantId())
                             .name(variant.getName())
                             .regularPrice(variant.getRegularPrice())
-                            .salePrice(variant.getSalePrice())
                             .stock(variant.getStock())
                             .isRepresentative(variant.getIsRepresentative())
-                            .isDisplay(variant.getIsDisplay())
                             .optionIds(optionIds)
                             .build();
                 })
@@ -824,23 +876,122 @@ public class ProductService {
                 .representativeImageUrl(representativeImageUrl)
                 .coverImageUrls(coverImageUrls)
                 .regularPrice(product.getRegularPrice())
-                .salePrice(product.getSalePrice())
-                .gender(product.getGender())
-                .purchasePrice(product.getPurchasePrice())
-                .isDisplay(product.getIsDisplay())
-                .isOutOfStockForced(product.getIsOutOfStockForced())
+                .displayStatus(product.getDisplayStatus())
+                .groupBuyStatus(resolveDummyGroupBuyStatus(product.getProductId()))
+                .latestHideInfo(processingHistoryService.getLatestHideInfo(product))
+                .processingHistory(processingHistoryService.getHistoryItems(product.getProductId()))
                 .isRecommended(product.getIsRecommended())
                 .productNotice(product.getProductNotice())
                 .description(product.getDescription())
-                .tags(product.getTags())
-                .deliveryType(product.getDeliveryType())
-                .deliveryFee(product.getDeliveryFee())
-                .deliveryFreeThreshold(product.getDeliveryFreeThreshold())
-                .deliveryEstimatedDays(product.getDeliveryEstimatedDays())
                 .createdAt(createdAtStr)
                 .optionGroups(optionGroups)
                 .variants(variants)
                 .build();
     }
-}
 
+    private ProductGroupBuyStatus resolveDummyGroupBuyStatus(Long productId) {
+        ProductGroupBuyStatus[] statuses = ProductGroupBuyStatus.values();
+        return statuses[(int) Math.floorMod(productId != null ? productId : 0L, statuses.length)];
+    }
+
+    /**
+     * 진열 + 공구 진행 중이면 상품 정보 수정 불가(옵션·재고만 허용).
+     * 재고는 모든 상태에서 수정 가능.
+     */
+    private void validateSellerProductEdit(Product product, boolean hasInfoChange) {
+        ProductDisplayStatus displayStatus = product.getDisplayStatus();
+        ProductGroupBuyStatus groupBuyStatus = resolveDummyGroupBuyStatus(product.getProductId());
+
+        boolean displayedAndInGroupBuy =
+                displayStatus == ProductDisplayStatus.DISPLAY
+                        && groupBuyStatus == ProductGroupBuyStatus.IN_PROGRESS;
+
+        if (displayedAndInGroupBuy && hasInfoChange) {
+            throw new BusinessException(ErrorCode.PRODUCT_EDIT_RESTRICTED);
+        }
+    }
+
+    /**
+     * 기존 variant 재고만 갱신 (optionGroups 없이 variants만 전달한 경우).
+     */
+    private void updateExistingVariantStocks(Product product, List<ProductDto.VariantRequest> variantRequests) {
+        if (product.getVariants() == null || product.getVariants().isEmpty()) {
+            throw new BusinessException(ErrorCode.VARIANT_NOT_FOUND);
+        }
+
+        Map<String, ProductVariant> byName = product.getVariants().stream()
+                .collect(Collectors.toMap(
+                        ProductVariant::getName,
+                        v -> v,
+                        (a, b) -> a
+                ));
+
+        for (ProductDto.VariantRequest variantRequest : variantRequests) {
+            String variantName = variantRequest.getOptionNames().stream()
+                    .collect(Collectors.joining(" / "));
+            ProductVariant existing = byName.get(variantName);
+            if (existing == null) {
+                throw new BusinessException(ErrorCode.INVALID_VARIANT_OPTIONS);
+            }
+            existing.setStock(variantRequest.getStock());
+        }
+    }
+
+    private void applySellerDisplayStatusChange(
+            Product product,
+            ProductDisplayStatus previous,
+            ProductDisplayStatus next
+    ) {
+        if (next == null) {
+            return;
+        }
+        if (next == previous) {
+            return;
+        }
+        product.setDisplayStatus(next);
+        if (next == ProductDisplayStatus.HIDDEN) {
+            product.setHideReasonType(ProductHideReasonType.BRAND_REQUEST);
+            product.setHideDetail(null);
+            processingHistoryService.recordHidden(
+                    product, previous, ProductHideReasonType.BRAND_REQUEST, null, null);
+        } else if (next == ProductDisplayStatus.DISPLAY) {
+            product.setHideReasonType(null);
+            product.setHideDetail(null);
+            processingHistoryService.recordRedisplayed(product, previous, null);
+        } else if (next == ProductDisplayStatus.HIDE_REQUEST) {
+            product.setHideReasonType(ProductHideReasonType.BRAND_REQUEST);
+            product.setHideDetail(null);
+            processingHistoryService.recordHideRequested(product, previous);
+        } else if (next == ProductDisplayStatus.PENDING_REVIEW) {
+            processingHistoryService.recordPendingReview(product, previous);
+        }
+    }
+
+    private int sumVariantStock(Product product) {
+        if (product.getVariants() == null || product.getVariants().isEmpty()) {
+            return 0;
+        }
+        return product.getVariants().stream()
+                .mapToInt(v -> v.getStock() != null ? v.getStock() : 0)
+                .sum();
+    }
+
+    private boolean hasProductInfoChange(ProductDto.UpdateProductRequest request) {
+        return request.getCategoryId() != null
+                || request.getName() != null
+                || request.getSellerProductCode() != null
+                || request.getRegularPrice() != null
+                || request.getGender() != null
+                || request.getDescription() != null
+                || request.getProductNotice() != null
+                || request.getRepresentativeImageUrl() != null
+                || request.getCoverImageUrls() != null;
+    }
+
+    private boolean hasAnyUpdate(ProductDto.UpdateProductRequest request) {
+        return hasProductInfoChange(request)
+                || request.getDisplayStatus() != null
+                || request.getVariants() != null;
+    }
+
+}

@@ -101,9 +101,9 @@ public interface CommonMarketControllerDocs {
                     "**정렬 기준:**\n" +
                     "1. Wishlist 수 많은 순 (DESC)\n" +
                     "2. 최신 등록일(createdAt) 순 (DESC)\n\n" +
-                    "**필터링:** 해당 마켓에 속한 상품 중 전시 중(isDisplay=true)인 상품만 대상\n\n" +
+                    "**필터링:** 해당 마켓에 속한 상품 중 전시 중(displayStatus=DISPLAY)인 상품만 대상\n\n" +
                     "**응답 구조:**\n" +
-                    "- content: 상품 리스트 (id, name, marketName, representativeImageUrl, price, wishCount, isWished, reviewCount, tags 등)\n" +
+                    "- content: 상품 리스트 (id, name, marketName, representativeImageUrl, price, wishCount, isWished, reviewCount 등)\n" +
                     "- pageInfo: 고정값 (currentPage=1, totalPages=1, totalResults, limit=10, hasNext=false)\n\n" +
                     "**권한:** 비회원/회원 공통 (로그인 시 isWished 반영, 비회원은 false)\n\n" +
                     "**파라미터:** marketId (경로) - 조회할 마켓(쇼룸) ID (필수)"

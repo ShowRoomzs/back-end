@@ -11,7 +11,12 @@ import lombok.Setter;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import showroomz.api.common.product.dto.ProductProcessingHistoryDto;
+import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGender;
+import showroomz.domain.product.type.ProductGroupBuyStatus;
+import showroomz.global.dto.PageResponse;
 
 public class ProductDto {
 
@@ -34,31 +39,10 @@ public class ProductDto {
         @Schema(description = "판매자 상품 코드", example = "PROD-001")
         private String sellerProductCode;
 
-        @Schema(description = "진열 상태", example = "true")
-        private Boolean isDisplay = true;
-
-        @Schema(description = "강제 품절 처리 여부", example = "false")
-        private Boolean isOutOfStockForced = false;
-
-        @Min(value = 0, message = "매입가는 0 이상이어야 합니다.")
-        @Schema(description = "매입가", example = "30000")
-        private Integer purchasePrice;
-
-        @NotNull(message = "판매가(할인 전)는 필수 입력값입니다.")
+        @NotNull(message = "판매가는 필수 입력값입니다.")
         @Min(value = 0, message = "판매가는 0 이상이어야 합니다.")
-        @Schema(description = "판매가 (할인 전)", example = "59000")
+        @Schema(description = "판매가 (정가)", example = "59000")
         private Integer regularPrice;
-
-        @NotNull(message = "할인 판매가는 필수 입력값입니다.")
-        @Min(value = 0, message = "할인 판매가는 0 이상이어야 합니다.")
-        @Schema(description = "할인 판매가 (최종가)", example = "49000")
-        private Integer salePrice;
-
-        @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
-        private ProductGender gender;
-
-        @Schema(description = "할인 설정 여부", example = "true")
-        private Boolean isDiscount = false;
 
         @Schema(description = "대표 이미지 URL", example = "https://example.com/image.jpg")
         private String representativeImageUrl;
@@ -73,35 +57,24 @@ public class ProductDto {
         @Schema(description = "인스타그램 Embed 태그", example = "<blockquote>...</blockquote>")
         private String instagramEmbedTag;
 
-        @Schema(description = "태그 목록", example = "[\"신상\", \"할인\", \"인기\"]")
-        private List<String> tags;
-
-        @Schema(description = "배송 유형", example = "STANDARD")
-        private String deliveryType;
-
-        @Min(value = 0, message = "배송비는 0 이상이어야 합니다.")
-        @Schema(description = "배송비", example = "3000")
-        private Integer deliveryFee;
-
-        @Min(value = 0, message = "무료 배송 최소 금액은 0 이상이어야 합니다.")
-        @Schema(description = "무료 배송 최소 금액", example = "50000")
-        private Integer deliveryFreeThreshold;
-
-        @Min(value = 1, message = "배송 예상 일수는 1 이상이어야 합니다.")
-        @Schema(description = "배송 예상 일수", example = "3")
-        private Integer deliveryEstimatedDays;
-
         @Valid
         @Schema(description = "상품정보제공고시")
         private ProductNoticeRequest productNotice;
 
+        @Min(value = 0, message = "재고 수량은 0 이상이어야 합니다.")
+        @Schema(
+                description = "재고 수량. 옵션(optionGroups/variants) 없이 단일 재고만 등록할 때 사용. " +
+                        "variants를 보내지 않으면 이 값으로 단일 옵션 없는 상품이 생성됩니다. (미입력 시 0)",
+                example = "999"
+        )
+        private Integer stock;
+
         @Valid
-        @Schema(description = "옵션 그룹 목록")
+        @Schema(description = "옵션 그룹 목록. 옵션 없는 상품은 생략하거나 빈 배열")
         private List<OptionGroupRequest> optionGroups;
 
         @Valid
-        @NotNull(message = "옵션 목록은 필수 입력값입니다.")
-        @Schema(description = "옵션 목록 (조합된 결과)")
+        @Schema(description = "옵션 조합(Variant) 목록. 옵션 없는 상품은 생략하고 stock만 입력")
         private List<VariantRequest> variants;
     }
 
@@ -111,32 +84,38 @@ public class ProductDto {
     @AllArgsConstructor
     @Schema(description = "상품정보제공고시")
     public static class ProductNoticeRequest {
+        @Schema(description = "용량·중량", example = "제품 상세 참고")
+        private String capacityWeight;
+
+        @Schema(description = "제품 주요 사양", example = "제품 상세 참고")
+        private String mainSpecs;
+
+        @Schema(description = "사용기한·개봉 후 사용기간", example = "제품 상세 참고")
+        private String expirationPeriod;
+
+        @Schema(description = "사용방법", example = "제품 상세 참고")
+        private String usageMethod;
+
+        @Schema(description = "화장품제조업자·책임판매업자", example = "제품 상세 참고")
+        private String manufacturerSeller;
+
         @Schema(description = "제조국", example = "제품 상세 참고")
         private String origin;
 
-        @Schema(description = "소재", example = "제품 상세 참고")
-        private String material;
+        @Schema(description = "전성분", example = "제품 상세 참고")
+        private String ingredients;
 
-        @Schema(description = "색상", example = "제품 상세 참고")
-        private String color;
+        @Schema(description = "기능성 화장품 식품의약품안전처 심사필 여부", example = "제품 상세 참고")
+        private String functionalCosmeticApproval;
 
-        @Schema(description = "치수", example = "제품 상세 참고")
-        private String size;
+        @Schema(description = "사용 시 주의사항", example = "제품 상세 참고")
+        private String precautions;
 
-        @Schema(description = "제조자", example = "제품 상세 참고")
-        private String manufacturer;
-
-        @Schema(description = "세탁 방법", example = "제품 상세 참고")
-        private String washingMethod;
-
-        @Schema(description = "제조연월", example = "제품 상세 참고")
-        private String manufactureDate;
-
-        @Schema(description = "A/S 정보", example = "제품 상세 참고")
-        private String asInfo;
-
-        @Schema(description = "품질 보증 기준", example = "제품 상세 참고")
+        @Schema(description = "품질보증기준", example = "제품 상세 참고")
         private String qualityAssurance;
+
+        @Schema(description = "소비자상담 전화번호", example = "제품 상세 참고")
+        private String customerServicePhone;
     }
 
     @Getter
@@ -183,16 +162,13 @@ public class ProductDto {
 
         @NotNull(message = "판매가는 필수 입력값입니다.")
         @Min(value = 0, message = "판매가는 0 이상이어야 합니다.")
-        @Schema(description = "옵션가 포함 최종가", example = "50000")
-        private Integer salePrice;
+        @Schema(description = "판매가 (옵션가 포함)", example = "50000")
+        private Integer regularPrice;
 
         @NotNull(message = "재고 수량은 필수 입력값입니다.")
         @Min(value = 0, message = "재고 수량은 0 이상이어야 합니다.")
         @Schema(description = "재고 수량", example = "100")
         private Integer stock;
-
-        @Schema(description = "진열 여부", example = "true")
-        private Boolean isDisplay = true;
 
         @Schema(description = "대표 옵션 여부", example = "true")
         private Boolean isRepresentative = false;
@@ -232,23 +208,13 @@ public class ProductDto {
         @Schema(description = "판매자 상품 코드", example = "PROD-001")
         private String sellerProductCode;
 
-        @Schema(description = "진열 상태", example = "true")
-        private Boolean isDisplay;
-
-        @Schema(description = "강제 품절 처리 여부", example = "false")
-        private Boolean isOutOfStockForced;
-
-        @Min(value = 0, message = "매입가는 0 이상이어야 합니다.")
-        @Schema(description = "매입가", example = "30000")
-        private Integer purchasePrice;
+        @Schema(description = "진열 상태", example = "DISPLAY",
+                allowableValues = {"DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"})
+        private ProductDisplayStatus displayStatus;
 
         @Min(value = 0, message = "판매가는 0 이상이어야 합니다.")
-        @Schema(description = "판매가 (할인 전)", example = "59000")
+        @Schema(description = "판매가 (정가)", example = "59000")
         private Integer regularPrice;
-
-        @Min(value = 0, message = "할인 판매가는 0 이상이어야 합니다.")
-        @Schema(description = "할인 판매가 (최종가)", example = "49000")
-        private Integer salePrice;
 
         @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
         private ProductGender gender;
@@ -262,24 +228,6 @@ public class ProductDto {
 
         @Schema(description = "에디터 상세 설명 (HTML)", example = "<p>상품 상세 설명</p>")
         private String description;
-
-        @Schema(description = "태그 목록", example = "[\"신상\", \"할인\", \"인기\"]")
-        private List<String> tags;
-
-        @Schema(description = "배송 유형", example = "STANDARD")
-        private String deliveryType;
-
-        @Min(value = 0, message = "배송비는 0 이상이어야 합니다.")
-        @Schema(description = "배송비", example = "3000")
-        private Integer deliveryFee;
-
-        @Min(value = 0, message = "무료 배송 최소 금액은 0 이상이어야 합니다.")
-        @Schema(description = "무료 배송 최소 금액", example = "50000")
-        private Integer deliveryFreeThreshold;
-
-        @Min(value = 1, message = "배송 예상 일수는 1 이상이어야 합니다.")
-        @Schema(description = "배송 예상 일수", example = "3")
-        private Integer deliveryEstimatedDays;
 
         @Valid
         @Schema(description = "상품정보제공고시")
@@ -312,37 +260,41 @@ public class ProductDto {
     }
 
     @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Schema(description = "상품 목록 조회 요청 (필터)")
-    public static class ProductListRequest {
-        @Schema(description = "카테고리 ID (최종 선택된 카테고리)", example = "3")
-        private Long categoryId;
+    @Schema(description = "상품 목록 조회 응답 (글로벌 PageResponse + 진열 상태별 건수)")
+    public static class ProductListResponse extends PageResponse<ProductListItem> {
 
-        @Schema(description = "진열 상태 (ALL: 전체, DISPLAY: 진열, HIDDEN: 미진열)", example = "ALL", allowableValues = {"ALL", "DISPLAY", "HIDDEN"})
-        private String displayStatus = "ALL";
+        @Schema(description = "진열 상태별 상품 건수 (검색어·공구상태 반영, 진열상태 필터 미반영)")
+        private final DisplayStatusCounts displayStatusCounts;
 
-        @Schema(description = "품절 상태 (ALL: 전체, OUT_OF_STOCK: 품절, IN_STOCK: 품절 아님)", example = "ALL", allowableValues = {"ALL", "OUT_OF_STOCK", "IN_STOCK"})
-        private String stockStatus = "ALL";
-
-        @Schema(description = "검색어", example = "멋진코트")
-        private String keyword;
-
-        @Schema(description = "검색 타입 (productNumber: 상품 번호, sellerProductCode: 판매자 상품 코드, name: 상품명)", 
-                example = "name", allowableValues = {"productNumber", "sellerProductCode", "name"})
-        private String keywordType;
+        public ProductListResponse(
+                List<ProductListItem> content,
+                Page<?> page,
+                DisplayStatusCounts displayStatusCounts) {
+            super(content, page);
+            this.displayStatusCounts = displayStatusCounts;
+        }
     }
 
     @Getter
-    @Setter
+    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Builder
-    @Schema(description = "상품 목록 조회 응답")
-    public static class ProductListResponse {
-        @Schema(description = "상품 목록")
-        private List<ProductListItem> products;
+    @Schema(description = "진열 상태별 상품 건수")
+    public static class DisplayStatusCounts {
+        @Schema(description = "전체 건수", example = "195")
+        private long all;
+
+        @Schema(description = "진열 건수", example = "120")
+        private long display;
+
+        @Schema(description = "미진열 건수", example = "40")
+        private long hidden;
+
+        @Schema(description = "재검토 대기 건수", example = "20")
+        private long pendingReview;
+
+        @Schema(description = "미진열 요청 건수", example = "15")
+        private long hideRequest;
     }
 
     @Getter
@@ -367,20 +319,27 @@ public class ProductDto {
         @Schema(description = "상품명", example = "프리미엄 린넨 셔츠")
         private String name;
 
-        @Schema(description = "가격 정보")
-        private PriceInfo price;
+        @Schema(description = "판매가", example = "59000")
+        private Integer regularPrice;
 
         @Schema(description = "등록일", example = "2025-12-28T14:30:00Z")
         private String createdAt;
 
-        @Schema(description = "진열 상태", example = "DISPLAY")
-        private String displayStatus;
+        @Schema(description = "수정일", example = "2026-01-05T10:00:00Z")
+        private String modifiedAt;
 
-        @Schema(description = "품절 상태", example = "IN_STOCK")
-        private String stockStatus;
+        @Schema(description = "진열 상태 (DISPLAY: 진열, HIDDEN: 미진열, PENDING_REVIEW: 재검토 대기, HIDE_REQUEST: 미진열 요청)",
+                example = "DISPLAY",
+                allowableValues = {"DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"})
+        private ProductDisplayStatus displayStatus;
 
-        @Schema(description = "강제 품절 처리 여부", example = "false")
-        private Boolean isOutOfStockForced;
+        @Schema(description = "공구 상태 (더미). PREPARING: 준비중, READY: 준비완료, IN_PROGRESS: 진행중, NOT_CONNECTED: 연결없음",
+                example = "PREPARING",
+                allowableValues = {"PREPARING", "READY", "IN_PROGRESS", "NOT_CONNECTED"})
+        private ProductGroupBuyStatus groupBuyStatus;
+
+        @Schema(description = "재고 수량 (옵션 재고 합계)", example = "100")
+        private Integer stock;
     }
 
     @Getter
@@ -390,14 +349,8 @@ public class ProductDto {
     @Builder
     @Schema(description = "가격 정보")
     public static class PriceInfo {
-        @Schema(description = "매입가", example = "25000")
-        private Integer purchasePrice;
-
         @Schema(description = "판매가", example = "59000")
         private Integer regularPrice;
-
-        @Schema(description = "할인 판매가", example = "49000")
-        private Integer salePrice;
     }
 
     @Getter
@@ -437,47 +390,29 @@ public class ProductDto {
         @Schema(description = "커버 이미지 URL 목록", example = "[\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\"]")
         private List<String> coverImageUrls;
 
-        @Schema(description = "정가", example = "59000")
+        @Schema(description = "판매가 (정가)", example = "59000")
         private Integer regularPrice;
 
-        @Schema(description = "할인 판매가", example = "49000")
-        private Integer salePrice;
+        @Schema(description = "진열 상태", example = "DISPLAY",
+                allowableValues = {"DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"})
+        private ProductDisplayStatus displayStatus;
 
-        @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
-        private ProductGender gender;
+        @Schema(description = "공구 상태 (더미). PREPARING: 준비중, READY: 준비완료, IN_PROGRESS: 진행중, NOT_CONNECTED: 연결없음",
+                example = "PREPARING",
+                allowableValues = {"PREPARING", "READY", "IN_PROGRESS", "NOT_CONNECTED"})
+        private ProductGroupBuyStatus groupBuyStatus;
 
-        @Schema(description = "매입가", example = "30000")
-        private Integer purchasePrice;
-
-        @Schema(description = "진열 상태", example = "true")
-        private Boolean isDisplay;
-
-        @Schema(description = "강제 품절 처리 여부", example = "false")
-        private Boolean isOutOfStockForced;
+        @Schema(description = "최근 미진열 정보 (displayStatus=HIDDEN일 때만, 가장 최근 HIDDEN 이력 기준)")
+        private ProductProcessingHistoryDto.LatestHideInfo latestHideInfo;
 
         @Schema(description = "추천 상품 여부", example = "false")
         private Boolean isRecommended;
 
-        @Schema(description = "상품정보제공고시 (JSON 문자열)", example = "{\"제조국\":\"한국\",\"제조사\":\"ABC\"}")
+        @Schema(description = "상품정보제공고시 (JSON 문자열)", example = "{\"origin\":\"한국\",\"ingredients\":\"제품 상세 참고\"}")
         private String productNotice;
 
         @Schema(description = "상품 상세 설명 (HTML)", example = "<p>상품 상세 설명</p>")
         private String description;
-
-        @Schema(description = "태그 (JSON 문자열)", example = "[\"신상\", \"할인\", \"인기\"]")
-        private String tags;
-
-        @Schema(description = "배송 유형", example = "STANDARD")
-        private String deliveryType;
-
-        @Schema(description = "배송비", example = "3000")
-        private Integer deliveryFee;
-
-        @Schema(description = "무료 배송 최소 금액", example = "50000")
-        private Integer deliveryFreeThreshold;
-
-        @Schema(description = "배송 예상 일수", example = "3")
-        private Integer deliveryEstimatedDays;
 
         @Schema(description = "등록일", example = "2025-12-28T14:30:00Z")
         private String createdAt;
@@ -487,6 +422,12 @@ public class ProductDto {
 
         @Schema(description = "옵션 조합 (Variant) 목록")
         private List<VariantInfo> variants;
+
+        @Schema(description = "처리 이력 (브랜드/어드민 공유, 최신순). "
+                + "historyType: PRODUCT_CREATED(상품 등록), PRODUCT_INFO_UPDATED(브랜드가 상품 정보 수정), "
+                + "STOCK_UPDATED(재고 수량 수정), HIDDEN(미진열 처리), REDISPLAYED(다시 진열), "
+                + "HIDE_REQUESTED(미진열 요청), PENDING_REVIEW(재검토 대기)")
+        private List<ProductProcessingHistoryDto.HistoryItem> processingHistory;
     }
 
     @Getter
@@ -553,20 +494,14 @@ public class ProductDto {
         @Schema(description = "옵션 조합명", example = "S, Black")
         private String name;
 
-        @Schema(description = "판매가", example = "50000")
+        @Schema(description = "판매가 (옵션가 포함)", example = "50000")
         private Integer regularPrice;
-
-        @Schema(description = "할인 판매가", example = "49000")
-        private Integer salePrice;
 
         @Schema(description = "재고 수량", example = "100")
         private Integer stock;
 
         @Schema(description = "대표 옵션 여부", example = "true")
         private Boolean isRepresentative;
-
-        @Schema(description = "진열 여부", example = "true")
-        private Boolean isDisplay;
 
         @Schema(description = "옵션 ID 목록", example = "[1, 2]")
         private List<Long> optionIds;
@@ -675,8 +610,10 @@ public class ProductDto {
         private List<Long> productIds;
 
         @NotNull(message = "진열 상태는 필수 입력값입니다.")
-        @Schema(description = "진열 상태 (true: 진열 처리, false: 미진열 처리)", example = "true")
-        private Boolean isDisplayed;
+        @Schema(description = "진열 상태 (DISPLAY: 진열, HIDDEN: 미진열, PENDING_REVIEW: 재검토 대기, HIDE_REQUEST: 미진열 요청)",
+                example = "HIDDEN",
+                allowableValues = {"DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"})
+        private ProductDisplayStatus displayStatus;
     }
 
     @Getter

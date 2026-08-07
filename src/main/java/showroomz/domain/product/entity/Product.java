@@ -6,9 +6,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGender;
-import showroomz.domain.product.type.ProductInspectionStatus;
-import showroomz.domain.product.type.ProductRejectReasonType;
+import showroomz.domain.product.type.ProductHideReasonType;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -53,14 +53,13 @@ public class Product {
     @Column(name = "gender", length = 10)
     private ProductGender gender;
 
-    @Column(name = "purchase_price")
-    private Integer purchasePrice;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "display_status", nullable = false, length = 32)
+    private ProductDisplayStatus displayStatus = ProductDisplayStatus.DISPLAY;
 
-    @Column(name = "is_display", nullable = false)
-    private Boolean isDisplay = true;
-
-    @Column(name = "previous_is_display")
-    private Boolean previousIsDisplay;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "previous_display_status", length = 32)
+    private ProductDisplayStatus previousDisplayStatus;
 
     @Column(name = "is_out_of_stock_forced", nullable = false)
     private Boolean isOutOfStockForced = false;
@@ -69,18 +68,11 @@ public class Product {
     private Boolean isRecommended = false;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "inspection_status", nullable = false, length = 32)
-    private ProductInspectionStatus inspectionStatus = ProductInspectionStatus.WAITING;
+    @Column(name = "hide_reason_type", length = 64)
+    private ProductHideReasonType hideReasonType;
 
-    @Column(name = "admin_memo", length = 500)
-    private String adminMemo;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "reject_reason_type", length = 64)
-    private ProductRejectReasonType rejectReasonType;
-
-    @Column(name = "reject_detail", length = 500)
-    private String rejectDetail;
+    @Column(name = "hide_detail", length = 500)
+    private String hideDetail;
 
     @Column(name = "product_notice", columnDefinition = "json")
     private String productNotice;
@@ -88,23 +80,11 @@ public class Product {
     @Column(name = "description", columnDefinition = "text")
     private String description;
 
-    @Column(name = "tags", columnDefinition = "json")
-    private String tags;
-
-    @Column(name = "delivery_type", length = 100)
-    private String deliveryType;
-
-    @Column(name = "delivery_fee")
-    private Integer deliveryFee;
-
-    @Column(name = "delivery_free_threshold")
-    private Integer deliveryFreeThreshold;
-
-    @Column(name = "delivery_estimated_days")
-    private Integer deliveryEstimatedDays;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    @Column(name = "modified_at")
+    private Instant modifiedAt;
 
     // 상품 번호 (SRZ-YYYYMMDD-XXX 형식)
     @Column(name = "product_number", unique = true, length = 50)
@@ -121,9 +101,18 @@ public class Product {
 
     @PrePersist
     protected void onCreate() {
+        Instant now = Instant.now();
         if (createdAt == null) {
-            createdAt = Instant.now();
+            createdAt = now;
         }
+        if (modifiedAt == null) {
+            modifiedAt = now;
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        modifiedAt = Instant.now();
     }
 }
 

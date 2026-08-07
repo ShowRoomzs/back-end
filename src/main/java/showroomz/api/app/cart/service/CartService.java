@@ -111,9 +111,6 @@ public class CartService {
         if (request.getVariantId() != null && !request.getVariantId().equals(cart.getVariant().getVariantId())) {
             targetVariant = productVariantRepository.findByVariantId(request.getVariantId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.VARIANT_NOT_FOUND));
-            if (!Boolean.TRUE.equals(targetVariant.getIsDisplay())) {
-                throw new BusinessException(ErrorCode.VARIANT_NOT_AVAILABLE);
-            }
         }
 
         int requestedQuantity = request.getQuantity() != null ? request.getQuantity() : cart.getQuantity();
@@ -251,7 +248,7 @@ public class CartService {
                 .optionName(buildOptionName(variant.getOptions()))
                 .quantity(cart.getQuantity())
                 .price(priceInfo)
-                .deliveryFee(product.getDeliveryFee() != null ? product.getDeliveryFee() : 0)
+                .deliveryFee(market != null && market.getDefaultDeliveryFee() != null ? market.getDefaultDeliveryFee() : 0)
                 .stock(stockInfo)
                 .build();
     }
@@ -259,10 +256,6 @@ public class CartService {
     private Cart addCartForUser(Users user, CartDto.AddCartRequest request) {
         ProductVariant variant = productVariantRepository.findByVariantId(request.getVariantId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.VARIANT_NOT_FOUND));
-
-        if (!Boolean.TRUE.equals(variant.getIsDisplay())) {
-            throw new BusinessException(ErrorCode.VARIANT_NOT_AVAILABLE);
-        }
 
         int stock = variant.getStock() != null ? variant.getStock() : 0;
         int addQuantity = request.getQuantity();
@@ -349,11 +342,11 @@ public class CartService {
                     key -> new MarketShippingAccumulator()
             );
             acc.saleTotal += sale * quantity;
-            Integer deliveryFee = product.getDeliveryFee();
+            Integer deliveryFee = market != null ? market.getDefaultDeliveryFee() : null;
             if (deliveryFee != null && deliveryFee > acc.maxDeliveryFee) {
                 acc.maxDeliveryFee = deliveryFee;
             }
-            Integer threshold = product.getDeliveryFreeThreshold();
+            Integer threshold = market != null ? market.getFreeShippingThreshold() : null;
             if (threshold != null) {
                 if (acc.minFreeThreshold == null || threshold < acc.minFreeThreshold) {
                     acc.minFreeThreshold = threshold;

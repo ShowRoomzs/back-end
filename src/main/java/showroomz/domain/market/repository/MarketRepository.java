@@ -145,7 +145,7 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
            "FROM Market m " +
            "JOIN m.seller s " +
            "LEFT JOIN m.mainCategory c " +
-           "LEFT JOIN Product p ON p.market = m AND p.isDisplay = true " +
+           "LEFT JOIN Product p ON p.market = m AND p.displayStatus = 'DISPLAY' " +
            "WHERE s.status = :approvedStatus " +
            "AND (:mainCategoryId IS NULL OR c.categoryId = :mainCategoryId) " +
            "GROUP BY m.id, m.marketName, m.marketImageUrl, c.categoryId, c.name, s.roleType " +

@@ -137,10 +137,11 @@ public class ProductService {
         List<ProductDto.VariantInfo> variants = buildVariants(variantEntities);
         Integer regularPrice = product.getRegularPrice();
         Integer salePrice = product.getSalePrice();
-        Integer deliveryFreeThreshold = product.getDeliveryFreeThreshold();
+        Integer deliveryFreeThreshold = product.getMarket() != null
+                ? product.getMarket().getFreeShippingThreshold()
+                : null;
         Boolean isFreeDelivery = calculateIsFreeDelivery(salePrice, deliveryFreeThreshold);
         JsonNode productNotice = parseJsonSafely(product.getProductNotice());
-        JsonNode tags = parseJsonSafely(product.getTags());
 
         String createdAt = product.getCreatedAt() != null ? product.getCreatedAt().toString() : null;
 
@@ -159,15 +160,10 @@ public class ProductService {
                 .coverImageUrls(coverImageUrls)
                 .description(product.getDescription())
                 .productNotice(productNotice)
-                .tags(tags)
                 .gender(product.getGender() != null ? product.getGender().name() : null)
                 .isRecommended(product.getIsRecommended())
                 .regularPrice(regularPrice)
                 .salePrice(salePrice)
-                .deliveryType(product.getDeliveryType())
-                .deliveryFee(product.getDeliveryFee())
-                .deliveryFreeThreshold(deliveryFreeThreshold)
-                .deliveryEstimatedDays(product.getDeliveryEstimatedDays())
                 .isFreeDelivery(isFreeDelivery)
                 .optionGroups(optionGroups)
                 .variants(variants)
@@ -305,17 +301,11 @@ public class ProductService {
                 .marketName(product.getMarket() != null ? product.getMarket().getMarketName() : null)
                 .price(priceInfo)
                 .discountRate(discountRate)
-                .purchasePrice(product.getPurchasePrice())
                 .gender(product.getGender() != null ? product.getGender().name() : null)
-                .isDisplay(product.getIsDisplay())
+                .isDisplay(product.getDisplayStatus() != null && product.getDisplayStatus().isVisible())
                 .isRecommended(product.getIsRecommended())
                 .productNotice(product.getProductNotice())
                 .description(product.getDescription())
-                .tags(product.getTags())
-                .deliveryType(product.getDeliveryType())
-                .deliveryFee(product.getDeliveryFee())
-                .deliveryFreeThreshold(product.getDeliveryFreeThreshold())
-                .deliveryEstimatedDays(product.getDeliveryEstimatedDays())
                 .createdAt(product.getCreatedAt() != null ? product.getCreatedAt().toString() : null)
                 .status(buildStockStatus(product))
                 .likeCount(0L) // TODO: 실제 좋아요 수 조회
@@ -481,7 +471,6 @@ public class ProductService {
                         .salePrice(variant.getSalePrice())
                         .stock(variant.getStock())
                         .isRepresentative(variant.getIsRepresentative())
-                        .isDisplay(variant.getIsDisplay())
                         .optionIds(variant.getOptions().stream()
                                 .map(ProductOption::getOptionId)
                                 .filter(Objects::nonNull)
