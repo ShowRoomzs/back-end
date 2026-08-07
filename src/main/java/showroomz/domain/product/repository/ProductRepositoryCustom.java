@@ -6,10 +6,8 @@ import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGender;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
-import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.domain.product.type.ProductListSortType;
 
-import java.time.Instant;
 import java.util.List;
 
 public interface ProductRepositoryCustom {
@@ -41,18 +39,6 @@ public interface ProductRepositoryCustom {
      * - displayStatus=DISPLAY인 상품만
      */
     List<Product> findPopularProductsByMarketId(Long marketId, int limit);
-
-    /**
-     * 관리자 상품 검수 목록 (전 마켓, 미승인 포함)
-     */
-    Page<Product> searchAdminInspection(
-            ProductInspectionStatus inspectionStatus,
-            Instant createdFrom,
-            Instant createdTo,
-            String keyword,
-            Long marketId,
-            Pageable pageable
-    );
 
     /**
      * 셀러 백스테이지 상품 목록 (필터 + 정렬)

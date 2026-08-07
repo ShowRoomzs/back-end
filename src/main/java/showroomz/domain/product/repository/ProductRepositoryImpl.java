@@ -1,9 +1,12 @@
 package showroomz.domain.product.repository;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.CaseBuilder;
-import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.NumberTemplate;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -11,8 +14,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.support.PageableExecutionUtils;
-import showroomz.domain.market.entity.QMarket;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.QProduct;
 import showroomz.domain.product.entity.QProductOption;
@@ -21,14 +22,9 @@ import showroomz.domain.product.entity.QProductVariant;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGender;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
-import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.domain.product.type.ProductListSortType;
 import showroomz.domain.wishlist.entitiy.QWishlist;
 
-import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.core.types.dsl.NumberTemplate;
-
-import java.time.Instant;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -326,59 +322,6 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
     }
 
     @Override
-    public Page<Product> searchAdminInspection(
-            ProductInspectionStatus inspectionStatus,
-            Instant createdFrom,
-            Instant createdTo,
-            String keyword,
-            Long marketId,
-            Pageable pageable
-    ) {
-        QProduct product = QProduct.product;
-        QMarket market = QMarket.market;
-
-        BooleanBuilder where = new BooleanBuilder();
-        if (inspectionStatus != null) {
-            where.and(product.inspectionStatus.eq(inspectionStatus));
-        }
-        if (createdFrom != null) {
-            where.and(product.createdAt.goe(createdFrom));
-        }
-        if (createdTo != null) {
-            where.and(product.createdAt.loe(createdTo));
-        }
-        if (marketId != null) {
-            where.and(product.market.id.eq(marketId));
-        }
-        if (keyword != null && !keyword.isBlank()) {
-            String k = keyword.trim();
-            where.and(
-                    product.name.containsIgnoreCase(k)
-                            .or(product.productNumber.containsIgnoreCase(k))
-                            .or(product.sellerProductCode.containsIgnoreCase(k))
-                            .or(market.marketName.containsIgnoreCase(k))
-            );
-        }
-
-        List<Product> content = queryFactory
-                .selectFrom(product)
-                .leftJoin(product.market, market)
-                .where(where)
-                .orderBy(product.createdAt.desc())
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .fetch();
-
-        JPAQuery<Long> countQuery = queryFactory
-                .select(product.count())
-                .from(product)
-                .leftJoin(product.market, market)
-                .where(where);
-
-        return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
-    }
-
-    @Override
     public List<Product> findPopularProductsByMarketId(Long marketId, int limit) {
         if (marketId == null || limit <= 0) {
             return List.of();
@@ -415,7 +358,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
 
         BooleanBuilder where = buildSellerProductWhere(product, marketId, displayStatus, groupBuyStatus, keyword);
 
-        NumberExpression<Integer> totalStock = JPAExpressions
+        Expression<Integer> totalStock = JPAExpressions
                 .select(variant.stock.sum().coalesce(0))
                 .from(variant)
                 .where(variant.product.eq(product));
@@ -423,7 +366,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         ProductListSortType resolvedSort = sortType != null ? sortType : ProductListSortType.CREATED_AT;
         OrderSpecifier<?> primaryOrder = switch (resolvedSort) {
             case MODIFIED_AT -> product.modifiedAt.desc().nullsLast();
-            case STOCK_ASC -> totalStock.asc();
+            case STOCK_ASC -> new OrderSpecifier<>(Order.ASC, totalStock);
             case CREATED_AT -> product.createdAt.desc();
         };
 

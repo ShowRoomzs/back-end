@@ -20,7 +20,6 @@ import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.member.seller.entity.SellerApplication;
 import showroomz.domain.member.seller.repository.SellerApplicationRepository;
 import showroomz.domain.product.repository.ProductRepository;
-import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PaginationInfo;
 import showroomz.global.error.exception.BusinessException;
@@ -353,8 +352,6 @@ public class AdminService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
 
         long registeredCount = productRepository.countByMarket_Id(marketId);
-        long pendingInspectionCount = productRepository.countByMarket_IdAndInspectionStatus(
-                marketId, ProductInspectionStatus.WAITING);
 
         Seller seller = market.getSeller();
         LocalDateTime processedAt = seller.getProcessedAt();
@@ -375,7 +372,6 @@ public class AdminService {
                 .mainCategoryName(market.getMainCategory() != null ? market.getMainCategory().getName() : null)
                 .snsLinks(snsLinks)
                 .registeredProductCount(registeredCount)
-                .pendingInspectionProductCount(pendingInspectionCount)
                 .totalSalesAmount(DUMMY_TOTAL_SALES_AMOUNT)
                 .monthlySalesAmount(DUMMY_MONTHLY_SALES_AMOUNT)
                 .totalOrderCount(DUMMY_TOTAL_ORDER_COUNT)

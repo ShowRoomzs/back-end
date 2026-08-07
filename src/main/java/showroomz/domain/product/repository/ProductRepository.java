@@ -10,7 +10,6 @@ import org.springframework.stereotype.Repository;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.type.ProductDisplayStatus;
-import showroomz.domain.product.type.ProductInspectionStatus;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -44,8 +43,6 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     long countByMarket_Id(Long marketId);
 
-    long countByMarket_IdAndInspectionStatus(Long marketId, ProductInspectionStatus inspectionStatus);
-    
     // 검색어로 상품 검색 (상품명, 상품번호, 판매자코드)
     @Query("SELECT p FROM Product p WHERE p.market.id = :marketId " +
            "AND (p.name LIKE %:searchTerm% OR p.productNumber LIKE %:searchTerm% OR p.sellerProductCode LIKE %:searchTerm%)")

@@ -21,7 +21,6 @@ import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.domain.product.type.ProductHideReasonType;
 import showroomz.domain.product.type.ProductListSortType;
-import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.global.dto.PagingRequest;
 import org.springframework.data.domain.Page;
@@ -77,7 +76,6 @@ public class ProductService {
         product.setIsRecommended(false);
         product.setDescription(request.getDescription());
         product.setProductNumber(productNumber);
-        product.setInspectionStatus(ProductInspectionStatus.WAITING);
 
         // 5. 상품정보제공고시 JSON 변환
         if (request.getProductNotice() != null) {

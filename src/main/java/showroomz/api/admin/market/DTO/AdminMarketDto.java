@@ -230,11 +230,8 @@ public class AdminMarketDto {
         @Schema(description = "SNS 링크 목록")
         private List<SnsLinkResponse> snsLinks;
 
-        @Schema(description = "등록 상품 수 (검수 대기 포함)", example = "48")
+        @Schema(description = "등록 상품 수", example = "48")
         private Long registeredProductCount;
-
-        @Schema(description = "검수 대기 중인 상품 수", example = "3")
-        private Long pendingInspectionProductCount;
 
         @Schema(description = "누적 판매액(원, 더미)", example = "12450000")
         private Long totalSalesAmount;
