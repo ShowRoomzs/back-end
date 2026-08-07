@@ -402,6 +402,11 @@ public class ProductDto {
                 allowableValues = {"DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"})
         private ProductDisplayStatus displayStatus;
 
+        @Schema(description = "공구 상태 (더미). PREPARING: 준비중, READY: 준비완료, IN_PROGRESS: 진행중, NOT_CONNECTED: 연결없음",
+                example = "PREPARING",
+                allowableValues = {"PREPARING", "READY", "IN_PROGRESS", "NOT_CONNECTED"})
+        private ProductGroupBuyStatus groupBuyStatus;
+
         @Schema(description = "미진열 사유 타입", example = "PRODUCT_NOTICE_ERROR",
                 allowableValues = {"PRODUCT_NOTICE_ERROR", "AD_DISPLAY_VIOLATION", "BRAND_REQUEST", "OTHER"})
         private ProductHideReasonType hideReasonType;

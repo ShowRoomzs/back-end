@@ -716,10 +716,7 @@ public class ProductService {
                 : createdAtStr;
 
         // 공구 상태 (더미) — productId 기준으로 순환
-        ProductGroupBuyStatus[] groupBuyStatuses = ProductGroupBuyStatus.values();
-        ProductGroupBuyStatus groupBuyStatus = groupBuyStatuses[
-                (int) (Math.floorMod(product.getProductId() != null ? product.getProductId() : 0L, groupBuyStatuses.length))
-        ];
+        ProductGroupBuyStatus groupBuyStatus = resolveDummyGroupBuyStatus(product.getProductId());
 
         return ProductDto.ProductListItem.builder()
                 .productId(product.getProductId())
@@ -807,6 +804,7 @@ public class ProductService {
                 .regularPrice(product.getRegularPrice())
                 .gender(product.getGender())
                 .displayStatus(product.getDisplayStatus())
+                .groupBuyStatus(resolveDummyGroupBuyStatus(product.getProductId()))
                 .hideReasonType(product.getHideReasonType())
                 .hideDetail(product.getHideDetail())
                 .latestHideInfo(processingHistoryService.getLatestHideInfo(product))
@@ -819,6 +817,11 @@ public class ProductService {
                 .optionGroups(optionGroups)
                 .variants(variants)
                 .build();
+    }
+
+    private ProductGroupBuyStatus resolveDummyGroupBuyStatus(Long productId) {
+        ProductGroupBuyStatus[] statuses = ProductGroupBuyStatus.values();
+        return statuses[(int) Math.floorMod(productId != null ? productId : 0L, statuses.length)];
     }
 
     private void applySellerDisplayStatusChange(
