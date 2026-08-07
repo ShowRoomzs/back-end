@@ -72,11 +72,18 @@ public class AdminProductInspectionDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @Schema(description = "검수 상세 (상품 + 마켓 + 이력)")
+    @Schema(description = "검수 상세 (상품 + 마켓 + 검수 이력 + 처리 이력)")
     public static class InspectionDetailResponse {
+        @Schema(description = "상품 상세")
         private ProductDetail product;
+
+        @Schema(description = "마켓·판매자 요약")
         private MarketSummary market;
+
+        @Schema(description = "검수 이력 (최신순)")
         private List<HistoryItem> inspectionHistory;
+
+        @Schema(description = "상품 처리 이력 (브랜드/어드민 공유, 최신순)")
         private List<ProductProcessingHistoryDto.HistoryItem> processingHistory;
     }
 

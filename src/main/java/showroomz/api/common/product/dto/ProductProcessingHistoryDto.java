@@ -10,8 +10,6 @@ import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductHideReasonType;
 import showroomz.domain.product.type.ProductProcessingHistoryType;
 
-import java.util.List;
-
 public class ProductProcessingHistoryDto {
 
     @Getter
@@ -69,19 +67,5 @@ public class ProductProcessingHistoryDto {
 
         @Schema(description = "처리 시각 (ISO-8601)", example = "2026-06-20T11:20:00Z")
         private String createdAt;
-    }
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    @Schema(description = "상품 처리 이력 목록 응답")
-    public static class HistoryListResponse {
-        @Schema(description = "상품 ID", example = "1")
-        private Long productId;
-
-        @Schema(description = "처리 이력 (최신순)")
-        private List<HistoryItem> processingHistory;
     }
 }

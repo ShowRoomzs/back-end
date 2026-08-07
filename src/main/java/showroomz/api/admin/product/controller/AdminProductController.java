@@ -10,7 +10,6 @@ import showroomz.api.admin.product.DTO.AdminProductDto;
 import showroomz.api.admin.product.docs.AdminProductControllerDocs;
 import showroomz.api.admin.product.service.AdminProductService;
 import showroomz.api.app.auth.entity.UserPrincipal;
-import showroomz.api.common.product.dto.ProductProcessingHistoryDto;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -53,14 +52,6 @@ public class AdminProductController implements AdminProductControllerDocs {
         AdminProductDto.BulkUpdateDisplayStatusResponse response = adminProductService.bulkUpdateDisplayStatus(
                 request, requireAdminSellerId(principal));
         return ResponseEntity.ok(response);
-    }
-
-    @Override
-    @GetMapping("/{productId}/processing-history")
-    public ResponseEntity<ProductProcessingHistoryDto.HistoryListResponse> getProcessingHistory(
-            @PathVariable Long productId
-    ) {
-        return ResponseEntity.ok(adminProductService.getProcessingHistory(productId));
     }
 
     private Long requireAdminSellerId(UserPrincipal principal) {

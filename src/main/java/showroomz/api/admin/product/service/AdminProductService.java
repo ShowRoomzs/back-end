@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.product.DTO.AdminProductDto;
-import showroomz.api.common.product.dto.ProductProcessingHistoryDto;
 import showroomz.api.common.product.service.ProductProcessingHistoryService;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductRepository;
@@ -100,13 +99,6 @@ public class AdminProductService {
                 .displayStatus(request.getDisplayStatus())
                 .message(buildMessage(request.getDisplayStatus(), processed.size()))
                 .build();
-    }
-
-    @Transactional(readOnly = true)
-    public ProductProcessingHistoryDto.HistoryListResponse getProcessingHistory(Long productId) {
-        productRepository.findByProductId(productId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
-        return processingHistoryService.getHistoryList(productId);
     }
 
     private void applyDisplayStatusChange(

@@ -16,7 +16,6 @@ import showroomz.api.admin.product.DTO.AdminProductDto;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
-import showroomz.api.common.product.dto.ProductProcessingHistoryDto;
 
 @Tag(name = "Admin - Product", description = "관리자 상품 관리 API")
 public interface AdminProductControllerDocs {
@@ -213,88 +212,5 @@ public interface AdminProductControllerDocs {
     ResponseEntity<AdminProductDto.BulkUpdateDisplayStatusResponse> bulkUpdateDisplayStatus(
             @RequestBody AdminProductDto.BulkUpdateDisplayStatusRequest request,
             @AuthenticationPrincipal UserPrincipal principal
-    );
-
-    @Operation(
-            summary = "상품 처리 이력 조회",
-            description = "상품별 처리 이력을 최신순으로 조회합니다. 브랜드와 어드민이 동일 이력을 공유합니다.\n\n" +
-                    "- 미진열 처리 시 사유와 상세사유는 `hideReason` 객체로 묶여 응답됩니다.\n" +
-                    "- 어드민 처리 이력에는 `processorName`(예: 김운영 운영자)이 포함됩니다.\n\n" +
-                    "**권한:** ADMIN"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "조회 성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProductProcessingHistoryDto.HistoryListResponse.class),
-                            examples = {
-                                    @ExampleObject(
-                                            name = "처리 이력 예시",
-                                            value = "{\n" +
-                                                    "  \"productId\": 1,\n" +
-                                                    "  \"processingHistory\": [\n" +
-                                                    "    {\n" +
-                                                    "      \"historyId\": 4,\n" +
-                                                    "      \"historyType\": \"STOCK_UPDATED\",\n" +
-                                                    "      \"title\": \"재고 수량 수정\",\n" +
-                                                    "      \"previousDisplayStatus\": \"PENDING_REVIEW\",\n" +
-                                                    "      \"newDisplayStatus\": \"PENDING_REVIEW\",\n" +
-                                                    "      \"hideReason\": null,\n" +
-                                                    "      \"stockQuantity\": 120,\n" +
-                                                    "      \"processorName\": null,\n" +
-                                                    "      \"createdAt\": \"2026-07-28T16:42:00Z\"\n" +
-                                                    "    },\n" +
-                                                    "    {\n" +
-                                                    "      \"historyId\": 3,\n" +
-                                                    "      \"historyType\": \"REDISPLAYED\",\n" +
-                                                    "      \"title\": \"다시 진열\",\n" +
-                                                    "      \"previousDisplayStatus\": \"HIDDEN\",\n" +
-                                                    "      \"newDisplayStatus\": \"DISPLAY\",\n" +
-                                                    "      \"hideReason\": null,\n" +
-                                                    "      \"stockQuantity\": null,\n" +
-                                                    "      \"processorName\": \"김운영 운영자\",\n" +
-                                                    "      \"createdAt\": \"2026-06-25T09:00:00Z\"\n" +
-                                                    "    },\n" +
-                                                    "    {\n" +
-                                                    "      \"historyId\": 2,\n" +
-                                                    "      \"historyType\": \"HIDDEN\",\n" +
-                                                    "      \"title\": \"미진열 처리\",\n" +
-                                                    "      \"previousDisplayStatus\": \"DISPLAY\",\n" +
-                                                    "      \"newDisplayStatus\": \"HIDDEN\",\n" +
-                                                    "      \"hideReason\": {\n" +
-                                                    "        \"reasonType\": \"PRODUCT_NOTICE_ERROR\",\n" +
-                                                    "        \"reasonDescription\": \"상품 정보 제공 고시 오류\",\n" +
-                                                    "        \"detail\": null\n" +
-                                                    "      },\n" +
-                                                    "      \"stockQuantity\": null,\n" +
-                                                    "      \"processorName\": \"김운영 운영자\",\n" +
-                                                    "      \"createdAt\": \"2026-06-20T11:20:00Z\"\n" +
-                                                    "    },\n" +
-                                                    "    {\n" +
-                                                    "      \"historyId\": 1,\n" +
-                                                    "      \"historyType\": \"PRODUCT_CREATED\",\n" +
-                                                    "      \"title\": \"상품 등록\",\n" +
-                                                    "      \"previousDisplayStatus\": null,\n" +
-                                                    "      \"newDisplayStatus\": \"DISPLAY\",\n" +
-                                                    "      \"hideReason\": null,\n" +
-                                                    "      \"stockQuantity\": null,\n" +
-                                                    "      \"processorName\": null,\n" +
-                                                    "      \"createdAt\": \"2026-06-12T10:05:00Z\"\n" +
-                                                    "    }\n" +
-                                                    "  ]\n" +
-                                                    "}"
-                                    )
-                            }
-                    )
-            ),
-            @ApiResponse(responseCode = "404", description = "상품 없음",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)))
-    })
-    ResponseEntity<ProductProcessingHistoryDto.HistoryListResponse> getProcessingHistory(
-            @Parameter(description = "상품 ID", required = true, example = "1")
-            @PathVariable Long productId
     );
 }

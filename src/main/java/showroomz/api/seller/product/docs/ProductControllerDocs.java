@@ -182,7 +182,7 @@ public interface ProductControllerDocs {
 
     @Operation(
             summary = "상품 개별 조회",
-            description = "백스테이지에서 판매자가 특정 상품의 상세 정보를 조회합니다. 상품의 모든 정보를 포함합니다.\n\n" +
+            description = "백스테이지에서 판매자가 특정 상품의 상세 정보를 조회합니다. 상품의 모든 정보와 처리 이력(`processingHistory`)을 포함합니다.\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -241,6 +241,45 @@ public interface ProductControllerDocs {
                                                     "      \"stock\": 100,\n" +
                                                     "      \"isRepresentative\": true,\n" +
                                                     "      \"optionIds\": [1, 2]\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"processingHistory\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"historyId\": 3,\n" +
+                                                    "      \"historyType\": \"REDISPLAYED\",\n" +
+                                                    "      \"title\": \"다시 진열\",\n" +
+                                                    "      \"previousDisplayStatus\": \"HIDDEN\",\n" +
+                                                    "      \"newDisplayStatus\": \"DISPLAY\",\n" +
+                                                    "      \"hideReason\": null,\n" +
+                                                    "      \"stockQuantity\": null,\n" +
+                                                    "      \"processorName\": \"김운영 운영자\",\n" +
+                                                    "      \"createdAt\": \"2026-06-25T09:00:00Z\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"historyId\": 2,\n" +
+                                                    "      \"historyType\": \"HIDDEN\",\n" +
+                                                    "      \"title\": \"미진열 처리\",\n" +
+                                                    "      \"previousDisplayStatus\": \"DISPLAY\",\n" +
+                                                    "      \"newDisplayStatus\": \"HIDDEN\",\n" +
+                                                    "      \"hideReason\": {\n" +
+                                                    "        \"reasonType\": \"PRODUCT_NOTICE_ERROR\",\n" +
+                                                    "        \"reasonDescription\": \"상품 정보 제공 고시 오류\",\n" +
+                                                    "        \"detail\": \"성분 표기 누락\"\n" +
+                                                    "      },\n" +
+                                                    "      \"stockQuantity\": null,\n" +
+                                                    "      \"processorName\": \"김운영 운영자\",\n" +
+                                                    "      \"createdAt\": \"2026-06-20T11:20:00Z\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"historyId\": 1,\n" +
+                                                    "      \"historyType\": \"PRODUCT_CREATED\",\n" +
+                                                    "      \"title\": \"상품 등록\",\n" +
+                                                    "      \"previousDisplayStatus\": null,\n" +
+                                                    "      \"newDisplayStatus\": \"DISPLAY\",\n" +
+                                                    "      \"hideReason\": null,\n" +
+                                                    "      \"stockQuantity\": null,\n" +
+                                                    "      \"processorName\": null,\n" +
+                                                    "      \"createdAt\": \"2026-06-12T10:05:00Z\"\n" +
                                                     "    }\n" +
                                                     "  ]\n" +
                                                     "}"

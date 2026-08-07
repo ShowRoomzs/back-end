@@ -52,7 +52,7 @@ public interface AdminProductInspectionControllerDocs {
 
     @Operation(
             summary = "[검수] 상세 조회",
-            description = "단건 상품 데이터, 마켓·판매자 요약, 검수 이력 타임라인을 반환합니다.\n\n" +
+            description = "단건 상품 데이터, 마켓·판매자 요약, 처리 이력(`processingHistory`)을 함께 반환합니다.\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -62,7 +62,91 @@ public interface AdminProductInspectionControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = AdminProductInspectionDto.InspectionDetailResponse.class)
+                            schema = @Schema(implementation = AdminProductInspectionDto.InspectionDetailResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"product\": {\n" +
+                                                    "    \"productId\": 1,\n" +
+                                                    "    \"productNumber\": \"SRZ-20251228-001\",\n" +
+                                                    "    \"marketId\": 1,\n" +
+                                                    "    \"marketName\": \"프리미엄 쇼핑몰\",\n" +
+                                                    "    \"categoryId\": 1,\n" +
+                                                    "    \"categoryName\": \"의류\",\n" +
+                                                    "    \"name\": \"프리미엄 린넨 셔츠\",\n" +
+                                                    "    \"sellerProductCode\": \"PROD-ABC-001\",\n" +
+                                                    "    \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
+                                                    "    \"coverImageUrls\": [\"https://example.com/image1.jpg\"],\n" +
+                                                    "    \"regularPrice\": 59000,\n" +
+                                                    "    \"salePrice\": 59000,\n" +
+                                                    "    \"gender\": \"UNISEX\",\n" +
+                                                    "    \"displayStatus\": \"DISPLAY\",\n" +
+                                                    "    \"isOutOfStockForced\": false,\n" +
+                                                    "    \"isRecommended\": false,\n" +
+                                                    "    \"productNotice\": \"{\\\"origin\\\":\\\"대한민국\\\"}\",\n" +
+                                                    "    \"description\": \"<p>상품 상세 설명</p>\",\n" +
+                                                    "    \"createdAt\": \"2026-06-12T10:05:00Z\",\n" +
+                                                    "    \"inspectionStatus\": \"APPROVED\",\n" +
+                                                    "    \"adminMemo\": null,\n" +
+                                                    "    \"rejectReasonType\": null,\n" +
+                                                    "    \"rejectDetail\": null,\n" +
+                                                    "    \"hideReasonType\": null,\n" +
+                                                    "    \"hideDetail\": null,\n" +
+                                                    "    \"optionGroups\": [],\n" +
+                                                    "    \"variants\": []\n" +
+                                                    "  },\n" +
+                                                    "  \"market\": {\n" +
+                                                    "    \"marketId\": 1,\n" +
+                                                    "    \"marketName\": \"프리미엄 쇼핑몰\",\n" +
+                                                    "    \"csNumber\": \"02-1234-5678\",\n" +
+                                                    "    \"sellerName\": \"홍길동\",\n" +
+                                                    "    \"sellerPhone\": \"010-1234-5678\",\n" +
+                                                    "    \"sellerEmail\": \"seller@example.com\"\n" +
+                                                    "  },\n" +
+                                                    "  \"inspectionHistory\": [],\n" +
+                                                    "  \"processingHistory\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"historyId\": 3,\n" +
+                                                    "      \"historyType\": \"REDISPLAYED\",\n" +
+                                                    "      \"title\": \"다시 진열\",\n" +
+                                                    "      \"previousDisplayStatus\": \"HIDDEN\",\n" +
+                                                    "      \"newDisplayStatus\": \"DISPLAY\",\n" +
+                                                    "      \"hideReason\": null,\n" +
+                                                    "      \"stockQuantity\": null,\n" +
+                                                    "      \"processorName\": \"김운영 운영자\",\n" +
+                                                    "      \"createdAt\": \"2026-06-25T09:00:00Z\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"historyId\": 2,\n" +
+                                                    "      \"historyType\": \"HIDDEN\",\n" +
+                                                    "      \"title\": \"미진열 처리\",\n" +
+                                                    "      \"previousDisplayStatus\": \"DISPLAY\",\n" +
+                                                    "      \"newDisplayStatus\": \"HIDDEN\",\n" +
+                                                    "      \"hideReason\": {\n" +
+                                                    "        \"reasonType\": \"PRODUCT_NOTICE_ERROR\",\n" +
+                                                    "        \"reasonDescription\": \"상품 정보 제공 고시 오류\",\n" +
+                                                    "        \"detail\": \"성분 표기 누락\"\n" +
+                                                    "      },\n" +
+                                                    "      \"stockQuantity\": null,\n" +
+                                                    "      \"processorName\": \"김운영 운영자\",\n" +
+                                                    "      \"createdAt\": \"2026-06-20T11:20:00Z\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"historyId\": 1,\n" +
+                                                    "      \"historyType\": \"PRODUCT_CREATED\",\n" +
+                                                    "      \"title\": \"상품 등록\",\n" +
+                                                    "      \"previousDisplayStatus\": null,\n" +
+                                                    "      \"newDisplayStatus\": \"DISPLAY\",\n" +
+                                                    "      \"hideReason\": null,\n" +
+                                                    "      \"stockQuantity\": null,\n" +
+                                                    "      \"processorName\": null,\n" +
+                                                    "      \"createdAt\": \"2026-06-12T10:05:00Z\"\n" +
+                                                    "    }\n" +
+                                                    "  ]\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             ),
             @ApiResponse(responseCode = "401", description = "인증 실패",

@@ -171,14 +171,6 @@ public class ProductProcessingHistoryService {
         return toHistoryItems(histories);
     }
 
-    @Transactional(readOnly = true)
-    public ProductProcessingHistoryDto.HistoryListResponse getHistoryList(Long productId) {
-        return ProductProcessingHistoryDto.HistoryListResponse.builder()
-                .productId(productId)
-                .processingHistory(getHistoryItems(productId))
-                .build();
-    }
-
     private List<ProductProcessingHistoryDto.HistoryItem> toHistoryItems(List<ProductProcessingHistory> histories) {
         Set<Long> processorIds = histories.stream()
                 .map(ProductProcessingHistory::getProcessedBy)
