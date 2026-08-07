@@ -409,6 +409,28 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                 .toList();
     }
 
+    @Override
+    public List<Object[]> countSellerProductsByGroupBuyStatus(
+            Long marketId,
+            ProductDisplayStatus displayStatus,
+            String keyword
+    ) {
+        QProduct product = QProduct.product;
+        // 공구상태 필터는 미반영
+        BooleanBuilder where = buildSellerProductWhere(product, marketId, displayStatus, null, keyword);
+        NumberTemplate<Long> groupBuyMod = dummyGroupBuyStatusExpression(product);
+
+        return queryFactory
+                .select(groupBuyMod, product.count())
+                .from(product)
+                .where(where)
+                .groupBy(groupBuyMod)
+                .fetch()
+                .stream()
+                .map(tuple -> new Object[]{tuple.get(groupBuyMod), tuple.get(product.count())})
+                .toList();
+    }
+
     private BooleanBuilder buildSellerProductWhere(
             QProduct product,
             Long marketId,
@@ -425,13 +447,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
 
         if (groupBuyStatus != null) {
             // 더미 공구 상태: productId % enum.size == ordinal
-            NumberTemplate<Long> groupBuyMod = Expressions.numberTemplate(
-                    Long.class,
-                    "mod({0}, {1})",
-                    product.productId,
-                    ProductGroupBuyStatus.values().length
-            );
-            where.and(groupBuyMod.eq((long) groupBuyStatus.ordinal()));
+            where.and(dummyGroupBuyStatusExpression(product).eq((long) groupBuyStatus.ordinal()));
         }
 
         if (keyword != null && !keyword.isBlank()) {
@@ -511,6 +527,29 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                 .toList();
     }
 
+    @Override
+    public List<Object[]> countAdminProductsByGroupBuyStatus(
+            ProductDisplayStatus displayStatus,
+            String keyword
+    ) {
+        QProduct product = QProduct.product;
+        QMarket market = QMarket.market;
+        // 공구상태 필터는 미반영
+        BooleanBuilder where = buildAdminProductWhere(product, market, displayStatus, null, keyword);
+        NumberTemplate<Long> groupBuyMod = dummyGroupBuyStatusExpression(product);
+
+        return queryFactory
+                .select(groupBuyMod, product.count())
+                .from(product)
+                .leftJoin(product.market, market)
+                .where(where)
+                .groupBy(groupBuyMod)
+                .fetch()
+                .stream()
+                .map(tuple -> new Object[]{tuple.get(groupBuyMod), tuple.get(product.count())})
+                .toList();
+    }
+
     private BooleanBuilder buildAdminProductWhere(
             QProduct product,
             QMarket market,
@@ -525,13 +564,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         }
 
         if (groupBuyStatus != null) {
-            NumberTemplate<Long> groupBuyMod = Expressions.numberTemplate(
-                    Long.class,
-                    "mod({0}, {1})",
-                    product.productId,
-                    ProductGroupBuyStatus.values().length
-            );
-            where.and(groupBuyMod.eq((long) groupBuyStatus.ordinal()));
+            where.and(dummyGroupBuyStatusExpression(product).eq((long) groupBuyStatus.ordinal()));
         }
 
         if (keyword != null && !keyword.isBlank()) {
@@ -544,5 +577,14 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         }
 
         return where;
+    }
+
+    private NumberTemplate<Long> dummyGroupBuyStatusExpression(QProduct product) {
+        return Expressions.numberTemplate(
+                Long.class,
+                "mod({0}, {1})",
+                product.productId,
+                ProductGroupBuyStatus.values().length
+        );
     }
 }

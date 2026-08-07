@@ -18,18 +18,23 @@ import java.util.List;
 public class AdminProductDto {
 
     @Getter
-    @Schema(description = "관리자 상품 목록 조회 응답 (글로벌 PageResponse + 진열 상태별 건수)")
+    @Schema(description = "관리자 상품 목록 조회 응답 (글로벌 PageResponse + 진열/공구 상태별 건수)")
     public static class ProductListResponse extends PageResponse<ProductListItem> {
 
         @Schema(description = "진열 상태별 상품 건수 (검색어·공구상태 반영, 진열상태 필터 미반영)")
         private final DisplayStatusCounts displayStatusCounts;
 
+        @Schema(description = "공구 상태별 상품 건수 (검색어·진열상태 반영, 공구상태 필터 미반영)")
+        private final GroupBuyStatusCounts groupBuyStatusCounts;
+
         public ProductListResponse(
                 List<ProductListItem> content,
                 Page<?> page,
-                DisplayStatusCounts displayStatusCounts) {
+                DisplayStatusCounts displayStatusCounts,
+                GroupBuyStatusCounts groupBuyStatusCounts) {
             super(content, page);
             this.displayStatusCounts = displayStatusCounts;
+            this.groupBuyStatusCounts = groupBuyStatusCounts;
         }
     }
 
@@ -53,6 +58,28 @@ public class AdminProductDto {
 
         @Schema(description = "미진열 요청 건수", example = "15")
         private long hideRequest;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "공구 상태별 상품 건수")
+    public static class GroupBuyStatusCounts {
+        @Schema(description = "전체 건수", example = "5")
+        private long all;
+
+        @Schema(description = "준비중 건수", example = "1")
+        private long preparing;
+
+        @Schema(description = "준비완료 건수", example = "0")
+        private long ready;
+
+        @Schema(description = "진행중 건수", example = "2")
+        private long inProgress;
+
+        @Schema(description = "연결없음 건수", example = "2")
+        private long notConnected;
     }
 
     @Getter
