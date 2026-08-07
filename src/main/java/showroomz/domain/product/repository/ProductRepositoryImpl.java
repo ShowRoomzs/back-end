@@ -16,6 +16,7 @@ import showroomz.domain.product.entity.QProduct;
 import showroomz.domain.wishlist.entitiy.QWishlist;
 import showroomz.domain.product.entity.QProductOption;
 import showroomz.domain.product.entity.QProductOptionGroup;
+import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGender;
 import showroomz.domain.product.type.ProductInspectionStatus;
 
@@ -41,7 +42,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         QProductOption option = QProductOption.productOption;
 
         BooleanBuilder where = new BooleanBuilder();
-        where.and(product.isDisplay.isTrue());
+        where.and(product.displayStatus.eq(ProductDisplayStatus.DISPLAY));
 
         if (keyword != null && !keyword.isBlank()) {
             where.and(
@@ -113,7 +114,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
 
         QProduct product = QProduct.product;
         BooleanBuilder where = new BooleanBuilder();
-        where.and(product.isDisplay.isTrue());
+        where.and(product.displayStatus.eq(ProductDisplayStatus.DISPLAY));
         where.and(product.productId.ne(productId));
 
         BooleanBuilder related = new BooleanBuilder();
@@ -280,7 +281,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         QProduct product = QProduct.product;
 
         BooleanBuilder where = new BooleanBuilder();
-        where.and(product.isDisplay.isTrue());
+        where.and(product.displayStatus.eq(ProductDisplayStatus.DISPLAY));
         where.and(product.isRecommended.isTrue());
 
         // 카테고리 필터
@@ -384,7 +385,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                 .leftJoin(wishlist).on(wishlist.product.eq(product))
                 .where(
                         product.market.id.eq(marketId),
-                        product.isDisplay.isTrue()
+                        product.displayStatus.eq(ProductDisplayStatus.DISPLAY)
                 )
                 .groupBy(product)
                 .orderBy(wishlist.count().desc(), product.createdAt.desc())

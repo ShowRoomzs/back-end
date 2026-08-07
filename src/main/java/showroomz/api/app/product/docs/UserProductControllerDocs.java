@@ -213,7 +213,6 @@ public interface UserProductControllerDocs {
                                                     "      \"salePrice\": 33900,\n" +
                                                     "      \"stock\": 10,\n" +
                                                     "      \"isRepresentative\": true,\n" +
-                                                    "      \"isDisplay\": true,\n" +
                                                     "      \"optionIds\": [1]\n" +
                                                     "    }\n" +
                                                     "  ],\n" +

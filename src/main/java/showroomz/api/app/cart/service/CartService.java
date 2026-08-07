@@ -111,9 +111,6 @@ public class CartService {
         if (request.getVariantId() != null && !request.getVariantId().equals(cart.getVariant().getVariantId())) {
             targetVariant = productVariantRepository.findByVariantId(request.getVariantId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.VARIANT_NOT_FOUND));
-            if (!Boolean.TRUE.equals(targetVariant.getIsDisplay())) {
-                throw new BusinessException(ErrorCode.VARIANT_NOT_AVAILABLE);
-            }
         }
 
         int requestedQuantity = request.getQuantity() != null ? request.getQuantity() : cart.getQuantity();
@@ -259,10 +256,6 @@ public class CartService {
     private Cart addCartForUser(Users user, CartDto.AddCartRequest request) {
         ProductVariant variant = productVariantRepository.findByVariantId(request.getVariantId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.VARIANT_NOT_FOUND));
-
-        if (!Boolean.TRUE.equals(variant.getIsDisplay())) {
-            throw new BusinessException(ErrorCode.VARIANT_NOT_AVAILABLE);
-        }
 
         int stock = variant.getStock() != null ? variant.getStock() : 0;
         int addQuantity = request.getQuantity();

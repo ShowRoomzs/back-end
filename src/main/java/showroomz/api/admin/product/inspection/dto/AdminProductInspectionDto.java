@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGender;
 import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.domain.product.type.ProductRejectReasonType;
@@ -96,7 +97,7 @@ public class AdminProductInspectionDto {
         private Integer regularPrice;
         private Integer salePrice;
         private ProductGender gender;
-        private Boolean isDisplay;
+        private ProductDisplayStatus displayStatus;
         private Boolean isOutOfStockForced;
         private Boolean isRecommended;
         private String productNotice;

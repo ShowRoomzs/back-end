@@ -25,10 +25,10 @@ public interface AdminMarketStatusControllerDocs {
             summary = "마켓 운영 상태 변경 (활성/정지)",
             description = "마켓 계정의 **운영 상태**를 `ACTIVE`(활성) 또는 `SUSPENDED`(정지)로 변경합니다.\n\n" +
                     "**정지 (`SUSPENDED`) 시 동작:**\n" +
-                    "- 해당 마켓의 모든 상품에 대해 현재 `isDisplay` 값을 `previousIsDisplay`에 저장한 뒤, `isDisplay`를 `false`로 설정합니다.\n\n" +
+                    "- 해당 마켓의 모든 상품에 대해 현재 `displayStatus` 값을 `previousDisplayStatus`에 저장한 뒤, `displayStatus`를 `HIDDEN`으로 설정합니다.\n\n" +
                     "**활성 (`ACTIVE`) 시 동작:**\n" +
-                    "- `previousIsDisplay`가 있으면 그 값으로 `isDisplay`를 복구하고, 백업 컬럼은 `null`로 초기화합니다.\n" +
-                    "- 백업이 없으면 `isDisplay`를 `true`로 둡니다.\n\n" +
+                    "- `previousDisplayStatus`가 있으면 그 값으로 `displayStatus`를 복구하고, 백업 컬럼은 `null`로 초기화합니다.\n" +
+                    "- 백업이 없으면 `displayStatus`를 `DISPLAY`로 둡니다.\n\n" +
                     "**기타:**\n" +
                     "- 이미 요청한 상태와 같으면 DB 변경 없이 성공 응답만 반환합니다.\n\n" +
                     "**권한:** ADMIN\n\n" +

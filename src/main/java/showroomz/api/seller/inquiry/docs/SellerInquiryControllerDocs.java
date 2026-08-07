@@ -98,7 +98,7 @@ public interface SellerInquiryControllerDocs {
                                                     "  \"productCode\": \"SRZ-20260401-001\",\n" +
                                                     "  \"regularPrice\": 59000,\n" +
                                                     "  \"salePrice\": 49000,\n" +
-                                                    "  \"isDisplay\": true,\n" +
+                                                    "  \"displayStatus\": \"DISPLAY\",\n" +
                                                     "  \"isOutOfStockForced\": false,\n" +
                                                     "  \"saleStatus\": \"ON_SALE\"\n" +
                                                     "}"
@@ -117,7 +117,7 @@ public interface SellerInquiryControllerDocs {
                                                     "  \"productCode\": \"SRZ-20260401-002\",\n" +
                                                     "  \"regularPrice\": 69000,\n" +
                                                     "  \"salePrice\": 59000,\n" +
-                                                    "  \"isDisplay\": false,\n" +
+                                                    "  \"displayStatus\": \"HIDDEN\",\n" +
                                                     "  \"isOutOfStockForced\": true,\n" +
                                                     "  \"saleStatus\": \"UNAVAILABLE\"\n" +
                                                     "}"

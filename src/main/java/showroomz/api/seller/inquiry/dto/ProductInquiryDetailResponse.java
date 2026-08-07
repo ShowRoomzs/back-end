@@ -3,6 +3,7 @@ package showroomz.api.seller.inquiry.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
+import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.inquiry.entity.ProductInquiry;
 import showroomz.domain.inquiry.type.ProductInquiryType;
 import showroomz.domain.product.entity.Product;
@@ -48,8 +49,10 @@ public class ProductInquiryDetailResponse {
     @Schema(description = "판매가", example = "49000")
     private Integer salePrice;
 
-    @Schema(description = "진열 여부", example = "true")
-    private Boolean isDisplay;
+    @Schema(description = "진열 상태 (DISPLAY: 진열, HIDDEN: 미진열, PENDING_REVIEW: 재검토 대기, HIDE_REQUEST: 미진열 요청)",
+            example = "DISPLAY",
+            allowableValues = {"DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"})
+    private ProductDisplayStatus displayStatus;
 
     @Schema(description = "강제 품절 여부", example = "false")
     private Boolean isOutOfStockForced;
@@ -80,7 +83,7 @@ public class ProductInquiryDetailResponse {
                 .productCode(product.getProductNumber())
                 .regularPrice(product.getRegularPrice())
                 .salePrice(product.getSalePrice())
-                .isDisplay(product.getIsDisplay())
+                .displayStatus(product.getDisplayStatus())
                 .isOutOfStockForced(product.getIsOutOfStockForced())
                 .saleStatus(saleStatus)
                 .build();
@@ -95,8 +98,9 @@ public class ProductInquiryDetailResponse {
     }
 
     private static String resolveSaleStatus(Product product) {
-        if (Boolean.FALSE.equals(product.getIsDisplay())
-                || Boolean.TRUE.equals(product.getIsOutOfStockForced())) {
+        boolean notDisplayed = product.getDisplayStatus() == null
+                || !product.getDisplayStatus().isVisible();
+        if (notDisplayed || Boolean.TRUE.equals(product.getIsOutOfStockForced())) {
             return "UNAVAILABLE";
         }
         return "ON_SALE";

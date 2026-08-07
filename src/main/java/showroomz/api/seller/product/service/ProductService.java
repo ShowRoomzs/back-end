@@ -16,6 +16,7 @@ import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.product.entity.*;
 import showroomz.domain.product.repository.ProductRepository;
+import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.global.dto.PageResponse;
@@ -66,7 +67,7 @@ public class ProductService {
         // 할인가는 계약 단계에서 결정 — 등록 시점에는 판매가와 동일하게 저장
         product.setSalePrice(request.getRegularPrice());
         product.setGender(request.getGender());
-        product.setIsDisplay(true);
+        product.setDisplayStatus(ProductDisplayStatus.DISPLAY);
         product.setIsOutOfStockForced(request.getIsOutOfStockForced() != null ? request.getIsOutOfStockForced() : false);
         product.setIsRecommended(false);
         product.setDescription(request.getDescription());
@@ -189,8 +190,7 @@ public class ProductService {
                         variantRequest.getRegularPrice(),
                         variantRequest.getRegularPrice(),
                         variantRequest.getStock(),
-                        variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false,
-                        variantRequest.getIsDisplay()
+                        variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false
                 );
                 
                 variant.setOptions(variantOptions);
@@ -204,7 +204,6 @@ public class ProductService {
                     request.getRegularPrice(),
                     request.getRegularPrice(),
                     0,
-                    true,
                     true
             );
             product.getVariants().add(variant);
@@ -263,8 +262,8 @@ public class ProductService {
         
         // 3. 필터 파라미터 설정
         Long categoryId = request != null ? request.getCategoryId() : null;
-        String displayStatus = (request != null && request.getDisplayStatus() != null) 
-                ? request.getDisplayStatus() : "ALL";
+        ProductDisplayStatus displayStatusFilter = resolveDisplayStatusFilter(
+                request != null ? request.getDisplayStatus() : null);
         String stockStatus = (request != null && request.getStockStatus() != null) 
                 ? request.getStockStatus() : "ALL";
         String keyword = (request != null && request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) 
@@ -287,7 +286,7 @@ public class ProductService {
         Page<Product> productPage = productRepository.findByMarketIdWithFilters(
                 market.getId(),
                 categoryIds,
-                displayStatus,
+                displayStatusFilter,
                 stockStatus,
                 keyword,
                 keywordType,
@@ -483,7 +482,7 @@ public class ProductService {
                 unauthorizedProductIds.add(product.getProductId());
             } else {
                 // 요청받은 상태로 명시적 설정
-                product.setIsDisplay(request.getIsDisplayed());
+                product.setDisplayStatus(request.getDisplayStatus());
                 processedProductIds.add(product.getProductId());
             }
         }
@@ -501,12 +500,9 @@ public class ProductService {
         productRepository.saveAll(products);
         
         // 5. 응답 메시지 생성
-        String message;
-        if (request.getIsDisplayed()) {
-            message = String.format("%d개의 상품이 성공적으로 진열 처리되었습니다.", processedProductIds.size());
-        } else {
-            message = String.format("%d개의 상품이 성공적으로 미진열 처리되었습니다.", processedProductIds.size());
-        }
+        String message = String.format("%d개의 상품이 성공적으로 %s 처리되었습니다.",
+                processedProductIds.size(),
+                request.getDisplayStatus().getDescription());
         
         // 6. 응답 생성
         return ProductDto.BatchUpdateResponse.builder()
@@ -546,8 +542,8 @@ public class ProductService {
         if (request.getSellerProductCode() != null) {
             product.setSellerProductCode(request.getSellerProductCode());
         }
-        if (request.getIsDisplay() != null) {
-            product.setIsDisplay(request.getIsDisplay());
+        if (request.getDisplayStatus() != null) {
+            product.setDisplayStatus(request.getDisplayStatus());
         }
         if (request.getIsOutOfStockForced() != null) {
             product.setIsOutOfStockForced(request.getIsOutOfStockForced());
@@ -674,8 +670,7 @@ public class ProductService {
                         variantRequest.getRegularPrice(),
                         variantRequest.getRegularPrice(),
                         variantRequest.getStock(),
-                        variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false,
-                        variantRequest.getIsDisplay()
+                        variantRequest.getIsRepresentative() != null ? variantRequest.getIsRepresentative() : false
                 );
                 
                 variant.setOptions(variantOptions);
@@ -717,8 +712,10 @@ public class ProductService {
      * Product 엔티티를 ProductListItem DTO로 변환
      */
     private ProductDto.ProductListItem convertToProductListItem(Product product, String stockStatus) {
-        // 진열 상태 변환
-        String displayStatus = Boolean.TRUE.equals(product.getIsDisplay()) ? "DISPLAY" : "HIDDEN";
+        // 진열 상태
+        ProductDisplayStatus displayStatus = product.getDisplayStatus() != null
+                ? product.getDisplayStatus()
+                : ProductDisplayStatus.DISPLAY;
         
         // 가격 정보
         ProductDto.PriceInfo priceInfo = ProductDto.PriceInfo.builder()
@@ -795,7 +792,6 @@ public class ProductService {
                             .regularPrice(variant.getRegularPrice())
                             .stock(variant.getStock())
                             .isRepresentative(variant.getIsRepresentative())
-                            .isDisplay(variant.getIsDisplay())
                             .optionIds(optionIds)
                             .build();
                 })
@@ -814,7 +810,7 @@ public class ProductService {
                 .coverImageUrls(coverImageUrls)
                 .regularPrice(product.getRegularPrice())
                 .gender(product.getGender())
-                .isDisplay(product.getIsDisplay())
+                .displayStatus(product.getDisplayStatus())
                 .isOutOfStockForced(product.getIsOutOfStockForced())
                 .isRecommended(product.getIsRecommended())
                 .productNotice(product.getProductNotice())
@@ -828,6 +824,17 @@ public class ProductService {
                 .optionGroups(optionGroups)
                 .variants(variants)
                 .build();
+    }
+
+    private ProductDisplayStatus resolveDisplayStatusFilter(String displayStatus) {
+        if (displayStatus == null || displayStatus.isBlank() || "ALL".equalsIgnoreCase(displayStatus)) {
+            return null;
+        }
+        try {
+            return ProductDisplayStatus.valueOf(displayStatus.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "유효하지 않은 진열 상태입니다.");
+        }
     }
 }
 

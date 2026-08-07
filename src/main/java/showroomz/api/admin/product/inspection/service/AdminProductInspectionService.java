@@ -292,7 +292,6 @@ public class AdminProductInspectionService {
                             .regularPrice(variant.getRegularPrice())
                             .stock(variant.getStock())
                             .isRepresentative(variant.getIsRepresentative())
-                            .isDisplay(variant.getIsDisplay())
                             .optionIds(optionIds)
                             .build();
                 })
@@ -314,7 +313,7 @@ public class AdminProductInspectionService {
                 .regularPrice(product.getRegularPrice())
                 .salePrice(product.getSalePrice())
                 .gender(product.getGender())
-                .isDisplay(product.getIsDisplay())
+                .displayStatus(product.getDisplayStatus())
                 .isOutOfStockForced(product.getIsOutOfStockForced())
                 .isRecommended(product.getIsRecommended())
                 .productNotice(product.getProductNotice())

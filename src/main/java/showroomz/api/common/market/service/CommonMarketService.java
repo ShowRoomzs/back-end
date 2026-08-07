@@ -25,6 +25,7 @@ import showroomz.domain.product.entity.ProductImage;
 import showroomz.domain.product.repository.ProductImageRepository;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.repository.ProductVariantRepository;
+import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.review.repository.ReviewRepository;
 import showroomz.domain.wishlist.repository.WishlistRepository;
 import showroomz.global.dto.PagingRequest;
@@ -115,7 +116,7 @@ public class CommonMarketService {
     /**
      * 특정 쇼룸(Market) 인기 상품 Top 10 조회
      * - 정렬: Wishlist 수 DESC → createdAt DESC
-     * - 필터: isDisplay=true
+     * - 필터: displayStatus=DISPLAY
      * - 비회원: isWished=false, 회원: SecurityContext 기반 매핑
      */
     public PopularProductResponse getPopularProducts(Long marketId) {
@@ -208,7 +209,7 @@ public class CommonMarketService {
                 .price(priceInfo)
                 .discountRate(discountRate)
                 .gender(product.getGender() != null ? product.getGender().name() : null)
-                .isDisplay(product.getIsDisplay())
+                .isDisplay(product.getDisplayStatus() != null && product.getDisplayStatus().isVisible())
                 .isRecommended(product.getIsRecommended())
                 .productNotice(product.getProductNotice())
                 .description(product.getDescription())
@@ -254,7 +255,8 @@ public class CommonMarketService {
      */
     private Map<Long, List<MarketRecommendationResponse.RepresentativeProduct>> buildMarketRepresentativeProducts(
             List<Long> marketIds) {
-        List<Product> products = productRepository.findByMarketIdInAndIsDisplayTrue(marketIds);
+        List<Product> products = productRepository.findByMarketIdInAndDisplayStatus(
+                marketIds, ProductDisplayStatus.DISPLAY);
         if (products.isEmpty()) {
             return Map.of();
         }

@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGender;
 import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.domain.product.type.ProductRejectReasonType;
@@ -53,11 +54,13 @@ public class Product {
     @Column(name = "gender", length = 10)
     private ProductGender gender;
 
-    @Column(name = "is_display", nullable = false)
-    private Boolean isDisplay = true;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "display_status", nullable = false, length = 32)
+    private ProductDisplayStatus displayStatus = ProductDisplayStatus.DISPLAY;
 
-    @Column(name = "previous_is_display")
-    private Boolean previousIsDisplay;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "previous_display_status", length = 32)
+    private ProductDisplayStatus previousDisplayStatus;
 
     @Column(name = "is_out_of_stock_forced", nullable = false)
     private Boolean isOutOfStockForced = false;

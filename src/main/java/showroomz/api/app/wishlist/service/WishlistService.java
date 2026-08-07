@@ -175,7 +175,7 @@ public class WishlistService {
                 .price(priceInfo)
                 .discountRate(discountRate)
                 .gender(product.getGender() != null ? product.getGender().name() : null)
-                .isDisplay(product.getIsDisplay())
+                .isDisplay(product.getDisplayStatus() != null && product.getDisplayStatus().isVisible())
                 .isRecommended(product.getIsRecommended())
                 .productNotice(product.getProductNotice())
                 .description(product.getDescription())

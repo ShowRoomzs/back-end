@@ -409,9 +409,6 @@ public class ProductDto {
         @Schema(description = "대표 옵션 여부", example = "true")
         private Boolean isRepresentative;
 
-        @Schema(description = "노출 여부", example = "true")
-        private Boolean isDisplay;
-
         @Schema(description = "옵션 ID 목록", example = "[1, 2]")
         private List<Long> optionIds;
     }

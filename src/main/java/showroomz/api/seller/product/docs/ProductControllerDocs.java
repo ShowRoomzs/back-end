@@ -171,7 +171,6 @@ public interface ProductControllerDocs {
                                             "      \"optionNames\": [\"Free\"],\n" +
                                             "      \"regularPrice\": 59000,\n" +
                                             "      \"stock\": 999,\n" +
-                                            "      \"isDisplay\": true,\n" +
                                             "      \"isRepresentative\": true\n" +
                                             "    }\n" +
                                             "  ]\n" +
@@ -213,7 +212,7 @@ public interface ProductControllerDocs {
                                                     "  \"coverImageUrls\": [\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\"],\n" +
                                                     "  \"regularPrice\": 59000,\n" +
                                                     "  \"gender\": \"UNISEX\",\n" +
-                                                    "  \"isDisplay\": true,\n" +
+                                                    "  \"displayStatus\": \"DISPLAY\",\n" +
                                                     "  \"isOutOfStockForced\": false,\n" +
                                                     "  \"isRecommended\": false,\n" +
                                                     "  \"productNotice\": \"{\\\"origin\\\":\\\"대한민국\\\",\\\"material\\\":\\\"면 100%\\\"}\",\n" +
@@ -249,7 +248,6 @@ public interface ProductControllerDocs {
                                                     "      \"regularPrice\": 50000,\n" +
                                                     "      \"stock\": 100,\n" +
                                                     "      \"isRepresentative\": true,\n" +
-                                                    "      \"isDisplay\": true,\n" +
                                                     "      \"optionIds\": [1, 2]\n" +
                                                     "    }\n" +
                                                     "  ]\n" +
@@ -297,7 +295,11 @@ public interface ProductControllerDocs {
             description = "백스테이지에서 판매자가 자신의 상품 목록을 조회합니다. 페이징, 카테고리, 진열상태, 품절상태 필터 및 검색 기능을 지원합니다.\n\n" +
                     "**필터 파라미터:**\n" +
                     "- categoryId: 최종 선택된 카테고리 ID (선택사항)\n" +
-                    "- displayStatus: 진열 상태 (ALL, DISPLAY, HIDDEN) - 기본값: ALL\n" +
+                    "- displayStatus: 진열 상태 (ALL, DISPLAY, HIDDEN, PENDING_REVIEW, HIDE_REQUEST) - 기본값: ALL\n" +
+                    "  - DISPLAY: 진열\n" +
+                    "  - HIDDEN: 미진열\n" +
+                    "  - PENDING_REVIEW: 재검토 대기\n" +
+                    "  - HIDE_REQUEST: 미진열 요청\n" +
                     "- stockStatus: 품절 상태 (ALL, OUT_OF_STOCK, IN_STOCK) - 기본값: ALL\n\n" +
                     "**검색 파라미터:**\n" +
                     "- keyword: 검색어 (선택사항)\n" +
@@ -378,7 +380,7 @@ public interface ProductControllerDocs {
                     "- categoryId: 카테고리 ID\n" +
                     "- name: 상품명\n" +
                     "- sellerProductCode: 판매자 상품 코드\n" +
-                    "- isDisplay: 진열 상태\n" +
+                    "- displayStatus: 진열 상태 (DISPLAY, HIDDEN, PENDING_REVIEW, HIDE_REQUEST)\n" +
                     "- isOutOfStockForced: 강제 품절 처리 여부\n" +
                     "- regularPrice: 판매가 (정가). 할인가는 계약 단계에서 결정됩니다.\n" +
                     "- representativeImageUrl: 대표 이미지 URL\n" +
@@ -497,7 +499,7 @@ public interface ProductControllerDocs {
                                             "  \"name\": \"수정된 상품명\",\n" +
                                             "  \"regularPrice\": 69000,\n" +
                                             "  \"gender\": \"UNISEX\",\n" +
-                                            "  \"isDisplay\": true\n" +
+                                            "  \"displayStatus\": \"DISPLAY\"\n" +
                                             "}",
                                     description = "일부 필드만 수정하는 예시"
                             ),
@@ -547,7 +549,6 @@ public interface ProductControllerDocs {
                                             "      \"optionNames\": [\"Free\"],\n" +
                                             "      \"regularPrice\": 59000,\n" +
                                             "      \"stock\": 999,\n" +
-                                            "      \"isDisplay\": true,\n" +
                                             "      \"isRepresentative\": true\n" +
                                             "    }\n" +
                                             "  ]\n" +
@@ -752,18 +753,20 @@ public interface ProductControllerDocs {
     );
 
     @Operation(
-            summary = "상품 일괄 미진열/진열 처리",
+            summary = "상품 일괄 진열 상태 변경",
             description = "선택된 여러 상품의 진열 상태를 지정한 값으로 일괄 변경합니다.\n\n" +
-                    "**동작 방식:**\n" +
-                    "- `isDisplayed: true` → 진열 처리\n" +
-                    "- `isDisplayed: false` → 미진열 처리\n\n" +
+                    "**진열 상태 값:**\n" +
+                    "- `DISPLAY` → 진열\n" +
+                    "- `HIDDEN` → 미진열\n" +
+                    "- `PENDING_REVIEW` → 재검토 대기\n" +
+                    "- `HIDE_REQUEST` → 미진열 요청\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "일괄 미진열/진열 처리 성공",
+                    description = "일괄 진열 상태 변경 성공",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProductDto.BatchUpdateResponse.class),
@@ -831,14 +834,21 @@ public interface ProductControllerDocs {
                                     name = "진열 처리 요청 예시",
                                     value = "{\n" +
                                             "  \"productIds\": [1, 2, 3],\n" +
-                                            "  \"isDisplayed\": true\n" +
+                                            "  \"displayStatus\": \"DISPLAY\"\n" +
                                             "}"
                             ),
                             @ExampleObject(
                                     name = "미진열 처리 요청 예시",
                                     value = "{\n" +
                                             "  \"productIds\": [1, 2, 3],\n" +
-                                            "  \"isDisplayed\": false\n" +
+                                            "  \"displayStatus\": \"HIDDEN\"\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "미진열 요청 처리 예시",
+                                    value = "{\n" +
+                                            "  \"productIds\": [1, 2, 3],\n" +
+                                            "  \"displayStatus\": \"HIDE_REQUEST\"\n" +
                                             "}"
                             )
                     }

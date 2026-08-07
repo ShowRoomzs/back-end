@@ -35,7 +35,7 @@ public interface ProductRepositoryCustom {
     /**
      * 특정 마켓의 인기 상품 상위 N개 조회
      * - wishCount(Wishlist 수) DESC, createdAt DESC
-     * - isDisplay=true인 상품만
+     * - displayStatus=DISPLAY인 상품만
      */
     List<Product> findPopularProductsByMarketId(Long marketId, int limit);
 

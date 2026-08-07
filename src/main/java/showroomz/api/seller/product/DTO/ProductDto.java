@@ -11,6 +11,7 @@ import lombok.Setter;
 
 import java.util.List;
 
+import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGender;
 
 public class ProductDto {
@@ -176,9 +177,6 @@ public class ProductDto {
         @Schema(description = "재고 수량", example = "100")
         private Integer stock;
 
-        @Schema(description = "진열 여부", example = "true")
-        private Boolean isDisplay = true;
-
         @Schema(description = "대표 옵션 여부", example = "true")
         private Boolean isRepresentative = false;
     }
@@ -217,8 +215,9 @@ public class ProductDto {
         @Schema(description = "판매자 상품 코드", example = "PROD-001")
         private String sellerProductCode;
 
-        @Schema(description = "진열 상태", example = "true")
-        private Boolean isDisplay;
+        @Schema(description = "진열 상태", example = "DISPLAY",
+                allowableValues = {"DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"})
+        private ProductDisplayStatus displayStatus;
 
         @Schema(description = "강제 품절 처리 여부", example = "false")
         private Boolean isOutOfStockForced;
@@ -297,7 +296,9 @@ public class ProductDto {
         @Schema(description = "카테고리 ID (최종 선택된 카테고리)", example = "3")
         private Long categoryId;
 
-        @Schema(description = "진열 상태 (ALL: 전체, DISPLAY: 진열, HIDDEN: 미진열)", example = "ALL", allowableValues = {"ALL", "DISPLAY", "HIDDEN"})
+        @Schema(description = "진열 상태 (ALL: 전체, DISPLAY: 진열, HIDDEN: 미진열, PENDING_REVIEW: 재검토 대기, HIDE_REQUEST: 미진열 요청)",
+                example = "ALL",
+                allowableValues = {"ALL", "DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"})
         private String displayStatus = "ALL";
 
         @Schema(description = "품절 상태 (ALL: 전체, OUT_OF_STOCK: 품절, IN_STOCK: 품절 아님)", example = "ALL", allowableValues = {"ALL", "OUT_OF_STOCK", "IN_STOCK"})
@@ -350,8 +351,10 @@ public class ProductDto {
         @Schema(description = "등록일", example = "2025-12-28T14:30:00Z")
         private String createdAt;
 
-        @Schema(description = "진열 상태", example = "DISPLAY")
-        private String displayStatus;
+        @Schema(description = "진열 상태 (DISPLAY: 진열, HIDDEN: 미진열, PENDING_REVIEW: 재검토 대기, HIDE_REQUEST: 미진열 요청)",
+                example = "DISPLAY",
+                allowableValues = {"DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"})
+        private ProductDisplayStatus displayStatus;
 
         @Schema(description = "품절 상태", example = "IN_STOCK")
         private String stockStatus;
@@ -414,8 +417,9 @@ public class ProductDto {
         @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
         private ProductGender gender;
 
-        @Schema(description = "진열 상태", example = "true")
-        private Boolean isDisplay;
+        @Schema(description = "진열 상태", example = "DISPLAY",
+                allowableValues = {"DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"})
+        private ProductDisplayStatus displayStatus;
 
         @Schema(description = "강제 품절 처리 여부", example = "false")
         private Boolean isOutOfStockForced;
@@ -527,9 +531,6 @@ public class ProductDto {
         @Schema(description = "대표 옵션 여부", example = "true")
         private Boolean isRepresentative;
 
-        @Schema(description = "진열 여부", example = "true")
-        private Boolean isDisplay;
-
         @Schema(description = "옵션 ID 목록", example = "[1, 2]")
         private List<Long> optionIds;
     }
@@ -637,8 +638,10 @@ public class ProductDto {
         private List<Long> productIds;
 
         @NotNull(message = "진열 상태는 필수 입력값입니다.")
-        @Schema(description = "진열 상태 (true: 진열 처리, false: 미진열 처리)", example = "true")
-        private Boolean isDisplayed;
+        @Schema(description = "진열 상태 (DISPLAY: 진열, HIDDEN: 미진열, PENDING_REVIEW: 재검토 대기, HIDE_REQUEST: 미진열 요청)",
+                example = "HIDDEN",
+                allowableValues = {"DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"})
+        private ProductDisplayStatus displayStatus;
     }
 
     @Getter

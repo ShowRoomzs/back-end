@@ -13,6 +13,7 @@ import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.market.type.MarketStatus;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductRepository;
+import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -54,16 +55,16 @@ public class AdminMarketService {
 
         if (newStatus == MarketStatus.SUSPENDED) {
             for (Product product : products) {
-                product.setPreviousIsDisplay(product.getIsDisplay());
-                product.setIsDisplay(false);
+                product.setPreviousDisplayStatus(product.getDisplayStatus());
+                product.setDisplayStatus(ProductDisplayStatus.HIDDEN);
             }
         } else if (newStatus == MarketStatus.ACTIVE) {
             for (Product product : products) {
-                if (product.getPreviousIsDisplay() != null) {
-                    product.setIsDisplay(product.getPreviousIsDisplay());
-                    product.setPreviousIsDisplay(null);
+                if (product.getPreviousDisplayStatus() != null) {
+                    product.setDisplayStatus(product.getPreviousDisplayStatus());
+                    product.setPreviousDisplayStatus(null);
                 } else {
-                    product.setIsDisplay(true);
+                    product.setDisplayStatus(ProductDisplayStatus.DISPLAY);
                 }
             }
         }
