@@ -16,7 +16,6 @@ import showroomz.api.common.product.dto.ProductProcessingHistoryDto;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGender;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
-import showroomz.domain.product.type.ProductHideReasonType;
 import showroomz.global.dto.PageResponse;
 
 public class ProductDto {
@@ -394,9 +393,6 @@ public class ProductDto {
         @Schema(description = "판매가 (정가)", example = "59000")
         private Integer regularPrice;
 
-        @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
-        private ProductGender gender;
-
         @Schema(description = "진열 상태", example = "DISPLAY",
                 allowableValues = {"DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"})
         private ProductDisplayStatus displayStatus;
@@ -405,13 +401,6 @@ public class ProductDto {
                 example = "PREPARING",
                 allowableValues = {"PREPARING", "READY", "IN_PROGRESS", "NOT_CONNECTED"})
         private ProductGroupBuyStatus groupBuyStatus;
-
-        @Schema(description = "미진열 사유 타입", example = "PRODUCT_NOTICE_ERROR",
-                allowableValues = {"PRODUCT_NOTICE_ERROR", "AD_DISPLAY_VIOLATION", "BRAND_REQUEST", "OTHER"})
-        private ProductHideReasonType hideReasonType;
-
-        @Schema(description = "미진열 상세 사유", example = "성분 표기 누락")
-        private String hideDetail;
 
         @Schema(description = "최근 미진열 정보 (displayStatus=HIDDEN일 때만, 가장 최근 HIDDEN 이력 기준)")
         private ProductProcessingHistoryDto.LatestHideInfo latestHideInfo;

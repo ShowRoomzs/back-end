@@ -255,11 +255,8 @@ public interface ProductControllerDocs {
                                                     "  \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
                                                     "  \"coverImageUrls\": [\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\"],\n" +
                                                     "  \"regularPrice\": 59000,\n" +
-                                                    "  \"gender\": \"UNISEX\",\n" +
                                                     "  \"displayStatus\": \"HIDDEN\",\n" +
                                                     "  \"groupBuyStatus\": \"PREPARING\",\n" +
-                                                    "  \"hideReasonType\": \"PRODUCT_NOTICE_ERROR\",\n" +
-                                                    "  \"hideDetail\": \"성분 표기 누락\",\n" +
                                                     "  \"latestHideInfo\": {\n" +
                                                     "    \"hideReasonType\": \"PRODUCT_NOTICE_ERROR\",\n" +
                                                     "    \"hideReasonDescription\": \"상품 정보 제공 고시 오류\",\n" +
