@@ -103,6 +103,8 @@ public enum ErrorCode {
     VARIANT_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "VARIANT_NOT_AVAILABLE", "노출되지 않는 옵션입니다."),
     INSUFFICIENT_STOCK(HttpStatus.BAD_REQUEST, "INSUFFICIENT_STOCK", "재고가 부족합니다."),
     INVALID_VARIANT_OPTIONS(HttpStatus.BAD_REQUEST, "INVALID_VARIANT_OPTIONS", "옵션 조합이 올바르지 않습니다."),
+    PRODUCT_EDIT_RESTRICTED(HttpStatus.BAD_REQUEST, "PRODUCT_EDIT_RESTRICTED",
+            "진열 중이며 공구 진행 중인 상품은 옵션·재고만 수정할 수 있습니다."),
     CART_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "CART_ITEM_NOT_FOUND", "장바구니 항목을 찾을 수 없습니다."),
     DUPLICATE_CATEGORY_NAME(HttpStatus.BAD_REQUEST, "DUPLICATE_CATEGORY_NAME", "이미 존재하는 카테고리명입니다."),
     CATEGORY_IN_USE(HttpStatus.BAD_REQUEST, "CATEGORY_IN_USE", "사용 중인 카테고리는 삭제할 수 없습니다."),

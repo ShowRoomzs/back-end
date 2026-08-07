@@ -576,7 +576,11 @@ public class ProductService {
         ProductDisplayStatus previousDisplayStatus = product.getDisplayStatus();
         int previousTotalStock = sumVariantStock(product);
         boolean hasInfoChange = hasProductInfoChange(request);
-        boolean hasVariantUpdate = request.getOptionGroups() != null && request.getVariants() != null;
+        boolean hasOptionStructureUpdate = request.getOptionGroups() != null && request.getVariants() != null;
+        boolean hasStockOnlyUpdate = !hasOptionStructureUpdate && request.getVariants() != null;
+        boolean hasVariantUpdate = hasOptionStructureUpdate || hasStockOnlyUpdate;
+
+        validateSellerProductEdit(product, hasInfoChange);
 
         // 3. 카테고리 업데이트 (제공된 경우)
         if (request.getCategoryId() != null) {
@@ -643,8 +647,8 @@ public class ProductService {
             }
         }
 
-        // 7. 옵션 그룹 및 옵션 업데이트 (제공된 경우)
-        if (request.getOptionGroups() != null && request.getVariants() != null) {
+        // 7. 옵션 그룹 및 옵션 업데이트 (제공된 경우) / 재고만 업데이트
+        if (hasOptionStructureUpdate) {
             // 기존 옵션 그룹 및 variant 삭제
             product.getOptionGroups().clear();
             product.getVariants().clear();
@@ -700,9 +704,8 @@ public class ProductService {
                 variant.setOptions(variantOptions);
                 product.getVariants().add(variant);
             }
-        } else if (request.getVariants() != null) {
-            // variants만 제공된 경우 (옵션 그룹은 유지하고 variant만 업데이트)
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        } else if (hasStockOnlyUpdate) {
+            updateExistingVariantStocks(product, request.getVariants());
         }
 
         // 8. Product 저장
@@ -715,15 +718,19 @@ public class ProductService {
                 && !hasVariantUpdate;
 
         if (!displayOnlyChange) {
-            processingHistoryService.moveToPendingReviewIfNeeded(savedProduct);
-            if (stockChanged && !hasInfoChange) {
-                processingHistoryService.recordStockUpdated(
-                        savedProduct, savedProduct.getDisplayStatus(), newTotalStock);
-            } else if (hasInfoChange || hasVariantUpdate) {
-                processingHistoryService.recordBrandInfoUpdated(
-                        savedProduct, savedProduct.getDisplayStatus());
+            boolean shouldRecordProcessing = hasInfoChange || hasOptionStructureUpdate || stockChanged;
+            if (shouldRecordProcessing) {
+                // 미진열(브랜드 요청 제외)이면 재검토 대기로 전환. 브랜드 요청 미진열은 상태 유지.
+                processingHistoryService.moveToPendingReviewIfNeeded(savedProduct);
+                if (stockChanged && !hasInfoChange && !hasOptionStructureUpdate) {
+                    processingHistoryService.recordStockUpdated(
+                            savedProduct, previousDisplayStatus, newTotalStock);
+                } else if (hasInfoChange || hasOptionStructureUpdate) {
+                    processingHistoryService.recordBrandInfoUpdated(
+                            savedProduct, previousDisplayStatus);
+                }
+                productRepository.save(savedProduct);
             }
-            productRepository.save(savedProduct);
         }
 
         // 9. 응답 생성
@@ -890,6 +897,49 @@ public class ProductService {
         return statuses[(int) Math.floorMod(productId != null ? productId : 0L, statuses.length)];
     }
 
+    /**
+     * 진열 + 공구 진행 중이면 상품 정보 수정 불가(옵션·재고만 허용).
+     * 재고는 모든 상태에서 수정 가능.
+     */
+    private void validateSellerProductEdit(Product product, boolean hasInfoChange) {
+        ProductDisplayStatus displayStatus = product.getDisplayStatus();
+        ProductGroupBuyStatus groupBuyStatus = resolveDummyGroupBuyStatus(product.getProductId());
+
+        boolean displayedAndInGroupBuy =
+                displayStatus == ProductDisplayStatus.DISPLAY
+                        && groupBuyStatus == ProductGroupBuyStatus.IN_PROGRESS;
+
+        if (displayedAndInGroupBuy && hasInfoChange) {
+            throw new BusinessException(ErrorCode.PRODUCT_EDIT_RESTRICTED);
+        }
+    }
+
+    /**
+     * 기존 variant 재고만 갱신 (optionGroups 없이 variants만 전달한 경우).
+     */
+    private void updateExistingVariantStocks(Product product, List<ProductDto.VariantRequest> variantRequests) {
+        if (product.getVariants() == null || product.getVariants().isEmpty()) {
+            throw new BusinessException(ErrorCode.VARIANT_NOT_FOUND);
+        }
+
+        Map<String, ProductVariant> byName = product.getVariants().stream()
+                .collect(Collectors.toMap(
+                        ProductVariant::getName,
+                        v -> v,
+                        (a, b) -> a
+                ));
+
+        for (ProductDto.VariantRequest variantRequest : variantRequests) {
+            String variantName = variantRequest.getOptionNames().stream()
+                    .collect(Collectors.joining(" / "));
+            ProductVariant existing = byName.get(variantName);
+            if (existing == null) {
+                throw new BusinessException(ErrorCode.INVALID_VARIANT_OPTIONS);
+            }
+            existing.setStock(variantRequest.getStock());
+        }
+    }
+
     private void applySellerDisplayStatusChange(
             Product product,
             ProductDisplayStatus previous,
@@ -944,7 +994,7 @@ public class ProductService {
     private boolean hasAnyUpdate(ProductDto.UpdateProductRequest request) {
         return hasProductInfoChange(request)
                 || request.getDisplayStatus() != null
-                || (request.getOptionGroups() != null && request.getVariants() != null);
+                || request.getVariants() != null;
     }
 
 }

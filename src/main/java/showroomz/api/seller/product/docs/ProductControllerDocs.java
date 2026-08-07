@@ -451,7 +451,13 @@ public interface ProductControllerDocs {
 
     @Operation(
             summary = "상품 수정",
-            description = "백스테이지 관리자가 기존 상품의 정보를 수정합니다. 수정하고 싶은 필드만 제공하면 해당 필드만 업데이트됩니다.\n\n" +
+            description = "백스테이지 판매자가 기존 상품의 정보를 수정합니다. 수정하고 싶은 필드만 제공하면 해당 필드만 업데이트됩니다.\n\n" +
+                    "**진열·공구 상태별 수정 규칙:**\n" +
+                    "- 진열 + 공구 진행 아님: 전부 수정 가능\n" +
+                    "- 진열 + 공구 진행 중: 옵션·재고만 수정 가능 (상품 정보 수정 시 `PRODUCT_EDIT_RESTRICTED`)\n" +
+                    "- 미진열(운영자 사유) + 공구 무관: 전부 수정 가능 → 저장 시 `PENDING_REVIEW`(재검토 대기)로 전환 → 운영자 검토 후 진열\n" +
+                    "- 미진열(브랜드 요청) + 공구 무관: 전부 수정 가능 → 재검토 대기 전환 없음(미진열 유지) → 운영자 검토 후 진열\n" +
+                    "- 재고 수량: 모든 상태에서 수정 가능 (`variants`만 전달하면 재고만 갱신)\n\n" +
                     "**수정 가능한 항목:**\n" +
                     "- categoryId: 카테고리 ID\n" +
                     "- name: 상품명\n" +
@@ -463,9 +469,10 @@ public interface ProductControllerDocs {
                     "- description: 상세 설명\n" +
                     "- productNotice: 상품정보제공고시\n" +
                     "- optionGroups: 옵션 그룹 목록 (variants와 함께 제공해야 함)\n" +
-                    "- variants: 옵션 목록 (optionGroups와 함께 제공해야 함)\n\n" +
+                    "- variants: 옵션 목록 (optionGroups와 함께 제공 시 옵션 전체 교체, variants만 제공 시 재고만 갱신)\n\n" +
                     "**주의사항:**\n" +
-                    "- optionGroups와 variants는 함께 제공해야 합니다.\n" +
+                    "- 옵션 구조를 변경할 때는 optionGroups와 variants를 함께 제공해야 합니다.\n" +
+                    "- 재고만 변경할 때는 variants만 제공하고, 기존 옵션명(`optionNames`)과 일치해야 합니다.\n" +
                     "- 이미지를 수정하는 경우, representativeImageUrl 또는 coverImageUrls를 제공하면 기존 이미지가 모두 삭제되고 새로운 이미지로 교체됩니다.\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
@@ -492,7 +499,7 @@ public interface ProductControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "입력값 형식 오류",
+                    description = "입력값 형식 오류 또는 수정 제한",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ValidationErrorResponse.class),
@@ -508,6 +515,13 @@ public interface ProductControllerDocs {
                                                     "      \"reason\": \"판매가는 0 이상이어야 합니다.\"\n" +
                                                     "    }\n" +
                                                     "  ]\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "진열+공구 진행 중 상품 정보 수정 제한",
+                                            value = "{\n" +
+                                                    "  \"code\": \"PRODUCT_EDIT_RESTRICTED\",\n" +
+                                                    "  \"message\": \"진열 중이며 공구 진행 중인 상품은 옵션·재고만 수정할 수 있습니다.\"\n" +
                                                     "}"
                                     )
                             }
@@ -572,6 +586,20 @@ public interface ProductControllerDocs {
                                             "  \"displayStatus\": \"DISPLAY\"\n" +
                                             "}",
                                     description = "일부 필드만 수정하는 예시"
+                            ),
+                            @ExampleObject(
+                                    name = "요청 예시 (재고만 수정)",
+                                    value = "{\n" +
+                                            "  \"variants\": [\n" +
+                                            "    {\n" +
+                                            "      \"optionNames\": [\"Free\"],\n" +
+                                            "      \"regularPrice\": 59000,\n" +
+                                            "      \"stock\": 50,\n" +
+                                            "      \"isRepresentative\": true\n" +
+                                            "    }\n" +
+                                            "  ]\n" +
+                                            "}",
+                                    description = "optionGroups 없이 variants만 전달하면 기존 옵션의 재고만 갱신합니다."
                             ),
                             @ExampleObject(
                                     name = "요청 예시 (전체 필드 수정)",
