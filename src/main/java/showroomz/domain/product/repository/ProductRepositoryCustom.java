@@ -62,4 +62,26 @@ public interface ProductRepositoryCustom {
             ProductGroupBuyStatus groupBuyStatus,
             String keyword
     );
+
+    /**
+     * 관리자 상품 목록 (전체 마켓, 필터 + 정렬)
+     * - keyword: 상품명 / 상품번호 / 브랜드(마켓)명
+     */
+    Page<Product> searchAdminProducts(
+            ProductDisplayStatus displayStatus,
+            ProductGroupBuyStatus groupBuyStatus,
+            String keyword,
+            ProductListSortType sortType,
+            Pageable pageable
+    );
+
+    /**
+     * 관리자 진열 상태별 상품 건수
+     * - keyword, groupBuyStatus 반영 / displayStatus 필터 미반영
+     * @return [ProductDisplayStatus, count]
+     */
+    List<Object[]> countAdminProductsByDisplayStatus(
+            ProductGroupBuyStatus groupBuyStatus,
+            String keyword
+    );
 }

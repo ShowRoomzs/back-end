@@ -2,14 +2,17 @@ package showroomz.api.admin.product.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import showroomz.api.admin.product.DTO.AdminProductDto;
+import showroomz.api.admin.product.DTO.AdminProductSearchCondition;
 import showroomz.api.admin.product.docs.AdminProductControllerDocs;
 import showroomz.api.admin.product.service.AdminProductService;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -19,6 +22,16 @@ import showroomz.global.error.exception.ErrorCode;
 public class AdminProductController implements AdminProductControllerDocs {
 
     private final AdminProductService adminProductService;
+
+    @Override
+    @GetMapping
+    public ResponseEntity<AdminProductDto.ProductListResponse> getProductList(
+            @ParameterObject @ModelAttribute AdminProductSearchCondition condition,
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest
+    ) {
+        AdminProductDto.ProductListResponse response = adminProductService.getProductList(condition, pagingRequest);
+        return ResponseEntity.ok(response);
+    }
 
     @Override
     @PatchMapping("/{productId}/recommendation")

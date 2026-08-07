@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import showroomz.domain.market.entity.QMarket;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.QProduct;
 import showroomz.domain.product.entity.QProductOption;
@@ -438,6 +439,107 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
             where.and(
                     product.name.containsIgnoreCase(k)
                             .or(product.sellerProductCode.containsIgnoreCase(k))
+            );
+        }
+
+        return where;
+    }
+
+    @Override
+    public Page<Product> searchAdminProducts(
+            ProductDisplayStatus displayStatus,
+            ProductGroupBuyStatus groupBuyStatus,
+            String keyword,
+            ProductListSortType sortType,
+            Pageable pageable
+    ) {
+        QProduct product = QProduct.product;
+        QMarket market = QMarket.market;
+        QProductVariant variant = QProductVariant.productVariant;
+
+        BooleanBuilder where = buildAdminProductWhere(product, market, displayStatus, groupBuyStatus, keyword);
+
+        Expression<Integer> totalStock = JPAExpressions
+                .select(variant.stock.sum().coalesce(0))
+                .from(variant)
+                .where(variant.product.eq(product));
+
+        ProductListSortType resolvedSort = sortType != null ? sortType : ProductListSortType.CREATED_AT;
+        OrderSpecifier<?> primaryOrder = switch (resolvedSort) {
+            case MODIFIED_AT -> product.modifiedAt.desc().nullsLast();
+            case STOCK_ASC -> new OrderSpecifier<>(Order.ASC, totalStock);
+            case CREATED_AT -> product.createdAt.desc();
+        };
+
+        List<Product> content = queryFactory
+                .selectFrom(product)
+                .leftJoin(product.market, market).fetchJoin()
+                .where(where)
+                .orderBy(primaryOrder, product.productId.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        Long total = queryFactory
+                .select(product.count())
+                .from(product)
+                .leftJoin(product.market, market)
+                .where(where)
+                .fetchOne();
+
+        return new PageImpl<>(content, pageable, total != null ? total : 0L);
+    }
+
+    @Override
+    public List<Object[]> countAdminProductsByDisplayStatus(
+            ProductGroupBuyStatus groupBuyStatus,
+            String keyword
+    ) {
+        QProduct product = QProduct.product;
+        QMarket market = QMarket.market;
+        BooleanBuilder where = buildAdminProductWhere(product, market, null, groupBuyStatus, keyword);
+
+        return queryFactory
+                .select(product.displayStatus, product.count())
+                .from(product)
+                .leftJoin(product.market, market)
+                .where(where)
+                .groupBy(product.displayStatus)
+                .fetch()
+                .stream()
+                .map(tuple -> new Object[]{tuple.get(product.displayStatus), tuple.get(product.count())})
+                .toList();
+    }
+
+    private BooleanBuilder buildAdminProductWhere(
+            QProduct product,
+            QMarket market,
+            ProductDisplayStatus displayStatus,
+            ProductGroupBuyStatus groupBuyStatus,
+            String keyword
+    ) {
+        BooleanBuilder where = new BooleanBuilder();
+
+        if (displayStatus != null) {
+            where.and(product.displayStatus.eq(displayStatus));
+        }
+
+        if (groupBuyStatus != null) {
+            NumberTemplate<Long> groupBuyMod = Expressions.numberTemplate(
+                    Long.class,
+                    "mod({0}, {1})",
+                    product.productId,
+                    ProductGroupBuyStatus.values().length
+            );
+            where.and(groupBuyMod.eq((long) groupBuyStatus.ordinal()));
+        }
+
+        if (keyword != null && !keyword.isBlank()) {
+            String k = keyword.trim();
+            where.and(
+                    product.name.containsIgnoreCase(k)
+                            .or(product.productNumber.containsIgnoreCase(k))
+                            .or(market.marketName.containsIgnoreCase(k))
             );
         }
 

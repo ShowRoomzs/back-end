@@ -1,19 +1,30 @@
 package showroomz.api.admin.product.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.product.DTO.AdminProductDto;
+import showroomz.api.admin.product.DTO.AdminProductSearchCondition;
 import showroomz.api.common.product.service.ProductProcessingHistoryService;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductRepository;
+import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.domain.product.type.ProductDisplayStatus;
+import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.domain.product.type.ProductHideReasonType;
+import showroomz.domain.product.type.ProductListSortType;
+import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +32,132 @@ import java.util.List;
 public class AdminProductService {
 
     private final ProductRepository productRepository;
+    private final ProductVariantRepository productVariantRepository;
     private final ProductProcessingHistoryService processingHistoryService;
+
+    /**
+     * 관리자 상품 목록 조회 (전체 브랜드)
+     */
+    @Transactional(readOnly = true)
+    public AdminProductDto.ProductListResponse getProductList(
+            AdminProductSearchCondition condition,
+            PagingRequest pagingRequest
+    ) {
+        Pageable pageable = pagingRequest.toPageable(Sort.unsorted());
+
+        ProductDisplayStatus displayStatusFilter = condition != null ? condition.getDisplayStatus() : null;
+        ProductGroupBuyStatus groupBuyStatusFilter = condition != null ? condition.getGroupBuyStatus() : null;
+        String keyword = (condition != null && condition.getKeyword() != null && !condition.getKeyword().trim().isEmpty())
+                ? condition.getKeyword().trim() : null;
+        ProductListSortType sortType = condition != null && condition.getSortType() != null
+                ? condition.getSortType()
+                : ProductListSortType.CREATED_AT;
+
+        Page<Product> productPage = productRepository.searchAdminProducts(
+                displayStatusFilter,
+                groupBuyStatusFilter,
+                keyword,
+                sortType,
+                pageable
+        );
+
+        List<Long> productIds = productPage.getContent().stream()
+                .map(Product::getProductId)
+                .collect(Collectors.toList());
+        Map<Long, Integer> stockSumMap = toStockSumMap(
+                productIds.isEmpty() ? List.of() : productVariantRepository.sumStockByProductIds(productIds));
+
+        List<AdminProductDto.ProductListItem> productList = productPage.getContent().stream()
+                .map(product -> convertToProductListItem(
+                        product,
+                        stockSumMap.getOrDefault(product.getProductId(), 0)))
+                .collect(Collectors.toList());
+
+        AdminProductDto.DisplayStatusCounts displayStatusCounts = buildDisplayStatusCounts(
+                groupBuyStatusFilter, keyword);
+
+        return new AdminProductDto.ProductListResponse(productList, productPage, displayStatusCounts);
+    }
+
+    private AdminProductDto.DisplayStatusCounts buildDisplayStatusCounts(
+            ProductGroupBuyStatus groupBuyStatus,
+            String keyword
+    ) {
+        long display = 0L;
+        long hidden = 0L;
+        long pendingReview = 0L;
+        long hideRequest = 0L;
+
+        List<Object[]> rows = productRepository.countAdminProductsByDisplayStatus(groupBuyStatus, keyword);
+        for (Object[] row : rows) {
+            if (row.length < 2 || !(row[0] instanceof ProductDisplayStatus status) || !(row[1] instanceof Number countNum)) {
+                continue;
+            }
+            long count = countNum.longValue();
+            switch (status) {
+                case DISPLAY -> display = count;
+                case HIDDEN -> hidden = count;
+                case PENDING_REVIEW -> pendingReview = count;
+                case HIDE_REQUEST -> hideRequest = count;
+            }
+        }
+
+        return AdminProductDto.DisplayStatusCounts.builder()
+                .all(display + hidden + pendingReview + hideRequest)
+                .display(display)
+                .hidden(hidden)
+                .pendingReview(pendingReview)
+                .hideRequest(hideRequest)
+                .build();
+    }
+
+    private AdminProductDto.ProductListItem convertToProductListItem(Product product, Integer stock) {
+        ProductDisplayStatus displayStatus = product.getDisplayStatus() != null
+                ? product.getDisplayStatus()
+                : ProductDisplayStatus.DISPLAY;
+
+        String createdAtStr = product.getCreatedAt() != null
+                ? product.getCreatedAt().toString()
+                : null;
+        String modifiedAtStr = product.getModifiedAt() != null
+                ? product.getModifiedAt().toString()
+                : createdAtStr;
+
+        String marketName = product.getMarket() != null ? product.getMarket().getMarketName() : null;
+
+        return AdminProductDto.ProductListItem.builder()
+                .productId(product.getProductId())
+                .productNumber(product.getProductNumber())
+                .sellerProductCode(product.getSellerProductCode())
+                .marketName(marketName)
+                .thumbnailUrl(product.getThumbnailUrl())
+                .name(product.getName())
+                .regularPrice(product.getRegularPrice())
+                .createdAt(createdAtStr)
+                .modifiedAt(modifiedAtStr)
+                .displayStatus(displayStatus)
+                .groupBuyStatus(resolveDummyGroupBuyStatus(product.getProductId()))
+                .stock(stock)
+                .build();
+    }
+
+    private Map<Long, Integer> toStockSumMap(List<Object[]> rows) {
+        Map<Long, Integer> map = new HashMap<>();
+        if (rows == null) {
+            return map;
+        }
+        for (Object[] row : rows) {
+            if (row.length >= 2 && row[0] instanceof Long productId && row[1] instanceof Number sum) {
+                map.put(productId, sum.intValue());
+            }
+        }
+        return map;
+    }
+
+    private ProductGroupBuyStatus resolveDummyGroupBuyStatus(Long productId) {
+        ProductGroupBuyStatus[] statuses = ProductGroupBuyStatus.values();
+        return statuses[(int) Math.floorMod(productId != null ? productId : 0L, statuses.length)];
+    }
 
     /**
      * 상품 추천 상태 변경

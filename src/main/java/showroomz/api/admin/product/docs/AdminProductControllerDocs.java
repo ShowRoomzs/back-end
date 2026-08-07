@@ -8,17 +8,114 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.admin.product.DTO.AdminProductDto;
+import showroomz.api.admin.product.DTO.AdminProductSearchCondition;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "Admin - Product", description = "관리자 상품 관리 API")
 public interface AdminProductControllerDocs {
+
+    @Operation(
+            summary = "관리자 상품 목록 조회 (페이징, 필터링, 검색)",
+            description = "관리자가 모든 브랜드의 상품 목록을 조회합니다. 셀러 상품 목록과 동일한 구성이며, 응답에 마켓명을 포함합니다.\n\n" +
+                    "**응답:** 글로벌 `PageResponse`(`content` + `pageInfo`) + 진열 상태별 건수(`displayStatusCounts`)\n" +
+                    "- `displayStatusCounts`: 검색어·공구상태 반영, 진열상태 필터 미반영\n\n" +
+                    "**응답 필드:**\n" +
+                    "- marketName: 마켓(브랜드)명\n" +
+                    "- regularPrice: 판매가\n" +
+                    "- createdAt: 등록일\n" +
+                    "- modifiedAt: 수정일\n" +
+                    "- stock: 재고 수량 (옵션 재고 합계)\n" +
+                    "- groupBuyStatus: 공구 상태 (더미)\n" +
+                    "  - PREPARING: 준비중\n" +
+                    "  - READY: 준비완료\n" +
+                    "  - IN_PROGRESS: 진행중\n" +
+                    "  - NOT_CONNECTED: 연결없음\n\n" +
+                    "**검색 조건 (Query):**\n" +
+                    "- displayStatus: 진열 상태 (DISPLAY, HIDDEN, PENDING_REVIEW, HIDE_REQUEST, 미입력 시 전체)\n" +
+                    "- groupBuyStatus: 공구 상태 (PREPARING, READY, IN_PROGRESS, NOT_CONNECTED, 미입력 시 전체)\n" +
+                    "- keyword: 검색어 (상품명, 상품번호, 브랜드명)\n" +
+                    "- sortType: 정렬 (CREATED_AT, MODIFIED_AT, STOCK_ASC, 미입력 시 CREATED_AT)\n" +
+                    "- page / size: 페이징\n\n" +
+                    "**권한:** ADMIN\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "상품 목록 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AdminProductDto.ProductListResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"content\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"productId\": 1,\n" +
+                                                    "      \"productNumber\": \"SRZ-20251228-001\",\n" +
+                                                    "      \"sellerProductCode\": \"PROD-ABC-001\",\n" +
+                                                    "      \"marketName\": \"프리미엄 쇼핑몰\",\n" +
+                                                    "      \"thumbnailUrl\": \"https://example.com/thumbnail.jpg\",\n" +
+                                                    "      \"name\": \"프리미엄 린넨 셔츠\",\n" +
+                                                    "      \"regularPrice\": 59000,\n" +
+                                                    "      \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
+                                                    "      \"modifiedAt\": \"2026-01-05T10:00:00Z\",\n" +
+                                                    "      \"displayStatus\": \"DISPLAY\",\n" +
+                                                    "      \"groupBuyStatus\": \"PREPARING\",\n" +
+                                                    "      \"stock\": 100\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"pageInfo\": {\n" +
+                                                    "    \"currentPage\": 1,\n" +
+                                                    "    \"totalPages\": 10,\n" +
+                                                    "    \"totalResults\": 195,\n" +
+                                                    "    \"limit\": 20,\n" +
+                                                    "    \"hasNext\": true\n" +
+                                                    "  },\n" +
+                                                    "  \"displayStatusCounts\": {\n" +
+                                                    "    \"all\": 195,\n" +
+                                                    "    \"display\": 120,\n" +
+                                                    "    \"hidden\": 40,\n" +
+                                                    "    \"pendingReview\": 20,\n" +
+                                                    "    \"hideRequest\": 15\n" +
+                                                    "  }\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 (ADMIN 권한 필요)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<AdminProductDto.ProductListResponse> getProductList(
+            @ParameterObject @ModelAttribute AdminProductSearchCondition condition,
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest
+    );
 
     @Operation(
             summary = "관리자 상품 추천 상태 변경",
