@@ -221,7 +221,7 @@ public interface ProductControllerDocs {
             summary = "상품 개별 조회",
             description = "백스테이지에서 판매자가 특정 상품의 상세 정보를 조회합니다. 상품의 모든 정보와 처리 이력(`processingHistory`)을 포함합니다.\n\n" +
                     "- `displayStatus=HIDDEN`인 경우 `latestHideInfo`에 가장 최근 미진열 사유·상세사유·일시·운영자명이 포함됩니다.\n" +
-                    "- `groupBuyStatus`(더미): PREPARING(준비중), READY(준비완료), IN_PROGRESS(진행중), NOT_CONNECTED(연결없음)\n\n" +
+                    "- `groupBuyStatus`: PREPARING(준비중), READY(준비완료), IN_PROGRESS(진행중), NOT_CONNECTED(연결없음, 등록 시 기본값)\n\n" +
                     "**processingHistory.historyType (상품 처리 이력):**\n" +
                     "- `PRODUCT_CREATED` → 상품 등록\n" +
                     "- `PRODUCT_INFO_UPDATED` → 브랜드가 상품 정보 수정\n" +
@@ -256,7 +256,7 @@ public interface ProductControllerDocs {
                                                     "  \"coverImageUrls\": [\"https://example.com/image1.jpg\", \"https://example.com/image2.jpg\"],\n" +
                                                     "  \"regularPrice\": 59000,\n" +
                                                     "  \"displayStatus\": \"HIDDEN\",\n" +
-                                                    "  \"groupBuyStatus\": \"PREPARING\",\n" +
+                                                    "  \"groupBuyStatus\": \"NOT_CONNECTED\",\n" +
                                                     "  \"latestHideInfo\": {\n" +
                                                     "    \"hideReasonType\": \"PRODUCT_NOTICE_ERROR\",\n" +
                                                     "    \"hideReasonDescription\": \"상품 정보 제공 고시 오류\",\n" +
@@ -374,11 +374,11 @@ public interface ProductControllerDocs {
                     "- createdAt: 등록일\n" +
                     "- modifiedAt: 수정일\n" +
                     "- stock: 재고 수량 (옵션 재고 합계)\n" +
-                    "- groupBuyStatus: 공구 상태 (더미)\n" +
+                    "- groupBuyStatus: 공구 상태\n" +
                     "  - PREPARING: 준비중\n" +
                     "  - READY: 준비완료\n" +
                     "  - IN_PROGRESS: 진행중\n" +
-                    "  - NOT_CONNECTED: 연결없음\n\n" +
+                    "  - NOT_CONNECTED: 연결없음 (등록 시 기본값)\n\n" +
                     "**검색 조건 (Query):**\n" +
                     "- displayStatus: 진열 상태 (DISPLAY, HIDDEN, PENDING_REVIEW, HIDE_REQUEST, 미입력 시 전체)\n" +
                     "- groupBuyStatus: 공구 상태 (PREPARING, READY, IN_PROGRESS, NOT_CONNECTED, 미입력 시 전체)\n" +
@@ -410,7 +410,7 @@ public interface ProductControllerDocs {
                                                     "      \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
                                                     "      \"modifiedAt\": \"2026-01-05T10:00:00Z\",\n" +
                                                     "      \"displayStatus\": \"DISPLAY\",\n" +
-                                                    "      \"groupBuyStatus\": \"PREPARING\",\n" +
+                                                    "      \"groupBuyStatus\": \"NOT_CONNECTED\",\n" +
                                                     "      \"stock\": 100\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
@@ -429,11 +429,11 @@ public interface ProductControllerDocs {
                                                     "    \"hideRequest\": 15\n" +
                                                     "  },\n" +
                                                     "  \"groupBuyStatusCounts\": {\n" +
-                                                    "    \"all\": 5,\n" +
-                                                    "    \"preparing\": 1,\n" +
+                                                    "    \"all\": 195,\n" +
+                                                    "    \"preparing\": 0,\n" +
                                                     "    \"ready\": 0,\n" +
-                                                    "    \"inProgress\": 2,\n" +
-                                                    "    \"notConnected\": 2\n" +
+                                                    "    \"inProgress\": 0,\n" +
+                                                    "    \"notConnected\": 195\n" +
                                                     "  }\n" +
                                                     "}"
                                     )

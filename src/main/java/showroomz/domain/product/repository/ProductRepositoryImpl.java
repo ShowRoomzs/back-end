@@ -5,8 +5,6 @@ import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.CaseBuilder;
-import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.core.types.dsl.NumberTemplate;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -418,16 +416,15 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         QProduct product = QProduct.product;
         // 공구상태 필터는 미반영
         BooleanBuilder where = buildSellerProductWhere(product, marketId, displayStatus, null, keyword);
-        NumberTemplate<Long> groupBuyMod = dummyGroupBuyStatusExpression(product);
 
         return queryFactory
-                .select(groupBuyMod, product.count())
+                .select(product.groupBuyStatus, product.count())
                 .from(product)
                 .where(where)
-                .groupBy(groupBuyMod)
+                .groupBy(product.groupBuyStatus)
                 .fetch()
                 .stream()
-                .map(tuple -> new Object[]{tuple.get(groupBuyMod), tuple.get(product.count())})
+                .map(tuple -> new Object[]{tuple.get(product.groupBuyStatus), tuple.get(product.count())})
                 .toList();
     }
 
@@ -446,8 +443,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         }
 
         if (groupBuyStatus != null) {
-            // 더미 공구 상태: productId % enum.size == ordinal
-            where.and(dummyGroupBuyStatusExpression(product).eq((long) groupBuyStatus.ordinal()));
+            where.and(product.groupBuyStatus.eq(groupBuyStatus));
         }
 
         if (keyword != null && !keyword.isBlank()) {
@@ -536,17 +532,16 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         QMarket market = QMarket.market;
         // 공구상태 필터는 미반영
         BooleanBuilder where = buildAdminProductWhere(product, market, displayStatus, null, keyword);
-        NumberTemplate<Long> groupBuyMod = dummyGroupBuyStatusExpression(product);
 
         return queryFactory
-                .select(groupBuyMod, product.count())
+                .select(product.groupBuyStatus, product.count())
                 .from(product)
                 .leftJoin(product.market, market)
                 .where(where)
-                .groupBy(groupBuyMod)
+                .groupBy(product.groupBuyStatus)
                 .fetch()
                 .stream()
-                .map(tuple -> new Object[]{tuple.get(groupBuyMod), tuple.get(product.count())})
+                .map(tuple -> new Object[]{tuple.get(product.groupBuyStatus), tuple.get(product.count())})
                 .toList();
     }
 
@@ -564,7 +559,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         }
 
         if (groupBuyStatus != null) {
-            where.and(dummyGroupBuyStatusExpression(product).eq((long) groupBuyStatus.ordinal()));
+            where.and(product.groupBuyStatus.eq(groupBuyStatus));
         }
 
         if (keyword != null && !keyword.isBlank()) {
@@ -577,14 +572,5 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         }
 
         return where;
-    }
-
-    private NumberTemplate<Long> dummyGroupBuyStatusExpression(QProduct product) {
-        return Expressions.numberTemplate(
-                Long.class,
-                "mod({0}, {1})",
-                product.productId,
-                ProductGroupBuyStatus.values().length
-        );
     }
 }

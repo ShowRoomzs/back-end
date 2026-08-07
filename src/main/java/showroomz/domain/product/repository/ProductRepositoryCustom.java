@@ -66,7 +66,7 @@ public interface ProductRepositoryCustom {
     /**
      * 셀러 백스테이지 공구 상태별 상품 건수
      * - keyword, displayStatus 반영 / groupBuyStatus 필터 미반영
-     * @return [groupBuyStatusOrdinal(Long), count]
+     * @return [ProductGroupBuyStatus, count]
      */
     List<Object[]> countSellerProductsByGroupBuyStatus(
             Long marketId,
@@ -99,7 +99,7 @@ public interface ProductRepositoryCustom {
     /**
      * 관리자 공구 상태별 상품 건수
      * - keyword, displayStatus 반영 / groupBuyStatus 필터 미반영
-     * @return [groupBuyStatusOrdinal(Long), count]
+     * @return [ProductGroupBuyStatus, count]
      */
     List<Object[]> countAdminProductsByGroupBuyStatus(
             ProductDisplayStatus displayStatus,
