@@ -40,16 +40,10 @@ public class ProductDto {
         @Schema(description = "판매자 상품 코드", example = "PROD-001")
         private String sellerProductCode;
 
-        @Schema(description = "강제 품절 처리 여부", example = "false")
-        private Boolean isOutOfStockForced = false;
-
         @NotNull(message = "판매가는 필수 입력값입니다.")
         @Min(value = 0, message = "판매가는 0 이상이어야 합니다.")
         @Schema(description = "판매가 (정가)", example = "59000")
         private Integer regularPrice;
-
-        @Schema(description = "성별", example = "UNISEX", allowableValues = {"MALE", "FEMALE", "UNISEX"})
-        private ProductGender gender;
 
         @Schema(description = "대표 이미지 URL", example = "https://example.com/image.jpg")
         private String representativeImageUrl;
@@ -68,13 +62,20 @@ public class ProductDto {
         @Schema(description = "상품정보제공고시")
         private ProductNoticeRequest productNotice;
 
+        @Min(value = 0, message = "재고 수량은 0 이상이어야 합니다.")
+        @Schema(
+                description = "재고 수량. 옵션(optionGroups/variants) 없이 단일 재고만 등록할 때 사용. " +
+                        "variants를 보내지 않으면 이 값으로 단일 옵션 없는 상품이 생성됩니다. (미입력 시 0)",
+                example = "999"
+        )
+        private Integer stock;
+
         @Valid
-        @Schema(description = "옵션 그룹 목록")
+        @Schema(description = "옵션 그룹 목록. 옵션 없는 상품은 생략하거나 빈 배열")
         private List<OptionGroupRequest> optionGroups;
 
         @Valid
-        @NotNull(message = "옵션 목록은 필수 입력값입니다.")
-        @Schema(description = "옵션 목록 (조합된 결과)")
+        @Schema(description = "옵션 조합(Variant) 목록. 옵션 없는 상품은 생략하고 stock만 입력")
         private List<VariantRequest> variants;
     }
 
@@ -212,9 +213,6 @@ public class ProductDto {
                 allowableValues = {"DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"})
         private ProductDisplayStatus displayStatus;
 
-        @Schema(description = "강제 품절 처리 여부", example = "false")
-        private Boolean isOutOfStockForced;
-
         @Min(value = 0, message = "판매가는 0 이상이어야 합니다.")
         @Schema(description = "판매가 (정가)", example = "59000")
         private Integer regularPrice;
@@ -260,31 +258,6 @@ public class ProductDto {
 
         @Schema(description = "응답 메시지", example = "상품이 성공적으로 수정되었습니다.")
         private String message;
-    }
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Schema(description = "상품 목록 조회 요청 (필터)")
-    public static class ProductListRequest {
-        @Schema(description = "진열 상태 (ALL: 전체, DISPLAY: 진열, HIDDEN: 미진열, PENDING_REVIEW: 재검토 대기, HIDE_REQUEST: 미진열 요청)",
-                example = "ALL",
-                allowableValues = {"ALL", "DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"})
-        private String displayStatus = "ALL";
-
-        @Schema(description = "공구 상태 (ALL: 전체, PREPARING: 준비중, READY: 준비완료, IN_PROGRESS: 진행중, NOT_CONNECTED: 연결없음)",
-                example = "ALL",
-                allowableValues = {"ALL", "PREPARING", "READY", "IN_PROGRESS", "NOT_CONNECTED"})
-        private String groupBuyStatus = "ALL";
-
-        @Schema(description = "검색어 (상품명 또는 브랜드 상품코드 일치 시 반환)", example = "멋진코트")
-        private String keyword;
-
-        @Schema(description = "정렬 (CREATED_AT: 등록일순, MODIFIED_AT: 수정일순, STOCK_ASC: 재고 적은순) - 기본값: CREATED_AT",
-                example = "CREATED_AT",
-                allowableValues = {"CREATED_AT", "MODIFIED_AT", "STOCK_ASC"})
-        private String sortType = "CREATED_AT";
     }
 
     @Getter
@@ -368,9 +341,6 @@ public class ProductDto {
 
         @Schema(description = "재고 수량 (옵션 재고 합계)", example = "100")
         private Integer stock;
-
-        @Schema(description = "강제 품절 처리 여부", example = "false")
-        private Boolean isOutOfStockForced;
     }
 
     @Getter
@@ -445,9 +415,6 @@ public class ProductDto {
 
         @Schema(description = "최근 미진열 정보 (displayStatus=HIDDEN일 때만, 가장 최근 HIDDEN 이력 기준)")
         private ProductProcessingHistoryDto.LatestHideInfo latestHideInfo;
-
-        @Schema(description = "강제 품절 처리 여부", example = "false")
-        private Boolean isOutOfStockForced;
 
         @Schema(description = "추천 상품 여부", example = "false")
         private Boolean isRecommended;

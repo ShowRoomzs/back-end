@@ -2,6 +2,7 @@ package showroomz.api.seller.product.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.seller.product.DTO.ProductDto;
+import showroomz.api.seller.product.DTO.SellerProductSearchCondition;
 import showroomz.api.seller.product.docs.ProductControllerDocs;
 import showroomz.api.seller.product.service.ProductService;
 import showroomz.global.error.exception.BusinessException;
@@ -52,10 +54,10 @@ public class ProductController implements ProductControllerDocs {
     @Override
     @GetMapping
     public ResponseEntity<ProductDto.ProductListResponse> getProductList(
-            ProductDto.ProductListRequest request,
-            PagingRequest pagingRequest) {
+            @ParameterObject @ModelAttribute SellerProductSearchCondition condition,
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest) {
         String adminEmail = getCurrentAdminEmail();
-        ProductDto.ProductListResponse response = productService.getProductList(adminEmail, request, pagingRequest);
+        ProductDto.ProductListResponse response = productService.getProductList(adminEmail, condition, pagingRequest);
         return ResponseEntity.ok(response);
     }
 
@@ -66,6 +68,15 @@ public class ProductController implements ProductControllerDocs {
             @Valid @RequestBody ProductDto.UpdateProductRequest request) {
         String adminEmail = getCurrentAdminEmail();
         ProductDto.UpdateProductResponse response = productService.updateProduct(adminEmail, productId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @DeleteMapping("/{productId}")
+    public ResponseEntity<ProductDto.DeleteProductResponse> deleteProduct(
+            @PathVariable Long productId) {
+        String adminEmail = getCurrentAdminEmail();
+        ProductDto.DeleteProductResponse response = productService.deleteProduct(adminEmail, productId);
         return ResponseEntity.ok(response);
     }
 

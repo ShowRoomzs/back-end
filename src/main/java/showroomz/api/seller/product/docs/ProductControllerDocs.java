@@ -8,13 +8,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.seller.product.DTO.ProductDto;
+import showroomz.api.seller.product.DTO.SellerProductSearchCondition;
 import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "Seller - Product", description = "Seller Product API")
@@ -22,12 +25,15 @@ public interface ProductControllerDocs {
 
     @Operation(
             summary = "상품 등록",
-            description = "백스테이지 관리자가 새로운 상품을 등록합니다. 카테고리, 가격, 옵션 조합(재고/판매가), 이미지, 상세 설명 및 공시 정보를 모두 포함합니다.\n\n" +
+            description = "백스테이지 관리자가 새로운 상품을 등록합니다. 카테고리, 가격, 옵션 조합(재고/판매가), 이미지, 상세 설명 및 공시 정보를 포함합니다.\n\n" +
                     "**필수 항목:**\n" +
-                    "- categoryId: 카테고리 ID (예: 1, 2, 3)\n" +
+                    "- categoryId: 카테고리 ID\n" +
                     "- name: 상품명\n" +
-                    "- regularPrice: 판매가 (정가). 할인가는 계약 단계에서 결정됩니다.\n" +
-                    "- variants: 옵션 목록 (조합된 결과)\n\n" +
+                    "- regularPrice: 판매가 (정가). 할인가는 계약 단계에서 결정됩니다.\n\n" +
+                    "**옵션 / 재고:**\n" +
+                    "- 옵션 없는 상품: `optionGroups`·`variants` 생략(또는 빈 배열)하고 `stock`만 입력\n" +
+                    "- 옵션 있는 상품: `optionGroups` + `variants`를 함께 전달 (`variants[].stock`에 조합별 재고)\n" +
+                    "- `optionGroups`만 있고 `variants`가 없으면 400 오류\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -118,20 +124,52 @@ public interface ProductControllerDocs {
             )
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "상품 등록 정보",
+            description = "상품 등록 정보. 옵션 없는 상품은 stock만, 옵션 있는 상품은 optionGroups+variants를 사용합니다.",
             required = true,
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = ProductDto.CreateProductRequest.class),
                     examples = {
                             @ExampleObject(
-                                    name = "요청 예시",
+                                    name = "옵션 없이 재고만 등록",
+                                    summary = "optionGroups/variants 없이 stock만 입력",
+                                    description = "단일 재고 상품. optionGroups·variants를 보내지 않고 stock으로 재고를 등록합니다.",
                                     value = "{\n" +
                                             "  \"categoryId\": 1,\n" +
                                             "  \"name\": \"프리미엄 린넨 셔츠\",\n" +
                                             "  \"sellerProductCode\": \"PROD-001\",\n" +
                                             "  \"regularPrice\": 59000,\n" +
-                                            "  \"gender\": \"UNISEX\",\n" +
+                                            "  \"stock\": 999,\n" +
+                                            "  \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
+                                            "  \"coverImageUrls\": [\n" +
+                                            "    \"https://example.com/image1.jpg\",\n" +
+                                            "    \"https://example.com/image2.jpg\"\n" +
+                                            "  ],\n" +
+                                            "  \"description\": \"<p>상품 상세 설명</p>\",\n" +
+                                            "  \"productNotice\": {\n" +
+                                            "    \"capacityWeight\": \"제품 상세 참고\",\n" +
+                                            "    \"mainSpecs\": \"제품 상세 참고\",\n" +
+                                            "    \"expirationPeriod\": \"제품 상세 참고\",\n" +
+                                            "    \"usageMethod\": \"제품 상세 참고\",\n" +
+                                            "    \"manufacturerSeller\": \"제품 상세 참고\",\n" +
+                                            "    \"origin\": \"제품 상세 참고\",\n" +
+                                            "    \"ingredients\": \"제품 상세 참고\",\n" +
+                                            "    \"functionalCosmeticApproval\": \"제품 상세 참고\",\n" +
+                                            "    \"precautions\": \"제품 상세 참고\",\n" +
+                                            "    \"qualityAssurance\": \"제품 상세 참고\",\n" +
+                                            "    \"customerServicePhone\": \"제품 상세 참고\"\n" +
+                                            "  }\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "옵션(사이즈 Free) 포함 등록",
+                                    summary = "optionGroups + variants로 재고 등록",
+                                    description = "옵션 그룹과 조합(variant)을 함께 전달합니다. 재고는 variants[].stock에 넣습니다.",
+                                    value = "{\n" +
+                                            "  \"categoryId\": 1,\n" +
+                                            "  \"name\": \"프리미엄 린넨 셔츠\",\n" +
+                                            "  \"sellerProductCode\": \"PROD-001\",\n" +
+                                            "  \"regularPrice\": 59000,\n" +
                                             "  \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
                                             "  \"coverImageUrls\": [\n" +
                                             "    \"https://example.com/image1.jpg\",\n" +
@@ -221,7 +259,6 @@ public interface ProductControllerDocs {
                                                     "    \"hiddenAt\": \"2026-06-20T11:20:00Z\",\n" +
                                                     "    \"processorName\": \"김운영 운영자\"\n" +
                                                     "  },\n" +
-                                                    "  \"isOutOfStockForced\": false,\n" +
                                                     "  \"isRecommended\": false,\n" +
                                                     "  \"productNotice\": \"{\\\"origin\\\":\\\"대한민국\\\",\\\"ingredients\\\":\\\"제품 상세 참고\\\"}\",\n" +
                                                     "  \"description\": \"<p>상품 상세 설명</p>\",\n" +
@@ -336,27 +373,12 @@ public interface ProductControllerDocs {
                     "  - READY: 준비완료\n" +
                     "  - IN_PROGRESS: 진행중\n" +
                     "  - NOT_CONNECTED: 연결없음\n\n" +
-                    "**필터 파라미터:**\n" +
-                    "- displayStatus: 진열 상태 (ALL, DISPLAY, HIDDEN, PENDING_REVIEW, HIDE_REQUEST) - 기본값: ALL\n" +
-                    "  - DISPLAY: 진열\n" +
-                    "  - HIDDEN: 미진열\n" +
-                    "  - PENDING_REVIEW: 재검토 대기\n" +
-                    "  - HIDE_REQUEST: 미진열 요청\n" +
-                    "- groupBuyStatus: 공구 상태 (ALL, PREPARING, READY, IN_PROGRESS, NOT_CONNECTED) - 기본값: ALL\n" +
-                    "  - PREPARING: 준비중\n" +
-                    "  - READY: 준비완료\n" +
-                    "  - IN_PROGRESS: 진행중\n" +
-                    "  - NOT_CONNECTED: 연결없음\n\n" +
-                    "**정렬 파라미터:**\n" +
-                    "- sortType: 정렬 기준 (기본값: CREATED_AT)\n" +
-                    "  - CREATED_AT: 등록일순 (최신순)\n" +
-                    "  - MODIFIED_AT: 수정일순 (최신순)\n" +
-                    "  - STOCK_ASC: 재고 적은순\n\n" +
-                    "**검색 파라미터:**\n" +
-                    "- keyword: 검색어 (상품명 또는 브랜드 상품코드 일치 시 반환)\n\n" +
-                    "**페이징 파라미터:**\n" +
-                    "- page: 페이지 번호 (1부터 시작) - 기본값: 1\n" +
-                    "- size: 페이지당 항목 수 - 기본값: 20\n\n" +
+                    "**검색 조건 (Query):**\n" +
+                    "- displayStatus: 진열 상태 (DISPLAY, HIDDEN, PENDING_REVIEW, HIDE_REQUEST, 미입력 시 전체)\n" +
+                    "- groupBuyStatus: 공구 상태 (PREPARING, READY, IN_PROGRESS, NOT_CONNECTED, 미입력 시 전체)\n" +
+                    "- keyword: 검색어 (상품명 또는 브랜드 상품코드)\n" +
+                    "- sortType: 정렬 (CREATED_AT, MODIFIED_AT, STOCK_ASC, 미입력 시 CREATED_AT)\n" +
+                    "- page / size: 페이징\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -383,8 +405,7 @@ public interface ProductControllerDocs {
                                                     "      \"modifiedAt\": \"2026-01-05T10:00:00Z\",\n" +
                                                     "      \"displayStatus\": \"DISPLAY\",\n" +
                                                     "      \"groupBuyStatus\": \"PREPARING\",\n" +
-                                                    "      \"stock\": 100,\n" +
-                                                    "      \"isOutOfStockForced\": false\n" +
+                                                    "      \"stock\": 100\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
@@ -424,10 +445,8 @@ public interface ProductControllerDocs {
             )
     })
     ResponseEntity<ProductDto.ProductListResponse> getProductList(
-            @Parameter(description = "필터 조건 (진열상태, 공구상태, 검색어, 정렬)")
-            ProductDto.ProductListRequest request,
-            @Parameter(description = "페이징 정보 (페이지 번호, 페이지 크기)")
-            PagingRequest pagingRequest
+            @ParameterObject @ModelAttribute SellerProductSearchCondition condition,
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest
     );
 
     @Operation(
@@ -438,7 +457,6 @@ public interface ProductControllerDocs {
                     "- name: 상품명\n" +
                     "- sellerProductCode: 판매자 상품 코드\n" +
                     "- displayStatus: 진열 상태 (DISPLAY, HIDDEN, PENDING_REVIEW, HIDE_REQUEST)\n" +
-                    "- isOutOfStockForced: 강제 품절 처리 여부\n" +
                     "- regularPrice: 판매가 (정가). 할인가는 계약 단계에서 결정됩니다.\n" +
                     "- representativeImageUrl: 대표 이미지 URL\n" +
                     "- coverImageUrls: 커버 이미지 URL 목록\n" +
@@ -615,6 +633,82 @@ public interface ProductControllerDocs {
             )
             @PathVariable Long productId,
             @RequestBody ProductDto.UpdateProductRequest request
+    );
+
+    @Operation(
+            summary = "상품 개별 삭제",
+            description = "백스테이지에서 판매자가 본인 마켓의 상품 1건을 삭제합니다.\n\n" +
+                    "**권한:** SELLER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "상품 삭제 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProductDto.DeleteProductResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"productId\": 1,\n" +
+                                                    "  \"message\": \"상품이 성공적으로 삭제되었습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 (본인의 상품이 아님)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "권한 없음 예시",
+                                            value = "{\n" +
+                                                    "  \"code\": \"FORBIDDEN\",\n" +
+                                                    "  \"message\": \"접근 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "상품을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "상품 없음 예시",
+                                            value = "{\n" +
+                                                    "  \"code\": \"PRODUCT_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"상품을 찾을 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<ProductDto.DeleteProductResponse> deleteProduct(
+            @Parameter(
+                    description = "삭제할 상품 ID",
+                    required = true,
+                    example = "1"
+            )
+            @PathVariable Long productId
     );
 
     @Operation(

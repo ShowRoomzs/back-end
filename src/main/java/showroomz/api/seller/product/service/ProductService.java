@@ -9,6 +9,7 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.api.common.product.service.ProductProcessingHistoryService;
 import showroomz.api.seller.product.DTO.ProductDto;
+import showroomz.api.seller.product.DTO.SellerProductSearchCondition;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.category.repository.CategoryRepository;
 import showroomz.domain.market.entity.Market;
@@ -70,9 +71,8 @@ public class ProductService {
         product.setRegularPrice(request.getRegularPrice());
         // 할인가는 계약 단계에서 결정 — 등록 시점에는 판매가와 동일하게 저장
         product.setSalePrice(request.getRegularPrice());
-        product.setGender(request.getGender());
         product.setDisplayStatus(ProductDisplayStatus.DISPLAY);
-        product.setIsOutOfStockForced(request.getIsOutOfStockForced() != null ? request.getIsOutOfStockForced() : false);
+        product.setIsOutOfStockForced(false);
         product.setIsRecommended(false);
         product.setDescription(request.getDescription());
         product.setProductNumber(productNumber);
@@ -184,13 +184,14 @@ public class ProductService {
                 product.getVariants().add(variant);
             }
         } else {
-            // 옵션이 없는 경우 단일 Variant 생성
+            // 옵션이 없는 경우: stock으로 단일 Variant 생성
+            int stock = request.getStock() != null ? request.getStock() : 0;
             ProductVariant variant = new ProductVariant(
                     product,
                     null,
                     request.getRegularPrice(),
                     request.getRegularPrice(),
-                    0,
+                    stock,
                     true
             );
             product.getVariants().add(variant);
@@ -237,7 +238,11 @@ public class ProductService {
 
 
     @Transactional(readOnly = true)
-    public ProductDto.ProductListResponse getProductList(String adminEmail, ProductDto.ProductListRequest request, PagingRequest pagingRequest) {
+    public ProductDto.ProductListResponse getProductList(
+            String adminEmail,
+            SellerProductSearchCondition condition,
+            PagingRequest pagingRequest
+    ) {
         // 1. Admin과 Market 조회
         Seller admin = adminRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -249,13 +254,13 @@ public class ProductService {
         Pageable pageable = pagingRequest.toPageable(Sort.unsorted());
         
         // 3. 필터 파라미터 설정
-        ProductDisplayStatus displayStatusFilter = resolveDisplayStatusFilter(
-                request != null ? request.getDisplayStatus() : null);
-        ProductGroupBuyStatus groupBuyStatusFilter = resolveGroupBuyStatusFilter(
-                request != null ? request.getGroupBuyStatus() : null);
-        String keyword = (request != null && request.getKeyword() != null && !request.getKeyword().trim().isEmpty())
-                ? request.getKeyword().trim() : null;
-        ProductListSortType sortType = resolveSortType(request != null ? request.getSortType() : null);
+        ProductDisplayStatus displayStatusFilter = condition != null ? condition.getDisplayStatus() : null;
+        ProductGroupBuyStatus groupBuyStatusFilter = condition != null ? condition.getGroupBuyStatus() : null;
+        String keyword = (condition != null && condition.getKeyword() != null && !condition.getKeyword().trim().isEmpty())
+                ? condition.getKeyword().trim() : null;
+        ProductListSortType sortType = condition != null && condition.getSortType() != null
+                ? condition.getSortType()
+                : ProductListSortType.CREATED_AT;
         
         // 4. 필터링된 상품 조회
         Page<Product> productPage = productRepository.searchSellerProducts(
@@ -345,6 +350,31 @@ public class ProductService {
         
         // 5. 응답 생성 (모든 필드 포함)
         return convertToProductDetailResponse(product, stockStatus);
+    }
+
+    /**
+     * 상품 개별 삭제
+     */
+    public ProductDto.DeleteProductResponse deleteProduct(String adminEmail, Long productId) {
+        Seller admin = adminRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        Market market = marketRepository.findBySeller(admin)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        Product product = productRepository.findByProductId(productId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        if (product.getMarket() == null || !product.getMarket().getId().equals(market.getId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+
+        productRepository.delete(product);
+
+        return ProductDto.DeleteProductResponse.builder()
+                .productId(productId)
+                .message("상품이 성공적으로 삭제되었습니다.")
+                .build();
     }
 
     /**
@@ -565,9 +595,6 @@ public class ProductService {
         if (request.getDisplayStatus() != null) {
             applySellerDisplayStatusChange(product, product.getDisplayStatus(), request.getDisplayStatus());
         }
-        if (request.getIsOutOfStockForced() != null) {
-            product.setIsOutOfStockForced(request.getIsOutOfStockForced());
-        }
         if (request.getRegularPrice() != null) {
             product.setRegularPrice(request.getRegularPrice());
             // 할인가는 계약 단계에서 결정 — 수정 시점에는 판매가와 동일하게 저장
@@ -771,7 +798,6 @@ public class ProductService {
                 .displayStatus(displayStatus)
                 .groupBuyStatus(groupBuyStatus)
                 .stock(stock)
-                .isOutOfStockForced(product.getIsOutOfStockForced())
                 .build();
     }
     
@@ -850,7 +876,6 @@ public class ProductService {
                 .hideDetail(product.getHideDetail())
                 .latestHideInfo(processingHistoryService.getLatestHideInfo(product))
                 .processingHistory(processingHistoryService.getHistoryItems(product.getProductId()))
-                .isOutOfStockForced(product.getIsOutOfStockForced())
                 .isRecommended(product.getIsRecommended())
                 .productNotice(product.getProductNotice())
                 .description(product.getDescription())
@@ -908,7 +933,6 @@ public class ProductService {
         return request.getCategoryId() != null
                 || request.getName() != null
                 || request.getSellerProductCode() != null
-                || request.getIsOutOfStockForced() != null
                 || request.getRegularPrice() != null
                 || request.getGender() != null
                 || request.getDescription() != null
@@ -923,37 +947,4 @@ public class ProductService {
                 || (request.getOptionGroups() != null && request.getVariants() != null);
     }
 
-    private ProductDisplayStatus resolveDisplayStatusFilter(String displayStatus) {
-        if (displayStatus == null || displayStatus.isBlank() || "ALL".equalsIgnoreCase(displayStatus)) {
-            return null;
-        }
-        try {
-            return ProductDisplayStatus.valueOf(displayStatus.trim().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "유효하지 않은 진열 상태입니다.");
-        }
-    }
-
-    private ProductGroupBuyStatus resolveGroupBuyStatusFilter(String groupBuyStatus) {
-        if (groupBuyStatus == null || groupBuyStatus.isBlank() || "ALL".equalsIgnoreCase(groupBuyStatus)) {
-            return null;
-        }
-        try {
-            return ProductGroupBuyStatus.valueOf(groupBuyStatus.trim().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "유효하지 않은 공구 상태입니다.");
-        }
-    }
-
-    private ProductListSortType resolveSortType(String sortType) {
-        if (sortType == null || sortType.isBlank()) {
-            return ProductListSortType.CREATED_AT;
-        }
-        try {
-            return ProductListSortType.valueOf(sortType.trim().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "유효하지 않은 정렬 타입입니다.");
-        }
-    }
 }
-
