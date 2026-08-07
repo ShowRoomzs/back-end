@@ -3,6 +3,8 @@ package showroomz.domain.product.repository;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -13,12 +15,14 @@ import org.springframework.data.support.PageableExecutionUtils;
 import showroomz.domain.market.entity.QMarket;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.QProduct;
-import showroomz.domain.wishlist.entitiy.QWishlist;
 import showroomz.domain.product.entity.QProductOption;
 import showroomz.domain.product.entity.QProductOptionGroup;
+import showroomz.domain.product.entity.QProductVariant;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGender;
 import showroomz.domain.product.type.ProductInspectionStatus;
+import showroomz.domain.product.type.ProductListSortType;
+import showroomz.domain.wishlist.entitiy.QWishlist;
 
 import java.time.Instant;
 import java.util.List;
@@ -391,5 +395,84 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                 .orderBy(wishlist.count().desc(), product.createdAt.desc())
                 .limit(limit)
                 .fetch();
+    }
+
+    @Override
+    public Page<Product> searchSellerProducts(
+            Long marketId,
+            List<Long> categoryIds,
+            ProductDisplayStatus displayStatus,
+            String stockStatus,
+            String keyword,
+            String keywordType,
+            ProductListSortType sortType,
+            Pageable pageable
+    ) {
+        QProduct product = QProduct.product;
+        QProductVariant variant = QProductVariant.productVariant;
+
+        BooleanBuilder where = new BooleanBuilder();
+        where.and(product.market.id.eq(marketId));
+
+        if (categoryIds != null && !categoryIds.isEmpty()) {
+            where.and(product.category.categoryId.in(categoryIds));
+        }
+        if (displayStatus != null) {
+            where.and(product.displayStatus.eq(displayStatus));
+        }
+
+        String normalizedStockStatus = stockStatus != null ? stockStatus : "ALL";
+        NumberExpression<Integer> totalStock = JPAExpressions
+                .select(variant.stock.sum().coalesce(0))
+                .from(variant)
+                .where(variant.product.eq(product));
+
+        if (!"ALL".equalsIgnoreCase(normalizedStockStatus)) {
+            if ("OUT_OF_STOCK".equalsIgnoreCase(normalizedStockStatus)) {
+                where.and(product.isOutOfStockForced.isTrue().or(totalStock.eq(0)));
+            } else if ("IN_STOCK".equalsIgnoreCase(normalizedStockStatus)) {
+                where.and(product.isOutOfStockForced.isFalse().and(totalStock.gt(0)));
+            }
+        }
+
+        if (keyword != null && !keyword.isBlank()) {
+            String k = keyword.trim();
+            if ("productNumber".equalsIgnoreCase(keywordType)) {
+                where.and(product.productNumber.containsIgnoreCase(k));
+            } else if ("sellerProductCode".equalsIgnoreCase(keywordType)) {
+                where.and(product.sellerProductCode.containsIgnoreCase(k));
+            } else if ("name".equalsIgnoreCase(keywordType)) {
+                where.and(product.name.containsIgnoreCase(k));
+            } else {
+                where.and(
+                        product.productNumber.containsIgnoreCase(k)
+                                .or(product.sellerProductCode.containsIgnoreCase(k))
+                                .or(product.name.containsIgnoreCase(k))
+                );
+            }
+        }
+
+        ProductListSortType resolvedSort = sortType != null ? sortType : ProductListSortType.CREATED_AT;
+        OrderSpecifier<?> primaryOrder = switch (resolvedSort) {
+            case MODIFIED_AT -> product.modifiedAt.desc().nullsLast();
+            case STOCK_ASC -> totalStock.asc();
+            case CREATED_AT -> product.createdAt.desc();
+        };
+
+        List<Product> content = queryFactory
+                .selectFrom(product)
+                .where(where)
+                .orderBy(primaryOrder, product.productId.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        Long total = queryFactory
+                .select(product.count())
+                .from(product)
+                .where(where)
+                .fetchOne();
+
+        return new PageImpl<>(content, pageable, total != null ? total : 0L);
     }
 }

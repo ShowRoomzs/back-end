@@ -329,6 +329,7 @@ public interface ProductControllerDocs {
                     "- regularPrice: 판매가\n" +
                     "- createdAt: 등록일\n" +
                     "- modifiedAt: 수정일\n" +
+                    "- stock: 재고 수량 (옵션 재고 합계)\n" +
                     "- groupBuyStatus: 공구 상태 (더미)\n" +
                     "  - PREPARING: 준비중\n" +
                     "  - READY: 준비완료\n" +
@@ -342,6 +343,11 @@ public interface ProductControllerDocs {
                     "  - PENDING_REVIEW: 재검토 대기\n" +
                     "  - HIDE_REQUEST: 미진열 요청\n" +
                     "- stockStatus: 품절 상태 (ALL, OUT_OF_STOCK, IN_STOCK) - 기본값: ALL\n\n" +
+                    "**정렬 파라미터:**\n" +
+                    "- sortType: 정렬 기준 (기본값: CREATED_AT)\n" +
+                    "  - CREATED_AT: 등록일순 (최신순)\n" +
+                    "  - MODIFIED_AT: 수정일순 (최신순)\n" +
+                    "  - STOCK_ASC: 재고 적은순\n\n" +
                     "**검색 파라미터:**\n" +
                     "- keyword: 검색어 (선택사항)\n" +
                     "- keywordType: 검색 타입 (productNumber: 상품 번호, sellerProductCode: 판매자 상품 코드, name: 상품명) - keywordType이 없으면 전체 검색\n\n" +
@@ -374,7 +380,7 @@ public interface ProductControllerDocs {
                                                     "      \"modifiedAt\": \"2026-01-05T10:00:00Z\",\n" +
                                                     "      \"displayStatus\": \"DISPLAY\",\n" +
                                                     "      \"groupBuyStatus\": \"PREPARING\",\n" +
-                                                    "      \"stockStatus\": \"IN_STOCK\",\n" +
+                                                    "      \"stock\": 100,\n" +
                                                     "      \"isOutOfStockForced\": false\n" +
                                                     "    }\n" +
                                                     "  ],\n" +

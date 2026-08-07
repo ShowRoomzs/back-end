@@ -17,15 +17,18 @@ import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.product.entity.*;
 import showroomz.domain.product.repository.ProductRepository;
+import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.domain.product.type.ProductHideReasonType;
+import showroomz.domain.product.type.ProductListSortType;
 import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -39,6 +42,7 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final ProductVariantRepository productVariantRepository;
     private final CategoryRepository categoryRepository;
     private final CategoryService categoryService;
     private final SellerRepository adminRepository;
@@ -246,8 +250,8 @@ public class ProductService {
         Market market = marketRepository.findBySeller(admin)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         
-        // 2. 페이징 정보 생성
-        Pageable pageable = pagingRequest.toPageable();
+        // 2. 페이징 정보 생성 (정렬은 쿼리에서 처리)
+        Pageable pageable = pagingRequest.toPageable(Sort.unsorted());
         
         // 3. 필터 파라미터 설정
         Long categoryId = request != null ? request.getCategoryId() : null;
@@ -259,6 +263,7 @@ public class ProductService {
                 ? request.getKeyword().trim() : null;
         String keywordType = (request != null && request.getKeywordType() != null && !request.getKeywordType().trim().isEmpty()) 
                 ? request.getKeywordType().trim() : null;
+        ProductListSortType sortType = resolveSortType(request != null ? request.getSortType() : null);
         
         // 4. 카테고리 필터링 처리: 상위 카테고리인 경우 모든 하위 카테고리 ID를 포함
         List<Long> categoryIds = null;
@@ -272,25 +277,32 @@ public class ProductService {
         }
         
         // 5. 필터링된 상품 조회 (모든 필터는 쿼리에서 처리)
-        Page<Product> productPage = productRepository.findByMarketIdWithFilters(
+        Page<Product> productPage = productRepository.searchSellerProducts(
                 market.getId(),
                 categoryIds,
                 displayStatusFilter,
                 stockStatus,
                 keyword,
                 keywordType,
+                sortType,
                 pageable
         );
-        
-        // 5. ProductListItem으로 변환
+
+        // 6. 상품별 재고 합계 일괄 조회
+        List<Long> productIds = productPage.getContent().stream()
+                .map(Product::getProductId)
+                .collect(Collectors.toList());
+        Map<Long, Integer> stockSumMap = toStockSumMap(
+                productIds.isEmpty() ? List.of() : productVariantRepository.sumStockByProductIds(productIds));
+
+        // 7. ProductListItem으로 변환
         List<ProductDto.ProductListItem> productList = productPage.getContent().stream()
-                .map(product -> {
-                    String calculatedStockStatus = calculateStockStatus(product, null);
-                    return convertToProductListItem(product, calculatedStockStatus);
-                })
+                .map(product -> convertToProductListItem(
+                        product,
+                        stockSumMap.getOrDefault(product.getProductId(), 0)))
                 .collect(Collectors.toList());
         
-        // 7. PageResponse 생성
+        // 8. PageResponse 생성
         return new PageResponse<>(
                 productList,
                 productPage
@@ -699,9 +711,25 @@ public class ProductService {
     }
     
     /**
+     * 상품별 재고 합계 맵 변환
+     */
+    private Map<Long, Integer> toStockSumMap(List<Object[]> rows) {
+        Map<Long, Integer> map = new HashMap<>();
+        if (rows == null) {
+            return map;
+        }
+        for (Object[] row : rows) {
+            if (row.length >= 2 && row[0] instanceof Long productId && row[1] instanceof Number sum) {
+                map.put(productId, sum.intValue());
+            }
+        }
+        return map;
+    }
+
+    /**
      * Product 엔티티를 ProductListItem DTO로 변환
      */
-    private ProductDto.ProductListItem convertToProductListItem(Product product, String stockStatus) {
+    private ProductDto.ProductListItem convertToProductListItem(Product product, Integer stock) {
         // 진열 상태
         ProductDisplayStatus displayStatus = product.getDisplayStatus() != null
                 ? product.getDisplayStatus()
@@ -729,7 +757,7 @@ public class ProductService {
                 .modifiedAt(modifiedAtStr)
                 .displayStatus(displayStatus)
                 .groupBuyStatus(groupBuyStatus)
-                .stockStatus(stockStatus)
+                .stock(stock)
                 .isOutOfStockForced(product.getIsOutOfStockForced())
                 .build();
     }
@@ -890,6 +918,17 @@ public class ProductService {
             return ProductDisplayStatus.valueOf(displayStatus.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "유효하지 않은 진열 상태입니다.");
+        }
+    }
+
+    private ProductListSortType resolveSortType(String sortType) {
+        if (sortType == null || sortType.isBlank()) {
+            return ProductListSortType.CREATED_AT;
+        }
+        try {
+            return ProductListSortType.valueOf(sortType.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "유효하지 않은 정렬 타입입니다.");
         }
     }
 }

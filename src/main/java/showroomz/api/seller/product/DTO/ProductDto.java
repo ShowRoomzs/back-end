@@ -283,6 +283,11 @@ public class ProductDto {
         @Schema(description = "검색 타입 (productNumber: 상품 번호, sellerProductCode: 판매자 상품 코드, name: 상품명)", 
                 example = "name", allowableValues = {"productNumber", "sellerProductCode", "name"})
         private String keywordType;
+
+        @Schema(description = "정렬 (CREATED_AT: 등록일순, MODIFIED_AT: 수정일순, STOCK_ASC: 재고 적은순) - 기본값: CREATED_AT",
+                example = "CREATED_AT",
+                allowableValues = {"CREATED_AT", "MODIFIED_AT", "STOCK_ASC"})
+        private String sortType = "CREATED_AT";
     }
 
     @Getter
@@ -337,8 +342,8 @@ public class ProductDto {
                 allowableValues = {"PREPARING", "READY", "IN_PROGRESS", "NOT_CONNECTED"})
         private ProductGroupBuyStatus groupBuyStatus;
 
-        @Schema(description = "품절 상태", example = "IN_STOCK")
-        private String stockStatus;
+        @Schema(description = "재고 수량 (옵션 재고 합계)", example = "100")
+        private Integer stock;
 
         @Schema(description = "강제 품절 처리 여부", example = "false")
         private Boolean isOutOfStockForced;

@@ -3,8 +3,10 @@ package showroomz.domain.product.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import showroomz.domain.product.entity.Product;
+import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGender;
 import showroomz.domain.product.type.ProductInspectionStatus;
+import showroomz.domain.product.type.ProductListSortType;
 
 import java.time.Instant;
 import java.util.List;
@@ -48,6 +50,20 @@ public interface ProductRepositoryCustom {
             Instant createdTo,
             String keyword,
             Long marketId,
+            Pageable pageable
+    );
+
+    /**
+     * 셀러 백스테이지 상품 목록 (필터 + 정렬)
+     */
+    Page<Product> searchSellerProducts(
+            Long marketId,
+            List<Long> categoryIds,
+            ProductDisplayStatus displayStatus,
+            String stockStatus,
+            String keyword,
+            String keywordType,
+            ProductListSortType sortType,
             Pageable pageable
     );
 }
