@@ -97,32 +97,38 @@ public class ProductDto {
     @AllArgsConstructor
     @Schema(description = "상품정보제공고시")
     public static class ProductNoticeRequest {
+        @Schema(description = "용량·중량", example = "제품 상세 참고")
+        private String capacityWeight;
+
+        @Schema(description = "제품 주요 사양", example = "제품 상세 참고")
+        private String mainSpecs;
+
+        @Schema(description = "사용기한·개봉 후 사용기간", example = "제품 상세 참고")
+        private String expirationPeriod;
+
+        @Schema(description = "사용방법", example = "제품 상세 참고")
+        private String usageMethod;
+
+        @Schema(description = "화장품제조업자·책임판매업자", example = "제품 상세 참고")
+        private String manufacturerSeller;
+
         @Schema(description = "제조국", example = "제품 상세 참고")
         private String origin;
 
-        @Schema(description = "소재", example = "제품 상세 참고")
-        private String material;
+        @Schema(description = "전성분", example = "제품 상세 참고")
+        private String ingredients;
 
-        @Schema(description = "색상", example = "제품 상세 참고")
-        private String color;
+        @Schema(description = "기능성 화장품 식품의약품안전처 심사필 여부", example = "제품 상세 참고")
+        private String functionalCosmeticApproval;
 
-        @Schema(description = "치수", example = "제품 상세 참고")
-        private String size;
+        @Schema(description = "사용 시 주의사항", example = "제품 상세 참고")
+        private String precautions;
 
-        @Schema(description = "제조자", example = "제품 상세 참고")
-        private String manufacturer;
-
-        @Schema(description = "세탁 방법", example = "제품 상세 참고")
-        private String washingMethod;
-
-        @Schema(description = "제조연월", example = "제품 상세 참고")
-        private String manufactureDate;
-
-        @Schema(description = "A/S 정보", example = "제품 상세 참고")
-        private String asInfo;
-
-        @Schema(description = "품질 보증 기준", example = "제품 상세 참고")
+        @Schema(description = "품질보증기준", example = "제품 상세 참고")
         private String qualityAssurance;
+
+        @Schema(description = "소비자상담 전화번호", example = "제품 상세 참고")
+        private String customerServicePhone;
     }
 
     @Getter
@@ -427,7 +433,7 @@ public class ProductDto {
         @Schema(description = "추천 상품 여부", example = "false")
         private Boolean isRecommended;
 
-        @Schema(description = "상품정보제공고시 (JSON 문자열)", example = "{\"제조국\":\"한국\",\"제조사\":\"ABC\"}")
+        @Schema(description = "상품정보제공고시 (JSON 문자열)", example = "{\"origin\":\"한국\",\"ingredients\":\"제품 상세 참고\"}")
         private String productNotice;
 
         @Schema(description = "상품 상세 설명 (HTML)", example = "<p>상품 상세 설명</p>")

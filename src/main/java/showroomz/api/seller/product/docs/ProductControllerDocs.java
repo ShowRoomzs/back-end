@@ -145,15 +145,17 @@ public interface ProductControllerDocs {
                                             "  \"deliveryFreeThreshold\": 50000,\n" +
                                             "  \"deliveryEstimatedDays\": 3,\n" +
                                             "  \"productNotice\": {\n" +
+                                            "    \"capacityWeight\": \"제품 상세 참고\",\n" +
+                                            "    \"mainSpecs\": \"제품 상세 참고\",\n" +
+                                            "    \"expirationPeriod\": \"제품 상세 참고\",\n" +
+                                            "    \"usageMethod\": \"제품 상세 참고\",\n" +
+                                            "    \"manufacturerSeller\": \"제품 상세 참고\",\n" +
                                             "    \"origin\": \"제품 상세 참고\",\n" +
-                                            "    \"material\": \"제품 상세 참고\",\n" +
-                                            "    \"color\": \"제품 상세 참고\",\n" +
-                                            "    \"size\": \"제품 상세 참고\",\n" +
-                                            "    \"manufacturer\": \"제품 상세 참고\",\n" +
-                                            "    \"washingMethod\": \"제품 상세 참고\",\n" +
-                                            "    \"manufactureDate\": \"제품 상세 참고\",\n" +
-                                            "    \"asInfo\": \"제품 상세 참고\",\n" +
-                                            "    \"qualityAssurance\": \"제품 상세 참고\"\n" +
+                                            "    \"ingredients\": \"제품 상세 참고\",\n" +
+                                            "    \"functionalCosmeticApproval\": \"제품 상세 참고\",\n" +
+                                            "    \"precautions\": \"제품 상세 참고\",\n" +
+                                            "    \"qualityAssurance\": \"제품 상세 참고\",\n" +
+                                            "    \"customerServicePhone\": \"제품 상세 참고\"\n" +
                                             "  },\n" +
                                             "  \"optionGroups\": [\n" +
                                             "    {\n" +
@@ -215,7 +217,7 @@ public interface ProductControllerDocs {
                                                     "  \"displayStatus\": \"DISPLAY\",\n" +
                                                     "  \"isOutOfStockForced\": false,\n" +
                                                     "  \"isRecommended\": false,\n" +
-                                                    "  \"productNotice\": \"{\\\"origin\\\":\\\"대한민국\\\",\\\"material\\\":\\\"면 100%\\\"}\",\n" +
+                                                    "  \"productNotice\": \"{\\\"origin\\\":\\\"대한민국\\\",\\\"ingredients\\\":\\\"제품 상세 참고\\\"}\",\n" +
                                                     "  \"description\": \"<p>상품 상세 설명</p>\",\n" +
                                                     "  \"tags\": \"[\\\"신상\\\", \\\"할인\\\"]\",\n" +
                                                     "  \"deliveryType\": \"STANDARD\",\n" +
@@ -523,15 +525,17 @@ public interface ProductControllerDocs {
                                             "  \"deliveryFreeThreshold\": 50000,\n" +
                                             "  \"deliveryEstimatedDays\": 3,\n" +
                                             "  \"productNotice\": {\n" +
+                                            "    \"capacityWeight\": \"제품 상세 참고\",\n" +
+                                            "    \"mainSpecs\": \"제품 상세 참고\",\n" +
+                                            "    \"expirationPeriod\": \"제품 상세 참고\",\n" +
+                                            "    \"usageMethod\": \"제품 상세 참고\",\n" +
+                                            "    \"manufacturerSeller\": \"제품 상세 참고\",\n" +
                                             "    \"origin\": \"제품 상세 참고\",\n" +
-                                            "    \"material\": \"제품 상세 참고\",\n" +
-                                            "    \"color\": \"제품 상세 참고\",\n" +
-                                            "    \"size\": \"제품 상세 참고\",\n" +
-                                            "    \"manufacturer\": \"제품 상세 참고\",\n" +
-                                            "    \"washingMethod\": \"제품 상세 참고\",\n" +
-                                            "    \"manufactureDate\": \"제품 상세 참고\",\n" +
-                                            "    \"asInfo\": \"제품 상세 참고\",\n" +
-                                            "    \"qualityAssurance\": \"제품 상세 참고\"\n" +
+                                            "    \"ingredients\": \"제품 상세 참고\",\n" +
+                                            "    \"functionalCosmeticApproval\": \"제품 상세 참고\",\n" +
+                                            "    \"precautions\": \"제품 상세 참고\",\n" +
+                                            "    \"qualityAssurance\": \"제품 상세 참고\",\n" +
+                                            "    \"customerServicePhone\": \"제품 상세 참고\"\n" +
                                             "  },\n" +
                                             "  \"optionGroups\": [\n" +
                                             "    {\n" +
