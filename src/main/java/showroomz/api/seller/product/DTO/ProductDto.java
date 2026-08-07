@@ -11,8 +11,10 @@ import lombok.Setter;
 
 import java.util.List;
 
+import showroomz.api.common.product.dto.ProductProcessingHistoryDto;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGender;
+import showroomz.domain.product.type.ProductHideReasonType;
 
 public class ProductDto {
 
@@ -427,6 +429,13 @@ public class ProductDto {
                 allowableValues = {"DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"})
         private ProductDisplayStatus displayStatus;
 
+        @Schema(description = "미진열 사유 타입", example = "PRODUCT_NOTICE_ERROR",
+                allowableValues = {"PRODUCT_NOTICE_ERROR", "AD_DISPLAY_VIOLATION", "BRAND_REQUEST", "OTHER"})
+        private ProductHideReasonType hideReasonType;
+
+        @Schema(description = "미진열 상세 사유", example = "성분 표기 누락")
+        private String hideDetail;
+
         @Schema(description = "강제 품절 처리 여부", example = "false")
         private Boolean isOutOfStockForced;
 
@@ -462,6 +471,9 @@ public class ProductDto {
 
         @Schema(description = "옵션 조합 (Variant) 목록")
         private List<VariantInfo> variants;
+
+        @Schema(description = "처리 이력 (브랜드/어드민 공유, 최신순)")
+        private List<ProductProcessingHistoryDto.HistoryItem> processingHistory;
     }
 
     @Getter

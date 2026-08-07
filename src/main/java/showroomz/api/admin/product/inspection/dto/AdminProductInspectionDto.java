@@ -9,8 +9,10 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import showroomz.api.common.product.dto.ProductProcessingHistoryDto;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGender;
+import showroomz.domain.product.type.ProductHideReasonType;
 import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.domain.product.type.ProductRejectReasonType;
 
@@ -75,6 +77,7 @@ public class AdminProductInspectionDto {
         private ProductDetail product;
         private MarketSummary market;
         private List<HistoryItem> inspectionHistory;
+        private List<ProductProcessingHistoryDto.HistoryItem> processingHistory;
     }
 
     @Getter
@@ -112,6 +115,8 @@ public class AdminProductInspectionDto {
         private String adminMemo;
         private ProductRejectReasonType rejectReasonType;
         private String rejectDetail;
+        private ProductHideReasonType hideReasonType;
+        private String hideDetail;
         private List<showroomz.api.seller.product.DTO.ProductDto.OptionGroupInfo> optionGroups;
         private List<showroomz.api.seller.product.DTO.ProductDto.VariantInfo> variants;
     }

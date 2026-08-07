@@ -8,6 +8,7 @@ import showroomz.domain.category.entity.Category;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGender;
+import showroomz.domain.product.type.ProductHideReasonType;
 import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.domain.product.type.ProductRejectReasonType;
 
@@ -81,6 +82,13 @@ public class Product {
 
     @Column(name = "reject_detail", length = 500)
     private String rejectDetail;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "hide_reason_type", length = 64)
+    private ProductHideReasonType hideReasonType;
+
+    @Column(name = "hide_detail", length = 500)
+    private String hideDetail;
 
     @Column(name = "product_notice", columnDefinition = "json")
     private String productNotice;

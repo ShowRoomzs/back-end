@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import showroomz.api.admin.product.inspection.dto.AdminProductInspectionDto;
 import showroomz.api.admin.product.inspection.dto.ProductInspectionSearchCondition;
+import showroomz.api.common.product.service.ProductProcessingHistoryService;
 import showroomz.api.seller.product.DTO.ProductDto;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.seller.entity.Seller;
@@ -43,6 +44,7 @@ public class AdminProductInspectionService {
 
     private final ProductRepository productRepository;
     private final ProductInspectionHistoryRepository productInspectionHistoryRepository;
+    private final ProductProcessingHistoryService processingHistoryService;
 
     @Transactional(readOnly = true)
     public PageResponse<AdminProductInspectionDto.ListItem> search(
@@ -95,6 +97,7 @@ public class AdminProductInspectionService {
                 .product(toProductDetail(product))
                 .market(toMarketSummary(market))
                 .inspectionHistory(toHistoryItems(histories))
+                .processingHistory(processingHistoryService.getHistoryItems(productId))
                 .build();
     }
 
@@ -328,6 +331,8 @@ public class AdminProductInspectionService {
                 .adminMemo(product.getAdminMemo())
                 .rejectReasonType(product.getRejectReasonType())
                 .rejectDetail(product.getRejectDetail())
+                .hideReasonType(product.getHideReasonType())
+                .hideDetail(product.getHideDetail())
                 .optionGroups(optionGroups)
                 .variants(variants)
                 .build();

@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.api.common.product.service.ProductProcessingHistoryService;
 import showroomz.api.seller.product.DTO.ProductDto;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.category.repository.CategoryRepository;
@@ -17,6 +18,7 @@ import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.product.entity.*;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.type.ProductDisplayStatus;
+import showroomz.domain.product.type.ProductHideReasonType;
 import showroomz.domain.product.type.ProductInspectionStatus;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.global.dto.PageResponse;
@@ -41,6 +43,7 @@ public class ProductService {
     private final SellerRepository adminRepository;
     private final MarketRepository marketRepository;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    private final ProductProcessingHistoryService processingHistoryService;
 
     public ProductDto.CreateProductResponse createProduct(String adminEmail, ProductDto.CreateProductRequest request) {
         // 1. 카테고리 조회 및 검증 (카테고리 ID로 조회)
@@ -211,6 +214,7 @@ public class ProductService {
 
         // 11. Product 저장
         Product savedProduct = productRepository.save(product);
+        processingHistoryService.recordCreated(savedProduct);
 
         // 12. 응답 생성
         return ProductDto.CreateProductResponse.builder()
@@ -481,8 +485,9 @@ public class ProductService {
             if (product.getMarket() == null || !product.getMarket().getId().equals(market.getId())) {
                 unauthorizedProductIds.add(product.getProductId());
             } else {
-                // 요청받은 상태로 명시적 설정
-                product.setDisplayStatus(request.getDisplayStatus());
+                // 요청된 상태로 명시적 설정
+                ProductDisplayStatus previous = product.getDisplayStatus();
+                applySellerDisplayStatusChange(product, previous, request.getDisplayStatus());
                 processedProductIds.add(product.getProductId());
             }
         }
@@ -528,6 +533,11 @@ public class ProductService {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
+        ProductDisplayStatus previousDisplayStatus = product.getDisplayStatus();
+        int previousTotalStock = sumVariantStock(product);
+        boolean hasInfoChange = hasProductInfoChange(request);
+        boolean hasVariantUpdate = request.getOptionGroups() != null && request.getVariants() != null;
+
         // 3. 카테고리 업데이트 (제공된 경우)
         if (request.getCategoryId() != null) {
             Category category = categoryRepository.findByCategoryId(request.getCategoryId())
@@ -543,7 +553,7 @@ public class ProductService {
             product.setSellerProductCode(request.getSellerProductCode());
         }
         if (request.getDisplayStatus() != null) {
-            product.setDisplayStatus(request.getDisplayStatus());
+            applySellerDisplayStatusChange(product, product.getDisplayStatus(), request.getDisplayStatus());
         }
         if (request.getIsOutOfStockForced() != null) {
             product.setIsOutOfStockForced(request.getIsOutOfStockForced());
@@ -684,6 +694,24 @@ public class ProductService {
         // 9. Product 저장
         Product savedProduct = productRepository.save(product);
 
+        int newTotalStock = sumVariantStock(savedProduct);
+        boolean stockChanged = hasVariantUpdate && previousTotalStock != newTotalStock;
+        boolean displayOnlyChange = request.getDisplayStatus() != null
+                && !hasInfoChange
+                && !hasVariantUpdate;
+
+        if (!displayOnlyChange) {
+            processingHistoryService.moveToPendingReviewIfNeeded(savedProduct);
+            if (stockChanged && !hasInfoChange) {
+                processingHistoryService.recordStockUpdated(
+                        savedProduct, savedProduct.getDisplayStatus(), newTotalStock);
+            } else if (hasInfoChange || hasVariantUpdate) {
+                processingHistoryService.recordBrandInfoUpdated(
+                        savedProduct, savedProduct.getDisplayStatus());
+            }
+            productRepository.save(savedProduct);
+        }
+
         // 10. 응답 생성
         return ProductDto.UpdateProductResponse.builder()
                 .productId(savedProduct.getProductId())
@@ -811,6 +839,9 @@ public class ProductService {
                 .regularPrice(product.getRegularPrice())
                 .gender(product.getGender())
                 .displayStatus(product.getDisplayStatus())
+                .hideReasonType(product.getHideReasonType())
+                .hideDetail(product.getHideDetail())
+                .processingHistory(processingHistoryService.getHistoryItems(product.getProductId()))
                 .isOutOfStockForced(product.getIsOutOfStockForced())
                 .isRecommended(product.getIsRecommended())
                 .productNotice(product.getProductNotice())
@@ -824,6 +855,69 @@ public class ProductService {
                 .optionGroups(optionGroups)
                 .variants(variants)
                 .build();
+    }
+
+    private void applySellerDisplayStatusChange(
+            Product product,
+            ProductDisplayStatus previous,
+            ProductDisplayStatus next
+    ) {
+        if (next == null) {
+            return;
+        }
+        if (next == previous) {
+            return;
+        }
+        product.setDisplayStatus(next);
+        if (next == ProductDisplayStatus.HIDDEN) {
+            product.setHideReasonType(ProductHideReasonType.BRAND_REQUEST);
+            product.setHideDetail(null);
+            processingHistoryService.recordHidden(
+                    product, previous, ProductHideReasonType.BRAND_REQUEST, null, null);
+        } else if (next == ProductDisplayStatus.DISPLAY) {
+            product.setHideReasonType(null);
+            product.setHideDetail(null);
+            processingHistoryService.recordRedisplayed(product, previous, null);
+        } else if (next == ProductDisplayStatus.HIDE_REQUEST) {
+            product.setHideReasonType(ProductHideReasonType.BRAND_REQUEST);
+            product.setHideDetail(null);
+            processingHistoryService.recordHideRequested(product, previous);
+        } else if (next == ProductDisplayStatus.PENDING_REVIEW) {
+            processingHistoryService.recordPendingReview(product, previous);
+        }
+    }
+
+    private int sumVariantStock(Product product) {
+        if (product.getVariants() == null || product.getVariants().isEmpty()) {
+            return 0;
+        }
+        return product.getVariants().stream()
+                .mapToInt(v -> v.getStock() != null ? v.getStock() : 0)
+                .sum();
+    }
+
+    private boolean hasProductInfoChange(ProductDto.UpdateProductRequest request) {
+        return request.getCategoryId() != null
+                || request.getName() != null
+                || request.getSellerProductCode() != null
+                || request.getIsOutOfStockForced() != null
+                || request.getRegularPrice() != null
+                || request.getGender() != null
+                || request.getDescription() != null
+                || request.getDeliveryType() != null
+                || request.getDeliveryFee() != null
+                || request.getDeliveryFreeThreshold() != null
+                || request.getDeliveryEstimatedDays() != null
+                || request.getTags() != null
+                || request.getProductNotice() != null
+                || request.getRepresentativeImageUrl() != null
+                || request.getCoverImageUrls() != null;
+    }
+
+    private boolean hasAnyUpdate(ProductDto.UpdateProductRequest request) {
+        return hasProductInfoChange(request)
+                || request.getDisplayStatus() != null
+                || (request.getOptionGroups() != null && request.getVariants() != null);
     }
 
     private ProductDisplayStatus resolveDisplayStatusFilter(String displayStatus) {
