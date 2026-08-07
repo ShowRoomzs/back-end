@@ -286,11 +286,16 @@ public class ProductService {
                         stockSumMap.getOrDefault(product.getProductId(), 0)))
                 .collect(Collectors.toList());
 
-        // 7. 진열 상태별 건수 (검색어·공구상태 반영, 진열상태 필터 미반영)
+        // 7. 진열/공구 상태별 건수
+        // - displayStatusCounts: 검색어·공구상태 반영, 진열상태 필터 미반영
+        // - groupBuyStatusCounts: 검색어·진열상태 반영, 공구상태 필터 미반영
         ProductDto.DisplayStatusCounts displayStatusCounts = buildDisplayStatusCounts(
                 market.getId(), groupBuyStatusFilter, keyword);
+        ProductDto.GroupBuyStatusCounts groupBuyStatusCounts = buildGroupBuyStatusCounts(
+                market.getId(), displayStatusFilter, keyword);
         
-        return new ProductDto.ProductListResponse(productList, productPage, displayStatusCounts);
+        return new ProductDto.ProductListResponse(
+                productList, productPage, displayStatusCounts, groupBuyStatusCounts);
     }
 
     private ProductDto.DisplayStatusCounts buildDisplayStatusCounts(
@@ -324,6 +329,45 @@ public class ProductService {
                 .hidden(hidden)
                 .pendingReview(pendingReview)
                 .hideRequest(hideRequest)
+                .build();
+    }
+
+    private ProductDto.GroupBuyStatusCounts buildGroupBuyStatusCounts(
+            Long marketId,
+            ProductDisplayStatus displayStatus,
+            String keyword
+    ) {
+        long preparing = 0L;
+        long ready = 0L;
+        long inProgress = 0L;
+        long notConnected = 0L;
+
+        List<Object[]> rows = productRepository.countSellerProductsByGroupBuyStatus(
+                marketId, displayStatus, keyword);
+        ProductGroupBuyStatus[] statuses = ProductGroupBuyStatus.values();
+        for (Object[] row : rows) {
+            if (row.length < 2 || !(row[0] instanceof Number ordinalNum) || !(row[1] instanceof Number countNum)) {
+                continue;
+            }
+            int ordinal = ordinalNum.intValue();
+            if (ordinal < 0 || ordinal >= statuses.length) {
+                continue;
+            }
+            long count = countNum.longValue();
+            switch (statuses[ordinal]) {
+                case PREPARING -> preparing = count;
+                case READY -> ready = count;
+                case IN_PROGRESS -> inProgress = count;
+                case NOT_CONNECTED -> notConnected = count;
+            }
+        }
+
+        return ProductDto.GroupBuyStatusCounts.builder()
+                .all(preparing + ready + inProgress + notConnected)
+                .preparing(preparing)
+                .ready(ready)
+                .inProgress(inProgress)
+                .notConnected(notConnected)
                 .build();
     }
     

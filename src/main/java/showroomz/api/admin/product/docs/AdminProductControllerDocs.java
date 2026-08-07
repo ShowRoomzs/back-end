@@ -28,8 +28,9 @@ public interface AdminProductControllerDocs {
     @Operation(
             summary = "관리자 상품 목록 조회 (페이징, 필터링, 검색)",
             description = "관리자가 모든 브랜드의 상품 목록을 조회합니다. 셀러 상품 목록과 동일한 구성이며, 응답에 마켓명을 포함합니다.\n\n" +
-                    "**응답:** 글로벌 `PageResponse`(`content` + `pageInfo`) + 진열 상태별 건수(`displayStatusCounts`)\n" +
-                    "- `displayStatusCounts`: 검색어·공구상태 반영, 진열상태 필터 미반영\n\n" +
+                    "**응답:** 글로벌 `PageResponse`(`content` + `pageInfo`) + 진열/공구 상태별 건수\n" +
+                    "- `displayStatusCounts`: 검색어·공구상태 반영, 진열상태 필터 미반영\n" +
+                    "- `groupBuyStatusCounts`: 검색어·진열상태 반영, 공구상태 필터 미반영\n\n" +
                     "**응답 필드:**\n" +
                     "- marketName: 마켓(브랜드)명\n" +
                     "- regularPrice: 판매가\n" +
@@ -90,6 +91,13 @@ public interface AdminProductControllerDocs {
                                                     "    \"hidden\": 40,\n" +
                                                     "    \"pendingReview\": 20,\n" +
                                                     "    \"hideRequest\": 15\n" +
+                                                    "  },\n" +
+                                                    "  \"groupBuyStatusCounts\": {\n" +
+                                                    "    \"all\": 5,\n" +
+                                                    "    \"preparing\": 1,\n" +
+                                                    "    \"ready\": 0,\n" +
+                                                    "    \"inProgress\": 2,\n" +
+                                                    "    \"notConnected\": 2\n" +
                                                     "  }\n" +
                                                     "}"
                                     )

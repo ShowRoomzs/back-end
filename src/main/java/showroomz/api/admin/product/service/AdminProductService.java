@@ -79,8 +79,11 @@ public class AdminProductService {
 
         AdminProductDto.DisplayStatusCounts displayStatusCounts = buildDisplayStatusCounts(
                 groupBuyStatusFilter, keyword);
+        AdminProductDto.GroupBuyStatusCounts groupBuyStatusCounts = buildGroupBuyStatusCounts(
+                displayStatusFilter, keyword);
 
-        return new AdminProductDto.ProductListResponse(productList, productPage, displayStatusCounts);
+        return new AdminProductDto.ProductListResponse(
+                productList, productPage, displayStatusCounts, groupBuyStatusCounts);
     }
 
     /**
@@ -195,6 +198,43 @@ public class AdminProductService {
                 .hidden(hidden)
                 .pendingReview(pendingReview)
                 .hideRequest(hideRequest)
+                .build();
+    }
+
+    private AdminProductDto.GroupBuyStatusCounts buildGroupBuyStatusCounts(
+            ProductDisplayStatus displayStatus,
+            String keyword
+    ) {
+        long preparing = 0L;
+        long ready = 0L;
+        long inProgress = 0L;
+        long notConnected = 0L;
+
+        List<Object[]> rows = productRepository.countAdminProductsByGroupBuyStatus(displayStatus, keyword);
+        ProductGroupBuyStatus[] statuses = ProductGroupBuyStatus.values();
+        for (Object[] row : rows) {
+            if (row.length < 2 || !(row[0] instanceof Number ordinalNum) || !(row[1] instanceof Number countNum)) {
+                continue;
+            }
+            int ordinal = ordinalNum.intValue();
+            if (ordinal < 0 || ordinal >= statuses.length) {
+                continue;
+            }
+            long count = countNum.longValue();
+            switch (statuses[ordinal]) {
+                case PREPARING -> preparing = count;
+                case READY -> ready = count;
+                case IN_PROGRESS -> inProgress = count;
+                case NOT_CONNECTED -> notConnected = count;
+            }
+        }
+
+        return AdminProductDto.GroupBuyStatusCounts.builder()
+                .all(preparing + ready + inProgress + notConnected)
+                .preparing(preparing)
+                .ready(ready)
+                .inProgress(inProgress)
+                .notConnected(notConnected)
                 .build();
     }
 
