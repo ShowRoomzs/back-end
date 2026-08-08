@@ -14,9 +14,9 @@ import lombok.Setter;
 @NoArgsConstructor
 public class ConnectRequest {
 
-    @Schema(description = "쇼룸명 검색 결과에서 선택한 인플루언서 ID")
+    @Schema(description = "쇼룸명 검색 결과에서 선택한 인플루언서 ID", example = "12")
     private Long creatorId;
 
-    @Schema(description = "연결코드 확인을 거쳐 얻은 연결코드")
+    @Schema(description = "연결코드 확인을 거쳐 얻은 연결코드", example = "AB3K7M9X")
     private String connectionCode;
 }

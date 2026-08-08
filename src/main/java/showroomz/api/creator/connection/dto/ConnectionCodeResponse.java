@@ -8,10 +8,10 @@ import java.time.LocalDateTime;
 @Getter
 public class ConnectionCodeResponse {
 
-    @Schema(description = "연결코드")
+    @Schema(description = "연결코드", example = "AB3K7M9X")
     private final String connectionCode;
 
-    @Schema(description = "(재)발급 시각")
+    @Schema(description = "(재)발급 시각", example = "2026-07-01T10:00:00")
     private final LocalDateTime issuedAt;
 
     public ConnectionCodeResponse(String connectionCode, LocalDateTime issuedAt) {

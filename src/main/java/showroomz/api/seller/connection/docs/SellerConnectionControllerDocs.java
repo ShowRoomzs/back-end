@@ -3,6 +3,7 @@ package showroomz.api.seller.connection.docs;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -31,12 +32,65 @@ public interface SellerConnectionControllerDocs {
                     "REQUESTED/CONNECTED면 화면에서 [요청] 버튼 대신 상태 배지로 대체해 중복 요청을 애초에 막는다."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "검색 성공"),
-            @ApiResponse(responseCode = "401", description = "인증 실패",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "검색 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PageResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"content\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"creatorId\": 12,\n" +
+                                                    "      \"showroomName\": \"민지의 쇼룸\",\n" +
+                                                    "      \"connectionStatus\": null\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"creatorId\": 15,\n" +
+                                                    "      \"showroomName\": \"민지픽\",\n" +
+                                                    "      \"connectionStatus\": \"REQUESTED\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"creatorId\": 21,\n" +
+                                                    "      \"showroomName\": \"민지스타일\",\n" +
+                                                    "      \"connectionStatus\": \"CONNECTED\"\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"pageInfo\": {\n" +
+                                                    "    \"currentPage\": 1,\n" +
+                                                    "    \"totalPages\": 1,\n" +
+                                                    "    \"totalResults\": 3,\n" +
+                                                    "    \"limit\": 20,\n" +
+                                                    "    \"hasNext\": false\n" +
+                                                    "  }\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
     })
     ResponseEntity<PageResponse<ConnectionCreatorSearchItem>> searchCreators(
-            @Parameter(description = "쇼룸명 검색어(미입력 시 전체)") @RequestParam(value = "keyword", required = false) String keyword,
+            @Parameter(description = "쇼룸명 검색어(미입력 시 전체)", example = "민지") @RequestParam(value = "keyword", required = false) String keyword,
             @ModelAttribute PagingRequest pagingRequest
     );
 
@@ -48,12 +102,52 @@ public interface SellerConnectionControllerDocs {
                     "정상적인 케이스라 오류 취급하지 않는다."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "확인 완료(found로 존재 여부 판단)"),
-            @ApiResponse(responseCode = "401", description = "인증 실패",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "확인 완료(found로 존재 여부 판단)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ConnectionCodeCheckResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "코드 일치",
+                                            value = "{\n" +
+                                                    "  \"found\": true,\n" +
+                                                    "  \"creatorId\": 12,\n" +
+                                                    "  \"showroomName\": \"민지의 쇼룸\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "코드 불일치",
+                                            value = "{\n" +
+                                                    "  \"found\": false,\n" +
+                                                    "  \"creatorId\": null,\n" +
+                                                    "  \"showroomName\": null\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
     })
     ResponseEntity<ConnectionCodeCheckResponse> checkConnectionCode(
-            @Parameter(description = "연결코드", required = true) @RequestParam("code") String code
+            @Parameter(description = "연결코드", required = true, example = "AB3K7M9X") @RequestParam("code") String code
     );
 
     @Operation(
@@ -64,15 +158,98 @@ public interface SellerConnectionControllerDocs {
                     "먼저 걸러지는 게 정상 흐름이며, 이 검증은 서버 측 최종 방어선이다)."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "요청 생성/재요청 성공"),
-            @ApiResponse(responseCode = "400", description = "creatorId/connectionCode 둘 다 없거나 둘 다 있음",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "401", description = "인증 실패",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "대상 인플루언서를 찾을 수 없음",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "409", description = "이미 연결됨/요청중인 상대",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "요청 생성/재요청 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ConnectResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "요청 성공",
+                                            value = "{\n" +
+                                                    "  \"connectionId\": 101,\n" +
+                                                    "  \"status\": \"REQUESTED\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "creatorId/connectionCode 둘 다 없거나 둘 다 있음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "대상 미지정",
+                                            value = "{\n" +
+                                                    "  \"code\": \"CONNECTION_TARGET_REQUIRED\",\n" +
+                                                    "  \"message\": \"creatorId 또는 connectionCode 중 하나는 필수입니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "둘 다 지정",
+                                            value = "{\n" +
+                                                    "  \"code\": \"CONNECTION_TARGET_AMBIGUOUS\",\n" +
+                                                    "  \"message\": \"creatorId와 connectionCode는 동시에 지정할 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "대상 인플루언서를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "크리에이터 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"CREATOR_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 크리에이터입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "이미 연결됨/요청중인 상대",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "중복 요청",
+                                            value = "{\n" +
+                                                    "  \"code\": \"CONNECTION_ALREADY_EXISTS\",\n" +
+                                                    "  \"message\": \"이미 연결되었거나 요청중인 상대입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
     })
     ResponseEntity<ConnectResponse> requestConnection(
             @Valid @RequestBody ConnectRequest request
