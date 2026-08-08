@@ -14,6 +14,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.api.common.attachment.dto.AttachmentSummary;
+import showroomz.api.common.attachment.dto.CompleteAttachmentRequest;
+import showroomz.api.common.attachment.dto.PresignRequest;
+import showroomz.api.common.attachment.dto.PresignResponse;
 import showroomz.api.creator.thread.dto.MessageItem;
 import showroomz.api.creator.thread.dto.MessageListResponse;
 import showroomz.api.creator.thread.dto.SendMessageRequest;
@@ -77,7 +81,7 @@ public interface CreatorThreadControllerDocs {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "신규 전송 성공"),
             @ApiResponse(responseCode = "200", description = "멱등 재전송 — 기존 메시지 반환"),
-            @ApiResponse(responseCode = "400", description = "본문 없음(content 빈 값)",
+            @ApiResponse(responseCode = "400", description = "content와 attachmentIds가 모두 비어 있음(MESSAGE_EMPTY) 등",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "401", description = "인증 실패",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
@@ -108,5 +112,49 @@ public interface CreatorThreadControllerDocs {
     })
     ResponseEntity<Void> markRead(
             @Parameter(description = "스레드 ID", required = true) @PathVariable("threadId") Long threadId
+    );
+
+    @Operation(
+            summary = "첨부 업로드용 Presigned URL 발급",
+            description = "서버가 확장자(§2-1)·개별 파일 크기를 먼저 검증하고 PENDING 첨부 행을 선(先)생성한 뒤 " +
+                    "S3 presigned PUT URL을 발급한다(§4-1 ①). 실제 파일은 서버를 거치지 않고 이 URL로 S3에 " +
+                    "직접 PUT한다 — 응답의 requiredContentType과 정확히 같은 Content-Type 헤더로 PUT해야 한다.\n\n" +
+                    "**권한:** CREATOR(본인 스레드만)"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "발급 성공"),
+            @ApiResponse(responseCode = "400", description = "허용되지 않는 확장자 또는 500MB 초과 단일 파일",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "본인 스레드가 아님",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 스레드",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<PresignResponse> createPresignedUpload(
+            @Parameter(description = "스레드 ID", required = true) @PathVariable("threadId") Long threadId,
+            @Valid @RequestBody PresignRequest request
+    );
+
+    @Operation(
+            summary = "첨부 업로드 완료 통지",
+            description = "S3 직접 PUT이 끝난 뒤 호출한다. 서버가 HeadObject로 실제 업로드 크기·Content-Type을 " +
+                    "재확인해 UPLOADED로 전환한다(§4-1 ③). 선언 값과 실측이 어긋나면 400이 아니라 200 + " +
+                    "status=REJECTED로 응답한다 — FE는 응답의 status 필드로 성공/거부를 판정해야 한다.\n\n" +
+                    "**권한:** CREATOR(본인이 올린 첨부만)"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "검증 완료 — status로 UPLOADED/REJECTED 판정"),
+            @ApiResponse(responseCode = "400", description = "S3에 아직 업로드되지 않음(ATTACHMENT_NOT_UPLOADED)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "본인이 올린 첨부가 아님",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<AttachmentSummary> completeUpload(
+            @Parameter(description = "첨부 ID", required = true) @PathVariable("attachmentId") Long attachmentId,
+            @Valid @RequestBody(required = false) CompleteAttachmentRequest request
     );
 }

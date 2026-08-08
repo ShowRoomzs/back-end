@@ -8,6 +8,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.api.common.attachment.dto.AttachmentSummary;
+import showroomz.api.common.attachment.dto.CompleteAttachmentRequest;
+import showroomz.api.common.attachment.dto.PresignRequest;
+import showroomz.api.common.attachment.dto.PresignResponse;
 import showroomz.api.seller.thread.docs.SellerThreadControllerDocs;
 import showroomz.api.seller.thread.dto.MessageItem;
 import showroomz.api.seller.thread.dto.MessageListResponse;
@@ -67,6 +71,25 @@ public class SellerThreadController implements SellerThreadControllerDocs {
     public ResponseEntity<Void> markRead(@PathVariable("threadId") Long threadId) {
         sellerThreadService.markRead(getCurrentSellerEmail(), threadId);
         return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    @PostMapping("/v1/seller/threads/{threadId}/attachments/presign")
+    public ResponseEntity<PresignResponse> createPresignedUpload(
+            @PathVariable("threadId") Long threadId,
+            @Valid @RequestBody PresignRequest request) {
+        PresignResponse response = sellerThreadService.createPresignedUpload(getCurrentSellerEmail(), threadId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Override
+    @PatchMapping("/v1/seller/attachments/{attachmentId}/complete")
+    public ResponseEntity<AttachmentSummary> completeUpload(
+            @PathVariable("attachmentId") Long attachmentId,
+            @Valid @RequestBody(required = false) CompleteAttachmentRequest request) {
+        CompleteAttachmentRequest body = request == null ? new CompleteAttachmentRequest() : request;
+        AttachmentSummary response = sellerThreadService.completeUpload(getCurrentSellerEmail(), attachmentId, body);
+        return ResponseEntity.ok(response);
     }
 
     private String getCurrentSellerEmail() {

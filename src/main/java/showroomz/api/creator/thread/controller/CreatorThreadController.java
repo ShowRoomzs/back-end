@@ -8,6 +8,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.api.common.attachment.dto.AttachmentSummary;
+import showroomz.api.common.attachment.dto.CompleteAttachmentRequest;
+import showroomz.api.common.attachment.dto.PresignRequest;
+import showroomz.api.common.attachment.dto.PresignResponse;
 import showroomz.api.creator.thread.docs.CreatorThreadControllerDocs;
 import showroomz.api.creator.thread.dto.MessageItem;
 import showroomz.api.creator.thread.dto.MessageListResponse;
@@ -67,6 +71,25 @@ public class CreatorThreadController implements CreatorThreadControllerDocs {
     public ResponseEntity<Void> markRead(@PathVariable("threadId") Long threadId) {
         creatorThreadService.markRead(getCurrentUserEmail(), threadId);
         return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    @PostMapping("/v1/creator/threads/{threadId}/attachments/presign")
+    public ResponseEntity<PresignResponse> createPresignedUpload(
+            @PathVariable("threadId") Long threadId,
+            @Valid @RequestBody PresignRequest request) {
+        PresignResponse response = creatorThreadService.createPresignedUpload(getCurrentUserEmail(), threadId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Override
+    @PatchMapping("/v1/creator/attachments/{attachmentId}/complete")
+    public ResponseEntity<AttachmentSummary> completeUpload(
+            @PathVariable("attachmentId") Long attachmentId,
+            @Valid @RequestBody(required = false) CompleteAttachmentRequest request) {
+        CompleteAttachmentRequest body = request == null ? new CompleteAttachmentRequest() : request;
+        AttachmentSummary response = creatorThreadService.completeUpload(getCurrentUserEmail(), attachmentId, body);
+        return ResponseEntity.ok(response);
     }
 
     private String getCurrentUserEmail() {

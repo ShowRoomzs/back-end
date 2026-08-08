@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,6 +19,9 @@ public class SendMessageRequest {
     @Size(max = 64)
     private String clientMessageId;
 
-    @Schema(description = "메시지 본문 — P3(첨부) 적용 전까지는 필수")
+    @Schema(description = "메시지 본문 — attachmentIds가 있으면 생략 가능(§13-11)")
     private String content;
+
+    @Schema(description = "complete까지 마친 첨부 ID 목록 — 배열 순서가 곧 표시 순서(§4-5)")
+    private List<Long> attachmentIds;
 }

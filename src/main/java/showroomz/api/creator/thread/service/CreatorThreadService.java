@@ -6,6 +6,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.api.common.attachment.dto.AttachmentSummary;
+import showroomz.api.common.attachment.dto.CompleteAttachmentRequest;
+import showroomz.api.common.attachment.dto.PresignRequest;
+import showroomz.api.common.attachment.dto.PresignResponse;
+import showroomz.api.common.attachment.service.MessageAttachmentService;
 import showroomz.api.creator.thread.dto.MessageItem;
 import showroomz.api.creator.thread.dto.MessageListResponse;
 import showroomz.api.creator.thread.dto.SendMessageRequest;
@@ -19,7 +24,9 @@ import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.message.entity.Message;
+import showroomz.domain.message.entity.MessageAttachment;
 import showroomz.domain.message.entity.MessageThread;
+import showroomz.domain.message.repository.MessageAttachmentRepository;
 import showroomz.domain.message.repository.MessageThreadRepository;
 import showroomz.domain.message.service.MessageThreadService;
 import showroomz.domain.message.type.ParticipantType;
@@ -29,7 +36,10 @@ import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +53,8 @@ public class CreatorThreadService {
     private final ConnectionRepository connectionRepository;
     private final MessageThreadRepository messageThreadRepository;
     private final MessageThreadService messageThreadService;
+    private final MessageAttachmentRepository messageAttachmentRepository;
+    private final MessageAttachmentService messageAttachmentService;
 
     /** §14-3 `연결됨` 탭. */
     public PageResponse<ThreadListItem> getThreads(String creatorEmail, PagingRequest pagingRequest) {
@@ -76,8 +88,9 @@ public class CreatorThreadService {
         List<Message> page = hasNext ? fetched.subList(0, size) : fetched;
         Long nextCursor = hasNext ? page.get(page.size() - 1).getId() : null;
 
+        Map<Long, List<AttachmentSummary>> attachmentsByMessage = loadAttachments(page);
         List<MessageItem> items = page.stream()
-                .map(m -> toMessageItem(m, creator.getId()))
+                .map(m -> toMessageItem(m, creator.getId(), attachmentsByMessage.getOrDefault(m.getId(), List.of())))
                 .toList();
         return new MessageListResponse(items, nextCursor, hasNext);
     }
@@ -91,8 +104,13 @@ public class CreatorThreadService {
         MessageThread thread = getMyThread(creator, threadId);
 
         MessageThreadService.SendResult result = messageThreadService.sendMessage(
-                thread, ParticipantType.CREATOR, creator.getId(), request.getClientMessageId(), request.getContent());
-        return new SendMessageOutcome(toMessageItem(result.message(), creator.getId()), result.created());
+                thread, ParticipantType.CREATOR, creator.getId(),
+                request.getClientMessageId(), request.getContent(), request.getAttachmentIds());
+
+        Map<Long, List<AttachmentSummary>> attachments = loadAttachments(List.of(result.message()));
+        MessageItem item = toMessageItem(result.message(), creator.getId(),
+                attachments.getOrDefault(result.message().getId(), List.of()));
+        return new SendMessageOutcome(item, result.created());
     }
 
     @Transactional
@@ -100,6 +118,39 @@ public class CreatorThreadService {
         Creator creator = getMyCreator(creatorEmail);
         MessageThread thread = getMyThread(creator, threadId);
         messageThreadService.markRead(thread, ParticipantType.CREATOR, creator.getId());
+    }
+
+    /** §4-1 ① — presign 발급. */
+    @Transactional
+    public PresignResponse createPresignedUpload(String creatorEmail, Long threadId, PresignRequest request) {
+        Creator creator = getMyCreator(creatorEmail);
+        MessageThread thread = getMyThread(creator, threadId);
+        return messageAttachmentService.createPresignedUpload(thread, ParticipantType.CREATOR, creator.getId(), request);
+    }
+
+    /** §4-1 ③ — 업로드 완료 통지. */
+    @Transactional
+    public AttachmentSummary completeUpload(String creatorEmail, Long attachmentId, CompleteAttachmentRequest request) {
+        Creator creator = getMyCreator(creatorEmail);
+        return messageAttachmentService.completeUpload(
+                ParticipantType.CREATOR, creator.getId(), attachmentId, request.getDurationSeconds());
+    }
+
+    private Map<Long, List<AttachmentSummary>> loadAttachments(List<Message> messages) {
+        List<Long> messageIds = messages.stream().map(Message::getId).toList();
+        if (messageIds.isEmpty()) {
+            return Map.of();
+        }
+        return messageAttachmentRepository.findByMessage_IdInOrderBySortOrderAsc(messageIds).stream()
+                .collect(Collectors.groupingBy(
+                        a -> a.getMessage().getId(),
+                        Collectors.collectingAndThen(
+                                Collectors.toList(),
+                                list -> list.stream()
+                                        .sorted(Comparator.comparing(MessageAttachment::getSortOrder,
+                                                Comparator.nullsLast(Comparator.naturalOrder())))
+                                        .map(messageAttachmentService::toSummary)
+                                        .toList())));
     }
 
     private ThreadListItem toListItem(MessageThread thread, Creator creator) {
@@ -114,9 +165,9 @@ public class CreatorThreadService {
                 isOperator, false, thread.getLastMessagePreview(), thread.getLastMessageAt(), unread);
     }
 
-    private MessageItem toMessageItem(Message message, Long myCreatorId) {
+    private MessageItem toMessageItem(Message message, Long myCreatorId, List<AttachmentSummary> attachments) {
         boolean mine = message.getSenderType() == ParticipantType.CREATOR && message.getSenderId().equals(myCreatorId);
-        return new MessageItem(message.getId(), message.getSenderType(), mine, message.getContent(), message.getCreatedAt());
+        return new MessageItem(message.getId(), message.getSenderType(), mine, message.getContent(), attachments, message.getCreatedAt());
     }
 
     private MessageThread getMyThread(Creator creator, Long threadId) {
