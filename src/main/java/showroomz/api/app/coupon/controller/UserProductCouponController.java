@@ -1,5 +1,6 @@
 package showroomz.api.app.coupon.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,6 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/v1/user/products")
 @RequiredArgsConstructor
+@Hidden
 public class UserProductCouponController implements UserProductCouponControllerDocs {
 
     private final UserCouponService userCouponService;

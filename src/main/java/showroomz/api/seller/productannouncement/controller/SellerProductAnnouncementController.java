@@ -1,5 +1,6 @@
 package showroomz.api.seller.productannouncement.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,7 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/v1/seller/product-announcements")
 @RequiredArgsConstructor
+@Hidden
 @Tag(name = SellerProductAnnouncementControllerDocs.SWAGGER_TAG, description = "마켓 상품 공지사항 관리")
 public class SellerProductAnnouncementController implements SellerProductAnnouncementControllerDocs {
 

@@ -1,5 +1,6 @@
 package showroomz.api.seller.inquiry.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -32,6 +33,7 @@ import showroomz.global.error.exception.ErrorCode;
 @RestController
 @RequestMapping("/v1/seller/answer-templates")
 @RequiredArgsConstructor
+@Hidden
 public class AnswerTemplateController implements AnswerTemplateControllerDocs {
 
     private final AnswerTemplateService answerTemplateService;

@@ -1,6 +1,5 @@
 package showroomz.api.seller.connection.controller;
 
-import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,7 +21,6 @@ import showroomz.global.error.exception.ErrorCode;
 @RestController
 @RequestMapping("/v1/seller/connections")
 @RequiredArgsConstructor
-@Hidden
 public class SellerConnectionController implements SellerConnectionControllerDocs {
 
     private final SellerConnectionService sellerConnectionService;

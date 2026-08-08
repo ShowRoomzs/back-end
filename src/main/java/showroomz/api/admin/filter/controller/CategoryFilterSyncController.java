@@ -1,5 +1,6 @@
 package showroomz.api.admin.filter.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,6 +16,7 @@ import showroomz.api.admin.filter.service.FilterService;
 @RestController
 @RequestMapping("/v1/admin/categories")
 @RequiredArgsConstructor
+@Hidden
 public class CategoryFilterSyncController implements AdminCategoryFilterSyncControllerDocs {
 
     private final FilterService filterService;

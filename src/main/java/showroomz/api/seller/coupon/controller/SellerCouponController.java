@@ -1,5 +1,6 @@
 package showroomz.api.seller.coupon.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,7 @@ import showroomz.global.error.exception.ErrorCode;
 @RestController
 @RequestMapping("/v1/seller/coupons")
 @RequiredArgsConstructor
+@Hidden
 public class SellerCouponController implements SellerCouponControllerDocs {
 
     private final SellerCouponService sellerCouponService;

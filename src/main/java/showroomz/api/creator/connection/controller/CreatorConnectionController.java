@@ -1,6 +1,5 @@
 package showroomz.api.creator.connection.controller;
 
-import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,7 +17,6 @@ import showroomz.global.error.exception.ErrorCode;
 @RestController
 @RequestMapping("/v1/creator/connections")
 @RequiredArgsConstructor
-@Hidden
 public class CreatorConnectionController implements CreatorConnectionControllerDocs {
 
     private final CreatorConnectionService creatorConnectionService;

@@ -1,6 +1,5 @@
 package showroomz.api.creator.thread.controller;
 
-import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,7 +25,6 @@ import showroomz.global.error.exception.ErrorCode;
 
 @RestController
 @RequiredArgsConstructor
-@Hidden
 public class CreatorThreadController implements CreatorThreadControllerDocs {
 
     private static final int DEFAULT_MESSAGE_PAGE_SIZE = 30;

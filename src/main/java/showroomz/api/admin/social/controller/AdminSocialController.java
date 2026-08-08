@@ -1,5 +1,6 @@
 package showroomz.api.admin.social.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/v1/admin/social")
 @RequiredArgsConstructor
+@Hidden
 public class AdminSocialController implements AdminSocialControllerDocs {
 
     private final SocialPolicyService socialPolicyService;
