@@ -11,6 +11,8 @@ import showroomz.domain.market.type.SnsType;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
 import showroomz.domain.member.user.entity.Users;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "CREATOR")
 @Getter
@@ -60,6 +62,12 @@ public class Creator extends BaseTimeEntity {
     @Column(name = "SHOWROOM_NAME", length = 100)
     private String showroomName;
 
+    @Column(name = "CONNECTION_CODE", length = 16, unique = true)
+    private String connectionCode;
+
+    @Column(name = "CONNECTION_CODE_ISSUED_AT")
+    private LocalDateTime connectionCodeIssuedAt;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "BUSINESS_TYPE", length = 30)
     private CreatorBusinessType businessType;
@@ -95,5 +103,11 @@ public class Creator extends BaseTimeEntity {
         this.accountNumber = accountNumber;
         this.bankbookImageUrl = bankbookImageUrl;
         this.isNewMember = false;
+    }
+
+    /** §13-6 — 연결코드는 쇼룸별 고정(영구) 발급, 인플루언서가 원하면 재발급 가능(값 자체는 애플리케이션에서 생성해 전달). */
+    public void reissueConnectionCode(String connectionCode) {
+        this.connectionCode = connectionCode;
+        this.connectionCodeIssuedAt = LocalDateTime.now();
     }
 }

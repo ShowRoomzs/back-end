@@ -14,4 +14,8 @@ public interface CreatorRepository extends JpaRepository<Creator, Long> {
     boolean existsByShowroomName(String showroomName);
 
     boolean existsByShowroomNameAndIdNot(String showroomName, Long id);
+
+    Optional<Creator> findByConnectionCode(String connectionCode);
+
+    boolean existsByConnectionCode(String connectionCode);
 }

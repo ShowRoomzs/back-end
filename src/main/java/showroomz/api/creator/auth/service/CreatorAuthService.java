@@ -28,6 +28,7 @@ import showroomz.domain.member.user.entity.Users;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.ClientUtils;
+import showroomz.global.utils.ConnectionCodeGenerator;
 
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -104,6 +105,8 @@ public class CreatorAuthService {
                 request.getAccountNumber(),
                 request.getBankBookImageUrl()
         );
+        // §13-6 — 연결코드는 등록 완료 시 쇼룸별로 고정 발급된다(재발급은 §14-1 연결·소통 영역에서 별도 처리).
+        creator.reissueConnectionCode(ConnectionCodeGenerator.generateUnique(creatorRepository::existsByConnectionCode));
 
         return authService.generateTokens(
                 user.getUsername(),

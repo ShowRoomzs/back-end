@@ -161,7 +161,18 @@ public enum ErrorCode {
    PRODUCT_ANNOUNCEMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT_ANNOUNCEMENT_NOT_FOUND", "상품 공지사항을 찾을 수 없습니다."),
    PRODUCT_ANNOUNCEMENT_TARGET_REQUIRED(HttpStatus.BAD_REQUEST, "PRODUCT_ANNOUNCEMENT_TARGET_REQUIRED", "지정 노출(SPECIFIC)인 경우 대상 상품 ID가 1개 이상 필요합니다."),
    PRODUCT_ANNOUNCEMENT_TARGET_NOT_ALLOWED_FOR_ALL(HttpStatus.BAD_REQUEST, "PRODUCT_ANNOUNCEMENT_TARGET_NOT_ALLOWED_FOR_ALL", "전체 노출(ALL)인 경우 대상 상품 ID를 지정할 수 없습니다."),
-   PRODUCT_NOT_FOUND_FOR_ANNOUNCEMENT(HttpStatus.BAD_REQUEST, "PRODUCT_NOT_FOUND_FOR_ANNOUNCEMENT", "존재하지 않는 상품 ID가 포함되어 있습니다.");
+   PRODUCT_NOT_FOUND_FOR_ANNOUNCEMENT(HttpStatus.BAD_REQUEST, "PRODUCT_NOT_FOUND_FOR_ANNOUNCEMENT", "존재하지 않는 상품 ID가 포함되어 있습니다."),
+
+    /* * 17. 연결·소통 (Connection)
+     */
+    CONNECTION_ALREADY_EXISTS(HttpStatus.CONFLICT, "CONNECTION_ALREADY_EXISTS", "이미 연결되었거나 요청중인 상대입니다."),
+    CONNECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "CONNECTION_NOT_FOUND", "존재하지 않는 연결 요청입니다."),
+    CONNECTION_CODE_INVALID(HttpStatus.BAD_REQUEST, "CONNECTION_CODE_INVALID", "연결코드는 영문 대문자와 숫자로만 입력할 수 있습니다."),
+    CONNECTION_INVALID_STATUS(HttpStatus.CONFLICT, "CONNECTION_INVALID_STATUS", "처리할 수 없는 연결 상태입니다."),
+    CONNECTION_ACCESS_DENIED(HttpStatus.FORBIDDEN, "CONNECTION_ACCESS_DENIED", "해당 연결 요청에 대한 권한이 없습니다."),
+    CONNECTION_TARGET_REQUIRED(HttpStatus.BAD_REQUEST, "CONNECTION_TARGET_REQUIRED", "creatorId 또는 connectionCode 중 하나는 필수입니다."),
+    CONNECTION_TARGET_AMBIGUOUS(HttpStatus.BAD_REQUEST, "CONNECTION_TARGET_AMBIGUOUS", "creatorId와 connectionCode는 동시에 지정할 수 없습니다."),
+    CONNECTION_TARGET_NOT_CONNECTABLE(HttpStatus.BAD_REQUEST, "CONNECTION_TARGET_NOT_CONNECTABLE", "연결할 수 없는 상대입니다.");
     private final HttpStatus status;
     private final String code;
     private final String message;
