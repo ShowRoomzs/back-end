@@ -161,13 +161,24 @@ public class MessageThreadService {
         threadParticipantRepository.save(participant);
     }
 
-    public long countUnread(MessageThread thread, ParticipantType participantType, Long participantId) {
-        return threadParticipantRepository
-                .findByThreadAndParticipantTypeAndParticipantId(thread, participantType, participantId)
-                .map(p -> p.getLastReadMessageId() == null
-                        ? messageRepository.countByThread(thread)
-                        : messageRepository.countByThreadAndIdGreaterThan(thread, p.getLastReadMessageId()))
-                .orElseGet(() -> messageRepository.countByThread(thread));
+    /**
+     * 여러 스레드의 안 읽은 수를 한 쿼리로 집계한다(threadId → count). 결과에 없는 스레드는 0으로 본다.
+     * 스레드당 개별 카운트를 돌면 배지 폴링(§0)·목록 조회 비용이 스레드 수에 비례해 늘어난다.
+     */
+    public Map<Long, Long> countUnreadByThreadIds(List<Long> threadIds, ParticipantType participantType,
+                                                   Long participantId) {
+        if (threadIds.isEmpty()) {
+            return Map.of();
+        }
+        return messageRepository.countUnreadByThreadIds(threadIds, participantType, participantId).stream()
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
+    }
+
+    /** 배지 합계 — countUnreadByThreadIds와 같은 한 쿼리를 쓰고 값만 합친다. */
+    public long sumUnread(List<Long> threadIds, ParticipantType participantType, Long participantId) {
+        return countUnreadByThreadIds(threadIds, participantType, participantId).values().stream()
+                .mapToLong(Long::longValue)
+                .sum();
     }
 
     /** §13-11 — 텍스트 없이 첨부만 보낸 경우, 목록 미리보기는 첨부 종류 기반 대체 문구를 쓴다. */

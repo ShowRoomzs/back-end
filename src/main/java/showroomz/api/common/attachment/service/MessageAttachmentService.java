@@ -2,6 +2,7 @@ package showroomz.api.common.attachment.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.common.attachment.dto.AttachmentSummary;
@@ -10,6 +11,7 @@ import showroomz.api.common.attachment.dto.PresignResponse;
 import showroomz.domain.message.entity.MessageAttachment;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.repository.MessageAttachmentRepository;
+import showroomz.domain.message.type.AttachmentStatus;
 import showroomz.domain.message.type.AttachmentType;
 import showroomz.domain.message.type.ParticipantType;
 import showroomz.global.config.properties.S3Properties;
@@ -29,6 +31,8 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -139,15 +143,57 @@ public class MessageAttachmentService {
         return presigned.url().toString();
     }
 
+    /**
+     * §4-6 고아 정리 — 한 청크를 처리하고 다음 커서를 돌려준다. 스케줄러가 이 메서드를 반복 호출한다.
+     *
+     * <p><b>S3 객체를 먼저 지우고 성공했을 때만 행을 지운다.</b> 순서를 뒤집거나 실패해도 행을 지우면
+     * S3 고아가 영구히 남아, 정확히 이 스케줄러가 존재하는 이유가 사라진다. 실패한 행은 그대로 두고
+     * 다음 회차에 다시 시도한다.
+     *
+     * <p>청크마다 트랜잭션을 끊기 위해 스케줄러가 아니라 이 빈에 둔다 — 스케줄러 안에서 자기 자신을
+     * 호출하면 프록시를 타지 않아 @Transactional이 걸리지 않는다.
+     */
+    @Transactional
+    public PurgeChunk purgeOrphanChunk(AttachmentStatus status, LocalDateTime threshold,
+                                        Long afterId, int chunkSize) {
+        List<MessageAttachment> candidates = attachmentRepository.findOrphanCandidates(
+                status, threshold, afterId, Pageable.ofSize(chunkSize));
+        if (candidates.isEmpty()) {
+            return new PurgeChunk(0, 0, afterId);
+        }
+
+        int deleted = 0;
+        for (MessageAttachment attachment : candidates) {
+            if (!deleteObject(attachment.getS3Key())) {
+                continue;
+            }
+            attachmentRepository.delete(attachment);
+            deleted++;
+        }
+        Long lastId = candidates.get(candidates.size() - 1).getId();
+        return new PurgeChunk(candidates.size(), deleted, lastId);
+    }
+
+    /** scanned가 chunkSize보다 작으면 마지막 청크다. lastId는 다음 호출의 커서. */
+    public record PurgeChunk(int scanned, int deleted, Long lastId) {
+    }
+
     private void deleteObjectSafely(String key) {
+        // 삭제 실패해도 응답 자체를 막지 않는다 — 고아 정리 스케줄러(§4-6)가 최종적으로 정리한다.
+        deleteObject(key);
+    }
+
+    /** 삭제 성공 여부를 반환한다 — 정리 스케줄러는 실패 시 행을 남겨야 하므로 결과를 알아야 한다. */
+    private boolean deleteObject(String key) {
         try {
             s3Client.deleteObject(DeleteObjectRequest.builder()
                     .bucket(s3Properties.getBucket())
                     .key(key)
                     .build());
+            return true;
         } catch (Exception e) {
-            // 삭제 실패해도 응답 자체를 막지 않는다 — 고아 정리 스케줄러(§4-6, Phase 5)가 최종적으로 정리한다.
-            log.warn("REJECTED 첨부 객체 삭제 실패 - key: {}", key, e);
+            log.warn("첨부 객체 삭제 실패 - key: {}", key, e);
+            return false;
         }
     }
 

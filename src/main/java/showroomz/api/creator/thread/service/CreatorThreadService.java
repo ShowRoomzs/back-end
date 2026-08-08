@@ -2,7 +2,6 @@ package showroomz.api.creator.thread.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.user.repository.UserRepository;
@@ -56,24 +55,26 @@ public class CreatorThreadService {
     private final MessageAttachmentRepository messageAttachmentRepository;
     private final MessageAttachmentService messageAttachmentService;
 
-    /** §14-3 `연결됨` 탭. */
+    /** §14-3 `연결됨` 탭. 안 읽은 수는 페이지 전체를 한 쿼리로 집계한다(스레드당 카운트 금지). */
     public PageResponse<ThreadListItem> getThreads(String creatorEmail, PagingRequest pagingRequest) {
         Creator creator = getMyCreator(creatorEmail);
-        Page<ThreadListItem> page = messageThreadRepository
-                .findOpenThreadsForCreator(creator, ThreadStatus.OPEN, pagingRequest.toPageable())
-                .map(thread -> toListItem(thread, creator));
-        return PageResponse.of(page);
+        Page<MessageThread> threads = messageThreadRepository
+                .findOpenThreadsForCreator(creator, ThreadStatus.OPEN, pagingRequest.toPageable());
+
+        Map<Long, Long> unreadByThread = messageThreadService.countUnreadByThreadIds(
+                threads.getContent().stream().map(MessageThread::getId).toList(),
+                ParticipantType.CREATOR, creator.getId());
+
+        return PageResponse.of(threads.map(thread -> toListItem(thread, unreadByThread)));
     }
 
+    /** 탭 배지용 — 폴링 대상(§0)이라 스레드 수와 무관하게 쿼리 3회로 고정한다. */
     public ThreadSummaryResponse getSummary(String creatorEmail) {
         Creator creator = getMyCreator(creatorEmail);
-        List<MessageThread> threads = messageThreadRepository
-                .findOpenThreadsForCreator(creator, ThreadStatus.OPEN, Pageable.unpaged())
-                .getContent();
+        List<Long> threadIds = messageThreadRepository
+                .findOpenThreadIdsForCreator(creator, ThreadStatus.OPEN);
 
-        long unread = threads.stream()
-                .mapToLong(t -> messageThreadService.countUnread(t, ParticipantType.CREATOR, creator.getId()))
-                .sum();
+        long unread = messageThreadService.sumUnread(threadIds, ParticipantType.CREATOR, creator.getId());
         long pendingRequests = connectionRepository.countByTypeAndCreatorAndStatus(
                 ConnectionType.PAIR, creator, ConnectionStatus.REQUESTED);
         return new ThreadSummaryResponse(unread, pendingRequests);
@@ -153,11 +154,11 @@ public class CreatorThreadService {
                                         .toList())));
     }
 
-    private ThreadListItem toListItem(MessageThread thread, Creator creator) {
+    private ThreadListItem toListItem(MessageThread thread, Map<Long, Long> unreadByThread) {
         Connection connection = thread.getConnection();
         boolean isOperator = connection.getType() == ConnectionType.OPERATOR_CREATOR;
         String name = isOperator ? OPERATOR_CHANNEL_NAME : connection.getMarket().getMarketName();
-        long unread = messageThreadService.countUnread(thread, ParticipantType.CREATOR, creator.getId());
+        long unread = unreadByThread.getOrDefault(thread.getId(), 0L);
 
         // 계약 도메인은 이번 스코프 밖 — hasContract는 항상 false로 스텁(§3-2, 계약 작업 시 연결).
         return new ThreadListItem(

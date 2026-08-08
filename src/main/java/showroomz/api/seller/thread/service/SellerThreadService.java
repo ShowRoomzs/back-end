@@ -2,7 +2,6 @@ package showroomz.api.seller.thread.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.common.attachment.dto.AttachmentSummary;
@@ -53,25 +52,26 @@ public class SellerThreadService {
     private final MessageAttachmentRepository messageAttachmentRepository;
     private final MessageAttachmentService messageAttachmentService;
 
-    /** §13-1 좌측 목록. */
+    /** §13-1 좌측 목록. 안 읽은 수는 페이지 전체를 한 쿼리로 집계한다(스레드당 카운트 금지). */
     public PageResponse<ThreadListItem> getThreads(String sellerEmail, PagingRequest pagingRequest) {
         Market market = getMyMarket(sellerEmail);
-        Page<ThreadListItem> page = messageThreadRepository
-                .findOpenThreadsForMarket(market, ThreadStatus.OPEN, pagingRequest.toPageable())
-                .map(thread -> toListItem(thread, market));
-        return PageResponse.of(page);
+        Page<MessageThread> threads = messageThreadRepository
+                .findOpenThreadsForMarket(market, ThreadStatus.OPEN, pagingRequest.toPageable());
+
+        Map<Long, Long> unreadByThread = messageThreadService.countUnreadByThreadIds(
+                threads.getContent().stream().map(MessageThread::getId).toList(),
+                ParticipantType.SELLER, market.getId());
+
+        return PageResponse.of(threads.map(thread -> toListItem(thread, unreadByThread)));
     }
 
-    /** GNB 배지용 — 폴링 대상. */
+    /** GNB 배지용 — 폴링 대상(§0)이라 스레드 수와 무관하게 쿼리 2회로 고정한다. */
     public ThreadSummaryResponse getSummary(String sellerEmail) {
         Market market = getMyMarket(sellerEmail);
-        List<MessageThread> threads = messageThreadRepository
-                .findOpenThreadsForMarket(market, ThreadStatus.OPEN, Pageable.unpaged())
-                .getContent();
+        List<Long> threadIds = messageThreadRepository
+                .findOpenThreadIdsForMarket(market, ThreadStatus.OPEN);
 
-        long total = threads.stream()
-                .mapToLong(t -> messageThreadService.countUnread(t, ParticipantType.SELLER, market.getId()))
-                .sum();
+        long total = messageThreadService.sumUnread(threadIds, ParticipantType.SELLER, market.getId());
         return new ThreadSummaryResponse(total);
     }
 
@@ -150,11 +150,11 @@ public class SellerThreadService {
                                         .toList())));
     }
 
-    private ThreadListItem toListItem(MessageThread thread, Market market) {
+    private ThreadListItem toListItem(MessageThread thread, Map<Long, Long> unreadByThread) {
         Connection connection = thread.getConnection();
         boolean isOperator = connection.getType() == ConnectionType.OPERATOR_MARKET;
         String name = isOperator ? OPERATOR_CHANNEL_NAME : connection.getCreator().getShowroomName();
-        long unread = messageThreadService.countUnread(thread, ParticipantType.SELLER, market.getId());
+        long unread = unreadByThread.getOrDefault(thread.getId(), 0L);
 
         return new ThreadListItem(
                 thread.getId(), name, null, isOperator, connection.getStatus(),

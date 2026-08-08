@@ -13,6 +13,7 @@ import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.type.ThreadStatus;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -37,4 +38,18 @@ public interface MessageThreadRepository extends JpaRepository<MessageThread, Lo
     Page<MessageThread> findOpenThreadsForCreator(@Param("creator") Creator creator,
                                                    @Param("status") ThreadStatus status,
                                                    Pageable pageable);
+
+    /**
+     * 배지 집계 전용 — 스레드 엔티티를 통째로 로드하지 않고 id만 가져온다. 목록과 달리 배지는
+     * 정렬·표시 정보가 전혀 필요 없고, 30~60초 폴링(§0) 대상이라 로딩 비용을 줄일 값어치가 있다.
+     */
+    @Query("SELECT t.id FROM MessageThread t JOIN t.connection c " +
+           "WHERE t.status = :status AND c.market = :market")
+    List<Long> findOpenThreadIdsForMarket(@Param("market") Market market,
+                                           @Param("status") ThreadStatus status);
+
+    @Query("SELECT t.id FROM MessageThread t JOIN t.connection c " +
+           "WHERE t.status = :status AND c.creator = :creator")
+    List<Long> findOpenThreadIdsForCreator(@Param("creator") Creator creator,
+                                            @Param("status") ThreadStatus status);
 }
