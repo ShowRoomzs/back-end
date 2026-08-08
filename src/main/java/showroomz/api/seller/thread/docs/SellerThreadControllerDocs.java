@@ -3,6 +3,7 @@ package showroomz.api.seller.thread.docs;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -36,9 +37,67 @@ public interface SellerThreadControllerDocs {
                     "별도의 휴면 화면은 존재하지 않는다.\n\n**권한:** SELLER"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
-            @ApiResponse(responseCode = "401", description = "인증 실패",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PageResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"content\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"threadId\": 1,\n" +
+                                                    "      \"counterpartName\": \"SHOWROOMZ 운영팀\",\n" +
+                                                    "      \"counterpartImageUrl\": null,\n" +
+                                                    "      \"operatorChannel\": true,\n" +
+                                                    "      \"connectionStatus\": \"CONNECTED\",\n" +
+                                                    "      \"lastMessagePreview\": \"입점 승인되었습니다. 궁금한 점이 있으면 말씀해주세요.\",\n" +
+                                                    "      \"lastMessageAt\": \"2026-08-01T10:00:00\",\n" +
+                                                    "      \"unreadCount\": 0\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"threadId\": 55,\n" +
+                                                    "      \"counterpartName\": \"민지의 쇼룸\",\n" +
+                                                    "      \"counterpartImageUrl\": \"https://s3.ap-northeast-2.amazonaws.com/bucket/creator/12.jpg\",\n" +
+                                                    "      \"operatorChannel\": false,\n" +
+                                                    "      \"connectionStatus\": \"CONNECTED\",\n" +
+                                                    "      \"lastMessagePreview\": \"촬영본 보내드렸습니다\",\n" +
+                                                    "      \"lastMessageAt\": \"2026-08-08T14:22:10\",\n" +
+                                                    "      \"unreadCount\": 3\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"pageInfo\": {\n" +
+                                                    "    \"currentPage\": 1,\n" +
+                                                    "    \"totalPages\": 1,\n" +
+                                                    "    \"totalResults\": 2,\n" +
+                                                    "    \"limit\": 20,\n" +
+                                                    "    \"hasNext\": false\n" +
+                                                    "  }\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
     })
     ResponseEntity<PageResponse<ThreadListItem>> getThreads(@ModelAttribute PagingRequest pagingRequest);
 
@@ -47,9 +106,39 @@ public interface SellerThreadControllerDocs {
             description = "폴링 대상 경량 엔드포인트(§0). 실시간 알림 없이 이 값을 주기적으로 재조회해 배지를 갱신한다.\n\n**권한:** SELLER"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
-            @ApiResponse(responseCode = "401", description = "인증 실패",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ThreadSummaryResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"unreadCount\": 5\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
     })
     ResponseEntity<ThreadSummaryResponse> getSummary();
 
@@ -59,18 +148,109 @@ public interface SellerThreadControllerDocs {
                     "nextCursor를 그대로 넘긴다.\n\n**권한:** SELLER(본인 마켓 스레드만)"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
-            @ApiResponse(responseCode = "401", description = "인증 실패",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "본인 스레드가 아님",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "존재하지 않는 스레드",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = MessageListResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "성공 예시",
+                                            value = "{\n" +
+                                                    "  \"content\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"messageId\": 1001,\n" +
+                                                    "      \"senderType\": \"SELLER\",\n" +
+                                                    "      \"mine\": true,\n" +
+                                                    "      \"content\": \"촬영본 보내드렸습니다\",\n" +
+                                                    "      \"attachments\": [\n" +
+                                                    "        {\n" +
+                                                    "          \"attachmentId\": 501,\n" +
+                                                    "          \"status\": \"UPLOADED\",\n" +
+                                                    "          \"attachmentType\": \"VIDEO\",\n" +
+                                                    "          \"fileUrl\": \"https://cdn.example.com/uploads/message/55/uuid.mp4\",\n" +
+                                                    "          \"originalName\": \"촬영본.mp4\",\n" +
+                                                    "          \"extension\": \"mp4\",\n" +
+                                                    "          \"sizeBytes\": 31457280,\n" +
+                                                    "          \"durationSeconds\": 58,\n" +
+                                                    "          \"sortOrder\": 0\n" +
+                                                    "        }\n" +
+                                                    "      ],\n" +
+                                                    "      \"createdAt\": \"2026-08-08T14:22:10\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"messageId\": 1000,\n" +
+                                                    "      \"senderType\": \"CREATOR\",\n" +
+                                                    "      \"mine\": false,\n" +
+                                                    "      \"content\": \"네, 확인했습니다\",\n" +
+                                                    "      \"attachments\": [],\n" +
+                                                    "      \"createdAt\": \"2026-08-08T13:10:00\"\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"nextCursor\": 998,\n" +
+                                                    "  \"hasNext\": true\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "본인 스레드가 아님",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "권한 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"THREAD_ACCESS_DENIED\",\n" +
+                                                    "  \"message\": \"해당 스레드에 대한 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "존재하지 않는 스레드",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "스레드 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"THREAD_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 스레드입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
     })
     ResponseEntity<MessageListResponse> getMessages(
-            @Parameter(description = "스레드 ID", required = true) @PathVariable("threadId") Long threadId,
-            @Parameter(description = "커서(직전 응답의 nextCursor)") @RequestParam(value = "cursor", required = false) Long cursor,
-            @Parameter(description = "페이지 크기(기본 30)") @RequestParam(value = "size", required = false) Integer size
+            @Parameter(description = "스레드 ID", required = true, example = "55") @PathVariable("threadId") Long threadId,
+            @Parameter(description = "커서(직전 응답의 nextCursor)", example = "998") @RequestParam(value = "cursor", required = false) Long cursor,
+            @Parameter(description = "페이지 크기(기본 30)", example = "30") @RequestParam(value = "size", required = false) Integer size
     );
 
     @Operation(
@@ -80,21 +260,181 @@ public interface SellerThreadControllerDocs {
                     "**권한:** SELLER(본인 마켓 스레드만, 휴면 스레드는 작성 불가)"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "신규 전송 성공"),
-            @ApiResponse(responseCode = "200", description = "멱등 재전송 — 기존 메시지 반환"),
-            @ApiResponse(responseCode = "400", description = "content와 attachmentIds가 모두 비어 있음(MESSAGE_EMPTY) 등",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "401", description = "인증 실패",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "본인 스레드가 아님",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "존재하지 않는 스레드",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "409", description = "휴면 스레드에 전송 시도(THREAD_DORMANT)",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "신규 전송 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = MessageItem.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "신규 전송",
+                                            value = "{\n" +
+                                                    "  \"messageId\": 1001,\n" +
+                                                    "  \"senderType\": \"SELLER\",\n" +
+                                                    "  \"mine\": true,\n" +
+                                                    "  \"content\": \"촬영본 보내드렸습니다\",\n" +
+                                                    "  \"attachments\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"attachmentId\": 501,\n" +
+                                                    "      \"status\": \"UPLOADED\",\n" +
+                                                    "      \"attachmentType\": \"VIDEO\",\n" +
+                                                    "      \"fileUrl\": \"https://cdn.example.com/uploads/message/55/uuid.mp4\",\n" +
+                                                    "      \"originalName\": \"촬영본.mp4\",\n" +
+                                                    "      \"extension\": \"mp4\",\n" +
+                                                    "      \"sizeBytes\": 31457280,\n" +
+                                                    "      \"durationSeconds\": 58,\n" +
+                                                    "      \"sortOrder\": 0\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"createdAt\": \"2026-08-08T14:22:10\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "멱등 재전송 — 기존 메시지 반환",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = MessageItem.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "멱등 재전송",
+                                            value = "{\n" +
+                                                    "  \"messageId\": 1001,\n" +
+                                                    "  \"senderType\": \"SELLER\",\n" +
+                                                    "  \"mine\": true,\n" +
+                                                    "  \"content\": \"촬영본 보내드렸습니다\",\n" +
+                                                    "  \"attachments\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"attachmentId\": 501,\n" +
+                                                    "      \"status\": \"UPLOADED\",\n" +
+                                                    "      \"attachmentType\": \"VIDEO\",\n" +
+                                                    "      \"fileUrl\": \"https://cdn.example.com/uploads/message/55/uuid.mp4\",\n" +
+                                                    "      \"originalName\": \"촬영본.mp4\",\n" +
+                                                    "      \"extension\": \"mp4\",\n" +
+                                                    "      \"sizeBytes\": 31457280,\n" +
+                                                    "      \"durationSeconds\": 58,\n" +
+                                                    "      \"sortOrder\": 0\n" +
+                                                    "    }\n" +
+                                                    "  ],\n" +
+                                                    "  \"createdAt\": \"2026-08-08T14:22:10\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "content와 attachmentIds가 모두 비어 있음(MESSAGE_EMPTY) 등",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "빈 메시지",
+                                            value = "{\n" +
+                                                    "  \"code\": \"MESSAGE_EMPTY\",\n" +
+                                                    "  \"message\": \"메시지 내용 또는 첨부 중 하나는 필요합니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "첨부 개수 초과",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ATTACHMENT_COUNT_EXCEEDED\",\n" +
+                                                    "  \"message\": \"첨부는 메시지 1건당 최대 20개까지 가능합니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "첨부 용량 초과",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ATTACHMENT_SIZE_EXCEEDED\",\n" +
+                                                    "  \"message\": \"첨부 총 용량은 메시지 1건당 500MB를 초과할 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "본인 스레드가 아님",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "권한 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"THREAD_ACCESS_DENIED\",\n" +
+                                                    "  \"message\": \"해당 스레드에 대한 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "존재하지 않는 스레드",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "스레드 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"THREAD_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 스레드입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "휴면 스레드에 전송 시도(THREAD_DORMANT) 또는 이미 다른 메시지에 연결된 첨부",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "휴면 스레드",
+                                            value = "{\n" +
+                                                    "  \"code\": \"THREAD_DORMANT\",\n" +
+                                                    "  \"message\": \"연결이 해제된 스레드입니다. 열람만 가능합니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "첨부 이미 연결됨",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ATTACHMENT_ALREADY_ATTACHED\",\n" +
+                                                    "  \"message\": \"이미 다른 메시지에 연결된 첨부입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
     })
     ResponseEntity<MessageItem> sendMessage(
-            @Parameter(description = "스레드 ID", required = true) @PathVariable("threadId") Long threadId,
+            @Parameter(description = "스레드 ID", required = true, example = "55") @PathVariable("threadId") Long threadId,
             @Valid @RequestBody SendMessageRequest request
     );
 
@@ -103,16 +443,61 @@ public interface SellerThreadControllerDocs {
             description = "현재 스레드의 마지막 메시지까지 읽음으로 표시한다.\n\n**권한:** SELLER(본인 마켓 스레드만)"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "처리 성공"),
-            @ApiResponse(responseCode = "401", description = "인증 실패",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "본인 스레드가 아님",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "존재하지 않는 스레드",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+            @ApiResponse(responseCode = "204", description = "처리 성공 (본문 없음)"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "본인 스레드가 아님",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "권한 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"THREAD_ACCESS_DENIED\",\n" +
+                                                    "  \"message\": \"해당 스레드에 대한 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "존재하지 않는 스레드",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "스레드 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"THREAD_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 스레드입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
     })
     ResponseEntity<Void> markRead(
-            @Parameter(description = "스레드 ID", required = true) @PathVariable("threadId") Long threadId
+            @Parameter(description = "스레드 ID", required = true, example = "55") @PathVariable("threadId") Long threadId
     );
 
     @Operation(
@@ -123,18 +508,103 @@ public interface SellerThreadControllerDocs {
                     "**권한:** SELLER(본인 마켓 스레드만)"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "발급 성공"),
-            @ApiResponse(responseCode = "400", description = "허용되지 않는 확장자 또는 500MB 초과 단일 파일",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "401", description = "인증 실패",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "본인 스레드가 아님",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "존재하지 않는 스레드",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "발급 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PresignResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "발급 성공",
+                                            value = "{\n" +
+                                                    "  \"attachmentId\": 501,\n" +
+                                                    "  \"uploadUrl\": \"https://bucket.s3.ap-northeast-2.amazonaws.com/uploads/message/55/uuid.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=900&...\",\n" +
+                                                    "  \"requiredContentType\": \"video/mp4\",\n" +
+                                                    "  \"expiresInSeconds\": 900\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "허용되지 않는 확장자 또는 500MB 초과 단일 파일",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "확장자 미허용",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ATTACHMENT_EXTENSION_NOT_ALLOWED\",\n" +
+                                                    "  \"message\": \"허용되지 않는 파일 형식입니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "용량 초과",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ATTACHMENT_SIZE_EXCEEDED\",\n" +
+                                                    "  \"message\": \"첨부 총 용량은 메시지 1건당 500MB를 초과할 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "본인 스레드가 아님",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "권한 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"THREAD_ACCESS_DENIED\",\n" +
+                                                    "  \"message\": \"해당 스레드에 대한 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "존재하지 않는 스레드",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "스레드 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"THREAD_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 스레드입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
     })
     ResponseEntity<PresignResponse> createPresignedUpload(
-            @Parameter(description = "스레드 ID", required = true) @PathVariable("threadId") Long threadId,
+            @Parameter(description = "스레드 ID", required = true, example = "55") @PathVariable("threadId") Long threadId,
             @Valid @RequestBody PresignRequest request
     );
 
@@ -146,16 +616,98 @@ public interface SellerThreadControllerDocs {
                     "응답의 status 필드로 성공/거부를 판정해야 한다.\n\n**권한:** SELLER(본인이 올린 첨부만)"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "검증 완료 — status로 UPLOADED/REJECTED 판정"),
-            @ApiResponse(responseCode = "400", description = "S3에 아직 업로드되지 않음(ATTACHMENT_NOT_UPLOADED)",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "401", description = "인증 실패",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "본인이 올린 첨부가 아님",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "검증 완료 — status로 UPLOADED/REJECTED 판정",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AttachmentSummary.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "업로드 완료",
+                                            value = "{\n" +
+                                                    "  \"attachmentId\": 501,\n" +
+                                                    "  \"status\": \"UPLOADED\",\n" +
+                                                    "  \"attachmentType\": \"VIDEO\",\n" +
+                                                    "  \"fileUrl\": \"https://cdn.example.com/uploads/message/55/uuid.mp4\",\n" +
+                                                    "  \"originalName\": \"촬영본.mp4\",\n" +
+                                                    "  \"extension\": \"mp4\",\n" +
+                                                    "  \"sizeBytes\": 31457280,\n" +
+                                                    "  \"durationSeconds\": 58,\n" +
+                                                    "  \"sortOrder\": null\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "검증 거부",
+                                            value = "{\n" +
+                                                    "  \"attachmentId\": 501,\n" +
+                                                    "  \"status\": \"REJECTED\",\n" +
+                                                    "  \"attachmentType\": \"VIDEO\",\n" +
+                                                    "  \"fileUrl\": null,\n" +
+                                                    "  \"originalName\": \"촬영본.mp4\",\n" +
+                                                    "  \"extension\": \"mp4\",\n" +
+                                                    "  \"sizeBytes\": 31457280,\n" +
+                                                    "  \"durationSeconds\": null,\n" +
+                                                    "  \"sortOrder\": null\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "S3에 아직 업로드되지 않음(ATTACHMENT_NOT_UPLOADED)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "업로드 미완료",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ATTACHMENT_NOT_UPLOADED\",\n" +
+                                                    "  \"message\": \"업로드가 완료되지 않은 첨부입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "본인이 올린 첨부가 아님",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "권한 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ATTACHMENT_ACCESS_DENIED\",\n" +
+                                                    "  \"message\": \"해당 첨부에 대한 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
     })
     ResponseEntity<AttachmentSummary> completeUpload(
-            @Parameter(description = "첨부 ID", required = true) @PathVariable("attachmentId") Long attachmentId,
+            @Parameter(description = "첨부 ID", required = true, example = "501") @PathVariable("attachmentId") Long attachmentId,
             @Valid @RequestBody(required = false) CompleteAttachmentRequest request
     );
 }

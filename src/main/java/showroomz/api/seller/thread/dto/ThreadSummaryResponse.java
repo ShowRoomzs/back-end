@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 public class ThreadSummaryResponse {
 
-    @Schema(description = "전체 스레드 안 읽은 수 합계 — GNB 배지용(폴링 대상)")
+    @Schema(description = "전체 스레드 안 읽은 수 합계 — GNB 배지용(폴링 대상)", example = "5")
     private final long unreadCount;
 
     public ThreadSummaryResponse(long unreadCount) {

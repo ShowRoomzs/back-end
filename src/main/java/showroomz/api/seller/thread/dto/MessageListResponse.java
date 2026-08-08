@@ -11,10 +11,11 @@ public class MessageListResponse {
     @Schema(description = "메시지 목록 — 최신순")
     private final List<MessageItem> content;
 
-    @Schema(description = "다음 페이지 조회에 쓸 cursor(마지막 항목의 messageId) — hasNext=false면 null")
+    @Schema(description = "다음 페이지 조회에 쓸 cursor(마지막 항목의 messageId) — hasNext=false면 null",
+            example = "998", nullable = true)
     private final Long nextCursor;
 
-    @Schema(description = "다음 페이지 존재 여부")
+    @Schema(description = "다음 페이지 존재 여부", example = "true")
     private final boolean hasNext;
 
     public MessageListResponse(List<MessageItem> content, Long nextCursor, boolean hasNext) {
