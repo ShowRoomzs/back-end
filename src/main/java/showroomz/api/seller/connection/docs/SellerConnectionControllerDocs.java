@@ -28,7 +28,8 @@ public interface SellerConnectionControllerDocs {
             summary = "쇼룸명 검색",
             description = "탐색·추천 없이 쇼룸명 부분 일치로만 인플루언서를 찾는다(§13-6).\n\n" +
                     "**권한:** SELLER\n\n" +
-                    "결과마다 현재 연결 상태(connectionStatus)를 함께 내려준다 — null이면 연결 이력 없음(요청 가능), " +
+                    "결과마다 팔로워 수(`followerCount`), 프로필 이미지 URL(`profileImageUrl`), " +
+                    "현재 연결 상태(`connectionStatus`)를 함께 내려준다 — null이면 연결 이력 없음(요청 가능), " +
                     "REQUESTED/CONNECTED면 화면에서 [요청] 버튼 대신 상태 배지로 대체해 중복 요청을 애초에 막는다."
     )
     @ApiResponses(value = {
@@ -46,16 +47,22 @@ public interface SellerConnectionControllerDocs {
                                                     "    {\n" +
                                                     "      \"creatorId\": 12,\n" +
                                                     "      \"showroomName\": \"민지의 쇼룸\",\n" +
+                                                    "      \"followerCount\": 12000,\n" +
+                                                    "      \"profileImageUrl\": \"https://cdn.example.com/profiles/12.png\",\n" +
                                                     "      \"connectionStatus\": null\n" +
                                                     "    },\n" +
                                                     "    {\n" +
                                                     "      \"creatorId\": 15,\n" +
                                                     "      \"showroomName\": \"민지픽\",\n" +
+                                                    "      \"followerCount\": 8000,\n" +
+                                                    "      \"profileImageUrl\": null,\n" +
                                                     "      \"connectionStatus\": \"REQUESTED\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
                                                     "      \"creatorId\": 21,\n" +
                                                     "      \"showroomName\": \"민지스타일\",\n" +
+                                                    "      \"followerCount\": 6400,\n" +
+                                                    "      \"profileImageUrl\": \"https://cdn.example.com/profiles/21.png\",\n" +
                                                     "      \"connectionStatus\": \"CONNECTED\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +

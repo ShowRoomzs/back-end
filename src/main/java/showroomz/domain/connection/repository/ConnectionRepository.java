@@ -32,7 +32,7 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
      * 탈퇴한 인플루언서는 검색 결과에서 제외한다.
      */
     @Query("SELECT new showroomz.api.seller.connection.dto.ConnectionCreatorSearchItem(" +
-           "cr.id, cr.showroomName, c.status) " +
+           "cr.id, cr.showroomName, cr.followerCount, cr.user.profileImageUrl, c.status) " +
            "FROM Creator cr " +
            "LEFT JOIN Connection c ON c.creator = cr AND c.type = showroomz.domain.connection.type.ConnectionType.PAIR " +
            "    AND c.market.id = :marketId " +
