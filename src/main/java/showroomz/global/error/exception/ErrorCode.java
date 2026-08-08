@@ -172,7 +172,20 @@ public enum ErrorCode {
     CONNECTION_ACCESS_DENIED(HttpStatus.FORBIDDEN, "CONNECTION_ACCESS_DENIED", "해당 연결 요청에 대한 권한이 없습니다."),
     CONNECTION_TARGET_REQUIRED(HttpStatus.BAD_REQUEST, "CONNECTION_TARGET_REQUIRED", "creatorId 또는 connectionCode 중 하나는 필수입니다."),
     CONNECTION_TARGET_AMBIGUOUS(HttpStatus.BAD_REQUEST, "CONNECTION_TARGET_AMBIGUOUS", "creatorId와 connectionCode는 동시에 지정할 수 없습니다."),
-    CONNECTION_TARGET_NOT_CONNECTABLE(HttpStatus.BAD_REQUEST, "CONNECTION_TARGET_NOT_CONNECTABLE", "연결할 수 없는 상대입니다.");
+    CONNECTION_TARGET_NOT_CONNECTABLE(HttpStatus.BAD_REQUEST, "CONNECTION_TARGET_NOT_CONNECTABLE", "연결할 수 없는 상대입니다."),
+
+    /* * 18. 소통 스레드 (Message)
+     */
+    THREAD_NOT_FOUND(HttpStatus.NOT_FOUND, "THREAD_NOT_FOUND", "존재하지 않는 스레드입니다."),
+    THREAD_ACCESS_DENIED(HttpStatus.FORBIDDEN, "THREAD_ACCESS_DENIED", "해당 스레드에 대한 권한이 없습니다."),
+    THREAD_DORMANT(HttpStatus.CONFLICT, "THREAD_DORMANT", "연결이 해제된 스레드입니다. 열람만 가능합니다."),
+    MESSAGE_EMPTY(HttpStatus.BAD_REQUEST, "MESSAGE_EMPTY", "메시지 내용 또는 첨부 중 하나는 필요합니다."),
+    ATTACHMENT_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "ATTACHMENT_COUNT_EXCEEDED", "첨부는 메시지 1건당 최대 20개까지 가능합니다."),
+    ATTACHMENT_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "ATTACHMENT_SIZE_EXCEEDED", "첨부 총 용량은 메시지 1건당 500MB를 초과할 수 없습니다."),
+    ATTACHMENT_EXTENSION_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "ATTACHMENT_EXTENSION_NOT_ALLOWED", "허용되지 않는 파일 형식입니다."),
+    ATTACHMENT_NOT_UPLOADED(HttpStatus.BAD_REQUEST, "ATTACHMENT_NOT_UPLOADED", "업로드가 완료되지 않은 첨부입니다."),
+    ATTACHMENT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ATTACHMENT_ACCESS_DENIED", "해당 첨부에 대한 권한이 없습니다."),
+    ATTACHMENT_ALREADY_ATTACHED(HttpStatus.CONFLICT, "ATTACHMENT_ALREADY_ATTACHED", "이미 다른 메시지에 연결된 첨부입니다.");
     private final HttpStatus status;
     private final String code;
     private final String message;

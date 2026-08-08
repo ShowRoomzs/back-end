@@ -14,6 +14,7 @@ import showroomz.domain.connection.type.ConnectionType;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.message.service.MessageThreadService;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
@@ -28,6 +29,7 @@ public class CreatorConnectionService {
     private final ConnectionRepository connectionRepository;
     private final UserRepository userRepository;
     private final CreatorRepository creatorRepository;
+    private final MessageThreadService messageThreadService;
 
     /** §14-3 요청함 탭 — 받은 연결 요청 목록(브랜드가 발신 주체, §13-6). */
     public PageResponse<ConnectionRequestItem> getRequests(String creatorEmail, PagingRequest pagingRequest) {
@@ -44,11 +46,12 @@ public class CreatorConnectionService {
         return PageResponse.of(page);
     }
 
-    /** §14-4 수락 — 연결됨으로 전이(스레드 활성화 훅은 §13-4 · 소통 도메인 구현 시 이 지점에 연결). */
+    /** §14-4 수락 — 연결됨으로 전이 + 스레드 활성화(신규 생성 또는 DORMANT→OPEN, §13-4). */
     @Transactional
     public void accept(String creatorEmail, Long connectionId) {
         Connection connection = getMyRequestedConnection(creatorEmail, connectionId);
         connection.markConnected();
+        messageThreadService.activateThread(connection);
     }
 
     /** §14-4 거절 — 해제(거절) 상태로 전이. */
