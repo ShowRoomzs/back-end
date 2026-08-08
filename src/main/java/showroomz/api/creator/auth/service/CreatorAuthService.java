@@ -18,6 +18,7 @@ import showroomz.api.creator.auth.DTO.CreatorRegistrationInfoResponse;
 import showroomz.api.creator.auth.DTO.ShowroomNameCheckResponse;
 import showroomz.domain.bank.entity.Bank;
 import showroomz.domain.bank.repository.BankRepository;
+import showroomz.domain.connection.service.OperatorChannelService;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.entity.CreatorApplication;
 import showroomz.domain.member.creator.repository.CreatorApplicationRepository;
@@ -51,6 +52,7 @@ public class CreatorAuthService {
     private final BankRepository bankRepository;
     private final AuthService authService;
     private final AuthTokenProvider tokenProvider;
+    private final OperatorChannelService operatorChannelService;
 
     @Transactional
     public TokenResponse socialLogin(HttpServletRequest request, SocialLoginRequest socialLoginRequest) {
@@ -107,6 +109,9 @@ public class CreatorAuthService {
         );
         // §13-6 — 연결코드는 등록 완료 시 쇼룸별로 고정 발급된다(재발급은 §14-1 연결·소통 영역에서 별도 처리).
         creator.reissueConnectionCode(ConnectionCodeGenerator.generateUnique(creatorRepository::existsByConnectionCode));
+
+        // §14-6 운영자 고정 채널 — 안내 문구가 쇼룸명을 쓰므로 승인 시점이 아니라 쇼룸명이 확정되는 이 시점에 연다.
+        operatorChannelService.ensureCreatorChannel(creator);
 
         return authService.generateTokens(
                 user.getUsername(),
