@@ -4,12 +4,17 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+import showroomz.domain.connection.entity.Connection;
+import showroomz.domain.market.entity.Market;
 import showroomz.domain.message.entity.Message;
 import showroomz.domain.message.entity.MessageAttachment;
 import showroomz.domain.message.entity.MessageThread;
+import showroomz.domain.message.entity.ThreadParticipant;
 import showroomz.domain.message.repository.MessageAttachmentRepository;
 import showroomz.domain.message.repository.MessageRepository;
 import showroomz.domain.message.repository.MessageThreadRepository;
@@ -81,6 +86,78 @@ class MessageThreadServiceTest {
 
     private void givenMessageSaved() {
         given(messageRepository.save(any(Message.class))).willAnswer(inv -> inv.getArgument(0));
+    }
+
+    @Nested
+    @DisplayName("스레드 활성화")
+    class ActivateThread {
+
+        @Test
+        @DisplayName("스레드가 없으면 CONNECTION에 묶인 OPEN 스레드를 새로 만든다 (§1-3)")
+        void createsNewThreadWhenMissing() {
+            Connection connection = Connection.createOperatorMarket(new Market());
+            given(messageThreadRepository.findByConnection(connection)).willReturn(Optional.empty());
+            given(messageThreadRepository.save(any(MessageThread.class))).willAnswer(inv -> {
+                MessageThread saved = inv.getArgument(0);
+                ReflectionTestUtils.setField(saved, "id", THREAD_ID);
+                return saved;
+            });
+
+            MessageThread result = messageThreadService.activateThread(connection);
+
+            assertThat(result.getId()).isEqualTo(THREAD_ID);
+            assertThat(result.getStatus()).isEqualTo(ThreadStatus.OPEN);
+            assertThat(result.getConnection()).isSameAs(connection);
+        }
+
+        @Test
+        @DisplayName("휴면 스레드가 있으면 같은 행을 다시 OPEN으로 연다 — 대화 기록을 보존하기 위해서다")
+        void reopensExistingDormantThread() {
+            Connection connection = Connection.createOperatorMarket(new Market());
+            MessageThread dormant = MessageThread.builder()
+                    .id(THREAD_ID).connection(connection).status(ThreadStatus.DORMANT).build();
+            given(messageThreadRepository.findByConnection(connection)).willReturn(Optional.of(dormant));
+
+            MessageThread result = messageThreadService.activateThread(connection);
+
+            assertThat(result).isSameAs(dormant);
+            assertThat(result.getStatus()).isEqualTo(ThreadStatus.OPEN);
+            verify(messageThreadRepository, never()).save(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("읽음 처리")
+    class MarkRead {
+
+        @Test
+        @DisplayName("메시지가 없으면 참가자 행을 만들지 않는다")
+        void noMessagesSkipsParticipant() {
+            given(messageRepository.findTopByThreadOrderByIdDesc(openThread)).willReturn(Optional.empty());
+
+            messageThreadService.markRead(openThread, ParticipantType.SELLER, MY_ID);
+
+            verify(threadParticipantRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("최신 메시지 id로 읽음 위치를 갱신한다")
+        void updatesLastReadMessageId() {
+            Message latest = Message.builder().id(42L).thread(openThread)
+                    .senderType(ParticipantType.CREATOR).senderId(1L)
+                    .clientMessageId("c").content("hi").build();
+            given(messageRepository.findTopByThreadOrderByIdDesc(openThread)).willReturn(Optional.of(latest));
+            given(threadParticipantRepository.findByThreadAndParticipantTypeAndParticipantId(
+                    openThread, ParticipantType.SELLER, MY_ID))
+                    .willReturn(Optional.empty());
+            given(threadParticipantRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+
+            messageThreadService.markRead(openThread, ParticipantType.SELLER, MY_ID);
+
+            ArgumentCaptor<ThreadParticipant> saved = ArgumentCaptor.forClass(ThreadParticipant.class);
+            verify(threadParticipantRepository).save(saved.capture());
+            assertThat(saved.getValue().getLastReadMessageId()).isEqualTo(42L);
+        }
     }
 
     @Nested
@@ -239,6 +316,21 @@ class MessageThreadServiceTest {
                     openThread, ParticipantType.SELLER, MY_ID, "uuid-1", "본문", List.of(10L)))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ATTACHMENT_NOT_UPLOADED);
+        }
+
+        @Test
+        @DisplayName("이미 다른 메시지에 붙은 첨부는 거부한다 (§4-5 검증 4)")
+        void alreadyAttachedIsRejected() {
+            MessageAttachment linked = attachment(10L, openThread, MY_ID, AttachmentStatus.UPLOADED, 100L);
+            ReflectionTestUtils.setField(
+                    linked, "message", Message.create(openThread, ParticipantType.SELLER, MY_ID, "old", "x"));
+            givenNoExistingMessage();
+            given(messageAttachmentRepository.findAllByIdIn(List.of(10L))).willReturn(List.of(linked));
+
+            assertThatThrownBy(() -> messageThreadService.sendMessage(
+                    openThread, ParticipantType.SELLER, MY_ID, "uuid-1", "본문", List.of(10L)))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ATTACHMENT_ALREADY_ATTACHED);
         }
 
         @Test

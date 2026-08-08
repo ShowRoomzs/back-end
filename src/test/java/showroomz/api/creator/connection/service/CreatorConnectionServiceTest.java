@@ -137,4 +137,17 @@ class CreatorConnectionServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.CONNECTION_NOT_FOUND);
     }
+
+    @Test
+    @DisplayName("REQUESTED가 아닌 연결은 거절할 수 없다")
+    void cannotRejectNonRequested() {
+        Connection connection = requestedPair();
+        connection.markConnected();
+        givenAuthenticatedCreator();
+        given(connectionRepository.findById(1L)).willReturn(Optional.of(connection));
+
+        assertThatThrownBy(() -> creatorConnectionService.reject(CREATOR_EMAIL, 1L))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.CONNECTION_INVALID_STATUS);
+    }
 }

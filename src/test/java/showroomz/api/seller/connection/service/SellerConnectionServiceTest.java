@@ -173,6 +173,23 @@ class SellerConnectionServiceTest {
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.CONNECTION_TARGET_REQUIRED);
         }
 
+        @Test
+        @DisplayName("연결코드로도 요청할 수 있다 — creatorId 없이 코드만으로 대상을 찾는다")
+        void requestByConnectionCode() {
+            Creator target = creator(12L, UserStatus.NORMAL);
+            givenAuthenticatedSeller();
+            given(creatorRepository.findByConnectionCode("ABCD234567")).willReturn(Optional.of(target));
+            given(connectionRepository.findByTypeAndMarketAndCreator(ConnectionType.PAIR, market, target))
+                    .willReturn(Optional.empty());
+            given(connectionRepository.save(any(Connection.class))).willAnswer(inv -> inv.getArgument(0));
+
+            ConnectResponse response = sellerConnectionService.requestConnection(
+                    SELLER_EMAIL, request(null, " abcd234567 "));
+
+            assertThat(response.getStatus()).isEqualTo(ConnectionStatus.REQUESTED);
+            verify(creatorRepository).findByConnectionCode("ABCD234567");
+        }
+
         private ConnectRequest request(Long creatorId, String code) {
             ConnectRequest request = new ConnectRequest();
             request.setCreatorId(creatorId);
