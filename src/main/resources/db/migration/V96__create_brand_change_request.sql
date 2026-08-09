@@ -29,7 +29,7 @@ CREATE TABLE `brand_change_request` (
     UNIQUE KEY `uk_brand_change_request_code` (`request_code`),
     UNIQUE KEY `uk_brand_change_request_pending` (`market_id`, `type`, `pending_key`),
     KEY `idx_brand_change_request_status` (`status`, `requested_at`),
-    CONSTRAINT `fk_brand_change_request_market` FOREIGN KEY (`market_id`) REFERENCES `MARKET` (`MARKET_ID`)
+    CONSTRAINT `fk_brand_change_request_market` FOREIGN KEY (`market_id`) REFERENCES `market` (`market_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `brand_change_request_item` (
