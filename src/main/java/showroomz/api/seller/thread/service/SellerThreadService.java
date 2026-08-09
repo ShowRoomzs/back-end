@@ -53,17 +53,28 @@ public class SellerThreadService {
     private final MessageAttachmentRepository messageAttachmentRepository;
     private final MessageAttachmentService messageAttachmentService;
 
-    /** §13-1 좌측 목록. 안 읽은 수는 페이지 전체를 한 쿼리로 집계한다(스레드당 카운트 금지). */
-    public PageResponse<ThreadListItem> getThreads(String sellerEmail, PagingRequest pagingRequest) {
+    /**
+     * §13-1 좌측 목록. 안 읽은 수는 페이지 전체를 한 쿼리로 집계한다(스레드당 카운트 금지).
+     * keyword는 좌측 목록 상단의 "쇼룸명 검색"(A1~A11) — 비어 있으면 전체를 내려준다.
+     */
+    public PageResponse<ThreadListItem> getThreads(String sellerEmail, String keyword, PagingRequest pagingRequest) {
         Market market = getMyMarket(sellerEmail);
         Page<MessageThread> threads = messageThreadRepository
-                .findOpenThreadsForMarket(market, ThreadStatus.OPEN, pagingRequest.toPageable());
+                .findOpenThreadsForMarket(market, ThreadStatus.OPEN, normalizeKeyword(keyword),
+                        pagingRequest.toPageable());
 
         Map<Long, Long> unreadByThread = messageThreadService.countUnreadByThreadIds(
                 threads.getContent().stream().map(MessageThread::getId).toList(),
                 ParticipantType.SELLER, market.getId());
 
         return PageResponse.of(threads.map(thread -> toListItem(thread, unreadByThread)));
+    }
+
+    private static String normalizeKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+        return keyword.trim();
     }
 
     /** GNB 배지용 — 폴링 대상(§0)이라 스레드 수와 무관하게 쿼리 2회로 고정한다. */

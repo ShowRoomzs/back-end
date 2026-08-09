@@ -34,7 +34,10 @@ public interface SellerThreadControllerDocs {
             summary = "좌측 스레드 목록",
             description = "운영자 채널이 항상 최상단 고정되고, 그 아래 연결됨(OPEN) 상태의 상대만 최근 메시지순으로 노출된다.\n\n" +
                     "휴면(DORMANT) 스레드는 REQUESTED와 동일하게 목록에서 완전히 제외된다(§13-12 #2 해소) — " +
-                    "별도의 휴면 화면은 존재하지 않는다.\n\n**권한:** SELLER"
+                    "별도의 휴면 화면은 존재하지 않는다.\n\n" +
+                    "`keyword`는 목록 상단 \"쇼룸명 검색\" 입력이다 — 값을 주면 상대 쇼룸명 부분 일치만 남고, " +
+                    "상대가 없는 운영자 고정 채널은 검색 결과에서 빠진다(값이 없을 때만 최상단에 고정 노출).\n\n" +
+                    "**권한:** SELLER"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -99,7 +102,10 @@ public interface SellerThreadControllerDocs {
                     )
             )
     })
-    ResponseEntity<PageResponse<ThreadListItem>> getThreads(@ModelAttribute PagingRequest pagingRequest);
+    ResponseEntity<PageResponse<ThreadListItem>> getThreads(
+            @Parameter(description = "쇼룸명 검색어 — 비우면 전체(운영자 채널 포함)", example = "민지의 쇼룸")
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @ModelAttribute PagingRequest pagingRequest);
 
     @Operation(
             summary = "GNB 배지용 안 읽은 수 합계",

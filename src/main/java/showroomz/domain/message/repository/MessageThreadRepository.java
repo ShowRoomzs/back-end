@@ -25,14 +25,18 @@ public interface MessageThreadRepository extends JpaRepository<MessageThread, Lo
      * §13-1 좌측 목록 — 운영자 채널(OPERATOR_MARKET) 최상단 고정 + STATUS=OPEN만, 최근 메시지순.
      * 목록 아바타(counterpartImageUrl)가 CREATOR.USER.PROFILE_IMAGE_URL에 있으므로 user까지 fetch한다
      * — 지연 로딩으로 두면 스레드 수만큼 추가 쿼리가 나간다(N+1).
+     * keyword는 좌측 목록 상단의 "쇼룸명 검색" 입력이다 — 값이 있으면 상대 쇼룸명 부분 일치만 남고,
+     * 운영자 채널은 자연히 빠진다(creator가 NULL이라 LIKE 조건이 성립하지 않는다).
      */
     @Query("SELECT t FROM MessageThread t JOIN FETCH t.connection c " +
            "LEFT JOIN FETCH c.creator cr LEFT JOIN FETCH cr.user " +
            "WHERE t.status = :status AND c.market = :market " +
+           "AND (:keyword IS NULL OR :keyword = '' OR cr.showroomName LIKE CONCAT('%', :keyword, '%')) " +
            "ORDER BY CASE WHEN c.type = showroomz.domain.connection.type.ConnectionType.OPERATOR_MARKET THEN 0 ELSE 1 END, " +
            "t.lastMessageAt DESC NULLS LAST")
     Page<MessageThread> findOpenThreadsForMarket(@Param("market") Market market,
                                                   @Param("status") ThreadStatus status,
+                                                  @Param("keyword") String keyword,
                                                   Pageable pageable);
 
     /**

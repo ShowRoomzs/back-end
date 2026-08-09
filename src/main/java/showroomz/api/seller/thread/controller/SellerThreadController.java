@@ -33,8 +33,10 @@ public class SellerThreadController implements SellerThreadControllerDocs {
 
     @Override
     @GetMapping("/v1/seller/connections/threads")
-    public ResponseEntity<PageResponse<ThreadListItem>> getThreads(@ModelAttribute PagingRequest pagingRequest) {
-        return ResponseEntity.ok(sellerThreadService.getThreads(getCurrentSellerEmail(), pagingRequest));
+    public ResponseEntity<PageResponse<ThreadListItem>> getThreads(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @ModelAttribute PagingRequest pagingRequest) {
+        return ResponseEntity.ok(sellerThreadService.getThreads(getCurrentSellerEmail(), keyword, pagingRequest));
     }
 
     @Override

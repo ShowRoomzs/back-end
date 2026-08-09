@@ -152,12 +152,12 @@ class SellerThreadServiceTest {
                     .id(THREAD_ID).connection(connection).status(ThreadStatus.OPEN).build();
 
             givenAuthenticatedSeller();
-            given(messageThreadRepository.findOpenThreadsForMarket(eq(market), eq(ThreadStatus.OPEN), any()))
+            given(messageThreadRepository.findOpenThreadsForMarket(eq(market), eq(ThreadStatus.OPEN), isNull(), any()))
                     .willReturn(new PageImpl<>(List.of(thread)));
             given(messageThreadService.countUnreadByThreadIds(List.of(THREAD_ID), ParticipantType.SELLER, MARKET_ID))
                     .willReturn(Map.of(THREAD_ID, 2L));
 
-            ThreadListItem item = sellerThreadService.getThreads(SELLER_EMAIL, new PagingRequest())
+            ThreadListItem item = sellerThreadService.getThreads(SELLER_EMAIL, null, new PagingRequest())
                     .getContent().get(0);
 
             assertThat(item.getCounterpartName()).isEqualTo("뷰티_소연");
@@ -174,17 +174,33 @@ class SellerThreadServiceTest {
                     .id(THREAD_ID).connection(operator).status(ThreadStatus.OPEN).build();
 
             givenAuthenticatedSeller();
-            given(messageThreadRepository.findOpenThreadsForMarket(eq(market), eq(ThreadStatus.OPEN), any()))
+            given(messageThreadRepository.findOpenThreadsForMarket(eq(market), eq(ThreadStatus.OPEN), isNull(), any()))
                     .willReturn(new PageImpl<>(List.of(thread)));
             given(messageThreadService.countUnreadByThreadIds(List.of(THREAD_ID), ParticipantType.SELLER, MARKET_ID))
                     .willReturn(Map.of());
 
-            ThreadListItem item = sellerThreadService.getThreads(SELLER_EMAIL, new PagingRequest())
+            ThreadListItem item = sellerThreadService.getThreads(SELLER_EMAIL, null, new PagingRequest())
                     .getContent().get(0);
 
             assertThat(item.isOperatorChannel()).isTrue();
             assertThat(item.getCounterpartName()).isEqualTo("SHOWROOMZ 운영팀");
             assertThat(item.getCounterpartImageUrl()).isNull();
+        }
+
+        @Test
+        @DisplayName("쇼룸명 검색어는 공백을 정리해서 넘기고, 빈 값이면 전체 조회(null)로 넘긴다")
+        void normalizesSearchKeyword() {
+            givenAuthenticatedSeller();
+            given(messageThreadRepository.findOpenThreadsForMarket(eq(market), eq(ThreadStatus.OPEN), any(), any()))
+                    .willReturn(new PageImpl<>(List.of()));
+
+            sellerThreadService.getThreads(SELLER_EMAIL, "  민지  ", new PagingRequest());
+            sellerThreadService.getThreads(SELLER_EMAIL, "   ", new PagingRequest());
+
+            verify(messageThreadRepository)
+                    .findOpenThreadsForMarket(eq(market), eq(ThreadStatus.OPEN), eq("민지"), any());
+            verify(messageThreadRepository)
+                    .findOpenThreadsForMarket(eq(market), eq(ThreadStatus.OPEN), isNull(), any());
         }
     }
 
