@@ -12,6 +12,7 @@ import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.history.entity.SellerApplicationHistory;
+import showroomz.domain.connection.service.OperatorChannelService;
 import showroomz.domain.history.repository.SellerApplicationHistoryRepository;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
@@ -51,6 +52,7 @@ public class AdminService {
     private final MailService mailService;
     private final SellerApplicationRepository sellerApplicationRepository;
     private final SellerApplicationHistoryRepository sellerApplicationHistoryRepository;
+    private final OperatorChannelService operatorChannelService;
 
     /**
      * 마켓(SELLER) 계정 승인/반려 처리
@@ -90,6 +92,8 @@ public class AdminService {
             application.approve();
             seller.setIsNewMember(true);
             mailService.sendApprovalEmail(seller.getEmail(), marketName, processedAt);
+            // §13-3 운영자 고정 채널 — 입점 승인 즉시 요청·수락 없이 CONNECTED로 열린다(연결·소통 §1-1).
+            marketRepository.findBySeller(seller).ifPresent(operatorChannelService::ensureMarketChannel);
         } else if (status == SellerStatus.REJECTED) {
             String mailDetail = reasonDetail != null && !reasonDetail.isBlank() ? reasonDetail.strip() : "";
             String recipientEmail = seller.getEmail();

@@ -12,13 +12,14 @@ public enum ImageType {
     MARKET,
     CATEGORY,
     SIGNUP_DOCUMENT, // 판매자 회원가입 증빙 서류
-    CREATOR_DOCUMENT; // 크리에이터 추가 정보(사업자등록증·통장사본 등)
+    CREATOR_DOCUMENT, // 크리에이터 추가 정보(사업자등록증·통장사본 등)
+    CHANGE_REQUEST_DOCUMENT; // 브랜드 기본정보 변경 요청 증빙(§15-6)
 
     public static final Set<ImageType> USER_ALLOWED_TYPES =
             EnumSet.of(PROFILE, REVIEW, INQUIRY);
 
     public static final Set<ImageType> SELLER_ALLOWED_TYPES =
-            EnumSet.of(MARKET, PRODUCT);
+            EnumSet.of(MARKET, PRODUCT, CHANGE_REQUEST_DOCUMENT);
 
     public static final Set<ImageType> CREATOR_ALLOWED_TYPES =
             EnumSet.of(POST, PRODUCT, MARKET);

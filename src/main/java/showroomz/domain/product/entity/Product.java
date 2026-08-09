@@ -8,6 +8,7 @@ import showroomz.domain.category.entity.Category;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGender;
+import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.domain.product.type.ProductHideReasonType;
 
 import java.time.Instant;
@@ -56,6 +57,10 @@ public class Product {
     @Enumerated(EnumType.STRING)
     @Column(name = "display_status", nullable = false, length = 32)
     private ProductDisplayStatus displayStatus = ProductDisplayStatus.DISPLAY;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "group_buy_status", nullable = false, length = 32)
+    private ProductGroupBuyStatus groupBuyStatus = ProductGroupBuyStatus.NOT_CONNECTED;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "previous_display_status", length = 32)

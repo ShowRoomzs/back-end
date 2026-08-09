@@ -1,5 +1,6 @@
 package showroomz.api.app.coupon.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,7 @@ import java.net.URI;
 @RestController
 @RequestMapping("/v1/user/coupons")
 @RequiredArgsConstructor
+@Hidden
 public class UserCouponController implements UserCouponControllerDocs {
 
     private final UserCouponService userCouponService;

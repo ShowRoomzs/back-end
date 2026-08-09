@@ -78,7 +78,7 @@ public class ImageService {
     }
 
     private List<String> getAllowedExtensions(ImageType type) {
-        if (type == ImageType.SIGNUP_DOCUMENT || type == ImageType.CREATOR_DOCUMENT) {
+        if (type == ImageType.SIGNUP_DOCUMENT || type == ImageType.CREATOR_DOCUMENT || type == ImageType.CHANGE_REQUEST_DOCUMENT) {
             return DOCUMENT_ALLOWED_EXTENSIONS;
         }
         return ALLOWED_EXTENSIONS;

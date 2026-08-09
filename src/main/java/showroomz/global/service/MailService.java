@@ -165,6 +165,89 @@ public class MailService {
         sendEmail(to, subject, text);
     }
 
+    /**
+     * §15-5 로그인 이메일 변경 통지 — 구 이메일로 발송한다. UI에는 노출되지 않는 BE 전용 안전장치로,
+     * 계정 탈취로 이메일이 바뀌었을 때 원 소유자가 인지할 수 있게 한다.
+     */
+    @Async
+    public void sendLoginEmailChangedNotice(String oldEmail, String newEmail, LocalDateTime changedAt) {
+        String safeNewEmail = HtmlUtils.htmlEscape(newEmail);
+        String when = changedAt.format(SELLER_MAIL_DATETIME);
+        String subject = "[SHOWROOMZ] 로그인 이메일이 변경되었습니다.";
+        String text = String.format("""
+                <html>
+                <body style="font-family: sans-serif; line-height: 1.6; color: #222;">
+                    <p>안녕하세요.</p>
+                    <p>회원님의 SHOWROOMZ 파트너센터 로그인 이메일이 변경되었습니다.</p>
+                    <p><strong>■ 변경 정보</strong><br/>
+                    변경일시: %s<br/>
+                    변경된 이메일: %s</p>
+                    <p>본인이 요청하지 않은 변경이라면 즉시 SHOWROOMZ 고객센터로 문의해 주세요.</p>
+                    <p>감사합니다.<br/>%s 드림</p>
+                </body>
+                </html>
+                """,
+                when, safeNewEmail, OPS_TEAM);
+
+        sendEmail(oldEmail, subject, text);
+    }
+
+    /** §16-4 변경 요청 승인 통지 — 수신은 로그인 이메일이다(tax 이메일 아님). */
+    @Async
+    public void sendChangeRequestApprovedEmail(String to, String requestCode, String changedFieldLabels, LocalDateTime processedAt) {
+        String safeLabels = HtmlUtils.htmlEscape(changedFieldLabels);
+        String when = processedAt.format(SELLER_MAIL_DATETIME);
+        String subject = "[SHOWROOMZ] 변경 요청이 승인되었습니다.";
+        String text = String.format("""
+                <html>
+                <body style="font-family: sans-serif; line-height: 1.6; color: #222;">
+                    <p>안녕하세요, 담당자님.</p>
+                    <p>요청하신 정보 변경이 승인되어 반영되었습니다.</p>
+                    <p><strong>■ 처리 정보</strong><br/>
+                    요청번호: %s<br/>
+                    변경 항목: %s<br/>
+                    승인일시: %s<br/>
+                    담당 관리자: %s</p>
+                    <p>파트너센터에서 반영된 정보를 확인하실 수 있습니다.</p>
+                    <p>감사합니다.<br/>%s 드림</p>
+                </body>
+                </html>
+                """,
+                requestCode, safeLabels, when, OPS_TEAM, OPS_TEAM);
+
+        sendEmail(to, subject, text);
+    }
+
+    /** §16-5 변경 요청 반려 통지. 선택 문구·상세 사유가 가공 없이 그대로 실린다. */
+    @Async
+    public void sendChangeRequestRejectedEmail(String to, String requestCode, LocalDateTime processedAt,
+                                                String reasonSummary, String reasonDetail) {
+        String safeSummary = HtmlUtils.htmlEscape(reasonSummary);
+        String when = processedAt.format(SELLER_MAIL_DATETIME);
+        String detailBlock = (reasonDetail != null && !reasonDetail.isBlank())
+                ? HtmlUtils.htmlEscape(reasonDetail.strip()) : "";
+        String subject = "[SHOWROOMZ] 변경 요청이 반려되었습니다.";
+        String text = String.format("""
+                <html>
+                <body style="font-family: sans-serif; line-height: 1.6; color: #222;">
+                    <p>안녕하세요, 담당자님.</p>
+                    <p>요청하신 정보 변경 건이 아래 사유로 반려되었습니다.</p>
+                    <p><strong>■ 반려 정보</strong><br/>
+                    요청번호: %s<br/>
+                    반려일시: %s<br/>
+                    담당 관리자: %s</p>
+                    <p><strong>■ 반려 사유</strong> %s</p>
+                    <p><strong>■ 상세 내용</strong><br/>%s</p>
+                    <p>내용을 보완하여 파트너센터에서 다시 요청해 주세요.</p>
+                    <p>감사합니다.<br/>%s 드림</p>
+                </body>
+                </html>
+                """,
+                requestCode, when, OPS_TEAM, safeSummary, detailBlock, OPS_TEAM);
+
+        sendEmail(to, subject, text);
+    }
+
     private void sendEmail(String to, String subject, String text) {
         try {
             MimeMessage mimeMessage = javaMailSender.createMimeMessage();

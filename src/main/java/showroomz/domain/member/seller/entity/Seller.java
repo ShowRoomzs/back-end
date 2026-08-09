@@ -149,6 +149,10 @@ public class Seller {
     @Column(name = "IS_NEW_MEMBER", nullable = false)
     private Boolean isNewMember = true;
 
+    // 로그인 이메일 마지막 변경 시각(§15-5 월 1회 제한 판정)
+    @Column(name = "email_changed_at")
+    private LocalDateTime emailChangedAt;
+
     // 생성자 편의 메서드
     public Seller(String email, String password, String name, String phoneNumber, LocalDateTime now) {
         this.email = email;

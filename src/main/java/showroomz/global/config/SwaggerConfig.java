@@ -24,6 +24,8 @@ import org.springframework.context.annotation.Profile;
                           SELLER : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzZWxsZXJAZXhhbXBsZS5jb20iLCJyb2xlIjoiUk9MRV9TRUxMRVIiLCJwayI6OCwiZXhwIjoxODE3NjQwMzg3fQ.wpS-Kal5V0HGoo13YTL2A1T8OCqaZUttQjkLiqM6uSQ
                           
                           ADMIN  : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzdXBlciIsInJvbGUiOiJST0xFX0FETUlOIiwicGsiOjEsImV4cCI6MTgxNzY0MDQzNn0.kgsX8tTiCjME0pjagc92brdZq2B4LDqg7OTZNQc6x6U
+
+                          CREATOR : eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzd1p1bnBWYUoycmttSTNhM0FOa0NTRmlNNjJKWWxNS2U0MnpUbkZrQkxrIiwicm9sZSI6IlJPTEVfQ1JFQVRPUiIsInBrIjoxMSwiZXhwIjoxODE3NzEwODQ1fQ.BVsewDrawxMbWYdjFq2oNndSLd2ROwoKZgmIKQ_-2p0
                         """,
                 version = "v1"
         ),

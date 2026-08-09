@@ -1,5 +1,6 @@
 package showroomz.api.admin.coupon.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
@@ -18,6 +19,7 @@ import java.util.Objects;
 @RestController
 @RequestMapping("/v1/admin/coupons")
 @RequiredArgsConstructor
+@Hidden
 public class AdminCouponController implements AdminCouponControllerDocs {
 
     private final AdminCouponService adminCouponService;

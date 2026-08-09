@@ -157,7 +157,9 @@ public class AdminProductService {
                 .coverImageUrls(coverImageUrls)
                 .regularPrice(product.getRegularPrice())
                 .displayStatus(product.getDisplayStatus())
-                .groupBuyStatus(resolveDummyGroupBuyStatus(product.getProductId()))
+                .groupBuyStatus(product.getGroupBuyStatus() != null
+                        ? product.getGroupBuyStatus()
+                        : ProductGroupBuyStatus.NOT_CONNECTED)
                 .latestHideInfo(processingHistoryService.getLatestHideInfo(product))
                 .processingHistory(processingHistoryService.getHistoryItems(product.getProductId()))
                 .isRecommended(product.getIsRecommended())
@@ -211,17 +213,12 @@ public class AdminProductService {
         long notConnected = 0L;
 
         List<Object[]> rows = productRepository.countAdminProductsByGroupBuyStatus(displayStatus, keyword);
-        ProductGroupBuyStatus[] statuses = ProductGroupBuyStatus.values();
         for (Object[] row : rows) {
-            if (row.length < 2 || !(row[0] instanceof Number ordinalNum) || !(row[1] instanceof Number countNum)) {
-                continue;
-            }
-            int ordinal = ordinalNum.intValue();
-            if (ordinal < 0 || ordinal >= statuses.length) {
+            if (row.length < 2 || !(row[0] instanceof ProductGroupBuyStatus status) || !(row[1] instanceof Number countNum)) {
                 continue;
             }
             long count = countNum.longValue();
-            switch (statuses[ordinal]) {
+            switch (status) {
                 case PREPARING -> preparing = count;
                 case READY -> ready = count;
                 case IN_PROGRESS -> inProgress = count;
@@ -263,7 +260,9 @@ public class AdminProductService {
                 .createdAt(createdAtStr)
                 .modifiedAt(modifiedAtStr)
                 .displayStatus(displayStatus)
-                .groupBuyStatus(resolveDummyGroupBuyStatus(product.getProductId()))
+                .groupBuyStatus(product.getGroupBuyStatus() != null
+                        ? product.getGroupBuyStatus()
+                        : ProductGroupBuyStatus.NOT_CONNECTED)
                 .stock(stock)
                 .build();
     }
@@ -279,11 +278,6 @@ public class AdminProductService {
             }
         }
         return map;
-    }
-
-    private ProductGroupBuyStatus resolveDummyGroupBuyStatus(Long productId) {
-        ProductGroupBuyStatus[] statuses = ProductGroupBuyStatus.values();
-        return statuses[(int) Math.floorMod(productId != null ? productId : 0L, statuses.length)];
     }
 
     /**

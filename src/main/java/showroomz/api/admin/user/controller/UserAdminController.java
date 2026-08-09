@@ -1,5 +1,6 @@
 package showroomz.api.admin.user.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -24,6 +25,7 @@ import showroomz.global.dto.PagingRequest;
 @RestController
 @RequestMapping("/v1/admin/users")
 @RequiredArgsConstructor
+@Hidden
 public class UserAdminController implements UserAdminControllerDocs {
 
     private final AdminUserService adminUserService;

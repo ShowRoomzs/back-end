@@ -72,6 +72,7 @@ public class ProductService {
         // 할인가는 계약 단계에서 결정 — 등록 시점에는 판매가와 동일하게 저장
         product.setSalePrice(request.getRegularPrice());
         product.setDisplayStatus(ProductDisplayStatus.DISPLAY);
+        product.setGroupBuyStatus(ProductGroupBuyStatus.NOT_CONNECTED);
         product.setIsOutOfStockForced(false);
         product.setIsRecommended(false);
         product.setDescription(request.getDescription());
@@ -344,17 +345,12 @@ public class ProductService {
 
         List<Object[]> rows = productRepository.countSellerProductsByGroupBuyStatus(
                 marketId, displayStatus, keyword);
-        ProductGroupBuyStatus[] statuses = ProductGroupBuyStatus.values();
         for (Object[] row : rows) {
-            if (row.length < 2 || !(row[0] instanceof Number ordinalNum) || !(row[1] instanceof Number countNum)) {
-                continue;
-            }
-            int ordinal = ordinalNum.intValue();
-            if (ordinal < 0 || ordinal >= statuses.length) {
+            if (row.length < 2 || !(row[0] instanceof ProductGroupBuyStatus status) || !(row[1] instanceof Number countNum)) {
                 continue;
             }
             long count = countNum.longValue();
-            switch (statuses[ordinal]) {
+            switch (status) {
                 case PREPARING -> preparing = count;
                 case READY -> ready = count;
                 case IN_PROGRESS -> inProgress = count;
@@ -834,8 +830,10 @@ public class ProductService {
                 ? product.getModifiedAt().toString()
                 : createdAtStr;
 
-        // 공구 상태 (더미) — productId 기준으로 순환
-        ProductGroupBuyStatus groupBuyStatus = resolveDummyGroupBuyStatus(product.getProductId());
+        // 공구 상태
+        ProductGroupBuyStatus groupBuyStatus = product.getGroupBuyStatus() != null
+                ? product.getGroupBuyStatus()
+                : ProductGroupBuyStatus.NOT_CONNECTED;
 
         return ProductDto.ProductListItem.builder()
                 .productId(product.getProductId())
@@ -921,7 +919,9 @@ public class ProductService {
                 .coverImageUrls(coverImageUrls)
                 .regularPrice(product.getRegularPrice())
                 .displayStatus(product.getDisplayStatus())
-                .groupBuyStatus(resolveDummyGroupBuyStatus(product.getProductId()))
+                .groupBuyStatus(product.getGroupBuyStatus() != null
+                        ? product.getGroupBuyStatus()
+                        : ProductGroupBuyStatus.NOT_CONNECTED)
                 .latestHideInfo(processingHistoryService.getLatestHideInfo(product))
                 .processingHistory(processingHistoryService.getHistoryItems(product.getProductId()))
                 .isRecommended(product.getIsRecommended())
@@ -933,18 +933,15 @@ public class ProductService {
                 .build();
     }
 
-    private ProductGroupBuyStatus resolveDummyGroupBuyStatus(Long productId) {
-        ProductGroupBuyStatus[] statuses = ProductGroupBuyStatus.values();
-        return statuses[(int) Math.floorMod(productId != null ? productId : 0L, statuses.length)];
-    }
-
     /**
      * 진열 + 공구 진행 중이면 상품 정보 수정 불가(옵션·재고만 허용).
      * 재고는 모든 상태에서 수정 가능.
      */
     private void validateSellerProductEdit(Product product, boolean hasInfoChange) {
         ProductDisplayStatus displayStatus = product.getDisplayStatus();
-        ProductGroupBuyStatus groupBuyStatus = resolveDummyGroupBuyStatus(product.getProductId());
+        ProductGroupBuyStatus groupBuyStatus = product.getGroupBuyStatus() != null
+                ? product.getGroupBuyStatus()
+                : ProductGroupBuyStatus.NOT_CONNECTED;
 
         boolean displayedAndInGroupBuy =
                 displayStatus == ProductDisplayStatus.DISPLAY

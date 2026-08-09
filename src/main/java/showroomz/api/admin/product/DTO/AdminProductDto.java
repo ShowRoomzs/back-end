@@ -66,19 +66,19 @@ public class AdminProductDto {
     @AllArgsConstructor
     @Schema(description = "공구 상태별 상품 건수")
     public static class GroupBuyStatusCounts {
-        @Schema(description = "전체 건수", example = "5")
+        @Schema(description = "전체 건수", example = "195")
         private long all;
 
-        @Schema(description = "준비중 건수", example = "1")
+        @Schema(description = "준비중 건수", example = "0")
         private long preparing;
 
         @Schema(description = "준비완료 건수", example = "0")
         private long ready;
 
-        @Schema(description = "진행중 건수", example = "2")
+        @Schema(description = "진행중 건수", example = "0")
         private long inProgress;
 
-        @Schema(description = "연결없음 건수", example = "2")
+        @Schema(description = "연결없음 건수", example = "195")
         private long notConnected;
     }
 
@@ -121,8 +121,8 @@ public class AdminProductDto {
                 allowableValues = {"DISPLAY", "HIDDEN", "PENDING_REVIEW", "HIDE_REQUEST"})
         private ProductDisplayStatus displayStatus;
 
-        @Schema(description = "공구 상태 (더미). PREPARING: 준비중, READY: 준비완료, IN_PROGRESS: 진행중, NOT_CONNECTED: 연결없음",
-                example = "PREPARING",
+        @Schema(description = "공구 상태. PREPARING: 준비중, READY: 준비완료, IN_PROGRESS: 진행중, NOT_CONNECTED: 연결없음",
+                example = "NOT_CONNECTED",
                 allowableValues = {"PREPARING", "READY", "IN_PROGRESS", "NOT_CONNECTED"})
         private ProductGroupBuyStatus groupBuyStatus;
 
