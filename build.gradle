@@ -68,6 +68,8 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	// 통합 테스트 전용 인메모리 DB(MySQL 호환 모드). 실 MySQL 스키마 검증은 showroomz.DB.ShowroomzApplicationTests가 담당한다.
+	testRuntimeOnly 'com.h2database:h2'
 	
 }
 

@@ -76,6 +76,9 @@ springdoc:
   swagger-ui:
     tags-sorter: alpha       # 태그를 알파벳순 정렬
     operations-sorter: alpha # API(메서드)도 알파벳순 정렬
+    doc-expansion: none      # 문서 기본 접힘 상태 (none | list | full)
+    try-it-out-enabled: true # Try it out 기본 활성화
+    filter: true             # API 검색/필터링 창 표시
 
 # Sentry 설정 (공통)
 sentry:
