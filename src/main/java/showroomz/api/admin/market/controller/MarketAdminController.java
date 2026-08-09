@@ -1,5 +1,6 @@
 package showroomz.api.admin.market.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +15,7 @@ import showroomz.api.admin.market.service.AdminService;
 @RestController
 @RequestMapping("/v1/admin")
 @RequiredArgsConstructor
+@Hidden
 public class MarketAdminController implements AdminMarketManagementControllerDocs {
 
     private final AdminService adminService;

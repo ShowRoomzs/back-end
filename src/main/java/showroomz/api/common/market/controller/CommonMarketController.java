@@ -1,5 +1,6 @@
 package showroomz.api.common.market.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import showroomz.global.dto.PagingRequest;
 @RestController
 @RequestMapping("/v1/common/markets")
 @RequiredArgsConstructor
+@Hidden
 public class CommonMarketController implements CommonMarketControllerDocs {
 
     private final CommonMarketService commonMarketService;

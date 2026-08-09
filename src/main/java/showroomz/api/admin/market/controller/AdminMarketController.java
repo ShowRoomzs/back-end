@@ -1,5 +1,6 @@
 package showroomz.api.admin.market.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
@@ -28,6 +29,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/v1/admin/markets")
 @RequiredArgsConstructor
+@Hidden
 public class AdminMarketController implements AdminMarketListControllerDocs,
         AdminMarketStatusControllerDocs,
         AdminMarketMemoControllerDocs {

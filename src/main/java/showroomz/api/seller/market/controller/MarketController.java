@@ -1,5 +1,6 @@
 package showroomz.api.seller.market.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import showroomz.global.error.exception.ErrorCode;
 @RestController
 @RequestMapping("/v1/seller/markets")
 @RequiredArgsConstructor
+@Hidden
 public class MarketController implements MarketControllerDocs {
 
     private final MarketService marketService;
