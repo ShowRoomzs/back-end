@@ -22,6 +22,6 @@ CREATE TABLE `connection` (
     UNIQUE KEY `uk_connection_type_market_creator` (`type`, `market_id_key`, `creator_id_key`),
     KEY `idx_connection_creator_status` (`creator_id`, `status`),
     KEY `idx_connection_market_status` (`market_id`, `status`),
-    CONSTRAINT `fk_connection_market` FOREIGN KEY (`market_id`) REFERENCES `MARKET` (`MARKET_ID`),
-    CONSTRAINT `fk_connection_creator` FOREIGN KEY (`creator_id`) REFERENCES `CREATOR` (`CREATOR_ID`)
+    CONSTRAINT `fk_connection_market` FOREIGN KEY (`market_id`) REFERENCES `market` (`market_id`),
+    CONSTRAINT `fk_connection_creator` FOREIGN KEY (`creator_id`) REFERENCES `creator` (`creator_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

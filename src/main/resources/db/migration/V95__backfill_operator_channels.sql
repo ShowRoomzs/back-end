@@ -10,27 +10,27 @@
 
 -- 1) 운영자↔브랜드 연결 — 승인 완료 + 탈퇴하지 않은 마켓
 INSERT INTO `connection` (`type`, `market_id`, `creator_id`, `status`, `requested_at`, `responded_at`, `created_at`, `modified_at`)
-SELECT 'OPERATOR_MARKET', m.`MARKET_ID`, NULL, 'CONNECTED', NOW(6), NOW(6), NOW(6), NOW(6)
-FROM `MARKET` m
-JOIN `SELLER` s ON s.`SELLER_ID` = m.`SELLER_ID`
-WHERE s.`STATUS` = 'APPROVED'
+SELECT 'OPERATOR_MARKET', m.`market_id`, NULL, 'CONNECTED', NOW(6), NOW(6), NOW(6), NOW(6)
+FROM `market` m
+JOIN `seller` s ON s.`seller_id` = m.`seller_id`
+WHERE s.`status` = 'APPROVED'
   AND m.`status` <> 'WITHDRAWN'
   AND NOT EXISTS (
       SELECT 1 FROM `connection` c
-      WHERE c.`type` = 'OPERATOR_MARKET' AND c.`market_id` = m.`MARKET_ID`
+      WHERE c.`type` = 'OPERATOR_MARKET' AND c.`market_id` = m.`market_id`
   );
 
 -- 2) 운영자↔쇼룸 연결 — 등록 완료(쇼룸명 확정) + 탈퇴하지 않은 크리에이터
 INSERT INTO `connection` (`type`, `market_id`, `creator_id`, `status`, `requested_at`, `responded_at`, `created_at`, `modified_at`)
-SELECT 'OPERATOR_CREATOR', NULL, cr.`CREATOR_ID`, 'CONNECTED', NOW(6), NOW(6), NOW(6), NOW(6)
-FROM `CREATOR` cr
-JOIN `USERS` u ON u.`USER_ID` = cr.`USER_ID`
-WHERE cr.`SHOWROOM_NAME` IS NOT NULL
-  AND cr.`SHOWROOM_NAME` <> ''
-  AND u.`STATUS` <> 'WITHDRAWN'
+SELECT 'OPERATOR_CREATOR', NULL, cr.`creator_id`, 'CONNECTED', NOW(6), NOW(6), NOW(6), NOW(6)
+FROM `creator` cr
+JOIN `users` u ON u.`user_id` = cr.`user_id`
+WHERE cr.`showroom_name` IS NOT NULL
+  AND cr.`showroom_name` <> ''
+  AND u.`status` <> 'WITHDRAWN'
   AND NOT EXISTS (
       SELECT 1 FROM `connection` c
-      WHERE c.`type` = 'OPERATOR_CREATOR' AND c.`creator_id` = cr.`CREATOR_ID`
+      WHERE c.`type` = 'OPERATOR_CREATOR' AND c.`creator_id` = cr.`creator_id`
   );
 
 -- 3) 스레드 — 운영자 연결은 요청·수락 단계가 없으므로 생성과 동시에 OPEN이다(§1-3)
@@ -46,12 +46,12 @@ WHERE c.`type` IN ('OPERATOR_MARKET', 'OPERATOR_CREATOR')
 -- SENDER_ID=0은 개별 어드민이 아닌 "SHOWROOMZ 운영팀"을 뜻하는 시스템 값
 INSERT INTO `message` (`thread_id`, `sender_type`, `sender_id`, `content`, `client_message_id`, `created_at`, `modified_at`)
 SELECT t.`thread_id`, 'ADMIN', 0,
-       CONCAT('안녕하세요, ', cr.`SHOWROOM_NAME`,
+       CONCAT('안녕하세요, ', cr.`showroom_name`,
               '님. 아직 연결된 브랜드가 없네요. 브랜드가 연결 요청을 보내면 [요청함] 탭에서 확인하실 수 있어요.'),
        'operator-welcome', NOW(6), NOW(6)
 FROM `message_thread` t
 JOIN `connection` c ON c.`connection_id` = t.`connection_id`
-JOIN `CREATOR` cr ON cr.`CREATOR_ID` = c.`creator_id`
+JOIN `creator` cr ON cr.`creator_id` = c.`creator_id`
 WHERE c.`type` = 'OPERATOR_CREATOR'
   AND NOT EXISTS (
       SELECT 1 FROM `message` msg
