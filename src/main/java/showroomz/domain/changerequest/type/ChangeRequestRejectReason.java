@@ -11,7 +11,7 @@ import java.util.Set;
 public enum ChangeRequestRejectReason {
     EVIDENCE_MISSING("증빙 서류 미첨부", EnumSet.of(ChangeRequestType.BUSINESS_INFO)),
     EVIDENCE_VALUE_MISMATCH("증빙 서류와 요청 값이 일치하지 않음", EnumSet.of(ChangeRequestType.BUSINESS_INFO)),
-    EVIDENCE_UNREADABLE("서류 판독 불가(흐림·잘림)", EnumSet.of(ChangeRequestType.BUSINESS_INFO)),
+    EVIDENCE_UNREADABLE("서류 판독 불가 (흐림·잘림)", EnumSet.of(ChangeRequestType.BUSINESS_INFO)),
     EVIDENCE_EXPIRED("서류 유효기간 경과", EnumSet.of(ChangeRequestType.BUSINESS_INFO)),
     REASON_INSUFFICIENT("변경 사유 불충분", EnumSet.of(ChangeRequestType.BUSINESS_INFO)),
     BANKBOOK_MISSING("통장 사본 미첨부", EnumSet.of(ChangeRequestType.SETTLEMENT_ACCOUNT)),

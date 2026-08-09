@@ -9,7 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.creator.connection.dto.ConnectionRequestItem;
-import showroomz.domain.category.entity.Category;
+import showroomz.api.creator.connection.type.ConnectionRequestStatusFilter;
 import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.connection.type.ConnectionStatus;
@@ -71,52 +71,89 @@ class CreatorConnectionServiceTest {
     }
 
     @Test
-    @DisplayName("요청 카드 부가 정보(S12 \"뷰티 브랜드 · 어제 요청\")를 위해 대표 카테고리명을 함께 내려준다")
-    void requestItemCarriesMainCategoryName() {
+    @DisplayName("요청 목록은 브랜드 정보와 상태(REQUESTED/CONNECTED/REJECTED)를 내려준다")
+    void requestItemCarriesMarketInfoAndStatus() {
         Market market = market();
         market.setId(7L);
-        Category category = new Category();
-        category.setName("뷰티");
-        market.setMainCategory(category);
+        market.setMarketImageUrl("https://example.com/market/7.jpg");
 
         givenAuthenticatedCreator();
-        given(connectionRepository.findRequestsByCreator(eq(me), eq(ConnectionStatus.REQUESTED), isNull(), any()))
+        given(connectionRepository.findRequestsByCreator(eq(me), eq(ConnectionRequestStatusFilter.REQUESTED.getStatuses()),
+                isNull(), any()))
                 .willReturn(new PageImpl<>(List.of(Connection.requestPair(market, me))));
 
         ConnectionRequestItem item = creatorConnectionService
-                .getRequests(CREATOR_EMAIL, null, new PagingRequest()).getContent().get(0);
+                .getRequests(CREATOR_EMAIL, ConnectionRequestStatusFilter.REQUESTED, null, new PagingRequest())
+                .getContent().get(0);
 
+        assertThat(item.getMarketId()).isEqualTo(7L);
         assertThat(item.getMarketName()).isEqualTo("코코브라운");
-        assertThat(item.getMainCategoryName()).isEqualTo("뷰티");
+        assertThat(item.getMarketImageUrl()).isEqualTo("https://example.com/market/7.jpg");
+        assertThat(item.getStatus()).isEqualTo(ConnectionStatus.REQUESTED);
+        assertThat(item.getRequestedAt()).isNotNull();
     }
 
     @Test
-    @DisplayName("대표 카테고리가 없는 브랜드는 카테고리명이 null이다")
-    void requestItemAllowsMissingCategory() {
+    @DisplayName("status=ALL이면 수락·거절된 요청도 포함하고 status로 구분한다")
+    void includesAcceptedAndRejectedWhenStatusAll() {
+        Market acceptedMarket = market();
+        acceptedMarket.setId(1L);
+        acceptedMarket.setMarketName("수락브랜드");
+        Connection accepted = Connection.requestPair(acceptedMarket, me);
+        accepted.markConnected();
+
+        Market rejectedMarket = market();
+        rejectedMarket.setId(2L);
+        rejectedMarket.setMarketName("거절브랜드");
+        Connection rejected = Connection.requestPair(rejectedMarket, me);
+        rejected.markRejected();
+
         givenAuthenticatedCreator();
-        given(connectionRepository.findRequestsByCreator(eq(me), eq(ConnectionStatus.REQUESTED), isNull(), any()))
-                .willReturn(new PageImpl<>(List.of(Connection.requestPair(market(), me))));
+        given(connectionRepository.findRequestsByCreator(eq(me), eq(ConnectionRequestStatusFilter.ALL.getStatuses()),
+                isNull(), any()))
+                .willReturn(new PageImpl<>(List.of(accepted, rejected)));
 
-        ConnectionRequestItem item = creatorConnectionService
-                .getRequests(CREATOR_EMAIL, null, new PagingRequest()).getContent().get(0);
+        var items = creatorConnectionService
+                .getRequests(CREATOR_EMAIL, ConnectionRequestStatusFilter.ALL, null, new PagingRequest())
+                .getContent();
 
-        assertThat(item.getMainCategoryName()).isNull();
+        assertThat(items).extracting(ConnectionRequestItem::getStatus)
+                .containsExactly(ConnectionStatus.CONNECTED, ConnectionStatus.REJECTED);
+        assertThat(items).extracting(ConnectionRequestItem::getMarketName)
+                .containsExactly("수락브랜드", "거절브랜드");
+    }
+
+    @Test
+    @DisplayName("status=REQUESTED면 미처리 상태 목록만 조회한다")
+    void filtersRequestedOnly() {
+        givenAuthenticatedCreator();
+        given(connectionRepository.findRequestsByCreator(eq(me), eq(ConnectionRequestStatusFilter.REQUESTED.getStatuses()),
+                isNull(), any()))
+                .willReturn(new PageImpl<>(List.of()));
+
+        creatorConnectionService.getRequests(CREATOR_EMAIL, ConnectionRequestStatusFilter.REQUESTED, null,
+                new PagingRequest());
+
+        verify(connectionRepository)
+                .findRequestsByCreator(eq(me), eq(ConnectionRequestStatusFilter.REQUESTED.getStatuses()), isNull(), any());
     }
 
     @Test
     @DisplayName("브랜드명 검색어는 공백을 정리해서 넘기고, 빈 값이면 전체 조회(null)로 넘긴다")
     void normalizesSearchKeyword() {
         givenAuthenticatedCreator();
-        given(connectionRepository.findRequestsByCreator(eq(me), eq(ConnectionStatus.REQUESTED), any(), any()))
+        given(connectionRepository.findRequestsByCreator(eq(me), any(), any(), any()))
                 .willReturn(new PageImpl<>(List.of()));
 
-        creatorConnectionService.getRequests(CREATOR_EMAIL, "  데일리  ", new PagingRequest());
-        creatorConnectionService.getRequests(CREATOR_EMAIL, "   ", new PagingRequest());
+        creatorConnectionService.getRequests(CREATOR_EMAIL, ConnectionRequestStatusFilter.ALL, "  데일리  ",
+                new PagingRequest());
+        creatorConnectionService.getRequests(CREATOR_EMAIL, ConnectionRequestStatusFilter.ALL, "   ",
+                new PagingRequest());
 
         verify(connectionRepository)
-                .findRequestsByCreator(eq(me), eq(ConnectionStatus.REQUESTED), eq("데일리"), any());
+                .findRequestsByCreator(eq(me), eq(ConnectionRequestStatusFilter.ALL.getStatuses()), eq("데일리"), any());
         verify(connectionRepository)
-                .findRequestsByCreator(eq(me), eq(ConnectionStatus.REQUESTED), isNull(), any());
+                .findRequestsByCreator(eq(me), eq(ConnectionRequestStatusFilter.ALL.getStatuses()), isNull(), any());
     }
 
     @Test

@@ -2,6 +2,7 @@ package showroomz.api.creator.connection.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
+import showroomz.domain.connection.type.ConnectionStatus;
 
 import java.time.LocalDateTime;
 
@@ -20,20 +21,20 @@ public class ConnectionRequestItem {
     @Schema(description = "브랜드 대표 이미지 URL", example = "https://s3.ap-northeast-2.amazonaws.com/bucket/market/7.jpg")
     private final String marketImageUrl;
 
-    @Schema(description = "브랜드 대표 카테고리명 — 요청 카드 부가 정보(\"뷰티 브랜드 · 어제 요청\", S12)에 사용. "
-            + "카테고리가 설정되지 않은 브랜드는 null", example = "뷰티", nullable = true)
-    private final String mainCategoryName;
+    @Schema(description = "연결 상태 — REQUESTED(요청 도착)·CONNECTED(수락)·REJECTED(거절)",
+            example = "REQUESTED")
+    private final ConnectionStatus status;
 
     @Schema(description = "요청 시각 — 화면에서 상대 시간(\"2일 전\")으로 변환해 표시", example = "2026-08-06T14:22:10")
     private final LocalDateTime requestedAt;
 
     public ConnectionRequestItem(Long connectionId, Long marketId, String marketName,
-                                  String marketImageUrl, String mainCategoryName, LocalDateTime requestedAt) {
+                                  String marketImageUrl, ConnectionStatus status, LocalDateTime requestedAt) {
         this.connectionId = connectionId;
         this.marketId = marketId;
         this.marketName = marketName;
         this.marketImageUrl = marketImageUrl;
-        this.mainCategoryName = mainCategoryName;
+        this.status = status;
         this.requestedAt = requestedAt;
     }
 }

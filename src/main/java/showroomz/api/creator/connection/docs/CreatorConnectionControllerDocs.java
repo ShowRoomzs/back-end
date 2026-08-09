@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.creator.connection.dto.ConnectionCodeResponse;
 import showroomz.api.creator.connection.dto.ConnectionRequestItem;
+import showroomz.api.creator.connection.type.ConnectionRequestStatusFilter;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
@@ -24,8 +25,8 @@ public interface CreatorConnectionControllerDocs {
     @Operation(
             summary = "받은 연결 요청 목록",
             description = "연결은 항상 브랜드가 발신한다(§13-6·§14-2) — 인플루언서는 수락/거절만 한다.\n\n" +
-                    "요청 시각 내림차순이며, 카드 부가 정보(\"뷰티 브랜드 · 어제 요청\", S12)를 그릴 수 있도록 " +
-                    "브랜드 대표 카테고리명(`mainCategoryName`)을 함께 내려준다.\n\n" +
+                    "`status=REQUESTED`(기본)면 미처리 요청만, `status=ALL`이면 요청·수락·거절을 모두 포함한다. " +
+                    "항목별 `status`로 구분하며 요청 시각 내림차순이다.\n\n" +
                     "`keyword`는 목록 상단 \"브랜드명 검색\" 입력으로, 브랜드명 부분 일치다.\n\n" +
                     "**권한:** CREATOR"
     )
@@ -46,7 +47,7 @@ public interface CreatorConnectionControllerDocs {
                                                     "      \"marketId\": 7,\n" +
                                                     "      \"marketName\": \"쇼룸즈\",\n" +
                                                     "      \"marketImageUrl\": \"https://s3.ap-northeast-2.amazonaws.com/bucket/market/7.jpg\",\n" +
-                                                    "      \"mainCategoryName\": \"뷰티\",\n" +
+                                                    "      \"status\": \"REQUESTED\",\n" +
                                                     "      \"requestedAt\": \"2026-08-06T14:22:10\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
@@ -54,14 +55,22 @@ public interface CreatorConnectionControllerDocs {
                                                     "      \"marketId\": 3,\n" +
                                                     "      \"marketName\": \"트렌디샵\",\n" +
                                                     "      \"marketImageUrl\": null,\n" +
-                                                    "      \"mainCategoryName\": null,\n" +
+                                                    "      \"status\": \"CONNECTED\",\n" +
                                                     "      \"requestedAt\": \"2026-08-05T09:01:44\"\n" +
+                                                    "    },\n" +
+                                                    "    {\n" +
+                                                    "      \"connectionId\": 90,\n" +
+                                                    "      \"marketId\": 5,\n" +
+                                                    "      \"marketName\": \"데일리코스\",\n" +
+                                                    "      \"marketImageUrl\": null,\n" +
+                                                    "      \"status\": \"REJECTED\",\n" +
+                                                    "      \"requestedAt\": \"2026-08-04T11:10:00\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 1,\n" +
-                                                    "    \"totalResults\": 2,\n" +
+                                                    "    \"totalResults\": 3,\n" +
                                                     "    \"limit\": 20,\n" +
                                                     "    \"hasNext\": false\n" +
                                                     "  }\n" +
@@ -89,6 +98,8 @@ public interface CreatorConnectionControllerDocs {
             )
     })
     ResponseEntity<PageResponse<ConnectionRequestItem>> getRequests(
+            @Parameter(description = "목록 필터 — REQUESTED(미처리만, 기본) / ALL(요청·수락·거절)", example = "REQUESTED")
+            @RequestParam(value = "status", defaultValue = "REQUESTED") ConnectionRequestStatusFilter status,
             @Parameter(description = "브랜드명 검색어 — 비우면 전체", example = "데일리코스")
             @RequestParam(value = "keyword", required = false) String keyword,
             @ModelAttribute PagingRequest pagingRequest

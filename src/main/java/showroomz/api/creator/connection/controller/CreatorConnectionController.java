@@ -9,6 +9,7 @@ import showroomz.api.creator.connection.dto.ConnectionCodeResponse;
 import showroomz.api.creator.connection.dto.ConnectionRequestItem;
 import showroomz.api.creator.connection.docs.CreatorConnectionControllerDocs;
 import showroomz.api.creator.connection.service.CreatorConnectionService;
+import showroomz.api.creator.connection.type.ConnectionRequestStatusFilter;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
@@ -24,10 +25,11 @@ public class CreatorConnectionController implements CreatorConnectionControllerD
     @Override
     @GetMapping("/requests")
     public ResponseEntity<PageResponse<ConnectionRequestItem>> getRequests(
+            @RequestParam(value = "status", defaultValue = "REQUESTED") ConnectionRequestStatusFilter status,
             @RequestParam(value = "keyword", required = false) String keyword,
             @ModelAttribute PagingRequest pagingRequest) {
         PageResponse<ConnectionRequestItem> response =
-                creatorConnectionService.getRequests(getCurrentUserEmail(), keyword, pagingRequest);
+                creatorConnectionService.getRequests(getCurrentUserEmail(), status, keyword, pagingRequest);
         return ResponseEntity.ok(response);
     }
 
