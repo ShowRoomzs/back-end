@@ -6,7 +6,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.api.creator.connection.dto.ConnectionRequestItem;
+import showroomz.domain.category.entity.Category;
 import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.connection.type.ConnectionStatus;
@@ -15,14 +18,18 @@ import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.message.service.MessageThreadService;
+import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -61,6 +68,55 @@ class CreatorConnectionServiceTest {
 
     private Connection requestedPair() {
         return Connection.requestPair(market(), me);
+    }
+
+    @Test
+    @DisplayName("요청 카드 부가 정보(S12 \"뷰티 브랜드 · 어제 요청\")를 위해 대표 카테고리명을 함께 내려준다")
+    void requestItemCarriesMainCategoryName() {
+        Market market = market();
+        market.setId(7L);
+        Category category = new Category();
+        category.setName("뷰티");
+        market.setMainCategory(category);
+
+        givenAuthenticatedCreator();
+        given(connectionRepository.findRequestsByCreator(eq(me), eq(ConnectionStatus.REQUESTED), isNull(), any()))
+                .willReturn(new PageImpl<>(List.of(Connection.requestPair(market, me))));
+
+        ConnectionRequestItem item = creatorConnectionService
+                .getRequests(CREATOR_EMAIL, null, new PagingRequest()).getContent().get(0);
+
+        assertThat(item.getMarketName()).isEqualTo("코코브라운");
+        assertThat(item.getMainCategoryName()).isEqualTo("뷰티");
+    }
+
+    @Test
+    @DisplayName("대표 카테고리가 없는 브랜드는 카테고리명이 null이다")
+    void requestItemAllowsMissingCategory() {
+        givenAuthenticatedCreator();
+        given(connectionRepository.findRequestsByCreator(eq(me), eq(ConnectionStatus.REQUESTED), isNull(), any()))
+                .willReturn(new PageImpl<>(List.of(Connection.requestPair(market(), me))));
+
+        ConnectionRequestItem item = creatorConnectionService
+                .getRequests(CREATOR_EMAIL, null, new PagingRequest()).getContent().get(0);
+
+        assertThat(item.getMainCategoryName()).isNull();
+    }
+
+    @Test
+    @DisplayName("브랜드명 검색어는 공백을 정리해서 넘기고, 빈 값이면 전체 조회(null)로 넘긴다")
+    void normalizesSearchKeyword() {
+        givenAuthenticatedCreator();
+        given(connectionRepository.findRequestsByCreator(eq(me), eq(ConnectionStatus.REQUESTED), any(), any()))
+                .willReturn(new PageImpl<>(List.of()));
+
+        creatorConnectionService.getRequests(CREATOR_EMAIL, "  데일리  ", new PagingRequest());
+        creatorConnectionService.getRequests(CREATOR_EMAIL, "   ", new PagingRequest());
+
+        verify(connectionRepository)
+                .findRequestsByCreator(eq(me), eq(ConnectionStatus.REQUESTED), eq("데일리"), any());
+        verify(connectionRepository)
+                .findRequestsByCreator(eq(me), eq(ConnectionStatus.REQUESTED), isNull(), any());
     }
 
     @Test

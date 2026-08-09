@@ -55,17 +55,28 @@ public class CreatorThreadService {
     private final MessageAttachmentRepository messageAttachmentRepository;
     private final MessageAttachmentService messageAttachmentService;
 
-    /** §14-3 `연결됨` 탭. 안 읽은 수는 페이지 전체를 한 쿼리로 집계한다(스레드당 카운트 금지). */
-    public PageResponse<ThreadListItem> getThreads(String creatorEmail, PagingRequest pagingRequest) {
+    /**
+     * §14-3 `연결됨` 탭. 안 읽은 수는 페이지 전체를 한 쿼리로 집계한다(스레드당 카운트 금지).
+     * keyword는 좌측 목록 상단의 "브랜드명 검색"(S1~S11) — 비어 있으면 전체를 내려준다.
+     */
+    public PageResponse<ThreadListItem> getThreads(String creatorEmail, String keyword, PagingRequest pagingRequest) {
         Creator creator = getMyCreator(creatorEmail);
         Page<MessageThread> threads = messageThreadRepository
-                .findOpenThreadsForCreator(creator, ThreadStatus.OPEN, pagingRequest.toPageable());
+                .findOpenThreadsForCreator(creator, ThreadStatus.OPEN, normalizeKeyword(keyword),
+                        pagingRequest.toPageable());
 
         Map<Long, Long> unreadByThread = messageThreadService.countUnreadByThreadIds(
                 threads.getContent().stream().map(MessageThread::getId).toList(),
                 ParticipantType.CREATOR, creator.getId());
 
         return PageResponse.of(threads.map(thread -> toListItem(thread, unreadByThread)));
+    }
+
+    private static String normalizeKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+        return keyword.trim();
     }
 
     /** 탭 배지용 — 폴링 대상(§0)이라 스레드 수와 무관하게 쿼리 3회로 고정한다. */

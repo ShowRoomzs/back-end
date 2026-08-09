@@ -24,9 +24,10 @@ public class CreatorConnectionController implements CreatorConnectionControllerD
     @Override
     @GetMapping("/requests")
     public ResponseEntity<PageResponse<ConnectionRequestItem>> getRequests(
+            @RequestParam(value = "keyword", required = false) String keyword,
             @ModelAttribute PagingRequest pagingRequest) {
         PageResponse<ConnectionRequestItem> response =
-                creatorConnectionService.getRequests(getCurrentUserEmail(), pagingRequest);
+                creatorConnectionService.getRequests(getCurrentUserEmail(), keyword, pagingRequest);
         return ResponseEntity.ok(response);
     }
 

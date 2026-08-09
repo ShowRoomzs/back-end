@@ -33,7 +33,10 @@ public interface CreatorThreadControllerDocs {
     @Operation(
             summary = "`연결됨` 탭 — 스레드 목록",
             description = "운영자 채널이 항상 최상단 고정되고, 그 아래 연결됨(OPEN) 상태의 브랜드만 최근 메시지순으로 노출된다.\n\n" +
-                    "휴면(DORMANT) 스레드는 목록에서 완전히 제외된다(§13-12 #2 해소).\n\n**권한:** CREATOR"
+                    "휴면(DORMANT) 스레드는 목록에서 완전히 제외된다(§13-12 #2 해소).\n\n" +
+                    "`keyword`는 목록 상단 \"브랜드명 검색\" 입력이다 — 값을 주면 브랜드명 부분 일치만 남고, " +
+                    "브랜드가 아닌 운영자 고정 채널은 검색 결과에서 빠진다(값이 없을 때만 최상단에 고정 노출).\n\n" +
+                    "**권한:** CREATOR"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -98,7 +101,10 @@ public interface CreatorThreadControllerDocs {
                     )
             )
     })
-    ResponseEntity<PageResponse<ThreadListItem>> getThreads(@ModelAttribute PagingRequest pagingRequest);
+    ResponseEntity<PageResponse<ThreadListItem>> getThreads(
+            @Parameter(description = "브랜드명 검색어 — 비우면 전체(운영자 채널 포함)", example = "글로우랩")
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @ModelAttribute PagingRequest pagingRequest);
 
     @Operation(
             summary = "탭 배지용 안 읽은 수·미처리 요청 수",

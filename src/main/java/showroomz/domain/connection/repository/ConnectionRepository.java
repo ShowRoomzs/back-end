@@ -49,13 +49,19 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
             @Param("withdrawnStatus") UserStatus withdrawnStatus,
             Pageable pageable);
 
-    /** §14-3 요청함 목록 — 브랜드 정보까지 한 번에 가져온다(N+1 방지). */
-    @Query("SELECT c FROM Connection c JOIN FETCH c.market m " +
+    /**
+     * §14-3 요청함 목록 — 브랜드 정보까지 한 번에 가져온다(N+1 방지).
+     * 요청 카드의 부가 정보가 "뷰티 브랜드 · 어제 요청"(S12)이라 대표 카테고리까지 함께 fetch한다.
+     * keyword는 좌측 목록 상단의 "브랜드명 검색" 입력으로, 연결됨 탭과 동일하게 브랜드명 부분 일치다.
+     */
+    @Query("SELECT c FROM Connection c JOIN FETCH c.market m LEFT JOIN FETCH m.mainCategory " +
            "WHERE c.type = showroomz.domain.connection.type.ConnectionType.PAIR " +
            "AND c.creator = :creator AND c.status = :status " +
+           "AND (:keyword IS NULL OR :keyword = '' OR m.marketName LIKE CONCAT('%', :keyword, '%')) " +
            "ORDER BY c.requestedAt DESC")
     Page<Connection> findRequestsByCreator(@Param("creator") Creator creator,
                                             @Param("status") ConnectionStatus status,
+                                            @Param("keyword") String keyword,
                                             Pageable pageable);
 
     long countByTypeAndCreatorAndStatus(ConnectionType type, Creator creator, ConnectionStatus status);

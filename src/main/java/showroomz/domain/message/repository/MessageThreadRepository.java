@@ -35,13 +35,20 @@ public interface MessageThreadRepository extends JpaRepository<MessageThread, Lo
                                                   @Param("status") ThreadStatus status,
                                                   Pageable pageable);
 
-    /** §14-3 `연결됨` 탭 — 운영자 채널(OPERATOR_CREATOR) 최상단 고정 + STATUS=OPEN만, 최근 메시지순. */
-    @Query("SELECT t FROM MessageThread t JOIN FETCH t.connection c LEFT JOIN FETCH c.market " +
+    /**
+     * §14-3 `연결됨` 탭 — 운영자 채널(OPERATOR_CREATOR) 최상단 고정 + STATUS=OPEN만, 최근 메시지순.
+     * keyword는 시안(S1~S13) 좌측 목록 상단의 "브랜드명 검색" 입력이다 — 값이 있으면 브랜드명 부분 일치만 남는다.
+     * 이때 운영자 채널은 자연히 빠진다(market이 NULL이라 LIKE 조건이 성립하지 않는다) — 검색 대상이
+     * "브랜드명"이므로 브랜드가 아닌 고정 채널이 검색 결과에 남아 있으면 오히려 방해가 된다.
+     */
+    @Query("SELECT t FROM MessageThread t JOIN FETCH t.connection c LEFT JOIN FETCH c.market m " +
            "WHERE t.status = :status AND c.creator = :creator " +
+           "AND (:keyword IS NULL OR :keyword = '' OR m.marketName LIKE CONCAT('%', :keyword, '%')) " +
            "ORDER BY CASE WHEN c.type = showroomz.domain.connection.type.ConnectionType.OPERATOR_CREATOR THEN 0 ELSE 1 END, " +
            "t.lastMessageAt DESC NULLS LAST")
     Page<MessageThread> findOpenThreadsForCreator(@Param("creator") Creator creator,
                                                    @Param("status") ThreadStatus status,
+                                                   @Param("keyword") String keyword,
                                                    Pageable pageable);
 
     /**

@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.creator.connection.dto.ConnectionCodeResponse;
 import showroomz.api.creator.connection.dto.ConnectionRequestItem;
@@ -23,6 +24,9 @@ public interface CreatorConnectionControllerDocs {
     @Operation(
             summary = "받은 연결 요청 목록",
             description = "연결은 항상 브랜드가 발신한다(§13-6·§14-2) — 인플루언서는 수락/거절만 한다.\n\n" +
+                    "요청 시각 내림차순이며, 카드 부가 정보(\"뷰티 브랜드 · 어제 요청\", S12)를 그릴 수 있도록 " +
+                    "브랜드 대표 카테고리명(`mainCategoryName`)을 함께 내려준다.\n\n" +
+                    "`keyword`는 목록 상단 \"브랜드명 검색\" 입력으로, 브랜드명 부분 일치다.\n\n" +
                     "**권한:** CREATOR"
     )
     @ApiResponses(value = {
@@ -42,6 +46,7 @@ public interface CreatorConnectionControllerDocs {
                                                     "      \"marketId\": 7,\n" +
                                                     "      \"marketName\": \"쇼룸즈\",\n" +
                                                     "      \"marketImageUrl\": \"https://s3.ap-northeast-2.amazonaws.com/bucket/market/7.jpg\",\n" +
+                                                    "      \"mainCategoryName\": \"뷰티\",\n" +
                                                     "      \"requestedAt\": \"2026-08-06T14:22:10\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
@@ -49,6 +54,7 @@ public interface CreatorConnectionControllerDocs {
                                                     "      \"marketId\": 3,\n" +
                                                     "      \"marketName\": \"트렌디샵\",\n" +
                                                     "      \"marketImageUrl\": null,\n" +
+                                                    "      \"mainCategoryName\": null,\n" +
                                                     "      \"requestedAt\": \"2026-08-05T09:01:44\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
@@ -83,6 +89,8 @@ public interface CreatorConnectionControllerDocs {
             )
     })
     ResponseEntity<PageResponse<ConnectionRequestItem>> getRequests(
+            @Parameter(description = "브랜드명 검색어 — 비우면 전체", example = "데일리코스")
+            @RequestParam(value = "keyword", required = false) String keyword,
             @ModelAttribute PagingRequest pagingRequest
     );
 

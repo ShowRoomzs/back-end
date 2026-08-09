@@ -33,8 +33,10 @@ public class CreatorThreadController implements CreatorThreadControllerDocs {
 
     @Override
     @GetMapping("/v1/creator/connections/threads")
-    public ResponseEntity<PageResponse<ThreadListItem>> getThreads(@ModelAttribute PagingRequest pagingRequest) {
-        return ResponseEntity.ok(creatorThreadService.getThreads(getCurrentUserEmail(), pagingRequest));
+    public ResponseEntity<PageResponse<ThreadListItem>> getThreads(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @ModelAttribute PagingRequest pagingRequest) {
+        return ResponseEntity.ok(creatorThreadService.getThreads(getCurrentUserEmail(), keyword, pagingRequest));
     }
 
     @Override
