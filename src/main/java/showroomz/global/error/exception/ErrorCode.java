@@ -201,7 +201,7 @@ public enum ErrorCode {
     CHANGE_REQUEST_REJECT_REASON_TYPE_MISMATCH(HttpStatus.BAD_REQUEST, "CHANGE_REQUEST_REJECT_REASON_TYPE_MISMATCH", "해당 유형에 사용할 수 없는 반려 사유입니다."),
     CHANGE_REQUEST_REJECT_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "CHANGE_REQUEST_REJECT_DETAIL_REQUIRED", "기타 사유를 선택한 경우 상세 사유는 필수입니다."),
     EMAIL_CHANGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "EMAIL_CHANGE_LIMIT_EXCEEDED", "로그인 이메일은 월 1회만 변경할 수 있습니다."),
-    NEW_PASSWORD_CONFIRM_MISMATCH(HttpStatus.BAD_REQUEST, "NEW_PASSWORD_CONFIRM_MISMATCH", "새 비밀번호가 일치하지 않습니다.");
+    NEW_PASSWORD_CONFIRM_MISMATCH(HttpStatus.BAD_REQUEST, "NEW_PASSWORD_CONFIRM_MISMATCH", "비밀번호가 일치하지 않습니다.");
 
     private final HttpStatus status;
     private final String code;

@@ -57,12 +57,12 @@ public class SellerBasicInfoDto {
     public static class UpdateBusinessInfoRequest {
 
         @NotBlank(message = "tax 확인용 이메일은 필수입니다.")
-        @Email(message = "올바른 이메일 형식이 아닙니다.")
+        @Email(message = "올바른 이메일 형식이 아닙니다. (예: example@domain.com)")
         @Schema(description = "tax 확인용 이메일", example = "tax@brand.com")
         private String taxEmail;
 
-        @Pattern(regexp = "^https?://.+$", message = "http(s):// 를 포함한 전체 주소를 입력해주세요.")
-        @Schema(description = "브랜드 사이트 링크. 미입력 시 소비자 앱에 버튼이 노출되지 않는다.", example = "https://ohh-cosmetic.com")
+        @Pattern(regexp = "^$|^https?://.+$", message = "올바른 주소 형식이 아닙니다. (예: https://example.com)")
+        @Schema(description = "브랜드 사이트 링크. 선택 입력 — 미입력 시 소비자 앱에 버튼이 노출되지 않는다.", example = "https://ohh-cosmetic.com")
         private String brandSiteUrl;
     }
 
@@ -104,17 +104,17 @@ public class SellerBasicInfoDto {
     @Schema(description = "담당자·CS 탭 일괄 저장 요청 (7필드)")
     public static class UpdateManagerInfoRequest {
 
-        @NotBlank(message = "판매 담당자 이름은 필수입니다.")
+        @NotBlank(message = "판매 담당자 이름을 입력해 주세요.")
         @Schema(description = "판매 담당자 이름", example = "김담당")
         private String managerName;
 
         @NotBlank(message = "판매 담당자 연락처는 필수입니다.")
-        @Pattern(regexp = "^010-\\d{4}-\\d{4}$", message = "010-0000-0000 형식으로 입력해주세요.")
+        @Pattern(regexp = "^010-\\d{4}-\\d{4}$", message = "올바른 핸드폰 번호 형식으로 입력해 주세요. (예: 010-0000-0000)")
         @Schema(description = "판매 담당자 연락처(내부 관리용, 010 11자리 고정)", example = "010-1234-5678")
         private String managerContact;
 
         @NotBlank(message = "고객센터 전화번호는 필수입니다.")
-        @Pattern(regexp = "^(\\d{4}-\\d{4}|\\d{2,4}-\\d{3,4}-\\d{4}|\\d{3,4})$", message = "올바른 전화번호 형식이 아닙니다.")
+        @Pattern(regexp = "^(\\d{4}-\\d{4}|\\d{2,4}-\\d{3,4}-\\d{4}|\\d{3,4})$", message = "올바른 전화번호 형식으로 입력해 주세요. (예: 02-1234-5678)")
         @Schema(description = "고객센터 전화번호", example = "02-1234-5678")
         private String csNumber;
 
@@ -123,14 +123,15 @@ public class SellerBasicInfoDto {
         private String recipientName;
 
         @NotBlank(message = "수취인 연락처는 필수입니다.")
-        @Pattern(regexp = "^01(?:0|1|[6-9])-\\d{3,4}-\\d{4}$", message = "올바른 휴대폰 번호 형식이 아닙니다.")
+        @Pattern(regexp = "^01(?:0|1|[6-9])-\\d{3,4}-\\d{4}$", message = "올바른 휴대폰 번호 형식으로 입력해 주세요. (예: 010-1234-5678)")
         @Schema(description = "반품 수취인 연락처(외부 노출용, 구 통신사 번호 허용)", example = "010-1234-5678")
         private String recipientContact;
 
-        @NotBlank(message = "반품 수취 주소는 필수입니다.")
+        @NotBlank(message = "주소를 검색해 입력해 주세요.")
         @Schema(description = "반품 수취 주소(카카오 주소 API, readonly)", example = "서울특별시 강남구 테헤란로 123")
         private String address;
 
+        @NotBlank(message = "상세 주소를 입력해 주세요.")
         @Schema(description = "반품 수취 상세주소", example = "4층 401호")
         private String detailAddress;
     }
@@ -157,7 +158,7 @@ public class SellerBasicInfoDto {
 
         @NotBlank(message = "새 비밀번호를 입력해주세요.")
         @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,16}$",
-                message = "비밀번호는 8~16자의 영문자, 숫자, 특수문자를 포함해야 합니다.")
+                message = "8~16자 영문·숫자·특수문자 조합으로 입력해 주세요.")
         private String newPassword;
 
         @NotBlank(message = "새 비밀번호 확인을 입력해주세요.")

@@ -66,7 +66,12 @@ public class SellerBasicInfoService {
         Market market = getMyMarket(sellerEmail);
         Seller seller = market.getSeller();
         seller.setTaxEmail(request.getTaxEmail());
-        market.setBrandSiteUrl(request.getBrandSiteUrl());
+        market.setBrandSiteUrl(normalizeBlank(request.getBrandSiteUrl()));
+    }
+
+    /** §A-0 — 빈 값은 빈 문자열이 아니라 null로 저장한다(미입력 시 소비자 앱 버튼 비노출 판정과 일치). */
+    private String normalizeBlank(String value) {
+        return (value == null || value.isBlank()) ? null : value;
     }
 
     public SellerBasicInfoDto.SettlementInfoResponse getSettlementInfo(String sellerEmail) {
@@ -121,7 +126,7 @@ public class SellerBasicInfoService {
     public void changePassword(String sellerEmail, SellerBasicInfoDto.ChangePasswordRequest request) {
         Seller seller = getMySeller(sellerEmail);
         if (!passwordEncoder.matches(request.getCurrentPassword(), seller.getPassword())) {
-            throw new BusinessException(ErrorCode.LOGIN_PASSWORD_MISMATCH);
+            throw new BusinessException(ErrorCode.LOGIN_PASSWORD_MISMATCH, "현재 비밀번호가 일치하지 않습니다.");
         }
         if (!request.getNewPassword().equals(request.getNewPasswordConfirm())) {
             throw new BusinessException(ErrorCode.NEW_PASSWORD_CONFIRM_MISMATCH);
@@ -135,7 +140,7 @@ public class SellerBasicInfoService {
         Seller seller = getMySeller(sellerEmail);
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), seller.getPassword())) {
-            throw new BusinessException(ErrorCode.LOGIN_PASSWORD_MISMATCH);
+            throw new BusinessException(ErrorCode.LOGIN_PASSWORD_MISMATCH, "현재 비밀번호가 일치하지 않습니다.");
         }
 
         String newEmail = request.getNewEmail();
