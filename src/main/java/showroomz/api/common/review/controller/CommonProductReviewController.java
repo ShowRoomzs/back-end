@@ -1,5 +1,6 @@
 package showroomz.api.common.review.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/v1/common/products")
 @RequiredArgsConstructor
+@Hidden
 public class CommonProductReviewController implements CommonProductReviewControllerDocs {
 
     private final CommonProductReviewService commonProductReviewService;

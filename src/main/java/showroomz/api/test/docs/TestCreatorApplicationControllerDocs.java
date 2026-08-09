@@ -15,7 +15,7 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 
 import java.util.Map;
 
-@Tag(name = "Test", description = "테스트 전용 API (인증 불필요)")
+@Tag(name = "Z Test", description = "테스트용 API")
 public interface TestCreatorApplicationControllerDocs {
 
     @Operation(

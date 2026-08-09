@@ -35,7 +35,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/v1/user/auth/local")
 @RequiredArgsConstructor
-@Tag(name = "Z User - LocalAuth", description = "테스트용 LocalAuth API")
+@Tag(name = "Z Test", description = "테스트용 API")
 public class LocalAuthController {
 
     private final AuthenticationManager authenticationManager;

@@ -1,5 +1,6 @@
 package showroomz.api.app.notice.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ import showroomz.global.dto.PagingRequest;
 @RestController
 @RequestMapping("/v1/common/notices")
 @RequiredArgsConstructor
+@Hidden
 public class NoticeController implements NoticeControllerDocs {
 
     private final NoticeService noticeService;

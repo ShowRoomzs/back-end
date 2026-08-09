@@ -1,5 +1,6 @@
 package showroomz.api.creator.post.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import showroomz.global.error.exception.ErrorCode;
 @RestController
 @RequestMapping("/v1/creator/posts")
 @RequiredArgsConstructor
+@Hidden
 public class ShowroomPostController implements PostControllerDocs {
 
     private final ShowroomPostService postService;
