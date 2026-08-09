@@ -19,7 +19,9 @@ public class ConnectionCreatorSearchItem {
     @Schema(description = "프로필 이미지 URL — 없으면 null", example = "https://cdn.example.com/profiles/12.png", nullable = true)
     private final String profileImageUrl;
 
-    @Schema(description = "현재 연결 상태 — null이면 연결 이력 없음(요청 가능), REQUESTED/CONNECTED면 [요청] 버튼 대신 상태 배지 표시(§13-6)",
+    @Schema(description = "현재 연결 상태 — null이면 요청 가능([요청] 버튼), REQUESTED/CONNECTED면 " +
+            "[요청] 버튼 대신 상태 배지 표시(§13-6). 재요청이 허용되는 REJECTED/DISCONNECTED 이력은 " +
+            "연결 이력이 없는 것과 동일하게 null로 내려간다",
             example = "REQUESTED", nullable = true)
     private final ConnectionStatus connectionStatus;
 

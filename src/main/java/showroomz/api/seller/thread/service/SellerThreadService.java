@@ -19,6 +19,7 @@ import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.connection.type.ConnectionType;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
+import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.message.entity.Message;
 import showroomz.domain.message.entity.MessageAttachment;
@@ -157,8 +158,17 @@ public class SellerThreadService {
         long unread = unreadByThread.getOrDefault(thread.getId(), 0L);
 
         return new ThreadListItem(
-                thread.getId(), name, null, isOperator, connection.getStatus(),
+                thread.getId(), name, isOperator ? null : profileImageUrlOf(connection.getCreator()),
+                isOperator, connection.getStatus(),
                 thread.getLastMessagePreview(), thread.getLastMessageAt(), unread);
+    }
+
+    /** 인플루언서 프로필 이미지는 CREATOR가 아니라 USERS에 있다(운영자 채널은 creator가 null). */
+    private String profileImageUrlOf(Creator creator) {
+        if (creator == null || creator.getUser() == null) {
+            return null;
+        }
+        return creator.getUser().getProfileImageUrl();
     }
 
     private MessageItem toMessageItem(Message message, Long myMarketId, List<AttachmentSummary> attachments) {

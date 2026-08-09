@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.test.util.ReflectionTestUtils;
 import showroomz.api.common.attachment.dto.AttachmentSummary;
 import showroomz.api.common.attachment.dto.CompleteAttachmentRequest;
@@ -16,11 +17,14 @@ import showroomz.api.common.attachment.dto.PresignResponse;
 import showroomz.api.common.attachment.service.MessageAttachmentService;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.thread.dto.SendMessageRequest;
+import showroomz.api.seller.thread.dto.ThreadListItem;
 import showroomz.domain.connection.entity.Connection;
+import showroomz.domain.connection.type.ConnectionStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.message.entity.Message;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.repository.MessageAttachmentRepository;
@@ -30,14 +34,17 @@ import showroomz.domain.message.type.AttachmentStatus;
 import showroomz.domain.message.type.AttachmentType;
 import showroomz.domain.message.type.ParticipantType;
 import showroomz.domain.message.type.ThreadStatus;
+import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
@@ -126,6 +133,58 @@ class SellerThreadServiceTest {
             assertThatThrownBy(() -> sellerThreadService.markRead(SELLER_EMAIL, THREAD_ID))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.THREAD_ACCESS_DENIED);
+        }
+    }
+
+    @Nested
+    @DisplayName("스레드 목록")
+    class ThreadList {
+
+        @Test
+        @DisplayName("상대 아바타(A1)는 CREATOR가 아니라 USERS의 프로필 이미지를 내려준다")
+        void exposesCounterpartProfileImage() {
+            Users user = new Users();
+            user.setProfileImageUrl("https://cdn.example.com/profiles/12.png");
+            Creator creator = Creator.builder().id(12L).showroomName("뷰티_소연").user(user).build();
+            Connection connection = Connection.requestPair(market, creator);
+            connection.markConnected();
+            MessageThread thread = MessageThread.builder()
+                    .id(THREAD_ID).connection(connection).status(ThreadStatus.OPEN).build();
+
+            givenAuthenticatedSeller();
+            given(messageThreadRepository.findOpenThreadsForMarket(eq(market), eq(ThreadStatus.OPEN), any()))
+                    .willReturn(new PageImpl<>(List.of(thread)));
+            given(messageThreadService.countUnreadByThreadIds(List.of(THREAD_ID), ParticipantType.SELLER, MARKET_ID))
+                    .willReturn(Map.of(THREAD_ID, 2L));
+
+            ThreadListItem item = sellerThreadService.getThreads(SELLER_EMAIL, new PagingRequest())
+                    .getContent().get(0);
+
+            assertThat(item.getCounterpartName()).isEqualTo("뷰티_소연");
+            assertThat(item.getCounterpartImageUrl()).isEqualTo("https://cdn.example.com/profiles/12.png");
+            assertThat(item.getConnectionStatus()).isEqualTo(ConnectionStatus.CONNECTED);
+            assertThat(item.getUnreadCount()).isEqualTo(2L);
+        }
+
+        @Test
+        @DisplayName("운영자 채널은 상대 크리에이터가 없으므로 아바타 없이 고정 표시명만 내려준다 (A2)")
+        void operatorChannelHasNoCounterpartImage() {
+            Connection operator = Connection.createOperatorMarket(market);
+            MessageThread thread = MessageThread.builder()
+                    .id(THREAD_ID).connection(operator).status(ThreadStatus.OPEN).build();
+
+            givenAuthenticatedSeller();
+            given(messageThreadRepository.findOpenThreadsForMarket(eq(market), eq(ThreadStatus.OPEN), any()))
+                    .willReturn(new PageImpl<>(List.of(thread)));
+            given(messageThreadService.countUnreadByThreadIds(List.of(THREAD_ID), ParticipantType.SELLER, MARKET_ID))
+                    .willReturn(Map.of());
+
+            ThreadListItem item = sellerThreadService.getThreads(SELLER_EMAIL, new PagingRequest())
+                    .getContent().get(0);
+
+            assertThat(item.isOperatorChannel()).isTrue();
+            assertThat(item.getCounterpartName()).isEqualTo("SHOWROOMZ 운영팀");
+            assertThat(item.getCounterpartImageUrl()).isNull();
         }
     }
 

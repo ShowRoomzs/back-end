@@ -71,7 +71,8 @@ class SellerConnectionServiceTest {
     private static Creator creator(long id, UserStatus status) {
         Users user = new Users();
         user.setStatus(status);
-        return Creator.builder().id(id).showroomName("뷰티_소연").user(user).build();
+        user.setProfileImageUrl("https://cdn.example.com/profiles/" + id + ".png");
+        return Creator.builder().id(id).showroomName("뷰티_소연").followerCount(8000).user(user).build();
     }
 
     @Nested
@@ -226,6 +227,57 @@ class SellerConnectionServiceTest {
 
             assertThat(response.isFound()).isTrue();
             assertThat(response.getCreatorId()).isEqualTo(12L);
+        }
+
+        @Test
+        @DisplayName("확인 카드에 필요한 팔로워 수·프로필 이미지를 함께 내려준다 (B5)")
+        void returnsCardFields() {
+            givenAuthenticatedSeller();
+            given(creatorRepository.findByConnectionCode("ABCD234567"))
+                    .willReturn(Optional.of(creator(12L, UserStatus.NORMAL)));
+
+            ConnectionCodeCheckResponse response =
+                    sellerConnectionService.checkConnectionCode(SELLER_EMAIL, "ABCD234567");
+
+            assertThat(response.getShowroomName()).isEqualTo("뷰티_소연");
+            assertThat(response.getFollowerCount()).isEqualTo(8000);
+            assertThat(response.getProfileImageUrl()).isEqualTo("https://cdn.example.com/profiles/12.png");
+        }
+
+        @Test
+        @DisplayName("이미 연결된 상대의 코드면 상태를 실어 보내 [요청 보내기]를 화면에서 막게 한다")
+        void connectedCounterpartExposesStatus() {
+            Creator target = creator(12L, UserStatus.NORMAL);
+            Connection existing = Connection.requestPair(market, target);
+            existing.markConnected();
+            givenAuthenticatedSeller();
+            given(creatorRepository.findByConnectionCode("ABCD234567")).willReturn(Optional.of(target));
+            given(connectionRepository.findByTypeAndMarketAndCreator(ConnectionType.PAIR, market, target))
+                    .willReturn(Optional.of(existing));
+
+            ConnectionCodeCheckResponse response =
+                    sellerConnectionService.checkConnectionCode(SELLER_EMAIL, "ABCD234567");
+
+            assertThat(response.isFound()).isTrue();
+            assertThat(response.getConnectionStatus()).isEqualTo(ConnectionStatus.CONNECTED);
+        }
+
+        @Test
+        @DisplayName("거절됐던 상대는 재요청이 가능하므로 상태를 null로 내린다 — 이력 없는 상대와 같게 보여야 한다")
+        void rejectedHistoryIsReportedAsRequestable() {
+            Creator target = creator(12L, UserStatus.NORMAL);
+            Connection existing = Connection.requestPair(market, target);
+            existing.markRejected();
+            givenAuthenticatedSeller();
+            given(creatorRepository.findByConnectionCode("ABCD234567")).willReturn(Optional.of(target));
+            given(connectionRepository.findByTypeAndMarketAndCreator(ConnectionType.PAIR, market, target))
+                    .willReturn(Optional.of(existing));
+
+            ConnectionCodeCheckResponse response =
+                    sellerConnectionService.checkConnectionCode(SELLER_EMAIL, "ABCD234567");
+
+            assertThat(response.isFound()).isTrue();
+            assertThat(response.getConnectionStatus()).isNull();
         }
 
         @Test

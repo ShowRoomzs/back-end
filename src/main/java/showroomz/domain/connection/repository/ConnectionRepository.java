@@ -28,7 +28,9 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
 
     /**
      * §13-6 쇼룸명 검색 — 상대별 현재 연결 상태(이 브랜드 기준)를 함께 내려준다.
-     * 연결 이력이 없으면 status는 null(요청 가능), 있으면 최신 상태(REQUESTED/CONNECTED/REJECTED/DISCONNECTED).
+     * status는 <b>REQUESTED/CONNECTED일 때만</b> 채워지고 그 외에는 null이다 — 시안(B1·B4)의 배지는
+     * "요청중"·"연결됨" 두 가지뿐이고, REJECTED/DISCONNECTED 이력은 재요청이 허용되므로
+     * (requestConnection이 같은 행을 재사용한다) 이력이 없는 상대와 똑같이 [요청] 버튼이 떠야 한다.
      * 탈퇴한 인플루언서는 검색 결과에서 제외한다.
      */
     @Query("SELECT new showroomz.api.seller.connection.dto.ConnectionCreatorSearchItem(" +
@@ -36,6 +38,8 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
            "FROM Creator cr " +
            "LEFT JOIN Connection c ON c.creator = cr AND c.type = showroomz.domain.connection.type.ConnectionType.PAIR " +
            "    AND c.market.id = :marketId " +
+           "    AND c.status IN (showroomz.domain.connection.type.ConnectionStatus.REQUESTED, " +
+           "                     showroomz.domain.connection.type.ConnectionStatus.CONNECTED) " +
            "WHERE cr.showroomName LIKE CONCAT('%', :keyword, '%') " +
            "AND cr.user.status <> :withdrawnStatus " +
            "ORDER BY cr.showroomName ASC")

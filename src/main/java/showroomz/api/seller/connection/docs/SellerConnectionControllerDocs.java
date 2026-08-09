@@ -106,7 +106,10 @@ public interface SellerConnectionControllerDocs {
             description = "인플루언서에게 전달받은 연결코드가 유효한지 확인한다(§13-6).\n\n" +
                     "**권한:** SELLER\n\n" +
                     "일치하는 코드가 없어도 예외를 던지지 않고 found=false로 응답한다 — 오타 등으로 흔히 발생하는 " +
-                    "정상적인 케이스라 오류 취급하지 않는다."
+                    "정상적인 케이스라 오류 취급하지 않는다.\n\n" +
+                    "일치하면 확인 카드에 필요한 팔로워 수(`followerCount`)·프로필 이미지(`profileImageUrl`)와 함께 " +
+                    "현재 연결 상태(`connectionStatus`)를 내려준다 — null이면 [요청 보내기] 활성, " +
+                    "REQUESTED/CONNECTED면 이미 유효한 연결이 있어 요청할 수 없다(검색 응답과 동일한 규칙)."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -117,11 +120,25 @@ public interface SellerConnectionControllerDocs {
                             schema = @Schema(implementation = ConnectionCodeCheckResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "코드 일치",
+                                            name = "코드 일치 — 요청 가능",
                                             value = "{\n" +
                                                     "  \"found\": true,\n" +
                                                     "  \"creatorId\": 12,\n" +
-                                                    "  \"showroomName\": \"민지의 쇼룸\"\n" +
+                                                    "  \"showroomName\": \"민지의 쇼룸\",\n" +
+                                                    "  \"followerCount\": 8000,\n" +
+                                                    "  \"profileImageUrl\": \"https://cdn.example.com/profiles/12.png\",\n" +
+                                                    "  \"connectionStatus\": null\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "코드 일치 — 이미 연결된 상대",
+                                            value = "{\n" +
+                                                    "  \"found\": true,\n" +
+                                                    "  \"creatorId\": 12,\n" +
+                                                    "  \"showroomName\": \"민지의 쇼룸\",\n" +
+                                                    "  \"followerCount\": 8000,\n" +
+                                                    "  \"profileImageUrl\": null,\n" +
+                                                    "  \"connectionStatus\": \"CONNECTED\"\n" +
                                                     "}"
                                     ),
                                     @ExampleObject(
@@ -129,7 +146,10 @@ public interface SellerConnectionControllerDocs {
                                             value = "{\n" +
                                                     "  \"found\": false,\n" +
                                                     "  \"creatorId\": null,\n" +
-                                                    "  \"showroomName\": null\n" +
+                                                    "  \"showroomName\": null,\n" +
+                                                    "  \"followerCount\": null,\n" +
+                                                    "  \"profileImageUrl\": null,\n" +
+                                                    "  \"connectionStatus\": null\n" +
                                                     "}"
                                     )
                             }

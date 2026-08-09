@@ -21,8 +21,13 @@ public interface MessageThreadRepository extends JpaRepository<MessageThread, Lo
 
     Optional<MessageThread> findByConnection(Connection connection);
 
-    /** §13-1 좌측 목록 — 운영자 채널(OPERATOR_MARKET) 최상단 고정 + STATUS=OPEN만, 최근 메시지순. */
-    @Query("SELECT t FROM MessageThread t JOIN FETCH t.connection c LEFT JOIN FETCH c.creator " +
+    /**
+     * §13-1 좌측 목록 — 운영자 채널(OPERATOR_MARKET) 최상단 고정 + STATUS=OPEN만, 최근 메시지순.
+     * 목록 아바타(counterpartImageUrl)가 CREATOR.USER.PROFILE_IMAGE_URL에 있으므로 user까지 fetch한다
+     * — 지연 로딩으로 두면 스레드 수만큼 추가 쿼리가 나간다(N+1).
+     */
+    @Query("SELECT t FROM MessageThread t JOIN FETCH t.connection c " +
+           "LEFT JOIN FETCH c.creator cr LEFT JOIN FETCH cr.user " +
            "WHERE t.status = :status AND c.market = :market " +
            "ORDER BY CASE WHEN c.type = showroomz.domain.connection.type.ConnectionType.OPERATOR_MARKET THEN 0 ELSE 1 END, " +
            "t.lastMessageAt DESC NULLS LAST")
