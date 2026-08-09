@@ -10,7 +10,10 @@ import showroomz.domain.changerequest.type.ChangeRequestField;
 @Builder
 @Schema(description = "변경 요청 가능 항목")
 public class ChangeRequestFieldOption {
+    @Schema(example = "REPRESENTATIVE_NAME")
     private ChangeRequestField fieldKey;
+    @Schema(example = "대표자명")
     private String label;
+    @Schema(example = "김대표")
     private String currentValue;
 }
