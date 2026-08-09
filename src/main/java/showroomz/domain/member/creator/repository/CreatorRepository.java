@@ -28,7 +28,9 @@ public interface CreatorRepository extends JpaRepository<Creator, Long> {
      * <p>`LIKE 'SZ%'`가 아니라 <b>생성 규칙과의 정확한 등식</b>으로 판정하는 이유: 랜덤 코드 알파벳에도
      * `S`·`Z`가 있어 접두사만 보면 정상 코드를 1/1024 확률로 오탐한다.
      */
-    @Query(value = "SELECT CREATOR_ID FROM CREATOR " +
-                   "WHERE CONNECTION_CODE = CONCAT('SZ', LPAD(CREATOR_ID, 8, '0'))", nativeQuery = true)
+    // Flyway는 creator(소문자)로 생성한다. Linux CI(MySQL lower_case_table_names=0)에서는
+    // CREATOR(대문자) 조회가 SQLSyntaxErrorException으로 실패하므로 소문자로 맞춘다.
+    @Query(value = "SELECT creator_id FROM creator " +
+                   "WHERE connection_code = CONCAT('SZ', LPAD(creator_id, 8, '0'))", nativeQuery = true)
     List<Long> findIdsWithLegacyConnectionCode();
 }

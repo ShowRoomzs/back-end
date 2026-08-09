@@ -39,14 +39,14 @@ public interface BrandChangeRequestRepository extends JpaRepository<BrandChangeR
             "SELECT * FROM brand_change_request r " +
             "WHERE r.status IN (:statuses) " +
             "AND (:keyword IS NULL OR :keyword = '' OR EXISTS (" +
-            "    SELECT 1 FROM MARKET m WHERE m.MARKET_ID = r.market_id AND m.MARKET_NAME LIKE CONCAT('%', :keyword, '%')" +
+            "    SELECT 1 FROM market m WHERE m.market_id = r.market_id AND m.market_name LIKE CONCAT('%', :keyword, '%')" +
             ")) " +
             "ORDER BY (r.status = 'PENDING') DESC, CASE WHEN r.status = 'PENDING' THEN r.requested_at END ASC, r.requested_at DESC",
             countQuery =
             "SELECT COUNT(*) FROM brand_change_request r " +
             "WHERE r.status IN (:statuses) " +
             "AND (:keyword IS NULL OR :keyword = '' OR EXISTS (" +
-            "    SELECT 1 FROM MARKET m WHERE m.MARKET_ID = r.market_id AND m.MARKET_NAME LIKE CONCAT('%', :keyword, '%')" +
+            "    SELECT 1 FROM market m WHERE m.market_id = r.market_id AND m.market_name LIKE CONCAT('%', :keyword, '%')" +
             "))",
             nativeQuery = true)
     Page<BrandChangeRequest> search(@Param("statuses") Collection<String> statuses,
