@@ -49,6 +49,9 @@ public class Market {
     @Column(name = "MARKET_URL", length = 512)
     private String marketUrl; // 마켓 URL
 
+    @Column(name = "brand_site_url", length = 512)
+    private String brandSiteUrl; // 브랜드 사이트 링크(§15-2). MARKET_URL과 별개 — 자동 생성 쇼룸 주소가 아니다
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "MAIN_CATEGORY_ID")
     private Category mainCategory; // 대표 카테고리
