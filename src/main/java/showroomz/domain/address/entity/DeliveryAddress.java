@@ -38,27 +38,32 @@ public class DeliveryAddress extends BaseTimeEntity {
     @Column(name = "PHONE_NUMBER", length = 20, nullable = false)
     private String phoneNumber;
 
+    @Column(name = "MEMO", length = 50)
+    private String memo; // 배송 메모 (선택, 프리셋 문구 또는 직접 입력 50자)
+
     @Column(name = "IS_DEFAULT", nullable = false)
     private boolean isDefault;
 
     @Builder
-    public DeliveryAddress(Users user, String recipientName, String zipCode, String address, String detailAddress, String phoneNumber, boolean isDefault) {
+    public DeliveryAddress(Users user, String recipientName, String zipCode, String address, String detailAddress, String phoneNumber, String memo, boolean isDefault) {
         this.user = user;
         this.recipientName = recipientName;
         this.zipCode = zipCode;
         this.address = address;
         this.detailAddress = detailAddress;
         this.phoneNumber = phoneNumber;
+        this.memo = memo;
         this.isDefault = isDefault;
     }
 
     // 정보 수정을 위한 메서드
-    public void updateAddress(String recipientName, String zipCode, String address, String detailAddress, String phoneNumber, boolean isDefault) {
+    public void updateAddress(String recipientName, String zipCode, String address, String detailAddress, String phoneNumber, String memo, boolean isDefault) {
         this.recipientName = recipientName;
         this.zipCode = zipCode;
         this.address = address;
         this.detailAddress = detailAddress;
         this.phoneNumber = phoneNumber;
+        this.memo = memo;
         this.isDefault = isDefault;
     }
 

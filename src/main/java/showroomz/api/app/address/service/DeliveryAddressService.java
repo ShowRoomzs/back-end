@@ -63,6 +63,7 @@ public class DeliveryAddressService {
                 .address(request.getAddress())
                 .detailAddress(request.getDetailAddress())
                 .phoneNumber(request.getPhoneNumber())
+                .memo(request.getMemo())
                 .isDefault(request.isDefault() || isFirst)
                 .build();
 
@@ -102,6 +103,7 @@ public class DeliveryAddressService {
                 request.getAddress(),
                 request.getDetailAddress(),
                 request.getPhoneNumber(),
+                request.getMemo(),
                 request.isDefault()
         );
     }
