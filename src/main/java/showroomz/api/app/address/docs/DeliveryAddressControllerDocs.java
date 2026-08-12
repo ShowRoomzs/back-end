@@ -48,6 +48,7 @@ public interface DeliveryAddressControllerDocs {
                                                     "    \"address\": \"서울특별시 강남구 테헤란로 123\",\n" +
                                                     "    \"detailAddress\": \"101동 101호\",\n" +
                                                     "    \"phoneNumber\": \"010-1234-5678\",\n" +
+                                                    "    \"memo\": \"문 앞에 두세요\",\n" +
                                                     "    \"default\": true\n" +
                                                     "  },\n" +
                                                     "  {\n" +
@@ -57,6 +58,7 @@ public interface DeliveryAddressControllerDocs {
                                                     "    \"address\": \"부산광역시 해운대구 해운대해변로 456\",\n" +
                                                     "    \"detailAddress\": \"202동 202호\",\n" +
                                                     "    \"phoneNumber\": \"010-9876-5432\",\n" +
+                                                    "    \"memo\": null,\n" +
                                                     "    \"default\": false\n" +
                                                     "  }\n" +
                                                     "]"
@@ -129,6 +131,7 @@ public interface DeliveryAddressControllerDocs {
                                                     "  \"address\": \"서울특별시 강남구 테헤란로 123\",\n" +
                                                     "  \"detailAddress\": \"101동 101호\",\n" +
                                                     "  \"phoneNumber\": \"010-1234-5678\",\n" +
+                                                    "  \"memo\": \"문 앞에 두세요\",\n" +
                                                     "  \"default\": true\n" +
                                                     "}"
                                     )
@@ -197,6 +200,7 @@ public interface DeliveryAddressControllerDocs {
                     "- `address`: 필수, 최대 255자\n" +
                     "- `detailAddress`: 필수, 최대 255자\n" +
                     "- `phoneNumber`: 필수, 형식: `010-1234-5678` (하이픈 포함)\n" +
+                    "- `memo`: 선택, 최대 50자 (배송 시 요청사항 프리셋 문구 또는 직접 입력한 문구)\n" +
                     "- `isDefault`: 선택, 기본값: `false`\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
@@ -280,6 +284,7 @@ public interface DeliveryAddressControllerDocs {
                                             "  \"address\": \"서울특별시 강남구 테헤란로 123\",\n" +
                                             "  \"detailAddress\": \"101동 101호\",\n" +
                                             "  \"phoneNumber\": \"010-1234-5678\",\n" +
+                                            "  \"memo\": \"문 앞에 두세요\",\n" +
                                             "  \"isDefault\": true\n" +
                                             "}",
                                     description = "기본 배송지로 등록하는 경우"
@@ -292,6 +297,7 @@ public interface DeliveryAddressControllerDocs {
                                             "  \"address\": \"부산광역시 해운대구 해운대해변로 456\",\n" +
                                             "  \"detailAddress\": \"202동 202호\",\n" +
                                             "  \"phoneNumber\": \"010-9876-5432\",\n" +
+                                            "  \"memo\": null,\n" +
                                             "  \"isDefault\": false\n" +
                                             "}",
                                     description = "일반 배송지로 등록하는 경우"
@@ -414,6 +420,7 @@ public interface DeliveryAddressControllerDocs {
                     "- `address`: 필수, 최대 255자\n" +
                     "- `detailAddress`: 필수, 최대 255자\n" +
                     "- `phoneNumber`: 필수, 형식: `010-1234-5678` (하이픈 포함)\n" +
+                    "- `memo`: 선택, 최대 50자 (배송 시 요청사항 프리셋 문구 또는 직접 입력한 문구)\n" +
                     "- `isDefault`: 선택, 기본값: `false`\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
@@ -514,6 +521,7 @@ public interface DeliveryAddressControllerDocs {
                                             "  \"address\": \"서울특별시 강남구 테헤란로 123\",\n" +
                                             "  \"detailAddress\": \"101동 101호\",\n" +
                                             "  \"phoneNumber\": \"010-1234-5678\",\n" +
+                                            "  \"memo\": \"경비실에 맡겨주세요\",\n" +
                                             "  \"isDefault\": true\n" +
                                             "}",
                                     description = "배송지 정보를 수정하고 기본 배송지로 설정"
