@@ -10,7 +10,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@Schema(description = "회원가입 요청")
+@Schema(description = "회원가입 요청 (C0-1) — 닉네임과 약관 동의만 입력받습니다. "
+        + "실명·생년월일·성별은 C0-2 본인인증(PASS) 결과로 채워지므로 요청에 포함하지 않습니다.")
 public class RegisterRequest {
     
     @NotNull(message = "닉네임은 필수 입력값입니다.")
@@ -19,23 +20,18 @@ public class RegisterRequest {
     @Schema(description = "닉네임", example = "홍길동", requiredMode = Schema.RequiredMode.REQUIRED)
     private String nickname;
     
-    @Pattern(regexp = "^(MALE|FEMALE)$", message = "성별은 MALE 또는 FEMALE이어야 합니다.", flags = Pattern.Flag.CASE_INSENSITIVE)
-    @Schema(description = "성별", example = "MALE", allowableValues = {"MALE", "FEMALE"}, nullable = true)
-    private String gender; // "MALE", "FEMALE", null
-    
-    @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$|^$", message = "생년월일 형식이 올바르지 않습니다. (YYYY-MM-DD)")
-    @Schema(description = "생년월일", example = "1990-01-15", pattern = "YYYY-MM-DD", nullable = true)
-    private String birthday; // null 또는 "YYYY-MM-DD"
+    @AssertTrue(message = "만 14세 이상만 가입할 수 있습니다.")
+    @Schema(description = "[필수] 만 14세 이상입니다", example = "true", requiredMode = Schema.RequiredMode.REQUIRED)
+    private boolean ageAgree;
     
     @AssertTrue(message = "서비스 이용약관에 동의해야 합니다.")
-    @Schema(description = "서비스 이용약관 동의", example = "true", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "[필수] 서비스 이용약관 동의", example = "true", requiredMode = Schema.RequiredMode.REQUIRED)
     private boolean serviceAgree;
     
     @AssertTrue(message = "개인정보 수집 및 이용에 동의해야 합니다.")
-    @Schema(description = "개인정보 수집 및 이용 동의", example = "true", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "[필수] 개인정보 수집·이용 동의", example = "true", requiredMode = Schema.RequiredMode.REQUIRED)
     private boolean privacyAgree;
     
-    @Schema(description = "마케팅 수신 동의", example = "true", nullable = true)
+    @Schema(description = "[선택] 광고성 정보 수신 동의", example = "true", nullable = true)
     private Boolean marketingAgree; // 선택사항
 }
-

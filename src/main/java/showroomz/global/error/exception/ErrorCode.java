@@ -34,6 +34,7 @@ public enum ErrorCode {
     PROFANITY_DETECTED(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "부적절한 닉네임입니다."),
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "비밀번호가 일치하지 않습니다."),
     ALREADY_REGISTERED(HttpStatus.BAD_REQUEST, "ALREADY_REGISTERED", "이미 회원가입이 완료된 사용자입니다."),
+    UNDER_MIN_AGE(HttpStatus.FORBIDDEN, "UNDER_MIN_AGE", "만 14세 미만은 가입할 수 없습니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "존재하지 않는 회원입니다."),
     CREATOR_NOT_FOUND(HttpStatus.NOT_FOUND, "CREATOR_NOT_FOUND", "존재하지 않는 크리에이터입니다."),
     

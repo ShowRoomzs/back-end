@@ -212,6 +212,7 @@ public class UserService {
         String[] inappropriateWords = {
             "관리자", "admin", "administrator", "운영자", "operator",
             "시스템", "system", "서버", "server", "테스트", "test",
+            "공식", "official", "고객센터",
             "욕설", "비속어", "fuck", "shit", "damn", "hell"
         };
         
