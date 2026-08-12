@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.api.app.user.repository.UserRepository;
-import showroomz.domain.market.repository.MarketFollowRepository;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductImage;
 import showroomz.domain.product.entity.ProductOption;
@@ -56,7 +55,6 @@ public class ProductService {
     private final ProductOptionGroupRepository productOptionGroupRepository;
     private final ProductVariantRepository productVariantRepository;
     private final UserRepository userRepository;
-    private final MarketFollowRepository marketFollowRepository;
     private final WishlistRepository wishlistRepository;
     private final WishlistService wishlistService;
     private final ReviewRepository reviewRepository;
@@ -121,12 +119,8 @@ public class ProductService {
 
         Users currentUser = resolveCurrentUser();
         boolean isWished = false;
-        boolean isFollowing = false;
         if (currentUser != null) {
             isWished = wishlistRepository.existsByUserAndProduct(currentUser, product);
-            if (product.getMarket() != null) {
-                isFollowing = marketFollowRepository.existsByUserAndMarket(currentUser, product.getMarket());
-            }
         }
 
         String representativeImageUrl = extractRepresentativeImageUrl(product);
@@ -168,7 +162,6 @@ public class ProductService {
                 .optionGroups(optionGroups)
                 .variants(variants)
                 .isWished(isWished)
-                .isFollowing(isFollowing)
                 .createdAt(createdAt)
                 .reviewInfo(reviewInfo)
                 .build();

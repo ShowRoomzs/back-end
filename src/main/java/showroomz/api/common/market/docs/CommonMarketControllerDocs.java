@@ -34,8 +34,7 @@ public interface CommonMarketControllerDocs {
                     "- categoryId: 대표 카테고리 ID 필터 (선택)\n" +
                     "- page: 페이지 번호 (1부터 시작, 기본값: 1)\n" +
                     "- size: 페이지당 항목 수 (기본값: 20)\n\n" +
-                    "**권한:** 비회원/USER (Authorization 헤더 선택)\n" +
-                    "**isFollowing:** 로그인 시 본인 팔로우 여부 반영, 비회원은 false\n\n" +
+                    "**권한:** 비회원/USER (Authorization 헤더 선택)\n\n" +
                     "**representativeProducts:** 기획안 4-2 - 상품 이미지 클릭 시 상세 페이지 이동을 위해 productId 포함"
     )
     @ApiResponses(value = {
@@ -63,8 +62,6 @@ public interface CommonMarketControllerDocs {
                                                     "      \"marketDescription\": \"브랜드 소개\",\n" +
                                                     "      \"marketUrl\": \"https://example.com\",\n" +
                                                     "      \"shopType\": \"SHOWROOM\",\n" +
-                                                    "      \"followCount\": 1200,\n" +
-                                                    "      \"isFollowing\": false,\n" +
                                                     "      \"mainCategoryId\": 1\n" +
                                                     "    }\n" +
                                                     "  ],\n" +

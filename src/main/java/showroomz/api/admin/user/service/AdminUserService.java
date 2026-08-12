@@ -15,7 +15,7 @@ import showroomz.domain.history.entity.UserStatusHistory;
 import showroomz.domain.history.repository.UserStatusHistoryRepository;
 import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
 import showroomz.domain.inquiry.repository.ProductInquiryRepository;
-import showroomz.domain.market.repository.MarketFollowRepository;
+import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.member.user.type.UserStatus;
 import showroomz.domain.review.repository.ReviewRepository;
@@ -34,7 +34,7 @@ public class AdminUserService {
 
     private final UserRepository userRepository;
     private final WishlistRepository wishlistRepository;
-    private final MarketFollowRepository marketFollowRepository;
+    private final CreatorFollowRepository creatorFollowRepository;
     private final ReviewRepository reviewRepository;
     private final ProductInquiryRepository productInquiryRepository;
     private final OneToOneInquiryRepository oneToOneInquiryRepository;
@@ -66,7 +66,7 @@ public class AdminUserService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         long wishlistCount = wishlistRepository.countByUser_Id(userId);
-        long followedShowroomCount = marketFollowRepository.countByUser(user);
+        long followedShowroomCount = creatorFollowRepository.countByUser(user);
         long reviewCount = reviewRepository.countByUser_Id(userId);
         long productInquiryCount = productInquiryRepository.countByUser_Id(userId);
         long oneToOneInquiryCount = oneToOneInquiryRepository.countByUser_Id(userId);

@@ -26,10 +26,6 @@ public class MarketDetailResponse {
     // SNS 링크 배열
     private List<SnsLinkResponse> snsLinks;
 
-    // 팔로우 관련 정보
-    private long followerCount; // 이 샵을 찜한 유저 수
-    private boolean isFollowed; // 현재 유저가 찜했는지 여부
-
     @Getter
     @AllArgsConstructor
     public static class SnsLinkResponse {

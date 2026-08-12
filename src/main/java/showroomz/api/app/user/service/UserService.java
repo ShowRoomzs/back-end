@@ -17,7 +17,7 @@ import showroomz.domain.history.entity.UserStatusHistory;
 import showroomz.domain.history.entity.WithdrawalHistory;
 import showroomz.domain.history.repository.UserStatusHistoryRepository;
 import showroomz.domain.history.repository.WithdrawalHistoryRepository;
-import showroomz.domain.market.repository.MarketFollowRepository;
+import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.member.user.type.UserStatus;
 import showroomz.domain.member.user.vo.RefundAccount;
@@ -32,7 +32,7 @@ import java.util.Optional;
 public class UserService {
     private final UserRepository userRepository;
     private final BankRepository bankRepository;
-    private final MarketFollowRepository marketFollowRepository;
+    private final CreatorFollowRepository creatorFollowRepository;
     private final WithdrawalHistoryRepository withdrawalHistoryRepository;
     private final UserStatusHistoryRepository userStatusHistoryRepository;
 
@@ -54,8 +54,8 @@ public class UserService {
             throw new BusinessException(ErrorCode.USER_WITHDRAWN);
         }
 
-        // 유저가 팔로우한 마켓 수 조회
-        long followingCount = marketFollowRepository.countByUser(user);
+        // 유저가 팔로우한 쇼룸 수 조회
+        long followingCount = creatorFollowRepository.countByUser(user);
 
         // DTO 생성 및 반환 (더미 데이터 추가)
         return new UserProfileResponse(
