@@ -38,6 +38,9 @@ public class DeliveryAddressDto {
         @Pattern(regexp = "^\\d{2,3}-\\d{3,4}-\\d{4}$", message = "전화번호 형식이 올바르지 않습니다. (예: 010-1234-5678)")
         private String phoneNumber;
 
+        @Size(max = 50, message = "배송 메모는 50자 이내여야 합니다.")
+        private String memo;
+
         @JsonProperty("isDefault")
         private boolean isDefault;
     }
@@ -53,6 +56,7 @@ public class DeliveryAddressDto {
         private String address;
         private String detailAddress;
         private String phoneNumber;
+        private String memo;
 
         // @JsonProperty("isDefault") 제거: Getter(isDefault())를 통해 JSON 키가 "default"로 생성됨
         private boolean isDefault;
@@ -65,6 +69,7 @@ public class DeliveryAddressDto {
                     .address(entity.getAddress())
                     .detailAddress(entity.getDetailAddress())
                     .phoneNumber(entity.getPhoneNumber())
+                    .memo(entity.getMemo())
                     .isDefault(entity.isDefault())
                     .build();
         }
