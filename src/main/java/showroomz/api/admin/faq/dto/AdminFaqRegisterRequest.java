@@ -11,7 +11,8 @@ import showroomz.domain.faq.type.FaqCategory;
 @NoArgsConstructor
 public class AdminFaqRegisterRequest {
 
-    @Schema(description = "카테고리 (ALL 제외)", example = "DELIVERY", allowableValues = {"DELIVERY", "CANCEL_EXCHANGE_REFUND", "PRODUCT_AS", "ORDER_PAYMENT", "SERVICE", "USAGE_GUIDE", "MEMBER_INFO"})
+    @Schema(description = "카테고리 (ALL 제외)", example = "DELIVERY",
+            allowableValues = {"DELIVERY", "CANCEL_EXCHANGE_REFUND", "ORDER_PAYMENT", "SERVICE", "ACCOUNT"})
     @NotNull(message = "카테고리를 선택해주세요.")
     private FaqCategory category;
 

@@ -18,11 +18,11 @@ import org.springframework.web.bind.annotation.RestController;
 import showroomz.api.admin.faq.docs.AdminFaqControllerDocs;
 import showroomz.api.admin.faq.dto.AdminFaqListRequest;
 import showroomz.api.admin.faq.dto.AdminFaqListResponse;
+import showroomz.api.admin.faq.dto.AdminFaqPageResponse;
 import showroomz.api.admin.faq.dto.AdminFaqRegisterRequest;
 import showroomz.api.admin.faq.dto.AdminFaqUpdateRequest;
 import showroomz.api.admin.faq.dto.FaqReorderRequest;
 import showroomz.api.admin.faq.service.AdminFaqService;
-import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
 import java.net.URI;
@@ -60,10 +60,10 @@ public class AdminFaqController implements AdminFaqControllerDocs {
 
     @Override
     @GetMapping
-    public ResponseEntity<PageResponse<AdminFaqListResponse>> getFaqs(
+    public ResponseEntity<AdminFaqPageResponse> getFaqs(
             @ModelAttribute AdminFaqListRequest request,
             @ModelAttribute PagingRequest pagingRequest) {
-        PageResponse<AdminFaqListResponse> response = adminFaqService.getFaqs(request, pagingRequest);
+        AdminFaqPageResponse response = adminFaqService.getFaqs(request, pagingRequest);
         return ResponseEntity.ok(response);
     }
 

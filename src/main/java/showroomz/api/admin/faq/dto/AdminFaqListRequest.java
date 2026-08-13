@@ -9,10 +9,10 @@ import showroomz.domain.faq.type.FaqCategory;
 @Setter
 public class AdminFaqListRequest {
 
-    @Schema(description = "카테고리 필터 (미입력 시 전체 조회)", example = "DELIVERY",
-            allowableValues = {"ALL", "DELIVERY", "CANCEL_EXCHANGE_REFUND", "PRODUCT_AS", "ORDER_PAYMENT", "SERVICE", "USAGE_GUIDE", "MEMBER_INFO"})
+    @Schema(description = "카테고리 필터 (미입력/ALL 시 전체 조회)", example = "DELIVERY",
+            allowableValues = {"ALL", "DELIVERY", "CANCEL_EXCHANGE_REFUND", "ORDER_PAYMENT", "SERVICE", "ACCOUNT"})
     private FaqCategory category;
 
-    @Schema(description = "질문 또는 답변 키워드 검색", example = "배송")
+    @Schema(description = "질문 키워드 검색", example = "배송")
     private String keyword;
 }

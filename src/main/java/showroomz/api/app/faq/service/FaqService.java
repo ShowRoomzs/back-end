@@ -11,7 +11,6 @@ import showroomz.domain.faq.type.FaqCategory;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,29 +20,16 @@ public class FaqService {
     private final FaqRepository faqRepository;
 
     // FAQ 목록 조회. category=전체/null이면 전체, keyword 있으면 질문 검색
+    // 정렬은 운영자가 정한 카테고리 내 노출 순서를 그대로 따른다 (기획 §19-4)
     public List<FaqResponse> getFaqList(String keyword, FaqCategory category) {
-        boolean hasKeyword = keyword != null && !keyword.isBlank();
-        String trimmedKeyword = (keyword == null) ? null : keyword.trim();
-        boolean filterByCategory = category != null && category.isPersistable();
-
-        List<Faq> faqs;
-        if (filterByCategory && hasKeyword) {
-            faqs = faqRepository.findAllByCategoryAndQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(category, trimmedKeyword);
-        } else if (filterByCategory) {
-            faqs = faqRepository.findAllByCategoryOrderByDisplayOrderAscIdAsc(category);
-        } else if (hasKeyword) {
-            faqs = faqRepository.findAllByQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(trimmedKeyword);
-        } else {
-            faqs = faqRepository.findAllByOrderByDisplayOrderAscIdAsc();
-        }
-        return faqs.stream().map(FaqResponse::from).collect(Collectors.toList());
+        List<Faq> faqs = faqRepository.findAppFaqList(category, keyword);
+        return faqs.stream().map(FaqResponse::from).toList();
     }
 
-    // FAQ 카테고리 고정 목록 (key: enum 이름, description: 한글 표시명)
+    // FAQ 카테고리 고정 목록 (key: enum 이름, description: 한글 표시명) — 전체 + 5종
     public List<FaqCategoryItem> getFaqCategories() {
         return Arrays.stream(FaqCategory.values())
                 .map(FaqCategoryItem::from)
                 .toList();
     }
 }
-

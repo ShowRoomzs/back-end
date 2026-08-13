@@ -5,22 +5,12 @@ import showroomz.domain.faq.entity.Faq;
 import showroomz.domain.faq.type.FaqCategory;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface FaqRepository extends JpaRepository<Faq, Long>, FaqRepositoryCustom {
 
-    List<Faq> findAllByOrderByDisplayOrderAscIdAsc();
-
-    List<Faq> findAllByCategoryOrderByDisplayOrderAscIdAsc(FaqCategory category);
-
-    List<Faq> findAllByQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(String keyword);
-
     List<Faq> findAllByIdIn(List<Long> ids);
 
-    Optional<Faq> findTopByOrderByDisplayOrderDescIdDesc();
+    long countByCategory(FaqCategory category);
 
-    List<Faq> findAllByCategoryAndQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(FaqCategory category, String keyword);
-
-    boolean existsByDisplayOrderInAndIdNotIn(List<Integer> displayOrders, List<Long> ids);
+    boolean existsByCategoryAndDisplayOrderInAndIdNotIn(FaqCategory category, List<Integer> displayOrders, List<Long> ids);
 }
-

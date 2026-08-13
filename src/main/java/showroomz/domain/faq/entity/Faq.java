@@ -14,7 +14,8 @@ import showroomz.domain.faq.type.FaqCategory;
 @Table(
         name = "FAQ",
         indexes = {
-                @Index(name = "idx_faq_display_order", columnList = "DISPLAY_ORDER")
+                // 노출 순서는 카테고리 안에서만 유효하다 (기획 §19-4)
+                @Index(name = "idx_faq_category_display_order", columnList = "CATEGORY, DISPLAY_ORDER")
         }
 )
 public class Faq extends BaseTimeEntity {
