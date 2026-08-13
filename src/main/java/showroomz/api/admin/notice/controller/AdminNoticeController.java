@@ -4,25 +4,31 @@ import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import showroomz.api.admin.notice.docs.AdminNoticeControllerDocs;
 import showroomz.api.admin.notice.dto.AdminNoticeDetailResponse;
-import showroomz.api.admin.notice.dto.AdminNoticeListResponse;
+import showroomz.api.admin.notice.dto.AdminNoticeListRequest;
+import showroomz.api.admin.notice.dto.AdminNoticePageResponse;
 import showroomz.api.admin.notice.dto.AdminNoticeRegisterRequest;
+import showroomz.api.admin.notice.dto.AdminNoticeUpdateRequest;
 import showroomz.api.admin.notice.service.AdminNoticeService;
-import showroomz.global.dto.PageResponse;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.global.dto.PagingRequest;
+import showroomz.global.error.exception.BusinessException;
+import showroomz.global.error.exception.ErrorCode;
 
 import java.net.URI;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/v1/admin/notices")
@@ -34,17 +40,20 @@ public class AdminNoticeController implements AdminNoticeControllerDocs {
 
     @Override
     @PostMapping
-    public ResponseEntity<Void> registerNotice(@Valid @RequestBody AdminNoticeRegisterRequest request) {
-        Long noticeId = adminNoticeService.registerNotice(request);
-        return ResponseEntity.created(URI.create("/v1/common/notices/" + noticeId)).build();
+    public ResponseEntity<Void> registerNotice(
+            @Valid @RequestBody AdminNoticeRegisterRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        Long noticeId = adminNoticeService.registerNotice(request, requireOperatorId(principal));
+        URI location = Objects.requireNonNull(URI.create("/v1/admin/notices/" + noticeId));
+        return ResponseEntity.created(location).build();
     }
 
     @Override
     @GetMapping
-    public ResponseEntity<PageResponse<AdminNoticeListResponse>> getNotices(
-            @RequestParam(name = "keyword", required = false) String keyword,
+    public ResponseEntity<AdminNoticePageResponse> getNotices(
+            @ModelAttribute AdminNoticeListRequest request,
             @ModelAttribute PagingRequest pagingRequest) {
-        PageResponse<AdminNoticeListResponse> response = adminNoticeService.getNotices(keyword, pagingRequest);
+        AdminNoticePageResponse response = adminNoticeService.getNotices(request, pagingRequest);
         return ResponseEntity.ok(response);
     }
 
@@ -56,9 +65,32 @@ public class AdminNoticeController implements AdminNoticeControllerDocs {
     }
 
     @Override
-    @DeleteMapping("/{noticeId}")
-    public ResponseEntity<Void> deleteNotice(@PathVariable("noticeId") Long noticeId) {
-        adminNoticeService.deleteNotice(noticeId);
+    @PutMapping("/{noticeId}")
+    public ResponseEntity<Void> updateNotice(
+            @PathVariable("noticeId") Long noticeId,
+            @Valid @RequestBody AdminNoticeUpdateRequest request) {
+        adminNoticeService.updateNotice(noticeId, request);
         return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    @PatchMapping("/{noticeId}/end")
+    public ResponseEntity<Void> endNotice(@PathVariable("noticeId") Long noticeId) {
+        adminNoticeService.endNotice(noticeId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    @PatchMapping("/{noticeId}/publish")
+    public ResponseEntity<Void> publishNotice(@PathVariable("noticeId") Long noticeId) {
+        adminNoticeService.publishNotice(noticeId);
+        return ResponseEntity.noContent().build();
+    }
+
+    private Long requireOperatorId(UserPrincipal principal) {
+        if (principal == null || principal.getUserId() == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+        return principal.getUserId();
     }
 }

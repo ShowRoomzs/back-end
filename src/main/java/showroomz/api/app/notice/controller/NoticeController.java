@@ -29,7 +29,7 @@ public class NoticeController implements NoticeControllerDocs {
     @GetMapping
     public ResponseEntity<PageResponse<NoticeResponse>> getNoticeList(
             @ParameterObject @ModelAttribute PagingRequest pagingRequest) {
-        return ResponseEntity.ok(noticeService.getNoticeList(pagingRequest.toPageable()));
+        return ResponseEntity.ok(noticeService.getNoticeList(pagingRequest));
     }
 
     @Override
