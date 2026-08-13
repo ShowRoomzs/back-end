@@ -13,7 +13,7 @@ import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.domain.inquiry.entity.OneToOneInquiry;
 import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
 import showroomz.domain.inquiry.type.InquiryStatus;
-import showroomz.domain.inquiry.type.InquiryType;
+import showroomz.domain.cs.type.CsCategory;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.dto.PaginationInfo;
@@ -43,7 +43,7 @@ public class AdminInquiryService {
     private final AdminInquiryQueryRepository inquiryQueryRepository;
     private final SellerRepository sellerRepository;
 
-    public AdminInquiryDto.ListResponse getList(AdminInquiryStatusFilter statusFilter, InquiryType type,
+    public AdminInquiryDto.ListResponse getList(AdminInquiryStatusFilter statusFilter, CsCategory type,
                                                 String keyword, Pageable pageable) {
         String normalizedKeyword = normalize(keyword);
         Page<OneToOneInquiry> page = inquiryQueryRepository.search(statusFilter, type, normalizedKeyword, pageable);
@@ -67,7 +67,7 @@ public class AdminInquiryService {
     }
 
     public List<AdminInquiryDto.TypeOption> getTypeOptions() {
-        return Arrays.stream(InquiryType.values())
+        return Arrays.stream(CsCategory.values())
                 .map(type -> AdminInquiryDto.TypeOption.builder()
                         .code(type)
                         .label(type.getDescription())
@@ -76,7 +76,7 @@ public class AdminInquiryService {
     }
 
     public AdminInquiryDto.DetailResponse getDetail(Long inquiryId, AdminInquiryStatusFilter statusFilter,
-                                                    InquiryType type, String keyword) {
+                                                    CsCategory type, String keyword) {
         OneToOneInquiry inquiry = getInquiry(inquiryId);
         Users user = inquiry.getUser();
         LocalDateTime now = LocalDateTime.now();
@@ -147,7 +147,7 @@ public class AdminInquiryService {
                 .build();
     }
 
-    private AdminInquiryDto.StatusCounts buildStatusCounts(InquiryType type, String keyword) {
+    private AdminInquiryDto.StatusCounts buildStatusCounts(CsCategory type, String keyword) {
         Map<InquiryStatus, Long> counts = inquiryQueryRepository.countByStatus(type, keyword);
         long waiting = counts.getOrDefault(InquiryStatus.WAITING, 0L);
         long answered = counts.getOrDefault(InquiryStatus.ANSWERED, 0L);

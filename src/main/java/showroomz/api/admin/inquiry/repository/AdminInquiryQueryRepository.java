@@ -12,7 +12,7 @@ import showroomz.api.admin.inquiry.type.AdminInquiryStatusFilter;
 import showroomz.domain.inquiry.entity.OneToOneInquiry;
 import showroomz.domain.inquiry.entity.QOneToOneInquiry;
 import showroomz.domain.inquiry.type.InquiryStatus;
-import showroomz.domain.inquiry.type.InquiryType;
+import showroomz.domain.cs.type.CsCategory;
 import showroomz.domain.member.user.entity.QUsers;
 
 import java.util.EnumMap;
@@ -29,7 +29,7 @@ public class AdminInquiryQueryRepository {
     private static final QUsers user = QUsers.users;
 
     /** 목록 (§17-2) — 접수일시 최신순, 유형 필터 + 작성자·문의 내용 통합 검색 */
-    public Page<OneToOneInquiry> search(AdminInquiryStatusFilter statusFilter, InquiryType type,
+    public Page<OneToOneInquiry> search(AdminInquiryStatusFilter statusFilter, CsCategory type,
                                         String keyword, Pageable pageable) {
         BooleanBuilder where = createWhere(statusFilter, type, keyword);
 
@@ -53,7 +53,7 @@ public class AdminInquiryQueryRepository {
     }
 
     /** 상세의 ‹ 이전 · 다음 › — 현재 탭·필터의 목록 순서를 따른다 (§17-3) */
-    public List<Long> findOrderedIds(AdminInquiryStatusFilter statusFilter, InquiryType type, String keyword) {
+    public List<Long> findOrderedIds(AdminInquiryStatusFilter statusFilter, CsCategory type, String keyword) {
         return queryFactory
                 .select(inquiry.id)
                 .from(inquiry)
@@ -64,7 +64,7 @@ public class AdminInquiryQueryRepository {
     }
 
     /** 탭 건수 — 상태 조건만 제외하고 유형·검색어는 그대로 반영한다 */
-    public Map<InquiryStatus, Long> countByStatus(InquiryType type, String keyword) {
+    public Map<InquiryStatus, Long> countByStatus(CsCategory type, String keyword) {
         List<Tuple> rows = queryFactory
                 .select(inquiry.status, inquiry.count())
                 .from(inquiry)
@@ -87,7 +87,7 @@ public class AdminInquiryQueryRepository {
         return counts;
     }
 
-    private BooleanBuilder createWhere(AdminInquiryStatusFilter statusFilter, InquiryType type, String keyword) {
+    private BooleanBuilder createWhere(AdminInquiryStatusFilter statusFilter, CsCategory type, String keyword) {
         BooleanBuilder where = new BooleanBuilder();
 
         if (statusFilter != null && statusFilter.getStatus() != null) {

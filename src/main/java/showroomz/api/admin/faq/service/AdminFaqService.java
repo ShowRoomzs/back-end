@@ -15,9 +15,9 @@ import showroomz.api.admin.faq.dto.FaqReorderRequest;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.dto.PaginationInfo;
 import showroomz.global.error.exception.BusinessException;
+import showroomz.domain.cs.type.CsCategory;
 import showroomz.domain.faq.entity.Faq;
 import showroomz.domain.faq.repository.FaqRepository;
-import showroomz.domain.faq.type.FaqCategory;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.util.ArrayList;
@@ -40,7 +40,7 @@ public class AdminFaqService {
 
     @Transactional
     public Long registerFaq(AdminFaqRegisterRequest request) {
-        FaqCategory category = validatePersistableCategory(request.getCategory());
+        CsCategory category = requireCategory(request.getCategory());
 
         // 등록은 해당 카테고리 맨 위에 배치한다 (기획 §19-4)
         faqRepository.shiftOrderUpForInsert(category);
@@ -79,7 +79,7 @@ public class AdminFaqService {
         }
 
         // 순서는 카테고리 안에서만 유효하다 (기획 §19-4)
-        FaqCategory category = validateSameCategory(existingFaqs);
+        CsCategory category = validateSameCategory(existingFaqs);
 
         validateOrderRange(requestedOrders, category);
         validateOrderConflictWithDatabase(category, requestedOrders, requestedFaqIds);
@@ -99,7 +99,7 @@ public class AdminFaqService {
 
     public AdminFaqPageResponse getFaqs(AdminFaqListRequest request, PagingRequest pagingRequest) {
         Pageable pageable = pagingRequest.toPageable();
-        FaqCategory category = request.getCategory();
+        CsCategory category = request.toCategory();
         String keyword = request.getKeyword();
 
         Page<Faq> faqPage = faqRepository.findAdminFaqList(category, keyword, pageable);
@@ -114,9 +114,9 @@ public class AdminFaqService {
     @Transactional
     public void updateFaq(Long faqId, AdminFaqUpdateRequest request) {
         Faq faq = findFaq(faqId);
-        FaqCategory newCategory = validatePersistableCategory(request.getCategory());
+        CsCategory newCategory = requireCategory(request.getCategory());
 
-        FaqCategory currentCategory = faq.getCategory();
+        CsCategory currentCategory = faq.getCategory();
         if (currentCategory == newCategory) {
             faq.update(newCategory, request.getQuestion(), request.getAnswer());
             return;
@@ -136,7 +136,7 @@ public class AdminFaqService {
     public void deleteFaq(Long faqId) {
         Faq faq = findFaq(faqId);
 
-        FaqCategory category = faq.getCategory();
+        CsCategory category = faq.getCategory();
         Integer deletedOrder = faq.getDisplayOrder();
 
         faqRepository.delete(faq);
@@ -150,29 +150,30 @@ public class AdminFaqService {
     }
 
     private List<AdminFaqCategoryCount> buildCategoryCounts(String keyword) {
-        Map<FaqCategory, Long> counts = faqRepository.countByCategoryGroup(keyword);
+        Map<CsCategory, Long> counts = faqRepository.countByCategoryGroup(keyword);
 
         List<AdminFaqCategoryCount> categoryCounts = new ArrayList<>();
         long total = 0L;
-        for (FaqCategory category : FaqCategory.persistableValues()) {
+        for (CsCategory category : CsCategory.values()) {
             long count = counts.getOrDefault(category, 0L);
             total += count;
             categoryCounts.add(AdminFaqCategoryCount.of(category, count));
         }
-        categoryCounts.add(0, AdminFaqCategoryCount.of(FaqCategory.ALL, total));
+        // 전체 탭은 맨 앞 (기획 §19-2)
+        categoryCounts.add(0, AdminFaqCategoryCount.all(total));
 
         return categoryCounts;
     }
 
-    private FaqCategory validatePersistableCategory(FaqCategory category) {
-        if (category == null || !category.isPersistable()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "카테고리는 전체(ALL)를 제외한 값이어야 합니다.");
+    private CsCategory requireCategory(CsCategory category) {
+        if (category == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "카테고리를 선택해주세요.");
         }
         return category;
     }
 
-    private FaqCategory validateSameCategory(List<Faq> faqs) {
-        Set<FaqCategory> categories = faqs.stream()
+    private CsCategory validateSameCategory(List<Faq> faqs) {
+        Set<CsCategory> categories = faqs.stream()
                 .map(Faq::getCategory)
                 .collect(Collectors.toSet());
         if (categories.size() > 1) {
@@ -195,20 +196,20 @@ public class AdminFaqService {
         }
     }
 
-    private void validateOrderRange(List<Integer> requestedOrders, FaqCategory category) {
+    private void validateOrderRange(List<Integer> requestedOrders, CsCategory category) {
         long categoryFaqCount = faqRepository.countByCategory(category);
         for (Integer order : requestedOrders) {
             if (order < 1 || order > categoryFaqCount) {
                 throw new BusinessException(
                         ErrorCode.INVALID_INPUT_VALUE,
                         String.format("변경할 순서는 1부터 해당 카테고리(%s)의 FAQ 개수(%d) 사이여야 합니다.",
-                                category.getDisplayName(), categoryFaqCount)
+                                category.getDescription(), categoryFaqCount)
                 );
             }
         }
     }
 
-    private void validateOrderConflictWithDatabase(FaqCategory category, List<Integer> requestedOrders, List<Long> requestedFaqIds) {
+    private void validateOrderConflictWithDatabase(CsCategory category, List<Integer> requestedOrders, List<Long> requestedFaqIds) {
         boolean hasDuplicate = faqRepository.existsByCategoryAndDisplayOrderInAndIdNotIn(category, requestedOrders, requestedFaqIds);
         if (hasDuplicate) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "요청한 정렬 순서가 같은 카테고리의 다른 FAQ에서 사용 중입니다. 화면을 새로고침한 후 다시 시도해주세요.");

@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import showroomz.domain.common.BaseTimeEntity;
 import showroomz.domain.inquiry.type.InquiryStatus;
-import showroomz.domain.inquiry.type.InquiryType;
+import showroomz.domain.cs.type.CsCategory;
 import showroomz.domain.member.user.entity.Users;
 
 import java.time.LocalDateTime;
@@ -39,7 +39,7 @@ public class OneToOneInquiry extends BaseTimeEntity {
     // 문의 유형 — FAQ 카테고리와 동일한 5종 (§17-2-1)
     @Enumerated(EnumType.STRING)
     @Column(name = "TYPE", nullable = false)
-    private InquiryType type;
+    private CsCategory type;
 
     @Column(name = "CONTENT", nullable = false, columnDefinition = "TEXT")
     private String content;
@@ -73,7 +73,7 @@ public class OneToOneInquiry extends BaseTimeEntity {
     private InquiryStatus status;
 
     @Builder
-    public OneToOneInquiry(Users user, InquiryType type, String content, List<String> imageUrls, Long orderId) {
+    public OneToOneInquiry(Users user, CsCategory type, String content, List<String> imageUrls, Long orderId) {
         this.user = user;
         this.type = type;
         this.content = content;
@@ -92,7 +92,7 @@ public class OneToOneInquiry extends BaseTimeEntity {
         this.status = InquiryStatus.ANSWERED;
     }
 
-    public void update(InquiryType type, String content, List<String> imageUrls, Long orderId) {
+    public void update(CsCategory type, String content, List<String> imageUrls, Long orderId) {
         this.type = type;
         this.content = content;
         this.imageUrls = imageUrls != null ? imageUrls : new ArrayList<>();

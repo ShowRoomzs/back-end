@@ -13,8 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
+import showroomz.domain.cs.type.CsCategory;
 import showroomz.domain.faq.entity.Faq;
-import showroomz.domain.faq.type.FaqCategory;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -31,7 +31,7 @@ public class FaqRepositoryImpl implements FaqRepositoryCustom {
     private EntityManager entityManager;
 
     @Override
-    public Page<Faq> findAdminFaqList(FaqCategory category, String keyword, Pageable pageable) {
+    public Page<Faq> findAdminFaqList(CsCategory category, String keyword, Pageable pageable) {
         List<Faq> content = queryFactory
                 .selectFrom(faq)
                 .where(
@@ -55,7 +55,7 @@ public class FaqRepositoryImpl implements FaqRepositoryCustom {
     }
 
     @Override
-    public List<Faq> findAppFaqList(FaqCategory category, String keyword) {
+    public List<Faq> findAppFaqList(CsCategory category, String keyword) {
         return queryFactory
                 .selectFrom(faq)
                 .where(
@@ -67,7 +67,7 @@ public class FaqRepositoryImpl implements FaqRepositoryCustom {
     }
 
     @Override
-    public Map<FaqCategory, Long> countByCategoryGroup(String keyword) {
+    public Map<CsCategory, Long> countByCategoryGroup(String keyword) {
         List<Tuple> rows = queryFactory
                 .select(faq.category, faq.count())
                 .from(faq)
@@ -75,9 +75,9 @@ public class FaqRepositoryImpl implements FaqRepositoryCustom {
                 .groupBy(faq.category)
                 .fetch();
 
-        Map<FaqCategory, Long> counts = new EnumMap<>(FaqCategory.class);
+        Map<CsCategory, Long> counts = new EnumMap<>(CsCategory.class);
         for (Tuple row : rows) {
-            FaqCategory category = row.get(faq.category);
+            CsCategory category = row.get(faq.category);
             Long count = row.get(faq.count());
             counts.put(category, count == null ? 0L : count);
         }
@@ -85,7 +85,7 @@ public class FaqRepositoryImpl implements FaqRepositoryCustom {
     }
 
     @Override
-    public void shiftOrderUpForInsert(FaqCategory category) {
+    public void shiftOrderUpForInsert(CsCategory category) {
         entityManager.flush();
 
         queryFactory.update(faq)
@@ -97,7 +97,7 @@ public class FaqRepositoryImpl implements FaqRepositoryCustom {
     }
 
     @Override
-    public void shiftOrderDownAfterDelete(FaqCategory category, Integer deletedOrder) {
+    public void shiftOrderDownAfterDelete(CsCategory category, Integer deletedOrder) {
         entityManager.flush();
 
         queryFactory.update(faq)
@@ -122,17 +122,17 @@ public class FaqRepositoryImpl implements FaqRepositoryCustom {
 
     /** 카테고리는 enum 이름으로 저장되므로 선언 순서를 SQL 정렬 값으로 환산한다 */
     private NumberExpression<Integer> categoryOrder() {
-        List<FaqCategory> categories = FaqCategory.persistableValues();
+        CsCategory[] categories = CsCategory.values();
         CaseBuilder.Cases<Integer, NumberExpression<Integer>> cases =
-                new CaseBuilder().when(faq.category.eq(categories.get(0))).then(0);
-        for (int i = 1; i < categories.size(); i++) {
-            cases = cases.when(faq.category.eq(categories.get(i))).then(i);
+                new CaseBuilder().when(faq.category.eq(categories[0])).then(0);
+        for (int i = 1; i < categories.length; i++) {
+            cases = cases.when(faq.category.eq(categories[i])).then(i);
         }
-        return cases.otherwise(categories.size());
+        return cases.otherwise(categories.length);
     }
 
-    private BooleanExpression eqCategory(FaqCategory category) {
-        return category != null && category.isPersistable() ? faq.category.eq(category) : null;
+    private BooleanExpression eqCategory(CsCategory category) {
+        return category != null ? faq.category.eq(category) : null;
     }
 
     /** 검색은 질문 단일 대상이다 (기획 §19-2) */

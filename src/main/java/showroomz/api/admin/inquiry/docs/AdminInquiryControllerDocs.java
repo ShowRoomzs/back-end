@@ -15,7 +15,7 @@ import showroomz.api.admin.inquiry.dto.AdminInquiryDto;
 import showroomz.api.admin.inquiry.type.AdminInquiryStatusFilter;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
-import showroomz.domain.inquiry.type.InquiryType;
+import showroomz.domain.cs.type.CsCategory;
 import showroomz.global.dto.PagingRequest;
 
 import java.util.List;
@@ -72,7 +72,7 @@ public interface AdminInquiryControllerDocs {
     })
     ResponseEntity<AdminInquiryDto.ListResponse> getList(
             @Parameter(description = "상태 탭", example = "ALL") AdminInquiryStatusFilter status,
-            @Parameter(description = "유형 필터 (미지정 시 전체 유형)", example = "DELIVERY") InquiryType type,
+            @Parameter(description = "유형 필터 (미지정 시 전체 유형)", example = "DELIVERY") CsCategory type,
             @Parameter(description = "작성자 · 문의 내용 검색어") String keyword,
             @Parameter(description = "페이징 (page: 1부터, size: 20/50/100)") PagingRequest pagingRequest
     );
@@ -148,7 +148,7 @@ public interface AdminInquiryControllerDocs {
     ResponseEntity<AdminInquiryDto.DetailResponse> getDetail(
             @Parameter(description = "문의 ID", required = true, example = "21") @PathVariable("inquiryId") Long inquiryId,
             @Parameter(description = "목록에서 사용 중인 상태 탭 (이전/다음 순서 기준)", example = "ALL") AdminInquiryStatusFilter status,
-            @Parameter(description = "목록에서 사용 중인 유형 필터") InquiryType type,
+            @Parameter(description = "목록에서 사용 중인 유형 필터") CsCategory type,
             @Parameter(description = "목록에서 사용 중인 검색어") String keyword
     );
 

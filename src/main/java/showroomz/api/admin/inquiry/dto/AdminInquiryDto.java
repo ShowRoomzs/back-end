@@ -9,7 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import showroomz.domain.inquiry.type.InquiryStatus;
-import showroomz.domain.inquiry.type.InquiryType;
+import showroomz.domain.cs.type.CsCategory;
 import showroomz.global.dto.PaginationInfo;
 
 import java.time.LocalDateTime;
@@ -25,7 +25,7 @@ public class AdminInquiryDto {
         @Schema(description = "문의 ID", example = "21")
         private Long inquiryId;
         @Schema(description = "유형 코드", example = "DELIVERY")
-        private InquiryType type;
+        private CsCategory type;
         @Schema(description = "유형 명", example = "배송")
         private String typeName;
         @Schema(description = "문의 내용 — 목록은 한 줄 말줄임으로 표시한다(제목 필드 없음)")
@@ -79,7 +79,7 @@ public class AdminInquiryDto {
     @Schema(description = "유형 필터 옵션 (§17-2-1)")
     public static class TypeOption {
         @Schema(example = "DELIVERY")
-        private InquiryType code;
+        private CsCategory code;
         @Schema(example = "배송")
         private String label;
     }
@@ -120,7 +120,7 @@ public class AdminInquiryDto {
         @Schema(description = "문의번호", example = "INQ-20260716-021")
         private String inquiryNumber;
         @Schema(example = "CANCEL_EXCHANGE_RETURN")
-        private InquiryType type;
+        private CsCategory type;
         @Schema(example = "취소/교환/반품")
         private String typeName;
         @Schema(example = "WAITING")

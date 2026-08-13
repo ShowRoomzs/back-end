@@ -29,7 +29,7 @@ public interface AdminFaqControllerDocs {
             description = "관리자가 새로운 FAQ를 등록합니다.\n\n" +
                     "**카테고리 조회:**\n" +
                     "- 카테고리 값(`category`)은 Common API `GET /v1/common/faqs/categories`를 사용해 조회하세요.\n\n" +
-                    "**카테고리:** DELIVERY, CANCEL_EXCHANGE_REFUND, ORDER_PAYMENT, SERVICE, ACCOUNT (ALL 불가)\n\n" +
+                    "**카테고리:** DELIVERY, CANCEL_EXCHANGE_RETURN, ORDER_PAYMENT, SERVICE, ACCOUNT (ALL 불가)\n\n" +
                     "**노출 순서:** 등록한 FAQ는 해당 카테고리의 **맨 위(displayOrder=1)** 에 배치되고, 같은 카테고리의 기존 항목은 한 칸씩 밀립니다.\n\n" +
                     "**노출 시점:** 등록 즉시 소비자 앱 고객센터에 노출됩니다(게시/미게시 상태 없음).\n\n" +
                     "**권한:** ADMIN\n" +
@@ -260,7 +260,7 @@ public interface AdminFaqControllerDocs {
                     name = "category",
                     description = "카테고리 필터 (미입력/ALL 시 전체)",
                     example = "DELIVERY",
-                    schema = @Schema(allowableValues = {"ALL", "DELIVERY", "CANCEL_EXCHANGE_REFUND", "ORDER_PAYMENT", "SERVICE", "ACCOUNT"})
+                    schema = @Schema(allowableValues = {"ALL", "DELIVERY", "CANCEL_EXCHANGE_RETURN", "ORDER_PAYMENT", "SERVICE", "ACCOUNT"})
             ),
             @Parameter(
                     name = "keyword",
@@ -286,7 +286,7 @@ public interface AdminFaqControllerDocs {
     @Operation(
             summary = "FAQ 수정",
             description = "관리자가 FAQ의 카테고리, 질문, 답변을 수정합니다. 수정일만 갱신되고 변경 전 내용은 이력으로 남기지 않습니다(기획 §19-5).\n\n" +
-                    "**카테고리:** DELIVERY, CANCEL_EXCHANGE_REFUND, ORDER_PAYMENT, SERVICE, ACCOUNT (전체/ALL 불가)\n\n" +
+                    "**카테고리:** DELIVERY, CANCEL_EXCHANGE_RETURN, ORDER_PAYMENT, SERVICE, ACCOUNT (전체/ALL 불가)\n\n" +
                     "**카테고리를 바꾸면** 기존 카테고리의 뒷 순서는 한 칸씩 당겨지고, 해당 FAQ는 새 카테고리의 맨 위로 이동합니다.\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"

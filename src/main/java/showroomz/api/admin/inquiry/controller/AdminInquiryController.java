@@ -20,7 +20,7 @@ import showroomz.api.admin.inquiry.dto.AdminInquiryDto;
 import showroomz.api.admin.inquiry.service.AdminInquiryService;
 import showroomz.api.admin.inquiry.type.AdminInquiryStatusFilter;
 import showroomz.api.app.auth.entity.UserPrincipal;
-import showroomz.domain.inquiry.type.InquiryType;
+import showroomz.domain.cs.type.CsCategory;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -39,7 +39,7 @@ public class AdminInquiryController implements AdminInquiryControllerDocs {
     @GetMapping
     public ResponseEntity<AdminInquiryDto.ListResponse> getList(
             @RequestParam(value = "status", defaultValue = "ALL") AdminInquiryStatusFilter status,
-            @RequestParam(value = "type", required = false) InquiryType type,
+            @RequestParam(value = "type", required = false) CsCategory type,
             @RequestParam(value = "keyword", required = false) String keyword,
             @ModelAttribute PagingRequest pagingRequest) {
         Pageable pageable = pagingRequest.toPageable(Sort.unsorted());
@@ -63,7 +63,7 @@ public class AdminInquiryController implements AdminInquiryControllerDocs {
     public ResponseEntity<AdminInquiryDto.DetailResponse> getDetail(
             @PathVariable("inquiryId") Long inquiryId,
             @RequestParam(value = "status", defaultValue = "ALL") AdminInquiryStatusFilter status,
-            @RequestParam(value = "type", required = false) InquiryType type,
+            @RequestParam(value = "type", required = false) CsCategory type,
             @RequestParam(value = "keyword", required = false) String keyword) {
         return ResponseEntity.ok(adminInquiryService.getDetail(inquiryId, status, type, keyword));
     }

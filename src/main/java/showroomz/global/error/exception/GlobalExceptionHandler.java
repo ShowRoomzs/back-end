@@ -48,7 +48,7 @@ public class GlobalExceptionHandler {
         Throwable cause = e.getCause();
         if (cause instanceof InvalidFormatException invalidFormat) {
             Class<?> targetType = invalidFormat.getTargetType();
-            if (targetType != null && targetType.getSimpleName().equals("InquiryType")) {
+            if (targetType != null && targetType.getSimpleName().equals("CsCategory")) {
                 log.warn("Invalid type: {}", invalidFormat.getValue());
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(new ErrorResponse(ErrorCode.INVALID_INPUT_VALUE.getCode(),

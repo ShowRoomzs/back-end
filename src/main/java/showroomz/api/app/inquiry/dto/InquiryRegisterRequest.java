@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import showroomz.domain.inquiry.type.InquiryType;
+import showroomz.domain.cs.type.CsCategory;
 
 import java.util.List;
 
@@ -17,7 +17,7 @@ public class InquiryRegisterRequest {
     @Schema(description = "문의 유형 (5종)", example = "DELIVERY", requiredMode = Schema.RequiredMode.REQUIRED,
             allowableValues = {"DELIVERY", "CANCEL_EXCHANGE_RETURN", "ORDER_PAYMENT", "SERVICE", "ACCOUNT"})
     @NotNull(message = "문의 유형을 선택해주세요.")
-    private InquiryType type;
+    private CsCategory type;
 
     @Schema(description = "문의 내용 (최대 1000자)", example = "배송이 언제 오나요?", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "내용을 입력해주세요.")
