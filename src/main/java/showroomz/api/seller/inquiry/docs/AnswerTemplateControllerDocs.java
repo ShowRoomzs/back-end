@@ -34,7 +34,7 @@ public interface AnswerTemplateControllerDocs {
                     "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
                     "**필수 입력:**\n" +
                     "- `title`: 템플릿 제목 (최대 30자)\n" +
-                    "- `category`: 카테고리 (PRODUCT, SIZE, STOCK, DELIVERY, ORDER_PAYMENT, CANCEL_REFUND_EXCHANGE, DEFECT_AS)\n" +
+                    "- `category`: 카테고리 (PRODUCT, SIZE, STOCK)\n" +
                     "- `content`: 답변 내용 (최대 1000자)\n\n" +
                     "**선택 입력:**\n" +
                     "- `isActive`: 사용 여부. false 설정 시 템플릿 목록에 노출되지 않습니다. 기본값은 true(사용)입니다.\n\n" +
@@ -43,11 +43,8 @@ public interface AnswerTemplateControllerDocs {
                     "|------|------|\n" +
                     "| `PRODUCT` | 상품 |\n" +
                     "| `SIZE` | 사이즈 |\n" +
-                    "| `STOCK` | 재고/재입고 |\n" +
-                    "| `DELIVERY` | 배송 |\n" +
-                    "| `ORDER_PAYMENT` | 주문/결제 |\n" +
-                    "| `CANCEL_REFUND_EXCHANGE` | 취소/교환/환불 |\n" +
-                    "| `DEFECT_AS` | 불량/AS |"
+                    "| `STOCK` | 재고/재입고 |\n\n" +
+                    "1:1 문의는 어드민으로만 접수되므로 마켓 답변 템플릿 카테고리는 상품 문의 3종뿐입니다."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -134,9 +131,9 @@ public interface AnswerTemplateControllerDocs {
                             @ExampleObject(
                                     name = "미사용 템플릿 등록",
                                     value = "{\n" +
-                                            "  \"title\": \"배송 지연 안내\",\n" +
-                                            "  \"category\": \"DELIVERY\",\n" +
-                                            "  \"content\": \"현재 물류 상황으로 인해 배송이 다소 지연될 수 있습니다. 양해 부탁드립니다.\",\n" +
+                                            "  \"title\": \"사이즈 안내\",\n" +
+                                            "  \"category\": \"SIZE\",\n" +
+                                            "  \"content\": \"상세페이지의 실측 사이즈를 참고해 주세요. 추가 문의 주시면 안내드리겠습니다.\",\n" +
                                             "  \"isActive\": false\n" +
                                             "}"
                             )
@@ -165,11 +162,7 @@ public interface AnswerTemplateControllerDocs {
                     "|------|------|\n" +
                     "| `PRODUCT` | 상품 |\n" +
                     "| `SIZE` | 사이즈 |\n" +
-                    "| `STOCK` | 재고/재입고 |\n" +
-                    "| `DELIVERY` | 배송 |\n" +
-                    "| `ORDER_PAYMENT` | 주문/결제 |\n" +
-                    "| `CANCEL_REFUND_EXCHANGE` | 취소/교환/환불 |\n" +
-                    "| `DEFECT_AS` | 불량/AS |"
+                    "| `STOCK` | 재고/재입고 |"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -194,10 +187,10 @@ public interface AnswerTemplateControllerDocs {
                                                     "    },\n" +
                                                     "    {\n" +
                                                     "      \"templateId\": 2,\n" +
-                                                    "      \"title\": \"배송 문의 안내\",\n" +
-                                                    "      \"category\": \"DELIVERY\",\n" +
-                                                    "      \"categoryName\": \"배송\",\n" +
-                                                    "      \"content\": \"평균 배송 기간은 영업일 기준 2~3일입니다.\",\n" +
+                                                    "      \"title\": \"상품 문의 안내\",\n" +
+                                                    "      \"category\": \"PRODUCT\",\n" +
+                                                    "      \"categoryName\": \"상품 문의\",\n" +
+                                                    "      \"content\": \"문의 주신 상품의 상세 정보는 상세페이지에서 확인하실 수 있습니다.\",\n" +
                                                     "      \"createdAt\": \"2026-04-01T09:00:00\",\n" +
                                                     "      \"modifiedAt\": \"2026-04-01T09:00:00\",\n" +
                                                     "      \"isActive\": true\n" +
@@ -254,7 +247,7 @@ public interface AnswerTemplateControllerDocs {
 
             @Parameter(description = "카테고리 필터. 미입력 시 전체 조회",
                     example = "STOCK",
-                    schema = @Schema(allowableValues = {"PRODUCT", "SIZE", "STOCK", "DELIVERY", "ORDER_PAYMENT", "CANCEL_REFUND_EXCHANGE", "DEFECT_AS"}))
+                    schema = @Schema(allowableValues = {"PRODUCT", "SIZE", "STOCK"}))
             @RequestParam(value = "category", required = false) MarketInquiryFilterType category,
 
             @Parameter(description = "템플릿 제목 검색어 (부분 일치). 미입력 시 전체 조회", example = "재입고")
