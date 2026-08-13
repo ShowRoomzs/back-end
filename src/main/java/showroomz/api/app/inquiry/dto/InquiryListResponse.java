@@ -32,6 +32,9 @@ public class InquiryListResponse {
     @Schema(description = "참조 주문 ID (선택 — 없으면 null)")
     private Long orderId;
 
+    @Schema(description = "연결된 주문 요약 — 목록의 주문 카드(주문번호·상품명·썸네일)용. 주문을 연결하지 않았으면 null")
+    private InquiryOrderSummary order;
+
     @Schema(description = "답변 상태 (WAITING: 접수, ANSWERED: 답변완료)", allowableValues = {"WAITING", "ANSWERED"})
     private InquiryStatus status;
 
@@ -44,7 +47,7 @@ public class InquiryListResponse {
     @Schema(description = "등록 일시")
     private LocalDateTime createdAt;
 
-    public static InquiryListResponse from(OneToOneInquiry inquiry) {
+    public static InquiryListResponse from(OneToOneInquiry inquiry, InquiryOrderSummary order) {
         InquiryType type = inquiry.getType();
         return InquiryListResponse.builder()
                 .id(inquiry.getId())
@@ -53,6 +56,7 @@ public class InquiryListResponse {
                 .content(inquiry.getContent())
                 .imageUrls(inquiry.getImageUrls())
                 .orderId(inquiry.getOrderId())
+                .order(order)
                 .status(inquiry.getStatus())
                 .answerContent(inquiry.getAnswerContent())
                 .answeredAt(inquiry.getAnsweredAt())

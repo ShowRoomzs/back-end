@@ -50,8 +50,11 @@ public class ProductInquiryService {
         return inquiry.getId();
     }
 
-    public PageResponse<ProductInquiryResponse> getMyInquiries(Long userId, Pageable pageable) {
-        Page<ProductInquiry> page = productInquiryRepository.findByUserId(userId, pageable);
+    // status가 있으면 해당 상태만 조회한다 ([답변 대기만] 필터)
+    public PageResponse<ProductInquiryResponse> getMyInquiries(Long userId, InquiryStatus status, Pageable pageable) {
+        Page<ProductInquiry> page = (status == null)
+                ? productInquiryRepository.findByUserId(userId, pageable)
+                : productInquiryRepository.findByUserIdAndStatus(userId, status, pageable);
         return PageResponse.of(page.map(inquiry ->
                 ProductInquiryResponse.of(inquiry, resolveImageUrl(inquiry))));
     }

@@ -13,8 +13,10 @@ import showroomz.api.app.inquiry.dto.InquiryDetailResponse;
 import showroomz.api.app.inquiry.dto.InquiryListResponse;
 import showroomz.api.app.inquiry.dto.InquiryRegisterRequest;
 import showroomz.api.app.inquiry.dto.InquiryRegisterResponse;
+import showroomz.api.app.inquiry.dto.InquirySummaryResponse;
 import showroomz.api.app.inquiry.dto.InquiryUpdateRequest;
 import showroomz.api.app.inquiry.service.InquiryService;
+import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
@@ -38,8 +40,16 @@ public class InquiryController implements InquiryControllerDocs {
     @GetMapping
     public PageResponse<InquiryListResponse> getMyInquiries(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam(value = "status", required = false) InquiryStatus status,
             @Valid PagingRequest pagingRequest) {
-        return inquiryService.getMyInquiries(userPrincipal.getUserId(), pagingRequest.toPageable());
+        return inquiryService.getMyInquiries(userPrincipal.getUserId(), status, pagingRequest.toPageable());
+    }
+
+    @Override
+    @GetMapping("/summary")
+    public InquirySummaryResponse getInquirySummary(
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return inquiryService.getInquirySummary(userPrincipal.getUserId());
     }
 
     @Override
