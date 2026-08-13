@@ -113,4 +113,17 @@ public class MessageAttachment extends BaseTimeEntity {
     public boolean isPending() {
         return this.status == AttachmentStatus.PENDING;
     }
+
+    public boolean isUploaded() {
+        return this.status == AttachmentStatus.UPLOADED;
+    }
+
+    /** 메시지에 연결되기 전(§4-5)에는 아직 상대방에게 보이지 않은 첨부다 — 열람 권한 판정에 쓴다. */
+    public boolean isSent() {
+        return this.message != null;
+    }
+
+    public boolean isUploadedBy(ParticipantType type, Long id) {
+        return this.uploaderType == type && this.uploaderId.equals(id);
+    }
 }

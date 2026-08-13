@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.api.common.attachment.dto.AttachmentDownloadResponse;
 import showroomz.api.common.attachment.dto.AttachmentSummary;
 import showroomz.api.common.attachment.dto.CompleteAttachmentRequest;
 import showroomz.api.common.attachment.dto.PresignRequest;
@@ -691,5 +692,100 @@ public interface CreatorThreadControllerDocs {
     ResponseEntity<AttachmentSummary> completeUpload(
             @Parameter(description = "첨부 ID", required = true, example = "501") @PathVariable("attachmentId") Long attachmentId,
             @Valid @RequestBody(required = false) CompleteAttachmentRequest request
+    );
+
+    @Operation(
+            summary = "첨부 다운로드 URL 발급",
+            description = "대화에 첨부된 파일을 내려받기 위한 presigned GET URL을 발급한다(§13-8). " +
+                    "FE는 응답의 downloadUrl로 이동시키기만 하면 되며, 원본 파일명으로 저장되도록 " +
+                    "Content-Disposition이 서명에 포함돼 있다.\n\n" +
+                    "메시지 목록의 `fileUrl`은 미리보기·재생용이다 — **저장은 반드시 이 API로** 받아야 " +
+                    "파일명이 UUID가 아닌 원본 이름으로 떨어진다.\n\n" +
+                    "URL은 300초 후 만료되므로 캐시하지 말고 클릭 시점에 호출한다. 한 메시지의 첨부를 " +
+                    "`전체 다운로드`할 때는 첨부 개수만큼 각각 호출한다(§13-9 — 서버 압축 없음).\n\n" +
+                    "**권한:** CREATOR(본인 스레드의 첨부만 — 상대가 보낸 첨부도 포함)"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "발급 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AttachmentDownloadResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "발급 성공",
+                                            value = "{\n" +
+                                                    "  \"attachmentId\": 501,\n" +
+                                                    "  \"downloadUrl\": \"https://bucket.s3.ap-northeast-2.amazonaws.com/uploads/message/55/uuid.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=300&response-content-disposition=attachment%3B%20filename%2A%3DUTF-8%27%27...\",\n" +
+                                                    "  \"originalName\": \"촬영본.mp4\",\n" +
+                                                    "  \"sizeBytes\": 31457280,\n" +
+                                                    "  \"expiresInSeconds\": 300\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "업로드가 완료되지 않은 첨부(ATTACHMENT_NOT_UPLOADED)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "업로드 미완료",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ATTACHMENT_NOT_UPLOADED\",\n" +
+                                                    "  \"message\": \"업로드가 완료되지 않은 첨부입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "인증 실패",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "존재하지 않거나 접근 권한이 없는 첨부 / 본인 스레드가 아님",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "첨부 권한 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ATTACHMENT_ACCESS_DENIED\",\n" +
+                                                    "  \"message\": \"해당 첨부에 대한 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "스레드 권한 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"THREAD_ACCESS_DENIED\",\n" +
+                                                    "  \"message\": \"해당 스레드에 대한 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            )
+    })
+    ResponseEntity<AttachmentDownloadResponse> getDownloadUrl(
+            @Parameter(description = "첨부 ID", required = true, example = "501") @PathVariable("attachmentId") Long attachmentId
     );
 }

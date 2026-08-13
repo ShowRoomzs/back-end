@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.util.ReflectionTestUtils;
+import showroomz.api.common.attachment.dto.AttachmentDownloadResponse;
 import showroomz.api.common.attachment.dto.AttachmentSummary;
 import showroomz.api.common.attachment.dto.CompleteAttachmentRequest;
 import showroomz.api.common.attachment.dto.PresignRequest;
@@ -26,6 +27,7 @@ import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.message.entity.Message;
+import showroomz.domain.message.entity.MessageAttachment;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.repository.MessageAttachmentRepository;
 import showroomz.domain.message.repository.MessageThreadRepository;
@@ -48,6 +50,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -292,6 +295,50 @@ class SellerThreadServiceTest {
             AttachmentSummary summary = sellerThreadService.completeUpload(SELLER_EMAIL, 501L, request);
 
             assertThat(summary).isSameAs(expected);
+        }
+
+        /** 인플루언서(CREATOR)가 올린 첨부 — 다운로드는 업로더가 아니라 스레드 참가자 기준이어야 한다. */
+        private MessageAttachment counterpartAttachment(MessageThread thread) {
+            return MessageAttachment.pending(thread, ParticipantType.CREATOR, 12L, AttachmentType.DOCUMENT,
+                    "uploads/message/1/uuid.pdf", "https://cdn.example.com/uuid.pdf",
+                    "촬영본.pdf", "pdf", "application/pdf", 2048L);
+        }
+
+        @Test
+        @DisplayName("내 스레드의 첨부면 상대(인플루언서)가 올린 것도 다운로드 URL 발급으로 위임한다 (§13-8)")
+        void downloadDelegatesForCounterpartAttachment() {
+            MessageAttachment attachment = counterpartAttachment(myThread);
+            AttachmentDownloadResponse expected =
+                    new AttachmentDownloadResponse(501L, "https://s3.example/download", "촬영본.pdf", 2048L, 300L);
+
+            givenAuthenticatedSeller();
+            given(messageAttachmentRepository.findById(501L)).willReturn(Optional.of(attachment));
+            given(messageThreadRepository.findById(THREAD_ID)).willReturn(Optional.of(myThread));
+            given(messageAttachmentService.createDownloadUrl(attachment, ParticipantType.SELLER, MARKET_ID))
+                    .willReturn(expected);
+
+            assertThat(sellerThreadService.getDownloadUrl(SELLER_EMAIL, 501L)).isSameAs(expected);
+        }
+
+        @Test
+        @DisplayName("다른 브랜드의 스레드에 속한 첨부는 다운로드 URL을 발급하지 않는다")
+        void downloadDeniedForOtherMarketsThread() {
+            Market other = new Market();
+            other.setId(999L);
+            Connection connection = Connection.requestPair(other, Creator.builder().id(12L).build());
+            connection.markConnected();
+            MessageThread otherThread = MessageThread.builder()
+                    .id(THREAD_ID).connection(connection).status(ThreadStatus.OPEN).build();
+
+            givenAuthenticatedSeller();
+            given(messageAttachmentRepository.findById(501L))
+                    .willReturn(Optional.of(counterpartAttachment(otherThread)));
+            given(messageThreadRepository.findById(THREAD_ID)).willReturn(Optional.of(otherThread));
+
+            assertThatThrownBy(() -> sellerThreadService.getDownloadUrl(SELLER_EMAIL, 501L))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.THREAD_ACCESS_DENIED);
+            verify(messageAttachmentService, never()).createDownloadUrl(any(), any(), any());
         }
     }
 
