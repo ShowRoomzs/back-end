@@ -24,7 +24,8 @@ public interface FaqControllerDocs {
                     "- 카테고리 값(`category`)은 Common API `GET /v1/common/faqs/categories`로 조회.\n\n" +
                     "**검색:**\n" +
                     "- `keyword`: 질문 내용 부분 일치 (대소문자 무시)\n" +
-                    "- `category`: 고정 카테고리 (전체, 배송, 취소/교환/반품, 상품/AS문의, 주문/결제, 서비스, 이용 안내, 회원 정보). 전체 또는 생략 시 전체 조회.\n\n" +
+                    "- `category`: 고정 카테고리 5종 (배송, 취소/교환/반품, 주문·결제, 서비스, 계정). 전체(ALL) 또는 생략 시 전체 조회.\n\n" +
+                    "**정렬:** 카테고리 노출 순서 → 운영자가 정한 카테고리 내 노출 순서\n\n" +
                     "**권한:** 없음\n" +
                     "**요청 헤더:** 없음",
             parameters = {
@@ -53,7 +54,7 @@ public interface FaqControllerDocs {
                                                     "  {\n" +
                                                     "    \"id\": 2,\n" +
                                                     "    \"category\": \"ORDER_PAYMENT\",\n" +
-                                                    "    \"categoryName\": \"주문/결제\",\n" +
+                                                    "    \"categoryName\": \"주문·결제\",\n" +
                                                     "    \"question\": \"결제 방법은 무엇이 있나요?\",\n" +
                                                     "    \"answer\": \"카드, 계좌이체, 간편결제를 이용하실 수 있습니다.\"\n" +
                                                     "  }\n" +
