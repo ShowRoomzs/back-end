@@ -50,12 +50,6 @@ public class RecommendationDto {
         @Schema(description = "대표 카테고리명", example = "의류")
         private String mainCategoryName;
 
-        @Schema(description = "팔로워 수", example = "1200")
-        private Long followerCount;
-
-        @Schema(description = "팔로우 여부", example = "true")
-        private Boolean isFollowing;
-
         @Schema(description = "대표 상품 3개")
         private List<ProductDto.ProductItem> representativeProducts;
     }

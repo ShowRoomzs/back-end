@@ -15,7 +15,6 @@ import showroomz.api.common.market.dto.MarketRecommendationResponse;
 import showroomz.api.common.market.dto.PopularProductResponse;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.market.entity.Market;
-import showroomz.domain.market.repository.MarketFollowRepository;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.api.app.market.DTO.MarketListResponse;
@@ -44,7 +43,6 @@ import java.util.stream.Collectors;
 public class CommonMarketService {
 
     private final MarketRepository marketRepository;
-    private final MarketFollowRepository marketFollowRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final ProductImageRepository productImageRepository;
@@ -64,9 +62,6 @@ public class CommonMarketService {
             Long categoryId,
             PagingRequest pagingRequest
     ) {
-        Users currentUser = resolveCurrentUser();
-        Long currentUserId = currentUser != null ? currentUser.getId() : null;
-
         int pageNumber = pagingRequest.getPage() > 0 ? pagingRequest.getPage() - 1 : 0;
         int pageSize = pagingRequest.getSize() > 0 ? pagingRequest.getSize() : 20;
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
@@ -97,16 +92,11 @@ public class CommonMarketService {
         List<Market> markets = marketRepository.findAllById(validMarketIds);
         Map<Long, Market> marketMap = markets.stream().collect(Collectors.toMap(Market::getId, m -> m));
 
-        Set<Long> followingMarketIds = currentUserId != null
-                ? marketFollowRepository.findMarketIdsByUserAndMarketIdIn(currentUserId, validMarketIds)
-                : Set.of();
-
         List<MarketRecommendationResponse.MarketRecommendationItem> items = validMarketIds.stream()
                 .map(marketMap::get)
                 .filter(market -> market != null)
                 .map(market -> toRecommendationItem(
                         market,
-                        followingMarketIds.contains(market.getId()),
                         marketRepProductsMap.get(market.getId())))
                 .toList();
 
@@ -293,9 +283,8 @@ public class CommonMarketService {
     }
 
     private MarketRecommendationResponse.MarketRecommendationItem toRecommendationItem(
-            Market market, boolean isFollowing,
+            Market market,
             List<MarketRecommendationResponse.RepresentativeProduct> representativeProducts) {
-        long followCount = marketFollowRepository.countByMarket(market);
 
         return MarketRecommendationResponse.MarketRecommendationItem.builder()
                 .marketId(market.getId())
@@ -306,8 +295,6 @@ public class CommonMarketService {
                 .marketDescription(market.getMarketDescription())
                 .marketUrl(market.getMarketUrl())
                 .shopType(toShopType(market.getSeller().getRoleType()))
-                .followCount(followCount)
-                .isFollowing(isFollowing)
                 .mainCategoryId(market.getMainCategory() != null ? market.getMainCategory().getCategoryId() : null)
                 .build();
     }

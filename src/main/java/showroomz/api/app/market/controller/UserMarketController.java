@@ -6,12 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import io.swagger.v3.oas.annotations.Hidden;
-import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.market.DTO.MarketDetailResponse;
 import showroomz.api.app.market.DTO.MarketListResponse;
 import showroomz.api.app.market.docs.UserMarketControllerDocs;
@@ -45,14 +41,8 @@ public class UserMarketController implements UserMarketControllerDocs {
     @GetMapping("/{shopId}")
     public ResponseEntity<MarketDetailResponse> getMarketDetail(
         @PathVariable("shopId") Long shopId) {
-        
-        String username = null;
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof UserPrincipal) {
-            username = ((UserPrincipal) authentication.getPrincipal()).getUsername();
-        }
 
-        MarketDetailResponse response = userMarketService.getMarketDetail(shopId, username);
+        MarketDetailResponse response = userMarketService.getMarketDetail(shopId);
         return ResponseEntity.ok(response);
     }
 }

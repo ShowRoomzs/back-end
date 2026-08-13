@@ -82,7 +82,7 @@ public interface UserMarketControllerDocs {
 
     @Operation(
             summary = "마켓 상세 조회",
-            description = "샵 정보와 팔로워 수를 조회합니다. (비로그인 상태에서도 조회 가능)\n\n" +
+            description = "샵 정보를 조회합니다. (비로그인 상태에서도 조회 가능)\n\n" +
                     "**응답 필드:**\n" +
                     "- `shopId`: 샵 ID\n" +
                     "- `shopName`: 샵명\n" +
@@ -93,9 +93,7 @@ public interface UserMarketControllerDocs {
                     "- `mainCategoryId`: 대표 카테고리 ID\n" +
                     "- `mainCategoryName`: 대표 카테고리명\n" +
                     "- `snsLinks`: SNS 링크 배열 (각 항목은 `snsType`, `snsUrl` 필드를 포함)\n" +
-                    "  - `snsType`: SNS 타입 (INSTAGRAM, TIKTOK, X, YOUTUBE)\n" +
-                    "- `followerCount`: 이 샵을 찜한 유저 수\n" +
-                    "- `isFollowed`: 현재 유저가 찜했는지 여부 (비로그인 시 false)\n\n" +
+                    "  - `snsType`: SNS 타입 (INSTAGRAM, TIKTOK, X, YOUTUBE)\n\n" +
                     "**권한:** 인증 불필요 (비로그인 가능)",
             parameters = {
                     @Parameter(name = "shopId", description = "샵 ID", required = true, example = "1", in = ParameterIn.PATH)
@@ -110,7 +108,7 @@ public interface UserMarketControllerDocs {
                             schema = @Schema(implementation = MarketDetailResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "성공 시 (로그인 상태, 팔로우 중)",
+                                            name = "성공 시 (SNS 링크 3개)",
                                             value = "{\n" +
                                                     "  \"shopId\": 1,\n" +
                                                     "  \"shopName\": \"쇼룸즈\",\n" +
@@ -133,14 +131,12 @@ public interface UserMarketControllerDocs {
                                                     "      \"snsType\": \"TIKTOK\",\n" +
                                                     "      \"snsUrl\": \"https://tiktok.com/@showroomz\"\n" +
                                                     "    }\n" +
-                                                    "  ],\n" +
-                                                    "  \"followerCount\": 150,\n" +
-                                                    "  \"isFollowed\": true\n" +
+                                                    "  ]\n" +
                                                     "}",
-                                            description = "로그인한 사용자가 해당 샵을 팔로우한 경우"
+                                            description = "SNS 링크가 모두 등록된 샵"
                                     ),
                                     @ExampleObject(
-                                            name = "성공 시 (비로그인 상태)",
+                                            name = "성공 시 (SNS 링크 2개)",
                                             value = "{\n" +
                                                     "  \"shopId\": 1,\n" +
                                                     "  \"shopName\": \"쇼룸즈\",\n" +
@@ -159,11 +155,9 @@ public interface UserMarketControllerDocs {
                                                     "      \"snsType\": \"YOUTUBE\",\n" +
                                                     "      \"snsUrl\": \"https://youtube.com/showroomz\"\n" +
                                                     "    }\n" +
-                                                    "  ],\n" +
-                                                    "  \"followerCount\": 150,\n" +
-                                                    "  \"isFollowed\": false\n" +
+                                                    "  ]\n" +
                                                     "}",
-                                            description = "비로그인 상태에서는 isFollowed가 항상 false"
+                                            description = "SNS 링크 일부만 등록된 샵"
                                     )
                             }
                     )

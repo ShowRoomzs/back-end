@@ -16,6 +16,7 @@ import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.user.type.UserStatus;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -67,4 +68,17 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
                                             Pageable pageable);
 
     long countByTypeAndCreatorAndStatus(ConnectionType type, Creator creator, ConnectionStatus status);
+
+    /**
+     * 진행 중 공구를 보유한 쇼룸 판별 (C2 팔로잉 목록의 아바타 링).
+     * 공구 상태는 상품(product.group_buy_status)에 있으므로, 연결(CONNECTED)된 브랜드의 진열 중 상품 가운데
+     * 공구 진행중(IN_PROGRESS)이 하나라도 있으면 그 쇼룸을 진행 중으로 본다.
+     */
+    @Query("SELECT DISTINCT c.creator.id FROM Connection c, Product p " +
+           "WHERE p.market = c.market " +
+           "AND c.creator.id IN :creatorIds " +
+           "AND c.status = showroomz.domain.connection.type.ConnectionStatus.CONNECTED " +
+           "AND p.groupBuyStatus = showroomz.domain.product.type.ProductGroupBuyStatus.IN_PROGRESS " +
+           "AND p.displayStatus = showroomz.domain.product.type.ProductDisplayStatus.DISPLAY")
+    List<Long> findCreatorIdsWithOngoingGroupBuy(@Param("creatorIds") Collection<Long> creatorIds);
 }

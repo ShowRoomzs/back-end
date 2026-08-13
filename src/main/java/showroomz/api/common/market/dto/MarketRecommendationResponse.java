@@ -59,12 +59,6 @@ public class MarketRecommendationResponse {
         @Schema(description = "쇼룸 유형", allowableValues = {"MARKET", "SHOWROOM"})
         private ShopType shopType;
 
-        @Schema(description = "팔로워 수", example = "1200")
-        private Long followCount;
-
-        @Schema(description = "현재 로그인 유저의 팔로우 여부 (비회원: false)")
-        private Boolean isFollowing;
-
         @Schema(description = "대표 카테고리 ID", example = "1")
         private Long mainCategoryId;
     }

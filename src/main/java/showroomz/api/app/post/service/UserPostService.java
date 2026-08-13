@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.post.DTO.PostDto;
 import showroomz.api.app.user.repository.UserRepository;
-import showroomz.domain.market.repository.MarketFollowRepository;
 import showroomz.domain.member.creator.entity.Creator;
+import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.entity.PostProduct;
@@ -39,7 +39,7 @@ public class UserPostService {
 
     private final PostRepository postRepository;
     private final PostWishlistRepository postWishlistRepository;
-    private final MarketFollowRepository marketFollowRepository;
+    private final CreatorFollowRepository creatorFollowRepository;
     private final UserRepository userRepository;
     private final WishlistRepository wishlistRepository;
     private final ReviewRepository reviewRepository;
@@ -202,14 +202,14 @@ public class UserPostService {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        List<Long> followingMarketIds = marketFollowRepository.findMarketIdsByUserId(user.getId());
+        List<Long> followingShowroomIds = creatorFollowRepository.findCreatorIdsByUserId(user.getId());
         Pageable pageable = pagingRequest.toPageable();
 
-        if (followingMarketIds.isEmpty()) {
+        if (followingShowroomIds.isEmpty()) {
             return new PageResponse<>(Page.empty(pageable));
         }
 
-        Page<Post> postPage = postRepository.findDisplayedPostsByFollowingMarketIds(followingMarketIds, pageable);
+        Page<Post> postPage = postRepository.findDisplayedPostsByFollowingCreatorIds(followingShowroomIds, pageable);
 
         List<Long> postIds = postPage.getContent().stream()
                 .map(Post::getId)

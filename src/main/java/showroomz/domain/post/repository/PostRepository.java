@@ -21,7 +21,13 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
 
     Page<Post> findByCreatorId(Long creatorId, Pageable pageable);
 
-    @Query("SELECT p FROM Post p WHERE p.isDisplay = true AND p.creator.user.email IN " +
-           "(SELECT m.seller.email FROM Market m WHERE m.id IN :marketIds)")
-    Page<Post> findDisplayedPostsByFollowingMarketIds(@Param("marketIds") List<Long> marketIds, Pageable pageable);
+    /** 팔로잉 피드 — 팔로우한 쇼룸(크리에이터)이 올린 게시물 */
+    @Query("SELECT p FROM Post p WHERE p.isDisplay = true AND p.creator.id IN :creatorIds")
+    Page<Post> findDisplayedPostsByFollowingCreatorIds(@Param("creatorIds") List<Long> creatorIds, Pageable pageable);
+
+    /** 쇼룸별 최근 게시물 등록 시각 (팔로잉 목록 기본 정렬용) */
+    @Query("SELECT p.creator.id, MAX(p.createdAt) FROM Post p " +
+           "WHERE p.isDisplay = true AND p.creator.id IN :creatorIds " +
+           "GROUP BY p.creator.id")
+    List<Object[]> findLatestPostCreatedAtByCreatorIds(@Param("creatorIds") List<Long> creatorIds);
 }

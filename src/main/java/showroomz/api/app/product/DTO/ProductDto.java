@@ -230,9 +230,6 @@ public class ProductDto {
         @Schema(description = "찜 여부", example = "false")
         private Boolean isWished;
 
-        @Schema(description = "마켓 팔로우 여부", example = "false")
-        private Boolean isFollowing;
-
         @Schema(description = "등록일", example = "2025-12-28T14:30:00Z")
         private String createdAt;
 

@@ -9,14 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.market.DTO.MarketDetailResponse;
 import showroomz.api.app.market.DTO.MarketListResponse;
-import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.market.type.ShopType;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.market.entity.Market;
-import showroomz.domain.market.repository.MarketFollowRepository;
 import showroomz.domain.market.repository.MarketRepository;
-import showroomz.domain.member.user.entity.Users;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -30,32 +27,18 @@ import java.util.stream.Collectors;
 public class UserMarketService {
 
     private final MarketRepository marketRepository;
-    private final MarketFollowRepository marketFollowRepository;
-    private final UserRepository userRepository;
 
-    public MarketDetailResponse getMarketDetail(Long marketId, String username) {
+    public MarketDetailResponse getMarketDetail(Long marketId) {
         // 1. 마켓 조회 (승인된 Shop만 조회)
         Market market = marketRepository.findByIdAndSellerStatus(marketId, SellerStatus.APPROVED)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MARKET_NOT_FOUND));
 
-        // 2. 팔로워 수 조회
-        long followerCount = marketFollowRepository.countByMarket(market);
-
-        // 3. 현재 유저의 팔로우 여부 조회
-        boolean isFollowed = false;
-        if (username != null && !username.equals("anonymousUser")) {
-            Users user = userRepository.findByUsername(username).orElse(null);
-            if (user != null) {
-                isFollowed = marketFollowRepository.existsByUserAndMarket(user, market);
-            }
-        }
-
-        // 4. SNS 링크 변환 (Enum -> String)
+        // 2. SNS 링크 변환 (Enum -> String)
         List<MarketDetailResponse.SnsLinkResponse> snsLinks = market.getSnsLinks().stream()
                 .map(sns -> new MarketDetailResponse.SnsLinkResponse(sns.getSnsType().name(), sns.getSnsUrl()))
                 .collect(Collectors.toList());
 
-        // 5. 응답 생성
+        // 3. 응답 생성
         Category mainCategory = market.getMainCategory();
         return MarketDetailResponse.builder()
                 .shopId(market.getId())
@@ -67,8 +50,6 @@ public class UserMarketService {
                 .mainCategoryId(mainCategory != null ? mainCategory.getCategoryId() : null)
                 .mainCategoryName(mainCategory != null ? mainCategory.getName() : null)
                 .snsLinks(snsLinks)
-                .followerCount(followerCount)
-                .isFollowed(isFollowed)
                 .build();
     }
 
