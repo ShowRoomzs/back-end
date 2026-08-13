@@ -103,14 +103,10 @@ public class ProductInquiryService {
         productInquiryRepository.delete(inquiry);
     }
 
-    /** 상품 문의 타입 목록 조회 (1:1 문의 카테고리 API와 동일한 형식: key, description, details는 빈 목록) */
+    /** 상품 문의 타입 목록 조회 (1:1 문의 유형 API와 동일한 형식: key, description) */
     public java.util.List<InquiryCategoryResponse> getProductInquiryCategories() {
         return java.util.Arrays.stream(ProductInquiryType.values())
-                .map(type -> new InquiryCategoryResponse(
-                        type.name(),
-                        type.getDescription(),
-                        java.util.Collections.emptyList()
-                ))
+                .map(type -> new InquiryCategoryResponse(type.name(), type.getDescription()))
                 .toList();
     }
 

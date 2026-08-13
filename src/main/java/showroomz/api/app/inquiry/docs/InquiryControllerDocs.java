@@ -26,14 +26,13 @@ public interface InquiryControllerDocs {
 
     @Operation(
             summary = "1:1 문의 등록",
-            description = "문의 타입(Enum)과 상세 유형(String), 내용을 입력하여 1:1 문의를 등록합니다.\n\n" +
+            description = "문의 유형과 내용을 입력하여 1:1 문의를 등록합니다. 등록된 문의는 마켓이 아닌 **어드민(운영자)**에게만 전달됩니다.\n\n" +
                     "**필수 값:**\n" +
-                    "- `type`: 문의 타입 (InquiryType - DELIVERY, ORDER_PAYMENT, CANCEL_REFUND_EXCHANGE, USER_INFO, PRODUCT_CHECK, SERVICE)\n" +
-                    "- `detailType`: 문의 상세 유형 (InquiryDetailType - 해당 대분류에 속한 소분류 코드, 예: DELIVERY_SCHEDULE)\n" +
-                    "- `content`: 문의 내용\n\n" +
+                    "- `type`: 문의 유형 5종 (DELIVERY, CANCEL_EXCHANGE_RETURN, ORDER_PAYMENT, SERVICE, ACCOUNT) — 소분류는 없습니다\n" +
+                    "- `content`: 문의 내용 (최대 1000자)\n\n" +
                     "**선택 값:**\n" +
-                    "- `imageUrls`: 첨부 이미지 URL 리스트 (최대 10장)\n" +
-                    "- `orderId`: 주문 번호 (주문 변경, 취소/교환/환불, 불량/하자, AS 문의 시 **필수**)\n\n" +
+                    "- `imageUrls`: 첨부 이미지 URL 리스트 (최대 5장)\n" +
+                    "- `orderId`: 참조 주문 ID — **모든 유형에서 선택값**입니다. 주문 없이도 문의할 수 있습니다\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -66,13 +65,6 @@ public interface InquiryControllerDocs {
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
                                                     "  \"message\": \"입력값이 올바르지 않습니다.\"\n" +
-                                                    "}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "주문 번호 필수",
-                                            value = "{\n" +
-                                                    "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"해당 문의 유형에는 주문 번호가 필수입니다.\"\n" +
                                                     "}"
                                     )
                             }
@@ -121,10 +113,9 @@ public interface InquiryControllerDocs {
                     schema = @Schema(implementation = InquiryRegisterRequest.class),
                     examples = {
                             @ExampleObject(
-                                    name = "배송 일정 문의 (orderId 선택)",
+                                    name = "주문 연결 없이 문의",
                                     value = "{\n" +
                                             "  \"type\": \"DELIVERY\",\n" +
-                                            "  \"detailType\": \"DELIVERY_SCHEDULE\",\n" +
                                             "  \"content\": \"주문한 지 3일이 지났는데 아직 배송 준비 중입니다. 배송 일정을 확인 부탁드립니다.\",\n" +
                                             "  \"imageUrls\": [\n" +
                                             "    \"https://example.com/inquiries/img1.jpg\"\n" +
@@ -132,10 +123,9 @@ public interface InquiryControllerDocs {
                                             "}"
                             ),
                             @ExampleObject(
-                                    name = "취소/교환/환불 문의 (orderId 필수)",
+                                    name = "참조 주문을 연결한 문의",
                                     value = "{\n" +
-                                            "  \"type\": \"CANCEL_REFUND_EXCHANGE\",\n" +
-                                            "  \"detailType\": \"ORDER_CANCEL\",\n" +
+                                            "  \"type\": \"CANCEL_EXCHANGE_RETURN\",\n" +
                                             "  \"content\": \"주문을 취소하고 싶습니다.\",\n" +
                                             "  \"imageUrls\": [\n" +
                                             "    \"https://example.com/inquiries/img1.jpg\"\n" +
@@ -157,8 +147,8 @@ public interface InquiryControllerDocs {
                     "**정렬 기준:**\n" +
                     "- 생성일(`createdAt`) 기준 내림차순\n\n" +
                     "**status 값:**\n" +
-                    "- `WAITING`: 답변 대기\n" +
-                    "- `ANSWERED`: 답변 완료\n\n" +
+                    "- `WAITING`: 접수(답변 대기)\n" +
+                    "- `ANSWERED`: 답변완료\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -178,8 +168,6 @@ public interface InquiryControllerDocs {
                                                     "      \"id\": 1,\n" +
                                                     "      \"type\": \"DELIVERY\",\n" +
                                                     "      \"typeName\": \"배송\",\n" +
-                                                    "      \"detailType\": \"DELIVERY_SCHEDULE\",\n" +
-                                                    "      \"detailTypeName\": \"배송 일정\",\n" +
                                                     "      \"content\": \"주문한 지 3일이 지났는데 아직 배송 준비 중입니다. 배송 일정을 확인 부탁드립니다.\",\n" +
                                                     "      \"imageUrls\": [\n" +
                                                     "        \"https://example.com/inquiries/img1.jpg\"\n" +
@@ -229,11 +217,11 @@ public interface InquiryControllerDocs {
 
     @Operation(
             summary = "문의 상세 조회",
-            description = "특정 1:1 문의의 상세 정보(타입, 상세 유형, 내용, 이미지, 답변 상태/내용 등)를 조회합니다.\n\n" +
+            description = "특정 1:1 문의의 상세 정보(유형, 내용, 이미지, 답변 상태/내용 등)를 조회합니다.\n\n" +
                     "- 본인이 등록한 문의만 조회할 수 있습니다.\n\n" +
                     "**status 값:**\n" +
-                    "- `WAITING`: 답변 대기\n" +
-                    "- `ANSWERED`: 답변 완료\n\n" +
+                    "- `WAITING`: 접수(답변 대기)\n" +
+                    "- `ANSWERED`: 답변완료\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -251,8 +239,6 @@ public interface InquiryControllerDocs {
                                                     "  \"id\": 1,\n" +
                                                     "  \"type\": \"DELIVERY\",\n" +
                                                     "  \"typeName\": \"배송\",\n" +
-                                                    "  \"detailType\": \"DELIVERY_SCHEDULE\",\n" +
-                                                    "  \"detailTypeName\": \"배송 일정\",\n" +
                                                     "  \"content\": \"주문한 지 3일이 지났는데 아직 배송 준비 중입니다. 배송 일정을 확인 부탁드립니다.\",\n" +
                                                     "  \"imageUrls\": [\n" +
                                                     "    \"https://example.com/inquiries/img1.jpg\"\n" +
@@ -271,8 +257,6 @@ public interface InquiryControllerDocs {
                                                     "  \"id\": 1,\n" +
                                                     "  \"type\": \"DELIVERY\",\n" +
                                                     "  \"typeName\": \"배송\",\n" +
-                                                    "  \"detailType\": \"DELIVERY_SCHEDULE\",\n" +
-                                                    "  \"detailTypeName\": \"배송 일정\",\n" +
                                                     "  \"content\": \"주문한 지 3일이 지났는데 아직 배송 준비 중입니다. 배송 일정을 확인 부탁드립니다.\",\n" +
                                                     "  \"imageUrls\": [\n" +
                                                     "    \"https://example.com/inquiries/img1.jpg\"\n" +
@@ -348,10 +332,10 @@ public interface InquiryControllerDocs {
 
     @Operation(
             summary = "문의 수정",
-            description = "답변 대기 중인 1:1 문의의 내용을 수정합니다.\n\n" +
+            description = "접수(답변 대기) 상태인 1:1 문의의 내용을 수정합니다.\n\n" +
                     "- 본인이 등록한 문의만 수정할 수 있습니다.\n" +
-                    "- 답변이 완료된 문의는 수정할 수 없습니다.\n" +
-                    "- 주문 변경, 취소/교환/환불, 불량/하자, AS 문의인 경우 `orderId`(주문 번호)가 필수입니다.\n\n" +
+                    "- 답변이 등록된 문의는 수정할 수 없습니다.\n" +
+                    "- `orderId`(참조 주문)는 모든 유형에서 선택값입니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -368,17 +352,10 @@ public interface InquiryControllerDocs {
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "답변 완료된 문의",
+                                            name = "답변이 등록된 문의",
                                             value = "{\n" +
                                                     "  \"code\": \"INQUIRY_ALREADY_ANSWERED\",\n" +
-                                                    "  \"message\": \"답변이 완료된 문의는 수정하거나 삭제할 수 없습니다.\"\n" +
-                                                    "}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "주문 번호 필수",
-                                            value = "{\n" +
-                                                    "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"해당 문의 유형에는 주문 번호가 필수입니다.\"\n" +
+                                                    "  \"message\": \"이미 답변이 등록된 문의입니다. 답변은 1회만 등록할 수 있습니다.\"\n" +
                                                     "}"
                                     )
                             }
@@ -437,7 +414,7 @@ public interface InquiryControllerDocs {
             )
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "문의 수정 요청 바디 (주문 변경/취소·교환·환불/불량·하자/AS 문의 시 orderId 필수)",
+            description = "문의 수정 요청 바디 (orderId는 선택값)",
             required = true,
             content = @Content(
                     mediaType = "application/json",
@@ -446,8 +423,7 @@ public interface InquiryControllerDocs {
                             @ExampleObject(
                                     name = "수정 예시 (orderId 포함)",
                                     value = "{\n" +
-                                            "  \"type\": \"CANCEL_REFUND_EXCHANGE\",\n" +
-                                            "  \"detailType\": \"ORDER_CANCEL\",\n" +
+                                            "  \"type\": \"CANCEL_EXCHANGE_RETURN\",\n" +
                                             "  \"content\": \"주문 취소 요청 내용을 수정합니다.\",\n" +
                                             "  \"imageUrls\": [\n" +
                                             "    \"https://example.com/inquiries/img1.jpg\"\n" +
@@ -467,9 +443,9 @@ public interface InquiryControllerDocs {
 
     @Operation(
             summary = "문의 삭제",
-            description = "답변 대기 중인 1:1 문의를 삭제합니다.\n\n" +
+            description = "접수(답변 대기) 상태인 1:1 문의를 삭제합니다.\n\n" +
                     "- 본인이 등록한 문의만 삭제할 수 있습니다.\n" +
-                    "- 답변이 완료된 문의는 삭제할 수 없습니다.\n\n" +
+                    "- 답변이 등록된 문의는 삭제할 수 없습니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -489,7 +465,7 @@ public interface InquiryControllerDocs {
                                             name = "답변 완료된 문의",
                                             value = "{\n" +
                                                     "  \"code\": \"INQUIRY_ALREADY_ANSWERED\",\n" +
-                                                    "  \"message\": \"답변이 완료된 문의는 수정하거나 삭제할 수 없습니다.\"\n" +
+                                                    "  \"message\": \"이미 답변이 등록된 문의입니다. 답변은 1회만 등록할 수 있습니다.\"\n" +
                                                     "}"
                                     )
                             }

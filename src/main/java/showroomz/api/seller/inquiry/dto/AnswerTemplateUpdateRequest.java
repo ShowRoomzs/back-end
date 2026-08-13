@@ -23,7 +23,7 @@ public class AnswerTemplateUpdateRequest {
             description = "카테고리",
             requiredMode = Schema.RequiredMode.REQUIRED,
             example = "STOCK",
-            allowableValues = {"PRODUCT", "SIZE", "STOCK", "DELIVERY", "ORDER_PAYMENT", "CANCEL_REFUND_EXCHANGE", "DEFECT_AS"}
+            allowableValues = {"PRODUCT", "SIZE", "STOCK"}
     )
     private MarketInquiryFilterType category;
 

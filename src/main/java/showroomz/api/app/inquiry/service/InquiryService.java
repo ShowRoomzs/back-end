@@ -14,13 +14,11 @@ import showroomz.api.app.inquiry.dto.InquiryUpdateRequest;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.inquiry.entity.OneToOneInquiry;
 import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
-import showroomz.domain.inquiry.type.InquiryDetailType;
-import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.domain.inquiry.type.InquiryType;
 import showroomz.domain.member.user.entity.Users;
+
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.BusinessException;
@@ -34,34 +32,15 @@ public class InquiryService {
     private final OneToOneInquiryRepository inquiryRepository;
     private final UserRepository userRepository;
 
-    private void validateOrderIdRequirement(InquiryType type, InquiryDetailType detailType, Long orderId) {
-        boolean isOrderIdRequired = (type == InquiryType.CANCEL_REFUND_EXCHANGE)
-                || (detailType == InquiryDetailType.ORDER_CHANGE)
-                || (detailType == InquiryDetailType.DEFECT)
-                || (detailType == InquiryDetailType.AS);
-
-        if (isOrderIdRequired && orderId == null) {
-            throw new BusinessException(ErrorCode.ORDER_ID_REQUIRED);
-        }
-    }
-
-    // 1:1 문의 등록
+    // 1:1 문의 등록 — 답변은 어드민(운영자)만 등록한다
     @Transactional
     public InquiryRegisterResponse registerInquiry(Long userId, InquiryRegisterRequest request) {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        InquiryDetailType detailType = request.getDetailType();
-        if (detailType.getParentType() != request.getType()) {
-            throw new BusinessException(ErrorCode.INVALID_INQUIRY_DETAIL_TYPE);
-        }
-
-        validateOrderIdRequirement(request.getType(), detailType, request.getOrderId());
-
         OneToOneInquiry inquiry = OneToOneInquiry.builder()
                 .user(user)
                 .type(request.getType())
-                .category(detailType)
                 .content(request.getContent())
                 .imageUrls(request.getImageUrls())
                 .orderId(request.getOrderId())
@@ -106,20 +85,12 @@ public class InquiryService {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
-        if (inquiry.getStatus() == InquiryStatus.ANSWERED) {
+        if (inquiry.isAnswered()) {
             throw new BusinessException(ErrorCode.INQUIRY_ALREADY_ANSWERED);
         }
 
-        InquiryDetailType detailType = request.getDetailType();
-        if (detailType.getParentType() != request.getType()) {
-            throw new BusinessException(ErrorCode.INVALID_INQUIRY_DETAIL_TYPE);
-        }
-
-        validateOrderIdRequirement(request.getType(), detailType, request.getOrderId());
-
         inquiry.update(
                 request.getType(),
-                detailType,
                 request.getContent(),
                 request.getImageUrls(),
                 request.getOrderId()
@@ -136,26 +107,17 @@ public class InquiryService {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
-        if (inquiry.getStatus() == InquiryStatus.ANSWERED) {
+        if (inquiry.isAnswered()) {
             throw new BusinessException(ErrorCode.INQUIRY_ALREADY_ANSWERED);
         }
 
         inquiryRepository.delete(inquiry);
     }
 
-    /** 1:1 문의 카테고리 목록 조회 (대분류 + 소분류) */
+    /** 1:1 문의 유형 목록 조회 (§17-2-1 — 5종 단일 레벨) */
     public List<InquiryCategoryResponse> getInquiryCategories() {
         return Arrays.stream(InquiryType.values())
-                .map(type -> new InquiryCategoryResponse(
-                        type.name(),
-                        type.getDescription(),
-                        InquiryDetailType.findByParentType(type).stream()
-                                .map(detail -> new InquiryCategoryResponse.DetailResponse(
-                                        detail.name(),
-                                        detail.getDescription()
-                                ))
-                                .collect(Collectors.toList())
-                ))
-                .collect(Collectors.toList());
+                .map(type -> new InquiryCategoryResponse(type.name(), type.getDescription()))
+                .toList();
     }
 }
