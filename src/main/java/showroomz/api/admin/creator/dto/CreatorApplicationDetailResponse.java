@@ -18,10 +18,6 @@ import java.util.List;
 @Schema(description = "크리에이터 입점 관리 상세 응답")
 public class CreatorApplicationDetailResponse {
 
-    /** 본인인증 연동 전까지 사용하는 더미 값 */
-    public static final String DUMMY_REAL_NAME = "홍길동";
-    public static final String DUMMY_BIRTHDAY = "1990-01-01";
-    public static final String DUMMY_PHONE_NUMBER = "010-1234-5678";
     public static final String VERIFICATION_METHOD_PASS = "PASS";
     public static final String VERIFICATION_METHOD_PASS_LABEL = "휴대폰 본인인증(PASS)";
 
@@ -75,15 +71,15 @@ public class CreatorApplicationDetailResponse {
     @Schema(description = "반려 상세 사유 (반려 시에만, 선택)", example = "제출하신 채널의 팔로워 수가 기준에 미달합니다.")
     private String rejectReasonDetail;
 
-    // ── 본인 인증 (더미) ──
+    // ── 본인 인증 (회원가입 시 PASS 인증값) ──
 
-    @Schema(description = "실명 (반려 시 null/파기, 본인인증 연동 전 더미)", example = "홍길동")
+    @Schema(description = "실명 (회원가입 시 본인인증 결과, 반려 시 null/파기)", example = "홍길동")
     private String name;
 
-    @Schema(description = "생년월일 (반려 시 null/파기, 본인인증 연동 전 더미, YYYY-MM-DD)", example = "1990-01-01")
+    @Schema(description = "생년월일 (회원가입 시 본인인증 결과, 반려 시 null/파기, YYYY-MM-DD)", example = "1990-01-01")
     private String birthday;
 
-    @Schema(description = "연락처 (반려 시 null/파기, 본인인증 연동 전 더미)", example = "010-1234-5678")
+    @Schema(description = "연락처 (회원가입 시 본인인증 결과, 반려 시 null/파기)", example = "010-1234-5678")
     private String phoneNumber;
 
     @Schema(description = "연락처 일방향 해시 (반려 시에만)", example = "a3f9c210...")

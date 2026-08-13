@@ -237,7 +237,10 @@ public interface AuthControllerDocs {
 
     @Operation(
             summary = "회원가입 완료",
-            description = "소셜 로그인 후 회원가입 정보를 입력하여 회원가입을 완료합니다. Register Token이 필요합니다."
+            description = "소셜 로그인 후 닉네임과 약관 동의를 입력하여 회원가입을 완료합니다. Register Token이 필요합니다.\n\n" +
+                    "**입력 항목:** 닉네임 + 약관 동의 4종([필수] 만 14세 이상 · 서비스 이용약관 · 개인정보 수집·이용 / [선택] 광고성 정보 수신)\n" +
+                    "**실명·생년월일·성별·연락처:** 본인인증(PASS) 결과로 저장되므로 요청에 포함하지 않습니다.\n" +
+                    "**본인인증:** PASS 연동 전까지는 서버가 임시 인증 데이터를 사용합니다. 만 14세 미만이면 403 UNDER_MIN_AGE로 차단됩니다."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -287,8 +290,8 @@ public interface AuthControllerDocs {
                                                     "      \"reason\": \"부적절한 단어가 포함되어 있습니다.\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
-                                                    "      \"field\": \"birthday\",\n" +
-                                                    "      \"reason\": \"생년월일 형식이 올바르지 않습니다.\"\n" +
+                                                    "      \"field\": \"ageAgree\",\n" +
+                                                    "      \"reason\": \"만 14세 이상만 가입할 수 있습니다.\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
                                                     "      \"field\": \"serviceAgree\",\n" +
@@ -339,6 +342,23 @@ public interface AuthControllerDocs {
                     )
             ),
             @ApiResponse(
+                    responseCode = "403",
+                    description = "만 14세 미만 가입 제한 (본인인증 결과 기준)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "만 14세 미만 예시",
+                                            value = "{\n" +
+                                                    "  \"code\": \"UNDER_MIN_AGE\",\n" +
+                                                    "  \"message\": \"만 14세 미만은 가입할 수 없습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
                     responseCode = "409",
                     description = "닉네임 중복",
                     content = @Content(
@@ -367,8 +387,7 @@ public interface AuthControllerDocs {
                                     name = "요청 예시",
                                     value = "{\n" +
                                             "  \"nickname\": \"홍길동\",\n" +
-                                            "  \"gender\": \"MALE\",\n" +
-                                            "  \"birthday\": \"1990-01-15\",\n" +
+                                            "  \"ageAgree\": true,\n" +
                                             "  \"serviceAgree\": true,\n" +
                                             "  \"privacyAgree\": true,\n" +
                                             "  \"marketingAgree\": true\n" +

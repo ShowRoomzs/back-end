@@ -13,6 +13,8 @@ import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.auth.refreshToken.UserRefreshToken;
 import showroomz.api.app.auth.refreshToken.UserRefreshTokenRepository;
 import showroomz.api.app.auth.service.AuthService;
+import showroomz.api.app.auth.service.IdentityVerificationService;
+import showroomz.api.app.auth.service.IdentityVerificationService.IdentityVerification;
 import showroomz.api.app.auth.service.SocialLoginService.SocialLoginResult;
 import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
@@ -45,6 +47,7 @@ public class AuthController implements AuthControllerDocs {
     private final UserRepository userRepository;
     private final UserService userService;
     private final AuthService authService;
+    private final IdentityVerificationService identityVerificationService;
     
     private final static long THREE_DAYS_MSEC = 259200000;
     private final static long REGISTER_TOKEN_EXPIRY_MSEC = 5 * 60 * 1000;
@@ -125,14 +128,15 @@ public class AuthController implements AuthControllerDocs {
             }
         }
 
-        // 4. 생년월일 형식 검증 (null이 아닐 때만)
-        if (registerRequest.getBirthday() != null && !registerRequest.getBirthday().isEmpty()) {
-            if (!registerRequest.getBirthday().matches("^\\d{4}-\\d{2}-\\d{2}$")) {
-                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
-            }
+        // 3. 본인인증(C0-2) 결과 조회 — PASS 연동 전까지는 임시 데이터
+        IdentityVerification verification = identityVerificationService.verify(username);
+
+        // 만 14세 미만은 가입 차단 (C0 1d)
+        if (verification.isUnderMinAge()) {
+            throw new BusinessException(ErrorCode.UNDER_MIN_AGE);
         }
 
-        // 5. Users 조회 및 업데이트
+        // 4. Users 조회 및 업데이트
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -142,10 +146,16 @@ public class AuthController implements AuthControllerDocs {
         }
 
         user.setNickname(registerRequest.getNickname());
-        user.setGender(registerRequest.getGender());
-        user.setBirthday(registerRequest.getBirthday());
-        
+
+        // 실명·생년월일·성별·연락처는 사용자 입력이 아니라 본인인증 결과로 저장
+        user.setName(verification.getName());
+        user.setBirthday(verification.getBirthday());
+        user.setGender(verification.getGender());
+        user.setPhoneNumber(verification.getPhoneNumber());
+        user.setIdentityVerifiedAt(verification.getVerifiedAt());
+
         // 동의 항목 저장
+        user.setAgeAgree(registerRequest.isAgeAgree());
         user.setServiceAgree(registerRequest.isServiceAgree());
         user.setPrivacyAgree(registerRequest.isPrivacyAgree());
         user.setMarketingAgree(registerRequest.getMarketingAgree() != null && registerRequest.getMarketingAgree());
@@ -156,12 +166,12 @@ public class AuthController implements AuthControllerDocs {
         user.setModifiedAt(LocalDateTime.now());
         userRepository.save(user);
 
-        // 6. 로그인 이력 저장 (회원가입 완료 후 첫 로그인으로 간주)
+        // 5. 로그인 이력 저장 (회원가입 완료 후 첫 로그인으로 간주)
         String clientIp = ClientUtils.getRemoteIP(request);
         String userAgent = ClientUtils.getUserAgent(request);
         authService.saveLoginHistory(user.getId(), clientIp, userAgent);
 
-        // 7. 토큰 발급 및 반환
+        // 6. 토큰 발급 및 반환
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(authService.generateTokens(username, user.getRoleType(), user.getId(), false));
     }

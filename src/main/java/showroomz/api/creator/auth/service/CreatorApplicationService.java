@@ -70,10 +70,10 @@ public class CreatorApplicationService {
                 request.getAccountId(),
                 request.getFollowerCount(),
                 request.getBusinessEmail(),
-                // 본인인증 연동 전: 신청서에 더미 본인인증 정보 저장
-                CreatorApplicationDetailResponse.DUMMY_REAL_NAME,
-                CreatorApplicationDetailResponse.DUMMY_BIRTHDAY,
-                CreatorApplicationDetailResponse.DUMMY_PHONE_NUMBER
+                // 회원가입(C0-1) 시 본인인증(PASS)으로 이미 확인된 값을 그대로 사용 — 별도로 다시 받지 않는다
+                user.getName(),
+                user.getBirthday(),
+                user.getPhoneNumber()
         );
 
         user.setServiceAgree(Boolean.TRUE.equals(request.getAgreeTermsOfService()));

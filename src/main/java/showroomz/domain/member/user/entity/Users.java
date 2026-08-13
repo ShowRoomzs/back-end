@@ -92,6 +92,9 @@ public class Users {
     @NotNull
     private LocalDateTime modifiedAt;
 
+    @Column(name = "AGE_AGREE")
+    private boolean ageAgree; // [필수] 만 14세 이상입니다
+
     @Column(name = "SERVICE_AGREE")
     private boolean serviceAgree;
 
@@ -108,6 +111,10 @@ public class Users {
     // 최근 접속일
     @Column(name = "LAST_LOGIN_AT")
     private LocalDateTime lastLoginAt;
+
+    // C0-2 본인인증(PASS) 완료 시각 (null이면 미인증)
+    @Column(name = "IDENTITY_VERIFIED_AT")
+    private LocalDateTime identityVerifiedAt;
 
     @Embedded
     private NotificationSetting notificationSetting;
@@ -179,6 +186,7 @@ public class Users {
      * (실명·생년월일·연락처는 CreatorApplication에서 파기/해시)
      */
     public void purgeAgreementsOnCreatorRejection() {
+        this.ageAgree = false;
         this.serviceAgree = false;
         this.privacyAgree = false;
         this.marketingAgree = false;
