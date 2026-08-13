@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.api.common.attachment.dto.AttachmentDownloadResponse;
 import showroomz.api.common.attachment.dto.AttachmentSummary;
 import showroomz.api.common.attachment.dto.CompleteAttachmentRequest;
 import showroomz.api.common.attachment.dto.PresignRequest;
@@ -90,6 +91,13 @@ public class CreatorThreadController implements CreatorThreadControllerDocs {
         CompleteAttachmentRequest body = request == null ? new CompleteAttachmentRequest() : request;
         AttachmentSummary response = creatorThreadService.completeUpload(getCurrentUserEmail(), attachmentId, body);
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @GetMapping("/v1/creator/attachments/{attachmentId}/download")
+    public ResponseEntity<AttachmentDownloadResponse> getDownloadUrl(
+            @PathVariable("attachmentId") Long attachmentId) {
+        return ResponseEntity.ok(creatorThreadService.getDownloadUrl(getCurrentUserEmail(), attachmentId));
     }
 
     private String getCurrentUserEmail() {

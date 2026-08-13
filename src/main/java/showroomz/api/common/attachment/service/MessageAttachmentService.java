@@ -3,8 +3,10 @@ package showroomz.api.common.attachment.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ContentDisposition;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.common.attachment.dto.AttachmentDownloadResponse;
 import showroomz.api.common.attachment.dto.AttachmentSummary;
 import showroomz.api.common.attachment.dto.PresignRequest;
 import showroomz.api.common.attachment.dto.PresignResponse;
@@ -20,11 +22,14 @@ import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.AllowedAttachmentExtensions;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
@@ -47,6 +52,8 @@ import java.util.UUID;
 public class MessageAttachmentService {
 
     private static final Duration PRESIGN_EXPIRY = Duration.ofMinutes(15);
+    /** 다운로드는 발급 즉시 브라우저가 소비하므로 업로드보다 짧게 잡는다 — URL이 유출돼도 노출 창이 좁다. */
+    private static final Duration DOWNLOAD_EXPIRY = Duration.ofMinutes(5);
 
     private final MessageAttachmentRepository attachmentRepository;
     private final S3Presigner s3Presigner;
@@ -120,6 +127,44 @@ public class MessageAttachmentService {
 
         attachment.markUploaded(head.contentLength(), head.contentType(), durationSeconds);
         return toSummary(attachment);
+    }
+
+    /**
+     * §13-8 — 첨부 다운로드용 presigned GET URL 발급. 호출 전에 각 role의 Thread 서비스가 "이 스레드가
+     * 내 것인지"를 검증한다(presign 발급과 동일한 분담) — 여기서는 스레드 참가자라면 상대가 보낸 첨부도
+     * 받을 수 있다는 전제 아래, 그 위에 얹히는 첨부 자체의 조건만 본다.
+     *
+     * <p><b>fileUrl을 그대로 쓰지 않고 매번 새로 서명한다.</b> S3 키는 UUID라 fileUrl로 받으면 파일명이
+     * `uuid.mp4`가 되고, 버킷/CloudFront가 비공개면 아예 열리지도 않는다. 서명 시점에
+     * Content-Disposition을 심어야 브라우저가 원본 파일명으로 "저장"한다(미리보기가 아니라 다운로드 —
+     * §13-8에서 문서는 예외 없이 전부 다운로드).
+     */
+    public AttachmentDownloadResponse createDownloadUrl(MessageAttachment attachment,
+                                                          ParticipantType viewerType, Long viewerId) {
+        if (!attachment.isUploaded()) {
+            throw new BusinessException(ErrorCode.ATTACHMENT_NOT_UPLOADED);
+        }
+        // 아직 메시지에 연결되지 않은 첨부(§4-5 전)는 올린 본인 외에는 볼 수 없다 — 같은 스레드 참가자라도
+        // 상대가 "전송 버튼을 누르기 전"의 파일까지 받아갈 수 있으면 안 된다.
+        if (!attachment.isSent() && !attachment.isUploadedBy(viewerType, viewerId)) {
+            throw new BusinessException(ErrorCode.ATTACHMENT_ACCESS_DENIED);
+        }
+
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(s3Properties.getBucket())
+                .key(attachment.getS3Key())
+                .responseContentDisposition(ContentDisposition.attachment()
+                        .filename(attachment.getOriginalName(), StandardCharsets.UTF_8)
+                        .build().toString())
+                .build();
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(DOWNLOAD_EXPIRY)
+                .getObjectRequest(getObjectRequest)
+                .build();
+        PresignedGetObjectRequest presigned = s3Presigner.presignGetObject(presignRequest);
+
+        return new AttachmentDownloadResponse(attachment.getId(), presigned.url().toString(),
+                attachment.getOriginalName(), attachment.getSizeBytes(), DOWNLOAD_EXPIRY.toSeconds());
     }
 
     public AttachmentSummary toSummary(MessageAttachment attachment) {

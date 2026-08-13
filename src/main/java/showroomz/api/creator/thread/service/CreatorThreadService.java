@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.api.common.attachment.dto.AttachmentDownloadResponse;
 import showroomz.api.common.attachment.dto.AttachmentSummary;
 import showroomz.api.common.attachment.dto.CompleteAttachmentRequest;
 import showroomz.api.common.attachment.dto.PresignRequest;
@@ -146,6 +147,19 @@ public class CreatorThreadService {
         Creator creator = getMyCreator(creatorEmail);
         return messageAttachmentService.completeUpload(
                 ParticipantType.CREATOR, creator.getId(), attachmentId, request.getDurationSeconds());
+    }
+
+    /**
+     * §13-8 — 첨부 다운로드 URL 발급. 스레드 참가자면 상대(브랜드)가 보낸 첨부도 받을 수 있어야 하므로
+     * 업로더 본인 여부가 아니라 <b>첨부가 속한 스레드가 내 것인지</b>로 권한을 판정한다.
+     */
+    public AttachmentDownloadResponse getDownloadUrl(String creatorEmail, Long attachmentId) {
+        Creator creator = getMyCreator(creatorEmail);
+        MessageAttachment attachment = messageAttachmentRepository.findById(attachmentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ATTACHMENT_ACCESS_DENIED));
+
+        getMyThread(creator, attachment.getThread().getId());
+        return messageAttachmentService.createDownloadUrl(attachment, ParticipantType.CREATOR, creator.getId());
     }
 
     private Map<Long, List<AttachmentSummary>> loadAttachments(List<Message> messages) {

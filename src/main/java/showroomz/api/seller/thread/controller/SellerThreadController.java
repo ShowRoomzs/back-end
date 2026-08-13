@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.api.common.attachment.dto.AttachmentDownloadResponse;
 import showroomz.api.common.attachment.dto.AttachmentSummary;
 import showroomz.api.common.attachment.dto.CompleteAttachmentRequest;
 import showroomz.api.common.attachment.dto.PresignRequest;
@@ -90,6 +91,13 @@ public class SellerThreadController implements SellerThreadControllerDocs {
         CompleteAttachmentRequest body = request == null ? new CompleteAttachmentRequest() : request;
         AttachmentSummary response = sellerThreadService.completeUpload(getCurrentSellerEmail(), attachmentId, body);
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @GetMapping("/v1/seller/attachments/{attachmentId}/download")
+    public ResponseEntity<AttachmentDownloadResponse> getDownloadUrl(
+            @PathVariable("attachmentId") Long attachmentId) {
+        return ResponseEntity.ok(sellerThreadService.getDownloadUrl(getCurrentSellerEmail(), attachmentId));
     }
 
     private String getCurrentSellerEmail() {

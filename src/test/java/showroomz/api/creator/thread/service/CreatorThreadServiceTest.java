@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.api.common.attachment.dto.AttachmentDownloadResponse;
 import showroomz.api.common.attachment.service.MessageAttachmentService;
 import showroomz.api.creator.thread.dto.ThreadListItem;
 import showroomz.domain.connection.entity.Connection;
@@ -17,23 +18,29 @@ import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.message.entity.MessageAttachment;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.repository.MessageAttachmentRepository;
 import showroomz.domain.message.repository.MessageThreadRepository;
 import showroomz.domain.message.service.MessageThreadService;
+import showroomz.domain.message.type.AttachmentType;
 import showroomz.domain.message.type.ParticipantType;
 import showroomz.domain.message.type.ThreadStatus;
 import showroomz.global.dto.PagingRequest;
+import showroomz.global.error.exception.BusinessException;
+import showroomz.global.error.exception.ErrorCode;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -141,5 +148,49 @@ class CreatorThreadServiceTest {
                 .findOpenThreadsForCreator(eq(me), eq(ThreadStatus.OPEN), eq("글로우"), any());
         verify(messageThreadRepository)
                 .findOpenThreadsForCreator(eq(me), eq(ThreadStatus.OPEN), isNull(), any());
+    }
+
+    /** 브랜드(SELLER)가 올린 첨부 — 다운로드는 업로더가 아니라 스레드 참가자 기준이어야 한다. */
+    private static MessageAttachment counterpartAttachment(MessageThread thread) {
+        return MessageAttachment.pending(thread, ParticipantType.SELLER, 7L, AttachmentType.DOCUMENT,
+                "uploads/message/55/uuid.pdf", "https://cdn.example.com/uuid.pdf",
+                "계약서.pdf", "pdf", "application/pdf", 2048L);
+    }
+
+    @Test
+    @DisplayName("내 스레드의 첨부면 상대(브랜드)가 올린 것도 다운로드 URL 발급으로 위임한다 (§13-8)")
+    void delegatesDownloadForCounterpartAttachment() {
+        MessageThread thread = connectedPairThread();
+        MessageAttachment attachment = counterpartAttachment(thread);
+        AttachmentDownloadResponse expected =
+                new AttachmentDownloadResponse(501L, "https://s3.example/download", "계약서.pdf", 2048L, 300L);
+
+        givenAuthenticatedCreator();
+        given(messageAttachmentRepository.findById(501L)).willReturn(Optional.of(attachment));
+        given(messageThreadRepository.findById(THREAD_ID)).willReturn(Optional.of(thread));
+        given(messageAttachmentService.createDownloadUrl(attachment, ParticipantType.CREATOR, CREATOR_ID))
+                .willReturn(expected);
+
+        assertThat(creatorThreadService.getDownloadUrl(CREATOR_EMAIL, 501L)).isSameAs(expected);
+    }
+
+    @Test
+    @DisplayName("남의 스레드에 속한 첨부는 다운로드 URL을 발급하지 않는다")
+    void deniesDownloadForOtherCreatorsThread() {
+        Creator otherCreator = Creator.builder().id(999L).showroomName("남의쇼룸").build();
+        Connection connection = Connection.requestPair(market(), otherCreator);
+        connection.markConnected();
+        MessageThread otherThread = MessageThread.builder()
+                .id(THREAD_ID).connection(connection).status(ThreadStatus.OPEN).build();
+
+        givenAuthenticatedCreator();
+        given(messageAttachmentRepository.findById(501L))
+                .willReturn(Optional.of(counterpartAttachment(otherThread)));
+        given(messageThreadRepository.findById(THREAD_ID)).willReturn(Optional.of(otherThread));
+
+        assertThatThrownBy(() -> creatorThreadService.getDownloadUrl(CREATOR_EMAIL, 501L))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.THREAD_ACCESS_DENIED);
+        verify(messageAttachmentService, never()).createDownloadUrl(any(), any(), any());
     }
 }

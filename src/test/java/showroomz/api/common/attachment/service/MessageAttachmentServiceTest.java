@@ -10,9 +10,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
+import showroomz.api.common.attachment.dto.AttachmentDownloadResponse;
 import showroomz.api.common.attachment.dto.AttachmentSummary;
 import showroomz.api.common.attachment.dto.PresignRequest;
 import showroomz.api.common.attachment.dto.PresignResponse;
+import showroomz.domain.message.entity.Message;
 import showroomz.domain.message.entity.MessageAttachment;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.repository.MessageAttachmentRepository;
@@ -26,10 +28,13 @@ import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.AllowedAttachmentExtensions;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
@@ -251,6 +256,98 @@ class MessageAttachmentServiceTest {
             assertThat(summary.getStatus()).isEqualTo(AttachmentStatus.UPLOADED);
             assertThat(summary.getDurationSeconds()).isNull();
             verify(s3Client, never()).headObject(any(HeadObjectRequest.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("첨부 다운로드 URL 발급 (§13-8)")
+    class CreateDownloadUrl {
+
+        /** 스레드 상대방 — 업로더(SELLER/7)와 다른 참가자. */
+        private static final ParticipantType VIEWER_TYPE = ParticipantType.CREATOR;
+        private static final long VIEWER_ID = 42L;
+
+        private MessageAttachment sentAttachment(String originalName) {
+            MessageAttachment attachment = uploadedAttachment(originalName);
+            ReflectionTestUtils.setField(attachment, "message", mock(Message.class));
+            return attachment;
+        }
+
+        private MessageAttachment uploadedAttachment(String originalName) {
+            MessageAttachment attachment = MessageAttachment.pending(
+                    thread, ParticipantType.SELLER, UPLOADER_ID, AttachmentType.VIDEO,
+                    "uploads/message/1/uuid.mp4", "https://cdn.example/uuid.mp4",
+                    originalName, "mp4", "video/mp4", 2048L);
+            ReflectionTestUtils.setField(attachment, "id", 501L);
+            attachment.markUploaded(31457280L, "video/mp4", 58);
+            return attachment;
+        }
+
+        private void givenDownloadPresignUrl() throws Exception {
+            givenBucket();
+            PresignedGetObjectRequest presigned = mock(PresignedGetObjectRequest.class);
+            given(presigned.url()).willReturn(URI.create("https://s3.example/download").toURL());
+            given(s3Presigner.presignGetObject(any(GetObjectPresignRequest.class))).willReturn(presigned);
+        }
+
+        @Test
+        @DisplayName("전송된 첨부는 상대방도 받을 수 있고, 원본 파일명이 서명에 실린다")
+        void counterpartCanDownloadSentAttachment() throws Exception {
+            givenDownloadPresignUrl();
+
+            AttachmentDownloadResponse response = messageAttachmentService.createDownloadUrl(
+                    sentAttachment("촬영본.mp4"), VIEWER_TYPE, VIEWER_ID);
+
+            assertThat(response.getAttachmentId()).isEqualTo(501L);
+            assertThat(response.getDownloadUrl()).isEqualTo("https://s3.example/download");
+            assertThat(response.getOriginalName()).isEqualTo("촬영본.mp4");
+            assertThat(response.getSizeBytes()).isEqualTo(31457280L);
+            assertThat(response.getExpiresInSeconds()).isEqualTo(5 * 60L);
+
+            ArgumentCaptor<GetObjectPresignRequest> captor =
+                    ArgumentCaptor.forClass(GetObjectPresignRequest.class);
+            verify(s3Presigner).presignGetObject(captor.capture());
+            GetObjectRequest signed = captor.getValue().getObjectRequest();
+            assertThat(signed.key()).isEqualTo("uploads/message/1/uuid.mp4");
+            // 미리보기가 아니라 "저장" — 한글 파일명은 RFC 5987 형식으로 인코딩돼야 한다.
+            assertThat(signed.responseContentDisposition())
+                    .startsWith("attachment;")
+                    .contains("filename*=UTF-8''");
+        }
+
+        @Test
+        @DisplayName("업로드가 끝나지 않은 첨부는 받을 수 없다")
+        void notUploadedIsRejected() {
+            MessageAttachment pending = pendingAttachment(501L);
+
+            assertThatThrownBy(() -> messageAttachmentService.createDownloadUrl(
+                    pending, ParticipantType.SELLER, UPLOADER_ID))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ATTACHMENT_NOT_UPLOADED);
+            verify(s3Presigner, never()).presignGetObject(any(GetObjectPresignRequest.class));
+        }
+
+        @Test
+        @DisplayName("아직 전송되지 않은 첨부는 같은 스레드 참가자라도 받을 수 없다")
+        void unsentAttachmentIsHiddenFromCounterpart() {
+            MessageAttachment unsent = uploadedAttachment("작업중.mp4");
+
+            assertThatThrownBy(() -> messageAttachmentService.createDownloadUrl(
+                    unsent, VIEWER_TYPE, VIEWER_ID))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ATTACHMENT_ACCESS_DENIED);
+            verify(s3Presigner, never()).presignGetObject(any(GetObjectPresignRequest.class));
+        }
+
+        @Test
+        @DisplayName("아직 전송되지 않은 첨부라도 올린 본인은 받을 수 있다")
+        void uploaderCanDownloadOwnUnsentAttachment() throws Exception {
+            givenDownloadPresignUrl();
+
+            AttachmentDownloadResponse response = messageAttachmentService.createDownloadUrl(
+                    uploadedAttachment("작업중.mp4"), ParticipantType.SELLER, UPLOADER_ID);
+
+            assertThat(response.getDownloadUrl()).isEqualTo("https://s3.example/download");
         }
     }
 
