@@ -20,7 +20,7 @@ import showroomz.api.seller.inquiry.dto.AnswerTemplateDto;
 import showroomz.api.seller.inquiry.dto.AnswerTemplateRegisterRequest;
 import showroomz.api.seller.inquiry.dto.AnswerTemplateRegisterResponse;
 import showroomz.api.seller.inquiry.dto.AnswerTemplateUpdateRequest;
-import showroomz.api.seller.inquiry.type.MarketInquiryFilterType;
+import showroomz.domain.inquiry.type.ProductInquiryType;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
@@ -34,17 +34,19 @@ public interface AnswerTemplateControllerDocs {
                     "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
                     "**필수 입력:**\n" +
                     "- `title`: 템플릿 제목 (최대 30자)\n" +
-                    "- `category`: 카테고리 (PRODUCT, SIZE, STOCK)\n" +
+                    "- `category`: 카테고리 (OPTION, INGREDIENT_USAGE, RESTOCK, DELIVERY, ETC)\n" +
                     "- `content`: 답변 내용 (최대 1000자)\n\n" +
                     "**선택 입력:**\n" +
                     "- `isActive`: 사용 여부. false 설정 시 템플릿 목록에 노출되지 않습니다. 기본값은 true(사용)입니다.\n\n" +
                     "**카테고리 설명:**\n" +
                     "| 코드 | 설명 |\n" +
                     "|------|------|\n" +
-                    "| `PRODUCT` | 상품 |\n" +
-                    "| `SIZE` | 사이즈 |\n" +
-                    "| `STOCK` | 재고/재입고 |\n\n" +
-                    "1:1 문의는 어드민으로만 접수되므로 마켓 답변 템플릿 카테고리는 상품 문의 3종뿐입니다."
+                    "| `OPTION` | 옵션 |\n" +
+                    "| `INGREDIENT_USAGE` | 성분·사용법 |\n" +
+                    "| `RESTOCK` | 재입고 |\n" +
+                    "| `DELIVERY` | 배송 |\n" +
+                    "| `ETC` | 기타 |\n\n" +
+                    "1:1 문의는 어드민으로만 접수되므로 마켓 답변 템플릿 카테고리는 상품 문의 유형 5종과 동일합니다."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -123,7 +125,7 @@ public interface AnswerTemplateControllerDocs {
                                     name = "사용 중인 템플릿 등록",
                                     value = "{\n" +
                                             "  \"title\": \"재입고 안내 템플릿\",\n" +
-                                            "  \"category\": \"STOCK\",\n" +
+                                            "  \"category\": \"RESTOCK\",\n" +
                                             "  \"content\": \"안녕하세요, 해당 상품은 다음 주 중 재입고 예정입니다. 감사합니다.\",\n" +
                                             "  \"isActive\": true\n" +
                                             "}"
@@ -132,7 +134,7 @@ public interface AnswerTemplateControllerDocs {
                                     name = "미사용 템플릿 등록",
                                     value = "{\n" +
                                             "  \"title\": \"사이즈 안내\",\n" +
-                                            "  \"category\": \"SIZE\",\n" +
+                                            "  \"category\": \"OPTION\",\n" +
                                             "  \"content\": \"상세페이지의 실측 사이즈를 참고해 주세요. 추가 문의 주시면 안내드리겠습니다.\",\n" +
                                             "  \"isActive\": false\n" +
                                             "}"
@@ -160,9 +162,11 @@ public interface AnswerTemplateControllerDocs {
                     "**카테고리 코드:**\n" +
                     "| 코드 | 설명 |\n" +
                     "|------|------|\n" +
-                    "| `PRODUCT` | 상품 |\n" +
-                    "| `SIZE` | 사이즈 |\n" +
-                    "| `STOCK` | 재고/재입고 |"
+                    "| `OPTION` | 옵션 |\n" +
+                    "| `INGREDIENT_USAGE` | 성분·사용법 |\n" +
+                    "| `RESTOCK` | 재입고 |\n" +
+                    "| `DELIVERY` | 배송 |\n" +
+                    "| `ETC` | 기타 |"
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -178,8 +182,8 @@ public interface AnswerTemplateControllerDocs {
                                                     "    {\n" +
                                                     "      \"templateId\": 1,\n" +
                                                     "      \"title\": \"재입고 안내 템플릿\",\n" +
-                                                    "      \"category\": \"STOCK\",\n" +
-                                                    "      \"categoryName\": \"재고/재입고 문의\",\n" +
+                                                    "      \"category\": \"RESTOCK\",\n" +
+                                                    "      \"categoryName\": \"재입고\",\n" +
                                                     "      \"content\": \"안녕하세요, 해당 상품은 다음 주 중 재입고 예정입니다.\",\n" +
                                                     "      \"createdAt\": \"2026-04-01T10:30:00\",\n" +
                                                     "      \"modifiedAt\": \"2026-04-01T12:00:00\",\n" +
@@ -188,7 +192,7 @@ public interface AnswerTemplateControllerDocs {
                                                     "    {\n" +
                                                     "      \"templateId\": 2,\n" +
                                                     "      \"title\": \"상품 문의 안내\",\n" +
-                                                    "      \"category\": \"PRODUCT\",\n" +
+                                                    "      \"category\": \"INGREDIENT_USAGE\",\n" +
                                                     "      \"categoryName\": \"상품 문의\",\n" +
                                                     "      \"content\": \"문의 주신 상품의 상세 정보는 상세페이지에서 확인하실 수 있습니다.\",\n" +
                                                     "      \"createdAt\": \"2026-04-01T09:00:00\",\n" +
@@ -246,9 +250,9 @@ public interface AnswerTemplateControllerDocs {
             @RequestParam(value = "includeInactive", required = false, defaultValue = "false") Boolean includeInactive,
 
             @Parameter(description = "카테고리 필터. 미입력 시 전체 조회",
-                    example = "STOCK",
-                    schema = @Schema(allowableValues = {"PRODUCT", "SIZE", "STOCK"}))
-            @RequestParam(value = "category", required = false) MarketInquiryFilterType category,
+                    example = "RESTOCK",
+                    schema = @Schema(allowableValues = {"OPTION", "INGREDIENT_USAGE", "RESTOCK", "DELIVERY", "ETC"}))
+            @RequestParam(value = "category", required = false) ProductInquiryType category,
 
             @Parameter(description = "템플릿 제목 검색어 (부분 일치). 미입력 시 전체 조회", example = "재입고")
             @RequestParam(value = "keyword", required = false) String keyword,
@@ -275,8 +279,8 @@ public interface AnswerTemplateControllerDocs {
                                     value = "{\n" +
                                             "  \"templateId\": 1,\n" +
                                             "  \"title\": \"재입고 안내 템플릿\",\n" +
-                                            "  \"category\": \"STOCK\",\n" +
-                                            "  \"categoryName\": \"재고/재입고 문의\",\n" +
+                                            "  \"category\": \"RESTOCK\",\n" +
+                                            "  \"categoryName\": \"재입고\",\n" +
                                             "  \"content\": \"안녕하세요, 해당 상품은 다음 주 중 재입고 예정입니다.\",\n" +
                                             "  \"createdAt\": \"2026-04-01T10:30:00\",\n" +
                                             "  \"modifiedAt\": \"2026-04-01T12:00:00\",\n" +
@@ -351,7 +355,7 @@ public interface AnswerTemplateControllerDocs {
                     examples = @ExampleObject(
                             value = "{\n" +
                                     "  \"title\": \"재입고 안내 - 수정본\",\n" +
-                                    "  \"category\": \"STOCK\",\n" +
+                                    "  \"category\": \"RESTOCK\",\n" +
                                     "  \"content\": \"안녕하세요, 해당 상품은 이번 주 내로 재입고 예정입니다.\",\n" +
                                     "  \"isActive\": true\n" +
                                     "}"

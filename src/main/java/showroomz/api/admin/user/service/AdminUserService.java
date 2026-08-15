@@ -15,6 +15,7 @@ import showroomz.domain.history.entity.UserStatusHistory;
 import showroomz.domain.history.repository.UserStatusHistoryRepository;
 import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
 import showroomz.domain.inquiry.repository.ProductInquiryRepository;
+import showroomz.domain.inquiry.type.InquiryExposureStatus;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.member.user.type.UserStatus;
@@ -68,7 +69,7 @@ public class AdminUserService {
         long wishlistCount = wishlistRepository.countByUser_Id(userId);
         long followedShowroomCount = creatorFollowRepository.countByUser(user);
         long reviewCount = reviewRepository.countByUser_Id(userId);
-        long productInquiryCount = productInquiryRepository.countByUser_Id(userId);
+        long productInquiryCount = productInquiryRepository.countByUser_IdAndExposureStatusNot(userId, InquiryExposureStatus.DELETED);
         long oneToOneInquiryCount = oneToOneInquiryRepository.countByUser_Id(userId);
         long inquiryCount = productInquiryCount + oneToOneInquiryCount;
 

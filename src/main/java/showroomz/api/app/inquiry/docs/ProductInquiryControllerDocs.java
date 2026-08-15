@@ -28,7 +28,7 @@ public interface ProductInquiryControllerDocs {
             summary = "상품 문의 등록",
             description = "특정 상품에 대한 문의를 등록합니다.\n\n" +
                     "**필수 값:**\n" +
-                    "- `type`: 문의 타입 (PRODUCT_INQUIRY: 상품 문의, SIZE_INQUIRY: 사이즈 문의, STOCK_INQUIRY: 재고/재입고 문의)\n" +
+                    "- `type`: 문의 유형 (OPTION: 옵션, INGREDIENT_USAGE: 성분·사용법, RESTOCK: 재입고, DELIVERY: 배송, ETC: 기타)\n" +
                     "- `content`: 문의 내용\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
@@ -112,7 +112,7 @@ public interface ProductInquiryControllerDocs {
                             @ExampleObject(
                                     name = "상품 문의 예시",
                                     value = "{\n" +
-                                            "  \"type\": \"SIZE_INQUIRY\",\n" +
+                                            "  \"type\": \"INGREDIENT_USAGE\",\n" +
                                             "  \"content\": \"키 170에 보통 체형인데 M 사이즈가 맞을까요?\"\n" +
                                             "}"
                             )
@@ -165,8 +165,8 @@ public interface ProductInquiryControllerDocs {
                                                     "      \"shopName\": \"모노 스튜디오\",\n" +
                                                     "      \"productName\": \"오버핏 블레이저\",\n" +
                                                     "      \"productImageUrl\": \"https://example.com/products/101/main.jpg\",\n" +
-                                                    "      \"type\": \"SIZE_INQUIRY\",\n" +
-                                                    "      \"typeName\": \"사이즈 문의\",\n" +
+                                                    "      \"type\": \"INGREDIENT_USAGE\",\n" +
+                                                    "      \"typeName\": \"성분·사용법\",\n" +
                                                     "      \"content\": \"키 170에 보통 체형인데 M 사이즈가 맞을까요?\",\n" +
                                                     "      \"status\": \"WAITING\",\n" +
                                                     "      \"answerContent\": null,\n" +
@@ -239,8 +239,8 @@ public interface ProductInquiryControllerDocs {
                                                     "  \"shopName\": \"모노 스튜디오\",\n" +
                                                     "  \"productName\": \"오버핏 블레이저\",\n" +
                                                     "  \"productImageUrl\": \"https://example.com/products/101/main.jpg\",\n" +
-                                                    "  \"type\": \"SIZE_INQUIRY\",\n" +
-                                                    "  \"typeName\": \"사이즈 문의\",\n" +
+                                                    "  \"type\": \"INGREDIENT_USAGE\",\n" +
+                                                    "  \"typeName\": \"성분·사용법\",\n" +
                                                     "  \"content\": \"키 170에 보통 체형인데 M 사이즈가 맞을까요?\",\n" +
                                                     "  \"status\": \"WAITING\",\n" +
                                                     "  \"answerContent\": null,\n" +
@@ -257,8 +257,8 @@ public interface ProductInquiryControllerDocs {
                                                     "  \"shopName\": \"모노 스튜디오\",\n" +
                                                     "  \"productName\": \"오버핏 블레이저\",\n" +
                                                     "  \"productImageUrl\": \"https://example.com/products/101/main.jpg\",\n" +
-                                                    "  \"type\": \"SIZE_INQUIRY\",\n" +
-                                                    "  \"typeName\": \"사이즈 문의\",\n" +
+                                                    "  \"type\": \"INGREDIENT_USAGE\",\n" +
+                                                    "  \"typeName\": \"성분·사용법\",\n" +
                                                     "  \"content\": \"키 170에 보통 체형인데 M 사이즈가 맞을까요?\",\n" +
                                                     "  \"status\": \"ANSWERED\",\n" +
                                                     "  \"answerContent\": \"안녕하세요, 해당 상품은 키 170 기준 M 사이즈를 가장 많이 구매하셨습니다.\",\n" +
@@ -332,7 +332,7 @@ public interface ProductInquiryControllerDocs {
             summary = "상품 문의 수정",
             description = "답변 대기 중인 상품 문의의 내용을 수정합니다.\n\n" +
                     "**필수 값:**\n" +
-                    "- `type`: 문의 타입 (PRODUCT_INQUIRY, SIZE_INQUIRY, STOCK_INQUIRY)\n" +
+                    "- `type`: 문의 유형 (OPTION, INGREDIENT_USAGE, RESTOCK, DELIVERY, ETC)\n" +
                     "- `content`: 문의 내용\n\n" +
                     "- 본인이 등록한 문의만 수정할 수 있습니다.\n" +
                     "- 답변이 완료된 문의는 수정할 수 없습니다.\n\n" +

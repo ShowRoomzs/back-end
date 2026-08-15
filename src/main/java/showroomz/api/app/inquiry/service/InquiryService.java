@@ -17,6 +17,7 @@ import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.inquiry.entity.OneToOneInquiry;
 import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
 import showroomz.domain.inquiry.repository.ProductInquiryRepository;
+import showroomz.domain.inquiry.type.InquiryExposureStatus;
 import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.domain.cs.type.CsCategory;
 import showroomz.domain.member.user.entity.Users;
@@ -85,8 +86,8 @@ public class InquiryService {
         return InquirySummaryResponse.builder()
                 .oneToOneTotal(inquiryRepository.countByUser_Id(userId))
                 .oneToOneWaiting(inquiryRepository.countByUser_IdAndStatus(userId, InquiryStatus.WAITING))
-                .productTotal(productInquiryRepository.countByUser_Id(userId))
-                .productWaiting(productInquiryRepository.countByUser_IdAndStatus(userId, InquiryStatus.WAITING))
+                .productTotal(productInquiryRepository.countByUser_IdAndExposureStatusNot(userId, InquiryExposureStatus.DELETED))
+                .productWaiting(productInquiryRepository.countByUser_IdAndStatusAndExposureStatusNot(userId, InquiryStatus.WAITING, InquiryExposureStatus.DELETED))
                 .build();
     }
 

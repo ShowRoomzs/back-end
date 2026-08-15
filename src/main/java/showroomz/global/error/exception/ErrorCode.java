@@ -126,6 +126,15 @@ public enum ErrorCode {
     INQUIRY_ALREADY_ANSWERED(HttpStatus.BAD_REQUEST, "INQUIRY_ALREADY_ANSWERED", "이미 답변이 등록된 문의입니다. 답변은 1회만 등록할 수 있습니다."),
     INVALID_INQUIRY_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "올바르지 않은 문의 유형입니다. (DELIVERY, CANCEL_EXCHANGE_RETURN, ORDER_PAYMENT, SERVICE, ACCOUNT)"),
 
+    /* 11-1. 상품 문의 (§23 파트너센터 문의 관리)
+     */
+    INQUIRY_NOT_ANSWERED(HttpStatus.BAD_REQUEST, "INQUIRY_NOT_ANSWERED", "아직 답변이 등록되지 않은 문의입니다."),
+    INQUIRY_UNDER_DELETE_REVIEW(HttpStatus.BAD_REQUEST, "INQUIRY_UNDER_DELETE_REVIEW", "삭제 요청을 운영자가 검토 중인 문의입니다. 검토 결과가 나올 때까지 조작할 수 없습니다."),
+    INQUIRY_DELETE_ALREADY_REQUESTED(HttpStatus.BAD_REQUEST, "INQUIRY_DELETE_ALREADY_REQUESTED", "이미 삭제를 요청한 문의입니다. 요청은 취소할 수 없습니다."),
+    INQUIRY_DELETE_NOT_REQUESTED(HttpStatus.BAD_REQUEST, "INQUIRY_DELETE_NOT_REQUESTED", "삭제 요청이 없는 문의입니다."),
+    INQUIRY_DELETE_REASON_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "기타(직접 입력) 사유는 상세 설명이 필요합니다."),
+    INQUIRY_ALREADY_DELETED(HttpStatus.BAD_REQUEST, "INQUIRY_ALREADY_DELETED", "이미 삭제된 문의입니다."),
+
     /* 12. 쿠폰 (Coupon)
      */
     COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "COUPON_NOT_FOUND", "존재하지 않거나 유효하지 않은 쿠폰 코드입니다."),

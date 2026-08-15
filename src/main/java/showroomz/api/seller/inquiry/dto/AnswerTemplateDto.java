@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
-import showroomz.api.seller.inquiry.type.MarketInquiryFilterType;
+import showroomz.domain.inquiry.type.ProductInquiryType;
 import showroomz.domain.inquiry.entity.AnswerTemplate;
 
 import java.time.LocalDateTime;
@@ -20,10 +20,10 @@ public class AnswerTemplateDto {
     @Schema(description = "템플릿 제목", example = "재입고 안내 템플릿")
     private String title;
 
-    @Schema(description = "카테고리 코드", example = "STOCK")
-    private MarketInquiryFilterType category;
+    @Schema(description = "카테고리 코드", example = "RESTOCK")
+    private ProductInquiryType category;
 
-    @Schema(description = "카테고리명", example = "재고/재입고 문의")
+    @Schema(description = "카테고리명", example = "재입고")
     private String categoryName;
 
     @Schema(description = "답변 내용", example = "안녕하세요, 해당 상품은 다음 주 중 재입고 예정입니다.")
