@@ -39,3 +39,6 @@ out/
 .env
 
 output-ddl.sql
+
+# GeoIP DB — 이미지/jar에 번들하지 않고 EC2 호스트 볼륨(/home/ubuntu/geoip)에서 마운트한다
+src/main/resources/GeoLite2-City.mmdb

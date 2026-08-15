@@ -40,6 +40,7 @@ services:
       - .env
     volumes:
       - /home/ubuntu/logs:/logs
+      - /home/ubuntu/geoip:/geoip:ro
     entrypoint: ["/bin/sh", "-c"]
     # [변경됨] JVM 힙 메모리(256MB) 및 메타스페이스 제한 추가
     # [변경] Metaspace를 128m -> 256m으로 증량
