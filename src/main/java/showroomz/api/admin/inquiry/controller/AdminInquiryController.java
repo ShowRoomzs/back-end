@@ -1,6 +1,5 @@
 package showroomz.api.admin.inquiry.controller;
 
-import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -30,7 +29,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/v1/admin/inquiries")
 @RequiredArgsConstructor
-@Hidden
 public class AdminInquiryController implements AdminInquiryControllerDocs {
 
     private final AdminInquiryService adminInquiryService;
