@@ -55,4 +55,14 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
            "WHERE p.isDisplay = true AND p.creator.id IN :creatorIds " +
            "GROUP BY p.creator.id")
     List<Object[]> findLatestPostCreatedAtByCreatorIds(@Param("creatorIds") List<Long> creatorIds);
+
+    /**
+     * C14 "활동 중인 쇼룸" — 최근에 게시물을 올린 쇼룸 순.
+     * 팔로잉 목록 기본 정렬과 같은 기준을 대상 쇼룸을 정하지 않은 채로 쓴 형태다.
+     */
+    @Query("SELECT p.creator.id FROM Post p " +
+           "WHERE p.isDisplay = true " +
+           "GROUP BY p.creator.id " +
+           "ORDER BY MAX(p.createdAt) DESC")
+    List<Long> findCreatorIdsOrderByLatestPost(Pageable pageable);
 }
