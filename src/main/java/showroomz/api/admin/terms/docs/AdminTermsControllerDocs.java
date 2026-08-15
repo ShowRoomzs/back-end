@@ -1,5 +1,6 @@
 package showroomz.api.admin.terms.docs;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -24,6 +25,7 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.global.dto.PagingRequest;
 
+@Hidden
 @Tag(name = "Admin - Terms", description = "관리자 약관·정책 관리 API (기획 §21)")
 public interface AdminTermsControllerDocs {
 

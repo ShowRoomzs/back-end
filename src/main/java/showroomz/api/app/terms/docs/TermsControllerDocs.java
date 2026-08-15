@@ -1,5 +1,6 @@
 package showroomz.api.app.terms.docs;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -17,6 +18,7 @@ import showroomz.domain.terms.type.TermsType;
 
 import java.util.List;
 
+@Hidden
 @Tag(name = "Common - Terms", description = "공용 약관·정책 문서 API (기획 §21 · C18 문서 뷰어)\n\n")
 public interface TermsControllerDocs {
 

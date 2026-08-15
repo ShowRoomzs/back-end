@@ -1,5 +1,6 @@
 package showroomz.api.app.inquiry.docs;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -9,6 +10,7 @@ import showroomz.api.app.inquiry.dto.InquiryCategoryResponse;
 
 import java.util.List;
 
+@Hidden
 @Tag(name = "User - Inquiry Product", description = "상품 문의 관련 API")
 public interface CommonProductInquiryControllerDocs {
 
