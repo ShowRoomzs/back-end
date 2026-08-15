@@ -25,12 +25,13 @@ public interface SellerInquiryControllerDocs {
 
     @Operation(
             summary = "판매자 문의 목록 조회",
-            description = "본인 마켓 기준으로 상품 문의와 1:1 문의를 통합 조회합니다.\n\n" +
+            description = "본인 마켓의 **상품 문의**를 조회합니다.\n\n" +
+                    "1:1 문의는 어드민(운영자)으로만 접수되므로 이 목록에 포함되지 않습니다.\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
                     "**검색 조건:**\n" +
                     "- 기간(startDate, endDate)\n" +
-                    "- 문의 유형(inquiryTypes)\n" +
+                    "- 문의 유형(inquiryTypes: PRODUCT, SIZE, STOCK)\n" +
                     "- 답변 상태(status)\n" +
                     "- 키워드(keyword: 내용, 고객명, 상품명 통합 검색)"
     )

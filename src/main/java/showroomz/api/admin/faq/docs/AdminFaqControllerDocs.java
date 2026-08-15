@@ -14,11 +14,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.admin.faq.dto.AdminFaqListRequest;
 import showroomz.api.admin.faq.dto.AdminFaqListResponse;
+import showroomz.api.admin.faq.dto.AdminFaqPageResponse;
 import showroomz.api.admin.faq.dto.AdminFaqRegisterRequest;
 import showroomz.api.admin.faq.dto.AdminFaqUpdateRequest;
 import showroomz.api.admin.faq.dto.FaqReorderRequest;
 import showroomz.api.app.auth.DTO.ErrorResponse;
-import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "Admin - FAQ", description = "관리자 FAQ 관리 API")
@@ -29,7 +29,9 @@ public interface AdminFaqControllerDocs {
             description = "관리자가 새로운 FAQ를 등록합니다.\n\n" +
                     "**카테고리 조회:**\n" +
                     "- 카테고리 값(`category`)은 Common API `GET /v1/common/faqs/categories`를 사용해 조회하세요.\n\n" +
-                    "**카테고리:** ALL, DELIVERY, CANCEL_EXCHANGE_REFUND, PRODUCT_AS, ORDER_PAYMENT, SERVICE, USAGE_GUIDE, MEMBER_INFO\n\n" +
+                    "**카테고리:** DELIVERY, CANCEL_EXCHANGE_RETURN, ORDER_PAYMENT, SERVICE, ACCOUNT (ALL 불가)\n\n" +
+                    "**노출 순서:** 등록한 FAQ는 해당 카테고리의 **맨 위(displayOrder=1)** 에 배치되고, 같은 카테고리의 기존 항목은 한 칸씩 밀립니다.\n\n" +
+                    "**노출 시점:** 등록 즉시 소비자 앱 고객센터에 노출됩니다(게시/미게시 상태 없음).\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -99,11 +101,12 @@ public interface AdminFaqControllerDocs {
                     "- `reorderList`: `{ \"faqId\": number, \"displayOrder\": number }` 객체 배열 (비어 있을 수 없음)\n" +
                     "- 각 항목의 `displayOrder` 값이 해당 FAQ에 그대로 저장됩니다.\n\n" +
                     "**동작 규칙:**\n" +
+                    "- **순서는 카테고리 안에서만 유효합니다.** 요청에 담긴 FAQ가 서로 다른 카테고리면 실패합니다(전체 통합 순서 없음).\n" +
                     "- 일부 FAQ만 전달해도 됩니다. 요청에 포함된 FAQ만 순서가 갱신됩니다.\n" +
                     "- `reorderList` 안의 `faqId`는 서로 중복될 수 없습니다.\n" +
                     "- `reorderList` 안의 `displayOrder`는 서로 중복될 수 없습니다.\n" +
-                    "- `displayOrder`는 1 이상, 전체 FAQ 개수 이하 범위만 허용됩니다.\n" +
-                    "- 업데이트 대상(`reorderList`의 faqId) 외 FAQ와 `displayOrder`가 충돌하면 실패합니다.\n" +
+                    "- `displayOrder`는 1 이상, **해당 카테고리의 FAQ 개수** 이하 범위만 허용됩니다.\n" +
+                    "- 업데이트 대상(`reorderList`의 faqId) 외 **같은 카테고리** FAQ와 `displayOrder`가 충돌하면 실패합니다.\n" +
                     "- 요청한 모든 `faqId`는 DB에 존재해야 합니다.\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
@@ -115,7 +118,7 @@ public interface AdminFaqControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "입력값 오류 (빈 reorderList, null faqId·displayOrder, 중복 faqId/displayOrder, displayOrder 범위 초과, 기존 데이터와 순서 충돌 등)",
+                    description = "입력값 오류 (빈 reorderList, null faqId·displayOrder, 중복 faqId/displayOrder, 서로 다른 카테고리 혼합, displayOrder 범위 초과, 기존 데이터와 순서 충돌 등)",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)
@@ -154,16 +157,16 @@ public interface AdminFaqControllerDocs {
                     schema = @Schema(implementation = FaqReorderRequest.class),
                     examples = {
                             @ExampleObject(
-                                    name = "일부 FAQ만 순서 변경",
+                                    name = "같은 카테고리 안에서 두 건만 자리 교환",
                                     value = "{\n" +
                                             "  \"reorderList\": [\n" +
-                                            "    { \"faqId\": 5, \"displayOrder\": 10 },\n" +
-                                            "    { \"faqId\": 2, \"displayOrder\": 20 }\n" +
+                                            "    { \"faqId\": 5, \"displayOrder\": 2 },\n" +
+                                            "    { \"faqId\": 2, \"displayOrder\": 1 }\n" +
                                             "  ]\n" +
                                             "}"
                             ),
                             @ExampleObject(
-                                    name = "여러 FAQ 순서 일괄 반영",
+                                    name = "카테고리 목록 전체 순서 반영",
                                     value = "{\n" +
                                             "  \"reorderList\": [\n" +
                                             "    { \"faqId\": 5, \"displayOrder\": 1 },\n" +
@@ -180,7 +183,7 @@ public interface AdminFaqControllerDocs {
 
     @Operation(
             summary = "FAQ 단일 조회",
-            description = "관리자가 FAQ를 단건 조회합니다.\n\n" +
+            description = "관리자가 FAQ를 단건 조회합니다. 상세 페이지는 없고 수정 모달의 초기값 용도입니다(기획 §19-3).\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -223,8 +226,10 @@ public interface AdminFaqControllerDocs {
             description = "관리자가 FAQ 목록을 조회합니다.\n\n" +
                     "**카테고리 조회:**\n" +
                     "- 카테고리 값(`category`)은 Common API `GET /v1/common/faqs/categories`를 사용해 조회하세요.\n\n" +
-                    "**필터 조건:** 카테고리, 질문/답변 키워드 (복합 적용 가능)\n\n" +
-                    "**정렬:** 노출 순서(displayOrder) 오름차순\n\n" +
+                    "**필터 조건:** 카테고리 탭, 질문 검색 (복합 적용 가능)\n\n" +
+                    "**정렬:** 카테고리 노출 순서 → 카테고리 내 노출 순서(displayOrder) 오름차순\n\n" +
+                    "**응답:** `content`(목록) · `pageInfo`(`totalResults` = 툴바의 '총 N건') · " +
+                    "`categoryCounts`(카테고리 탭 건수 — 전체 + 5종, 검색어가 있으면 검색 결과 기준)\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -255,11 +260,11 @@ public interface AdminFaqControllerDocs {
                     name = "category",
                     description = "카테고리 필터 (미입력/ALL 시 전체)",
                     example = "DELIVERY",
-                    schema = @Schema(allowableValues = {"ALL", "DELIVERY", "CANCEL_EXCHANGE_REFUND", "PRODUCT_AS", "ORDER_PAYMENT", "SERVICE", "USAGE_GUIDE", "MEMBER_INFO"})
+                    schema = @Schema(allowableValues = {"ALL", "DELIVERY", "CANCEL_EXCHANGE_RETURN", "ORDER_PAYMENT", "SERVICE", "ACCOUNT"})
             ),
             @Parameter(
                     name = "keyword",
-                    description = "질문 또는 답변 키워드 필터",
+                    description = "질문 키워드 필터 (부분 일치, 대소문자 무시)",
                     example = "배송"
             ),
             @Parameter(
@@ -269,19 +274,20 @@ public interface AdminFaqControllerDocs {
             ),
             @Parameter(
                     name = "size",
-                    description = "페이지당 항목 수",
+                    description = "페이지당 항목 수 (어드민 표시 건수 드롭다운: 20 / 50 / 100)",
                     example = "20"
             )
     })
-    ResponseEntity<PageResponse<AdminFaqListResponse>> getFaqs(
+    ResponseEntity<AdminFaqPageResponse> getFaqs(
             @Parameter(hidden = true) AdminFaqListRequest request,
             @Parameter(hidden = true) PagingRequest pagingRequest
     );
 
     @Operation(
             summary = "FAQ 수정",
-            description = "관리자가 FAQ의 카테고리, 질문, 답변을 수정합니다.\n\n" +
-                    "**카테고리:** DELIVERY, CANCEL_EXCHANGE_REFUND, PRODUCT_AS, ORDER_PAYMENT, SERVICE, USAGE_GUIDE, MEMBER_INFO (전체/ALL 불가)\n\n" +
+            description = "관리자가 FAQ의 카테고리, 질문, 답변을 수정합니다. 수정일만 갱신되고 변경 전 내용은 이력으로 남기지 않습니다(기획 §19-5).\n\n" +
+                    "**카테고리:** DELIVERY, CANCEL_EXCHANGE_RETURN, ORDER_PAYMENT, SERVICE, ACCOUNT (전체/ALL 불가)\n\n" +
+                    "**카테고리를 바꾸면** 기존 카테고리의 뒷 순서는 한 칸씩 당겨지고, 해당 FAQ는 새 카테고리의 맨 위로 이동합니다.\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -357,7 +363,8 @@ public interface AdminFaqControllerDocs {
 
     @Operation(
             summary = "FAQ 단일 삭제",
-            description = "관리자가 FAQ를 단건 삭제합니다.\n\n" +
+            description = "관리자가 FAQ를 단건 삭제합니다. 사유는 받지 않으며 복구할 수 없습니다(기획 §19-6).\n\n" +
+                    "**노출 순서:** 같은 카테고리에 남은 항목의 순서가 자동으로 당겨집니다.\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )

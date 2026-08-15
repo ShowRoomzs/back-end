@@ -1,26 +1,16 @@
 package showroomz.domain.faq.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import showroomz.domain.cs.type.CsCategory;
 import showroomz.domain.faq.entity.Faq;
-import showroomz.domain.faq.type.FaqCategory;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface FaqRepository extends JpaRepository<Faq, Long>, FaqRepositoryCustom {
 
-    List<Faq> findAllByOrderByDisplayOrderAscIdAsc();
-
-    List<Faq> findAllByCategoryOrderByDisplayOrderAscIdAsc(FaqCategory category);
-
-    List<Faq> findAllByQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(String keyword);
-
     List<Faq> findAllByIdIn(List<Long> ids);
 
-    Optional<Faq> findTopByOrderByDisplayOrderDescIdDesc();
+    long countByCategory(CsCategory category);
 
-    List<Faq> findAllByCategoryAndQuestionContainingIgnoreCaseOrderByDisplayOrderAscIdAsc(FaqCategory category, String keyword);
-
-    boolean existsByDisplayOrderInAndIdNotIn(List<Integer> displayOrders, List<Long> ids);
+    boolean existsByCategoryAndDisplayOrderInAndIdNotIn(CsCategory category, List<Integer> displayOrders, List<Long> ids);
 }
-

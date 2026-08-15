@@ -123,9 +123,8 @@ public enum ErrorCode {
 
     /* 11. 1:1 문의 (Inquiry)
      */
-    INQUIRY_ALREADY_ANSWERED(HttpStatus.BAD_REQUEST, "INQUIRY_ALREADY_ANSWERED", "답변이 완료된 문의는 수정하거나 삭제할 수 없습니다."),
-    INVALID_INQUIRY_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "올바르지 않은 문의 타입입니다. (DELIVERY, ORDER_PAYMENT, CANCEL_REFUND_EXCHANGE, USER_INFO, PRODUCT_CHECK, SERVICE)"),
-    ORDER_ID_REQUIRED(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "해당 문의 유형에는 주문 번호가 필수입니다."),
+    INQUIRY_ALREADY_ANSWERED(HttpStatus.BAD_REQUEST, "INQUIRY_ALREADY_ANSWERED", "이미 답변이 등록된 문의입니다. 답변은 1회만 등록할 수 있습니다."),
+    INVALID_INQUIRY_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "올바르지 않은 문의 유형입니다. (DELIVERY, CANCEL_EXCHANGE_RETURN, ORDER_PAYMENT, SERVICE, ACCOUNT)"),
 
     /* 12. 쿠폰 (Coupon)
      */
@@ -137,8 +136,6 @@ public enum ErrorCode {
     USER_COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_COUPON_NOT_FOUND", "보유하지 않은 사용자 쿠폰입니다."),
     COUPON_MIN_ORDER_AMOUNT_NOT_MET(HttpStatus.BAD_REQUEST, "COUPON_MIN_ORDER_AMOUNT_NOT_MET", "최소 주문 금액을 충족하지 않습니다."),
     INVALID_COUPON_VALIDITY_PERIOD(HttpStatus.BAD_REQUEST, "INVALID_COUPON_VALIDITY_PERIOD", "유효 시작 일시는 유효 종료 일시보다 이전이어야 합니다."),
-
-    INVALID_INQUIRY_DETAIL_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "선택한 상세 유형이 문의 타입에 맞지 않습니다."),
 
      /* 13. 리뷰 (Review)
      */

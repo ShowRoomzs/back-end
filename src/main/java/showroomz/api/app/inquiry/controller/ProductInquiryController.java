@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 import showroomz.api.app.auth.entity.UserPrincipal;
@@ -20,6 +21,7 @@ import showroomz.api.app.inquiry.dto.ProductInquiryRegisterRequest;
 import showroomz.api.app.inquiry.dto.ProductInquiryRegisterResponse;
 import showroomz.api.app.inquiry.dto.ProductInquiryUpdateRequest;
 import showroomz.api.app.inquiry.service.ProductInquiryService;
+import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
@@ -45,9 +47,10 @@ public class ProductInquiryController implements ProductInquiryControllerDocs {
     @Override
     public PageResponse<ProductInquiryResponse> getMyInquiries(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam(value = "status", required = false) InquiryStatus status,
             @Valid PagingRequest pagingRequest) {
         return productInquiryService.getMyInquiries(
-                userPrincipal.getUserId(), pagingRequest.toPageable());
+                userPrincipal.getUserId(), status, pagingRequest.toPageable());
     }
 
     @GetMapping("/v1/user/product-inquiries/{inquiryId}")

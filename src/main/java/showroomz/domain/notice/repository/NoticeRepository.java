@@ -4,14 +4,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import showroomz.domain.notice.entity.Notice;
+import showroomz.domain.notice.type.NoticeStatus;
 
 import java.util.Optional;
 
-public interface NoticeRepository extends JpaRepository<Notice, Long> {
+public interface NoticeRepository extends JpaRepository<Notice, Long>, NoticeRepositoryCustom {
 
-    Page<Notice> findAllByIsVisibleTrue(Pageable pageable);
+    Page<Notice> findAllByStatus(NoticeStatus status, Pageable pageable);
 
-    Optional<Notice> findByIdAndIsVisibleTrue(Long id);
-
-    Page<Notice> findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(String title, String content, Pageable pageable);
+    Optional<Notice> findByIdAndStatus(Long id, NoticeStatus status);
 }

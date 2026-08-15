@@ -17,6 +17,7 @@ import showroomz.api.app.inquiry.dto.ProductInquiryResponse;
 import showroomz.api.app.inquiry.dto.ProductInquiryRegisterRequest;
 import showroomz.api.app.inquiry.dto.ProductInquiryRegisterResponse;
 import showroomz.api.app.inquiry.dto.ProductInquiryUpdateRequest;
+import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
@@ -129,7 +130,12 @@ public interface ProductInquiryControllerDocs {
             summary = "내 상품 문의 목록 조회",
             description = "현재 로그인한 사용자가 등록한 상품 문의 목록을 최신순으로 페이징 조회합니다.\n\n" +
                     "**정렬 기준:**\n" +
-                    "- 생성일(`createdAt`) 기준 내림차순\n\n" +
+                    "- 생성일(`createdAt`) 기준 내림차순 (정렬 옵션 없음 — 문의 내역은 항상 최신순입니다)\n\n" +
+                    "**필터 (`status` 쿼리 파라미터, 선택):**\n" +
+                    "- 생략: 전체\n" +
+                    "- `WAITING`: 답변 대기만 — 화면의 [답변 대기만] 체크에 대응합니다\n" +
+                    "- `ANSWERED`: 답변완료만\n\n" +
+                    "필터를 반영한 건수는 `pageInfo.totalResults`로 내려가며, 화면 상단의 `전체 N건` / `답변 대기 N건` 표기에 사용합니다.\n\n" +
                     "**포함 정보:**\n" +
                     "- `shopName`: 쇼룸(마켓) 이름\n" +
                     "- `productName`: 상품명\n" +
@@ -200,6 +206,9 @@ public interface ProductInquiryControllerDocs {
     })
     PageResponse<ProductInquiryResponse> getMyInquiries(
             @Parameter(hidden = true) UserPrincipal userPrincipal,
+            @Parameter(description = "답변 상태 필터 (선택) — 생략하면 전체, `WAITING`이면 [답변 대기만]",
+                    example = "WAITING", in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY)
+            InquiryStatus status,
             @Parameter(description = "페이징 요청 정보 (page: 1부터 시작, size: 페이지당 항목 수)", required = true)
             PagingRequest pagingRequest
     );

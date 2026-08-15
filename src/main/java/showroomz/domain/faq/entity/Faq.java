@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import showroomz.domain.common.BaseTimeEntity;
-import showroomz.domain.faq.type.FaqCategory;
+import showroomz.domain.cs.type.CsCategory;
 
 @Entity
 @Getter
@@ -14,7 +14,8 @@ import showroomz.domain.faq.type.FaqCategory;
 @Table(
         name = "FAQ",
         indexes = {
-                @Index(name = "idx_faq_display_order", columnList = "DISPLAY_ORDER")
+                // 노출 순서는 카테고리 안에서만 유효하다 (기획 §19-4)
+                @Index(name = "idx_faq_category_display_order", columnList = "CATEGORY, DISPLAY_ORDER")
         }
 )
 public class Faq extends BaseTimeEntity {
@@ -24,9 +25,10 @@ public class Faq extends BaseTimeEntity {
     @Column(name = "FAQ_ID")
     private Long id;
 
+    // 카테고리 — 1:1 문의 유형과 같은 enum을 공유한다 (§19-1)
     @Enumerated(EnumType.STRING)
     @Column(name = "CATEGORY", nullable = false, length = 30)
-    private FaqCategory category;
+    private CsCategory category;
 
     // 3. 질문 내용
     @Column(name = "QUESTION", nullable = false, columnDefinition = "TEXT")
@@ -40,14 +42,14 @@ public class Faq extends BaseTimeEntity {
     private Integer displayOrder;
 
     @Builder
-    public Faq(FaqCategory category, String question, String answer, Integer displayOrder) {
+    public Faq(CsCategory category, String question, String answer, Integer displayOrder) {
         this.category = category;
         this.question = question;
         this.answer = answer;
         this.displayOrder = displayOrder == null ? 0 : displayOrder;
     }
 
-    public void update(FaqCategory category, String question, String answer) {
+    public void update(CsCategory category, String question, String answer) {
         this.category = category;
         this.question = question;
         this.answer = answer;

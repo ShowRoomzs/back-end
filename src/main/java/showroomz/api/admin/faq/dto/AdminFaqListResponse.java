@@ -3,8 +3,8 @@ package showroomz.api.admin.faq.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
+import showroomz.domain.cs.type.CsCategory;
 import showroomz.domain.faq.entity.Faq;
-import showroomz.domain.faq.type.FaqCategory;
 
 import java.time.LocalDateTime;
 
@@ -16,7 +16,7 @@ public class AdminFaqListResponse {
     private Long id;
 
     @Schema(description = "카테고리", example = "DELIVERY")
-    private FaqCategory category;
+    private CsCategory category;
 
     @Schema(description = "카테고리 표시명", example = "배송")
     private String categoryDisplayName;
@@ -40,7 +40,7 @@ public class AdminFaqListResponse {
         return AdminFaqListResponse.builder()
                 .id(faq.getId())
                 .category(faq.getCategory())
-                .categoryDisplayName(faq.getCategory().getDisplayName())
+                .categoryDisplayName(faq.getCategory().getDescription())
                 .question(faq.getQuestion())
                 .answer(faq.getAnswer())
                 .displayOrder(faq.getDisplayOrder())

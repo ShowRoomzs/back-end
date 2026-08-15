@@ -50,8 +50,11 @@ public class ProductInquiryService {
         return inquiry.getId();
     }
 
-    public PageResponse<ProductInquiryResponse> getMyInquiries(Long userId, Pageable pageable) {
-        Page<ProductInquiry> page = productInquiryRepository.findByUserId(userId, pageable);
+    // status가 있으면 해당 상태만 조회한다 ([답변 대기만] 필터)
+    public PageResponse<ProductInquiryResponse> getMyInquiries(Long userId, InquiryStatus status, Pageable pageable) {
+        Page<ProductInquiry> page = (status == null)
+                ? productInquiryRepository.findByUserId(userId, pageable)
+                : productInquiryRepository.findByUserIdAndStatus(userId, status, pageable);
         return PageResponse.of(page.map(inquiry ->
                 ProductInquiryResponse.of(inquiry, resolveImageUrl(inquiry))));
     }
@@ -103,14 +106,10 @@ public class ProductInquiryService {
         productInquiryRepository.delete(inquiry);
     }
 
-    /** 상품 문의 타입 목록 조회 (1:1 문의 카테고리 API와 동일한 형식: key, description, details는 빈 목록) */
+    /** 상품 문의 타입 목록 조회 (1:1 문의 유형 API와 동일한 형식: key, description) */
     public java.util.List<InquiryCategoryResponse> getProductInquiryCategories() {
         return java.util.Arrays.stream(ProductInquiryType.values())
-                .map(type -> new InquiryCategoryResponse(
-                        type.name(),
-                        type.getDescription(),
-                        java.util.Collections.emptyList()
-                ))
+                .map(type -> new InquiryCategoryResponse(type.name(), type.getDescription()))
                 .toList();
     }
 
