@@ -14,7 +14,7 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.showroom.DTO.ShowroomVisitRequest;
 
-@Tag(name = "App - Showroom Visit", description = "쇼룸 방문 기록 API (§22-4 쇼룸 현황 지표 원천)")
+@Tag(name = "User - Showroom Visit", description = "쇼룸 방문 기록 API (§22-4 쇼룸 현황 지표 원천)")
 public interface ShowroomVisitControllerDocs {
 
     @Operation(
