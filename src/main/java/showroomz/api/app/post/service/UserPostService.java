@@ -85,12 +85,11 @@ public class UserPostService {
 
         // 7. Response 생성
         Creator creator = post.getCreator();
-        Users creatorUser = creator.getUser();
         return PostDto.PostDetailResponse.builder()
                 .postId(post.getId())
                 .showroomId(creator.getId())
-                .showroomName(creatorUser.getNickname())
-                .showroomImageUrl(creatorUser.getProfileImageUrl())
+                .showroomName(showroomName(creator))
+                .showroomImageUrl(creator.getProfileImageUrl())
                 .title(post.getTitle())
                 .content(post.getContent())
                 .imageUrls(post.getImageUrls())
@@ -172,14 +171,13 @@ public class UserPostService {
         final Map<Long, Boolean> finalWishlistMap = wishlistMap;
         Page<PostDto.FeedItemResponse> dtoPage = postPage.map(post -> {
             Creator creator = post.getCreator();
-            Users creatorUser = creator.getUser();
             List<PostDto.PostProductResponse> registeredProducts = buildRegisteredProducts(
                     post, globalWishlistCountMap, globalReviewCountMap, globalWishedProductIds);
             PostDto.PostListItem postItem = PostDto.PostListItem.builder()
                     .postId(post.getId())
                     .showroomId(creator.getId())
-                    .showroomName(creatorUser.getNickname())
-                    .showroomImageUrl(creatorUser.getProfileImageUrl())
+                    .showroomName(showroomName(creator))
+                    .showroomImageUrl(creator.getProfileImageUrl())
                     .title(post.getTitle())
                     .imageUrls(post.getImageUrls())
                     .viewCount(post.getViewCount())
@@ -235,14 +233,13 @@ public class UserPostService {
         final Map<Long, Boolean> finalWishlistMap = wishlistMap;
         Page<PostDto.FeedItemResponse> dtoPage = postPage.map(post -> {
             Creator creator = post.getCreator();
-            Users creatorUser = creator.getUser();
             List<PostDto.PostProductResponse> registeredProducts = buildRegisteredProducts(
                     post, globalWishlistCountMap, globalReviewCountMap, globalWishedProductIds);
             PostDto.PostListItem postItem = PostDto.PostListItem.builder()
                     .postId(post.getId())
                     .showroomId(creator.getId())
-                    .showroomName(creatorUser.getNickname())
-                    .showroomImageUrl(creatorUser.getProfileImageUrl())
+                    .showroomName(showroomName(creator))
+                    .showroomImageUrl(creator.getProfileImageUrl())
                     .title(post.getTitle())
                     .imageUrls(post.getImageUrls())
                     .viewCount(post.getViewCount())
@@ -326,14 +323,13 @@ public class UserPostService {
 
         Page<PostDto.FeedItemResponse> dtoPage = postPage.map(post -> {
             Creator creator = post.getCreator();
-            Users creatorUser = creator.getUser();
             List<PostDto.PostProductResponse> registeredProducts = buildRegisteredProducts(
                     post, globalWishlistCountMap, globalReviewCountMap, globalWishedProductIds);
             PostDto.PostListItem postItem = PostDto.PostListItem.builder()
                     .postId(post.getId())
                     .showroomId(creator.getId())
-                    .showroomName(creatorUser.getNickname())
-                    .showroomImageUrl(creatorUser.getProfileImageUrl())
+                    .showroomName(showroomName(creator))
+                    .showroomImageUrl(creator.getProfileImageUrl())
                     .title(post.getTitle())
                     .imageUrls(post.getImageUrls())
                     .viewCount(post.getViewCount())
@@ -398,5 +394,16 @@ public class UserPostService {
                     .build());
         }
         return result;
+    }
+
+    /**
+     * §22-1 — 소비자에게 보이는 이름은 <b>쇼룸명</b>이다. 앱 계정 닉네임은 개인 소비 계정의 이름이라
+     * 판매 채널의 간판으로 쓰지 않는다(구버전의 "앱 계정 공유" 규칙은 폐기됐다).
+     * 쇼룸명이 아직 없는 가입 도중 상태에서만 닉네임으로 떨어진다.
+     */
+    private static String showroomName(Creator creator) {
+        return creator.getShowroomName() != null
+                ? creator.getShowroomName()
+                : creator.getUser().getNickname();
     }
 }

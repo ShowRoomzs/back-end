@@ -6,24 +6,40 @@ import com.maxmind.geoip2.model.CityResponse;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 
+/**
+ * GeoIP 조회 서비스.
+ *
+ * <p>mmdb(63MB)는 더 이상 jar에 번들하지 않는다 — {@link #dbPath}가 가리키는 파일 경로에서 읽는다.
+ * {@code File} 생성자는 기본적으로 메모리 매핑(mmap) 방식으로 로딩되어, {@code InputStream}
+ * 생성자처럼 파일 전체를 힙에 올리지 않는다. 파일이 없으면(로컬 개발 등) 조회 불가로 처리하고
+ * 애플리케이션 기동은 막지 않는다.
+ */
 @Service
 @Slf4j
 public class GeoLocationService {
+
+    @Value("${geoip.db-path}")
+    private String dbPath;
 
     private DatabaseReader databaseReader;
 
     @PostConstruct
     public void init() {
+        File dbFile = new File(dbPath);
+        if (!dbFile.exists()) {
+            log.warn("GeoIP Database not found at {}. Location lookup is disabled.", dbPath);
+            return;
+        }
         try {
-            ClassPathResource resource = new ClassPathResource("GeoLite2-City.mmdb");
-            databaseReader = new DatabaseReader.Builder(resource.getInputStream()).build();
-            log.info("GeoIP Database loaded successfully.");
+            databaseReader = new DatabaseReader.Builder(dbFile).build();
+            log.info("GeoIP Database loaded from {}", dbPath);
         } catch (IOException e) {
             log.error("Failed to load GeoIP Database: {}", e.getMessage());
         }

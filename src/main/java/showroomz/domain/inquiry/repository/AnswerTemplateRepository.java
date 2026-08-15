@@ -5,7 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import showroomz.api.seller.inquiry.type.MarketInquiryFilterType;
+import showroomz.domain.inquiry.type.ProductInquiryType;
 import showroomz.domain.inquiry.entity.AnswerTemplate;
 
 import java.util.Collection;
@@ -31,7 +31,7 @@ public interface AnswerTemplateRepository extends JpaRepository<AnswerTemplate, 
     Page<AnswerTemplate> findTemplates(
             @Param("sellerId") Long sellerId,
             @Param("isActive") Boolean isActive,
-            @Param("category") MarketInquiryFilterType category,
+            @Param("category") ProductInquiryType category,
             @Param("keyword") String keyword,
             Pageable pageable
     );

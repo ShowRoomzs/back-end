@@ -62,6 +62,10 @@ cors:
   allowed-headers: '*'
   max-age: 3600
 
+# GeoLocationService.java 관련 설정 — mmdb를 jar에 번들하지 않고 파일 경로에서 읽는다
+geoip:
+  db-path: ${GEOIP_DB_PATH:/geoip/GeoLite2-City.mmdb}
+
 # S3Properties.java 관련 설정
 aws:
   s3:

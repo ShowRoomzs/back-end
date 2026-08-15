@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import showroomz.api.seller.inquiry.type.MarketInquiryFilterType;
+import showroomz.domain.inquiry.type.ProductInquiryType;
 
 @Getter
 @NoArgsConstructor
@@ -22,10 +22,10 @@ public class AnswerTemplateRegisterRequest {
     @Schema(
             description = "카테고리",
             requiredMode = Schema.RequiredMode.REQUIRED,
-            example = "STOCK",
-            allowableValues = {"PRODUCT", "SIZE", "STOCK"}
+            example = "RESTOCK",
+            allowableValues = {"OPTION", "INGREDIENT_USAGE", "RESTOCK", "DELIVERY", "ETC"}
     )
-    private MarketInquiryFilterType category;
+    private ProductInquiryType category;
 
     @NotBlank(message = "답변 내용을 입력해주세요.")
     @Size(max = 1000, message = "답변 내용은 최대 1000자까지 입력 가능합니다.")

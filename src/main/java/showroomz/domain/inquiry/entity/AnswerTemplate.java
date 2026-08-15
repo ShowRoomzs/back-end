@@ -5,7 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import showroomz.api.seller.inquiry.type.MarketInquiryFilterType;
+import showroomz.domain.inquiry.type.ProductInquiryType;
 import showroomz.domain.common.BaseTimeEntity;
 import showroomz.domain.member.seller.entity.Seller;
 
@@ -29,7 +29,7 @@ public class AnswerTemplate extends BaseTimeEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "CATEGORY", nullable = false)
-    private MarketInquiryFilterType category;
+    private ProductInquiryType category;
 
     @Column(name = "CONTENT", nullable = false, length = 1000)
     private String content;
@@ -38,7 +38,7 @@ public class AnswerTemplate extends BaseTimeEntity {
     private boolean isActive = true;
 
     @Builder
-    public AnswerTemplate(Seller seller, String title, MarketInquiryFilterType category,
+    public AnswerTemplate(Seller seller, String title, ProductInquiryType category,
                           String content, boolean isActive) {
         this.seller = seller;
         this.title = title;
@@ -47,7 +47,7 @@ public class AnswerTemplate extends BaseTimeEntity {
         this.isActive = isActive;
     }
 
-    public void update(String title, MarketInquiryFilterType category, String content, boolean isActive) {
+    public void update(String title, ProductInquiryType category, String content, boolean isActive) {
         this.title = title;
         this.category = category;
         this.content = content;

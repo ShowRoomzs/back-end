@@ -24,7 +24,7 @@ import showroomz.api.seller.inquiry.dto.AnswerTemplateRegisterRequest;
 import showroomz.api.seller.inquiry.dto.AnswerTemplateRegisterResponse;
 import showroomz.api.seller.inquiry.dto.AnswerTemplateUpdateRequest;
 import showroomz.api.seller.inquiry.service.AnswerTemplateService;
-import showroomz.api.seller.inquiry.type.MarketInquiryFilterType;
+import showroomz.domain.inquiry.type.ProductInquiryType;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
@@ -51,7 +51,7 @@ public class AnswerTemplateController implements AnswerTemplateControllerDocs {
     @GetMapping
     public ResponseEntity<PageResponse<AnswerTemplateDto>> getTemplates(
             @RequestParam(value = "includeInactive", required = false, defaultValue = "false") Boolean includeInactive,
-            @RequestParam(value = "category", required = false) MarketInquiryFilterType category,
+            @RequestParam(value = "category", required = false) ProductInquiryType category,
             @RequestParam(value = "keyword", required = false) String keyword,
             @ModelAttribute PagingRequest pagingRequest) {
         String sellerEmail = getCurrentSellerEmail();

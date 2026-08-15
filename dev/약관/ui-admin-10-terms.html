@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-admin-08-cs-content — 어드민 CS·콘텐츠 관리 · FAQ·공지·약관 rev.2</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+
+/* ══════════════════════════════════════════════════════════════════
+   SHOWROOMZ 웹 디자인시스템 v1.2 — 어드민
+   이 <style> 블록 전체가 소스오브트루스다.
+   신규 ui-admin-*.html 은 이 블록을 통째로 복사한 뒤 화면 전용 CSS만 덧붙인다.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── ① 토큰 ───────────────────────────────────────────────────── */
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --adm-sidebar-w:240px; --adm-topbar-h:56px; --adm-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+
+/* ── ② 문서 골격 (시안 파일 공통) ─────────────────────────────── */
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;line-height:1.8;}
+.doc-head .rule{margin-top:12px;}
+.rule b{color:var(--n-900);} .rule .new{color:var(--accent-600);font-weight:600;}
+.rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+
+/* ── ③ 어드민 셸 · 사이드바 ───────────────────────────────────── */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--adm-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--adm-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;overflow-y:auto;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:7px 10px;border-radius:var(--r-sm);margin-bottom:2px;cursor:pointer;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--danger-text);color:#fff;
+  border-radius:8px;padding:0 5px;min-width:16px;text-align:center;}
+.gnb-item .chev{width:14px;height:14px;color:var(--n-500);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:transform .15s;}
+.gnb-item .chev svg{width:11px;height:11px;display:block;}
+.gnb-item.open .chev{transform:rotate(180deg);color:var(--n-700);}
+.gnb-group{overflow:hidden;}
+.gnb-group.closed{display:none;}
+.gnb-item:hover:not(.active){background:var(--n-200);}
+.gnb-item.open{color:var(--n-900);font-weight:500;}
+.gnb-sub{display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-micro);
+  color:var(--n-500);padding:5px 10px 5px 33px;border-radius:var(--r-sm);margin-bottom:1px;cursor:pointer;}
+.gnb-sub:hover:not(.active){background:var(--n-200);}
+.gnb-sub.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-sub.active .scnt{color:#fff;}
+.scnt{font-size:10px;color:var(--n-500);}
+
+/* ── ④ 어드민 셸 · 탑바 / 본문 ────────────────────────────────── */
+.top{position:absolute;left:var(--adm-sidebar-w);right:0;top:0;height:var(--adm-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--adm-pad);}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.crumb .c-sub{font-size:var(--fs-caption);color:var(--n-500);font-weight:400;margin-left:6px;}
+.op{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);}
+.op-av{width:24px;height:24px;border-radius:50%;background:var(--n-200);color:var(--n-600);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-micro);font-weight:600;}
+.main{position:absolute;left:var(--adm-sidebar-w);right:0;top:var(--adm-topbar-h);bottom:0;
+  overflow-y:auto;padding:var(--adm-pad);}
+.navgrp{display:flex;align-items:center;gap:6px;}
+.nav-btn{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-caption);font-weight:500;
+  color:var(--n-700);cursor:pointer;padding:0 12px;height:32px;background:#fff;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);white-space:nowrap;}
+.nav-btn:hover{background:var(--n-100);color:var(--n-900);border-color:var(--n-400);}
+.nav-sep{width:1px;height:18px;background:var(--n-300);margin:0 2px;}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:var(--sp-4);}
+.page-t{font-size:var(--fs-h1);font-weight:600;display:flex;align-items:center;gap:10px;}
+.t-link{font-size:var(--fs-micro);font-weight:500;color:var(--n-600);background:var(--n-100);
+  border:1px solid var(--n-200);border-radius:var(--r-pill);padding:2px 10px;cursor:pointer;
+  white-space:nowrap;line-height:1.7;}
+.t-link:hover{background:var(--accent-50);color:var(--accent-600);border-color:var(--accent-100);}
+.page-d{font-size:var(--fs-caption);color:var(--n-600);margin-top:2px;}
+
+/* ── ⑤ 필터 · 폼 컨트롤 ───────────────────────────────────────── */
+.filter{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);
+  padding:var(--sp-3) var(--sp-4);margin-bottom:var(--sp-4);display:flex;align-items:center;
+  justify-content:space-between;gap:var(--sp-4);}
+.tabs{display:flex;gap:0;}
+.tab{font-size:var(--fs-caption);color:var(--n-500);padding:6px 2px;margin-right:20px;cursor:pointer;
+  border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;}
+.tab.active{color:var(--accent-500);border-bottom-color:var(--accent-500);font-weight:500;}
+.tab .tn{font-size:10px;background:var(--n-100);color:var(--n-600);border-radius:8px;padding:0 5px;}
+.tab.active .tn{background:var(--accent-50);color:var(--accent-600);}
+.search{display:flex;gap:6px;}
+.inp{font-family:inherit;font-size:var(--fs-body);padding:6px 10px;border-radius:var(--r-sm);
+  border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:32px;width:180px;}
+.inp::placeholder{color:var(--n-400);}
+.inp:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:7px 14px;cursor:pointer;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
+.btn-primary{background:var(--accent-500);color:#fff;border:none;}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-danger{background:var(--danger-text);color:#fff;border:none;}
+.btn:disabled{background:var(--n-100);color:var(--n-400);border:1px solid var(--n-200);cursor:not-allowed;}
+.sel-sm{font-family:inherit;font-size:var(--fs-caption);height:28px;padding:0 26px 0 10px;cursor:pointer;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-700);
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;}
+.sel-sm:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+
+/* ── ⑥ 테이블 ─────────────────────────────────────────────────── */
+.tcard{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+.tbar{display:flex;align-items:center;justify-content:space-between;padding:10px var(--sp-4);
+  border-bottom:1px solid var(--n-200);}
+.tbar-l{font-size:var(--fs-caption);color:var(--n-600);} .tbar-l b{color:var(--n-900);}
+.tbar-r{display:flex;align-items:center;gap:8px;}
+table{width:100%;border-collapse:collapse;}
+thead td{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);font-weight:500;
+  padding:10px 16px;white-space:nowrap;border-bottom:1px solid var(--n-200);}
+tbody td{padding:13px 16px;font-size:var(--fs-caption);border-top:1px solid var(--n-100);
+  vertical-align:middle;white-space:nowrap;}
+tbody tr:first-child td{border-top:none;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:var(--accent-50);}
+tbody tr:hover .t-main{color:var(--accent-600);}
+.t-main{font-size:var(--fs-body);font-weight:500;color:var(--n-900);}
+.tcard table{table-layout:fixed;}
+.tnum{font-variant-numeric:tabular-nums;letter-spacing:-.1px;}
+.t-sub{color:var(--n-500);font-size:var(--fs-micro);}
+.t-c{text-align:center;}
+.t-r{text-align:right;}
+.over{color:var(--warning-text);font-weight:600;}
+
+/* ── ⑦ 배지 ───────────────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-warning{background:var(--warning-bg);color:var(--warning-text);}
+.b-danger{background:var(--danger-bg);color:var(--danger-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+
+/* ── ⑧ 페이지네이션 · 빈 상태 ─────────────────────────────────── */
+.tb-doc thead td:nth-child(1),.tb-doc tbody td:nth-child(1){padding-left:20px;white-space:normal;}
+.tb-doc thead td:nth-child(2),.tb-doc tbody td:nth-child(2){width:110px;}
+.tb-doc thead td:nth-child(3),.tb-doc tbody td:nth-child(3){width:90px;}
+.tb-doc thead td:nth-child(4),.tb-doc tbody td:nth-child(4){width:110px;}
+.tb-doc thead td:nth-child(5),.tb-doc tbody td:nth-child(5){width:130px;}
+.tb-doc thead td:nth-child(6),.tb-doc tbody td:nth-child(6){width:150px;padding-right:20px;}
+.tb-doc tbody td{vertical-align:middle;}
+.doc-view{font-size:var(--fs-body);line-height:1.9;color:var(--n-900);max-height:320px;overflow:auto;
+  border:1px solid var(--n-200);border-radius:var(--r-sm);padding:16px 18px;background:var(--n-50);}
+.doc-view p{margin:0 0 14px;}
+.doc-view p:last-child{margin-bottom:0;}
+.pager{display:flex;align-items:center;justify-content:center;gap:4px;padding:12px;border-top:1px solid var(--n-200);}
+.page-item{min-width:26px;height:26px;padding:0 6px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-600);cursor:pointer;}
+.page-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.empty{padding:72px 24px;text-align:center;}
+.empty-ic{font-size:28px;color:var(--n-300);margin-bottom:10px;}
+.empty-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);margin-bottom:4px;}
+.empty-d{font-size:var(--fs-caption);color:var(--n-500);}
+
+/* ── ⑨ 상세 · 카드 ────────────────────────────────────────────── */
+.detail{display:grid;grid-template-columns:1fr 320px;gap:var(--sp-4);align-items:start;}
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);margin-bottom:var(--sp-4);}
+.card:last-child{margin-bottom:0;}
+.card-h{font-size:var(--fs-h3);font-weight:600;padding:11px var(--sp-4);border-bottom:1px solid var(--n-200);
+  background:var(--n-50);border-radius:var(--r-md) var(--r-md) 0 0;display:flex;align-items:center;
+  justify-content:space-between;}
+.card-h .ch-n{font-size:var(--fs-micro);color:var(--n-500);font-weight:400;}
+.card-b{padding:var(--sp-4);}
+.rsn{margin:0;font-size:var(--fs-caption);color:var(--n-700);line-height:1.75;}
+
+/* 상세 필드 행 — 라벨 140px · 행 패딩 9px (어드민 공통 규격) */
+.frow{display:flex;gap:var(--sp-3);padding:9px 0;border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.frow:last-child{border-bottom:none;}
+.frow:first-child{padding-top:0;}
+.fk{width:140px;flex-shrink:0;color:var(--n-500);}
+.fv{flex:1;color:var(--n-900);min-width:0;}
+.fv .fsub{color:var(--n-500);font-size:var(--fs-micro);margin-top:2px;}
+.flink{color:var(--n-600);text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
+.flink:hover{color:var(--accent-600);}
+
+/* ── ⑩ 변경 대조 표 ───────────────────────────────────────────── */
+table.diff{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+table.diff thead td{width:auto;} table.diff thead td:first-child{width:180px;}
+table.diff tbody td{white-space:normal;cursor:default;padding:11px 16px;}
+table.diff tbody tr{cursor:default;} table.diff tbody tr:hover{background:transparent;}
+table.diff tbody tr.chg{background:var(--accent-50);}
+table.diff tbody tr.chg:hover{background:var(--accent-50);}
+.dk{color:var(--n-500);font-size:var(--fs-micro);}
+.dv{color:var(--n-900);}
+.dold{color:var(--n-500);text-decoration:line-through;text-decoration-color:var(--n-400);}
+.dnew{color:var(--accent-600);font-weight:600;}
+.dsame{color:var(--n-400);font-size:var(--fs-micro);}
+.dlock{color:var(--n-500);font-size:var(--fs-micro);font-weight:500;}
+
+/* ── ⑪ 인라인 안내 박스 ───────────────────────────────────────── */
+.chk-note{display:flex;gap:9px;background:var(--warning-bg);border-radius:var(--r-sm);padding:11px 13px;
+  font-size:var(--fs-micro);color:var(--n-700);line-height:1.65;margin-bottom:var(--sp-4);}
+.chk-note.danger{background:var(--danger-bg);}
+.chk-note .ci{width:16px;height:16px;border-radius:50%;background:var(--warning-text);color:#fff;font-size:10px;
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;margin-top:1px;}
+.chk-note.danger .ci{background:var(--danger-text);}
+
+/* ── ⑫ 첨부 ───────────────────────────────────────────────────── */
+.files{display:flex;flex-direction:column;gap:8px;}
+.file{display:flex;align-items:center;gap:10px;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:9px 12px;}
+.file-ic{width:28px;height:28px;border-radius:var(--r-sm);background:var(--accent-50);color:var(--accent-600);
+  display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+.file-n{flex:1;font-size:var(--fs-caption);}
+.file-s{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ── ⑬ 우측 액션 카드 · 이력 ──────────────────────────────────── */
+.detail > div:last-child{position:sticky;top:0;align-self:start;}
+.side-card{}
+.st-now{padding:var(--sp-4);}
+.st-line{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding-bottom:var(--sp-3);border-bottom:1px solid var(--n-100);}
+.st-meta{padding-top:var(--sp-2);}
+.mrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);}
+.mrow:last-child{border-bottom:none;}
+.mk{color:var(--n-500);} .mv{color:var(--n-900);font-weight:500;text-align:right;}
+.st-lbl{font-size:var(--fs-caption);color:var(--n-500);flex-shrink:0;}
+.st-acts{display:flex;gap:8px;margin-top:var(--sp-4);}
+.st-acts .btn{flex:1;}
+.st-hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;line-height:1.55;}
+.hist{padding:var(--sp-2) var(--sp-4) var(--sp-3);}
+.hitem{display:flex;gap:10px;padding:9px 0;}
+.hdot{width:7px;height:7px;border-radius:50%;background:var(--n-300);margin-top:6px;flex-shrink:0;}
+.hdot.on{background:var(--accent-500);}
+.htxt{font-size:var(--fs-caption);}
+.hmeta{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ── ⑭ 모달 ───────────────────────────────────────────────────── */
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;justify-content:center;}
+.modal{width:520px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);overflow:hidden;}
+.modal.sm{width:400px;}
+.modal-h{font-size:var(--fs-h3);font-weight:600;padding:14px var(--sp-5);border-bottom:1px solid var(--n-200);
+  display:flex;align-items:center;justify-content:space-between;}
+.modal-x{color:var(--n-400);cursor:pointer;font-size:var(--fs-body);}
+.modal-b{padding:var(--sp-5);font-size:var(--fs-caption);color:var(--n-700);line-height:1.7;}
+.modal-f{padding:12px var(--sp-5);border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.mlabel{display:block;font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;}
+.modal-b > .mlabel:first-child{margin-top:0;}
+.mlabel .req{color:var(--danger-text);margin-left:2px;}
+.mlabel .opt{color:var(--n-400);margin-left:4px;font-weight:400;}
+.msel,.mta{width:100%;font-family:inherit;font-size:var(--fs-body);border:1px solid var(--n-300);
+  border-radius:var(--r-sm);background:#fff;color:var(--n-900);padding:6px 10px;}
+.msel:focus,.mta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.msel{height:32px;appearance:none;-webkit-appearance:none;-moz-appearance:none;padding-right:32px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;}
+.mta{min-height:88px;resize:vertical;line-height:1.6;height:auto;padding-top:7px;}
+.mta.is-error{border-color:var(--danger-text);}
+.merr{font-size:var(--fs-micro);color:var(--danger-text);margin:6px 0 0;}
+.mwarn{display:flex;gap:8px;background:var(--danger-bg);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--danger-text);line-height:1.6;margin-top:var(--sp-4);font-weight:500;}
+.mhint{font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;}
+
+/* ── ⑮ 미리보기 라이트박스 ────────────────────────────────────── */
+.modal.pv{width:1080px;}
+.pv-body{display:grid;grid-template-columns:1fr 340px;height:620px;}
+.pv-view{background:var(--n-900);display:flex;flex-direction:column;}
+.pv-canvas{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:20px;}
+.pv-img{width:440px;height:310px;background:#fff;border-radius:2px;
+  box-shadow:0 4px 18px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;
+  color:var(--n-400);font-size:var(--fs-caption);}
+.pv-bar{height:48px;background:rgba(255,255,255,.06);border-top:1px solid rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px;}
+.pv-nav{display:flex;align-items:center;gap:6px;}
+.pv-b{height:28px;padding:0 10px;border-radius:var(--r-sm);background:rgba(255,255,255,.1);
+  color:rgba(255,255,255,.85);font-size:var(--fs-micro);font-weight:500;cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;border:none;font-family:inherit;}
+.pv-b:hover{background:rgba(255,255,255,.2);color:#fff;}
+.pv-zoom{font-size:var(--fs-micro);color:rgba(255,255,255,.6);padding:0 6px;}
+.pv-side{background:#fff;border-left:1px solid var(--n-200);padding:var(--sp-4);overflow-y:auto;}
+.pv-t{font-size:var(--fs-h3);font-weight:600;margin-bottom:2px;}
+.pv-d{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:var(--sp-4);}
+.pv-sec{font-size:var(--fs-micro);color:var(--n-500);font-weight:600;padding-bottom:6px;
+  border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-2);}
+.pv-row{display:flex;gap:9px;padding:11px 0;border-bottom:1px solid var(--n-100);align-items:flex-start;}
+.pv-row:last-of-type{border-bottom:none;}
+.pv-k{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:3px;}
+.pv-old{font-size:var(--fs-micro);color:var(--n-500);text-decoration:line-through;
+  text-decoration-color:var(--n-400);margin-bottom:1px;}
+.pv-new{font-size:var(--fs-body);font-weight:600;color:var(--accent-600);line-height:1.45;}
+.pv-new.plain{color:var(--n-900);}
+.pv-note{display:flex;gap:7px;background:var(--n-100);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--n-600);line-height:1.55;margin-top:var(--sp-4);}
+.pv-note.warn{background:var(--danger-bg);color:var(--danger-text);}
+
+/* ── ⑯ 토스트 ─────────────────────────────────────────────────── */
+.toast-wrap{position:absolute;top:72px;right:24px;display:flex;flex-direction:column;gap:8px;}
+.toast{min-width:260px;background:#fff;border:1px solid var(--n-200);border-left:3px solid var(--success-text);
+  border-radius:7px;box-shadow:0 4px 16px rgba(26,27,31,.1);padding:11px 14px;font-size:var(--fs-caption);
+  font-weight:500;display:flex;align-items:center;gap:8px;}
+
+/* ══ 화면 전용 (ui-admin-06) ══ */
+/* 어드민 공통 규격 정합: 테이블 본문 셀 14px 16px · 행높이 50px */
+tbody td{padding:14px 16px;height:50px;}
+
+.tb-inq thead td:nth-child(1),.tb-inq tbody td:nth-child(1){width:8%;padding-left:20px;}
+.tb-inq thead td:nth-child(3),.tb-inq tbody td:nth-child(3){width:15%;}
+.tb-inq thead td:nth-child(4),.tb-inq tbody td:nth-child(4){width:15%;}
+.tb-inq thead td:nth-child(5),.tb-inq tbody td:nth-child(5){width:11%;}
+.tb-inq thead td:nth-child(6),.tb-inq tbody td:nth-child(6){width:11%;padding-right:20px;}
+
+.tb-qna thead td:nth-child(1),.tb-qna tbody td:nth-child(1){padding-left:20px;white-space:normal;}
+.tb-qna thead td:nth-child(2),.tb-qna tbody td:nth-child(2){width:18%;white-space:normal;}
+.tb-qna thead td:nth-child(3),.tb-qna tbody td:nth-child(3){width:12%;}
+.tb-qna thead td:nth-child(4),.tb-qna tbody td:nth-child(4){width:8%;}
+.tb-qna thead td:nth-child(5),.tb-qna tbody td:nth-child(5){width:9%;}
+.tb-qna thead td:nth-child(6),.tb-qna tbody td:nth-child(6){width:10%;}
+.tb-qna thead td:nth-child(7),.tb-qna tbody td:nth-child(7){width:10%;padding-right:20px;}
+.tb-qna tbody td{vertical-align:top;}
+
+.tb-faq thead td:nth-child(1),.tb-faq tbody td:nth-child(1){width:13%;padding-left:20px;}
+.tb-faq thead td:nth-child(2),.tb-faq tbody td:nth-child(2){white-space:normal;}
+.tb-faq thead td:nth-child(3),.tb-faq tbody td:nth-child(3){width:10%;}
+.tb-faq thead td:nth-child(4),.tb-faq tbody td:nth-child(4){width:10%;}
+.tb-faq thead td:nth-child(5),.tb-faq tbody td:nth-child(5){width:112px;padding-left:4px;padding-right:4px;}
+.tb-faq thead td:nth-child(6),.tb-faq tbody td:nth-child(6){width:13%;padding-right:20px;}
+.tb-faq tbody td{vertical-align:middle;}
+.tb-faq .qa-q{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+.tb-not thead td:nth-child(1),.tb-not tbody td:nth-child(1){width:56px;padding-left:20px;}
+.tb-not thead td:nth-child(2),.tb-not tbody td:nth-child(2){white-space:normal;}
+.tb-not thead td:nth-child(3),.tb-not tbody td:nth-child(3){width:10%;}
+.tb-not thead td:nth-child(4),.tb-not tbody td:nth-child(4){width:10%;}
+.tb-not thead td:nth-child(5),.tb-not tbody td:nth-child(5){width:10%;}
+.tb-not thead td:nth-child(6),.tb-not tbody td:nth-child(6){width:16%;padding-right:20px;}
+.tb-not tbody td{vertical-align:middle;}
+.tb-not .qa-q{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+.qa-q{font-size:var(--fs-body);font-weight:500;color:var(--n-900);line-height:1.5;}
+.qa-a{font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;line-height:1.6;max-width:660px;}
+.ord{display:flex;gap:2px;justify-content:center;}
+.ordbtn{width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid var(--n-200);border-radius:4px;background:#fff;color:var(--n-500);cursor:pointer;flex-shrink:0;}
+.ordbtn:hover{border-color:var(--n-400);color:var(--n-900);background:var(--n-100);}
+.ordbtn svg{width:9px;height:9px;display:block;}
+.ordbtn.off{color:var(--n-300);border-color:var(--n-100);cursor:not-allowed;}
+.ordbtn.off:hover{background:#fff;border-color:var(--n-100);color:var(--n-300);}
+
+.racts{display:flex;gap:6px;}
+.rbtn{display:inline-flex;align-items:center;justify-content:center;height:26px;padding:0 10px;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;font-size:var(--fs-micro);
+  font-weight:500;color:var(--n-700);cursor:pointer;font-family:inherit;white-space:nowrap;}
+.rbtn:hover{background:var(--n-100);border-color:var(--n-400);}
+.rbtn.del{color:var(--danger-text);border-color:#E9C9C9;}
+.rbtn.del:hover{background:var(--danger-bg);}
+
+.thread{display:flex;flex-direction:column;gap:10px;}
+.tmsg{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:12px 14px;
+  font-size:var(--fs-caption);line-height:1.75;color:var(--n-700);}
+.tmsg.me{background:var(--accent-50);border-color:var(--accent-100);}
+.tmsg .who{font-size:var(--fs-micro);font-weight:600;color:var(--n-700);margin-bottom:5px;
+  display:flex;align-items:center;gap:6px;}
+.tmsg .who .wt{font-weight:400;color:var(--n-500);}
+.ta-label{font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;display:block;}
+
+.term{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fff;
+  border:1px solid var(--n-200);border-radius:var(--r-md);padding:14px var(--sp-4);margin-bottom:10px;cursor:pointer;}
+.term:hover{border-color:var(--n-300);}
+.term.on{border-color:var(--accent-500);background:var(--accent-50);}
+.term .tn{font-size:var(--fs-h3);font-weight:600;}
+.term .tv{font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;}
+
+.cbrow{display:flex;gap:9px;align-items:flex-start;padding:9px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);color:var(--n-700);}
+.cbrow:last-child{border-bottom:none;}
+.cbx{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--n-300);background:#fff;
+  flex-shrink:0;margin-top:2px;}
+.cbx.on{background:var(--accent-500);border-color:var(--accent-500);color:#fff;font-size:10px;
+  display:flex;align-items:center;justify-content:center;}
+.rdo{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--n-300);background:#fff;
+  flex-shrink:0;display:inline-block;}
+.rdo.on{border-color:var(--accent-500);border-width:5px;}
+.optrow{display:flex;gap:20px;align-items:center;margin-top:var(--sp-4);font-size:var(--fs-caption);color:var(--n-700);}
+.optrow label{display:flex;align-items:center;gap:7px;cursor:pointer;}
+.w-full{width:100%;}
+.inp-g{display:flex;align-items:center;}
+.inp-pre{height:32px;display:inline-flex;align-items:center;padding:0 11px;border:1px solid var(--n-300);
+  border-right:none;border-radius:var(--r-sm) 0 0 var(--r-sm);background:var(--n-100);color:var(--n-600);
+  font-size:var(--fs-body);}
+.inp-g .inp{border-radius:0 var(--r-sm) var(--r-sm) 0;}
+.inp-date{cursor:pointer;padding-right:32px;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 14 14' fill='none'%3E%3Crect x='1.5' y='2.5' width='11' height='10' rx='1.5' stroke='%237B7F89' stroke-width='1.2'/%3E%3Cpath d='M1.5 5.5h11M4.5 1.5v2M9.5 1.5v2' stroke='%237B7F89' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;}
+.cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.cal-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-900);}
+.cal-nav{display:flex;gap:4px;}
+.cal-b{width:26px;height:26px;border:1px solid var(--n-200);border-radius:var(--r-sm);
+  display:inline-flex;align-items:center;justify-content:center;color:var(--n-600);cursor:pointer;font-size:11px;}
+.cal-b:hover{background:var(--n-100);color:var(--n-900);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.cal-w{text-align:center;font-size:var(--fs-micro);color:var(--n-500);padding:3px 0 5px;}
+.cal-d{height:32px;display:flex;align-items:center;justify-content:center;font-size:var(--fs-caption);
+  color:var(--n-900);border-radius:var(--r-sm);cursor:pointer;font-variant-numeric:tabular-nums;}
+.cal-d:hover{background:var(--n-100);}
+.cal-d.mute{color:var(--n-300);}
+.cal-d.on{background:var(--accent-500);color:#fff;font-weight:600;}
+.cal-d.on:hover{background:var(--accent-500);}
+.tatt{display:flex;gap:8px;}
+.tthumb{width:72px;height:72px;border-radius:var(--r-sm);border:1px solid var(--n-200);
+  background:var(--n-100);color:var(--n-400);font-size:var(--fs-micro);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.tthumb:hover{border-color:var(--accent-500);color:var(--accent-600);}
+.editor{border:1px solid var(--n-300);border-radius:var(--r-sm);overflow:hidden;background:#fff;}
+.ed-bar{display:flex;align-items:center;gap:2px;padding:6px 8px;border-bottom:1px solid var(--n-200);
+  background:var(--n-50);flex-wrap:wrap;}
+.ed-b{min-width:26px;height:26px;padding:0 7px;display:inline-flex;align-items:center;justify-content:center;
+  border-radius:4px;color:var(--n-600);font-size:var(--fs-caption);cursor:pointer;}
+.ed-b:hover{background:var(--n-200);color:var(--n-900);}
+.ed-b.on{background:var(--accent-50);color:var(--accent-600);}
+.ed-sep{width:1px;height:16px;background:var(--n-200);margin:0 5px;}
+.ed-body{padding:14px 16px;min-height:300px;font-size:var(--fs-body);line-height:1.85;color:var(--n-900);}
+.ed-body p{margin:0 0 12px;}
+.ed-body p:last-child{margin-bottom:0;}
+.ed-img{height:190px;border:1px solid var(--n-200);border-radius:var(--r-sm);background:var(--n-100);
+  display:flex;align-items:center;justify-content:center;color:var(--n-400);font-size:var(--fs-micro);margin:0 0 12px;}
+.ed-foot{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;
+  border-top:1px solid var(--n-200);background:var(--n-50);font-size:var(--fs-micro);color:var(--n-500);}
+.cbrow{display:flex;gap:9px;align-items:flex-start;padding:9px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);color:var(--n-700);}
+
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>⑤ 어드민 · 8. CS·콘텐츠 관리 — 약관 및 정책 관리 <span style="font-weight:400;color:var(--n-600);font-size:var(--fs-caption)">ui-admin-10-terms · rev.2</span></h1>
+  <p class="meta">운영자 정적 콘텐츠 · 근거: <code>SHOWROOMZ_웹_디자인시스템_v1_2.html</code> · 셸·테이블·모달·배지는 <code>ui-admin-05-change-requests.html</code> rev.6 재사용 · <b>메뉴 위치를 CS·콘텐츠 관리 → 설정 하위로 옮김</b> · FAQ·공지는 <code>ui-admin-08-faq</code> / <code>ui-admin-09-notice</code></p>
+  <div class="rule">
+    <b>[상태 색 매핑]</b> 시행중=<b>성공</b> / 시행 예정=<b>정보</b> / 구버전·과거 버전=<b>중립</b>.<br>
+    <b>[용어 2단]</b> 상태어는 층이 다르다 — <b>문서</b> 목록에서는 후속 문서로 대체돼 더는 시행되지 않는 문서를 <b>구버전</b>, <b>버전 이력</b>에서는 같은 문서 안에서 교체된 지난 버전을 <b>과거 버전</b>이라 부른다. 색은 둘 다 중립이다.<br>
+    <b class="new">[개편 · 목록 구조]</b> 카드 나열 + 하단 이력 → <b>문서 목록(표) + 문서 상세</b>로 바꿨다. 약관·정책·개인정보 문서가 늘어나면 카드 나열은 세로로 무한히 길어지고 검색·필터를 붙일 자리가 없다. 문서 1건 = 1행, 버전 이력은 상세로 내렸다.<br>
+    <b class="new">[와이어 수정]</b> ⓐ 관리 열의 <b>[상세]</b> 버튼은 두지 않았다 — 디자인시스템 규칙(“행 클릭으로 상세 이동, 별도 상세 버튼 금지”)과 충돌해 행 클릭으로 대체하고, 관리 열에는 실제 액션인 <b>새 버전 등록</b>을 넣었다. ⓑ 유형 탭에 <b>전체</b>를 더해 4탭으로 했다 — 문서명 검색은 유형을 넘나든다. ⓒ 대상·상태 셀렉트는 두지 않았다 — 문서가 10건 안팎이라 <b>유형 탭 + 문서명 검색</b>으로 충분하고, 대상은 목록 열에서 바로 읽힌다.<br>
+    <b class="new">[와이어 수정]</b> ⓐ 약관은 카드와 이력 표의 연결이 없어 <b>선택 카드 강조 + 하단 이력 갱신</b> 구조로 바꿨다. ⓑ 새 버전 등록의 체크리스트는 와이어에서도 라벨만 있고 컨트롤이 없어 <b>삭제</b>했다 — 운영 절차 확인은 화면 밖 업무다.<br>
+    <b>[법률 대기]</b> <b>개정 고지 방법·의무·사전 고지 기간</b>은 변호사 확인 대기 — “사전 고지 21일”은 <b>임시 표기</b>다. 문서 범위는 현재 <b>8종</b>(이용 약관 3 · 개인정보처리방침 2 · 마케팅 목적 개인정보 수집·이용 동의 3)이며 운영정책 편입 여부는 <b>미정</b>이다(약관후속패치리스트 #4·#5).<br>
+    <b>[규격 정합]</b> 테이블 본문 셀은 어드민 공통 규격대로 <b>14px 16px · 행높이 50px</b>(ui-admin-05 실측 13px과 1px 차이 — <b>디자인시스템 파일의 미결 항목</b>). 상세 필드 행은 <b>9px · 라벨 140px</b>(<code>.frow</code>).<br>
+    <b>[주석 분리]</b> 설계 근거는 이 박스와 각 상태의 <code>.state-spec</code>에만 둔다 — <code>.stage</code> 안에는 규칙 메모를 넣지 않았다.
+  </div>
+</div>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">C1</span><span class="state-label">약관 및 정책 관리 · 목록</span><span class="state-spec">문서 1건 = 1행이며 표시 버전은 <b>현재 시행중(또는 시행 예정) 1개</b>다 — 과거 버전은 문서 상세의 이력에서 본다 · 유형 탭은 <b>전체 · 이용 약관 · 개인정보처리방침 · 마케팅 동의</b> 4종 — 마케팅 동의는 대상(소비자·브랜드·인플루언서)별로 문서를 따로 둔다 · 상태 3종 — 시행중=<b>성공</b> / 시행 예정=<b>정보</b> / <b>구버전</b>=<b>중립</b>(원칙 ② 종료) · 구버전은 후속 문서로 대체돼 더는 시행되지 않는 문서라 <b>새 버전 등록 버튼을 두지 않고</b> 관리 열을 비운다(조회만) · 대상·상태 셀렉트는 두지 않았다 — 문서 수가 적어 탭+검색으로 충분하다 · 행 클릭 → 문서 상세(C2)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">1</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">12</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+</div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item open" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div><div class="gnb-sub active"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">설정<span class="c-sub">/ 약관 및 정책 관리</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">약관 및 정책 관리</div></div><button class="btn btn-primary">＋ 문서 등록</button></div><div class="filter"><div class="tabs"><div class="tab active">전체<span class="tn">8</span></div><div class="tab">이용 약관<span class="tn">3</span></div><div class="tab">개인정보처리방침<span class="tn">2</span></div><div class="tab">마케팅 동의<span class="tn">3</span></div></div><div class="search"><input class="inp" placeholder="문서명 검색" style="width:200px"><button class="btn btn-secondary">검색</button></div></div><div class="tcard"><div class="tbar"><div class="tbar-l">총 <b>8</b>건 · 시행 예정 <b>1</b>건 · 구버전 <b>1</b>건</div><div class="tbar-r"><select class="sel-sm"><option>20건씩</option><option>50건씩</option><option>100건씩</option></select></div></div><table class="tb-doc"><thead><tr><td>문서명</td><td>대상</td><td>버전</td><td class="t-c">상태</td><td class="t-c">시행일</td><td class="t-c">관리</td></tr></thead><tbody>
+<tr><td class="t-main">소비자 이용약관</td><td class="t-sub">소비자</td><td class="tnum">v3.1</td><td class="t-c"><span class="badge b-success">시행중</span></td><td class="t-c tnum">2026.06.01</td><td class="t-c"><div class="racts" style="justify-content:center"><span class="rbtn">새 버전 등록</span></div></td></tr>
+<tr><td class="t-main">브랜드(판매자) 이용약관</td><td class="t-sub">브랜드</td><td class="tnum">v1.0</td><td class="t-c"><span class="badge b-success">시행중</span></td><td class="t-c tnum">2026.08.01</td><td class="t-c"><div class="racts" style="justify-content:center"><span class="rbtn">새 버전 등록</span></div></td></tr>
+<tr><td class="t-main">인플루언서 이용약관</td><td class="t-sub">인플루언서</td><td class="tnum">v1.1</td><td class="t-c"><span class="badge b-success">시행중</span></td><td class="t-c tnum">2026.08.01</td><td class="t-c"><div class="racts" style="justify-content:center"><span class="rbtn">새 버전 등록</span></div></td></tr>
+<tr><td class="t-main">개인정보처리방침</td><td class="t-sub">전체</td><td class="tnum">v1.3</td><td class="t-c"><span class="badge b-success">시행중</span></td><td class="t-c tnum">2026.08.05</td><td class="t-c"><div class="racts" style="justify-content:center"><span class="rbtn">새 버전 등록</span></div></td></tr>
+<tr><td class="t-main">개인정보 수집·이용 동의</td><td class="t-sub">전체</td><td class="tnum">v2.0</td><td class="t-c"><span class="badge b-neutral">구버전</span></td><td class="t-c tnum">2025.12.01</td><td class="t-c"><span class="t-sub">—</span></td></tr>
+<tr><td class="t-main">마케팅 목적 개인정보 수집·이용 동의</td><td class="t-sub">소비자</td><td class="tnum">v1.0</td><td class="t-c"><span class="badge b-success">시행중</span></td><td class="t-c tnum">2026.08.01</td><td class="t-c"><div class="racts" style="justify-content:center"><span class="rbtn">새 버전 등록</span></div></td></tr>
+<tr><td class="t-main">마케팅 목적 개인정보 수집·이용 동의</td><td class="t-sub">브랜드</td><td class="tnum">v1.0</td><td class="t-c"><span class="badge b-success">시행중</span></td><td class="t-c tnum">2026.08.01</td><td class="t-c"><div class="racts" style="justify-content:center"><span class="rbtn">새 버전 등록</span></div></td></tr>
+<tr><td class="t-main">마케팅 목적 개인정보 수집·이용 동의</td><td class="t-sub">인플루언서</td><td class="tnum">v1.0</td><td class="t-c"><span class="badge b-info">시행 예정</span></td><td class="t-c tnum">2026.09.01</td><td class="t-c"><div class="racts" style="justify-content:center"><span class="rbtn">새 버전 등록</span></div></td></tr>
+</tbody></table><div class="pager"><span class="page-item">‹</span><span class="page-item active">1</span><span class="page-item">›</span></div></div></div></div></div>
+</section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">C2</span><span class="state-label">문서 상세 · 버전 이력</span><span class="state-spec">목록 행 클릭 → 이 화면 · <b>원문 수정 없음</b> — 개정은 새 버전 등록으로만 한다 · 과거 버전은 동의 기록이 참조하므로 보관하며 이력 행 클릭 시 버전 상세(C4 — v3.0 예시)로 간다 · 유형·대상은 문서 속성이라 상세에서 조회만 한다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">1</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">12</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+</div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item open" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div><div class="gnb-sub active"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">설정<span class="c-sub">/ 약관 및 정책 관리 / 소비자 이용약관</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">소비자 이용약관</div></div><div class="navgrp"><span class="nav-btn">목록</span></div></div><div class="detail"><div><div class="card"><div class="card-h">문서 정보</div><div class="card-b"><div class="frow"><div class="fk">유형</div><div class="fv"><span class="badge b-neutral nodot">약관</span></div></div><div class="frow"><div class="fk">대상</div><div class="fv">소비자</div></div><div class="frow"><div class="fk">시행 버전</div><div class="fv"><b class="tnum">v3.1</b> · 2026.06.01 시행</div></div><div class="frow"><div class="fk">보관 버전</div><div class="fv">과거 버전 2개 — 동의 기록이 참조하므로 삭제하지 않습니다</div></div></div></div><div class="card"><div class="card-h">시행 원문<span class="ch-n">v3.1 · 조회 전용</span></div><div class="card-b"><div class="doc-view"><p><b>제1조 (목적)</b></p><p>본 약관은 SHOWROOMZ가 제공하는 서비스의 이용 조건 및 절차, 회사와 소비자의 권리·의무 및 책임사항을 규정함을 목적으로 합니다.</p><p><b>제2조 (정의)</b></p><p>① “서비스”란 회사가 운영하는 애플리케이션 및 웹사이트를 통해 제공하는 일체의 서비스를 말합니다.<br>② “소비자”란 본 약관에 동의하고 서비스를 이용하는 자를 말합니다.<br>③ “브랜드”란 회사와 입점 계약을 체결하고 상품을 판매하는 사업자를 말합니다.</p><p><b>제3조 (약관의 게시와 개정)</b></p><p>회사는 본 약관의 내용을 서비스 초기 화면에 게시하며, 개정 시에는 시행일 및 개정 사유를 명시하여 사전에 공지합니다.</p></div></div></div><div class="card"><div class="card-h">버전 이력<span class="ch-n">행 클릭 → 버전 상세 · 과거 버전은 전부 보관</span></div><table><thead><tr><td style="padding-left:20px">버전</td><td>시행일</td><td>등록자</td><td>등록일시</td><td class="t-c">상태</td></tr></thead><tbody><tr><td class="t-main tnum" style="padding-left:20px">v3.1</td><td class="tnum">2026.06.01</td><td>김운영</td><td class="t-sub tnum">2026.05.18 15:20</td><td class="t-c"><span class="badge b-success">시행중</span></td></tr><tr><td class="tnum" style="padding-left:20px">v3.0</td><td class="tnum">2026.04.15</td><td>김운영</td><td class="t-sub tnum">2026.04.01 10:04</td><td class="t-c"><span class="badge b-neutral">과거 버전</span></td></tr><tr><td class="tnum" style="padding-left:20px">v2.0</td><td class="tnum">2026.02.01</td><td>소 대표</td><td class="t-sub tnum">2026.01.20 09:41</td><td class="t-c"><span class="badge b-neutral">과거 버전</span></td></tr></tbody></table></div></div><div><div class="card side-card"><div class="card-h">현재 시행</div><div class="st-now"><div class="st-line"><span class="st-lbl">상태</span><span class="badge b-success">시행중</span></div><div class="st-meta"><div class="mrow"><span class="mk">버전</span><span class="mv tnum">v3.1</span></div><div class="mrow"><span class="mk">시행일</span><span class="mv tnum">2026.06.01</span></div><div class="mrow"><span class="mk">등록자</span><span class="mv">김운영</span></div></div><div class="st-acts"><button class="btn btn-primary w-full">새 버전 등록</button></div></div></div></div></div></div>
+</section>
+
+
+<section class="state">
+<div class="state-bar"><span class="state-id">C3</span><span class="state-label">문서 등록 · 신규 문서 최초 등록</span><span class="state-spec">목록의 <b>＋ 문서 등록</b>에서 진입 — 아직 없는 문서를 처음 올리는 화면이라 <b>교체 대상이 없다</b>(현재 시행 버전 카드 없음) · 유형·대상·문서명은 이 화면에서만 정하고 이후에는 문서 속성으로 고정된다 · 첫 버전은 <b>v1.0 고정</b>이며 입력받지 않는다 · 시행일은 오늘 이후만 선택 가능</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">1</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">12</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+</div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item open" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div><div class="gnb-sub active"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">설정<span class="c-sub">/ 약관 및 정책 관리 / 문서 등록</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">문서 등록</div></div><div class="navgrp"><span class="nav-btn">목록</span></div></div><div class="detail"><div><div class="card"><div class="card-h">문서 정보</div><div class="card-b"><div class="frow"><div class="fk">문서명<span style="color:var(--danger-text)">*</span></div><div class="fv"><input class="inp" style="width:340px" placeholder="예: 마케팅 목적 개인정보 수집·이용 동의"></div></div><div class="frow"><div class="fk">유형<span style="color:var(--danger-text)">*</span></div><div class="fv"><select class="msel" style="width:200px"><option>선택</option><option>이용 약관</option><option>개인정보처리방침</option><option>마케팅 동의</option></select></div></div><div class="frow"><div class="fk">대상<span style="color:var(--danger-text)">*</span></div><div class="fv"><select class="msel" style="width:160px"><option>선택</option><option>전체</option><option>소비자</option><option>브랜드</option><option>인플루언서</option></select></div></div></div><div class="card-b" style="padding-top:0"><p class="st-hint" style="margin-top:0">유형·대상은 등록 후 문서 속성으로 고정됩니다 — 잘못 지정하면 문서를 다시 만들어야 하므로 등록 전에 확인하세요.</p></div></div><div class="card"><div class="card-h">최초 버전 작성<span class="ch-n">버전 v1.0 · 시행일 · 원문</span></div><div class="card-b"><div class="frow"><div class="fk">버전 번호</div><div class="fv"><b class="tnum">v1.0</b> <span class="t-sub">— 최초 등록이라 자동 부여됩니다</span></div></div><div class="frow"><div class="fk">시행일<span style="color:var(--danger-text)">*</span></div><div class="fv"><input class="inp inp-date" style="width:180px" value="2026.09.01" readonly></div></div><div class="frow" style="align-items:flex-start"><div class="fk" style="padding-top:7px">본문<span style="color:var(--danger-text)">*</span></div><div class="fv"><textarea class="mta" style="min-height:250px" placeholder="문서 원문을 붙여 넣습니다."></textarea><p class="mhint">등록 후 원문은 수정할 수 없습니다 — 내용을 고치려면 새 버전을 등록합니다.</p></div></div></div></div></div><div><div class="card side-card"><div class="card-h">등록</div><div class="st-now"><div class="st-line"><span class="st-lbl">등록 후 상태</span><span class="badge b-info">시행 예정</span></div><div class="st-meta"><div class="mrow"><span class="mk">버전</span><span class="mv tnum">v1.0</span></div><div class="mrow"><span class="mk">시행일</span><span class="mv tnum">2026.09.01</span></div><div class="mrow"><span class="mk">사전 고지</span><span class="mv">21일</span></div></div><div class="st-acts"><button class="btn btn-primary" disabled>등록</button></div></div></div></div></div></div></div>
+</section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">C4</span><span class="state-label">문서 새 버전 등록 · 기존 문서 개정</span><span class="state-spec">문서 상세의 <b>새 버전 등록</b>에서 진입 — 문서명·유형·대상은 고정이고 <b>버전 번호·시행일·본문</b>만 입력한다 · 버전 번호는 <b>숫자와 점만</b> 받으며 공백은 입력되지 않는다(접두 <code>v</code>는 필드 밖 고정) · 시행일 이전에는 등록만 되고 노출되지 않음 · 모달이 아닌 전체 페이지</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">1</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">12</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+</div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item open" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div><div class="gnb-sub active"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">설정<span class="c-sub">/ 약관 및 정책 관리 / 소비자 이용약관 / 새 버전 등록</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">새 버전 등록</div><div class="page-d">소비자 이용약관 · 현재 시행 v3.1</div></div><div class="navgrp"><span class="nav-btn">목록</span></div></div><div class="detail"><div><div class="card"><div class="card-h">현재 시행 버전</div><div class="card-b"><div class="frow"><div class="fk">유형</div><div class="fv">소비자 이용약관</div></div><div class="frow"><div class="fk">시행 버전</div><div class="fv tnum">v3.1</div></div><div class="frow"><div class="fk">시행일</div><div class="fv tnum">2026.06.01</div></div><div class="frow"><div class="fk">등록자</div><div class="fv">김운영 · 2026.05.18 15:20</div></div></div><div class="card-b" style="padding-top:0"><p class="st-hint" style="margin-top:0">새 버전이 시행되면 이 버전은 자동으로 <b>과거 버전</b>으로 전환되어 계속 보관됩니다 — 동의 기록이 “동의한 버전”을 참조하므로 삭제되지 않습니다.</p></div></div><div class="card"><div class="card-h">새 버전 작성</div><div class="card-b"><div class="frow"><div class="fk">버전 번호<span style="color:var(--danger-text)">*</span></div><div class="fv"><div class="inp-g"><span class="inp-pre">v</span><input class="inp" style="width:96px" value="3.2" inputmode="decimal"></div></div></div><div class="frow"><div class="fk">시행일<span style="color:var(--danger-text)">*</span></div><div class="fv"><input class="inp inp-date" style="width:180px" value="2026.09.01" readonly></div></div><div class="frow" style="align-items:flex-start"><div class="fk" style="padding-top:7px">본문<span style="color:var(--danger-text)">*</span></div><div class="fv"><textarea class="mta" style="min-height:250px">제1조(목적) 본 약관은 SHOWROOMZ(이하 “회사”)가 제공하는 서비스의 이용 조건 및 절차, 회사와 회원 간의 권리·의무 및 책임사항을 규정함을 목적으로 합니다.
+
+제2조(정의)
+1. “서비스”란 회사가 운영하는 모바일 애플리케이션 및 웹사이트를 통해 제공하는 일체의 서비스를 말합니다.
+2. “회원”이란 본 약관에 동의하고 서비스 이용 계약을 체결한 자를 말합니다.
+3. “브랜드”란 회사와 입점 계약을 체결하고 상품을 판매하는 사업자를 말합니다.
+
+제3조(약관의 게시와 개정)
+1. 회사는 본 약관의 내용을 회원이 쉽게 알 수 있도록 서비스 초기 화면에 게시합니다.
+2. 회사는 관련 법령을 위배하지 않는 범위에서 본 약관을 개정할 수 있습니다.</textarea></div></div></div></div></div><div><div class="card side-card"><div class="card-h">등록</div><div class="st-now"><div class="st-line"><span class="st-lbl">등록 후 상태</span><span class="badge b-info">시행 예정</span></div><div class="st-meta"><div class="mrow"><span class="mk">새 버전</span><span class="mv tnum">v3.2</span></div><div class="mrow"><span class="mk">시행일</span><span class="mv tnum">2026.09.01</span></div><div class="mrow"><span class="mk">사전 고지</span><span class="mv">21일</span></div></div><div class="st-acts"><button class="btn btn-primary">등록</button></div></div></div></div></div></div></div>
+</section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">C5</span><span class="state-label">버전 상세 · 과거 버전 (조회 전용)</span><span class="state-spec">버전 이력 행 클릭 → 이 화면 · 액션 없음(수정·삭제 불가) · 동의 기록이 참조하므로 원문 보관 · 시행중 버전도 같은 화면이며 상태 배지만 <b>시행중</b>(성공)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">1</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">12</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+</div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item open" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div><div class="gnb-sub active"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">설정<span class="c-sub">/ 약관 및 정책 관리 / 소비자 이용약관 / v3.0</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">소비자 이용약관 v3.0</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">버전 정보</div><div class="card-b"><div class="frow"><div class="fk">유형</div><div class="fv">소비자 이용약관</div></div><div class="frow"><div class="fk">버전</div><div class="fv tnum">v3.0</div></div><div class="frow"><div class="fk">시행 기간</div><div class="fv tnum">2026.04.15 ~ 2026.05.31</div></div><div class="frow"><div class="fk">등록자</div><div class="fv">김운영 · 2026.04.01 10:04</div></div></div></div><div class="card"><div class="card-h">약관 본문<span class="ch-n">조회 전용 · 과거 버전은 수정할 수 없음</span></div><div class="card-b"><p class="rsn" style="margin-bottom:14px">제1조(목적) 본 약관은 SHOWROOMZ(이하 “회사”)가 제공하는 서비스의 이용 조건 및 절차, 회사와 회원 간의 권리·의무 및 책임사항을 규정함을 목적으로 합니다.</p><p class="rsn" style="margin-bottom:14px">제2조(정의) 1. “서비스”란 회사가 운영하는 모바일 애플리케이션 및 웹사이트를 통해 제공하는 일체의 서비스를 말합니다. 2. “회원”이란 본 약관에 동의하고 서비스 이용 계약을 체결한 자를 말합니다. 3. “브랜드”란 회사와 입점 계약을 체결하고 상품을 판매하는 사업자를 말합니다.</p><p class="rsn" style="margin-bottom:14px">제3조(약관의 게시와 개정) 1. 회사는 본 약관의 내용을 회원이 쉽게 알 수 있도록 서비스 초기 화면에 게시합니다. 2. 회사는 관련 법령을 위배하지 않는 범위에서 본 약관을 개정할 수 있습니다.</p><p class="rsn" style="margin-bottom:14px">제4조(이용계약의 성립) 이용계약은 회원이 되고자 하는 자가 약관의 내용에 동의한 다음 이용 신청을 하고, 회사가 이를 승낙함으로써 체결됩니다.</p></div></div></div><div><div class="card side-card"><div class="card-h">이 버전</div><div class="st-now"><div class="st-line"><span class="st-lbl">상태</span><span class="badge b-neutral">과거 버전</span></div><div class="st-meta"><div class="mrow"><span class="mk">다음 버전</span><span class="mv tnum">v3.1</span></div><div class="mrow"><span class="mk">교체일</span><span class="mv tnum">2026.06.01</span></div></div></div></div></div></div></div></div>
+</section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">C6</span><span class="state-label">시행일 · 달력 모달</span><span class="state-spec">시행일 입력은 <b>읽기 전용</b>이고 클릭하면 달력이 뜬다 · 오늘 이전 날짜는 선택 불가 · 선택일은 액센트로 표시</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">1</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">12</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+</div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item open" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div><div class="gnb-sub active"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">설정<span class="c-sub">/ 약관 및 정책 관리 / 소비자 이용약관 / 새 버전 등록</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">새 버전 등록</div><div class="page-d">소비자 이용약관 · 현재 시행 v3.1</div></div><div class="navgrp"><span class="nav-btn">목록</span></div></div><div class="detail"><div><div class="card"><div class="card-h">현재 시행 버전</div><div class="card-b"><div class="frow"><div class="fk">유형</div><div class="fv">소비자 이용약관</div></div><div class="frow"><div class="fk">시행 버전</div><div class="fv tnum">v3.1</div></div><div class="frow"><div class="fk">시행일</div><div class="fv tnum">2026.06.01</div></div><div class="frow"><div class="fk">등록자</div><div class="fv">김운영 · 2026.05.18 15:20</div></div></div><div class="card-b" style="padding-top:0"><p class="st-hint" style="margin-top:0">새 버전이 시행되면 이 버전은 자동으로 <b>과거 버전</b>으로 전환되어 계속 보관됩니다 — 동의 기록이 “동의한 버전”을 참조하므로 삭제되지 않습니다.</p></div></div><div class="card"><div class="card-h">새 버전 작성</div><div class="card-b"><div class="frow"><div class="fk">버전 번호<span style="color:var(--danger-text)">*</span></div><div class="fv"><div class="inp-g"><span class="inp-pre">v</span><input class="inp" style="width:96px" value="3.2" inputmode="decimal"></div></div></div><div class="frow"><div class="fk">시행일<span style="color:var(--danger-text)">*</span></div><div class="fv"><input class="inp inp-date" style="width:180px" value="2026.09.01" readonly></div></div><div class="frow" style="align-items:flex-start"><div class="fk" style="padding-top:7px">본문<span style="color:var(--danger-text)">*</span></div><div class="fv"><textarea class="mta" style="min-height:250px">제1조(목적) 본 약관은 SHOWROOMZ(이하 “회사”)가 제공하는 서비스의 이용 조건 및 절차, 회사와 회원 간의 권리·의무 및 책임사항을 규정함을 목적으로 합니다.
+
+제2조(정의)
+1. “서비스”란 회사가 운영하는 모바일 애플리케이션 및 웹사이트를 통해 제공하는 일체의 서비스를 말합니다.
+2. “회원”이란 본 약관에 동의하고 서비스 이용 계약을 체결한 자를 말합니다.
+3. “브랜드”란 회사와 입점 계약을 체결하고 상품을 판매하는 사업자를 말합니다.
+
+제3조(약관의 게시와 개정)
+1. 회사는 본 약관의 내용을 회원이 쉽게 알 수 있도록 서비스 초기 화면에 게시합니다.
+2. 회사는 관련 법령을 위배하지 않는 범위에서 본 약관을 개정할 수 있습니다.</textarea></div></div></div></div></div><div><div class="card side-card"><div class="card-h">등록</div><div class="st-now"><div class="st-line"><span class="st-lbl">등록 후 상태</span><span class="badge b-info">시행 예정</span></div><div class="st-meta"><div class="mrow"><span class="mk">새 버전</span><span class="mv tnum">v3.2</span></div><div class="mrow"><span class="mk">시행일</span><span class="mv tnum">2026.09.01</span></div><div class="mrow"><span class="mk">사전 고지</span><span class="mv">21일</span></div></div><div class="st-acts"><button class="btn btn-primary">등록</button></div></div></div></div></div></div><div class="overlay"><div class="modal sm" style="width:340px"><div class="modal-h">시행일 선택<span class="modal-x">✕</span></div><div class="modal-b"><div class="cal-h"><div class="cal-t">2026년 9월</div><div class="cal-nav"><span class="cal-b">‹</span><span class="cal-b">›</span></div></div><div class="cal-grid"><div class="cal-w">일</div><div class="cal-w">월</div><div class="cal-w">화</div><div class="cal-w">수</div><div class="cal-w">목</div><div class="cal-w">금</div><div class="cal-w">토</div><div class="cal-d mute">30</div><div class="cal-d mute">31</div><div class="cal-d on">1</div><div class="cal-d">2</div><div class="cal-d">3</div><div class="cal-d">4</div><div class="cal-d">5</div><div class="cal-d">6</div><div class="cal-d">7</div><div class="cal-d">8</div><div class="cal-d">9</div><div class="cal-d">10</div><div class="cal-d">11</div><div class="cal-d">12</div><div class="cal-d">13</div><div class="cal-d">14</div><div class="cal-d">15</div><div class="cal-d">16</div><div class="cal-d">17</div><div class="cal-d">18</div><div class="cal-d">19</div><div class="cal-d">20</div><div class="cal-d">21</div><div class="cal-d">22</div><div class="cal-d">23</div><div class="cal-d">24</div><div class="cal-d">25</div><div class="cal-d">26</div><div class="cal-d">27</div><div class="cal-d">28</div><div class="cal-d">29</div><div class="cal-d">30</div><div class="cal-d mute">1</div><div class="cal-d mute">2</div><div class="cal-d mute">3</div></div><p class="mhint">시행일은 <b>오늘 이후</b>만 선택할 수 있습니다. 선택한 날 00:00부터 새 버전이 노출됩니다.</p></div><div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary">선택</button></div></div></div></div>
+</section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">C7</span><span class="state-label">새 버전 등록 확인 모달</span><span class="state-spec">등록 전 <b>무엇이 언제부터 무엇을 대체하는지</b>를 한 번 더 확인 · 파괴적이지 않으므로 주 액션 버튼</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">1</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">12</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+</div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item open" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div><div class="gnb-sub active"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">설정<span class="c-sub">/ 약관 및 정책 관리 / 소비자 이용약관 / 새 버전 등록</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">새 버전 등록</div><div class="page-d">소비자 이용약관 · 현재 시행 v3.1</div></div><div class="navgrp"><span class="nav-btn">목록</span></div></div><div class="detail"><div><div class="card"><div class="card-h">현재 시행 버전</div><div class="card-b"><div class="frow"><div class="fk">유형</div><div class="fv">소비자 이용약관</div></div><div class="frow"><div class="fk">시행 버전</div><div class="fv tnum">v3.1</div></div><div class="frow"><div class="fk">시행일</div><div class="fv tnum">2026.06.01</div></div><div class="frow"><div class="fk">등록자</div><div class="fv">김운영 · 2026.05.18 15:20</div></div></div><div class="card-b" style="padding-top:0"><p class="st-hint" style="margin-top:0">새 버전이 시행되면 이 버전은 자동으로 <b>과거 버전</b>으로 전환되어 계속 보관됩니다 — 동의 기록이 “동의한 버전”을 참조하므로 삭제되지 않습니다.</p></div></div><div class="card"><div class="card-h">새 버전 작성</div><div class="card-b"><div class="frow"><div class="fk">버전 번호<span style="color:var(--danger-text)">*</span></div><div class="fv"><div class="inp-g"><span class="inp-pre">v</span><input class="inp" style="width:96px" value="3.2" inputmode="decimal"></div></div></div><div class="frow"><div class="fk">시행일<span style="color:var(--danger-text)">*</span></div><div class="fv"><input class="inp inp-date" style="width:180px" value="2026.09.01" readonly></div></div><div class="frow" style="align-items:flex-start"><div class="fk" style="padding-top:7px">본문<span style="color:var(--danger-text)">*</span></div><div class="fv"><textarea class="mta" style="min-height:250px">제1조(목적) 본 약관은 SHOWROOMZ(이하 “회사”)가 제공하는 서비스의 이용 조건 및 절차, 회사와 회원 간의 권리·의무 및 책임사항을 규정함을 목적으로 합니다.
+
+제2조(정의)
+1. “서비스”란 회사가 운영하는 모바일 애플리케이션 및 웹사이트를 통해 제공하는 일체의 서비스를 말합니다.
+2. “회원”이란 본 약관에 동의하고 서비스 이용 계약을 체결한 자를 말합니다.
+3. “브랜드”란 회사와 입점 계약을 체결하고 상품을 판매하는 사업자를 말합니다.
+
+제3조(약관의 게시와 개정)
+1. 회사는 본 약관의 내용을 회원이 쉽게 알 수 있도록 서비스 초기 화면에 게시합니다.
+2. 회사는 관련 법령을 위배하지 않는 범위에서 본 약관을 개정할 수 있습니다.</textarea></div></div></div></div></div><div><div class="card side-card"><div class="card-h">등록</div><div class="st-now"><div class="st-line"><span class="st-lbl">등록 후 상태</span><span class="badge b-info">시행 예정</span></div><div class="st-meta"><div class="mrow"><span class="mk">새 버전</span><span class="mv tnum">v3.2</span></div><div class="mrow"><span class="mk">시행일</span><span class="mv tnum">2026.09.01</span></div><div class="mrow"><span class="mk">사전 고지</span><span class="mv">21일</span></div></div><div class="st-acts"><button class="btn btn-primary">등록</button></div></div></div></div></div></div><div class="overlay"><div class="modal"><div class="modal-h">새 버전 등록<span class="modal-x">✕</span></div><div class="modal-b"><div class="frow" style="padding-top:0"><div class="fk">유형</div><div class="fv">소비자 이용약관</div></div><div class="frow"><div class="fk">새 버전</div><div class="fv tnum">v3.2</div></div><div class="frow"><div class="fk">시행일</div><div class="fv tnum">2026.09.01</div></div><div class="frow"><div class="fk">교체 대상</div><div class="fv tnum">v3.1</div></div><p class="mhint" style="margin-top:14px">시행일 이전에는 등록만 되고 소비자 화면에 노출되지 않습니다. 시행일 00:00에 시스템이 자동으로 교체하며, 기존 v3.1은 삭제되지 않고 과거 버전으로 보관됩니다.</p></div><div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary">등록</button></div></div></div></div>
+</section>
+
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="sz-wm" viewBox="0 0 1863.4 200"><text x="0" y="160" font-family="Fredoka, sans-serif" font-size="180" font-weight="700" letter-spacing="0">SHOWROOMZ</text></symbol>
+  </defs>
+</svg>
+
+<script>
+document.querySelectorAll('.inp-g input.inp').forEach(function(el){
+  el.setAttribute('inputmode','decimal');
+  el.setAttribute('pattern','[0-9.]*');
+  el.setAttribute('autocomplete','off');
+  el.addEventListener('keydown', function(e){ if(e.key === ' ') e.preventDefault(); });
+  var clean = function(){
+    var v = el.value.replace(/[^0-9.]/g, '');
+    if(v !== el.value) el.value = v;
+  };
+  el.addEventListener('input', clean);
+  el.addEventListener('paste', function(){ setTimeout(clean, 0); });
+});
+</script>
+
+</body>
+</html>

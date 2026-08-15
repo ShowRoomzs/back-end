@@ -12,7 +12,7 @@ import showroomz.api.seller.inquiry.dto.AnswerTemplateDto;
 import showroomz.api.seller.inquiry.dto.AnswerTemplateRegisterRequest;
 import showroomz.api.seller.inquiry.dto.AnswerTemplateRegisterResponse;
 import showroomz.api.seller.inquiry.dto.AnswerTemplateUpdateRequest;
-import showroomz.api.seller.inquiry.type.MarketInquiryFilterType;
+import showroomz.domain.inquiry.type.ProductInquiryType;
 import showroomz.domain.inquiry.entity.AnswerTemplate;
 import showroomz.domain.inquiry.repository.AnswerTemplateRepository;
 import showroomz.domain.member.seller.entity.Seller;
@@ -51,7 +51,7 @@ public class AnswerTemplateService {
     @Transactional(readOnly = true)
     public PageResponse<AnswerTemplateDto> getTemplates(String sellerEmail,
                                                         Boolean includeInactive,
-                                                        MarketInquiryFilterType category,
+                                                        ProductInquiryType category,
                                                         String keyword,
                                                         PagingRequest pagingRequest) {
         Seller seller = sellerRepository.findByEmail(sellerEmail)

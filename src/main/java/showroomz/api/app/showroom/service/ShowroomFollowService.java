@@ -168,7 +168,8 @@ public class ShowroomFollowService {
                 .showroomName(creator.getShowroomName() != null
                         ? creator.getShowroomName()
                         : creatorUser.getNickname())
-                .showroomImageUrl(creatorUser.getProfileImageUrl())
+                // §22-1 — 쇼룸 아바타는 쇼룸 프로필 이미지다. 앱 계정 프로필과는 별개 값이다.
+                .showroomImageUrl(creator.getProfileImageUrl())
                 .hasOngoingGroupBuy(ongoingGroupBuyShowroomIds.contains(creator.getId()))
                 .followedAt(follow.getCreatedAt())
                 .build();

@@ -8,6 +8,7 @@ import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.domain.inquiry.type.ProductInquiryType;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Builder
@@ -29,14 +30,20 @@ public class ProductInquiryResponse {
     @Schema(description = "상품 대표 이미지 URL")
     private String productImageUrl;
 
-    @Schema(description = "문의 타입 코드 (PRODUCT_INQUIRY, SIZE_INQUIRY, STOCK_INQUIRY)")
+    @Schema(description = "문의 유형 코드 (OPTION, INGREDIENT_USAGE, RESTOCK, DELIVERY, ETC)")
     private ProductInquiryType type;
 
-    @Schema(description = "문의 타입 한글명", example = "사이즈 문의")
+    @Schema(description = "문의 유형 한글명", example = "성분·사용법")
     private String typeName;
 
     @Schema(description = "문의 내용")
     private String content;
+
+    @Schema(description = "비밀글 여부 — 목록에서는 잠금 표시로 자리만 남깁니다")
+    private boolean secret;
+
+    @Schema(description = "첨부 사진 URL (최대 3장)")
+    private List<String> imageUrls;
 
     @Schema(description = "답변 상태")
     private InquiryStatus status;
@@ -61,6 +68,8 @@ public class ProductInquiryResponse {
                 .type(inquiry.getType())
                 .typeName(inquiry.getType().getDescription())
                 .content(inquiry.getContent())
+                .secret(inquiry.isSecret())
+                .imageUrls(inquiry.getImageUrls())
                 .status(inquiry.getStatus())
                 .answerContent(inquiry.getAnswerContent())
                 .createdAt(inquiry.getCreatedAt())
@@ -68,4 +77,3 @@ public class ProductInquiryResponse {
                 .build();
     }
 }
-
