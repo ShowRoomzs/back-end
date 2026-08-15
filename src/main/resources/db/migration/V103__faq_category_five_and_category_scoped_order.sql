@@ -1,19 +1,22 @@
 -- FAQ 기획 §19 반영
 -- 1) 카테고리를 5종으로 고정 (배송 · 취소/교환/반품 · 주문·결제 · 서비스 · 계정, "기타" 없음)
+--    값은 1:1 문의 유형(V102)과 동일한 enum을 공유한다 (§19-1 · §17-2-1)
 -- 2) 노출 순서(display_order)를 카테고리 안에서만 유효한 값으로 재부여
 
--- 1) 폐지 카테고리 재매핑
---    PRODUCT_AS(상품/AS문의) → CANCEL_EXCHANGE_REFUND(취소/교환/반품)
---    USAGE_GUIDE(이용 안내)  → SERVICE(서비스)
---    MEMBER_INFO(회원 정보)  → ACCOUNT(계정)
+-- 1) 폐지 카테고리 재매핑 + 1:1 문의 유형과 이름 통일
+--    CANCEL_EXCHANGE_REFUND     → CANCEL_EXCHANGE_RETURN (공유 enum 이름)
+--    PRODUCT_AS(상품/AS문의)    → CANCEL_EXCHANGE_RETURN(취소/교환/반품)
+--    USAGE_GUIDE(이용 안내)     → SERVICE(서비스)
+--    MEMBER_INFO(회원 정보)     → ACCOUNT(계정)
 UPDATE `faq`
 SET `category` = CASE `category`
-    WHEN 'PRODUCT_AS'  THEN 'CANCEL_EXCHANGE_REFUND'
-    WHEN 'USAGE_GUIDE' THEN 'SERVICE'
-    WHEN 'MEMBER_INFO' THEN 'ACCOUNT'
+    WHEN 'CANCEL_EXCHANGE_REFUND' THEN 'CANCEL_EXCHANGE_RETURN'
+    WHEN 'PRODUCT_AS'             THEN 'CANCEL_EXCHANGE_RETURN'
+    WHEN 'USAGE_GUIDE'            THEN 'SERVICE'
+    WHEN 'MEMBER_INFO'            THEN 'ACCOUNT'
     ELSE `category`
 END
-WHERE `category` IN ('PRODUCT_AS', 'USAGE_GUIDE', 'MEMBER_INFO');
+WHERE `category` IN ('CANCEL_EXCHANGE_REFUND', 'PRODUCT_AS', 'USAGE_GUIDE', 'MEMBER_INFO');
 
 -- 2) 카테고리별로 1부터 다시 채번 (기존 순서 유지, 카테고리 통합 순서 폐지)
 UPDATE `faq` f

@@ -18,7 +18,7 @@ import showroomz.domain.inquiry.entity.OneToOneInquiry;
 import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
 import showroomz.domain.inquiry.repository.ProductInquiryRepository;
 import showroomz.domain.inquiry.type.InquiryStatus;
-import showroomz.domain.inquiry.type.InquiryType;
+import showroomz.domain.cs.type.CsCategory;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.order.entity.Order;
 import showroomz.domain.order.repository.OrderRepository;
@@ -145,7 +145,7 @@ public class InquiryService {
 
     /** 1:1 문의 유형 목록 조회 (§17-2-1 — 5종 단일 레벨) */
     public List<InquiryCategoryResponse> getInquiryCategories() {
-        return Arrays.stream(InquiryType.values())
+        return Arrays.stream(CsCategory.values())
                 .map(type -> new InquiryCategoryResponse(type.name(), type.getDescription()))
                 .toList();
     }

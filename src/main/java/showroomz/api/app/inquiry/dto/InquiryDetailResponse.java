@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import showroomz.domain.inquiry.entity.OneToOneInquiry;
 import showroomz.domain.inquiry.type.InquiryStatus;
-import showroomz.domain.inquiry.type.InquiryType;
+import showroomz.domain.cs.type.CsCategory;
 import showroomz.domain.member.user.entity.Users;
 
 import java.time.LocalDateTime;
@@ -61,7 +61,7 @@ public class InquiryDetailResponse {
     public static final String ANSWERER_NAME = "쇼룸즈 고객센터";
 
     public static InquiryDetailResponse from(OneToOneInquiry inquiry, InquiryOrderSummary order) {
-        InquiryType type = inquiry.getType();
+        CsCategory type = inquiry.getType();
         Users writer = inquiry.getUser();
         return InquiryDetailResponse.builder()
                 .id(inquiry.getId())

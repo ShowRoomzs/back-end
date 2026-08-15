@@ -5,16 +5,16 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import showroomz.domain.faq.type.FaqCategory;
+import showroomz.domain.cs.type.CsCategory;
 
 @Getter
 @NoArgsConstructor
 public class AdminFaqUpdateRequest {
 
-    @Schema(description = "카테고리 (ALL 제외)", example = "DELIVERY",
-            allowableValues = {"DELIVERY", "CANCEL_EXCHANGE_REFUND", "ORDER_PAYMENT", "SERVICE", "ACCOUNT"})
+    @Schema(description = "카테고리 (1:1 문의 유형과 동일한 5종)", example = "DELIVERY",
+            allowableValues = {"DELIVERY", "CANCEL_EXCHANGE_RETURN", "ORDER_PAYMENT", "SERVICE", "ACCOUNT"})
     @NotNull(message = "카테고리를 선택해주세요.")
-    private FaqCategory category;
+    private CsCategory category;
 
     @Schema(description = "질문", example = "배송은 얼마나 걸리나요?")
     @NotBlank(message = "질문 내용을 입력해주세요.")
