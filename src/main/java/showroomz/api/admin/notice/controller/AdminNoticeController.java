@@ -1,6 +1,5 @@
 package showroomz.api.admin.notice.controller;
 
-import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -33,7 +32,6 @@ import java.util.Objects;
 @RestController
 @RequestMapping("/v1/admin/notices")
 @RequiredArgsConstructor
-@Hidden
 public class AdminNoticeController implements AdminNoticeControllerDocs {
 
     private final AdminNoticeService adminNoticeService;
