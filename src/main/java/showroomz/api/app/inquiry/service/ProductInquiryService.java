@@ -11,7 +11,10 @@ import showroomz.api.app.inquiry.dto.ProductInquiryRegisterRequest;
 import showroomz.api.app.inquiry.dto.ProductInquiryUpdateRequest;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.inquiry.entity.ProductInquiry;
+import showroomz.domain.inquiry.entity.ProductInquiryHistory;
+import showroomz.domain.inquiry.repository.ProductInquiryHistoryRepository;
 import showroomz.domain.inquiry.repository.ProductInquiryRepository;
+import showroomz.domain.inquiry.type.ProductInquiryHistoryType;
 import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.domain.inquiry.type.ProductInquiryType;
 import showroomz.domain.member.user.entity.Users;
@@ -28,6 +31,7 @@ import showroomz.global.error.exception.ErrorCode;
 public class ProductInquiryService {
 
     private final ProductInquiryRepository productInquiryRepository;
+    private final ProductInquiryHistoryRepository productInquiryHistoryRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
 
@@ -44,9 +48,13 @@ public class ProductInquiryService {
                 .product(product)
                 .type(request.getType())
                 .content(request.getContent())
+                .secret(request.isSecret())
+                .imageUrls(request.getImageUrls())
                 .build();
 
         productInquiryRepository.save(inquiry);
+        productInquiryHistoryRepository.save(new ProductInquiryHistory(
+                inquiry, ProductInquiryHistoryType.REGISTERED, inquiry.isSecret() ? "비밀글" : null));
         return inquiry.getId();
     }
 
@@ -60,11 +68,11 @@ public class ProductInquiryService {
     }
 
     public ProductInquiryResponse getInquiryDetail(Long userId, Long inquiryId) {
-        ProductInquiry inquiry = productInquiryRepository.findById(inquiryId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
+        ProductInquiry inquiry = getMyInquiry(userId, inquiryId);
 
-        if (!inquiry.getUser().getId().equals(userId)) {
-            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        // 삭제 집행된 문의는 질문·답변이 함께 소비자 화면에서 내려간다 (§23-5)
+        if (inquiry.isDeleted()) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_DATA);
         }
 
         String imageUrl = resolveImageUrl(inquiry);
@@ -73,37 +81,50 @@ public class ProductInquiryService {
 
     @Transactional
     public void updateInquiry(Long userId, Long inquiryId, ProductInquiryUpdateRequest request) {
-        ProductInquiry inquiry = productInquiryRepository.findById(inquiryId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
-
-        if (!inquiry.getUser().getId().equals(userId)) {
-            throw new BusinessException(ErrorCode.ACCESS_DENIED);
-        }
+        ProductInquiry inquiry = getMyInquiry(userId, inquiryId);
 
         if (inquiry.getStatus() == InquiryStatus.ANSWERED) {
             throw new BusinessException(ErrorCode.INQUIRY_ALREADY_ANSWERED);
         }
+        requireExposureNormal(inquiry);
 
         inquiry.update(
                 request.getType(),
-                request.getContent()
+                request.getContent(),
+                request.getImageUrls()
         );
     }
 
     @Transactional
     public void deleteInquiry(Long userId, Long inquiryId) {
+        ProductInquiry inquiry = getMyInquiry(userId, inquiryId);
+
+        if (inquiry.getStatus() == InquiryStatus.ANSWERED) {
+            throw new BusinessException(ErrorCode.INQUIRY_ALREADY_ANSWERED);
+        }
+        requireExposureNormal(inquiry);
+
+        productInquiryRepository.delete(inquiry);
+    }
+
+    private ProductInquiry getMyInquiry(Long userId, Long inquiryId) {
         ProductInquiry inquiry = productInquiryRepository.findById(inquiryId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
         if (!inquiry.getUser().getId().equals(userId)) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
+        return inquiry;
+    }
 
-        if (inquiry.getStatus() == InquiryStatus.ANSWERED) {
-            throw new BusinessException(ErrorCode.INQUIRY_ALREADY_ANSWERED);
+    /** 삭제 요청 검토 중이거나 삭제 집행된 문의는 작성자도 손댈 수 없다 (§23-5) */
+    private void requireExposureNormal(ProductInquiry inquiry) {
+        if (inquiry.isDeleteRequested()) {
+            throw new BusinessException(ErrorCode.INQUIRY_UNDER_DELETE_REVIEW);
         }
-
-        productInquiryRepository.delete(inquiry);
+        if (inquiry.isDeleted()) {
+            throw new BusinessException(ErrorCode.INQUIRY_ALREADY_DELETED);
+        }
     }
 
     /** 상품 문의 타입 목록 조회 (1:1 문의 유형 API와 동일한 형식: key, description) */

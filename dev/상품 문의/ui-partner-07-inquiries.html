@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-partner-07-inquiries — 파트너센터 문의 관리 rev.4</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --pt-sidebar-w:240px; --pt-topbar-h:56px; --pt-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;margin-top:12px;line-height:1.8;}
+.rule b{color:var(--n-900);} .rule .new{color:var(--accent-600);font-weight:600;}
+.rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.rule .wait{color:var(--danger-text);font-weight:600;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;min-height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+
+/* ══ 사이드바(플랫 리스트, 서브메뉴 없음) ══ */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--pt-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--pt-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:9px 10px;border-radius:var(--r-sm);margin-bottom:2px;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--n-200);color:var(--n-700);
+  border-radius:9px;min-width:18px;height:18px;padding:0 5px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gnb-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-item.active .gn{color:rgba(255,255,255,.8);}
+.gnb-item.active .gcnt{background:rgba(255,255,255,.24);color:#fff;}
+
+/* ══ 탑바 ══ */
+.top{position:absolute;left:var(--pt-sidebar-w);right:0;top:0;height:var(--pt-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--pt-pad);}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.crumb .c-sub{font-size:var(--fs-caption);color:var(--n-500);font-weight:400;margin-left:6px;}
+.brand-chip{display:flex;align-items:center;gap:7px;font-size:var(--fs-caption);color:var(--n-600);}
+.brand-chip .st{font-size:var(--fs-micro);font-weight:500;padding:2px 9px;border-radius:var(--r-pill);
+  background:var(--success-bg);color:var(--success-text);}
+
+/* ══ 본문 ══ */
+.main{position:absolute;left:var(--pt-sidebar-w);right:0;top:var(--pt-topbar-h);bottom:0;
+  overflow-y:auto;padding:var(--pt-pad);}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:var(--sp-4);}
+.page-t{font-size:var(--fs-h1);font-weight:600;}
+.page-d{font-size:var(--fs-caption);color:var(--n-600);margin-top:2px;}
+.navgrp{display:flex;align-items:center;gap:6px;}
+.nav-btn{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-caption);font-weight:500;
+  color:var(--n-700);padding:0 12px;height:32px;background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);white-space:nowrap;cursor:pointer;}
+.nav-btn:hover{background:var(--n-100);color:var(--n-900);border-color:var(--n-400);}
+.nav-sep{width:1px;height:18px;background:var(--n-300);margin:0 2px;}
+
+/* ══ 버튼 ══ */
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:0 14px;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:none;cursor:pointer;white-space:nowrap;}
+.btn-primary{background:var(--accent-500);color:#fff;}
+.btn-primary:disabled{background:var(--n-200);color:var(--n-400);cursor:not-allowed;}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-secondary:disabled{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+.btn-ghost{background:transparent;color:var(--n-600);}
+.btn-danger{background:#fff;color:var(--danger-text);border:1px solid #E9C9C9;}
+.btn-danger:hover{background:var(--danger-bg);}
+.btn-danger-solid{background:var(--danger-text);color:#fff;}
+.btn-danger-solid:disabled{background:var(--n-200);color:var(--n-400);cursor:not-allowed;}
+
+/* ══ 입력 ══ */
+.inp,.sel,.ta{font-family:inherit;font-size:var(--fs-body);padding:8px 12px;
+  border-radius:var(--r-sm);border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:36px;}
+.inp:focus,.sel:focus,.ta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.inp:disabled,.sel:disabled,.ta:disabled{background:var(--n-100);color:var(--n-500);cursor:not-allowed;}
+.inp::placeholder,.ta::placeholder{color:var(--n-400);}
+.ta{height:auto;min-height:104px;resize:vertical;line-height:1.65;padding-top:9px;width:100%;}
+.ta-wrap{display:flex;flex-direction:column;}
+.ta-count{align-self:flex-end;font-size:var(--fs-micro);color:var(--n-400);margin-top:6px;letter-spacing:.2px;}
+.ta-count.max{color:var(--n-700);font-weight:600;}
+
+/* ══ 배지 ══ */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-danger{background:var(--danger-bg);color:var(--danger-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-warning{background:var(--warning-bg);color:var(--warning-text);}
+
+/* ══ 상태 탭(배타적 단일선택) ══ */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-4);}
+.tab{font-size:var(--fs-caption);color:var(--n-500);padding:9px 2px;margin-right:22px;cursor:pointer;
+  border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;}
+.tab:hover:not(.active){color:var(--n-700);}
+.tab.active{color:var(--accent-500);border-bottom-color:var(--accent-500);font-weight:500;}
+.tab .tn{font-size:10px;background:var(--n-100);color:var(--n-600);border-radius:8px;padding:0 5px;}
+.tab.active .tn{background:var(--accent-50);color:var(--accent-600);}
+
+/* ══ 필터 영역(다중선택) ══ */
+.filter-panel{position:relative;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);
+  padding:20px 16px;display:flex;flex-direction:column;gap:16px;margin-bottom:var(--sp-4);}
+.fp-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.search{display:flex;gap:6px;}
+.search .btn{height:36px;}
+.fp-glabel{font-size:var(--fs-micro);color:var(--n-400);font-weight:600;flex-shrink:0;width:58px;}
+.fp-item{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:var(--fs-caption);color:var(--n-600);}
+.fp-box{width:15px;height:15px;border:1.5px solid var(--n-300);border-radius:4px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;background:#fff;}
+.fp-box svg{width:9px;height:9px;display:none;}
+.fp-item.on .fp-box{background:var(--accent-500);border-color:var(--accent-500);}
+.fp-item.on .fp-box svg{display:block;}
+.fp-item.on{color:var(--n-900);font-weight:500;}
+.fp-n{font-size:var(--fs-micro);color:var(--n-400);}
+.fp-reset{position:absolute;top:17px;right:14px;display:inline-flex;align-items:center;gap:5px;
+  height:26px;padding:0 10px;border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;
+  color:var(--n-500);font-size:var(--fs-micro);font-weight:500;cursor:pointer;}
+.fp-reset:hover{background:var(--n-100);color:var(--n-700);border-color:var(--n-400);}
+.fp-reset svg{width:11px;height:11px;}
+
+/* ══ 목록 ══ */
+.tbar{display:flex;align-items:center;justify-content:space-between;padding:10px var(--sp-4);border-bottom:1px solid var(--n-200);}
+.tbar-l{font-size:var(--fs-caption);color:var(--n-600);}
+.tbar-l b{color:var(--n-900);}
+.tbar-r{display:flex;align-items:center;gap:8px;}
+.sel-sm{font-family:inherit;font-size:var(--fs-caption);height:28px;padding:0 22px 0 8px;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-700);
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='9' height='5'><path d='M0 0L4.5 5L9 0Z' fill='%237B7F89'/></svg>");
+  background-repeat:no-repeat;background-position:right 8px center;cursor:pointer;}
+.tcard{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+table{width:100%;border-collapse:collapse;table-layout:fixed;}
+thead td{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);font-weight:600;
+  padding:11px 16px;white-space:nowrap;border-bottom:1px solid var(--n-200);letter-spacing:.2px;}
+tbody td{padding:13px 16px;font-size:var(--fs-caption);border-top:1px solid var(--n-100);vertical-align:middle;}
+tbody tr:first-child td{border-top:none;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:var(--accent-50);}
+tbody tr:hover .t-q{color:var(--accent-600);}
+.t-c{text-align:center;}
+.tnum{font-variant-numeric:tabular-nums;}
+.t-q{font-weight:500;color:var(--n-900);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.t-prod{color:var(--n-700);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.t-date{color:var(--n-500);white-space:nowrap;}
+.pager{display:flex;align-items:center;justify-content:center;gap:4px;padding:12px;border-top:1px solid var(--n-200);}
+.page-item{min-width:26px;height:26px;padding:0 6px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-600);cursor:pointer;}
+.page-item:hover:not(.active){background:var(--n-100);}
+.page-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.empty{padding:72px 24px;text-align:center;}
+.empty-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);margin-bottom:4px;}
+.empty-d{font-size:var(--fs-caption);color:var(--n-500);}
+
+/* ══ 상세 ══ */
+.detail{display:grid;grid-template-columns:1fr 320px;gap:var(--sp-4);align-items:start;}
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);margin-bottom:var(--sp-4);}
+.card:last-child{margin-bottom:0;}
+.card-h{font-size:var(--fs-h3);font-weight:600;padding:11px var(--sp-4);border-bottom:1px solid var(--n-200);
+  background:var(--n-50);border-radius:var(--r-md) var(--r-md) 0 0;display:flex;align-items:center;
+  justify-content:space-between;gap:8px;}
+.card-h .ch-n{font-size:var(--fs-micro);color:var(--n-500);font-weight:400;}
+.card-b{padding:var(--sp-4);}
+
+/* 상세 필드 행 — 라벨 140px · 행 패딩 9px (3서피스 공통 규격) */
+.frow{display:flex;gap:var(--sp-3);padding:9px 0;border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.frow:last-child{border-bottom:none;}
+.frow:first-child{padding-top:0;}
+.fk{width:140px;flex-shrink:0;color:var(--n-500);}
+.fv{flex:1;color:var(--n-900);min-width:0;}
+.fv .fsub{color:var(--n-500);font-size:var(--fs-micro);margin-top:2px;}
+.flink{color:var(--n-600);text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
+.flink:hover{color:var(--accent-600);}
+
+/* 문답 스레드 */
+.thread{display:flex;flex-direction:column;gap:10px;}
+.tmsg{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:12px 14px;
+  font-size:var(--fs-caption);line-height:1.75;color:var(--n-700);}
+.tmsg.me{background:var(--accent-50);border-color:var(--accent-100);}
+.tmsg .who{font-size:var(--fs-micro);font-weight:600;color:var(--n-700);margin-bottom:5px;
+  display:flex;align-items:center;gap:6px;}
+.tmsg .who .wt{font-weight:400;color:var(--n-500);}
+.tatt{display:flex;gap:8px;margin-top:10px;}
+.tthumb{width:72px;height:72px;border-radius:var(--r-sm);border:1px solid var(--n-200);
+  background:var(--n-100);color:var(--n-400);font-size:var(--fs-micro);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.tthumb:hover{border-color:var(--accent-500);color:var(--accent-600);}
+.tatt-n{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;}
+.ans-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:var(--sp-3);}
+
+/* 안내 배너 */
+.notice{display:flex;gap:8px;border-radius:var(--r-sm);padding:11px 13px;font-size:var(--fs-micro);line-height:1.6;}
+.notice.info{background:var(--info-bg);color:var(--info-text);}
+.notice.warn{background:var(--warning-bg);color:var(--warning-text);}
+.notice.danger{background:var(--danger-bg);color:var(--danger-text);}
+.notice.neutral{background:var(--n-100);color:var(--n-600);}
+.notice b{font-weight:600;}
+
+/* 우측 처리 카드 */
+.st-now{padding:var(--sp-4);}
+.st-line{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding-bottom:var(--sp-3);border-bottom:1px solid var(--n-100);}
+.st-lbl{font-size:var(--fs-caption);color:var(--n-500);flex-shrink:0;}
+.st-meta{padding-top:var(--sp-2);}
+.mrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);}
+.mrow:last-child{border-bottom:none;}
+.mk{color:var(--n-500);} .mv{color:var(--n-900);font-weight:500;text-align:right;}
+.mv.warn{color:var(--warning-text);}
+.st-acts{display:flex;gap:8px;margin-top:var(--sp-4);}
+.st-acts .btn{flex:1;}
+.st-hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;line-height:1.55;}
+.st-rsn{padding:9px 0 0;border-top:1px solid var(--n-100);margin-top:var(--sp-2);}
+.st-rsn .rk{font-size:var(--fs-micro);color:var(--n-500);display:block;margin-bottom:3px;}
+.st-rsn .rv{font-size:var(--fs-caption);color:var(--n-900);line-height:1.6;}
+.hist{padding:var(--sp-2) var(--sp-4) var(--sp-3);}
+.hitem{display:flex;gap:10px;padding:9px 0;}
+.hdot{width:7px;height:7px;border-radius:50%;background:var(--n-300);margin-top:6px;flex-shrink:0;}
+.hdot.h-info{background:var(--info-text);}
+.hdot.h-success{background:var(--success-text);}
+.hdot.h-warning{background:var(--warning-text);}
+.hdot.h-danger{background:var(--danger-text);}
+.htxt{font-size:var(--fs-caption);}
+.hmeta{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* 모달 */
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;justify-content:center;}
+.modal{width:520px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);overflow:hidden;}
+.modal-h{font-size:var(--fs-h3);font-weight:600;padding:14px var(--sp-5);border-bottom:1px solid var(--n-200);
+  display:flex;align-items:center;justify-content:space-between;}
+.modal-x{color:var(--n-400);cursor:pointer;}
+.modal-b{padding:var(--sp-5);font-size:var(--fs-caption);color:var(--n-700);line-height:1.7;}
+.modal-f{padding:12px var(--sp-5);border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.mlabel{display:block;font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;}
+.modal-b > .mlabel:first-child{margin-top:0;}
+.mlabel .req{color:var(--danger-text);margin-left:2px;}
+.mlabel .opt{color:var(--n-400);margin-left:4px;font-weight:400;}
+.msel,.mta{width:100%;font-family:inherit;font-size:var(--fs-body);border:1px solid var(--n-300);
+  border-radius:var(--r-sm);background:#fff;color:var(--n-900);padding:6px 10px;}
+.msel:focus,.mta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.msel{height:32px;appearance:none;-webkit-appearance:none;padding-right:32px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;}
+.mta{min-height:88px;resize:vertical;line-height:1.6;height:auto;padding-top:7px;}
+.mhint{font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;}
+.mwarn{display:flex;gap:8px;background:var(--info-bg);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--info-text);line-height:1.6;margin-top:var(--sp-4);}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 640.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+
+<div class="doc-head">
+  <h1>ui-partner-07-inquiries <span style="font-weight:400;color:var(--n-500)">— 파트너센터 문의 관리 · rev.4</span></h1>
+  <p class="meta">근거: <code>ui-admin-07-product-qna.html</code> rev.1(상태·용어·컬럼 정본) · wf-partner-07-문의관리 · 디자인시스템 v1.3 · 셸 출처 ui-partner-04-product-management(rev.32) · GNB #8 · 어드민 「상품 문의 모니터링」과 짝</p>
+  <div class="rule">
+    <b class="new">[rev.2 · 어드민 정본에 맞춰 전면 수정]</b> rev.1은 와이어(wf-partner-07)만 보고 그려 어드민과 모델이 어긋나 있었다. <code>ui-admin-07-product-qna</code> 기준으로 아래를 바로잡았다 —
+    ① 상태를 미답변·답변완료·숨김 3종에서 <b>답변대기 · 답변완료 · 삭제 요청 · 삭제 4종</b>으로 교체(<b>숨김 개념 폐기</b>). ② <b>비공개 → 비밀글</b>. ③ <b>문의 유형</b> 컬럼 신설(옵션 · 성분·사용법 · 재입고 · 배송 · 기타 — 소비자가 작성 시 필수 선택). ④ 소비자 문의 사양 반영(<b>250자 이내 · 사진 최대 3장</b>) — 상세에 첨부 썸네일 노출. ⑤ 브랜드의 <b>신고</b>를 <b>삭제 요청</b>으로 교체 — 운영자는 삭제 또는 반려로 판단한다. ⑥ 상세 구조를 어드민과 동일한 <b>문의 정보 / 문의 내용 / 브랜드 답변 3카드 + 우측 처리·이력</b>으로 통일(<code>.frow</code> 라벨 140px · 행 9px).<br>
+    <b>[역할]</b> 문의는 <b>소비자가 작성</b>하고 <b>답변은 브랜드가 작성</b>한다 — 파트너센터가 답변의 유일한 작성 창구다. 운영자에겐 답변 입력란이 없다(모니터링·삭제 판단만). 문의 유형은 <b>옵션 · 성분·사용법 · 재입고 · 배송 · 기타</b> 5종이다. 배송 유형은 상품 자체의 발송 조건(합포장·분리 발송·발송 시점 등)을 묻는 문의이며, 개별 주문의 배송 추적·환불은 여전히 운영자 단일 창구가 처리한다.<br>
+    <b class="new">[rev.3 · 상태색 3서피스 동일로 확정]</b> rev.2는 「조치 주체 축」을 적용해 답변대기를 파트너센터에서만 경고로 뒀으나, <b>어드민 정본과 동일한 색으로 통일</b>한다 — 답변대기=<b>정보</b>, 삭제 요청=<b>경고</b>. 같은 상태값이 서피스마다 다른 색으로 보이면 3서피스를 오가는 운영 소통에서 혼선이 생긴다(원칙 ③ 우선). 브랜드의 조치 시급성은 색이 아니라 <b>등록일 아래 경과 시간 표기</b>와 GNB 카운트가 전달한다.<br>
+    <b class="new">[rev.3 · 상태는 탭으로 분리]</b> 상태는 한 번에 하나만 보는 배타적 축이라 <b>1단 탭</b>으로 올렸다(디자인시스템 v1.3 「탐색 위계 3단」 · 어드민 ui-admin-07과 동일한 구성). 필터 패널에는 <b>겹쳐 걸 수 있는 축</b>(문의 유형 × 공개여부)만 남는다. 탭에는 <b>전체</b>가 있고 필터 패널에는 없다 — 단일선택은 되돌아갈 항목이 필요하지만, 다중선택은 <b>미선택이 곧 전체</b>이고 해제는 초기화 버튼이 맡는다.<br>
+    <b class="new">[rev.4 · 반려 시 복귀 규칙]</b> 삭제 요청이 반려되면 상태는 <b>요청 직전 상태로 복귀</b>한다 — 답변완료 건은 답변완료로, <b>답변대기 건은 답변대기로</b>. "항상 답변완료로 복귀"는 틀렸다: 답변하지 않은 문의가 답변완료로 바뀌어 답변 이력이 소실된다. 삭제 요청·삭제는 <b>노출 축</b>이고 답변대기·답변완료는 <b>답변 축</b>이라, 한 열에 표시하는 동안에도 <b>답변 축 값은 내부적으로 보존</b>돼야 한다.<br>
+    <b class="new">[rev.4 · 반려 결과 인지 경로]</b> 반려는 브랜드가 후속 판단해야 하는 이벤트이므로 <b>처리 이력에 "삭제 요청 반려 · 결과 알림 수신"으로 기록</b>하고 알림을 발송한다. 별도 상태값·배지는 만들지 않는다(상태 축을 늘리지 않는다).<br>
+    <b class="new">[rev.4 · 답변 수정 허용]</b> 답변은 <b>수정 가능</b>하다 — 공개 콘텐츠라 잘못된 안내를 고칠 경로가 없으면 브랜드가 삭제 요청으로 우회하게 된다. 대신 조용한 수정은 막는다: <b>답변 카드에 "등록 시각 · 수정 시각" 병기</b>, <b>처리 이력에 「답변 수정」 기록</b>. <span class="wait">[근거 대기]</span> 수정 횟수 제한·소비자 화면의 "수정됨" 노출 여부·어드민에 수정 전 원문을 보여줄지는 미확정.<br>
+    <b class="new">[rev.4 · 삭제 시 답변 처리]</b> 문의가 삭제되면 <b>브랜드 답변도 함께</b> 소비자 화면에서 내려간다. 질문 없는 답변은 성립하지 않는다. 원문·답변 모두 보관되며 파트너센터·어드민 상세에서만 조회된다.<br>
+    <b>[상태색 매핑]</b> 답변대기=<b>정보</b> · 답변완료=<b>중립</b>(성공색 아님, 정상 종결된 일상 상태) · 삭제 요청=<b>경고</b>(운영자 조치 필요) · 삭제=<b>위험</b>(소비자 노출이 실제로 막힌 상태, ui-admin-04 미진열 선례). 전부 어드민 <code>ui-admin-07</code>과 동일하다.<br>
+    <b>[공개여부는 상태가 아니라 분류]</b> 공개/비밀글은 상태 배지 체계에 넣지 않는다 — 점 없는 중립 배지(<code>.nodot</code>)로 표기한다. 문의 유형도 같은 규칙.<br>
+    <b>[상세 진입]</b> 행 전체 클릭. 관리 열에 진입 전용 버튼을 두지 않는다(v1.3 「목록 상호작용 규칙」). 와이어의 [답변]·[보기] 열은 삭제했다.<br>
+    <b>[버튼 비활성 원칙]</b> 답변 미입력 시 [답변 등록]은 <b>에러 문구 없이 비활성</b>(B1). 삭제 요청 모달도 사유 미선택이면 비활성(C1). <b>답변 글자수는 상한에서 입력이 막히므로(<code>maxlength</code>) 초과 상태 자체가 생기지 않는다 — 이 화면에 에러 문구는 없다</b>(B3). 에러 문구는 형식 오류·중복·파일 형식/용량 오류에만 쓴다.<br>
+    <b>[권한 3분류]</b> 답변 등록·수정 = ①직접 수정 / 문의 삭제 = ②변경 요청(운영자 검토 경유 — 브랜드는 요청까지, 집행은 운영자) / 공개↔비밀글 전환·문의 내용 수정 = ③변경 불가.<br>
+    <b>[작성자 표기]</b> 어드민은 실명+회원 상세 링크지만 <b>파트너센터는 닉네임 마스킹만</b> 본다(구****). 회원 상세 링크 없음.<br>
+    <b class="new">[rev.3 · 답변 SLA 표기 제외]</b> 답변 기한(SLA) 경과·잔여 시간 표기는 <b>넣지 않는다</b> — 기한 자체가 운영 정책으로 확정되지 않았고, 근거 없는 수치를 화면에 두면 시급성 신호가 먼저 굳어버린다. 목록의 등록일·답변일은 <b>날짜+시:분</b>까지 표기해 실제 소요를 직접 읽게 한다. SLA가 확정되면 상태값을 늘리지 말고 <b>등록일 아래 보조 텍스트</b>로만 얹는다.<br>
+    <span class="wait">[근거 대기]</span> ① <b>답변 수정 가능 여부·횟수</b> — 우선 수정 가능 + 수정 이력 표기로 그렸다(B4). ② <b>답변 글자수 상한</b> 2,000자는 잠정치(소비자 문의 250자는 어드민 확정값) — 값만 미확정이고 <b>초과 입력을 막는 방식</b>은 확정. ③ <b>삭제 요청 사유 목록</b> 4종 잠정. ④ 답변 후 소비자 알림 발송 여부. ⑤ 상태값 문자열은 기능요구사항 §12·상태정의서 수신 후 최종 대조.
+  </div>
+</div>
+
+<!-- ═════════ A1. 목록 · 기본 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">A1</span><span class="state-label">목록 · 기본</span>
+  <span class="state-spec">상태는 <b>탭</b>(배타적 단일선택 · 어드민과 동일), 문의 유형·공개여부는 <b>필터 패널</b>(다중선택) · 문의 유형·공개여부 배지는 점 없는 중립(분류) · 상태 컬럼은 <b>맨 뒷열</b>(어드민과 동일) · 관리 열 없음, 행 클릭 진입</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">문의 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 문의</div><div class="page-d">소비자가 상품 상세에서 남긴 문의에 답변합니다.</div></div></div>
+  <div class="tabs">
+    <div class="tab active">전체 <span class="tn">16</span></div>
+    <div class="tab">답변대기 <span class="tn">3</span></div>
+    <div class="tab">답변완료 <span class="tn">11</span></div>
+    <div class="tab">삭제 요청 <span class="tn">1</span></div>
+    <div class="tab">삭제 <span class="tn">1</span></div>
+  </div>
+  <div class="filter-panel">
+    <button class="fp-reset" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>초기화</button>
+    <div class="fp-row" style="padding-right:90px">
+      <span class="fp-glabel">문의 유형</span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>옵션<span class="fp-n">3</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>성분·사용법<span class="fp-n">6</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>재입고<span class="fp-n">2</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>배송<span class="fp-n">1</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>기타<span class="fp-n">4</span></span>
+    </div>
+    <div class="fp-row">
+      <span class="fp-glabel">공개여부</span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>공개<span class="fp-n">13</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>비밀글<span class="fp-n">3</span></span>
+    </div>
+    <div class="fp-row" style="justify-content:flex-end">
+      <div class="search"><input class="inp" placeholder="상품명 · 질문 검색" style="width:280px"><button class="btn btn-secondary">검색</button></div>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="tbar">
+      <div class="tbar-l">총 <b>16</b>건 · 답변대기 <b>3</b>건</div>
+      <div class="tbar-r"><select class="sel-sm"><option>답변대기 우선</option><option>등록일순</option></select><select class="sel-sm"><option>20건씩</option><option>50건씩</option><option>100건씩</option></select></div>
+    </div>
+    <table>
+      <thead><tr>
+        <td style="width:112px">문의 유형</td><td>질문</td><td style="width:128px">상품</td>
+        <td class="t-c" style="width:120px;padding-left:28px">공개여부</td><td class="t-c" style="width:162px">등록일</td>
+        <td class="t-c" style="width:150px">답변일</td><td class="t-c" style="width:150px">상태</td>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="badge b-neutral nodot">성분·사용법</span></td>
+          <td><span class="t-q">유통기한이 어떻게 되나요? 개봉 후에는 얼마나 사용 가능한지도 궁금해요.</span></td>
+          <td><span class="t-prod">수분진정 세럼 30ml</span></td>
+          <td class="t-c" style="padding-left:28px"><span class="badge b-neutral nodot">공개</span></td>
+          <td class="t-c t-date tnum">2026.08.11 09:12</td>
+          <td class="t-c t-date tnum">—</td>
+          <td class="t-c"><span class="badge b-info">답변대기</span></td>
+        </tr>
+        <tr>
+          <td><span class="badge b-neutral nodot">성분·사용법</span></td>
+          <td><span class="t-q">민감성 피부도 사용 가능한가요?</span></td>
+          <td><span class="t-prod">수분진정 크림 50ml</span></td>
+          <td class="t-c" style="padding-left:28px"><span class="badge b-neutral nodot">공개</span></td>
+          <td class="t-c t-date tnum">2026.08.12 20:40</td>
+          <td class="t-c t-date tnum">—</td>
+          <td class="t-c"><span class="badge b-info">답변대기</span></td>
+        </tr>
+        <tr>
+          <td><span class="badge b-neutral nodot">옵션</span></td>
+          <td><span class="t-q">30ml, 50ml 중 어떤 걸 추천하세요?</span></td>
+          <td><span class="t-prod">수분진정 세럼 30ml</span></td>
+          <td class="t-c" style="padding-left:28px"><span class="badge b-neutral nodot">비밀글</span></td>
+          <td class="t-c t-date tnum">2026.08.13 08:05</td>
+          <td class="t-c t-date tnum">—</td>
+          <td class="t-c"><span class="badge b-info">답변대기</span></td>
+        </tr>
+        <tr>
+          <td><span class="badge b-neutral nodot">성분·사용법</span></td>
+          <td><span class="t-q">향이 강한 편인가요? 향에 예민해서 여쭤봅니다.</span></td>
+          <td><span class="t-prod">저자극 클렌징 오일 150ml</span></td>
+          <td class="t-c" style="padding-left:28px"><span class="badge b-neutral nodot">공개</span></td>
+          <td class="t-c t-date tnum">2026.08.10 14:22</td>
+          <td class="t-c t-date tnum">2026.08.10 16:05</td>
+          <td class="t-c"><span class="badge b-neutral">답변완료</span></td>
+        </tr>
+        <tr>
+          <td><span class="badge b-neutral nodot">기타</span></td>
+          <td><span class="t-q">다른 브랜드 제품이 성분이 더 낫다던데 사실인가요? 발림성도 차이가 난다고 들었습니다</span></td>
+          <td><span class="t-prod">브라이트닝 아이크림 12ml</span></td>
+          <td class="t-c" style="padding-left:28px"><span class="badge b-neutral nodot">공개</span></td>
+          <td class="t-c t-date tnum">2026.08.09 09:24</td>
+          <td class="t-c t-date tnum">2026.08.09 14:10</td>
+          <td class="t-c"><span class="badge b-warning">삭제 요청</span></td>
+        </tr>
+        <tr>
+          <td><span class="badge b-neutral nodot">배송</span></td>
+          <td><span class="t-q">이 상품만 따로 먼저 발송해 주실 수 있나요?</span></td>
+          <td><span class="t-prod">수분진정 크림 50ml</span></td>
+          <td class="t-c" style="padding-left:28px"><span class="badge b-neutral nodot">비밀글</span></td>
+          <td class="t-c t-date tnum">2026.08.08 11:16</td>
+          <td class="t-c t-date tnum">2026.08.08 15:02</td>
+          <td class="t-c"><span class="badge b-neutral">답변완료</span></td>
+        </tr>
+        <tr>
+          <td><span class="badge b-neutral nodot">재입고</span></td>
+          <td><span class="t-q">재입고는 언제 되나요?</span></td>
+          <td><span class="t-prod">수분진정 토너 200ml</span></td>
+          <td class="t-c" style="padding-left:28px"><span class="badge b-neutral nodot">공개</span></td>
+          <td class="t-c t-date tnum">2026.08.07 10:31</td>
+          <td class="t-c t-date tnum">2026.08.07 18:44</td>
+          <td class="t-c"><span class="badge b-neutral">답변완료</span></td>
+        </tr>
+        <tr>
+          <td><span class="badge b-neutral nodot">기타</span></td>
+          <td><span class="t-q">타 사이트 최저가 링크입니다 http://…</span></td>
+          <td><span class="t-prod">브라이트닝 아이크림 12ml</span></td>
+          <td class="t-c" style="padding-left:28px"><span class="badge b-neutral nodot">공개</span></td>
+          <td class="t-c t-date tnum">2026.08.05 14:02</td>
+          <td class="t-c t-date tnum">—</td>
+          <td class="t-c"><span class="badge b-danger">삭제</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pager"><span class="page-item">‹</span><span class="page-item active">1</span><span class="page-item">2</span><span class="page-item">›</span></div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ A2. 목록 · 검색 결과 없음 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">A2</span><span class="state-label">목록 · 검색 결과 없음</span>
+  <span class="state-spec">테이블 헤더는 유지하고 내용 영역만 교체 · 필터 카운트는 전체 기준이라 그대로</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">문의 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 문의</div><div class="page-d">소비자가 상품 상세에서 남긴 문의에 답변합니다.</div></div></div>
+  <div class="tabs">
+    <div class="tab active">전체 <span class="tn">16</span></div>
+    <div class="tab">답변대기 <span class="tn">3</span></div>
+    <div class="tab">답변완료 <span class="tn">11</span></div>
+    <div class="tab">삭제 요청 <span class="tn">1</span></div>
+    <div class="tab">삭제 <span class="tn">1</span></div>
+  </div>
+  <div class="filter-panel">
+    <button class="fp-reset" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>초기화</button>
+    <div class="fp-row" style="padding-right:90px">
+      <span class="fp-glabel">문의 유형</span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>옵션<span class="fp-n">3</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>성분·사용법<span class="fp-n">6</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>재입고<span class="fp-n">2</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>배송<span class="fp-n">1</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>기타<span class="fp-n">4</span></span>
+    </div>
+    <div class="fp-row">
+      <span class="fp-glabel">공개여부</span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>공개<span class="fp-n">13</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>비밀글<span class="fp-n">3</span></span>
+    </div>
+    <div class="fp-row" style="justify-content:flex-end">
+      <div class="search"><input class="inp" value="리필 파우치" style="width:280px"><button class="btn btn-secondary">검색</button></div>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="tbar">
+      <div class="tbar-l">총 <b>0</b>건</div>
+      <div class="tbar-r"><select class="sel-sm"><option>답변대기 우선</option><option>등록일순</option></select><select class="sel-sm"><option>20건씩</option><option>50건씩</option><option>100건씩</option></select></div>
+    </div>
+    <table>
+      <thead><tr>
+        <td style="width:112px">문의 유형</td><td>질문</td><td style="width:128px">상품</td>
+        <td class="t-c" style="width:120px;padding-left:28px">공개여부</td><td class="t-c" style="width:162px">등록일</td>
+        <td class="t-c" style="width:150px">답변일</td><td class="t-c" style="width:150px">상태</td>
+      </tr></thead>
+    </table>
+    <div class="empty">
+      <div class="empty-t">검색 결과가 없습니다</div>
+      <div class="empty-d">검색어를 바꾸거나 필터를 초기화해 보세요.</div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ A3. 목록 · 빈 상태 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">A3</span><span class="state-label">목록 · 빈 상태(문의 없음)</span>
+  <span class="state-spec">브랜드가 문의를 만들 수 없으므로 <b>CTA 버튼 없음</b> · 필터 카운트 전부 0 · GNB 배지도 사라짐</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">문의 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 문의</div><div class="page-d">소비자가 상품 상세에서 남긴 문의에 답변합니다.</div></div></div>
+  <div class="tabs">
+    <div class="tab active">전체 <span class="tn">0</span></div>
+    <div class="tab">답변대기 <span class="tn">0</span></div>
+    <div class="tab">답변완료 <span class="tn">0</span></div>
+    <div class="tab">삭제 요청 <span class="tn">0</span></div>
+    <div class="tab">삭제 <span class="tn">0</span></div>
+  </div>
+  <div class="filter-panel">
+    <button class="fp-reset" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>초기화</button>
+    <div class="fp-row" style="padding-right:90px">
+      <span class="fp-glabel">문의 유형</span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>옵션<span class="fp-n">0</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>성분·사용법<span class="fp-n">0</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>재입고<span class="fp-n">0</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>배송<span class="fp-n">0</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>기타<span class="fp-n">0</span></span>
+    </div>
+    <div class="fp-row">
+      <span class="fp-glabel">공개여부</span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>공개<span class="fp-n">0</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>비밀글<span class="fp-n">0</span></span>
+    </div>
+    <div class="fp-row" style="justify-content:flex-end">
+      <div class="search"><input class="inp" placeholder="상품명 · 질문 검색" style="width:280px"><button class="btn btn-secondary">검색</button></div>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="empty">
+      <div class="empty-t">아직 등록된 문의가 없습니다</div>
+      <div class="empty-d">소비자가 상품 상세에서 문의를 남기면 여기에 표시됩니다.</div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B1. 상세 · 답변대기 · 미입력 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B1</span><span class="state-label">상세 · 답변대기 · 미입력</span>
+  <span class="state-spec">어드민과 동일한 3카드 구조(문의 정보 / 문의 내용 / 브랜드 답변) · 답변 미입력 → [답변 등록] <b>비활성, 에러 문구 없음</b> · 작성자는 <b>닉네임 마스킹</b>(회원 상세 링크 없음)</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">문의 관리<span class="c-sub">/ 상품 문의 상세</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 문의 상세</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">문의 정보<span class="ch-n">QNA-20260811-071</span></div>
+        <div class="card-b">
+          <div class="frow"><div class="fk">문의 유형</div><div class="fv"><span class="badge b-neutral nodot">성분·사용법</span></div></div>
+          <div class="frow"><div class="fk">상품</div><div class="fv">수분진정 세럼 30ml <span class="flink">상품 상세 보기</span></div></div>
+          <div class="frow"><div class="fk">작성자</div><div class="fv">구**** <div class="fsub">소비자 닉네임 마스킹 · 브랜드는 실명·연락처를 볼 수 없습니다</div></div></div>
+          <div class="frow"><div class="fk">공개 여부</div><div class="fv"><span class="badge b-neutral nodot">공개</span></div></div>
+          <div class="frow"><div class="fk">등록일시</div><div class="fv tnum">2026.08.11 09:12</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">문의 내용<span class="ch-n">소비자 입력 · 250자 이내 · 사진 최대 3장</span></div>
+        <div class="card-b">
+          <div class="thread">
+            <div class="tmsg"><div class="who">구**** <span class="wt">소비자 · 2026.08.11 09:12</span></div>이 제품 유통기한이 어떻게 되나요? 개봉 후에는 얼마나 사용 가능한지도 궁금해요.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">브랜드 답변<span class="ch-n">○○ 브랜드 · 답변 작성</span></div>
+        <div class="card-b">
+          <div class="ta-wrap">
+            <textarea class="ta" placeholder="답변을 입력하세요"></textarea>
+            <span class="ta-count">0 / 2,000</span>
+          </div>
+          <div class="notice info" style="margin-top:var(--sp-3)"><div><b>등록 시 공개 콘텐츠로 전환됩니다.</b> 상품 상세 문의 탭에 질문·답변이 함께 노출되며, 작성자는 닉네임 마스킹(구****)이 유지됩니다.</div></div>
+          <div class="ans-actions">
+            <button class="btn btn-secondary">취소</button>
+            <button class="btn btn-primary" disabled>답변 등록</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">처리</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">답변대기</span></div>
+          <div class="st-meta">
+            <div class="mrow"><span class="mk">등록일시</span><span class="mv tnum">2026.08.11 09:12</span></div>
+            <div class="mrow"><span class="mk">답변일시</span><span class="mv">—</span></div>
+            </div>
+          <div class="st-acts"><button class="btn btn-danger" style="width:100%">문의 삭제 요청</button></div>
+          <div class="st-hint">비방·개인정보·광고 등 부적절한 문의는 <b>운영자에게 삭제를 요청</b>할 수 있습니다. 삭제 집행 여부는 운영자가 판단합니다.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">처리 이력</div>
+        <div class="hist">
+          <div class="hitem"><span class="hdot"></span><div><div class="htxt">문의 등록</div><div class="hmeta">2026.08.11 09:12 · 구****</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B2. 상세 · 답변대기 · 입력 완료 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B2</span><span class="state-label">상세 · 답변대기 · 입력 완료(등록 가능)</span>
+  <span class="state-spec">글자수 카운터 갱신 · [답변 등록] 활성 · B1과 같은 자리, 버튼 상태만 교체</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">문의 관리<span class="c-sub">/ 상품 문의 상세</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 문의 상세</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">문의 정보<span class="ch-n">QNA-20260811-071</span></div>
+        <div class="card-b">
+          <div class="frow"><div class="fk">문의 유형</div><div class="fv"><span class="badge b-neutral nodot">성분·사용법</span></div></div>
+          <div class="frow"><div class="fk">상품</div><div class="fv">수분진정 세럼 30ml <span class="flink">상품 상세 보기</span></div></div>
+          <div class="frow"><div class="fk">작성자</div><div class="fv">구****</div></div>
+          <div class="frow"><div class="fk">공개 여부</div><div class="fv"><span class="badge b-neutral nodot">공개</span></div></div>
+          <div class="frow"><div class="fk">등록일시</div><div class="fv tnum">2026.08.11 09:12</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">문의 내용<span class="ch-n">소비자 입력 · 250자 이내 · 사진 최대 3장</span></div>
+        <div class="card-b">
+          <div class="thread">
+            <div class="tmsg"><div class="who">구**** <span class="wt">소비자 · 2026.08.11 09:12</span></div>이 제품 유통기한이 어떻게 되나요? 개봉 후에는 얼마나 사용 가능한지도 궁금해요.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">브랜드 답변<span class="ch-n">○○ 브랜드 · 답변 작성</span></div>
+        <div class="card-b">
+          <div class="ta-wrap">
+            <textarea class="ta">제조일로부터 30개월이며, 개별 용기 하단에 표기된 사용기한을 확인해 주세요. 개봉 후에는 6개월 이내 사용을 권장드립니다.</textarea>
+            <span class="ta-count">71 / 2,000</span>
+          </div>
+          <div class="notice info" style="margin-top:var(--sp-3)"><div><b>등록 시 공개 콘텐츠로 전환됩니다.</b> 상품 상세 문의 탭에 질문·답변이 함께 노출되며, 작성자는 닉네임 마스킹(구****)이 유지됩니다.</div></div>
+          <div class="ans-actions">
+            <button class="btn btn-secondary">취소</button>
+            <button class="btn btn-primary">답변 등록</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">처리</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">답변대기</span></div>
+          <div class="st-meta">
+            <div class="mrow"><span class="mk">등록일시</span><span class="mv tnum">2026.08.11 09:12</span></div>
+            <div class="mrow"><span class="mk">답변일시</span><span class="mv">—</span></div>
+            </div>
+          <div class="st-acts"><button class="btn btn-danger" style="width:100%">문의 삭제 요청</button></div>
+          <div class="st-hint">비방·개인정보·광고 등 부적절한 문의는 <b>운영자에게 삭제를 요청</b>할 수 있습니다. 삭제 집행 여부는 운영자가 판단합니다.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">처리 이력</div>
+        <div class="hist">
+          <div class="hitem"><span class="hdot"></span><div><div class="htxt">문의 등록</div><div class="hmeta">2026.08.11 09:12 · 구****</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B3. 상세 · 답변 글자수 초과 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B3</span><span class="state-label">상세 · 답변 글자수 상한 도달</span>
+  <span class="state-spec">2,000자에서 <b>입력 자체가 막힌다</b>(<code>maxlength</code>) — 초과 상태가 존재하지 않으므로 에러 문구도 없다 · 카운터만 상한 색으로 바뀌고 <b>등록은 계속 활성</b> <span style="color:var(--danger-text)">[근거 대기 · 상한 잠정치]</span></span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">문의 관리<span class="c-sub">/ 상품 문의 상세</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 문의 상세</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">문의 정보<span class="ch-n">QNA-20260811-071</span></div>
+        <div class="card-b">
+          <div class="frow"><div class="fk">문의 유형</div><div class="fv"><span class="badge b-neutral nodot">성분·사용법</span></div></div>
+          <div class="frow"><div class="fk">상품</div><div class="fv">수분진정 세럼 30ml <span class="flink">상품 상세 보기</span></div></div>
+          <div class="frow"><div class="fk">작성자</div><div class="fv">구****</div></div>
+          <div class="frow"><div class="fk">공개 여부</div><div class="fv"><span class="badge b-neutral nodot">공개</span></div></div>
+          <div class="frow"><div class="fk">등록일시</div><div class="fv tnum">2026.08.11 09:12</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">브랜드 답변<span class="ch-n">○○ 브랜드 · 답변 작성</span></div>
+        <div class="card-b">
+          <div class="ta-wrap">
+            <textarea class="ta" maxlength="2000">제조일로부터 30개월이며, 개별 용기 하단에 표기된 사용기한을 확인해 주세요. 개봉 후에는 6개월 이내 사용을 권장드립니다. (이하 상세 안내가 길게 이어지는 경우…)</textarea>
+            <span class="ta-count max">2,000 / 2,000</span>
+          </div>
+          <div class="ans-actions">
+            <button class="btn btn-secondary">취소</button>
+            <button class="btn btn-primary">답변 등록</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">처리</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">답변대기</span></div>
+          <div class="st-meta">
+            <div class="mrow"><span class="mk">등록일시</span><span class="mv tnum">2026.08.11 09:12</span></div>
+            <div class="mrow"><span class="mk">답변일시</span><span class="mv">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B4. 상세 · 답변완료 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B4</span><span class="state-label">상세 · 답변완료</span>
+  <span class="state-spec">답변완료 = <b>중립</b>(어드민과 동일 · 성공색 아님) · 등록된 답변은 읽기 표시 + [답변 수정] <span style="color:var(--danger-text)">[근거 대기 · 수정 허용 여부]</span></span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">문의 관리<span class="c-sub">/ 상품 문의 상세</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 문의 상세</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">문의 정보<span class="ch-n">QNA-20260810-066</span></div>
+        <div class="card-b">
+          <div class="frow"><div class="fk">문의 유형</div><div class="fv"><span class="badge b-neutral nodot">성분·사용법</span></div></div>
+          <div class="frow"><div class="fk">상품</div><div class="fv">저자극 클렌징 오일 150ml <span class="flink">상품 상세 보기</span></div></div>
+          <div class="frow"><div class="fk">작성자</div><div class="fv">정****</div></div>
+          <div class="frow"><div class="fk">공개 여부</div><div class="fv"><span class="badge b-neutral nodot">공개</span></div></div>
+          <div class="frow"><div class="fk">등록일시</div><div class="fv tnum">2026.08.10 14:22</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">문의 내용<span class="ch-n">소비자 입력 · 250자 이내 · 사진 최대 3장</span></div>
+        <div class="card-b">
+          <div class="thread">
+            <div class="tmsg"><div class="who">정**** <span class="wt">소비자 · 2026.08.10 14:22</span></div>향이 강한 편인가요? 향에 예민해서 여쭤봅니다.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">브랜드 답변<span class="ch-n">○○ 브랜드</span></div>
+        <div class="card-b">
+          <div class="thread">
+            <div class="tmsg me"><div class="who">○○ 브랜드 <span class="wt">브랜드 · 2026.08.10 16:05 등록 · 2026.08.11 09:30 수정됨</span></div>인공 향료를 넣지 않아 원료 자체의 은은한 향만 납니다. 세안 후에는 잔향이 거의 남지 않습니다.</div>
+          </div>
+          <div class="ans-actions"><button class="btn btn-secondary">답변 수정</button></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">처리</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-neutral">답변완료</span></div>
+          <div class="st-meta">
+            <div class="mrow"><span class="mk">등록일시</span><span class="mv tnum">2026.08.10 14:22</span></div>
+            <div class="mrow"><span class="mk">답변일시</span><span class="mv tnum">2026.08.10 16:05</span></div>
+            <div class="mrow"><span class="mk">답변 소요</span><span class="mv">1시간 43분</span></div>
+          </div>
+          <div class="st-acts"><button class="btn btn-danger" style="width:100%">문의 삭제 요청</button></div>
+          <div class="st-hint">답변을 등록한 뒤에도 부적절한 문의라면 삭제를 요청할 수 있습니다.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">처리 이력</div>
+        <div class="hist">
+          <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">답변 수정</div><div class="hmeta">2026.08.11 09:30 · ○○ 브랜드</div></div></div>
+          <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">답변 등록 · 공개 노출 시작</div><div class="hmeta">2026.08.10 16:05 · ○○ 브랜드</div></div></div>
+          <div class="hitem"><span class="hdot"></span><div><div class="htxt">문의 등록</div><div class="hmeta">2026.08.10 14:22 · 정****</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B5. 상세 · 비밀글 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B5</span><span class="state-label">상세 · 비밀글</span>
+  <span class="state-spec">공개 고지 배너를 <b>비밀글 고지로 교체</b>(같은 자리·같은 컴포넌트) · 답변해도 공개 전환 없음 · 상품 상세 문의 탭에는 잠금 표시만 노출</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">문의 관리<span class="c-sub">/ 상품 문의 상세</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 문의 상세</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">문의 정보<span class="ch-n">QNA-20260813-078</span></div>
+        <div class="card-b">
+          <div class="frow"><div class="fk">문의 유형</div><div class="fv"><span class="badge b-neutral nodot">옵션</span></div></div>
+          <div class="frow"><div class="fk">상품</div><div class="fv">수분진정 세럼 30ml <span class="flink">상품 상세 보기</span></div></div>
+          <div class="frow"><div class="fk">작성자</div><div class="fv">박****</div></div>
+          <div class="frow"><div class="fk">공개 여부</div><div class="fv"><span class="badge b-neutral nodot">비밀글</span> <span style="color:var(--n-500);font-size:var(--fs-micro)">작성자 지정 · 변경 불가</span></div></div>
+          <div class="frow"><div class="fk">등록일시</div><div class="fv tnum">2026.08.13 08:05</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">문의 내용<span class="ch-n">소비자 입력 · 250자 이내 · 사진 최대 3장</span></div>
+        <div class="card-b">
+          <div class="thread">
+            <div class="tmsg"><div class="who">박**** <span class="wt">소비자 · 2026.08.13 08:05</span></div>30ml랑 50ml 중에 어떤 걸 추천하시나요? 아래 사진처럼 펌프가 헐거운데 정상인지도 봐주세요.
+              <div class="tatt-n">첨부 사진 2장</div>
+              <div class="tatt"><div class="tthumb">사진 1</div><div class="tthumb">사진 2</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">브랜드 답변<span class="ch-n">○○ 브랜드 · 답변 작성</span></div>
+        <div class="card-b">
+          <div class="ta-wrap">
+            <textarea class="ta" placeholder="답변을 입력하세요"></textarea>
+            <span class="ta-count">0 / 2,000</span>
+          </div>
+          <div class="ans-actions">
+            <button class="btn btn-secondary">취소</button>
+            <button class="btn btn-primary" disabled>답변 등록</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">처리</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">답변대기</span></div>
+          <div class="st-meta">
+            <div class="mrow"><span class="mk">등록일시</span><span class="mv tnum">2026.08.13 08:05</span></div>
+            <div class="mrow"><span class="mk">답변일시</span><span class="mv">—</span></div>
+            </div>
+          <div class="st-acts"><button class="btn btn-danger" style="width:100%">문의 삭제 요청</button></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">처리 이력</div>
+        <div class="hist">
+          <div class="hitem"><span class="hdot"></span><div><div class="htxt">문의 등록 · 비밀글</div><div class="hmeta">2026.08.13 08:05 · 박****</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B6. 상세 · 삭제 요청 중 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B6</span><span class="state-label">상세 · 삭제 요청 중(운영자 검토 대기)</span>
+  <span class="state-spec">삭제 요청 = <b>경고</b>(운영자 조치 필요 · 어드민과 동일 색) · 요청 취소·재요청 불가, <b>액션 버튼 없음</b> · 문의는 검토 중에도 계속 게시된다</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">문의 관리<span class="c-sub">/ 상품 문의 상세</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 문의 상세</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">문의 정보<span class="ch-n">QNA-20260809-061</span></div>
+        <div class="card-b">
+          <div class="frow"><div class="fk">문의 유형</div><div class="fv"><span class="badge b-neutral nodot">기타</span></div></div>
+          <div class="frow"><div class="fk">상품</div><div class="fv">브라이트닝 아이크림 12ml <span class="flink">상품 상세 보기</span></div></div>
+          <div class="frow"><div class="fk">작성자</div><div class="fv">한****</div></div>
+          <div class="frow"><div class="fk">공개 여부</div><div class="fv"><span class="badge b-neutral nodot">공개</span></div></div>
+          <div class="frow"><div class="fk">등록일시</div><div class="fv tnum">2026.08.09 09:24</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">문의 내용<span class="ch-n">소비자 입력 · 250자 이내 · 사진 최대 3장</span></div>
+        <div class="card-b">
+          <div class="thread">
+            <div class="tmsg"><div class="who">한**** <span class="wt">소비자 · 2026.08.09 09:24</span></div>다른 브랜드 제품이 성분이 더 낫다고 들었는데 사실인가요? 아래 사진처럼 발림성도 차이가 난다고 해서요.
+              <div class="tatt-n">첨부 사진 2장</div>
+              <div class="tatt"><div class="tthumb">사진 1</div><div class="tthumb">사진 2</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">브랜드 답변<span class="ch-n">○○ 브랜드</span></div>
+        <div class="card-b">
+          <div class="thread">
+            <div class="tmsg me"><div class="who">○○ 브랜드 <span class="wt">브랜드 · 2026.08.09 14:10</span></div>제품별 성분 구성은 상세 페이지의 전성분 표를 참고해 주세요. 발림성은 피부 타입에 따라 다르게 느껴질 수 있습니다.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">삭제 요청<span class="ch-n">○○ 브랜드 · 2026.08.09 15:02 요청</span></div>
+        <div class="card-b">
+          <div class="frow"><div class="fk">요청 사유</div><div class="fv">타 브랜드 비교·비방</div></div>
+          <div class="frow"><div class="fk">상세 설명</div><div class="fv">근거 없는 타사 비교로 상품 이미지가 훼손될 우려가 있습니다.</div></div>
+          <div class="notice info" style="margin-top:var(--sp-3)"><div><b>운영자 검토 중입니다.</b> 검토 결과에 따라 문의가 삭제되거나, 요청이 반려되고 문의는 그대로 게시됩니다(반려 시 <b>요청 직전 상태로 복귀</b>). 결과는 알림으로 전달됩니다.</div></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">처리</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-warning">삭제 요청</span></div>
+          <div class="st-meta">
+            <div class="mrow"><span class="mk">등록일시</span><span class="mv tnum">2026.08.09 09:24</span></div>
+            <div class="mrow"><span class="mk">답변일시</span><span class="mv tnum">2026.08.09 14:10</span></div>
+            <div class="mrow"><span class="mk">삭제 요청일</span><span class="mv tnum">2026.08.09 15:02</span></div>
+          </div>
+          <div class="st-hint">삭제 요청은 <b>취소할 수 없습니다.</b> 운영자 판단이 나올 때까지 이 화면에서 할 수 있는 조작은 없습니다.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">처리 이력</div>
+        <div class="hist">
+          <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">문의 삭제 요청 · 타 브랜드 비교·비방</div><div class="hmeta">2026.08.09 15:02 · ○○ 브랜드</div></div></div>
+          <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">답변 등록 · 공개 노출 시작</div><div class="hmeta">2026.08.09 14:10 · ○○ 브랜드</div></div></div>
+          <div class="hitem"><span class="hdot"></span><div><div class="htxt">문의 등록</div><div class="hmeta">2026.08.09 09:24 · 한****</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B7. 상세 · 삭제 요청 반려됨 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B7</span><span class="state-label">상세 · 삭제 요청 반려됨</span>
+  <span class="state-spec">운영자가 요청만 기각 → 문의는 <b>게시 유지</b>, 상태는 <b>요청 직전 상태로 복귀</b>(이 건은 답변완료 → 삭제 요청 → 답변완료) · 반려 사유는 요청 브랜드에게 전달된다(삭제 사유는 내부 기록이라 전달되지 않는 것과 대비) · 재요청 가능</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">문의 관리<span class="c-sub">/ 상품 문의 상세</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 문의 상세</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">문의 정보<span class="ch-n">QNA-20260809-061</span></div>
+        <div class="card-b">
+          <div class="frow"><div class="fk">문의 유형</div><div class="fv"><span class="badge b-neutral nodot">기타</span></div></div>
+          <div class="frow"><div class="fk">상품</div><div class="fv">브라이트닝 아이크림 12ml <span class="flink">상품 상세 보기</span></div></div>
+          <div class="frow"><div class="fk">작성자</div><div class="fv">한****</div></div>
+          <div class="frow"><div class="fk">공개 여부</div><div class="fv"><span class="badge b-neutral nodot">공개</span></div></div>
+          <div class="frow"><div class="fk">등록일시</div><div class="fv tnum">2026.08.09 09:24</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">삭제 요청 결과<span class="ch-n">운영자 · 2026.08.10 11:20 처리</span></div>
+        <div class="card-b">
+          <div class="notice warn" style="margin-bottom:var(--sp-3)"><div><b>삭제 요청이 반려되었습니다.</b> 문의는 그대로 게시되며 상태는 <b>요청 직전 상태(답변완료)</b>로 돌아갑니다. 답변 전에 요청한 건이었다면 답변대기로 돌아갑니다.</div></div>
+          <div class="frow"><div class="fk">내 요청 사유</div><div class="fv">타 브랜드 비교·비방 <div class="fsub">2026.08.09 15:02 요청</div></div></div>
+          <div class="frow"><div class="fk">운영자 반려 사유</div><div class="fv">단순 비교 질문으로 판단되며 비방·허위 사실에 해당하지 않습니다. 답변으로 사실관계를 안내해 주세요.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">문의 내용<span class="ch-n">소비자 입력 · 250자 이내 · 사진 최대 3장</span></div>
+        <div class="card-b">
+          <div class="thread">
+            <div class="tmsg"><div class="who">한**** <span class="wt">소비자 · 2026.08.09 09:24</span></div>다른 브랜드 제품이 성분이 더 낫다고 들었는데 사실인가요? 아래 사진처럼 발림성도 차이가 난다고 해서요.
+              <div class="tatt-n">첨부 사진 2장</div>
+              <div class="tatt"><div class="tthumb">사진 1</div><div class="tthumb">사진 2</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">브랜드 답변<span class="ch-n">○○ 브랜드</span></div>
+        <div class="card-b">
+          <div class="thread">
+            <div class="tmsg me"><div class="who">○○ 브랜드 <span class="wt">브랜드 · 2026.08.09 14:10</span></div>제품별 성분 구성은 상세 페이지의 전성분 표를 참고해 주세요. 발림성은 피부 타입에 따라 다르게 느껴질 수 있습니다.</div>
+          </div>
+          <div class="ans-actions"><button class="btn btn-secondary">답변 수정</button></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">처리</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-neutral">답변완료</span></div>
+          <div class="st-meta">
+            <div class="mrow"><span class="mk">등록일시</span><span class="mv tnum">2026.08.09 09:24</span></div>
+            <div class="mrow"><span class="mk">답변일시</span><span class="mv tnum">2026.08.09 14:10</span></div>
+            <div class="mrow"><span class="mk">삭제 요청 결과</span><span class="mv warn">반려</span></div>
+          </div>
+          <div class="st-acts"><button class="btn btn-danger" style="width:100%">문의 삭제 재요청</button></div>
+          <div class="st-hint">반려된 요청은 사유를 보완해 다시 제출할 수 있습니다.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">처리 이력</div>
+        <div class="hist">
+          <div class="hitem"><span class="hdot h-warning"></span><div><div class="htxt">삭제 요청 반려 · 결과 알림 수신</div><div class="hmeta">2026.08.10 11:20 · 운영자</div></div></div>
+          <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">문의 삭제 요청 · 타 브랜드 비교·비방</div><div class="hmeta">2026.08.09 15:02 · ○○ 브랜드</div></div></div>
+          <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">답변 등록 · 공개 노출 시작</div><div class="hmeta">2026.08.09 14:10 · ○○ 브랜드</div></div></div>
+          <div class="hitem"><span class="hdot"></span><div><div class="htxt">문의 등록</div><div class="hmeta">2026.08.09 09:24 · 한****</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B8. 상세 · 삭제됨 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B8</span><span class="state-label">상세 · 삭제됨(조회 전용)</span>
+  <span class="state-spec">소비자 노출이 실제로 막힌 상태라 <b>위험색</b>(ui-admin-04 미진열 선례) · 원문은 보관 · <b>브랜드 액션 없음</b> · 삭제 사유는 운영자 내부 기록이라 <b>브랜드에게 표시하지 않는다</b>(요청 경위만 남김)</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">문의 관리<span class="c-sub">/ 상품 문의 상세</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 문의 상세</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">문의 정보<span class="ch-n">QNA-20260805-054</span></div>
+        <div class="card-b">
+          <div class="frow"><div class="fk">문의 유형</div><div class="fv"><span class="badge b-neutral nodot">기타</span></div></div>
+          <div class="frow"><div class="fk">상품</div><div class="fv">브라이트닝 아이크림 12ml <span class="flink">상품 상세 보기</span></div></div>
+          <div class="frow"><div class="fk">작성자</div><div class="fv">한****</div></div>
+          <div class="frow"><div class="fk">공개 여부</div><div class="fv"><span class="badge b-neutral nodot">공개</span> <span style="color:var(--n-500);font-size:var(--fs-micro)">삭제되어 비노출</span></div></div>
+          <div class="frow"><div class="fk">등록일시</div><div class="fv tnum">2026.08.05 14:02</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">문의 내용<span class="ch-n">삭제 전 원문 보관</span></div>
+        <div class="card-b">
+          <div class="notice danger" style="margin-bottom:var(--sp-3)"><div><b>운영자가 삭제한 문의입니다.</b> 질문과 <b>브랜드 답변이 함께</b> 소비자 화면에서 내려갑니다 — 질문 없는 답변은 성립하지 않기 때문입니다. 원문·답변 모두 분쟁 대비로 보관되며 이 화면에서만 조회할 수 있습니다.</div></div>
+          <div class="thread">
+            <div class="tmsg"><div class="who">한**** <span class="wt">소비자 · 2026.08.05 14:02</span></div>여기보다 싼 곳 있어요. 타 사이트 최저가 링크입니다 http://…</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">삭제 요청<span class="ch-n">○○ 브랜드 · 2026.08.05 15:40 요청</span></div>
+        <div class="card-b">
+          <div class="frow"><div class="fk">요청 사유</div><div class="fv">광고·홍보</div></div>
+          <div class="frow"><div class="fk">상세 설명</div><div class="fv">외부 판매처 링크가 포함되어 있습니다.</div></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">처리</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-danger">삭제</span></div>
+          <div class="st-meta">
+            <div class="mrow"><span class="mk">등록일시</span><span class="mv tnum">2026.08.05 14:02</span></div>
+            <div class="mrow"><span class="mk">삭제일시</span><span class="mv tnum">2026.08.05 16:30</span></div>
+            <div class="mrow"><span class="mk">처리자</span><span class="mv">운영자</span></div>
+          </div>
+          <div class="st-hint">삭제 사유는 운영자 내부 기록으로 관리되며 브랜드·작성자에게 공개되지 않습니다. 되돌리려면 운영자에게 문의하세요.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">처리 이력</div>
+        <div class="hist">
+          <div class="hitem"><span class="hdot h-danger"></span><div><div class="htxt">문의 삭제 집행</div><div class="hmeta">2026.08.05 16:30 · 운영자</div></div></div>
+          <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">문의 삭제 요청 · 광고·홍보</div><div class="hmeta">2026.08.05 15:40 · ○○ 브랜드</div></div></div>
+          <div class="hitem"><span class="hdot"></span><div><div class="htxt">문의 등록</div><div class="hmeta">2026.08.05 14:02 · 한****</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ C1. 모달 · 문의 삭제 요청 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">C1</span><span class="state-label">모달 · 문의 삭제 요청</span>
+  <span class="state-spec">사유 미선택이면 <b>에러 문구 없이 [요청 보내기] 비활성</b> · "기타(직접 입력)"일 때만 상세 설명 필수 <span style="color:var(--danger-text)">[근거 대기 · 사유 목록 잠정]</span></span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">문의 관리<span class="c-sub">/ 상품 문의 상세</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 문의 상세</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">문의 정보<span class="ch-n">QNA-20260809-061</span></div>
+        <div class="card-b">
+          <div class="frow"><div class="fk">문의 유형</div><div class="fv"><span class="badge b-neutral nodot">기타</span></div></div>
+          <div class="frow"><div class="fk">상품</div><div class="fv">브라이트닝 아이크림 12ml</div></div>
+          <div class="frow"><div class="fk">작성자</div><div class="fv">한****</div></div>
+          <div class="frow"><div class="fk">공개 여부</div><div class="fv"><span class="badge b-neutral nodot">공개</span></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">문의 내용<span class="ch-n">소비자 입력 · 250자 이내 · 사진 최대 3장</span></div>
+        <div class="card-b">
+          <div class="thread">
+            <div class="tmsg"><div class="who">한**** <span class="wt">소비자 · 2026.08.09 09:24</span></div>다른 브랜드 제품이 성분이 더 낫다고 들었는데 사실인가요?</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">처리</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-neutral">답변완료</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="overlay">
+    <div class="modal">
+      <div class="modal-h">문의 삭제 요청<span class="modal-x">✕</span></div>
+      <div class="modal-b">
+        <label class="mlabel">요청 사유<span class="req">*</span></label>
+        <select class="msel"><option>선택하세요</option><option>비방·욕설</option><option>개인정보 노출</option><option>광고·홍보</option><option>타 브랜드 비교·비방</option><option>기타(직접 입력)</option></select>
+        <label class="mlabel">상세 설명<span class="opt">선택</span></label>
+        <textarea class="mta" placeholder="운영자가 판단하는 데 도움이 될 내용을 적어주세요"></textarea>
+        <div class="mhint">사유로 “기타(직접 입력)”를 선택하면 상세 설명이 필수가 됩니다.</div>
+        <div class="mwarn"><div>요청해도 문의는 <b>즉시 삭제되지 않습니다.</b> 운영자가 검토해 삭제 또는 반려를 결정하며, 검토 중에도 문의는 계속 게시됩니다. <b>요청 후에는 취소할 수 없습니다.</b></div></div>
+      </div>
+      <div class="modal-f"><button class="btn btn-ghost">취소</button><button class="btn btn-danger-solid" disabled>요청 보내기</button></div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+</body>
+</html>
