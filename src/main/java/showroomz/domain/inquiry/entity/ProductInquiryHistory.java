@@ -40,14 +40,28 @@ public class ProductInquiryHistory {
     @Column(name = "DETAIL", length = 500)
     private String detail;
 
+    /**
+     * 행위자 ID — OPERATOR 이벤트에서만 값을 채운다(운영자 Seller ID).
+     * 문의의 현재 {@code deleteProcessedBy}를 그대로 참조하면 두 번째 운영자가 다시 처리했을 때
+     * 과거 이력의 행위자가 최신 값으로 뒤바뀌므로, 이벤트 시점의 행위자를 이 컬럼에 고정한다.
+     */
+    @Column(name = "ACTOR_ID")
+    private Long actorId;
+
     @Column(name = "CREATED_AT", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     public ProductInquiryHistory(ProductInquiry inquiry, ProductInquiryHistoryType historyType, String detail) {
+        this(inquiry, historyType, detail, null);
+    }
+
+    public ProductInquiryHistory(ProductInquiry inquiry, ProductInquiryHistoryType historyType, String detail,
+                                 Long actorId) {
         this.inquiry = inquiry;
         this.historyType = historyType;
         this.actorType = historyType.getActorType();
         this.detail = detail;
+        this.actorId = actorId;
         this.createdAt = LocalDateTime.now();
     }
 

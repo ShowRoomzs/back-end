@@ -200,11 +200,21 @@ public class ProductInquiryDetailResponse {
                 .detail(inquiry.getDeleteRequestDetail())
                 .requestedAt(inquiry.getDeleteRequestedAt())
                 .reviewedAt(inquiry.getDeleteReviewedAt())
-                .rejectReason(inquiry.getDeleteRejectReason())
+                .rejectReason(formatRejectReason(inquiry))
                 .deletedAt(inquiry.getDeletedAt())
                 .underReview(underReview)
                 .rejected(rejected)
                 .build();
+    }
+
+    /** 반려 사유 — 요청 브랜드에게 전달되는 문구. 기타(직접 입력)는 상세 사유를 함께 붙인다 (§18-6) */
+    private static String formatRejectReason(ProductInquiry inquiry) {
+        if (inquiry.getDeleteRejectReasonType() == null) {
+            return null;
+        }
+        String label = inquiry.getDeleteRejectReasonType().getDescription();
+        String detail = inquiry.getDeleteRejectReasonDetail();
+        return (detail != null && !detail.isBlank()) ? label + " — " + detail : label;
     }
 
     private static List<HistoryItem> toHistoryItems(List<ProductInquiryHistory> histories,

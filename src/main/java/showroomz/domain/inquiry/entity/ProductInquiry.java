@@ -8,7 +8,9 @@ import lombok.NoArgsConstructor;
 import showroomz.domain.common.BaseTimeEntity;
 import showroomz.domain.inquiry.type.InquiryExposureStatus;
 import showroomz.domain.inquiry.type.InquiryStatus;
+import showroomz.domain.inquiry.type.ProductInquiryAdminDeleteReason;
 import showroomz.domain.inquiry.type.ProductInquiryDeleteReason;
+import showroomz.domain.inquiry.type.ProductInquiryRejectReason;
 import showroomz.domain.inquiry.type.ProductInquiryType;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.product.entity.Product;
@@ -106,13 +108,27 @@ public class ProductInquiry extends BaseTimeEntity {
     @Column(name = "DELETE_REVIEWED_AT")
     private LocalDateTime deleteReviewedAt;
 
-    /** 운영자 반려 사유 — 요청 브랜드에게 전달된다 (§23-5) */
-    @Column(name = "DELETE_REJECT_REASON", length = 500)
-    private String deleteRejectReason;
+    /** 반려 사유 코드 — 요청 브랜드에게 전달된다 (§18-6) */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "DELETE_REJECT_REASON_TYPE", length = 32)
+    private ProductInquiryRejectReason deleteRejectReasonType;
 
-    /** 운영자 삭제 사유 — 내부 기록이라 브랜드·작성자에게 표시하지 않는다 (§23-5) */
-    @Column(name = "DELETE_REASON", length = 500)
-    private String deleteReason;
+    /** 반려 상세 사유 — 사유가 `ETC`일 때만 필수, 요청 브랜드에게 전달된다 (§18-6) */
+    @Column(name = "DELETE_REJECT_REASON_DETAIL", length = 500)
+    private String deleteRejectReasonDetail;
+
+    /** 삭제 사유 코드 — 내부 기록이라 브랜드·작성자에게 표시하지 않는다 (§18-5) */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "DELETE_REASON_TYPE", length = 32)
+    private ProductInquiryAdminDeleteReason deleteReasonType;
+
+    /** 삭제 상세 사유 — 내부 기록 (§18-5) */
+    @Column(name = "DELETE_REASON_DETAIL", length = 500)
+    private String deleteReasonDetail;
+
+    /** 삭제 집행·반려를 처리한 운영자(Seller ID) — 처리자 표기용 (§18-3) */
+    @Column(name = "DELETE_PROCESSED_BY")
+    private Long deleteProcessedBy;
 
     @Column(name = "DELETED_AT")
     private LocalDateTime deletedAt;
@@ -165,24 +181,32 @@ public class ProductInquiry extends BaseTimeEntity {
         this.deleteRequestDetail = detail;
         this.deleteRequestedAt = LocalDateTime.now();
         this.deleteReviewedAt = null;
-        this.deleteRejectReason = null;
+        this.deleteRejectReasonType = null;
+        this.deleteRejectReasonDetail = null;
     }
 
     /**
-     * 운영자의 삭제 요청 반려 (§23-5) — 노출 축만 정상으로 돌리면
-     * 답변 축은 보존돼 있으므로 요청 직전 상태로 그대로 복귀한다.
+     * 운영자의 삭제 요청 반려 (§18-6) — 노출 축만 정상으로 돌리면
+     * 답변 축은 보존돼 있으므로 요청 직전 상태로 그대로 복귀한다. 삭제 요청이 있을 때만 성립한다.
      */
-    public void rejectDeleteRequest(String rejectReason) {
+    public void rejectDeleteRequest(ProductInquiryRejectReason reasonType, String detail, Long processedBy) {
         this.exposureStatus = InquiryExposureStatus.NORMAL;
         this.deleteReviewedAt = LocalDateTime.now();
-        this.deleteRejectReason = rejectReason;
+        this.deleteRejectReasonType = reasonType;
+        this.deleteRejectReasonDetail = detail;
+        this.deleteProcessedBy = processedBy;
     }
 
-    /** 운영자의 삭제 집행 (§23-5) — 질문과 브랜드 답변이 함께 소비자 화면에서 내려간다. */
-    public void executeDelete(String internalReason) {
+    /**
+     * 운영자의 삭제 집행 (§18-5) — 질문과 브랜드 답변이 함께 소비자·브랜드 화면에서 내려간다.
+     * 삭제 요청 없이도(답변대기·답변완료 어느 상태에서든) 운영자가 직접 집행할 수 있다.
+     */
+    public void executeDelete(ProductInquiryAdminDeleteReason reasonType, String detail, Long processedBy) {
         LocalDateTime now = LocalDateTime.now();
         this.exposureStatus = InquiryExposureStatus.DELETED;
-        this.deleteReason = internalReason;
+        this.deleteReasonType = reasonType;
+        this.deleteReasonDetail = detail;
+        this.deleteProcessedBy = processedBy;
         this.deleteReviewedAt = now;
         this.deletedAt = now;
     }
