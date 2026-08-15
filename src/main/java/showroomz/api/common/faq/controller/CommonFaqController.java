@@ -1,5 +1,6 @@
 package showroomz.api.common.faq.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/v1/common/faqs")
 @RequiredArgsConstructor
+@Hidden
 public class CommonFaqController implements CommonFaqControllerDocs {
 
     private final FaqService faqService;
