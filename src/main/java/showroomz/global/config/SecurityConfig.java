@@ -90,6 +90,10 @@ public class SecurityConfig {
 
             // 쇼룸 게시글 조회 API
             "/v1/user/showroom/*/posts", "/v1/user/showroom/posts/*",
+
+            // 쇼룸 방문 기록 (§22-4) — 비로그인 방문도 쇼룸 도달 지표에 포함되므로 인증을 요구하지 않는다.
+            // 토큰이 실려 오면 필터가 인증을 채워 주므로, 로그인 방문은 사용자 기준으로 집계된다.
+            "/v1/user/showrooms/*/visits",
     };
     /*
      * SecurityFilterChain 설정 (Spring Security 3.x 최신 방식)

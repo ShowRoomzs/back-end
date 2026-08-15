@@ -58,9 +58,11 @@ public class ImageService {
             throw new BusinessException(ErrorCode.INVALID_FILE_EXTENSION);
         }
 
-        // 4. 마켓 대표 이미지(MARKET)인 경우 해상도 및 비율 검증
-        if (type == ImageType.MARKET) {
-            validateMarketImage(file);
+        // 4. 대표 이미지(마켓·쇼룸 프로필)인 경우 해상도 및 비율 검증
+        //    §22-1 쇼룸 프로필 이미지 규칙(최소 160×160 · 정비율 · 최대 20MB · JPG·PNG·GIF)이
+        //    마켓 대표 이미지와 같으므로 같은 검증을 태운다.
+        if (type == ImageType.MARKET || type == ImageType.SHOWROOM_PROFILE) {
+            validateSquareThumbnail(file);
         }
 
         // 5. S3에 업로드
@@ -162,9 +164,9 @@ public class ImageService {
     }
 
     /**
-     * 마켓 이미지 정밀 검증 (해상도, 비율)
+     * 대표 이미지 정밀 검증 (해상도 최소 160×160, 정비율) — 마켓 대표 이미지·쇼룸 프로필 이미지 공통.
      */
-    private void validateMarketImage(MultipartFile file) {
+    private void validateSquareThumbnail(MultipartFile file) {
         try {
             BufferedImage image = ImageIO.read(file.getInputStream());
             if (image == null) {

@@ -17,6 +17,9 @@ public interface CreatorRepository extends JpaRepository<Creator, Long> {
 
     boolean existsByShowroomNameAndIdNot(String showroomName, Long id);
 
+    /** §22-1 쇼룸 주소는 쇼룸 사이에서 유일해야 한다(자동 생성 시 충돌 회피용). */
+    boolean existsByShowroomAddress(String showroomAddress);
+
     Optional<Creator> findByConnectionCode(String connectionCode);
 
     boolean existsByConnectionCode(String connectionCode);

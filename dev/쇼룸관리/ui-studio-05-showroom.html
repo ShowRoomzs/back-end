@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-studio-05-showroom — 쇼룸 스튜디오 쇼룸 관리 rev.1</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --pt-sidebar-w:240px; --pt-topbar-h:56px; --pt-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;margin-top:12px;line-height:1.8;}
+.rule b{color:var(--n-900);} .rule code{font-family:monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.rule.warn{border-color:var(--warning-text);background:#FFFDF8;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;display:inline-flex;align-items:center;gap:6px;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;min-height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+.stage.tall{height:auto;}
+
+/* ══ 셸(ui-studio-04 동일) ══ */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--pt-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--pt-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:9px 10px;border-radius:var(--r-sm);margin-bottom:2px;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--danger-text);color:#fff;border-radius:9px;
+  min-width:18px;height:18px;line-height:1;padding:1px 5px 0;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gnb-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-item.active .gn{color:rgba(255,255,255,.8);}
+.gcnt .bnum{display:inline-block;transform:translateY(-0.5px);}
+.top{position:absolute;left:var(--pt-sidebar-w);right:0;top:0;height:var(--pt-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;padding:0 var(--pt-pad);z-index:2;}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.crumb-s{font-weight:400;color:var(--n-400);font-size:var(--fs-caption);}
+.brand-chip{display:flex;align-items:center;gap:7px;font-size:var(--fs-caption);color:var(--n-600);}
+.brand-chip .st{font-size:var(--fs-micro);font-weight:500;padding:2px 9px;border-radius:var(--r-pill);
+  background:var(--success-bg);color:var(--success-text);}
+.main{position:absolute;left:var(--pt-sidebar-w);right:0;top:var(--pt-topbar-h);bottom:0;overflow:hidden;
+  display:flex;flex-direction:column;}
+.stage.tall .main{position:static;margin:var(--pt-topbar-h) 0 0 var(--pt-sidebar-w);overflow:visible;}
+.page-h{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:var(--pt-pad) var(--pt-pad) var(--sp-3);flex-shrink:0;}
+.page-t{font-size:var(--fs-h1);font-weight:600;}
+.page-body{flex:1;min-height:0;overflow-y:auto;padding:0 var(--pt-pad) var(--pt-pad);}
+
+/* ══ 버튼 ══ */
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:0 14px;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:none;cursor:pointer;white-space:nowrap;}
+.btn-primary{background:var(--accent-500);color:#fff;}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-ghost{background:transparent;color:var(--n-600);}
+.btn-danger{background:var(--danger-text);color:#fff;}
+.btn-quiet{background:#fff;color:var(--danger-text);border:1px solid var(--n-300);}
+.btn:disabled{background:var(--n-100);color:var(--n-400);border:1px solid var(--n-200);cursor:not-allowed;}
+.btn-sm{height:28px;padding:0 10px;font-size:var(--fs-micro);}
+.btn-block{width:100%;}
+
+/* ══ 탭(디자인시스템) ══ */
+.tabs{display:flex;align-items:center;gap:0;border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-4);}
+.tabs .period{margin:0 0 6px auto;}
+.tab{font-size:var(--fs-caption);color:var(--n-500);padding:9px 2px;margin-right:20px;cursor:pointer;
+  border-bottom:2px solid transparent;}
+.tab.active{color:var(--accent-500);border-bottom-color:var(--accent-500);font-weight:500;}
+
+/* ══ 2컬럼 · 카드 ══ */
+.cols{display:flex;gap:16px;align-items:flex-start;}
+.col-l{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px;}
+.col-r{width:400px;flex-shrink:0;display:flex;flex-direction:column;gap:16px;}
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);}
+.card-h{padding:13px 18px;border-bottom:1px solid var(--n-200);font-size:var(--fs-h3);font-weight:600;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.card-h .ch-s{font-size:var(--fs-micro);font-weight:400;color:var(--n-500);}
+.sec{padding:18px;border-bottom:1px solid var(--n-200);}
+.sec:last-child{border-bottom:none;}
+.btn-row{padding:14px 18px;border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+
+/* ══ 폼 ══ */
+.field{margin-bottom:14px;}
+.field:last-child{margin-bottom:0;}
+.flabel{display:block;font-size:var(--fs-caption);color:var(--n-600);margin-bottom:5px;font-weight:500;}
+.flabel .req{color:var(--danger-text);}
+.flabel .opt{color:var(--n-400);font-weight:400;}
+.inp{width:100%;height:36px;border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;
+  display:flex;align-items:center;padding:0 12px;font-size:var(--fs-body);color:var(--n-400);}
+.inp.filled{color:var(--n-900);}
+.inp.ro{background:var(--n-50);color:var(--n-600);border-color:var(--n-200);}
+.inp.area{height:70px;align-items:flex-start;padding-top:9px;line-height:1.6;}
+.inp.bad{border-color:var(--danger-text);}
+.lk{margin-left:auto;font-size:var(--fs-micro);color:var(--n-400);white-space:nowrap;}
+.hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:5px;line-height:1.7;}
+.err{font-size:var(--fs-micro);color:var(--danger-text);margin-top:5px;font-weight:500;}
+.cnt-in{margin-left:auto;padding-left:10px;font-size:var(--fs-micro);color:var(--n-400);flex-shrink:0;}
+.cnt{text-align:right;font-size:var(--fs-micro);color:var(--n-400);margin-top:4px;}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-warning{background:var(--warning-bg);color:var(--warning-text);}
+.b-danger{background:var(--danger-bg);color:var(--danger-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+
+/* ══ 프로필 ══ */
+.prof-row{display:flex;gap:18px;align-items:center;}
+.av-big{width:84px;height:84px;border-radius:50%;background:var(--n-200);border:1px solid var(--n-300);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-micro);color:var(--n-500);flex-shrink:0;}
+.av-big.noimg{border-style:dashed;background:var(--n-50);color:var(--n-400);cursor:pointer;}
+.av-big.noimg:hover{border-color:var(--accent-500);color:var(--accent-500);background:var(--accent-50);}
+.prof-acts{display:flex;gap:8px;}
+
+/* ══ 연결코드 ══ */
+.codebox{border:1px solid var(--accent-100);background:var(--accent-50);border-radius:var(--r-md);
+  padding:18px;text-align:center;}
+.code-val{font-size:26px;font-weight:600;letter-spacing:3px;color:var(--accent-600);
+  font-variant-numeric:tabular-nums;}
+.code-lb{font-size:var(--fs-micro);color:var(--n-500);margin:2px 0 14px;}
+.code-acts{display:flex;gap:8px;justify-content:center;}
+.linkbox{display:flex;gap:8px;align-items:center;}
+.linkbox .inp{flex:1;font-size:var(--fs-caption);}
+.note-i{font-size:var(--fs-micro);color:var(--n-600);background:var(--n-50);border:1px solid var(--n-200);
+  border-radius:var(--r-sm);padding:9px 12px;margin-top:var(--sp-3);line-height:1.7;}
+.note-i b{color:var(--n-900);}
+
+/* ══ 쇼룸 현황 ══ */
+.period{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 10px 0 12px;background:#fff;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-700);cursor:pointer;}
+.period:hover{border-color:var(--n-400);}
+.stat.key{background:var(--accent-50);border-color:var(--accent-100);}
+.stat.key .num{color:var(--accent-600);}
+.stat.key .lb{color:var(--accent-600);opacity:.8;}
+table.grid{width:100%;border-collapse:collapse;background:#fff;}
+table.grid th{text-align:left;background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);
+  font-weight:500;padding:8px 14px;white-space:nowrap;}
+table.grid td{padding:10px 14px;font-size:var(--fs-caption);border-top:1px solid var(--n-200);color:var(--n-700);}
+table.grid td.num{text-align:right;font-variant-numeric:tabular-nums;}
+table.grid th.num{text-align:right;}
+.td-t{color:var(--n-900);font-weight:500;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px;}
+.td-s{color:var(--n-400);font-size:var(--fs-micro);}
+.tbl-wrap{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.src{display:flex;flex-direction:column;gap:14px;}
+.dist{display:flex;flex-direction:column;gap:11px;}
+.dist-g{display:flex;align-items:center;gap:8px;font-size:var(--fs-micro);color:var(--n-600);font-weight:600;
+  margin-bottom:10px;}
+.dist-grp + .dist-grp{margin-top:20px;padding-top:18px;border-top:1px solid var(--n-200);}
+.rank{display:flex;flex-direction:column;}
+.rank-r{display:flex;gap:11px;align-items:center;padding:10px 0;border-bottom:1px solid var(--n-100);}
+.rank-r:last-child{border-bottom:none;}
+.rank-n{width:20px;height:20px;border-radius:var(--r-sm);background:var(--n-100);color:var(--n-600);
+  font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rank-r:first-child .rank-n{background:var(--accent-500);color:#fff;}
+.rank-m{flex:1;min-width:0;}
+.rank-t{font-size:var(--fs-caption);color:var(--n-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rank-d{font-size:var(--fs-micro);color:var(--n-400);margin-top:1px;}
+.rank-v{font-size:var(--fs-caption);color:var(--n-700);font-variant-numeric:tabular-nums;flex-shrink:0;}
+.src-r .sl{display:flex;align-items:baseline;justify-content:space-between;font-size:var(--fs-caption);color:var(--n-700);}
+.src-r .sv{font-size:var(--fs-caption);color:var(--n-500);font-variant-numeric:tabular-nums;}
+.src-r .sv b{color:var(--n-900);}
+.bar{height:6px;background:var(--n-200);border-radius:3px;margin-top:6px;overflow:hidden;}
+.bar i{display:block;height:100%;background:var(--accent-500);border-radius:3px;}
+/* ══ 팔로워 ══ */
+.stats{display:flex;gap:10px;}
+.stat{flex:1;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:13px;background:var(--n-50);}
+.stat .num{font-size:19px;font-weight:600;}
+.stat .lb{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.chart{height:180px;border:1px solid var(--n-200);border-radius:var(--r-sm);background:var(--n-50);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-micro);color:var(--n-400);}
+.flist{border:1px solid var(--n-200);border-radius:var(--r-sm);background:#fff;padding:0 14px;}
+.frow{display:flex;gap:11px;align-items:center;padding:10px 0;border-bottom:1px solid var(--n-100);}
+.frow:last-child{border-bottom:none;}
+.av{width:30px;height:30px;border-radius:50%;background:var(--n-200);display:flex;align-items:center;
+  justify-content:center;font-size:9px;color:var(--n-500);flex-shrink:0;}
+.frow .fn{flex:1;font-size:var(--fs-caption);color:var(--n-900);}
+.frow .fd{font-size:var(--fs-micro);color:var(--n-400);}
+
+/* ══ 빈 상태 ══ */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  text-align:center;padding:48px 20px;}
+.empty .ic{font-size:30px;}
+.empty .t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);}
+.empty .d{font-size:var(--fs-caption);color:var(--n-500);max-width:340px;line-height:1.7;}
+
+/* ══ 모달 ══ */
+.scrim{position:absolute;inset:0;background:rgba(26,27,31,.45);display:flex;align-items:center;justify-content:center;z-index:10;}
+.mdl{width:440px;background:#fff;border-radius:12px;box-shadow:var(--shadow-popover);overflow:hidden;}
+.mdl-h{padding:16px 20px;border-bottom:1px solid var(--n-200);font-size:var(--fs-h2);font-weight:600;
+  display:flex;align-items:center;justify-content:space-between;}
+.mdl-x{color:var(--n-400);font-size:14px;cursor:pointer;}
+.mdl-b{padding:20px;}
+.mdl-p{font-size:var(--fs-caption);color:var(--n-600);margin:0;line-height:1.7;}
+.mdl-f{padding:14px 20px;border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.mdl-box{background:var(--n-50);border:1px solid var(--n-200);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:14px;}
+.mdl-code{font-size:19px;font-weight:600;letter-spacing:2px;color:var(--n-900);text-align:center;}
+.chklist{margin:0;padding-left:18px;font-size:var(--fs-caption);color:var(--n-600);line-height:1.8;}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 640.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+<div class="doc-head">
+  <h1>ui-studio-05-showroom <span style="font-weight:400;color:var(--n-500)">— 쇼룸 스튜디오 쇼룸 관리</span></h1>
+  <p class="meta">근거: wf-studio-05-쇼룸기본정보 F1·F2(쇼룸 프로필 · 팔로워) · ui-studio-04-connections.html(메인 셸 · 컴포넌트 재사용) · SHOWROOMZ 웹 디자인시스템 v1.3(셸 · 탭 · 액션 모달 · 빈 상태) · GNB #8</p>
+
+  <div class="rule">
+    <b>[스코프]</b> GNB #8 <b>쇼룸 관리</b> — 쇼룸 프로필(공개 정보 · 주소 · 연결코드) + <b>쇼룸 현황</b> 2탭. 계정 · 사업자 · 정산 계좌는 GNB #9 기본정보 관리(<code>ui-studio-06</code>) 소관.<br>
+    <b>[설계 원칙 — 공개/비공개 분리]</b> <b>쇼룸(#8) = 소비자에게 공개</b> / <b>계정(#9) = 비공개</b>. 구버전 목업 studio-profile이 프로필 · 활동채널 · 정산계좌를 한 화면에 혼재시킨 구조를 두 메뉴로 분리(wf-studio-05 F1·F3 근거).<br>
+    <b>[셸 재사용]</b> GNB · 탑바 · 버튼 · 입력 · 배지 · 모달은 <code>ui-studio-04-connections.html</code> 및 디자인시스템 v1.3의 셸 · 액션 모달 규격 그대로. 탭은 디자인시스템 「탭」(밑줄 · 배타적 단일선택).<br>
+    <b>[에러 문구 사용 범위]</b> 필수 미입력은 <b>버튼 비활성만</b>(S2) · 에러 문구는 <b>중복(S3) · 파일 형식/용량(S4)</b>에만. 오류 필드는 보더 위험색 + 문구 1줄.<br>
+    <b>[연결코드]</b> 쇼룸별 고정 · 재발급 시 이전 코드 즉시 무효 → 되돌릴 수 없는 액션이므로 확인 모달(S5) 필수. 확정 버튼은 파괴적 액션이라 위험색 사용(주 액션색 인디고 규칙과 별개 · 디자인시스템 <code>btn-danger</code>).<br>
+    <b>[앱 계정과 분리 · 2026.08 변경]</b> 쇼룸명 · 프로필 이미지를 <b>소비자 앱 계정과 공유하지 않음</b>으로 변경(구버전 목업의 "앱 계정 공유" 규칙 폐기) — 쇼룸은 판매 채널의 간판이고 앱 계정은 개인 소비 계정이라 같은 값을 강제하면 어느 한쪽이 부적절해진다. 동일 인물이 두 이름을 갖게 되는 점은 의도된 결과.<br>
+    <b>[인스타그램 URL]</b> 소비자 노출용 공개 필드로 이 화면에 둠 — 가입 온보딩의 채널 주소를 기본값으로 가져오되 독립 수정 가능. 기본정보 관리의 활동 채널(비공개 · 계약 이행 확인용)과는 별개 데이터.
+  <br>
+    <b>[드롭다운 항목 · 확정]</b> 기간 = <b>최근 7일 / 14일 / 30일 / 60일 / 90일 / 6개월 / 1년</b>(기본값 30일) · 인기 콘텐츠 정렬 = <b>좋아요 많은 순 / 노출 많은 순</b>(기본값 좋아요 많은 순, 최신순 제외 — 순위표의 목적이 성과 비교라 시간순은 의미가 없음). 시안은 <b>닫힌 상태만</b> 표시 — 펼친 팝오버는 디자인시스템에 컴포넌트가 없어 별도 정의 후 추가.<br>
+    <b>[스냅샷 높이]</b> 본문이 1024px를 넘는 상태는 디자인시스템 v1.3 「1024 초과」 규격에 따라 <code>.stage</code>를 세로로 늘려 전체를 펼쳐 표시했다 — 실제 화면은 GNB · 탑바 고정 + 본문만 스크롤.
+  </div>
+  <div class="rule warn">
+    <b>[와이어와 다르게 처리한 것 · 팔로워 탭 → 쇼룸 현황]</b> wf-studio-05 F2의 <b>팔로워 탭을 폐기</b>하고 <b>쇼룸 현황</b> 탭으로 교체(2026.08 결정) — 팔로워 목록은 열람 전용 · 개인정보 미표시 · 개별 연락 불가라 인플루언서가 그 화면에서 할 수 있는 행동이 없었다. 화면의 목적을 <b>쇼룸이라는 공개 채널의 반응 지표</b>로 재정의했다. 와이어의 <code>[집계 대기]</code> 등 기획 태그는 UI에서 제거(원칙④).<br><b>[지표 정의 · 확정]</b> ⓪ 팔로워 카드 3번째 지표는 <b>직전 동일 기간 대비 증감률</b> — 절대 수치만으로는 좋은지 나쁜지 판단할 수 없어 비교 기준을 넣었다(게시물 총 개수는 콘텐츠 자산이라 게시물(#5) 소관으로 제외). ① <b>순방문</b> = 방문 횟수(같은 소비자 재방문은 30분 세션 기준 1회) ② <b>방문자 수</b> = 중복 제거한 사람 수, <b>팔로우 전환율</b> = 기간 내 신규 팔로워 ÷ 방문자 수(횟수가 아니라 사람 기준) ③ 인스타그램 링크 클릭 지표는 제외(쇼룸 밖으로 나가는 행동이라 쇼룸 도달 지표와 성격이 다름) · <b>언팔로우 수 미노출</b>(누가 언팔했는지는 어떤 형태로도 표시하지 않음) ④ 콘텐츠 성과는 <b>인기 콘텐츠 TOP 5</b>(노출 · 좋아요)만 — 판매 · 정산 수치는 판매 현황(#6)과 정산 관리(#7)로 경계를 그었다.<br><b>[팔로워 정보 · 2026.08 추가]</b> 게시물 반응 표 · 최근 팔로워 목록을 폐기하고 <b>팔로워 구성(연령대 · 성별) · 팔로워 행동 · 지역 분포 · 인기 콘텐츠 TOP 5</b>로 교체 — 개별 팔로워를 나열해도 할 수 있는 행동이 없었고, 인플루언서에게 필요한 건 <b>누가 보는지에 대한 집계</b>였다. 개인 단위 정보는 어떤 카드에도 표시하지 않는다.<br>
+    <b>[수집 가능성 · 확인 필요]</b> ① <b>연령대 · 성별</b> = 소셜 로그인(카카오) 동의 항목이라 <b>동의자만</b> 집계 — 동의율이 낮으면 "미확인" 비중이 커진다. 동의 항목 신청 여부 확인 필요. ② <b>지역</b> = 별도 수집 항목이 없어 <b>공구 배송지 시 · 도</b>로만 추정 가능 → 구매 이력 없는 팔로워는 빠지므로 표본 편향이 있다. 별도 수집(가입 시 지역 선택) 없이 이대로 갈지 결정 필요. ③ <b>표본 최소치</b> — 팔로워가 적을 때 구성 비율이 개인을 특정할 수 있어, <b>일정 인원 미만이면 비율 비공개</b> 규칙이 필요하다(기준 인원 확정 필요).<br>
+    <b>[유입 경로 전제]</b> 유입 경로는 <b>쇼룸 링크에 붙는 소스 값</b>(예: <code>?from=ig</code>)과 앱 딥링크에서 그 값을 보존하는 규칙이 있어야 신뢰할 수 있다 — 규칙이 없으면 대부분이 "직접 유입"으로 뭉친다. 링크 발급 규칙 확정 필요.<br>
+    <b>[와이어 오류]</b> wf-studio-05 전 프레임의 GNB #6이 <b>"성과 관리"</b>로 표기됨 → 확정 9항목의 <b>"판매 현황"</b>으로 정정 적용.<br>
+    <b>[확인 필요]</b> ① 프로필 이미지 <b>삭제</b> 동선(기본 이미지로 되돌리기)이 와이어에 없음 — S1에 [삭제] 버튼을 넣었으니 기본 이미지 처리 방식 확정 필요. ② 쇼룸명 변경 시 쇼룸 주소가 따라 바뀌지 않는다는 규칙이라, <b>쇼룸명과 주소가 장기적으로 불일치</b>하게 됨(예: 쇼룸명만 여러 번 변경) — MVP 의도된 것인지 확인 필요.
+  </div>
+</div>
+<section class="state">
+  <div class="state-bar"><span class="state-id">S1</span><span class="state-label">쇼룸 프로필 · 기본<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">공개 정보만 이 화면에 모임(비공개 정보는 기본정보 관리) · 쇼룸 주소는 자동 생성 후 <b>수정 불가</b>, 옆에 [복사] · 저장은 변경이 있을 때만 활성</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">판매 현황</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item active"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">쇼룸 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">쇼룸 관리</div></div><div class="page-body"><div class="tabs"><div class="tab active">쇼룸 프로필</div><div class="tab">쇼룸 현황</div></div><div class="cols"><div class="col-l"><div class="card"><div class="card-h">쇼룸 프로필 <span class="ch-s">소비자에게 공개되는 정보</span></div><div class="sec"><div class="prof-row"><div class="av-big">IMG</div><div style="flex:1"><div class="prof-acts"><button class="btn btn-secondary btn-sm">이미지 변경</button><button class="btn btn-secondary btn-sm">삭제</button></div><div class="hint">최소 160×160 · 정비율 · 최대 20MB · JPG · PNG · GIF</div></div></div><div class="note-i">쇼룸 프로필은 <b>소비자 앱 계정과 별개</b>입니다 — 여기서 바꿔도 앱 계정의 닉네임 · 프로필 이미지에는 영향이 없습니다.</div></div><div class="sec"><div class="field"><label class="flabel">쇼룸명 <span class="req">*</span></label><div class="inp filled">뷰티_소연<span class="cnt-in">5 / 20</span></div><div class="hint">특수문자 없이 2~20자 · 중복 불가 · 소비자에게 보이는 이름</div></div><div class="field"><label class="flabel">쇼룸 주소</label><div class="linkbox"><div class="inp ro">showroomz.com/@beauty_soyeon<span class="lk">🔒 자동 생성</span></div><button class="btn btn-secondary" style="height:36px;flex-shrink:0">복사</button></div><div class="hint">가입 시 쇼룸명 기준으로 자동 생성됩니다. 인스타그램 프로필·스토리에 이 링크를 걸어두세요.</div></div><div class="field"><label class="flabel">쇼룸 소개글</label><div class="inp area filled">뷰티 소품을 좋아하는 소연입니다 🌸 제가 직접 써보고 고른 아이템들을 소개합니다.</div><div class="cnt">47 / 50</div></div><div class="field"><label class="flabel">인스타그램 URL</label><div class="inp filled">https://www.instagram.com/beauty_soyeon</div><div class="hint">쇼룸 화면에 공개됩니다. 가입 시 입력한 채널 주소가 기본값이며 여기서 직접 수정할 수 있습니다.</div></div></div><div class="btn-row"><button class="btn btn-primary">저장</button></div></div></div><div class="col-r"><div class="card"><div class="card-h">연결코드</div><div class="sec"><div class="codebox"><div class="code-val">SRZ-4K7M</div><div class="code-lb">내 쇼룸 연결코드</div><div class="code-acts"><button class="btn btn-secondary btn-sm">복사</button><button class="btn btn-secondary btn-sm">재발급</button></div></div><div class="note-i">브랜드가 연결 요청 시 이 코드를 입력하면 <b>정확히 내 쇼룸으로</b> 요청이 도착합니다.</div><div class="note-i">재발급하면 <b>이전 코드는 즉시 무효</b>가 됩니다. 이미 연결된 브랜드와의 연결은 그대로 유지됩니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S2</span><span class="state-label">쇼룸 프로필 · 신규(미입력 · 저장 비활성)<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">가입 직후 — 이미지 없음(원 클릭 시 파일 선택) · 쇼룸명 · 소개글 · 인스타그램 URL 미입력 · <b>필수 미입력은 에러 문구 없이 [저장] 비활성만</b></span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">판매 현황</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item active"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">쇼룸 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">쇼룸 관리</div></div><div class="page-body"><div class="tabs"><div class="tab active">쇼룸 프로필</div><div class="tab">쇼룸 현황</div></div><div class="cols"><div class="col-l"><div class="card"><div class="card-h">쇼룸 프로필 <span class="ch-s">소비자에게 공개되는 정보</span></div><div class="sec"><div class="prof-row"><div class="av-big noimg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" style="width:26px;height:26px"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></div><div style="flex:1"><div class="hint" style="margin-top:0">원을 눌러 이미지를 선택하세요 · 최소 160×160 · 정비율 · 최대 20MB · JPG · PNG · GIF</div></div></div><div class="note-i">쇼룸 프로필은 <b>소비자 앱 계정과 별개</b>입니다 — 여기서 바꿔도 앱 계정의 닉네임 · 프로필 이미지에는 영향이 없습니다.</div></div><div class="sec"><div class="field"><label class="flabel">쇼룸명 <span class="req">*</span></label><div class="inp">한글·영문·숫자·공백 2~20자<span class="cnt-in">0 / 20</span></div></div><div class="field"><label class="flabel">쇼룸 주소</label><div class="linkbox"><div class="inp ro">showroomz.com/@beauty_soyeon<span class="lk">🔒 자동 생성</span></div><button class="btn btn-secondary" style="height:36px;flex-shrink:0">복사</button></div><div class="hint">가입 시 쇼룸명 기준으로 자동 생성됩니다. 인스타그램 프로필·스토리에 이 링크를 걸어두세요.</div></div><div class="field"><label class="flabel">쇼룸 소개글</label><div class="inp area">쇼룸을 소개하는 문장을 적어주세요</div><div class="cnt">0 / 50</div></div><div class="field"><label class="flabel">인스타그램 URL</label><div class="inp">인스타그램 주소</div><div class="hint">쇼룸 화면에 공개됩니다. 가입 시 입력한 채널 주소가 기본값이며 여기서 직접 수정할 수 있습니다.</div></div></div><div class="btn-row"><button class="btn btn-primary" disabled>저장</button></div></div></div><div class="col-r"><div class="card"><div class="card-h">연결코드</div><div class="sec"><div class="codebox"><div class="code-val">SRZ-4K7M</div><div class="code-lb">내 쇼룸 연결코드</div><div class="code-acts"><button class="btn btn-secondary btn-sm">복사</button><button class="btn btn-secondary btn-sm">재발급</button></div></div><div class="note-i">브랜드가 연결 요청 시 이 코드를 입력하면 <b>정확히 내 쇼룸으로</b> 요청이 도착합니다.</div><div class="note-i">재발급하면 <b>이전 코드는 즉시 무효</b>가 됩니다. 이미 연결된 브랜드와의 연결은 그대로 유지됩니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S3</span><span class="state-label">쇼룸 프로필 · 입력 오류(중복 · 형식)<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">에러 문구는 <b>중복 · 형식 오류</b>에만 사용(필수 미입력은 비활성만) · 쇼룸명 중복 + 인스타그램 URL 형식 오류를 함께 표시 · 오류 필드 보더 위험색 + 문구는 <b>필드 바로 아래</b> 1줄 · [저장] 비활성</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">판매 현황</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item active"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">쇼룸 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">쇼룸 관리</div></div><div class="page-body"><div class="tabs"><div class="tab active">쇼룸 프로필</div><div class="tab">쇼룸 현황</div></div><div class="cols"><div class="col-l"><div class="card"><div class="card-h">쇼룸 프로필 <span class="ch-s">소비자에게 공개되는 정보</span></div><div class="sec"><div class="prof-row"><div class="av-big">IMG</div><div style="flex:1"><div class="prof-acts"><button class="btn btn-secondary btn-sm">이미지 변경</button><button class="btn btn-secondary btn-sm">삭제</button></div><div class="hint">최소 160×160 · 정비율 · 최대 20MB · JPG · PNG · GIF</div></div></div><div class="note-i">쇼룸 프로필은 <b>소비자 앱 계정과 별개</b>입니다 — 여기서 바꿔도 앱 계정의 닉네임 · 프로필 이미지에는 영향이 없습니다.</div></div><div class="sec"><div class="field"><label class="flabel">쇼룸명 <span class="req">*</span></label><div class="inp filled bad">뷰티소연<span class="cnt-in">4 / 20</span></div><div class="err">이미 사용 중인 쇼룸명입니다. 다른 이름을 입력해주세요.</div></div><div class="field"><label class="flabel">쇼룸 주소</label><div class="linkbox"><div class="inp ro">showroomz.com/@beauty_soyeon<span class="lk">🔒 자동 생성</span></div><button class="btn btn-secondary" style="height:36px;flex-shrink:0">복사</button></div><div class="hint">가입 시 쇼룸명 기준으로 자동 생성됩니다. 인스타그램 프로필·스토리에 이 링크를 걸어두세요.</div></div><div class="field"><label class="flabel">쇼룸 소개글</label><div class="inp area filled">뷰티 소품을 좋아하는 소연입니다 🌸 제가 직접 써보고 고른 아이템들을 소개합니다.</div><div class="cnt">47 / 50</div></div><div class="field"><label class="flabel">인스타그램 URL</label><div class="inp filled bad">instagram.com/beauty soyeon</div><div class="err">https://로 시작하는 올바른 URL을 입력해 주세요.</div></div></div><div class="btn-row"><button class="btn btn-primary" disabled>저장</button></div></div></div><div class="col-r"><div class="card"><div class="card-h">연결코드</div><div class="sec"><div class="codebox"><div class="code-val">SRZ-4K7M</div><div class="code-lb">내 쇼룸 연결코드</div><div class="code-acts"><button class="btn btn-secondary btn-sm">복사</button><button class="btn btn-secondary btn-sm">재발급</button></div></div><div class="note-i">브랜드가 연결 요청 시 이 코드를 입력하면 <b>정확히 내 쇼룸으로</b> 요청이 도착합니다.</div><div class="note-i">재발급하면 <b>이전 코드는 즉시 무효</b>가 됩니다. 이미 연결된 브랜드와의 연결은 그대로 유지됩니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S4</span><span class="state-label">쇼룸 프로필 · 이미지 용량 초과 오류<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">파일 형식 · 용량 오류도 에러 문구 대상 · 업로드 실패 시 기존 이미지는 유지하고 안내만 교체 · [저장] 비활성</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">판매 현황</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item active"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">쇼룸 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">쇼룸 관리</div></div><div class="page-body"><div class="tabs"><div class="tab active">쇼룸 프로필</div><div class="tab">쇼룸 현황</div></div><div class="cols"><div class="col-l"><div class="card"><div class="card-h">쇼룸 프로필 <span class="ch-s">소비자에게 공개되는 정보</span></div><div class="sec"><div class="prof-row"><div class="av-big">IMG</div><div style="flex:1"><div class="prof-acts"><button class="btn btn-secondary btn-sm">이미지 변경</button><button class="btn btn-secondary btn-sm">삭제</button></div><div class="err">20MB를 초과했습니다. 20MB 이하 JPG · PNG · GIF 파일을 올려주세요.</div></div></div><div class="note-i">쇼룸 프로필은 <b>소비자 앱 계정과 별개</b>입니다 — 여기서 바꿔도 앱 계정의 닉네임 · 프로필 이미지에는 영향이 없습니다.</div></div><div class="sec"><div class="field"><label class="flabel">쇼룸명 <span class="req">*</span></label><div class="inp filled">뷰티_소연<span class="cnt-in">5 / 20</span></div><div class="hint">특수문자 없이 2~20자 · 중복 불가 · 소비자에게 보이는 이름</div></div><div class="field"><label class="flabel">쇼룸 주소</label><div class="linkbox"><div class="inp ro">showroomz.com/@beauty_soyeon<span class="lk">🔒 자동 생성</span></div><button class="btn btn-secondary" style="height:36px;flex-shrink:0">복사</button></div><div class="hint">가입 시 쇼룸명 기준으로 자동 생성됩니다. 인스타그램 프로필·스토리에 이 링크를 걸어두세요.</div></div><div class="field"><label class="flabel">쇼룸 소개글</label><div class="inp area filled">뷰티 소품을 좋아하는 소연입니다 🌸 제가 직접 써보고 고른 아이템들을 소개합니다.</div><div class="cnt">47 / 50</div></div><div class="field"><label class="flabel">인스타그램 URL</label><div class="inp filled">https://www.instagram.com/beauty_soyeon</div><div class="hint">쇼룸 화면에 공개됩니다. 가입 시 입력한 채널 주소가 기본값이며 여기서 직접 수정할 수 있습니다.</div></div></div><div class="btn-row"><button class="btn btn-primary" disabled>저장</button></div></div></div><div class="col-r"><div class="card"><div class="card-h">연결코드</div><div class="sec"><div class="codebox"><div class="code-val">SRZ-4K7M</div><div class="code-lb">내 쇼룸 연결코드</div><div class="code-acts"><button class="btn btn-secondary btn-sm">복사</button><button class="btn btn-secondary btn-sm">재발급</button></div></div><div class="note-i">브랜드가 연결 요청 시 이 코드를 입력하면 <b>정확히 내 쇼룸으로</b> 요청이 도착합니다.</div><div class="note-i">재발급하면 <b>이전 코드는 즉시 무효</b>가 됩니다. 이미 연결된 브랜드와의 연결은 그대로 유지됩니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S5</span><span class="state-label">연결코드 재발급 확인 모달<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">되돌릴 수 없는 액션 — 이전 코드 즉시 무효 · 기존 연결 유지 사실을 함께 고지 · 확정 버튼은 위험색</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">판매 현황</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item active"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">쇼룸 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">쇼룸 관리</div></div><div class="page-body"><div class="tabs"><div class="tab active">쇼룸 프로필</div><div class="tab">쇼룸 현황</div></div><div class="cols"><div class="col-l"><div class="card"><div class="card-h">쇼룸 프로필 <span class="ch-s">소비자에게 공개되는 정보</span></div><div class="sec"><div class="prof-row"><div class="av-big">IMG</div><div style="flex:1"><div class="prof-acts"><button class="btn btn-secondary btn-sm">이미지 변경</button><button class="btn btn-secondary btn-sm">삭제</button></div><div class="hint">최소 160×160 · 정비율 · 최대 20MB · JPG · PNG · GIF</div></div></div><div class="note-i">쇼룸 프로필은 <b>소비자 앱 계정과 별개</b>입니다 — 여기서 바꿔도 앱 계정의 닉네임 · 프로필 이미지에는 영향이 없습니다.</div></div><div class="sec"><div class="field"><label class="flabel">쇼룸명 <span class="req">*</span></label><div class="inp filled">뷰티_소연<span class="cnt-in">5 / 20</span></div><div class="hint">특수문자 없이 2~20자 · 중복 불가 · 소비자에게 보이는 이름</div></div><div class="field"><label class="flabel">쇼룸 주소</label><div class="linkbox"><div class="inp ro">showroomz.com/@beauty_soyeon<span class="lk">🔒 자동 생성</span></div><button class="btn btn-secondary" style="height:36px;flex-shrink:0">복사</button></div><div class="hint">가입 시 쇼룸명 기준으로 자동 생성됩니다. 인스타그램 프로필·스토리에 이 링크를 걸어두세요.</div></div><div class="field"><label class="flabel">쇼룸 소개글</label><div class="inp area filled">뷰티 소품을 좋아하는 소연입니다 🌸 제가 직접 써보고 고른 아이템들을 소개합니다.</div><div class="cnt">47 / 50</div></div><div class="field"><label class="flabel">인스타그램 URL</label><div class="inp filled">https://www.instagram.com/beauty_soyeon</div><div class="hint">쇼룸 화면에 공개됩니다. 가입 시 입력한 채널 주소가 기본값이며 여기서 직접 수정할 수 있습니다.</div></div></div><div class="btn-row"><button class="btn btn-primary">저장</button></div></div></div><div class="col-r"><div class="card"><div class="card-h">연결코드</div><div class="sec"><div class="codebox"><div class="code-val">SRZ-4K7M</div><div class="code-lb">내 쇼룸 연결코드</div><div class="code-acts"><button class="btn btn-secondary btn-sm">복사</button><button class="btn btn-secondary btn-sm">재발급</button></div></div><div class="note-i">브랜드가 연결 요청 시 이 코드를 입력하면 <b>정확히 내 쇼룸으로</b> 요청이 도착합니다.</div><div class="note-i">재발급하면 <b>이전 코드는 즉시 무효</b>가 됩니다. 이미 연결된 브랜드와의 연결은 그대로 유지됩니다.</div></div></div></div></div></div>
+</div>
+<div class="scrim"><div class="mdl"><div class="mdl-h">연결코드를 재발급할까요?<span class="mdl-x">✕</span></div><div class="mdl-b"><div class="mdl-box"><div class="mdl-code">SRZ-4K7M</div></div><p class="mdl-p">재발급하면 위 코드는 <b>즉시 사용할 수 없습니다</b>. 이 코드를 이미 전달한 브랜드는 새 코드를 다시 받아야 합니다. 이미 연결된 브랜드와의 연결은 그대로 유지됩니다.</p></div><div class="mdl-f"><button class="btn btn-ghost">취소</button><button class="btn btn-danger">재발급</button></div></div></div>
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S6</span><span class="state-label">쇼룸 현황 · 기본<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">쇼룸(공개 채널)의 반응과 <b>팔로워 구성</b>만 — 공구 매출 · 정산 수치는 판매 현황(#6) 소관 · 팔로워는 <b>집계값만</b> 표시(개인 목록 없음) · 연령 · 성별은 소셜 로그인 동의자 기준, 지역은 배송지 기준 · 기간 선택은 화면 전체에 적용</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">판매 현황</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item active"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">쇼룸 관리 <span class="crumb-s">› 쇼룸 현황</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">쇼룸 관리</div><div class="period">최근 30일 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="width:13px;height:13px;color:var(--n-500)"><polyline points="6 9 12 15 18 9"></polyline></svg></div></div><div class="page-body"><div class="tabs"><div class="tab">쇼룸 프로필</div><div class="tab active">쇼룸 현황</div></div><div class="cols"><div class="col-l"><div class="card"><div class="card-h">팔로워</div><div class="sec"><div class="stats"><div class="stat"><div class="num">1,240</div><div class="lb">총 팔로워</div></div><div class="stat key"><div class="num">+42</div><div class="lb">기간 내 신규</div></div><div class="stat"><div class="num">+3.5%</div><div class="lb">직전 30일 대비 증감률</div></div></div></div></div><div class="card"><div class="card-h">쇼룸 도달</div><div class="sec"><div class="stats"><div class="stat"><div class="num">3,180</div><div class="lb">쇼룸 순방문</div></div><div class="stat"><div class="num">2,410</div><div class="lb">방문자 수</div></div><div class="stat key"><div class="num">1.7%</div><div class="lb">팔로우 전환율</div></div></div><div class="note-i"><b>순방문</b>은 방문 횟수(같은 소비자의 재방문은 30분 세션 기준 1회) · <b>방문자 수</b>는 같은 소비자를 중복 없이 센 사람 수 · <b>팔로우 전환율</b>은 기간 내 신규 팔로워 ÷ 방문자 수입니다.</div></div></div><div class="card"><div class="card-h">팔로워 구성 <span class="ch-s">집계값만 · 개인 식별 정보 없음</span></div><div class="sec"><div class="dist-grp"><div class="dist-g">연령대</div><div class="dist"><div class="src-r"><div class="sl"><span>18–24세</span><span class="sv"><b>34%</b></span></div><div class="bar"><i style="width:34%"></i></div></div><div class="src-r"><div class="sl"><span>25–34세</span><span class="sv"><b>41%</b></span></div><div class="bar"><i style="width:41%"></i></div></div><div class="src-r"><div class="sl"><span>35–44세</span><span class="sv"><b>17%</b></span></div><div class="bar"><i style="width:17%"></i></div></div><div class="src-r"><div class="sl"><span>45세 이상</span><span class="sv"><b>5%</b></span></div><div class="bar"><i style="width:5%"></i></div></div><div class="src-r"><div class="sl"><span>미확인</span><span class="sv"><b>3%</b></span></div><div class="bar"><i style="width:3%"></i></div></div></div></div><div class="dist-grp"><div class="dist-g">성별</div><div class="dist"><div class="src-r"><div class="sl"><span>여성</span><span class="sv"><b>88%</b></span></div><div class="bar"><i style="width:88%"></i></div></div><div class="src-r"><div class="sl"><span>남성</span><span class="sv"><b>9%</b></span></div><div class="bar"><i style="width:9%"></i></div></div><div class="src-r"><div class="sl"><span>미확인</span><span class="sv"><b>3%</b></span></div><div class="bar"><i style="width:3%"></i></div></div></div></div><div class="note-i">소셜 로그인 시 <b>연령대 · 성별 제공에 동의한 팔로워</b>만 집계됩니다. 동의하지 않은 팔로워는 미확인으로 분류됩니다.</div></div></div><div class="card"><div class="card-h">지역 분포</div><div class="sec"><div class="dist"><div class="src-r"><div class="sl"><span>서울</span><span class="sv"><b>31%</b></span></div><div class="bar"><i style="width:31%"></i></div></div><div class="src-r"><div class="sl"><span>경기</span><span class="sv"><b>24%</b></span></div><div class="bar"><i style="width:24%"></i></div></div><div class="src-r"><div class="sl"><span>부산</span><span class="sv"><b>9%</b></span></div><div class="bar"><i style="width:9%"></i></div></div><div class="src-r"><div class="sl"><span>인천</span><span class="sv"><b>7%</b></span></div><div class="bar"><i style="width:7%"></i></div></div><div class="src-r"><div class="sl"><span>대구</span><span class="sv"><b>6%</b></span></div><div class="bar"><i style="width:6%"></i></div></div><div class="src-r"><div class="sl"><span>기타</span><span class="sv"><b>23%</b></span></div><div class="bar"><i style="width:23%"></i></div></div></div><div class="note-i">공구 구매 시 입력한 <b>배송지 시 · 도</b> 기준입니다. 구매 이력이 없는 팔로워는 집계에서 빠집니다.</div></div></div></div><div class="col-r"><div class="card"><div class="card-h">팔로워 행동</div><div class="sec"><div class="stats" style="flex-direction:column"><div class="stat"><div class="num">2.4회</div><div class="lb">팔로워 평균 방문 횟수</div></div><div class="stat"><div class="num">38%</div><div class="lb">팔로워 재방문율</div></div><div class="stat"><div class="num">61%</div><div class="lb">방문자 중 팔로워 비중</div></div></div></div></div><div class="card"><div class="card-h">인기 콘텐츠 TOP 5 <div class="period" style="height:28px;font-size:var(--fs-micro)">좋아요 많은 순 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="width:13px;height:13px;color:var(--n-500)"><polyline points="6 9 12 15 18 9"></polyline></svg></div></div><div class="sec"><div class="rank"><div class="rank-r"><div class="rank-n">1</div><div class="rank-m"><div class="rank-t">여름 끝 무너진 장벽, 3주연 돌아옵니다</div><div class="rank-d">08.10 게시 · 노출 2,840</div></div><div class="rank-v">♥ 24</div></div><div class="rank-r"><div class="rank-n">2</div><div class="rank-m"><div class="rank-t">시카 앰플 재구매 후기</div><div class="rank-d">08.02 게시 · 노출 1,510</div></div><div class="rank-v">♥ 31</div></div><div class="rank-r"><div class="rank-n">3</div><div class="rank-m"><div class="rank-t">지난 공구 후기 모아봤어요</div><div class="rank-d">08.07 게시 · 노출 1,960</div></div><div class="rank-v">♥ 13</div></div><div class="rank-r"><div class="rank-n">4</div><div class="rank-m"><div class="rank-t">여름 수분 루틴 정리</div><div class="rank-d">07.28 게시 · 노출 1,120</div></div><div class="rank-v">♥ 18</div></div><div class="rank-r"><div class="rank-n">5</div><div class="rank-m"><div class="rank-t">클렌저 3종 비교</div><div class="rank-d">07.21 게시 · 노출 870</div></div><div class="rank-v">♥ 9</div></div></div></div></div><div class="card"><div class="card-h">유입 경로</div><div class="sec"><div class="src"><div class="src-r"><div class="sl"><span>인스타그램 링크</span><span class="sv"><b>62%</b> · 1,972</span></div><div class="bar"><i style="width:62%"></i></div></div><div class="src-r"><div class="sl"><span>앱 검색</span><span class="sv"><b>21%</b> · 668</span></div><div class="bar"><i style="width:21%"></i></div></div><div class="src-r"><div class="sl"><span>공구 게시물</span><span class="sv"><b>12%</b> · 382</span></div><div class="bar"><i style="width:12%"></i></div></div><div class="src-r"><div class="sl"><span>직접 유입</span><span class="sv"><b>5%</b> · 158</span></div><div class="bar"><i style="width:5%"></i></div></div></div><div class="note-i">쇼룸 링크에 붙은 소스 값으로 구분합니다. 소스가 없는 방문은 <b>직접 유입</b>으로 집계됩니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S7</span><span class="state-label">쇼룸 현황 · 빈 상태(데이터 없음)<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">신규 인플루언서 · 수치는 0 또는 —로 표시하고 카드를 숨기지 않음 · 구성 · 지역 · 유입 경로는 각자의 빈 상태 문구를 가짐</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">판매 현황</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item active"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">쇼룸 관리 <span class="crumb-s">› 쇼룸 현황</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">쇼룸 관리</div><div class="period">최근 30일 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="width:13px;height:13px;color:var(--n-500)"><polyline points="6 9 12 15 18 9"></polyline></svg></div></div><div class="page-body"><div class="tabs"><div class="tab">쇼룸 프로필</div><div class="tab active">쇼룸 현황</div></div><div class="cols"><div class="col-l"><div class="card"><div class="card-h">팔로워</div><div class="sec"><div class="stats"><div class="stat"><div class="num">0</div><div class="lb">총 팔로워</div></div><div class="stat key"><div class="num">0</div><div class="lb">기간 내 신규</div></div><div class="stat"><div class="num">—</div><div class="lb">직전 30일 대비 증감률</div></div></div></div></div><div class="card"><div class="card-h">쇼룸 도달</div><div class="sec"><div class="stats"><div class="stat"><div class="num">0</div><div class="lb">쇼룸 순방문</div></div><div class="stat"><div class="num">0</div><div class="lb">방문자 수</div></div><div class="stat key"><div class="num">—</div><div class="lb">팔로우 전환율</div></div></div><div class="note-i"><b>순방문</b>은 방문 횟수(같은 소비자의 재방문은 30분 세션 기준 1회) · <b>방문자 수</b>는 같은 소비자를 중복 없이 센 사람 수 · <b>팔로우 전환율</b>은 기간 내 신규 팔로워 ÷ 방문자 수입니다.</div></div></div><div class="card"><div class="card-h">팔로워 구성 <span class="ch-s">집계값만 · 개인 식별 정보 없음</span></div><div class="sec"><div class="empty" style="padding:32px 20px"><div class="t" style="font-size:var(--fs-caption);color:var(--n-500);font-weight:400">팔로워가 모이면 연령 · 성별 구성이 표시됩니다</div></div></div></div><div class="card"><div class="card-h">지역 분포</div><div class="sec"><div class="empty" style="padding:32px 20px"><div class="t" style="font-size:var(--fs-caption);color:var(--n-500);font-weight:400">표시할 데이터가 없습니다</div></div></div></div></div><div class="col-r"><div class="card"><div class="card-h">팔로워 행동</div><div class="sec"><div class="stats" style="flex-direction:column"><div class="stat"><div class="num">—</div><div class="lb">팔로워 평균 방문 횟수</div></div><div class="stat"><div class="num">—</div><div class="lb">팔로워 재방문율</div></div><div class="stat"><div class="num">—</div><div class="lb">방문자 중 팔로워 비중</div></div></div></div></div><div class="card"><div class="card-h">인기 콘텐츠 TOP 5 <div class="period" style="height:28px;font-size:var(--fs-micro)">좋아요 많은 순 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="width:13px;height:13px;color:var(--n-500)"><polyline points="6 9 12 15 18 9"></polyline></svg></div></div><div class="sec"><div class="empty" style="padding:32px 20px"><div class="t" style="font-size:var(--fs-caption);color:var(--n-500);font-weight:400">아직 게시물이 없습니다</div></div></div></div><div class="card"><div class="card-h">유입 경로</div><div class="sec"><div class="empty" style="padding:32px 20px"><div class="t" style="font-size:var(--fs-caption);color:var(--n-500);font-weight:400">아직 방문 기록이 없습니다</div></div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+</body>
+</html>
