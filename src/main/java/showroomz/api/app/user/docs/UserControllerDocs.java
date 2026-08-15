@@ -21,6 +21,7 @@ import showroomz.api.app.user.DTO.RefundAccountRequest;
 import showroomz.api.app.user.DTO.RefundAccountResponse;
 import showroomz.api.app.user.DTO.UpdateUserProfileRequest;
 import showroomz.api.app.user.DTO.UserProfileResponse;
+import showroomz.api.app.user.DTO.WithdrawalInfoResponse;
 
 @Tag(name = "User - Profile", description = "사용자 프로필 관리 API")
 public interface UserControllerDocs {
@@ -121,82 +122,73 @@ public interface UserControllerDocs {
     ResponseEntity<UserProfileResponse> getCurrentUser();
 
     @Operation(
-            summary = "닉네임 유효성 검사",
-            description = "닉네임 유효성 검사를 수행합니다.\n\n" +
+            summary = "닉네임 유효성 검사 (C0-1 가입 · C15-1 닉네임 변경)",
+            description = "가입 화면과 닉네임 변경 화면이 같은 규칙·문구를 씁니다. 항상 200으로 응답하고 " +
+                    "`code`로 상태를 구분합니다. `message`는 화면에 그대로 노출할 문구입니다.\n\n" +
                     "**응답 코드 (code)**\n" +
-                    "- `AVAILABLE`: 사용 가능한 닉네임 (isAvailable: true)\n" +
-                    "- `INVALID_FORMAT`: 형식 오류 - 이모티콘, 특수문자 등 (isAvailable: false)\n" +
-                    "- `PROFANITY`: 금칙어(욕설) 포함 (isAvailable: false)\n" +
-                    "- `DUPLICATE`: 이미 존재하는 닉네임 (isAvailable: false)"
+                    "- `AVAILABLE`: 사용할 수 있음 (isAvailable: true) - \"사용할 수 있는 닉네임이에요\"\n" +
+                    "- `UNCHANGED`: 로그인 상태에서 현재 닉네임을 그대로 입력 (isAvailable: false) - " +
+                    "오류가 아니므로 경고색 없이 표시하되 [저장]은 비활성으로 둡니다\n" +
+                    "- `INVALID_LENGTH`: 2자 미만/10자 초과 (isAvailable: false)\n" +
+                    "- `INVALID_FORMAT`: 한글·영문·숫자 외 문자 포함 (isAvailable: false)\n" +
+                    "- `PROFANITY`: 금칙어 포함 (isAvailable: false)\n" +
+                    "- `DUPLICATE`: 이미 사용 중 (isAvailable: false)\n\n" +
+                    "**인증:** 선택. Authorization 헤더를 함께 보내면 현재 닉네임과 비교해 `UNCHANGED`를 구분합니다."
     )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "사용 가능한 경우 - Status: 200 OK",
+                    description = "검사 결과 - Status: 200 OK (모든 상태가 200으로 내려옵니다)",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = NicknameCheckResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "사용 가능한 경우",
+                                            name = "사용 가능",
                                             value = "{\n" +
                                                     "  \"isAvailable\": true,\n" +
                                                     "  \"code\": \"AVAILABLE\",\n" +
-                                                    "  \"message\": \"사용 가능한 닉네임입니다.\"\n" +
+                                                    "  \"message\": \"사용할 수 있는 닉네임이에요\"\n" +
                                                     "}"
-                                    )
-                            }
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "이미 사용 중인 경우 (중복) - Status: 200 OK",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = NicknameCheckResponse.class),
-                            examples = {
+                                    ),
                                     @ExampleObject(
-                                            name = "이미 사용 중인 경우 (중복)",
+                                            name = "현재 닉네임 그대로",
                                             value = "{\n" +
                                                     "  \"isAvailable\": false,\n" +
-                                                    "  \"code\": \"DUPLICATE\",\n" +
-                                                    "  \"message\": \"이미 사용 중인 닉네임입니다.\"\n" +
+                                                    "  \"code\": \"UNCHANGED\",\n" +
+                                                    "  \"message\": \"현재 사용 중인 닉네임이에요\"\n" +
                                                     "}"
-                                    )
-                            }
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "202",
-                    description = "욕설이 포함된 경우 (금칙어) - Status: 200 OK",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = NicknameCheckResponse.class),
-                            examples = {
+                                    ),
                                     @ExampleObject(
-                                            name = "욕설이 포함된 경우 (금칙어)",
+                                            name = "길이 미달",
                                             value = "{\n" +
                                                     "  \"isAvailable\": false,\n" +
-                                                    "  \"code\": \"PROFANITY\",\n" +
-                                                    "  \"message\": \"부적절한 단어가 포함되어 있습니다.\"\n" +
+                                                    "  \"code\": \"INVALID_LENGTH\",\n" +
+                                                    "  \"message\": \"2자 이상 입력해 주세요\"\n" +
                                                     "}"
-                                    )
-                            }
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "203",
-                    description = "이모티콘/특수문자 포함 (형식) - Status: 200 OK",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = NicknameCheckResponse.class),
-                            examples = {
+                                    ),
                                     @ExampleObject(
-                                            name = "이모티콘/특수문자 포함 (형식)",
+                                            name = "형식 오류",
                                             value = "{\n" +
                                                     "  \"isAvailable\": false,\n" +
                                                     "  \"code\": \"INVALID_FORMAT\",\n" +
-                                                    "  \"message\": \"닉네임에 특수문자나 이모티콘을 사용할 수 없습니다.\"\n" +
+                                                    "  \"message\": \"한글·영문·숫자만 사용할 수 있어요\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "금지 단어",
+                                            value = "{\n" +
+                                                    "  \"isAvailable\": false,\n" +
+                                                    "  \"code\": \"PROFANITY\",\n" +
+                                                    "  \"message\": \"사용할 수 없는 단어가 포함되어 있어요\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "중복",
+                                            value = "{\n" +
+                                                    "  \"isAvailable\": false,\n" +
+                                                    "  \"code\": \"DUPLICATE\",\n" +
+                                                    "  \"message\": \"이미 사용 중인 닉네임이에요\"\n" +
                                                     "}"
                                     )
                             }
@@ -208,14 +200,19 @@ public interface UserControllerDocs {
                     name = "nickname",
                     description = "검사할 닉네임 (필수)",
                     required = true,
-                    example = "abc123"
+                    example = "수민이네"
             )
             @RequestParam("nickname") String nickname
     );
 
     @Operation(
-            summary = "현재 로그인한 사용자 프로필 정보 수정",
-            description = "현재 로그인한 사용자의 프로필 정보(닉네임, 프로필 이미지 등)를 수정합니다.\n\n" +
+            summary = "현재 로그인한 사용자 프로필 정보 수정 (C15 · C15-1)",
+            description = "설정 화면에서 바꿀 수 있는 값만 수정합니다 - **닉네임**과 **프로필 사진**.\n\n" +
+                    "이름·생년월일·성별·휴대폰번호는 본인인증(PASS) 결과라 여기서 수정할 수 없고, " +
+                    "`POST /v1/user/settings/account/verifications`(재인증)로만 갱신됩니다. " +
+                    "광고성 정보 수신 동의는 `PATCH /v1/user/settings/notifications`로 옮겼습니다.\n\n" +
+                    "닉네임이 현재 값과 같으면 오류 없이 통과하며 아무것도 바뀌지 않습니다. " +
+                    "`profileImageUrl`에 빈 문자열을 보내면 기본 이미지로 되돌립니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -341,27 +338,97 @@ public interface UserControllerDocs {
             )
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "프로필 수정 요청 (모든 필드는 선택사항)",
+            description = "프로필 수정 요청 (모든 필드는 선택사항, 보내지 않은 필드는 변경되지 않음)",
             required = true,
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = UpdateUserProfileRequest.class),
                     examples = {
                             @ExampleObject(
-                                    name = "요청 예시",
-                                    value = "{\n" +
-                                            "  \"nickname\": \"string\",\n" +
-                                            "  \"phoneNumber\": \"010-1234-5678\",\n" +
-                                            "  \"birthday\": \"YYYY-MM-DD\",\n" +
-                                            "  \"gender\": \"MALE\",\n" +
-                                            "  \"profileImageUrl\": \"https://...\",\n" +
-                                            "  \"marketingAgree\": true\n" +
-                                            "}"
+                                    name = "C15-1 닉네임 변경",
+                                    value = "{\n  \"nickname\": \"수민이네\"\n}"
+                            ),
+                            @ExampleObject(
+                                    name = "C15 프로필 사진 변경",
+                                    value = "{\n  \"profileImageUrl\": \"https://cdn.showroomz.com/profile/1.jpg\"\n}"
+                            ),
+                            @ExampleObject(
+                                    name = "프로필 사진 제거",
+                                    value = "{\n  \"profileImageUrl\": \"\"\n}",
+                                    description = "빈 문자열이면 기본 이미지로 되돌립니다"
                             )
                     }
             )
     )
     ResponseEntity<?> updateCurrentUser(@RequestBody UpdateUserProfileRequest request);
+
+    @Operation(
+            summary = "C15-3/C15-4 회원 탈퇴 화면 진입 데이터",
+            description = "탈퇴 화면을 그리는 데 필요한 값을 한 번에 반환합니다.\n\n" +
+                    "- `withdrawable`: 탈퇴 가능 여부. false면 차단 상태이므로 동의 체크와 [탈퇴하기]를 계속 비활성으로 둡니다.\n" +
+                    "- `ongoingOrderCount`: 진행 중인 주문 상품 수. 0보다 크면 \"진행 중인 주문이 있어 지금은 탈퇴할 수 없어요\" " +
+                    "안내와 \"진행 중 주문 N건 보기\"를 노출합니다.\n" +
+                    "- `followingCount` / `wishlistCount` / `cartCount`: 탈퇴 시 삭제되는 활동 기록 수. " +
+                    "최종 확인 모달의 \"팔로잉 N곳과 좋아요 M개가 모두 삭제되고...\" 문구에 씁니다.\n" +
+                    "- `reasons`: 1단계에 노출할 탈퇴 이유 목록. `code`를 그대로 탈퇴 요청의 `reason`으로 보냅니다.\n\n" +
+                    "**권한:** USER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공 - Status: 200 OK",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = WithdrawalInfoResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "진행 중 주문이 있어 차단된 경우",
+                                            value = "{\n" +
+                                                    "  \"withdrawable\": false,\n" +
+                                                    "  \"ongoingOrderCount\": 2,\n" +
+                                                    "  \"followingCount\": 4,\n" +
+                                                    "  \"wishlistCount\": 12,\n" +
+                                                    "  \"cartCount\": 3,\n" +
+                                                    "  \"reasons\": [\n" +
+                                                    "    { \"code\": \"NO_GROUP_BUY\", \"label\": \"원하는 공구가 없어요\" },\n" +
+                                                    "    { \"code\": \"TOO_MANY_NOTIFICATIONS\", \"label\": \"알림이 너무 많아요\" },\n" +
+                                                    "    { \"code\": \"INCONVENIENT_APP\", \"label\": \"앱이 사용하기 불편해요\" },\n" +
+                                                    "    { \"code\": \"PRIVACY_CONCERN\", \"label\": \"개인정보가 걱정돼요\" },\n" +
+                                                    "    { \"code\": \"REJOIN_OTHER_ACCOUNT\", \"label\": \"다른 계정으로 다시 가입할 거예요\" },\n" +
+                                                    "    { \"code\": \"ETC\", \"label\": \"기타\" }\n" +
+                                                    "  ]\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "탈퇴 가능한 경우",
+                                            value = "{\n" +
+                                                    "  \"withdrawable\": true,\n" +
+                                                    "  \"ongoingOrderCount\": 0,\n" +
+                                                    "  \"followingCount\": 4,\n" +
+                                                    "  \"wishlistCount\": 12,\n" +
+                                                    "  \"cartCount\": 0,\n" +
+                                                    "  \"reasons\": []\n" +
+                                                    "}",
+                                            description = "reasons는 항상 6개가 내려오며, 예시에서만 생략했습니다"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음 - Status: 404 Not Found",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    ResponseEntity<WithdrawalInfoResponse> getWithdrawalInfo(
+            @Parameter(hidden = true) UserPrincipal userPrincipal
+    );
 
     @Operation(
             summary = "내 환불 계좌 조회",

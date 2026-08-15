@@ -17,6 +17,9 @@ public interface CreatorFollowRepository extends JpaRepository<CreatorFollow, Lo
     // 유저가 팔로우한 쇼룸 수
     long countByUser(Users user);
 
+    /** C15-4 탈퇴 — 팔로잉 기록 파기 */
+    void deleteByUser(Users user);
+
     // 팔로잉 목록 조회 — 정렬(최근 게시물 순)이 서비스 단에서 끝나므로 전체를 한 번에 가져온다
     @Query("SELECT cf FROM CreatorFollow cf " +
            "JOIN FETCH cf.creator c " +
