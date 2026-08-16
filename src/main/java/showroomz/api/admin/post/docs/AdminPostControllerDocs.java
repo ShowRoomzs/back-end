@@ -84,6 +84,8 @@ public interface AdminPostControllerDocs {
                                     """))),
             @ApiResponse(responseCode = "400", description = "기타 사유인데 상세 설명이 없음",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "게시물을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "게시중이 아닌 게시물",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
@@ -107,6 +109,8 @@ public interface AdminPostControllerDocs {
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "승인 완료"),
+            @ApiResponse(responseCode = "404", description = "이의 신청을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "이미 심사가 끝난 신청",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
@@ -125,6 +129,8 @@ public interface AdminPostControllerDocs {
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "반려 완료"),
+            @ApiResponse(responseCode = "404", description = "이의 신청을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "이미 심사가 끝난 신청",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })

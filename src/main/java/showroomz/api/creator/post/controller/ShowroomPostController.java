@@ -2,6 +2,7 @@ package showroomz.api.creator.post.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -57,7 +58,7 @@ public class ShowroomPostController implements PostControllerDocs {
     public ResponseEntity<PostDto.PostPageResponse> getPostList(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(value = "status", required = false) PostStatus status,
-            @ModelAttribute PagingRequest pagingRequest) {
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest) {
         return ResponseEntity.ok(postService.getPostList(getUserId(userPrincipal), status, pagingRequest));
     }
 

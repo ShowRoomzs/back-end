@@ -36,9 +36,14 @@ public interface UserPostImpressionControllerDocs {
             @ApiResponse(responseCode = "204", description = "적재 완료(또는 중복이라 건너뜀)"),
             @ApiResponse(responseCode = "400", description = "게시물 ID 없음 · 비로그인인데 visitorId 없음",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class),
-                            examples = @ExampleObject(value = """
-                                    { "code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다." }
-                                    """)))
+                            examples = {
+                                    @ExampleObject(name = "게시물 ID 없음", value = """
+                                            { "code": "INVALID_INPUT", "message": "노출된 게시물 ID가 필요합니다." }
+                                            """),
+                                    @ExampleObject(name = "비로그인인데 visitorId 없음", value = """
+                                            { "code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다." }
+                                            """)
+                            }))
     })
     ResponseEntity<Void> recordImpressions(
             @AuthenticationPrincipal UserPrincipal userPrincipal,

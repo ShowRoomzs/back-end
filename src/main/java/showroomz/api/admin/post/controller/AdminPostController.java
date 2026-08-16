@@ -2,6 +2,7 @@ package showroomz.api.admin.post.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,7 +46,7 @@ public class AdminPostController implements AdminPostControllerDocs {
     public ResponseEntity<PageResponse<AdminPostDto.AdminPostListItem>> getPosts(
             @RequestParam(value = "showroomId", required = false) Long showroomId,
             @RequestParam(value = "status", required = false) PostStatus status,
-            @ModelAttribute PagingRequest pagingRequest) {
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest) {
         return ResponseEntity.ok(adminPostService.getPosts(showroomId, status, pagingRequest));
     }
 
@@ -74,7 +75,7 @@ public class AdminPostController implements AdminPostControllerDocs {
     @GetMapping("/post-appeals")
     public ResponseEntity<PageResponse<AdminPostDto.AppealItem>> getAppeals(
             @RequestParam(value = "status", required = false) PostAppealStatus status,
-            @ModelAttribute PagingRequest pagingRequest) {
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest) {
         return ResponseEntity.ok(adminPostService.getAppeals(status, pagingRequest));
     }
 

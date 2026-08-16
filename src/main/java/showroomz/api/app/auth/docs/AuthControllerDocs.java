@@ -680,8 +680,8 @@ public interface AuthControllerDocs {
                                     @ExampleObject(
                                             name = "탈퇴 동의 미체크",
                                             value = "{\n" +
-                                                    "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"탈퇴 유의사항에 동의해야 합니다.\"\n" +
+                                                    "  \"code\": \"WITHDRAWAL_CONSENT_REQUIRED\",\n" +
+                                                    "  \"message\": \"계정과 활동 기록이 삭제되는 데 동의해야 합니다.\"\n" +
                                                     "}",
                                             description = "agreeConsent가 false인 경우"
                                     ),

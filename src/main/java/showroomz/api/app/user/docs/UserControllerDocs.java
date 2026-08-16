@@ -102,6 +102,23 @@ public interface UserControllerDocs {
                     )
             ),
             @ApiResponse(
+                    responseCode = "403",
+                    description = "이미 탈퇴한 회원 - Status: 403 Forbidden",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "이미 탈퇴한 회원",
+                                            value = "{\n" +
+                                                    "  \"code\": \"USER_WITHDRAWN\",\n" +
+                                                    "  \"message\": \"탈퇴한 회원입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
                     responseCode = "404",
                     description = "사용자를 찾을 수 없음 - Status: 404 Not Found",
                     content = @Content(
@@ -303,6 +320,23 @@ public interface UserControllerDocs {
                     )
             ),
             @ApiResponse(
+                    responseCode = "403",
+                    description = "이미 탈퇴한 회원 - Status: 403 Forbidden",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "이미 탈퇴한 회원",
+                                            value = "{\n" +
+                                                    "  \"code\": \"USER_WITHDRAWN\",\n" +
+                                                    "  \"message\": \"탈퇴한 회원입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
                     responseCode = "404",
                     description = "사용자를 찾을 수 없음 - Status: 404 Not Found",
                     content = @Content(
@@ -419,6 +453,21 @@ public interface UserControllerDocs {
                     responseCode = "401",
                     description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "이미 탈퇴한 회원 - Status: 403 Forbidden",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "이미 탈퇴한 회원",
+                                    value = "{\n" +
+                                            "  \"code\": \"USER_WITHDRAWN\",\n" +
+                                            "  \"message\": \"탈퇴한 회원입니다.\"\n" +
+                                            "}"
+                            )
+                    )
             ),
             @ApiResponse(
                     responseCode = "404",

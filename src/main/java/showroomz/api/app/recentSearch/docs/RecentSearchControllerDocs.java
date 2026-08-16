@@ -356,7 +356,7 @@ public interface RecentSearchControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "사용자를 찾을 수 없음 - Status: 404 Not Found",
+                    description = "사용자를 찾을 수 없거나, showroomId로 저장할 때 그 쇼룸을 찾을 수 없음 - Status: 404 Not Found",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -366,6 +366,13 @@ public interface RecentSearchControllerDocs {
                                             value = "{\n" +
                                                     "  \"code\": \"USER_NOT_FOUND\",\n" +
                                                     "  \"message\": \"존재하지 않는 회원입니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "쇼룸 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"SHOWROOM_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 쇼룸입니다.\"\n" +
                                                     "}"
                                     )
                             }

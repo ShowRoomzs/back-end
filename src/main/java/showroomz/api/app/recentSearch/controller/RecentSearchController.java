@@ -1,6 +1,7 @@
 package showroomz.api.app.recentSearch.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -31,7 +32,7 @@ public class RecentSearchController implements RecentSearchControllerDocs {
     @GetMapping
     public ResponseEntity<PageResponse<RecentSearchResponse>> getMyRecentSearches(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @ModelAttribute PagingRequest pagingRequest
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest
     ) {
         return ResponseEntity.ok(
             recentSearchService.getMyRecentSearches(userPrincipal.getUsername(), pagingRequest)

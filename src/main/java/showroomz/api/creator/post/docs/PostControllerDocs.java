@@ -143,6 +143,12 @@ public interface PostControllerDocs {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "수정 성공",
                     content = @Content(schema = @Schema(implementation = PostDto.PostIdResponse.class))),
+            @ApiResponse(responseCode = "400", description = "사진 20장 초과 · 본문 2,000자 초과 · 비율 범위 밖 · 사진·본문 모두 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "다른 인플루언서의 게시물",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "게시물을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "노출 중지·심사 중이라 수정 불가",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
@@ -160,6 +166,10 @@ public interface PostControllerDocs {
             @ApiResponse(responseCode = "200", description = "게시 성공",
                     content = @Content(schema = @Schema(implementation = PostDto.PostIdResponse.class))),
             @ApiResponse(responseCode = "400", description = "사진이 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "다른 인플루언서의 게시물",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "게시물을 찾을 수 없음",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "이미 게시됐거나 게시할 수 없는 상태",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
@@ -182,6 +192,10 @@ public interface PostControllerDocs {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "삭제 성공"),
+            @ApiResponse(responseCode = "403", description = "다른 인플루언서의 게시물",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "게시물을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "심사 중이라 삭제 불가",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
@@ -202,6 +216,10 @@ public interface PostControllerDocs {
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "신청 접수",
                     content = @Content(schema = @Schema(implementation = PostDto.AppealResponse.class))),
+            @ApiResponse(responseCode = "403", description = "다른 인플루언서의 게시물",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "게시물을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "이미 신청함 · 기한 경과 · 중지 상태가 아님",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
@@ -221,7 +239,9 @@ public interface PostControllerDocs {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공",
                     content = @Content(schema = @Schema(implementation = PostDto.OriginalImagesResponse.class))),
-            @ApiResponse(responseCode = "403", description = "유예 기간이 아님",
+            @ApiResponse(responseCode = "403", description = "다른 인플루언서의 게시물이거나, 반려 후 유예 기간이 아님",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "게시물을 찾을 수 없음",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<PostDto.OriginalImagesResponse> getOriginalImages(
@@ -247,6 +267,8 @@ public interface PostControllerDocs {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공",
                     content = @Content(schema = @Schema(implementation = PostInsightDto.PostInsightResponse.class))),
+            @ApiResponse(responseCode = "403", description = "다른 인플루언서의 게시물",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "게시물을 찾을 수 없음",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
