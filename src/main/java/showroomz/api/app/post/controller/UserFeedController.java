@@ -1,15 +1,19 @@
 package showroomz.api.app.post.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.post.DTO.PostDto;
 import showroomz.api.app.post.docs.UserFeedControllerDocs;
 import showroomz.api.app.post.service.UserPostService;
+import showroomz.domain.post.type.LikedPostSort;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
@@ -33,7 +37,8 @@ public class UserFeedController implements UserFeedControllerDocs {
     @GetMapping("/wishlist/contents")
     public ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getLikedPosts(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            PagingRequest pagingRequest) {
-        return ResponseEntity.ok(postService.getLikedPosts(userPrincipal.getUsername(), pagingRequest));
+            @RequestParam(name = "sort", required = false, defaultValue = "DEFAULT") LikedPostSort sort,
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest) {
+        return ResponseEntity.ok(postService.getLikedPosts(userPrincipal.getUsername(), sort, pagingRequest));
     }
 }

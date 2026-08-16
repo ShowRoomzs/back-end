@@ -56,6 +56,9 @@ public class PostDto {
         private Boolean isLiked;
         @Schema(description = "좋아요 수", example = "12")
         private Long likeCount;
+        @Schema(description = "새 좋아요가 막힌 게시물인지 — true면 해제만 된다(마감된 공구). 하트를 눌러도 새로 걸리지 않는다",
+                example = "false")
+        private Boolean likeLocked;
 
         @Schema(description = "게시 일시", example = "2026-03-04T12:34:56")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
@@ -114,6 +117,14 @@ public class PostDto {
         private Boolean isLiked;
         @Schema(description = "좋아요 수", example = "12")
         private Long likeCount;
+
+        /**
+         * C3 — 마감된 공구는 좋아요 목록에 <b>남되</b> 하트를 회색으로 낮추고 해제만 허용한다.
+         * 서버가 {@code POST /wishlist}를 거절하는 것과 같은 규칙을 클라이언트가 미리 그릴 수 있게
+         * 내려준다. 값이 정책({@code PostPolicy.canLike})에서 나오므로 둘이 어긋날 수 없다.
+         */
+        @Schema(description = "새 좋아요가 막힌 게시물인지 — true면 해제만 된다(마감된 공구)", example = "false")
+        private Boolean likeLocked;
 
         @Schema(description = "게시 일시", example = "2026-03-04T12:34:56")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")

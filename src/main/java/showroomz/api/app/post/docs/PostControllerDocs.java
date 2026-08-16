@@ -115,11 +115,16 @@ public interface PostControllerDocs {
 
     @Operation(
             summary = "게시글 좋아요",
-            description = "이미 눌러 뒀으면 아무 일도 일어나지 않고 204로 끝난다(멱등). 게시중이 아닌 게시물에는 누를 수 없다."
+            description = """
+                    이미 눌러 뒀으면 아무 일도 일어나지 않고 204로 끝난다(멱등). 게시중이 아닌 게시물에는 누를 수 없다.
+
+                    목록 응답의 `likeLocked=true`인 게시물(마감된 공구)도 거절한다 — 해제만 가능하다.
+                    품절은 막지 않는다. 재입고·다음 공구로 되살아날 수 있다(C3 §마감·품절).
+                    """
     )
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "좋아요 완료"),
-            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없거나 게시중이 아님",
+            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없거나, 게시중이 아니거나, 좋아요가 막힌 게시물",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<Void> likePost(
@@ -127,7 +132,13 @@ public interface PostControllerDocs {
             @Parameter(description = "게시글 ID", required = true, example = "123", in = ParameterIn.PATH)
             @PathVariable("postId") Long postId);
 
-    @Operation(summary = "게시글 좋아요 취소", description = "누른 적이 없으면 그대로 204로 끝난다(멱등).")
+    @Operation(
+            summary = "게시글 좋아요 취소",
+            description = """
+                    누른 적이 없으면 그대로 204로 끝난다(멱등).
+                    마감된 공구도 취소는 언제나 허용한다 — 막는 것은 새 좋아요뿐이다.
+                    """
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "취소 완료"),
             @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음",

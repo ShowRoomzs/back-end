@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.post.DTO.PostDto;
@@ -18,6 +19,7 @@ import showroomz.domain.post.policy.PostPolicies;
 import showroomz.domain.post.repository.PostImageRepository;
 import showroomz.domain.post.repository.PostLikeRepository;
 import showroomz.domain.post.repository.PostRepository;
+import showroomz.domain.post.type.LikedPostSort;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
@@ -78,6 +80,7 @@ public class UserPostService {
                 .impressionCount(post.getImpressionCount())
                 .isLiked(liked)
                 .likeCount(post.getLikeCount())
+                .likeLocked(!postPolicies.of(post).canLike(post))
                 .publishedAt(post.getPublishedAt())
                 .modifiedAt(post.getModifiedAt())
                 .build();
@@ -107,12 +110,24 @@ public class UserPostService {
         return toFeed(postPage, likedPostIds(user, postPage.getContent()));
     }
 
-    /** 좋아요한 게시물 모음 — 그 사이 내려간 게시물은 목록에서 빠진다 */
-    public PageResponse<PostDto.FeedItemResponse> getLikedPosts(String username, PagingRequest pagingRequest) {
+    /**
+     * 좋아요한 게시물 모음 (C3).
+     *
+     * <p>그 사이 내려간 게시물은 목록에서 빠지지만, <b>마감된 공구는 남는다</b>. 살 수 없게
+     * 됐다고 앱이 사용자가 저장한 기록을 지우면 안 되고, 대신 {@code likeLocked}로 새 좋아요만
+     * 막는다(C3 §마감·품절).
+     *
+     * <p>화면 상단의 "좋아요한 게시물 N"은 {@code pageInfo.totalResults}다 — 페이지에 담긴
+     * 수가 아니라 전체 수라 스크롤 위치와 무관하게 같은 값이 나온다.
+     */
+    public PageResponse<PostDto.FeedItemResponse> getLikedPosts(
+            String username, LikedPostSort sort, PagingRequest pagingRequest) {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        Page<Post> postPage = postLikeRepository.findLikedPostsByUserId(user.getId(), pagingRequest.toPageable());
+        // 정렬 키가 post_like에 있어 Pageable의 정렬은 쓰지 않는다 — 쿼리가 직접 순서를 잡는다
+        Page<Post> postPage = postLikeRepository.findLikedPostsByUserId(
+                user.getId(), sort, pagingRequest.toPageable(Sort.unsorted()));
         Set<Long> allLiked = postPage.getContent().stream().map(Post::getId).collect(Collectors.toSet());
 
         return toFeed(postPage, allLiked);
@@ -175,6 +190,7 @@ public class UserPostService {
                     .impressionCount(post.getImpressionCount())
                     .isLiked(likedPostIds.contains(post.getId()))
                     .likeCount(post.getLikeCount())
+                    .likeLocked(!postPolicies.of(post).canLike(post))
                     .publishedAt(post.getPublishedAt())
                     .build();
             return PostDto.FeedItemResponse.builder()

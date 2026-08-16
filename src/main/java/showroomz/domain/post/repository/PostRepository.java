@@ -84,7 +84,7 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
      * 팔로잉 목록 기본 정렬과 같은 기준을 대상 쇼룸을 정하지 않은 채로 쓴 형태다.
      */
     @Query("SELECT p.creator.id FROM Post p " +
-           "WHERE p.isDisplay = true " +
+           "WHERE p.status = showroomz.domain.post.type.PostStatus.PUBLISHED " +
            "GROUP BY p.creator.id " +
            "ORDER BY MAX(p.createdAt) DESC")
     List<Long> findCreatorIdsOrderByLatestPost(Pageable pageable);
