@@ -25,18 +25,15 @@ public class UserFeedController implements UserFeedControllerDocs {
     public ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getFollowingFeed(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             PagingRequest pagingRequest) {
-        PageResponse<PostDto.FeedItemResponse> response = postService.getFollowingFeed(
-                userPrincipal.getUsername(), pagingRequest);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(postService.getFollowingFeed(userPrincipal.getUsername(), pagingRequest));
     }
 
+    /** 경로({@code /wishlist/contents})는 앱이 쓰는 계약이라 그대로 두고 용어만 좋아요로 맞췄다 */
     @Override
     @GetMapping("/wishlist/contents")
-    public ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getWishlistedPosts(
+    public ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getLikedPosts(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             PagingRequest pagingRequest) {
-        PageResponse<PostDto.FeedItemResponse> response = postService.getWishlistedPosts(
-                userPrincipal.getUsername(), pagingRequest);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(postService.getLikedPosts(userPrincipal.getUsername(), pagingRequest));
     }
 }

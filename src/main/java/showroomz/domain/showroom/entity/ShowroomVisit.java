@@ -63,6 +63,16 @@ public class ShowroomVisit {
     @Column(name = "VISITED_AT", nullable = false)
     private LocalDateTime visitedAt;
 
+    /**
+     * §24-7 라스트 터치 귀속 — 이 방문 직전 24시간 안에 <b>마지막으로 본</b> 게시물.
+     *
+     * <p>FK를 걸지 않는다. 게시물은 보관 기간이 끝나면 파기되는데, FK가 있으면 그때 방문 행까지
+     * 막히거나 지워진다. 귀속은 참조 무결성이 필요한 관계가 아니라 통계 태그다.
+     * 귀속되지 않은 방문은 {@code null}로 남는다(귀속 불명).
+     */
+    @Column(name = "attributed_post_id")
+    private Long attributedPostId;
+
     public ShowroomVisit(Creator creator, Users user, String visitorKey,
                          ShowroomVisitSource source, LocalDateTime visitedAt) {
         this.creator = creator;
@@ -70,5 +80,10 @@ public class ShowroomVisit {
         this.visitorKey = visitorKey;
         this.source = source;
         this.visitedAt = visitedAt;
+    }
+
+    /** 적재 직후 한 번만 채운다 — 시점 성과라 나중에 다시 계산하지 않는다 */
+    public void attributeTo(Long postId) {
+        this.attributedPostId = postId;
     }
 }

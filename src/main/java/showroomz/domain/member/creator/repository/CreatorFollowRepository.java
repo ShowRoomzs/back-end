@@ -44,4 +44,16 @@ public interface CreatorFollowRepository extends JpaRepository<CreatorFollow, Lo
      */
     @Query("SELECT u.gender, u.birthday FROM CreatorFollow cf JOIN cf.user u WHERE cf.creator.id = :creatorId")
     List<Object[]> findFollowerDemographics(@Param("creatorId") Long creatorId);
+
+    /**
+     * §24-7 ② 행동 — 이 게시물에 귀속된 팔로우.
+     *
+     * <p>언팔로우한 사람은 행 자체가 사라지므로 이 값은 과거를 향해 <b>줄어들 수 있다.</b>
+     * 팔로우 이벤트 로그가 생기기 전까지의 한계다.
+     */
+    @Query("SELECT COUNT(cf) FROM CreatorFollow cf " +
+           "WHERE cf.attributedPostId = :postId AND cf.createdAt >= :from AND cf.createdAt < :to")
+    long countAttributedFollows(@Param("postId") Long postId,
+                                @Param("from") LocalDateTime from,
+                                @Param("to") LocalDateTime to);
 }

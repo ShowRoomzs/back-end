@@ -11,6 +11,7 @@ import org.springframework.web.client.RestTemplate;
 import io.sentry.SentryOptions;
 import showroomz.global.config.properties.AppProperties;
 import showroomz.global.config.properties.CorsProperties;
+import showroomz.global.config.properties.PostProperties;
 import showroomz.global.config.properties.S3Properties;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -18,7 +19,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 @SpringBootApplication
 @EnableScheduling
 @EnableAsync
-@EnableConfigurationProperties({AppProperties.class, CorsProperties.class, S3Properties.class})
+@EnableConfigurationProperties({AppProperties.class, CorsProperties.class, S3Properties.class, PostProperties.class})
 public class ShowroomzApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(ShowroomzApplication.class, args);

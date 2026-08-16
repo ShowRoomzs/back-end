@@ -52,8 +52,23 @@ public class CreatorFollow {
     @Column(name = "CREATED_AT", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /**
+     * §24-7 라스트 터치 귀속 — 팔로우 직전 24시간 안에 마지막으로 본 이 쇼룸의 게시물. FK는 걸지 않는다.
+     *
+     * <p>알려진 구멍 하나 — 언팔로우하면 이 행이 삭제되므로 <b>과거에 귀속된 팔로우 수가 줄어든다.</b>
+     * 인사이트는 시점 성과라 줄면 안 되지만, 정확히 하려면 팔로우 이벤트 로그가 필요하고 그것은
+     * 쇼룸 관리(§22-4 팔로워 행동)와 공유 자산이라 그쪽 작업과 함께 설계한다.
+     */
+    @Column(name = "attributed_post_id")
+    private Long attributedPostId;
+
     public CreatorFollow(Users user, Creator creator) {
         this.user = user;
         this.creator = creator;
+    }
+
+    /** 적재 직후 한 번만 채운다 */
+    public void attributeTo(Long postId) {
+        this.attributedPostId = postId;
     }
 }

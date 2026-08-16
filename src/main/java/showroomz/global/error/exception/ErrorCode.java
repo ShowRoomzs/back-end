@@ -160,6 +160,26 @@ public enum ErrorCode {
    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_NOT_FOUND", "존재하지 않는 게시글입니다."),
    POST_ACCESS_DENIED(HttpStatus.FORBIDDEN, "POST_ACCESS_DENIED", "해당 게시글에 대한 권한이 없습니다."),
 
+   /* 14-1. 쇼룸 포스트 (§24)
+    * 사진·본문 미입력은 FE에서 버튼 비활성으로만 표현되지만(§24-3), API 직접 호출로 빈 게시물이
+    * 생기는 것을 막기 위해 서버도 거절한다. 문구가 화면에 뜰 일은 없다.
+    */
+   POST_IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "POST_IMAGE_REQUIRED", "게시하려면 사진이 최소 1장 필요합니다."),
+   POST_EMPTY(HttpStatus.BAD_REQUEST, "POST_EMPTY", "사진 또는 본문 중 하나는 입력해야 합니다."),
+   POST_IMAGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "POST_IMAGE_LIMIT_EXCEEDED", "사진은 게시물당 최대 20장까지 등록할 수 있습니다."),
+   POST_CONTENT_TOO_LONG(HttpStatus.BAD_REQUEST, "POST_CONTENT_TOO_LONG", "본문은 최대 2,000자까지 입력할 수 있습니다."),
+   POST_ASPECT_RATIO_OUT_OF_RANGE(HttpStatus.BAD_REQUEST, "POST_ASPECT_RATIO_OUT_OF_RANGE", "사진 비율은 1.91:1 ~ 4:5 범위여야 합니다."),
+   POST_NOT_EDITABLE(HttpStatus.CONFLICT, "POST_NOT_EDITABLE", "노출 중지·심사 중인 게시물은 수정할 수 없습니다."),
+   POST_NOT_DELETABLE(HttpStatus.CONFLICT, "POST_NOT_DELETABLE", "이의 심사 중인 게시물은 삭제할 수 없습니다."),
+   POST_ALREADY_PUBLISHED(HttpStatus.CONFLICT, "POST_ALREADY_PUBLISHED", "이미 게시된 게시물입니다."),
+   POST_NOT_SUSPENDED(HttpStatus.CONFLICT, "POST_NOT_SUSPENDED", "노출 중지된 게시물이 아닙니다."),
+   POST_SUSPENSION_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "POST_SUSPENSION_DETAIL_REQUIRED", "기타 사유를 선택한 경우 상세 사유는 필수입니다."),
+   POST_APPEAL_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_APPEAL_NOT_FOUND", "존재하지 않는 이의 신청입니다."),
+   POST_APPEAL_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "POST_APPEAL_ALREADY_SUBMITTED", "이의 신청은 게시물당 1회만 가능합니다."),
+   POST_APPEAL_DEADLINE_PASSED(HttpStatus.CONFLICT, "POST_APPEAL_DEADLINE_PASSED", "이의 신청 기한이 지났습니다."),
+   POST_APPEAL_ALREADY_REVIEWED(HttpStatus.CONFLICT, "POST_APPEAL_ALREADY_REVIEWED", "이미 심사가 끝난 이의 신청입니다."),
+   POST_ORIGINAL_DOWNLOAD_UNAVAILABLE(HttpStatus.FORBIDDEN, "POST_ORIGINAL_DOWNLOAD_UNAVAILABLE", "원본을 내려받을 수 있는 기간이 아닙니다."),
+
    /* 15. 위시리스트 (Wishlist)
     */
    WISHLIST_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "WISHLIST_ALREADY_EXISTS", "이미 위시리스트에 추가된 항목입니다."),
