@@ -11,6 +11,7 @@ import showroomz.api.app.post.DTO.PostDto;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
+import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.entity.PostImage;
@@ -25,6 +26,7 @@ import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +54,7 @@ public class UserPostService {
     private final PostLikeRepository postLikeRepository;
     private final PostImageRepository postImageRepository;
     private final CreatorFollowRepository creatorFollowRepository;
+    private final CreatorRepository creatorRepository;
     private final UserRepository userRepository;
     private final PostPolicies postPolicies;
 
@@ -92,7 +95,9 @@ public class UserPostService {
                 ? postRepository.findDisplayedPostsByCreatorId(showroomId, pageable)
                 : postRepository.findDisplayedPosts(pageable);
 
-        return toFeed(postPage, likedPostIds(findUser(username), postPage.getContent()));
+        Users user = findUser(username);
+        return toFeed(postPage, likedPostIds(user, postPage.getContent()),
+                followedCreatorIds(user, postPage.getContent()));
     }
 
     public PageResponse<PostDto.FeedItemResponse> getFollowingFeed(String username, PagingRequest pagingRequest) {
@@ -107,7 +112,32 @@ public class UserPostService {
         }
 
         Page<Post> postPage = postRepository.findDisplayedPostsByFollowingCreatorIds(followingShowroomIds, pageable);
-        return toFeed(postPage, likedPostIds(user, postPage.getContent()));
+        // 이 목록은 정의상 전부 팔로우 중인 쇼룸이다 — 다시 물어볼 필요가 없다
+        return toFeed(postPage, likedPostIds(user, postPage.getContent()), Set.copyOf(followingShowroomIds));
+    }
+
+    /**
+     * C1 "회원님을 위한 추천" — 팔로우하지 않은 쇼룸의 게시물 (§C1 추천 영역).
+     *
+     * <p>팔로잉 피드와 <b>겹치지 않게</b> 팔로우 중인 쇼룸을 통째로 뺀다. 화면이 "새 게시물을 모두
+     * 확인했어요" 구분선으로 두 영역을 끊어 두는데, 겹치는 게시물이 있으면 그 선이 거짓말이 된다.
+     *
+     * <p>본인 쇼룸도 뺀다 — 크리에이터에게 자기 게시물을 추천하는 것은 발견이 아니다.
+     *
+     * <p>팔로잉이 0인 사용자에게는 이 응답이 그대로 <b>발견 피드</b>가 된다(C1 빈 상태). 쇼룸 이름만
+     * 나열하는 목록으로는 팔로우를 결정할 근거가 없어서, 빈 상태에도 게시물을 그대로 보여준다.
+     */
+    public PageResponse<PostDto.FeedItemResponse> getRecommendedFeed(String username, PagingRequest pagingRequest) {
+        Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        List<Long> excluded = new ArrayList<>(creatorFollowRepository.findCreatorIdsByUserId(user.getId()));
+        creatorRepository.findByUser_Id(user.getId()).ifPresent(creator -> excluded.add(creator.getId()));
+
+        Page<Post> postPage = postRepository.findRecommendedPosts(excluded, pagingRequest.toPageable());
+
+        // 제외 조건이 곧 미팔로우 보장이라 팔로우 여부를 다시 묻지 않는다 — 전부 false다
+        return toFeed(postPage, likedPostIds(user, postPage.getContent()), Set.of());
     }
 
     /**
@@ -130,7 +160,7 @@ public class UserPostService {
                 user.getId(), sort, pagingRequest.toPageable(Sort.unsorted()));
         Set<Long> allLiked = postPage.getContent().stream().map(Post::getId).collect(Collectors.toSet());
 
-        return toFeed(postPage, allLiked);
+        return toFeed(postPage, allLiked, followedCreatorIds(user, postPage.getContent()));
     }
 
     @Transactional
@@ -172,7 +202,8 @@ public class UserPostService {
 
     // ------------------------------------------------------------------ 내부
 
-    private PageResponse<PostDto.FeedItemResponse> toFeed(Page<Post> postPage, Set<Long> likedPostIds) {
+    private PageResponse<PostDto.FeedItemResponse> toFeed(
+            Page<Post> postPage, Set<Long> likedPostIds, Set<Long> followedCreatorIds) {
         Map<Long, List<String>> imagesByPost = imagesByPost(postPage.getContent());
 
         Page<PostDto.FeedItemResponse> dtoPage = postPage.map(post -> {
@@ -183,6 +214,7 @@ public class UserPostService {
                     .showroomId(creator.getId())
                     .showroomName(showroomName(creator))
                     .showroomImageUrl(creator.getProfileImageUrl())
+                    .isFollowing(followedCreatorIds.contains(creator.getId()))
                     .content(post.getContent())
                     .imageUrls(imageUrls)
                     .imageCount(imageUrls.size())
@@ -207,6 +239,15 @@ public class UserPostService {
         }
         List<Long> postIds = posts.stream().map(Post::getId).toList();
         return Set.copyOf(postLikeRepository.findLikedPostIdsByUserIdAndPostIds(user.getId(), postIds));
+    }
+
+    /** 페이지에 실린 쇼룸만 대조한다 — 팔로잉이 많은 사용자에게 전체 목록을 읽게 하지 않는다 */
+    private Set<Long> followedCreatorIds(Users user, List<Post> posts) {
+        if (user == null || posts.isEmpty()) {
+            return Collections.emptySet();
+        }
+        List<Long> creatorIds = posts.stream().map(post -> post.getCreator().getId()).distinct().toList();
+        return Set.copyOf(creatorFollowRepository.findFollowedCreatorIds(user.getId(), creatorIds));
     }
 
     private Users findUser(String username) {

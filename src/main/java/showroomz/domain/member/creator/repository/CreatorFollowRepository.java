@@ -31,6 +31,17 @@ public interface CreatorFollowRepository extends JpaRepository<CreatorFollow, Lo
     @Query("SELECT cf.creator.id FROM CreatorFollow cf WHERE cf.user.id = :userId")
     List<Long> findCreatorIdsByUserId(@Param("userId") Long userId);
 
+    /**
+     * C1 피드 카드의 팔로우 버튼용 — <b>이 페이지에 실린 쇼룸만</b> 팔로우 여부를 확인한다.
+     *
+     * <p>{@link #findCreatorIdsByUserId}로 전체를 끌어와 대조해도 답은 같지만, 팔로잉이 수천 개인
+     * 사용자에게 게시물 20개를 그리려고 수천 행을 읽게 된다. 대상 쇼룸을 좁혀 묻는다.
+     */
+    @Query("SELECT cf.creator.id FROM CreatorFollow cf " +
+           "WHERE cf.user.id = :userId AND cf.creator.id IN :creatorIds")
+    List<Long> findFollowedCreatorIds(@Param("userId") Long userId,
+                                      @Param("creatorIds") List<Long> creatorIds);
+
     /** §22-4 총 팔로워 — 기간과 무관한 현재 시점 값. */
     long countByCreator_Id(Long creatorId);
 

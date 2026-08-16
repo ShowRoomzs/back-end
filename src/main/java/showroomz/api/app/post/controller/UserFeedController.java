@@ -32,6 +32,14 @@ public class UserFeedController implements UserFeedControllerDocs {
         return ResponseEntity.ok(postService.getFollowingFeed(userPrincipal.getUsername(), pagingRequest));
     }
 
+    @Override
+    @GetMapping("/feed/recommended")
+    public ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getRecommendedFeed(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest) {
+        return ResponseEntity.ok(postService.getRecommendedFeed(userPrincipal.getUsername(), pagingRequest));
+    }
+
     /** 경로({@code /wishlist/contents})는 앱이 쓰는 계약이라 그대로 두고 용어만 좋아요로 맞췄다 */
     @Override
     @GetMapping("/wishlist/contents")

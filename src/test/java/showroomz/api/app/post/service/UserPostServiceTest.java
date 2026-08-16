@@ -16,6 +16,7 @@ import showroomz.api.app.post.DTO.PostDto;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
+import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.policy.GeneralPostPolicy;
@@ -37,6 +38,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -63,6 +65,8 @@ class UserPostServiceTest {
     @Mock
     private CreatorFollowRepository creatorFollowRepository;
     @Mock
+    private CreatorRepository creatorRepository;
+    @Mock
     private UserRepository userRepository;
 
     private final PostPolicies postPolicies = new PostPolicies(List.of(new GeneralPostPolicy()));
@@ -73,7 +77,7 @@ class UserPostServiceTest {
     void setUp() {
         userPostService = new UserPostService(
                 postRepository, postLikeRepository, postImageRepository,
-                creatorFollowRepository, userRepository, postPolicies);
+                creatorFollowRepository, creatorRepository, userRepository, postPolicies);
 
         Users user = new Users();
         user.setId(USER_ID);
@@ -140,7 +144,83 @@ class UserPostServiceTest {
         assertThat(response.getContent()).hasSize(1);
     }
 
+    @Test
+    @DisplayName("C1 추천 — 팔로우한 쇼룸과 본인 쇼룸을 제외하고 조회한다")
+    void recommendedFeedExcludesFollowedAndOwnShowroom() {
+        given(creatorFollowRepository.findCreatorIdsByUserId(USER_ID)).willReturn(List.of(10L, 11L));
+        given(creatorRepository.findByUser_Id(USER_ID))
+                .willReturn(Optional.of(Creator.builder().id(99L).showroomName("내 쇼룸").build()));
+        givenRecommendedPage(List.of(publishedPost()), 1);
+
+        userPostService.getRecommendedFeed(USERNAME, new PagingRequest());
+
+        ArgumentCaptor<List<Long>> captor = ArgumentCaptor.forClass(List.class);
+        verify(postRepository).findRecommendedPosts(captor.capture(), any());
+        assertThat(captor.getValue()).containsExactlyInAnyOrder(10L, 11L, 99L);
+    }
+
+    @Test
+    @DisplayName("C1 추천 — 크리에이터가 아닌 유저는 팔로잉만 제외한다")
+    void recommendedFeedExcludesOnlyFollowingForPlainUser() {
+        given(creatorFollowRepository.findCreatorIdsByUserId(USER_ID)).willReturn(List.of(10L));
+        given(creatorRepository.findByUser_Id(USER_ID)).willReturn(Optional.empty());
+        givenRecommendedPage(List.of(publishedPost()), 1);
+
+        userPostService.getRecommendedFeed(USERNAME, new PagingRequest());
+
+        ArgumentCaptor<List<Long>> captor = ArgumentCaptor.forClass(List.class);
+        verify(postRepository).findRecommendedPosts(captor.capture(), any());
+        assertThat(captor.getValue()).containsExactly(10L);
+    }
+
+    @Test
+    @DisplayName("C1 추천 — 항목은 전부 미팔로우다. 팔로우 여부를 다시 묻지 않는다")
+    void recommendedFeedItemsAreNotFollowing() {
+        given(creatorFollowRepository.findCreatorIdsByUserId(USER_ID)).willReturn(List.of());
+        given(creatorRepository.findByUser_Id(USER_ID)).willReturn(Optional.empty());
+        givenRecommendedPage(List.of(publishedPost()), 1);
+
+        PageResponse<PostDto.FeedItemResponse> response =
+                userPostService.getRecommendedFeed(USERNAME, new PagingRequest());
+
+        assertThat(response.getContent()).singleElement()
+                .satisfies(item -> assertThat(item.getPost().getIsFollowing()).isFalse());
+        verify(creatorFollowRepository, never()).findFollowedCreatorIds(anyLong(), any());
+    }
+
+    @Test
+    @DisplayName("팔로잉 피드 항목은 전부 팔로우 중이다 — 팔로우 버튼이 붙지 않게 한다")
+    void followingFeedItemsAreFollowing() {
+        given(creatorFollowRepository.findCreatorIdsByUserId(USER_ID)).willReturn(List.of(10L));
+        given(postRepository.findDisplayedPostsByFollowingCreatorIds(any(), any()))
+                .willAnswer(invocation -> new PageImpl<>(
+                        List.of(publishedPost()), invocation.getArgument(1), 1));
+
+        PageResponse<PostDto.FeedItemResponse> response =
+                userPostService.getFollowingFeed(USERNAME, new PagingRequest());
+
+        assertThat(response.getContent()).singleElement()
+                .satisfies(item -> assertThat(item.getPost().getIsFollowing()).isTrue());
+        verify(creatorFollowRepository, never()).findFollowedCreatorIds(anyLong(), any());
+    }
+
+    @Test
+    @DisplayName("팔로우한 쇼룸이 없으면 팔로잉 피드는 빈 페이지다 — 빈 상태는 추천 피드가 채운다")
+    void followingFeedIsEmptyWithoutFollowing() {
+        given(creatorFollowRepository.findCreatorIdsByUserId(USER_ID)).willReturn(List.of());
+
+        PageResponse<PostDto.FeedItemResponse> response =
+                userPostService.getFollowingFeed(USERNAME, new PagingRequest());
+
+        assertThat(response.getContent()).isEmpty();
+    }
+
     // ------------------------------------------------------------------ 픽스처
+
+    private void givenRecommendedPage(List<Post> posts, long total) {
+        given(postRepository.findRecommendedPosts(any(), any()))
+                .willAnswer(invocation -> new PageImpl<>(posts, invocation.getArgument(1), total));
+    }
 
     private void givenLikedPage(List<Post> posts, long total) {
         given(postLikeRepository.findLikedPostsByUserId(anyLong(), any(), any()))

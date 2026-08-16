@@ -41,6 +41,14 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
     }
 
     @Override
+    public Page<Post> findRecommendedPosts(List<Long> excludedCreatorIds, Pageable pageable) {
+        if (excludedCreatorIds == null || excludedCreatorIds.isEmpty()) {
+            return findPublished(null, pageable);
+        }
+        return findPublished(post.creator.id.notIn(excludedCreatorIds), pageable);
+    }
+
+    @Override
     public Page<Post> findStudioPosts(Long creatorId, PostStatus status, Pageable pageable) {
         BooleanBuilder where = new BooleanBuilder()
                 .and(post.creator.id.eq(creatorId))

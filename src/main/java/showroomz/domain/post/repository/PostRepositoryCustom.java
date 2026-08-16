@@ -18,6 +18,16 @@ public interface PostRepositoryCustom {
     Page<Post> findDisplayedPostsByCreatorIds(List<Long> creatorIds, Pageable pageable);
 
     /**
+     * C1 추천 — 팔로우하지 않은 쇼룸의 게시중 게시물 (§C1 "회원님을 위한 추천" · 팔로잉 0 발견 피드).
+     *
+     * <p>팔로잉 피드의 <b>여집합</b>이라 두 목록에 같은 게시물이 겹치지 않는다. 겹치면 "새 게시물을
+     * 모두 확인했어요" 구분선 아래에 방금 본 게시물이 다시 나와 구분 자체가 무의미해진다.
+     *
+     * @param excludedCreatorIds 제외할 쇼룸 — 팔로우 중인 쇼룸과 본인 쇼룸. 비어 있으면 전체가 대상이다
+     */
+    Page<Post> findRecommendedPosts(List<Long> excludedCreatorIds, Pageable pageable);
+
+    /**
      * 스튜디오 목록 — 탭(전체·게시중·노출중지·작성중)에 대응한다.
      *
      * @param status {@code null}이면 전체 탭. 어느 탭에서도 삭제 게시물은 보이지 않는다(§24-6)

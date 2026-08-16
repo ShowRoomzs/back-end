@@ -69,6 +69,63 @@ public interface UserFeedControllerDocs {
             @Parameter(description = "페이징 정보 (page: 1부터, size: 기본 20)") PagingRequest pagingRequest);
 
     @Operation(
+            summary = "추천 피드 조회 (C1 회원님을 위한 추천 · 발견 피드)",
+            description = """
+                    **팔로우하지 않은** 쇼룸의 게시중 게시물을 최신순으로 조회한다.
+                    팔로잉 피드(`/feed/following`)의 여집합이라 두 목록에 같은 게시물이 겹치지 않는다.
+
+                    - **화면 위치** — 팔로잉 피드를 끝까지 내리면 나오는 "새 게시물을 모두 확인했어요"
+                      구분 블록 아래의 `[회원님을 위한 추천]` 영역이다. 팔로잉 피드의
+                      `pageInfo.hasNext`가 false가 된 뒤 이 API를 이어 붙인다
+                    - **팔로잉 0 (빈 상태)** — 같은 API가 그대로 **발견 피드**가 된다. 쇼룸 이름만
+                      나열한 목록으로는 팔로우를 결정할 근거가 없어, 빈 상태에도 게시물을 보여준다
+                    - **isFollowing** — 이 목록은 전부 `false`다. 카드 헤더의 **회색 팔로우 버튼**은
+                      이 값이 false일 때만 그린다. 팔로우(`POST /v1/user/showrooms/{showroomId}/follow`)
+                      후 버튼을 지우는 것은 클라이언트가 하고, 이미 나간 페이지를 다시 받지는 않는다
+                    - **본인 쇼룸 제외** — 크리에이터에게 자기 게시물은 추천하지 않는다
+                    - **권한:** USER
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = PageResponse.class),
+                            examples = @ExampleObject(name = "success", value = """
+                                    {
+                                      "content": [
+                                        {
+                                          "contentType": "GENERAL",
+                                          "post": {
+                                            "postId": 512,
+                                            "showroomId": 31,
+                                            "showroomName": "하루 코스메틱",
+                                            "showroomImageUrl": "https://cdn.example.com/showrooms/31.png",
+                                            "isFollowing": false,
+                                            "content": "각질 정리부터 다시, 순한 성분만 골랐어요",
+                                            "imageUrls": ["https://cdn.example.com/posts/512-0.jpg"],
+                                            "imageCount": 1,
+                                            "aspectRatio": 0.8000,
+                                            "impressionCount": 1204,
+                                            "isLiked": false,
+                                            "likeCount": 88,
+                                            "likeLocked": false,
+                                            "publishedAt": "2026-03-04T07:10:00"
+                                          }
+                                        }
+                                      ],
+                                      "pageInfo": {
+                                        "currentPage": 1, "totalPages": 3, "totalResults": 47, "limit": 20, "hasNext": true
+                                      }
+                                    }
+                                    """))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getRecommendedFeed(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @Parameter(description = "페이징 정보 (page: 1부터, size: 기본 20)") PagingRequest pagingRequest);
+
+    @Operation(
             summary = "좋아요한 게시글 목록 조회 (C3 좋아요)",
             description = """
                     내가 좋아요한 게시물을 모아 조회한다. 공구·일반이 섞여 나오고 판별자는 `contentType`이다.

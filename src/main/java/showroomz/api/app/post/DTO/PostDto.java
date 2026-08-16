@@ -103,6 +103,15 @@ public class PostDto {
         private String showroomName;
         @Schema(description = "쇼룸 대표 이미지 URL")
         private String showroomImageUrl;
+
+        /**
+         * C1 — 카드 헤더의 팔로우 버튼은 <b>미팔로우 쇼룸에만</b> 붙는다. 이미 팔로우한 대상에게
+         * 버튼 자리를 내주지 않고(팔로우 취소는 C2·C4에서 한다), 추천 피드에서만 실질적으로 뜬다.
+         */
+        @Schema(description = "현재 사용자가 이 쇼룸을 팔로우 중인지 — false일 때만 카드에 팔로우 버튼을 그린다",
+                example = "false")
+        private Boolean isFollowing;
+
         @Schema(description = "본문 — 없을 수 있다")
         private String content;
         @Schema(description = "게시글 이미지 URL 목록 (순서대로)")
