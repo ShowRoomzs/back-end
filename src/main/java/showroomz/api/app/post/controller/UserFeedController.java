@@ -28,7 +28,7 @@ public class UserFeedController implements UserFeedControllerDocs {
     @GetMapping("/feed/following")
     public ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getFollowingFeed(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            PagingRequest pagingRequest) {
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest) {
         return ResponseEntity.ok(postService.getFollowingFeed(userPrincipal.getUsername(), pagingRequest));
     }
 

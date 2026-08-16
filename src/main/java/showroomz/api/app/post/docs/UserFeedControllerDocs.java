@@ -28,6 +28,11 @@ public interface UserFeedControllerDocs {
 
                     - **aspectRatio** — 카드 높이를 이 값으로 잡는다. 게시물마다 높이가 다르다(§24-2)
                     - **contentType** — 게시물 종류 판별자. 지금은 `GENERAL`뿐이다
+                    - **isFollowing** — 이 목록은 정의상 전부 `true`다(팔로우한 쇼룸의 글만 모았으므로
+                      다시 물어볼 필요가 없다). 카드 헤더에 팔로우 버튼을 그리지 않는다
+                    - **likeLocked** — `true`면 마감된 공구다. 하트를 눌러도 새로 걸리지 않고 해제만 된다
+                    - **팔로잉 0명** — 빈 목록(`content: []`)이 온다. 이때 화면은 발견 피드
+                      (`/feed/recommended`)로 대체한다(C1 빈 상태)
                     - **권한:** USER
                     """
     )
@@ -45,6 +50,7 @@ public interface UserFeedControllerDocs {
                                             "showroomId": 10,
                                             "showroomName": "리브의 방",
                                             "showroomImageUrl": "https://cdn.example.com/showrooms/10.png",
+                                            "isFollowing": true,
                                             "content": "3주 루틴 기록",
                                             "imageUrls": ["https://cdn.example.com/posts/123-0.jpg"],
                                             "imageCount": 1,
@@ -52,6 +58,7 @@ public interface UserFeedControllerDocs {
                                             "impressionCount": 532,
                                             "isLiked": true,
                                             "likeCount": 12,
+                                            "likeLocked": false,
                                             "publishedAt": "2026-03-04T12:34:56"
                                           }
                                         }
@@ -62,6 +69,8 @@ public interface UserFeedControllerDocs {
                                     }
                                     """))),
             @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "토큰의 사용자를 찾을 수 없음",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getFollowingFeed(
@@ -119,6 +128,8 @@ public interface UserFeedControllerDocs {
                                     }
                                     """))),
             @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "토큰의 사용자를 찾을 수 없음",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getRecommendedFeed(
@@ -137,6 +148,9 @@ public interface UserFeedControllerDocs {
                       - `MOST_LIKED` — 좋아요 많은순 (게시물의 총 좋아요 수 기준)
                       - `GROUP_BUY_FIRST` — 공구 게시물 먼저. 공구 게시물이 아직 없어 현재는 `DEFAULT`와 같다
                     - **좋아요한 게시물 N** — 화면 상단 카운트는 `pageInfo.totalResults`다
+                    - **isLiked** — 이 목록은 정의상 전부 `true`다(좋아요한 것만 모았으므로)
+                    - **isFollowing** — 실제 팔로우 여부를 그대로 반영한다. 좋아요는 팔로우와
+                      무관하게 누를 수 있어 이 목록엔 `true`/`false`가 섞여 나온다
                     - **마감된 공구** — 목록에서 지우지 않는다. 대신 `likeLocked=true`로 내려가며,
                       이 게시물은 **해제만** 된다(새 좋아요 요청은 서버가 거절한다)
                     - **좋아요 해제** — 해제해도 이 응답이 바로 바뀌지는 않는다.
@@ -159,6 +173,7 @@ public interface UserFeedControllerDocs {
                                             "showroomId": 10,
                                             "showroomName": "미아 스킨노트",
                                             "showroomImageUrl": "https://cdn.example.com/showrooms/10.png",
+                                            "isFollowing": false,
                                             "content": "요즘 아침 루틴 정리했어요",
                                             "imageUrls": ["https://cdn.example.com/posts/123-0.jpg"],
                                             "imageCount": 12,
@@ -177,6 +192,8 @@ public interface UserFeedControllerDocs {
                                     }
                                     """))),
             @ApiResponse(responseCode = "401", description = "인증 실패 — 비로그인",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "토큰의 사용자를 찾을 수 없음",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getLikedPosts(

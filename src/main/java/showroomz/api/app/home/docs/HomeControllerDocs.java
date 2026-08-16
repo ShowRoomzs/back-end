@@ -46,7 +46,12 @@ public interface HomeControllerDocs {
                                     }
                                     """))),
             @ApiResponse(responseCode = "401", description = "인증 실패",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "토큰의 사용자를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(name = "사용자 없음", value = """
+                                    {"code": "USER_NOT_FOUND", "message": "존재하지 않는 회원입니다."}
+                                    """)))
     })
     ResponseEntity<HomeSummaryResponse> getHomeSummary(@AuthenticationPrincipal UserPrincipal userPrincipal);
 }

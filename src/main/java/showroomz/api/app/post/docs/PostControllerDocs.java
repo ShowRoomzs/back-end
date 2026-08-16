@@ -29,6 +29,8 @@ public interface PostControllerDocs {
                     - **aspectRatio** — 게시물 비율(가로/세로). 게시물마다 높이가 다르므로
                       **고정 높이 카드로 그리면 안 되고** 이 값으로 자리를 잡는다(§24-2)
                     - **imageUrls** — 배열 순서가 노출 순서, 첫 장이 대표 사진
+                    - **likeLocked** — `true`면 마감된 공구다. 좋아요 버튼을 눌러도 새로 걸리지
+                      않고 해제만 된다(C3 §마감·품절과 같은 규칙)
                     - 비로그인도 조회할 수 있고, 이 경우 `isLiked`는 false다
                     """
     )
@@ -51,6 +53,7 @@ public interface PostControllerDocs {
                                       "impressionCount": 532,
                                       "isLiked": true,
                                       "likeCount": 12,
+                                      "likeLocked": false,
                                       "publishedAt": "2026-03-04T12:34:56",
                                       "modifiedAt": "2026-03-04T13:00:00"
                                     }
@@ -76,11 +79,17 @@ public interface PostControllerDocs {
 
                     **contentType**이 게시물 종류 판별자다 — 지금은 `GENERAL`뿐이고, 공구 게시물이
                     들어오면 `GROUP_BUY`가 더해진다. 응답 구조는 그대로 유지된다.
+
+                    - **isFollowing** — 이 쇼룸을 지금 팔로우 중인지. 조회 대상 쇼룸이 하나로 고정돼
+                      있어 목록 전체가 같은 값이다
+                    - **likeLocked** — `true`면 마감된 공구다. 새 좋아요는 서버가 거절하고 해제만 된다
                     """
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공",
-                    content = @Content(examples = @ExampleObject(value = """
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = PageResponse.class),
+                            examples = @ExampleObject(value = """
                             {
                               "content": [
                                 {
@@ -90,6 +99,7 @@ public interface PostControllerDocs {
                                     "showroomId": 10,
                                     "showroomName": "리브의 방",
                                     "showroomImageUrl": "https://cdn.example.com/showrooms/10.jpg",
+                                    "isFollowing": false,
                                     "content": "3주 루틴 기록",
                                     "imageUrls": ["https://cdn.example.com/posts/123-0.jpg"],
                                     "imageCount": 1,
@@ -97,6 +107,7 @@ public interface PostControllerDocs {
                                     "impressionCount": 532,
                                     "isLiked": false,
                                     "likeCount": 12,
+                                    "likeLocked": false,
                                     "publishedAt": "2026-03-04T12:34:56"
                                   }
                                 }

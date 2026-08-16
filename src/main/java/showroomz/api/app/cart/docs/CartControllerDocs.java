@@ -26,6 +26,9 @@ public interface CartControllerDocs {
     @Operation(
             summary = "장바구니 상품 추가",
             description = "사용자의 장바구니에 옵션(Variant)과 수량을 추가합니다.\n\n" +
+                    "**담을 수 없는 상품:** 공구가 마감(연결 해제·미진열)되었거나 품절된 옵션은 담을 수 없고 " +
+                    "400 `CART_ITEM_NOT_PURCHASABLE`을 반환합니다.\n\n" +
+                    "**수량 상한:** 항목당 최대 99개까지입니다(기존 수량과 합산 기준). 초과하면 400입니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -72,7 +75,7 @@ public interface CartControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "옵션을 찾을 수 없음",
+                    description = "옵션을 찾을 수 없거나 토큰의 사용자를 찾을 수 없음",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)
@@ -200,6 +203,14 @@ public interface CartControllerDocs {
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)
                     )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "토큰의 사용자를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
             )
     })
     ResponseEntity<CartDto.CartListResponse> getCart(
@@ -215,6 +226,12 @@ public interface CartControllerDocs {
     @Operation(
             summary = "장바구니 수정",
             description = "장바구니 항목의 옵션 또는 수량을 수정합니다.\n\n" +
+                    "**담은 뒤 마감·품절된 항목은 수정할 수 없습니다**(400 `CART_ITEM_NOT_PURCHASABLE`) — " +
+                    "화면도 그 행의 수량 스테퍼와 옵션 변경 버튼을 함께 비활성으로 그립니다. " +
+                    "바꾸려는 옵션(`variantId`) 쪽이 마감·품절인 경우도 같은 코드로 거절합니다.\n\n" +
+                    "**수량 상한:** 최종 수량은 최대 99개입니다(옵션을 합치는 경우 합산 후 기준). 초과하면 400입니다.\n\n" +
+                    "**옵션 변경 시 병합:** 이미 담긴 다른 항목과 같은 옵션으로 바꾸면 두 항목이 하나로 합쳐지고 " +
+                    "수량이 더해집니다(재고 초과 시 400 `INSUFFICIENT_STOCK`).\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -237,7 +254,7 @@ public interface CartControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "장바구니 항목 또는 옵션을 찾을 수 없음",
+                    description = "장바구니 항목 또는 옵션을 찾을 수 없거나 토큰의 사용자를 찾을 수 없음",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)
@@ -331,6 +348,14 @@ public interface CartControllerDocs {
             @ApiResponse(
                     responseCode = "401",
                     description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "토큰의 사용자를 찾을 수 없음",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)

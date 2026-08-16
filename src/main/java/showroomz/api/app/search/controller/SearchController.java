@@ -1,6 +1,7 @@
 package showroomz.api.app.search.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -32,7 +33,7 @@ public class SearchController implements SearchControllerDocs {
     @GetMapping("/showrooms")
     public ResponseEntity<PageResponse<ShowroomSearchItem>> searchShowrooms(
             @RequestParam(value = "keyword", required = false) String keyword,
-            @ModelAttribute PagingRequest pagingRequest
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest
     ) {
         return ResponseEntity.ok(searchService.searchShowrooms(keyword, pagingRequest));
     }

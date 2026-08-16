@@ -2,10 +2,12 @@ package showroomz.api.app.post.controller;
 
 import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -55,7 +57,7 @@ public class UserPostController implements PostControllerDocs {
     public ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getPostListByShowroom(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable("showroomId") Long showroomId,
-            PagingRequest pagingRequest) {
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest) {
         String username = userPrincipal != null ? userPrincipal.getUsername() : null;
         return ResponseEntity.ok(postService.getPostList(username, pagingRequest, showroomId));
     }
