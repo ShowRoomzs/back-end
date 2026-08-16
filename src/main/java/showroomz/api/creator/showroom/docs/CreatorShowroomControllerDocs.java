@@ -120,12 +120,23 @@ public interface CreatorShowroomControllerDocs {
                                             value = "{\"code\": \"DUPLICATE_SHOWROOM_NAME\", \"message\": \"이미 사용 중인 쇼룸명입니다.\"}"
                                     ),
                                     @ExampleObject(
-                                            name = "소개글 초과",
-                                            value = "{\"code\": \"SHOWROOM_INTRODUCTION_TOO_LONG\", \"message\": \"쇼룸 소개글은 최대 50자까지 입력할 수 있습니다.\"}"
-                                    ),
-                                    @ExampleObject(
                                             name = "URL 형식 오류",
                                             value = "{\"code\": \"INVALID_INSTAGRAM_URL\", \"message\": \"https://로 시작하는 올바른 URL을 입력해 주세요.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "쇼룸명 미입력",
+                                            value = "{\"code\": \"INVALID_INPUT\", \"message\": \"must not be blank\"}",
+                                            description = "@NotBlank 검증 실패 — showroomName을 비우거나 생략하면 서비스 로직 이전에 Bean Validation에서 막힙니다"
+                                    ),
+                                    @ExampleObject(
+                                            name = "소개글 초과",
+                                            value = "{\"code\": \"INVALID_INPUT\", \"message\": \"size must be between 0 and 50\"}",
+                                            description = "@Size(max=50) 검증 실패 — introduction이 50자를 넘으면 서비스 로직(SHOWROOM_INTRODUCTION_TOO_LONG) 이전에 Bean Validation에서 막힙니다"
+                                    ),
+                                    @ExampleObject(
+                                            name = "인스타그램 URL 길이 초과",
+                                            value = "{\"code\": \"INVALID_INPUT\", \"message\": \"size must be between 0 and 512\"}",
+                                            description = "@Size(max=512) 검증 실패 — 소개글 50자 제한(SHOWROOM_INTRODUCTION_TOO_LONG)과 달리 서비스 코드에 도달하기 전에 막힙니다"
                                     )
                             }
                     )
@@ -167,6 +178,10 @@ public interface CreatorShowroomControllerDocs {
                                     @ExampleObject(
                                             name = "중복",
                                             value = "{\"isAvailable\": false, \"code\": \"DUPLICATE\", \"message\": \"이미 사용 중인 쇼룸명입니다. 다른 이름을 입력해주세요.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "형식 오류",
+                                            value = "{\"isAvailable\": false, \"code\": \"INVALID_FORMAT\", \"message\": \"쇼룸명은 2~20자, 한글·영문·숫자·공백만 사용할 수 있습니다.\"}"
                                     )
                             }
                     )
@@ -175,6 +190,18 @@ public interface CreatorShowroomControllerDocs {
                     responseCode = "401",
                     description = "인증 실패",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "존재하지 않는 크리에이터",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "크리에이터 없음",
+                                    value = "{\"code\": \"CREATOR_NOT_FOUND\", \"message\": \"존재하지 않는 크리에이터입니다.\"}"
+                            )
+                    )
             )
     })
     ResponseEntity<ShowroomNameCheckResponse> checkShowroomName(
@@ -220,8 +247,8 @@ public interface CreatorShowroomControllerDocs {
                                             "  \"follower\": {\"total\": 1240, \"newFollowers\": 42, \"changeRate\": 3.5},\n" +
                                             "  \"reach\": {\"visits\": 3180, \"visitors\": 2410, \"followConversionRate\": 1.7},\n" +
                                             "  \"composition\": {\n" +
-                                            "    \"ageGroups\": [{\"label\": \"25–34세\", \"ratio\": 41.0}],\n" +
-                                            "    \"genders\": [{\"label\": \"여성\", \"ratio\": 88.0}],\n" +
+                                            "    \"ageGroups\": [{\"label\": \"18–24세\", \"ratio\": 12.0}, {\"label\": \"25–34세\", \"ratio\": 41.0}, {\"label\": \"35–44세\", \"ratio\": 22.0}, {\"label\": \"45세 이상\", \"ratio\": 9.0}, {\"label\": \"미확인\", \"ratio\": 16.0}],\n" +
+                                            "    \"genders\": [{\"label\": \"여성\", \"ratio\": 88.0}, {\"label\": \"남성\", \"ratio\": 7.0}, {\"label\": \"미확인\", \"ratio\": 5.0}],\n" +
                                             "    \"sampleSize\": 1240, \"ratioSuppressed\": false, \"minimumSampleSize\": 30\n" +
                                             "  },\n" +
                                             "  \"region\": {\n" +
@@ -231,7 +258,7 @@ public interface CreatorShowroomControllerDocs {
                                             "  \"behavior\": {\"averageVisitsPerFollower\": 2.4, \"followerRevisitRate\": 38.0, \"followerShareOfVisitors\": 61.0},\n" +
                                             "  \"topContentSort\": \"LIKES\",\n" +
                                             "  \"topContents\": [\n" +
-                                            "    {\"rank\": 1, \"postId\": 301, \"title\": \"시카 앰플 재구매 후기\", \"publishedAt\": \"2026-08-02T11:00:00\", \"viewCount\": 1510, \"likeCount\": 31}\n" +
+                                            "    {\"rank\": 1, \"postId\": 301, \"thumbnailUrl\": \"https://cdn.showroomz.co.kr/uploads/post/301/thumb.jpg\", \"excerpt\": \"여름 끝 무너진 장벽, 3주 루틴\", \"publishedAt\": \"2026-08-02T11:00:00\", \"viewCount\": 1510, \"likeCount\": 31}\n" +
                                             "  ],\n" +
                                             "  \"sources\": [\n" +
                                             "    {\"source\": \"INSTAGRAM_LINK\", \"label\": \"인스타그램 링크\", \"ratio\": 62.0, \"visits\": 1972}\n" +

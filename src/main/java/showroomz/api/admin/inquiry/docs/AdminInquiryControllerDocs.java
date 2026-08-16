@@ -83,14 +83,22 @@ public interface AdminInquiryControllerDocs {
                     "상품 문의 답변대기는 브랜드 조치이므로 이 값에 포함하지 않습니다.\n\n" +
                     "**권한:** ADMIN"
     )
-    @ApiResponses(@ApiResponse(responseCode = "200", description = "조회 성공"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 정보가 유효하지 않음",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<AdminInquiryDto.SummaryResponse> getSummary();
 
     @Operation(
             summary = "문의 유형 목록 조회",
             description = "유형 필터 셀렉트에 쓰는 5종 목록입니다(FAQ 카테고리와 동일한 분류 체계).\n\n**권한:** ADMIN"
     )
-    @ApiResponses(@ApiResponse(responseCode = "200", description = "조회 성공"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 정보가 유효하지 않음",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<List<AdminInquiryDto.TypeOption>> getTypes();
 
     @Operation(

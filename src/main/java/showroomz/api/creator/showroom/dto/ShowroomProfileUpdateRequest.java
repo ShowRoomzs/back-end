@@ -20,7 +20,7 @@ import lombok.Setter;
 public class ShowroomProfileUpdateRequest {
 
     @Schema(description = "쇼룸명 — 2~20자, 한글·영문·숫자·공백만, 중복 불가",
-            requiredMode = Schema.RequiredMode.REQUIRED, example = "뷰티_소연")
+            requiredMode = Schema.RequiredMode.REQUIRED, example = "뷰티 소연")
     @NotBlank
     private String showroomName;
 

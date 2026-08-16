@@ -31,13 +31,13 @@ public class AdminNoticeDetailResponse {
     @Schema(description = "중요 여부", example = "true")
     private boolean pinned;
 
-    @Schema(description = "등록일시", example = "2026-07-10T09:40:00")
+    @Schema(description = "등록일시", example = "2026-07-10T09:40:00Z")
     private LocalDateTime createdAt;
 
-    @Schema(description = "최종 수정 일시", example = "2026-07-10T09:40:00")
+    @Schema(description = "최종 수정 일시", example = "2026-07-10T09:40:00Z")
     private LocalDateTime modifiedAt;
 
-    @Schema(description = "게시 종료 일시 — 게시 종료 상태에서만 값이 있다", example = "2026-07-08T09:00:00")
+    @Schema(description = "게시 종료 일시 — 게시 종료 상태에서만 값이 있다", example = "2026-07-08T09:00:00Z")
     private LocalDateTime endedAt;
 
     @Schema(description = "작성자명 (운영자)", example = "김운영")

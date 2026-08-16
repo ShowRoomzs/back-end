@@ -184,7 +184,7 @@ public interface ShowroomFollowControllerDocs {
                                             "    \"currentPage\": 1,\n" +
                                             "    \"totalPages\": 3,\n" +
                                             "    \"totalResults\": 25,\n" +
-                                            "    \"size\": 10,\n" +
+                                            "    \"limit\": 10,\n" +
                                             "    \"hasNext\": true\n" +
                                             "  }\n" +
                                             "}"
@@ -212,6 +212,6 @@ public interface ShowroomFollowControllerDocs {
     ResponseEntity<PageResponse<FollowingShowroomResponse>> getFollowedShowrooms(
             @Parameter(hidden = true) UserPrincipal userPrincipal,
             FollowingShowroomSort sort,
-            @Parameter(hidden = true) PagingRequest pagingRequest
+            PagingRequest pagingRequest
     );
 }

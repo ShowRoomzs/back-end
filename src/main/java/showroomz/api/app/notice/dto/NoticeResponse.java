@@ -19,7 +19,7 @@ public class NoticeResponse {
     @Schema(description = "중요 여부 — [중요] 배지 노출 및 목록 상단 고정", example = "true")
     private final boolean pinned;
 
-    @Schema(description = "등록일", example = "2026-07-05T10:15:00")
+    @Schema(description = "등록일", example = "2026-07-05T10:15:00Z")
     private final LocalDateTime createdDate;
 
     public NoticeResponse(Notice notice) {

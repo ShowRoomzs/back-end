@@ -200,7 +200,7 @@ public interface InquiryControllerDocs {
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 5,\n" +
                                                     "    \"totalResults\": 48,\n" +
-                                                    "    \"size\": 10,\n" +
+                                                    "    \"limit\": 10,\n" +
                                                     "    \"hasNext\": true\n" +
                                                     "  }\n" +
                                                     "}"
@@ -220,6 +220,23 @@ public interface InquiryControllerDocs {
                                             value = "{\n" +
                                                     "  \"code\": \"UNAUTHORIZED\",\n" +
                                                     "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음 - Status: 404 Not Found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "사용자 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"USER_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 회원입니다.\"\n" +
                                                     "}"
                                     )
                             }

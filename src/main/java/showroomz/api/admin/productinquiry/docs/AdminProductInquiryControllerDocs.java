@@ -49,7 +49,12 @@ public interface AdminProductInquiryControllerDocs {
                     "운영자가 매번 확인해야 하는 유일한 수치이며 툴바의 `삭제 요청 N건`이 이 값입니다."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "목록 조회 성공")
+            @ApiResponse(responseCode = "200", description = "목록 조회 성공"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            )
     })
     ResponseEntity<AdminProductInquiryDto.ListResponse> getList(
             @RequestParam(value = "status", defaultValue = "ALL") AdminProductInquiryStatusFilter status,
@@ -64,7 +69,12 @@ public interface AdminProductInquiryControllerDocs {
                     "운영자가 매번 확인해야 하는 유일한 수치입니다.\n\n**권한:** ADMIN"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "조회 성공")
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            )
     })
     ResponseEntity<AdminProductInquiryDto.SummaryResponse> getSummary();
 
@@ -73,7 +83,12 @@ public interface AdminProductInquiryControllerDocs {
             description = "목록 상단 `전체 유형` 셀렉트에 쓸 문의 유형 목록을 반환합니다 (§18-2-1).\n\n**권한:** ADMIN"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "조회 성공")
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            )
     })
     ResponseEntity<List<AdminProductInquiryDto.TypeOption>> getTypes();
 

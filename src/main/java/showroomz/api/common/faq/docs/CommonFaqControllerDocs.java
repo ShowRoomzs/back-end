@@ -1,6 +1,7 @@
 package showroomz.api.common.faq.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -29,7 +30,7 @@ public interface CommonFaqControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = FaqCategoryItem.class),
+                            array = @ArraySchema(schema = @Schema(implementation = FaqCategoryItem.class)),
                             examples = @ExampleObject(
                                     name = "성공 예시 (실제 응답)",
                                     value = "[\n" +

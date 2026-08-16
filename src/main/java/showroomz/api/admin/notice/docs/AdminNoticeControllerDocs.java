@@ -147,6 +147,19 @@ public interface AdminNoticeControllerDocs {
                     example = "20"
             )
     })
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 (ADMIN 권한 필요)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
     ResponseEntity<AdminNoticePageResponse> getNotices(
             @Parameter(hidden = true) AdminNoticeListRequest request,
             @Parameter(hidden = true) PagingRequest pagingRequest
@@ -161,6 +174,16 @@ public interface AdminNoticeControllerDocs {
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 (ADMIN 권한 필요)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
             @ApiResponse(
                     responseCode = "404",
                     description = "존재하지 않는 공지",
@@ -186,6 +209,16 @@ public interface AdminNoticeControllerDocs {
             @ApiResponse(
                     responseCode = "400",
                     description = "입력값 오류 (제목/본문 필수, 본문 이미지 3장 초과)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 (ADMIN 권한 필요)",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
             ),
             @ApiResponse(
@@ -228,6 +261,16 @@ public interface AdminNoticeControllerDocs {
                     )
             ),
             @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 (ADMIN 권한 필요)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
                     responseCode = "404",
                     description = "존재하지 않는 공지",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
@@ -263,6 +306,16 @@ public interface AdminNoticeControllerDocs {
                                             + "}"
                             )
                     )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 (ADMIN 권한 필요)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
             ),
             @ApiResponse(
                     responseCode = "404",

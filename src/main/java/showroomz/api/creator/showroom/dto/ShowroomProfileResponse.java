@@ -19,7 +19,7 @@ public class ShowroomProfileResponse {
     @Schema(description = "쇼룸(크리에이터) ID", example = "5")
     private final Long creatorId;
 
-    @Schema(description = "쇼룸명 — 소비자 노출", example = "뷰티_소연")
+    @Schema(description = "쇼룸명 — 소비자 노출", example = "뷰티 소연")
     private final String showroomName;
 
     @Schema(description = "쇼룸 프로필 이미지 URL — 앱 계정 프로필과 별개, 없으면 null",

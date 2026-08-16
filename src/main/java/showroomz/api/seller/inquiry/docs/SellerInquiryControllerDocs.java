@@ -117,6 +117,11 @@ public interface SellerInquiryControllerDocs {
                     responseCode = "403",
                     description = "본인 마켓의 문의가 아님",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "문의를 찾을 수 없음 · 판매자 마켓을 찾을 수 없음",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
             )
     })
     ResponseEntity<Void> registerAnswer(
@@ -137,6 +142,16 @@ public interface SellerInquiryControllerDocs {
             @ApiResponse(
                     responseCode = "400",
                     description = "미답변 문의(`INQUIRY_NOT_ANSWERED`) · 삭제 검토 중(`INQUIRY_UNDER_DELETE_REVIEW`) · 삭제된 문의(`INQUIRY_ALREADY_DELETED`)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "본인 마켓의 문의가 아님",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "문의를 찾을 수 없음 · 판매자 마켓을 찾을 수 없음",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
             )
     })
@@ -174,6 +189,11 @@ public interface SellerInquiryControllerDocs {
             @ApiResponse(
                     responseCode = "403",
                     description = "본인 마켓의 문의가 아님",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "문의를 찾을 수 없음 · 판매자 마켓을 찾을 수 없음",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
             )
     })
