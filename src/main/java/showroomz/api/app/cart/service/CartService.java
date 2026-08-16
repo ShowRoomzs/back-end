@@ -9,17 +9,24 @@ import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.cart.entity.Cart;
 import showroomz.domain.cart.repository.CartRepository;
+import showroomz.domain.cart.type.CartUnavailableReason;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductOption;
 import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.product.repository.ProductVariantRepository;
+import showroomz.domain.product.type.ProductDisplayStatus;
+import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -69,17 +76,30 @@ public class CartService {
                 .build();
     }
 
+    /**
+     * 장바구니 조회 — 항목을 <b>공구(쇼룸) 단위로 묶어</b> 내려준다 (C8).
+     *
+     * <p>배송비·마감일·발송 시점이 공구마다 다르기 때문에 상품이 아니라 공구별로 묶는다. 그룹
+     * 끝에 그 공구의 배송비와 무료배송까지 남은 금액을 붙이는 것도 같은 이유다 — 결제 화면에서
+     * 처음 알게 되는 배송비가 가장 흔한 이탈 원인이라 담는 단계에서 미리 보여 준다.
+     *
+     * <p>{@code selectedCartItemIds}는 화면의 체크 상태다. 넘기지 않으면 <b>구매 가능한 항목 전체</b>가
+     * 선택된 것으로 보고 계산한다(화면에 처음 들어왔을 때의 상태). 담은 뒤 마감·품절된 항목은
+     * 요청에 담겨 있어도 선택에서 빠진다 — 전체 선택도 이 항목은 건너뛴다.
+     *
+     * <p>구매 불가 항목을 <b>목록에서 지우지는 않는다.</b> 담아 둔 것은 사용자의 기억이자 의도이고,
+     * 말없이 사라지면 합계가 줄어든 이유도 알 수 없다. 삭제는 사용자가 결정한다.
+     */
     @Transactional(readOnly = true)
-    public CartDto.CartListResponse getCart(String username) {
+    public CartDto.CartListResponse getCart(String username, List<Long> selectedCartItemIds) {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        List<Cart> carts = cartRepository.findAllByUser(user);
-        List<CartDto.CartItem> items = carts.stream()
-                .map(this::toCartItem)
-                .toList();
+        List<Cart> carts = sortedByRecentlyAdded(cartRepository.findAllByUser(user));
+        Set<Long> selectedIds = resolveSelection(carts, selectedCartItemIds);
 
-        CartSummaryData summaryData = calculateSummary(carts);
+        List<CartDto.CartGroup> groups = buildGroups(carts, selectedIds);
+        CartSummaryData summaryData = calculateSummary(carts, selectedIds);
 
         CartDto.CartSummary summary = CartDto.CartSummary.builder()
                 .regularTotal(summaryData.regularTotal)
@@ -87,14 +107,24 @@ public class CartService {
                 .discountTotal(summaryData.discountTotal)
                 .deliveryFeeTotal(summaryData.deliveryFeeTotal)
                 .finalTotal(summaryData.finalTotal)
+                .selectedCount(selectedIds.size())
+                .selectableCount((int) carts.stream().filter(cart -> unavailableReason(cart) == null).count())
+                .totalCount(carts.size())
                 .build();
 
         return CartDto.CartListResponse.builder()
-                .items(items)
+                .groups(groups)
                 .summary(summary)
                 .build();
     }
 
+    /**
+     * 장바구니 수정 — 수량 변경과 옵션 변경이 같은 경로로 들어온다.
+     *
+     * <p>담은 뒤 마감·품절된 항목은 수정하지 못한다. 화면이 그 행의 수량 스테퍼와 옵션 변경
+     * 버튼을 모두 비활성으로 그리기 때문이고(못 사는 상품에 조작할 컨트롤을 남겨 두지 않는다),
+     * 주소로 직접 호출하는 경로가 남으므로 서버도 같은 선에서 막는다.
+     */
     @Transactional
     public CartDto.UpdateCartResponse updateCart(String username, Long cartItemId, CartDto.UpdateCartRequest request) {
         Users user = userRepository.findByUsername(username)
@@ -107,10 +137,13 @@ public class CartService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "변경할 항목이 없습니다.");
         }
 
+        requirePurchasable(cart.getVariant());
+
         ProductVariant targetVariant = cart.getVariant();
         if (request.getVariantId() != null && !request.getVariantId().equals(cart.getVariant().getVariantId())) {
             targetVariant = productVariantRepository.findByVariantId(request.getVariantId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.VARIANT_NOT_FOUND));
+            requirePurchasable(targetVariant);
         }
 
         int requestedQuantity = request.getQuantity() != null ? request.getQuantity() : cart.getQuantity();
@@ -123,6 +156,7 @@ public class CartService {
 
         if (mergedTarget != null && !mergedTarget.getId().equals(cart.getId())) {
             int finalQuantity = mergedTarget.getQuantity() + requestedQuantity;
+            requireWithinQuantityLimit(finalQuantity);
             if (finalQuantity > availableStock) {
                 throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK, "재고가 부족합니다");
             }
@@ -130,6 +164,7 @@ public class CartService {
             cartRepository.delete(cart);
             cart = cartRepository.save(mergedTarget);
         } else {
+            requireWithinQuantityLimit(requestedQuantity);
             if (requestedQuantity > availableStock) {
                 throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK, "재고가 부족합니다");
             }
@@ -139,16 +174,7 @@ public class CartService {
         }
 
         List<Cart> carts = cartRepository.findAllByUser(user);
-        CartSummaryData summaryData = calculateSummary(carts);
-
-        CartDto.UpdateSummary summary = CartDto.UpdateSummary.builder()
-                .regularTotal(summaryData.regularTotal)
-                .saleTotal(summaryData.saleTotal)
-                .discountTotal(summaryData.discountTotal)
-                .deliveryFeeTotal(summaryData.deliveryFeeTotal)
-                .totalProductPrice(summaryData.saleTotal)
-                .expectedTotalPrice(summaryData.finalTotal)
-                .build();
+        CartDto.UpdateSummary summary = toUpdateSummary(calculateSummary(carts, resolveSelection(carts, null)));
 
         return CartDto.UpdateCartResponse.builder()
                 .cartId(cart.getId())
@@ -202,15 +228,8 @@ public class CartService {
         }
 
         List<Cart> remainingCarts = cartRepository.findAllByUser(user);
-        CartSummaryData summaryData = calculateSummary(remainingCarts);
-        CartDto.UpdateSummary summary = CartDto.UpdateSummary.builder()
-                .regularTotal(summaryData.regularTotal)
-                .saleTotal(summaryData.saleTotal)
-                .discountTotal(summaryData.discountTotal)
-                .deliveryFeeTotal(summaryData.deliveryFeeTotal)
-                .totalProductPrice(summaryData.saleTotal)
-                .expectedTotalPrice(summaryData.finalTotal)
-                .build();
+        CartDto.UpdateSummary summary =
+                toUpdateSummary(calculateSummary(remainingCarts, resolveSelection(remainingCarts, null)));
 
         return CartDto.DeleteCartResponse.builder()
                 .deletedCartItemIds(deletedIds)
@@ -220,7 +239,149 @@ public class CartService {
                 .build();
     }
 
-    private CartDto.CartItem toCartItem(Cart cart) {
+    // ------------------------------------------------------------------ 그룹 구성
+
+    /**
+     * 공구(쇼룸) 단위 묶음.
+     *
+     * <p>공구 게시물({@code group_buy_post})이 아직 없어 지금의 묶음 키는 상품이 속한 쇼룸(마켓)이다.
+     * 배송비가 쇼룸 단위로 매겨져 있어 배송비·무료배송 기준은 이 키로도 정확히 계산되고, 공구 게시물이
+     * 들어오면 키만 공구 ID로 바뀐다 — 그래서 응답 모양을 미리 그룹으로 잡았다. 같은 이유로 그룹
+     * 머리의 D-day(마감 시각)는 아직 내려보내지 않는다. 대신 그룹 전체가 마감·미진열이면
+     * {@code isClosed}로 알려, 화면이 끝난 공구에 D-day 자리를 비워 둘 수 있게 한다.
+     */
+    private List<CartDto.CartGroup> buildGroups(List<Cart> carts, Set<Long> selectedIds) {
+        Map<Long, List<Cart>> byMarket = new LinkedHashMap<>();
+        for (Cart cart : carts) {
+            byMarket.computeIfAbsent(marketIdOf(cart), key -> new ArrayList<>()).add(cart);
+        }
+
+        List<CartDto.CartGroup> groups = new ArrayList<>();
+        for (List<Cart> groupCarts : byMarket.values()) {
+            Market market = marketOf(groupCarts.get(0));
+
+            List<CartDto.CartItem> items = groupCarts.stream()
+                    .map(cart -> toCartItem(cart, selectedIds.contains(cart.getId())))
+                    .toList();
+
+            boolean isClosed = groupCarts.stream()
+                    .allMatch(cart -> unavailableReason(cart) == CartUnavailableReason.GROUP_BUY_CLOSED);
+
+            groups.add(CartDto.CartGroup.builder()
+                    .marketId(market != null ? market.getId() : null)
+                    .marketName(market != null ? market.getMarketName() : null)
+                    .marketImageUrl(market != null ? market.getMarketImageUrl() : null)
+                    .isClosed(isClosed)
+                    .items(items)
+                    .shipping(buildGroupShipping(market, groupCarts, selectedIds))
+                    .build());
+        }
+        return groups;
+    }
+
+    /**
+     * 그룹 배송비 — 선택된 항목만으로 계산한다.
+     *
+     * <p>선택된 것이 하나도 없으면 부과 배송비는 0이고 "○○원 더 담으면 무료"도 내려보내지 않는다.
+     * 아무것도 담기지 않은 그룹에 남은 금액을 띄우면 전액을 더 담아야 하는 것처럼 읽힌다.
+     */
+    private CartDto.GroupShipping buildGroupShipping(Market market, List<Cart> groupCarts, Set<Long> selectedIds) {
+        int deliveryFee = market != null && market.getDefaultDeliveryFee() != null
+                ? market.getDefaultDeliveryFee()
+                : 0;
+        Integer threshold = market != null ? market.getFreeShippingThreshold() : null;
+
+        long selectedTotal = groupCarts.stream()
+                .filter(cart -> selectedIds.contains(cart.getId()))
+                .mapToLong(this::lineSaleTotal)
+                .sum();
+
+        boolean hasSelectedItems = groupCarts.stream().anyMatch(cart -> selectedIds.contains(cart.getId()));
+        boolean isFreeShipping = hasSelectedItems && threshold != null && selectedTotal >= threshold;
+
+        Long amountToFreeShipping = null;
+        if (hasSelectedItems && threshold != null && selectedTotal < threshold) {
+            amountToFreeShipping = threshold - selectedTotal;
+        }
+
+        return CartDto.GroupShipping.builder()
+                .deliveryFee(deliveryFee)
+                .freeShippingThreshold(threshold)
+                .hasSelectedItems(hasSelectedItems)
+                .selectedProductTotal(selectedTotal)
+                .chargedDeliveryFee(hasSelectedItems && !isFreeShipping ? deliveryFee : 0)
+                .isFreeShipping(isFreeShipping)
+                .amountToFreeShipping(amountToFreeShipping)
+                .build();
+    }
+
+    // ------------------------------------------------------------------ 선택·구매 가능 여부
+
+    /**
+     * 화면의 체크 상태를 서버 계산에 쓸 수 있는 형태로 정리한다.
+     *
+     * <p>{@code requested}가 null이면 구매 가능한 항목 전체를 선택으로 본다. 값이 있으면 그중
+     * 실제로 담겨 있고 살 수 있는 항목만 남긴다 — 마감·품절 항목이 요청에 섞여 들어와도
+     * 합계에 들어가지 않는다.
+     */
+    private Set<Long> resolveSelection(List<Cart> carts, Collection<Long> requested) {
+        Set<Long> purchasable = carts.stream()
+                .filter(cart -> unavailableReason(cart) == null)
+                .map(Cart::getId)
+                .collect(Collectors.toCollection(HashSet::new));
+
+        if (requested == null) {
+            return purchasable;
+        }
+        purchasable.retainAll(new HashSet<>(requested));
+        return purchasable;
+    }
+
+    /**
+     * 담은 뒤 살 수 없게 된 사유. 살 수 있으면 null이다.
+     *
+     * <p>마감을 품절보다 먼저 본다 — 공구가 끝났으면 재고가 남아 있어도 살 수 없고, 이때는
+     * 다른 옵션으로 이어질 길도 없어 사유를 "품절"로 말하면 사용자를 헛걸음시킨다.
+     */
+    private CartUnavailableReason unavailableReason(Cart cart) {
+        return unavailableReason(cart.getVariant());
+    }
+
+    private CartUnavailableReason unavailableReason(ProductVariant variant) {
+        Product product = variant.getProduct();
+
+        ProductGroupBuyStatus groupBuyStatus = product.getGroupBuyStatus();
+        boolean isGroupBuyConnected = groupBuyStatus != null && groupBuyStatus.isConnected();
+        ProductDisplayStatus displayStatus = product.getDisplayStatus();
+        boolean isDisplayed = displayStatus != null && displayStatus.isVisible();
+        if (!isGroupBuyConnected || !isDisplayed) {
+            return CartUnavailableReason.GROUP_BUY_CLOSED;
+        }
+
+        int stock = variant.getStock() != null ? variant.getStock() : 0;
+        if (Boolean.TRUE.equals(product.getIsOutOfStockForced()) || stock <= 0) {
+            return CartUnavailableReason.SOLD_OUT;
+        }
+        return null;
+    }
+
+    private void requirePurchasable(ProductVariant variant) {
+        CartUnavailableReason reason = unavailableReason(variant);
+        if (reason != null) {
+            throw new BusinessException(ErrorCode.CART_ITEM_NOT_PURCHASABLE, reason.getMessage());
+        }
+    }
+
+    private void requireWithinQuantityLimit(int quantity) {
+        if (quantity > CartDto.MAX_QUANTITY) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                    "수량은 " + CartDto.MAX_QUANTITY + "개까지 담을 수 있습니다.");
+        }
+    }
+
+    // ------------------------------------------------------------------ 매핑
+
+    private CartDto.CartItem toCartItem(Cart cart, boolean isSelected) {
         ProductVariant variant = cart.getVariant();
         Product product = variant.getProduct();
         Market market = product.getMarket();
@@ -250,6 +411,17 @@ public class CartService {
                 .price(priceInfo)
                 .deliveryFee(market != null && market.getDefaultDeliveryFee() != null ? market.getDefaultDeliveryFee() : 0)
                 .stock(stockInfo)
+                .availability(buildAvailability(unavailableReason(cart)))
+                .isSelected(isSelected)
+                .build();
+    }
+
+    private CartDto.Availability buildAvailability(CartUnavailableReason reason) {
+        return CartDto.Availability.builder()
+                .isPurchasable(reason == null)
+                .reason(reason != null ? reason.name() : null)
+                .label(reason != null ? reason.getLabel() : null)
+                .message(reason != null ? reason.getMessage() : null)
                 .build();
     }
 
@@ -257,12 +429,15 @@ public class CartService {
         ProductVariant variant = productVariantRepository.findByVariantId(request.getVariantId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.VARIANT_NOT_FOUND));
 
+        requirePurchasable(variant);
+
         int stock = variant.getStock() != null ? variant.getStock() : 0;
         int addQuantity = request.getQuantity();
 
         Cart cart = cartRepository.findByUserAndVariant(user, variant).orElse(null);
         int finalQuantity = cart != null ? cart.getQuantity() + addQuantity : addQuantity;
 
+        requireWithinQuantityLimit(finalQuantity);
         if (finalQuantity > stock) {
             throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK, "재고가 부족합니다");
         }
@@ -318,15 +493,24 @@ public class CartService {
         return Math.min(rounded, 100);
     }
 
-    private CartSummaryData calculateSummary(List<Cart> carts) {
+    /**
+     * 합계 — <b>선택된 항목만</b> 계산한다 (C8 §선택 합산).
+     *
+     * <p>하단 요약과 [주문하기]가 같은 값을 써야 하므로 버튼 라벨에 들어가는 금액도 여기서 나온다.
+     * 배송비는 그룹(쇼룸)마다 따로 매겨지고, 그 그룹에서 선택된 것이 없으면 부과하지 않는다.
+     */
+    private CartSummaryData calculateSummary(List<Cart> carts, Set<Long> selectedIds) {
         long regularTotal = 0L;
         long saleTotal = 0L;
 
         Map<Long, MarketShippingAccumulator> shippingByMarket = new HashMap<>();
 
         for (Cart cart : carts) {
+            if (!selectedIds.contains(cart.getId())) {
+                continue;
+            }
+
             ProductVariant variant = cart.getVariant();
-            Product product = variant.getProduct();
             int quantity = cart.getQuantity() != null ? cart.getQuantity() : 0;
             long regular = variant.getRegularPrice() != null ? variant.getRegularPrice() : 0;
             long sale = variant.getSalePrice() != null ? variant.getSalePrice() : 0;
@@ -334,11 +518,10 @@ public class CartService {
             regularTotal += regular * quantity;
             saleTotal += sale * quantity;
 
-            Market market = product.getMarket();
-            Long marketId = market != null ? market.getId() : 0L;
+            Market market = marketOf(cart);
 
             MarketShippingAccumulator acc = shippingByMarket.computeIfAbsent(
-                    marketId,
+                    marketIdOf(cart),
                     key -> new MarketShippingAccumulator()
             );
             acc.saleTotal += sale * quantity;
@@ -374,6 +557,17 @@ public class CartService {
         );
     }
 
+    private CartDto.UpdateSummary toUpdateSummary(CartSummaryData data) {
+        return CartDto.UpdateSummary.builder()
+                .regularTotal(data.regularTotal)
+                .saleTotal(data.saleTotal)
+                .discountTotal(data.discountTotal)
+                .deliveryFeeTotal(data.deliveryFeeTotal)
+                .totalProductPrice(data.saleTotal)
+                .expectedTotalPrice(data.finalTotal)
+                .build();
+    }
+
     private CartDto.UpdateSummary emptySummary() {
         return CartDto.UpdateSummary.builder()
                 .regularTotal(0L)
@@ -383,6 +577,29 @@ public class CartService {
                 .totalProductPrice(0L)
                 .expectedTotalPrice(0L)
                 .build();
+    }
+
+    /** 최근에 담은 항목이 위로 온다 — 방금 담은 상품을 찾으러 스크롤하지 않게 한다 */
+    private List<Cart> sortedByRecentlyAdded(List<Cart> carts) {
+        return carts.stream()
+                .sorted(Comparator.comparing(Cart::getId, Comparator.reverseOrder()))
+                .toList();
+    }
+
+    private long lineSaleTotal(Cart cart) {
+        long sale = cart.getVariant().getSalePrice() != null ? cart.getVariant().getSalePrice() : 0;
+        int quantity = cart.getQuantity() != null ? cart.getQuantity() : 0;
+        return sale * quantity;
+    }
+
+    private Market marketOf(Cart cart) {
+        return cart.getVariant().getProduct().getMarket();
+    }
+
+    /** 마켓이 비어 있는 데이터도 한 그룹으로 모이도록 0을 쓴다 — 합계에서 빠지지 않게 하기 위한 것이다 */
+    private Long marketIdOf(Cart cart) {
+        Market market = marketOf(cart);
+        return market != null ? market.getId() : 0L;
     }
 
     private static class MarketShippingAccumulator {
