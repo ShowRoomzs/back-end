@@ -10,6 +10,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.search.dto.AutoCompleteResponse;
 import showroomz.api.app.search.dto.ShowroomSearchItem;
 import showroomz.global.dto.PageResponse;
@@ -108,8 +110,8 @@ public interface SearchControllerDocs {
                     description = "검색어 — 쇼룸 이름 또는 아이디(@handle). 없거나 공백만 있으면 빈 결과",
                     example = "브라이"
             )
-            String keyword,
-            PagingRequest pagingRequest
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @ModelAttribute PagingRequest pagingRequest
     );
 
     @Operation(
@@ -157,7 +159,7 @@ public interface SearchControllerDocs {
     })
     ResponseEntity<List<ShowroomSearchItem>> getActiveShowrooms(
             @Parameter(name = "size", description = "가져올 쇼룸 수 (기본값 10)", example = "10")
-            Integer size
+            @RequestParam(value = "size", required = false) Integer size
     );
 
     @Operation(
@@ -222,6 +224,6 @@ public interface SearchControllerDocs {
                     description = "검색 키워드. 없거나 공백만 있으면 빈 배열로 응답",
                     example = "화이트"
             )
-            String keyword
+            @RequestParam(value = "keyword", required = false) String keyword
     );
 }

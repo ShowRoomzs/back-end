@@ -59,7 +59,10 @@ public interface UserControllerDocs {
                                                     "  \"createdAt\": \"2025-10-31T10:00:00Z\",\n" +
                                                     "  \"modifiedAt\": \"2025-10-31T10:00:00Z\",\n" +
                                                     "  \"marketingAgree\": true,\n" +
-                                                    "  \"followingCount\": 0\n" +
+                                                    "  \"followingCount\": 0,\n" +
+                                                    "  \"couponCount\": 3,\n" +
+                                                    "  \"point\": 5000,\n" +
+                                                    "  \"reviewCount\": 12\n" +
                                                     "}"
                                     ),
                                     @ExampleObject(
@@ -78,7 +81,10 @@ public interface UserControllerDocs {
                                                     "  \"createdAt\": \"2025-10-31T10:00:00Z\",\n" +
                                                     "  \"modifiedAt\": \"2025-10-31T10:00:00Z\",\n" +
                                                     "  \"marketingAgree\": true,\n" +
-                                                    "  \"followingCount\": 0\n" +
+                                                    "  \"followingCount\": 0,\n" +
+                                                    "  \"couponCount\": 3,\n" +
+                                                    "  \"point\": 5000,\n" +
+                                                    "  \"reviewCount\": 12\n" +
                                                     "}"
                                     )
                             }
@@ -257,7 +263,10 @@ public interface UserControllerDocs {
                                                     "  \"createdAt\": \"2025-10-31T10:00:00Z\",\n" +
                                                     "  \"modifiedAt\": \"2025-10-31T10:00:00Z\",\n" +
                                                     "  \"marketingAgree\": true,\n" +
-                                                    "  \"followingCount\": 0\n" +
+                                                    "  \"followingCount\": 0,\n" +
+                                                    "  \"couponCount\": 3,\n" +
+                                                    "  \"point\": 5000,\n" +
+                                                    "  \"reviewCount\": 12\n" +
                                                     "}"
                                     )
                             }
@@ -476,7 +485,7 @@ public interface UserControllerDocs {
             )
     })
     ResponseEntity<WithdrawalInfoResponse> getWithdrawalInfo(
-            @Parameter(hidden = true) UserPrincipal userPrincipal
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal
     );
 
     @Operation(

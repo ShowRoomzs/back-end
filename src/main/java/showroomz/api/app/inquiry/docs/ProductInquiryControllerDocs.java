@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.inquiry.dto.ProductInquiryResponse;
@@ -222,7 +223,7 @@ public interface ProductInquiryControllerDocs {
             @Parameter(hidden = true) UserPrincipal userPrincipal,
             @Parameter(description = "답변 상태 필터 (선택) — 생략하면 전체, `WAITING`이면 [답변 대기만]",
                     example = "WAITING", in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY)
-            InquiryStatus status,
+            @RequestParam(value = "status", required = false) InquiryStatus status,
             @Parameter(description = "페이징 요청 정보 (page: 1부터 시작, size: 페이지당 항목 수)", required = true)
             PagingRequest pagingRequest
     );

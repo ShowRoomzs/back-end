@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -104,7 +105,7 @@ public interface PostControllerDocs {
             @Parameter(description = "상태 탭. 생략하면 전체", example = "PUBLISHED")
             @RequestParam(value = "status", required = false) PostStatus status,
             @Parameter(description = "페이징 정보 (page: 1부터, size: 기본 20)")
-            @ModelAttribute PagingRequest pagingRequest);
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest);
 
     @Operation(
             summary = "게시물 상세 조회",

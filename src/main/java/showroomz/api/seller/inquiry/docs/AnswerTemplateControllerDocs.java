@@ -174,6 +174,7 @@ public interface AnswerTemplateControllerDocs {
                     description = "목록 조회 성공",
                     content = @Content(
                             mediaType = "application/json",
+                            schema = @Schema(implementation = PageResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "전체 조회",

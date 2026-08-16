@@ -1,8 +1,10 @@
 package showroomz.api.app.inquiry.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,6 +25,7 @@ public interface CommonProductInquiryControllerDocs {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공",
                     content = @Content(mediaType = "application/json",
+                            array = @ArraySchema(schema = @Schema(implementation = InquiryCategoryResponse.class)),
                             examples = @ExampleObject(value = "[\n" +
                                     "  { \"key\": \"OPTION\", \"description\": \"옵션\" },\n" +
                                     "  { \"key\": \"INGREDIENT_USAGE\", \"description\": \"성분·사용법\" },\n" +

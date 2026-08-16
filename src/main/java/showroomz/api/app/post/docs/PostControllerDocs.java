@@ -9,8 +9,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
@@ -122,7 +124,8 @@ public interface PostControllerDocs {
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Parameter(description = "쇼룸 ID", required = true, example = "10", in = ParameterIn.PATH)
             @PathVariable("showroomId") Long showroomId,
-            @Parameter(description = "페이징 정보") PagingRequest pagingRequest);
+            @Parameter(description = "페이징 정보")
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest);
 
     @Operation(
             summary = "게시글 좋아요",

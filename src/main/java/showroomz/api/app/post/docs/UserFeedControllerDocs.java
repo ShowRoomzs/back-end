@@ -8,8 +8,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.post.DTO.PostDto;
@@ -75,7 +78,8 @@ public interface UserFeedControllerDocs {
     })
     ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getFollowingFeed(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @Parameter(description = "페이징 정보 (page: 1부터, size: 기본 20)") PagingRequest pagingRequest);
+            @Parameter(description = "페이징 정보 (page: 1부터, size: 기본 20)")
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest);
 
     @Operation(
             summary = "추천 피드 조회 (C1 회원님을 위한 추천 · 발견 피드)",
@@ -134,7 +138,8 @@ public interface UserFeedControllerDocs {
     })
     ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getRecommendedFeed(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @Parameter(description = "페이징 정보 (page: 1부터, size: 기본 20)") PagingRequest pagingRequest);
+            @Parameter(description = "페이징 정보 (page: 1부터, size: 기본 20)")
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest);
 
     @Operation(
             summary = "좋아요한 게시글 목록 조회 (C3 좋아요)",
@@ -198,6 +203,8 @@ public interface UserFeedControllerDocs {
     })
     ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getLikedPosts(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @Parameter(description = "정렬 기준 (기본 DEFAULT)") LikedPostSort sort,
-            @Parameter(description = "페이징 정보 (page: 1부터, size: 기본 20)") PagingRequest pagingRequest);
+            @Parameter(description = "정렬 기준 (기본 DEFAULT)")
+            @RequestParam(name = "sort", required = false, defaultValue = "DEFAULT") LikedPostSort sort,
+            @Parameter(description = "페이징 정보 (page: 1부터, size: 기본 20)")
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest);
 }

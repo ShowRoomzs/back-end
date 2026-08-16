@@ -44,7 +44,8 @@ public interface SellerInquiryControllerDocs {
                     "`totalCount`만 현재 탭·필터·검색 기준입니다."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "문의 목록 조회 성공"),
+            @ApiResponse(responseCode = "200", description = "문의 목록 조회 성공",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = SellerInquiryListResponse.class))),
             @ApiResponse(
                     responseCode = "401",
                     description = "인증 실패",
@@ -79,7 +80,8 @@ public interface SellerInquiryControllerDocs {
                     "목록 조회와 같은 검색 조건을 함께 넘기면 그 순서 기준의 `prevInquiryId` · `nextInquiryId`를 계산합니다."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "문의 상세 조회 성공"),
+            @ApiResponse(responseCode = "200", description = "문의 상세 조회 성공",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductInquiryDetailResponse.class))),
             @ApiResponse(
                     responseCode = "403",
                     description = "본인 마켓의 문의가 아님",

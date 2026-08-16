@@ -9,8 +9,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.creator.auth.DTO.ShowroomNameCheckResponse;
@@ -154,7 +157,7 @@ public interface CreatorShowroomControllerDocs {
     })
     ResponseEntity<ShowroomProfileResponse> updateProfile(
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
-            ShowroomProfileUpdateRequest request);
+            @Valid @RequestBody ShowroomProfileUpdateRequest request);
 
     @Operation(
             summary = "쇼룸명 중복 확인 (§22-2)",
@@ -206,7 +209,8 @@ public interface CreatorShowroomControllerDocs {
     })
     ResponseEntity<ShowroomNameCheckResponse> checkShowroomName(
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @Parameter(description = "확인할 쇼룸명", example = "뷰티 소연") String showroomName);
+            @Parameter(description = "확인할 쇼룸명", example = "뷰티 소연")
+            @RequestParam("showroomName") String showroomName);
 
     @Operation(
             summary = "쇼룸 현황 조회 (§22-4)",
@@ -280,7 +284,8 @@ public interface CreatorShowroomControllerDocs {
     })
     ResponseEntity<ShowroomStatsResponse> getStats(
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @Parameter(description = "집계 기간 — 기본 30일", example = "DAYS_30") StatsPeriod period,
+            @Parameter(description = "집계 기간 — 기본 30일", example = "DAYS_30")
+            @RequestParam(value = "period", defaultValue = "DAYS_30") StatsPeriod period,
             @Parameter(description = "인기 콘텐츠 정렬 — 최신순은 제공하지 않습니다", example = "LIKES")
-            TopContentSort topContentSort);
+            @RequestParam(value = "topContentSort", defaultValue = "LIKES") TopContentSort topContentSort);
 }

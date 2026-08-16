@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.admin.inquiry.dto.AdminInquiryDto;
 import showroomz.api.admin.inquiry.type.AdminInquiryStatusFilter;
 import showroomz.api.app.auth.DTO.ErrorResponse;
@@ -71,9 +72,9 @@ public interface AdminInquiryControllerDocs {
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<AdminInquiryDto.ListResponse> getList(
-            @Parameter(description = "상태 탭", example = "ALL") AdminInquiryStatusFilter status,
-            @Parameter(description = "유형 필터 (미지정 시 전체 유형)", example = "DELIVERY") CsCategory type,
-            @Parameter(description = "작성자 · 문의 내용 검색어") String keyword,
+            @Parameter(description = "상태 탭", example = "ALL") @RequestParam(value = "status", defaultValue = "ALL") AdminInquiryStatusFilter status,
+            @Parameter(description = "유형 필터 (미지정 시 전체 유형)", example = "DELIVERY") @RequestParam(value = "type", required = false) CsCategory type,
+            @Parameter(description = "작성자 · 문의 내용 검색어") @RequestParam(value = "keyword", required = false) String keyword,
             @Parameter(description = "페이징 (page: 1부터, size: 20/50/100)") PagingRequest pagingRequest
     );
 
@@ -155,9 +156,9 @@ public interface AdminInquiryControllerDocs {
     })
     ResponseEntity<AdminInquiryDto.DetailResponse> getDetail(
             @Parameter(description = "문의 ID", required = true, example = "21") @PathVariable("inquiryId") Long inquiryId,
-            @Parameter(description = "목록에서 사용 중인 상태 탭 (이전/다음 순서 기준)", example = "ALL") AdminInquiryStatusFilter status,
-            @Parameter(description = "목록에서 사용 중인 유형 필터") CsCategory type,
-            @Parameter(description = "목록에서 사용 중인 검색어") String keyword
+            @Parameter(description = "목록에서 사용 중인 상태 탭 (이전/다음 순서 기준)", example = "ALL") @RequestParam(value = "status", defaultValue = "ALL") AdminInquiryStatusFilter status,
+            @Parameter(description = "목록에서 사용 중인 유형 필터") @RequestParam(value = "type", required = false) CsCategory type,
+            @Parameter(description = "목록에서 사용 중인 검색어") @RequestParam(value = "keyword", required = false) String keyword
     );
 
     @Operation(
