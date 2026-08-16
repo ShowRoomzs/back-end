@@ -19,6 +19,7 @@ import showroomz.domain.product.entity.ProductOption;
 import showroomz.domain.product.entity.ProductOptionGroup;
 import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.product.type.ProductGender;
+import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.domain.filter.entity.Filter;
 import showroomz.domain.filter.repository.FilterRepository;
 import showroomz.domain.review.entity.Review;
@@ -116,6 +117,7 @@ public class ProductService {
     public ProductDto.ProductDetailResponse getProductDetail(Long productId) {
         Product product = productRepository.findDetailByProductId(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+        requireGroupBuyConnected(product);
 
         Users currentUser = resolveCurrentUser();
         boolean isWished = false;
@@ -159,6 +161,9 @@ public class ProductService {
                 .regularPrice(regularPrice)
                 .salePrice(salePrice)
                 .isFreeDelivery(isFreeDelivery)
+                .groupBuyStatus(product.getGroupBuyStatus() != null
+                        ? product.getGroupBuyStatus().name()
+                        : ProductGroupBuyStatus.NOT_CONNECTED.name())
                 .optionGroups(optionGroups)
                 .variants(variants)
                 .isWished(isWished)
@@ -176,8 +181,9 @@ public class ProductService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "variantIds는 필수이며 1개 이상이어야 합니다.");
         }
 
-        productRepository.findByProductId(productId)
+        Product product = productRepository.findByProductId(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+        requireGroupBuyConnected(product);
 
         List<ProductVariant> variants = productVariantRepository.findByProductIdAndVariantIdIn(productId, variantIds);
 
@@ -227,6 +233,7 @@ public class ProductService {
     ) {
         Product product = productRepository.findByProductId(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+        requireGroupBuyConnected(product);
 
         int pageNumber = (page != null && page > 0) ? page - 1 : 0;
         int pageSize = (limit != null && limit > 0) ? limit : 20;
@@ -408,6 +415,21 @@ public class ProductService {
                 })
                 .filter(java.util.Objects::nonNull)
                 .toList();
+    }
+
+    /**
+     * 공구에 연결된 상품만 소비자에게 게시된다 (C7).
+     *
+     * <p>상품 상세는 공구 게시물의 상품 카드에서만 진입하는 화면이라, 공구가 붙지 않은 상품에는
+     * 도달할 경로 자체가 없다. 그럼에도 서버가 막는 이유는 상품 ID가 순번이라 주소만 바꿔도
+     * 열리기 때문이다. 403이 아니라 404로 돌려주는 것은 의도적이다 — 권한 오류로 나누면
+     * "그 번호의 상품은 있다"는 사실이 밖으로 드러난다.
+     */
+    private void requireGroupBuyConnected(Product product) {
+        ProductGroupBuyStatus groupBuyStatus = product.getGroupBuyStatus();
+        if (groupBuyStatus == null || !groupBuyStatus.isConnected()) {
+            throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
     }
 
     private Users resolveCurrentUser() {

@@ -147,6 +147,9 @@ public interface UserProductControllerDocs {
     @Operation(
             summary = "비회원/회원 상품 상세 조회",
             description = "상품 ID로 상세 정보를 조회합니다.\n\n" +
+                    "**게시 조건:**\n" +
+                    "- 공구에 연결된 상품(groupBuyStatus: PREPARING, READY, IN_PROGRESS)만 조회됩니다.\n" +
+                    "- 공구 연결이 없는 상품(NOT_CONNECTED)은 404 PRODUCT_NOT_FOUND로 응답합니다.\n\n" +
                     "**참고사항:**\n" +
                     "- 대표 이미지: 상품 이미지 중 order == 0\n" +
                     "- 커버 이미지: 상품 이미지 중 order >= 1\n" +
@@ -185,6 +188,7 @@ public interface UserProductControllerDocs {
                                                     "  \"regularPrice\": 113000,\n" +
                                                     "  \"salePrice\": 33900,\n" +
                                                     "  \"isFreeDelivery\": false,\n" +
+                                                    "  \"groupBuyStatus\": \"IN_PROGRESS\",\n" +
                                                     "  \"optionGroups\": [\n" +
                                                     "    {\n" +
                                                     "      \"optionGroupId\": 1,\n" +
@@ -229,7 +233,7 @@ public interface UserProductControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "상품을 찾을 수 없음",
+                    description = "상품을 찾을 수 없거나 공구에 연결되지 않은 상품",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)
@@ -248,6 +252,7 @@ public interface UserProductControllerDocs {
                     "- variantIds: 조회할 옵션 ID 목록 (예: variantIds=1&variantIds=2&variantIds=3)\n\n" +
                     "**참고사항:**\n" +
                     "- 비회원도 조회 가능합니다.\n" +
+                    "- 공구에 연결된 상품만 조회됩니다 (미연결 시 404 PRODUCT_NOT_FOUND).\n" +
                     "- IN 절로 1회 쿼리하여 N+1을 방지합니다.\n" +
                     "- 재고 수량, 품절 여부(isOutOfStock), 강제 품절 여부(isOutOfStockForced)를 포함합니다.\n\n" +
                     "**권한:** 선택사항 (게스트 가능)"
@@ -306,7 +311,7 @@ public interface UserProductControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "상품을 찾을 수 없음",
+                    description = "상품을 찾을 수 없거나 공구에 연결되지 않은 상품",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)
@@ -329,6 +334,8 @@ public interface UserProductControllerDocs {
                     "**정렬:**\n" +
                     "- isRecommended DESC, createdAt DESC\n\n" +
                     "**참고사항:**\n" +
+                    "- 진열중이면서 공구에 연결된 상품만 포함됩니다.\n" +
+                    "- 기준 상품이 공구에 연결되어 있지 않으면 404 PRODUCT_NOT_FOUND로 응답합니다.\n" +
                     "- 조회 대상 상품은 결과에서 제외됩니다.\n" +
                     "- Authorization 헤더가 없어도 조회 가능합니다 (게스트 조회).\n" +
                     "- 로그인한 사용자의 경우 isWished 정보가 포함됩니다.\n\n" +
@@ -345,7 +352,7 @@ public interface UserProductControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "상품을 찾을 수 없음",
+                    description = "상품을 찾을 수 없거나 공구에 연결되지 않은 상품",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)

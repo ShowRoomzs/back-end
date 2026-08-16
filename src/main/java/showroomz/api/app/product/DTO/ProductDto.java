@@ -221,6 +221,13 @@ public class ProductDto {
         @Schema(description = "무료 배송 여부", example = "true")
         private Boolean isFreeDelivery;
 
+        @Schema(
+                description = "공구 상태 — 공구에 연결된 상품만 조회되므로 NOT_CONNECTED는 내려오지 않습니다.",
+                example = "IN_PROGRESS",
+                allowableValues = {"PREPARING", "READY", "IN_PROGRESS"}
+        )
+        private String groupBuyStatus;
+
         @Schema(description = "옵션 그룹 목록")
         private List<OptionGroupInfo> optionGroups;
 

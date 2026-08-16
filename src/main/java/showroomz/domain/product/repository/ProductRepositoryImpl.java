@@ -118,6 +118,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         QProduct product = QProduct.product;
         BooleanBuilder where = new BooleanBuilder();
         where.and(product.displayStatus.eq(ProductDisplayStatus.DISPLAY));
+        where.and(product.groupBuyStatus.ne(ProductGroupBuyStatus.NOT_CONNECTED));
         where.and(product.productId.ne(productId));
 
         BooleanBuilder related = new BooleanBuilder();
