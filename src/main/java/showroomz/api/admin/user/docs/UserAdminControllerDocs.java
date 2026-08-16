@@ -15,50 +15,63 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.admin.user.dto.AdminUserDto;
 import showroomz.api.admin.user.dto.AdminUserMemoUpdateRequest;
+import showroomz.api.admin.user.type.AdminUserSort;
+import showroomz.api.admin.user.type.AdminUserTab;
 import showroomz.api.app.auth.DTO.ErrorResponse;
-import showroomz.global.dto.PageResponse;
+import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.global.dto.PagingRequest;
 
 @Tag(name = "Admin - User", description = "관리자 일반 유저 관리 API")
 public interface UserAdminControllerDocs {
 
     @Operation(
-            summary = "일반 유저 목록 조회",
-            description = "닉네임, 이메일, 가입 채널, 가입일, 활동 상태별 필터링 및 페이징 조회\n\n" +
-                    "**필터 기능:**\n" +
-                    "- nickname: 닉네임 검색 (부분 일치)\n" +
-                    "- email: 이메일 검색 (부분 일치)\n" +
-                    "- providerType: 가입 채널 (GOOGLE, NAVER, KAKAO, APPLE)\n" +
-                    "- status: 활동 상태 (NORMAL, DORMANT, WITHDRAWN, SUSPENDED)\n" +
-                    "- startDate / endDate: 가입일 기준 조회 기간 (YYYY-MM-DD)\n\n" +
+            summary = "소비자 목록 조회",
+            description = "어드민 소비자 목록입니다. 컬럼 8종 — 회원번호 · 닉네임 · 이름 · 휴대폰 · 가입 수단 · 가입일 · 누적 주문 · 상태\n\n" +
+                    "**마스킹은 서버가 끝냅니다.** 이름은 가운데 1자, 휴대폰은 가운데 4자리를 가린 값만 내려갑니다. " +
+                    "목록에는 해제 경로가 없으므로 원본은 응답에 포함되지 않습니다.\n\n" +
+                    "**검색 3축** — 입력 형태로 축을 하나 고릅니다(OR로 묶지 않습니다).\n" +
+                    "- `CST-`로 시작 → 회원번호 정확히 일치 (접두사 뒤가 숫자가 아니면 0건)\n" +
+                    "- 숫자 4자리 → 휴대폰 **뒤 4자리**\n" +
+                    "- 그 외 → 닉네임 부분 일치\n\n" +
+                    "이메일 검색 축은 없습니다 — 소셜 이메일(특히 Apple 릴레이)은 연락 가능한 주소가 아니라 화면에서 뺐습니다.\n\n" +
+                    "**요약(`summary`)** — 상태 조건만 제외하고 검색어·가입 수단 필터는 그대로 반영한 건수입니다. " +
+                    "`newSuspendedIn30Days`는 **정지 탭에서만** 값이 있고 다른 탭에서는 null입니다.\n\n" +
+                    "**누적 주문** — 취소되지 않은 주문 상품이 하나라도 있는 주문의 수입니다(취소 포함 여부는 기획 확인 대기).\n\n" +
                     "**권한:** ADMIN\n" +
-                    "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
-                    "**페이징 파라미터:**\n" +
-                    "- page: 페이지 번호 (1부터 시작, 기본값: 1)\n" +
-                    "- size: 페이지당 항목 수 (기본값: 20)",
+                    "**요청 헤더:** Authorization: Bearer {accessToken}",
             parameters = {
                     @Parameter(name = "page", description = "페이지 번호 (1부터 시작)", example = "1", in = ParameterIn.QUERY),
                     @Parameter(name = "size", description = "페이지당 항목 수", example = "20", in = ParameterIn.QUERY),
-                    @Parameter(name = "nickname", description = "닉네임 검색 (부분 일치)", example = "홍길동", in = ParameterIn.QUERY),
-                    @Parameter(name = "email", description = "이메일 검색 (부분 일치)", example = "user@example.com", in = ParameterIn.QUERY),
+                    @Parameter(
+                            name = "tab",
+                            description = "상태 탭 — 기본 진입은 전체",
+                            example = "ALL",
+                            in = ParameterIn.QUERY,
+                            schema = @Schema(allowableValues = {"ALL", "ACTIVE", "SUSPENDED", "WITHDRAWN"})
+                    ),
+                    @Parameter(
+                            name = "keyword",
+                            description = "회원번호(CST-) · 닉네임 · 휴대폰 뒤 4자리",
+                            example = "CST-88231",
+                            in = ParameterIn.QUERY
+                    ),
                     @Parameter(
                             name = "providerType",
-                            description = "가입 채널",
-                            example = "GOOGLE",
+                            description = "가입 수단",
+                            example = "KAKAO",
                             in = ParameterIn.QUERY,
-                            schema = @Schema(allowableValues = {"GOOGLE", "NAVER", "KAKAO", "APPLE"})
+                            schema = @Schema(allowableValues = {"KAKAO", "NAVER", "APPLE", "GOOGLE"})
                     ),
                     @Parameter(
-                            name = "status",
-                            description = "활동 상태",
-                            example = "NORMAL",
+                            name = "sort",
+                            description = "정렬 — 기본은 최근 가입순",
+                            example = "RECENT_JOINED",
                             in = ParameterIn.QUERY,
-                            schema = @Schema(allowableValues = {"NORMAL", "DORMANT", "WITHDRAWN", "SUSPENDED"})
-                    ),
-                    @Parameter(name = "startDate", description = "가입일 조회 시작 날짜 (yyyy-MM-dd)", example = "2024-01-01", in = ParameterIn.QUERY),
-                    @Parameter(name = "endDate", description = "가입일 조회 종료 날짜 (yyyy-MM-dd)", example = "2024-12-31", in = ParameterIn.QUERY)
+                            schema = @Schema(allowableValues = {"RECENT_JOINED", "ORDER_COUNT_DESC", "MEMBER_NO"})
+                    )
             }
     )
     @ApiResponses(value = {
@@ -67,39 +80,48 @@ public interface UserAdminControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = PageResponse.class),
+                            schema = @Schema(implementation = AdminUserDto.ListResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "목록 조회 예시",
+                                            name = "전체 탭 조회 예시",
                                             value = "{\n" +
                                                     "  \"content\": [\n" +
                                                     "    {\n" +
-                                                    "      \"userId\": 1,\n" +
-                                                    "      \"email\": \"user@example.com\",\n" +
+                                                    "      \"userId\": 88231,\n" +
+                                                    "      \"memberNo\": \"CST-88231\",\n" +
                                                     "      \"nickname\": \"홍길동\",\n" +
-                                                    "      \"providerType\": \"GOOGLE\",\n" +
-                                                    "      \"createdAt\": \"2024-01-01T10:00:00Z\",\n" +
-                                                    "      \"lastLoginAt\": \"2024-01-15T14:30:00Z\",\n" +
-                                                    "      \"status\": \"NORMAL\",\n" +
-                                                    "      \"totalPurchaseAmount\": 1234567\n" +
+                                                    "      \"maskedName\": \"홍*동\",\n" +
+                                                    "      \"maskedPhone\": \"010-****-1234\",\n" +
+                                                    "      \"providerType\": \"KAKAO\",\n" +
+                                                    "      \"joinedAt\": \"2026-02-01T10:12:00\",\n" +
+                                                    "      \"orderCount\": 14,\n" +
+                                                    "      \"status\": \"NORMAL\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
-                                                    "      \"userId\": 2,\n" +
-                                                    "      \"email\": \"user2@example.com\",\n" +
-                                                    "      \"nickname\": \"김철수\",\n" +
-                                                    "      \"providerType\": \"NAVER\",\n" +
-                                                    "      \"createdAt\": \"2024-01-05T09:00:00Z\",\n" +
-                                                    "      \"lastLoginAt\": \"2024-01-20T16:45:00Z\",\n" +
-                                                    "      \"status\": \"NORMAL\",\n" +
-                                                    "      \"totalPurchaseAmount\": 1234567\n" +
+                                                    "      \"userId\": 88190,\n" +
+                                                    "      \"memberNo\": \"CST-88190\",\n" +
+                                                    "      \"nickname\": \"유리\",\n" +
+                                                    "      \"maskedName\": \"박*은\",\n" +
+                                                    "      \"maskedPhone\": \"010-****-2031\",\n" +
+                                                    "      \"providerType\": \"APPLE\",\n" +
+                                                    "      \"joinedAt\": \"2026-01-22T09:03:00\",\n" +
+                                                    "      \"orderCount\": 0,\n" +
+                                                    "      \"status\": \"SUSPENDED\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
                                                     "    \"currentPage\": 1,\n" +
-                                                    "    \"totalPages\": 5,\n" +
-                                                    "    \"totalResults\": 42,\n" +
+                                                    "    \"totalPages\": 117,\n" +
+                                                    "    \"totalResults\": 2340,\n" +
                                                     "    \"size\": 20,\n" +
                                                     "    \"hasNext\": true\n" +
+                                                    "  },\n" +
+                                                    "  \"summary\": {\n" +
+                                                    "    \"total\": 2340,\n" +
+                                                    "    \"active\": 2268,\n" +
+                                                    "    \"suspended\": 12,\n" +
+                                                    "    \"withdrawn\": 60,\n" +
+                                                    "    \"newSuspendedIn30Days\": null\n" +
                                                     "  }\n" +
                                                     "}"
                                     )
@@ -135,9 +157,12 @@ public interface UserAdminControllerDocs {
                     )
             )
     })
-    ResponseEntity<PageResponse<AdminUserDto.UserResponse>> getUsers(
-            @ParameterObject @ModelAttribute PagingRequest pagingRequest,
-            @ParameterObject @ModelAttribute AdminUserDto.SearchCondition searchCondition
+    ResponseEntity<AdminUserDto.ListResponse> getUsers(
+            @RequestParam(value = "tab", defaultValue = "ALL") AdminUserTab tab,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "providerType", required = false) ProviderType providerType,
+            @RequestParam(value = "sort", defaultValue = "RECENT_JOINED") AdminUserSort sort,
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest
     );
 
     @Operation(

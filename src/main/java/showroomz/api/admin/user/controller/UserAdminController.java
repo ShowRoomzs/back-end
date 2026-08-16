@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
@@ -19,7 +20,9 @@ import showroomz.api.admin.user.docs.UserAdminControllerDocs;
 import showroomz.api.admin.user.dto.AdminUserDto;
 import showroomz.api.admin.user.dto.AdminUserMemoUpdateRequest;
 import showroomz.api.admin.user.service.AdminUserService;
-import showroomz.global.dto.PageResponse;
+import showroomz.api.admin.user.type.AdminUserSort;
+import showroomz.api.admin.user.type.AdminUserTab;
+import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.global.dto.PagingRequest;
 
 @RestController
@@ -32,18 +35,18 @@ public class UserAdminController implements UserAdminControllerDocs {
 
     @Override
     @GetMapping
-    public ResponseEntity<PageResponse<AdminUserDto.UserResponse>> getUsers(
-            @ParameterObject @ModelAttribute PagingRequest pagingRequest,
-            @ParameterObject @ModelAttribute AdminUserDto.SearchCondition searchCondition) {
+    public ResponseEntity<AdminUserDto.ListResponse> getUsers(
+            @RequestParam(value = "tab", defaultValue = "ALL") AdminUserTab tab,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "providerType", required = false) ProviderType providerType,
+            @RequestParam(value = "sort", defaultValue = "RECENT_JOINED") AdminUserSort sort,
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest) {
 
-        // 기본 정렬: 가입일 최신순
-        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
-        Pageable pageable = pagingRequest.toPageable(sort);
+        // 정렬은 쿼리가 직접 잡는다 — 누적 주문순은 집계값 기준이라 Pageable의 Sort로 표현되지 않는다
+        Pageable pageable = pagingRequest.toPageable(Sort.unsorted());
 
-        PageResponse<AdminUserDto.UserResponse> response =
-                adminUserService.getUsers(searchCondition, pageable);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                adminUserService.getUsers(tab, keyword, providerType, sort, pageable));
     }
 
     @Override
