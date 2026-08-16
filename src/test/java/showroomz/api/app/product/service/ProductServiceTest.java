@@ -16,6 +16,7 @@ import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductOptionGroupRepository;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.repository.ProductVariantRepository;
+import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.domain.review.repository.ReviewRepository;
 import showroomz.domain.wishlist.repository.WishlistRepository;
@@ -35,10 +36,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
- * C7 상품 상세 — 공구에 연결된 상품만 게시된다.
+ * C7 상품 상세 — 진열중이면서 공구에 연결된 상품만 게시된다.
  *
  * <p>진입 경로가 공구 게시물의 상품 카드뿐이라 화면상으로는 도달할 수 없지만, 상품 ID가
- * 순번이라 주소만 바꾸면 열리므로 서버가 막는지 확인한다.
+ * 순번이라 주소만 바꾸면 열리므로 서버가 두 조건을 모두 확인하는지 검증한다.
  */
 @ExtendWith(MockitoExtension.class)
 class ProductServiceTest {
@@ -70,12 +71,17 @@ class ProductServiceTest {
     private ProductService productService;
 
     private Product product(ProductGroupBuyStatus groupBuyStatus) {
+        return product(groupBuyStatus, ProductDisplayStatus.DISPLAY);
+    }
+
+    private Product product(ProductGroupBuyStatus groupBuyStatus, ProductDisplayStatus displayStatus) {
         Product product = new Product();
         product.setProductId(PRODUCT_ID);
         product.setName("시카 리페어 앰플 30ml 리필 2개 세트");
         product.setRegularPrice(38000);
         product.setSalePrice(24900);
         product.setGroupBuyStatus(groupBuyStatus);
+        product.setDisplayStatus(displayStatus);
         return product;
     }
 
@@ -106,6 +112,31 @@ class ProductServiceTest {
 
         assertThat(response.getId()).isEqualTo(PRODUCT_ID);
         assertThat(response.getGroupBuyStatus()).isEqualTo("PREPARING");
+    }
+
+    @Test
+    @DisplayName("미진열 상품은 공구에 연결되어 있어도 상세가 404다")
+    void detailOfHiddenProductIsNotFoundEvenIfGroupBuyConnected() {
+        given(productRepository.findDetailByProductId(PRODUCT_ID))
+                .willReturn(Optional.of(product(ProductGroupBuyStatus.IN_PROGRESS, ProductDisplayStatus.HIDDEN)));
+
+        assertThatThrownBy(() -> productService.getProductDetail(PRODUCT_ID))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PRODUCT_NOT_FOUND);
+
+        verify(productOptionGroupRepository, never()).findByProductIdWithOptions(anyLong());
+        verifyNoInteractions(reviewRepository);
+    }
+
+    @Test
+    @DisplayName("공구 연결이 끝나 NOT_CONNECTED로 돌아가면 진열중이어도 상세가 404다")
+    void detailOfDisplayedProductIsNotFoundOnceGroupBuyEnds() {
+        given(productRepository.findDetailByProductId(PRODUCT_ID))
+                .willReturn(Optional.of(product(ProductGroupBuyStatus.NOT_CONNECTED, ProductDisplayStatus.DISPLAY)));
+
+        assertThatThrownBy(() -> productService.getProductDetail(PRODUCT_ID))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PRODUCT_NOT_FOUND);
     }
 
     @Test
