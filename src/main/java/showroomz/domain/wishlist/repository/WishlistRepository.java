@@ -24,6 +24,10 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Long>, Wishl
     @Modifying
     void deleteByUserAndProduct(Users user, Product product);
 
+    /** C15-4 탈퇴 — 좋아요 기록 파기 */
+    @Modifying
+    void deleteByUser(Users user);
+
     long countByProduct(Product product);
 
     @Query("SELECT w.product.productId FROM Wishlist w WHERE w.user.id = :userId AND w.product.productId IN :productIds")

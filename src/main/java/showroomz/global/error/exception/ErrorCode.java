@@ -55,6 +55,11 @@ public enum ErrorCode {
     /* * 5. 로그아웃 & 탈퇴 & 권한 (Logout & Withdraw & Authorization) 
      */
     USER_WITHDRAWN(HttpStatus.FORBIDDEN, "USER_WITHDRAWN", "탈퇴한 회원입니다."),
+    // C15-4 탈퇴 확인 — 진행 중 주문이 있으면 배송·교환·환불이 끝날 때까지 탈퇴를 막는다
+    WITHDRAWAL_BLOCKED_BY_ORDER(HttpStatus.CONFLICT, "WITHDRAWAL_BLOCKED_BY_ORDER", "진행 중인 주문이 있어 지금은 탈퇴할 수 없습니다."),
+    WITHDRAWAL_CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "WITHDRAWAL_CONSENT_REQUIRED", "계정과 활동 기록이 삭제되는 데 동의해야 합니다."),
+    // C15-2 회원정보 변경 — 재인증은 가입 시 동의와 별개의 새 수집 행위라 매번 다시 동의를 받는다
+    IDENTITY_CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "IDENTITY_CONSENT_REQUIRED", "본인확인을 위한 개인정보 수집·이용에 동의해야 합니다."),
     UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "인증 정보가 유효하지 않습니다."),
     MISSING_REFRESH_TOKEN_LOGOUT(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "Refresh Token이 필요합니다."),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "아이디 또는 비밀번호가 올바르지 않습니다."),

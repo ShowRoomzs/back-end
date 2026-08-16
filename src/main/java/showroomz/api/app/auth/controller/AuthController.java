@@ -22,6 +22,9 @@ import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.WithdrawalRequest;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.app.user.service.UserService;
+import showroomz.domain.history.entity.UserConsentHistory;
+import showroomz.domain.history.repository.UserConsentHistoryRepository;
+import showroomz.domain.history.type.ConsentType;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.config.properties.AppProperties;
 import showroomz.global.error.exception.BusinessException;
@@ -48,6 +51,7 @@ public class AuthController implements AuthControllerDocs {
     private final UserService userService;
     private final AuthService authService;
     private final IdentityVerificationService identityVerificationService;
+    private final UserConsentHistoryRepository userConsentHistoryRepository;
     
     private final static long THREE_DAYS_MSEC = 259200000;
     private final static long REGISTER_TOKEN_EXPIRY_MSEC = 5 * 60 * 1000;
@@ -158,7 +162,16 @@ public class AuthController implements AuthControllerDocs {
         user.setAgeAgree(registerRequest.isAgeAgree());
         user.setServiceAgree(registerRequest.isServiceAgree());
         user.setPrivacyAgree(registerRequest.isPrivacyAgree());
-        user.setMarketingAgree(registerRequest.getMarketingAgree() != null && registerRequest.getMarketingAgree());
+        // 광고성 정보 수신은 C15 설정의 토글과 같은 값이다. 동의 일시를 남겨야 철회 통지 근거가 되므로
+        // 값 설정과 이력 기록을 함께 처리한다.
+        boolean marketingAgree = registerRequest.getMarketingAgree() != null && registerRequest.getMarketingAgree();
+        if (user.updateMarketingAgree(marketingAgree)) {
+            userConsentHistoryRepository.save(UserConsentHistory.builder()
+                    .user(user)
+                    .consentType(ConsentType.MARKETING)
+                    .agreed(marketingAgree)
+                    .build());
+        }
         
         // 회원가입 완료: GUEST -> USER로 권한 변경
         user.setRoleType(RoleType.USER);

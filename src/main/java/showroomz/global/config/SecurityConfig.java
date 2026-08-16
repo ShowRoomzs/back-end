@@ -85,6 +85,10 @@ public class SecurityConfig {
             // 검색 자동완성 (비로그인 허용)
             "/v1/user/search/autocomplete",
 
+            // C14 쇼룸 검색 — 최근 검색만 로그인이 필요하고, 검색 자체와 추천 목록은 비로그인도 볼 수 있다.
+            "/v1/user/search/showrooms",
+            "/v1/user/search/showrooms/active",
+
             // FAQ 조회 API
             "/v1/user/faqs",
 

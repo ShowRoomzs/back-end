@@ -21,10 +21,9 @@ public class WithdrawalHistory extends BaseTimeEntity {
     @Column(nullable = false)
     private boolean agreeConsent;
 
-    // String 대신 Enum 사용
+    // C15-3의 이유는 선택 항목이라 고르지 않고 탈퇴하면 null이 된다
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private WithdrawalReason reason; 
+    private WithdrawalReason reason;
 
     @Column(length = 1000)
     private String customReason; // "기타" 선택 시 상세 사유 저장용
