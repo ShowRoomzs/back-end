@@ -1,6 +1,5 @@
 package showroomz.api.app.post.controller;
 
-import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
@@ -44,7 +43,6 @@ public class UserPostController implements PostControllerDocs {
 
     @Override
     @GetMapping
-    @Hidden
     public ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getPostList(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             PagingRequest pagingRequest) {
