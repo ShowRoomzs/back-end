@@ -12,6 +12,7 @@ import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.post.service.PostAttributionService;
 import showroomz.domain.showroom.entity.ShowroomVisit;
 import showroomz.domain.showroom.repository.ShowroomVisitRepository;
 import showroomz.domain.showroom.type.ShowroomVisitSource;
@@ -41,6 +42,9 @@ class ShowroomVisitServiceTest {
     private CreatorRepository creatorRepository;
     @Mock
     private UserRepository userRepository;
+    /** §24-7 귀속은 방문 적재의 곁가지다 — 귀속 대상이 없으면 null이고 방문은 그대로 쌓인다 */
+    @Mock
+    private PostAttributionService postAttributionService;
 
     @InjectMocks
     private ShowroomVisitService showroomVisitService;

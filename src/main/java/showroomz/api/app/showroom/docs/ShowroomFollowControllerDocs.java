@@ -9,7 +9,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
@@ -48,7 +52,7 @@ public interface ShowroomFollowControllerDocs {
                                     @ExampleObject(
                                             name = "인증 정보 없음",
                                             value = "{\n" +
-                                                    "  \"code\": \"INVALID_AUTH_INFO\",\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
                                                     "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
                                                     "}"
                                     )
@@ -76,7 +80,7 @@ public interface ShowroomFollowControllerDocs {
     ResponseEntity<Void> followShowroom(
             @Parameter(hidden = true) UserPrincipal userPrincipal,
             @Parameter(description = "쇼룸(크리에이터) ID", required = true, example = "1", in = ParameterIn.PATH)
-            Long showroomId
+            @PathVariable("showroomId") Long showroomId
     );
 
     @Operation(
@@ -106,7 +110,7 @@ public interface ShowroomFollowControllerDocs {
                                     @ExampleObject(
                                             name = "인증 정보 없음",
                                             value = "{\n" +
-                                                    "  \"code\": \"INVALID_AUTH_INFO\",\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
                                                     "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
                                                     "}"
                                     )
@@ -134,7 +138,7 @@ public interface ShowroomFollowControllerDocs {
     ResponseEntity<Void> unfollowShowroom(
             @Parameter(hidden = true) UserPrincipal userPrincipal,
             @Parameter(description = "쇼룸(크리에이터) ID", required = true, example = "1", in = ParameterIn.PATH)
-            Long showroomId
+            @PathVariable("showroomId") Long showroomId
     );
 
     @Operation(
@@ -184,7 +188,7 @@ public interface ShowroomFollowControllerDocs {
                                             "    \"currentPage\": 1,\n" +
                                             "    \"totalPages\": 3,\n" +
                                             "    \"totalResults\": 25,\n" +
-                                            "    \"size\": 10,\n" +
+                                            "    \"limit\": 10,\n" +
                                             "    \"hasNext\": true\n" +
                                             "  }\n" +
                                             "}"
@@ -201,8 +205,8 @@ public interface ShowroomFollowControllerDocs {
                                     @ExampleObject(
                                             name = "인증 정보 없음",
                                             value = "{\n" +
-                                                    "  \"code\": \"INVALID_AUTH_INFO\",\n" +
-                                                    "  \"message\": \"인증 정보가 유효하지 않습니다.\"\n" +
+                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
+                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
                                                     "}"
                                     )
                             }
@@ -211,7 +215,7 @@ public interface ShowroomFollowControllerDocs {
     })
     ResponseEntity<PageResponse<FollowingShowroomResponse>> getFollowedShowrooms(
             @Parameter(hidden = true) UserPrincipal userPrincipal,
-            FollowingShowroomSort sort,
-            @Parameter(hidden = true) PagingRequest pagingRequest
+            @RequestParam(name = "sort", required = false, defaultValue = "DEFAULT") FollowingShowroomSort sort,
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest
     );
 }

@@ -1,8 +1,9 @@
 package showroomz.api.app.terms.docs;
 
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -10,6 +11,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.terms.dto.TermsDocumentDetailResponse;
 import showroomz.api.app.terms.dto.TermsDocumentResponse;
@@ -18,7 +21,6 @@ import showroomz.domain.terms.type.TermsType;
 
 import java.util.List;
 
-@Hidden
 @Tag(name = "Common - Terms", description = "공용 약관·정책 문서 API (기획 §21 · C18 문서 뷰어)\n\n")
 public interface TermsControllerDocs {
 
@@ -40,7 +42,7 @@ public interface TermsControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = TermsDocumentResponse.class),
+                            array = @ArraySchema(schema = @Schema(implementation = TermsDocumentResponse.class)),
                             examples = @ExampleObject(
                                     name = "소비자 대상 문서 목록",
                                     value = "[\n"
@@ -60,10 +62,10 @@ public interface TermsControllerDocs {
             )
     })
     ResponseEntity<List<TermsDocumentResponse>> getTerms(
-            @Parameter(description = "유형 필터 (미입력 시 전체)", example = "TERMS_OF_SERVICE")
-            TermsType type,
-            @Parameter(description = "대상 필터 — 지정 시 해당 대상 + 전체(ALL) 대상 문서를 함께 조회", example = "USER")
-            TermsTarget target
+            @Parameter(description = "유형 필터 (미입력 시 전체)", example = "TERMS_OF_SERVICE", in = ParameterIn.QUERY)
+            @RequestParam(value = "type", required = false) TermsType type,
+            @Parameter(description = "대상 필터 — 지정 시 해당 대상 + 전체(ALL) 대상 문서를 함께 조회", example = "USER", in = ParameterIn.QUERY)
+            @RequestParam(value = "target", required = false) TermsTarget target
     );
 
     @Operation(
@@ -73,7 +75,28 @@ public interface TermsControllerDocs {
                     + "시행 중인 버전이 없는 문서(시행 예정만 있거나 구버전)는 404로 응답합니다."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = TermsDocumentDetailResponse.class),
+                            examples = @ExampleObject(
+                                    name = "소비자 이용약관 원문",
+                                    value = "{\n"
+                                            + "  \"documentId\": 1,\n"
+                                            + "  \"name\": \"소비자 이용약관\",\n"
+                                            + "  \"type\": \"TERMS_OF_SERVICE\",\n"
+                                            + "  \"typeName\": \"이용 약관\",\n"
+                                            + "  \"target\": \"USER\",\n"
+                                            + "  \"targetName\": \"소비자\",\n"
+                                            + "  \"version\": \"v3.1\",\n"
+                                            + "  \"effectiveDate\": \"2026-06-01\",\n"
+                                            + "  \"content\": \"제1조 (목적) ...\"\n"
+                                            + "}"
+                            )
+                    )
+            ),
             @ApiResponse(
                     responseCode = "404",
                     description = "존재하지 않거나 시행 중이 아닌 문서",
@@ -91,6 +114,7 @@ public interface TermsControllerDocs {
             )
     })
     ResponseEntity<TermsDocumentDetailResponse> getTermsDetail(
-            @Parameter(description = "문서 ID", required = true) Long documentId
+            @Parameter(description = "문서 ID", required = true, example = "1", in = ParameterIn.PATH)
+            @PathVariable("documentId") Long documentId
     );
 }

@@ -195,7 +195,9 @@ public class AdminProductInquiryService {
                 .visibilityName(inquiry.isSecret() ? "비밀글" : "공개")
                 .createdAt(inquiry.getCreatedAt())
                 .content(inquiry.getContent())
-                .imageUrls(inquiry.getImageUrls())
+                // 지연 로딩 컬렉션(@ElementCollection)이라 트랜잭션 안에서 복사해 넘긴다 —
+                // 원본을 그대로 실으면 직렬화 시점에 세션이 닫혀 응답 쓰기가 실패한다.
+                .imageUrls(List.copyOf(inquiry.getImageUrls()))
                 .answerContent(inquiry.getAnswerContent())
                 .answeredAt(inquiry.getAnsweredAt())
                 .answerModifiedAt(inquiry.getAnswerModifiedAt())

@@ -174,6 +174,7 @@ public interface AnswerTemplateControllerDocs {
                     description = "목록 조회 성공",
                     content = @Content(
                             mediaType = "application/json",
+                            schema = @Schema(implementation = PageResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "전체 조회",
@@ -193,7 +194,7 @@ public interface AnswerTemplateControllerDocs {
                                                     "      \"templateId\": 2,\n" +
                                                     "      \"title\": \"상품 문의 안내\",\n" +
                                                     "      \"category\": \"INGREDIENT_USAGE\",\n" +
-                                                    "      \"categoryName\": \"상품 문의\",\n" +
+                                                    "      \"categoryName\": \"성분·사용법\",\n" +
                                                     "      \"content\": \"문의 주신 상품의 상세 정보는 상세페이지에서 확인하실 수 있습니다.\",\n" +
                                                     "      \"createdAt\": \"2026-04-01T09:00:00\",\n" +
                                                     "      \"modifiedAt\": \"2026-04-01T09:00:00\",\n" +

@@ -20,6 +20,11 @@ public interface ProductRepositoryCustom {
             Pageable pageable
     );
 
+    /**
+     * 상품 상세의 "함께 판매 중" 목록 (C7).
+     * 진열중이면서 공구에 연결된 상품만 담는다 — 공구 없는 상품은 상세로 들어갈 수 없으므로
+     * 목록에 두면 누를 수 없는 카드가 된다.
+     */
     Page<Product> findRelatedProducts(
             Long productId,
             List<Long> categoryIds,

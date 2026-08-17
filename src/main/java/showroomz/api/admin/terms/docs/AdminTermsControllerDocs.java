@@ -1,6 +1,5 @@
 package showroomz.api.admin.terms.docs;
 
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -25,7 +24,6 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.global.dto.PagingRequest;
 
-@Hidden
 @Tag(name = "Admin - Terms", description = "관리자 약관·정책 관리 API (기획 §21)")
 public interface AdminTermsControllerDocs {
 
@@ -193,10 +191,31 @@ public interface AdminTermsControllerDocs {
                                                     + "}"
                                     ),
                                     @ExampleObject(
+                                            name = "형식 오류",
+                                            value = "{\n"
+                                                    + "  \"code\": \"INVALID_INPUT\",\n"
+                                                    + "  \"message\": \"버전 번호는 숫자와 점만 사용할 수 있습니다. (예: 3.2)\"\n"
+                                                    + "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "중복 번호",
+                                            value = "{\n"
+                                                    + "  \"code\": \"INVALID_INPUT\",\n"
+                                                    + "  \"message\": \"이미 등록된 버전 번호입니다. (v3.1)\"\n"
+                                                    + "}"
+                                    ),
+                                    @ExampleObject(
                                             name = "역행 번호",
                                             value = "{\n"
                                                     + "  \"code\": \"INVALID_INPUT\",\n"
                                                     + "  \"message\": \"새 버전은 기존 버전보다 높은 번호여야 합니다. (기존 v3.1)\"\n"
+                                                    + "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "시행일 제한",
+                                            value = "{\n"
+                                                    + "  \"code\": \"INVALID_INPUT\",\n"
+                                                    + "  \"message\": \"시행일은 오늘 이후 날짜만 선택할 수 있습니다.\"\n"
                                                     + "}"
                                     ),
                                     @ExampleObject(

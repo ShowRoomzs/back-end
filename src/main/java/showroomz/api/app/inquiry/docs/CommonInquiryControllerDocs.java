@@ -1,8 +1,10 @@
 package showroomz.api.app.inquiry.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,6 +26,7 @@ public interface CommonInquiryControllerDocs {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공",
                     content = @Content(mediaType = "application/json",
+                            array = @ArraySchema(schema = @Schema(implementation = InquiryCategoryResponse.class)),
                             examples = @ExampleObject(value = "[\n" +
                                     "  { \"key\": \"DELIVERY\", \"description\": \"배송\" },\n" +
                                     "  { \"key\": \"CANCEL_EXCHANGE_RETURN\", \"description\": \"취소/교환/반품\" },\n" +

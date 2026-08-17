@@ -727,6 +727,8 @@ public interface SellerThreadControllerDocs {
                     "파일명이 UUID가 아닌 원본 이름으로 떨어진다.\n\n" +
                     "URL은 300초 후 만료되므로 캐시하지 말고 클릭 시점에 호출한다. 한 메시지의 첨부를 " +
                     "`전체 다운로드`할 때는 첨부 개수만큼 각각 호출한다(§13-9 — 서버 압축 없음).\n\n" +
+                    "메시지에 아직 연결되지 않은(전송 전) 첨부는 업로드한 본인만 다운로드할 수 있다 — " +
+                    "같은 스레드 참가자라도 상대가 보낸 뒤여야 받을 수 있다.\n\n" +
                     "**권한:** SELLER(본인 스레드의 첨부만 — 상대가 보낸 첨부도 포함)"
     )
     @ApiResponses(value = {
@@ -803,6 +805,13 @@ public interface SellerThreadControllerDocs {
                                             value = "{\n" +
                                                     "  \"code\": \"THREAD_ACCESS_DENIED\",\n" +
                                                     "  \"message\": \"해당 스레드에 대한 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "미전송 첨부",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ATTACHMENT_ACCESS_DENIED\",\n" +
+                                                    "  \"message\": \"해당 첨부에 대한 권한이 없습니다.\"\n" +
                                                     "}"
                                     )
                             }

@@ -19,6 +19,7 @@ import showroomz.domain.product.entity.ProductOption;
 import showroomz.domain.product.entity.ProductOptionGroup;
 import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.product.type.ProductGender;
+import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.domain.filter.entity.Filter;
 import showroomz.domain.filter.repository.FilterRepository;
 import showroomz.domain.review.entity.Review;
@@ -116,6 +117,7 @@ public class ProductService {
     public ProductDto.ProductDetailResponse getProductDetail(Long productId) {
         Product product = productRepository.findDetailByProductId(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+        requireVisibleForDetail(product);
 
         Users currentUser = resolveCurrentUser();
         boolean isWished = false;
@@ -159,6 +161,9 @@ public class ProductService {
                 .regularPrice(regularPrice)
                 .salePrice(salePrice)
                 .isFreeDelivery(isFreeDelivery)
+                .groupBuyStatus(product.getGroupBuyStatus() != null
+                        ? product.getGroupBuyStatus().name()
+                        : ProductGroupBuyStatus.NOT_CONNECTED.name())
                 .optionGroups(optionGroups)
                 .variants(variants)
                 .isWished(isWished)
@@ -176,8 +181,9 @@ public class ProductService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "variantIds는 필수이며 1개 이상이어야 합니다.");
         }
 
-        productRepository.findByProductId(productId)
+        Product product = productRepository.findByProductId(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+        requireVisibleForDetail(product);
 
         List<ProductVariant> variants = productVariantRepository.findByProductIdAndVariantIdIn(productId, variantIds);
 
@@ -227,6 +233,7 @@ public class ProductService {
     ) {
         Product product = productRepository.findByProductId(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+        requireVisibleForDetail(product);
 
         int pageNumber = (page != null && page > 0) ? page - 1 : 0;
         int pageSize = (limit != null && limit > 0) ? limit : 20;
@@ -408,6 +415,25 @@ public class ProductService {
                 })
                 .filter(java.util.Objects::nonNull)
                 .toList();
+    }
+
+    /**
+     * 상품 상세는 진열중 + 공구 연결, 두 조건을 모두 요구한다 (C7).
+     *
+     * <p>진열 상태는 검색 목록과 같은 기준(DISPLAY만)이고, 공구 연결은 그 위에 얹는 조건이다 —
+     * 공구가 끝나 연결이 풀리면(NOT_CONNECTED로 되돌아가면) 진열 상태와 무관하게 다시 막힌다.
+     * 상품 상세는 공구 게시물의 상품 카드에서만 진입하는 화면이라 화면상 도달할 경로가 없지만,
+     * 상품 ID가 순번이라 주소만 바꿔도 열리므로 서버가 두 조건 모두 확인한다. 403이 아니라
+     * 404로 돌려주는 것은 의도적이다 — 권한 오류로 나누면 "그 번호의 상품은 있다"는 사실이
+     * 밖으로 드러난다.
+     */
+    private void requireVisibleForDetail(Product product) {
+        boolean isDisplayed = product.getDisplayStatus() != null && product.getDisplayStatus().isVisible();
+        ProductGroupBuyStatus groupBuyStatus = product.getGroupBuyStatus();
+        boolean isGroupBuyConnected = groupBuyStatus != null && groupBuyStatus.isConnected();
+        if (!isDisplayed || !isGroupBuyConnected) {
+            throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
     }
 
     private Users resolveCurrentUser() {

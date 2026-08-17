@@ -10,6 +10,7 @@ import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.showroom.entity.ShowroomVisit;
 import showroomz.domain.showroom.repository.ShowroomVisitRepository;
+import showroomz.domain.post.service.PostAttributionService;
 import showroomz.domain.showroom.type.ShowroomVisitSource;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -30,6 +31,7 @@ public class ShowroomVisitService {
     private final ShowroomVisitRepository showroomVisitRepository;
     private final CreatorRepository creatorRepository;
     private final UserRepository userRepository;
+    private final PostAttributionService postAttributionService;
 
     /**
      * 방문 1건을 기록한다. 30분 세션 안의 재방문이면 아무것도 쌓지 않는다.
@@ -51,12 +53,18 @@ public class ShowroomVisitService {
             return;
         }
 
-        showroomVisitRepository.save(new ShowroomVisit(
+        ShowroomVisit visit = new ShowroomVisit(
                 creator,
                 visitor,
                 visitorKey,
                 ShowroomVisitSource.fromLinkValue(request.getSource()),
-                now));
+                now);
+
+        // §24-7 — 이 방문이 어떤 게시물을 보고 온 것인지 지금 정해 태그로 굳힌다.
+        // 귀속 대상이 없으면 null로 남는다(귀속 불명). 방문 적재 자체는 이 결과와 무관하게 성립한다.
+        visit.attributeTo(postAttributionService.resolveAttributedPostId(visitorKey, creator.getId(), now));
+
+        showroomVisitRepository.save(visit);
     }
 
     /**
@@ -67,14 +75,11 @@ public class ShowroomVisitService {
      * 방문마다 새 사람으로 잡혀 방문자 수가 부풀기 때문에, 조용히 세는 대신 요청을 거절한다.
      */
     private static String resolveVisitorKey(Users visitor, String visitorId) {
-        if (visitor != null) {
-            return "u:" + visitor.getId();
-        }
-        if (visitorId == null || visitorId.isBlank()) {
+        String key = PostAttributionService.viewerKeyOf(visitor == null ? null : visitor.getId(), visitorId);
+        if (key == null) {
+            // 식별자가 없으면 방문마다 새 사람으로 잡혀 방문자 수가 부풀기 때문에, 조용히 세는 대신 거절한다.
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
-        String trimmed = visitorId.trim();
-        // 컬럼 길이(64)를 넘는 식별자는 잘라 넣는다 — 접두사 2자를 빼고 62자까지.
-        return "d:" + (trimmed.length() > 62 ? trimmed.substring(0, 62) : trimmed);
+        return key;
     }
 }

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+.dv-sw{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:-2px 0 2px}
+.dv-swl{font:600 10px/1 Pretendard,sans-serif;color:rgba(0,0,0,.38);letter-spacing:.02em;margin-right:2px}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C5 공구 게시물 상세</span></div>
+<p class="dv-tsub">홈 피드·쇼룸의 카드를 탭하면 열립니다. 카드가 요약이라면 이 화면은 <b>본문 전문 + 상품 전체</b>입니다. 좋아요·상품 접기·신고 시트가 동작합니다.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>C5 공구 게시물</div>
+<div class="dv-sw">
+<span class="dv-swl">판매 상태</span>
+<sc-for list="{{ swSale }}" as="o" hint-placeholder-count="4">
+<div onClick="{{ o.pick }}" style="padding:6px 10px;border-radius:6px;cursor:pointer;font:{{ o.font }};background:{{ o.bg }};color:{{ o.color }};border:1px solid {{ o.border }}">{{ o.label }}</div>
+</sc-for>
+</div>
+<div class="dv-sw">
+<span class="dv-swl">상품 수</span>
+<sc-for list="{{ swCount }}" as="o" hint-placeholder-count="3">
+<div onClick="{{ o.pick }}" style="padding:6px 10px;border-radius:6px;cursor:pointer;font:{{ o.font }};background:{{ o.bg }};color:{{ o.color }};border:1px solid {{ o.border }}">{{ o.label }}</div>
+</sc-for>
+</div>
+<div class="dv-card">
+<div data-screen-label="C5 공구 게시물" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;gap:6px;padding:0 12px 0 2px">
+<div style="display:flex;padding:11px;cursor:pointer;flex:none" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="flex:1;min-width:0;font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">게시물</span>
+<div style="flex:none;display:flex;gap:18px;color:#0F0F0F">
+<div style="display:flex;padding:9px;margin:-9px;cursor:pointer" style-active="opacity:.4"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" style="display:block"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg></div>
+<div style="position:relative;display:flex;padding:9px;margin:-9px;cursor:pointer;color:#0F0F0F"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter" style="display:block"><path d="M4.4 7.5h15.2l-1.1 12.3H5.5z"></path><path d="M8.8 10V6.6a3.2 3.2 0 0 1 6.4 0V10"></path></svg><span style="position:absolute;top:4px;right:2px;min-width:18px;height:18px;box-sizing:border-box;background:#F2456E;border:1.5px solid #fff;border-radius:100px;display:flex;align-items:center;justify-content:center;padding:0 3px"><span style="display:block;font:400 10px/1 Pretendard,sans-serif;color:#fff">3</span></span></div>
+</div>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="display:flex;align-items:center;gap:10px;padding:13px 14px">
+<div style="width:36px;height:36px;border-radius:50%;border:1.5px solid #F2456E;padding:2px;box-sizing:border-box;flex:none;cursor:pointer"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(140deg,#F4D9DF,#E6C3CD)"></div></div>
+<div style="flex:1;min-width:0;display:flex;align-items:center;gap:5px">
+<span style="min-width:0;font:600 13.5px/1.3 Pretendard,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">제니의 뷰티룸</span>
+<span style="flex:none;font:400 13px/1.3 Pretendard,sans-serif;color:#8E8E8E">· 2시간</span>
+</div>
+<div onClick="{{ openReport }}" style="flex:none;display:flex;padding:11px;margin:-11px;cursor:pointer" style-active="opacity:.4">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="#8E8E8E" style="display:block"><circle cx="12" cy="5.5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="18.5" r="1.6"></circle></svg>
+</div>
+</div>
+
+<div style="padding:4px 14px 0;display:flex;gap:6px">
+<span style="padding:4px 8px;border-radius:8px;background:{{ ddayBg }};color:{{ ddayColor }};font:600 11px/1 Pretendard,sans-serif">{{ ddayLabel }}</span>
+<span style="padding:4px 8px;border-radius:8px;background:#F4F4F5;color:#737373;font:500 11px/1 Pretendard,sans-serif">유료 광고 포함</span>
+</div>
+
+<div style="padding:11px 14px 0">
+<div style="font:700 17px/1.45 Pretendard,sans-serif;letter-spacing:-.4px;text-wrap:pretty">여름 끝 무너진 장벽, 3주면 돌아옵니다</div>
+<div style="margin-top:9px;font:400 14px/1.75 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">제가 두 달 동안 아침저녁으로 써본 조합이에요. 냉방 때문에 속당김이 심해진 분들께 특히 권하고 싶어서 이번 공구를 열었습니다.<br><br>앰플은 3~4방울씩 아침저녁으로, 토너 패드는 세안 직후에 한 장이면 충분해요. 저는 이 두 개만으로 2주쯤 지나서 붉은기가 눈에 띄게 줄었습니다.<br><br>이번 공구는 리필까지 같이 넣었고, 배송은 마감 다음 주 월요일부터 순차로 나갑니다. 궁금한 점은 상품 문의에 남겨 주세요.</div>
+</div>
+
+<div style="padding:20px 14px 10px;display:flex;align-items:baseline;gap:7px">
+<span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">공구 상품</span>
+<span style="font:700 15px/1 Pretendard,sans-serif;color:#737373">{{ productCount }}</span>
+</div>
+
+<div style="padding:0 22px">
+<sc-for list="{{ products }}" as="p" hint-placeholder-count="2">
+<div style="padding:9px 0;border-top:{{ p.divider }};display:flex;gap:12px;align-items:center;cursor:pointer" style-active="opacity:.6">
+<div style="position:relative;width:90px;height:90px;border-radius:4px;flex:none;overflow:hidden">
+<div style="position:absolute;inset:0;background:{{ p.thumb }};filter:{{ p.thumbFilter }}"></div>
+<sc-if value="{{ p.out }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font:600 12.5px/1 Pretendard,sans-serif;color:#3C3C3C">{{ p.outLabel }}</div>
+</sc-if>
+</div>
+<div style="flex:1;min-width:0">
+<div style="font:400 13.5px/1.45 Pretendard,sans-serif;color:{{ p.nameColor }};display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ p.name }}</div>
+<div style="margin-top:8px;font:400 12px/1 Pretendard,sans-serif;color:#B5B5B5;text-decoration:line-through">{{ p.was }}</div>
+<div style="margin-top:5px;display:flex;align-items:baseline;gap:6px">
+<span style="font:700 15px/1 Pretendard,sans-serif;color:{{ p.offColor }}">{{ p.off }}</span>
+<span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px;color:{{ p.priceColor }}">{{ p.price }}</span>
+</div>
+</div>
+</div>
+</sc-for>
+<sc-if value="{{ moreVisible }}" hint-placeholder-val="{{ true }}">
+<div onClick="{{ toggleMore }}" style="margin-top:4px;padding:3px 0;cursor:pointer" style-active="opacity:.6">
+<div style="height:38px;border:1px solid #E3E3E5;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:6px;font:600 12.5px/1 Pretendard,sans-serif;color:#3C3C3C">
+{{ moreLabel }}
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block;transform:{{ moreChevron }}"><path d="M5 9l7 7 7-7"></path></svg>
+</div>
+</div>
+</sc-if>
+</div>
+
+<div style="padding:14px 14px 0;display:flex;align-items:center">
+<div onClick="{{ toggleLike }}" style="cursor:{{ heartCursor }};display:flex;align-items:center;gap:7px;padding:10px 8px;margin:-10px -8px" style-active="opacity:{{ heartPress }}">
+<svg width="25" height="25" viewBox="0 0 24 24" stroke="{{ heartStroke }}" fill="{{ heartFill }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg>
+<span style="display:block;font:600 13.5px/1 Pretendard,sans-serif;color:{{ countColor }};transform:translateY(1px)">{{ likeCount }}</span>
+</div>
+</div>
+
+<div style="height:30px"></div>
+
+</div>
+
+<sc-if value="{{ reportOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeReport }}" style="position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:10"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:11;background:#fff;border-radius:8px 8px 0 0;padding:8px 0 24px;box-shadow:0 -8px 40px rgba(0,0,0,.16)">
+<div style="width:36px;height:4px;border-radius:100px;background:#DEDEE0;margin:0 auto 14px"></div>
+<div onClick="{{ closeReport }}" style="display:flex;align-items:center;min-height:56px;padding:0 20px;cursor:pointer" style-active="background:#F7F7F8">
+<span style="font:400 15.5px/1.35 Pretendard,sans-serif;color:#3C3C3C">게시물 신고</span>
+</div>
+<div onClick="{{ closeReport }}" style="display:flex;align-items:center;min-height:56px;padding:0 20px;border-top:.5px solid #F0F0F0;cursor:pointer" style-active="background:#F7F7F8">
+<span style="font:400 15.5px/1.35 Pretendard,sans-serif;color:#3C3C3C">이 쇼룸의 게시물 그만 보기</span>
+</div>
+<div onClick="{{ closeReport }}" style="display:flex;align-items:center;min-height:56px;padding:0 20px;border-top:.5px solid #F0F0F0;cursor:pointer" style-active="background:#F7F7F8">
+<span style="font:400 15.5px/1.35 Pretendard,sans-serif;color:#3C3C3C">링크 복사</span>
+</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+<p class="dv-note">상태 표기는 §05 <b>판매 종료 상태</b>를 따릅니다.<br><br><b>마감·품절과 좋아요</b> — <b>공구 마감</b>이면 하트를 회색으로 낮추고 <b>새 좋아요를 막습니다</b>(이미 누른 것은 해제 가능). 좋아요는 "나중에 다시 볼 것"의 표시인데, 살 수 없게 된 게시물을 새로 담게 하면 좋아요 탭이 죽은 목록이 됩니다. 반대로 <b>품절은 막지 않습니다</b> — 재입고·다음 공구로 되살아날 수 있어 저장 가치가 남아 있습니다. 마감 게시물의 하트는 <b>지우지 않고 회색으로만</b> 두어, 예전에 누른 기록이 사라진 것처럼 보이지 않게 했습니다.<br><br><b>마감 · 품절</b>(Tweaks의 saleState) — <b>상단 배지는 게시물 전체 상태</b>일 때만 바뀝니다: [공구 마감]은 공구가 끝나 <b>모든 상품</b>이 마감된 것이고, [품절]은 <b>모든 상품이 소진</b>됐을 때만 붙습니다. 일부만 품절이면 배지는 <b>D-3 그대로</b> 두고 해당 상품 행만 표시합니다 — 아직 살 수 있는 게 남았는데 게시물 전체를 끝난 것처럼 보이게 하면 안 됩니다.<br><br><b>썸네일 처리</b> — 회색으로 덮는 것이 아니라 이미지 자체를 <b>흑백(grayscale)으로 바꾸고</b> 그 위에 흰 베일 50%를 얹은 뒤 라벨을 올립니다. 회색 판으로 덮으면 무슨 상품이었는지 안 보이는데, 흑백은 <b>형태를 남기면서 "지금은 아니다"만</b> 전달합니다. 상품명·가격도 함께 탈색. 게시물은 <b>읽는 콘텐츠</b>라 마감돼도 남아 있고, 상품 행은 여전히 눌러 C7 상세로 갑니다 — 무엇을 팔았는지 보여주는 것이 인플루언서의 기록이자 다음 공구의 근거이기 때문입니다. 할인율의 로즈도 함께 죽여, <b>지금 살 수 있는 것만 로즈</b>라는 규칙을 지킵니다.<br><br><b>카드와 무엇이 다른가</b> — 피드 카드는 본문 2줄 + 상품 1개 미리보기지만, 상세는 <b>본문 전문 + 상품 전체</b>입니다. <b>좋아요는 맨 아래</b>로 내렸습니다 — 다 읽고 난 뒤에 누르는 동작이라 글 위에 두면 판단 전에 결정을 요구하는 셈이 됩니다. 사진은 피드 카드가 이미 보여 줬으므로 이 화면에서는 반복하지 않고, <b>글과 상품</b>만 남깁니다. 헤더·좋아요·배지는 카드와 같은 규격이라 탭했을 때 같은 게시물이라는 감각이 유지됩니다.<br><br><b>본문</b> — 접지 않고 전문을 노출합니다. 들어온 이유가 "자세한 설명"인데 여기서 다시 [더 보기]를 누르게 하면 목적이 무산됩니다. 배송비·마감 같은 조건은 <b>상품 상세(C7)</b>가 책임지므로 게시물에서는 중복해 적지 않습니다.<br><br><b>하단 CTA 없음</b> — 게시물은 <b>여러 상품을 소개하는 글</b>이라 한 버튼으로 살 수 있는 대상이 없습니다. 구매는 상품 행을 탭해 C7로 들어가는 경로 하나로 통일했습니다.<br><br><b>남은 결정</b> — ① 게시물 공유(카카오·링크) 진입점 위치 ② 마감된 공구 게시물의 표시 방식 ③ 신고 사유 선택 화면.</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;productCount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:3,&quot;min&quot;:1,&quot;max&quot;:3,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;상품&quot;},&quot;saleState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;판매중&quot;,&quot;일부 품절&quot;,&quot;전체 품절&quot;,&quot;공구 마감&quot;],&quot;default&quot;:&quot;판매중&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;판매 상태&quot;}}">
+class Component extends DCLogic {
+  state = { liked: false, expanded: false, reportOpen: false };
+
+  sw(key, opts, def){
+    const cur = this.state[key] ?? this.props[key] ?? def;
+    return opts.map(o => {
+      const label = String(o);
+      return {
+        label,
+        pick: () => this.setState({ [key]: o }),
+        bg: o === cur ? '#1a1a1a' : '#fff',
+        color: o === cur ? '#fff' : 'rgba(0,0,0,.62)',
+        border: o === cur ? '#1a1a1a' : 'rgba(0,0,0,.14)',
+        font: (o === cur ? '600' : '400') + ' 11px/1 Pretendard,sans-serif'
+      };
+    });
+  }
+
+  renderVals(){
+    const ALL = [
+      { name:'시카 리페어 앰플 30ml 리필 2개 세트 기획', was:'38,000', off:'34%', price:'24,900원', thumb:'linear-gradient(135deg,#EFEBE7,#D9D2CB)' },
+      { name:'진정 토너 패드 60매', was:'26,000', off:'33%', price:'17,500원', thumb:'linear-gradient(135deg,#F1E7EA,#DCCCD3)' },
+      { name:'배리어 크림 50ml 대용량 리뉴얼', was:'32,000', off:'32%', price:'21,900원', thumb:'linear-gradient(135deg,#E7ECE8,#CCD6CF)' }
+    ];
+    const n = Math.max(1, Math.min(3, this.state.productCount ?? this.props.productCount ?? 3));
+    const src = ALL.slice(0, n);
+    const shown = this.state.expanded ? src : src.slice(0, 1);
+    const liked = this.state.liked;
+
+    const st0 = (this.state.saleState ?? this.props.saleState ?? '판매중');
+    return {
+      swSale: this.sw('saleState', ['판매중', '일부 품절', '전체 품절', '공구 마감'], '판매중'),
+      swCount: this.sw('productCount', [1, 2, 3], 3),
+      ddayLabel: st0 === '공구 마감' ? '공구 마감' : (st0 === '전체 품절' ? '품절' : '공동구매 D-3'),
+      ddayBg: (st0 === '공구 마감' || st0 === '전체 품절') ? '#F1F1F2' : '#F2456E',
+      ddayColor: (st0 === '공구 마감' || st0 === '전체 품절') ? '#8E8E8E' : '#fff',
+      products: shown.map((p, i) => {
+        const st = st0;
+        const out = st === '전체 품절' || st === '공구 마감' || (st === '일부 품절' && i === 0);
+        return {
+          ...p,
+          divider: i === 0 ? 'none' : '.5px solid #F0F0F0',
+          out,
+          thumbFilter: out ? 'grayscale(1)' : 'none',
+          outLabel: st === '공구 마감' ? '공구 마감' : '품절',
+          nameColor: out ? '#9E9E9E' : '#2E2E2E',
+          offColor: out ? '#9E9E9E' : '#F2456E',
+          priceColor: out ? '#9E9E9E' : '#0F0F0F'
+        };
+      }),
+      productCount: String(n),
+      moreVisible: n > 1,
+      moreLabel: this.state.expanded ? '상품 접기' : ('상품 ' + (n - 1) + '개 더보기'),
+      moreChevron: this.state.expanded ? 'rotate(180deg)' : 'none',
+      toggleMore: () => this.setState(s => ({ expanded: !s.expanded })),
+      likeCount: String(24 + (liked ? 1 : 0)),
+      heartFill: liked ? (st0 === '공구 마감' ? '#C8C8CA' : '#F2456E') : 'none',
+      heartStroke: liked ? (st0 === '공구 마감' ? '#C8C8CA' : '#F2456E') : (st0 === '공구 마감' ? '#C8C8CA' : '#0F0F0F'),
+      heartCursor: (st0 === '공구 마감' && !liked) ? 'default' : 'pointer',
+      heartPress: (st0 === '공구 마감' && !liked) ? '1' : '.4',
+      countColor: st0 === '공구 마감' ? '#9E9E9E' : '#0F0F0F',
+      toggleLike: () => { if (st0 === '공구 마감' && !this.state.liked) return; this.setState(s => ({ liked: !s.liked })); },
+      reportOpen: this.state.reportOpen,
+      openReport: () => this.setState({ reportOpen: true }),
+      closeReport: () => this.setState({ reportOpen: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

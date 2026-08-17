@@ -1,6 +1,5 @@
 package showroomz.api.admin.productinquiry.docs;
 
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -24,7 +23,6 @@ import showroomz.global.dto.PagingRequest;
 
 import java.util.List;
 
-@Hidden
 @Tag(name = "Admin - Product Inquiry Monitoring", description = "어드민 상품 문의 모니터링 API (§18) — 운영자는 답변하지 않는다")
 public interface AdminProductInquiryControllerDocs {
 
@@ -51,7 +49,12 @@ public interface AdminProductInquiryControllerDocs {
                     "운영자가 매번 확인해야 하는 유일한 수치이며 툴바의 `삭제 요청 N건`이 이 값입니다."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "목록 조회 성공")
+            @ApiResponse(responseCode = "200", description = "목록 조회 성공"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            )
     })
     ResponseEntity<AdminProductInquiryDto.ListResponse> getList(
             @RequestParam(value = "status", defaultValue = "ALL") AdminProductInquiryStatusFilter status,
@@ -66,7 +69,12 @@ public interface AdminProductInquiryControllerDocs {
                     "운영자가 매번 확인해야 하는 유일한 수치입니다.\n\n**권한:** ADMIN"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "조회 성공")
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            )
     })
     ResponseEntity<AdminProductInquiryDto.SummaryResponse> getSummary();
 
@@ -75,7 +83,12 @@ public interface AdminProductInquiryControllerDocs {
             description = "목록 상단 `전체 유형` 셀렉트에 쓸 문의 유형 목록을 반환합니다 (§18-2-1).\n\n**권한:** ADMIN"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "조회 성공")
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            )
     })
     ResponseEntity<List<AdminProductInquiryDto.TypeOption>> getTypes();
 

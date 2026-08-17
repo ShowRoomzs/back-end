@@ -630,19 +630,28 @@ public interface AuthControllerDocs {
     );
 
     @Operation(
-            summary = "회원 탈퇴",
-            description = "인증된 사용자의 회원 탈퇴를 처리합니다. 탈퇴 사유가 기록됩니다.\n\n" +
+            summary = "C15-4 회원 탈퇴",
+            description = "인증된 사용자의 회원 탈퇴를 처리합니다. 화면 진입 데이터(차단 여부·삭제될 활동 기록 수·이유 목록)는 " +
+                    "`GET /v1/user/withdrawal`에서 먼저 받아옵니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
+                    "**탈퇴 전 차단 조건:**\n" +
+                    "- 진행 중인 주문이 하나라도 있으면 409 `WITHDRAWAL_BLOCKED_BY_ORDER`로 거절합니다. " +
+                    "배송과 교환·환불이 모두 끝난 뒤에 탈퇴할 수 있습니다.\n\n" +
                     "**탈퇴 처리 내용:**\n" +
                     "- 사용자 상태를 WITHDRAWN(탈퇴)으로 변경 (논리 삭제)\n" +
                     "- 관련 리프레시 토큰 삭제\n" +
                     "- 탈퇴 사유 및 동의 여부 기록\n" +
-                    "- 개인정보 마스킹 처리\n\n" +
-                    "**탈퇴 사유 (reason):**\n" +
-                    "- `INCONVENIENT_USE`: 앱 사용이 불편해요\n" +
-                    "- `DIFFICULT_SEARCH`: 상품 탐색이 어려워요\n" +
-                    "- `ETC`: 기타 (직접 입력) - 이 경우 customReason 필드에 상세 사유를 입력해야 합니다."
+                    "- 닉네임·프로필 사진·본인인증 정보(이름·생년월일·성별·휴대폰번호)·환불 계좌 파기\n" +
+                    "- 팔로잉·좋아요·장바구니 삭제\n" +
+                    "- 주문·결제 기록은 전자상거래법상 법정 기간 동안 분리 보관하므로 삭제하지 않습니다\n\n" +
+                    "**탈퇴 사유 (reason) — 선택 항목이라 보내지 않거나 null이어도 탈퇴됩니다:**\n" +
+                    "- `NO_GROUP_BUY`: 원하는 공구가 없어요\n" +
+                    "- `TOO_MANY_NOTIFICATIONS`: 알림이 너무 많아요\n" +
+                    "- `INCONVENIENT_APP`: 앱이 사용하기 불편해요\n" +
+                    "- `PRIVACY_CONCERN`: 개인정보가 걱정돼요\n" +
+                    "- `REJOIN_OTHER_ACCOUNT`: 다른 계정으로 다시 가입할 거예요\n" +
+                    "- `ETC`: 기타 - customReason에 자유 입력을 함께 보낼 수 있습니다."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -671,8 +680,8 @@ public interface AuthControllerDocs {
                                     @ExampleObject(
                                             name = "탈퇴 동의 미체크",
                                             value = "{\n" +
-                                                    "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"탈퇴 유의사항에 동의해야 합니다.\"\n" +
+                                                    "  \"code\": \"WITHDRAWAL_CONSENT_REQUIRED\",\n" +
+                                                    "  \"message\": \"계정과 활동 기록이 삭제되는 데 동의해야 합니다.\"\n" +
                                                     "}",
                                             description = "agreeConsent가 false인 경우"
                                     ),
@@ -682,7 +691,7 @@ public interface AuthControllerDocs {
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
                                                     "  \"message\": \"입력값이 올바르지 않습니다.\"\n" +
                                                     "}",
-                                            description = "reason 필드가 누락된 경우"
+                                            description = "요청 본문 형식이 올바르지 않은 경우 (reason은 선택 항목이라 누락돼도 됩니다)"
                                     )
                             }
                     )
@@ -739,6 +748,24 @@ public interface AuthControllerDocs {
                     )
             ),
             @ApiResponse(
+                    responseCode = "409",
+                    description = "진행 중인 주문이 있어 탈퇴할 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "진행 중 주문 존재",
+                                            value = "{\n" +
+                                                    "  \"code\": \"WITHDRAWAL_BLOCKED_BY_ORDER\",\n" +
+                                                    "  \"message\": \"진행 중인 주문이 있어 지금은 탈퇴할 수 없습니다.\"\n" +
+                                                    "}",
+                                            description = "배송과 교환·환불이 모두 끝난 뒤에 탈퇴할 수 있습니다"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
                     responseCode = "500",
                     description = "서버 오류",
                     content = @Content(
@@ -759,32 +786,30 @@ public interface AuthControllerDocs {
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "탈퇴 요청 정보\n\n" +
                     "**필수 필드:**\n" +
-                    "- `agreeConsent`: 탈퇴 유의사항 동의 여부 (true 필수)\n" +
-                    "- `reason`: 탈퇴 사유 (INCONVENIENT_USE, DIFFICULT_SEARCH, ETC)\n\n" +
+                    "- `agreeConsent`: \"계정과 활동 기록이 삭제되는 데 동의\" 체크 여부 (true 필수)\n\n" +
                     "**선택 필드:**\n" +
-                    "- `customReason`: reason이 ETC인 경우 상세 사유 입력 (최대 1000자)",
+                    "- `reason`: C15-3에서 고른 탈퇴 이유. 고르지 않아도 탈퇴할 수 있으므로 생략하거나 null로 보냅니다.\n" +
+                    "- `customReason`: 자유 입력 (최대 1000자). 주로 reason이 ETC일 때 함께 보냅니다.",
             required = true,
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = WithdrawalRequest.class),
                     examples = {
                             @ExampleObject(
-                                    name = "앱 사용 불편",
+                                    name = "이유를 고른 경우",
                                     value = "{\n" +
                                             "  \"agreeConsent\": true,\n" +
-                                            "  \"reason\": \"INCONVENIENT_USE\",\n" +
+                                            "  \"reason\": \"NO_GROUP_BUY\",\n" +
                                             "  \"customReason\": null\n" +
                                             "}",
-                                    description = "앱 사용이 불편한 경우"
+                                    description = "원하는 공구가 없는 경우"
                             ),
                             @ExampleObject(
-                                    name = "상품 탐색 어려움",
+                                    name = "이유를 고르지 않은 경우",
                                     value = "{\n" +
-                                            "  \"agreeConsent\": true,\n" +
-                                            "  \"reason\": \"DIFFICULT_SEARCH\",\n" +
-                                            "  \"customReason\": null\n" +
+                                            "  \"agreeConsent\": true\n" +
                                             "}",
-                                    description = "상품 탐색이 어려운 경우"
+                                    description = "이유는 선택이라 생략해도 탈퇴됩니다"
                             ),
                             @ExampleObject(
                                     name = "기타 사유",
@@ -793,7 +818,7 @@ public interface AuthControllerDocs {
                                             "  \"reason\": \"ETC\",\n" +
                                             "  \"customReason\": \"다른 앱을 사용하게 되었습니다.\"\n" +
                                             "}",
-                                    description = "기타 사유를 직접 입력하는 경우"
+                                    description = "기타를 고르고 자유 입력을 함께 보내는 경우"
                             )
                     }
             )

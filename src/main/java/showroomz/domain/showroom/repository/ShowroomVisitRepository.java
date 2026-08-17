@@ -47,4 +47,11 @@ public interface ShowroomVisitRepository extends JpaRepository<ShowroomVisit, Lo
     List<Long> countVisitsPerFollower(@Param("creatorId") Long creatorId,
                                       @Param("from") LocalDateTime from,
                                       @Param("to") LocalDateTime to);
+
+    /** §24-7 ② 행동 — 이 게시물에 귀속된 쇼룸 방문. 귀속은 적재 시점에 이미 정해져 있다. */
+    @Query("SELECT COUNT(v) FROM ShowroomVisit v " +
+           "WHERE v.attributedPostId = :postId AND v.visitedAt >= :from AND v.visitedAt < :to")
+    long countAttributedVisits(@Param("postId") Long postId,
+                               @Param("from") LocalDateTime from,
+                               @Param("to") LocalDateTime to);
 }

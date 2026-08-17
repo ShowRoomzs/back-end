@@ -46,14 +46,14 @@ public interface NoticeControllerDocs {
                                             "      \"id\": 1,\n" +
                                             "      \"title\": \"개인정보 처리방침 개정 안내\",\n" +
                                             "      \"pinned\": true,\n" +
-                                            "      \"createdDate\": \"2026-07-05T10:15:00\"\n" +
+                                            "      \"createdDate\": \"2026-07-05T10:15:00Z\"\n" +
                                             "    }\n" +
                                             "  ],\n" +
                                             "  \"pageInfo\": {\n" +
                                             "    \"currentPage\": 1,\n" +
                                             "    \"totalPages\": 1,\n" +
                                             "    \"totalResults\": 1,\n" +
-                                            "    \"size\": 20,\n" +
+                                            "    \"limit\": 20,\n" +
                                             "    \"hasNext\": false\n" +
                                             "  }\n" +
                                             "}"
@@ -91,7 +91,7 @@ public interface NoticeControllerDocs {
                                             "  \"title\": \"서비스 점검 안내\",\n" +
                                             "  \"content\": \"<p>2026년 7월 20일 02:00~04:00 점검 예정입니다.</p>\",\n" +
                                             "  \"pinned\": false,\n" +
-                                            "  \"createdDate\": \"2026-07-18T10:00:00\"\n" +
+                                            "  \"createdDate\": \"2026-07-18T10:00:00Z\"\n" +
                                             "}"
                             )
                     )

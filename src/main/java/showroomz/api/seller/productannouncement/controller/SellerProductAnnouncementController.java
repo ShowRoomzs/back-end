@@ -43,6 +43,7 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/v1/seller/product-announcements")
 @RequiredArgsConstructor
+// [기획 제외] 보류된 기능 — 신규 작업/리팩터링 대상 아님. 상세: CLAUDE.md
 @Hidden
 @Tag(name = SellerProductAnnouncementControllerDocs.SWAGGER_TAG, description = "마켓 상품 공지사항 관리")
 public class SellerProductAnnouncementController implements SellerProductAnnouncementControllerDocs {

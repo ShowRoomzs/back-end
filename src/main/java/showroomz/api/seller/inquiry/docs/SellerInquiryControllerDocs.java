@@ -1,6 +1,5 @@
 package showroomz.api.seller.inquiry.docs;
 
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -20,7 +19,6 @@ import showroomz.api.seller.inquiry.dto.SellerInquiryListResponse;
 import showroomz.api.seller.inquiry.dto.SellerInquirySearchCondition;
 import showroomz.global.dto.PagingRequest;
 
-@Hidden
 @Tag(name = "Seller - Inquiry", description = "파트너센터 문의 관리 API (§23)")
 public interface SellerInquiryControllerDocs {
 
@@ -46,7 +44,8 @@ public interface SellerInquiryControllerDocs {
                     "`totalCount`만 현재 탭·필터·검색 기준입니다."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "문의 목록 조회 성공"),
+            @ApiResponse(responseCode = "200", description = "문의 목록 조회 성공",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = SellerInquiryListResponse.class))),
             @ApiResponse(
                     responseCode = "401",
                     description = "인증 실패",
@@ -81,7 +80,8 @@ public interface SellerInquiryControllerDocs {
                     "목록 조회와 같은 검색 조건을 함께 넘기면 그 순서 기준의 `prevInquiryId` · `nextInquiryId`를 계산합니다."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "문의 상세 조회 성공"),
+            @ApiResponse(responseCode = "200", description = "문의 상세 조회 성공",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductInquiryDetailResponse.class))),
             @ApiResponse(
                     responseCode = "403",
                     description = "본인 마켓의 문의가 아님",
@@ -119,6 +119,11 @@ public interface SellerInquiryControllerDocs {
                     responseCode = "403",
                     description = "본인 마켓의 문의가 아님",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "문의를 찾을 수 없음 · 판매자 마켓을 찾을 수 없음",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
             )
     })
     ResponseEntity<Void> registerAnswer(
@@ -139,6 +144,16 @@ public interface SellerInquiryControllerDocs {
             @ApiResponse(
                     responseCode = "400",
                     description = "미답변 문의(`INQUIRY_NOT_ANSWERED`) · 삭제 검토 중(`INQUIRY_UNDER_DELETE_REVIEW`) · 삭제된 문의(`INQUIRY_ALREADY_DELETED`)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "본인 마켓의 문의가 아님",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "문의를 찾을 수 없음 · 판매자 마켓을 찾을 수 없음",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
             )
     })
@@ -176,6 +191,11 @@ public interface SellerInquiryControllerDocs {
             @ApiResponse(
                     responseCode = "403",
                     description = "본인 마켓의 문의가 아님",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "문의를 찾을 수 없음 · 판매자 마켓을 찾을 수 없음",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
             )
     })

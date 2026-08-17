@@ -15,6 +15,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/v1/admin/social")
 @RequiredArgsConstructor
+// [기획 제외] 보류된 기능 — 신규 작업/리팩터링 대상 아님. 상세: CLAUDE.md
 @Hidden
 public class AdminSocialController implements AdminSocialControllerDocs {
 

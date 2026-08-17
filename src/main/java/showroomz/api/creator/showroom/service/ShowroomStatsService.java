@@ -28,8 +28,6 @@ import showroomz.global.error.exception.ErrorCode;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.Period;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -290,36 +288,13 @@ public class ShowroomStatsService {
         return items;
     }
 
+    /** §24-7 게시물 인사이트와 같은 구간을 써야 하므로 규칙은 {@link Demographics}에 한 벌만 둔다 */
     private static String toAgeGroup(String birthday, LocalDate today) {
-        if (birthday == null || birthday.isBlank()) {
-            return UNKNOWN_LABEL;
-        }
-        try {
-            int age = Period.between(LocalDate.parse(birthday), today).getYears();
-            if (age <= 24) {
-                // 만 14세 이상만 가입하므로 최저 구간 아래는 구간을 늘리지 않고 여기에 합친다.
-                return "18–24세";
-            }
-            if (age <= 34) {
-                return "25–34세";
-            }
-            if (age <= 44) {
-                return "35–44세";
-            }
-            return "45세 이상";
-        } catch (DateTimeParseException e) {
-            return UNKNOWN_LABEL;
-        }
+        return Demographics.ageGroupOf(birthday, today);
     }
 
     private static String toGenderLabel(String gender) {
-        if ("FEMALE".equalsIgnoreCase(gender)) {
-            return "여성";
-        }
-        if ("MALE".equalsIgnoreCase(gender)) {
-            return "남성";
-        }
-        return UNKNOWN_LABEL;
+        return Demographics.genderLabelOf(gender);
     }
 
     /** 배송지 원문에서 시·도만 떼어 낸다 — 시·군·구 이하는 개인을 좁히므로 서비스 밖으로 내보내지 않는다. */
@@ -337,30 +312,23 @@ public class ShowroomStatsService {
     }
 
     private static Map<String, Long> newCountMap(String... labels) {
-        // 빈 상태에서도 항목이 사라지지 않도록 라벨을 미리 깔아 둔다(화면 순서도 그대로 유지된다).
-        Map<String, Long> counts = new LinkedHashMap<>();
-        for (String label : labels) {
-            counts.put(label, 0L);
-        }
-        return counts;
+        return Demographics.newCountMap(labels);
     }
 
     private static void increment(Map<String, Long> counts, String key) {
-        counts.merge(key, 1L, Long::sum);
+        Demographics.increment(counts, key);
     }
 
     private static List<DistributionItem> toDistribution(Map<String, Long> counts, long total) {
-        List<DistributionItem> items = new ArrayList<>(counts.size());
-        counts.forEach((label, count) -> items.add(new DistributionItem(label, ratio(count, total))));
-        return items;
+        return Demographics.toDistribution(counts, total);
     }
 
     private static Double ratio(long value, long total) {
-        return total == 0 ? 0.0 : round(value * 100.0 / total);
+        return Demographics.ratio(value, total);
     }
 
     private static Double round(double value) {
-        return Math.round(value * 10) / 10.0;
+        return Demographics.round(value);
     }
 
     private Creator getMyCreator(Long userId) {
