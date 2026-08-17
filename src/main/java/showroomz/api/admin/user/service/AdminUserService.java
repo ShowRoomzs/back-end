@@ -3,28 +3,35 @@ package showroomz.api.admin.user.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import showroomz.api.admin.user.AdminMemberNumber;
+import showroomz.api.admin.user.AdminUserMasker;
 import showroomz.api.admin.user.dto.AdminUserDto;
 import showroomz.api.admin.user.dto.AdminUserMemoUpdateRequest;
-import showroomz.api.admin.user.repository.UserSpecification;
+import showroomz.api.admin.user.repository.AdminUserQueryRepository;
+import showroomz.api.admin.user.type.AdminUserSort;
+import showroomz.api.admin.user.type.AdminUserTab;
+import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.history.entity.UserStatusHistory;
 import showroomz.domain.history.repository.UserStatusHistoryRepository;
 import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
 import showroomz.domain.inquiry.repository.ProductInquiryRepository;
+import showroomz.domain.inquiry.type.InquiryExposureStatus;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.member.user.type.UserStatus;
 import showroomz.domain.review.repository.ReviewRepository;
 import showroomz.domain.wishlist.repository.WishlistRepository;
-import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PaginationInfo;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,6 +40,7 @@ import java.util.stream.Collectors;
 public class AdminUserService {
 
     private final UserRepository userRepository;
+    private final AdminUserQueryRepository adminUserQueryRepository;
     private final WishlistRepository wishlistRepository;
     private final CreatorFollowRepository creatorFollowRepository;
     private final ReviewRepository reviewRepository;
@@ -40,22 +48,73 @@ public class AdminUserService {
     private final OneToOneInquiryRepository oneToOneInquiryRepository;
     private final UserStatusHistoryRepository userStatusHistoryRepository;
 
-    public PageResponse<AdminUserDto.UserResponse> getUsers(
-            AdminUserDto.SearchCondition condition, Pageable pageable) {
+    /**
+     * 소비자 목록 (§25-3).
+     *
+     * <p>이름·휴대폰은 <b>여기서 마스킹해서</b> 내려보낸다. 목록에는 해제 경로가 없으므로(§25-1)
+     * 원본이 응답 페이로드에 실릴 이유가 없다 — 화면이 가리는 방식이면 개발자 도구 한 번으로
+     * 전체 값이 드러나 열람 통제가 성립하지 않는다.
+     *
+     * <p>요약 건수는 <b>상태 조건만 빼고</b> 검색어·가입 수단 필터를 그대로 반영한다. 탭 숫자가
+     * 지금 보고 있는 범위와 같은 모집단을 세야 탭을 눌렀을 때 그 수만큼 나온다.
+     */
+    public AdminUserDto.ListResponse getUsers(
+            AdminUserTab tab, String keyword, ProviderType providerType,
+            AdminUserSort sort, Pageable pageable) {
 
-        // 검색 조건 생성
-        Specification<Users> spec = UserSpecification.search(condition);
+        AdminUserTab resolvedTab = tab != null ? tab : AdminUserTab.ALL;
 
-        // 페이징 조회
-        Page<Users> usersPage = userRepository.findAll(spec, pageable);
+        Page<AdminUserQueryRepository.Row> page =
+                adminUserQueryRepository.search(resolvedTab, keyword, providerType, sort, pageable);
 
-        // DTO 변환
-        List<AdminUserDto.UserResponse> content = usersPage.getContent().stream()
-                .map(AdminUserDto.UserResponse::from)
-                .collect(Collectors.toList());
+        List<AdminUserDto.ListItem> content = page.getContent().stream()
+                .map(this::toListItem)
+                .toList();
 
-        // PageResponse 생성
-        return new PageResponse<>(content, usersPage);
+        return AdminUserDto.ListResponse.builder()
+                .content(content)
+                .pageInfo(new PaginationInfo(page))
+                .summary(buildSummary(resolvedTab, keyword, providerType))
+                .build();
+    }
+
+    private AdminUserDto.ListItem toListItem(AdminUserQueryRepository.Row row) {
+        return AdminUserDto.ListItem.builder()
+                .userId(row.userId())
+                .memberNo(AdminMemberNumber.format(row.userId()))
+                .nickname(row.nickname())
+                .maskedName(AdminUserMasker.maskName(row.name()))
+                .maskedPhone(AdminUserMasker.maskPhoneNumber(row.phoneNumber()))
+                .providerType(row.providerType())
+                .joinedAt(row.joinedAt())
+                .orderCount(row.orderCount())
+                .status(row.status())
+                .build();
+    }
+
+    /**
+     * 요약 줄 — 정지 탭에서만 "최근 30일 신규 정지"를 덧붙인다 (§25-3).
+     *
+     * <p>다른 탭에서 이 값을 null로 두는 것은 화면이 행 자체를 그리지 않게 하기 위해서다.
+     * 전체 탭의 4분할 요약을 정지 탭에 그대로 두면 지금 보고 있는 범위와 어긋난다.
+     */
+    private AdminUserDto.ListSummary buildSummary(
+            AdminUserTab tab, String keyword, ProviderType providerType) {
+
+        Map<UserStatus, Long> counts = adminUserQueryRepository.countByStatus(keyword, providerType);
+        long total = counts.values().stream().mapToLong(Long::longValue).sum();
+
+        Long newSuspended = tab == AdminUserTab.SUSPENDED
+                ? adminUserQueryRepository.countNewlySuspended(keyword, providerType, LocalDateTime.now())
+                : null;
+
+        return AdminUserDto.ListSummary.builder()
+                .total(total)
+                .active(counts.getOrDefault(UserStatus.NORMAL, 0L))
+                .suspended(counts.getOrDefault(UserStatus.SUSPENDED, 0L))
+                .withdrawn(counts.getOrDefault(UserStatus.WITHDRAWN, 0L))
+                .newSuspendedIn30Days(newSuspended)
+                .build();
     }
 
     /**
@@ -68,7 +127,7 @@ public class AdminUserService {
         long wishlistCount = wishlistRepository.countByUser_Id(userId);
         long followedShowroomCount = creatorFollowRepository.countByUser(user);
         long reviewCount = reviewRepository.countByUser_Id(userId);
-        long productInquiryCount = productInquiryRepository.countByUser_Id(userId);
+        long productInquiryCount = productInquiryRepository.countByUser_IdAndExposureStatusNot(userId, InquiryExposureStatus.DELETED);
         long oneToOneInquiryCount = oneToOneInquiryRepository.countByUser_Id(userId);
         long inquiryCount = productInquiryCount + oneToOneInquiryCount;
 

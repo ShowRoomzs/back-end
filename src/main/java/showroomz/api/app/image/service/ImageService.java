@@ -35,6 +35,13 @@ public class ImageService {
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "gif");
     /** 브랜드·인플루언서 가입/추가정보 서류 */
     private static final List<String> DOCUMENT_ALLOWED_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "pdf");
+    /**
+     * 쇼룸 게시물 사진 — <b>JPG·PNG만</b>이다(§24-2). 공통 목록과 달리 gif가 빠져 있다.
+     *
+     * <p>영상을 받지 않는 것과 같은 이유다 — 릴스·영상 콘텐츠는 인스타그램에 직접 올리는 것이
+     * 계약상 콘텐츠 의무이고, 쇼룸은 사진만 받는다.
+     */
+    private static final List<String> POST_ALLOWED_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png");
 
     public ImageUploadResponse uploadImage(MultipartFile file, ImageType type) {
         // 1. 파일 존재 여부 확인
@@ -58,10 +65,15 @@ public class ImageService {
             throw new BusinessException(ErrorCode.INVALID_FILE_EXTENSION);
         }
 
-        // 4. 마켓 대표 이미지(MARKET)인 경우 해상도 및 비율 검증
-        if (type == ImageType.MARKET) {
-            validateMarketImage(file);
+        // 4. 대표 이미지(마켓·쇼룸 프로필)인 경우 해상도 및 비율 검증
+        //    §22-1 쇼룸 프로필 이미지 규칙(최소 160×160 · 정비율 · 최대 20MB · JPG·PNG·GIF)이
+        //    마켓 대표 이미지와 같으므로 같은 검증을 태운다.
+        if (type == ImageType.MARKET || type == ImageType.SHOWROOM_PROFILE) {
+            validateSquareThumbnail(file);
         }
+
+        // 4-1. 게시물 사진은 실제 이미지인지 내용으로 확인하고 크기를 함께 돌려준다(§24-2)
+        Dimension dimension = type == ImageType.POST ? readImageSize(file) : null;
 
         // 5. S3에 업로드
         try {
@@ -69,7 +81,9 @@ public class ImageService {
             String s3Key = getS3Key(type, fileName);
             String imageUrl = uploadToS3(file, s3Key);
 
-            return new ImageUploadResponse(imageUrl);
+            return dimension == null
+                    ? new ImageUploadResponse(imageUrl)
+                    : new ImageUploadResponse(imageUrl, dimension.width(), dimension.height());
         } catch (IOException e) {
             log.error("파일 업로드 중 IO 오류 발생", e);
             throw new BusinessException(ErrorCode.FILE_UPLOAD_ERROR);
@@ -81,7 +95,33 @@ public class ImageService {
         if (type == ImageType.SIGNUP_DOCUMENT || type == ImageType.CREATOR_DOCUMENT || type == ImageType.CHANGE_REQUEST_DOCUMENT) {
             return DOCUMENT_ALLOWED_EXTENSIONS;
         }
+        if (type == ImageType.POST) {
+            return POST_ALLOWED_EXTENSIONS;
+        }
         return ALLOWED_EXTENSIONS;
+    }
+
+    /**
+     * 게시물 사진 — <b>내용으로</b> 이미지인지 판정하고 크기를 읽는다.
+     *
+     * <p>확장자 문자열만 보면 {@code 아침루틴_영상.mp4}의 이름을 {@code .jpg}로 바꾼 파일이
+     * 그대로 통과한다(§24-4 와이어의 실패 케이스가 정확히 이것이다). {@code ImageIO.read()}가
+     * {@code null}을 돌려주면 디코더가 없다는 뜻이므로 거절한다 — 대표 이미지 검증이 이미 쓰는 방식이다.
+     */
+    private Dimension readImageSize(MultipartFile file) {
+        try {
+            BufferedImage image = ImageIO.read(file.getInputStream());
+            if (image == null) {
+                throw new BusinessException(ErrorCode.INVALID_FILE_EXTENSION);
+            }
+            return new Dimension(image.getWidth(), image.getHeight());
+        } catch (IOException e) {
+            log.error("이미지 읽기 실패", e);
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private record Dimension(int width, int height) {
     }
 
     private String getFileExtension(String filename) {
@@ -162,9 +202,9 @@ public class ImageService {
     }
 
     /**
-     * 마켓 이미지 정밀 검증 (해상도, 비율)
+     * 대표 이미지 정밀 검증 (해상도 최소 160×160, 정비율) — 마켓 대표 이미지·쇼룸 프로필 이미지 공통.
      */
-    private void validateMarketImage(MultipartFile file) {
+    private void validateSquareThumbnail(MultipartFile file) {
         try {
             BufferedImage image = ImageIO.read(file.getInputStream());
             if (image == null) {

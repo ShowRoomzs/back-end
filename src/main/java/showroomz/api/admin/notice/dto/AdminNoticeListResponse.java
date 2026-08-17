@@ -32,10 +32,10 @@ public class AdminNoticeListResponse {
     @Schema(description = "상태 표시명", example = "게시")
     private String statusName;
 
-    @Schema(description = "등록일 (분까지 표기)", example = "2026-07-10T09:30:00")
+    @Schema(description = "등록일 (분까지 표기)", example = "2026-07-10T09:30:00Z")
     private LocalDateTime createdAt;
 
-    @Schema(description = "수정일 (분까지 표기)", example = "2026-07-10T09:30:00")
+    @Schema(description = "수정일 (분까지 표기)", example = "2026-07-10T09:30:00Z")
     private LocalDateTime modifiedAt;
 
     public static AdminNoticeListResponse from(Notice notice) {

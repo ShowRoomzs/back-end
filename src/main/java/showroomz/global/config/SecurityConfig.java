@@ -85,11 +85,23 @@ public class SecurityConfig {
             // 검색 자동완성 (비로그인 허용)
             "/v1/user/search/autocomplete",
 
+            // C14 쇼룸 검색 — 최근 검색만 로그인이 필요하고, 검색 자체와 추천 목록은 비로그인도 볼 수 있다.
+            "/v1/user/search/showrooms",
+            "/v1/user/search/showrooms/active",
+
             // FAQ 조회 API
             "/v1/user/faqs",
 
             // 쇼룸 게시글 조회 API
             "/v1/user/showroom/*/posts", "/v1/user/showroom/posts/*",
+
+            // 쇼룸 방문 기록 (§22-4) — 비로그인 방문도 쇼룸 도달 지표에 포함되므로 인증을 요구하지 않는다.
+            // 토큰이 실려 오면 필터가 인증을 채워 주므로, 로그인 방문은 사용자 기준으로 집계된다.
+            "/v1/user/showrooms/*/visits",
+
+            // 게시물 노출 적재 (§24-7) — 방문 기록과 같은 이유로 비로그인 조회도 노출에 포함된다.
+            // 로그인 조회만 연령·성별 표본이 되고, 비로그인은 "미확인"으로 분류된다.
+            "/v1/user/posts/impressions",
     };
     /*
      * SecurityFilterChain 설정 (Spring Security 3.x 최신 방식)

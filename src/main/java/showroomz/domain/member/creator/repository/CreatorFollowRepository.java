@@ -7,6 +7,7 @@ import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.entity.CreatorFollow;
 import showroomz.domain.member.user.entity.Users;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface CreatorFollowRepository extends JpaRepository<CreatorFollow, Long> {
@@ -15,6 +16,9 @@ public interface CreatorFollowRepository extends JpaRepository<CreatorFollow, Lo
 
     // 유저가 팔로우한 쇼룸 수
     long countByUser(Users user);
+
+    /** C15-4 탈퇴 — 팔로잉 기록 파기 */
+    void deleteByUser(Users user);
 
     // 팔로잉 목록 조회 — 정렬(최근 게시물 순)이 서비스 단에서 끝나므로 전체를 한 번에 가져온다
     @Query("SELECT cf FROM CreatorFollow cf " +
@@ -26,4 +30,44 @@ public interface CreatorFollowRepository extends JpaRepository<CreatorFollow, Lo
     // 팔로잉 피드용 — 팔로우한 쇼룸 ID 목록
     @Query("SELECT cf.creator.id FROM CreatorFollow cf WHERE cf.user.id = :userId")
     List<Long> findCreatorIdsByUserId(@Param("userId") Long userId);
+
+    /**
+     * C1 피드 카드의 팔로우 버튼용 — <b>이 페이지에 실린 쇼룸만</b> 팔로우 여부를 확인한다.
+     *
+     * <p>{@link #findCreatorIdsByUserId}로 전체를 끌어와 대조해도 답은 같지만, 팔로잉이 수천 개인
+     * 사용자에게 게시물 20개를 그리려고 수천 행을 읽게 된다. 대상 쇼룸을 좁혀 묻는다.
+     */
+    @Query("SELECT cf.creator.id FROM CreatorFollow cf " +
+           "WHERE cf.user.id = :userId AND cf.creator.id IN :creatorIds")
+    List<Long> findFollowedCreatorIds(@Param("userId") Long userId,
+                                      @Param("creatorIds") List<Long> creatorIds);
+
+    /** §22-4 총 팔로워 — 기간과 무관한 현재 시점 값. */
+    long countByCreator_Id(Long creatorId);
+
+    /** §22-4 기간 내 신규 팔로워. 직전 동일 기간에 같은 쿼리를 한 번 더 돌려 증감률을 낸다. */
+    @Query("SELECT COUNT(cf) FROM CreatorFollow cf " +
+           "WHERE cf.creator.id = :creatorId AND cf.createdAt >= :from AND cf.createdAt < :to")
+    long countNewFollowers(@Param("creatorId") Long creatorId,
+                           @Param("from") LocalDateTime from,
+                           @Param("to") LocalDateTime to);
+
+    /**
+     * §22-4 팔로워 구성 — {성별, 생년월일} 행. 소셜 로그인 동의 항목이라 값이 비어 있을 수 있고,
+     * 비어 있는 쪽은 "미확인"으로 분류한다(§22-5 수집 한계). 개인 식별자는 꺼내지 않는다.
+     */
+    @Query("SELECT u.gender, u.birthday FROM CreatorFollow cf JOIN cf.user u WHERE cf.creator.id = :creatorId")
+    List<Object[]> findFollowerDemographics(@Param("creatorId") Long creatorId);
+
+    /**
+     * §24-7 ② 행동 — 이 게시물에 귀속된 팔로우.
+     *
+     * <p>언팔로우한 사람은 행 자체가 사라지므로 이 값은 과거를 향해 <b>줄어들 수 있다.</b>
+     * 팔로우 이벤트 로그가 생기기 전까지의 한계다.
+     */
+    @Query("SELECT COUNT(cf) FROM CreatorFollow cf " +
+           "WHERE cf.attributedPostId = :postId AND cf.createdAt >= :from AND cf.createdAt < :to")
+    long countAttributedFollows(@Param("postId") Long postId,
+                                @Param("from") LocalDateTime from,
+                                @Param("to") LocalDateTime to);
 }

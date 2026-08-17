@@ -62,6 +62,10 @@ cors:
   allowed-headers: '*'
   max-age: 3600
 
+# GeoLocationService.java 관련 설정 — mmdb를 jar에 번들하지 않고 파일 경로에서 읽는다
+geoip:
+  db-path: ${GEOIP_DB_PATH:/geoip/GeoLite2-City.mmdb}
+
 # S3Properties.java 관련 설정
 aws:
   s3:
@@ -79,6 +83,18 @@ springdoc:
     doc-expansion: none      # 문서 기본 접힘 상태 (none | list | full)
     try-it-out-enabled: true # Try it out 기본 활성화
     filter: true             # API 검색/필터링 창 표시
+
+# PostProperties.java 관련 설정 — §24 게시물 운영 정책값
+# 전부 법률 자문 대기 중인 "가정값"이라 코드가 아니라 설정으로 둔다(§24-8).
+# 보관 기간류는 짧게 잡았다가 늘릴 수 없으므로, 미확정 구간의 기본값은 "지우지 않는 쪽"이다.
+post:
+  appeal-deadline-days: ${POST_APPEAL_DEADLINE_DAYS:7}          # 이의 신청 기한 (시안 7일)
+  appeal-review-business-days: ${POST_APPEAL_REVIEW_DAYS:3}     # 심사 예상 소요 — 표시용
+  download-grace-days: ${POST_DOWNLOAD_GRACE_DAYS:30}           # 반려 후 원본 내려받기 유예
+  retention-months: ${POST_RETENTION_MONTHS:6}                  # 삭제 게시물 비공개 보관 기간
+  purge-enabled: ${POST_PURGE_ENABLED:false}                    # 파기 배치 — 기본은 드라이런
+  purge-batch-size: ${POST_PURGE_BATCH_SIZE:100}
+  impression-retention-days: ${POST_IMPRESSION_RETENTION_DAYS:0} # 0이면 노출 로그를 삭제하지 않는다
 
 # Sentry 설정 (공통)
 sentry:

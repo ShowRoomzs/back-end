@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+.dv-sw{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:-2px 0 2px}
+.dv-swl{font:600 10px/1 Pretendard,sans-serif;color:rgba(0,0,0,.38);letter-spacing:.02em;margin-right:2px}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C7-1 상품 문의 — 작성 · C7-2 문의 전체</span></div>
+<p class="dv-tsub">C7 상품 상세의 문의 탭에서 [문의하기]로 진입하는 <b>작성 화면</b>입니다(문의 목록은 별도 화면이 아니라 C7 상세의 문의 탭 안에 있습니다). 상품 문의는 <b>브랜드가 직접</b> 답변하므로, 주문·배송을 다루는 C12 1:1 문의(운영팀)와 접수 창구가 다릅니다. 유형 시트·비밀글 토글·글자 수가 동작합니다.</p><div class="dv-opts">
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>C7-2 문의 전체</div>
+<div class="dv-card">
+<div data-screen-label="C7-2 문의 전체" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">상품 문의 <span style="color:#737373">12</span></span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:none;display:flex;gap:7px;padding:14px 14px 12px;overflow-x:auto;border-bottom:.5px solid #EFEFEF">
+<sc-for list="{{ chips }}" as="c" hint-placeholder-count="6">
+<div onClick="{{ c.pick }}" style="flex:none;display:flex;align-items:center;justify-content:center;padding:7px 0;margin:-7px 0;cursor:pointer" style-active="opacity:.55">
+<span style="display:flex;align-items:center;justify-content:center;height:34px;padding:0 13px;border-radius:8px;box-sizing:border-box;white-space:nowrap;background:{{ c.bg }};color:{{ c.color }};border:{{ c.border }};font:{{ c.font }}">{{ c.label }}</span>
+</div>
+</sc-for>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+<sc-for list="{{ list }}" as="q" hint-placeholder-count="6">
+<div style="border-top:{{ q.divider }}">
+<div onClick="{{ q.toggle }}" style="padding:16px 14px;cursor:pointer" style-active="background:#F7F7F8">
+<div style="display:flex;align-items:center;gap:7px">
+<span style="flex:none;padding:4px 8px;border-radius:8px;background:#F4F4F5;color:#737373;font:600 11px/1 Pretendard,sans-serif">{{ q.type }}</span>
+<div style="flex:1"></div>
+<span style="flex:none;font:600 11.5px/1 Pretendard,sans-serif;color:{{ q.statusColor }}">{{ q.status }}</span>
+</div>
+<div style="margin-top:10px;display:flex;align-items:flex-start;gap:8px">
+<sc-if value="{{ q.secret }}" hint-placeholder-val="{{ false }}">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="1.8" stroke-linejoin="miter" style="display:block;flex:none;margin-top:3px"><path d="M5.5 10.5h13v9h-13z"></path><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7"></path></svg>
+</sc-if>
+<span style="flex:1;min-width:0;font:400 14px/1.6 Pretendard,sans-serif;color:{{ q.qColor }};overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:{{ q.clamp }};-webkit-box-orient:vertical;text-wrap:pretty">{{ q.q }}</span>
+<sc-if value="{{ q.expandable }}" hint-placeholder-val="{{ true }}">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none;margin-top:4px;transform:{{ q.chevron }}"><path d="M5 9l7 7 7-7"></path></svg>
+</sc-if>
+</div>
+<div style="margin-top:7px;font:400 11.5px/1 Pretendard,sans-serif;color:#737373">{{ q.author }} · {{ q.date }}</div>
+</div>
+<sc-if value="{{ q.showAnswer }}" hint-placeholder-val="{{ false }}">
+<div style="padding:0 14px 16px">
+<div style="padding:13px;border-radius:8px;background:#F7F7F8">
+<div style="display:flex;align-items:baseline;gap:6px">
+<span style="font:600 12px/1 Pretendard,sans-serif;color:#3C3C3C">라보에이치</span>
+
+<div style="flex:1"></div>
+<span style="flex:none;font:400 11px/1 Pretendard,sans-serif;color:#8E8E8E">{{ q.answerDate }}</span>
+</div>
+<div style="margin-top:8px;font:400 13.5px/1.7 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">{{ q.a }}</div>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ q.showWaiting }}" hint-placeholder-val="{{ false }}">
+<div style="padding:0 14px 16px">
+<div style="padding:13px;border-radius:8px;background:#F7F7F8;font:400 12.5px/1.6 Pretendard,sans-serif;color:#737373">아직 답변이 등록되지 않았어요. 답변이 등록되면 알림으로 알려드려요.</div>
+</div>
+</sc-if>
+</div>
+</sc-for>
+<sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+<div style="padding:80px 40px;text-align:center">
+<div style="font:600 14.5px/1.5 Pretendard,sans-serif;color:#3C3C3C">이 유형의 문의가 아직 없어요</div>
+<div style="margin-top:8px;font:400 12.5px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">첫 번째로 궁금한 점을 물어보세요</div>
+</div>
+</sc-if>
+<div style="height:20px"></div>
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:12px 14px 26px;background:#fff">
+<div style="height:52px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 15.5px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">문의하기</div>
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>왜 별도 화면인가</b> — 문의가 쌓이면 상세 탭 안에서 [더 보기]로 늘리는 방식은 한계가 있습니다. 스크롤이 끝없이 길어지고, <b>유형 필터·정렬·검색을 붙일 자리</b>가 없으며, 문의를 보다가 상품 정보로 돌아가기도 어렵습니다. 그래서 C7 상세의 문의 탭은 <b>최근 3건 미리보기 + [문의 전체 보기]</b>만 남기고 전체 목록은 이 화면이 맡습니다.<br><br><b>구성</b> — 헤더에 총 건수 · <b>유형 필터 칩</b>(전체 · 성분·사용법 · 배송 · 재입고 · 옵션·구성 · 기타) 고정 · 아코디언 목록 · 하단 [문의하기] 고정. 칩은 §05 규격(높이 34 · 활성 잉크 채움)이고 <b>필터에 로즈를 쓰지 않습니다</b>. 필터 결과가 없으면 빈 상태로 첫 문의를 유도합니다(칩을 눌러 확인해 보세요).<br><br><b>남은 결정</b> — ① 정렬(최신순/답변순) 추가 여부 ② 무한 스크롤 vs 페이지네이션 ③ 내 문의만 보기 필터 필요 여부.</p>
+</div>
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>C7-1 문의 작성</div>
+<div class="dv-sw">
+<span class="dv-swl">내용</span>
+<sc-for list="{{ swBody }}" as="o" hint-placeholder-count="2">
+<div onClick="{{ o.pick }}" style="padding:6px 10px;border-radius:6px;cursor:pointer;font:{{ o.font }};background:{{ o.bg }};color:{{ o.color }};border:1px solid {{ o.border }}">{{ o.label }}</div>
+</sc-for>
+</div>
+<div class="dv-card">
+<div data-screen-label="C7-1 문의 작성" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">상품 문의</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:14px;display:flex;gap:12px;align-items:center;border-bottom:.5px solid #EFEFEF">
+<div style="width:56px;height:56px;border-radius:4px;background:linear-gradient(135deg,#EFEBE7,#D9D2CB);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 11.5px/1.35 Pretendard,sans-serif;color:#737373">라보에이치</div>
+<div style="margin-top:4px;font:400 13.5px/1.4 Pretendard,sans-serif;color:#2E2E2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">시카 리페어 앰플 30ml 리필 2개 세트 기획</div>
+</div>
+</div>
+
+<div style="padding:20px 14px 4px">
+<div style="font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">문의 유형 (필수)</div>
+<div onClick="{{ openTypes }}" style="margin-top:9px;height:48px;border:1px solid #E3E3E5;border-radius:8px;display:flex;align-items:center;justify-content:space-between;padding:0 13px;cursor:pointer" style-active="background:#F7F7F8">
+<span style="font: 400 15px/1 Pretendard,sans-serif; color: {{ typeColor }}; font-size: 14px">{{ typeLabel }}</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 9l7 7 7-7"></path></svg>
+</div>
+</div>
+
+<div style="padding:16px 14px 4px">
+<div style="display:flex;align-items:baseline;justify-content:space-between">
+<span style="font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">문의 내용 (필수)</span>
+<span style="font:400 12px/1 Pretendard,sans-serif;color:#737373;padding-right:2px">{{ bodyCount }}</span>
+</div>
+<div style="margin-top:9px;min-height:140px;border:1px solid #E3E3E5;border-radius:8px;padding:13px;font:400 14px/1.7 Pretendard,sans-serif;color:{{ bodyColor }};text-wrap:pretty">{{ bodyText }}</div>
+</div>
+
+<div style="padding: 12px 14px 0; padding-top: 0px">
+<div onClick="{{ toggleSecret }}" style="display:flex;align-items:center;gap:10px;padding:8px 0;cursor:pointer" style-active="opacity:.6">
+<span style="width:21px;height:21px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:{{ secretBg }};border:{{ secretBorder }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{ secretCheck }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg></span>
+<span style="flex:1;min-width:0;font:500 13.5px/1 Pretendard,sans-serif;color:#0F0F0F">비밀글로 문의하기</span>
+</div>
+</div>
+
+<div style="padding:8px 14px 0">
+<div style="font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">사진 첨부 <span style="font-weight:400;color:#737373">(선택)</span></div>
+<div class="noscroll" style="margin-top:10px;display:flex;gap:8px;overflow-x:auto;padding-top:5px;padding-right:5px">
+<div style="width:72px;height:72px;border-radius:8px;border:1px dashed #DCDCDE;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;flex:none" style-active="background:#F7F7F8">
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="miter" style="display:block"><path d="M12 6.5v11"></path><path d="M6.5 12h11"></path></svg>
+<span style="font:400 10.5px/1 Pretendard,sans-serif;color:#8E8E8E">0/3</span>
+</div>
+</div>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:22px"></div>
+
+<div style="padding:18px 14px 26px;display:grid;gap:7px;font:400 11px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">
+<div style="display:flex;gap:7px"><span style="flex:none">·</span><span style="flex:1;min-width:0">답변은 <b style="font-weight:600;color:#3C3C3C">브랜드가 직접</b> 등록하며, 등록되면 알림으로 알려드려요. 주문·배송·환불 문의는 마이 탭의 <b style="font-weight:600;color:#3C3C3C">1:1 문의</b>를 이용해 주세요.</span></div>
+<div style="display:flex;gap:7px"><span style="flex:none">·</span><span style="flex:1;min-width:0">연락처·주소 등 개인정보는 적지 말아 주세요. 공개 문의에 남긴 정보는 다른 이용자에게 보일 수 있습니다.</span></div>
+<div style="display:flex;gap:7px"><span style="flex:none">·</span><span style="flex:1;min-width:0">욕설·비방·광고·타인의 개인정보가 담긴 문의는 <b style="font-weight:600;color:#3C3C3C">사전 통보 없이 삭제</b>될 수 있으며, 반복될 경우 문의 작성이 제한될 수 있습니다.</span></div>
+</div>
+
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:12px 14px 26px;background:#fff">
+<div style="height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:{{ submitBg }};color:{{ submitColor }};font:600 15.5px/1 Pretendard,sans-serif;cursor:{{ submitCursor }}" style-active="opacity:{{ submitPress }}">문의 등록</div>
+</div>
+
+<sc-if value="{{ typesOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeTypes }}" style="position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:10"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:11;background:#fff;border-radius:8px 8px 0 0;padding:8px 0 24px;box-shadow:0 -8px 40px rgba(0,0,0,.16)">
+<div style="width:36px;height:4px;border-radius:100px;background:#DEDEE0;margin:0 auto 14px"></div>
+<div style="padding:0 20px 12px;font:600 15px/1.4 Pretendard,sans-serif;text-align:center">문의 유형</div>
+<sc-for list="{{ typeOptions }}" as="t" hint-placeholder-count="5">
+<div onClick="{{ t.pick }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 20px;border-top:{{ t.divider }};cursor:pointer" style-active="background:#F7F7F8">
+<span style="font:{{ t.font }};color:{{ t.color }}">{{ t.label }}</span>
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#F2456E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block;opacity:{{ t.checked }}"><path d="M4.5 12.5l5 5 10-11"></path></svg>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+</div>
+</div>
+<p class="dv-note"><b>비로그인</b> — 상품 상세의 문의 목록은 누구나 읽을 수 있고, <b>[문의하기]를 탭한 시점에</b> C0 로그인으로 보낸 뒤 이 작성 화면으로 복귀합니다(버튼을 비활성으로 두지 않음 — 마이·고객센터와 같은 규칙). 작성 중이던 내용은 로그인 왕복 후에도 유지합니다.<br><br><b>C12와 무엇이 다른가</b> — 같은 "문의"라도 <b>답하는 주체가 다릅니다</b>. 여기(C7-1)는 상품에 대한 질문을 <b>브랜드</b>가 답하고 상품 상세에 공개로 쌓입니다. 주문·배송·환불은 <b>운영팀</b>이 답하는 C12로 보냅니다. 그래서 이 화면에는 <b>주문 연결이 없고</b>(아직 사지 않은 사람이 묻는 자리), 대신 <b>상품 카드가 상단에 고정</b>됩니다.<br><br><b>유형</b> — 성분·사용법 / 배송 / 재입고 / 옵션·구성 / 기타. C12의 유형(배송·취소/교환/반품·주문결제·서비스·계정)과 다른 이유는 <b>구매 전 질문</b>이기 때문입니다.<br><br><b>비밀글</b> — 체크박스 한 줄로 두었습니다. 목록에서는 자물쇠 + 회색 대체 문구로 자리를 남깁니다.<br><br><b>개인정보 안내</b> — 공개 문의라 연락처를 적는 사고가 실제로 잦습니다. 등록 버튼 위 마지막 시선에 놓아 <b>쓰기 전이 아니라 보내기 직전</b>에 읽히게 했습니다. 같은 자리에 <b>부적절한 글의 삭제·제한 고지</b>를 덧붙였습니다 — 사후에 지우려면 근거가 미리 공지돼 있어야 하고, 운영정책 링크로 미루면 아무도 읽지 않습니다.<br><br><b>남은 결정</b> — ① 브랜드 무응답 시 SLA와 에스컬레이션(운영팀 이관) 규칙 ② 비밀글 기본값(공개/비밀 중 무엇으로 시작할지) ③ 문의 수정·삭제 허용 범위 ④ 금칙어·개인정보 자동 마스킹 적용 여부.</p>
+</div>
+
+</div>
+
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;body&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;입력 전&quot;,&quot;정상&quot;],&quot;default&quot;:&quot;정상&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;문의 내용&quot;}}">
+class Component extends DCLogic {
+  state = { type: null, typesOpen: false, secret: false };
+
+  renderVals(){
+    const mask = (n) => {
+      const s = String(n || '');
+      if (s.length <= 1) return s;
+      const shown = Math.floor(s.length / 2);
+      return s.slice(0, shown) + '*'.repeat(s.length - shown);
+    };
+    const CHIPS = ['전체', '성분·사용법', '배송', '재입고', '옵션·구성', '기타'];
+    const cat = this.state.cat || '전체';
+    const chips = CHIPS.map(label => {
+      const on = cat === label;
+      return {
+        label,
+        bg: on ? '#0F0F0F' : '#fff',
+        color: on ? '#fff' : '#3C3C3C',
+        border: on ? '1px solid #0F0F0F' : '1px solid #E3E3E5',
+        font: (on ? '600' : '400') + ' 13px/1 Pretendard,sans-serif',
+        pick: () => this.setState({ cat: label })
+      };
+    });
+    const ALL_Q = [
+      { k:'q1', type:'성분·사용법', done:true, author:'수민초록', date:'2026.08.08', answerDate:'2026.08.09', q:'민감성인데 아침에도 써도 괜찮을까요? 자외선 차단제를 덧바를 예정이고, 여름에는 유분이 많아지는 편이라 무거운 제형은 피하고 싶습니다.', secret:false, a:'네, 자극 테스트를 완료한 제품으로 아침저녁 모두 사용 가능합니다. 제형이 가벼워 자외선 차단제와 함께 쓰셔도 밀리지 않으며, 처음에는 2~3방울 소량으로 시작해 보시길 권합니다.' },
+      { k:'q2', type:'옵션·구성', done:true, author:'현지', date:'2026.08.09', answerDate:'2026.08.09', q:'비밀글입니다. 작성자와 판매자만 볼 수 있어요', secret:true, a:'' },
+      { k:'q3', type:'재입고', done:false, author:'지은맑음', date:'2026.08.10', answerDate:'', q:'리필은 본품과 같은 용량인가요?', secret:false, a:'' },
+      { k:'q4', type:'배송', done:true, author:'윤아', date:'2026.08.07', answerDate:'2026.08.07', q:'제주도인데 배송비가 얼마나 추가되나요?', secret:false, a:'제주 지역은 3,000원이 추가되며, 결제 단계에서 배송지 우편번호를 입력하시면 자동으로 계산됩니다.' },
+      { k:'q5', type:'성분·사용법', done:true, author:'하늘바다', date:'2026.08.06', answerDate:'2026.08.07', q:'레티놀 제품과 같이 써도 되나요?', secret:false, a:'함께 사용하실 수 있습니다. 다만 같은 시간대에 겹쳐 바르기보다 아침에는 본 제품, 저녁에 레티놀을 쓰시는 것을 권합니다.' },
+      { k:'q6', type:'옵션·구성', done:true, author:'민서', date:'2026.08.05', answerDate:'2026.08.06', q:'리필 구성에도 펌프가 들어 있나요?', secret:false, a:'리필에는 펌프가 포함되지 않습니다. 본품 용기의 펌프를 그대로 사용해 주세요.' },
+      { k:'q7', type:'재입고', done:true, author:'서연가을', date:'2026.08.04', answerDate:'2026.08.05', q:'50ml 대용량은 이번 공구에 없나요?', secret:false, a:'이번 공동구매에는 30ml 구성만 준비되어 있습니다. 대용량은 다음 공구에서 검토 중입니다.' },
+      { k:'q8', type:'기타', done:true, author:'채원', date:'2026.08.03', answerDate:'2026.08.04', q:'선물 포장도 가능한가요?', secret:false, a:'옵션에서 선물 포장 쇼핑백을 추가하시면 함께 발송해 드립니다.' }
+    ];
+    const filtered = ALL_Q.filter(q => cat === '전체' || q.type === cat);
+    const list = filtered.map((q, i) => {
+      const expandable = q.done && !q.secret;
+      const open = expandable && !!(this.state.qOpen || {})[q.k];
+      return {
+        expandable,
+        type: q.type, author: mask(q.author), date: q.date, answerDate: q.answerDate, q: q.q, a: q.a, secret: q.secret,
+        status: q.done ? '답변 완료' : '답변 대기',
+        statusColor: q.done ? '#0F0F0F' : '#8E8E8E',
+        qColor: q.secret ? '#8E8E8E' : '#0F0F0F',
+        clamp: open ? 8 : 1,
+        chevron: open ? 'rotate(180deg)' : 'none',
+        showAnswer: open,
+        showWaiting: false,
+        divider: i === 0 ? 'none' : '.5px solid #F0F0F0',
+        toggle: () => { if (expandable) this.setState(s => ({ qOpen: { ...(s.qOpen || {}), [q.k]: !(s.qOpen || {})[q.k] } })); }
+      };
+    });
+
+    const TYPES = ['성분·사용법', '배송', '재입고', '옵션·구성', '기타'];
+    const typeOptions = TYPES.map((label, i) => {
+      const on = this.state.type === label;
+      return {
+        label,
+        checked: on ? 1 : 0,
+        divider: i === 0 ? 'none' : '.5px solid #F0F0F0',
+        font: (on ? '600' : '400') + ' 15.5px/1.35 Pretendard,sans-serif',
+        color: on ? '#0F0F0F' : '#3C3C3C',
+        pick: () => this.setState({ type: label, typesOpen: false })
+      };
+    });
+
+    const BODIES = {
+      '입력 전': { text:'문의할 내용을 입력해주세요\n', count:'0/500', placeholder:true, ok:false },
+      '정상': { text:'민감성 피부인데 아침에도 사용해도 괜찮을까요? 자외선 차단제를 덧바를 예정입니다.', count:'44/250', placeholder:false, ok:true }
+    };
+    const bCur = this.state.body ?? this.props.body ?? '정상';
+    const body = BODIES[bCur] || BODIES['정상'];
+    const ready = !!this.state.type && body.ok;
+    const s = this.state.secret;
+
+    return {
+      swBody: ['입력 전', '정상'].map(label => ({
+        label,
+        pick: () => this.setState({ body: label }),
+        bg: label === bCur ? '#1a1a1a' : '#fff',
+        color: label === bCur ? '#fff' : 'rgba(0,0,0,.62)',
+        border: label === bCur ? '#1a1a1a' : 'rgba(0,0,0,.14)',
+        font: (label === bCur ? '600' : '400') + ' 11px/1 Pretendard,sans-serif'
+      })),
+      chips,
+      list,
+      isEmpty: list.length === 0,
+      typeLabel: this.state.type || '문의 유형을 선택해 주세요',
+      typeColor: this.state.type ? '#0F0F0F' : '#B5B5B5',
+      typeOptions,
+      typesOpen: this.state.typesOpen,
+      openTypes: () => this.setState({ typesOpen: true }),
+      closeTypes: () => this.setState({ typesOpen: false }),
+      bodyText: body.text,
+      bodyCount: body.count,
+      bodyColor: body.placeholder ? '#B5B5B5' : '#0F0F0F',
+      secretBg: s ? '#F2456E' : '#fff',
+      secretBorder: s ? '1.5px solid #F2456E' : '1.5px solid #DEDEE0',
+      secretCheck: s ? '#fff' : '#DEDEE0',
+      toggleSecret: () => this.setState(x => ({ secret: !x.secret })),
+      submitBg: ready ? '#F2456E' : '#F4F4F5',
+      submitColor: ready ? '#fff' : '#B5B5B5',
+      submitCursor: ready ? 'pointer' : 'default',
+      submitPress: ready ? '.75' : '1'
+    };
+  }
+}
+</script>
+</body>
+</html>

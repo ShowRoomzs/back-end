@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import showroomz.domain.inquiry.entity.OneToOneInquiry;
 import showroomz.domain.inquiry.type.InquiryStatus;
-import showroomz.domain.inquiry.type.InquiryType;
+import showroomz.domain.cs.type.CsCategory;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -48,7 +48,7 @@ public class InquiryListResponse {
     private LocalDateTime createdAt;
 
     public static InquiryListResponse from(OneToOneInquiry inquiry, InquiryOrderSummary order) {
-        InquiryType type = inquiry.getType();
+        CsCategory type = inquiry.getType();
         return InquiryListResponse.builder()
                 .id(inquiry.getId())
                 .type(type.name())

@@ -43,9 +43,10 @@ public class CartController implements CartControllerDocs {
     @Override
     @GetMapping
     public ResponseEntity<CartDto.CartListResponse> getCart(
-            @AuthenticationPrincipal UserPrincipal userPrincipal
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam(value = "selectedCartItemIds", required = false) List<Long> selectedCartItemIds
     ) {
-        CartDto.CartListResponse response = cartService.getCart(userPrincipal.getUsername());
+        CartDto.CartListResponse response = cartService.getCart(userPrincipal.getUsername(), selectedCartItemIds);
         return ResponseEntity.ok(response);
     }
 

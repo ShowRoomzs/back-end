@@ -2,47 +2,15 @@ package showroomz.api.admin.user.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
-import org.springframework.format.annotation.DateTimeFormat;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.member.user.type.UserStatus;
+import showroomz.global.dto.PaginationInfo;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 public class AdminUserDto {
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Schema(description = "유저 목록 검색 조건")
-    public static class SearchCondition {
-        @Schema(description = "닉네임 검색 (부분 일치)", example = "홍길동")
-        private String nickname;
-
-        @Schema(description = "이메일 검색 (부분 일치)", example = "user@example.com")
-        private String email;
-
-        @Schema(description = "가입 채널 (GOOGLE, NAVER, KAKAO, APPLE)", example = "GOOGLE")
-        private ProviderType providerType;
-
-        @Schema(
-                description = "활동 상태 (NORMAL: 정상, DORMANT: 휴면, WITHDRAWN: 탈퇴, SUSPENDED: 정지)",
-                example = "NORMAL",
-                allowableValues = {"NORMAL", "DORMANT", "WITHDRAWN", "SUSPENDED"})
-        private UserStatus status;
-
-        @Schema(description = "가입일 조회 시작 날짜 (yyyy-MM-dd)", example = "2024-01-01")
-        @DateTimeFormat(pattern = "yyyy-MM-dd")
-        private LocalDate startDate;
-
-        @Schema(description = "가입일 조회 종료 날짜 (yyyy-MM-dd)", example = "2024-12-31")
-        @DateTimeFormat(pattern = "yyyy-MM-dd")
-        private LocalDate endDate;
-    }
 
     @Getter
     @Setter
@@ -56,46 +24,77 @@ public class AdminUserDto {
 
     @Getter
     @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Schema(description = "유저 목록 응답")
-    public static class UserResponse {
-        @Schema(description = "유저 ID", example = "1")
+    @Schema(description = "소비자 목록 행 (§25-3 컬럼 8종)")
+    public static class ListItem {
+        @Schema(description = "회원 ID — 행 클릭 시 상세 경로에 쓴다", example = "88231")
         private Long userId;
 
-        @Schema(description = "이메일 (계정)", example = "user@example.com")
-        private String email;
+        @Schema(description = "회원번호 — 첫 열. CS에서 문의받은 번호를 눈으로 대조한다", example = "CST-88231")
+        private String memberNo;
 
         @Schema(description = "닉네임", example = "홍길동")
         private String nickname;
 
-        @Schema(description = "가입 채널", example = "GOOGLE")
+        @Schema(
+                description = "이름 — 가운데 1자 마스킹. 목록에는 해제 경로가 없어 원본을 내려보내지 않는다",
+                example = "홍*동"
+        )
+        private String maskedName;
+
+        @Schema(
+                description = "휴대폰 — 가운데 4자리 마스킹. 뒤 4자리가 남아 검색·대조가 된다",
+                example = "010-****-1234"
+        )
+        private String maskedPhone;
+
+        @Schema(description = "가입 수단 — 상태가 아니라 속성이라 화면은 배지가 아닌 색점+이름으로 그린다", example = "KAKAO")
         private ProviderType providerType;
 
-        @Schema(description = "가입일", example = "2024-01-01T10:00:00")
-        private LocalDateTime createdAt;
+        @Schema(description = "가입일", example = "2026-02-01T10:00:00")
+        private LocalDateTime joinedAt;
 
-        @Schema(description = "최근 접속일", example = "2024-01-15T14:30:00")
-        private LocalDateTime lastLoginAt;
+        @Schema(description = "누적 주문 건수 — 취소만 남은 주문은 세지 않는다. 0건은 화면에서 회색으로 강등", example = "14")
+        private long orderCount;
 
-        @Schema(description = "활동 상태", example = "NORMAL")
+        @Schema(description = "상태 — 활성(성공)/정지(위험)/탈퇴(중립)", example = "NORMAL")
         private UserStatus status;
+    }
 
-        @Schema(description = "누적 구매액 (원, 더미)", example = "1234567")
-        private BigDecimal totalPurchaseAmount;
+    @Getter
+    @Builder
+    @Schema(description = "목록 요약 — 상태 조건만 제외하고 검색어·가입 수단은 그대로 반영한 건수")
+    public static class ListSummary {
+        @Schema(description = "전체", example = "2340")
+        private long total;
 
-        public static UserResponse from(Users user) {
-            return UserResponse.builder()
-                    .userId(user.getId())
-                    .email(user.getEmail())
-                    .nickname(user.getNickname())
-                    .providerType(user.getProviderType())
-                    .createdAt(user.getCreatedAt())
-                    .lastLoginAt(user.getLastLoginAt())
-                    .status(user.getStatus())
-                    .totalPurchaseAmount(new BigDecimal("1234567"))
-                    .build();
-        }
+        @Schema(description = "활성", example = "2268")
+        private long active;
+
+        @Schema(description = "정지", example = "12")
+        private long suspended;
+
+        @Schema(description = "탈퇴", example = "60")
+        private long withdrawn;
+
+        @Schema(
+                description = "최근 30일 신규 정지 — 정지 탭에서만 내려온다. 다른 탭에서는 null이라 화면이 행을 그리지 않는다",
+                example = "3"
+        )
+        private Long newSuspendedIn30Days;
+    }
+
+    @Getter
+    @Builder
+    @Schema(description = "소비자 목록 응답")
+    public static class ListResponse {
+        @Schema(description = "목록 행")
+        private List<ListItem> content;
+
+        @Schema(description = "페이지 정보")
+        private PaginationInfo pageInfo;
+
+        @Schema(description = "탭 건수 및 요약 줄")
+        private ListSummary summary;
     }
 
     @Getter

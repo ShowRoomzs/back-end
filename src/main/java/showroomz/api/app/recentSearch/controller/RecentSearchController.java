@@ -1,6 +1,7 @@
 package showroomz.api.app.recentSearch.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -31,7 +32,7 @@ public class RecentSearchController implements RecentSearchControllerDocs {
     @GetMapping
     public ResponseEntity<PageResponse<RecentSearchResponse>> getMyRecentSearches(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @ModelAttribute PagingRequest pagingRequest
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest
     ) {
         return ResponseEntity.ok(
             recentSearchService.getMyRecentSearches(userPrincipal.getUsername(), pagingRequest)
@@ -49,19 +50,39 @@ public class RecentSearchController implements RecentSearchControllerDocs {
     }
 
     /**
-     * 최근 검색어 저장 (단독 호출용)
+     * 최근 검색 전체 삭제 — 목록 상단의 [전체 삭제]
+     */
+    @Override
+    @DeleteMapping
+    public ResponseEntity<Void> deleteAllRecentSearches(
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
+        recentSearchService.deleteAllRecentSearches(userPrincipal.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 최근 검색 저장 (단독 호출용)
+     * - `keyword`만 보내면 검색어(TERM) 행, `showroomId`만 보내면 쇼룸(SHOWROOM) 행이 쌓인다.
      */
     @Override
     @PostMapping
     public ResponseEntity<Void> saveRecentSearch(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @RequestParam("keyword") String keyword) {
-        
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "showroomId", required = false) Long showroomId) {
+
+        // 검색 결과에서 쇼룸으로 들어간 경우 — 쇼룸 행으로 남긴다
+        if (showroomId != null) {
+            recentSearchService.saveRecentShowroom(userPrincipal.getUsername(), showroomId);
+            return ResponseEntity.noContent().build();
+        }
+
         // 검색어가 비어있지 않을 때만 저장
         if (keyword != null && !keyword.isBlank()) {
-            recentSearchService.saveRecentSearch(userPrincipal.getUsername(), keyword);
+            recentSearchService.saveRecentSearch(userPrincipal.getUsername(), keyword.trim());
         }
-        
+
         return ResponseEntity.noContent().build();
     }
 

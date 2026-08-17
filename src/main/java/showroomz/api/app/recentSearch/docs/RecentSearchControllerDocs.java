@@ -29,13 +29,22 @@ public interface RecentSearchControllerDocs {
             summary = "내 최근 검색 기록 조회",
             description = "로그인된 사용자의 최근 검색 기록을 페이징하여 조회합니다.\n\n" +
 
+                    "C14 최근 검색은 **쇼룸과 검색어가 한 목록에 시간순으로 섞인** 인스타 형식의 세로 리스트입니다. " +
+                    "행 종류는 `type`으로 구분합니다.\n" +
+                    "- `TERM`: 검색어 — 회색 원 안 돋보기 + 텍스트, 탭하면 그 단어로 재검색\n" +
+                    "- `SHOWROOM`: 쇼룸 — 아바타 + 이름 + 아이디(@handle), 탭하면 바로 C4 쇼룸으로\n\n" +
+
                     "**페이징 파라미터**\n" +
                     "- `page`: 페이지 번호 (1부터 시작, 기본값: 1)\n" +
                     "- `size`: 페이지당 항목 수 (기본값: 20)\n\n" +
                     "**응답 구조**\n" +
                     "- `content`: 검색 기록 배열\n" +
-                    "  - `id`: 검색 기록 ID\n" +
-                    "  - `term`: 검색 키워드\n" +
+                    "  - `id`: 검색 기록 ID (개별 삭제 시 사용)\n" +
+                    "  - `type`: 행 종류 (`TERM` | `SHOWROOM`)\n" +
+                    "  - `term`: 검색 키워드. `SHOWROOM` 행에서는 저장 시점의 쇼룸명 스냅샷이므로 표시에는 쓰지 않습니다\n" +
+                    "  - `showroom`: 쇼룸 정보 (`SHOWROOM` 행에만 채워짐, `TERM`이면 null)\n" +
+                    "    - `showroomId`, `showroomName`, `showroomAddress`(@handle), `showroomImageUrl`\n" +
+                    "    - `hasOngoingGroupBuy`: 진행 중 공구 보유 여부 — 아바타 로즈 링 표시용\n" +
                     "  - `createdAt`: 검색 시각 (UTC 기준)\n" +
                     "- `pageInfo`: 페이징 정보\n" +
                     "  - `currentPage`: 현재 페이지 번호\n" +
@@ -55,23 +64,35 @@ public interface RecentSearchControllerDocs {
                             schema = @Schema(implementation = PageResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "성공 시 (검색 기록 있음)",
+                                            name = "성공 시 (검색 기록 있음 — 쇼룸·검색어 혼합)",
                                             value = "{\n" +
                                                     "  \"content\": [\n" +
                                                     "    {\n" +
                                                     "      \"id\": 1,\n" +
-                                                    "      \"term\": \"화이트 린넨 셔츠\",\n" +
-                                                    "      \"createdAt\": \"2025-01-15T10:30:00Z\"\n" +
+                                                    "      \"type\": \"SHOWROOM\",\n" +
+                                                    "      \"term\": \"제니의 뷰티룸\",\n" +
+                                                    "      \"showroom\": {\n" +
+                                                    "        \"showroomId\": 12,\n" +
+                                                    "        \"showroomName\": \"제니의 뷰티룸\",\n" +
+                                                    "        \"showroomAddress\": \"jenny_beautyroom\",\n" +
+                                                    "        \"showroomImageUrl\": \"https://cdn.showroomz.co.kr/showroom/profile/b.jpg\",\n" +
+                                                    "        \"hasOngoingGroupBuy\": true\n" +
+                                                    "      },\n" +
+                                                    "      \"createdAt\": \"2026-08-15T10:30:00Z\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
                                                     "      \"id\": 2,\n" +
-                                                    "      \"term\": \"데님 팬츠\",\n" +
-                                                    "      \"createdAt\": \"2025-01-14T15:20:00Z\"\n" +
+                                                    "      \"type\": \"TERM\",\n" +
+                                                    "      \"term\": \"브라이\",\n" +
+                                                    "      \"showroom\": null,\n" +
+                                                    "      \"createdAt\": \"2026-08-14T15:20:00Z\"\n" +
                                                     "    },\n" +
                                                     "    {\n" +
                                                     "      \"id\": 3,\n" +
-                                                    "      \"term\": \"니트 스웨터\",\n" +
-                                                    "      \"createdAt\": \"2025-01-13T09:10:00Z\"\n" +
+                                                    "      \"type\": \"TERM\",\n" +
+                                                    "      \"term\": \"클린뷰티\",\n" +
+                                                    "      \"showroom\": null,\n" +
+                                                    "      \"createdAt\": \"2026-08-13T09:10:00Z\"\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"pageInfo\": {\n" +
@@ -241,14 +262,71 @@ public interface RecentSearchControllerDocs {
     );
 
     @Operation(
-            summary = "최근 검색어 저장",
-            description = "검색어를 최근 검색 기록에 저장합니다.\n\n" +
+            summary = "최근 검색 전체 삭제",
+            description = "로그인된 사용자의 최근 검색 기록을 모두 삭제합니다. 목록 상단의 [전체 삭제] 버튼용입니다.\n\n" +
                     "**동작 방식:**\n" +
-                    "- 이미 존재하는 검색어라면 시간만 최신으로 갱신 (upsert)\n" +
-                    "- 존재하지 않는 검색어라면 새로 생성\n" +
-                    "- 검색어가 비어있거나 공백만 있는 경우 저장하지 않음\n\n" +
+                    "- 검색어(TERM)·쇼룸(SHOWROOM) 행을 가리지 않고 내 기록 전체를 지웁니다\n" +
+                    "- 삭제 후 최근 검색 조회는 빈 목록을 반환합니다 (1d 최근 검색 없음 화면)\n\n" +
+                    "**응답 코드**\n" +
+                    "- `204 No Content`: 삭제 성공 (지울 기록이 없어도 204)\n\n" +
+                    "**권한:** USER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "삭제 성공 - Status: 204 No Content",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 정보가 유효하지 않음 - Status: 401 Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "인증 실패",
+                                    value = "{\n" +
+                                            "  \"code\": \"UNAUTHORIZED\",\n" +
+                                            "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                            "}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음 - Status: 404 Not Found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "사용자 없음",
+                                    value = "{\n" +
+                                            "  \"code\": \"USER_NOT_FOUND\",\n" +
+                                            "  \"message\": \"존재하지 않는 회원입니다.\"\n" +
+                                            "}"
+                            )
+                    )
+            )
+    })
+    ResponseEntity<Void> deleteAllRecentSearches(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal UserPrincipal principal
+    );
+
+    @Operation(
+            summary = "최근 검색 저장 (검색어 또는 쇼룸)",
+            description = "검색어 또는 쇼룸을 최근 검색 기록에 저장합니다.\n\n" +
+                    "**동작 방식:**\n" +
+                    "- `showroomId`를 보내면 **쇼룸(SHOWROOM) 행**으로 저장합니다 " +
+                    "(검색 결과에서 쇼룸을 눌러 C4로 들어갈 때 호출)\n" +
+                    "- `showroomId` 없이 `keyword`만 보내면 **검색어(TERM) 행**으로 저장합니다\n" +
+                    "- 둘 다 보내면 `showroomId`가 우선입니다\n" +
+                    "- 이미 있는 항목이면 시간만 최신으로 갱신 (upsert). 쇼룸은 쇼룸명이 바뀌어도 같은 행으로 합칩니다\n" +
+                    "- 검색어가 비어있거나 공백만 있고 `showroomId`도 없으면 아무것도 저장하지 않음\n\n" +
                     "**요청 파라미터**\n" +
-                    "- `keyword`: 저장할 검색어 (필수)\n\n" +
+                    "- `keyword`: 저장할 검색어 (선택)\n" +
+                    "- `showroomId`: 저장할 쇼룸(크리에이터) ID (선택)\n\n" +
 
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
@@ -278,7 +356,7 @@ public interface RecentSearchControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "사용자를 찾을 수 없음 - Status: 404 Not Found",
+                    description = "사용자를 찾을 수 없거나, showroomId로 저장할 때 그 쇼룸을 찾을 수 없음 - Status: 404 Not Found",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -288,6 +366,13 @@ public interface RecentSearchControllerDocs {
                                             value = "{\n" +
                                                     "  \"code\": \"USER_NOT_FOUND\",\n" +
                                                     "  \"message\": \"존재하지 않는 회원입니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "쇼룸 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"SHOWROOM_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 쇼룸입니다.\"\n" +
                                                     "}"
                                     )
                             }
@@ -299,11 +384,16 @@ public interface RecentSearchControllerDocs {
             @AuthenticationPrincipal UserPrincipal principal,
             @Parameter(
                     name = "keyword",
-                    description = "저장할 검색어",
-                    required = true,
-                    example = "화이트 린넨 셔츠"
+                    description = "저장할 검색어 (쇼룸을 저장할 때는 생략)",
+                    example = "브라이"
             )
-            @RequestParam("keyword") String keyword
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @Parameter(
+                    name = "showroomId",
+                    description = "저장할 쇼룸(크리에이터) ID — 검색 결과에서 쇼룸으로 진입할 때 사용",
+                    example = "12"
+            )
+            @RequestParam(value = "showroomId", required = false) Long showroomId
     );
 
     @Operation(

@@ -1,0 +1,85 @@
+package showroomz.api.app.showroom.service;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.app.showroom.DTO.ShowroomVisitRequest;
+import showroomz.api.app.user.repository.UserRepository;
+import showroomz.domain.member.creator.entity.Creator;
+import showroomz.domain.member.creator.repository.CreatorRepository;
+import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.showroom.entity.ShowroomVisit;
+import showroomz.domain.showroom.repository.ShowroomVisitRepository;
+import showroomz.domain.post.service.PostAttributionService;
+import showroomz.domain.showroom.type.ShowroomVisitSource;
+import showroomz.global.error.exception.BusinessException;
+import showroomz.global.error.exception.ErrorCode;
+
+import java.time.LocalDateTime;
+
+/**
+ * §22-4 쇼룸 방문 적재 — 쇼룸 현황의 도달·유입 경로·팔로워 행동 지표가 여기서 쌓인 로그로 계산된다.
+ *
+ * <p>"순방문은 30분 세션 기준 1회"라는 규칙을 <b>적재 시점</b>에 적용한다. 집계 때 세션을 접으려면
+ * 조회마다 원본 로그 전체를 훑어야 하는데, 방문 로그는 지표 중 가장 빨리 불어나는 데이터다.
+ */
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class ShowroomVisitService {
+
+    private final ShowroomVisitRepository showroomVisitRepository;
+    private final CreatorRepository creatorRepository;
+    private final UserRepository userRepository;
+    private final PostAttributionService postAttributionService;
+
+    /**
+     * 방문 1건을 기록한다. 30분 세션 안의 재방문이면 아무것도 쌓지 않는다.
+     *
+     * @param username 로그인 방문이면 로그인 아이디, 비로그인 방문이면 null
+     */
+    @Transactional
+    public void recordVisit(String username, Long showroomId, ShowroomVisitRequest request) {
+        Creator creator = creatorRepository.findById(showroomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SHOWROOM_NOT_FOUND));
+
+        Users visitor = username == null ? null : userRepository.findByUsername(username).orElse(null);
+        String visitorKey = resolveVisitorKey(visitor, request.getVisitorId());
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime sessionStart = now.minusMinutes(ShowroomVisit.SESSION_MINUTES);
+        if (showroomVisitRepository.existsByCreator_IdAndVisitorKeyAndVisitedAtAfter(
+                creator.getId(), visitorKey, sessionStart)) {
+            return;
+        }
+
+        ShowroomVisit visit = new ShowroomVisit(
+                creator,
+                visitor,
+                visitorKey,
+                ShowroomVisitSource.fromLinkValue(request.getSource()),
+                now);
+
+        // §24-7 — 이 방문이 어떤 게시물을 보고 온 것인지 지금 정해 태그로 굳힌다.
+        // 귀속 대상이 없으면 null로 남는다(귀속 불명). 방문 적재 자체는 이 결과와 무관하게 성립한다.
+        visit.attributeTo(postAttributionService.resolveAttributedPostId(visitorKey, creator.getId(), now));
+
+        showroomVisitRepository.save(visit);
+    }
+
+    /**
+     * 사람 단위 식별자를 정한다.
+     *
+     * <p>로그인 방문은 사용자 기준으로 센다 — 같은 사람이 폰과 PC로 들어와도 방문자 수는 1명이어야 한다.
+     * 비로그인 방문은 누구인지 알 수 없으므로 클라이언트가 보낸 디바이스 식별자에 기댄다. 그 값이 없으면
+     * 방문마다 새 사람으로 잡혀 방문자 수가 부풀기 때문에, 조용히 세는 대신 요청을 거절한다.
+     */
+    private static String resolveVisitorKey(Users visitor, String visitorId) {
+        String key = PostAttributionService.viewerKeyOf(visitor == null ? null : visitor.getId(), visitorId);
+        if (key == null) {
+            // 식별자가 없으면 방문마다 새 사람으로 잡혀 방문자 수가 부풀기 때문에, 조용히 세는 대신 거절한다.
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return key;
+    }
+}

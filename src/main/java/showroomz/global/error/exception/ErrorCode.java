@@ -55,6 +55,11 @@ public enum ErrorCode {
     /* * 5. 로그아웃 & 탈퇴 & 권한 (Logout & Withdraw & Authorization) 
      */
     USER_WITHDRAWN(HttpStatus.FORBIDDEN, "USER_WITHDRAWN", "탈퇴한 회원입니다."),
+    // C15-4 탈퇴 확인 — 진행 중 주문이 있으면 배송·교환·환불이 끝날 때까지 탈퇴를 막는다
+    WITHDRAWAL_BLOCKED_BY_ORDER(HttpStatus.CONFLICT, "WITHDRAWAL_BLOCKED_BY_ORDER", "진행 중인 주문이 있어 지금은 탈퇴할 수 없습니다."),
+    WITHDRAWAL_CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "WITHDRAWAL_CONSENT_REQUIRED", "계정과 활동 기록이 삭제되는 데 동의해야 합니다."),
+    // C15-2 회원정보 변경 — 재인증은 가입 시 동의와 별개의 새 수집 행위라 매번 다시 동의를 받는다
+    IDENTITY_CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "IDENTITY_CONSENT_REQUIRED", "본인확인을 위한 개인정보 수집·이용에 동의해야 합니다."),
     UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "인증 정보가 유효하지 않습니다."),
     MISSING_REFRESH_TOKEN_LOGOUT(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "Refresh Token이 필요합니다."),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "아이디 또는 비밀번호가 올바르지 않습니다."),
@@ -83,7 +88,7 @@ public enum ErrorCode {
 
     /* * 7. 이미지 (Image)
      */
-    INVALID_IMAGE_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, INQUIRY, POST, PRODUCT, MARKET, CATEGORY, SIGNUP_DOCUMENT, CREATOR_DOCUMENT, CHANGE_REQUEST_DOCUMENT)"),
+    INVALID_IMAGE_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, INQUIRY, POST, PRODUCT, MARKET, CATEGORY, SIGNUP_DOCUMENT, CREATOR_DOCUMENT, CHANGE_REQUEST_DOCUMENT, SHOWROOM_PROFILE)"),
     EMPTY_FILE_EXCEPTION(HttpStatus.BAD_REQUEST, "EMPTY_FILE", "업로드할 파일이 존재하지 않습니다."),
     INVALID_FILE_EXTENSION(HttpStatus.BAD_REQUEST, "INVALID_FILE_TYPE", "지원하지 않는 이미지 형식입니다"),
     FILE_SIZE_EXCEEDED(HttpStatus.PAYLOAD_TOO_LARGE, "FILE_SIZE_EXCEEDED", "이미지 용량은 최대 20MB까지 등록 가능합니다."),
@@ -107,6 +112,7 @@ public enum ErrorCode {
     PRODUCT_EDIT_RESTRICTED(HttpStatus.BAD_REQUEST, "PRODUCT_EDIT_RESTRICTED",
             "진열 중이며 공구 진행 중인 상품은 옵션·재고만 수정할 수 있습니다."),
     CART_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "CART_ITEM_NOT_FOUND", "장바구니 항목을 찾을 수 없습니다."),
+    CART_ITEM_NOT_PURCHASABLE(HttpStatus.BAD_REQUEST, "CART_ITEM_NOT_PURCHASABLE", "마감되었거나 품절되어 주문할 수 없는 상품입니다."),
     DUPLICATE_CATEGORY_NAME(HttpStatus.BAD_REQUEST, "DUPLICATE_CATEGORY_NAME", "이미 존재하는 카테고리명입니다."),
     CATEGORY_IN_USE(HttpStatus.BAD_REQUEST, "CATEGORY_IN_USE", "사용 중인 카테고리는 삭제할 수 없습니다."),
 
@@ -125,6 +131,15 @@ public enum ErrorCode {
      */
     INQUIRY_ALREADY_ANSWERED(HttpStatus.BAD_REQUEST, "INQUIRY_ALREADY_ANSWERED", "이미 답변이 등록된 문의입니다. 답변은 1회만 등록할 수 있습니다."),
     INVALID_INQUIRY_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "올바르지 않은 문의 유형입니다. (DELIVERY, CANCEL_EXCHANGE_RETURN, ORDER_PAYMENT, SERVICE, ACCOUNT)"),
+
+    /* 11-1. 상품 문의 (§23 파트너센터 문의 관리)
+     */
+    INQUIRY_NOT_ANSWERED(HttpStatus.BAD_REQUEST, "INQUIRY_NOT_ANSWERED", "아직 답변이 등록되지 않은 문의입니다."),
+    INQUIRY_UNDER_DELETE_REVIEW(HttpStatus.BAD_REQUEST, "INQUIRY_UNDER_DELETE_REVIEW", "삭제 요청을 운영자가 검토 중인 문의입니다. 검토 결과가 나올 때까지 조작할 수 없습니다."),
+    INQUIRY_DELETE_ALREADY_REQUESTED(HttpStatus.BAD_REQUEST, "INQUIRY_DELETE_ALREADY_REQUESTED", "이미 삭제를 요청한 문의입니다. 요청은 취소할 수 없습니다."),
+    INQUIRY_DELETE_NOT_REQUESTED(HttpStatus.BAD_REQUEST, "INQUIRY_DELETE_NOT_REQUESTED", "삭제 요청이 없는 문의입니다."),
+    INQUIRY_DELETE_REASON_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "기타(직접 입력) 사유는 상세 설명이 필요합니다."),
+    INQUIRY_ALREADY_DELETED(HttpStatus.BAD_REQUEST, "INQUIRY_ALREADY_DELETED", "이미 삭제된 문의입니다."),
 
     /* 12. 쿠폰 (Coupon)
      */
@@ -150,6 +165,26 @@ public enum ErrorCode {
      */
    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_NOT_FOUND", "존재하지 않는 게시글입니다."),
    POST_ACCESS_DENIED(HttpStatus.FORBIDDEN, "POST_ACCESS_DENIED", "해당 게시글에 대한 권한이 없습니다."),
+
+   /* 14-1. 쇼룸 포스트 (§24)
+    * 사진·본문 미입력은 FE에서 버튼 비활성으로만 표현되지만(§24-3), API 직접 호출로 빈 게시물이
+    * 생기는 것을 막기 위해 서버도 거절한다. 문구가 화면에 뜰 일은 없다.
+    */
+   POST_IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "POST_IMAGE_REQUIRED", "게시하려면 사진이 최소 1장 필요합니다."),
+   POST_EMPTY(HttpStatus.BAD_REQUEST, "POST_EMPTY", "사진 또는 본문 중 하나는 입력해야 합니다."),
+   POST_IMAGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "POST_IMAGE_LIMIT_EXCEEDED", "사진은 게시물당 최대 20장까지 등록할 수 있습니다."),
+   POST_CONTENT_TOO_LONG(HttpStatus.BAD_REQUEST, "POST_CONTENT_TOO_LONG", "본문은 최대 2,000자까지 입력할 수 있습니다."),
+   POST_ASPECT_RATIO_OUT_OF_RANGE(HttpStatus.BAD_REQUEST, "POST_ASPECT_RATIO_OUT_OF_RANGE", "사진 비율은 1.91:1 ~ 4:5 범위여야 합니다."),
+   POST_NOT_EDITABLE(HttpStatus.CONFLICT, "POST_NOT_EDITABLE", "노출 중지·심사 중인 게시물은 수정할 수 없습니다."),
+   POST_NOT_DELETABLE(HttpStatus.CONFLICT, "POST_NOT_DELETABLE", "이의 심사 중인 게시물은 삭제할 수 없습니다."),
+   POST_ALREADY_PUBLISHED(HttpStatus.CONFLICT, "POST_ALREADY_PUBLISHED", "이미 게시된 게시물입니다."),
+   POST_NOT_SUSPENDED(HttpStatus.CONFLICT, "POST_NOT_SUSPENDED", "노출 중지된 게시물이 아닙니다."),
+   POST_SUSPENSION_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "POST_SUSPENSION_DETAIL_REQUIRED", "기타 사유를 선택한 경우 상세 사유는 필수입니다."),
+   POST_APPEAL_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_APPEAL_NOT_FOUND", "존재하지 않는 이의 신청입니다."),
+   POST_APPEAL_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "POST_APPEAL_ALREADY_SUBMITTED", "이의 신청은 게시물당 1회만 가능합니다."),
+   POST_APPEAL_DEADLINE_PASSED(HttpStatus.CONFLICT, "POST_APPEAL_DEADLINE_PASSED", "이의 신청 기한이 지났습니다."),
+   POST_APPEAL_ALREADY_REVIEWED(HttpStatus.CONFLICT, "POST_APPEAL_ALREADY_REVIEWED", "이미 심사가 끝난 이의 신청입니다."),
+   POST_ORIGINAL_DOWNLOAD_UNAVAILABLE(HttpStatus.FORBIDDEN, "POST_ORIGINAL_DOWNLOAD_UNAVAILABLE", "원본을 내려받을 수 있는 기간이 아닙니다."),
 
    /* 15. 위시리스트 (Wishlist)
     */
@@ -199,7 +234,14 @@ public enum ErrorCode {
     CHANGE_REQUEST_REJECT_REASON_TYPE_MISMATCH(HttpStatus.BAD_REQUEST, "CHANGE_REQUEST_REJECT_REASON_TYPE_MISMATCH", "해당 유형에 사용할 수 없는 반려 사유입니다."),
     CHANGE_REQUEST_REJECT_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "CHANGE_REQUEST_REJECT_DETAIL_REQUIRED", "기타 사유를 선택한 경우 상세 사유는 필수입니다."),
     EMAIL_CHANGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "EMAIL_CHANGE_LIMIT_EXCEEDED", "로그인 이메일은 월 1회만 변경할 수 있습니다."),
-    NEW_PASSWORD_CONFIRM_MISMATCH(HttpStatus.BAD_REQUEST, "NEW_PASSWORD_CONFIRM_MISMATCH", "비밀번호가 일치하지 않습니다.");
+    NEW_PASSWORD_CONFIRM_MISMATCH(HttpStatus.BAD_REQUEST, "NEW_PASSWORD_CONFIRM_MISMATCH", "비밀번호가 일치하지 않습니다."),
+
+    /* * 20. 쇼룸 관리 (Showroom, §22)
+     */
+    INVALID_SHOWROOM_NAME_FORMAT(HttpStatus.BAD_REQUEST, "INVALID_SHOWROOM_NAME_FORMAT", "쇼룸명은 2~20자, 한글·영문·숫자·공백만 사용할 수 있습니다."),
+    SHOWROOM_INTRODUCTION_TOO_LONG(HttpStatus.BAD_REQUEST, "SHOWROOM_INTRODUCTION_TOO_LONG", "쇼룸 소개글은 최대 50자까지 입력할 수 있습니다."),
+    INVALID_INSTAGRAM_URL(HttpStatus.BAD_REQUEST, "INVALID_INSTAGRAM_URL", "https://로 시작하는 올바른 URL을 입력해 주세요."),
+    SHOWROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "SHOWROOM_NOT_FOUND", "존재하지 않는 쇼룸입니다.");
 
     private final HttpStatus status;
     private final String code;

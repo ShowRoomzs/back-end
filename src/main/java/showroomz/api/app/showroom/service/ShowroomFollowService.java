@@ -17,6 +17,7 @@ import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.post.repository.PostRepository;
+import showroomz.domain.post.service.PostAttributionService;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
@@ -44,6 +45,7 @@ public class ShowroomFollowService {
     private final UserRepository userRepository;
     private final PostRepository postRepository;
     private final ConnectionRepository connectionRepository;
+    private final PostAttributionService postAttributionService;
 
     /**
      * 쇼룸 팔로우 — 이미 팔로우 중이면 아무 동작도 하지 않는다.
@@ -53,7 +55,16 @@ public class ShowroomFollowService {
         Creator creator = getCreator(showroomId);
 
         if (!creatorFollowRepository.existsByUserAndCreator(user, creator)) {
-            creatorFollowRepository.save(new CreatorFollow(user, creator));
+            CreatorFollow follow = new CreatorFollow(user, creator);
+
+            // §24-7 — 이 팔로우가 어떤 게시물을 보고 누른 것인지 지금 정해 태그로 굳힌다.
+            // 팔로우는 로그인 행동이므로 조회 키는 언제나 사용자 기준이다.
+            follow.attributeTo(postAttributionService.resolveAttributedPostId(
+                    PostAttributionService.viewerKeyOf(user.getId(), null),
+                    creator.getId(),
+                    LocalDateTime.now()));
+
+            creatorFollowRepository.save(follow);
         }
     }
 
@@ -168,7 +179,8 @@ public class ShowroomFollowService {
                 .showroomName(creator.getShowroomName() != null
                         ? creator.getShowroomName()
                         : creatorUser.getNickname())
-                .showroomImageUrl(creatorUser.getProfileImageUrl())
+                // §22-1 — 쇼룸 아바타는 쇼룸 프로필 이미지다. 앱 계정 프로필과는 별개 값이다.
+                .showroomImageUrl(creator.getProfileImageUrl())
                 .hasOngoingGroupBuy(ongoingGroupBuyShowroomIds.contains(creator.getId()))
                 .followedAt(follow.getCreatedAt())
                 .build();

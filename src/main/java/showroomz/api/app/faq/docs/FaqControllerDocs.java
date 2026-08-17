@@ -3,6 +3,7 @@ package showroomz.api.app.faq.docs;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -39,7 +40,7 @@ public interface FaqControllerDocs {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = FaqResponse.class),
+                            array = @ArraySchema(schema = @Schema(implementation = FaqResponse.class)),
                             examples = {
                                     @ExampleObject(
                                             name = "성공 예시 (실제 응답)",

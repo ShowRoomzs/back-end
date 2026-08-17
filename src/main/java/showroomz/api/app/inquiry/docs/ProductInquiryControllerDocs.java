@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.inquiry.dto.ProductInquiryResponse;
@@ -28,8 +29,11 @@ public interface ProductInquiryControllerDocs {
             summary = "상품 문의 등록",
             description = "특정 상품에 대한 문의를 등록합니다.\n\n" +
                     "**필수 값:**\n" +
-                    "- `type`: 문의 타입 (PRODUCT_INQUIRY: 상품 문의, SIZE_INQUIRY: 사이즈 문의, STOCK_INQUIRY: 재고/재입고 문의)\n" +
-                    "- `content`: 문의 내용\n\n" +
+                    "- `type`: 문의 유형 (OPTION: 옵션, INGREDIENT_USAGE: 성분·사용법, RESTOCK: 재입고, DELIVERY: 배송, ETC: 기타)\n" +
+                    "- `content`: 문의 내용 (최대 250자)\n\n" +
+                    "**선택 값:**\n" +
+                    "- `secret`: 비밀글 여부 — 작성자와 브랜드만 볼 수 있습니다. 기본값 false\n" +
+                    "- `imageUrls`: 첨부 사진 URL (최대 3장)\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -44,7 +48,7 @@ public interface ProductInquiryControllerDocs {
                                     @ExampleObject(
                                             name = "성공 예시",
                                             value = "{\n" +
-                                                    "  \"id\": 1\n" +
+                                                    "  \"inquiryId\": 1\n" +
                                                     "}"
                                     )
                             }
@@ -60,7 +64,7 @@ public interface ProductInquiryControllerDocs {
                                     @ExampleObject(
                                             name = "유효성 검증 실패",
                                             value = "{\n" +
-                                                    "  \"code\": \"INVALID_INPUT_VALUE\",\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
                                                     "  \"message\": \"입력값이 올바르지 않습니다.\"\n" +
                                                     "}"
                                     )
@@ -92,10 +96,17 @@ public interface ProductInquiryControllerDocs {
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "데이터 없음",
+                                            name = "사용자 없음",
                                             value = "{\n" +
-                                                    "  \"code\": \"NOT_FOUND_DATA\",\n" +
-                                                    "  \"message\": \"데이터를 찾을 수 없습니다.\"\n" +
+                                                    "  \"code\": \"USER_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 회원입니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "상품 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"PRODUCT_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 상품입니다.\"\n" +
                                                     "}"
                                     )
                             }
@@ -112,8 +123,10 @@ public interface ProductInquiryControllerDocs {
                             @ExampleObject(
                                     name = "상품 문의 예시",
                                     value = "{\n" +
-                                            "  \"type\": \"SIZE_INQUIRY\",\n" +
-                                            "  \"content\": \"키 170에 보통 체형인데 M 사이즈가 맞을까요?\"\n" +
+                                            "  \"type\": \"INGREDIENT_USAGE\",\n" +
+                                            "  \"content\": \"키 170에 보통 체형인데 M 사이즈가 맞을까요?\",\n" +
+                                            "  \"secret\": false,\n" +
+                                            "  \"imageUrls\": []\n" +
                                             "}"
                             )
                     }
@@ -165,9 +178,11 @@ public interface ProductInquiryControllerDocs {
                                                     "      \"shopName\": \"모노 스튜디오\",\n" +
                                                     "      \"productName\": \"오버핏 블레이저\",\n" +
                                                     "      \"productImageUrl\": \"https://example.com/products/101/main.jpg\",\n" +
-                                                    "      \"type\": \"SIZE_INQUIRY\",\n" +
-                                                    "      \"typeName\": \"사이즈 문의\",\n" +
+                                                    "      \"type\": \"INGREDIENT_USAGE\",\n" +
+                                                    "      \"typeName\": \"성분·사용법\",\n" +
                                                     "      \"content\": \"키 170에 보통 체형인데 M 사이즈가 맞을까요?\",\n" +
+                                                    "      \"secret\": false,\n" +
+                                                    "      \"imageUrls\": [],\n" +
                                                     "      \"status\": \"WAITING\",\n" +
                                                     "      \"answerContent\": null,\n" +
                                                     "      \"createdAt\": \"2025-02-07T10:30:00\",\n" +
@@ -178,7 +193,7 @@ public interface ProductInquiryControllerDocs {
                                                     "    \"currentPage\": 1,\n" +
                                                     "    \"totalPages\": 3,\n" +
                                                     "    \"totalResults\": 25,\n" +
-                                                    "    \"size\": 10,\n" +
+                                                    "    \"limit\": 10,\n" +
                                                     "    \"hasNext\": true\n" +
                                                     "  }\n" +
                                                     "}"
@@ -208,7 +223,7 @@ public interface ProductInquiryControllerDocs {
             @Parameter(hidden = true) UserPrincipal userPrincipal,
             @Parameter(description = "답변 상태 필터 (선택) — 생략하면 전체, `WAITING`이면 [답변 대기만]",
                     example = "WAITING", in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY)
-            InquiryStatus status,
+            @RequestParam(value = "status", required = false) InquiryStatus status,
             @Parameter(description = "페이징 요청 정보 (page: 1부터 시작, size: 페이지당 항목 수)", required = true)
             PagingRequest pagingRequest
     );
@@ -239,9 +254,11 @@ public interface ProductInquiryControllerDocs {
                                                     "  \"shopName\": \"모노 스튜디오\",\n" +
                                                     "  \"productName\": \"오버핏 블레이저\",\n" +
                                                     "  \"productImageUrl\": \"https://example.com/products/101/main.jpg\",\n" +
-                                                    "  \"type\": \"SIZE_INQUIRY\",\n" +
-                                                    "  \"typeName\": \"사이즈 문의\",\n" +
+                                                    "  \"type\": \"INGREDIENT_USAGE\",\n" +
+                                                    "  \"typeName\": \"성분·사용법\",\n" +
                                                     "  \"content\": \"키 170에 보통 체형인데 M 사이즈가 맞을까요?\",\n" +
+                                                    "  \"secret\": false,\n" +
+                                                    "  \"imageUrls\": [],\n" +
                                                     "  \"status\": \"WAITING\",\n" +
                                                     "  \"answerContent\": null,\n" +
                                                     "  \"createdAt\": \"2025-02-07T10:30:00\",\n" +
@@ -257,9 +274,11 @@ public interface ProductInquiryControllerDocs {
                                                     "  \"shopName\": \"모노 스튜디오\",\n" +
                                                     "  \"productName\": \"오버핏 블레이저\",\n" +
                                                     "  \"productImageUrl\": \"https://example.com/products/101/main.jpg\",\n" +
-                                                    "  \"type\": \"SIZE_INQUIRY\",\n" +
-                                                    "  \"typeName\": \"사이즈 문의\",\n" +
+                                                    "  \"type\": \"INGREDIENT_USAGE\",\n" +
+                                                    "  \"typeName\": \"성분·사용법\",\n" +
                                                     "  \"content\": \"키 170에 보통 체형인데 M 사이즈가 맞을까요?\",\n" +
+                                                    "  \"secret\": false,\n" +
+                                                    "  \"imageUrls\": [],\n" +
                                                     "  \"status\": \"ANSWERED\",\n" +
                                                     "  \"answerContent\": \"안녕하세요, 해당 상품은 키 170 기준 M 사이즈를 가장 많이 구매하셨습니다.\",\n" +
                                                     "  \"createdAt\": \"2025-02-07T10:30:00\",\n" +
@@ -332,10 +351,11 @@ public interface ProductInquiryControllerDocs {
             summary = "상품 문의 수정",
             description = "답변 대기 중인 상품 문의의 내용을 수정합니다.\n\n" +
                     "**필수 값:**\n" +
-                    "- `type`: 문의 타입 (PRODUCT_INQUIRY, SIZE_INQUIRY, STOCK_INQUIRY)\n" +
-                    "- `content`: 문의 내용\n\n" +
+                    "- `type`: 문의 유형 (OPTION, INGREDIENT_USAGE, RESTOCK, DELIVERY, ETC)\n" +
+                    "- `content`: 문의 내용 (최대 250자)\n\n" +
                     "- 본인이 등록한 문의만 수정할 수 있습니다.\n" +
-                    "- 답변이 완료된 문의는 수정할 수 없습니다.\n\n" +
+                    "- 답변이 완료된 문의는 수정할 수 없습니다.\n" +
+                    "- 삭제 검토 중이거나 이미 삭제된 문의는 수정할 수 없습니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -355,7 +375,21 @@ public interface ProductInquiryControllerDocs {
                                             name = "답변 완료된 상품 문의",
                                             value = "{\n" +
                                                     "  \"code\": \"INQUIRY_ALREADY_ANSWERED\",\n" +
-                                                    "  \"message\": \"답변이 완료된 문의는 수정하거나 삭제할 수 없습니다.\"\n" +
+                                                    "  \"message\": \"이미 답변이 등록된 문의입니다. 답변은 1회만 등록할 수 있습니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "삭제 검토 중",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INQUIRY_UNDER_DELETE_REVIEW\",\n" +
+                                                    "  \"message\": \"삭제 요청을 운영자가 검토 중인 문의입니다. 검토 결과가 나올 때까지 조작할 수 없습니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "이미 삭제됨",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INQUIRY_ALREADY_DELETED\",\n" +
+                                                    "  \"message\": \"이미 삭제된 문의입니다.\"\n" +
                                                     "}"
                                     )
                             }
@@ -432,7 +466,8 @@ public interface ProductInquiryControllerDocs {
             summary = "상품 문의 삭제",
             description = "답변 대기 중인 상품 문의를 삭제합니다.\n\n" +
                     "- 본인이 등록한 문의만 삭제할 수 있습니다.\n" +
-                    "- 답변이 완료된 문의는 삭제할 수 없습니다.\n\n" +
+                    "- 답변이 완료된 문의는 삭제할 수 없습니다.\n" +
+                    "- 삭제 검토 중이거나 이미 삭제된 문의는 다시 삭제할 수 없습니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -452,7 +487,21 @@ public interface ProductInquiryControllerDocs {
                                             name = "답변 완료된 상품 문의",
                                             value = "{\n" +
                                                     "  \"code\": \"INQUIRY_ALREADY_ANSWERED\",\n" +
-                                                    "  \"message\": \"답변이 완료된 문의는 수정하거나 삭제할 수 없습니다.\"\n" +
+                                                    "  \"message\": \"이미 답변이 등록된 문의입니다. 답변은 1회만 등록할 수 있습니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "삭제 검토 중",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INQUIRY_UNDER_DELETE_REVIEW\",\n" +
+                                                    "  \"message\": \"삭제 요청을 운영자가 검토 중인 문의입니다. 검토 결과가 나올 때까지 조작할 수 없습니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "이미 삭제됨",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INQUIRY_ALREADY_DELETED\",\n" +
+                                                    "  \"message\": \"이미 삭제된 문의입니다.\"\n" +
                                                     "}"
                                     )
                             }

@@ -30,10 +30,11 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.ClientUtils;
 import showroomz.global.utils.ConnectionCodeGenerator;
+import showroomz.global.utils.ShowroomNamePolicy;
+import showroomz.global.utils.ShowroomAddressGenerator;
 
 import java.time.LocalDateTime;
 import java.util.Date;
-import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -41,10 +42,6 @@ import java.util.regex.Pattern;
 public class CreatorAuthService {
 
     private static final long REGISTER_TOKEN_EXPIRY_MSEC = 5 * 60 * 1000;
-    private static final Pattern SHOWROOM_NAME_PATTERN =
-            Pattern.compile("^[가-힣a-zA-Z0-9 ]{2,20}$");
-    private static final String SHOWROOM_NAME_FORMAT_MESSAGE =
-            "쇼룸명은 2~20자, 한글·영문·숫자·공백만 사용할 수 있습니다.";
 
     private final CreatorRepository creatorRepository;
     private final CreatorApplicationRepository creatorApplicationRepository;
@@ -110,6 +107,12 @@ public class CreatorAuthService {
         // §13-6 — 연결코드는 등록 완료 시 쇼룸별로 고정 발급된다(재발급은 §14-1 연결·소통 영역에서 별도 처리).
         creator.reissueConnectionCode(ConnectionCodeGenerator.generateUnique(creatorRepository::existsByConnectionCode));
 
+        // §22-1 — 쇼룸 주소는 쇼룸명이 확정되는 이 시점에 자동 생성되고, 이후 쇼룸명을 바꿔도 따라 바뀌지 않는다.
+        creator.assignShowroomAddressIfAbsent(ShowroomAddressGenerator.generateUnique(
+                request.getShowroomName(), creatorRepository::existsByShowroomAddress));
+        // §22-1 — 공개용 인스타그램 URL의 기본값은 온보딩 채널 주소다(쇼룸 관리에서 독립 수정한다).
+        creator.initializeInstagramUrlFromChannel();
+
         // §14-6 운영자 고정 채널 — 안내 문구가 쇼룸명을 쓰므로 승인 시점이 아니라 쇼룸명이 확정되는 이 시점에 연다.
         operatorChannelService.ensureCreatorChannel(creator);
 
@@ -167,11 +170,11 @@ public class CreatorAuthService {
             );
         }
 
-        if (!SHOWROOM_NAME_PATTERN.matcher(showroomName).matches()) {
+        if (!ShowroomNamePolicy.isValidFormat(showroomName)) {
             return new ShowroomNameCheckResponse(
                     false,
                     "INVALID_FORMAT",
-                    SHOWROOM_NAME_FORMAT_MESSAGE
+                    ShowroomNamePolicy.FORMAT_MESSAGE
             );
         }
 
