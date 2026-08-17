@@ -33,6 +33,8 @@ public interface UserFeedControllerDocs {
                     - **contentType** — 게시물 종류 판별자. 지금은 `GENERAL`뿐이다
                     - **isFollowing** — 이 목록은 정의상 전부 `true`다(팔로우한 쇼룸의 글만 모았으므로
                       다시 물어볼 필요가 없다). 카드 헤더에 팔로우 버튼을 그리지 않는다
+                    - **hasOngoingGroupBuy** — 카드 헤더 **아바타의 로즈 링**. 게시물이 아니라 그 쇼룸이
+                      지금 공구를 열고 있는지다(C2 팔로잉·C14 검색의 아바타 규칙과 같은 값)
                     - **likeLocked** — `true`면 마감된 공구다. 하트를 눌러도 새로 걸리지 않고 해제만 된다
                     - **팔로잉 0명** — 빈 목록(`content: []`)이 온다. 이때 화면은 발견 피드
                       (`/feed/recommended`)로 대체한다(C1 빈 상태)
@@ -54,6 +56,7 @@ public interface UserFeedControllerDocs {
                                             "showroomName": "리브의 방",
                                             "showroomImageUrl": "https://cdn.example.com/showrooms/10.png",
                                             "isFollowing": true,
+                                            "hasOngoingGroupBuy": true,
                                             "content": "3주 루틴 기록",
                                             "imageUrls": ["https://cdn.example.com/posts/123-0.jpg"],
                                             "imageCount": 1,
@@ -95,6 +98,7 @@ public interface UserFeedControllerDocs {
                     - **isFollowing** — 이 목록은 전부 `false`다. 카드 헤더의 **회색 팔로우 버튼**은
                       이 값이 false일 때만 그린다. 팔로우(`POST /v1/user/showrooms/{showroomId}/follow`)
                       후 버튼을 지우는 것은 클라이언트가 하고, 이미 나간 페이지를 다시 받지는 않는다
+                    - **hasOngoingGroupBuy** — 카드 헤더 아바타의 로즈 링(진행 중 공구 보유 쇼룸)
                     - **본인 쇼룸 제외** — 크리에이터에게 자기 게시물은 추천하지 않는다
                     - **권한:** USER
                     """
@@ -114,6 +118,7 @@ public interface UserFeedControllerDocs {
                                             "showroomName": "하루 코스메틱",
                                             "showroomImageUrl": "https://cdn.example.com/showrooms/31.png",
                                             "isFollowing": false,
+                                            "hasOngoingGroupBuy": true,
                                             "content": "각질 정리부터 다시, 순한 성분만 골랐어요",
                                             "imageUrls": ["https://cdn.example.com/posts/512-0.jpg"],
                                             "imageCount": 1,
@@ -179,6 +184,7 @@ public interface UserFeedControllerDocs {
                                             "showroomName": "미아 스킨노트",
                                             "showroomImageUrl": "https://cdn.example.com/showrooms/10.png",
                                             "isFollowing": false,
+                                            "hasOngoingGroupBuy": false,
                                             "content": "요즘 아침 루틴 정리했어요",
                                             "imageUrls": ["https://cdn.example.com/posts/123-0.jpg"],
                                             "imageCount": 12,

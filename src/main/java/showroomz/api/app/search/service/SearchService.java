@@ -14,12 +14,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.search.dto.AutoCompleteResponse;
 import showroomz.api.app.search.dto.ShowroomSearchItem;
-import showroomz.api.app.auth.entity.RoleType;
-import showroomz.api.seller.auth.type.SellerStatus;
 
 import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.member.creator.entity.Creator;
-import showroomz.domain.member.user.type.UserStatus;
+import showroomz.domain.member.creator.repository.PublicShowrooms;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.global.dto.PageResponse;
@@ -34,7 +32,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static showroomz.domain.market.entity.QMarket.market;
 import static showroomz.domain.member.creator.entity.QCreator.creator;
 import static showroomz.domain.member.user.entity.QUsers.users;
 import static showroomz.domain.product.entity.QProduct.product;
@@ -135,8 +132,10 @@ public class SearchService {
     /**
      * 검색어 자동완성
      * - 상품: 이름 포함, 전시 중, 이름 짧은 순 5개
-     * - 마켓: 이름 포함, 마켓 타입, 승인된(APPROVED) 판매자만, 이름 짧은 순 3개
      * - 쇼룸: 쇼룸명 또는 아이디(@handle) 포함, 공개 중인 쇼룸만, 이름 짧은 순 3개
+     *
+     * <p>마켓 후보는 뺐다 — 소비자 앱에서 마켓(브랜드)은 조회되지 않는다. 이름을 눌러 들어갈 화면이
+     * 없는 후보를 자동완성에 남겨 두면 탭했을 때 갈 곳이 없다.
      */
     public AutoCompleteResponse getAutocomplete(String keyword) {
 
@@ -153,21 +152,7 @@ public class SearchService {
                 .limit(5)
                 .fetch();
 
-        // 2. 마켓 검색 (승인된 판매자만)
-        List<AutoCompleteResponse.SearchDto> markets = queryFactory
-                .select(Projections.constructor(AutoCompleteResponse.SearchDto.class,
-                        market.id,
-                        market.marketName
-                ))
-                .from(market)
-                .where(market.marketName.contains(keyword)
-                        .and(market.seller.roleType.eq(RoleType.SELLER))
-                        .and(market.seller.status.eq(SellerStatus.APPROVED)))
-                .orderBy(market.marketName.length().asc())
-                .limit(3)
-                .fetch();
-
-        // 3. 쇼룸 검색 — 쇼룸은 마켓이 아니라 크리에이터다. 이름과 아이디(@handle) 모두에 걸린다.
+        // 2. 쇼룸 검색 — 쇼룸은 마켓이 아니라 크리에이터다. 이름과 아이디(@handle) 모두에 걸린다.
         String handle = keyword.startsWith("@") ? keyword.substring(1) : keyword;
         BooleanExpression showroomMatch = handle.isEmpty()
                 ? creator.showroomName.containsIgnoreCase(keyword)
@@ -188,21 +173,16 @@ public class SearchService {
 
         return AutoCompleteResponse.builder()
                 .products(products)
-                .markets(markets)
                 .showrooms(showrooms)
                 .build();
     }
 
     /**
-     * 검색·추천에 노출할 수 있는 쇼룸 — 등록을 마쳐 쇼룸명과 아이디가 확정됐고(둘 다 등록 완료 시점에 정해진다),
-     * 계정이 정상인 크리에이터다.
+     * 검색·추천에 노출할 수 있는 쇼룸 — 조건은 쇼룸 목록·상세와 <b>같은 것</b>을 쓴다
+     * ({@link PublicShowrooms#visible()}).
      */
     private BooleanExpression publicShowroom() {
-        return creator.showroomName.isNotNull()
-                .and(creator.showroomName.ne(""))
-                .and(creator.showroomAddress.isNotNull())
-                .and(users.status.eq(UserStatus.NORMAL))
-                .and(users.roleType.eq(RoleType.CREATOR));
+        return PublicShowrooms.visible();
     }
 
     /** 주어진 ID 순서를 유지한 채 공개 가능한 쇼룸만 남긴다. */

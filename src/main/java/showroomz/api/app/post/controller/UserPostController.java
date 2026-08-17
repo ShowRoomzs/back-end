@@ -41,8 +41,13 @@ public class UserPostController implements PostControllerDocs {
         return ResponseEntity.ok(postService.getPostById(username, postId));
     }
 
+    /**
+     * 경로가 {@code /v1/user/showrooms}에서 {@code /v1/user/showrooms/posts}로 옮겨졌다 —
+     * 앞자리는 이제 쇼룸 목록({@code UserShowroomController})이 쓴다. 내부용 목록이라
+     * 앱 계약에 영향이 없다.
+     */
     @Override
-    @GetMapping
+    @GetMapping("/posts")
     public ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getPostList(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             PagingRequest pagingRequest) {

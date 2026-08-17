@@ -69,7 +69,12 @@ public interface PostControllerDocs {
             @PathVariable("postId") Long postId);
 
     @Operation(summary = "전체 게시글 목록 조회 (내부용)",
-            description = "게시중인 게시물을 최신순으로 조회한다.")
+            description = """
+                    게시중인 게시물을 최신순으로 조회한다.
+
+                    경로가 `GET /v1/user/showrooms` → `GET /v1/user/showrooms/posts`로 옮겨졌다 —
+                    앞자리는 쇼룸 목록 조회가 쓴다.
+                    """)
     ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getPostList(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Parameter(description = "페이징 정보 (page: 1부터, size: 기본 20)") PagingRequest pagingRequest);
@@ -84,6 +89,8 @@ public interface PostControllerDocs {
 
                     - **isFollowing** — 이 쇼룸을 지금 팔로우 중인지. 조회 대상 쇼룸이 하나로 고정돼
                       있어 목록 전체가 같은 값이다
+                    - **hasOngoingGroupBuy** — 이 쇼룸이 진행 중인 공구를 가졌는지. 쇼룸 안(C4)에서는
+                      모든 카드가 같은 쇼룸이라 아바타 링을 그리지 않는다 — 값은 프로필 영역이 쓴다
                     - **likeLocked** — `true`면 마감된 공구다. 새 좋아요는 서버가 거절하고 해제만 된다
                     """
     )
@@ -102,6 +109,7 @@ public interface PostControllerDocs {
                                     "showroomName": "리브의 방",
                                     "showroomImageUrl": "https://cdn.example.com/showrooms/10.jpg",
                                     "isFollowing": false,
+                                    "hasOngoingGroupBuy": false,
                                     "content": "3주 루틴 기록",
                                     "imageUrls": ["https://cdn.example.com/posts/123-0.jpg"],
                                     "imageCount": 1,

@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 import showroomz.api.app.post.DTO.PostDto;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.creator.repository.CreatorRepository;
@@ -72,6 +73,8 @@ class UserPostServiceTest {
     private CreatorRepository creatorRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private ConnectionRepository connectionRepository;
 
     private final PostPolicies postPolicies = new PostPolicies(List.of(new GeneralPostPolicy()));
 
@@ -81,7 +84,8 @@ class UserPostServiceTest {
     void setUp() {
         userPostService = new UserPostService(
                 postRepository, postLikeRepository, postImageRepository,
-                creatorFollowRepository, creatorRepository, userRepository, postPolicies);
+                creatorFollowRepository, creatorRepository, userRepository,
+                connectionRepository, postPolicies);
 
         Users user = new Users();
         user.setId(USER_ID);

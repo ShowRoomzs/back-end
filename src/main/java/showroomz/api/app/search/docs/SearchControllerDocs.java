@@ -165,11 +165,13 @@ public interface SearchControllerDocs {
     @Operation(
             summary = "검색어 자동완성",
             description =
-                    "입력한 키워드로 **상품**, **마켓**, **쇼룸**을 각각 검색하여 자동완성 후보를 반환합니다.\n\n" +
+                    "입력한 키워드로 **상품**과 **쇼룸**을 각각 검색하여 자동완성 후보를 반환합니다.\n\n" +
+
+                            "**변경:** `markets` 필드가 제거되었습니다 — 소비자 앱에서 마켓(브랜드)은 조회되지 않습니다. " +
+                            "탭해서 들어갈 화면이 없는 후보를 자동완성에 남겨 둘 수 없습니다.\n\n" +
 
                             "**동작 방식**\n" +
                             "- **상품**: 이름에 키워드가 포함되고, 전시 중인 상품만 조회. 이름 길이 짧은 순 최대 5건\n" +
-                            "- **마켓**: 마켓명에 키워드가 포함되고, 승인(APPROVED)된 판매자의 마켓만 조회. 이름 길이 짧은 순 최대 3건\n" +
                             "- **쇼룸**: 쇼룸명 또는 아이디(@handle)에 키워드가 포함되고, 등록을 마쳐 쇼룸명·아이디가 확정되고 " +
                             "계정이 정상인 쇼룸만 조회. 이름 길이 짧은 순 최대 3건\n\n" +
 
@@ -180,7 +182,6 @@ public interface SearchControllerDocs {
 
                             "**응답 구조**\n" +
                             "- `products`: 상품 목록 (id: 상품 ID, name: 상품명)\n" +
-                            "- `markets`: 마켓 목록 (id: 마켓 ID, name: 마켓명)\n" +
                             "- `showrooms`: 쇼룸 목록 (id: 쇼룸(크리에이터) ID, name: 쇼룸명)\n\n" +
 
                             "**참고:** C14 쇼룸 검색 화면은 이 API가 아니라 `GET /v1/user/search/showrooms`를 사용합니다."
@@ -188,7 +189,7 @@ public interface SearchControllerDocs {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "조회 성공. 키워드가 없거나 공백이면 products/markets/showrooms 모두 빈 배열",
+                    description = "조회 성공. 키워드가 없거나 공백이면 products/showrooms 모두 빈 배열",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = AutoCompleteResponse.class),
@@ -200,17 +201,15 @@ public interface SearchControllerDocs {
                                                     "    { \"id\": 1, \"name\": \"화이트 린넨 셔츠\" },\n" +
                                                     "    { \"id\": 2, \"name\": \"화이트 데님 팬츠\" }\n" +
                                                     "  ],\n" +
-                                                    "  \"markets\": [\n" +
-                                                    "    { \"id\": 10, \"name\": \"화이트 브랜드\" }\n" +
-                                                    "  ],\n" +
-                                                    "  \"showrooms\": []\n" +
+                                                    "  \"showrooms\": [\n" +
+                                                    "    { \"id\": 12, \"name\": \"화이트룸\" }\n" +
+                                                    "  ]\n" +
                                                     "}"
                                     ),
                                     @ExampleObject(
                                             name = "키워드 없음/공백 - 빈 결과",
                                             value = "{\n" +
                                                     "  \"products\": [],\n" +
-                                                    "  \"markets\": [],\n" +
                                                     "  \"showrooms\": []\n" +
                                                     "}"
                                     )
