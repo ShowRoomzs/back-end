@@ -69,7 +69,9 @@ public class ProductInquiryResponse {
                 .typeName(inquiry.getType().getDescription())
                 .content(inquiry.getContent())
                 .secret(inquiry.isSecret())
-                .imageUrls(inquiry.getImageUrls())
+                // 지연 로딩 컬렉션(@ElementCollection)이라 트랜잭션 안에서 복사해 넘긴다 —
+                // 원본을 그대로 실으면 직렬화 시점에 세션이 닫혀 응답 쓰기가 실패한다.
+                .imageUrls(List.copyOf(inquiry.getImageUrls()))
                 .status(inquiry.getStatus())
                 .answerContent(inquiry.getAnswerContent())
                 .createdAt(inquiry.getCreatedAt())
