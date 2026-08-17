@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.post.DTO.PostDto;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.creator.repository.CreatorRepository;
@@ -56,6 +57,7 @@ public class UserPostService {
     private final CreatorFollowRepository creatorFollowRepository;
     private final CreatorRepository creatorRepository;
     private final UserRepository userRepository;
+    private final ConnectionRepository connectionRepository;
     private final PostPolicies postPolicies;
 
     public PostDto.PostDetailResponse getPostById(String username, Long postId) {
@@ -205,6 +207,7 @@ public class UserPostService {
     private PageResponse<PostDto.FeedItemResponse> toFeed(
             Page<Post> postPage, Set<Long> likedPostIds, Set<Long> followedCreatorIds) {
         Map<Long, List<String>> imagesByPost = imagesByPost(postPage.getContent());
+        Set<Long> ongoingGroupBuyCreatorIds = ongoingGroupBuyCreatorIds(postPage.getContent());
 
         Page<PostDto.FeedItemResponse> dtoPage = postPage.map(post -> {
             List<String> imageUrls = imagesByPost.getOrDefault(post.getId(), List.of());
@@ -215,6 +218,7 @@ public class UserPostService {
                     .showroomName(showroomName(creator))
                     .showroomImageUrl(creator.getProfileImageUrl())
                     .isFollowing(followedCreatorIds.contains(creator.getId()))
+                    .hasOngoingGroupBuy(ongoingGroupBuyCreatorIds.contains(creator.getId()))
                     .content(post.getContent())
                     .imageUrls(imageUrls)
                     .imageCount(imageUrls.size())
@@ -239,6 +243,20 @@ public class UserPostService {
         }
         List<Long> postIds = posts.stream().map(Post::getId).toList();
         return Set.copyOf(postLikeRepository.findLikedPostIdsByUserIdAndPostIds(user.getId(), postIds));
+    }
+
+    /**
+     * C1 아바타 로즈 링 — 페이지에 실린 쇼룸 중 진행 중인 공구를 가진 쇼룸.
+     *
+     * <p>게시물마다 묻지 않고 페이지의 쇼룸을 한 번에 대조한다. 링은 <b>쇼룸</b>의 상태라 같은
+     * 쇼룸의 게시물이 여러 장 실려도 답은 하나다.
+     */
+    private Set<Long> ongoingGroupBuyCreatorIds(List<Post> posts) {
+        if (posts.isEmpty()) {
+            return Collections.emptySet();
+        }
+        List<Long> creatorIds = posts.stream().map(post -> post.getCreator().getId()).distinct().toList();
+        return Set.copyOf(connectionRepository.findCreatorIdsWithOngoingGroupBuy(creatorIds));
     }
 
     /** 페이지에 실린 쇼룸만 대조한다 — 팔로잉이 많은 사용자에게 전체 목록을 읽게 하지 않는다 */

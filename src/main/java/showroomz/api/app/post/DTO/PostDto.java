@@ -112,6 +112,16 @@ public class PostDto {
                 example = "false")
         private Boolean isFollowing;
 
+        /**
+         * C1 — 카드 헤더 아바타의 <b>로즈 링</b>이다. "지금 살 수 있는 공구가 있다"는 신호이고,
+         * C2 팔로잉·C14 검색의 아바타 규칙과 같은 값이다(§02).
+         *
+         * <p>게시물이 아니라 <b>쇼룸</b>의 상태다 — 일반 게시물 카드에도 그 쇼룸이 공구를 열고 있으면
+         * 링이 붙는다. C4 쇼룸 안에서는 모든 카드가 같은 쇼룸이라 링을 그리지 않는다(클라이언트 판단).
+         */
+        @Schema(description = "이 쇼룸이 진행 중인 공구를 갖고 있는지 — 아바타 로즈 링 표시용", example = "true")
+        private Boolean hasOngoingGroupBuy;
+
         @Schema(description = "본문 — 없을 수 있다")
         private String content;
         @Schema(description = "게시글 이미지 URL 목록 (순서대로)")

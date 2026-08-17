@@ -109,25 +109,11 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
             @Param("approvedSellerStatus") SellerStatus approvedSellerStatus,
             Pageable pageable);
 
-    /**
-     * 유저용 마켓 목록 조회 (검색 + 카테고리 필터)
-     * - 승인된(APPROVED) 판매자의 마켓만 조회
-     * - 필요한 필드만 DTO로 즉시 변환
-     * - 수정됨: LEFT JOIN을 사용하여 mainCategory가 null인 마켓도 포함
+    /*
+     * 유저용 마켓 목록 조회(findAllForUser)는 삭제됐다 — 소비자 앱에서 마켓은 조회되지 않는다.
+     * 샵 목록 `GET /v1/user/shops`가 쇼룸 목록 `GET /v1/user/showrooms`로 대체되면서
+     * 이 쿼리를 쓰던 UserMarketService도 함께 사라졌다.
      */
-    @Query("SELECT new showroomz.api.app.market.DTO.MarketListResponse(" +
-           "m.id, m.marketName, m.marketImageUrl, c.categoryId, c.name, s.roleType) " +
-           "FROM Market m " +
-           "JOIN m.seller s " +
-           "LEFT JOIN m.mainCategory c " +
-           "WHERE s.status = :approvedStatus " +
-           "AND (:mainCategoryId IS NULL OR c.categoryId = :mainCategoryId) " +
-           "AND (:keyword IS NULL OR :keyword = '' OR m.marketName LIKE CONCAT('%', :keyword, '%'))")
-    Page<MarketListResponse> findAllForUser(
-            @Param("mainCategoryId") Long mainCategoryId,
-            @Param("keyword") String keyword,
-            @Param("approvedStatus") SellerStatus approvedStatus,
-            Pageable pageable);
 
     /**
      * 특정 카테고리를 대표 카테고리로 설정한 마켓이 존재하는지 확인

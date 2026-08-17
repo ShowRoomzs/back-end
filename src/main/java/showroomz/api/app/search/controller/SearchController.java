@@ -57,7 +57,6 @@ public class SearchController implements SearchControllerDocs {
         if (keyword == null || keyword.trim().isEmpty()) {
             return ResponseEntity.ok(AutoCompleteResponse.builder()
                     .products(Collections.emptyList())
-                    .markets(Collections.emptyList())
                     .showrooms(Collections.emptyList())
                     .build());
         }

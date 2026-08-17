@@ -260,7 +260,7 @@ class ShowroomSearchIntegrationTest extends IntegrationTestSupport {
     class Autocomplete {
 
         @Test
-        @DisplayName("쇼룸은 이름으로 걸리고 상품·마켓 칸은 비어도 응답 형태는 유지된다")
+        @DisplayName("쇼룸은 이름으로 걸리고 상품 칸은 비어도 응답 형태는 유지된다")
         void showroomAppearsInAutocomplete() throws Exception {
             createShowroom("소연 뷰티", "soyeon");
 
@@ -269,8 +269,22 @@ class ShowroomSearchIntegrationTest extends IntegrationTestSupport {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.showrooms.length()").value(1))
                     .andExpect(jsonPath("$.showrooms[0].name").value("소연 뷰티"))
-                    .andExpect(jsonPath("$.products").isArray())
-                    .andExpect(jsonPath("$.markets").isArray());
+                    .andExpect(jsonPath("$.products").isArray());
+        }
+
+        /**
+         * 마켓 후보는 기획에서 빠졌다 — 소비자 앱에서 마켓(브랜드)은 조회되지 않는다.
+         * 되살아나면 탭했을 때 갈 화면이 없는 후보가 자동완성에 다시 낀다.
+         */
+        @Test
+        @DisplayName("마켓 후보는 응답에 없다")
+        void marketCandidatesAreGone() throws Exception {
+            createShowroom("소연 뷰티", "soyeon");
+
+            mockMvc.perform(get(AUTOCOMPLETE_PATH).param("keyword", "소연")
+                            .header(HttpHeaders.AUTHORIZATION, userToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.markets").doesNotExist());
         }
 
         /** 빈 키워드는 컨트롤러가 질의 없이 빈 응답으로 끊는다 — 전체 스캔이 돌면 안 된다. */
@@ -283,8 +297,7 @@ class ShowroomSearchIntegrationTest extends IntegrationTestSupport {
                             .header(HttpHeaders.AUTHORIZATION, userToken))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.showrooms").isEmpty())
-                    .andExpect(jsonPath("$.products").isEmpty())
-                    .andExpect(jsonPath("$.markets").isEmpty());
+                    .andExpect(jsonPath("$.products").isEmpty());
         }
     }
 

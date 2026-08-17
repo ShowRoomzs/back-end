@@ -78,9 +78,11 @@ public class SecurityConfig {
             // 공용 API 전체 허용
             "/v1/common/**",
 
-            // 샵 조회 API
-            "/v1/user/shops",
-            "/v1/user/shops/{shopId}",
+            // 쇼룸 조회 API (구 샵 조회 API) — 소비자에게 조회되는 것은 마켓이 아니라 쇼룸뿐이다.
+            // 상세는 ID를 숫자로 못 박는다. `{showroomId}`로 두면 로그인이 필요한
+            // `/v1/user/showrooms/following`까지 함께 열려 버린다.
+            "/v1/user/showrooms",
+            "/v1/user/showrooms/{showroomId:[0-9]+}",
 
             // 검색 자동완성 (비로그인 허용)
             "/v1/user/search/autocomplete",
@@ -92,8 +94,9 @@ public class SecurityConfig {
             // FAQ 조회 API
             "/v1/user/faqs",
 
-            // 쇼룸 게시글 조회 API
-            "/v1/user/showroom/*/posts", "/v1/user/showroom/posts/*",
+            // 쇼룸 게시글 조회 API — 실제 경로는 `showrooms`(복수)다. 단수로 적혀 있던 동안
+            // 비로그인 열람이 조용히 막혀 있었다(C4 §비로그인 — 열람은 자유, 팔로우·♥만 로그인).
+            "/v1/user/showrooms/*/posts", "/v1/user/showrooms/posts/*",
 
             // 쇼룸 방문 기록 (§22-4) — 비로그인 방문도 쇼룸 도달 지표에 포함되므로 인증을 요구하지 않는다.
             // 토큰이 실려 오면 필터가 인증을 채워 주므로, 로그인 방문은 사용자 기준으로 집계된다.

@@ -79,6 +79,9 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
 
     Optional<Post> findByIdAndStatus(Long postId, PostStatus status);
 
+    /** C4 쇼룸 프로필의 "게시물 N" — 소비자에게 보이는 것만 센다(작성중·노출 중지·삭제 제외). */
+    long countByCreator_IdAndStatus(Long creatorId, PostStatus status);
+
     /**
      * C14 "활동 중인 쇼룸" — 최근에 게시물을 올린 쇼룸 순.
      * 팔로잉 목록 기본 정렬과 같은 기준을 대상 쇼룸을 정하지 않은 채로 쓴 형태다.
