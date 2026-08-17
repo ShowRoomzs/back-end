@@ -52,7 +52,7 @@ public interface CreatorShowroomControllerDocs {
                                             "  \"showroomName\": \"뷰티 소연\",\n" +
                                             "  \"profileImageUrl\": \"https://cdn.showroomz.co.kr/uploads/showroom_profile/abc.jpg\",\n" +
                                             "  \"showroomAddress\": \"beauty_soyeon\",\n" +
-                                            "  \"showroomUrl\": \"https://www.showroomz.co.kr/@beauty_soyeon\",\n" +
+                                            "  \"showroomUrl\": \"https://showroomz.shop/@beauty_soyeon\",\n" +
                                             "  \"introduction\": \"뷰티 소품을 좋아하는 소연입니다\",\n" +
                                             "  \"instagramUrl\": \"https://www.instagram.com/beauty_soyeon\",\n" +
                                             "  \"connectionCode\": \"SRZ4K7M9XQ\",\n" +
