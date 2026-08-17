@@ -1,6 +1,5 @@
 package showroomz.api.creator.showroom.docs;
 
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -24,7 +23,6 @@ import showroomz.api.creator.showroom.dto.ShowroomStatsResponse;
 import showroomz.api.creator.showroom.type.StatsPeriod;
 import showroomz.api.creator.showroom.type.TopContentSort;
 
-@Hidden
 @Tag(name = "Creator - Showroom", description = "쇼룸 스튜디오 쇼룸 관리(#8) API — 공개 프로필 · 쇼룸 현황")
 @SecurityRequirement(name = "Authorization")
 public interface CreatorShowroomControllerDocs {

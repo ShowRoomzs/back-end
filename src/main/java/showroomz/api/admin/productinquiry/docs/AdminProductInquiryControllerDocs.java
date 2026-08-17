@@ -1,6 +1,5 @@
 package showroomz.api.admin.productinquiry.docs;
 
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -24,7 +23,6 @@ import showroomz.global.dto.PagingRequest;
 
 import java.util.List;
 
-@Hidden
 @Tag(name = "Admin - Product Inquiry Monitoring", description = "어드민 상품 문의 모니터링 API (§18) — 운영자는 답변하지 않는다")
 public interface AdminProductInquiryControllerDocs {
 
