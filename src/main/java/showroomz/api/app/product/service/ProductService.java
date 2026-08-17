@@ -138,6 +138,7 @@ public class ProductService {
                 .groupBuyStatus(product.getGroupBuyStatus() != null
                         ? product.getGroupBuyStatus().name()
                         : ProductGroupBuyStatus.NOT_CONNECTED.name())
+                .status(buildStockStatus(product, variantEntities))
                 .delivery(buildDeliveryInfo(market))
                 .description(product.getDescription())
                 .productNotice(productNotice)
@@ -248,8 +249,19 @@ public class ProductService {
     }
 
     private ProductDto.StockStatus buildStockStatus(Product product) {
+        return buildStockStatus(product, product.getVariants());
+    }
+
+    /**
+     * 상품 전체 품절 판정 — 재고는 옵션마다 소진되므로, <b>남은 옵션이 하나도 없을 때</b> 비로소
+     * 상품 전체가 품절이다. 강제 품절은 그 위를 덮는다(재고가 남아 있어도 브랜드가 내려둘 수 있다).
+     *
+     * <p>상세는 이미 읽어 둔 옵션 목록으로 판정한다 — 엔티티의 지연 컬렉션을 다시 건드리면 같은
+     * 옵션을 두 번 읽는다.
+     */
+    private ProductDto.StockStatus buildStockStatus(Product product, List<ProductVariant> variants) {
         boolean isOutOfStockForced = Boolean.TRUE.equals(product.getIsOutOfStockForced());
-        boolean hasStock = product.getVariants().stream()
+        boolean hasStock = variants.stream()
                 .anyMatch(variant -> variant.getStock() != null && variant.getStock() > 0);
         boolean isOutOfStock = isOutOfStockForced || !hasStock;
 

@@ -215,6 +215,9 @@ public class ProductDto {
         )
         private String groupBuyStatus;
 
+        @Schema(description = "상품 전체 판매 상태 — 하단 CTA를 [구매하기]와 판매 종료 상태로 가르는 값")
+        private StockStatus status;
+
         @Schema(description = "배송 · 교환 · 반품 정보")
         private DeliveryInfo delivery;
 

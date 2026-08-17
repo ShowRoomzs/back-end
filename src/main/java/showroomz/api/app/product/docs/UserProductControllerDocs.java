@@ -158,7 +158,14 @@ public interface UserProductControllerDocs {
                     "- 배송 블록: delivery (발송 예정일 · 배송비 · 무료배송 기준 · 도서산간 추가비 · 반품비 · 교환비)\n" +
                     "- 상세정보 탭: description + productNotice\n" +
                     "- 판매자 정보 탭: productNotice(고시) + delivery(배송/교환/반품) + sellerInfo(사업자 정보)\n" +
-                    "- 옵션 시트: optionGroups + variants (variants[].isOutOfStock으로 옵션 단위 품절 표시)\n\n" +
+                    "- 옵션 시트: optionGroups + variants (variants[].isOutOfStock으로 옵션 단위 품절 표시)\n" +
+                    "- 하단 CTA: status (상품 전체 판매 상태)\n\n" +
+                    "**판매 상태 (status):**\n" +
+                    "- 재고는 옵션마다 소진되므로, 남은 옵션이 하나도 없을 때 비로소 status.isOutOfStock = true가 됩니다.\n" +
+                    "- status.isOutOfStockForced는 재고가 남아 있어도 브랜드가 강제로 내려둔 경우이며, 이때도 isOutOfStock = true입니다.\n" +
+                    "- 품절이면 하단 CTA를 [구매하기] 대신 판매 종료 상태로 그립니다. 개별 옵션의 품절은 variants[].isOutOfStock을 보세요.\n" +
+                    "- \"공구 마감\" 상태는 아직 표현되지 않습니다 — 공구 연결이 풀린 상품은 상세 자체가 404이며, " +
+                    "마감된 공구를 화면에 남기는 처리는 공구 도메인이 붙은 뒤 정해집니다.\n\n" +
                     "**할인율:**\n" +
                     "- discountRate는 서버가 정가·판매가로 계산해 반올림한 값입니다. 클라이언트가 다시 계산하지 마세요 " +
                     "(반올림 방식이 갈리면 같은 상품에 34%와 35%가 동시에 보입니다).\n" +
@@ -197,6 +204,10 @@ public interface UserProductControllerDocs {
                                                     "  \"discountRate\": 34,\n" +
                                                     "  \"salePrice\": 24900,\n" +
                                                     "  \"groupBuyStatus\": \"IN_PROGRESS\",\n" +
+                                                    "  \"status\": {\n" +
+                                                    "    \"isOutOfStock\": false,\n" +
+                                                    "    \"isOutOfStockForced\": false\n" +
+                                                    "  },\n" +
                                                     "  \"delivery\": {\n" +
                                                     "    \"shippingLeadDays\": 2,\n" +
                                                     "    \"deliveryFee\": 3000,\n" +

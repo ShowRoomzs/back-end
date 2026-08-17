@@ -465,6 +465,57 @@ class ProductServiceTest {
             assertThat(variants.get(1).getIsOutOfStock()).isTrue();
         }
 
+        /**
+         * 상품 전체 품절은 <b>옵션이 전부 소진된 뒤에야</b> 성립한다 — 하나라도 살 수 있으면
+         * 하단 CTA는 [구매하기]로 남아야 한다.
+         */
+        @Test
+        @DisplayName("살 수 있는 옵션이 하나라도 남아 있으면 상품 전체는 품절이 아니다")
+        void productIsNotSoldOutWhileAnyVariantHasStock() {
+            Product target = product(ProductGroupBuyStatus.IN_PROGRESS);
+            given(productRepository.findDetailByProductId(PRODUCT_ID)).willReturn(Optional.of(target));
+            given(productOptionGroupRepository.findByProductIdWithOptions(PRODUCT_ID)).willReturn(List.of());
+            given(productVariantRepository.findByProductIdWithOptions(PRODUCT_ID))
+                    .willReturn(List.of(
+                            variant(target, 1L, 38000, 24900, 0),
+                            variant(target, 2L, 38000, 24900, 3)));
+
+            assertThat(productService.getProductDetail(PRODUCT_ID).getStatus().getIsOutOfStock()).isFalse();
+        }
+
+        @Test
+        @DisplayName("모든 옵션이 소진되면 상품 전체가 품절로 올라간다")
+        void productIsSoldOutOnceEveryVariantIsGone() {
+            Product target = product(ProductGroupBuyStatus.IN_PROGRESS);
+            given(productRepository.findDetailByProductId(PRODUCT_ID)).willReturn(Optional.of(target));
+            given(productOptionGroupRepository.findByProductIdWithOptions(PRODUCT_ID)).willReturn(List.of());
+            given(productVariantRepository.findByProductIdWithOptions(PRODUCT_ID))
+                    .willReturn(List.of(
+                            variant(target, 1L, 38000, 24900, 0),
+                            variant(target, 2L, 38000, 24900, 0)));
+
+            ProductDto.StockStatus status = productService.getProductDetail(PRODUCT_ID).getStatus();
+
+            assertThat(status.getIsOutOfStock()).isTrue();
+            assertThat(status.getIsOutOfStockForced()).isFalse();
+        }
+
+        @Test
+        @DisplayName("강제 품절은 재고가 남아 있어도 상품 전체를 품절로 만든다")
+        void forcedOutOfStockSellsOutWholeProduct() {
+            Product target = product(ProductGroupBuyStatus.IN_PROGRESS);
+            target.setIsOutOfStockForced(true);
+            given(productRepository.findDetailByProductId(PRODUCT_ID)).willReturn(Optional.of(target));
+            given(productOptionGroupRepository.findByProductIdWithOptions(PRODUCT_ID)).willReturn(List.of());
+            given(productVariantRepository.findByProductIdWithOptions(PRODUCT_ID))
+                    .willReturn(List.of(variant(target, 1L, 38000, 24900, 10)));
+
+            ProductDto.StockStatus status = productService.getProductDetail(PRODUCT_ID).getStatus();
+
+            assertThat(status.getIsOutOfStock()).isTrue();
+            assertThat(status.getIsOutOfStockForced()).isTrue();
+        }
+
         @Test
         @DisplayName("강제 품절이면 재고가 남아 있어도 모든 옵션이 품절로 나간다")
         void forcedOutOfStockMarksEveryVariant() {
