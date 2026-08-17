@@ -33,6 +33,7 @@ import showroomz.global.error.exception.ErrorCode;
 @RestController
 @RequestMapping("/v1/seller/answer-templates")
 @RequiredArgsConstructor
+// [기획 제외] 보류된 기능 — 신규 작업/리팩터링 대상 아님. 상세: CLAUDE.md
 @Hidden
 public class AnswerTemplateController implements AnswerTemplateControllerDocs {
 

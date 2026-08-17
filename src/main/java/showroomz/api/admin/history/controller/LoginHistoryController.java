@@ -21,6 +21,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/v1/admin/history")
 @RequiredArgsConstructor
+// [기획 제외] 보류된 기능 — 신규 작업/리팩터링 대상 아님. 상세: CLAUDE.md
 @Hidden
 public class LoginHistoryController implements LoginHistoryControllerDocs {
 
