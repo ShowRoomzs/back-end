@@ -168,9 +168,11 @@ public class AdminUserService {
 
         UserStatus newStatus = request.getStatus();
 
-        
+        // 바꾸기 전에 붙잡아 둔다 — updateStatus 뒤에 읽으면 새 상태가 나와 전이 기록이 무의미해진다.
+        UserStatus previousStatus = user.getStatus();
+
         // 이전 상태와 새 상태가 동일하다면 변경 불필요
-        if (newStatus == user.getStatus()) {
+        if (newStatus == previousStatus) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "이미 해당 상태로 설정되어 있습니다.");
         }
 
@@ -182,10 +184,10 @@ public class AdminUserService {
 
         user.updateStatus(newStatus);
 
-        // 유저 상태 변경 히스토리 저장
+        // 유저 상태 변경 히스토리 저장 — 어디서 어디로 갔는지가 이력의 내용이다.
         userStatusHistoryRepository.save(UserStatusHistory.builder()
         .user(user)
-        .previousStatus(newStatus)
+        .previousStatus(previousStatus)
         .newStatus(newStatus)
         .reason("")
         .build());

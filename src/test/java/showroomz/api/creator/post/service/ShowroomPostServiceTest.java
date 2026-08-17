@@ -2,6 +2,7 @@ package showroomz.api.creator.post.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -25,6 +26,7 @@ import showroomz.domain.post.repository.PostSuspensionRepository;
 import showroomz.domain.post.service.PostNotificationService;
 import showroomz.domain.post.type.PostAppealStatus;
 import showroomz.domain.post.type.PostDeleteReason;
+import showroomz.domain.post.type.PostNotificationEvent;
 import showroomz.domain.post.type.PostStatus;
 import showroomz.domain.post.type.PostSuspensionReason;
 import showroomz.domain.post.type.SuspensionResolution;
@@ -41,6 +43,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 /**
  * §24 스튜디오 게시물 서비스 — 기획이 못박은 <b>거절 조건</b>을 중심으로 검증한다.
@@ -266,6 +270,167 @@ class ShowroomPostServiceTest {
         assertThat(post.getStatus()).isEqualTo(PostStatus.UNDER_REVIEW);
         assertThat(response.getStatus()).isEqualTo(PostAppealStatus.PENDING);
         assertThat(post.getStatus().isDeletable()).isFalse();
+    }
+
+    /**
+     * 게시 — 작성중 → 게시중으로 넘어가는 자리이자 <b>팔로워 통지가 나가는 유일한 시점</b>이다 (§24-3).
+     *
+     * <p>통지는 되돌릴 수 없다. 그래서 두 가지를 못 박는다: 이미 게시된 글을 다시 게시하려 하면
+     * 막아 통지가 두 번 나가지 않게 하고, 게시 후 수정은 통지를 <b>재발송하지 않는다</b>.
+     * 수정마다 알림이 가면 팔로워는 같은 글로 여러 번 불린다.
+     */
+    @Nested
+    @DisplayName("게시 · 통지")
+    class Publish {
+
+        private Post draft() {
+            Post post = Post.draft(me, "초안 본문", new java.math.BigDecimal("1.0000"));
+            post.replaceImages(List.of(new showroomz.domain.post.entity.PostImage(
+                    "https://cdn.example.com/posts/a.jpg", "https://cdn.example.com/posts/a-origin.jpg",
+                    1080, 1080, 2_048_000)));
+            ReflectionTestUtils.setField(post, "id", POST_ID);
+            given(postRepository.findById(POST_ID)).willReturn(Optional.of(post));
+            return post;
+        }
+
+        @Test
+        @DisplayName("작성중 게시물을 게시하면 게시중으로 바뀌고 게시 시각이 남는다")
+        void draftBecomesPublished() {
+            Post post = draft();
+
+            showroomPostService.publish(USER_ID, POST_ID);
+
+            assertThat(post.getStatus()).isEqualTo(PostStatus.PUBLISHED);
+            assertThat(post.getPublishedAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("게시하면 팔로워에게 통지한다 — 통지가 나가는 유일한 시점이다")
+        void publishNotifiesFollowers() {
+            draft();
+
+            showroomPostService.publish(USER_ID, POST_ID);
+
+            verify(postNotificationService).notify(any(Post.class),
+                    org.mockito.ArgumentMatchers.eq(PostNotificationEvent.PUBLISHED_TO_FOLLOWERS),
+                    org.mockito.ArgumentMatchers.any());
+        }
+
+        /** 두 번 게시되면 팔로워에게 같은 글 알림이 두 번 간다 — 되돌릴 수 없는 부작용이다. */
+        @Test
+        @DisplayName("이미 게시된 글은 다시 게시할 수 없다")
+        void republishIsRejected() {
+            Post post = publishedPost();
+            given(postRepository.findById(POST_ID)).willReturn(Optional.of(post));
+
+            assertThatThrownBy(() -> showroomPostService.publish(USER_ID, POST_ID))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.POST_ALREADY_PUBLISHED);
+
+            verify(postNotificationService, never()).notify(any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("노출 중지된 글은 게시할 수 없다 — 조치를 우회하는 경로가 되면 안 된다")
+        void suspendedPostCannotBePublished() {
+            Post post = publishedPost();
+            post.suspend();
+            given(postRepository.findById(POST_ID)).willReturn(Optional.of(post));
+
+            assertThatThrownBy(() -> showroomPostService.publish(USER_ID, POST_ID))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.POST_NOT_EDITABLE);
+        }
+
+        /** 게시 후 수정마다 알림이 가면 팔로워는 같은 글로 여러 번 불린다 (§24-3). */
+        @Test
+        @DisplayName("게시 후 수정은 팔로워 통지를 재발송하지 않는다")
+        void editAfterPublishDoesNotRenotify() {
+            Post post = publishedPost();
+            given(postRepository.findById(POST_ID)).willReturn(Optional.of(post));
+
+            showroomPostService.updatePost(USER_ID, POST_ID,
+                    request(PostSaveAction.PUBLISH, "고친 본문", List.of(image(1080, 1080))));
+
+            verify(postNotificationService, never()).notify(any(),
+                    org.mockito.ArgumentMatchers.eq(PostNotificationEvent.PUBLISHED_TO_FOLLOWERS),
+                    org.mockito.ArgumentMatchers.any());
+        }
+
+        /** 임시저장에서 곧바로 게시로 넘어가는 것은 첫 게시이므로 통지가 나가야 한다. */
+        @Test
+        @DisplayName("임시저장을 수정하며 바로 게시하면 첫 게시로 보고 통지한다")
+        void publishingFromDraftViaUpdateNotifies() {
+            draft();
+
+            showroomPostService.updatePost(USER_ID, POST_ID,
+                    request(PostSaveAction.PUBLISH, "완성한 본문", List.of(image(1080, 1080))));
+
+            verify(postNotificationService).notify(any(Post.class),
+                    org.mockito.ArgumentMatchers.eq(PostNotificationEvent.PUBLISHED_TO_FOLLOWERS),
+                    org.mockito.ArgumentMatchers.any());
+        }
+
+        @Test
+        @DisplayName("임시저장으로 수정하면 통지하지 않는다 — 아직 아무에게도 보이지 않는 글이다")
+        void savingDraftDoesNotNotify() {
+            draft();
+
+            showroomPostService.updatePost(USER_ID, POST_ID,
+                    request(PostSaveAction.DRAFT, "고친 초안", List.of(image(1080, 1080))));
+
+            verify(postNotificationService, never()).notify(any(), any(), any());
+        }
+
+        /** 남의 게시물은 조회 자체가 (postId, creatorId)로 좁혀져 잡히지 않는다. */
+        @Test
+        @DisplayName("남의 게시물은 게시할 수 없다")
+        void othersPostCannotBePublished() {
+            given(postRepository.findById(POST_ID)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> showroomPostService.publish(USER_ID, POST_ID))
+                    .isInstanceOf(BusinessException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("수정 시 사진 교체")
+    class ImageReplacement {
+
+        /**
+         * 사진은 전체 교체다 — {@code (post_id, sort_order)} 유니크 때문에 부분 갱신은 중간 상태에서
+         * 충돌한다. 교체 후 장수와 순서가 요청과 정확히 같아야 한다.
+         */
+        @Test
+        @DisplayName("사진을 보내면 기존 사진을 전부 대체한다")
+        void imagesAreFullyReplaced() {
+            Post post = publishedPost();
+            post.replaceImages(List.of(new showroomz.domain.post.entity.PostImage(
+                    "https://cdn.example.com/posts/old.jpg", null, 1080, 1080, 1000)));
+            given(postRepository.findById(POST_ID)).willReturn(Optional.of(post));
+
+            showroomPostService.updatePost(USER_ID, POST_ID, request(PostSaveAction.PUBLISH, "본문",
+                    List.of(image(1080, 1080), image(1080, 1080))));
+
+            assertThat(post.getImages()).hasSize(2);
+            assertThat(post.getImageCount()).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("수정으로도 사진을 20장 넘게 올릴 수 없다")
+        void tooManyImagesOnUpdateIsRejected() {
+            Post post = publishedPost();
+            given(postRepository.findById(POST_ID)).willReturn(Optional.of(post));
+
+            List<PostDto.PostImageRequest> tooMany = new java.util.ArrayList<>();
+            for (int i = 0; i < 21; i++) {
+                tooMany.add(image(1080, 1080));
+            }
+
+            assertThatThrownBy(() -> showroomPostService.updatePost(USER_ID, POST_ID,
+                    request(PostSaveAction.PUBLISH, "본문", tooMany)))
+                    .isInstanceOf(BusinessException.class);
+        }
     }
 
     // ------------------------------------------------------------------ fixture
