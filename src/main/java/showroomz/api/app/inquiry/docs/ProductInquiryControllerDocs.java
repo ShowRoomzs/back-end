@@ -1,5 +1,6 @@
 package showroomz.api.app.inquiry.docs;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -22,6 +23,7 @@ import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
+@Hidden
 @Tag(name = "User - Inquiry Product", description = "상품 문의 관련 API")
 public interface ProductInquiryControllerDocs {
 

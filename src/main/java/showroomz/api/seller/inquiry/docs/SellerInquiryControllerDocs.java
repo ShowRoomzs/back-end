@@ -1,5 +1,6 @@
 package showroomz.api.seller.inquiry.docs;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -19,6 +20,7 @@ import showroomz.api.seller.inquiry.dto.SellerInquiryListResponse;
 import showroomz.api.seller.inquiry.dto.SellerInquirySearchCondition;
 import showroomz.global.dto.PagingRequest;
 
+@Hidden
 @Tag(name = "Seller - Inquiry", description = "파트너센터 문의 관리 API (§23)")
 public interface SellerInquiryControllerDocs {
 
