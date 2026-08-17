@@ -13,6 +13,7 @@ import showroomz.domain.post.repository.PostAppealRepository;
 import showroomz.domain.post.repository.PostImageRepository;
 import showroomz.domain.post.repository.PostImpressionRepository;
 import showroomz.domain.post.repository.PostLikeRepository;
+import showroomz.domain.post.repository.PostReportRepository;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.post.repository.PostSuspensionRepository;
 import showroomz.global.config.properties.PostProperties;
@@ -47,6 +48,7 @@ public class PostPurgeService {
     private final PostLikeRepository postLikeRepository;
     private final PostImpressionRepository postImpressionRepository;
     private final PostAppealRepository postAppealRepository;
+    private final PostReportRepository postReportRepository;
     private final PostSuspensionRepository postSuspensionRepository;
     private final PostProperties postProperties;
     private final S3Properties s3Properties;
@@ -92,6 +94,7 @@ public class PostPurgeService {
         postImageRepository.deleteAllByPostId(postId);
         postLikeRepository.deleteAllByPostId(postId);
         postImpressionRepository.deleteAllByPostId(postId);
+        postReportRepository.deleteAllByPostId(postId);
         postAppealRepository.deleteAllByPostId(postId);
         postSuspensionRepository.deleteAllByPostId(postId);
         postRepository.delete(post);

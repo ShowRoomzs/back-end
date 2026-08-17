@@ -11,15 +11,18 @@ import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.entity.PostAppeal;
 import showroomz.domain.post.entity.PostImage;
+import showroomz.domain.post.entity.PostReport;
 import showroomz.domain.post.entity.PostSuspension;
 import showroomz.domain.post.repository.PostAppealRepository;
 import showroomz.domain.post.repository.PostImageRepository;
+import showroomz.domain.post.repository.PostReportRepository;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.post.repository.PostSuspensionRepository;
 import showroomz.domain.post.service.PostNotificationService;
 import showroomz.domain.post.type.PostAppealStatus;
 import showroomz.domain.post.type.PostDeleteReason;
 import showroomz.domain.post.type.PostNotificationEvent;
+import showroomz.domain.post.type.PostReportStatus;
 import showroomz.domain.post.type.PostStatus;
 import showroomz.domain.post.type.PostSuspensionReason;
 import showroomz.domain.post.type.SuspensionResolution;
@@ -58,6 +61,7 @@ public class AdminPostService {
     private final PostImageRepository postImageRepository;
     private final PostSuspensionRepository postSuspensionRepository;
     private final PostAppealRepository postAppealRepository;
+    private final PostReportRepository postReportRepository;
     private final PostNotificationService postNotificationService;
     private final PostProperties postProperties;
 
@@ -169,6 +173,10 @@ public class AdminPostService {
                 operatorId, now, deadline));
         post.suspend();
 
+        // 이 게시물에 걸려 있던 신고를 한꺼번에 닫는다. 신고 하나하나를 따로 처리하게 하면 같은
+        // 게시물에 스무 건이 걸렸을 때 스무 번을 눌러야 하고, 그 사이 대기열이 조치가 끝난 건으로 찬다.
+        acceptPendingReports(postId, operatorId, now);
+
         // 통지 문구를 지금 굳힌다 — 게시물이 파기된 뒤에는 사유·근거를 다시 만들어 낼 수 없다(§24-6)
         postNotificationService.notify(post, PostNotificationEvent.SUSPENDED,
                 PostNotificationService.payload(
@@ -250,6 +258,13 @@ public class AdminPostService {
     }
 
     // ------------------------------------------------------------------ 내부
+
+    /** 조치가 곧 신고의 답이다 — 신고자에게 따로 통지하지는 않는다(대상에게 신고자가 드러나면 안 된다) */
+    private void acceptPendingReports(Long postId, Long operatorId, LocalDateTime now) {
+        for (PostReport report : postReportRepository.findByPost_IdAndStatus(postId, PostReportStatus.PENDING)) {
+            report.accept(operatorId, now);
+        }
+    }
 
     private PostAppeal getPendingAppeal(Long appealId) {
         PostAppeal appeal = postAppealRepository.findById(appealId)

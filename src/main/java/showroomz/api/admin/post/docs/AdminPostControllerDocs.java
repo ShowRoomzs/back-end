@@ -17,9 +17,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.admin.post.dto.AdminPostDto;
+import showroomz.api.admin.post.dto.AdminPostReportDto;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.domain.post.type.PostAppealStatus;
+import showroomz.domain.post.type.PostReportStatus;
 import showroomz.domain.post.type.PostStatus;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
@@ -101,6 +103,52 @@ public interface AdminPostControllerDocs {
             @Parameter(description = "심사 상태로 좁히기", example = "PENDING")
             @RequestParam(value = "status", required = false) PostAppealStatus status,
             @Parameter(description = "페이징 정보") @ModelAttribute PagingRequest pagingRequest);
+
+    @Operation(
+            summary = "신고 대기열 조회",
+            description = """
+                    소비자가 올린 게시물 신고다. 조치의 **진입**이고, 여기서 고른 게시물을
+                    `POST /v1/admin/posts/{postId}/suspend`로 내리면 그 게시물에 걸린 대기 신고가 **함께 닫힌다**.
+
+                    - **정렬** — `status=PENDING`이면 오래 기다린 순이다. 신고 방치는 위반 게시물이 계속
+                      노출된다는 뜻이라 순서가 곧 형평이고, 이의 신청 대기열과 같은 규칙이다.
+                      상태를 지정하지 않으면 처리분까지 최신순으로 나온다
+                    - **신고자를 싣지 않는다** — 조치 판단에 필요한 것은 무엇이 지목됐는지이고,
+                      어드민 화면의 값은 분쟁 과정에서 인플루언서 쪽으로 옮겨 갈 수 있다
+                    - **pendingCountOnPost** — 같은 게시물을 몇 명이 지목했는지. 우선순위를 이 수로 매긴다
+                    - **suspensionReasonCode** — 이 신고를 받아 내릴 때 그대로 넣는 값. 신고 사유와
+                      조치 사유가 같은 코드 축이라 사유별 조치 건수를 한 번에 셀 수 있다
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공")
+    })
+    ResponseEntity<PageResponse<AdminPostReportDto.ReportItem>> getReports(
+            @Parameter(description = "게시물 ID로 좁히기", example = "301")
+            @RequestParam(value = "postId", required = false) Long postId,
+            @Parameter(description = "처리 상태로 좁히기 — PENDING / ACCEPTED / DISMISSED", example = "PENDING")
+            @RequestParam(value = "status", required = false) PostReportStatus status,
+            @Parameter(description = "페이징 정보") @ModelAttribute PagingRequest pagingRequest);
+
+    @Operation(summary = "신고 반려 (조치하지 않음)",
+            description = """
+                    검토 후 규정 위반이 아니라고 판단한 경우다. **게시물에는 아무 일도 일어나지 않고**
+                    대기열에서만 내려간다.
+
+                    신고자에게 알리지 않는다 — §24-5의 "알리지 않고 사라지는 경우는 없다"는 조치를 당하는
+                    쪽에 대한 약속이고, 신고자에게 결과를 돌려주면 그 값이 게시물 상태를 캐는 창구가 된다.
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "반려 완료"),
+            @ApiResponse(responseCode = "404", description = "신고를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "이미 처리가 끝난 신고",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<Void> dismissReport(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "신고 ID", required = true, example = "17", in = ParameterIn.PATH)
+            @PathVariable("reportId") Long reportId);
 
     @Operation(summary = "이의 신청 승인 (→ 재게시)",
             description = """
