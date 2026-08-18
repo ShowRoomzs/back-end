@@ -127,7 +127,7 @@ public class ShowroomPostService {
         validateSaveable(request.getAction(), images, request.getContent());
 
         post.updateContent(request.getContent(), resolveAspectRatio(images));
-        post.replaceImages(toImageEntities(images));
+        replaceImages(post, images);
 
         boolean publishing = request.getAction() == PostSaveAction.PUBLISH;
         boolean firstPublish = post.getStatus() == PostStatus.DRAFT && publishing;
@@ -381,6 +381,21 @@ public class ShowroomPostService {
         return ratio;
     }
 
+    /**
+     * 이미 저장된 게시물의 사진 교체 — 지우기와 넣기 사이에 <b>플러시가 반드시 들어간다.</b>
+     *
+     * <p>{@code (post_id, sort_order)} 유니크 때문이다. 한 플러시에 맡기면 하이버네이트가 INSERT를
+     * 고아 DELETE보다 먼저 내보내므로, 새 0번이 아직 살아 있는 옛 0번과 부딪혀 커밋이 통째로
+     * 터진다. 순서를 바꾸든 장수를 줄이든 <b>사진을 건드리는 모든 수정</b>이 여기에 걸린다.
+     *
+     * <p>작성({@code createPost})에는 필요 없다 — 지울 행이 애초에 없다.
+     */
+    private void replaceImages(Post post, List<PostDto.PostImageRequest> images) {
+        post.replaceImages(List.of());
+        postRepository.flush();
+        post.replaceImages(toImageEntities(images));
+    }
+
     private List<PostImage> toImageEntities(List<PostDto.PostImageRequest> images) {
         return images.stream()
                 .map(image -> new PostImage(
@@ -440,14 +455,13 @@ public class ShowroomPostService {
         for (Object[] row : postRepository.countByCreatorGroupedByStatus(creatorId)) {
             counts.put((PostStatus) row[0], ((Number) row[1]).longValue());
         }
-        // 심사 중은 화면에서 여전히 "노출 중지" 탭에 머문다 — 사실이 바뀐 게 아니다(§24-5)
-        long suspended = counts.getOrDefault(PostStatus.SUSPENDED, 0L)
-                + counts.getOrDefault(PostStatus.UNDER_REVIEW, 0L);
-
         List<PostDto.StatusCount> result = new ArrayList<>();
         result.add(new PostDto.StatusCount(null, "전체", counts.values().stream().mapToLong(Long::longValue).sum()));
         for (PostStatus status : TAB_STATUSES) {
-            long count = status == PostStatus.SUSPENDED ? suspended : counts.getOrDefault(status, 0L);
+            // 탭이 담는 상태는 PostStatus가 안다 — 목록 쿼리도 같은 답을 쓴다(§24-5 심사 중은 노출 중지 탭)
+            long count = status.tabMembers().stream()
+                    .mapToLong(member -> counts.getOrDefault(member, 0L))
+                    .sum();
             result.add(new PostDto.StatusCount(status, label(status), count));
         }
         return result;

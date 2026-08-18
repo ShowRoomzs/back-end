@@ -57,7 +57,9 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                 // 삭제 게시물은 어느 탭에도 나타나지 않는다 — 운영자 콘솔에서만 조회된다(§24-6)
                 .and(post.status.ne(PostStatus.DELETED));
         if (status != null) {
-            where.and(post.status.eq(status));
+            // 탭 하나가 상태 둘을 담는 경우가 있다 — 「노출 중지」 탭은 심사 중까지 포함한다(§24-5).
+            // 탭 개수를 세는 쪽과 같은 규칙을 써야 숫자와 목록이 어긋나지 않는다.
+            where.and(post.status.in(status.tabMembers()));
         }
 
         List<Post> content = queryFactory
