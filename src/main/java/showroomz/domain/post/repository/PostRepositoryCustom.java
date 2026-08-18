@@ -15,6 +15,11 @@ public interface PostRepositoryCustom {
     /** 소비자 쇼룸 피드 — 게시중만 */
     Page<Post> findDisplayedPostsByCreatorId(Long creatorId, Pageable pageable);
 
+    /**
+     * 팔로잉 피드 — 팔로우한 쇼룸이 <b>게시한</b> 게시물만. 작성중·노출 중지가 새면 안 된다.
+     *
+     * @param creatorIds 대상 쇼룸. 비어 있으면 빈 페이지다 — 팔로잉이 0인 사용자에게 전체 피드를 주지 않는다
+     */
     Page<Post> findDisplayedPostsByCreatorIds(List<Long> creatorIds, Pageable pageable);
 
     /**

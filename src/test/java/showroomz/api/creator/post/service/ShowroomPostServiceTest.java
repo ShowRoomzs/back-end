@@ -416,6 +416,37 @@ class ShowroomPostServiceTest {
             assertThat(post.getImageCount()).isEqualTo(2);
         }
 
+        /**
+         * 게시중인 글은 {@code action}이 임시저장이어도 계속 소비자에게 노출된다 — 사진을 전부 빼는
+         * 저장이 통과하면 피드에 사진 없는 카드가 남는다. 임시저장 규칙(사진 <b>또는</b> 본문)은
+         * 아직 노출되지 않은 글에만 해당한다(§24-3).
+         */
+        @Test
+        @DisplayName("게시중인 글은 임시저장으로도 사진을 전부 뺄 수 없다 — 노출 중인 카드가 비어 버린다")
+        void publishedPostCannotDropAllImages() {
+            Post post = publishedPost();
+            post.replaceImages(List.of(new showroomz.domain.post.entity.PostImage(
+                    "https://cdn.example.com/posts/old.jpg", null, 1080, 1080, 1000)));
+            given(postRepository.findById(POST_ID)).willReturn(Optional.of(post));
+
+            assertThatThrownBy(() -> showroomPostService.updatePost(USER_ID, POST_ID,
+                    request(PostSaveAction.DRAFT, "본문만 남긴다", List.of())))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.POST_IMAGE_REQUIRED);
+        }
+
+        /** 작성중인 글은 아직 아무에게도 보이지 않으므로 사진 없이 본문만 남겨 둘 수 있다. */
+        @Test
+        @DisplayName("작성중인 글은 사진 없이 본문만으로 임시저장된다")
+        void draftMayKeepContentOnly() {
+            Post post = Post.draft(me, "초안 본문", new java.math.BigDecimal("1.0000"));
+            ReflectionTestUtils.setField(post, "id", POST_ID);
+            given(postRepository.findById(POST_ID)).willReturn(Optional.of(post));
+
+            showroomPostService.updatePost(USER_ID, POST_ID,
+                    request(PostSaveAction.DRAFT, "사진은 나중에", List.of()));
+        }
+
         @Test
         @DisplayName("수정으로도 사진을 20장 넘게 올릴 수 없다")
         void tooManyImagesOnUpdateIsRejected() {

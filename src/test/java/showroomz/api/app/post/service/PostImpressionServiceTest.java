@@ -33,7 +33,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -92,8 +91,19 @@ class PostImpressionServiceTest {
 
     /** 세션 안에 이미 본 기록이 없다고 응답하게 해 둔다 — 중복 차단을 검증하는 테스트만 이를 뒤집는다. */
     private void givenNoRecentImpression() {
-        given(postImpressionRepository.existsByPost_IdAndViewerKeyAndViewedAtAfter(anyLong(), anyString(), any()))
-                .willReturn(false);
+        given(postImpressionRepository.findCountedPostIds(any(), anyString(), any()))
+                .willReturn(List.of());
+    }
+
+    /** 배치에 실린 ID들이 그대로 조회되게 해 둔다 — 게시물은 요청한 ID로 만들어 돌려준다. */
+    private void givenPostsExist() {
+        given(postRepository.findAllById(any())).willAnswer(invocation -> {
+            List<Post> posts = new ArrayList<>();
+            for (Long id : (Iterable<Long>) invocation.getArgument(0)) {
+                posts.add(visiblePost(id));
+            }
+            return posts;
+        });
     }
 
     @Nested
@@ -105,7 +115,7 @@ class PostImpressionServiceTest {
         void loggedInImpressionIsKeyedByUser() {
             Users viewer = user(7L);
             given(userRepository.findByUsername(USERNAME)).willReturn(Optional.of(viewer));
-            given(postRepository.findById(POST_ID)).willReturn(Optional.of(visiblePost(POST_ID)));
+            givenPostsExist();
             givenNoRecentImpression();
 
             postImpressionService.recordImpressions(USERNAME, request(List.of(POST_ID), "device-abc"));
@@ -120,7 +130,7 @@ class PostImpressionServiceTest {
         @Test
         @DisplayName("비로그인 조회는 디바이스 기준으로 적재되고 사용자는 비어 있다")
         void anonymousImpressionIsKeyedByDevice() {
-            given(postRepository.findById(POST_ID)).willReturn(Optional.of(visiblePost(POST_ID)));
+            givenPostsExist();
             givenNoRecentImpression();
 
             postImpressionService.recordImpressions(null, request(List.of(POST_ID), "device-abc"));
@@ -148,7 +158,7 @@ class PostImpressionServiceTest {
         @DisplayName("토큰의 사용자를 못 찾으면 디바이스 식별자로 적재한다")
         void unknownUserFallsBackToDevice() {
             given(userRepository.findByUsername(USERNAME)).willReturn(Optional.empty());
-            given(postRepository.findById(POST_ID)).willReturn(Optional.of(visiblePost(POST_ID)));
+            givenPostsExist();
             givenNoRecentImpression();
 
             postImpressionService.recordImpressions(USERNAME, request(List.of(POST_ID), "device-abc"));
@@ -167,9 +177,9 @@ class PostImpressionServiceTest {
         @DisplayName("30분 세션 안의 재노출은 적재하지 않고 카운터도 올리지 않는다")
         void revisitWithinSessionIsSkipped() {
             Post post = visiblePost(POST_ID);
-            given(postRepository.findById(POST_ID)).willReturn(Optional.of(post));
-            given(postImpressionRepository.existsByPost_IdAndViewerKeyAndViewedAtAfter(
-                    anyLong(), anyString(), any())).willReturn(true);
+            given(postRepository.findAllById(any())).willReturn(List.of(post));
+            given(postImpressionRepository.findCountedPostIds(any(), anyString(), any()))
+                    .willReturn(List.of(POST_ID));
 
             postImpressionService.recordImpressions(null, request(List.of(POST_ID), "device-abc"));
 
@@ -181,20 +191,20 @@ class PostImpressionServiceTest {
         @Test
         @DisplayName("한 요청 안의 중복 ID는 한 번만 적재한다")
         void duplicateIdsWithinRequestAreCollapsed() {
-            given(postRepository.findById(POST_ID)).willReturn(Optional.of(visiblePost(POST_ID)));
+            givenPostsExist();
             givenNoRecentImpression();
 
             postImpressionService.recordImpressions(null,
                     request(List.of(POST_ID, POST_ID, POST_ID), "device-abc"));
 
             verify(postImpressionRepository, times(1)).save(any());
-            verify(postRepository, times(1)).findById(POST_ID);
+            verify(postRepository).findAllById(List.of(POST_ID));
         }
 
         @Test
         @DisplayName("null이 섞여 와도 건너뛰고 나머지를 적재한다")
         void nullIdsAreSkipped() {
-            given(postRepository.findById(POST_ID)).willReturn(Optional.of(visiblePost(POST_ID)));
+            givenPostsExist();
             givenNoRecentImpression();
 
             List<Long> ids = new ArrayList<>();
@@ -217,8 +227,7 @@ class PostImpressionServiceTest {
         @Test
         @DisplayName("한 요청은 50건까지만 적재한다")
         void batchIsCappedAtFifty() {
-            given(postRepository.findById(anyLong()))
-                    .willAnswer(invocation -> Optional.of(visiblePost(invocation.getArgument(0))));
+            givenPostsExist();
             givenNoRecentImpression();
 
             List<Long> ids = new ArrayList<>();
@@ -234,8 +243,7 @@ class PostImpressionServiceTest {
         @Test
         @DisplayName("상한을 넘긴 요청도 예외 없이 앞쪽 50건을 처리한다 — 피드 스크롤이 멈추면 안 된다")
         void overLimitRequestDoesNotFail() {
-            given(postRepository.findById(anyLong()))
-                    .willAnswer(invocation -> Optional.of(visiblePost(invocation.getArgument(0))));
+            givenPostsExist();
             givenNoRecentImpression();
 
             List<Long> ids = new ArrayList<>();
@@ -245,7 +253,9 @@ class PostImpressionServiceTest {
 
             postImpressionService.recordImpressions(null, request(ids, "device-abc"));
 
-            verify(postRepository, never()).findById(51L);
+            ArgumentCaptor<Iterable<Long>> captor = ArgumentCaptor.forClass(Iterable.class);
+            verify(postRepository).findAllById(captor.capture());
+            assertThat(captor.getValue()).hasSize(50).doesNotContain(51L);
         }
     }
 
@@ -257,7 +267,7 @@ class PostImpressionServiceTest {
         @Test
         @DisplayName("없는 게시물은 조용히 버린다")
         void unknownPostIsSilentlyIgnored() {
-            given(postRepository.findById(POST_ID)).willReturn(Optional.empty());
+            given(postRepository.findAllById(any())).willReturn(List.of());
             givenNoRecentImpression();
 
             postImpressionService.recordImpressions(null, request(List.of(POST_ID), "device-abc"));
@@ -270,7 +280,7 @@ class PostImpressionServiceTest {
         void suspendedPostIsNotRecorded() {
             Post post = visiblePost(POST_ID);
             post.suspend();
-            given(postRepository.findById(POST_ID)).willReturn(Optional.of(post));
+            given(postRepository.findAllById(any())).willReturn(List.of(post));
             givenNoRecentImpression();
 
             postImpressionService.recordImpressions(null, request(List.of(POST_ID), "device-abc"));
@@ -283,7 +293,7 @@ class PostImpressionServiceTest {
         @DisplayName("적재와 카운터 증가가 함께 일어난다")
         void logAndCounterMoveTogether() {
             Post post = visiblePost(POST_ID);
-            given(postRepository.findById(POST_ID)).willReturn(Optional.of(post));
+            given(postRepository.findAllById(any())).willReturn(List.of(post));
             givenNoRecentImpression();
 
             postImpressionService.recordImpressions(null, request(List.of(POST_ID), "device-abc"));
@@ -295,7 +305,7 @@ class PostImpressionServiceTest {
         @Test
         @DisplayName("적재 로그에는 쇼룸 귀속이 함께 남는다 — 인사이트가 쇼룸 단위로 집계된다")
         void impressionCarriesShowroomId() {
-            given(postRepository.findById(POST_ID)).willReturn(Optional.of(visiblePost(POST_ID)));
+            givenPostsExist();
             givenNoRecentImpression();
 
             postImpressionService.recordImpressions(null, request(List.of(POST_ID), "device-abc"));

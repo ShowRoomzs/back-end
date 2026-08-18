@@ -60,30 +60,29 @@ public class PostImpressionService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
+        List<Long> postIds = distinctIds(request.getPostIds());
+        if (postIds.isEmpty()) {
+            return;
+        }
+
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime sessionStart = now.minusMinutes(PostImpression.SESSION_MINUTES);
 
-        for (Long postId : distinctIds(request.getPostIds())) {
-            recordOne(postId, viewer, viewerKey, now, sessionStart);
-        }
-    }
+        // 배치 전체를 두 번의 조회로 판정한다 — 게시물 조회와 세션 판정을 카드마다 하면
+        // 상한(50건)까지 채운 요청 하나가 조회 100번이 된다.
+        Set<Long> alreadyCounted = Set.copyOf(
+                postImpressionRepository.findCountedPostIds(postIds, viewerKey, sessionStart));
 
-    private void recordOne(Long postId, Users viewer, String viewerKey,
-                           LocalDateTime now, LocalDateTime sessionStart) {
-        Post post = postRepository.findById(postId).orElse(null);
-
-        // 없거나 이미 내려간 게시물의 노출은 조용히 버린다 — 화면에 떠 있던 카드가 그 사이 내려갔을 뿐이고,
-        // 노출 적재 실패로 피드 스크롤이 멈출 이유는 없다.
-        if (post == null || !post.isVisibleToConsumer()) {
-            return;
+        for (Post post : postRepository.findAllById(postIds)) {
+            // 없거나 이미 내려간 게시물의 노출은 조용히 버린다 — 화면에 떠 있던 카드가 그 사이 내려갔을 뿐이고,
+            // 노출 적재 실패로 피드 스크롤이 멈출 이유는 없다. (없는 게시물은 조회 결과에서 그냥 빠진다)
+            if (!post.isVisibleToConsumer() || alreadyCounted.contains(post.getId())) {
+                continue;
+            }
+            postImpressionRepository.save(new PostImpression(
+                    post, post.getCreator().getId(), viewer, viewerKey, now));
+            post.increaseImpressionCount();
         }
-        if (postImpressionRepository.existsByPost_IdAndViewerKeyAndViewedAtAfter(postId, viewerKey, sessionStart)) {
-            return;
-        }
-
-        postImpressionRepository.save(new PostImpression(
-                post, post.getCreator().getId(), viewer, viewerKey, now));
-        post.increaseImpressionCount();
     }
 
     /** 같은 카드가 스크롤 중 여러 번 담겨 오는 일이 흔하므로 요청 안에서 먼저 접는다 */
