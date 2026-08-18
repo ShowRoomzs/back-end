@@ -16,6 +16,17 @@ public interface PostSuspensionRepository extends JpaRepository<PostSuspension, 
     /** 현재 진행 중인 조치 — {@code resolution IS NULL}인 가장 최근 행이다 */
     Optional<PostSuspension> findFirstByPost_IdAndResolutionIsNullOrderBySuspendedAtDesc(Long postId);
 
+    /**
+     * 목록 화면용 — 여러 게시물의 진행 중인 조치를 한 번에 읽는다.
+     *
+     * <p>조치 시각 <b>오름차순</b>이라 게시물별로 마지막 행이 가장 최근 조치다 —
+     * {@link #findFirstByPost_IdAndResolutionIsNullOrderBySuspendedAtDesc(Long)}가 고르는 것과 같은 건이다.
+     */
+    @Query("SELECT s FROM PostSuspension s " +
+           "WHERE s.post.id IN :postIds AND s.resolution IS NULL " +
+           "ORDER BY s.suspendedAt ASC")
+    List<PostSuspension> findOpenByPostIds(@Param("postIds") List<Long> postIds);
+
     /** 조치 이력 — 재게시 후 재조치가 가능하므로 여러 건이 쌓인다 */
     List<PostSuspension> findByPost_IdOrderBySuspendedAtDesc(Long postId);
 

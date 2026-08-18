@@ -1,5 +1,7 @@
 package showroomz.domain.post.type;
 
+import java.util.List;
+
 /**
  * 게시물의 <b>노출 상태</b> (§24-1).
  *
@@ -47,5 +49,19 @@ public enum PostStatus {
     /** 삭제 허용 — 중지 중 본인 삭제는 허용하되(출구), 심사 중에는 막는다 (§24-5) */
     public boolean isDeletable() {
         return this == DRAFT || this == PUBLISHED || this == SUSPENDED;
+    }
+
+    /**
+     * 이 상태 탭이 실제로 담는 상태들 (§24-1).
+     *
+     * <p>화면 배지는 3종인데 서버 상태는 5종이라 탭 하나가 상태 둘을 담는 경우가 생긴다 —
+     * 「노출 중지」가 그렇다. 심사 중은 배지도 탭도 여전히 노출 중지다(§24-5: 사실이 바뀐 게 아니다).
+     *
+     * <p><b>탭 개수와 탭 목록이 같은 답을 써야 한다.</b> 한쪽만 심사 중을 포함하면, 이의 신청을
+     * 넣은 순간 게시물이 자기 탭 목록에서 사라지면서 숫자만 남는다 — 인플루언서에게는 글이
+     * 증발한 것으로 보인다.
+     */
+    public List<PostStatus> tabMembers() {
+        return this == SUSPENDED ? List.of(SUSPENDED, UNDER_REVIEW) : List.of(this);
     }
 }

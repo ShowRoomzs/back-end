@@ -127,11 +127,17 @@ public class ShowroomPostService {
         validateSaveable(request.getAction(), images, request.getContent());
 
         post.updateContent(request.getContent(), resolveAspectRatio(images));
-        post.replaceImages(toImageEntities(images));
+        replaceImages(post, images);
 
-        boolean firstPublish = post.getStatus() == PostStatus.DRAFT && request.getAction() == PostSaveAction.PUBLISH;
-        if (request.getAction() == PostSaveAction.PUBLISH) {
+        boolean publishing = request.getAction() == PostSaveAction.PUBLISH;
+        boolean firstPublish = post.getStatus() == PostStatus.DRAFT && publishing;
+
+        // 이미 게시중인 게시물은 action이 임시저장이어도 계속 노출된다 — 그래서 게시 조건을 다시 확인한다.
+        // 확인하지 않으면 사진을 전부 뺀 저장이 통과해 소비자 피드에 사진 없는 카드가 남는다(§24-3).
+        if (publishing || post.getStatus() == PostStatus.PUBLISHED) {
             postPolicies.of(post).validateForPublish(post);
+        }
+        if (publishing) {
             post.publish(LocalDateTime.now());
         }
 
@@ -375,6 +381,21 @@ public class ShowroomPostService {
         return ratio;
     }
 
+    /**
+     * 이미 저장된 게시물의 사진 교체 — 지우기와 넣기 사이에 <b>플러시가 반드시 들어간다.</b>
+     *
+     * <p>{@code (post_id, sort_order)} 유니크 때문이다. 한 플러시에 맡기면 하이버네이트가 INSERT를
+     * 고아 DELETE보다 먼저 내보내므로, 새 0번이 아직 살아 있는 옛 0번과 부딪혀 커밋이 통째로
+     * 터진다. 순서를 바꾸든 장수를 줄이든 <b>사진을 건드리는 모든 수정</b>이 여기에 걸린다.
+     *
+     * <p>작성({@code createPost})에는 필요 없다 — 지울 행이 애초에 없다.
+     */
+    private void replaceImages(Post post, List<PostDto.PostImageRequest> images) {
+        post.replaceImages(List.of());
+        postRepository.flush();
+        post.replaceImages(toImageEntities(images));
+    }
+
     private List<PostImage> toImageEntities(List<PostDto.PostImageRequest> images) {
         return images.stream()
                 .map(image -> new PostImage(
@@ -434,14 +455,13 @@ public class ShowroomPostService {
         for (Object[] row : postRepository.countByCreatorGroupedByStatus(creatorId)) {
             counts.put((PostStatus) row[0], ((Number) row[1]).longValue());
         }
-        // 심사 중은 화면에서 여전히 "노출 중지" 탭에 머문다 — 사실이 바뀐 게 아니다(§24-5)
-        long suspended = counts.getOrDefault(PostStatus.SUSPENDED, 0L)
-                + counts.getOrDefault(PostStatus.UNDER_REVIEW, 0L);
-
         List<PostDto.StatusCount> result = new ArrayList<>();
         result.add(new PostDto.StatusCount(null, "전체", counts.values().stream().mapToLong(Long::longValue).sum()));
         for (PostStatus status : TAB_STATUSES) {
-            long count = status == PostStatus.SUSPENDED ? suspended : counts.getOrDefault(status, 0L);
+            // 탭이 담는 상태는 PostStatus가 안다 — 목록 쿼리도 같은 답을 쓴다(§24-5 심사 중은 노출 중지 탭)
+            long count = status.tabMembers().stream()
+                    .mapToLong(member -> counts.getOrDefault(member, 0L))
+                    .sum();
             result.add(new PostDto.StatusCount(status, label(status), count));
         }
         return result;
@@ -478,15 +498,25 @@ public class ShowroomPostService {
         return map;
     }
 
-    /** 목록 카드에 남은 기한을 함께 보여주기 위한 값 — 중지·심사 중인 게시물만 조회한다 */
+    /**
+     * 목록 카드에 남은 기한을 함께 보여주기 위한 값 — 중지·심사 중인 게시물만 <b>한 번에</b> 조회한다.
+     *
+     * <p>게시물마다 물으면 노출 중지가 많은 페이지에서 조회가 페이지 크기만큼 늘어난다. 조치가
+     * 여러 번 쌓인 게시물은 조치 시각 오름차순으로 받아 덮어쓰므로 가장 최근 건이 남는다.
+     */
     private Map<Long, LocalDateTime> openAppealDeadlines(List<Post> posts) {
+        List<Long> postIds = posts.stream()
+                .filter(post -> post.getStatus() == PostStatus.SUSPENDED
+                        || post.getStatus() == PostStatus.UNDER_REVIEW)
+                .map(Post::getId)
+                .toList();
+        if (postIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
         Map<Long, LocalDateTime> deadlines = new HashMap<>();
-        for (Post post : posts) {
-            if (post.getStatus() != PostStatus.SUSPENDED && post.getStatus() != PostStatus.UNDER_REVIEW) {
-                continue;
-            }
-            postSuspensionRepository.findFirstByPost_IdAndResolutionIsNullOrderBySuspendedAtDesc(post.getId())
-                    .ifPresent(suspension -> deadlines.put(post.getId(), suspension.getAppealDeadline()));
+        for (PostSuspension suspension : postSuspensionRepository.findOpenByPostIds(postIds)) {
+            deadlines.put(suspension.getPost().getId(), suspension.getAppealDeadline());
         }
         return deadlines;
     }

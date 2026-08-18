@@ -14,6 +14,8 @@ import showroomz.domain.post.type.PostStatus;
 
 import java.util.List;
 
+import static showroomz.domain.member.creator.entity.QCreator.creator;
+import static showroomz.domain.member.user.entity.QUsers.users;
 import static showroomz.domain.post.entity.QPost.post;
 
 @Repository
@@ -55,7 +57,9 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                 // 삭제 게시물은 어느 탭에도 나타나지 않는다 — 운영자 콘솔에서만 조회된다(§24-6)
                 .and(post.status.ne(PostStatus.DELETED));
         if (status != null) {
-            where.and(post.status.eq(status));
+            // 탭 하나가 상태 둘을 담는 경우가 있다 — 「노출 중지」 탭은 심사 중까지 포함한다(§24-5).
+            // 탭 개수를 세는 쪽과 같은 규칙을 써야 숫자와 목록이 어긋나지 않는다.
+            where.and(post.status.in(status.tabMembers()));
         }
 
         List<Post> content = queryFactory
@@ -106,6 +110,11 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
      * <p>예전에는 {@code isDisplay = true} 하나로 걸렀는데, 그 조건은 작성중(임시저장)과 노출 중지를
      * 구분하지 못했다. 상태가 5종으로 갈린 지금은 <b>게시중과의 일치</b>로만 판정한다 — 부정 조건
      * ("삭제가 아닌")으로 쓰면 상태가 늘어날 때마다 소비자 화면에 새 상태가 새어 나간다.
+     *
+     * <p>쇼룸(크리에이터)과 그 계정을 함께 읽는다 — 카드마다 쇼룸명·프로필이 붙는데 지연 로딩에
+     * 맡기면 한 페이지에 쿼리가 쇼룸 수만큼 더 나가고, 쇼룸명이 아직 없는 계정은 닉네임을 읽느라
+     * 한 번 더 나간다. 컬렉션이 아니라 {@code ManyToOne}이라 페이징과 같이 써도 안전하다
+     * (좋아요 목록 쿼리와 같은 방식이다).
      */
     private Page<Post> findPublished(BooleanExpression extraCondition, Pageable pageable) {
         BooleanBuilder where = new BooleanBuilder(post.status.eq(PostStatus.PUBLISHED));
@@ -115,6 +124,8 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
 
         List<Post> content = queryFactory
                 .selectFrom(post)
+                .join(post.creator, creator).fetchJoin()
+                .join(creator.user, users).fetchJoin()
                 .where(where)
                 .orderBy(post.publishedAt.desc(), post.id.desc())
                 .offset(pageable.getOffset())

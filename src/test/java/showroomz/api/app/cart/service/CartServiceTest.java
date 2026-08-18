@@ -17,22 +17,29 @@ import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.cart.entity.Cart;
 import showroomz.domain.cart.repository.CartRepository;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductVariant;
+import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.data.domain.Pageable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -57,6 +64,10 @@ class CartServiceTest {
     private UserRepository userRepository;
     @Mock
     private ProductVariantRepository productVariantRepository;
+    @Mock
+    private ProductRepository productRepository;
+    @Mock
+    private CreatorFollowRepository creatorFollowRepository;
 
     @InjectMocks
     private CartService cartService;
@@ -201,7 +212,7 @@ class CartServiceTest {
 
         CartDto.UpdateCartRequest request = CartDto.UpdateCartRequest.builder().quantity(2).build();
 
-        assertThatThrownBy(() -> cartService.updateCart(USERNAME, 10L, request))
+        assertThatThrownBy(() -> cartService.updateCart(USERNAME, 10L, request, null))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.CART_ITEM_NOT_PURCHASABLE);
     }
@@ -220,7 +231,7 @@ class CartServiceTest {
 
         CartDto.UpdateCartRequest request = CartDto.UpdateCartRequest.builder().variantId(2L).build();
 
-        assertThatThrownBy(() -> cartService.updateCart(USERNAME, 10L, request))
+        assertThatThrownBy(() -> cartService.updateCart(USERNAME, 10L, request, null))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.CART_ITEM_NOT_PURCHASABLE);
     }
@@ -394,7 +405,7 @@ class CartServiceTest {
             givenUpdatable(item);
 
             CartDto.UpdateCartResponse response = cartService.updateCart(
-                    USERNAME, 10L, CartDto.UpdateCartRequest.builder().quantity(4).build());
+                    USERNAME, 10L, CartDto.UpdateCartRequest.builder().quantity(4).build(), null);
 
             assertThat(item.getQuantity()).isEqualTo(4);
             assertThat(response.getQuantity()).isEqualTo(4);
@@ -407,7 +418,7 @@ class CartServiceTest {
             givenUpdatable(cart(10L, target, 1));
 
             assertThatThrownBy(() -> cartService.updateCart(
-                    USERNAME, 10L, CartDto.UpdateCartRequest.builder().quantity(4).build()))
+                    USERNAME, 10L, CartDto.UpdateCartRequest.builder().quantity(4).build(), null))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INSUFFICIENT_STOCK);
         }
@@ -419,7 +430,7 @@ class CartServiceTest {
             givenUpdatable(cart(10L, purchasableVariant(1L, 10), 1));
 
             assertThatThrownBy(() -> cartService.updateCart(
-                    USERNAME, 10L, CartDto.UpdateCartRequest.builder().build()))
+                    USERNAME, 10L, CartDto.UpdateCartRequest.builder().build(), null))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_INPUT_VALUE);
         }
@@ -438,7 +449,7 @@ class CartServiceTest {
             given(cartRepository.findByUserAndVariant(user, next)).willReturn(Optional.empty());
 
             cartService.updateCart(USERNAME, 10L,
-                    CartDto.UpdateCartRequest.builder().variantId(2L).build());
+                    CartDto.UpdateCartRequest.builder().variantId(2L).build(), null);
 
             assertThat(item.getVariant().getVariantId()).isEqualTo(2L);
             assertThat(item.getQuantity()).isEqualTo(2);
@@ -461,7 +472,7 @@ class CartServiceTest {
             given(cartRepository.findByUserAndVariant(user, next)).willReturn(Optional.of(alreadyHeld));
 
             CartDto.UpdateCartResponse response = cartService.updateCart(USERNAME, 10L,
-                    CartDto.UpdateCartRequest.builder().variantId(2L).build());
+                    CartDto.UpdateCartRequest.builder().variantId(2L).build(), null);
 
             assertThat(alreadyHeld.getQuantity()).isEqualTo(5);
             verify(cartRepository).delete(item);
@@ -482,7 +493,7 @@ class CartServiceTest {
             given(cartRepository.findByUserAndVariant(user, next)).willReturn(Optional.of(cart(11L, next, 3)));
 
             assertThatThrownBy(() -> cartService.updateCart(USERNAME, 10L,
-                    CartDto.UpdateCartRequest.builder().variantId(2L).build()))
+                    CartDto.UpdateCartRequest.builder().variantId(2L).build(), null))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INSUFFICIENT_STOCK);
 
@@ -497,7 +508,7 @@ class CartServiceTest {
             given(cartRepository.findByIdAndUser(10L, user)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> cartService.updateCart(
-                    USERNAME, 10L, CartDto.UpdateCartRequest.builder().quantity(2).build()))
+                    USERNAME, 10L, CartDto.UpdateCartRequest.builder().quantity(2).build(), null))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.CART_ITEM_NOT_FOUND);
         }
@@ -516,7 +527,7 @@ class CartServiceTest {
             given(cartRepository.findByIdInAndUser(List.of(10L), user)).willReturn(List.of(first));
             given(cartRepository.findAllByUser(user)).willReturn(List.of());
 
-            CartDto.DeleteCartResponse response = cartService.deleteCart(USERNAME, List.of(10L));
+            CartDto.DeleteCartResponse response = cartService.deleteCart(USERNAME, List.of(10L), null);
 
             assertThat(response.getDeletedCount()).isEqualTo(1);
             assertThat(response.getDeletedCartItemIds()).containsExactly(10L);
@@ -535,7 +546,7 @@ class CartServiceTest {
             given(cartRepository.findByIdInAndUser(List.of(10L, 999L), user))
                     .willReturn(List.of(cart(10L, target, 1)));
 
-            assertThatThrownBy(() -> cartService.deleteCart(USERNAME, List.of(10L, 999L)))
+            assertThatThrownBy(() -> cartService.deleteCart(USERNAME, List.of(10L, 999L), null))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
 
@@ -551,7 +562,7 @@ class CartServiceTest {
             given(cartRepository.findAllByUser(user))
                     .willReturn(List.of(cart(10L, target, 1), cart(11L, target, 1)), List.of());
 
-            CartDto.DeleteCartResponse response = cartService.deleteCart(USERNAME, null);
+            CartDto.DeleteCartResponse response = cartService.deleteCart(USERNAME, null, null);
 
             assertThat(response.getDeletedCount()).isEqualTo(2);
             verify(cartRepository).deleteByUser(user);
@@ -564,7 +575,7 @@ class CartServiceTest {
             given(userRepository.findByUsername(USERNAME)).willReturn(Optional.of(user));
             given(cartRepository.countByUser(user)).willReturn(0L);
 
-            CartDto.DeleteCartResponse response = cartService.deleteCart(USERNAME, null);
+            CartDto.DeleteCartResponse response = cartService.deleteCart(USERNAME, null, null);
 
             assertThat(response.getDeletedCount()).isZero();
             assertThat(response.getSummary().getExpectedTotalPrice()).isZero();
@@ -652,6 +663,165 @@ class CartServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("체크 상태를 따르는 요약")
+    class SummaryFollowsSelection {
+
+        /** 수량만 올렸는데 체크를 푼 항목까지 합계에 들어가면 하단 요약이 목록과 어긋난다. */
+        @Test
+        @DisplayName("수량을 바꾸면 넘겨받은 체크 상태로 요약을 다시 계산한다")
+        void updateSummaryUsesGivenSelection() {
+            Market market = market(5L, "제니의 뷰티룸", 3000, 100000);
+            Product product = product(market, ProductGroupBuyStatus.IN_PROGRESS, 10);
+            Cart changed = cart(10L, variant(1L, product, 38000, 24900, 10), 1);
+            Cart unchecked = cart(11L, variant(2L, product, 26000, 17500, 10), 1);
+
+            given(userRepository.findByUsername(USERNAME)).willReturn(Optional.of(user));
+            given(cartRepository.findByIdAndUser(10L, user)).willReturn(Optional.of(changed));
+            given(cartRepository.save(any(Cart.class))).willAnswer(invocation -> invocation.getArgument(0));
+            given(cartRepository.findAllByUser(user)).willReturn(List.of(changed, unchecked));
+
+            CartDto.UpdateCartResponse response = cartService.updateCart(
+                    USERNAME, 10L, CartDto.UpdateCartRequest.builder().quantity(2).build(), List.of(10L));
+
+            // 체크된 10번만 24,900 × 2 = 49,800원. 체크를 푼 11번의 17,500원은 빠진다
+            assertThat(response.getSummary().getTotalProductPrice()).isEqualTo(49_800L);
+            assertThat(response.getSummary().getExpectedTotalPrice()).isEqualTo(52_800L);
+        }
+
+        /** 옵션만 고쳤는데 합계에서 빠지면 금액이 이유 없이 준다. */
+        @Test
+        @DisplayName("옵션을 바꾸다 다른 줄과 합쳐져도 체크 상태를 이어받는다")
+        void mergedRowKeepsSelection() {
+            Market market = market(5L, "제니의 뷰티룸", 3000, 100000);
+            Product product = product(market, ProductGroupBuyStatus.IN_PROGRESS, 10);
+            ProductVariant current = variant(1L, product, 38000, 24900, 10);
+            ProductVariant next = variant(2L, product, 38000, 24900, 10);
+            Cart item = cart(10L, current, 2);
+            Cart alreadyHeld = cart(11L, next, 3);
+
+            given(userRepository.findByUsername(USERNAME)).willReturn(Optional.of(user));
+            given(cartRepository.findByIdAndUser(10L, user)).willReturn(Optional.of(item));
+            given(cartRepository.save(any(Cart.class))).willAnswer(invocation -> invocation.getArgument(0));
+            given(productVariantRepository.findByVariantId(2L)).willReturn(Optional.of(next));
+            given(cartRepository.findByUserAndVariant(user, next)).willReturn(Optional.of(alreadyHeld));
+            given(cartRepository.findAllByUser(user)).willReturn(List.of(alreadyHeld));
+
+            CartDto.UpdateCartResponse response = cartService.updateCart(USERNAME, 10L,
+                    CartDto.UpdateCartRequest.builder().variantId(2L).build(), List.of(10L));
+
+            // 합쳐진 11번 줄(24,900 × 5)이 체크된 것으로 계산된다
+            assertThat(response.getCartId()).isEqualTo(11L);
+            assertThat(response.getSummary().getTotalProductPrice()).isEqualTo(124_500L);
+        }
+
+        @Test
+        @DisplayName("삭제 후 요약도 남은 항목의 체크 상태를 따른다 — 지워진 ID는 알아서 빠진다")
+        void deleteSummaryUsesGivenSelection() {
+            Market market = market(5L, "제니의 뷰티룸", 3000, 100000);
+            Product product = product(market, ProductGroupBuyStatus.IN_PROGRESS, 10);
+            Cart deleted = cart(10L, variant(1L, product, 38000, 24900, 10), 1);
+            Cart remaining = cart(11L, variant(2L, product, 26000, 17500, 10), 1);
+            Cart unchecked = cart(12L, variant(3L, product, 26000, 17500, 10), 1);
+
+            given(userRepository.findByUsername(USERNAME)).willReturn(Optional.of(user));
+            given(cartRepository.findByIdInAndUser(List.of(10L), user)).willReturn(List.of(deleted));
+            given(cartRepository.findAllByUser(user)).willReturn(List.of(remaining, unchecked));
+
+            CartDto.DeleteCartResponse response =
+                    cartService.deleteCart(USERNAME, List.of(10L), List.of(10L, 11L));
+
+            assertThat(response.getSummary().getTotalProductPrice()).isEqualTo(17_500L);
+        }
+
+        /** 같은 ID가 두 번 실려 왔다고 "권한 없음"으로 막으면 한 번 더 누른 사용자가 막힌다. */
+        @Test
+        @DisplayName("같은 항목 ID가 두 번 실려 와도 한 번 지운 것으로 본다")
+        void duplicatedIdsAreDeletedOnce() {
+            Market market = market(5L, "제니의 뷰티룸", 3000, 100000);
+            Cart item = cart(10L, variant(1L, product(market, ProductGroupBuyStatus.IN_PROGRESS, 10),
+                    38000, 24900, 10), 1);
+
+            given(userRepository.findByUsername(USERNAME)).willReturn(Optional.of(user));
+            given(cartRepository.findByIdInAndUser(List.of(10L), user)).willReturn(List.of(item));
+            given(cartRepository.findAllByUser(user)).willReturn(List.of());
+
+            CartDto.DeleteCartResponse response = cartService.deleteCart(USERNAME, List.of(10L, 10L), null);
+
+            assertThat(response.getDeletedCount()).isEqualTo(1);
+            assertThat(response.getDeletedCartItemIds()).containsExactly(10L);
+        }
+    }
+
+    @Nested
+    @DisplayName("팔로우한 쇼룸의 공구")
+    class Recommendations {
+
+        @Test
+        @DisplayName("팔로우한 쇼룸이 없으면 빈 목록이다 — 화면은 영역을 그리지 않는다")
+        void noFollowYieldsEmptyList() {
+            given(userRepository.findByUsername(USERNAME)).willReturn(Optional.of(user));
+            given(creatorFollowRepository.findCreatorIdsByUserId(1L)).willReturn(List.of());
+
+            assertThat(cartService.getRecommendations(USERNAME, null).getProducts()).isEmpty();
+            verify(productRepository, never()).findOngoingGroupBuyProductsOfShowrooms(any(), any(), any());
+        }
+
+        /** "13,200원 더 담으면 무료"를 본 직후 같은 쇼룸의 상품이 바로 아래 있어야 도움이 된다. */
+        @Test
+        @DisplayName("무료배송까지 조금 남은 쇼룸의 상품이 앞에 온다")
+        void marketShortOfFreeShippingComesFirst() {
+            Market inCart = market(5L, "제니의 뷰티룸", 3000, 30000);
+            Market other = market(7L, "미아 스킨노트", 3000, 30000);
+            Cart held = cart(10L, variant(1L, product(inCart, ProductGroupBuyStatus.IN_PROGRESS, 10),
+                    38000, 24900, 10), 1);
+
+            given(userRepository.findByUsername(USERNAME)).willReturn(Optional.of(user));
+            given(creatorFollowRepository.findCreatorIdsByUserId(1L)).willReturn(List.of(3L));
+            given(cartRepository.findAllByUser(user)).willReturn(List.of(held));
+            given(productRepository.findOngoingGroupBuyProductsOfShowrooms(
+                    eq(List.of(3L)),
+                    anyCollection(),
+                    any(Pageable.class)))
+                    .willReturn(List.of(
+                            recommended(2049L, other, 24000, 16800),
+                            recommended(2050L, inCart, 20000, 15000)));
+
+            List<CartDto.RecommendedProduct> products =
+                    cartService.getRecommendations(USERNAME, 10).getProducts();
+
+            assertThat(products).extracting(CartDto.RecommendedProduct::getProductId)
+                    .containsExactly(2050L, 2049L);
+            assertThat(products.get(0).getHelpsFreeShipping()).isTrue();
+            assertThat(products.get(0).getPrice().getDiscountRate()).isEqualTo(25);
+            assertThat(products.get(1).getHelpsFreeShipping()).isFalse();
+        }
+
+        @Test
+        @DisplayName("이미 담은 상품은 추천에서 뺀다")
+        void heldProductsAreExcluded() {
+            Market market = market(5L, "제니의 뷰티룸", 3000, 30000);
+            Product held = product(market, ProductGroupBuyStatus.IN_PROGRESS, 10);
+            held.setProductId(1024L);
+
+            given(userRepository.findByUsername(USERNAME)).willReturn(Optional.of(user));
+            given(creatorFollowRepository.findCreatorIdsByUserId(1L)).willReturn(List.of(3L));
+            given(cartRepository.findAllByUser(user))
+                    .willReturn(List.of(cart(10L, variant(1L, held, 38000, 24900, 10), 1)));
+            given(productRepository.findOngoingGroupBuyProductsOfShowrooms(any(), any(), any()))
+                    .willReturn(List.of());
+
+            cartService.getRecommendations(USERNAME, null);
+
+            @SuppressWarnings("unchecked")
+            ArgumentCaptor<Collection<Long>> excluded =
+                    ArgumentCaptor.forClass((Class<Collection<Long>>) (Class<?>) Collection.class);
+            verify(productRepository).findOngoingGroupBuyProductsOfShowrooms(
+                    any(), excluded.capture(), any(Pageable.class));
+            assertThat(excluded.getValue()).containsExactly(1024L);
+        }
+    }
+
     // ------------------------------------------------------------------ 픽스처
 
     private ProductVariant purchasableVariant(Long variantId, int stock) {
@@ -715,6 +885,14 @@ class CartServiceTest {
         Cart cart = new Cart(user, variant, quantity);
         ReflectionTestUtils.setField(cart, "id", cartId);
         return cart;
+    }
+
+    private Product recommended(Long productId, Market market, int regularPrice, int salePrice) {
+        Product product = product(market, ProductGroupBuyStatus.IN_PROGRESS, 10);
+        product.setProductId(productId);
+        product.setRegularPrice(regularPrice);
+        product.setSalePrice(salePrice);
+        return product;
     }
 
     private CartDto.CartItem itemOf(CartDto.CartListResponse response, long cartId) {

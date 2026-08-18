@@ -200,7 +200,7 @@ class UserPostServiceTest {
     @DisplayName("팔로잉 피드 항목은 전부 팔로우 중이다 — 팔로우 버튼이 붙지 않게 한다")
     void followingFeedItemsAreFollowing() {
         given(creatorFollowRepository.findCreatorIdsByUserId(USER_ID)).willReturn(List.of(10L));
-        given(postRepository.findDisplayedPostsByFollowingCreatorIds(any(), any()))
+        given(postRepository.findDisplayedPostsByCreatorIds(any(), any()))
                 .willAnswer(invocation -> new PageImpl<>(
                         List.of(publishedPost()), invocation.getArgument(1), 1));
 

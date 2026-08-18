@@ -1,6 +1,5 @@
 package showroomz.domain.post.repository;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,14 +13,18 @@ import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<Post, Long>, PostRepositoryCustom {
 
-    /** 상세 조회 — 사진까지 한 번에(N+1 방지). 순서는 {@code @OrderBy}가 보장한다 */
-    @Query("SELECT DISTINCT p FROM Post p LEFT JOIN FETCH p.images WHERE p.id = :postId")
+    /**
+     * 상세 조회 — 사진과 쇼룸까지 한 번에(N+1 방지). 사진 순서는 {@code @OrderBy}가 보장한다.
+     *
+     * <p>쇼룸과 그 계정을 함께 읽는 이유 — 소비자 상세 응답에 쇼룸명·프로필이 실리는데
+     * 지연 로딩에 맡기면 상세 한 건에 쿼리가 두 번 더 나간다(§22-1 쇼룸명 대체값이 닉네임이라
+     * 이름이 없는 쇼룸은 계정까지 읽는다).
+     */
+    @Query("SELECT DISTINCT p FROM Post p " +
+           "LEFT JOIN FETCH p.images " +
+           "JOIN FETCH p.creator c JOIN FETCH c.user " +
+           "WHERE p.id = :postId")
     Optional<Post> findByIdWithImages(@Param("postId") Long postId);
-
-    /** 팔로잉 피드 — 팔로우한 쇼룸이 <b>게시한</b> 게시물만. 작성중이 새면 안 된다 */
-    @Query("SELECT p FROM Post p WHERE p.status = showroomz.domain.post.type.PostStatus.PUBLISHED " +
-           "AND p.creator.id IN :creatorIds")
-    Page<Post> findDisplayedPostsByFollowingCreatorIds(@Param("creatorIds") List<Long> creatorIds, Pageable pageable);
 
     /**
      * §22-4 인기 콘텐츠 TOP 5 — 기간 내 <b>게시된</b> 게시물을 좋아요 많은 순으로.

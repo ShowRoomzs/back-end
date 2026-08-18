@@ -231,7 +231,11 @@ public interface CartControllerDocs {
                     "바꾸려는 옵션(`variantId`) 쪽이 마감·품절인 경우도 같은 코드로 거절합니다.\n\n" +
                     "**수량 상한:** 최종 수량은 최대 99개입니다(옵션을 합치는 경우 합산 후 기준). 초과하면 400입니다.\n\n" +
                     "**옵션 변경 시 병합:** 이미 담긴 다른 항목과 같은 옵션으로 바꾸면 두 항목이 하나로 합쳐지고 " +
-                    "수량이 더해집니다(재고 초과 시 400 `INSUFFICIENT_STOCK`).\n\n" +
+                    "수량이 더해집니다(재고 초과 시 400 `INSUFFICIENT_STOCK`). 합쳐지기 전 항목이 선택돼 있었다면 " +
+                    "합쳐진 항목도 선택된 것으로 봅니다.\n\n" +
+                    "**요약:** 응답의 `summary`는 `selectedCartItemIds`(화면의 체크 상태) 기준으로 다시 계산됩니다. " +
+                    "생략하면 구매 가능한 항목 전체를 선택한 것으로 봅니다 — 체크를 푼 항목이 있는 화면이라면 넘겨야 " +
+                    "하단 요약이 목록과 어긋나지 않습니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -264,7 +268,13 @@ public interface CartControllerDocs {
     ResponseEntity<CartDto.UpdateCartResponse> updateCart(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long cartItemId,
-            @RequestBody CartDto.UpdateCartRequest request
+            @RequestBody CartDto.UpdateCartRequest request,
+            @Parameter(
+                    description = "요약 계산에 포함할 장바구니 항목 ID 목록(화면의 체크 상태). "
+                            + "생략하면 구매 가능한 항목 전체를 선택한 것으로 봅니다.",
+                    example = "10,11"
+            )
+            @RequestParam(value = "selectedCartItemIds", required = false) List<Long> selectedCartItemIds
     );
 
     @Operation(
@@ -275,6 +285,9 @@ public interface CartControllerDocs {
                     "- **선택 삭제:** cartItemIds=10&cartItemIds=11&cartItemIds=12 → 지정한 ID들만 삭제\n" +
                     "- **전체 삭제:** cartItemIds 생략 또는 비어있음 → 현재 사용자의 장바구니 전체 삭제\n\n" +
                     "**보안:** 삭제 요청 시 해당 cartItemId가 현재 로그인한 유저의 소유인지 검증합니다. 타인의 장바구니 항목은 삭제할 수 없습니다.\n\n" +
+                    "**요약:** 응답의 `summary`는 `selectedCartItemIds`(화면의 체크 상태) 기준으로 다시 계산됩니다. " +
+                    "지워진 항목은 알아서 빠지므로 삭제 전 체크 목록을 그대로 넘겨도 됩니다. " +
+                    "생략하면 남은 항목 중 구매 가능한 것 전체를 선택한 것으로 봅니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -364,6 +377,82 @@ public interface CartControllerDocs {
     })
     ResponseEntity<CartDto.DeleteCartResponse> deleteCart(
             @AuthenticationPrincipal UserPrincipal principal,
-            @RequestParam(value = "cartItemIds", required = false) List<Long> cartItemIds
+            @Parameter(description = "삭제할 장바구니 항목 ID 목록. 생략하면 전체 삭제입니다.", example = "10,11")
+            @RequestParam(value = "cartItemIds", required = false) List<Long> cartItemIds,
+            @Parameter(
+                    description = "삭제 후 요약 계산에 포함할 장바구니 항목 ID 목록(화면의 체크 상태). "
+                            + "생략하면 남은 항목 중 구매 가능한 것 전체를 선택한 것으로 봅니다.",
+                    example = "12,13"
+            )
+            @RequestParam(value = "selectedCartItemIds", required = false) List<Long> selectedCartItemIds
+    );
+
+    @Operation(
+            summary = "팔로우한 쇼룸의 공구 조회 (C8 장바구니 하단 추천)",
+            description = "장바구니 목록 아래 가로 스크롤 영역에 그릴 **팔로우한 쇼룸의 진행 중 공구**를 조회합니다.\n\n" +
+                    "**대상:** 팔로우한 쇼룸(크리에이터)과 연결된 브랜드의 진열 중 상품 가운데 공구가 진행 중인 것. " +
+                    "이미 장바구니에 담은 상품은 빠집니다.\n\n" +
+                    "**정렬:** 장바구니에 이미 있고 무료배송까지 조금 남은 쇼룸의 상품(`helpsFreeShipping=true`)이 앞에 옵니다 — " +
+                    "\"○○원 더 담으면 무료\"를 본 직후 같은 쇼룸의 다른 상품이 바로 아래 있으면 실제로 도움이 되기 때문입니다. " +
+                    "그 안에서는 추천 상품·최신순입니다.\n\n" +
+                    "**D-day:** 공구 게시물(마감 시각)이 아직 없어 카드의 D-day 배지는 내려주지 않습니다 — " +
+                    "장바구니 그룹 머리의 D-day와 사정이 같습니다.\n\n" +
+                    "**빈 배열:** 팔로우한 쇼룸이 없거나 권할 공구가 없으면 `products`가 빈 배열입니다(화면은 영역을 그리지 않습니다).\n\n" +
+                    "**권한:** USER\n" +
+                    "**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CartDto.RecommendationListResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "조회 성공 예시",
+                                            value = "{\n" +
+                                                    "  \"products\": [\n" +
+                                                    "    {\n" +
+                                                    "      \"productId\": 2048,\n" +
+                                                    "      \"productName\": \"마일드 필링 패드 70매 대용량\",\n" +
+                                                    "      \"thumbnailUrl\": \"https://example.com/image3.jpg\",\n" +
+                                                    "      \"marketId\": 5,\n" +
+                                                    "      \"marketName\": \"제니의 뷰티룸\",\n" +
+                                                    "      \"price\": {\n" +
+                                                    "        \"regularPrice\": 24000,\n" +
+                                                    "        \"discountRate\": 30,\n" +
+                                                    "        \"salePrice\": 16800,\n" +
+                                                    "        \"maxBenefitPrice\": 16800\n" +
+                                                    "      },\n" +
+                                                    "      \"helpsFreeShipping\": true\n" +
+                                                    "    }\n" +
+                                                    "  ]\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "토큰의 사용자를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<CartDto.RecommendationListResponse> getCartRecommendations(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "가져올 개수 (기본 10, 최대 30)", example = "10")
+            @RequestParam(value = "limit", required = false) Integer limit
     );
 }
