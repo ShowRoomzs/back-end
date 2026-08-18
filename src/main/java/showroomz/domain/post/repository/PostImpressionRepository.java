@@ -11,8 +11,17 @@ import java.util.List;
 
 public interface PostImpressionRepository extends JpaRepository<PostImpression, Long> {
 
-    /** 30분 세션 판정 — 같은 사람이 같은 게시물을 다시 봐도 노출을 새로 세지 않는다 */
-    boolean existsByPost_IdAndViewerKeyAndViewedAtAfter(Long postId, String viewerKey, LocalDateTime since);
+    /**
+     * 30분 세션 판정 — 같은 사람이 같은 게시물을 다시 봐도 노출을 새로 세지 않는다.
+     *
+     * <p>한 배치에 실린 게시물을 <b>한 번에</b> 가려낸다. 카드마다 물으면 배치 상한(50건)만큼
+     * 조회가 나가는데, 노출 적재는 이 서비스에서 가장 자주 불리는 쓰기 경로다.
+     */
+    @Query("SELECT DISTINCT i.post.id FROM PostImpression i " +
+           "WHERE i.post.id IN :postIds AND i.viewerKey = :viewerKey AND i.viewedAt > :since")
+    List<Long> findCountedPostIds(@Param("postIds") List<Long> postIds,
+                                  @Param("viewerKey") String viewerKey,
+                                  @Param("since") LocalDateTime since);
 
     /** §24-7 ① 노출 — 기간 내 행 수 */
     @Query("SELECT COUNT(i) FROM PostImpression i " +

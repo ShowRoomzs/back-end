@@ -109,11 +109,13 @@ public class UserPostService {
         List<Long> followingShowroomIds = creatorFollowRepository.findCreatorIdsByUserId(user.getId());
         Pageable pageable = pagingRequest.toPageable();
 
+        // 팔로잉이 0이면 이 피드는 정의상 비어 있다 — C1 빈 상태는 추천 피드가 채운다
         if (followingShowroomIds.isEmpty()) {
             return new PageResponse<>(Page.empty(pageable));
         }
 
-        Page<Post> postPage = postRepository.findDisplayedPostsByFollowingCreatorIds(followingShowroomIds, pageable);
+        Page<Post> postPage = postRepository.findDisplayedPostsByCreatorIds(followingShowroomIds, pageable);
+
         // 이 목록은 정의상 전부 팔로우 중인 쇼룸이다 — 다시 물어볼 필요가 없다
         return toFeed(postPage, likedPostIds(user, postPage.getContent()), Set.copyOf(followingShowroomIds));
     }
