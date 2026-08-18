@@ -7,38 +7,31 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.product.DTO.ProductDto;
-import showroomz.api.app.user.repository.UserRepository;
+import showroomz.domain.market.entity.Market;
+import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductImage;
 import showroomz.domain.product.entity.ProductOption;
 import showroomz.domain.product.entity.ProductOptionGroup;
 import showroomz.domain.product.entity.ProductVariant;
-import showroomz.domain.product.type.ProductGender;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.domain.filter.entity.Filter;
 import showroomz.domain.filter.repository.FilterRepository;
-import showroomz.domain.review.entity.Review;
-import showroomz.domain.review.repository.ReviewRepository;
 import showroomz.domain.product.repository.ProductFilterCriteria;
 import showroomz.domain.product.repository.ProductOptionGroupRepository;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.domain.category.service.CategoryHierarchyService;
 import showroomz.domain.wishlist.repository.WishlistRepository;
-import showroomz.api.app.wishlist.service.WishlistService;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
-import showroomz.global.utils.RelativeTimeFormatter;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -55,10 +48,7 @@ public class ProductService {
     private final FilterRepository filterRepository;
     private final ProductOptionGroupRepository productOptionGroupRepository;
     private final ProductVariantRepository productVariantRepository;
-    private final UserRepository userRepository;
     private final WishlistRepository wishlistRepository;
-    private final WishlistService wishlistService;
-    private final ReviewRepository reviewRepository;
     private final ObjectMapper objectMapper;
     private static final String DEFAULT_SORT = "RECOMMEND";
     private static final String SORT_FILTER_KEY = "sort";
@@ -112,63 +102,49 @@ public class ProductService {
     }
 
     /**
-     * 사용자용 상품 상세 조회
+     * 사용자용 상품 상세 조회 (C7).
+     *
+     * <p>응답은 C7 화면이 실제로 그리는 값만 담는다 — 갤러리 · 브랜드 줄 · 가격 · 배송 블록 ·
+     * 상세정보/판매자 정보 탭 · 옵션 시트. 문의 탭은 별도 API가, 찜은 게시물 단위가 담당하므로
+     * 여기서 내려주지 않는다.
      */
     public ProductDto.ProductDetailResponse getProductDetail(Long productId) {
         Product product = productRepository.findDetailByProductId(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
         requireVisibleForDetail(product);
 
-        Users currentUser = resolveCurrentUser();
-        boolean isWished = false;
-        if (currentUser != null) {
-            isWished = wishlistRepository.existsByUserAndProduct(currentUser, product);
-        }
-
         String representativeImageUrl = extractRepresentativeImageUrl(product);
         List<String> coverImageUrls = extractCoverImageUrls(product);
         List<ProductOptionGroup> optionGroupEntities = productOptionGroupRepository.findByProductIdWithOptions(productId);
         List<ProductVariant> variantEntities = productVariantRepository.findByProductIdWithOptions(productId);
         List<ProductDto.OptionGroupInfo> optionGroups = buildOptionGroups(optionGroupEntities);
-        List<ProductDto.VariantInfo> variants = buildVariants(variantEntities);
+        List<ProductDto.VariantInfo> variants = buildVariants(variantEntities, product);
         Integer regularPrice = product.getRegularPrice();
         Integer salePrice = product.getSalePrice();
-        Integer deliveryFreeThreshold = product.getMarket() != null
-                ? product.getMarket().getFreeShippingThreshold()
-                : null;
-        Boolean isFreeDelivery = calculateIsFreeDelivery(salePrice, deliveryFreeThreshold);
         JsonNode productNotice = parseJsonSafely(product.getProductNotice());
-
-        String createdAt = product.getCreatedAt() != null ? product.getCreatedAt().toString() : null;
-
-        ProductDto.ReviewInfo reviewInfo = buildReviewInfo(productId);
+        Market market = product.getMarket();
 
         return ProductDto.ProductDetailResponse.builder()
                 .id(product.getProductId())
-                .productNumber(product.getProductNumber())
-                .marketId(product.getMarket() != null ? product.getMarket().getId() : null)
-                .marketName(product.getMarket() != null ? product.getMarket().getMarketName() : null)
-                .categoryId(product.getCategory() != null ? product.getCategory().getCategoryId() : null)
-                .categoryName(product.getCategory() != null ? product.getCategory().getName() : null)
                 .name(product.getName())
-                .sellerProductCode(product.getSellerProductCode())
                 .representativeImageUrl(representativeImageUrl)
                 .coverImageUrls(coverImageUrls)
-                .description(product.getDescription())
-                .productNotice(productNotice)
-                .gender(product.getGender() != null ? product.getGender().name() : null)
-                .isRecommended(product.getIsRecommended())
+                .marketId(market != null ? market.getId() : null)
+                .marketName(market != null ? market.getMarketName() : null)
+                .brandSiteUrl(market != null ? market.getBrandSiteUrl() : null)
                 .regularPrice(regularPrice)
+                .discountRate(calculateDiscountRate(regularPrice, salePrice))
                 .salePrice(salePrice)
-                .isFreeDelivery(isFreeDelivery)
                 .groupBuyStatus(product.getGroupBuyStatus() != null
                         ? product.getGroupBuyStatus().name()
                         : ProductGroupBuyStatus.NOT_CONNECTED.name())
+                .status(buildStockStatus(product, variantEntities))
+                .delivery(buildDeliveryInfo(market))
+                .description(product.getDescription())
+                .productNotice(productNotice)
                 .optionGroups(optionGroups)
                 .variants(variants)
-                .isWished(isWished)
-                .createdAt(createdAt)
-                .reviewInfo(reviewInfo)
+                .sellerInfo(buildSellerInfo(market))
                 .build();
     }
 
@@ -223,49 +199,6 @@ public class ProductService {
     }
 
     /**
-     * 사용자용 연관 상품 조회
-     */
-    public PageResponse<ProductDto.ProductItem> getRelatedProducts(
-            Long productId,
-            Integer page,
-            Integer limit,
-            Users currentUser
-    ) {
-        Product product = productRepository.findByProductId(productId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
-        requireVisibleForDetail(product);
-
-        int pageNumber = (page != null && page > 0) ? page - 1 : 0;
-        int pageSize = (limit != null && limit > 0) ? limit : 20;
-        Pageable pageable = PageRequest.of(pageNumber, pageSize);
-
-        Long categoryId = product.getCategory() != null ? product.getCategory().getCategoryId() : null;
-        List<Long> categoryIds = null;
-        if (categoryId != null) {
-            try {
-                categoryIds = categoryHierarchyService.getAllSubCategoryIds(categoryId);
-            } catch (Exception e) {
-                log.warn("카테고리 조회 실패: {}", categoryId, e);
-                categoryIds = List.of(categoryId);
-            }
-        }
-        ProductGender gender = product.getGender();
-
-        Page<Product> relatedPage = productRepository.findRelatedProducts(
-                productId,
-                categoryIds,
-                gender,
-                pageable
-        );
-
-        List<ProductDto.ProductItem> productItems = relatedPage.getContent().stream()
-                .map(item -> convertToProductItem(item, currentUser))
-                .collect(Collectors.toList());
-
-        return new PageResponse<>(productItems, relatedPage);
-    }
-
-    /**
      * Product 엔티티를 ProductItem DTO로 변환
      */
     public ProductDto.ProductItem convertToProductItem(Product product, Users currentUser) {
@@ -316,8 +249,19 @@ public class ProductService {
     }
 
     private ProductDto.StockStatus buildStockStatus(Product product) {
+        return buildStockStatus(product, product.getVariants());
+    }
+
+    /**
+     * 상품 전체 품절 판정 — 재고는 옵션마다 소진되므로, <b>남은 옵션이 하나도 없을 때</b> 비로소
+     * 상품 전체가 품절이다. 강제 품절은 그 위를 덮는다(재고가 남아 있어도 브랜드가 내려둘 수 있다).
+     *
+     * <p>상세는 이미 읽어 둔 옵션 목록으로 판정한다 — 엔티티의 지연 컬렉션을 다시 건드리면 같은
+     * 옵션을 두 번 읽는다.
+     */
+    private ProductDto.StockStatus buildStockStatus(Product product, List<ProductVariant> variants) {
         boolean isOutOfStockForced = Boolean.TRUE.equals(product.getIsOutOfStockForced());
-        boolean hasStock = product.getVariants().stream()
+        boolean hasStock = variants.stream()
                 .anyMatch(variant -> variant.getStock() != null && variant.getStock() > 0);
         boolean isOutOfStock = isOutOfStockForced || !hasStock;
 
@@ -436,18 +380,6 @@ public class ProductService {
         }
     }
 
-    private Users resolveCurrentUser() {
-        try {
-            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (principal instanceof UserPrincipal userPrincipal) {
-                return userRepository.findByUsername(userPrincipal.getUsername()).orElse(null);
-            }
-        } catch (Exception ignored) {
-            // guest user
-        }
-        return null;
-    }
-
     private String extractRepresentativeImageUrl(Product product) {
         return product.getProductImages().stream()
                 .filter(image -> image.getOrder() != null && image.getOrder() == 0)
@@ -481,28 +413,82 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
-    private List<ProductDto.VariantInfo> buildVariants(List<ProductVariant> variants) {
+    /**
+     * 옵션 시트에 필요한 값만 담는다. 품절 판정은 옵션 재고 조회(getVariantStocks)와 같은 규칙이다 —
+     * 재고 0이거나 상품이 강제 품절이면 품절. 시트를 연 뒤의 실시간 재고는 옵션 재고 API가 갱신한다.
+     */
+    private List<ProductDto.VariantInfo> buildVariants(List<ProductVariant> variants, Product product) {
+        boolean isOutOfStockForced = Boolean.TRUE.equals(product.getIsOutOfStockForced());
         return variants.stream()
-                .map(variant -> ProductDto.VariantInfo.builder()
-                        .variantId(variant.getVariantId())
-                        .name(variant.getName())
-                        .regularPrice(variant.getRegularPrice())
-                        .salePrice(variant.getSalePrice())
-                        .stock(variant.getStock())
-                        .isRepresentative(variant.getIsRepresentative())
-                        .optionIds(variant.getOptions().stream()
-                                .map(ProductOption::getOptionId)
-                                .filter(Objects::nonNull)
-                                .collect(Collectors.toList()))
-                        .build())
+                .map(variant -> {
+                    int stock = variant.getStock() != null ? variant.getStock() : 0;
+                    return ProductDto.VariantInfo.builder()
+                            .variantId(variant.getVariantId())
+                            .name(variant.getName())
+                            .regularPrice(variant.getRegularPrice())
+                            .salePrice(variant.getSalePrice())
+                            .stock(variant.getStock())
+                            .isOutOfStock(isOutOfStockForced || stock <= 0)
+                            .isRepresentative(variant.getIsRepresentative())
+                            .optionIds(variant.getOptions().stream()
+                                    .map(ProductOption::getOptionId)
+                                    .filter(Objects::nonNull)
+                                    .collect(Collectors.toList()))
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 
-    private Boolean calculateIsFreeDelivery(Integer salePrice, Integer deliveryFreeThreshold) {
-        if (salePrice == null || deliveryFreeThreshold == null) {
-            return false;
+    /**
+     * 배송 · 교환 · 반품 값은 브랜드(마켓)의 배송 설정에서 온다. 화면은 이 숫자로 "3,000원",
+     * "30,000원 이상 구매시 무료배송", "N일 이내 출발 예정" 문구를 조립하므로 서버는 금액만 내려준다.
+     */
+    private ProductDto.DeliveryInfo buildDeliveryInfo(Market market) {
+        if (market == null) {
+            return null;
         }
-        return salePrice >= deliveryFreeThreshold;
+        return ProductDto.DeliveryInfo.builder()
+                .shippingLeadDays(market.getShippingLeadDays())
+                .deliveryFee(market.getDefaultDeliveryFee())
+                .freeShippingThreshold(market.getFreeShippingThreshold())
+                .remoteAreaSurcharge(market.getRemoteAreaSurcharge())
+                .returnFee(market.getReturnFee())
+                .exchangeFee(market.getExchangeFee())
+                .build();
+    }
+
+    /**
+     * 판매자 정보 탭의 전자상거래법 표시 항목. 마켓의 고객센터 번호와 셀러의 사업자 정보를 합친다.
+     */
+    private ProductDto.SellerInfo buildSellerInfo(Market market) {
+        if (market == null) {
+            return null;
+        }
+        Seller seller = market.getSeller();
+        if (seller == null) {
+            return ProductDto.SellerInfo.builder()
+                    .csNumber(market.getCsNumber())
+                    .build();
+        }
+        return ProductDto.SellerInfo.builder()
+                .companyName(seller.getCompanyName())
+                .representativeName(seller.getRepresentativeName())
+                .businessRegistrationNumber(seller.getBusinessRegistrationNumber())
+                .mailOrderRegNumber(seller.getMailOrderRegNumber())
+                .businessAddress(joinAddress(seller.getBusinessAddress(), seller.getDetailAddress()))
+                .csNumber(market.getCsNumber())
+                .email(seller.getEmail())
+                .build();
+    }
+
+    private String joinAddress(String address, String detailAddress) {
+        if (address == null || address.isBlank()) {
+            return null;
+        }
+        if (detailAddress == null || detailAddress.isBlank()) {
+            return address.trim();
+        }
+        return address.trim() + " " + detailAddress.trim();
     }
 
     private JsonNode parseJsonSafely(String rawJson) {
@@ -514,36 +500,6 @@ public class ProductService {
         } catch (Exception e) {
             return null;
         }
-    }
-
-    private ProductDto.ReviewInfo buildReviewInfo(Long productId) {
-        long totalCount = reviewRepository.countByProductId(productId);
-        Double avgRaw = reviewRepository.findAverageRatingByProductId(productId);
-        double averageRating = (avgRaw != null) ? Math.round(avgRaw * 10.0) / 10.0 : 0.0;
-
-        List<Review> topReviews = reviewRepository.findTop3ByProductIdOrderByCreatedAtDesc(
-                productId, PageRequest.of(0, 3));
-
-        List<ProductDto.ReviewPreviewItem> previews = new ArrayList<>();
-        for (Review r : topReviews) {
-            String userName = r.getUser() != null ? r.getUser().getNickname() : null;
-            List<String> imageUrls = r.getImageUrlsOrdered();
-            String createdAtRel = RelativeTimeFormatter.format(r.getCreatedAt());
-            previews.add(ProductDto.ReviewPreviewItem.builder()
-                    .reviewId(r.getId())
-                    .userName(userName)
-                    .rating(r.getRating())
-                    .content(r.getContent())
-                    .imageUrls(imageUrls)
-                    .createdAt(createdAtRel)
-                    .build());
-        }
-
-        return ProductDto.ReviewInfo.builder()
-                .totalCount(totalCount)
-                .averageRating(averageRating)
-                .reviews(previews)
-                .build();
     }
 
     private static class FilterParsingResult {

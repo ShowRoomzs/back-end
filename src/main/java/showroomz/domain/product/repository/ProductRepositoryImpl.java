@@ -4,7 +4,6 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
-import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -102,55 +101,6 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         return page;
     }
 
-    @Override
-    public Page<Product> findRelatedProducts(
-            Long productId,
-            List<Long> categoryIds,
-            ProductGender gender,
-            Pageable pageable
-    ) {
-        if (productId == null || ((categoryIds == null || categoryIds.isEmpty()) && gender == null)) {
-            @SuppressWarnings("null")
-            PageImpl<Product> emptyPage = new PageImpl<>(List.of(), pageable, 0);
-            return emptyPage;
-        }
-
-        QProduct product = QProduct.product;
-        BooleanBuilder where = new BooleanBuilder();
-        where.and(product.displayStatus.eq(ProductDisplayStatus.DISPLAY));
-        where.and(product.groupBuyStatus.ne(ProductGroupBuyStatus.NOT_CONNECTED));
-        where.and(product.productId.ne(productId));
-
-        BooleanBuilder related = new BooleanBuilder();
-        if (categoryIds != null && !categoryIds.isEmpty()) {
-            related.or(product.category.categoryId.in(categoryIds));
-        }
-        if (gender != null) {
-            related.or(product.gender.eq(gender));
-        }
-        where.and(related);
-
-        JPAQuery<Product> query = queryFactory.selectFrom(product)
-                .where(where)
-                .orderBy(getRelatedOrderSpecifiers(categoryIds, product))
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize());
-
-        @SuppressWarnings("null")
-        List<Product> content = java.util.Objects.requireNonNullElse(query.fetch(), List.of());
-
-        Long total = queryFactory
-                .select(product.productId.countDistinct())
-                .from(product)
-                .where(where)
-                .fetchOne();
-
-        long totalElements = total != null ? total : 0L;
-        @SuppressWarnings("null")
-        PageImpl<Product> page = new PageImpl<>(content, pageable, totalElements);
-        return page;
-    }
-
     private OrderSpecifier<?>[] getOrderSpecifiers(String sortType, QProduct product) {
         if (sortType == null || sortType.isBlank() || "RECOMMEND".equals(sortType)) {
             return new OrderSpecifier<?>[]{
@@ -175,23 +125,6 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
             default -> new OrderSpecifier<?>[]{
                     product.createdAt.desc()
             };
-        };
-    }
-
-    private OrderSpecifier<?>[] getRelatedOrderSpecifiers(List<Long> categoryIds, QProduct product) {
-        if (categoryIds != null && !categoryIds.isEmpty()) {
-            return new OrderSpecifier<?>[]{
-                    new CaseBuilder()
-                            .when(product.category.categoryId.in(categoryIds)).then(1)
-                            .otherwise(0)
-                            .desc(),
-                    product.isRecommended.desc(),
-                    product.createdAt.desc()
-            };
-        }
-        return new OrderSpecifier<?>[]{
-                product.isRecommended.desc(),
-                product.createdAt.desc()
         };
     }
 
@@ -274,51 +207,6 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         if (criteria.maxValue() != null) {
             where.and(product.salePrice.loe(criteria.maxValue()));
         }
-    }
-
-    @Override
-    public Page<Product> findRecommendedProducts(
-            List<Long> categoryIds,
-            ProductGender userGender,
-            Pageable pageable
-    ) {
-        QProduct product = QProduct.product;
-
-        BooleanBuilder where = new BooleanBuilder();
-        where.and(product.displayStatus.eq(ProductDisplayStatus.DISPLAY));
-        where.and(product.isRecommended.isTrue());
-
-        // 카테고리 필터
-        if (categoryIds != null && !categoryIds.isEmpty()) {
-            where.and(product.category.categoryId.in(categoryIds));
-        }
-
-        // 성별 필터: 사용자 성별에 맞는 상품 또는 UNISEX 상품
-        if (userGender != null) {
-            where.and(
-                    product.gender.eq(userGender)
-                            .or(product.gender.eq(ProductGender.UNISEX))
-            );
-        }
-
-        // 정렬: isRecommended DESC, createdAt DESC (추천 상품 우선, 최신순)
-        OrderSpecifier<?>[] orderSpecifiers = {
-                product.isRecommended.desc(),
-                product.createdAt.desc()
-        };
-
-        JPAQuery<Product> query = queryFactory
-                .selectFrom(product)
-                .where(where)
-                .orderBy(orderSpecifiers);
-
-        long total = query.fetchCount();
-        List<Product> content = query
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .fetch();
-
-        return new PageImpl<>(content, pageable, total);
     }
 
     @Override

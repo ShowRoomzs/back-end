@@ -4,7 +4,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.type.ProductDisplayStatus;
-import showroomz.domain.product.type.ProductGender;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.domain.product.type.ProductListSortType;
 
@@ -17,24 +16,6 @@ public interface ProductRepositoryCustom {
             Long marketId,
             List<ProductFilterCriteria> filters,
             String sortType,
-            Pageable pageable
-    );
-
-    /**
-     * 상품 상세의 "함께 판매 중" 목록 (C7).
-     * 진열중이면서 공구에 연결된 상품만 담는다 — 공구 없는 상품은 상세로 들어갈 수 없으므로
-     * 목록에 두면 누를 수 없는 카드가 된다.
-     */
-    Page<Product> findRelatedProducts(
-            Long productId,
-            List<Long> categoryIds,
-            ProductGender gender,
-            Pageable pageable
-    );
-
-    Page<Product> findRecommendedProducts(
-            List<Long> categoryIds,
-            ProductGender userGender,
             Pageable pageable
     );
 

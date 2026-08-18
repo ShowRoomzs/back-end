@@ -78,24 +78,6 @@ public class ProductController implements UserProductControllerDocs {
     }
 
     @Override
-    @GetMapping("/{productId}/related")
-    public ResponseEntity<PageResponse<ProductDto.ProductItem>> getRelatedProducts(
-            @PathVariable("productId") Long productId,
-            @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestParam(name = "page", required = false, defaultValue = "1") Integer page,
-            @RequestParam(name = "limit", required = false, defaultValue = "20") Integer limit
-    ) {
-        Users currentUser = resolveCurrentUser();
-        PageResponse<ProductDto.ProductItem> response = productService.getRelatedProducts(
-                productId,
-                page,
-                limit,
-                currentUser
-        );
-        return ResponseEntity.ok(response);
-    }
-
-    @Override
     @GetMapping("/{productId}/variants")
     public ResponseEntity<ProductDto.VariantStockListResponse> getVariantStocks(
             @PathVariable("productId") Long productId,

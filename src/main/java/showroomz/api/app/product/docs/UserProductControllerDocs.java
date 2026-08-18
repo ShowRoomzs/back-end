@@ -146,16 +146,37 @@ public interface UserProductControllerDocs {
 
     @Operation(
             summary = "비회원/회원 상품 상세 조회",
-            description = "상품 ID로 상세 정보를 조회합니다.\n\n" +
+            description = "상품 ID로 C7 상품 상세 화면에 필요한 정보를 조회합니다.\n\n" +
                     "**게시 조건 (모두 충족해야 조회됨):**\n" +
                     "- 진열중(displayStatus: DISPLAY)인 상품만 조회됩니다.\n" +
                     "- 공구에 연결된 상품(groupBuyStatus: PREPARING, READY, IN_PROGRESS)만 조회됩니다.\n" +
                     "- 미진열 또는 공구 연결이 없는 상품(NOT_CONNECTED)은 404 PRODUCT_NOT_FOUND로 응답합니다.\n\n" +
-                    "**참고사항:**\n" +
-                    "- 대표 이미지: 상품 이미지 중 order == 0\n" +
-                    "- 커버 이미지: 상품 이미지 중 order >= 1\n" +
-                    "- 무료배송 여부는 마켓의 무료배송 기준 금액으로 계산됩니다.\n" +
-                    "- 로그인한 사용자는 isWished 정보가 포함됩니다.\n\n" +
+                    "**화면 구성과 응답 필드:**\n" +
+                    "- 갤러리: representativeImageUrl(첫 장, 이미지 order == 0) + coverImageUrls(order >= 1)\n" +
+                    "- 브랜드 줄: marketName + brandSiteUrl (brandSiteUrl이 null이면 [브랜드 사이트] 버튼을 숨깁니다)\n" +
+                    "- 가격: regularPrice(취소선) + discountRate(%) + salePrice(공구가)\n" +
+                    "- 배송 블록: delivery (발송 예정일 · 배송비 · 무료배송 기준 · 도서산간 추가비 · 반품비 · 교환비)\n" +
+                    "- 상세정보 탭: description + productNotice\n" +
+                    "- 판매자 정보 탭: productNotice(고시) + delivery(배송/교환/반품) + sellerInfo(사업자 정보)\n" +
+                    "- 옵션 시트: optionGroups + variants (variants[].isOutOfStock으로 옵션 단위 품절 표시)\n" +
+                    "- 하단 CTA: status (상품 전체 판매 상태)\n\n" +
+                    "**판매 상태 (status):**\n" +
+                    "- 재고는 옵션마다 소진되므로, 남은 옵션이 하나도 없을 때 비로소 status.isOutOfStock = true가 됩니다.\n" +
+                    "- status.isOutOfStockForced는 재고가 남아 있어도 브랜드가 강제로 내려둔 경우이며, 이때도 isOutOfStock = true입니다.\n" +
+                    "- 품절이면 하단 CTA를 [구매하기] 대신 판매 종료 상태로 그립니다. 개별 옵션의 품절은 variants[].isOutOfStock을 보세요.\n" +
+                    "- \"공구 마감\" 상태는 아직 표현되지 않습니다 — 공구 연결이 풀린 상품은 상세 자체가 404이며, " +
+                    "마감된 공구를 화면에 남기는 처리는 공구 도메인이 붙은 뒤 정해집니다.\n\n" +
+                    "**할인율:**\n" +
+                    "- discountRate는 서버가 정가·판매가로 계산해 반올림한 값입니다. 클라이언트가 다시 계산하지 마세요 " +
+                    "(반올림 방식이 갈리면 같은 상품에 34%와 35%가 동시에 보입니다).\n" +
+                    "- 할인이 없거나 판매가가 정가보다 높은 데이터면 0입니다.\n\n" +
+                    "**이 응답에 포함되지 않는 것:**\n" +
+                    "- 상품 문의(문의 탭): `GET /v1/common/products/{productId}/inquiries`가 담당합니다.\n" +
+                    "- 옵션별 실시간 재고: 시트를 연 뒤에는 `GET /v1/common/products/{productId}/variants`로 갱신합니다.\n" +
+                    "- 찜(♥): 게시물 단위 기능이라 상품 상세에는 두지 않습니다.\n" +
+                    "- **\"이 공구에서 함께 판매 중\"(공구 추천 상품): 공구 연결 기능이 아직 구현되지 않아 추후 구현 예정입니다.** " +
+                    "같은 공구에 묶인 상품을 내려주는 값이므로, 공구 도메인이 붙은 뒤 이 응답 또는 별도 API로 추가됩니다.\n" +
+                    "- 연관 상품 / 추천 상품 API는 폐기되었습니다.\n\n" +
                     "**권한:** 선택사항 (게스트 가능)"
     )
     @ApiResponses(value = {
@@ -170,62 +191,63 @@ public interface UserProductControllerDocs {
                                             name = "성공 예시",
                                             value = "{\n" +
                                                     "  \"id\": 1024,\n" +
-                                                    "  \"productNumber\": \"SRZ-20251228-001\",\n" +
-                                                    "  \"marketId\": 5,\n" +
-                                                    "  \"marketName\": \"M 브라이튼\",\n" +
-                                                    "  \"categoryId\": 1,\n" +
-                                                    "  \"categoryName\": \"의류\",\n" +
-                                                    "  \"name\": \"프리미엄 린넨 셔츠\",\n" +
-                                                    "  \"sellerProductCode\": \"PROD-001\",\n" +
+                                                    "  \"name\": \"시카 리페어 앰플 30ml 리필 2개 세트\",\n" +
                                                     "  \"representativeImageUrl\": \"https://example.com/image.jpg\",\n" +
                                                     "  \"coverImageUrls\": [\n" +
                                                     "    \"https://example.com/image1.jpg\",\n" +
                                                     "    \"https://example.com/image2.jpg\"\n" +
                                                     "  ],\n" +
-                                                    "  \"description\": \"<p>상품 상세 설명</p>\",\n" +
-                                                    "  \"productNotice\": {\"origin\":\"한국\"},\n" +
-                                                    "  \"gender\": \"UNISEX\",\n" +
-                                                    "  \"isRecommended\": false,\n" +
-                                                    "  \"regularPrice\": 113000,\n" +
-                                                    "  \"salePrice\": 33900,\n" +
-                                                    "  \"isFreeDelivery\": false,\n" +
+                                                    "  \"marketId\": 5,\n" +
+                                                    "  \"marketName\": \"라보에이치\",\n" +
+                                                    "  \"brandSiteUrl\": \"https://labo-h.example.com\",\n" +
+                                                    "  \"regularPrice\": 38000,\n" +
+                                                    "  \"discountRate\": 34,\n" +
+                                                    "  \"salePrice\": 24900,\n" +
                                                     "  \"groupBuyStatus\": \"IN_PROGRESS\",\n" +
+                                                    "  \"status\": {\n" +
+                                                    "    \"isOutOfStock\": false,\n" +
+                                                    "    \"isOutOfStockForced\": false\n" +
+                                                    "  },\n" +
+                                                    "  \"delivery\": {\n" +
+                                                    "    \"shippingLeadDays\": 2,\n" +
+                                                    "    \"deliveryFee\": 3000,\n" +
+                                                    "    \"freeShippingThreshold\": 30000,\n" +
+                                                    "    \"remoteAreaSurcharge\": 5000,\n" +
+                                                    "    \"returnFee\": 3000,\n" +
+                                                    "    \"exchangeFee\": 6000\n" +
+                                                    "  },\n" +
+                                                    "  \"description\": \"<p>상품 상세 설명</p>\",\n" +
+                                                    "  \"productNotice\": {\"용량 또는 중량\":\"30ml (리필 30ml × 2)\",\"제조국\":\"대한민국\"},\n" +
                                                     "  \"optionGroups\": [\n" +
                                                     "    {\n" +
                                                     "      \"optionGroupId\": 1,\n" +
-                                                    "      \"name\": \"사이즈\",\n" +
+                                                    "      \"name\": \"구성\",\n" +
                                                     "      \"options\": [\n" +
-                                                    "        {\"optionId\": 1, \"name\": \"S\", \"price\": 0},\n" +
-                                                    "        {\"optionId\": 2, \"name\": \"M\", \"price\": 0}\n" +
+                                                    "        {\"optionId\": 1, \"name\": \"단품 30ml\", \"price\": 0},\n" +
+                                                    "        {\"optionId\": 2, \"name\": \"30ml + 리필 2개\", \"price\": 25000}\n" +
                                                     "      ]\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
                                                     "  \"variants\": [\n" +
                                                     "    {\n" +
                                                     "      \"variantId\": 1,\n" +
-                                                    "      \"name\": \"S\",\n" +
-                                                    "      \"regularPrice\": 113000,\n" +
-                                                    "      \"salePrice\": 33900,\n" +
+                                                    "      \"name\": \"단품 30ml\",\n" +
+                                                    "      \"regularPrice\": 38000,\n" +
+                                                    "      \"salePrice\": 24900,\n" +
                                                     "      \"stock\": 10,\n" +
+                                                    "      \"isOutOfStock\": false,\n" +
                                                     "      \"isRepresentative\": true,\n" +
                                                     "      \"optionIds\": [1]\n" +
                                                     "    }\n" +
                                                     "  ],\n" +
-                                                    "  \"isWished\": false,\n" +
-                                                    "  \"createdAt\": \"2025-12-28T14:30:00Z\",\n" +
-                                                    "  \"reviewInfo\": {\n" +
-                                                    "    \"totalCount\": 42,\n" +
-                                                    "    \"averageRating\": 4.5,\n" +
-                                                    "    \"reviews\": [\n" +
-                                                    "      {\n" +
-                                                    "        \"reviewId\": 1,\n" +
-                                                    "        \"userName\": \"쇼핑러버\",\n" +
-                                                    "        \"rating\": 5,\n" +
-                                                    "        \"content\": \"너무 만족합니다!\",\n" +
-                                                    "        \"imageUrls\": [\"https://example.com/review1.jpg\"],\n" +
-                                                    "        \"createdAt\": \"1일 전\"\n" +
-                                                    "      }\n" +
-                                                    "    ]\n" +
+                                                    "  \"sellerInfo\": {\n" +
+                                                    "    \"companyName\": \"주식회사 라보에이치\",\n" +
+                                                    "    \"representativeName\": \"홍길동\",\n" +
+                                                    "    \"businessRegistrationNumber\": \"000-00-00000\",\n" +
+                                                    "    \"mailOrderRegNumber\": \"제0000-서울강남-00000호\",\n" +
+                                                    "    \"businessAddress\": \"서울특별시 강남구 ○○로 00 4층\",\n" +
+                                                    "    \"csNumber\": \"000-0000-0000\",\n" +
+                                                    "    \"email\": \"brand@example.com\"\n" +
                                                     "  }\n" +
                                                     "}"
                                     )
@@ -326,48 +348,4 @@ public interface UserProductControllerDocs {
             @RequestParam(name = "variantIds") List<Long> variantIds
     );
 
-    @Operation(
-            summary = "비회원/회원 연관 상품 조회",
-            description = "특정 상품과 연관된 상품 목록을 조회합니다.\n\n" +
-                    "**추천 기준:**\n" +
-                    "- 1순위: 동일 카테고리 상품\n" +
-                    "- 2순위: 동일 성별 상품\n\n" +
-                    "**정렬:**\n" +
-                    "- isRecommended DESC, createdAt DESC\n\n" +
-                    "**참고사항:**\n" +
-                    "- 진열중이면서 공구에 연결된 상품만 포함됩니다.\n" +
-                    "- 기준 상품이 공구에 연결되어 있지 않으면 404 PRODUCT_NOT_FOUND로 응답합니다.\n" +
-                    "- 조회 대상 상품은 결과에서 제외됩니다.\n" +
-                    "- Authorization 헤더가 없어도 조회 가능합니다 (게스트 조회).\n" +
-                    "- 로그인한 사용자의 경우 isWished 정보가 포함됩니다.\n\n" +
-                    "**권한:** 선택사항 (게스트 가능)"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "조회 성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = PageResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "상품을 찾을 수 없거나 공구에 연결되지 않은 상품",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            )
-    })
-    ResponseEntity<PageResponse<ProductDto.ProductItem>> getRelatedProducts(
-            @Parameter(name = "productId", description = "상품 ID", required = true, example = "1")
-            @PathVariable("productId") Long productId,
-            @Parameter(description = "Authorization 헤더 (Optional)", required = false, hidden = true)
-            @RequestHeader(value = "Authorization", required = false) String authorization,
-            @Parameter(description = "페이지 번호 (기본값: 1)", required = false, example = "1")
-            @RequestParam(name = "page", required = false, defaultValue = "1") Integer page,
-            @Parameter(description = "페이지당 항목 수 (기본값: 20)", required = false, example = "20")
-            @RequestParam(name = "limit", required = false, defaultValue = "20") Integer limit
-    );
 }

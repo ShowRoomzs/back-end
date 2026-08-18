@@ -5,20 +5,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 import showroomz.api.app.product.DTO.ProductDto;
-import showroomz.api.app.user.repository.UserRepository;
-import showroomz.api.app.wishlist.service.WishlistService;
-import showroomz.domain.category.entity.Category;
 import showroomz.domain.category.service.CategoryHierarchyService;
 import showroomz.domain.filter.repository.FilterRepository;
+import showroomz.domain.market.entity.Market;
+import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.product.repository.ProductOptionGroupRepository;
@@ -26,7 +22,6 @@ import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
-import showroomz.domain.review.repository.ReviewRepository;
 import showroomz.domain.wishlist.repository.WishlistRepository;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -66,13 +61,7 @@ class ProductServiceTest {
     @Mock
     private ProductVariantRepository productVariantRepository;
     @Mock
-    private UserRepository userRepository;
-    @Mock
     private WishlistRepository wishlistRepository;
-    @Mock
-    private WishlistService wishlistService;
-    @Mock
-    private ReviewRepository reviewRepository;
     @Mock
     private ObjectMapper objectMapper;
 
@@ -105,7 +94,6 @@ class ProductServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PRODUCT_NOT_FOUND);
 
         verify(productOptionGroupRepository, never()).findByProductIdWithOptions(anyLong());
-        verifyNoInteractions(reviewRepository);
     }
 
     @Test
@@ -115,7 +103,6 @@ class ProductServiceTest {
                 .willReturn(Optional.of(product(ProductGroupBuyStatus.PREPARING)));
         given(productOptionGroupRepository.findByProductIdWithOptions(PRODUCT_ID)).willReturn(List.of());
         given(productVariantRepository.findByProductIdWithOptions(PRODUCT_ID)).willReturn(List.of());
-        given(reviewRepository.findTop3ByProductIdOrderByCreatedAtDesc(anyLong(), any())).willReturn(List.of());
 
         ProductDto.ProductDetailResponse response = productService.getProductDetail(PRODUCT_ID);
 
@@ -134,7 +121,6 @@ class ProductServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PRODUCT_NOT_FOUND);
 
         verify(productOptionGroupRepository, never()).findByProductIdWithOptions(anyLong());
-        verifyNoInteractions(reviewRepository);
     }
 
     @Test
@@ -161,19 +147,6 @@ class ProductServiceTest {
         verify(productVariantRepository, never()).findByProductIdAndVariantIdIn(anyLong(), any());
     }
 
-    @Test
-    @DisplayName("함께 판매 중 목록도 같은 규칙을 따른다")
-    void relatedProductsFollowTheSameRule() {
-        given(productRepository.findByProductId(PRODUCT_ID))
-                .willReturn(Optional.of(product(ProductGroupBuyStatus.NOT_CONNECTED)));
-
-        assertThatThrownBy(() -> productService.getRelatedProducts(PRODUCT_ID, 1, 20, null))
-                .isInstanceOf(BusinessException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PRODUCT_NOT_FOUND);
-
-        verify(productRepository, never()).findRelatedProducts(anyLong(), any(), any(), any());
-    }
-
     /**
      * 가격 표시 — 할인율은 <b>서버가 계산해 내려준다</b>.
      *
@@ -188,7 +161,6 @@ class ProductServiceTest {
             given(productRepository.findDetailByProductId(PRODUCT_ID)).willReturn(Optional.of(target));
             given(productOptionGroupRepository.findByProductIdWithOptions(PRODUCT_ID)).willReturn(List.of());
             given(productVariantRepository.findByProductIdWithOptions(PRODUCT_ID)).willReturn(List.of());
-            given(reviewRepository.findTop3ByProductIdOrderByCreatedAtDesc(anyLong(), any())).willReturn(List.of());
         }
 
         @Test
@@ -359,113 +331,203 @@ class ProductServiceTest {
         }
     }
 
+    /**
+     * 상세 응답은 <b>C7 화면이 그리는 값만</b> 담는다.
+     *
+     * <p>브랜드 줄·배송 블록·판매자 정보 탭은 상품이 아니라 <b>마켓과 셀러</b>에서 온다. 셀러 정보가
+     * 아직 채워지지 않은 마켓도 있어, 없을 때 응답이 통째로 깨지지 않는지도 함께 본다.
+     */
     @Nested
-    @DisplayName("함께 판매 중 (연관 상품)")
-    class RelatedProducts {
+    @DisplayName("상세 응답 구성")
+    class DetailPayload {
 
-        private Product givenVisibleProduct() {
-            Product target = product(ProductGroupBuyStatus.IN_PROGRESS);
-            Category category = new Category();
-            category.setCategoryId(7L);
-            category.setName("스킨케어");
-            target.setCategory(category);
-            given(productRepository.findByProductId(PRODUCT_ID)).willReturn(Optional.of(target));
+        private Product givenDetailReady(Product target) {
+            given(productRepository.findDetailByProductId(PRODUCT_ID)).willReturn(Optional.of(target));
+            given(productOptionGroupRepository.findByProductIdWithOptions(PRODUCT_ID)).willReturn(List.of());
+            given(productVariantRepository.findByProductIdWithOptions(PRODUCT_ID)).willReturn(List.of());
             return target;
         }
 
-        private void givenRelated(Product... products) {
-            given(productRepository.findRelatedProducts(anyLong(), any(), any(), any()))
-                    .willAnswer(invocation -> new PageImpl<>(
-                            List.of(products), invocation.getArgument(3), products.length));
+        @Test
+        @DisplayName("브랜드 줄은 마켓명과 브랜드 사이트 링크를 함께 내려준다")
+        void brandLineCarriesMarketAndSiteUrl() {
+            Product target = product(ProductGroupBuyStatus.IN_PROGRESS);
+            target.setMarket(market());
+            givenDetailReady(target);
+
+            ProductDto.ProductDetailResponse response = productService.getProductDetail(PRODUCT_ID);
+
+            assertThat(response.getMarketName()).isEqualTo("라보에이치");
+            assertThat(response.getBrandSiteUrl()).isEqualTo("https://labo-h.example.com");
         }
 
-        /** 자기 자신이 "함께 판매 중"에 섞이면 같은 상품으로 되돌아가는 링크가 된다. */
+        /** 할인율을 클라이언트가 다시 계산하면 화면마다 34%와 35%로 갈린다. */
         @Test
-        @DisplayName("조회 대상 상품 자신을 제외하도록 ID를 넘긴다")
-        void excludesItselfByPassingOwnId() {
-            givenVisibleProduct();
-            givenRelated();
+        @DisplayName("상세는 할인율까지 계산해 내려준다")
+        void detailCarriesDiscountRate() {
+            givenDetailReady(product(ProductGroupBuyStatus.IN_PROGRESS));
 
-            productService.getRelatedProducts(PRODUCT_ID, 1, 20, null);
-
-            verify(productRepository).findRelatedProducts(
-                    org.mockito.ArgumentMatchers.eq(PRODUCT_ID), any(), any(), any());
-        }
-
-        /** 하위 카테고리까지 포함해야 "스킨케어"에서 토너·앰플이 함께 나온다. */
-        @Test
-        @DisplayName("카테고리는 하위까지 펼쳐 조회한다")
-        void expandsCategoryHierarchy() {
-            givenVisibleProduct();
-            given(categoryHierarchyService.getAllSubCategoryIds(7L)).willReturn(List.of(7L, 8L, 9L));
-            givenRelated();
-
-            productService.getRelatedProducts(PRODUCT_ID, 1, 20, null);
-
-            verify(productRepository).findRelatedProducts(
-                    anyLong(), org.mockito.ArgumentMatchers.eq(List.of(7L, 8L, 9L)), any(), any());
-        }
-
-        /** 카테고리 조회가 실패해도 "함께 판매 중"이 통째로 비면 상세 화면에 빈 칸이 남는다. */
-        @Test
-        @DisplayName("카테고리 조회가 실패해도 자기 카테고리로 좁혀 계속 조회한다")
-        void fallsBackToOwnCategoryOnFailure() {
-            givenVisibleProduct();
-            given(categoryHierarchyService.getAllSubCategoryIds(7L))
-                    .willThrow(new RuntimeException("카테고리 트리 조회 실패"));
-            givenRelated();
-
-            productService.getRelatedProducts(PRODUCT_ID, 1, 20, null);
-
-            verify(productRepository).findRelatedProducts(
-                    anyLong(), org.mockito.ArgumentMatchers.eq(List.of(7L)), any(), any());
+            // 38,000 → 24,900 = 34.47% → 34%
+            assertThat(productService.getProductDetail(PRODUCT_ID).getDiscountRate()).isEqualTo(34);
         }
 
         @Test
-        @DisplayName("페이지 번호는 1부터 받아 0부터 세는 쿼리로 바꿔 넘긴다")
-        void pageNumberIsConvertedToZeroBased() {
-            givenVisibleProduct();
-            givenRelated();
+        @DisplayName("배송 블록은 마켓의 배송·교환·반품 설정을 그대로 싣는다")
+        void deliveryBlockComesFromMarketSettings() {
+            Product target = product(ProductGroupBuyStatus.IN_PROGRESS);
+            target.setMarket(market());
+            givenDetailReady(target);
 
-            productService.getRelatedProducts(PRODUCT_ID, 2, 10, null);
+            ProductDto.DeliveryInfo delivery = productService.getProductDetail(PRODUCT_ID).getDelivery();
 
-            ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-            verify(productRepository).findRelatedProducts(anyLong(), any(), any(), captor.capture());
-            assertThat(captor.getValue().getPageNumber()).isEqualTo(1);
-            assertThat(captor.getValue().getPageSize()).isEqualTo(10);
+            assertThat(delivery.getShippingLeadDays()).isEqualTo(2);
+            assertThat(delivery.getDeliveryFee()).isEqualTo(3000);
+            assertThat(delivery.getFreeShippingThreshold()).isEqualTo(30000);
+            assertThat(delivery.getRemoteAreaSurcharge()).isEqualTo(5000);
+            assertThat(delivery.getReturnFee()).isEqualTo(3000);
+            assertThat(delivery.getExchangeFee()).isEqualTo(6000);
         }
 
         @Test
-        @DisplayName("페이지·개수를 주지 않으면 첫 페이지 20개로 조회한다")
-        void defaultsToFirstPageOfTwenty() {
-            givenVisibleProduct();
-            givenRelated();
+        @DisplayName("판매자 정보는 셀러의 사업자 정보와 마켓의 고객센터 번호를 합쳐 만든다")
+        void sellerInfoMergesSellerAndMarket() {
+            Product target = product(ProductGroupBuyStatus.IN_PROGRESS);
+            target.setMarket(market());
+            givenDetailReady(target);
 
-            productService.getRelatedProducts(PRODUCT_ID, null, null, null);
+            ProductDto.SellerInfo sellerInfo = productService.getProductDetail(PRODUCT_ID).getSellerInfo();
 
-            ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-            verify(productRepository).findRelatedProducts(anyLong(), any(), any(), captor.capture());
-            assertThat(captor.getValue().getPageNumber()).isZero();
-            assertThat(captor.getValue().getPageSize()).isEqualTo(20);
+            assertThat(sellerInfo.getCompanyName()).isEqualTo("주식회사 라보에이치");
+            assertThat(sellerInfo.getRepresentativeName()).isEqualTo("홍길동");
+            assertThat(sellerInfo.getBusinessRegistrationNumber()).isEqualTo("000-00-00000");
+            assertThat(sellerInfo.getMailOrderRegNumber()).isEqualTo("제0000-서울강남-00000호");
+            assertThat(sellerInfo.getCsNumber()).isEqualTo("000-0000-0000");
+            assertThat(sellerInfo.getEmail()).isEqualTo("brand@example.com");
+        }
+
+        /** 사업장 소재지는 기본 주소와 상세 주소가 나뉘어 저장되지만 화면에는 한 줄로 나간다. */
+        @Test
+        @DisplayName("사업장 소재지는 기본 주소와 상세 주소를 한 줄로 합친다")
+        void businessAddressIsJoinedIntoOneLine() {
+            Product target = product(ProductGroupBuyStatus.IN_PROGRESS);
+            target.setMarket(market());
+            givenDetailReady(target);
+
+            assertThat(productService.getProductDetail(PRODUCT_ID).getSellerInfo().getBusinessAddress())
+                    .isEqualTo("서울특별시 강남구 ○○로 00 4층");
         }
 
         @Test
-        @DisplayName("연관 상품 카드에도 할인율이 계산돼 실린다")
-        void relatedItemsCarryDiscountRate() {
-            givenVisibleProduct();
-            Product related = new Product();
-            related.setProductId(2048L);
-            related.setName("수분 진정 토너");
-            related.setRegularPrice(40000);
-            related.setSalePrice(30000);
-            related.setGroupBuyStatus(ProductGroupBuyStatus.IN_PROGRESS);
-            related.setDisplayStatus(ProductDisplayStatus.DISPLAY);
-            givenRelated(related);
+        @DisplayName("상세 주소가 비어 있으면 기본 주소만 내려간다")
+        void blankDetailAddressIsDropped() {
+            Market market = market();
+            market.getSeller().setDetailAddress("   ");
+            Product target = product(ProductGroupBuyStatus.IN_PROGRESS);
+            target.setMarket(market);
+            givenDetailReady(target);
 
-            ProductDto.ProductItem item =
-                    productService.getRelatedProducts(PRODUCT_ID, 1, 20, null).getContent().get(0);
+            assertThat(productService.getProductDetail(PRODUCT_ID).getSellerInfo().getBusinessAddress())
+                    .isEqualTo("서울특별시 강남구 ○○로 00");
+        }
 
-            assertThat(item.getPrice().getDiscountRate()).isEqualTo(25);
+        /** 승인 직후라 사업자 정보가 아직 없는 마켓에서도 상세가 500으로 죽으면 안 된다. */
+        @Test
+        @DisplayName("셀러 정보가 없어도 고객센터 번호는 내려주고 나머지는 비운다")
+        void missingSellerLeavesOnlyCsNumber() {
+            Market market = market();
+            market.setSeller(null);
+            Product target = product(ProductGroupBuyStatus.IN_PROGRESS);
+            target.setMarket(market);
+            givenDetailReady(target);
+
+            ProductDto.SellerInfo sellerInfo = productService.getProductDetail(PRODUCT_ID).getSellerInfo();
+
+            assertThat(sellerInfo.getCsNumber()).isEqualTo("000-0000-0000");
+            assertThat(sellerInfo.getCompanyName()).isNull();
+        }
+
+        /** 품절 옵션도 목록에서 지우지 않는다 — 없어지면 원래 없던 옵션인지 팔린 것인지 알 수 없다. */
+        @Test
+        @DisplayName("옵션 목록은 품절 여부를 함께 실어 보낸다")
+        void variantsCarrySoldOutFlag() {
+            Product target = product(ProductGroupBuyStatus.IN_PROGRESS);
+            given(productRepository.findDetailByProductId(PRODUCT_ID)).willReturn(Optional.of(target));
+            given(productOptionGroupRepository.findByProductIdWithOptions(PRODUCT_ID)).willReturn(List.of());
+            given(productVariantRepository.findByProductIdWithOptions(PRODUCT_ID))
+                    .willReturn(List.of(
+                            variant(target, 1L, 38000, 24900, 3),
+                            variant(target, 2L, 38000, 24900, 0)));
+
+            List<ProductDto.VariantInfo> variants = productService.getProductDetail(PRODUCT_ID).getVariants();
+
+            assertThat(variants).hasSize(2);
+            assertThat(variants.get(0).getIsOutOfStock()).isFalse();
+            assertThat(variants.get(1).getIsOutOfStock()).isTrue();
+        }
+
+        /**
+         * 상품 전체 품절은 <b>옵션이 전부 소진된 뒤에야</b> 성립한다 — 하나라도 살 수 있으면
+         * 하단 CTA는 [구매하기]로 남아야 한다.
+         */
+        @Test
+        @DisplayName("살 수 있는 옵션이 하나라도 남아 있으면 상품 전체는 품절이 아니다")
+        void productIsNotSoldOutWhileAnyVariantHasStock() {
+            Product target = product(ProductGroupBuyStatus.IN_PROGRESS);
+            given(productRepository.findDetailByProductId(PRODUCT_ID)).willReturn(Optional.of(target));
+            given(productOptionGroupRepository.findByProductIdWithOptions(PRODUCT_ID)).willReturn(List.of());
+            given(productVariantRepository.findByProductIdWithOptions(PRODUCT_ID))
+                    .willReturn(List.of(
+                            variant(target, 1L, 38000, 24900, 0),
+                            variant(target, 2L, 38000, 24900, 3)));
+
+            assertThat(productService.getProductDetail(PRODUCT_ID).getStatus().getIsOutOfStock()).isFalse();
+        }
+
+        @Test
+        @DisplayName("모든 옵션이 소진되면 상품 전체가 품절로 올라간다")
+        void productIsSoldOutOnceEveryVariantIsGone() {
+            Product target = product(ProductGroupBuyStatus.IN_PROGRESS);
+            given(productRepository.findDetailByProductId(PRODUCT_ID)).willReturn(Optional.of(target));
+            given(productOptionGroupRepository.findByProductIdWithOptions(PRODUCT_ID)).willReturn(List.of());
+            given(productVariantRepository.findByProductIdWithOptions(PRODUCT_ID))
+                    .willReturn(List.of(
+                            variant(target, 1L, 38000, 24900, 0),
+                            variant(target, 2L, 38000, 24900, 0)));
+
+            ProductDto.StockStatus status = productService.getProductDetail(PRODUCT_ID).getStatus();
+
+            assertThat(status.getIsOutOfStock()).isTrue();
+            assertThat(status.getIsOutOfStockForced()).isFalse();
+        }
+
+        @Test
+        @DisplayName("강제 품절은 재고가 남아 있어도 상품 전체를 품절로 만든다")
+        void forcedOutOfStockSellsOutWholeProduct() {
+            Product target = product(ProductGroupBuyStatus.IN_PROGRESS);
+            target.setIsOutOfStockForced(true);
+            given(productRepository.findDetailByProductId(PRODUCT_ID)).willReturn(Optional.of(target));
+            given(productOptionGroupRepository.findByProductIdWithOptions(PRODUCT_ID)).willReturn(List.of());
+            given(productVariantRepository.findByProductIdWithOptions(PRODUCT_ID))
+                    .willReturn(List.of(variant(target, 1L, 38000, 24900, 10)));
+
+            ProductDto.StockStatus status = productService.getProductDetail(PRODUCT_ID).getStatus();
+
+            assertThat(status.getIsOutOfStock()).isTrue();
+            assertThat(status.getIsOutOfStockForced()).isTrue();
+        }
+
+        @Test
+        @DisplayName("강제 품절이면 재고가 남아 있어도 모든 옵션이 품절로 나간다")
+        void forcedOutOfStockMarksEveryVariant() {
+            Product target = product(ProductGroupBuyStatus.IN_PROGRESS);
+            target.setIsOutOfStockForced(true);
+            given(productRepository.findDetailByProductId(PRODUCT_ID)).willReturn(Optional.of(target));
+            given(productOptionGroupRepository.findByProductIdWithOptions(PRODUCT_ID)).willReturn(List.of());
+            given(productVariantRepository.findByProductIdWithOptions(PRODUCT_ID))
+                    .willReturn(List.of(variant(target, 1L, 38000, 24900, 10)));
+
+            assertThat(productService.getProductDetail(PRODUCT_ID).getVariants().get(0).getIsOutOfStock())
+                    .isTrue();
         }
     }
 
@@ -476,5 +538,27 @@ class ProductServiceTest {
         ProductVariant variant = new ProductVariant(target, "기본", regularPrice, salePrice, stock, true);
         variant.setVariantId(variantId);
         return variant;
+    }
+
+    private Market market() {
+        Seller seller = new Seller();
+        seller.setCompanyName("주식회사 라보에이치");
+        seller.setRepresentativeName("홍길동");
+        seller.setBusinessRegistrationNumber("000-00-00000");
+        seller.setMailOrderRegNumber("제0000-서울강남-00000호");
+        seller.setBusinessAddress("서울특별시 강남구 ○○로 00");
+        seller.setDetailAddress("4층");
+        seller.setEmail("brand@example.com");
+
+        Market market = new Market(seller, "라보에이치", "000-0000-0000");
+        market.setId(5L);
+        market.setBrandSiteUrl("https://labo-h.example.com");
+        market.setShippingLeadDays(2);
+        market.setDefaultDeliveryFee(3000);
+        market.setFreeShippingThreshold(30000);
+        market.setRemoteAreaSurcharge(5000);
+        market.setReturnFee(3000);
+        market.setExchangeFee(6000);
+        return market;
     }
 }

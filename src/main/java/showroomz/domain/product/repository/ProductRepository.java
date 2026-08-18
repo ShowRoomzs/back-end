@@ -29,8 +29,13 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     @Query("SELECT p FROM Product p WHERE p.productId IN :productIds AND p.market.seller.id = :sellerId")
     List<Product> findAllByProductIdsAndSellerId(@Param("productIds") Collection<Long> productIds, @Param("sellerId") Long sellerId);
 
+    /**
+     * C7 상품 상세용 단건 조회.
+     * 판매자 정보 탭이 셀러의 사업자 정보를 쓰므로 market과 seller까지 함께 가져온다.
+     */
     @Query("SELECT DISTINCT p FROM Product p " +
-           "LEFT JOIN FETCH p.market " +
+           "LEFT JOIN FETCH p.market m " +
+           "LEFT JOIN FETCH m.seller " +
            "LEFT JOIN FETCH p.category " +
            "LEFT JOIN FETCH p.productImages " +
            "WHERE p.productId = :productId")

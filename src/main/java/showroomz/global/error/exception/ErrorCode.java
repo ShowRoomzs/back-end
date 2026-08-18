@@ -186,6 +186,16 @@ public enum ErrorCode {
    POST_APPEAL_ALREADY_REVIEWED(HttpStatus.CONFLICT, "POST_APPEAL_ALREADY_REVIEWED", "이미 심사가 끝난 이의 신청입니다."),
    POST_ORIGINAL_DOWNLOAD_UNAVAILABLE(HttpStatus.FORBIDDEN, "POST_ORIGINAL_DOWNLOAD_UNAVAILABLE", "원본을 내려받을 수 있는 기간이 아닙니다."),
 
+   /* 14-2. 게시물 신고 (C4 ⋯ 시트 · 하단 고지)
+    * 조치(§24-5)의 입구다. 접수만 하고 자동 조치는 일어나지 않는다 — 반려가 곧 영구 삭제인 절차라
+    * 자동화하면 경쟁 쇼룸을 신고로 내리는 길이 열린다.
+    */
+   POST_REPORT_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "POST_REPORT_DETAIL_REQUIRED", "기타 사유를 선택한 경우 상세 사유는 필수입니다."),
+   POST_REPORT_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "POST_REPORT_SELF_NOT_ALLOWED", "자신의 게시물은 신고할 수 없습니다."),
+   POST_REPORT_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "POST_REPORT_ALREADY_SUBMITTED", "이미 신고한 게시물입니다."),
+   POST_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_REPORT_NOT_FOUND", "존재하지 않는 신고입니다."),
+   POST_REPORT_ALREADY_HANDLED(HttpStatus.CONFLICT, "POST_REPORT_ALREADY_HANDLED", "이미 처리가 끝난 신고입니다."),
+
    /* 15. 위시리스트 (Wishlist)
     */
    WISHLIST_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "WISHLIST_ALREADY_EXISTS", "이미 위시리스트에 추가된 항목입니다."),

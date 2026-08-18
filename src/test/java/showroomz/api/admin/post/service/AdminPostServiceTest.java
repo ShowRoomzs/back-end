@@ -13,14 +13,18 @@ import showroomz.api.admin.post.dto.AdminPostDto;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.entity.PostAppeal;
+import showroomz.domain.post.entity.PostReport;
 import showroomz.domain.post.entity.PostSuspension;
 import showroomz.domain.post.repository.PostAppealRepository;
 import showroomz.domain.post.repository.PostImageRepository;
+import showroomz.domain.post.repository.PostReportRepository;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.post.repository.PostSuspensionRepository;
 import showroomz.domain.post.service.PostNotificationService;
 import showroomz.domain.post.type.PostDeleteReason;
 import showroomz.domain.post.type.PostNotificationEvent;
+import showroomz.domain.post.type.PostReportReason;
+import showroomz.domain.post.type.PostReportStatus;
 import showroomz.domain.post.type.PostStatus;
 import showroomz.domain.post.type.PostSuspensionReason;
 import showroomz.domain.post.type.SuspensionResolution;
@@ -30,6 +34,7 @@ import showroomz.global.error.exception.ErrorCode;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,6 +66,8 @@ class AdminPostServiceTest {
     @Mock
     private PostAppealRepository postAppealRepository;
     @Mock
+    private PostReportRepository postReportRepository;
+    @Mock
     private PostNotificationService postNotificationService;
 
     private final PostProperties postProperties = new PostProperties();
@@ -72,7 +79,7 @@ class AdminPostServiceTest {
     void setUp() {
         creator = Creator.builder().id(5L).showroomName("뷰티 소연").build();
         adminPostService = new AdminPostService(postRepository, postImageRepository, postSuspensionRepository,
-                postAppealRepository, postNotificationService, postProperties);
+                postAppealRepository, postReportRepository, postNotificationService, postProperties);
 
         given(postSuspensionRepository.save(any(PostSuspension.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
@@ -102,6 +109,25 @@ class AdminPostServiceTest {
 
         then(postNotificationService).should()
                 .notify(eq(post), eq(PostNotificationEvent.SUSPENDED), any());
+    }
+
+    @Test
+    @DisplayName("중지하면 그 게시물에 걸린 대기 신고가 함께 닫힌다 — 스무 건을 스무 번 누르게 하지 않는다")
+    void suspendClosesPendingReports() {
+        Post post = publishedPost();
+        given(postRepository.findById(POST_ID)).willReturn(Optional.of(post));
+
+        PostReport first = report(post);
+        PostReport second = report(post);
+        given(postReportRepository.findByPost_IdAndStatus(POST_ID, PostReportStatus.PENDING))
+                .willReturn(List.of(first, second));
+
+        adminPostService.suspend(OPERATOR_ID, POST_ID, suspendRequest(PostSuspensionReason.AD_DISCLOSURE, null));
+
+        assertThat(first.getStatus()).isEqualTo(PostReportStatus.ACCEPTED);
+        assertThat(second.getStatus()).isEqualTo(PostReportStatus.ACCEPTED);
+        assertThat(first.getHandledBy()).isEqualTo(OPERATOR_ID);
+        assertThat(first.getHandledAt()).isNotNull();
     }
 
     @Test
@@ -181,6 +207,11 @@ class AdminPostServiceTest {
     }
 
     // ------------------------------------------------------------------ fixture
+
+    /** 신고자는 이 검증에 필요 없다 — 조치가 닫는 것은 상태이지 누가 눌렀는지가 아니다 */
+    private static PostReport report(Post post) {
+        return new PostReport(post, null, PostReportReason.AD_DISCLOSURE, null, LocalDateTime.now());
+    }
 
     private Post publishedPost() {
         Post post = Post.published(creator, "3주 루틴 기록", new BigDecimal("0.8000"), LocalDateTime.now().minusDays(3));

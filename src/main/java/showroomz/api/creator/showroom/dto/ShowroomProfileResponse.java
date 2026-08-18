@@ -30,7 +30,7 @@ public class ShowroomProfileResponse {
     private final String showroomAddress;
 
     @Schema(description = "쇼룸 주소 전체 URL — 복사 버튼이 그대로 쓰는 값",
-            example = "https://www.showroomz.co.kr/@beauty_soyeon")
+            example = "https://showroomz.shop/@beauty_soyeon")
     private final String showroomUrl;
 
     @Schema(description = "쇼룸 소개글 — 최대 50자", example = "뷰티 소품을 좋아하는 소연입니다 🌸", nullable = true)

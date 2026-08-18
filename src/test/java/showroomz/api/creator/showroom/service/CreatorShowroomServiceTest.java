@@ -28,7 +28,7 @@ class CreatorShowroomServiceTest {
 
     private static final long USER_ID = 42L;
     private static final long CREATOR_ID = 5L;
-    private static final String BASE_URL = "https://www.showroomz.co.kr";
+    private static final String BASE_URL = "https://showroomz.shop";
 
     @Mock
     private CreatorRepository creatorRepository;
