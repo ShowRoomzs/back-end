@@ -33,6 +33,9 @@ public interface UserPostReportControllerDocs {
                     - 코드 축은 어드민 조치 화면(`GET /v1/admin/posts/suspension-reasons`)과 **같다**.
                       신고를 받아 노출 중지를 누를 때 사유가 그대로 이어진다
                     - **목록은 잠정이다** — C5 §남은 결정 ③ "신고 사유 선택 화면"이 확정되면 값이 바뀔 수 있다
+                    - **권한:** 없음(비로그인 허용). 운영정책 문구일 뿐 개인화된 값이 아니라 누가 물어도
+                      답이 같다. 시트를 여는 데까지는 토큰이 필요 없고, 실제 접수
+                      (`POST /v1/user/posts/{postId}/reports`)에서만 로그인을 요구한다
                     """
     )
     @ApiResponses({
