@@ -105,6 +105,11 @@ public class SecurityConfig {
             // 게시물 노출 적재 (§24-7) — 방문 기록과 같은 이유로 비로그인 조회도 노출에 포함된다.
             // 로그인 조회만 연령·성별 표본이 되고, 비로그인은 "미확인"으로 분류된다.
             "/v1/user/posts/impressions",
+
+            // C1 추천·발견 피드 — 비로그인도 본다. 팔로우가 없는 상태에서 앱이 그리는 첫 화면이라
+            // 로그인을 요구하면 볼 것이 없는 화면만 남는다. 팔로잉 피드(`/feed/following`)는
+            // 정의상 내 팔로우 목록이라 그대로 로그인이 필요하다.
+            "/v1/user/feed/recommended",
     };
     /*
      * SecurityFilterChain 설정 (Spring Security 3.x 최신 방식)

@@ -130,13 +130,19 @@ public class UserPostService {
      *
      * <p>팔로잉이 0인 사용자에게는 이 응답이 그대로 <b>발견 피드</b>가 된다(C1 빈 상태). 쇼룸 이름만
      * 나열하는 목록으로는 팔로우를 결정할 근거가 없어서, 빈 상태에도 게시물을 그대로 보여준다.
+     *
+     * <p><b>비로그인도 본다.</b> 팔로우도 본인 쇼룸도 없으니 뺄 것이 없어 게시중 게시물 전체가
+     * 그대로 발견 피드가 되고, {@code isLiked}·{@code isFollowing}은 전부 false로 나간다.
      */
     public PageResponse<PostDto.FeedItemResponse> getRecommendedFeed(String username, PagingRequest pagingRequest) {
-        Users user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        Users user = findFeedUser(username);
 
-        List<Long> excluded = new ArrayList<>(creatorFollowRepository.findCreatorIdsByUserId(user.getId()));
-        creatorRepository.findByUser_Id(user.getId()).ifPresent(creator -> excluded.add(creator.getId()));
+        // 비로그인은 뺄 쇼룸이 없다 — 제외 목록이 비면 게시중 게시물 전체가 후보다
+        List<Long> excluded = new ArrayList<>();
+        if (user != null) {
+            excluded.addAll(creatorFollowRepository.findCreatorIdsByUserId(user.getId()));
+            creatorRepository.findByUser_Id(user.getId()).ifPresent(creator -> excluded.add(creator.getId()));
+        }
 
         Page<Post> postPage = postRepository.findRecommendedPosts(excluded, pagingRequest.toPageable());
 
@@ -272,6 +278,20 @@ public class UserPostService {
 
     private Users findUser(String username) {
         return username == null ? null : userRepository.findByUsername(username).orElse(null);
+    }
+
+    /**
+     * 비로그인은 허용하되 <b>깨진 토큰은 허용하지 않는</b> 조회용 사용자 해석.
+     *
+     * <p>{@link #findUser}처럼 없는 사용자를 조용히 null로 떨어뜨리면 탈퇴한 계정의 토큰이
+     * 비로그인처럼 통과해 버린다. 토큰이 실려 왔는데 그 사용자가 없으면 404다.
+     */
+    private Users findFeedUser(String username) {
+        if (username == null) {
+            return null;
+        }
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
     /** 피드 한 페이지의 사진을 한 번에 읽어 게시물별로 묶는다 — 게시물마다 지연 로딩하면 쿼리가 페이지 크기만큼 늘어난다 */
