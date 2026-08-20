@@ -133,5 +133,30 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
             @Param("displayStatus") ProductDisplayStatus displayStatus
     );
 
+    /**
+     * 팔로우한 쇼룸이 진행 중인 공구 상품 (C8 장바구니 하단 "팔로우한 쇼룸의 공구").
+     *
+     * <p>공구 게시물이 아직 없어 "쇼룸의 공구"는 <b>연결(CONNECTED)된 브랜드의 진열 중 상품 가운데
+     * 공구 진행중(IN_PROGRESS)</b>으로 판별한다 — C2 팔로잉 목록의 아바타 링과 같은 기준이다
+     * ({@code findCreatorIdsWithOngoingGroupBuy}).
+     *
+     * <p>{@code excludedProductIds}로 이미 담아 둔 상품을 뺀다. 장바구니에 있는 상품을 그 아래에서
+     * 다시 권하면 목록을 두 번 읽게 만든다.
+     */
+    @Query("SELECT DISTINCT p FROM Product p JOIN FETCH p.market m " +
+           "WHERE EXISTS (SELECT c.id FROM Connection c " +
+           "              WHERE c.market = m " +
+           "              AND c.creator.id IN :creatorIds " +
+           "              AND c.status = showroomz.domain.connection.type.ConnectionStatus.CONNECTED) " +
+           "AND p.displayStatus = showroomz.domain.product.type.ProductDisplayStatus.DISPLAY " +
+           "AND p.groupBuyStatus = showroomz.domain.product.type.ProductGroupBuyStatus.IN_PROGRESS " +
+           "AND p.productId NOT IN :excludedProductIds " +
+           "ORDER BY p.isRecommended DESC, p.createdAt DESC")
+    List<Product> findOngoingGroupBuyProductsOfShowrooms(
+            @Param("creatorIds") Collection<Long> creatorIds,
+            @Param("excludedProductIds") Collection<Long> excludedProductIds,
+            Pageable pageable
+    );
+
 }
 

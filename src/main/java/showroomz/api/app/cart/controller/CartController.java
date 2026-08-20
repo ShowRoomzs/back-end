@@ -51,13 +51,26 @@ public class CartController implements CartControllerDocs {
     }
 
     @Override
+    @GetMapping("/recommendations")
+    public ResponseEntity<CartDto.RecommendationListResponse> getCartRecommendations(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam(value = "limit", required = false) Integer limit
+    ) {
+        CartDto.RecommendationListResponse response =
+                cartService.getRecommendations(userPrincipal.getUsername(), limit);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
     @PatchMapping("/{cartItemId}")
     public ResponseEntity<CartDto.UpdateCartResponse> updateCart(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Long cartItemId,
-            @RequestBody CartDto.UpdateCartRequest request
+            @RequestBody CartDto.UpdateCartRequest request,
+            @RequestParam(value = "selectedCartItemIds", required = false) List<Long> selectedCartItemIds
     ) {
-        CartDto.UpdateCartResponse response = cartService.updateCart(userPrincipal.getUsername(), cartItemId, request);
+        CartDto.UpdateCartResponse response =
+                cartService.updateCart(userPrincipal.getUsername(), cartItemId, request, selectedCartItemIds);
         return ResponseEntity.ok(response);
     }
 
@@ -65,9 +78,11 @@ public class CartController implements CartControllerDocs {
     @DeleteMapping
     public ResponseEntity<CartDto.DeleteCartResponse> deleteCart(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @RequestParam(value = "cartItemIds", required = false) List<Long> cartItemIds
+            @RequestParam(value = "cartItemIds", required = false) List<Long> cartItemIds,
+            @RequestParam(value = "selectedCartItemIds", required = false) List<Long> selectedCartItemIds
     ) {
-        CartDto.DeleteCartResponse response = cartService.deleteCart(userPrincipal.getUsername(), cartItemIds);
+        CartDto.DeleteCartResponse response =
+                cartService.deleteCart(userPrincipal.getUsername(), cartItemIds, selectedCartItemIds);
         return ResponseEntity.ok(response);
     }
 }

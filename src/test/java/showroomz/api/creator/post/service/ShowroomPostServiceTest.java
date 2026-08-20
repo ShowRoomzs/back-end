@@ -31,6 +31,7 @@ import showroomz.domain.post.type.PostStatus;
 import showroomz.domain.post.type.PostSuspensionReason;
 import showroomz.domain.post.type.SuspensionResolution;
 import showroomz.global.config.properties.PostProperties;
+import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -416,6 +417,61 @@ class ShowroomPostServiceTest {
             assertThat(post.getImageCount()).isEqualTo(2);
         }
 
+        /**
+         * 게시중인 글은 {@code action}이 임시저장이어도 계속 소비자에게 노출된다 — 사진을 전부 빼는
+         * 저장이 통과하면 피드에 사진 없는 카드가 남는다. 임시저장 규칙(사진 <b>또는</b> 본문)은
+         * 아직 노출되지 않은 글에만 해당한다(§24-3).
+         */
+        @Test
+        @DisplayName("게시중인 글은 임시저장으로도 사진을 전부 뺄 수 없다 — 노출 중인 카드가 비어 버린다")
+        void publishedPostCannotDropAllImages() {
+            Post post = publishedPost();
+            post.replaceImages(List.of(new showroomz.domain.post.entity.PostImage(
+                    "https://cdn.example.com/posts/old.jpg", null, 1080, 1080, 1000)));
+            given(postRepository.findById(POST_ID)).willReturn(Optional.of(post));
+
+            assertThatThrownBy(() -> showroomPostService.updatePost(USER_ID, POST_ID,
+                    request(PostSaveAction.DRAFT, "본문만 남긴다", List.of())))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.POST_IMAGE_REQUIRED);
+        }
+
+        /** 작성중인 글은 아직 아무에게도 보이지 않으므로 사진 없이 본문만 남겨 둘 수 있다. */
+        @Test
+        @DisplayName("작성중인 글은 사진 없이 본문만으로 임시저장된다")
+        void draftMayKeepContentOnly() {
+            Post post = Post.draft(me, "초안 본문", new java.math.BigDecimal("1.0000"));
+            ReflectionTestUtils.setField(post, "id", POST_ID);
+            given(postRepository.findById(POST_ID)).willReturn(Optional.of(post));
+
+            showroomPostService.updatePost(USER_ID, POST_ID,
+                    request(PostSaveAction.DRAFT, "사진은 나중에", List.of()));
+        }
+
+        /**
+         * 교체는 <b>지우기와 넣기 사이에 플러시가 들어가야</b> 성립한다.
+         *
+         * <p>{@code (post_id, sort_order)} 유니크 때문이다 — 한 플러시에 맡기면 하이버네이트가
+         * INSERT를 고아 DELETE보다 먼저 내보내 새 0번이 옛 0번과 부딪힌다. 이 검증만 구현 세부를
+         * 들여다보는 이유는, 위 테스트들이 리포지토리를 흉내 내는 탓에 <b>제약을 보지 못한 채</b>
+         * 통과하기 때문이다. 실제 충돌은 {@code PostPublishToFeedIntegrationTest}가 잡는다.
+         */
+        @Test
+        @DisplayName("교체는 기존 사진을 먼저 지워 내보낸 뒤에 새 사진을 넣는다")
+        void oldImagesAreFlushedBeforeNewOnesAreAdded() {
+            Post post = publishedPost();
+            post.replaceImages(List.of(new showroomz.domain.post.entity.PostImage(
+                    "https://cdn.example.com/posts/old.jpg", null, 1080, 1080, 1000)));
+            given(postRepository.findById(POST_ID)).willReturn(Optional.of(post));
+
+            org.mockito.InOrder inOrder = org.mockito.Mockito.inOrder(postRepository);
+            showroomPostService.updatePost(USER_ID, POST_ID,
+                    request(PostSaveAction.PUBLISH, "본문", List.of(image(1080, 1080))));
+
+            inOrder.verify(postRepository).flush();
+            assertThat(post.getImages()).hasSize(1);
+        }
+
         @Test
         @DisplayName("수정으로도 사진을 20장 넘게 올릴 수 없다")
         void tooManyImagesOnUpdateIsRejected() {
@@ -430,6 +486,81 @@ class ShowroomPostServiceTest {
             assertThatThrownBy(() -> showroomPostService.updatePost(USER_ID, POST_ID,
                     request(PostSaveAction.PUBLISH, "본문", tooMany)))
                     .isInstanceOf(BusinessException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("목록 · 상태 탭")
+    class PostList {
+
+        /**
+         * 심사 중은 화면에서 여전히 「노출 중지」 탭에 머문다(§24-5). 탭 숫자와 탭 목록이 이 규칙을
+         * 함께 쓰지 않으면, 이의 신청을 넣은 순간 게시물이 자기 탭에서 사라지면서 숫자만 남는다.
+         * 목록 쪽 필터는 쿼리가 잡으므로 {@code PostPublishToFeedIntegrationTest}가 이어서 검증한다.
+         */
+        @Test
+        @DisplayName("노출 중지 탭 개수에는 심사 중인 게시물이 함께 잡힌다")
+        void suspendedTabCountsUnderReviewToo() {
+            givenStudioPage(List.of());
+            given(postRepository.countByCreatorGroupedByStatus(CREATOR_ID)).willReturn(List.of(
+                    new Object[]{PostStatus.PUBLISHED, 3L},
+                    new Object[]{PostStatus.SUSPENDED, 1L},
+                    new Object[]{PostStatus.UNDER_REVIEW, 2L},
+                    new Object[]{PostStatus.DRAFT, 4L}));
+
+            PostDto.PostPageResponse response =
+                    showroomPostService.getPostList(USER_ID, null, new PagingRequest());
+
+            assertThat(countOf(response, PostStatus.SUSPENDED)).isEqualTo(3L);
+            assertThat(countOf(response, PostStatus.PUBLISHED)).isEqualTo(3L);
+            assertThat(countOf(response, PostStatus.DRAFT)).isEqualTo(4L);
+            assertThat(countOf(response, null)).isEqualTo(10L);
+        }
+
+        /** 제목이 없으므로 본문 앞부분이 게시물을 알아보는 단서다 — 줄바꿈은 눌러서 한 줄로 만든다(§24-1). */
+        @Test
+        @DisplayName("본문 미리보기는 40자에서 자르고 줄바꿈은 한 칸으로 눌러 준다")
+        void contentPreviewIsFlattenedAndTruncated() {
+            Post post = publishedPost();
+            ReflectionTestUtils.setField(post, "content", "가".repeat(41));
+            givenStudioPage(List.of(post));
+
+            PostDto.PostPageResponse response =
+                    showroomPostService.getPostList(USER_ID, null, new PagingRequest());
+
+            assertThat(response.getContent().get(0).getContentPreview()).isEqualTo("가".repeat(40) + "…");
+
+            ReflectionTestUtils.setField(post, "content", "첫 줄\n\n  둘째 줄");
+            response = showroomPostService.getPostList(USER_ID, null, new PagingRequest());
+            assertThat(response.getContent().get(0).getContentPreview()).isEqualTo("첫 줄 둘째 줄");
+        }
+
+        /** 본문이 없는(사진만 있는) 게시물도 정상이다 — 미리보기 자리는 비워 둔다. */
+        @Test
+        @DisplayName("본문이 없는 게시물의 미리보기는 비어 있다")
+        void previewIsNullWithoutContent() {
+            Post post = publishedPost();
+            ReflectionTestUtils.setField(post, "content", "   ");
+            givenStudioPage(List.of(post));
+
+            PostDto.PostPageResponse response =
+                    showroomPostService.getPostList(USER_ID, null, new PagingRequest());
+
+            assertThat(response.getContent().get(0).getContentPreview()).isNull();
+        }
+
+        private void givenStudioPage(List<Post> posts) {
+            given(postRepository.findStudioPosts(org.mockito.ArgumentMatchers.eq(CREATOR_ID), any(), any()))
+                    .willReturn(new org.springframework.data.domain.PageImpl<>(
+                            posts, new PagingRequest().toPageable(), posts.size()));
+        }
+
+        private long countOf(PostDto.PostPageResponse response, PostStatus status) {
+            return response.getStatusCounts().stream()
+                    .filter(count -> count.getStatus() == status)
+                    .findFirst()
+                    .orElseThrow()
+                    .getCount();
         }
     }
 

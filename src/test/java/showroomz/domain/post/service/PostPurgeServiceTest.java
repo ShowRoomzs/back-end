@@ -24,6 +24,7 @@ import showroomz.domain.post.repository.PostAppealRepository;
 import showroomz.domain.post.repository.PostImageRepository;
 import showroomz.domain.post.repository.PostImpressionRepository;
 import showroomz.domain.post.repository.PostLikeRepository;
+import showroomz.domain.post.repository.PostReportRepository;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.post.repository.PostSuspensionRepository;
 import showroomz.global.config.properties.PostProperties;
@@ -68,6 +69,8 @@ class PostPurgeServiceTest {
     private PostLikeRepository postLikeRepository;
     @Mock
     private PostImpressionRepository postImpressionRepository;
+    @Mock
+    private PostReportRepository postReportRepository;
     @Mock
     private PostAppealRepository postAppealRepository;
     @Mock
@@ -128,6 +131,7 @@ class PostPurgeServiceTest {
             verify(postImageRepository, never()).deleteAllByPostId(anyLong());
             verify(postLikeRepository, never()).deleteAllByPostId(anyLong());
             verify(postImpressionRepository, never()).deleteAllByPostId(anyLong());
+            verify(postReportRepository, never()).deleteAllByPostId(anyLong());
             verify(postAppealRepository, never()).deleteAllByPostId(anyLong());
             verify(postSuspensionRepository, never()).deleteAllByPostId(anyLong());
         }
@@ -177,10 +181,11 @@ class PostPurgeServiceTest {
             postPurgeService.purgeExpired(NOW);
 
             InOrder order = inOrder(postImageRepository, postLikeRepository, postImpressionRepository,
-                    postAppealRepository, postSuspensionRepository, postRepository);
+                    postReportRepository, postAppealRepository, postSuspensionRepository, postRepository);
             order.verify(postImageRepository).deleteAllByPostId(POST_ID);
             order.verify(postLikeRepository).deleteAllByPostId(POST_ID);
             order.verify(postImpressionRepository).deleteAllByPostId(POST_ID);
+            order.verify(postReportRepository).deleteAllByPostId(POST_ID);
             order.verify(postAppealRepository).deleteAllByPostId(POST_ID);
             order.verify(postSuspensionRepository).deleteAllByPostId(POST_ID);
             order.verify(postRepository).delete(target);

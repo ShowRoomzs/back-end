@@ -17,6 +17,12 @@ public class CartDto {
     /** 수량 상한 — 화면의 수량 스테퍼가 99에서 멈춘다(C8). 서버도 같은 선에서 막는다 */
     public static final int MAX_QUANTITY = 99;
 
+    /** 추천(팔로우한 쇼룸의 공구) 기본 개수 — 가로 스크롤 한 줄에 담기는 만큼만 내려준다 */
+    public static final int DEFAULT_RECOMMENDATION_LIMIT = 10;
+
+    /** 추천 최대 개수 — 장바구니 화면의 곁다리 영역이라 여기서 끊는다 */
+    public static final int MAX_RECOMMENDATION_LIMIT = 30;
+
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
@@ -342,6 +348,48 @@ public class CartDto {
 
         @Schema(description = "장바구니에 담긴 전체 항목 수 (구매 불가 포함)", example = "4")
         private Integer totalCount;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "팔로우한 쇼룸의 공구 — 목록 아래 가로 스크롤 영역")
+    public static class RecommendationListResponse {
+        @Schema(description = "추천 상품 목록 — 팔로우한 쇼룸이 없거나 권할 공구가 없으면 빈 배열")
+        private List<RecommendedProduct> products;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "팔로우한 쇼룸의 진행 중 공구 상품")
+    public static class RecommendedProduct {
+        @Schema(description = "상품 ID", example = "2048")
+        private Long productId;
+
+        @Schema(description = "상품명", example = "마일드 필링 패드 70매 대용량")
+        private String productName;
+
+        @Schema(description = "썸네일 URL", example = "https://example.com/image.jpg")
+        private String thumbnailUrl;
+
+        @Schema(description = "쇼룸(마켓) ID", example = "7")
+        private Long marketId;
+
+        @Schema(description = "쇼룸(마켓)명 — 카드의 상품명 위 줄", example = "미아 스킨노트")
+        private String marketName;
+
+        @Schema(description = "가격 정보 — 카드의 할인율과 판매가")
+        private ProductDto.PriceInfo price;
+
+        @Schema(
+                description = "장바구니에 이미 담긴 그룹이라 무료배송까지 조금 남은 쇼룸의 상품인지 — "
+                        + "true인 카드가 목록 앞에 온다.",
+                example = "true"
+        )
+        private Boolean helpsFreeShipping;
     }
 
     @Getter

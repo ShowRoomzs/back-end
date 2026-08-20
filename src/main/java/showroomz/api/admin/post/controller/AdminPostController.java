@@ -15,9 +15,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import showroomz.api.admin.post.docs.AdminPostControllerDocs;
 import showroomz.api.admin.post.dto.AdminPostDto;
+import showroomz.api.admin.post.dto.AdminPostReportDto;
+import showroomz.api.admin.post.service.AdminPostReportService;
 import showroomz.api.admin.post.service.AdminPostService;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.domain.post.type.PostAppealStatus;
+import showroomz.domain.post.type.PostReportStatus;
 import showroomz.domain.post.type.PostStatus;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
@@ -32,7 +35,9 @@ import java.util.List;
  * <p><b>수정·삭제 엔드포인트가 없다.</b> 운영자가 할 수 있는 것은 내리는 일과 이의 신청을 심사하는
  * 일뿐이고, 게시물은 인플루언서 소유 콘텐츠다. 삭제는 심사 결과로만 일어난다.
  *
- * <p>신고 접수 화면은 §24 범위 밖이라 <b>진입은 운영자 수동 조작</b>으로 시작한다.
+ * <p>진입은 두 갈래다 — 소비자 신고 대기열({@code GET /post-reports})에서 고르거나, 운영자가
+ * 게시물 목록에서 직접 찾는다. 신고는 접수일 뿐이라 <b>자동 조치로 이어지지 않는다</b>. 반려가 곧
+ * 영구 삭제인 절차라(§24-5) 자동화하면 경쟁 쇼룸을 신고로 내리는 길이 열린다.
  */
 @RestController
 @RequestMapping("/v1/admin")
@@ -40,6 +45,7 @@ import java.util.List;
 public class AdminPostController implements AdminPostControllerDocs {
 
     private final AdminPostService adminPostService;
+    private final AdminPostReportService adminPostReportService;
 
     @Override
     @GetMapping("/posts")
@@ -69,6 +75,24 @@ public class AdminPostController implements AdminPostControllerDocs {
             @PathVariable("postId") Long postId,
             @Valid @RequestBody AdminPostDto.SuspendRequest request) {
         return ResponseEntity.ok(adminPostService.suspend(requireOperatorId(principal), postId, request));
+    }
+
+    @Override
+    @GetMapping("/post-reports")
+    public ResponseEntity<PageResponse<AdminPostReportDto.ReportItem>> getReports(
+            @RequestParam(value = "postId", required = false) Long postId,
+            @RequestParam(value = "status", required = false) PostReportStatus status,
+            @ParameterObject @ModelAttribute PagingRequest pagingRequest) {
+        return ResponseEntity.ok(adminPostReportService.getReports(postId, status, pagingRequest));
+    }
+
+    @Override
+    @PostMapping("/post-reports/{reportId}/dismiss")
+    public ResponseEntity<Void> dismissReport(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable("reportId") Long reportId) {
+        adminPostReportService.dismiss(requireOperatorId(principal), reportId);
+        return ResponseEntity.noContent().build();
     }
 
     @Override

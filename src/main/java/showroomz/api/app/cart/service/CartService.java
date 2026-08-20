@@ -1,6 +1,7 @@
 package showroomz.api.app.cart.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,10 +12,12 @@ import showroomz.domain.cart.entity.Cart;
 import showroomz.domain.cart.repository.CartRepository;
 import showroomz.domain.cart.type.CartUnavailableReason;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductOption;
 import showroomz.domain.product.entity.ProductVariant;
+import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
@@ -29,6 +32,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,9 +40,17 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CartService {
 
+    /**
+     * 추천 후보를 넉넉히 읽어 오는 배수 — 장바구니 쇼룸의 상품을 앞으로 당기는 재정렬이
+     * DB 정렬 뒤에 오기 때문에, 딱 필요한 개수만 읽으면 당길 상품이 창 밖에 남는다.
+     */
+    private static final int RECOMMENDATION_CANDIDATE_MULTIPLIER = 3;
+
     private final CartRepository cartRepository;
     private final UserRepository userRepository;
     private final ProductVariantRepository productVariantRepository;
+    private final ProductRepository productRepository;
+    private final CreatorFollowRepository creatorFollowRepository;
 
     @Transactional
     public CartDto.AddCartResponse addCart(String username, CartDto.AddCartRequest request) {
@@ -124,9 +136,14 @@ public class CartService {
      * <p>담은 뒤 마감·품절된 항목은 수정하지 못한다. 화면이 그 행의 수량 스테퍼와 옵션 변경
      * 버튼을 모두 비활성으로 그리기 때문이고(못 사는 상품에 조작할 컨트롤을 남겨 두지 않는다),
      * 주소로 직접 호출하는 경로가 남으므로 서버도 같은 선에서 막는다.
+     *
+     * <p>{@code selectedCartItemIds}는 조회와 같은 뜻이다 — 수량을 하나 올렸을 때 하단 요약이
+     * <b>체크된 항목만</b>으로 다시 계산돼야 화면이 목록을 다시 부르지 않는다. 생략하면 구매
+     * 가능한 항목 전체를 선택한 것으로 본다.
      */
     @Transactional
-    public CartDto.UpdateCartResponse updateCart(String username, Long cartItemId, CartDto.UpdateCartRequest request) {
+    public CartDto.UpdateCartResponse updateCart(String username, Long cartItemId, CartDto.UpdateCartRequest request,
+                                                 List<Long> selectedCartItemIds) {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -174,7 +191,9 @@ public class CartService {
         }
 
         List<Cart> carts = cartRepository.findAllByUser(user);
-        CartDto.UpdateSummary summary = toUpdateSummary(calculateSummary(carts, resolveSelection(carts, null)));
+        Set<Long> selectedIds =
+                resolveSelection(carts, carryOverSelection(selectedCartItemIds, cartItemId, cart.getId()));
+        CartDto.UpdateSummary summary = toUpdateSummary(calculateSummary(carts, selectedIds));
 
         return CartDto.UpdateCartResponse.builder()
                 .cartId(cart.getId())
@@ -188,9 +207,14 @@ public class CartService {
      * 장바구니 삭제 (개별/선택/전체 통합)
      * - cartItemIds가 null 또는 비어있으면: 전체 삭제
      * - cartItemIds가 있으면: 해당 ID들만 삭제 (본인 소유 검증 후 deleteAllByIdInBatch)
+     *
+     * <p>{@code selectedCartItemIds}는 삭제 후 요약을 계산할 <b>화면의 체크 상태</b>다. 지워진
+     * 항목은 알아서 빠지므로 화면은 삭제 전 목록을 그대로 넘겨도 된다. 생략하면 남은 항목 중
+     * 구매 가능한 것 전체를 선택한 것으로 본다.
      */
     @Transactional
-    public CartDto.DeleteCartResponse deleteCart(String username, List<Long> cartItemIds) {
+    public CartDto.DeleteCartResponse deleteCart(String username, List<Long> cartItemIds,
+                                                 List<Long> selectedCartItemIds) {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -213,11 +237,12 @@ public class CartService {
             cartRepository.deleteByUser(user);
             message = count == 1 ? "1개 항목이 삭제되었습니다." : count + "개 항목이 삭제되었습니다.";
         } else {
-            // 선택 삭제: 본인 소유 검증 후 삭제
-            List<Cart> toDelete = cartRepository.findByIdInAndUser(cartItemIds, user);
-            if (toDelete.size() != cartItemIds.size()) {
+            // 선택 삭제: 본인 소유 검증 후 삭제. 같은 ID가 두 번 실려 와도 한 번 지운 것으로 본다
+            List<Long> requestedIds = cartItemIds.stream().distinct().toList();
+            List<Cart> toDelete = cartRepository.findByIdInAndUser(requestedIds, user);
+            if (toDelete.size() != requestedIds.size()) {
                 Set<Long> foundIds = toDelete.stream().map(Cart::getId).collect(Collectors.toSet());
-                List<Long> unauthorized = cartItemIds.stream().filter(id -> !foundIds.contains(id)).toList();
+                List<Long> unauthorized = requestedIds.stream().filter(id -> !foundIds.contains(id)).toList();
                 throw new BusinessException(ErrorCode.FORBIDDEN,
                         "장바구니 항목을 찾을 수 없거나 삭제 권한이 없습니다. cartItemIds: " + unauthorized);
             }
@@ -228,8 +253,8 @@ public class CartService {
         }
 
         List<Cart> remainingCarts = cartRepository.findAllByUser(user);
-        CartDto.UpdateSummary summary =
-                toUpdateSummary(calculateSummary(remainingCarts, resolveSelection(remainingCarts, null)));
+        CartDto.UpdateSummary summary = toUpdateSummary(
+                calculateSummary(remainingCarts, resolveSelection(remainingCarts, selectedCartItemIds)));
 
         return CartDto.DeleteCartResponse.builder()
                 .deletedCartItemIds(deletedIds)
@@ -237,6 +262,136 @@ public class CartService {
                 .message(message)
                 .summary(summary)
                 .build();
+    }
+
+    /**
+     * 팔로우한 쇼룸의 공구 — 목록 아래 가로 스크롤 영역 (C8).
+     *
+     * <p>무료배송 조건이 공구 단위라 "○○원 더 담으면 무료"를 본 직후 <b>같은 쇼룸의 다른 상품</b>이
+     * 바로 아래 있으면 실제로 도움이 된다. 그래서 장바구니에 이미 있고 무료배송까지 조금 남은
+     * 쇼룸의 상품을 앞으로 당긴다({@code helpsFreeShipping}).
+     *
+     * <p>목록과 따로 부르는 이유는 이 영역이 <b>담긴 상품이 있을 때만</b> 그려지고, 목록을 다시
+     * 부르는 조작(선택 토글·수량 변경)마다 같이 계산될 이유가 없기 때문이다.
+     *
+     * <p>D-day 배지는 아직 내려보내지 않는다 — 공구 게시물(마감 시각)이 없어 그룹 머리의 D-day와
+     * 사정이 같다.
+     */
+    @Transactional(readOnly = true)
+    public CartDto.RecommendationListResponse getRecommendations(String username, Integer limit) {
+        Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        int size = resolveRecommendationLimit(limit);
+
+        List<Long> creatorIds = creatorFollowRepository.findCreatorIdsByUserId(user.getId());
+        if (creatorIds.isEmpty()) {
+            return CartDto.RecommendationListResponse.builder().products(List.of()).build();
+        }
+
+        List<Cart> carts = cartRepository.findAllByUser(user);
+        Set<Long> nearFreeShippingMarkets = marketsShortOfFreeShipping(carts);
+
+        List<Product> candidates = productRepository.findOngoingGroupBuyProductsOfShowrooms(
+                creatorIds,
+                heldProductIds(carts),
+                PageRequest.of(0, size * RECOMMENDATION_CANDIDATE_MULTIPLIER)
+        );
+
+        List<CartDto.RecommendedProduct> products = candidates.stream()
+                // false가 앞이므로 "무료배송까지 조금 남은 쇼룸"이 먼저 온다. 정렬이 안정적이라
+                // 그 안에서는 DB 정렬(추천 상품 · 최신순)이 그대로 유지된다.
+                .sorted(Comparator.comparing(product -> !helpsFreeShipping(product, nearFreeShippingMarkets)))
+                .limit(size)
+                .map(product -> toRecommendedProduct(product, nearFreeShippingMarkets))
+                .toList();
+
+        return CartDto.RecommendationListResponse.builder().products(products).build();
+    }
+
+    private int resolveRecommendationLimit(Integer limit) {
+        if (limit == null) {
+            return CartDto.DEFAULT_RECOMMENDATION_LIMIT;
+        }
+        return Math.max(1, Math.min(limit, CartDto.MAX_RECOMMENDATION_LIMIT));
+    }
+
+    /**
+     * 이미 담아 둔 상품 ID — 추천에서 뺀다.
+     *
+     * <p>비어 있으면 {@code NOT IN ()}이 되지 않도록 어떤 상품과도 겹치지 않는 값을 하나 넣는다.
+     */
+    private List<Long> heldProductIds(List<Cart> carts) {
+        List<Long> ids = carts.stream()
+                .map(cart -> cart.getVariant().getProduct().getProductId())
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        return ids.isEmpty() ? List.of(0L) : ids;
+    }
+
+    /**
+     * 무료배송까지 조금 남은 장바구니 그룹의 쇼룸.
+     *
+     * <p>여기서는 화면의 체크 상태를 받지 않으므로 목록 진입 시와 같은 기준(구매 가능한 항목 전체)으로
+     * 본다 — 이 영역은 곁다리라 체크를 옮길 때마다 순서가 흔들릴 이유가 없다.
+     */
+    private Set<Long> marketsShortOfFreeShipping(List<Cart> carts) {
+        Set<Long> selectedIds = resolveSelection(carts, null);
+
+        Map<Long, Long> selectedTotalByMarket = new LinkedHashMap<>();
+        Map<Long, Integer> thresholdByMarket = new HashMap<>();
+        for (Cart cart : carts) {
+            if (!selectedIds.contains(cart.getId())) {
+                continue;
+            }
+            Long marketId = marketIdOf(cart);
+            selectedTotalByMarket.merge(marketId, lineSaleTotal(cart), Long::sum);
+            Market market = marketOf(cart);
+            if (market != null && market.getFreeShippingThreshold() != null) {
+                thresholdByMarket.put(marketId, market.getFreeShippingThreshold());
+            }
+        }
+
+        Set<Long> markets = new HashSet<>();
+        selectedTotalByMarket.forEach((marketId, total) -> {
+            Integer threshold = thresholdByMarket.get(marketId);
+            if (threshold != null && total < threshold) {
+                markets.add(marketId);
+            }
+        });
+        return markets;
+    }
+
+    private boolean helpsFreeShipping(Product product, Set<Long> nearFreeShippingMarkets) {
+        Market market = product.getMarket();
+        return market != null && nearFreeShippingMarkets.contains(market.getId());
+    }
+
+    private CartDto.RecommendedProduct toRecommendedProduct(Product product, Set<Long> nearFreeShippingMarkets) {
+        Market market = product.getMarket();
+        return CartDto.RecommendedProduct.builder()
+                .productId(product.getProductId())
+                .productName(product.getName())
+                .thumbnailUrl(product.getThumbnailUrl())
+                .marketId(market != null ? market.getId() : null)
+                .marketName(market != null ? market.getMarketName() : null)
+                .price(buildPriceInfo(product.getRegularPrice(), product.getSalePrice()))
+                .helpsFreeShipping(helpsFreeShipping(product, nearFreeShippingMarkets))
+                .build();
+    }
+
+    /**
+     * 옵션을 바꾸다 다른 줄과 합쳐지면 항목 ID가 갈린다. 원래 줄이 체크돼 있었다면 합쳐진 줄도
+     * 체크된 것으로 본다 — 사용자가 옵션만 고쳤을 뿐인데 합계에서 빠지면 금액이 이유 없이 준다.
+     */
+    private List<Long> carryOverSelection(List<Long> requested, Long originalCartItemId, Long resultCartItemId) {
+        if (requested == null || !requested.contains(originalCartItemId) || requested.contains(resultCartItemId)) {
+            return requested;
+        }
+        List<Long> carried = new ArrayList<>(requested);
+        carried.add(resultCartItemId);
+        return carried;
     }
 
     // ------------------------------------------------------------------ 그룹 구성
