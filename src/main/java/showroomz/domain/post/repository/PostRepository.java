@@ -71,6 +71,7 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
      */
     @Query("SELECT p.status, COUNT(p) FROM Post p " +
            "WHERE p.creator.id = :creatorId AND p.status <> showroomz.domain.post.type.PostStatus.DELETED " +
+           "AND p.postType = showroomz.domain.post.type.PostType.GENERAL " +
            "GROUP BY p.status")
     List<Object[]> countByCreatorGroupedByStatus(@Param("creatorId") Long creatorId);
 
