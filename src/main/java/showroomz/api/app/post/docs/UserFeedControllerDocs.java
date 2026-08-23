@@ -100,7 +100,10 @@ public interface UserFeedControllerDocs {
                       후 버튼을 지우는 것은 클라이언트가 하고, 이미 나간 페이지를 다시 받지는 않는다
                     - **hasOngoingGroupBuy** — 카드 헤더 아바타의 로즈 링(진행 중 공구 보유 쇼룸)
                     - **본인 쇼룸 제외** — 크리에이터에게 자기 게시물은 추천하지 않는다
-                    - **권한:** USER
+                    - **비로그인 허용** — 토큰 없이 호출할 수 있다. 뺄 팔로우도 본인 쇼룸도 없어
+                      게시중 게시물 전체가 그대로 발견 피드가 되고, `isLiked`·`isFollowing`은
+                      전부 `false`로 내려간다. 하트·팔로우 버튼을 누르는 순간에만 로그인을 유도한다
+                    - **권한:** 없음(비로그인 허용). 토큰을 실어 보내면 `isLiked`가 실제 값으로 채워진다
                     """
     )
     @ApiResponses({
@@ -136,9 +139,7 @@ public interface UserFeedControllerDocs {
                                       }
                                     }
                                     """))),
-            @ApiResponse(responseCode = "401", description = "인증 실패",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "토큰의 사용자를 찾을 수 없음",
+            @ApiResponse(responseCode = "404", description = "토큰의 사용자를 찾을 수 없음 — 토큰을 보낸 경우에만 난다. 토큰이 없으면 비로그인으로 200이다",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getRecommendedFeed(

@@ -23,6 +23,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -113,6 +116,31 @@ class UserFeedIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.content[0].post.postId").value(notFollowedPostId))
                 .andExpect(jsonPath("$.content[0].post.showroomName").value("소연의 살림"))
                 .andExpect(jsonPath("$.content[0].post.isFollowing").value(false));
+    }
+
+    /**
+     * 비로그인 발견 피드 — 팔로우가 없으니 뺄 것도 없어 게시중 게시물이 전부 나온다.
+     * 노출 조건은 로그인과 똑같이 걸린다(작성중·노출 중지는 여기서도 새면 안 된다).
+     */
+    @Test
+    @DisplayName("추천 피드는 토큰 없이도 열린다 — 게시중 전체가 발견 피드가 된다")
+    void recommendedFeedIsOpenToAnonymous() throws Exception {
+        mockMvc.perform(get(RECOMMENDED_FEED))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pageInfo.totalResults").value(2))
+                .andExpect(jsonPath("$.content[*].post.postId",
+                        containsInAnyOrder(followedPostId.intValue(), notFollowedPostId.intValue())))
+                .andExpect(jsonPath("$.content[*].post.content", not(hasItem(SUSPENDED_CONTENT))))
+                .andExpect(jsonPath("$.content[0].post.isFollowing").value(false))
+                .andExpect(jsonPath("$.content[0].post.isLiked").value(false));
+    }
+
+    /** 팔로잉 피드는 정의상 내 팔로우 목록이라 비로그인이 열리면 안 된다 — 함께 새지 않았는지 본다. */
+    @Test
+    @DisplayName("팔로잉 피드는 여전히 비로그인 401이다")
+    void followingFeedStillRequiresLogin() throws Exception {
+        mockMvc.perform(get(FOLLOWING_FEED))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

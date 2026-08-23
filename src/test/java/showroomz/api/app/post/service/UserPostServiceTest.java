@@ -197,6 +197,35 @@ class UserPostServiceTest {
     }
 
     @Test
+    @DisplayName("C1 추천 — 비로그인은 제외 없이 전체를 본다. 사용자 조회도 하지 않는다")
+    void recommendedFeedAllowsAnonymous() {
+        givenRecommendedPage(List.of(publishedPost()), 1);
+
+        PageResponse<PostDto.FeedItemResponse> response =
+                userPostService.getRecommendedFeed(null, new PagingRequest());
+
+        ArgumentCaptor<List<Long>> captor = ArgumentCaptor.forClass(List.class);
+        verify(postRepository).findRecommendedPosts(captor.capture(), any());
+        assertThat(captor.getValue()).isEmpty();
+        assertThat(response.getContent()).singleElement().satisfies(item -> {
+            assertThat(item.getPost().getIsLiked()).isFalse();
+            assertThat(item.getPost().getIsFollowing()).isFalse();
+        });
+        verify(userRepository, never()).findByUsername(any());
+        verify(creatorFollowRepository, never()).findCreatorIdsByUserId(anyLong());
+    }
+
+    @Test
+    @DisplayName("C1 추천 — 토큰은 왔는데 그 사용자가 없으면 비로그인이 아니라 404다")
+    void recommendedFeedRejectsUnknownUser() {
+        given(userRepository.findByUsername("ghost")).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userPostService.getRecommendedFeed("ghost", new PagingRequest()))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
+    }
+
+    @Test
     @DisplayName("팔로잉 피드 항목은 전부 팔로우 중이다 — 팔로우 버튼이 붙지 않게 한다")
     void followingFeedItemsAreFollowing() {
         given(creatorFollowRepository.findCreatorIdsByUserId(USER_ID)).willReturn(List.of(10L));

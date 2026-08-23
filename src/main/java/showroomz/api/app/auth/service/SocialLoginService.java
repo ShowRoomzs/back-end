@@ -141,7 +141,8 @@ public class SocialLoginService {
     }
 
     private OAuth2UserInfo resolveOAuthUserInfo(ProviderType providerType, String accessToken) {
-        socialPolicyService.validateProviderActive(providerType);
+        // [보류] 소셜 로그인 상태(정책) 검증 - 상태에 따른 403 반환하지 않도록 주석 처리
+        // socialPolicyService.validateProviderActive(providerType);
 
         if (providerType == ProviderType.GOOGLE) {
             verifyGoogleToken(accessToken);

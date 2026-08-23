@@ -32,12 +32,14 @@ public class UserFeedController implements UserFeedControllerDocs {
         return ResponseEntity.ok(postService.getFollowingFeed(userPrincipal.getUsername(), pagingRequest));
     }
 
+    /** 비로그인도 보는 피드라 principal이 없을 수 있다 — 토큰이 실려 오면 좋아요 여부까지 채워진다 */
     @Override
     @GetMapping("/feed/recommended")
     public ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getRecommendedFeed(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @ParameterObject @ModelAttribute PagingRequest pagingRequest) {
-        return ResponseEntity.ok(postService.getRecommendedFeed(userPrincipal.getUsername(), pagingRequest));
+        String username = userPrincipal != null ? userPrincipal.getUsername() : null;
+        return ResponseEntity.ok(postService.getRecommendedFeed(username, pagingRequest));
     }
 
     /** 경로({@code /wishlist/contents})는 앱이 쓰는 계약이라 그대로 두고 용어만 좋아요로 맞췄다 */
