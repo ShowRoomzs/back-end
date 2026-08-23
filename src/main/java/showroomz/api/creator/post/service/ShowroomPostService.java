@@ -41,7 +41,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -210,24 +209,25 @@ public class ShowroomPostService {
         Page<Post> page = postRepository.findStudioPosts(creator.getId(), status, pageable);
         List<Long> postIds = page.getContent().stream().map(Post::getId).toList();
 
-        Map<Long, PostImage> thumbnails = representativeImages(postIds);
-        Map<Long, Long> imageCounts = imageCounts(postIds);
+        Map<Long, List<String>> imagesByPost = imagesByPost(postIds);
         Map<Long, LocalDateTime> appealDeadlines = openAppealDeadlines(page.getContent());
 
         List<PostDto.PostListItem> content = page.getContent().stream()
-                .map(post -> PostDto.PostListItem.builder()
-                        .postId(post.getId())
-                        .status(post.getStatus())
-                        .thumbnailUrl(Optional.ofNullable(thumbnails.get(post.getId()))
-                                .map(PostImage::getImageUrl).orElse(null))
-                        .imageCount(imageCounts.getOrDefault(post.getId(), 0L).intValue())
-                        .contentPreview(preview(post.getContent()))
-                        .impressionCount(post.getImpressionCount())
-                        .likeCount(post.getLikeCount())
-                        .publishedAt(post.getPublishedAt())
-                        .createdAt(post.getCreatedAt())
-                        .appealDeadline(appealDeadlines.get(post.getId()))
-                        .build())
+                .map(post -> {
+                    List<String> imageUrls = imagesByPost.getOrDefault(post.getId(), List.of());
+                    return PostDto.PostListItem.builder()
+                            .postId(post.getId())
+                            .status(post.getStatus())
+                            .imageUrls(imageUrls)
+                            .imageCount(imageUrls.size())
+                            .contentPreview(preview(post.getContent()))
+                            .impressionCount(post.getImpressionCount())
+                            .likeCount(post.getLikeCount())
+                            .publishedAt(post.getPublishedAt())
+                            .createdAt(post.getCreatedAt())
+                            .appealDeadline(appealDeadlines.get(post.getId()))
+                            .build();
+                })
                 .toList();
 
         return PostDto.PostPageResponse.builder()
@@ -476,26 +476,15 @@ public class ShowroomPostService {
         };
     }
 
-    private Map<Long, PostImage> representativeImages(List<Long> postIds) {
+    /** 목록 한 페이지의 사진을 한 번에 읽어 게시물별로 묶는다 — S1 카드 넘김용 imageUrls와 imageCount를 같이 채운다 */
+    private Map<Long, List<String>> imagesByPost(List<Long> postIds) {
         if (postIds.isEmpty()) {
             return Collections.emptyMap();
         }
-        Map<Long, PostImage> map = new HashMap<>();
-        for (PostImage image : postImageRepository.findRepresentativesByPostIds(postIds)) {
-            map.put(image.getPost().getId(), image);
-        }
-        return map;
-    }
-
-    private Map<Long, Long> imageCounts(List<Long> postIds) {
-        if (postIds.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        Map<Long, Long> map = new HashMap<>();
-        for (Object[] row : postImageRepository.countByPostIds(postIds)) {
-            map.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
-        }
-        return map;
+        return postImageRepository.findByPostIdsOrdered(postIds).stream()
+                .collect(Collectors.groupingBy(
+                        image -> image.getPost().getId(),
+                        Collectors.mapping(PostImage::getImageUrl, Collectors.toList())));
     }
 
     /**
@@ -536,8 +525,11 @@ public class ShowroomPostService {
     }
 
     /**
-     * 팔로워 신규 게시물 알림 (§24-8 ⓗ) — 발송 채널·시점이 확정되지 않았고 발송 인프라도 없다.
-     * 이력만 남기고 실제 발송은 어댑터가 붙을 때 살아난다.
+     * 팔로워 신규 게시물 알림 (§24-8 ⓗ).
+     *
+     * <p>여기서는 이력만 남긴다. 실제 FCM 발송은 {@code PostNotificationDispatcher}가
+     * <b>이 트랜잭션이 커밋된 뒤</b> 별도 스레드에서 한다 — 롤백된 게시물의 알림이 나가지 않게,
+     * 그리고 팔로워 수만 명의 발송이 이 API의 응답을 붙들지 않게 하기 위해서다.
      */
     private void notifyFollowers(Post post) {
         postNotificationService.notify(post, PostNotificationEvent.PUBLISHED_TO_FOLLOWERS,

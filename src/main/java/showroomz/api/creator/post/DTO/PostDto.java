@@ -157,8 +157,8 @@ public class PostDto {
         private Long postId;
         @Schema(description = "상태", example = "PUBLISHED")
         private PostStatus status;
-        @Schema(description = "대표 사진 — 목록 격자는 균일 4:5 센터 크롭으로 그린다(§24-2)")
-        private String thumbnailUrl;
+        @Schema(description = "게시글 이미지 URL 목록 — 배열 순서가 노출 순서이고 첫 장이 대표 사진. 목록 격자는 균일 4:5 센터 크롭으로 그린다(§24-2)")
+        private List<String> imageUrls;
         @Schema(description = "사진 장수", example = "5")
         private Integer imageCount;
         @Schema(description = "본문 미리보기(앞 40자)")

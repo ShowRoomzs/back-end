@@ -291,17 +291,19 @@ class PostPublishToFeedIntegrationTest extends IntegrationTestSupport {
                     .andExpect(jsonPath("$.statusCounts[" + TAB_SUSPENDED + "].count").value(2));
         }
 
-        /** 목록 카드에는 제목이 없다 — 대표 사진과 본문 앞부분이 게시물을 알아보는 유일한 단서다(§24-1). */
+        /** 목록 카드에는 제목이 없다 — 사진 URL 목록과 본문 앞부분이 게시물을 알아보는 유일한 단서다(§24-1). */
         @Test
-        @DisplayName("목록 카드는 대표 사진·장수·본문 미리보기로 게시물을 식별한다")
-        void listCardCarriesThumbnailAndPreview() throws Exception {
+        @DisplayName("목록 카드는 사진 URL·장수·본문 미리보기로 게시물을 식별한다")
+        void listCardCarriesImageUrlsAndPreview() throws Exception {
             Long postId = createPost("대표 사진이 걸리는지", "PUBLISH",
                     List.of(image("cover.jpg", 1080, 1350), image("second.jpg", 1080, 1350)));
 
             mockMvc.perform(get(CREATOR_POSTS).header(HttpHeaders.AUTHORIZATION, creatorToken))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.content[0].postId").value(postId))
-                    .andExpect(jsonPath("$.content[0].thumbnailUrl").value(CDN + "cover.jpg"))
+                    .andExpect(jsonPath("$.content[0].imageUrls.length()").value(2))
+                    .andExpect(jsonPath("$.content[0].imageUrls[0]").value(CDN + "cover.jpg"))
+                    .andExpect(jsonPath("$.content[0].imageUrls[1]").value(CDN + "second.jpg"))
                     .andExpect(jsonPath("$.content[0].imageCount").value(2))
                     .andExpect(jsonPath("$.content[0].contentPreview").value("대표 사진이 걸리는지"))
                     .andExpect(jsonPath("$.statusCounts[" + TAB_ALL + "].label").value("전체"))

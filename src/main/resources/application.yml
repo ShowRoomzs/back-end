@@ -76,6 +76,14 @@ aws:
     cloud-front-domain: ${AWS_CLOUDFRONT_DOMAIN:}
 
 
+# FcmProperties.java 관련 설정 — 팔로워 신규 게시물 알림 등 푸시 발송
+# 서비스 계정 JSON은 저장소에 넣지 않는다. 둘 다 비어 있으면 발송하지 않고 로그만 남는다(기동은 정상).
+fcm:
+  enabled: ${FCM_ENABLED:true}
+  credentials-path: ${FCM_CREDENTIALS_PATH:}     # 예) file:/etc/showroomz/fcm-service-account.json
+  credentials-base64: ${FCM_CREDENTIALS_BASE64:} # 서비스 계정 JSON을 base64로 인코딩한 값 (path보다 우선)
+  dry-run: ${FCM_DRY_RUN:false}                  # true면 FCM 검증만 하고 기기로는 보내지 않는다
+
 springdoc:
   swagger-ui:
     tags-sorter: alpha       # 태그를 알파벳순 정렬

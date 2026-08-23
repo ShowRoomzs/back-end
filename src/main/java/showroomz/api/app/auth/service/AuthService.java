@@ -17,6 +17,7 @@ import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.history.entity.LoginHistory;
 import showroomz.domain.history.repository.LoginHistoryRepository;
 import showroomz.domain.history.type.LoginStatus;
+import showroomz.domain.notification.service.DeviceTokenService;
 import showroomz.global.config.properties.AppProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -37,6 +38,7 @@ public class AuthService {
     private final LoginHistoryRepository loginHistoryRepository;
     private final GeoLocationService geoLocationService;
     private final SocialLoginService socialLoginService;
+    private final DeviceTokenService deviceTokenService;
 
     /**
      * 소셜 로그인 공통 진입점.
@@ -161,5 +163,36 @@ public class AuthService {
 
             loginHistoryRepository.save(history);
         });
+    }
+
+    /**
+     * 로그인 기기의 FCM 토큰 등록 (선택).
+     *
+     * <p>지금까지 요청의 {@code fcmToken}은 받기만 하고 버려졌다 — 저장할 곳이 없었기 때문인데,
+     * 그 상태로는 팔로워 신규 게시물 알림을 보낼 대상 자체가 없다.
+     *
+     * <p><b>실패해도 로그인을 깨뜨리지 않는다.</b> 알림을 못 받는 것은 불편이지만 로그인이
+     * 안 되는 것은 장애다. 토큰이 없는 요청(웹 등)은 조용히 넘어간다.
+     *
+     * @param platform "ANDROID" / "IOS" / "WEB" — 없거나 모르는 값이면 UNKNOWN으로 남는다
+     */
+    @Transactional
+    public void saveDeviceToken(Long userId, String fcmToken, String platform) {
+        if (fcmToken == null || fcmToken.isBlank()) {
+            return;
+        }
+        userRepository.findById(userId)
+                .ifPresent(user -> deviceTokenService.register(user, fcmToken, platform));
+    }
+
+    /**
+     * 로그아웃한 기기의 FCM 토큰 해제 (선택).
+     *
+     * <p>회원의 토큰을 전부 지우지 않는다 — 폰과 태블릿에 같은 계정으로 로그인해 둔 사람이
+     * 한쪽에서 로그아웃했다고 다른 쪽 알림까지 끊기면 안 된다.
+     */
+    @Transactional
+    public void removeDeviceToken(String fcmToken) {
+        deviceTokenService.unregister(fcmToken);
     }
 }

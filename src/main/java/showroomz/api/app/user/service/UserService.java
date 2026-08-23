@@ -27,6 +27,7 @@ import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.member.user.type.UserStatus;
 import showroomz.domain.member.user.type.WithdrawalReason;
 import showroomz.domain.member.user.vo.RefundAccount;
+import showroomz.domain.notification.service.DeviceTokenService;
 import showroomz.domain.order.repository.OrderProductRepository;
 import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.domain.wishlist.repository.WishlistRepository;
@@ -52,6 +53,7 @@ public class UserService {
     private final WishlistRepository wishlistRepository;
     private final CartRepository cartRepository;
     private final OrderProductRepository orderProductRepository;
+    private final DeviceTokenService deviceTokenService;
 
     /** 더 이상 진행 중이 아닌 주문 상태 — 이 둘을 뺀 나머지가 탈퇴를 막는다 */
     private static final Set<OrderProductStatus> FINISHED_ORDER_STATUSES =
@@ -330,10 +332,12 @@ public class UserService {
                 .reason(request.getCustomReason() != null ? request.getCustomReason() : (request.getReason() != null ? request.getReason().name() : null))
                 .build());
 
-        // 6. 활동 기록 파기 — 팔로잉·좋아요·장바구니
+        // 6. 활동 기록 파기 — 팔로잉·좋아요·장바구니·푸시 기기
+        //    기기 토큰을 남기면 탈퇴한 계정 앞으로 알림이 계속 나간다.
         creatorFollowRepository.deleteByUser(user);
         wishlistRepository.deleteByUser(user);
         cartRepository.deleteByUser(user);
+        deviceTokenService.unregisterAll(user);
 
         // 7. 광고성 정보 수신에 동의한 상태였다면 탈퇴로 철회되므로 철회 일시를 남긴다
         if (user.isMarketingAgree()) {

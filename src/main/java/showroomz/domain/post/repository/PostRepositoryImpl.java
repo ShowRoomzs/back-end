@@ -11,6 +11,7 @@ import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.type.PostStatus;
+import showroomz.domain.post.type.PostType;
 
 import java.util.List;
 
@@ -55,7 +56,9 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
         BooleanBuilder where = new BooleanBuilder()
                 .and(post.creator.id.eq(creatorId))
                 // 삭제 게시물은 어느 탭에도 나타나지 않는다 — 운영자 콘솔에서만 조회된다(§24-6)
-                .and(post.status.ne(PostStatus.DELETED));
+                .and(post.status.ne(PostStatus.DELETED))
+                // 일반 게시물과 공구 게시물을 한 목록에 섞지 않는다(§24) — 카운트 쿼리와 같은 조건이어야 한다(§24-1)
+                .and(post.postType.eq(PostType.GENERAL));
         if (status != null) {
             // 탭 하나가 상태 둘을 담는 경우가 있다 — 「노출 중지」 탭은 심사 중까지 포함한다(§24-5).
             // 탭 개수를 세는 쪽과 같은 규칙을 써야 숫자와 목록이 어긋나지 않는다.

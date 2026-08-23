@@ -76,6 +76,10 @@ public class AuthController implements AuthControllerDocs {
             String userAgent = ClientUtils.getUserAgent(request);
             if (result.getUser() != null) {
                 authService.saveLoginHistory(result.getUser().getId(), clientIp, userAgent);
+                // 가입 미완료(GUEST)여도 기기는 이미 특정된다. 가입을 마치고 다시 로그인할 때까지
+                // 기다리면 첫 로그인 직후의 알림을 놓친다.
+                authService.saveDeviceToken(result.getUser().getId(),
+                        socialLoginRequest.getFcmToken(), socialLoginRequest.getPlatform());
             }
 
             return ResponseEntity.ok(new TokenResponse(registerToken.getToken()));
@@ -93,6 +97,8 @@ public class AuthController implements AuthControllerDocs {
         String clientIp = ClientUtils.getRemoteIP(request);
         String userAgent = ClientUtils.getUserAgent(request);
         authService.saveLoginHistory(user.getId(), clientIp, userAgent);
+        authService.saveDeviceToken(user.getId(),
+                socialLoginRequest.getFcmToken(), socialLoginRequest.getPlatform());
 
         return ResponseEntity.ok(tokenResponse);
     }
@@ -308,6 +314,10 @@ public class AuthController implements AuthControllerDocs {
 
         // 3. DB에서 해당 Refresh Token 삭제
         userRefreshTokenRepository.deleteByRefreshToken(refreshToken);
+
+        // 3-1. 이 기기를 푸시 발송 대상에서 뺀다 (fcmToken을 보낸 경우).
+        //      다른 기기의 로그인은 건드리지 않는다 — 폰에서 로그아웃했다고 태블릿 알림까지 끊기면 안 된다.
+        authService.removeDeviceToken(refreshRequest.getFcmToken());
 
         // 4. SecurityContext 초기화
         SecurityContextHolder.clearContext();

@@ -188,7 +188,8 @@ public interface AuthControllerDocs {
                     "- providerType: 필수, 소셜 공급자 타입 (KAKAO, NAVER, GOOGLE, APPLE)\n" +
                     "- token: 필수, 애플은 idToken, 카카오/네이버/구글은 accessToken\n" +
                     "- name: 선택, 애플 로그인에서만 사용 (첫 로그인 시 이름)\n" +
-                    "- fcmToken: 선택, (푸시 알림 전송용 FCM 토큰)",
+                    "- fcmToken: 선택, 푸시 알림 전송용 FCM 토큰. 보내면 이 기기가 발송 대상으로 등록된다(같은 토큰이 다른 계정에 등록돼 있었다면 이번 로그인 계정으로 옮겨진다)\n" +
+                    "- platform: 선택, ANDROID / IOS / WEB. 보내지 않으면 UNKNOWN으로 저장된다",
             required = true,
             content = @Content(
                     mediaType = "application/json",
@@ -604,7 +605,9 @@ public interface AuthControllerDocs {
             )
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "로그아웃 요청 (Refresh Token 필요)",
+            description = "로그아웃 요청 (Refresh Token 필요)\n" +
+                    "- refreshToken: 필수\n" +
+                    "- fcmToken: 선택, 이 기기를 푸시 발송 대상에서 미리 제외한다. 보내지 않으면 로그아웃 후에도 그 기기로 알림이 계속 간다(다른 기기의 로그인은 유지된다)",
             required = true,
             content = @Content(
                     mediaType = "application/json",
@@ -613,7 +616,8 @@ public interface AuthControllerDocs {
                             @ExampleObject(
                                     name = "요청 예시",
                                     value = "{\n" +
-                                            "  \"refreshToken\": \"string\"\n" +
+                                            "  \"refreshToken\": \"string\",\n" +
+                                            "  \"fcmToken\": \"string\"\n" +
                                             "}"
                             )
                     }
