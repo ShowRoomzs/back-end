@@ -78,7 +78,13 @@ public interface PostControllerDocs {
                                         {
                                           "postId": 301,
                                           "status": "PUBLISHED",
-                                          "thumbnailUrl": "https://cdn.example.com/posts/301-0.jpg",
+                                          "imageUrls": [
+                                            "https://cdn.example.com/posts/301-0.jpg",
+                                            "https://cdn.example.com/posts/301-1.jpg",
+                                            "https://cdn.example.com/posts/301-2.jpg",
+                                            "https://cdn.example.com/posts/301-3.jpg",
+                                            "https://cdn.example.com/posts/301-4.jpg"
+                                          ],
                                           "imageCount": 5,
                                           "contentPreview": "여름 끝 무너진 장벽, 3주 루틴",
                                           "impressionCount": 2840,
