@@ -525,8 +525,11 @@ public class ShowroomPostService {
     }
 
     /**
-     * 팔로워 신규 게시물 알림 (§24-8 ⓗ) — 발송 채널·시점이 확정되지 않았고 발송 인프라도 없다.
-     * 이력만 남기고 실제 발송은 어댑터가 붙을 때 살아난다.
+     * 팔로워 신규 게시물 알림 (§24-8 ⓗ).
+     *
+     * <p>여기서는 이력만 남긴다. 실제 FCM 발송은 {@code PostNotificationDispatcher}가
+     * <b>이 트랜잭션이 커밋된 뒤</b> 별도 스레드에서 한다 — 롤백된 게시물의 알림이 나가지 않게,
+     * 그리고 팔로워 수만 명의 발송이 이 API의 응답을 붙들지 않게 하기 위해서다.
      */
     private void notifyFollowers(Post post) {
         postNotificationService.notify(post, PostNotificationEvent.PUBLISHED_TO_FOLLOWERS,

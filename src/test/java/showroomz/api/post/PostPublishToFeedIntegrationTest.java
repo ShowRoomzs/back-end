@@ -292,7 +292,7 @@ class PostPublishToFeedIntegrationTest extends IntegrationTestSupport {
         }
 
         /** 목록 카드에는 제목이 없다 — 사진 URL 목록과 본문 앞부분이 게시물을 알아보는 유일한 단서다(§24-1). */
-ㄹ        @Test
+        @Test
         @DisplayName("목록 카드는 사진 URL·장수·본문 미리보기로 게시물을 식별한다")
         void listCardCarriesImageUrlsAndPreview() throws Exception {
             Long postId = createPost("대표 사진이 걸리는지", "PUBLISH",

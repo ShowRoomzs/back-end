@@ -3,9 +3,9 @@ package showroomz.domain.post.type;
 /**
  * 게시물 관련 통지 종류 (§24-5 "알리지 않고 사라지는 경우는 없다" · §24-6 "알림 이력에 영구 보존").
  *
- * <p>발송 인프라는 이 프로젝트에 아직 없다({@code NotificationSetting}은 수신 설정값일 뿐이다).
- * 그래서 <b>이력은 지금 남기고 발송 어댑터는 no-op 스텁</b>으로 둔다 — 이력은 소급 생성이
- * 불가능하지만 발송은 인프라가 생긴 뒤 붙이면 되기 때문이다.
+ * <p>이력 적재와 발송은 분리돼 있다. {@code PostNotificationService}가 이력을 남기고,
+ * {@code PostPushMessageFactory}가 종류별 문구를,
+ * {@code PushPostNotificationSender}가 수신자(본인이냐 팔로워냐)를 정한다.
  */
 public enum PostNotificationEvent {
 
