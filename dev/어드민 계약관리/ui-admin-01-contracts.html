@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-admin-01-contracts — 어드민 계약 관리 rev.1</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+
+/* ══════════════════════════════════════════════════════════════════
+   SHOWROOMZ 웹 디자인시스템 v1.2 — 어드민
+   이 <style> 블록 전체가 소스오브트루스다.
+   신규 ui-admin-*.html 은 이 블록을 통째로 복사한 뒤 화면 전용 CSS만 덧붙인다.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── ① 토큰 ───────────────────────────────────────────────────── */
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --adm-sidebar-w:240px; --adm-topbar-h:56px; --adm-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+
+/* ── ② 문서 골격 (시안 파일 공통) ─────────────────────────────── */
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;line-height:1.8;}
+.doc-head .rule{margin-top:12px;}
+.rule b{color:var(--n-900);} .rule .new{color:var(--accent-600);font-weight:600;}
+.rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+
+/* ── ③ 어드민 셸 · 사이드바 ───────────────────────────────────── */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--adm-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--adm-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;overflow-y:auto;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:7px 10px;border-radius:var(--r-sm);margin-bottom:2px;cursor:pointer;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--danger-text);color:#fff;
+  border-radius:8px;padding:0 5px;min-width:16px;text-align:center;}
+.gnb-item .chev{width:14px;height:14px;color:var(--n-500);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:transform .15s;}
+.gnb-item .chev svg{width:11px;height:11px;display:block;}
+.gnb-item.open .chev{transform:rotate(180deg);color:var(--n-700);}
+.gnb-group{overflow:hidden;}
+.gnb-group.closed{display:none;}
+.gnb-item:hover:not(.active){background:var(--n-200);}
+.gnb-item.open{color:var(--n-900);font-weight:500;}
+.gnb-sub{display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-micro);
+  color:var(--n-500);padding:5px 10px 5px 33px;border-radius:var(--r-sm);margin-bottom:1px;cursor:pointer;}
+.gnb-sub:hover:not(.active){background:var(--n-200);}
+.gnb-sub.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-sub.active .scnt{color:#fff;}
+.scnt{font-size:10px;color:var(--n-500);}
+
+/* ── ④ 어드민 셸 · 탑바 / 본문 ────────────────────────────────── */
+.top{position:absolute;left:var(--adm-sidebar-w);right:0;top:0;height:var(--adm-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--adm-pad);}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.crumb .c-sub{font-size:var(--fs-caption);color:var(--n-500);font-weight:400;margin-left:6px;}
+.op{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);}
+.op-av{width:24px;height:24px;border-radius:50%;background:var(--n-200);color:var(--n-600);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-micro);font-weight:600;}
+.main{position:absolute;left:var(--adm-sidebar-w);right:0;top:var(--adm-topbar-h);bottom:0;
+  overflow-y:auto;padding:var(--adm-pad);}
+.navgrp{display:flex;align-items:center;gap:6px;}
+.nav-btn{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-caption);font-weight:500;
+  color:var(--n-700);cursor:pointer;padding:0 12px;height:32px;background:#fff;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);white-space:nowrap;}
+.nav-btn:hover{background:var(--n-100);color:var(--n-900);border-color:var(--n-400);}
+.nav-sep{width:1px;height:18px;background:var(--n-300);margin:0 2px;}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:var(--sp-4);}
+.page-t{font-size:var(--fs-h1);font-weight:600;display:flex;align-items:center;gap:10px;}
+.t-link{font-size:var(--fs-micro);font-weight:500;color:var(--n-600);background:var(--n-100);
+  border:1px solid var(--n-200);border-radius:var(--r-pill);padding:2px 10px;cursor:pointer;
+  white-space:nowrap;line-height:1.7;}
+.t-link:hover{background:var(--accent-50);color:var(--accent-600);border-color:var(--accent-100);}
+.page-d{font-size:var(--fs-caption);color:var(--n-600);margin-top:2px;}
+
+/* ── ⑤ 필터 · 폼 컨트롤 ───────────────────────────────────────── */
+.filter{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);
+  padding:var(--sp-3) var(--sp-4);margin-bottom:var(--sp-4);display:flex;align-items:center;
+  justify-content:space-between;gap:var(--sp-4);}
+.tabs{display:flex;gap:0;margin-bottom:var(--sp-4);border-bottom:1px solid var(--n-200);}
+.tab{font-size:var(--fs-caption);color:var(--n-500);padding:8px 2px 9px;margin-right:22px;cursor:pointer;
+  margin-bottom:-1px;border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;}
+.tab.active{color:var(--accent-500);border-bottom-color:var(--accent-500);font-weight:500;}
+.tab .tn{font-size:10px;background:var(--n-100);color:var(--n-600);border-radius:8px;padding:0 5px;}
+.tab.active .tn{background:var(--accent-50);color:var(--accent-600);}
+.search{display:flex;gap:6px;}
+.inp{font-family:inherit;font-size:var(--fs-body);padding:6px 10px;border-radius:var(--r-sm);
+  border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:32px;width:180px;}
+.inp::placeholder{color:var(--n-400);}
+.inp:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:7px 14px;cursor:pointer;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
+.btn-primary{background:var(--accent-500);color:#fff;border:none;}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-danger{background:var(--danger-text);color:#fff;border:none;}
+.btn-danger-o{background:#fff;color:var(--danger-text);border:1px solid var(--n-300);}
+.btn-danger-o:hover{background:var(--danger-bg);border-color:var(--n-400);}
+.btn:disabled{background:var(--n-100);color:var(--n-400);border:1px solid var(--n-200);cursor:not-allowed;}
+.sel-sm{font-family:inherit;font-size:var(--fs-caption);height:28px;padding:0 26px 0 10px;cursor:pointer;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-700);
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;}
+.sel-sm:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+
+/* ── ⑥ 테이블 ─────────────────────────────────────────────────── */
+.tcard{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+.tbar{display:flex;align-items:center;justify-content:space-between;padding:10px var(--sp-4);
+  border-bottom:1px solid var(--n-200);}
+.tbar-l{font-size:var(--fs-caption);color:var(--n-600);} .tbar-l b{color:var(--n-900);}
+.tbar-r{display:flex;align-items:center;gap:8px;}
+table{width:100%;border-collapse:collapse;}
+thead td{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);font-weight:500;
+  padding:10px 16px;white-space:nowrap;border-bottom:1px solid var(--n-200);}
+tbody td{padding:13px 16px;font-size:var(--fs-caption);border-top:1px solid var(--n-100);
+  vertical-align:middle;white-space:nowrap;}
+tbody tr:first-child td{border-top:none;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:var(--accent-50);}
+tbody tr:hover .t-main{color:var(--accent-600);}
+.t-main{font-size:var(--fs-body);font-weight:500;color:var(--n-900);}
+.tcard table{table-layout:fixed;}
+.tnum{font-variant-numeric:tabular-nums;letter-spacing:-.1px;}
+.t-sub{color:var(--n-500);font-size:var(--fs-micro);}
+.t-c{text-align:center;}
+.t-r{text-align:right;}
+.over{color:var(--warning-text);font-weight:600;}
+
+/* ── ⑦ 배지 ───────────────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-warning{background:var(--warning-bg);color:var(--warning-text);}
+.b-danger{background:var(--danger-bg);color:var(--danger-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+
+/* ── ⑧ 페이지네이션 · 빈 상태 ─────────────────────────────────── */
+.pager{display:flex;align-items:center;justify-content:center;gap:4px;padding:12px;border-top:1px solid var(--n-200);}
+.page-item{min-width:26px;height:26px;padding:0 6px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-600);cursor:pointer;}
+.page-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.empty{padding:72px 24px;text-align:center;}
+.empty-ic{font-size:28px;color:var(--n-300);margin-bottom:10px;}
+.empty-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);margin-bottom:4px;}
+.empty-d{font-size:var(--fs-caption);color:var(--n-500);}
+
+/* ── ⑨ 상세 · 카드 ────────────────────────────────────────────── */
+.detail{display:grid;grid-template-columns:1fr 320px;gap:var(--sp-4);align-items:start;}
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);margin-bottom:var(--sp-4);}
+.card:last-child{margin-bottom:0;}
+.card-h{font-size:var(--fs-h3);font-weight:600;padding:11px var(--sp-4);border-bottom:1px solid var(--n-200);
+  background:var(--n-50);border-radius:var(--r-md) var(--r-md) 0 0;display:flex;align-items:center;
+  justify-content:space-between;}
+.card-h .ch-n{font-size:var(--fs-micro);color:var(--n-500);font-weight:400;}
+.card-b{padding:var(--sp-4);}
+.rsn{margin:0;font-size:var(--fs-caption);color:var(--n-700);line-height:1.75;}
+
+/* 상세 필드 행 — 라벨 140px · 행 패딩 9px (어드민 공통 규격) */
+.frow{display:flex;gap:var(--sp-3);padding:9px 0;border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.frow:last-child{border-bottom:none;}
+.frow:first-child{padding-top:0;}
+.fk{width:140px;flex-shrink:0;color:var(--n-500);}
+.fv{flex:1;color:var(--n-900);min-width:0;}
+.fv .fsub{color:var(--n-500);font-size:var(--fs-micro);margin-top:2px;}
+.flink{color:var(--n-600);text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
+.flink:hover{color:var(--accent-600);}
+
+/* ── ⑩ 변경 대조 표 ───────────────────────────────────────────── */
+table.diff{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+table.diff thead td{width:auto;} table.diff thead td:first-child{width:180px;}
+table.diff tbody td{white-space:normal;cursor:default;padding:11px 16px;}
+table.diff tbody tr{cursor:default;} table.diff tbody tr:hover{background:transparent;}
+table.diff tbody tr.chg{background:var(--accent-50);}
+table.diff tbody tr.chg:hover{background:var(--accent-50);}
+.dk{color:var(--n-500);font-size:var(--fs-micro);}
+.dv{color:var(--n-900);}
+.dold{color:var(--n-500);text-decoration:line-through;text-decoration-color:var(--n-400);}
+.dnew{color:var(--accent-600);font-weight:600;}
+.dsame{color:var(--n-400);font-size:var(--fs-micro);}
+.dlock{color:var(--n-500);font-size:var(--fs-micro);font-weight:500;}
+
+/* ── ⑪ 인라인 안내 박스 ───────────────────────────────────────── */
+.chk-note{display:flex;gap:9px;background:var(--warning-bg);border-radius:var(--r-sm);padding:11px 13px;
+  font-size:var(--fs-micro);color:var(--n-700);line-height:1.65;margin-bottom:var(--sp-4);}
+.chk-note.danger{background:var(--danger-bg);}
+.chk-note .ci{width:16px;height:16px;border-radius:50%;background:var(--warning-text);color:#fff;font-size:10px;
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;margin-top:1px;}
+.chk-note.danger .ci{background:var(--danger-text);}
+
+/* ── ⑫ 첨부 ───────────────────────────────────────────────────── */
+.files{display:flex;flex-direction:column;gap:8px;}
+.file{display:flex;align-items:center;gap:10px;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:9px 12px;}
+.file-ic{width:28px;height:28px;border-radius:var(--r-sm);background:var(--accent-50);color:var(--accent-600);
+  display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+.file-n{flex:1;font-size:var(--fs-caption);}
+.file-s{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ── ⑬ 우측 액션 카드 · 이력 ──────────────────────────────────── */
+.detail > div:last-child{position:sticky;top:0;align-self:start;}
+.side-card{}
+.st-now{padding:var(--sp-4);}
+.st-line{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding-bottom:var(--sp-3);border-bottom:1px solid var(--n-100);}
+.st-meta{padding-top:var(--sp-2);}
+.mrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);}
+.mrow:last-child{border-bottom:none;}
+.mk{color:var(--n-500);} .mv{color:var(--n-900);font-weight:500;text-align:right;}
+.st-lbl{font-size:var(--fs-caption);color:var(--n-500);flex-shrink:0;}
+.st-acts{display:flex;gap:8px;margin-top:var(--sp-4);}
+.st-acts .btn{flex:1;}
+.st-hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;line-height:1.55;}
+.st-rsn{padding:9px 0 0;border-top:1px solid var(--n-100);margin-top:var(--sp-2);}
+.st-rsn .rk{font-size:var(--fs-micro);color:var(--n-500);display:block;margin-bottom:3px;}
+.st-rsn .rv{font-size:var(--fs-caption);color:var(--n-900);line-height:1.6;}
+.st-rsn + .st-rsn{margin-top:9px;}
+.hist{padding:var(--sp-2) var(--sp-4) var(--sp-3);}
+.hitem{display:flex;gap:10px;padding:9px 0;}
+.hdot{width:7px;height:7px;border-radius:50%;background:var(--n-300);margin-top:6px;flex-shrink:0;}
+.hdot.on{background:var(--accent-500);}
+.hdot.h-info{background:var(--info-text);}
+.hdot.h-success{background:var(--success-text);}
+.hdot.h-warning{background:var(--warning-text);}
+.hdot.h-danger{background:var(--danger-text);}
+.hdot.h-neutral{background:var(--n-400);}
+.htxt{font-size:var(--fs-caption);}
+.hmeta{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ── ⑭ 모달 ───────────────────────────────────────────────────── */
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;justify-content:center;}
+.modal{width:520px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);overflow:hidden;}
+.modal.sm{width:400px;}
+.modal-h{font-size:var(--fs-h3);font-weight:600;padding:14px var(--sp-5);border-bottom:1px solid var(--n-200);
+  display:flex;align-items:center;justify-content:space-between;}
+.modal-x{color:var(--n-400);cursor:pointer;font-size:var(--fs-body);}
+.modal-b{padding:var(--sp-5);font-size:var(--fs-caption);color:var(--n-700);line-height:1.7;}
+.modal-f{padding:12px var(--sp-5);border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.mlabel{display:block;font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;}
+.modal-b > .mlabel:first-child{margin-top:0;}
+.mlabel .req{color:var(--danger-text);margin-left:2px;}
+.mlabel .opt{color:var(--n-400);margin-left:4px;font-weight:400;}
+.msel,.mta{width:100%;font-family:inherit;font-size:var(--fs-body);border:1px solid var(--n-300);
+  border-radius:var(--r-sm);background:#fff;color:var(--n-900);padding:6px 10px;}
+.msel:focus,.mta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.msel{height:32px;appearance:none;-webkit-appearance:none;-moz-appearance:none;padding-right:32px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;}
+.mta{min-height:88px;resize:vertical;line-height:1.6;height:auto;padding-top:7px;}
+.mta.is-error{border-color:var(--danger-text);}
+.merr{font-size:var(--fs-micro);color:var(--danger-text);margin:6px 0 0;}
+.mwarn{display:flex;gap:8px;background:var(--danger-bg);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--danger-text);line-height:1.6;margin-top:var(--sp-4);font-weight:500;}
+.mwarn.info{background:var(--info-bg);color:var(--info-text);}
+.mhint{font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;}
+
+/* ── ⑮ 미리보기 라이트박스 ────────────────────────────────────── */
+.modal.pv{width:1080px;}
+.pv-body{display:grid;grid-template-columns:1fr 340px;height:620px;}
+.pv-view{background:var(--n-900);display:flex;flex-direction:column;}
+.pv-canvas{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:20px;}
+.pv-img{width:440px;height:310px;background:#fff;border-radius:2px;
+  box-shadow:0 4px 18px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;
+  color:var(--n-400);font-size:var(--fs-caption);}
+.pv-bar{height:48px;background:rgba(255,255,255,.06);border-top:1px solid rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px;}
+.pv-nav{display:flex;align-items:center;gap:6px;}
+.pv-b{height:28px;padding:0 10px;border-radius:var(--r-sm);background:rgba(255,255,255,.1);
+  color:rgba(255,255,255,.85);font-size:var(--fs-micro);font-weight:500;cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;border:none;font-family:inherit;}
+.pv-b:hover{background:rgba(255,255,255,.2);color:#fff;}
+.pv-zoom{font-size:var(--fs-micro);color:rgba(255,255,255,.6);padding:0 6px;}
+.pv-side{background:#fff;border-left:1px solid var(--n-200);padding:var(--sp-4);overflow-y:auto;}
+.pv-t{font-size:var(--fs-h3);font-weight:600;margin-bottom:2px;}
+.pv-d{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:var(--sp-4);}
+.pv-sec{font-size:var(--fs-micro);color:var(--n-500);font-weight:600;padding-bottom:6px;
+  border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-2);}
+.pv-row{display:flex;gap:9px;padding:11px 0;border-bottom:1px solid var(--n-100);align-items:flex-start;}
+.pv-row:last-of-type{border-bottom:none;}
+.pv-k{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:3px;}
+.pv-old{font-size:var(--fs-micro);color:var(--n-500);text-decoration:line-through;
+  text-decoration-color:var(--n-400);margin-bottom:1px;}
+.pv-new{font-size:var(--fs-body);font-weight:600;color:var(--accent-600);line-height:1.45;}
+.pv-new.plain{color:var(--n-900);}
+.pv-note{display:flex;gap:7px;background:var(--n-100);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--n-600);line-height:1.55;margin-top:var(--sp-4);}
+.pv-note.warn{background:var(--danger-bg);color:var(--danger-text);}
+
+/* ── ⑯ 토스트 ─────────────────────────────────────────────────── */
+.toast-wrap{position:absolute;top:72px;right:24px;display:flex;flex-direction:column;gap:8px;}
+.toast{min-width:260px;background:#fff;border:1px solid var(--n-200);border-left:3px solid var(--success-text);
+  border-radius:7px;box-shadow:0 4px 16px rgba(26,27,31,.1);padding:11px 14px;font-size:var(--fs-caption);
+  font-weight:500;display:flex;align-items:center;gap:8px;}
+
+/* ══ 화면 전용 (ui-admin-06) ══ */
+/* 어드민 공통 규격 정합: 테이블 본문 셀 14px 16px · 행높이 50px */
+tbody td{padding:14px 16px;height:50px;}
+
+.tb-inq thead td:nth-child(1),.tb-inq tbody td:nth-child(1){width:8%;padding-left:20px;}
+.tb-inq thead td:nth-child(3),.tb-inq tbody td:nth-child(3){width:10%;}
+.tb-inq thead td:nth-child(4),.tb-inq tbody td:nth-child(4){width:14%;}
+.tb-inq thead td:nth-child(5),.tb-inq tbody td:nth-child(5){width:14%;}
+.tb-inq thead td:nth-child(6),.tb-inq tbody td:nth-child(6){width:10%;}
+.tb-inq thead td:nth-child(7),.tb-inq tbody td:nth-child(7){width:11%;padding-right:20px;}
+
+.tb-qna thead td:nth-child(1),.tb-qna tbody td:nth-child(1){width:10%;padding-left:20px;}
+.tb-qna thead td:nth-child(2),.tb-qna tbody td:nth-child(2){width:32%;}
+.tb-qna thead td:nth-child(3),.tb-qna tbody td:nth-child(3){width:18%;}
+.tb-qna thead td:nth-child(4),.tb-qna tbody td:nth-child(4){width:12%;}
+.tb-qna thead td:nth-child(5),.tb-qna tbody td:nth-child(5){width:10%;}
+.tb-qna thead td:nth-child(6),.tb-qna tbody td:nth-child(6){width:10%;}
+.tb-qna thead td:nth-child(7),.tb-qna tbody td:nth-child(7){width:12%;padding-right:20px;}
+.tb-qna tbody td{vertical-align:top;}
+
+.tb-faq thead td:nth-child(1),.tb-faq tbody td:nth-child(1){width:40px;padding-left:16px;padding-right:0;}
+.tb-faq thead td:nth-child(2),.tb-faq tbody td:nth-child(2){width:13%;}
+.tb-faq thead td:nth-child(3),.tb-faq tbody td:nth-child(3){white-space:normal;}
+.tb-faq thead td:nth-child(4),.tb-faq tbody td:nth-child(4){width:10%;}
+.tb-faq thead td:nth-child(5),.tb-faq tbody td:nth-child(5){width:10%;}
+.tb-faq thead td:nth-child(6),.tb-faq tbody td:nth-child(6){width:13%;padding-right:20px;}
+.tb-faq tbody td{vertical-align:top;}
+
+.tb-not thead td:nth-child(1),.tb-not tbody td:nth-child(1){width:56px;padding-left:20px;}
+.tb-not thead td:nth-child(2),.tb-not tbody td:nth-child(2){white-space:normal;}
+.tb-not thead td:nth-child(3),.tb-not tbody td:nth-child(3){width:10%;}
+.tb-not thead td:nth-child(4),.tb-not tbody td:nth-child(4){width:10%;}
+.tb-not thead td:nth-child(5),.tb-not tbody td:nth-child(5){width:9%;}
+.tb-not thead td:nth-child(6),.tb-not tbody td:nth-child(6){width:13%;padding-right:20px;}
+.tb-not tbody td{vertical-align:top;}
+
+.qa-q{font-size:var(--fs-body);font-weight:500;color:var(--n-900);line-height:1.5;}
+.qa-a{font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;line-height:1.6;max-width:660px;}
+.drag{color:var(--n-300);text-align:center;cursor:grab;font-size:13px;}
+
+.racts{display:flex;gap:6px;}
+.rbtn{display:inline-flex;align-items:center;justify-content:center;height:26px;padding:0 10px;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;font-size:var(--fs-micro);
+  font-weight:500;color:var(--n-700);cursor:pointer;font-family:inherit;white-space:nowrap;}
+.rbtn:hover{background:var(--n-100);border-color:var(--n-400);}
+.rbtn.del{color:var(--danger-text);border-color:#E9C9C9;}
+.rbtn.del:hover{background:var(--danger-bg);}
+
+.thread{display:flex;flex-direction:column;gap:10px;}
+.tmsg{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:12px 14px;
+  font-size:var(--fs-caption);line-height:1.75;color:var(--n-700);}
+.tmsg.me{background:var(--accent-50);border-color:var(--accent-100);}
+.tmsg .who{font-size:var(--fs-micro);font-weight:600;color:var(--n-700);margin-bottom:5px;
+  display:flex;align-items:center;gap:6px;}
+.tmsg .who .wt{font-weight:400;color:var(--n-500);}
+.ta-label{font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;display:block;}
+
+.term{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fff;
+  border:1px solid var(--n-200);border-radius:var(--r-md);padding:14px var(--sp-4);margin-bottom:10px;cursor:pointer;}
+.term:hover{border-color:var(--n-300);}
+.term.on{border-color:var(--accent-500);background:var(--accent-50);}
+.term .tn{font-size:var(--fs-h3);font-weight:600;}
+.term .tv{font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;}
+
+.cbrow{display:flex;gap:9px;align-items:flex-start;padding:9px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);color:var(--n-700);}
+.cbrow:last-child{border-bottom:none;}
+.cbx{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--n-300);background:#fff;
+  flex-shrink:0;margin-top:2px;}
+.cbx.on{background:var(--accent-500);border-color:var(--accent-500);color:#fff;font-size:10px;
+  display:flex;align-items:center;justify-content:center;}
+.rdo{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--n-300);background:#fff;
+  flex-shrink:0;display:inline-block;}
+.rdo.on{border-color:var(--accent-500);border-width:5px;}
+.optrow{display:flex;gap:20px;align-items:center;margin-top:var(--sp-4);font-size:var(--fs-caption);color:var(--n-700);}
+.optrow label{display:flex;align-items:center;gap:7px;cursor:pointer;}
+.w-full{width:100%;}
+.tb-inq tbody td:nth-child(2),.tb-qna tbody td:nth-child(2),.tb-qna tbody td:nth-child(3){overflow:hidden;}
+.tb-inq .t-main,.tb-qna .qa-q{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tatt{display:flex;gap:8px;margin-top:10px;}
+.tthumb{width:72px;height:72px;border-radius:var(--r-sm);border:1px solid var(--n-200);
+  background:var(--n-100);color:var(--n-400);font-size:var(--fs-micro);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.tthumb:hover{border-color:var(--accent-500);color:var(--accent-600);}
+.tatt-n{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;}
+
+
+/* ── ⑰ 화면 전용 · 공구 관리 ───────────────────────────────────── */
+/* 디자인시스템 누락 보완 — 하위 없는 GNB 1단 항목의 활성 상태(.gnb-sub.active와 동일 규격) */
+.gnb-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-item.active .gn{color:rgba(255,255,255,.7);}
+.gnb-item.active .gcnt{background:#fff;color:var(--accent-600);}
+.tb-gb thead td:nth-child(1),.tb-gb tbody td:nth-child(1){padding-left:20px;white-space:normal;}
+.tb-gb thead td:nth-child(2),.tb-gb tbody td:nth-child(2){width:130px;}
+.tb-gb thead td:nth-child(3),.tb-gb tbody td:nth-child(3){width:120px;}
+.tb-gb thead td:nth-child(4),.tb-gb tbody td:nth-child(4){width:78px;}
+.tb-gb thead td:nth-child(5),.tb-gb tbody td:nth-child(5){width:166px;}
+.tb-gb thead td:nth-child(6),.tb-gb tbody td:nth-child(6){width:100px;}
+.tb-gb thead td:nth-child(7),.tb-gb tbody td:nth-child(7){width:100px;}
+.tb-gb thead td:nth-child(8),.tb-gb tbody td:nth-child(8){width:200px;padding-right:20px;}
+.tb-gb thead td:nth-child(n+4),.tb-gb tbody td:nth-child(n+4){text-align:center;}
+.tb-gb thead td:nth-child(8),.tb-gb tbody td:nth-child(8){text-align:left;}
+.tb-gb thead td:nth-child(n+2),.tb-gb tbody td:nth-child(n+2){padding-left:20px;padding-right:20px;}
+.tb-gb tbody td{vertical-align:middle;}
+.sub2{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.note-w{font-size:var(--fs-micro);color:var(--warning-text);font-weight:500;}
+.note-n{font-size:var(--fs-micro);color:var(--n-500);}
+.note-d{font-size:var(--fs-micro);color:var(--danger-text);}
+.pin{background:var(--warning-bg);}
+.pin:hover{background:var(--warning-bg);}
+.gate{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--n-100);}
+.gate:last-child{border-bottom:none;}
+.gate:first-child{padding-top:0;}
+.gd{width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:700;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;margin-top:1px;}
+.gd-ok{background:var(--success-bg);color:var(--success-text);}
+.gd-wait{background:var(--warning-bg);color:var(--warning-text);}
+.gd-idle{background:var(--n-100);color:var(--n-400);}
+.gt-t{font-size:var(--fs-caption);font-weight:600;}
+.gt-s{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;line-height:1.6;}
+.gt-b{margin-left:auto;flex-shrink:0;display:flex;gap:8px;}
+.kpi4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--n-200);
+  border-radius:var(--r-sm);overflow:hidden;}
+.k{background:#fff;padding:13px 14px;}
+.kn{font-size:var(--fs-h2);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em;}
+.kl{font-size:var(--fs-micro);color:var(--n-600);margin-top:3px;}
+.ks{font-size:var(--fs-micro);color:var(--n-400);margin-top:2px;}
+.pitem{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--n-100);}
+.pitem:first-child{padding-top:0;}
+.pitem:last-child{border-bottom:none;padding-bottom:0;}
+.pi-n{font-size:var(--fs-caption);font-weight:600;color:var(--accent-600);cursor:pointer;}
+.pi-n:hover{text-decoration:underline;}
+.pi-g{color:var(--n-400);font-size:9px;margin-left:3px;}
+.pi-x{font-size:var(--fs-micro);color:var(--n-600);margin-top:3px;line-height:1.7;}
+.pv{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:14px 16px;background:var(--n-50);}
+.pv-t{font-size:var(--fs-body);font-weight:600;}
+.pv-x{font-size:var(--fs-caption);color:var(--n-700);line-height:1.8;margin-top:8px;}
+.pv-c{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+.unmask{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  color:var(--n-700);background:#fff;border:1px solid var(--n-300);border-radius:var(--r-sm);
+  height:24px;padding:0 9px;cursor:pointer;}
+.unmask:hover{border-color:var(--n-400);color:var(--n-900);}
+.unmask.off{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+.chip{font-size:var(--fs-micro);color:var(--n-700);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-pill);padding:2px 9px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;}
+.chip:hover{border-color:var(--accent-500);color:var(--accent-600);}
+.chip .cg{color:var(--n-400);font-size:9px;}
+.chip:hover .cg{color:var(--accent-500);}
+.pv-l{font-size:var(--fs-micro);color:var(--n-500);border-top:1px solid var(--n-200);
+  margin-top:12px;padding-top:9px;line-height:1.7;}
+.req-b{border:1px solid #F0DCC0;background:#FDF6EC;border-radius:var(--r-sm);padding:12px 14px;}
+.req-h{font-size:var(--fs-caption);font-weight:600;color:var(--warning-text);}
+.req-x{font-size:var(--fs-caption);color:var(--n-900);line-height:1.7;margin-top:6px;}
+.req-m{font-size:var(--fs-micro);color:var(--n-600);margin-top:8px;}
+.stm{display:flex;align-items:center;gap:0;margin-top:2px;}
+.stm-i{flex:1;text-align:center;font-size:var(--fs-micro);padding:7px 4px;border-radius:var(--r-sm);
+  background:var(--n-100);color:var(--n-500);}
+.stm-i.on{background:var(--accent-50);color:var(--accent-600);font-weight:600;}
+.stm-i.done{background:var(--success-bg);color:var(--success-text);}
+.stm-a{color:var(--n-300);padding:0 4px;font-size:10px;}
+.kpi{display:flex;align-items:baseline;justify-content:space-between;padding:8px 0;
+  border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.kpi:last-child{border-bottom:none;}
+.kpi-k{color:var(--n-600);}
+.kpi-v{font-weight:600;}
+.kpi-sub{font-size:var(--fs-micro);color:var(--n-500);font-weight:400;margin-left:4px;}
+/* ── 계약 컴포넌트 — ui-partner-08-contracts(rev.7)에서 문자 그대로 이식 ── */
+/* 조항 박스(읽기 전용 표준 조항) */
+.terms{border:1px solid var(--n-200);border-radius:var(--r-sm);background:var(--n-50);padding:2px 14px;}
+.trow{display:flex;gap:14px;padding:9px 0;border-bottom:1px solid var(--n-200);font-size:var(--fs-caption);}
+.trow:last-child{border-bottom:none;}
+.tk{width:118px;flex-shrink:0;color:var(--n-500);}
+.tv{color:var(--n-700);line-height:1.6;flex:1;}
+.tv b{color:var(--n-900);}
+.wtag{display:inline-block;border:1px dashed var(--n-400);border-radius:4px;padding:0 5px;
+  font-size:10px;color:var(--n-500);margin-left:4px;white-space:nowrap;}
+
+/* 진행 단계 */
+.steps{display:flex;align-items:center;gap:3px;flex-wrap:wrap;}
+.stp{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:6px 10px;font-size:var(--fs-micro);
+  color:var(--n-400);background:#fff;line-height:1.35;}
+.stp .who{display:block;font-size:10px;color:var(--n-400);margin-top:1px;}
+.stp.done{background:var(--n-100);color:var(--n-600);border-color:var(--n-200);}
+.stp.done .who{color:var(--n-500);}
+.stp.cur{border-color:var(--accent-500);color:var(--accent-600);font-weight:600;background:var(--accent-50);}
+.stp.cur .who{color:var(--accent-600);}
+.stp.stop{border-color:#E9C9C9;color:var(--danger-text);font-weight:600;background:var(--danger-bg);}
+.stp.stop .who{color:var(--danger-text);}
+.stp.halt{border-color:var(--n-300);color:var(--n-600);font-weight:600;background:var(--n-100);}
+.stp.halt .who{color:var(--n-500);}
+.stp-ar{color:var(--n-300);font-size:var(--fs-micro);}
+
+/* 서명 박스 */
+.s-asof{margin-top:10px;padding-top:9px;border-top:1px solid var(--n-100);font-size:var(--fs-micro);color:var(--n-500);line-height:1.6;}
+.formbar{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4);
+  margin-top:10px;padding-top:11px;border-top:1px solid var(--n-100);}
+.formbar .s-asof{margin:0;padding:0;border-top:none;flex:1;min-width:0;}
+.formbar .acts{display:flex;gap:8px;flex-shrink:0;}
+.s-asof b{color:var(--n-700);}
+.signs{display:flex;gap:12px;}
+.sbox{flex:1;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:14px;background:var(--n-50);}
+.sbox.mine{background:var(--accent-50);border-color:var(--accent-100);}
+.s-who{font-size:var(--fs-micro);color:var(--n-500);}
+.s-name{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);margin:4px 0 10px;}
+.s-done{font-size:var(--fs-micro);color:var(--success-text);font-weight:500;}
+.s-wait{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* 안내 배너 */
+.notice{display:flex;gap:8px;border-radius:var(--r-sm);padding:11px 13px;font-size:var(--fs-micro);line-height:1.6;}
+.notice.info{background:var(--info-bg);color:var(--info-text);}
+.notice.warn{background:var(--warning-bg);color:var(--warning-text);}
+.notice.danger{background:var(--danger-bg);color:var(--danger-text);}
+.notice.neutral{background:var(--n-100);color:var(--n-600);}
+.notice.consent{background:var(--n-50);border:1px solid var(--n-200);color:var(--n-700);}
+.notice.consent b{color:var(--n-900);}
+.notice b{font-weight:600;}
+
+/* 체크박스(고지 확인) */
+.chk{display:inline-flex;align-items:center;gap:7px;font-size:var(--fs-micro);color:inherit;cursor:pointer;font-weight:500;}
+.cbox{width:15px;height:15px;border:1.5px solid var(--n-400);border-radius:4px;background:#fff;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;}
+.cbox svg{width:10px;height:10px;}
+.chk.on .cbox{background:var(--accent-500);border-color:var(--accent-500);}
+.chk .req{color:var(--danger-text);}
+
+
+.t-nm{font-weight:500;color:var(--n-900);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.t-date{color:var(--n-500);white-space:nowrap;}
+.t-dim{color:var(--n-400);}
+.flink{color:var(--n-600);text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
+.flink:hover{color:var(--accent-600);}
+.fsub{color:var(--n-500);font-size:var(--fs-micro);margin-top:2px;}
+.frow.ro .fk{padding-top:0;}
+/* 조치 큐 — 운영자는 처리할 것을 찾으러 온다 */
+.toolbar{display:flex;gap:6px;align-items:center;margin-bottom:var(--sp-4);}
+.actbar{display:flex;gap:10px;margin-bottom:var(--sp-5);}
+.aq{flex:1;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);padding:10px 14px;cursor:pointer;}
+.aq:hover{border-color:var(--n-400);}
+.aq.on{border-color:var(--warning-text);background:var(--warning-bg);}
+.aq.zero{background:var(--n-50);}
+.aq-n{font-size:20px;font-weight:600;color:var(--n-900);line-height:1.1;font-variant-numeric:tabular-nums;letter-spacing:-.01em;}
+.aq.on .aq-n{color:var(--warning-text);}
+.aq.zero .aq-n{color:var(--n-400);}
+.aq-l{font-size:var(--fs-micro);color:var(--n-600);margin-top:4px;}
+.aq-d{font-size:10px;color:var(--n-500);margin-top:2px;}
+/* 서명 현황 입력(운영자 전용 — 양측 화면에는 없다) */
+.sbox.edit{background:#fff;border-color:var(--n-300);}
+.s-in{display:flex;align-items:center;gap:6px;margin-top:9px;}
+.s-in .sel-sm{height:30px;}
+.dt{display:inline-flex;align-items:center;height:32px;background:#fff;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);overflow:hidden;}
+.dt:focus-within{border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.dt .d{font-family:inherit;font-size:var(--fs-caption);height:30px;width:96px;padding:0 10px;
+  border:none;background:transparent;color:var(--n-900);font-variant-numeric:tabular-nums;}
+.dt .d:focus{outline:none;}
+.dt .bar{width:1px;height:16px;background:var(--n-200);flex-shrink:0;}
+.dt .sel-sm{height:30px;border:none;border-radius:0;background-color:transparent;padding:0 22px 0 9px;
+  background-position:right 7px center;}
+.dt .sel-sm:focus{outline:none;box-shadow:none;}
+.dt .c{font-size:var(--fs-caption);color:var(--n-400);padding:0 1px;}
+.s-in .inp-d{font-family:inherit;font-size:var(--fs-caption);height:30px;width:104px;padding:0 8px;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-900);font-variant-numeric:tabular-nums;}
+.s-lock{font-size:var(--fs-micro);color:var(--n-400);margin-top:9px;}
+/* 업로드 슬롯 */
+.upl{display:flex;align-items:center;gap:10px;border:1px dashed var(--n-300);border-radius:var(--r-sm);
+  padding:11px 13px;font-size:var(--fs-caption);color:var(--n-600);background:var(--n-50);}
+.upl.done{border-style:solid;border-color:var(--n-200);background:#fff;color:var(--n-900);}
+.upl-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.upl .btn{flex-shrink:0;}
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>⑤ 어드민 · 5. 계약 관리 <span style="font-weight:400;color:var(--n-600);font-size:var(--fs-caption)">ui-admin-01-contracts · rev.1</span></h1>
+  <p class="meta">모두싸인 API 미도입(rev.7)으로 생긴 <b>운영자 수동 처리 5종</b> — 계약 검토 · 서명 현황 갱신 · 체결 완료 처리 · 만료 처리 · 서명 안내 재발송 · 근거: <code>SHOWROOMZ_웹_디자인시스템_v1_2.html</code> · 컴포넌트 원본 <code>ui-partner-08-contracts</code>(rev.7) · 반대편 뷰 <code>ui-studio-08-contracts</code>(rev.2) · 셸 출처 <code>ui-admin-17-groupbuys</code></p>
+  <div class="rule">
+    <b>[이 화면이 왜 생겼나]</b> 모두싸인 <b>API를 도입하지 않기로</b> 확정되면서(rev.7 · 요금제만 사용) 우리 시스템은 서명 링크도, 서명 완료 통지도, PDF·감사추적인증서도 <b>자동으로 받지 못한다</b>. 그래서 파트너센터·쇼룸 스튜디오에 보이는 서명 현황은 전부 <b>운영자가 모두싸인에서 눈으로 확인해 입력한 값</b>이고, 양쪽 화면에 「확인한 시점 기준 · YYYY.MM.DD HH:MM 기준」이 박혀 있다. <b>그 값을 입력하는 화면이 어디에도 없었다</b> — 이 파일이 그 자리다.<br>
+    <b class="new">[상류 두 화면이 요구하는 입력값 10종 — 전부 이 파일에서 나온다]</b> ① 검토 통과/반려(B1) ② <b>반려 사유 2단</b>(제목 + 상세 · C2) ③ 검토 통과 일시(C1) ④ <b>서명 요청 발송 일시 · 서명 기한</b>(C1 — 둘 다 모두싸인에서 정해진 값을 옮겨 적는다) ⑤ 브랜드 서명 완료 일시(B3) ⑥ 인플루언서 서명 완료 일시(B3) ⑦ <b>기준 시각</b>(B3 저장 시각 = 양쪽 <code>.s-asof</code>) ⑧ 체결 완료 처리(C4) ⑨ 서명 PDF·감사추적인증서 업로드(B4) ⑩ 만료 처리(C5).<br>
+    <b class="new">[지침에 없던 5번째 작업 — 서명 안내 재발송]</b> 파트너 rev.7과 스튜디오 모두 <b>[서명 안내 다시 받기]</b> 버튼을 두고 설명을 “운영자에게 재발송 요청”이라 적었는데, <b>그 요청이 도착할 화면이 정의돼 있지 않았다</b>. 이 파일뿐이므로 <b>조치 큐 4번째 항목</b>과 B3의 안내 블록 + [재발송 처리 기록]으로 받는다. 재발송 자체는 모두싸인에서 하고 이 화면은 <b>기록만</b> 한다(발송 권한이 우리에게 없다는 rev.7 제약 그대로).<br>
+    <b class="new">[서명 기한도 우리가 정하지 않는다]</b> 모두싸인에 계약을 <b>운영자가 직접 입력</b>하므로 서명 기한도 거기서 정해진다 — 우리 화면이 「공구 시작 −3일」 같은 값을 계산해 보여 주면 <b>있지도 않은 규칙</b>이 생기고, 모두싸인에 실제로 들어간 값과 <b>어긋날 수 있다</b>. 그래서 C1에서 <b>발송 일시와 나란히 입력</b>받는다. 이 값이 B3·C5의 「서명 기한」이 되고 <b>만료 판단의 유일한 기준</b>이다 — 확인 체크로 받으면 “설정했다”는 사실만 남고 <b>며칠인지가 우리 쪽에 남지 않는다</b>.<br>
+    <b>[운영자는 계약을 작성하지 않는다]</b> 공구명·기간·상품 항목·리워드율·고정 지급비·콘텐츠 의무 — <b>전부 읽기 전용</b>이고 수정 필드가 한 곳도 없다. 양측이 서명할 대상이 바뀌면 안 되기 때문이며, 문제가 있으면 <b>반려</b>한다. 계약 조건 카드는 파트너 B3c·B4b의 읽기 전용 카드를 <b>문자 단위로</b> 가져왔고 <b>브랜드·인플루언서 2행만</b> 더했다(파트너는 「계약 상대」 1행, 스튜디오는 「브랜드」 1행 — 운영자는 양측이 다 보여야 한다).<br>
+    <b class="new">[검토 체크리스트를 두지 않는다 — MVP에는 규칙 위반이 없다]</b> 금액·기간 임계값(리워드율 40% · 고정 지급비 100만원 · 할인율 70% 등)이 <b>MVP 범위에 없다</b>. 임계값이 없으면 판정할 것도 없고, 없는 기준으로 만든 판정표는 <b>있지도 않은 규칙이 있는 것처럼</b> 보이게 한다 — 없는 데이터를 UI에 올리지 않는다는 기존 원칙 그대로다(게시물 신고 행을 그리지 않은 것과 같은 판단). 그래서 <b>검토 진행 다음에 계약 조건 카드가 바로 온다</b>.<br>
+    <b>[그러면 운영자 검토는 무엇을 하나]</b> <b>대조</b>다 — 계약 조건이 <b>스레드의 합의 내용</b>과 같은지, 상품 항목이 <b>상품 정보</b>와 맞는지, 콘텐츠 의무가 <b>이행 판정 가능한 형태</b>인지, 당사자 계정이 <b>정상</b>인지. 전부 원문을 읽어야 아는 것이고 자동화할 수 없어 <b>판정 UI를 만들지 않았다</b>. 반려 사유 목록도 같은 축으로 다시 썼다 — 임계값 문구를 빼고 <b>합의 불일치 · 정보 불일치 · 이행 판정 불가 · 오기·누락 · 계정 상태</b> 5종이다.<br>
+    <b class="new">[승인 ≠ 발송]</b> API가 없으므로 <b>이 화면은 서명 요청을 보내지 못한다</b>. 운영자가 모두싸인에 계약 내용을 직접 입력해 보낸 뒤 승인을 누르고, 승인은 <b>“보냈다”는 기록</b>이다. 그래서 C1이 단순 확인 모달이 아니라 <b>모두싸인 입력 체크리스트 + 발송 일시 입력</b>이다 — 발송 전에 승인하면 양측이 <b>오지 않은 메일을 기다린다</b>. 체크는 우리 시스템이 검증할 방법이 없어 <b>눈 대조가 유일한 방어선</b>이다.<br>
+    <b class="new">[서명 현황 체크는 되돌릴 수 있고, 체결은 불가역이다]</b> <code>.sbox</code>는 양측과 <b>완전 동일 마크업</b>이고 <code>.sbox.edit</code>로 체크 + 일시 입력만 더했다 — 오입력한 서명 완료가 양측 화면에 박히면 되돌릴 경로가 있어야 한다. <b>체결 완료를 누른 순간부터</b> 잠긴다(공구가 생성되기 때문). 이 화면에서 불가역한 조치는 <b>체결 완료 하나</b>이며 확인 모달(C4)이 서명 기록·업로드 문서·생성될 공구를 다시 나열한다.<br>
+    <b class="new">[기준 시각이 이 화면의 가장 위험한 값]</b> 저장 시각이 양쪽 <code>.s-asof</code>에 그대로 나가고, 양측은 그것을 <b>운영자가 모두싸인을 확인한 때</b>로 읽는다. <b>대시보드를 보지 않고 저장하면 시각만 새로워지고 값은 그대로</b>인 화면이 나간다 — B3 경고 배너와 C3 모달 양쪽에 이 문장을 박았다. C3은 변경 내역을 <b>before → after</b>로 보여준다.<br>
+    <b>[N건 대기를 맨 위에]</b> 운영자는 <b>처리할 것을 찾으러</b> 오므로 조치 큐 4개(검토 대기 · 체결 처리 대기 · 만료 확인 · 재발송 요청)를 탭보다 위에 둔다. <b>상태 배지 색은 바꾸지 않았다</b> — 「검토 대기」가 운영자에게는 조치 필요 상태지만 파트너·스튜디오에서 정보색이고 <b>같은 계약이 세 화면에서 다른 색이면 안 된다</b>(원칙 ③). 앞세우는 수단은 <b>큐 카운트 + 정렬</b>(검토 요청 오래된순 기본)이다.<br>
+    <b>[상태 색 — 세 화면 동일]</b> 작성중=중립 · 검토 대기·서명 진행중·체결 처리 대기=<b>정보</b> · 검토 반려=<b>경고</b> · 체결완료=<b>성공</b> · 거절=<b>위험</b> · 만료·취소=<b>중립</b>(원칙 ②). 종결 스텝 칩도 배지와 같은 축이다(<code>.stop</code> 거절 · <code>.halt</code> 만료·취소).<br>
+    <b class="new">[탭에 없는 두 상태 — 작성중 · 검토 반려]</b> <b>작성중</b>은 검토 요청 전이라 운영자에게 도착하지 않는다(스튜디오가 같은 이유로 작성중 탭을 없앴다). <b>검토 반려</b>는 반려하는 순간 공이 브랜드로 넘어가 <b>운영자 조치 대상이 아니다</b> — 전체 탭에 배지로만 남는다. 탭 6종: 전체 10 · 검토 대기 2 · 서명 진행중 3 · 체결 처리 대기 1 · 체결완료 1 · 종료 2(+ 검토 반려 1 = 10).<br>
+    <b>[목록은 조회 · 액션 없음]</b> 관리 열·체크박스·일괄 처리가 없고 <b>행 클릭 진입</b>이다(v1.3 목록 상호작용 규칙 + 어드민 공통). 승인·반려·체결은 <b>근거를 읽고 누르는 판단</b>이라 목록에서 누르면 검토가 형식이 된다. 운영자 화면이라 <b>주 CTA도 없다</b>(파트너의 [+ 계약 작성]을 가져오지 않는다 — 운영자는 계약을 만들지 않는다).<br>
+    <b>[모든 수동 처리에 처리자·시각이 남는다]</b> 이력 항목의 주체를 <b>「김운영」</b>으로 적고(파트너·스튜디오 쪽 이력은 「어드민」·「운영자」로 익명), 만료·체결·서명 갱신·재발송 전부 기록된다. 파트너 B7의 주체가 rev.7에서 「시스템」 → 「어드민」으로 바뀐 것이 이 규칙의 출발점이다.<br>
+    <b>[필수 미입력 = 버튼 비활성만]</b> C1의 체크 4개, C5의 재확인 체크, B4의 문서 2종 — 전부 <b>에러 문구 없이 버튼만 비활성</b>이다(프로젝트 절대 규칙). B4는 우측 메타에 <b>「감사추적인증서 미업로드」를 경고색</b>으로 띄워 <b>왜 비활성인지</b>를 화면에서 읽히게 했다.<br>
+    <b class="new">[GNB — 제안 · 확정 필요]</b> 기존 어드민 셸(20개 파일 확정)에 계약 관리가 없었다. <b>「5 계약 관리」를 공구 관리 앞에</b> 넣고 이하 번호를 +1 했다(6 공구 · 7 거래 · 8 정산 · 9 CS·콘텐츠 · 10 게시물·소통 · 11 설정) — 계약 체결이 <b>공구 생성의 입구</b>라 흐름 순서와 맞고, 하위 메뉴 없는 1단 항목이다. <b>기존 20개 파일에는 아직 반영하지 않았다</b> — 확정되면 일괄 반영이 필요하다.<br>
+    <b class="new">[호칭 — 「운영자」로 통일 · 확정 필요]</b> 지침은 “어드민 화면 문구는 「어드민」”이었으나 <b>기존 어드민 20개 파일이 전부 「운영자」</b>이고 탑바가 <b>“김운영 운영자”</b>다. 이 파일만 「어드민」이면 한 화면에 두 이름이 생긴다. 파트너센터는 「어드민」, 스튜디오는 「운영자」로 쓰는 것은 그대로 두고 <b>운영자 자신의 화면만 「운영자」</b>로 맞췄다 — 되돌리려면 치환 한 번이다.<br>
+    <b class="new">[원본 시각 모순 1건 수정]</b> 파트너 B3c는 검토 요청을 <b>08.13 16:40</b>으로, B4b는 검토 통과를 <b>08.13 15:20</b> · 서명 요청 발송을 <b>16:40</b>으로 적어 <b>통과가 요청보다 빠르다</b>. 이 파일은 <b>요청 14:50 → 통과 15:20 → 발송 16:40</b>으로 잡았다 — 파트너 파일도 같은 값으로 맞춰야 세 화면이 일치한다.<br>
+    <b class="new">[상세는 상단·하단 2장으로 낸다]</b> 좌측 카드가 최대 5장(서명 진행 · 체크리스트/체결 문서 · 계약 조건 · 상품 항목 · 콘텐츠 의무)이라 1024px 프레임 하나에 들어가지 않는다 — <code>ui-admin-07b-settlement-detail</code>·<code>ui-admin-18-influencer-detail</code>이 쓴 방식 그대로 <b>상단/하단 스냅샷 2장</b>으로 쪼갰고 <b>sticky 레일은 양쪽에 반복</b>한다(스크롤해도 승인·반려·체결을 누를 수 있어야 한다). 실제 화면은 <b>한 페이지를 스크롤</b>하는 것이며 라우팅이 갈리지 않는다. <b>B1이 가장 중요한 이유</b> — 체크리스트가 짚은 「리워드율 45%」의 원문이 하단 상품 항목에 있어, 운영자는 <b>상단에서 짚고 하단에서 대조</b>한다.<br>
+    <b>[컴포넌트 재사용]</b> <code>.steps/.stp</code> · <code>.signs/.sbox/.s-asof</code> · <code>.terms/.trow</code> · <code>.notice</code> · <code>.chk/.cbox</code> — 파트너 rev.7 스타일시트에서 <b>문자 그대로 이식</b>했다(프론트 공유 컴포넌트 리프트 전제). 어드민 전용으로 새로 만든 것은 <b>3개뿐</b>: <code>.actbar/.aq</code>(조치 큐) · <code>.sbox.edit/.s-in</code>(서명 입력) · <code>.upl</code>(문서 업로드) — 모두 <b>운영자만 하는 일</b>이라 양측 화면에 대응물이 없다.<br>
+    <b>[금칙어]</b> 크리에이터 → <b>인플루언서</b> · 마켓·판매자 → <b>브랜드</b> · 구매자 → <b>소비자</b>.<br>
+    <b class="new">[확인 필요]</b> ⓐ <b>체결 후 해지 값이 없다</b> — 파트너 rev.2의 미해결 지적 그대로. 공구 진행 중 중단을 계약 상태로 표현할 수 없어 <b>공구 관리의 중단</b>으로만 처리했다 ⓑ <b>검토 SLA</b> — 제출 후 며칠 내 통과·반려인지 미정이라 대기 경과만 표시했다(자동 처리 없음) ⓒ <b>검토 반려 재요청 횟수 제한</b> 미정 ⓓ <b>권한 분리</b> — 검토 승인·반려는 운영자, <b>체결 완료·만료는 불가역이라 최고관리자 한정</b>이 타당해 보이나 확정 필요(시안은 구분하지 않음) ⓔ <b>검토 반려의 스텝 칩 색</b> — 파트너가 <code>.stop</code>(위험)을 쓰는데 배지는 경고다. 같은 화면에서 배지와 스텝이 갈리므로 파트너 쪽을 <code>.halt</code>로 바꿀지 결정 필요 ⓕ <b>서명 기한 임박 알림</b> 발송 시점(스튜디오 확인 필요 ① 그대로) ⓖ 재발송 요청의 <b>횟수 제한·SLA</b> ⓗ 만료 처리의 <b>일괄 처리 허용 여부</b> — 기한 경과 건이 쌓이면 건별 확인이 부담이나, 서명 반영 누락 위험 때문에 시안은 건별로만 뒀다.<br>
+    <b>[근거 대기 — 상류 승계]</b> 서명 시 본인확인 수준 · 표준 조항·위약금 문안(법률) · 대가관계 표시 의무 연동[쟁점 A] · 고정 지급비 지급 완료 기록의 효력.<br>
+    <b>[규격 정합]</b> 사이드바 240 · 탑바 56 · 본문 패딩 24 · 레일 320 · 상세 필드행 9px · 라벨 140px · 테이블 본문 셀 13px 16px · 조치 큐 숫자 20px · 액센트 인디고 <code>#3B5BDB</code> 단일 · 밀도 Compact · 다크모드 없음. 설계 근거는 이 박스와 <code>.state-spec</code>에만 둔다.
+  </div>
+</div>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">A1</span><span class="state-label">목록 · 기본 (조치 큐 + 상태 탭 + 검색)</span><span class="state-spec">운영자는 <b>처리할 것을 찾으러</b> 오므로 <b>조치 큐 4개</b>를 탭보다 위에 둔다 — 검토 대기 · 체결 처리 대기 · 만료 확인 · <b>재발송 요청</b> · 열은 <b>브랜드와 인플루언서를 모두</b> 보여준다(파트너는 「계약 상대」 1열, 스튜디오는 「브랜드」 1열이지만 운영자는 <b>양측이 다 보여야</b> 누구의 계약인지 안다) · <b>작성중은 도착하지 않는다</b> — 검토 요청 전이라 운영자에게 올 이유가 없다(스튜디오가 작성중 탭을 없앤 것과 같은 논리) · <b>검토 반려도 탭이 없다</b>: 반려하는 순간 공이 브랜드로 넘어가 운영자 조치 대상이 아니다 — 전체 탭에 배지로만 남는다 · 정렬 기본은 <b>검토 요청 오래된순</b>(방치 건이 먼저) · 관리 열·체크박스 없음, <b>행 클릭 진입</b></span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">계약 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">8</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">9</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">10</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">11</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">계약 관리</div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">계약 관리</div><div class="page-d">브랜드가 제출한 계약을 검토하고, 모두싸인에서 확인한 서명 현황을 갱신해 체결을 완료합니다.</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="actbar"><div class="aq on"><div class="aq-n">2</div><div class="aq-l">검토 대기</div><div class="aq-d">브랜드 제출 · 승인 또는 반려</div></div><div class="aq on"><div class="aq-n">1</div><div class="aq-l">체결 처리 대기</div><div class="aq-d">양측 서명 완료 · PDF 업로드</div></div><div class="aq on"><div class="aq-n">1</div><div class="aq-l">만료 확인</div><div class="aq-d">서명 기한 경과 · 수동 종결</div></div><div class="aq on"><div class="aq-n">1</div><div class="aq-l">재발송 요청</div><div class="aq-d">서명 안내 다시 받기</div></div></div><div class="tabs"><div class="tab active">전체<span class="tn">10</span></div><div class="tab">검토 대기<span class="tn">2</span></div><div class="tab">서명 진행중<span class="tn">3</span></div><div class="tab">체결 처리 대기<span class="tn">1</span></div><div class="tab">체결완료<span class="tn">1</span></div><div class="tab">종료<span class="tn">2</span></div></div><div class="toolbar"><input class="inp" placeholder="공구명 · 브랜드명 · 쇼룸명 · 계약번호 검색" style="width:300px"><button class="btn btn-secondary">검색</button><button class="btn btn-secondary">초기화</button></div><div class="tcard"><div class="tbar"><div class="tbar-l">총 <b>10</b>건 <span class="t-sub" style="display:inline">· 조치 필요 <b>5</b>건</span></div><div class="tbar-r"><select class="sel-sm"><option>검토 요청 오래된순</option><option>최근 생성순</option><option>공구 시작일순</option></select><select class="sel-sm"><option>20건씩</option><option>50건씩</option></select></div></div><table><thead><tr><td>공구명</td><td style="width:126px">브랜드</td><td style="width:122px">인플루언서</td>
+<td class="t-c" style="width:66px">상품 수</td><td class="t-c" style="width:246px">공구 기간</td>
+<td class="t-c" style="width:116px">검토 요청</td><td class="t-c" style="width:126px">상태</td></tr></thead><tbody><tr><td><span class="t-nm">겨울 리페어 크림 공구</span></td><td>글로우랩</td><td>뷰티_하윤</td><td class="t-c tnum">1</td><td class="t-c t-date tnum">2026.09.20 10:00 ~ 2026.09.27 23:55</td><td class="t-c t-date tnum">2026.08.13 16:52</td><td class="t-c"><span class="badge b-info">검토 대기</span></td></tr><tr><td><span class="t-nm">가을 앰플 신제품 공구</span></td><td>퓨어네이처</td><td>글로우_지민</td><td class="t-c tnum">2</td><td class="t-c t-date tnum">2026.09.01 10:00 ~ 2026.09.17 23:55</td><td class="t-c t-date tnum">2026.08.13 16:40</td><td class="t-c"><span class="badge b-info">검토 대기</span></td></tr><tr><td><span class="t-nm">데일리 토너 공구</span></td><td>데일리랩</td><td>글로우_지민</td><td class="t-c tnum">2</td><td class="t-c t-date tnum">2026.09.05 10:00 ~ 2026.09.12 23:55</td><td class="t-c t-date tnum">2026.08.12 10:20</td><td class="t-c"><span class="badge b-info">체결 처리 대기</span></td></tr><tr><td><span class="t-nm">여름 수분 세럼 공구</span></td><td>무드코스메틱</td><td>뷰티_소연</td><td class="t-c tnum">2</td><td class="t-c t-date tnum">2026.08.24 10:00 ~ 2026.08.31 23:55</td><td class="t-c t-date tnum">2026.08.13 14:50</td><td class="t-c"><span class="badge b-info">서명 진행중</span></td></tr><tr><td><span class="t-nm">수분 토너 리뉴얼 공구</span></td><td>벨라코스</td><td>뷰티_라온</td><td class="t-c tnum">2</td><td class="t-c t-date tnum">2026.09.28 10:00 ~ 2026.10.05 23:55</td><td class="t-c t-date tnum">2026.08.09 11:00</td><td class="t-c"><span class="badge b-info">서명 진행중</span></td></tr><tr><td><span class="t-nm">앰플 리필 공구</span></td><td>글로우랩</td><td>뷰티_하윤</td><td class="t-c tnum">1</td><td class="t-c t-date tnum">2026.09.25 10:00 ~ 2026.10.02 23:55</td><td class="t-c t-date tnum">2026.08.11 15:30</td><td class="t-c"><span class="badge b-warning">검토 반려</span></td></tr><tr><td><span class="t-nm">글로우 크림 앵콜 공구</span></td><td>글로우랩</td><td>글로우_지민</td><td class="t-c tnum">1</td><td class="t-c t-date tnum">2026.08.14 10:00 ~ 2026.08.21 23:55</td><td class="t-c t-date tnum">2026.08.05 13:10</td><td class="t-c"><span class="badge b-success">체결완료</span></td></tr><tr><td><span class="t-nm">봄 클렌저 공구</span></td><td>코스메틱랩</td><td>코스메_하늘</td><td class="t-c tnum">1</td><td class="t-c t-date tnum">2026.08.01 10:00 ~ 2026.08.08 23:55</td><td class="t-c t-date tnum">2026.07.22 10:15</td><td class="t-c"><span class="badge b-danger">거절</span></td></tr><tr><td><span class="t-nm">수분 크림 겨울 공구</span></td><td>벨라코스</td><td>뷰티_라온</td><td class="t-c tnum">1</td><td class="t-c t-date tnum">2026.07.25 10:00 ~ 2026.08.01 23:55</td><td class="t-c t-date tnum">2026.07.15 14:20</td><td class="t-c"><span class="badge b-info">서명 진행중</span></td></tr><tr><td><span class="t-nm">클렌징 오일 여름 공구</span></td><td>퓨어랩</td><td>뷰티_소연</td><td class="t-c tnum">1</td><td class="t-c t-date tnum">2026.07.20 10:00 ~ 2026.07.27 23:55</td><td class="t-c t-date tnum">2026.07.10 11:45</td><td class="t-c"><span class="badge b-neutral">취소</span></td></tr></tbody></table><div class="pager"><span class="page-item">‹</span><span class="page-item active">1</span><span class="page-item">2</span><span class="page-item">›</span></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">A2</span><span class="state-label">목록 · 빈 상태 (검색 결과 없음)</span><span class="state-spec">운영자 화면이라 <b>주 CTA가 없다</b> — 운영자는 계약을 만들지 않으므로 파트너센터의 [+ 계약 작성]을 가져오지 않는다(스튜디오가 같은 이유로 지운 것과 동일) · 빈 상태는 §8 규격(패딩 72px)이고 <b>검색어는 지우지 않는다</b> · 조치 큐는 <b>검색과 무관하게 그대로</b> 있다 — 검색 결과가 비어도 처리할 건은 남아 있다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">계약 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">8</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">9</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">10</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">11</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">계약 관리</div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">계약 관리</div><div class="page-d">브랜드가 제출한 계약을 검토하고, 모두싸인에서 확인한 서명 현황을 갱신해 체결을 완료합니다.</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="actbar"><div class="aq on"><div class="aq-n">2</div><div class="aq-l">검토 대기</div><div class="aq-d">브랜드 제출 · 승인 또는 반려</div></div><div class="aq on"><div class="aq-n">1</div><div class="aq-l">체결 처리 대기</div><div class="aq-d">양측 서명 완료 · PDF 업로드</div></div><div class="aq on"><div class="aq-n">1</div><div class="aq-l">만료 확인</div><div class="aq-d">서명 기한 경과 · 수동 종결</div></div><div class="aq on"><div class="aq-n">1</div><div class="aq-l">재발송 요청</div><div class="aq-d">서명 안내 다시 받기</div></div></div><div class="tabs"><div class="tab active">전체<span class="tn">10</span></div><div class="tab">검토 대기<span class="tn">2</span></div><div class="tab">서명 진행중<span class="tn">3</span></div><div class="tab">체결 처리 대기<span class="tn">1</span></div><div class="tab">체결완료<span class="tn">1</span></div><div class="tab">종료<span class="tn">2</span></div></div><div class="toolbar"><input class="inp" placeholder="공구명 · 브랜드명 · 쇼룸명 · 계약번호 검색" style="width:300px" value="CTR-20260601-007"><button class="btn btn-secondary">검색</button><button class="btn btn-secondary">초기화</button></div><div class="tcard"><div class="tbar"><div class="tbar-l">총 <b>0</b>건</div><div class="tbar-r"><select class="sel-sm"><option>검토 요청 오래된순</option><option>최근 생성순</option><option>공구 시작일순</option></select><select class="sel-sm"><option>20건씩</option><option>50건씩</option></select></div></div><table><thead><tr><td>공구명</td><td style="width:126px">브랜드</td><td style="width:122px">인플루언서</td>
+<td class="t-c" style="width:66px">상품 수</td><td class="t-c" style="width:246px">공구 기간</td>
+<td class="t-c" style="width:116px">검토 요청</td><td class="t-c" style="width:126px">상태</td></tr></thead><tbody></tbody></table>
+<div class="empty"><div class="empty-t">검색 결과가 없습니다</div><div class="empty-d">공구명 · 브랜드명 · 쇼룸명 · 계약번호 중 하나로 검색됩니다. 철자를 확인해 주세요.</div><button class="btn btn-secondary">검색 초기화</button></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">B1</span><span class="state-label">상세 · 검토 대기 (승인/반려 선택 전)</span><span class="state-spec"><b>MVP에는 금액·기간 규칙이 없다</b> — 그래서 <b>검토 체크리스트를 두지 않았다</b>. 임계값이 없으면 판정할 것도 없고, 없는 기준으로 만든 판정표는 <b>있지도 않은 규칙이 있는 것처럼</b> 보이게 한다(없는 데이터를 UI에 올리지 않는다는 기존 원칙) · 운영자 검토는 <b>대조 작업</b>이다: 계약 조건이 양측 합의대로인지, 상품 정보와 맞는지, 모두싸인에 옮길 수 있는 형태인지를 <b>원문을 읽고</b> 판단한다 — 그래서 상단에 <b>계약 조건 카드</b>를 바로 붙였고 상품 항목·콘텐츠 의무가 하단에 이어진다 · <b>조건 카드는 읽기 전용</b>이고 캡션에 이유를 쓴다 — 운영자가 고치면 양측이 서명할 대상이 달라진다 · <b>승인 = 발송이 아니다</b>: API를 쓰지 않으므로 이 화면은 요청을 보내지 못하고, 운영자가 모두싸인에서 직접 보낸 뒤 그 사실을 기록한다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">계약 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">8</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">9</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">10</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">11</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 겨울 리페어 크림 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">겨울 리페어 크림 공구</div><div class="page-d">CTR-20260813-041 · 글로우랩 × 뷰티_하윤 · 2026.08.13 16:52 검토 요청 <span class="t-sub" style="display:inline">· 상단</span></div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">검토 진행<span class="ch-n">운영자 검토 → 양측 동시 서명 요청</span></div><div class="card-b"><div class="steps"><span class="stp cur">운영자 검토<span class="who">제출 08.13 16:52 · 확인 중</span></span><span class="stp-ar">›</span><span class="stp">서명 요청 발송<span class="who">통과 시 모두싸인에서 양측 발송</span></span><span class="stp-ar">›</span><span class="stp">양측 서명<span class="who">—</span></span><span class="stp-ar">›</span><span class="stp">운영자 체결 완료 처리<span class="who">—</span></span></div><div class="notice info" style="margin-top:var(--sp-4)"><div><b>승인하면 모두싸인에 계약 내용을 직접 입력해 양측에 서명 요청을 보냅니다.</b> API를 쓰지 않으므로 이 화면이 요청을 보내지 않습니다 — 승인은 <b>「보냈다」는 기록</b>이고, 실제 발송은 운영자가 모두싸인에서 합니다.</div></div></div></div><div class="card"><div class="card-h"><span class="flink" style="order:9;margin-left:auto;flex-shrink:0">연결·소통 스레드 열기 ↗</span>계약 조건<span class="ch-n">운영자는 조건을 고칠 수 없습니다 — 양측이 서명할 대상이 바뀌면 안 됩니다</span></div><div class="card-b"><div class="frow ro"><div class="fk">브랜드</div><div class="fv">글로우랩 <span class="flink">브랜드 상세</span></div></div><div class="frow ro"><div class="fk">인플루언서</div><div class="fv">뷰티_하윤 <span class="flink">인플루언서 상세</span></div></div><div class="frow ro"><div class="fk">공구명</div><div class="fv">겨울 리페어 크림 공구 <div class="fsub">내부 관리용 식별명 · 소비자 노출 제목과 별개</div></div></div><div class="frow ro"><div class="fk">공구 기간</div><div class="fv"><span class="tnum">2026.09.20 10:00 ~ 2026.09.27 23:55</span> <span style="color:var(--n-500)">(8일)</span></div></div><div class="frow ro"><div class="fk">고정 지급비</div><div class="fv"><span class="tnum">1,500,000원</span><div class="fsub">지급 시점 <b>공구 종료 후</b> · 브랜드 직접 지급 · 플랫폼 미중개</div></div></div></div></div></div><div><div class="card"><div class="card-h">상태</div><div class="st-now">
+<div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">검토 대기</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">계약번호</span><span class="mv tnum">CTR-20260813-041</span></div><div class="mrow"><span class="mk">검토 요청</span><span class="mv tnum">2026.08.13 16:52</span></div><div class="mrow"><span class="mk">대기 경과</span><span class="mv tnum">1일 2시간</span></div><div class="mrow"><span class="mk">브랜드</span><span class="mv">글로우랩</span></div><div class="mrow"><span class="mk">인플루언서</span><span class="mv">뷰티_하윤</span></div><div class="mrow"><span class="mk">계약서</span><span class="mv"><span class="flink">제출본 보기</span></span></div></div>
+<div class="st-acts"><button class="btn btn-primary">검토 승인 · 서명 요청</button><button class="btn btn-danger-o">검토 반려</button></div>
+<p class="st-hint">승인하면 <b>편집 잠금이 유지된 채</b> 서명 진행중으로 넘어갑니다. 반려하면 <b>브랜드 편집이 다시 열립니다</b>.</p></div></div><div class="card"><div class="card-h">이력</div><div class="hist"><div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">운영자 검토 요청 · 편집 잠금</div><div class="hmeta">2026.08.13 16:52 · 글로우랩</div></div></div><div class="hitem"><span class="hdot"></span><div><div class="htxt">계약 작성 시작</div><div class="hmeta">2026.08.13 15:10 · 글로우랩</div></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">B1-b</span><span class="state-label">상세 · 검토 대기 — 스크롤 하단</span><span class="state-spec">B1의 아래쪽 — <b>상품 항목 · 콘텐츠 의무</b>. <b>반려 판단의 실제 근거가 여기 있다</b>: 규칙 임계값이 없으므로 운영자는 숫자가 범위 안인지를 보는 게 아니라 <b>스레드 합의·상품 정보와 대조</b>한다 — 이 계약의 <b>2차 활용 기간 “무기한”</b>이 B2에서 반려 사유가 된 지점이다 · 두 카드 모두 파트너·스튜디오의 읽기 전용 카드와 <b>문자 단위로 같다</b> · <b>레일은 따라온다</b>(스크롤해도 승인·반려를 누를 수 있어야 한다)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">계약 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">8</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">9</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">10</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">11</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 겨울 리페어 크림 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">겨울 리페어 크림 공구</div><div class="page-d">CTR-20260813-041 · 글로우랩 × 뷰티_하윤 · 2026.08.13 16:52 검토 요청 <span class="t-sub" style="display:inline">· 스크롤 하단</span></div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">계약 상품 항목<span class="ch-n">1건 · 정산이 이 리워드율을 사용합니다</span></div><div class="card-b"><div class="terms"><div class="trow"><div class="tk" style="width:176px">리페어 크림 60ml</div><div class="tv tnum">정가 48,000원 · 공구가 <b>33,600원</b> · 리워드율 <b>45%</b> · 예상 리워드 15,120원 · 최소 물량 <b>200개</b></div></div></div></div></div><div class="card"><div class="card-h">콘텐츠 의무</div><div class="card-b"><div class="frow ro"><div class="fk">게시 포맷·수량</div><div class="fv">피드 1 · 릴스 2</div></div><div class="frow ro"><div class="fk">게시 완료 기한</div><div class="fv"><span class="tnum">2026.09.27</span><div class="fsub">피드 1 · 릴스 2 전부를 이 날짜까지 게시</div></div></div><div class="frow ro"><div class="fk">2차 활용권</div><div class="fv">허용 <div class="fsub">허용 범위는 비고 참조</div></div></div><div class="frow ro"><div class="fk">2차 활용 기간</div><div class="fv">무기한</div></div><div class="frow ro"><div class="fk">브랜드 사전 검수</div><div class="fv">없음</div></div><div class="frow ro"><div class="fk">비고</div><div class="fv">겨울 시즌 리페어 라인 신규 런칭 건. 리워드율은 런칭 프로모션 조건으로 협의함.</div></div></div></div></div><div><div class="card"><div class="card-h">상태</div><div class="st-now">
+<div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">검토 대기</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">계약번호</span><span class="mv tnum">CTR-20260813-041</span></div><div class="mrow"><span class="mk">검토 요청</span><span class="mv tnum">2026.08.13 16:52</span></div><div class="mrow"><span class="mk">대기 경과</span><span class="mv tnum">1일 2시간</span></div><div class="mrow"><span class="mk">브랜드</span><span class="mv">글로우랩</span></div><div class="mrow"><span class="mk">인플루언서</span><span class="mv">뷰티_하윤</span></div><div class="mrow"><span class="mk">계약서</span><span class="mv"><span class="flink">제출본 보기</span></span></div></div>
+<div class="st-acts"><button class="btn btn-primary">검토 승인 · 서명 요청</button><button class="btn btn-danger-o">검토 반려</button></div>
+<p class="st-hint">승인하면 <b>편집 잠금이 유지된 채</b> 서명 진행중으로 넘어갑니다. 반려하면 <b>브랜드 편집이 다시 열립니다</b>.</p></div></div><div class="card"><div class="card-h">이력</div><div class="hist"><div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">운영자 검토 요청 · 편집 잠금</div><div class="hmeta">2026.08.13 16:52 · 글로우랩</div></div></div><div class="hitem"><span class="hdot"></span><div><div class="htxt">계약 작성 시작</div><div class="hmeta">2026.08.13 15:10 · 글로우랩</div></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">B2</span><span class="state-label">상세 · 검토 반려 처리 완료 (브랜드 편집 재개됨)</span><span class="state-spec">반려 직후 — <b>액션 버튼이 사라진다</b>. 공이 브랜드로 넘어가 운영자가 할 일이 없기 때문이고, <b>반려 취소 버튼도 두지 않았다</b>(브랜드 화면이 이미 열렸고 사유가 노출됐으므로 되돌리면 두 화면이 어긋난다 — 잘못 반려했으면 스레드로 알리고 재요청을 받는다) · <b>반려 사유는 파트너 B3d와 문자 단위로 같은 두 단</b>(제목 + 상세)이다 — 목록 한 줄짜리 사유로는 “무엇을 어떻게 고치라”는 말을 담을 수 없어 브랜드가 같은 내용으로 재요청한다 · 스텝 칩은 <b>.stop</b>(위험)이 아니라… 파트너가 <code>.stop</code>을 썼으므로 <b>그대로 따른다</b> — 배지는 경고, 스텝은 위험으로 갈리지만 이것은 파트너·스튜디오와의 동일 마크업 유지가 우선한 결과다(확인 필요 ⓔ)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">계약 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">8</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">9</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">10</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">11</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 겨울 리페어 크림 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">겨울 리페어 크림 공구</div><div class="page-d">CTR-20260813-041 · 글로우랩 × 뷰티_하윤 · 2026.08.13 17:05 반려 <span class="t-sub" style="display:inline">· 상단</span></div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">검토 진행<span class="ch-n">운영자 검토 → 양측 동시 서명 요청</span></div><div class="card-b"><div class="steps"><span class="stp stop">운영자 검토 반려<span class="who">08.13 17:05 · 김운영</span></span><span class="stp-ar">›</span><span class="stp">서명 요청 발송<span class="who">—</span></span><span class="stp-ar">›</span><span class="stp">양측 서명<span class="who">—</span></span><span class="stp-ar">›</span><span class="stp">운영자 체결 완료 처리<span class="who">—</span></span></div><div class="notice warn" style="margin-top:var(--sp-4)"><div><b>반려 처리가 완료됐습니다.</b> 브랜드 화면의 편집이 다시 열렸고 아래 사유가 <b>그대로 노출</b>됩니다 — 브랜드가 수정해 다시 요청하면 이 목록에 재등장합니다.</div></div><div style="margin-top:var(--sp-3)"><div class="frow ro"><div class="fk">반려 사유</div><div class="fv">2차 활용 조건이 인플루언서 합의 내용과 다릅니다 <div class="fsub">2차 활용 기간이 <b>무기한</b>으로 되어 있습니다. 스레드에는 12개월로 협의된 기록이 있어 그대로 서명 요청을 보낼 수 없습니다 — 기간을 명시하거나 합의 내용을 확인한 뒤 다시 요청해 주세요.</div></div></div>
+<div class="frow ro"><div class="fk">반려 처리</div><div class="fv"><span class="tnum">2026.08.13 17:05</span> · 김운영 운영자</div></div></div></div></div><div class="card"><div class="card-h">계약 조건<span class="ch-n">반려로 브랜드 편집이 다시 열렸습니다 — 운영자는 이후에도 조건을 고칠 수 없습니다</span></div><div class="card-b"><div class="frow ro"><div class="fk">브랜드</div><div class="fv">글로우랩 <span class="flink">브랜드 상세</span></div></div><div class="frow ro"><div class="fk">인플루언서</div><div class="fv">뷰티_하윤 <span class="flink">인플루언서 상세</span></div></div><div class="frow ro"><div class="fk">공구명</div><div class="fv">겨울 리페어 크림 공구 <div class="fsub">내부 관리용 식별명 · 소비자 노출 제목과 별개</div></div></div><div class="frow ro"><div class="fk">공구 기간</div><div class="fv"><span class="tnum">2026.09.20 10:00 ~ 2026.09.27 23:55</span> <span style="color:var(--n-500)">(8일)</span></div></div><div class="frow ro"><div class="fk">고정 지급비</div><div class="fv"><span class="tnum">1,500,000원</span><div class="fsub">지급 시점 <b>공구 종료 후</b> · 브랜드 직접 지급 · 플랫폼 미중개</div></div></div></div></div></div><div><div class="card"><div class="card-h">상태</div><div class="st-now">
+<div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-warning">검토 반려</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">계약번호</span><span class="mv tnum">CTR-20260813-041</span></div><div class="mrow"><span class="mk">검토 요청</span><span class="mv tnum">2026.08.13 16:52</span></div><div class="mrow"><span class="mk">반려 처리</span><span class="mv tnum">2026.08.13 17:05</span></div><div class="mrow"><span class="mk">처리자</span><span class="mv">김운영 운영자</span></div><div class="mrow"><span class="mk">재요청</span><span class="mv">대기 중</span></div><div class="mrow"><span class="mk">계약서</span><span class="mv"><span class="flink">제출본 보기</span></span></div></div>
+<p class="st-hint">반려 상태에서 운영자가 할 일은 <b>없습니다</b> — 브랜드가 수정해 다시 요청하면 <b>검토 대기</b>로 돌아옵니다. 반려를 되돌리는 버튼은 두지 않았습니다.</p></div></div><div class="card"><div class="card-h">이력</div><div class="hist"><div class="hitem"><span class="hdot h-warning"></span><div><div class="htxt">운영자 검토 반려 · 브랜드 편집 재개</div><div class="hmeta">2026.08.13 17:05 · 김운영</div></div></div><div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">운영자 검토 요청 · 편집 잠금</div><div class="hmeta">2026.08.13 16:52 · 글로우랩</div></div></div><div class="hitem"><span class="hdot"></span><div><div class="htxt">계약 작성 시작</div><div class="hmeta">2026.08.13 15:10 · 글로우랩</div></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">B2-b</span><span class="state-label">상세 · 검토 반려 — 스크롤 하단</span><span class="state-spec">반려 직후 — <b>액션 버튼이 사라진다</b>. 공이 브랜드로 넘어가 운영자가 할 일이 없기 때문이고, <b>반려 취소 버튼도 두지 않았다</b>(브랜드 화면이 이미 열렸고 사유가 노출됐으므로 되돌리면 두 화면이 어긋난다 — 잘못 반려했으면 스레드로 알리고 재요청을 받는다) · <b>반려 사유는 파트너 B3d와 문자 단위로 같은 두 단</b>(제목 + 상세)이다 — 목록 한 줄짜리 사유로는 “무엇을 어떻게 고치라”는 말을 담을 수 없어 브랜드가 같은 내용으로 재요청한다 · 스텝 칩은 <b>.stop</b>(위험)이 아니라… 파트너가 <code>.stop</code>을 썼으므로 <b>그대로 따른다</b> — 배지는 경고, 스텝은 위험으로 갈리지만 이것은 파트너·스튜디오와의 동일 마크업 유지가 우선한 결과다(확인 필요 ⓔ)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">계약 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">8</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">9</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">10</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">11</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 겨울 리페어 크림 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">겨울 리페어 크림 공구</div><div class="page-d">CTR-20260813-041 · 글로우랩 × 뷰티_하윤 · 2026.08.13 17:05 반려 <span class="t-sub" style="display:inline">· 스크롤 하단</span></div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">계약 상품 항목<span class="ch-n">1건 · 정산이 이 리워드율을 사용합니다</span></div><div class="card-b"><div class="terms"><div class="trow"><div class="tk" style="width:176px">리페어 크림 60ml</div><div class="tv tnum">정가 48,000원 · 공구가 <b>33,600원</b> · 리워드율 <b>45%</b> · 예상 리워드 15,120원 · 최소 물량 <b>200개</b></div></div></div></div></div><div class="card"><div class="card-h">콘텐츠 의무</div><div class="card-b"><div class="frow ro"><div class="fk">게시 포맷·수량</div><div class="fv">피드 1 · 릴스 2</div></div><div class="frow ro"><div class="fk">게시 완료 기한</div><div class="fv"><span class="tnum">2026.09.27</span><div class="fsub">피드 1 · 릴스 2 전부를 이 날짜까지 게시</div></div></div><div class="frow ro"><div class="fk">2차 활용권</div><div class="fv">허용 <div class="fsub">허용 범위는 비고 참조</div></div></div><div class="frow ro"><div class="fk">2차 활용 기간</div><div class="fv">무기한</div></div><div class="frow ro"><div class="fk">브랜드 사전 검수</div><div class="fv">없음</div></div><div class="frow ro"><div class="fk">비고</div><div class="fv">겨울 시즌 리페어 라인 신규 런칭 건. 리워드율은 런칭 프로모션 조건으로 협의함.</div></div></div></div></div><div><div class="card"><div class="card-h">상태</div><div class="st-now">
+<div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-warning">검토 반려</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">계약번호</span><span class="mv tnum">CTR-20260813-041</span></div><div class="mrow"><span class="mk">검토 요청</span><span class="mv tnum">2026.08.13 16:52</span></div><div class="mrow"><span class="mk">반려 처리</span><span class="mv tnum">2026.08.13 17:05</span></div><div class="mrow"><span class="mk">처리자</span><span class="mv">김운영 운영자</span></div><div class="mrow"><span class="mk">재요청</span><span class="mv">대기 중</span></div><div class="mrow"><span class="mk">계약서</span><span class="mv"><span class="flink">제출본 보기</span></span></div></div>
+<p class="st-hint">반려 상태에서 운영자가 할 일은 <b>없습니다</b> — 브랜드가 수정해 다시 요청하면 <b>검토 대기</b>로 돌아옵니다. 반려를 되돌리는 버튼은 두지 않았습니다.</p></div></div><div class="card"><div class="card-h">이력</div><div class="hist"><div class="hitem"><span class="hdot h-warning"></span><div><div class="htxt">운영자 검토 반려 · 브랜드 편집 재개</div><div class="hmeta">2026.08.13 17:05 · 김운영</div></div></div><div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">운영자 검토 요청 · 편집 잠금</div><div class="hmeta">2026.08.13 16:52 · 글로우랩</div></div></div><div class="hitem"><span class="hdot"></span><div><div class="htxt">계약 작성 시작</div><div class="hmeta">2026.08.13 15:10 · 글로우랩</div></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">B3</span><span class="state-label">상세 · 서명 진행중 — 서명 현황 갱신 (모두싸인 확인값 입력)</span><span class="state-spec"><b>이 화면이 존재하는 이유</b> — 파트너·스튜디오의 서명 카드에 박힌 「확인 시점 기준 · 08.14 12:00」을 <b>실제로 입력하는 곳</b>이 여기다 · 서명 카드는 양측과 <b>완전 동일한 <code>.signs/.sbox</code></b>이고 <b>체크 + 일시 입력</b>만 더했다(<code>.sbox.edit</code>) — 같은 컴포넌트를 쓰되 운영자만 쓰기 권한을 갖는다 · <b>체크 해제가 가능</b>하다: 오입력 정정 경로가 없으면 잘못 찍은 서명 완료가 양측 화면에 박혀 되돌릴 수 없다 — 다만 체결 완료는 불가역이라 거기서 잠긴다 · <b>기준 시각 경고가 이 화면의 핵심 문구</b>다 — 대시보드를 보지 않고 저장하면 시각만 새로워지고 양측은 확인된 값이라 믿는다 · <b>재발송 요청</b>은 지침의 4가지 작업에 없었으나 양쪽 화면의 [서명 안내 다시 받기]가 도착할 곳이 여기뿐이라 추가했다 · <b>만료 버튼은 기한 전 비활성</b></span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">계약 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">8</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">9</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">10</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">11</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 여름 수분 세럼 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">여름 수분 세럼 공구</div><div class="page-d">CTR-20260813-034 · 무드코스메틱 × 뷰티_소연 · 2026.08.13 16:40 서명 요청 발송 <span class="t-sub" style="display:inline">· 상단</span></div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">서명 진행<span class="ch-n">모두싸인 확인값 입력 — 이 화면의 값이 양측 화면에 그대로 나갑니다</span></div><div class="card-b"><div class="steps"><span class="stp done">운영자 검토 통과<span class="who">08.13 15:20 · 김운영</span></span><span class="stp-ar">›</span><span class="stp done">서명 요청 발송<span class="who">08.13 16:40 · 모두싸인</span></span><span class="stp-ar">›</span><span class="stp cur">양측 서명<span class="who">브랜드 완료 · 인플루언서 대기</span></span><span class="stp-ar">›</span><span class="stp">운영자 체결 완료 처리<span class="who">—</span></span></div><div class="signs" style="margin-top:var(--sp-4)">
+<div class="sbox edit">
+<div class="s-who">브랜드</div><div class="s-name">무드코스메틱</div>
+<span class="chk on"><span class="cbox"><svg viewBox="0 0 10 10" fill="none"><path d="M1.5 5.2L3.9 7.5L8.5 2.6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>서명 완료</span>
+<div class="s-in"><div class="dt"><input class="d" value="2026.08.14"><span class="bar"></span><select class="sel-sm"><option>09</option></select><span class="c">:</span><select class="sel-sm"><option>12</option></select></div></div></div>
+<div class="sbox edit">
+<div class="s-who">인플루언서</div><div class="s-name">뷰티_소연</div>
+<span class="chk"><span class="cbox"></span>서명 완료</span>
+<div class="s-lock">체크하면 서명 완료 일시를 입력합니다 — 모두싸인 대시보드의 값을 그대로 옮기세요.</div></div></div>
+<div class="formbar"><div class="s-asof">현재 양측 화면에 나간 기준 시각 · <span class="tnum">2026.08.14 09:30</span> <b>김운영</b></div>
+<div class="acts"><button class="btn btn-secondary">되돌리기</button><button class="btn btn-primary">서명 현황 저장</button></div></div><div class="notice warn" style="margin-top:var(--sp-4)"><div><b>저장하면 저장 시각이 양측 화면의 「확인 시점 기준」이 됩니다.</b> 모두싸인 대시보드를 <b>보지 않고</b> 저장하면 기준 시각만 새로워지고 내용은 그대로라, 양측은 확인된 값이라고 믿습니다 — 반드시 <b>대시보드를 확인한 뒤</b> 저장하세요.</div></div><div class="notice info" style="margin-top:var(--sp-3)"><div><b>서명 안내 재발송 요청 1건</b> — 뷰티_소연이 <span class="tnum">08.14 08:50</span>에 요청했습니다. 모두싸인에서 재발송한 뒤 아래 버튼으로 기록하세요.<div style="margin-top:9px"><button class="btn btn-secondary">재발송 처리 기록</button></div></div></div></div></div><div class="card"><div class="card-h">계약 조건<span class="ch-n">서명이 시작돼 수정할 수 없습니다 — 서명 대상이 바뀌면 안 됩니다</span></div><div class="card-b"><div class="frow ro"><div class="fk">브랜드</div><div class="fv">무드코스메틱 <span class="flink">브랜드 상세</span></div></div><div class="frow ro"><div class="fk">인플루언서</div><div class="fv">뷰티_소연 <span class="flink">인플루언서 상세</span></div></div><div class="frow ro"><div class="fk">공구명</div><div class="fv">여름 수분 세럼 공구 <div class="fsub">내부 관리용 식별명 · 소비자 노출 제목과 별개</div></div></div><div class="frow ro"><div class="fk">공구 기간</div><div class="fv"><span class="tnum">2026.08.24 10:00 ~ 2026.08.31 23:55</span> <span style="color:var(--n-500)">(8일)</span></div></div><div class="frow ro"><div class="fk">고정 지급비</div><div class="fv"><span class="tnum">1,200,000원</span><div class="fsub">지급 시점 <b>공구 게시물 등록 후</b> · 브랜드 직접 지급 · 플랫폼 미중개</div></div></div></div></div></div><div><div class="card"><div class="card-h">상태</div><div class="st-now">
+<div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">서명 진행중</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">계약번호</span><span class="mv tnum">CTR-20260813-034</span></div><div class="mrow"><span class="mk">서명 요청 발송</span><span class="mv tnum">2026.08.13 16:40</span></div><div class="mrow"><span class="mk">브랜드 서명</span><span class="mv tnum">2026.08.14 09:12</span></div><div class="mrow"><span class="mk">인플루언서 서명</span><span class="mv">— 대기</span></div><div class="mrow"><span class="mk">서명 기한</span><span class="mv tnum">2026.08.21 23:55</span></div><div class="mrow"><span class="mk">기준 시각</span><span class="mv tnum">2026.08.14 09:30</span></div></div>
+<div class="st-acts"><button class="btn btn-secondary">모두싸인 대시보드 ↗</button><button class="btn btn-danger-o">만료 처리</button></div>
+<p class="st-hint">서명 기한이 지나도 시스템이 자동으로 닫지 않습니다 — <b>운영자가 확인해 만료시킵니다</b>. 기한 전에는 만료 버튼이 비활성입니다.</p></div></div><div class="card"><div class="card-h">이력</div><div class="hist"><div class="hitem"><span class="hdot h-warning"></span><div><div class="htxt">서명 안내 재발송 요청</div><div class="hmeta">2026.08.14 08:50 · 뷰티_소연</div></div></div><div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">서명 현황 갱신 · 브랜드 서명 완료 확인</div><div class="hmeta">2026.08.14 09:30 · 김운영</div></div></div><div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">양측에 전자서명 요청 발송</div><div class="hmeta">2026.08.13 16:40 · 김운영 · 모두싸인</div></div></div><div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">운영자 검토 통과</div><div class="hmeta">2026.08.13 15:20 · 김운영</div></div></div><div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">운영자 검토 요청 · 편집 잠금</div><div class="hmeta">2026.08.13 14:50 · 무드코스메틱</div></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">B3-b</span><span class="state-label">상세 · 서명 진행중 — 스크롤 하단</span><span class="state-spec"><b>이 화면이 존재하는 이유</b> — 파트너·스튜디오의 서명 카드에 박힌 「확인 시점 기준 · 08.14 12:00」을 <b>실제로 입력하는 곳</b>이 여기다 · 서명 카드는 양측과 <b>완전 동일한 <code>.signs/.sbox</code></b>이고 <b>체크 + 일시 입력</b>만 더했다(<code>.sbox.edit</code>) — 같은 컴포넌트를 쓰되 운영자만 쓰기 권한을 갖는다 · <b>체크 해제가 가능</b>하다: 오입력 정정 경로가 없으면 잘못 찍은 서명 완료가 양측 화면에 박혀 되돌릴 수 없다 — 다만 체결 완료는 불가역이라 거기서 잠긴다 · <b>기준 시각 경고가 이 화면의 핵심 문구</b>다 — 대시보드를 보지 않고 저장하면 시각만 새로워지고 양측은 확인된 값이라 믿는다 · <b>재발송 요청</b>은 지침의 4가지 작업에 없었으나 양쪽 화면의 [서명 안내 다시 받기]가 도착할 곳이 여기뿐이라 추가했다 · <b>만료 버튼은 기한 전 비활성</b></span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">계약 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">8</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">9</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">10</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">11</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 여름 수분 세럼 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">여름 수분 세럼 공구</div><div class="page-d">CTR-20260813-034 · 무드코스메틱 × 뷰티_소연 · 2026.08.13 16:40 서명 요청 발송 <span class="t-sub" style="display:inline">· 스크롤 하단</span></div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">계약 상품 항목<span class="ch-n">2건 · 정산이 이 리워드율을 사용합니다</span></div><div class="card-b"><div class="terms"><div class="trow"><div class="tk" style="width:176px">수분진정 세럼 30ml</div><div class="tv tnum">정가 32,000원 · 공구가 <b>28,000원</b> · 리워드율 <b>15%</b> · 예상 리워드 4,200원 · 최소 물량 <b>300개</b></div></div><div class="trow"><div class="tk" style="width:176px">수분진정 크림 50ml</div><div class="tv tnum">정가 24,000원 · 공구가 <b>22,000원</b> · 리워드율 <b>12%</b> · 예상 리워드 2,640원 · 최소 물량 <b>150개</b></div></div></div></div></div><div class="card"><div class="card-h">콘텐츠 의무</div><div class="card-b"><div class="frow ro"><div class="fk">게시 포맷·수량</div><div class="fv">피드 1 · 릴스 1 · 스토리 3</div></div><div class="frow ro"><div class="fk">게시 완료 기한</div><div class="fv"><span class="tnum">2026.08.31</span><div class="fsub">피드 1 · 릴스 1 · 스토리 3 전부를 이 날짜까지 게시</div></div></div><div class="frow ro"><div class="fk">2차 활용권</div><div class="fv">허용 <div class="fsub">허용 범위는 비고 참조</div></div></div><div class="frow ro"><div class="fk">2차 활용 기간</div><div class="fv">기간 지정 · 12개월</div></div><div class="frow ro"><div class="fk">브랜드 사전 검수</div><div class="fv">있음 <div class="fsub">게시 전 초안을 스레드로 확인</div></div></div><div class="frow ro"><div class="fk">비고</div><div class="fv">2차 활용 범위: 자사 상세페이지·인스타 광고 소재로 게시 후 12개월간 사용. 스토리 3회는 공구 기간 중 균등 분배.</div></div></div></div></div><div><div class="card"><div class="card-h">상태</div><div class="st-now">
+<div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">서명 진행중</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">계약번호</span><span class="mv tnum">CTR-20260813-034</span></div><div class="mrow"><span class="mk">서명 요청 발송</span><span class="mv tnum">2026.08.13 16:40</span></div><div class="mrow"><span class="mk">브랜드 서명</span><span class="mv tnum">2026.08.14 09:12</span></div><div class="mrow"><span class="mk">인플루언서 서명</span><span class="mv">— 대기</span></div><div class="mrow"><span class="mk">서명 기한</span><span class="mv tnum">2026.08.21 23:55</span></div><div class="mrow"><span class="mk">기준 시각</span><span class="mv tnum">2026.08.14 09:30</span></div></div>
+<div class="st-acts"><button class="btn btn-secondary">모두싸인 대시보드 ↗</button><button class="btn btn-danger-o">만료 처리</button></div>
+<p class="st-hint">서명 기한이 지나도 시스템이 자동으로 닫지 않습니다 — <b>운영자가 확인해 만료시킵니다</b>. 기한 전에는 만료 버튼이 비활성입니다.</p></div></div><div class="card"><div class="card-h">이력</div><div class="hist"><div class="hitem"><span class="hdot h-warning"></span><div><div class="htxt">서명 안내 재발송 요청</div><div class="hmeta">2026.08.14 08:50 · 뷰티_소연</div></div></div><div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">서명 현황 갱신 · 브랜드 서명 완료 확인</div><div class="hmeta">2026.08.14 09:30 · 김운영</div></div></div><div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">양측에 전자서명 요청 발송</div><div class="hmeta">2026.08.13 16:40 · 김운영 · 모두싸인</div></div></div><div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">운영자 검토 통과</div><div class="hmeta">2026.08.13 15:20 · 김운영</div></div></div><div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">운영자 검토 요청 · 편집 잠금</div><div class="hmeta">2026.08.13 14:50 · 무드코스메틱</div></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">B4</span><span class="state-label">상세 · 양측 서명 완료 · 체결 처리 대기</span><span class="state-spec"><b>체결 문서 카드</b>가 이 상태에만 있다 — API를 쓰지 않아 PDF·감사추적인증서가 <b>자동 수신되지 않으므로</b> 운영자가 내려받아 올린다 · <b>두 파일이 다 올라와야</b> 체결 완료가 열린다: 필수 미입력이라 <b>에러 문구 없이 버튼만 비활성</b>(프로젝트 절대 규칙) · 서명 카드의 체크는 <b>여전히 해제 가능</b>하다 — 불가역이 되는 것은 <b>체결 완료를 누른 뒤</b>이고, 그 전까지는 오입력을 되돌릴 수 있어야 한다 · 우측 메타에 <b>인증서 미업로드가 경고색</b>으로 보인다 — 버튼이 왜 비활성인지 화면에서 읽혀야 한다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">계약 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">8</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">9</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">10</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">11</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 여름 수분 세럼 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">여름 수분 세럼 공구</div><div class="page-d">CTR-20260813-034 · 무드코스메틱 × 뷰티_소연 · 2026.08.14 12:00 양측 서명 확인 <span class="t-sub" style="display:inline">· 상단</span></div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">서명 진행<span class="ch-n">양측 서명 확인 완료 — 체결 처리가 남았습니다</span></div><div class="card-b"><div class="steps"><span class="stp done">운영자 검토 통과<span class="who">08.13 15:20 · 김운영</span></span><span class="stp-ar">›</span><span class="stp done">서명 요청 발송<span class="who">08.13 16:40 · 모두싸인</span></span><span class="stp-ar">›</span><span class="stp done">양측 서명 완료<span class="who">브랜드 08.14 09:12 · 인플루언서 08.14 11:40</span></span><span class="stp-ar">›</span><span class="stp cur">운영자 체결 완료 처리<span class="who">확인 중</span></span></div><div class="signs" style="margin-top:var(--sp-4)">
+<div class="sbox edit">
+<div class="s-who">브랜드</div><div class="s-name">무드코스메틱</div>
+<span class="chk on"><span class="cbox"><svg viewBox="0 0 10 10" fill="none"><path d="M1.5 5.2L3.9 7.5L8.5 2.6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>서명 완료</span>
+<div class="s-in"><div class="dt"><input class="d" value="2026.08.14"><span class="bar"></span><select class="sel-sm"><option>09</option></select><span class="c">:</span><select class="sel-sm"><option>12</option></select></div></div></div>
+<div class="sbox edit">
+<div class="s-who">인플루언서</div><div class="s-name">뷰티_소연</div>
+<span class="chk on"><span class="cbox"><svg viewBox="0 0 10 10" fill="none"><path d="M1.5 5.2L3.9 7.5L8.5 2.6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>서명 완료</span>
+<div class="s-in"><div class="dt"><input class="d" value="2026.08.14"><span class="bar"></span><select class="sel-sm"><option>11</option></select><span class="c">:</span><select class="sel-sm"><option>40</option></select></div></div></div></div>
+<div class="s-asof">현재 양측 화면에 나간 기준 시각 · <span class="tnum">2026.08.14 12:00</span> <b>김운영</b></div><div class="notice info" style="margin-top:var(--sp-4)"><div><b>양측 서명이 확인됐습니다.</b> 모두싸인에서 <b>서명 PDF와 감사추적인증서를 내려받아</b> 아래에 올린 뒤 체결 완료를 처리하세요. 처리하는 순간 <b>계약이 성립하고 공구가 생성</b>됩니다.</div></div></div></div><div class="card"><div class="card-h">체결 문서<span class="ch-n">모두싸인에서 내려받아 업로드 — 자동 수신되지 않습니다</span></div><div class="card-b"><div class="upl done"><span class="upl-n">서명완료_여름수분세럼공구_CTR-20260813-034.pdf <span class="t-sub" style="display:inline">· 1.2MB · 08.14 12:02 업로드</span></span><button class="btn btn-secondary">교체</button></div>
+<div class="upl" style="margin-top:8px"><span class="upl-n">감사추적인증서 — 아직 올리지 않았습니다</span><button class="btn btn-secondary">파일 선택</button></div>
+<p class="st-hint" style="margin-top:10px">두 파일이 <b>모두 올라와야</b> 체결 완료를 누를 수 있습니다. 필수 미입력이라 <b>에러 문구 없이 버튼만 비활성</b>입니다.</p></div></div></div><div><div class="card"><div class="card-h">상태</div><div class="st-now">
+<div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">체결 처리 대기</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">계약번호</span><span class="mv tnum">CTR-20260813-034</span></div><div class="mrow"><span class="mk">브랜드 서명</span><span class="mv tnum">2026.08.14 09:12</span></div><div class="mrow"><span class="mk">인플루언서 서명</span><span class="mv tnum">2026.08.14 11:40</span></div><div class="mrow"><span class="mk">기준 시각</span><span class="mv tnum">2026.08.14 12:00</span></div><div class="mrow"><span class="mk">서명 PDF</span><span class="mv">업로드 완료</span></div><div class="mrow"><span class="mk">감사추적인증서</span><span class="mv"><span style="color:var(--warning-text)">미업로드</span></span></div></div>
+<div class="st-acts"><button class="btn btn-primary" disabled>체결 완료 처리</button><button class="btn btn-secondary">모두싸인 대시보드 ↗</button></div>
+<p class="st-hint">체결 완료는 <b>되돌릴 수 없습니다</b> — 공구가 생성되기 때문입니다. 확인 모달을 반드시 거칩니다.</p></div></div><div class="card"><div class="card-h">이력</div><div class="hist"><div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">서명 현황 갱신 · 양측 서명 완료 확인</div><div class="hmeta">2026.08.14 12:00 · 김운영</div></div></div><div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">서명 현황 갱신 · 브랜드 서명 완료 확인</div><div class="hmeta">2026.08.14 09:30 · 김운영</div></div></div><div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">서명 안내 재발송</div><div class="hmeta">2026.08.14 08:55 · 김운영</div></div></div><div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">양측에 전자서명 요청 발송</div><div class="hmeta">2026.08.13 16:40 · 김운영 · 모두싸인</div></div></div><div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">운영자 검토 통과</div><div class="hmeta">2026.08.13 15:20 · 김운영</div></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">B4-b</span><span class="state-label">상세 · 체결 처리 대기 — 스크롤 하단</span><span class="state-spec"><b>체결 문서 카드</b>가 이 상태에만 있다 — API를 쓰지 않아 PDF·감사추적인증서가 <b>자동 수신되지 않으므로</b> 운영자가 내려받아 올린다 · <b>두 파일이 다 올라와야</b> 체결 완료가 열린다: 필수 미입력이라 <b>에러 문구 없이 버튼만 비활성</b>(프로젝트 절대 규칙) · 서명 카드의 체크는 <b>여전히 해제 가능</b>하다 — 불가역이 되는 것은 <b>체결 완료를 누른 뒤</b>이고, 그 전까지는 오입력을 되돌릴 수 있어야 한다 · 우측 메타에 <b>인증서 미업로드가 경고색</b>으로 보인다 — 버튼이 왜 비활성인지 화면에서 읽혀야 한다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">계약 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">8</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">9</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">10</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">11</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 여름 수분 세럼 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">여름 수분 세럼 공구</div><div class="page-d">CTR-20260813-034 · 무드코스메틱 × 뷰티_소연 · 2026.08.14 12:00 양측 서명 확인 <span class="t-sub" style="display:inline">· 스크롤 하단</span></div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">계약 조건<span class="ch-n">서명이 완료돼 수정할 수 없습니다</span></div><div class="card-b"><div class="frow ro"><div class="fk">브랜드</div><div class="fv">무드코스메틱 <span class="flink">브랜드 상세</span></div></div><div class="frow ro"><div class="fk">인플루언서</div><div class="fv">뷰티_소연 <span class="flink">인플루언서 상세</span></div></div><div class="frow ro"><div class="fk">공구명</div><div class="fv">여름 수분 세럼 공구 <div class="fsub">내부 관리용 식별명 · 소비자 노출 제목과 별개</div></div></div><div class="frow ro"><div class="fk">공구 기간</div><div class="fv"><span class="tnum">2026.08.24 10:00 ~ 2026.08.31 23:55</span> <span style="color:var(--n-500)">(8일)</span></div></div><div class="frow ro"><div class="fk">고정 지급비</div><div class="fv"><span class="tnum">1,200,000원</span><div class="fsub">지급 시점 <b>공구 게시물 등록 후</b> · 브랜드 직접 지급 · 플랫폼 미중개</div></div></div></div></div><div class="card"><div class="card-h">계약 상품 항목<span class="ch-n">2건 · 정산이 이 리워드율을 사용합니다</span></div><div class="card-b"><div class="terms"><div class="trow"><div class="tk" style="width:176px">수분진정 세럼 30ml</div><div class="tv tnum">정가 32,000원 · 공구가 <b>28,000원</b> · 리워드율 <b>15%</b> · 예상 리워드 4,200원 · 최소 물량 <b>300개</b></div></div><div class="trow"><div class="tk" style="width:176px">수분진정 크림 50ml</div><div class="tv tnum">정가 24,000원 · 공구가 <b>22,000원</b> · 리워드율 <b>12%</b> · 예상 리워드 2,640원 · 최소 물량 <b>150개</b></div></div></div></div></div><div class="card"><div class="card-h">콘텐츠 의무</div><div class="card-b"><div class="frow ro"><div class="fk">게시 포맷·수량</div><div class="fv">피드 1 · 릴스 1 · 스토리 3</div></div><div class="frow ro"><div class="fk">게시 완료 기한</div><div class="fv"><span class="tnum">2026.08.31</span><div class="fsub">피드 1 · 릴스 1 · 스토리 3 전부를 이 날짜까지 게시</div></div></div><div class="frow ro"><div class="fk">2차 활용권</div><div class="fv">허용 <div class="fsub">허용 범위는 비고 참조</div></div></div><div class="frow ro"><div class="fk">2차 활용 기간</div><div class="fv">기간 지정 · 12개월</div></div><div class="frow ro"><div class="fk">브랜드 사전 검수</div><div class="fv">있음 <div class="fsub">게시 전 초안을 스레드로 확인</div></div></div><div class="frow ro"><div class="fk">비고</div><div class="fv">2차 활용 범위: 자사 상세페이지·인스타 광고 소재로 게시 후 12개월간 사용. 스토리 3회는 공구 기간 중 균등 분배.</div></div></div></div></div><div><div class="card"><div class="card-h">상태</div><div class="st-now">
+<div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">체결 처리 대기</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">계약번호</span><span class="mv tnum">CTR-20260813-034</span></div><div class="mrow"><span class="mk">브랜드 서명</span><span class="mv tnum">2026.08.14 09:12</span></div><div class="mrow"><span class="mk">인플루언서 서명</span><span class="mv tnum">2026.08.14 11:40</span></div><div class="mrow"><span class="mk">기준 시각</span><span class="mv tnum">2026.08.14 12:00</span></div><div class="mrow"><span class="mk">서명 PDF</span><span class="mv">업로드 완료</span></div><div class="mrow"><span class="mk">감사추적인증서</span><span class="mv"><span style="color:var(--warning-text)">미업로드</span></span></div></div>
+<div class="st-acts"><button class="btn btn-primary" disabled>체결 완료 처리</button><button class="btn btn-secondary">모두싸인 대시보드 ↗</button></div>
+<p class="st-hint">체결 완료는 <b>되돌릴 수 없습니다</b> — 공구가 생성되기 때문입니다. 확인 모달을 반드시 거칩니다.</p></div></div><div class="card"><div class="card-h">이력</div><div class="hist"><div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">서명 현황 갱신 · 양측 서명 완료 확인</div><div class="hmeta">2026.08.14 12:00 · 김운영</div></div></div><div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">서명 현황 갱신 · 브랜드 서명 완료 확인</div><div class="hmeta">2026.08.14 09:30 · 김운영</div></div></div><div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">서명 안내 재발송</div><div class="hmeta">2026.08.14 08:55 · 김운영</div></div></div><div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">양측에 전자서명 요청 발송</div><div class="hmeta">2026.08.13 16:40 · 김운영 · 모두싸인</div></div></div><div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">운영자 검토 통과</div><div class="hmeta">2026.08.13 15:20 · 김운영</div></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">B5</span><span class="state-label">상세 · 체결완료 (처리 완료 · 공구 생성됨)</span><span class="state-spec">체결 처리가 끝난 상태 — <b>액션이 없다</b>. 파트너·스튜디오와 달리 운영자 화면에는 <b>생성된 공구 번호와 이동 링크</b>를 둔다: 체결의 결과물이 공구이고, 운영자가 다음으로 갈 곳이 거기다 · <b>체결 문서는 교체·삭제 불가</b>로 잠근다 — 서명 원본이 바뀌면 계약의 증거가 사라진다 · 체결완료 <b>이후를 닫는 상태값이 없다</b>는 파트너 rev.2의 미해결 지적을 그대로 안고 있다(확인 필요 ⓐ)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">계약 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">8</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">9</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">10</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">11</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 여름 수분 세럼 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">여름 수분 세럼 공구</div><div class="page-d">CTR-20260813-034 · 무드코스메틱 × 뷰티_소연 · 2026.08.14 12:08 체결 <span class="t-sub" style="display:inline">· 상단</span></div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">서명 진행<span class="ch-n">체결 완료 — 공구가 생성됐습니다</span></div><div class="card-b"><div class="steps"><span class="stp done">운영자 검토 통과<span class="who">08.13 15:20 · 김운영</span></span><span class="stp-ar">›</span><span class="stp done">서명 요청 발송<span class="who">08.13 16:40 · 모두싸인</span></span><span class="stp-ar">›</span><span class="stp done">양측 서명 완료<span class="who">08.14 09:12 · 11:40</span></span><span class="stp-ar">›</span><span class="stp done">운영자 체결 완료 처리<span class="who">08.14 12:08 · 김운영</span></span></div><div class="notice info" style="margin-top:var(--sp-4)"><div><b>계약이 성립하고 공구가 생성됐습니다.</b> 이후 공구 오픈 승인·중단은 <b>공구 관리</b> 소관이며 이 화면에서는 조건과 서명 기록만 조회합니다.</div></div><div style="margin-top:var(--sp-3)"><div class="frow ro"><div class="fk">생성된 공구</div><div class="fv"><span class="tnum">GRB-20260814-021</span> 여름 수분 세럼 공구 <span class="flink">공구 관리에서 보기</span><div class="fsub">공구 상태 <b>준비중</b> · 인플루언서 게시물 등록 대기</div></div></div></div></div></div><div class="card"><div class="card-h">체결 문서<span class="ch-n">체결 시 업로드된 원본 — 교체·삭제 불가</span></div><div class="card-b"><div class="upl done"><span class="upl-n">서명완료_여름수분세럼공구_CTR-20260813-034.pdf <span class="t-sub" style="display:inline">· 1.2MB · 08.14 12:02</span></span><button class="btn btn-secondary">내려받기</button></div>
+<div class="upl done" style="margin-top:8px"><span class="upl-n">감사추적인증서_CTR-20260813-034.pdf <span class="t-sub" style="display:inline">· 340KB · 08.14 12:06</span></span><button class="btn btn-secondary">내려받기</button></div></div></div></div><div><div class="card"><div class="card-h">상태</div><div class="st-now">
+<div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-success">체결완료</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">계약번호</span><span class="mv tnum">CTR-20260813-034</span></div><div class="mrow"><span class="mk">체결 처리</span><span class="mv tnum">2026.08.14 12:08</span></div><div class="mrow"><span class="mk">처리자</span><span class="mv">김운영 운영자</span></div><div class="mrow"><span class="mk">생성 공구</span><span class="mv tnum">GRB-20260814-021</span></div><div class="mrow"><span class="mk">고정 지급비</span><span class="mv tnum">1,200,000원</span></div><div class="mrow"><span class="mk">계약서</span><span class="mv"><span class="flink">서명본 보기</span></span></div></div>
+<p class="st-hint">체결완료 이후를 닫는 상태값이 <b>없습니다</b> — 공구 진행 중 중단은 <b>공구 관리의 중단</b>으로 처리합니다(확인 필요 ⓐ).</p></div></div><div class="card"><div class="card-h">이력</div><div class="hist"><div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">체결 완료 처리 · 공구 생성</div><div class="hmeta">2026.08.14 12:08 · 김운영</div></div></div><div class="hitem"><span class="hdot"></span><div><div class="htxt">감사추적인증서 업로드</div><div class="hmeta">2026.08.14 12:06 · 김운영</div></div></div><div class="hitem"><span class="hdot"></span><div><div class="htxt">서명 PDF 업로드</div><div class="hmeta">2026.08.14 12:02 · 김운영</div></div></div><div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">서명 현황 갱신 · 양측 서명 완료 확인</div><div class="hmeta">2026.08.14 12:00 · 김운영</div></div></div><div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">양측에 전자서명 요청 발송</div><div class="hmeta">2026.08.13 16:40 · 김운영 · 모두싸인</div></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">B5-b</span><span class="state-label">상세 · 체결완료 — 스크롤 하단</span><span class="state-spec">체결 처리가 끝난 상태 — <b>액션이 없다</b>. 파트너·스튜디오와 달리 운영자 화면에는 <b>생성된 공구 번호와 이동 링크</b>를 둔다: 체결의 결과물이 공구이고, 운영자가 다음으로 갈 곳이 거기다 · <b>체결 문서는 교체·삭제 불가</b>로 잠근다 — 서명 원본이 바뀌면 계약의 증거가 사라진다 · 체결완료 <b>이후를 닫는 상태값이 없다</b>는 파트너 rev.2의 미해결 지적을 그대로 안고 있다(확인 필요 ⓐ)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">계약 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">8</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">9</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">10</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">11</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 여름 수분 세럼 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">여름 수분 세럼 공구</div><div class="page-d">CTR-20260813-034 · 무드코스메틱 × 뷰티_소연 · 2026.08.14 12:08 체결 <span class="t-sub" style="display:inline">· 스크롤 하단</span></div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">계약 조건<span class="ch-n">체결된 계약입니다 — 조건은 공구와 정산이 그대로 상속합니다</span></div><div class="card-b"><div class="frow ro"><div class="fk">브랜드</div><div class="fv">무드코스메틱 <span class="flink">브랜드 상세</span></div></div><div class="frow ro"><div class="fk">인플루언서</div><div class="fv">뷰티_소연 <span class="flink">인플루언서 상세</span></div></div><div class="frow ro"><div class="fk">공구명</div><div class="fv">여름 수분 세럼 공구 <div class="fsub">내부 관리용 식별명 · 소비자 노출 제목과 별개</div></div></div><div class="frow ro"><div class="fk">공구 기간</div><div class="fv"><span class="tnum">2026.08.24 10:00 ~ 2026.08.31 23:55</span> <span style="color:var(--n-500)">(8일)</span></div></div><div class="frow ro"><div class="fk">고정 지급비</div><div class="fv"><span class="tnum">1,200,000원</span><div class="fsub">지급 시점 <b>공구 게시물 등록 후</b> · 브랜드 직접 지급 · 플랫폼 미중개</div></div></div></div></div><div class="card"><div class="card-h">계약 상품 항목<span class="ch-n">2건 · 정산이 이 리워드율을 사용합니다</span></div><div class="card-b"><div class="terms"><div class="trow"><div class="tk" style="width:176px">수분진정 세럼 30ml</div><div class="tv tnum">정가 32,000원 · 공구가 <b>28,000원</b> · 리워드율 <b>15%</b> · 예상 리워드 4,200원 · 최소 물량 <b>300개</b></div></div><div class="trow"><div class="tk" style="width:176px">수분진정 크림 50ml</div><div class="tv tnum">정가 24,000원 · 공구가 <b>22,000원</b> · 리워드율 <b>12%</b> · 예상 리워드 2,640원 · 최소 물량 <b>150개</b></div></div></div></div></div><div class="card"><div class="card-h">콘텐츠 의무</div><div class="card-b"><div class="frow ro"><div class="fk">게시 포맷·수량</div><div class="fv">피드 1 · 릴스 1 · 스토리 3</div></div><div class="frow ro"><div class="fk">게시 완료 기한</div><div class="fv"><span class="tnum">2026.08.31</span><div class="fsub">피드 1 · 릴스 1 · 스토리 3 전부를 이 날짜까지 게시</div></div></div><div class="frow ro"><div class="fk">2차 활용권</div><div class="fv">허용 <div class="fsub">허용 범위는 비고 참조</div></div></div><div class="frow ro"><div class="fk">2차 활용 기간</div><div class="fv">기간 지정 · 12개월</div></div><div class="frow ro"><div class="fk">브랜드 사전 검수</div><div class="fv">있음 <div class="fsub">게시 전 초안을 스레드로 확인</div></div></div><div class="frow ro"><div class="fk">비고</div><div class="fv">2차 활용 범위: 자사 상세페이지·인스타 광고 소재로 게시 후 12개월간 사용. 스토리 3회는 공구 기간 중 균등 분배.</div></div></div></div></div><div><div class="card"><div class="card-h">상태</div><div class="st-now">
+<div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-success">체결완료</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">계약번호</span><span class="mv tnum">CTR-20260813-034</span></div><div class="mrow"><span class="mk">체결 처리</span><span class="mv tnum">2026.08.14 12:08</span></div><div class="mrow"><span class="mk">처리자</span><span class="mv">김운영 운영자</span></div><div class="mrow"><span class="mk">생성 공구</span><span class="mv tnum">GRB-20260814-021</span></div><div class="mrow"><span class="mk">고정 지급비</span><span class="mv tnum">1,200,000원</span></div><div class="mrow"><span class="mk">계약서</span><span class="mv"><span class="flink">서명본 보기</span></span></div></div>
+<p class="st-hint">체결완료 이후를 닫는 상태값이 <b>없습니다</b> — 공구 진행 중 중단은 <b>공구 관리의 중단</b>으로 처리합니다(확인 필요 ⓐ).</p></div></div><div class="card"><div class="card-h">이력</div><div class="hist"><div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">체결 완료 처리 · 공구 생성</div><div class="hmeta">2026.08.14 12:08 · 김운영</div></div></div><div class="hitem"><span class="hdot"></span><div><div class="htxt">감사추적인증서 업로드</div><div class="hmeta">2026.08.14 12:06 · 김운영</div></div></div><div class="hitem"><span class="hdot"></span><div><div class="htxt">서명 PDF 업로드</div><div class="hmeta">2026.08.14 12:02 · 김운영</div></div></div><div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">서명 현황 갱신 · 양측 서명 완료 확인</div><div class="hmeta">2026.08.14 12:00 · 김운영</div></div></div><div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">양측에 전자서명 요청 발송</div><div class="hmeta">2026.08.13 16:40 · 김운영 · 모두싸인</div></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">C1</span><span class="state-label">모달 · 검토 승인 확인 (모두싸인 입력 체크리스트)</span><span class="state-spec">승인은 <b>버튼 하나로 끝나는 일이 아니다</b> — API를 쓰지 않으므로 운영자가 <b>모두싸인에 직접 입력해 보내야</b> 하고, 모달은 <b>무엇을 입력할지</b>를 체크리스트로 짚는다 · 체크는 <b>기록이 아니라 확인용</b>이다: 모두싸인에 실제로 넣었는지 우리 시스템이 검증할 방법이 없으므로 <b>운영자가 눈으로 대조</b>하는 것이 유일한 방어선이다 · <b>발송 일시와 서명 기한을 운영자가 입력</b>한다 — 둘 다 모두싸인 쪽에서 정해지는 값이고 우리 시스템이 계산하지 않는다(MVP에 「공구 시작 −3일」 같은 규칙이 없다). 기한은 나중에 <b>만료 판단의 기준</b>이 되므로 발송 시점에 받아 둔다 · 승인 즉시 <b>양측 상태가 서명 진행중</b>으로 바뀌므로 <b>먼저 보내고 나서 승인</b>을 누르는 순서를 문구에 못박는다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">계약 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">8</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">9</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">10</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">11</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 겨울 리페어 크림 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">겨울 리페어 크림 공구</div><div class="page-d">CTR-20260813-041 · 글로우랩 × 뷰티_하윤 · 2026.08.13 16:52 검토 요청</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">검토 진행<span class="ch-n">운영자 검토 → 양측 동시 서명 요청</span></div><div class="card-b"><div class="steps"><span class="stp cur">운영자 검토<span class="who">제출 08.13 16:52 · 확인 중</span></span><span class="stp-ar">›</span><span class="stp">서명 요청 발송<span class="who">통과 시 모두싸인에서 양측 발송</span></span><span class="stp-ar">›</span><span class="stp">양측 서명<span class="who">—</span></span><span class="stp-ar">›</span><span class="stp">운영자 체결 완료 처리<span class="who">—</span></span></div></div></div></div><div><div class="card"><div class="card-h">상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">검토 대기</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">계약번호</span><span class="mv tnum">CTR-20260813-041</span></div><div class="mrow"><span class="mk">검토 요청</span><span class="mv tnum">2026.08.13 16:52</span></div><div class="mrow"><span class="mk">대기 경과</span><span class="mv tnum">1일 2시간</span></div></div>
+<div class="st-acts"><button class="btn btn-primary">검토 승인 · 서명 요청</button><button class="btn btn-danger-o">검토 반려</button></div></div></div></div></div></div><div class="overlay"><div class="modal" style="width:520px"><div class="modal-h">검토 승인 · 서명 요청<span class="modal-x">✕</span></div><div class="modal-b"><b>겨울 리페어 크림 공구</b>(CTR-20260813-041)를 승인합니다. <b>모두싸인에서 아래를 입력해 발송한 뒤</b> 이 창에서 승인을 눌러 주세요.
+<div class="msum"><div class="trow"><div class="tk" style="width:96px">수신자 ①</div><div class="tv tnum">글로우랩 · contact@glowlab.kr</div></div><div class="trow"><div class="tk" style="width:96px">수신자 ②</div><div class="tv tnum">뷰티_하윤 · hayun.beauty@gmail.com</div></div><div class="trow"><div class="tk" style="width:96px">문서명</div><div class="tv tnum">겨울 리페어 크림 공구 계약서 (CTR-20260813-041)</div></div></div>
+<label class="mlabel" style="margin-top:0">모두싸인 입력 확인<span class="req">*</span></label>
+<div style="border:1px solid var(--n-200);border-radius:var(--r-sm);padding:2px 13px">
+<div style="display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--n-100)"><span class="chk on"><span class="cbox"><svg viewBox="0 0 10 10" fill="none"><path d="M1.5 5.2L3.9 7.5L8.5 2.6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span><div style="flex:1;font-size:var(--fs-caption);line-height:1.65">수신자 <b>2명</b>을 브랜드·인플루언서 순으로 등록했습니다</div></div>
+<div style="display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--n-100)"><span class="chk on"><span class="cbox"><svg viewBox="0 0 10 10" fill="none"><path d="M1.5 5.2L3.9 7.5L8.5 2.6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span><div style="flex:1;font-size:var(--fs-caption);line-height:1.65">계약 조건(공구명·기간·상품 항목·고정 지급비·콘텐츠 의무)을 <b>제출본 그대로</b> 옮겼습니다</div></div>
+
+<div style="display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--n-100)"><span class="chk"><span class="cbox"></span></span><div style="flex:1;font-size:var(--fs-caption);line-height:1.65">발송을 완료했습니다</div></div>
+</div>
+<label class="mlabel">서명 요청 발송 일시<span class="req">*</span></label>
+<div class="dt"><input class="d" value="2026.08.14"><span class="bar"></span><select class="sel-sm"><option>10</option></select><span class="c">:</span><select class="sel-sm"><option>05</option></select></div>
+<label class="mlabel">모두싸인에 설정한 서명 기한<span class="req">*</span></label>
+<div class="dt"><input class="d" value="2026.09.17"><span class="bar"></span><select class="sel-sm"><option>23</option></select><span class="c">:</span><select class="sel-sm"><option>55</option></select></div>
+<p class="mhint">둘 다 <b>모두싸인에서 정해진 값</b>을 옮겨 적습니다 — 발송 일시는 양측 화면의 「서명 요청 발송」이, 서명 기한은 <b>만료 판단의 기준</b>이 됩니다.</p>
+<div class="mwarn"><span>!</span><span>승인하면 양측 상태가 <b>서명 진행중</b>으로 바뀌고 <b>브랜드 편집 잠금이 유지</b>됩니다. 발송 전에 승인하면 양측이 <b>오지 않은 메일을 기다립니다</b> — 반드시 <b>보낸 뒤</b> 누르세요.</span></div></div><div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary" disabled>승인</button></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">C2</span><span class="state-label">모달 · 검토 반려 (사유 입력 필수)</span><span class="state-spec">반려 사유는 <b>제목 + 상세 2단</b>이다 — 파트너 B3d가 그 구조로 받으므로 단일 텍스트로 받으면 브랜드 화면이 한 줄만 얻는다 · <b>제목은 정형 사유 선택</b>, 상세는 <b>무엇을 어떻게 고치라</b>는 문장이며 <b>둘 다 필수</b>다: 사유만 있고 고칠 방법이 없으면 브랜드가 같은 내용으로 재요청한다 · <b>브랜드 화면에 그대로 노출됨</b>을 모달에서 고지한다 — 내부 메모처럼 쓰면 사고가 난다 · 실행 버튼은 <b>흰 배경 + 위험색 글자</b>다(반려는 파괴적 조치가 아니라 되돌림)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">계약 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">8</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">9</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">10</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">11</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 겨울 리페어 크림 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">겨울 리페어 크림 공구</div><div class="page-d">CTR-20260813-041 · 글로우랩 × 뷰티_하윤 · 2026.08.13 16:52 검토 요청</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">검토 진행<span class="ch-n">운영자 검토 → 양측 동시 서명 요청</span></div><div class="card-b"><div class="steps"><span class="stp cur">운영자 검토<span class="who">제출 08.13 16:52 · 확인 중</span></span><span class="stp-ar">›</span><span class="stp">서명 요청 발송<span class="who">통과 시 모두싸인에서 양측 발송</span></span><span class="stp-ar">›</span><span class="stp">양측 서명<span class="who">—</span></span><span class="stp-ar">›</span><span class="stp">운영자 체결 완료 처리<span class="who">—</span></span></div></div></div></div><div><div class="card"><div class="card-h">상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">검토 대기</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">계약번호</span><span class="mv tnum">CTR-20260813-041</span></div><div class="mrow"><span class="mk">검토 요청</span><span class="mv tnum">2026.08.13 16:52</span></div><div class="mrow"><span class="mk">대기 경과</span><span class="mv tnum">1일 2시간</span></div></div>
+<div class="st-acts"><button class="btn btn-primary">검토 승인 · 서명 요청</button><button class="btn btn-danger-o">검토 반려</button></div></div></div></div></div></div><div class="overlay"><div class="modal"><div class="modal-h">검토 반려<span class="modal-x">✕</span></div><div class="modal-b"><b>겨울 리페어 크림 공구</b>(CTR-20260813-041)의 검토를 반려합니다.
+<label class="mlabel">반려 사유<span class="req">*</span></label>
+<select class="msel"><option>2차 활용 조건이 인플루언서 합의 내용과 다릅니다</option><option>계약 조건과 상품 정보가 일치하지 않습니다</option><option>콘텐츠 의무가 이행 판정 가능한 형태가 아닙니다</option><option>계약 내용에 오기·누락이 있습니다</option><option>당사자 계정 상태 문제</option><option>기타(직접 입력)</option></select>
+<label class="mlabel">브랜드에게 전달할 설명<span class="req">*</span></label>
+<textarea class="mta">2차 활용 기간이 무기한으로 되어 있습니다. 스레드에는 12개월로 협의된 기록이 있어 그대로 서명 요청을 보낼 수 없습니다 — 기간을 명시하거나 합의 내용을 확인한 뒤 다시 요청해 주세요.</textarea>
+<p class="mhint">사유와 설명은 <b>브랜드 계약 화면에 그대로 노출</b>됩니다 — 내부 메모를 적지 마세요.</p>
+<div class="mwarn"><span>!</span><span>반려하면 <b>브랜드 편집이 다시 열리고</b> 알림이 발송됩니다. <b>반려를 되돌리는 기능은 없습니다</b> — 잘못 반려했으면 스레드로 알리고 재요청을 받으세요.</span></div></div><div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-danger-o">반려</button></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">C3</span><span class="state-label">모달 · 서명 현황 저장 확인 (기준 시각 고지)</span><span class="state-spec">이 모달의 유일한 목적은 <b>기준 시각의 무게를 알리는 것</b>이다 — 저장 시각이 파트너·스튜디오 <code>.s-asof</code>에 그대로 박히고, 양측은 그 시각을 <b>운영자가 확인한 시점</b>으로 읽는다 · <b>변경 내역을 before → after로</b> 보여준다: 무엇이 바뀌는지 보지 않고 누르면 오입력이 그대로 나간다 · <b>되돌릴 수 있음을 명시</b>한다 — 체결 완료 전까지 체크는 해제 가능하다(불가역은 체결 하나뿐) · 확인 버튼은 <b>주 액션</b>이다: 파괴적이지 않고 자주 하는 일이라 위험색을 쓰지 않는다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">계약 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">8</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">9</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">10</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">11</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 여름 수분 세럼 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">여름 수분 세럼 공구</div><div class="page-d">CTR-20260813-034 · 무드코스메틱 × 뷰티_소연 · 2026.08.13 16:40 서명 요청 발송</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">서명 진행<span class="ch-n">운영자 검토 → 양측 동시 서명 요청</span></div><div class="card-b"><div class="steps"><span class="stp done">운영자 검토 통과<span class="who">08.13 15:20 · 김운영</span></span><span class="stp-ar">›</span><span class="stp done">서명 요청 발송<span class="who">08.13 16:40 · 모두싸인</span></span><span class="stp-ar">›</span><span class="stp cur">양측 서명<span class="who">브랜드 완료 · 인플루언서 대기</span></span><span class="stp-ar">›</span><span class="stp">운영자 체결 완료 처리<span class="who">—</span></span></div></div></div></div><div><div class="card"><div class="card-h">상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">서명 진행중</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">계약번호</span><span class="mv tnum">CTR-20260813-034</span></div><div class="mrow"><span class="mk">서명 요청 발송</span><span class="mv tnum">2026.08.13 16:40</span></div><div class="mrow"><span class="mk">브랜드 서명</span><span class="mv tnum">2026.08.14 09:12</span></div><div class="mrow"><span class="mk">인플루언서 서명</span><span class="mv">— 대기</span></div><div class="mrow"><span class="mk">기준 시각</span><span class="mv tnum">2026.08.14 09:30</span></div></div>
+<div class="st-acts"><button class="btn btn-secondary">모두싸인 대시보드 ↗</button></div></div></div></div></div></div><div class="overlay"><div class="modal"><div class="modal-h">서명 현황 저장<span class="modal-x">✕</span></div><div class="modal-b">모두싸인에서 확인한 값을 저장합니다.
+<div class="msum"><div class="trow"><div class="tk" style="width:96px">브랜드</div><div class="tv tnum">서명 완료 · 08.14 09:12 <span class="t-dim">(변경 없음)</span></div></div><div class="trow"><div class="tk" style="width:96px">인플루언서</div><div class="tv tnum"><span class="t-dim">대기</span> → <b>서명 완료 · 08.14 11:40</b></div></div><div class="trow"><div class="tk" style="width:96px">기준 시각</div><div class="tv tnum">08.14 09:30 → <b>08.14 12:00</b></div></div></div>
+<div class="mwarn"><span>!</span><span>저장 시각이 <b>양측 화면의 「운영자가 확인한 시점 기준」</b>이 됩니다 — 브랜드와 인플루언서는 이 시각을 <b>운영자가 모두싸인을 확인한 때</b>로 읽습니다. 대시보드를 보지 않고 저장하면 <b>시각만 새로워지고 값은 그대로</b>인 화면이 나갑니다.</span></div>
+<div class="mwarn"><span>i</span><span>양측 서명이 모두 완료로 바뀌므로 저장 후 상태가 <b>체결 처리 대기</b>가 됩니다. 잘못 입력했으면 <b>체결 완료 전까지 체크를 해제</b>해 되돌릴 수 있습니다.</span></div></div><div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary">저장</button></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">C4</span><span class="state-label">모달 · 체결 완료 처리 (불가역 · 공구 생성)</span><span class="state-spec"><b>이 화면에서 유일하게 불가역한 조치</b>다 — 누르는 순간 계약이 성립하고 <b>공구가 생성</b>된다 · 그래서 모달이 <b>서명 기록과 업로드 문서를 다시 나열</b>한다: 서명 일시가 틀렸으면 지금이 마지막 정정 기회이고, 되돌리려면 계약을 새로 써야 한다 · 생성될 공구를 <b>미리 보여준다</b> — 무엇이 만들어지는지 모르고 누르는 불가역 버튼은 없어야 한다 · 실행 버튼은 <b>주 액션</b>이다: 파괴가 아니라 성립이라 위험색을 쓰지 않는다(파트너의 체결완료=성공색과 같은 판단)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">계약 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">8</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">9</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">10</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">11</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 여름 수분 세럼 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">여름 수분 세럼 공구</div><div class="page-d">CTR-20260813-034 · 무드코스메틱 × 뷰티_소연 · 2026.08.14 12:00 양측 서명 확인</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">서명 진행<span class="ch-n">운영자 검토 → 양측 동시 서명 요청</span></div><div class="card-b"><div class="steps"><span class="stp done">운영자 검토 통과<span class="who">08.13 15:20 · 김운영</span></span><span class="stp-ar">›</span><span class="stp done">서명 요청 발송<span class="who">08.13 16:40 · 모두싸인</span></span><span class="stp-ar">›</span><span class="stp done">양측 서명 완료<span class="who">브랜드 08.14 09:12 · 인플루언서 08.14 11:40</span></span><span class="stp-ar">›</span><span class="stp cur">운영자 체결 완료 처리<span class="who">확인 중</span></span></div></div></div></div><div><div class="card"><div class="card-h">상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">체결 처리 대기</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">계약번호</span><span class="mv tnum">CTR-20260813-034</span></div><div class="mrow"><span class="mk">브랜드 서명</span><span class="mv tnum">2026.08.14 09:12</span></div><div class="mrow"><span class="mk">인플루언서 서명</span><span class="mv tnum">2026.08.14 11:40</span></div><div class="mrow"><span class="mk">서명 PDF</span><span class="mv">업로드 완료</span></div><div class="mrow"><span class="mk">감사추적인증서</span><span class="mv">업로드 완료</span></div></div>
+<div class="st-acts"><button class="btn btn-primary">체결 완료 처리</button></div></div></div></div></div></div><div class="overlay"><div class="modal" style="width:520px"><div class="modal-h">체결 완료 처리<span class="modal-x">✕</span></div><div class="modal-b"><b>여름 수분 세럼 공구</b>(CTR-20260813-034)를 체결 완료 처리합니다.
+<div class="msum"><div class="trow"><div class="tk" style="width:96px">브랜드 서명</div><div class="tv tnum">무드코스메틱 · 2026.08.14 09:12</div></div><div class="trow"><div class="tk" style="width:96px">인플루언서 서명</div><div class="tv tnum">뷰티_소연 · 2026.08.14 11:40</div></div><div class="trow"><div class="tk" style="width:96px">서명 PDF</div><div class="tv tnum">서명완료_여름수분세럼공구.pdf</div></div><div class="trow"><div class="tk" style="width:96px">감사추적인증서</div><div class="tv tnum">감사추적인증서_CTR-20260813-034.pdf</div></div><div class="trow"><div class="tk" style="width:96px">생성될 공구</div><div class="tv tnum">여름 수분 세럼 공구 · 08.24 10:00 ~ 08.31 23:55</div></div></div>
+<div class="mwarn"><span>!</span><span><b>되돌릴 수 없습니다.</b> 처리하는 즉시 계약이 성립하고 <b>공구가 생성</b>되며, 양측 화면이 <b>체결완료</b>로 바뀝니다. 서명 일시가 틀렸다면 <b>지금이 마지막 정정 기회</b>입니다 — 체결 후에는 계약을 새로 작성해야 합니다.</span></div>
+<div class="mwarn"><span>i</span><span>생성된 공구는 <b>준비중</b>으로 시작합니다 — 인플루언서가 게시물을 등록하고 운영자가 <b>오픈 승인</b>해야 열립니다(공구 관리 소관). 고정 지급비 <b>1,200,000원</b>은 <b>브랜드가 직접 지급</b>하며 플랫폼이 중개하지 않습니다.</span></div></div><div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary">체결 완료</button></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">C5</span><span class="state-label">모달 · 만료 처리 확인</span><span class="state-spec">만료는 <b>자동 판정이 아니다</b> — 기한이 지나도 시스템이 닫지 못해 운영자가 확인해 종결시킨다(파트너 rev.7이 B7의 주체를 「시스템」에서 「어드민」으로 바꾼 그 지점) · 모달은 <b>정말 서명이 없었는지</b>를 되묻는다: 모두싸인에는 서명이 들어왔는데 우리 화면에 반영되지 않았을 수 있고, 그 상태로 만료시키면 <b>성립한 계약을 닫는다</b> · 그래서 <b>대시보드 재확인 체크를 필수</b>로 두고 기한 경과일을 병기한다 · 결과 상태는 <b>만료 = 중립</b>이다(원칙 ② · 부정 결과 확정이 아니라 시간으로 닫힌 건)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">계약 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">8</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7"><div class="gnb-sub"><span>공구 정산</span><span class="scnt"></span></div><div class="gnb-sub"><span>고정 지급비 정산</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="8"><span class="gn">9</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">10</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">11</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 수분 크림 겨울 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">수분 크림 겨울 공구</div><div class="page-d">CTR-20260715-018 · 벨라코스 × 뷰티_라온 · 2026.07.18 10:30 서명 요청 발송</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">서명 진행<span class="ch-n">운영자 검토 → 양측 동시 서명 요청</span></div><div class="card-b"><div class="steps"><span class="stp done">운영자 검토 통과<span class="who">07.18 09:40 · 김운영</span></span><span class="stp-ar">›</span><span class="stp done">서명 요청 발송<span class="who">07.18 10:30 · 모두싸인</span></span><span class="stp-ar">›</span><span class="stp cur">양측 서명<span class="who">브랜드 완료 · 인플루언서 미서명 · 기한 경과</span></span><span class="stp-ar">›</span><span class="stp">운영자 체결 완료 처리<span class="who">—</span></span></div><div class="notice warn" style="margin-top:var(--sp-4)"><div><b>서명 기한이 지났습니다.</b> 모두싸인에 서명이 들어왔는지 다시 확인한 뒤 만료 처리하세요 — 화면에 반영되지 않았을 뿐 서명이 완료돼 있을 수 있습니다.</div></div></div></div></div><div><div class="card"><div class="card-h">상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">서명 진행중</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">계약번호</span><span class="mv tnum">CTR-20260715-018</span></div><div class="mrow"><span class="mk">서명 요청 발송</span><span class="mv tnum">2026.07.18 10:30</span></div><div class="mrow"><span class="mk">브랜드 서명</span><span class="mv tnum">2026.07.19 14:02</span></div><div class="mrow"><span class="mk">인플루언서 서명</span><span class="mv">— 없음</span></div><div class="mrow"><span class="mk">서명 기한</span><span class="mv tnum">2026.07.22 23:55</span></div><div class="mrow"><span class="mk">기한 경과</span><span class="mv tnum">23일</span></div></div>
+<div class="st-acts"><button class="btn btn-danger-o">만료 처리</button></div><p class="st-hint">서명 기한이 <b>23일</b> 지났습니다 — 운영자가 확인해 종결시켜야 목록에서 내려갑니다.</p></div></div></div></div></div><div class="overlay"><div class="modal"><div class="modal-h">만료 처리<span class="modal-x">✕</span></div><div class="modal-b"><b>수분 크림 겨울 공구</b>(CTR-20260715-018)를 <b>만료</b>로 종결합니다.
+<div class="msum"><div class="trow"><div class="tk" style="width:96px">서명 기한</div><div class="tv tnum">2026.07.22 23:55 · <b>23일 경과</b></div></div><div class="trow"><div class="tk" style="width:96px">브랜드 서명</div><div class="tv tnum">완료 · 2026.07.19 14:02</div></div><div class="trow"><div class="tk" style="width:96px">인플루언서 서명</div><div class="tv tnum"><span style="color:var(--danger-text)">없음</span></div></div><div class="trow"><div class="tk" style="width:96px">기준 시각</div><div class="tv tnum">2026.07.20 09:00 <span class="t-dim">· 34일 전 확인</span></div></div></div>
+<label class="mlabel" style="margin-top:0">확인<span class="req">*</span></label>
+<div style="border:1px solid var(--n-200);border-radius:var(--r-sm);padding:2px 13px">
+<div style="display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--n-100)"><span class="chk"><span class="cbox"></span></span><div style="flex:1;font-size:var(--fs-caption);line-height:1.65">모두싸인 대시보드에서 <b>인플루언서 서명이 없음</b>을 다시 확인했습니다</div></div>
+</div>
+<p class="mhint">마지막 확인이 <b>34일 전</b>입니다 — 그 사이 서명이 들어왔을 수 있습니다.</p>
+<div class="mwarn"><span>!</span><span>만료는 <b>종결 상태</b>입니다 — 되돌릴 수 없고 같은 조건으로 진행하려면 브랜드가 <b>새 계약을 작성</b>해야 합니다. 서명이 이미 완료된 건을 만료시키면 <b>성립한 계약을 닫는 것</b>이 됩니다.</span></div></div><div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-danger-o" disabled>만료 처리</button></div></div></div></div></section>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="sz-wm" viewBox="0 0 1863.4 200"><text x="0" y="160" font-family="Fredoka, sans-serif" font-size="180" font-weight="700" letter-spacing="0">SHOWROOMZ</text></symbol>
+  </defs>
+</svg>
+
+</body>
+</html>
+</body>
+</html>
