@@ -654,19 +654,19 @@ class CreatorContractScreenSpecIntegrationTest extends CreatorContractTestSuppor
         list().andExpect(jsonPath("$.content[0].deadline.type").value("PASSED"));
     }
 
-    // ── S9 · 취소(브랜드 철회) ──────────────────────────────────────────────
+    // ── S9 · 취소 ──────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("S9 — 브랜드가 철회한 계약은 브랜드가 입력한 사유·메모가 카드로 오고 내가 할 조치가 없다")
-    void s9CanceledByBrand() throws Exception {
+    @DisplayName("S9 — 도착한 계약의 취소는 운영자가 한다 — 운영자가 입력한 사유·메모가 카드로 오고 내가 할 조치가 없다")
+    void s9CanceledByOperator() throws Exception {
         Long contractId = canceledContract();
 
         detail(contractId)
                 .andExpect(jsonPath("$.status").value("CANCELED"))
                 .andExpect(jsonPath("$.statusLabel").value("취소"))
                 .andExpect(jsonPath("$.statusTone").value("NEUTRAL"))
-                // 파트너센터 B8과 주체가 반대 — 사유는 브랜드가 입력한 값이다.
-                .andExpect(jsonPath("$.closure.actorType").value("SELLER"))
+                // 서명 요청 발송 이후라 브랜드는 취소할 수 없다 — 모두싸인 요청을 거둔 운영자가 주체다.
+                .andExpect(jsonPath("$.closure.actorType").value("ADMIN"))
                 .andExpect(jsonPath("$.closure.reasonCode").value("SCHEDULE_CHANGE"))
                 .andExpect(jsonPath("$.closure.reasonLabel").value("공구 일정 변경"))
                 .andExpect(jsonPath("$.closure.memo").value("생산 일정이 밀려 공구 기간을 다시 잡아야 합니다."))
@@ -758,7 +758,7 @@ class CreatorContractScreenSpecIntegrationTest extends CreatorContractTestSuppor
         declined(spring, ContractDeclineReason.CONDITION_RENEGOTIATION, "리워드율 조정이 가능하면 다시 검토하고 싶습니다.");
         receive(oo, "수분 토너 리뉴얼 공구", 1, 7, now.minusHours(1), ContractStatus.EXPIRED, c -> c.expire(now));
         receive(tri, "클렌징 오일 여름 공구", 1, 8, now.plusDays(8), ContractStatus.CANCELED,
-                c -> c.applyCanceled(ContractCloseReasonCode.SCHEDULE_CHANGE.name(), null, now));
+                c -> c.applyCanceledByAdmin(ContractCloseReasonCode.SCHEDULE_CHANGE.name(), null, now));
 
         // 아직 도착하지 않은 계약 — 8건에 섞이면 안 된다.
         saveContract(ContractStatus.DRAFT, c -> { });

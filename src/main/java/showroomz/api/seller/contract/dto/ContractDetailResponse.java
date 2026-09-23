@@ -198,7 +198,6 @@ public record ContractDetailResponse(
             boolean canDelete,
             boolean canRequestReview,
             boolean canCancelRequest,
-            boolean canCancel,
             boolean canRequestResend,
             boolean canRecordPayment,
             boolean canCreateGroupBuy,

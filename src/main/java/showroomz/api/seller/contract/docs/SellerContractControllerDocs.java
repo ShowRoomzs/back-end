@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
-import showroomz.api.seller.contract.dto.ContractCancelRequest;
 import showroomz.api.seller.contract.dto.ContractClausesResponse;
 import showroomz.api.seller.contract.dto.ContractCreateRequest;
 import showroomz.api.seller.contract.dto.ContractCreateResponse;
@@ -289,7 +288,8 @@ public interface SellerContractControllerDocs {
                     **종결이 아니다.** 사유를 받지 않고 상대에게 통지하지 않는다 — 상대에게는 아직 아무것도 가지 않았다.
                     어드민에는 통지한다(이미 검토를 시작했을 수 있다).
 
-                    계약 취소(`/cancel`)와 혼동 금지(§25-4). 서명 요청이 나간 뒤로는 이 API가 409다.
+                    브랜드에게 **계약 취소(종결)는 없다** — 발송 전의 되돌림은 이 API뿐이고,
+                    서명 요청이 나간 뒤의 취소는 운영자만 한다(어드민 `/cancel`). 서명 요청이 나간 뒤로는 이 API가 409다.
 
                     계약번호는 반납하지 않는다 — 이미 어드민 큐·통지에 나간 번호를 재사용하면
                     같은 번호가 서로 다른 계약을 가리키게 된다.
@@ -300,30 +300,6 @@ public interface SellerContractControllerDocs {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<ContractDetailResponse> cancelReviewRequest(@PathVariable Long contractId);
-
-    @Operation(
-            summary = "계약 취소",
-            description = """
-                    `SIGNING` → `CANCELED`. **항상 종결**이다(C4).
-
-                    **권한:** SELLER
-
-                    - 사유 필수. `ETC`면 메모도 필수다(400 `CONTRACT_CANCEL_REASON_MEMO_REQUIRED`).
-                    - 양측(상대·어드민)에 통지한다.
-                    - **양측 서명이 모두 끝나면 취소할 수 없다**(C4) — `CONCLUSION_PENDING`에서 호출하면 409다.
-                      한쪽만 서명한 `SIGNING`(B4a·B4c)은 아직 취소할 수 있다.
-                    - `REVIEW_PENDING`에서 호출하면 404가 아니라 **409**다 — 서버가 상태를 안 보면
-                      잘못된 호출 한 번에 종결돼야 할 계약이 다른 경로로 새어 나간다(설계서 3-2).
-                    """)
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "취소 성공"),
-            @ApiResponse(responseCode = "400", description = "기타 사유인데 메모 없음",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "409", description = "취소할 수 없는 상태",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    })
-    ResponseEntity<ContractDetailResponse> cancelContract(@PathVariable Long contractId,
-                                                          @Valid @RequestBody ContractCancelRequest request);
 
     @Operation(
             summary = "서명 안내 다시 받기",

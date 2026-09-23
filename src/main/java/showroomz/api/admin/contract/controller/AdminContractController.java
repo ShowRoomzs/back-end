@@ -62,6 +62,13 @@ public class AdminContractController {
     public ProcessResponse expire(@PathVariable Long id, @Valid @RequestBody ExpireRequest request, @AuthenticationPrincipal UserPrincipal principal) {
         return commands.expire(id, operator(principal), request);
     }
+    @PostMapping("/{id}/cancel")
+    @Operation(summary = "계약 취소", description = "서명 요청 발송 이후 체결 전(SIGNING·CONCLUSION_PENDING)만. "
+            + "이 구간은 브랜드가 취소할 수 없다. 모두싸인 서명 요청 회수 확인(signatureRequestWithdrawn) 필수 · "
+            + "사유 5종 · ETC면 메모 필수. 양측에 통지합니다.")
+    public ProcessResponse cancel(@PathVariable Long id, @Valid @RequestBody CancelRequest request, @AuthenticationPrincipal UserPrincipal principal) {
+        return commands.cancel(id, operator(principal), request);
+    }
     @PostMapping("/{id}/resend/handle")
     @Operation(summary = "외부 재발송 완료 기록", description = "미처리 요청 전부 처리. 발송 시각·서명 기한은 변경하지 않습니다.")
     public ProcessResponse resend(@PathVariable Long id, @AuthenticationPrincipal UserPrincipal principal) { return commands.handleResend(id, operator(principal)); }

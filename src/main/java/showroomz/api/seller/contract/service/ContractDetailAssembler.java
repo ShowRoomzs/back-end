@@ -217,7 +217,6 @@ public class ContractDetailAssembler {
                 status == ContractStatus.DRAFT,
                 editable,
                 status == ContractStatus.REVIEW_PENDING,
-                ContractStatus.CANCELABLE.contains(status),
                 // [서명 안내 다시 받기]는 「내 서명 안내」를 다시 보내달라는 요청이다 —
                 // 내가 이미 서명했으면 받을 안내가 없어 B4a에서는 버튼이 사라진다(§26-B4a).
                 status == ContractStatus.SIGNING && contract.getBrandSignedAt() == null,

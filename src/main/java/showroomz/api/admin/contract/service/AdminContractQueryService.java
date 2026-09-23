@@ -101,7 +101,8 @@ public class AdminContractQueryService {
                 new Resend(requests.stream().filter(r -> !r.isHandled()).count(), last == null ? null : last.getRequestedAt(), last == null ? null : last.getRequesterType()),
                 new GroupBuy(c.getGroupBuyId(), null, null),
                 new Permissions(status == ContractStatus.REVIEW_PENDING, status == ContractStatus.REVIEW_PENDING,
-                        signing || pending, pending && signed && completeDocs, signing && due, signing, pending),
+                        signing || pending, pending && signed && completeDocs, signing && due, signing, pending,
+                        ContractStatus.ADMIN_CANCELABLE.contains(status)),
                 history.stream().map(h -> new History(h.getEventType(), h.getActorType(), h.getActorId(), h.getActorDisplayName(), h.getDetail(), h.getOccurredAt())).toList(), c.getVersion());
     }
 

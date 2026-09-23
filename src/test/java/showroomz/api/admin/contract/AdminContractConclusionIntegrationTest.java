@@ -198,15 +198,18 @@ class AdminContractConclusionIntegrationTest extends AdminContractTestSupport {
     }
 
     @Test
-    @DisplayName("브랜드가 [계약 취소]한 뒤에는 체결할 수 없다 — 공구 생성과 종결이 동시에 일어나지 않는다")
-    void cannotConcludeAfterBrandCancel() throws Exception {
+    @DisplayName("체결 처리 대기는 브랜드가 취소할 수 없고, 운영자가 취소한 뒤에는 체결할 수 없다")
+    void cannotConcludeAfterOperatorCancel() throws Exception {
         Contract c = seed(ContractStatus.CONCLUSION_PENDING);
         attach(c, ContractDocumentType.SIGNED_PDF);
         attach(c, ContractDocumentType.AUDIT_TRAIL);
 
+        // 서명 요청 발송 이후 — 브랜드 취소는 막힌다.
         mockMvc.perform(post(SELLER_CONTRACTS + "/" + c.getId() + "/cancel").header(HttpHeaders.AUTHORIZATION, brandToken)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"reasonCode\":\"SCHEDULE_CHANGE\"}"))
-                .andExpect(status().isOk());
+                .andExpect(status().isConflict());
+
+        cancel(c, true, ContractCloseReasonCode.SCHEDULE_CHANGE, null).andExpect(status().isOk());
 
         conclude(c).andExpect(status().isConflict());
         assertThat(reload(c).getStatus()).isEqualTo(ContractStatus.CANCELED);

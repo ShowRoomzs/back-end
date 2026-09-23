@@ -9,7 +9,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.seller.contract.docs.SellerContractControllerDocs;
-import showroomz.api.seller.contract.dto.ContractCancelRequest;
 import showroomz.api.seller.contract.dto.ContractClausesResponse;
 import showroomz.api.seller.contract.dto.ContractCreateRequest;
 import showroomz.api.seller.contract.dto.ContractCreateResponse;
@@ -137,14 +136,6 @@ public class SellerContractController implements SellerContractControllerDocs {
     public ResponseEntity<ContractDetailResponse> cancelReviewRequest(@PathVariable Long contractId) {
         return ResponseEntity.ok(
                 sellerContractCommandService.cancelReviewRequest(getCurrentSellerEmail(), contractId));
-    }
-
-    @Override
-    @PostMapping("/{contractId}/cancel")
-    public ResponseEntity<ContractDetailResponse> cancelContract(@PathVariable Long contractId,
-                                                                 @Valid @RequestBody ContractCancelRequest request) {
-        return ResponseEntity.ok(
-                sellerContractCommandService.cancelContract(getCurrentSellerEmail(), contractId, request));
     }
 
     @Override

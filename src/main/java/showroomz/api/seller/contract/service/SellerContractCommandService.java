@@ -3,7 +3,6 @@ package showroomz.api.seller.contract.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import showroomz.api.seller.contract.dto.ContractCancelRequest;
 import showroomz.api.seller.contract.dto.ContractCreateRequest;
 import showroomz.api.seller.contract.dto.ContractCreateResponse;
 import showroomz.api.seller.contract.dto.ContractDetailResponse;
@@ -226,38 +225,6 @@ public class SellerContractCommandService {
         historyRecorder.recordBySeller(contract, ContractEventType.REVIEW_REQUEST_CANCELED, null, now);
         // 어드민은 이미 검토를 시작했을 수 있다 — 상대에게는 아직 아무것도 가지 않았으므로 통지하지 않는다.
         contractNotifier.notifyAdmin(contract, ContractEventType.REVIEW_REQUEST_CANCELED.name());
-
-        contractRepository.saveAndFlush(contract);
-        return detailAssembler.assemble(contract);
-    }
-
-    /** 계약 취소(C4) — 항상 종결이다. 검토 대기에서 호출되면 404가 아니라 409로 막는다(설계서 3-2). */
-    public ContractDetailResponse cancelContract(String sellerEmail, Long contractId,
-                                                 ContractCancelRequest request) {
-        Market market = accessGuard.resolveMarket(sellerEmail);
-        Contract contract = accessGuard.loadOwned(contractId, market);
-
-        if (!ContractStatus.CANCELABLE.contains(contract.getStatus())) {
-            throw new BusinessException(ErrorCode.CONTRACT_STATUS_CONFLICT);
-        }
-        String memo = request.memo() == null ? null : request.memo().trim();
-        if (request.reasonCode().requiresMemo() && (memo == null || memo.isBlank())) {
-            throw new BusinessException(ErrorCode.CONTRACT_CANCEL_REASON_MEMO_REQUIRED);
-        }
-
-        ContractStatus from = contract.getStatus();
-        int changed = contractRepository.transitionStatus(contract.getId(), from, ContractStatus.CANCELED);
-        if (changed == 0) {
-            throw new BusinessException(ErrorCode.CONTRACT_STATUS_CONFLICT);
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-        contract.applyCanceled(request.reasonCode().name(), memo, now);
-
-        historyRecorder.recordBySeller(contract, ContractEventType.CANCELED,
-                request.reasonCode().getLabel(), now);
-        contractNotifier.notifyCounterparty(contract, ContractEventType.CANCELED.name());
-        contractNotifier.notifyAdmin(contract, ContractEventType.CANCELED.name());
 
         contractRepository.saveAndFlush(contract);
         return detailAssembler.assemble(contract);

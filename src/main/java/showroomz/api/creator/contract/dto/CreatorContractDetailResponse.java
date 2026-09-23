@@ -250,7 +250,8 @@ public record CreatorContractDetailResponse(
     @Schema(description = "종결 정보 — 진행 중이면 필드가 모두 null")
     public record Closure(
             @Schema(nullable = true) LocalDateTime closedAt,
-            @Schema(description = "CREATOR=내가 거절 · SELLER=브랜드가 취소 · ADMIN=만료", nullable = true)
+            @Schema(description = "CREATOR=내가 거절 · ADMIN=운영자가 만료·취소(status로 구분). "
+                    + "브랜드 취소(SELLER)는 서명 요청 발송 전에만 가능해 스튜디오에 도착하지 않는다", nullable = true)
             ContractActorType actorType,
             @Schema(description = "만료는 사유가 없어 null이다", nullable = true) String reasonCode,
             @Schema(nullable = true) String reasonLabel,

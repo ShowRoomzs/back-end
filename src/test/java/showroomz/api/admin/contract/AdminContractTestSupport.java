@@ -236,7 +236,9 @@ public abstract class AdminContractTestSupport extends IntegrationTestSupport {
                     switch (s.status) {
                         case CONCLUDED -> c.conclude(now.minusMinutes(30));
                         case EXPIRED -> c.expire(now.minusHours(3));
-                        case CANCELED -> c.applyCanceled(ContractCloseReasonCode.SCHEDULE_CHANGE.name(), null, now.minusHours(3));
+                        // 서명 요청 발송 이후의 취소는 운영자만 한다.
+                        case CANCELED -> c.applyCanceledByAdmin(ContractCloseReasonCode.SCHEDULE_CHANGE.name(),
+                                "브랜드 요청으로 서명 요청을 회수했습니다.", now.minusHours(3));
                         default -> { }
                     }
                 }
@@ -379,6 +381,13 @@ public abstract class AdminContractTestSupport extends IntegrationTestSupport {
         return mockMvc.perform(post(BASE + "/" + contract.getId() + "/expire")
                 .header(HttpHeaders.AUTHORIZATION, adminToken).contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(new ExpireRequest(dashboardRechecked))));
+    }
+
+    protected ResultActions cancel(Contract contract, Boolean signatureRequestWithdrawn,
+                                   ContractCloseReasonCode reasonCode, String memo) throws Exception {
+        return mockMvc.perform(post(BASE + "/" + contract.getId() + "/cancel")
+                .header(HttpHeaders.AUTHORIZATION, adminToken).contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(new CancelRequest(signatureRequestWithdrawn, reasonCode, memo))));
     }
 
     protected ResultActions handleResend(Contract contract) throws Exception {

@@ -16,6 +16,9 @@ public final class AdminContractDto {
     public record SignatureRequest(LocalDateTime brandSignedAt, LocalDateTime creatorSignedAt,
                                    @NotNull @PositiveOrZero Long version) {}
     public record ExpireRequest(Boolean dashboardRechecked) {}
+    /** 운영자 [계약 취소] — 서명 요청 발송 이후 체결 전. 모두싸인 서명 요청을 먼저 거둬야 한다(API 미도입). */
+    public record CancelRequest(Boolean signatureRequestWithdrawn, @NotNull ContractCloseReasonCode reasonCode,
+                                @Size(max = 1000) String memo) {}
     public record PresignRequest(@NotNull ContractDocumentType documentType,
                                  @NotBlank String contentType, @NotBlank @Size(max = 200) String fileName) {}
     public record RegisterDocumentRequest(@NotNull ContractDocumentType documentType,
@@ -50,7 +53,7 @@ public final class AdminContractDto {
     public record GroupBuy(Long groupBuyId, String groupBuyNumber, String status) {}
     public record Permissions(boolean canApprove, boolean canReject, boolean canUpdateSignature,
                                boolean canConclude, boolean canExpire, boolean canHandleResend,
-                               boolean canUploadDocument) {}
+                               boolean canUploadDocument, boolean canCancel) {}
     public record History(ContractEventType eventType, ContractActorType actorType, Long actorId,
                           String actorDisplayName, String detail, LocalDateTime occurredAt) {}
     public record Detail(ContractInfo contract, Stepper stepper, Review review, Signature signature,

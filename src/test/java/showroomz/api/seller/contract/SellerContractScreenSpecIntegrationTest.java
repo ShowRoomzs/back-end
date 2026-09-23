@@ -193,8 +193,8 @@ class SellerContractScreenSpecIntegrationTest extends SellerContractTestSupport 
         detail(mySignatureDone)
                 .andExpect(jsonPath("$.signature.brandSignedAt").exists())
                 .andExpect(jsonPath("$.permissions.canRequestResend").value(false))
-                // 공은 상대에게 있지만 취소는 아직 내 몫으로 남는다.
-                .andExpect(jsonPath("$.permissions.canCancel").value(true));
+                // 서명 요청이 발송된 뒤라 취소는 운영자만 한다.
+                .andExpect(jsonPath("$.permissions.canCancel").value(false));
         requestResend(mySignatureDone)
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CONTRACT_RESEND_NOT_ALLOWED"));

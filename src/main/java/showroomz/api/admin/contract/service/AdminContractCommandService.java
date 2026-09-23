@@ -121,6 +121,28 @@ public class AdminContractCommandService {
         return response(c);
     }
 
+    /**
+     * 운영자 [계약 취소] — 서명 요청 발송 이후 체결 전({@code SIGNING}·{@code CONCLUSION_PENDING}).
+     *
+     * <p>이 구간은 브랜드가 취소할 수 없다. 모두싸인에 서명 요청이 나가 있어 우리 상태만 종결하면 양측이
+     * 여전히 서명 링크를 들고 있기 때문이다 — API가 없으니 운영자가 모두싸인에서 요청을 거뒀다는 확인을
+     * 체크리스트로 받는다. 사유는 브랜드 취소와 같은 5종이고 {@code ETC}면 메모가 필수다.
+     */
+    public ProcessResponse cancel(Long id, Long operator, CancelRequest request) {
+        String name = access.operatorName(operator);
+        Contract c = access.lock(id);
+        if (!ContractStatus.ADMIN_CANCELABLE.contains(c.getStatus())) fail(ErrorCode.CONTRACT_STATUS_CONFLICT);
+        if (!Boolean.TRUE.equals(request.signatureRequestWithdrawn())) fail(ErrorCode.CONTRACT_CHECKLIST_REQUIRED);
+        String memo = request.memo() == null || request.memo().isBlank() ? null : request.memo().trim();
+        if (request.reasonCode().requiresMemo() && memo == null) fail(ErrorCode.CONTRACT_CANCEL_REASON_MEMO_REQUIRED);
+        LocalDateTime now = LocalDateTime.now();
+        transition(c, ContractStatus.CANCELED);
+        c.applyCanceledByAdmin(request.reasonCode().name(), memo, now);
+        record(c, operator, name, ContractEventType.CANCELED, request.reasonCode().getLabel(), now);
+        notifier.notifyBothParties(c, "CANCELED");
+        return response(c);
+    }
+
     public ProcessResponse handleResend(Long id, Long operator) {
         String name = access.operatorName(operator);
         Contract c = access.lock(id);

@@ -211,12 +211,13 @@ abstract class CreatorContractTestSupport extends IntegrationTestSupport {
     protected Long canceledContract() {
         return saveContract(ContractStatus.CANCELED, contract -> {
             approve(contract);
-            contract.applyCanceled(ContractCloseReasonCode.SCHEDULE_CHANGE.name(),
+            // 서명 요청이 도착한 뒤의 취소는 운영자만 한다 — 브랜드 취소는 발송 전이라 여기 오지 않는다.
+            contract.applyCanceledByAdmin(ContractCloseReasonCode.SCHEDULE_CHANGE.name(),
                     "생산 일정이 밀려 공구 기간을 다시 잡아야 합니다.", LocalDateTime.now());
         });
     }
 
-    /** 거절은 실제 조건부 UPDATE 경로를 태운다 — applyCanceled는 주체가 SELLER라 여기 쓸 수 없다. */
+    /** 거절은 실제 조건부 UPDATE 경로를 태운다 — 취소 메서드로는 주체가 CREATOR가 되지 않는다. */
     protected Long declinedContract() {
         return declined(signingContract(), ContractDeclineReason.SCHEDULE_MISMATCH, null);
     }

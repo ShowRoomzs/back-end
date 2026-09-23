@@ -298,10 +298,13 @@ public class Contract extends BaseTimeEntity {
         this.status = ContractStatus.DRAFT;
     }
 
-    /** 브랜드의 [계약 취소] — 항상 종결이다(설계서 3-2). */
-    public void applyCanceled(String reasonCode, String memo, LocalDateTime now) {
+    /**
+     * 운영자의 [계약 취소] — 서명 요청 발송 이후 체결 전 구간. 항상 종결이다.
+     * 브랜드에게는 계약 취소가 없다(발송 전 되돌림은 [요청 취소]뿐).
+     */
+    public void applyCanceledByAdmin(String reasonCode, String memo, LocalDateTime now) {
         this.closedAt = now;
-        this.closeActorType = ContractActorType.SELLER;
+        this.closeActorType = ContractActorType.ADMIN;
         this.closeReasonCode = reasonCode;
         this.closeReasonMemo = memo;
         this.status = ContractStatus.CANCELED;

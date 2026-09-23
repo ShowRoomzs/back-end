@@ -443,6 +443,11 @@ abstract class SellerContractTestSupport extends IntegrationTestSupport {
                     "상품 정보가 계약 조건과 맞지 않습니다.", now.minusDays(2));
             return;
         }
+        if (status == ContractStatus.CANCELED) {
+            // 브랜드 취소는 서명 요청 발송 전(검토 대기)에만 있다 — 발송 이후의 취소는 운영자 몫이다.
+            contract.applyCanceled(ContractCloseReasonCode.SCHEDULE_CHANGE.name(), null, now.minusDays(1));
+            return;
+        }
 
         contract.approveReview(now.minusDays(2), now.plusDays(5), now.minusDays(2));
         switch (status) {
@@ -456,8 +461,6 @@ abstract class SellerContractTestSupport extends IntegrationTestSupport {
                 contract.conclude(now.minusHours(2));
             }
             case EXPIRED -> contract.expire(now.minusDays(1));
-            case CANCELED -> contract.applyCanceled(
-                    ContractCloseReasonCode.SCHEDULE_CHANGE.name(), null, now.minusDays(1));
             default -> throw new IllegalArgumentException("적재할 수 없는 상태: " + status);
         }
     }
