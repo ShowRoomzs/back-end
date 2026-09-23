@@ -13,6 +13,14 @@ import java.util.Optional;
 
 public interface ContractRepository extends JpaRepository<Contract, Long>, ContractRepositoryCustom {
 
+    /** 문서 변경과 체결 검증도 동일한 계약 행을 잠가 원자적으로 처리한다. */
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Contract c WHERE c.id = :contractId")
+    Optional<Contract> findForAdminUpdate(@Param("contractId") Long contractId);
+
+    @Query("SELECT c.status, COUNT(c) FROM Contract c WHERE c.status <> showroomz.domain.contract.type.ContractStatus.DRAFT GROUP BY c.status")
+    List<Object[]> countAdminStatuses();
+
     @Query("SELECT c FROM Contract c "
             + "LEFT JOIN FETCH c.creator cr "
             + "LEFT JOIN FETCH c.market m "

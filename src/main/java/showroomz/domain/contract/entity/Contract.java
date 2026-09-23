@@ -316,6 +316,40 @@ public class Contract extends BaseTimeEntity {
         return fixedFeeAmount != null && fixedFeeAmount > 0;
     }
 
+    public void approveReview(LocalDateTime requestedAt, LocalDateTime deadlineAt, LocalDateTime now) {
+        status = ContractStatus.SIGNING;
+        reviewApprovedAt = now;
+        signatureRequestedAt = requestedAt;
+        signatureDeadlineAt = deadlineAt;
+    }
+
+    public void rejectReview(String code, String detail, LocalDateTime now) {
+        status = ContractStatus.REVIEW_REJECTED;
+        reviewRejectedAt = now;
+        rejectReasonCode = code;
+        rejectReasonDetail = detail;
+    }
+
+    public void updateSignatures(LocalDateTime brand, LocalDateTime creator, LocalDateTime now) {
+        brandSignedAt = brand;
+        creatorSignedAt = creator;
+        signatureAsOf = now;
+        status = brand != null && creator != null ? ContractStatus.CONCLUSION_PENDING : ContractStatus.SIGNING;
+    }
+
+    public void conclude(LocalDateTime now) {
+        status = ContractStatus.CONCLUDED;
+        concludedAt = now;
+    }
+
+    public void expire(LocalDateTime now) {
+        status = ContractStatus.EXPIRED;
+        closedAt = now;
+        closeActorType = ContractActorType.ADMIN;
+        closeReasonCode = null;
+        closeReasonMemo = null;
+    }
+
     /**
      * 공구 기간(일수) — 시작·종료 「일자」 기준의 양끝 포함 계산이다.
      * 화면의 「(17일)」과 하드 검증 H4(3~30일)가 같은 값을 봐야 하므로 한 곳에 둔다.

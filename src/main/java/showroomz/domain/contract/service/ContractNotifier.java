@@ -18,6 +18,17 @@ import showroomz.domain.contract.entity.Contract;
 @Component
 public class ContractNotifier {
 
+    /** 계약 통지 채널 확정 전까지 기존 알림 포트에 양측의 호출 지점을 남긴다. */
+    public void notifyBothParties(Contract contract, String event) {
+        notifySeller(contract, event);
+        notifyCounterparty(contract, event);
+    }
+
+    public void notifySeller(Contract contract, String event) {
+        log.info("[contract-notify:stub] to=SELLER event={} contractId={} marketId={}",
+                event, contract.getId(), contract.getMarket().getId());
+    }
+
     /** 검토 요청 · 요청 취소 → 어드민. */
     public void notifyAdmin(Contract contract, String event) {
         log.info("[contract-notify:stub] to=ADMIN event={} contractId={} number={}",

@@ -53,7 +53,7 @@ public class ContractHistory {
     @Column(name = "actor_display_name", length = 100)
     private String actorDisplayName;
 
-    @Column(name = "detail", length = 500)
+    @Column(name = "detail", length = 2000)
     private String detail;
 
     @Column(name = "occurred_at", nullable = false)

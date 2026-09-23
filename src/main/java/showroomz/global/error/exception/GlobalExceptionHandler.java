@@ -26,6 +26,12 @@ import java.util.stream.Collectors;
 @RestControllerAdvice(basePackages = "showroomz")
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(ContractDocumentRequiredException.class)
+    public ResponseEntity<?> handleContractDocumentRequired(ContractDocumentRequiredException e) {
+        return ResponseEntity.status(e.getErrorCode().getStatus()).body(java.util.Map.of(
+                "code", e.getErrorCode().getCode(), "message", e.getErrorCode().getMessage(), "kind", "REQUIRED"));
+    }
+
     /**
      * 계약 하드 검증 실패(설계서 2-2) — 위반 항목 목록을 함께 내린다.
      * {@link BusinessException} 핸들러보다 먼저 잡히도록 구체 타입으로 선언한다.
@@ -210,4 +216,3 @@ public class GlobalExceptionHandler {
                         ErrorCode.INTERNAL_SERVER_ERROR.getMessage()));
     }
 }
-

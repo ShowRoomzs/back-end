@@ -50,6 +50,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class SellerContractQueryService {
+    private final showroomz.api.admin.contract.service.ContractDocumentStorage contractDocumentStorage;
 
     private final ContractAccessGuard accessGuard;
     private final ContractRepository contractRepository;
@@ -134,7 +135,10 @@ public class SellerContractQueryService {
     public ContractDocumentDownloadResponse getDocument(String sellerEmail, Long contractId,
                                                         ContractDocumentType documentType) {
         Market market = accessGuard.resolveMarket(sellerEmail);
-        accessGuard.loadOwned(contractId, market);
+        Contract contract = accessGuard.loadOwned(contractId, market);
+        if (contract.getStatus() != ContractStatus.CONCLUDED || documentType == ContractDocumentType.GENERATED_DRAFT) {
+            throw new BusinessException(ErrorCode.CONTRACT_DOCUMENT_NOT_FOUND);
+        }
 
         ContractDocument document = contractDocumentRepository
                 .findByContractIdAndDocumentType(contractId, documentType)
@@ -143,7 +147,7 @@ public class SellerContractQueryService {
         return new ContractDocumentDownloadResponse(
                 document.getDocumentType(),
                 document.getDocumentType().getLabel(),
-                document.getFileUrl(),
+                contractDocumentStorage.download(document).downloadUrl(),
                 document.getOriginalName(),
                 document.getSizeBytes(),
                 document.getContentType(),

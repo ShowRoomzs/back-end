@@ -33,6 +33,7 @@ public class ContractDetailAssembler {
     private final ContractHistoryRepository contractHistoryRepository;
     private final ConnectionRepository connectionRepository;
     private final ContractDocumentRepository contractDocumentRepository;
+    private final showroomz.api.admin.contract.service.ContractDocumentStorage contractDocumentStorage;
 
     public ContractDetailResponse assemble(Contract contract) {
         ContractStatus status = contract.getStatus();
@@ -201,11 +202,13 @@ public class ContractDetailAssembler {
     }
 
     private List<ContractDetailResponse.Document> documents(Contract contract) {
+        if (contract.getStatus() != ContractStatus.CONCLUDED) return List.of();
         return contractDocumentRepository.findByContractIdOrderByDocumentTypeAsc(contract.getId()).stream()
+                .filter(document -> document.getDocumentType() != showroomz.domain.contract.type.ContractDocumentType.GENERATED_DRAFT)
                 .map(document -> new ContractDetailResponse.Document(
                         document.getDocumentType(),
                         document.getDocumentType().getLabel(),
-                        document.getFileUrl()))
+                        contractDocumentStorage.download(document).downloadUrl()))
                 .toList();
     }
 
