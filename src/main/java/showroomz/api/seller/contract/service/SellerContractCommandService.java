@@ -121,6 +121,9 @@ public class SellerContractCommandService {
         if (contract.getStatus() != ContractStatus.DRAFT) {
             throw new BusinessException(ErrorCode.CONTRACT_EDIT_LOCKED);
         }
+        // 이력은 계약을 FK로 참조한다 — 초안이라도 생성 이력 한 줄은 반드시 있으므로
+        // 계약만 지우면 커밋에서 제약이 깨진다. 항목은 orphanRemoval이 함께 지운다.
+        historyRecorder.purgeForDeletedDraft(contract.getId());
         contractRepository.delete(contract);
     }
 

@@ -46,6 +46,19 @@ public class ContractHistoryRecorder {
         record(contract, eventType, ContractActorType.CREATOR, creatorId, showroomName, detail, occurredAt);
     }
 
+    /**
+     * 작성중 초안이 삭제될 때 딸린 이력을 함께 정리한다(설계서 4-2).
+     *
+     * <p>이력은 계약을 FK로 참조하므로 계약 행만 지우면 커밋 시점에 제약이 깨진다.
+     * append-only를 어기는 것이 아니라, 가리킬 계약이 사라지는 유일한 경로를 함께 치우는 것이다 —
+     * 삭제는 {@code DRAFT}에서만 허용되므로 여기서 사라지는 것은 아직 아무에게도 나가지 않은
+     * 브랜드 내부 기록뿐이다.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void purgeForDeletedDraft(Long contractId) {
+        contractHistoryRepository.deleteByContractId(contractId);
+    }
+
     /** 브랜드가 주체인 이력 — 표시명은 브랜드명 스냅샷이다. */
     @Transactional(propagation = Propagation.MANDATORY)
     public void recordBySeller(Contract contract, ContractEventType eventType, String detail,

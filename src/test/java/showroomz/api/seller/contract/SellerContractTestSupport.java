@@ -408,9 +408,14 @@ abstract class SellerContractTestSupport extends IntegrationTestSupport {
 
     /** 조건 일괄 세팅 — 목록 테스트가 공구명·기간만 갈아 끼우려고 쓴다. */
     protected void terms(Contract contract, String title, LocalDateTime startAt, LocalDateTime endAt) {
+        terms(contract, title, startAt, endAt, 500_000);
+    }
+
+    protected void terms(Contract contract, String title, LocalDateTime startAt, LocalDateTime endAt,
+                         Integer fixedFeeAmount) {
         contract.updateTerms(
                 title, startAt, endAt,
-                500_000, FixedFeeTrigger.POST_REGISTERED, LocalDateTime.now().withNano(0),
+                fixedFeeAmount, FixedFeeTrigger.POST_REGISTERED, LocalDateTime.now().withNano(0),
                 1, 1, 0, endAt == null ? null : endAt.toLocalDate().plusDays(3),
                 true, SecondaryUsePeriodType.FIXED, 12, false, "비고");
     }
