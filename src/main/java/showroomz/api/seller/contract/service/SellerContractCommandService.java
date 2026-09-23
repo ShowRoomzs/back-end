@@ -202,8 +202,7 @@ public class SellerContractCommandService {
 
     /**
      * 검토 요청 취소(B3c) — 작성중으로 되돌린다. <b>종결이 아니고 사유도 받지 않는다</b>(설계서 3-2).
-     * 계약 취소와 메서드 이름부터 갈라 둔다 — 두 경로를 섞으면 잘못된 호출 한 번에
-     * 종결된 계약이 작성중으로 돌아간다.
+     * 브랜드에게 계약 취소(종결)는 없다 — 발송 전의 되돌림은 이것뿐이고, 발송 이후 취소는 운영자 몫이다.
      */
     public ContractDetailResponse cancelReviewRequest(String sellerEmail, Long contractId) {
         Market market = accessGuard.resolveMarket(sellerEmail);

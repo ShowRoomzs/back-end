@@ -345,18 +345,10 @@ class CreatorContractLifecycleIntegrationTest extends CreatorContractTestSupport
     }
 
     @Test
-    @DisplayName("S9 — 도착한 뒤에는 브랜드가 취소할 수 없고, 운영자가 취소하면 운영자 사유로 종결되어 배지에서 빠진다")
+    @DisplayName("S9 — 도착한 계약은 운영자가 취소한다 — 운영자 사유로 종결되어 배지에서 빠진다")
     void onlyOperatorCancelsAfterArrival() throws Exception {
         long contractId = arrivedAtMe();
         summary().andExpect(jsonPath("$.actionRequiredCount").value(1));
-
-        // 서명 요청이 발송된 뒤 — 브랜드 [계약 취소]는 막힌다.
-        mockMvc.perform(post(SELLER_CONTRACTS + "/" + contractId + "/cancel")
-                        .header(HttpHeaders.AUTHORIZATION, brandToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reasonCode\":\"SCHEDULE_CHANGE\"}"))
-                .andExpect(status().isConflict());
-        detail(contractId).andExpect(jsonPath("$.status").value("SIGNING"));
 
         String memo = "생산 일정이 밀려 공구 기간을 다시 잡아야 합니다.";
         mockMvc.perform(post(ADMIN_CONTRACTS + "/" + contractId + "/cancel")
@@ -378,27 +370,6 @@ class CreatorContractLifecycleIntegrationTest extends CreatorContractTestSupport
         summary()
                 .andExpect(jsonPath("$.tabCounts.CLOSED").value(1))
                 .andExpect(jsonPath("$.actionRequiredCount").value(0));
-    }
-
-    @Test
-    @DisplayName("검토 대기에서 브랜드가 취소한 계약은 끝내 도착하지 않는다 — 종결 상태로도 보이지 않는다")
-    void brandCancellationBeforeSendingNeverArrives() throws Exception {
-        long contractId = brandWritesContractForMe();
-        brandRequestsReview(contractId);
-
-        mockMvc.perform(post(SELLER_CONTRACTS + "/" + contractId + "/cancel")
-                        .header(HttpHeaders.AUTHORIZATION, brandToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reasonCode\":\"SCHEDULE_CHANGE\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("CANCELED"));
-
-        // 가시성 판정이 서명 요청 발송 여부까지 본다 — CANCELED가 도착 상태 집합에 있어도 숨는다.
-        detail(contractId)
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("CONTRACT_NOT_RECEIVED"));
-        list().andExpect(jsonPath("$.content").isEmpty());
-        summary().andExpect(jsonPath("$.tabCounts.CLOSED").value(0));
     }
 
     // ── 서명 안내 다시 받기 · 열람 기록 ─────────────────────────────────────

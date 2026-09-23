@@ -8,7 +8,6 @@ import org.springframework.test.web.servlet.ResultActions;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractHistory;
 import showroomz.domain.contract.entity.ContractResendRequest;
-import showroomz.domain.contract.type.ContractCloseReasonCode;
 import showroomz.domain.contract.type.ContractEventType;
 import showroomz.domain.contract.type.ContractStatus;
 import showroomz.domain.member.creator.entity.Creator;
@@ -118,88 +117,30 @@ class SellerContractLifecycleIntegrationTest extends SellerContractTestSupport {
         }
     }
 
-    // ── 계약 취소 ──────────────────────────────────────────────────────────
+    // ── 취소 ────────────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("계약 취소는 운영자가 서명 요청을 발송하기 전(검토 대기)에만 가능하고 언제나 종결이다")
-    void cancelsOnlyBeforeSignatureRequestIsSent() throws Exception {
-        long contractId = draftReadyForReview();
-        reviewRequest(contractId).andExpect(status().isOk());
-        detail(contractId)
-                // [요청 취소](작성중으로 되돌림)와 [계약 취소](종결)가 함께 열려 있다.
-                .andExpect(jsonPath("$.permissions.canCancelRequest").value(true))
-                .andExpect(jsonPath("$.permissions.canCancel").value(true));
+    @DisplayName("브랜드에게는 계약 취소가 없다 — 버튼도 엔드포인트도 없고, 되돌림은 [요청 취소]뿐이다")
+    void brandHasNoContractCancel() throws Exception {
+        for (ContractStatus status : ContractStatus.values()) {
+            if (status == ContractStatus.DECLINED) {
+                continue; // 적재가 조건부 UPDATE를 타서 목록 밖에서 따로 본다
+            }
+            long contractId = seedInStatus(status).getId();
+            detail(contractId).andExpect(jsonPath("$.permissions.canCancel").doesNotExist());
 
-        cancelContract(contractId, ContractCloseReasonCode.SCHEDULE_CHANGE, null)
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("CANCELED"))
-                .andExpect(jsonPath("$.statusLabel").value("취소"))
-                .andExpect(jsonPath("$.closure.closedAt").exists())
-                .andExpect(jsonPath("$.closure.actorType").value("SELLER"))
-                .andExpect(jsonPath("$.closure.reasonCode").value("SCHEDULE_CHANGE"))
-                .andExpect(jsonPath("$.closure.reasonLabel").value("공구 일정 변경"))
-                // 종결되면 지급 의무도 함께 사라진다 — 화면이 고정 지급비 안내를 거두는 근거다.
-                .andExpect(jsonPath("$.fixedFee.obligationAlive").value(false))
-                .andExpect(jsonPath("$.permissions.canCancel").value(false))
-                .andExpect(jsonPath("$.permissions.canCancelRequest").value(false))
-                .andExpect(jsonPath("$.permissions.canDuplicate").value(true));
+            mockMvc.perform(post(CONTRACTS + "/" + contractId + "/cancel")
+                            .header(HttpHeaders.AUTHORIZATION, brandToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"reasonCode\":\"SCHEDULE_CHANGE\"}"))
+                    .andExpect(status().is4xxClientError());
 
-        assertThat(historyOf(contractId)).extracting(ContractHistory::getEventType)
-                .contains(ContractEventType.CANCELED);
-
-        // 반려된 계약은 수정 후 재요청만 한다 · 작성중은 [삭제]가 있다 · 종결·체결은 취소 대상이 아니다.
-        for (ContractStatus notCancelable : List.of(ContractStatus.DRAFT, ContractStatus.REVIEW_REJECTED,
-                ContractStatus.CONCLUDED, ContractStatus.EXPIRED, ContractStatus.CANCELED)) {
-            cancelContract(seedInStatus(notCancelable).getId(), ContractCloseReasonCode.SCHEDULE_CHANGE, null)
-                    .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.code").value("CONTRACT_STATUS_CONFLICT"));
+            // 막힌 호출은 흔적을 남기지 않는다.
+            assertThat(contractRepository.findById(contractId).orElseThrow().getStatus()).isEqualTo(status);
         }
-    }
-
-    @Test
-    @DisplayName("서명 요청이 발송된 뒤에는 브랜드가 취소할 수 없다 — 버튼도 없고 호출도 막는다(운영자만 취소)")
-    void refusesCancelOnceSignatureRequestIsSent() throws Exception {
-        LocalDateTime signedAt = LocalDateTime.now().minusHours(1).withNano(0);
-        List<Long> sent = List.of(
-                seedInStatus(ContractStatus.SIGNING).getId(),
-                // 한쪽만 서명한 B4a · B4c도 마찬가지다.
-                seedInStatus(ContractStatus.SIGNING, c -> c.updateSignatures(signedAt, null, signedAt)).getId(),
-                seedInStatus(ContractStatus.SIGNING, c -> c.updateSignatures(null, signedAt, signedAt)).getId(),
-                seedInStatus(ContractStatus.CONCLUSION_PENDING).getId());
-
-        for (long contractId : sent) {
-            ContractStatus before = contractRepository.findById(contractId).orElseThrow().getStatus();
-            detail(contractId).andExpect(jsonPath("$.permissions.canCancel").value(false));
-
-            cancelContract(contractId, ContractCloseReasonCode.CONDITION_REVIEW, null)
-                    .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.code").value("CONTRACT_STATUS_CONFLICT"));
-
-            // 막힌 호출은 흔적을 남기지 않는다 — 상태도 종결 필드도 이력도 그대로다.
-            detail(contractId)
-                    .andExpect(jsonPath("$.status").value(before.name()))
-                    .andExpect(jsonPath("$.closure.closedAt").doesNotExist())
-                    .andExpect(jsonPath("$.fixedFee.obligationAlive").value(true));
-            assertThat(historyOf(contractId)).extracting(ContractHistory::getEventType)
-                    .doesNotContain(ContractEventType.CANCELED);
-        }
-    }
-
-    @Test
-    @DisplayName("기타 사유는 메모가 필수다 — 상대에게 그대로 전달되는 문구다")
-    void requiresMemoForEtcReason() throws Exception {
-        long contractId = seedInStatus(ContractStatus.REVIEW_PENDING).getId();
-
-        cancelContract(contractId, ContractCloseReasonCode.ETC, null)
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("CONTRACT_CANCEL_REASON_MEMO_REQUIRED"));
-        cancelContract(contractId, ContractCloseReasonCode.ETC, "   ")
-                .andExpect(status().isBadRequest());
-
-        cancelContract(contractId, ContractCloseReasonCode.ETC, "  담당자 퇴사로 진행이 어렵습니다.  ")
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.closure.reasonLabel").value("기타"))
-                .andExpect(jsonPath("$.closure.memo").value("담당자 퇴사로 진행이 어렵습니다."));
+        long signing = seedInStatus(ContractStatus.SIGNING).getId();
+        assertThat(historyOf(signing)).extracting(ContractHistory::getEventType)
+                .doesNotContain(ContractEventType.CANCELED);
     }
 
     @Test
@@ -421,8 +362,8 @@ class SellerContractLifecycleIntegrationTest extends SellerContractTestSupport {
     @DisplayName("버튼 판정은 상태를 따른다 — 화면이 아니라 서버가 내린다")
     void permissionsFollowStatus() throws Exception {
         assertPermissions(ContractStatus.DRAFT, "canEdit", "canDelete", "canRequestReview");
-        // 검토 대기 — [요청 취소](작성중으로)와 [계약 취소](종결) 둘 다. 서명 요청 발송 전 마지막 구간이다.
-        assertPermissions(ContractStatus.REVIEW_PENDING, "canCancelRequest", "canCancel");
+        // 검토 대기 — 되돌림은 [요청 취소](작성중으로)뿐이다. 브랜드에게 계약 취소(종결)는 없다.
+        assertPermissions(ContractStatus.REVIEW_PENDING, "canCancelRequest");
         // 반려 — 수정 후 재요청만.
         assertPermissions(ContractStatus.REVIEW_REJECTED, "canEdit", "canRequestReview");
         // 서명 요청 발송 이후 — 취소는 운영자만 한다.
@@ -450,11 +391,7 @@ class SellerContractLifecycleIntegrationTest extends SellerContractTestSupport {
                 mockMvc.perform(post(CONTRACTS + "/" + mine.getId() + "/resend-request")
                         .header(HttpHeaders.AUTHORIZATION, otherToken)),
                 mockMvc.perform(post(CONTRACTS + "/" + mine.getId() + "/duplicate")
-                        .header(HttpHeaders.AUTHORIZATION, otherToken)),
-                mockMvc.perform(post(CONTRACTS + "/" + mine.getId() + "/cancel")
-                        .header(HttpHeaders.AUTHORIZATION, otherToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reasonCode\":\"SCHEDULE_CHANGE\"}")));
+                        .header(HttpHeaders.AUTHORIZATION, otherToken)));
         for (ResultActions attempt : forbidden) {
             attempt.andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("CONTRACT_NOT_OWNED_BY_SELLER"));
@@ -471,13 +408,13 @@ class SellerContractLifecycleIntegrationTest extends SellerContractTestSupport {
         return contractHistoryRepository.findByContractIdOrderByOccurredAtAscIdAsc(contractId);
     }
 
-    /** 나열한 권한만 true이고 나머지 8종은 false여야 한다 — 「무엇이 꺼져 있는가」가 판정의 절반이다. */
+    /** 나열한 권한만 true이고 나머지는 false여야 한다 — 「무엇이 꺼져 있는가」가 판정의 절반이다. */
     private void assertPermissions(ContractStatus status, String... allowed) throws Exception {
         long contractId = seedInStatus(status).getId();
         ResultActions result = detail(contractId).andExpect(status().isOk());
 
         List<String> allPermissions = List.of("canEdit", "canDelete", "canRequestReview", "canCancelRequest",
-                "canCancel", "canRequestResend", "canRecordPayment", "canCreateGroupBuy", "canDuplicate");
+                "canRequestResend", "canRecordPayment", "canCreateGroupBuy", "canDuplicate");
         List<String> expectedTrue = List.of(allowed);
         for (String permission : allPermissions) {
             result.andExpect(jsonPath("$.permissions." + permission).value(expectedTrue.contains(permission)));

@@ -150,13 +150,15 @@ class SellerContractScreenSpecIntegrationTest extends SellerContractTestSupport 
     }
 
     @Test
-    @DisplayName("취소는 내가 넣은 사유가 그대로 남는다 — 종결 3종이 같은 자리에 다른 값을 싣는다")
-    void canceledContractShowsMyOwnReason() throws Exception {
+    @DisplayName("취소는 운영자가 넣은 사유가 그대로 온다 — 종결 3종이 같은 자리에 다른 값을 싣는다")
+    void canceledContractShowsOperatorReason() throws Exception {
         Contract canceled = seedInStatus(ContractStatus.CANCELED);
 
         detail(canceled.getId())
                 .andExpect(jsonPath("$.statusLabel").value("취소"))
-                .andExpect(jsonPath("$.closure.actorType").value("SELLER"))
+                // 브랜드에게 계약 취소는 없다 — 서명 요청 발송 이후 운영자가 취소한다.
+                .andExpect(jsonPath("$.closure.actorType").value("ADMIN"))
+                .andExpect(jsonPath("$.closure.memo").value("브랜드 요청으로 서명 요청을 회수했습니다."))
                 .andExpect(jsonPath("$.closure.reasonCode").value("SCHEDULE_CHANGE"))
                 .andExpect(jsonPath("$.closure.reasonLabel").value("공구 일정 변경"))
                 .andExpect(jsonPath("$.fixedFee.obligationAlive").value(false));
@@ -193,8 +195,8 @@ class SellerContractScreenSpecIntegrationTest extends SellerContractTestSupport 
         detail(mySignatureDone)
                 .andExpect(jsonPath("$.signature.brandSignedAt").exists())
                 .andExpect(jsonPath("$.permissions.canRequestResend").value(false))
-                // 서명 요청이 발송된 뒤라 취소는 운영자만 한다.
-                .andExpect(jsonPath("$.permissions.canCancel").value(false));
+                // 브랜드에게 계약 취소는 없다 — 발송 이후 취소는 운영자만 한다.
+                .andExpect(jsonPath("$.permissions.canCancel").doesNotExist());
         requestResend(mySignatureDone)
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CONTRACT_RESEND_NOT_ALLOWED"));

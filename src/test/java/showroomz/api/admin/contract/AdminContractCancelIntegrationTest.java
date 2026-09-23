@@ -81,7 +81,8 @@ class AdminContractCancelIntegrationTest extends AdminContractTestSupport {
                 .andExpect(jsonPath("$.closure.actorType").value("ADMIN"))
                 .andExpect(jsonPath("$.closure.reasonLabel").value("상대와 협의 중단"))
                 .andExpect(jsonPath("$.closure.memo").value(MEMO))
-                .andExpect(jsonPath("$.permissions.canCancel").value(false));
+                // 브랜드에게 계약 취소는 없다.
+                .andExpect(jsonPath("$.permissions.canCancel").doesNotExist());
         creatorDetail(c)
                 .andExpect(jsonPath("$.status").value("CANCELED"))
                 .andExpect(jsonPath("$.closure.actorType").value("ADMIN"))

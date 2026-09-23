@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * 인플루언서의 [거절] 사유 5종(시안 S5 · §27 설계서 5-1).
  *
- * <p><b>브랜드의 취소 사유 {@link ContractCloseReasonCode}와 별도 enum이다.</b> 값이 하나도 겹치지
+ * <p><b>취소 사유 {@link ContractCloseReasonCode}와 별도 enum이다.</b> 값이 하나도 겹치지
  * 않고(취소는 재고 부족 · 일정 변경 · 협의 중단 …), 한 enum에 합치면 거절 모달에 브랜드용
  * 선택지가 뜰 수 있는 구조가 된다.
  *

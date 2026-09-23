@@ -9,7 +9,6 @@ import org.springframework.test.web.servlet.ResultActions;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.user.repository.UserRepository;
-import showroomz.api.seller.contract.dto.ContractCancelRequest;
 import showroomz.api.seller.contract.dto.ContractReviewRequestRequest;
 import showroomz.api.seller.contract.dto.ContractUpdateRequest;
 import showroomz.domain.category.entity.Category;
@@ -198,14 +197,6 @@ abstract class SellerContractTestSupport extends IntegrationTestSupport {
     protected ResultActions cancelReviewRequest(long contractId) throws Exception {
         return mockMvc.perform(post(CONTRACTS + "/" + contractId + "/review-request/cancel")
                 .header(HttpHeaders.AUTHORIZATION, brandToken));
-    }
-
-    protected ResultActions cancelContract(long contractId, ContractCloseReasonCode reasonCode, String memo)
-            throws Exception {
-        return mockMvc.perform(post(CONTRACTS + "/" + contractId + "/cancel")
-                .header(HttpHeaders.AUTHORIZATION, brandToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(toJson(new ContractCancelRequest(reasonCode, memo))));
     }
 
     protected ResultActions requestResend(long contractId) throws Exception {
@@ -443,11 +434,6 @@ abstract class SellerContractTestSupport extends IntegrationTestSupport {
                     "상품 정보가 계약 조건과 맞지 않습니다.", now.minusDays(2));
             return;
         }
-        if (status == ContractStatus.CANCELED) {
-            // 브랜드 취소는 서명 요청 발송 전(검토 대기)에만 있다 — 발송 이후의 취소는 운영자 몫이다.
-            contract.applyCanceled(ContractCloseReasonCode.SCHEDULE_CHANGE.name(), null, now.minusDays(1));
-            return;
-        }
 
         contract.approveReview(now.minusDays(2), now.plusDays(5), now.minusDays(2));
         switch (status) {
@@ -461,6 +447,9 @@ abstract class SellerContractTestSupport extends IntegrationTestSupport {
                 contract.conclude(now.minusHours(2));
             }
             case EXPIRED -> contract.expire(now.minusDays(1));
+            // 브랜드에게 계약 취소는 없다 — 취소는 서명 요청 발송 이후 운영자가 한다.
+            case CANCELED -> contract.applyCanceledByAdmin(ContractCloseReasonCode.SCHEDULE_CHANGE.name(),
+                    "브랜드 요청으로 서명 요청을 회수했습니다.", now.minusDays(1));
             default -> throw new IllegalArgumentException("적재할 수 없는 상태: " + status);
         }
     }

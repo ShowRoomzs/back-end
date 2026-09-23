@@ -257,8 +257,8 @@ class SellerContractIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.review.requestedAt").exists())
                 .andExpect(jsonPath("$.permissions.canEdit").value(false))
                 .andExpect(jsonPath("$.permissions.canCancelRequest").value(true))
-                // 검토 대기 — [요청 취소](작성중으로)와 [계약 취소](종결) 둘 다 열려 있다. 서명 요청 발송 전이다.
-                .andExpect(jsonPath("$.permissions.canCancel").value(true))
+                // 검토 대기의 되돌림은 [요청 취소]뿐이다 — 브랜드에게 계약 취소(종결)는 없다.
+                .andExpect(jsonPath("$.permissions.canCancel").doesNotExist())
                 .andExpect(jsonPath("$.history[?(@.eventType == 'REVIEW_REQUESTED')]").exists());
 
         mockMvc.perform(put(CONTRACTS + "/" + contractId)
@@ -317,29 +317,6 @@ class SellerContractIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.review.requestedAt").doesNotExist())
                 .andExpect(jsonPath("$.permissions.canEdit").value(true))
                 .andExpect(jsonPath("$.closure.closedAt").doesNotExist());
-    }
-
-    @Test
-    @DisplayName("검토 대기에서 [계약 취소]는 종결이다 — 작성중으로 되돌리는 [요청 취소]와 갈라져 있다")
-    void cancelContractClosesWhileReviewPending() throws Exception {
-        long contractId = createDraft();
-        saveOk(contractId, validContract(0L));
-        requestReview(contractId);
-
-        mockMvc.perform(post(CONTRACTS + "/" + contractId + "/cancel")
-                        .header(HttpHeaders.AUTHORIZATION, brandToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(new java.util.LinkedHashMap<>(java.util.Map.of(
-                                "reasonCode", ContractCloseReasonCode.SCHEDULE_CHANGE.name())))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("CANCELED"))
-                .andExpect(jsonPath("$.permissions.canEdit").value(false))
-                .andExpect(jsonPath("$.permissions.canCancelRequest").value(false));
-
-        // 종결된 계약은 [요청 취소]로 작성중에 되살릴 수 없다.
-        mockMvc.perform(post(CONTRACTS + "/" + contractId + "/review-request/cancel")
-                        .header(HttpHeaders.AUTHORIZATION, brandToken))
-                .andExpect(status().isConflict());
     }
 
     @Test
