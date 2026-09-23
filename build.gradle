@@ -41,6 +41,7 @@ dependencies {
 	implementation 'com.github.iamport:iamport-rest-client-java:0.2.23'
 	implementation 'software.amazon.awssdk:s3:2.20.26'
 	implementation 'org.jsoup:jsoup:1.17.2'
+	implementation 'com.microsoft.playwright:playwright:1.58.0'
 	implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
 	implementation 'com.maxmind.geoip2:geoip2:4.4.0'
 	/*implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.1'*/
@@ -73,11 +74,26 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	// 통합 테스트 전용 인메모리 DB(MySQL 호환 모드). 실 MySQL 스키마 검증은 showroomz.DB.ShowroomzApplicationTests가 담당한다.
 	testRuntimeOnly 'com.h2database:h2'
+	testImplementation 'org.apache.pdfbox:pdfbox:3.0.4'
 	
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform { excludeTags 'contract-pdf' }
+}
+
+tasks.register('installContractChromium', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.microsoft.playwright.CLI'
+    args 'install', 'chromium'
+}
+
+tasks.register('contractPdfTest', Test) {
+    description = 'Verifies real Chromium contract PDFs, Korean fonts and the final signature page.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform { includeTags 'contract-pdf' }
 }
 
 tasks.register('integrationTest', Test) {

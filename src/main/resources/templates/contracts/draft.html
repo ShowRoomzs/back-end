@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>SHOWROOMZ 공동구매 계약서 양식 v0.1</title>
+<style>
+  * { box-sizing: border-box; }
+  html { background: #6b6d72; }
+  body {
+    margin: 0;
+    font-family: "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Pretendard", sans-serif;
+    font-size: 9.3pt;
+    line-height: 1.46;
+    color: #000;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── 화면 전용 툴바 ───────────────────────────── */
+  .bar {
+    position: sticky; top: 0; z-index: 50;
+    background: #24262b; color: #e9eaec;
+    padding: 10px 20px;
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    font-size: 12px; letter-spacing: -.1px;
+  }
+  .bar strong { font-size: 13px; color: #fff; font-weight: 700; }
+  .bar .tag { background: #3d4046; border-radius: 3px; padding: 2px 7px; color: #c9cbd0; }
+  .bar .tag.warn { background: #5a3a12; color: #f0c98a; }
+  .bar label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+  .bar input { accent-color: #f5b301; }
+
+  .sheetwrap { padding: 26px 0 60px; }
+
+  /* ── A4 페이지 ────────────────────────────────── */
+  .page {
+    width: 210mm; min-height: 297mm;
+    margin: 0 auto 18px;
+    padding: 17mm 18mm 13mm;
+    background: #fff;
+    position: relative;
+    box-shadow: 0 2px 14px rgba(0,0,0,.38);
+  }
+  .page::after {
+    content: attr(data-foot);
+    position: absolute; left: 18mm; right: 18mm; bottom: 6mm;
+    border-top: .4pt solid #b8b8b8;
+    padding-top: 2.4mm;
+    font-size: 7.2pt; color: #666;
+    display: flex; justify-content: space-between;
+    white-space: pre;
+  }
+
+  /* ── 표제 ─────────────────────────────────────── */
+  h1.doc {
+    text-align: center; font-size: 15pt; font-weight: 700;
+    letter-spacing: 7px; margin: 0 0 2mm; padding-right: 8px;
+  }
+  .doc-sub { text-align: center; font-size: 8.4pt; color: #444; margin-bottom: 5mm; letter-spacing: -.2px; }
+
+  h2.art {
+    font-size: 10pt; font-weight: 700; margin: 4.2mm 0 1.4mm;
+    padding-bottom: .9mm; border-bottom: .8pt solid #222;
+  }
+  h2.art .arttag {
+    float: right; font-size: 7.4pt; font-weight: 600; color: #7a7a7a;
+    border: .5pt solid #c4c4c4; border-radius: 2px; padding: 0 4px;
+    letter-spacing: -.2px; line-height: 1.7;
+  }
+  h3.chap {
+    font-size: 11pt; font-weight: 700; text-align: center;
+    margin: 5mm 0 2.8mm; padding: 1.4mm 0;
+    background: #f1f1f1; border-top: 1pt solid #222; border-bottom: 1pt solid #222;
+    letter-spacing: 2px;
+  }
+
+  p { margin: 0 0 1.2mm; text-align: justify; }
+  ol.cl { margin: 0; padding-left: 6.5mm; }
+  ol.cl > li { margin-bottom: 1mm; }
+  ol.cl ol { margin: 1mm 0 0; padding-left: 6mm; list-style-type: lower-alpha; }
+  .lead { margin-bottom: 2.2mm; }
+
+  /* ── 표 ───────────────────────────────────────── */
+  table { width: 100%; border-collapse: collapse; margin: 1.6mm 0 2mm; font-size: 8.7pt; }
+  th, td { border: .5pt solid #8a8a8a; padding: 1mm 2mm; vertical-align: middle; }
+  th { background: #efefef; font-weight: 700; text-align: center; }
+  td.l { text-align: left; }
+  td.c { text-align: center; }
+  td.r { text-align: right; }
+  th.lab, td.lab { background: #f6f6f6; font-weight: 700; text-align: center; width: 26mm; }
+  tfoot td { background: #f6f6f6; font-weight: 700; }
+
+  /* ── 치환 변수 ────────────────────────────────── */
+  .v { padding: 0 1px; border-radius: 1.5px; }
+  body.hl .v { background: #fff3c4; box-shadow: 0 0 0 .5pt #e3c34d inset; }
+  body.hl .v::after {
+    content: attr(data-k);
+    font-size: 6.6pt; color: #8a6a00; vertical-align: super;
+    margin-left: 1px; letter-spacing: 0;
+  }
+  .cond {
+    border-left: 2pt solid #bdbdbd; padding-left: 3mm; margin: 2mm 0;
+  }
+  body.hl .cond { border-left-color: #e3a000; background: #fffdf3; }
+  .cond-k {
+    display: none; font-size: 7.4pt; color: #8a6a00; font-weight: 700;
+    letter-spacing: -.2px; margin-bottom: .8mm;
+  }
+  body.hl .cond-k { display: block; }
+
+  .note {
+    font-size: 8pt; color: #333; background: #f5f5f5;
+    border: .5pt solid #c9c9c9; padding: 1.8mm 2.4mm; margin: 2mm 0;
+  }
+  .note b { color: #000; }
+
+  /* ── 서명 페이지 ──────────────────────────────── */
+  .signclose { margin: 4mm 0 4.5mm; text-align: center; font-size: 10.5pt; }
+  .signdate { text-align: center; font-size: 11pt; margin: 0 0 9mm; letter-spacing: .5px; }
+  .sgrid { display: flex; gap: 8mm; }
+  .sparty { flex: 1; border: .8pt solid #555; padding: 3mm 3.5mm 3.5mm; }
+  .sparty h4 {
+    margin: 0 0 2mm; font-size: 10pt; font-weight: 700;
+    border-bottom: .5pt solid #999; padding-bottom: 1.6mm;
+  }
+  .sparty dl { margin: 0; font-size: 8.4pt; }
+  .sparty dl div { display: flex; margin-bottom: 1mm; }
+  .sparty dt { width: 20mm; flex: none; color: #444; font-weight: 700; }
+  .sparty dd { margin: 0; flex: 1; word-break: break-all; }
+
+  /* 모두싸인 사인·도장 배치 영역 */
+  .sslot {
+    margin-top: 3mm; height: 21mm;
+    border: .5pt solid #9a9a9a; background: #fff;
+    position: relative;
+  }
+  .sslot .cap {
+    position: absolute; right: 2.5mm; bottom: 1.8mm;
+    font-size: 8.4pt; color: #555;
+  }
+  .sslot .ms {
+    position: absolute; inset: 2mm 2mm 6mm 2mm;
+    border: 1pt dashed #c9a227; background: rgba(245,179,1,.10);
+    display: none; align-items: center; justify-content: center;
+    font-size: 7.6pt; color: #8a6a00; font-weight: 700; text-align: center;
+    line-height: 1.35; letter-spacing: -.2px;
+  }
+  body.ms .sslot .ms { display: flex; }
+
+  .msfield {
+    border: .5pt solid #9a9a9a; background: #fff;
+    height: 8mm; position: relative; margin-top: 1.5mm;
+  }
+  .msfield .ms {
+    position: absolute; inset: 1mm;
+    border: 1pt dashed #c9a227; background: rgba(245,179,1,.10);
+    display: none; align-items: center; justify-content: center;
+    font-size: 7.4pt; color: #8a6a00; font-weight: 700; letter-spacing: -.2px;
+  }
+  body.ms .msfield .ms { display: flex; }
+
+  .ack { margin-top: 3mm; border: .8pt solid #555; padding: 3mm 3.5mm; }
+  .ack h4 { margin: 0 0 1.8mm; font-size: 10pt; font-weight: 700; }
+  .ack p { font-size: 8.4pt; }
+  .ackrow { display: flex; align-items: flex-start; gap: 3mm; margin-top: 2mm; }
+  .ackbox {
+    width: 7mm; height: 7mm; flex: none;
+    border: .6pt solid #777; background: #fff; position: relative;
+  }
+  .ackbox .ms {
+    position: absolute; inset: -.6pt;
+    border: 1pt dashed #c9a227; background: rgba(245,179,1,.14);
+    display: none;
+  }
+  body.ms .ackbox .ms { display: block; }
+  .ackrow span { font-size: 8.4pt; padding-top: .6mm; }
+
+  @media print {
+    html, body { background: #fff; }
+    .bar { display: none !important; }
+    .sheetwrap { padding: 0; }
+    .page { box-shadow: none; margin: 0; page-break-after: always; }
+    .page:last-child { page-break-after: auto; }
+    body.hl .v { background: none !important; box-shadow: none !important; }
+    body.hl .v::after { content: none !important; }
+    .ms { display: none !important; }
+  }
+  @page { size: A4; margin: 0; }
+
+  @media (max-width: 900px) {
+    .page { width: 100%; min-height: auto; padding: 18px 16px 42px; }
+    .sgrid { flex-direction: column; gap: 5mm; }
+  }
+</style>
+<style>
+body { font-family: "Malgun Gothic", "Noto Sans CJK KR", sans-serif; }
+.draft-notice { font-size:8pt;color:#555; }
+.page::after { content:none !important; }
+td, th { overflow-wrap:anywhere; }
+tr { break-inside:avoid; }
+thead { display:table-header-group; }
+h2, h3 { break-after:avoid; }
+@page { size:A4; margin:17mm 18mm 13mm; }
+@media print {
+  .page { width:auto;min-height:0;padding:0;page-break-after:always; }
+  .page:last-child { page-break-after:auto; break-before:page; }
+  .sgrid { flex-direction:row; }
+  .sparty { min-width:0; }
+  .page:last-child > table { height:22mm; table-layout:fixed; }
+  .sparty dl { min-height:42mm; }
+}
+</style></head>
+<body class="">
+
+<div class="sheetwrap">
+<!-- ══════════════ 1면 ══════════════ -->
+<section class="page">
+<h1 class="doc">공동구매 계약서</h1>
+<div class="doc-sub">
+    계약번호 <span class="v" th:text="${values['계약번호']}"></span>
+     ·  제출본 기준 <span class="v" th:text="${values['제출본일시']}"></span>
+</div><p class="draft-notice">[자문대기-법률] 문안 미확정 · 검토용 초안 · 실제 체결 사용 금지</p>
+<table>
+<colgroup><col style="width:26mm"/><col/><col style="width:26mm"/><col/></colgroup>
+<tbody>
+<tr>
+<td class="lab" rowspan="4">브랜드<br/>(“갑”)</td>
+<td class="l"><b>상호</b> <span class="v" th:text="${values['브랜드_상호']}"></span></td>
+<td class="lab" rowspan="4">인플루언서<br/>(“을”)</td>
+<td class="l"><b>성명</b> <span class="v" th:text="${values['인플루언서_성명']}"></span>
+          (활동명 <span class="v" th:text="${values['인플루언서_활동명']}"></span>)</td>
+</tr>
+<tr>
+<td class="l"><b>대표자</b> <span class="v" th:text="${values['브랜드_대표자']}"></span></td>
+<td class="l"><b>사업자등록번호</b>
+<span class="cond" style="display:inline; border:0; padding:0; margin:0">
+<span class="v" th:text="${values['인플루언서_사업자등록번호']}"></span>
+</span></td>
+</tr>
+<tr>
+<td class="l"><b>사업자등록번호</b> <span class="v" th:text="${values['브랜드_사업자등록번호']}"></span></td>
+<td class="l"><b>주소</b> <span class="v" th:text="${values['인플루언서_주소']}"></span></td>
+</tr>
+<tr>
+<td class="l"><b>주소</b> <span class="v" th:text="${values['브랜드_주소']}"></span></td>
+<td class="l"><b>SNS 계정</b> <span class="v" th:text="${values['인플루언서_인스타그램']}"></span></td>
+</tr>
+<tr>
+<td class="lab">연락 담당</td>
+<td class="l">
+<span class="v" th:text="${values['브랜드_담당자명']}"></span> ·
+          <span class="v" th:text="${values['브랜드_연락처']}"></span> ·
+          <span class="v" th:text="${values['브랜드_이메일']}"></span>
+</td>
+<td class="lab">연락처</td>
+<td class="l">
+<span class="v" th:text="${values['인플루언서_연락처']}"></span> ·
+          <span class="v" th:text="${values['인플루언서_이메일']}"></span>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="lead" style="margin-top:4mm">
+    브랜드(이하 “갑”)와 인플루언서(이하 “을”)는 SHOWROOMZ 플랫폼(이하 “플랫폼”)을 통한
+    공동구매의 진행 및 그에 따른 콘텐츠 제작·게시에 관하여 다음과 같이 합의하고, 이를 증명하기 위하여
+    본 계약서를 전자문서로 작성하여 갑과 을이 각각 전자서명한다.
+  </p>
+<h3 class="chap">제 1 장   총 칙</h3>
+<h2 class="art">제1조 (목적) <span class="arttag">표준</span></h2>
+<p>본 계약은 갑이 공급하는 상품에 대하여 을이 자신의 SNS 채널 및 SHOWROOMZ 쇼룸을 통해 공동구매를
+     홍보·판매함에 있어, 양 당사자의 권리와 의무를 정함을 목적으로 한다.</p>
+<h2 class="art">제2조 (당사자 및 플랫폼의 지위) <span class="arttag">표준 · 신규제안</span></h2>
+<ol class="cl">
+<li>본 계약의 당사자는 갑과 을이며, <b>플랫폼은 본 계약의 당사자가 아니다.</b></li>
+<li>플랫폼은 통신판매중개자로서 공동구매의 개설·주문·결제·정산을 위한 전산 설비와 서비스를 제공하며,
+        상품의 하자, 배송, 교환·환불 및 표시·광고의 책임은 <b>판매자인 갑</b>에게 있다.</li>
+<li>제6조의 리워드는 플랫폼이 정산 절차에 따라 을에게 지급한다.
+        <b>제7조의 고정 지급비는 갑이 을에게 직접 지급하며, 플랫폼은 이를 보관·중개하지 아니하고 그 지급을 보증하지 아니한다.</b></li>
+<li>플랫폼은 본 계약의 체결 과정에서 계약서의 생성, 전자서명 요청의 전달 및 체결 문서의 보관 업무를 수행한다.
+        이는 사무적 처리에 해당하며 <b>플랫폼이 본 계약의 성립 여부를 결정하는 것은 아니다.</b></li>
+</ol>
+<h2 class="art">제3조 (계약의 성립 및 효력 발생) <span class="arttag">표준 · 신규제안</span></h2>
+<ol class="cl">
+<li>본 계약은 <b>갑과 을이 모두 전자서명을 완료한 때에 성립한다.</b> 서명의 선후는 효력에 영향을 미치지 아니한다.</li>
+<li>갑 또는 을이 <span class="v" th:text="${values['서명기한']}"></span>까지 서명을 완료하지 아니한 경우
+        본 계약은 성립하지 아니하며, 어느 당사자도 이를 이유로 상대방에게 책임을 묻지 아니한다.</li>
+<li>계약 성립 후 플랫폼 시스템상 공동구매가 생성되며, 공동구매의 실제 개시는 제4조의 기간에 따른다.</li>
+</ol>
+<h3 class="chap">제 2 장   협 의 조 건</h3>
+<h2 class="art">제4조 (공동구매 기간) <span class="arttag">협의</span></h2>
+<table>
+<tbody>
+<tr>
+<td class="lab">시작 일시</td>
+<td class="c"><span class="v" th:text="${values['공구_시작일시']}"></span></td>
+<td class="lab">종료 일시</td>
+<td class="c"><span class="v" th:text="${values['공구_종료일시']}"></span></td>
+</tr>
+<tr>
+<td class="lab">공동구매명</td>
+<td class="l" colspan="3"><span class="v" th:text="${values['공구명']}"></span>
+<span style="color:#666;font-size:8.6pt"> (관리용 식별명이며 소비자에게 노출되는 제목과 다를 수 있다)</span></td>
+</tr>
+</tbody>
+</table>
+<p>기간 중 갑은 제5조의 최소 물량을 확보하여야 하며, 을은 제8조의 콘텐츠 게시 의무를 이행하여야 한다.</p>
+</section>
+<!-- ══════════════ 2면 ══════════════ -->
+<section class="page">
+<h2 class="art">제5조 (대상 상품 및 판매 조건) <span class="arttag">협의</span></h2>
+<table>
+<thead>
+<tr>
+<th style="width:8mm">번호</th><th>상품명</th>
+<th style="width:22mm">정가</th><th style="width:22mm">공동구매가</th>
+<th style="width:18mm">리워드율</th><th style="width:24mm">1개당 리워드</th>
+<th style="width:20mm">최소 물량</th>
+</tr>
+</thead>
+<tbody>
+<tr th:each="item, stat : ${items}">
+<td class="c" th:text="${stat.count}"></td>
+<td class="l"><span class="v" th:text="${item['상품명']}"></span></td>
+<td class="r"><span class="v" th:text="${item['정가']}"></span>원</td>
+<td class="r"><span class="v" th:text="${item['공구가']}"></span>원</td>
+<td class="c"><span class="v" th:text="${item['리워드율']}"></span>%</td>
+<td class="r"><span class="v" th:text="${item['개당리워드']}"></span>원</td>
+<td class="r"><span class="v" th:text="${item['최소물량']}"></span>개</td>
+</tr>
+
+</tbody>
+</table>
+<ol class="cl">
+<li>공동구매가는 <b>부가가치세가 포함된 소비자 판매가</b>이며, 정가를 초과할 수 없다.</li>
+<li>최소 물량은 갑이 해당 상품에 대하여 확보를 약속하는 수량이다. 갑의 사유로 최소 물량이 확보되지 아니하여
+        주문이 이행되지 못한 경우, 그에 따른 소비자 대응과 손해는 갑이 부담한다.</li>
+<li>상품, 공동구매가, 리워드율 및 최소 물량은 <b>본 계약의 성립 후 변경할 수 없다.</b>
+        변경이 필요한 경우 양 당사자의 합의로 본 계약을 해지하고 새로 체결한다.</li>
+</ol>
+<h2 class="art">제6조 (리워드 및 정산) <span class="arttag">협의 · 표준 혼합</span></h2>
+<ol class="cl">
+<li>을은 본 계약에 따른 공동구매를 통해 발생한 판매에 대하여 제5조에 정한 상품별 리워드율을 적용한 금액을
+        리워드로 지급받는다. 리워드는 <b>상품별 공동구매가에 해당 상품의 리워드율을 곱한 금액</b>으로 산정한다.</li>
+<li>리워드는 플랫폼의 정산 절차에 따라 지급되며, 정산 기준은 다음과 같다.
+      <table style="margin-top:2mm">
+<tbody>
+<tr><td class="lab">정산 기준 금액</td><td class="l">공동구매가 (부가가치세 포함 소비자 판매가)</td></tr>
+<tr><td class="lab">플랫폼 수수료</td><td class="l"><span class="v" th:text="${values['플랫폼수수료율']}"></span>%</td></tr>
+<tr><td class="lab">결제 수수료</td><td class="l"><span class="v" th:text="${values['PG수수료_문구']}"></span></td></tr>
+<tr>
+<td class="lab">원천징수</td>
+<td class="l">
+<div class="cond">
+
+<span class="v" th:text="${values['원천징수_문구']}"></span>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>취소, 반품 및 교환이 발생한 건에 대하여는 리워드가 발생하지 아니하며,
+        이미 지급된 경우 다음 정산 시 차감한다.</li>
+<li>구체적인 정산 주기, 지급일 및 지급 방법은 플랫폼이 정한 정산 정책에 따른다.</li>
+</ol>
+<h2 class="art">제7조 (고정 지급비) <span class="arttag">협의</span></h2>
+<div class="cond" th:if="${hasFixedFee}">
+
+<table>
+<tbody>
+<tr>
+<td class="lab">금액</td>
+<td class="l"><b>금 <span class="v" th:text="${values['고정지급비_금액_한글']}"></span>원정
+            (₩<span class="v" th:text="${values['고정지급비_금액']}"></span>)</b></td>
+<td class="lab">지급 시점</td>
+<td class="l"><span class="v" th:text="${values['고정지급비_지급시점']}"></span></td>
+</tr>
+</tbody>
+</table>
+<ol class="cl">
+<li>고정 지급비는 <b>판매 실적과 무관한 별도의 지급액</b>이며, 제6조의 리워드와 합산하지 아니한다.</li>
+<li><b>고정 지급비는 갑이 을에게 직접 지급한다.</b> 플랫폼은 해당 금액을 보관하거나 중개하지 아니하며,
+          지급 여부를 확인하거나 보증하지 아니한다.</li>
+<li>지급 시점이 도래한 날부터 <b>7영업일 이내</b>에 갑은 을이 지정한 계좌로 지급한다.
+          지급에 따르는 제세공과금의 처리는 관계 법령에 따른다.</li>
+<li>고정 지급비의 지급이 이루어지지 아니한 경우, 을은 플랫폼의 이슈 스레드를 통해 이를 제기할 수 있고
+          플랫폼은 중재를 시도할 수 있다. 다만 <b>중재는 권고에 그치며 지급 의무는 갑에게 있고,
+          본 계약서가 그 근거가 된다.</b></li>
+<li>고정 지급비가 지급된 후 을이 제8조의 콘텐츠 게시 의무를 이행하지 아니한 경우에도
+          <b>이미 지급된 금액은 반환되지 아니한다.</b> 이 경우 갑은 제18조에 따른 조치를 요청할 수 있다.</li>
+</ol>
+</div><p th:unless="${hasFixedFee}">본 계약에는 고정 지급비가 없다.</p>
+</section>
+<!-- ══════════════ 3면 ══════════════ -->
+<section class="page">
+<h2 class="art">제8조 (콘텐츠 제작 및 게시 의무) <span class="arttag">협의</span></h2>
+<table>
+<tbody>
+<tr>
+<td class="lab">게시 채널</td>
+<td class="l" colspan="3">인스타그램</td>
+</tr>
+<tr>
+<td class="lab">게시 수량</td>
+<td class="l" colspan="3">
+          피드 <span class="v" th:text="${values['게시_피드수']}"></span>건 ·
+          릴스 <span class="v" th:text="${values['게시_릴스수']}"></span>건 ·
+          스토리 <span class="v" th:text="${values['게시_스토리수']}"></span>건
+           (합계 <span class="v" th:text="${values['게시_합계']}"></span>건)
+        </td>
+</tr>
+<tr>
+<td class="lab">게시 완료 기한</td>
+<td class="l"><span class="v" th:text="${values['게시완료기한']}"></span></td>
+<td class="lab">브랜드 사전 검수</td>
+<td class="l"><span class="v" th:text="${values['브랜드사전검수']}"></span></td>
+</tr>
+</tbody>
+</table>
+<ol class="cl">
+<li>을은 게시 완료 기한까지 위 수량의 콘텐츠를 모두 게시하여야 한다.
+        기한 내 게시가 완료되지 아니한 경우 미이행으로 본다.</li>
+<li th:if="${preReview}">
+<div class="cond" style="margin:0">
+
+<b>을은 게시 전 콘텐츠 초안을 플랫폼의 연결·소통 스레드를 통해 갑에게 제출하여 확인을 받아야 하며,
+        갑의 확인 없이 게시된 콘텐츠는 본 조의 이행으로 보지 아니한다.</b>
+        갑은 초안 수령일부터 3영업일 이내에 회신하여야 하고, 기간 내 회신이 없는 경우 확인한 것으로 본다.
+      </div>
+</li>
+<li>게시된 콘텐츠는 <b>공동구매 종료일부터 30일이 경과하기 전에는 삭제하거나 비공개로 전환할 수 없다.</b></li>
+<li>이행 여부의 확인은 갑과 을이 연결·소통 스레드를 통해 직접 한다. 플랫폼은 이행 여부를 판정하지 아니한다.</li>
+<li th:if="${hasNote}"><b>비고</b>
+<div class="cond" style="margin-top:1.5mm">
+
+<span class="v" style="white-space:pre-wrap;overflow-wrap:anywhere" th:text="${values['비고']}"></span>
+</div>
+</li>
+</ol>
+<h2 class="art">제9조 (2차 활용권) <span class="arttag">협의</span></h2>
+<div class="cond">
+
+<ol class="cl">
+<li>을은 제8조에 따라 제작·게시한 콘텐츠에 대하여 갑이 이를 2차적으로 활용하는 것을
+          <b><span class="v" th:text="${values['2차활용권']}"></span>.</b></li>
+<li th:if="${secondaryAllowed}" th:text="${secondaryPeriodClause}">활용 기간은 <b>게시일부터 <span class="v" th:text="${values['2차활용기간']}"></span></b>로 한다.</li>
+<li th:if="${secondaryAllowed}" th:text="${secondaryScopeClause}"></li>
+<li th:if="${secondaryAllowed}">갑은 콘텐츠를 활용함에 있어 을의 명예 또는 이미지를 훼손하지 아니하여야 하고,
+          콘텐츠의 본질적 내용을 변경하여서는 아니 된다.</li>
+<li th:if="${secondaryAllowed and secondaryFixed}">활용 기간이 만료된 후 갑은 해당 콘텐츠의 사용을 중단하여야 한다.</li>
+</ol>
+</div>
+<h3 class="chap">제 3 장   표 준 조 항</h3>
+<p class="lead" style="font-size:9.2pt;color:#444">
+    본 장의 각 조항은 SHOWROOMZ 플랫폼을 통해 체결되는 모든 공동구매 계약에 공통으로 적용되며,
+    갑과 을이 임의로 변경할 수 없다.
+  </p>
+<h2 class="art">제10조 (최저가 정책) <span class="arttag">표준</span></h2>
+<ol class="cl">
+<li>갑은 공동구매 기간 중 <b>자사몰 및 갑이 운영하거나 입점한 모든 판매 채널에서
+        대상 상품을 공동구매가보다 낮은 가격으로 판매하지 아니한다.</b></li>
+<li>할인 쿠폰, 적립금, 묶음 구성 등으로 <b>실질 구매가가 공동구매가보다 낮아지는 경우</b>에도 제1항을 위반한 것으로 본다.</li>
+<li>갑이 본 조를 위반한 경우 을은 즉시 시정을 요구할 수 있고, 시정되지 아니하면
+        <b>제20조에 따라 본 계약을 해지</b>할 수 있다. 이 경우 을의 콘텐츠 게시 의무는 소멸하고,
+        이미 지급받은 고정 지급비는 반환하지 아니한다.</li>
+</ol>
+<h2 class="art">제11조 (단독 판매) <span class="arttag">표준</span></h2>
+<ol class="cl">
+<li>갑은 공동구매 기간 중 <b>대상 상품에 대하여 다른 인플루언서와 동일한 조건의 공동구매를 병행하지 아니한다.</b></li>
+<li>본 조는 갑의 통상적인 상시 판매 채널 운영을 제한하지 아니하며, 제10조의 범위에서만 적용된다.</li>
+</ol>
+</section>
+<!-- ══════════════ 4면 ══════════════ -->
+<section class="page">
+<h2 class="art">제12조 (샘플 제공) <span class="arttag">표준</span></h2>
+<ol class="cl">
+<li>갑은 을이 콘텐츠를 제작할 수 있도록 <b>대상 상품의 샘플을 무상으로 제공한다.</b>
+        제공 수량과 배송 방법은 양 당사자가 협의한다.</li>
+<li>샘플의 대가는 청구되지 아니하며, 정산 금액에서 공제되지 아니한다.</li>
+<li>을은 제공받은 샘플을 <b>콘텐츠 제작 목적 외로 판매하거나 양도할 수 없다.</b></li>
+</ol>
+<h2 class="art">제13조 (화장품 표시·광고 준수) <span class="arttag">표준 · 자문대기</span></h2>
+<ol class="cl">
+<li>을은 콘텐츠를 제작함에 있어 <b>화장품법 및 「화장품 표시·광고 실증에 관한 규정」</b>을 준수하여야 하며,
+        의학적 효능·효과를 표방하거나 사실과 다른 내용을 표시·광고하여서는 아니 된다.</li>
+<li>갑은 을에게 <b>제품 정보와 표시·광고 가능 문구를 사전에 제공</b>하여야 하며,
+        갑이 제공한 정보의 정확성에 대한 책임은 갑에게 있다.</li>
+<li>갑이 제공한 정보에 따른 표시·광고로 인하여 행정처분 또는 분쟁이 발생한 경우
+        <b>그 책임은 갑이 부담</b>한다. 다만 을이 갑이 제공하지 아니한 내용을 임의로 추가한 경우에는 그러하지 아니하다.</li>
+</ol>
+<h2 class="art">제14조 (대가관계 표시 의무) <span class="arttag">표준 · 자문대기</span></h2>
+<ol class="cl">
+<li>을은 「추천·보증 등에 관한 표시·광고 심사지침」에 따라
+        <b>본 계약에 따른 경제적 대가를 받았다는 사실을 콘텐츠에 명확히 표시</b>하여야 한다.</li>
+<li>표시 문구는 소비자가 쉽게 인식할 수 있는 위치와 크기로 게시하여야 하며,
+        더보기 등으로 가려지는 위치에 두어서는 아니 된다.</li>
+<li>표시 누락으로 인한 행정처분 및 과징금은 <b>표시 의무를 이행하지 아니한 당사자가 부담</b>한다.</li>
+</ol>
+<h2 class="art">제15조 (지식재산권) <span class="arttag">표준</span></h2>
+<ol class="cl">
+<li>을이 제작한 콘텐츠의 저작권은 <b>을에게 귀속</b>한다. 갑은 제9조가 정한 범위에서 이를 이용할 수 있다.</li>
+<li>갑의 상표, 상호, 제품 이미지 및 디자인에 관한 권리는 갑에게 귀속하며,
+        을은 <b>본 계약의 이행에 필요한 범위에서만</b> 이를 사용할 수 있다.</li>
+<li>양 당사자는 계약이 종료된 후 상대방의 상표 또는 성명을 사용하여
+        제3자에게 제휴 관계가 계속되는 것으로 오인하게 하여서는 아니 된다.</li>
+</ol>
+<h2 class="art">제16조 (비밀유지) <span class="arttag">표준</span></h2>
+<ol class="cl">
+<li>양 당사자는 본 계약의 체결 및 이행 과정에서 알게 된 상대방의 영업상·기술상 정보와
+        <b>본 계약의 조건</b>을 제3자에게 누설하여서는 아니 된다.</li>
+<li>본 조의 의무는 <b>본 계약이 종료된 날부터 1년간 존속</b>한다.</li>
+<li>법령 또는 관계 기관의 요구에 따라 공개하는 경우에는 그러하지 아니하며,
+        이 경우 지체 없이 상대방에게 통지하여야 한다.</li>
+</ol>
+<h2 class="art">제17조 (고객 응대 주체) <span class="arttag">표준</span></h2>
+<ol class="cl">
+<li>주문, 배송, 교환, 반품 및 환불에 관한 소비자 문의와 처리의 <b>책임은 판매자인 갑에게 있다.</b></li>
+<li>을은 자신의 채널에 접수된 소비자 문의를 <b>갑 또는 플랫폼의 고객센터로 안내</b>한다.
+        을은 갑을 대리하여 교환·환불 여부를 확정하거나 보상을 약속할 권한이 없다.</li>
+<li>플랫폼은 통신판매중개자로서 소비자 문의를 갑에게 전달하고 처리 상황을 중개한다.</li>
+</ol>
+<h2 class="art">제18조 (위반 시 조치) <span class="arttag">표준</span></h2>
+<ol class="cl">
+<li>일방이 본 계약을 위반한 경우 상대방은 서면 또는 플랫폼의 연결·소통 스레드를 통해 시정을 요구할 수 있다.</li>
+<li>시정 요구를 받은 당사자가 <b>7일 이내에 이를 시정하지 아니하는 경우</b>
+        상대방은 제20조에 따라 본 계약을 해지할 수 있다.</li>
+<li>플랫폼은 본 계약의 위반 사실이 확인된 경우 자체 운영 정책에 따라
+        <b>계정 이용 제한 또는 향후 계약 체결 제한</b> 등의 조치를 할 수 있다.
+        <b>이는 플랫폼의 이용 관계에 관한 조치이며, 본 계약에 따른 금전의 회수를 의미하지 아니한다.</b></li>
+</ol>
+</section>
+<!-- ══════════════ 5면 ══════════════ -->
+<section class="page">
+<h2 class="art">제19조 (손해배상 및 위약금) <span class="arttag">표준 · 자문대기</span></h2>
+<ol class="cl">
+<li>일방의 귀책사유로 상대방에게 손해가 발생한 경우 그 당사자는 <b>통상의 손해</b>를 배상할 책임을 진다.</li>
+<li>을이 제8조의 게시 의무를 전혀 이행하지 아니한 경우, 갑은 이미 지급한 고정 지급비 상당액의
+        반환을 청구할 수 있다. <b>일부를 이행한 경우에는 미이행 수량의 비율에 따른다.</b></li>
+<li>어느 당사자도 <b>특별손해, 간접손해 및 일실이익에 대하여는 책임을 지지 아니한다.</b></li>
+<li>본 조에 따른 배상액은 <b>해당 공동구매의 총 거래액을 한도</b>로 한다.
+        다만 고의 또는 중대한 과실이 있는 경우에는 그러하지 아니하다.</li>
+</ol>
+<div class="note">
+<b>[자문대기-법률 쟁점 H]</b> 제2항의 반환 청구 요건과 제4항의 배상 한도는
+    법률 검토 회신 전 잠정 문안이다. 산정 방식과 상한이 확정되면 본 조를 일괄 갱신한다.
+  </div>
+<h3 class="chap">제 4 장   일 반 조 항</h3>
+<h2 class="art">제20조 (계약기간 및 해지) <span class="arttag">표준</span></h2>
+<ol class="cl">
+<li>본 계약은 성립일부터 효력이 발생하고, <b>제8조의 게시 의무와 제6조의 정산이 모두 완료된 때에 종료</b>한다.
+        제9조의 2차 활용권과 제16조의 비밀유지 의무는 계약 종료 후에도 각 조항이 정한 기간 동안 존속한다.</li>
+<li>양 당사자는 <b>합의로 언제든지 본 계약을 해지</b>할 수 있다.</li>
+<li>다음 각 호의 경우 상대방은 최고 없이 본 계약을 해지할 수 있다.
+      <ol>
+<li>일방에게 파산, 회생, 해산 또는 영업정지 사유가 발생한 경우</li>
+<li>일방의 계정이 플랫폼에서 이용정지되어 계약 이행이 불가능하게 된 경우</li>
+<li>제13조 또는 제14조를 위반하여 행정처분을 받은 경우</li>
+</ol>
+</li>
+<li><b>공동구매가 개시된 후의 해지</b>는 이미 접수된 주문의 이행에 영향을 미치지 아니한다.
+        이 경우 갑은 접수된 주문을 정상적으로 이행하여야 하고, 을은 해당 주문에 대한 리워드를 지급받는다.</li>
+</ol>
+<h2 class="art">제21조 (권리·의무의 양도 금지) <span class="arttag">표준</span></h2>
+<p>양 당사자는 상대방의 사전 서면 동의 없이 본 계약상의 지위 또는 권리·의무의 전부나 일부를
+     제3자에게 양도하거나 담보로 제공할 수 없다.</p>
+<h2 class="art">제22조 (준거법 및 분쟁 해결) <span class="arttag">표준</span></h2>
+<ol class="cl">
+<li>본 계약의 준거법은 <b>대한민국 법</b>으로 한다.</li>
+<li>본 계약에 관하여 분쟁이 발생한 경우 양 당사자는 먼저 협의로 해결하도록 노력하며,
+        플랫폼의 이슈 스레드를 통한 중재를 요청할 수 있다.</li>
+<li>협의로 해결되지 아니하는 경우 <b>갑의 주소지를 관할하는 법원</b>을 제1심 관할법원으로 한다.</li>
+</ol>
+<h2 class="art">제23조 (기타) <span class="arttag">표준</span></h2>
+<ol class="cl">
+<li>본 계약에 정하지 아니한 사항은 관계 법령, 상관례 및 플랫폼의 이용약관에 따른다.</li>
+<li>본 계약의 일부 조항이 무효로 되더라도 나머지 조항의 효력에는 영향을 미치지 아니한다.</li>
+<li>본 계약은 <b>전자문서 및 전자서명에 관한 법률</b>에 따른 전자문서로 작성되며,
+        양 당사자의 전자서명은 서명 날인과 동일한 효력을 가진다.</li>
+<li>본 계약서는 <b>전자적으로 1부를 작성</b>하고, 갑과 을은 플랫폼을 통하여 각자 그 사본을 내려받아 보관한다.</li>
+</ol>
+<h2 class="art">부 칙 <span class="arttag">표준</span></h2>
+<p>본 계약은 갑과 을이 모두 전자서명을 완료한 날부터 시행한다.</p>
+</section>
+<!-- ══════════════ 6면 · 서명 (독립 페이지) ══════════════ -->
+<section class="page">
+<h1 class="doc" style="font-size:14pt;letter-spacing:5px;margin-bottom:3mm">서 명 란</h1>
+<table style="font-size:9.2pt">
+<tbody>
+<tr>
+<td class="lab">계약번호</td>
+<td class="c"><span class="v" th:text="${values['계약번호']}"></span></td>
+<td class="lab">공동구매명</td>
+<td class="l"><span class="v" th:text="${values['공구명']}"></span></td>
+</tr>
+<tr>
+<td class="lab">공동구매 기간</td>
+<td class="c" colspan="3">
+<span class="v" th:text="${values['공구_시작일시']}"></span>  – 
+          <span class="v" th:text="${values['공구_종료일시']}"></span>
+           ·  대상 상품 <span class="v" th:text="${values['상품수']}"></span>종
+           ·  고정 지급비 ₩<span class="v" th:text="${values['고정지급비_금액']}"></span>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="signclose" style="margin:4mm 0 5mm">
+    갑과 을은 본 계약서 <b>전체 면</b>의 내용을 충분히 읽고 이해하였으며,<br/>
+    이에 동의하여 아래와 같이 전자서명한다.
+  </p>
+<div class="sgrid">
+<div class="sparty">
+<h4>갑  ·  브랜드</h4>
+<dl>
+<div><dt>상호</dt><dd><span class="v" th:text="${values['브랜드_상호']}"></span></dd></div>
+<div><dt>대표자</dt><dd><span class="v" th:text="${values['브랜드_대표자']}"></span></dd></div>
+<div><dt>사업자번호</dt><dd><span class="v" th:text="${values['브랜드_사업자등록번호']}"></span></dd></div>
+<div><dt>주소</dt><dd><span class="v" th:text="${values['브랜드_주소']}"></span></dd></div>
+<div><dt>서명자</dt><dd><span class="v" th:text="${values['브랜드_담당자명']}"></span> (<span class="v" th:text="${values['브랜드_이메일']}"></span>)</dd></div>
+</dl>
+<div class="sslot">
+<div class="ms">모두싸인 ‘사인·도장’<br/>서명자 1 (갑)  55×18mm</div>
+<span class="cap">(서명 또는 인)</span>
+</div>
+<div style="display:flex;align-items:center;gap:2.5mm;margin-top:2.5mm">
+<span style="font-size:9pt;font-weight:700;white-space:nowrap">서명일</span>
+<div class="msfield" style="flex:1;margin-top:0">
+<div class="ms">모두싸인 ‘서명한 날짜’ · 자동</div>
+</div>
+</div>
+</div>
+<div class="sparty">
+<h4>을  ·  인플루언서</h4>
+<dl>
+<div><dt>성명</dt><dd><span class="v" th:text="${values['인플루언서_성명']}"></span></dd></div>
+<div><dt>활동명</dt><dd><span class="v" th:text="${values['인플루언서_활동명']}"></span></dd></div>
+<div><dt>사업자번호</dt><dd><span class="v" th:text="${values['인플루언서_사업자등록번호']}"></span></dd></div>
+<div><dt>주소</dt><dd><span class="v" th:text="${values['인플루언서_주소']}"></span></dd></div>
+<div><dt>서명자</dt><dd><span class="v" th:text="${values['인플루언서_성명']}"></span> (<span class="v" th:text="${values['인플루언서_이메일']}"></span>)</dd></div>
+</dl>
+<div class="sslot">
+<div class="ms">모두싸인 ‘사인·도장’<br/>서명자 2 (을)  55×18mm</div>
+<span class="cap">(서명 또는 인)</span>
+</div>
+<div style="display:flex;align-items:center;gap:2.5mm;margin-top:2.5mm">
+<span style="font-size:9pt;font-weight:700;white-space:nowrap">서명일</span>
+<div class="msfield" style="flex:1;margin-top:0">
+<div class="ms">모두싸인 ‘서명한 날짜’ · 자동</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cond" style="margin-top:4mm" th:if="${hasFixedFee}">
+
+<div class="ack">
+<h4>고정 지급비에 관한 확인  <span style="font-size:8.2pt;font-weight:400;color:#666">— 을(서명자 2)만 표시</span></h4>
+<p>본 계약 제7조의 고정 지급비 <b>₩<span class="v" th:text="${values['고정지급비_금액']}"></span></b>은
+         <b>갑이 을에게 직접 지급</b>하는 금액이며, SHOWROOMZ 플랫폼은 이를 보관·중개하지 아니하고
+         <b>지급을 보증하지 아니합니다.</b> 미지급이 발생하는 경우 을은 갑에게 직접 청구하여야 하며,
+         본 계약서가 그 근거가 됩니다.</p>
+<div class="ackrow">
+<div class="ackbox"><div class="ms"></div></div>
+<span>위 내용을 확인하였습니다. <b>(필수)</b></span>
+</div>
+</div>
+</div>
+<div class="note" style="margin-top:4mm">
+    본 계약서는 SHOWROOMZ 플랫폼이 갑이 입력한 계약 조건과 표준 조항으로 자동 생성하였으며,
+    전자서명은 모두싸인(주식회사 모두싸인)을 통해 이루어집니다.
+    체결이 완료되면 <b>서명 완료 계약서</b>와 <b>감사추적인증서</b>가 각 당사자의 플랫폼 화면에 등록되며,
+    양 당사자는 이를 각자 내려받아 보관합니다.
+  </div>
+</section>
+</div>
+
+</body>
+</html>

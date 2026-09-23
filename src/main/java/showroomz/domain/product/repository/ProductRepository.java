@@ -158,5 +158,14 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
             Pageable pageable
     );
 
+    /**
+     * 계약 작성 폼의 「상품」 드롭다운(설계서 4-1) — 진열 상품 <b>전량</b>이 정가와 함께 필요하다.
+     * 페이징·필터가 붙은 상품 목록 API와 쓰임이 다르다.
+     */
+    @Query("SELECT p FROM Product p WHERE p.market.id = :marketId " +
+           "AND p.displayStatus = showroomz.domain.product.type.ProductDisplayStatus.DISPLAY " +
+           "ORDER BY p.name ASC")
+    List<Product> findDisplayedByMarketId(@Param("marketId") Long marketId);
+
 }
 
