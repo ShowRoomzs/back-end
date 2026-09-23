@@ -27,11 +27,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -530,29 +533,35 @@ class CreatorContractScreenSpecIntegrationTest extends CreatorContractTestSuppor
     }
 
     @Test
-    @DisplayName("S6 — 이력은 최신이 위이고 화이트리스트 밖(문서 업로드·재발송 처리)은 빠지며 「연결 성립」이 맨 아래다")
+    @DisplayName("S6 — 이력은 최신이 위이고 화이트리스트 밖(서명 저장 감사 기록·문서 업로드·재발송 처리)은 빠지며 「연결 성립」이 맨 아래다")
     void s6HistoryIsNewestFirstAndWhitelisted() throws Exception {
         Long contractId = concludedContract();
         Contract contract = load(contractId);
         LocalDateTime base = LocalDateTime.now().minusDays(2);
         saveHistory(contract, ContractEventType.SIGNATURE_SENT, ContractActorType.ADMIN, "운영자", null, base);
         saveHistory(contract, ContractEventType.BRAND_SIGNED, ContractActorType.SELLER, "퓨어랩", null, base.plusHours(1));
+        saveHistory(contract, ContractEventType.SIGNATURE_UPDATED, ContractActorType.ADMIN, "운영자",
+                "브랜드 서명: null → …", base.plusHours(1).plusMinutes(10));
         saveHistory(contract, ContractEventType.CREATOR_SIGNED, ContractActorType.CREATOR, "뷰티_소연", null, base.plusHours(2));
-        saveHistory(contract, ContractEventType.SIGNATURE_UPDATED, ContractActorType.ADMIN, "운영자", null, base.plusHours(3));
+        saveHistory(contract, ContractEventType.BOTH_SIGNED_CONFIRMED, ContractActorType.ADMIN, "운영자", null, base.plusHours(3));
+        saveHistory(contract, ContractEventType.SIGNATURE_UPDATED, ContractActorType.ADMIN, "운영자",
+                "인플루언서 서명: null → …", base.plusHours(3));
         saveHistory(contract, ContractEventType.DOCUMENT_UPLOADED, ContractActorType.ADMIN, "운영자", null, base.plusHours(4));
         saveHistory(contract, ContractEventType.RESEND_HANDLED, ContractActorType.ADMIN, "운영자", null, base.plusHours(4));
         saveHistory(contract, ContractEventType.CONCLUDED, ContractActorType.ADMIN, "운영자", null, base.plusHours(5));
         saveHistory(contract, ContractEventType.FIXED_FEE_PAID, ContractActorType.SELLER, "퓨어랩", null, base.plusHours(6));
 
         List<String> expected = new ArrayList<>(List.of(
-                "CONCLUDED", "SIGNATURE_UPDATED", "CREATOR_SIGNED", "BRAND_SIGNED", "SIGNATURE_SENT"));
+                "CONCLUDED", "BOTH_SIGNED_CONFIRMED", "CREATOR_SIGNED", "BRAND_SIGNED", "SIGNATURE_SENT"));
         expected.add(null); // 연결 성립 — contract_history가 아니라 Connection에서 합성한 줄
 
         detail(contractId)
                 .andExpect(jsonPath("$.history[*].eventType").value(contains(expected.toArray())))
                 .andExpect(jsonPath("$.history[*].actorType").value(contains(
                         "ADMIN", "ADMIN", "CREATOR", "SELLER", "ADMIN", "SELLER")))
-                .andExpect(jsonPath("$.history[5].actorDisplayName").value("퓨어랩"));
+                .andExpect(jsonPath("$.history[5].actorDisplayName").value("퓨어랩"))
+                // 운영자의 변경 내역 원문은 스튜디오에 내리지 않는다.
+                .andExpect(content().string(not(containsString("서명: null"))));
     }
 
     // ── S7 · 거절(내가 거절) ────────────────────────────────────────────────

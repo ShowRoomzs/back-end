@@ -43,6 +43,9 @@ public interface ContractHistoryRepository extends JpaRepository<ContractHistory
      *   <li>{@code CREATED} · {@code REVIEW_REQUESTED} · {@code REVIEW_REQUEST_CANCELED} — 발송 전 브랜드 내부 행위</li>
      *   <li>{@code REVIEW_APPROVED} · {@code REVIEW_REJECTED} — 운영자–브랜드 간.
      *       승인 사실은 {@code SIGNATURE_SENT} 문구에 흡수된다</li>
+     *   <li>{@code SIGNATURE_UPDATED} — 운영자의 저장 1회마다 쌓이는 감사 기록이다. 한쪽만 서명한 저장에도
+     *       남아서 「양측 서명 완료 확인」으로 그리면 거짓이 되고, detail에 변경 내역 원문이 담긴다.
+     *       스튜디오의 「양측 서명 완료 확인」은 {@code BOTH_SIGNED_CONFIRMED}다</li>
      *   <li>{@code RESEND_REQUESTED} — 브랜드가 요청한 건이 섞인다</li>
      *   <li>{@code FIXED_FEE_PAID} — 브랜드의 기록 행위. 상세의 {@code paymentState}로만 보인다</li>
      *   <li>{@code GROUP_BUY_CREATED} · 문서 이벤트 — 브랜드·운영자 소관</li>
@@ -52,7 +55,7 @@ public interface ContractHistoryRepository extends JpaRepository<ContractHistory
             + "  showroomz.domain.contract.type.ContractEventType.SIGNATURE_SENT,"
             + "  showroomz.domain.contract.type.ContractEventType.BRAND_SIGNED,"
             + "  showroomz.domain.contract.type.ContractEventType.CREATOR_SIGNED,"
-            + "  showroomz.domain.contract.type.ContractEventType.SIGNATURE_UPDATED,"
+            + "  showroomz.domain.contract.type.ContractEventType.BOTH_SIGNED_CONFIRMED,"
             + "  showroomz.domain.contract.type.ContractEventType.CONCLUDED,"
             + "  showroomz.domain.contract.type.ContractEventType.DECLINED,"
             + "  showroomz.domain.contract.type.ContractEventType.EXPIRED,"

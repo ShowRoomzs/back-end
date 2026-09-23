@@ -197,7 +197,7 @@ public class ContractDetailAssembler {
 
     private List<ContractDetailResponse.Document> documents(Contract contract) {
         if (contract.getStatus() != ContractStatus.CONCLUDED) return List.of();
-        return contractDocumentRepository.findByContractIdOrderByDocumentTypeAsc(contract.getId()).stream()
+        return contractDocumentRepository.findByContractIdInTypeOrder(contract.getId()).stream()
                 .filter(document -> document.getDocumentType() != showroomz.domain.contract.type.ContractDocumentType.GENERATED_DRAFT)
                 .map(document -> new ContractDetailResponse.Document(
                         document.getDocumentType(),

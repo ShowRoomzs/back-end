@@ -65,7 +65,7 @@ public class AdminContractQueryService {
         Contract c = access.read(id);
         var shared = assembler.assemble(c);
         var history = histories.findByContractIdOrderByOccurredAtAscIdAsc(id);
-        var docs = documents.findByContractIdOrderByDocumentTypeAsc(id);
+        var docs = documents.findByContractIdInTypeOrder(id);
         var requests = resends.findByContractIdOrderByRequestedAtDescIdDesc(id);
         LocalDateTime now = LocalDateTime.now();
         ContractStatus status = c.getStatus();

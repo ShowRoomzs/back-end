@@ -9,6 +9,7 @@ import showroomz.domain.contract.entity.ContractHistory;
 import showroomz.domain.contract.type.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -110,6 +111,50 @@ class AdminContractSigningIntegrationTest extends AdminContractTestSupport {
         // 인플루언서 서명 변경만 이력에 적힌다(브랜드는 변경 없음).
         assertThat(historyOf(c).getLast().getDetail()).contains("인플루언서 서명").doesNotContain("브랜드 서명");
         summary().andExpect(jsonPath("$.queues.CONCLUSION").value(1));
+    }
+
+    @Test
+    @DisplayName("C3: 각자의 서명은 당사자·서명 시각으로 한 번씩, 양측 완료 확인은 체결 처리 대기로 넘어갈 때 한 번 남는다")
+    void recordsEachSignatureAndBothSignedConfirmationOnce() throws Exception {
+        Contract c = signing();
+        LocalDateTime brandSignedAt = spec("2026-08-14T09:12");
+        LocalDateTime creatorSignedAt = spec("2026-08-14T11:40");
+
+        signatures(c, brandSignedAt, null, c.getVersion()).andExpect(status().isOk());
+        // 같은 값으로 다시 저장해도 「브랜드 서명 완료」가 두 줄이 되지 않는다.
+        signatures(c, brandSignedAt, null, versionOf(c)).andExpect(status().isOk());
+        assertThat(historyOf(c)).filteredOn(h -> h.getEventType() == ContractEventType.BRAND_SIGNED)
+                .singleElement()
+                .satisfies(h -> {
+                    assertThat(h.getActorType()).isEqualTo(ContractActorType.SELLER);
+                    assertThat(h.getActorDisplayName()).isEqualTo("글로우랩");
+                    // 입력한 시각이 아니라 서명한 시각이다 — 스튜디오 S3a 「브랜드 서명 완료 · 08.14 09:12」.
+                    assertThat(h.getOccurredAt()).isEqualTo(brandSignedAt);
+                });
+        // 한쪽만 서명했으면 「양측 서명 완료 확인」이 없다.
+        assertThat(historyOf(c)).extracting(ContractHistory::getEventType)
+                .doesNotContain(ContractEventType.CREATOR_SIGNED, ContractEventType.BOTH_SIGNED_CONFIRMED);
+
+        signatures(c, brandSignedAt, creatorSignedAt, versionOf(c)).andExpect(status().isOk());
+        // 체결 처리 대기에서 다시 저장해도 확인은 한 번이다.
+        signatures(c, brandSignedAt, creatorSignedAt, versionOf(c)).andExpect(status().isOk());
+
+        List<ContractHistory> history = historyOf(c);
+        assertThat(history).filteredOn(h -> h.getEventType() == ContractEventType.CREATOR_SIGNED)
+                .singleElement()
+                .satisfies(h -> {
+                    assertThat(h.getActorType()).isEqualTo(ContractActorType.CREATOR);
+                    assertThat(h.getOccurredAt()).isEqualTo(creatorSignedAt);
+                });
+        assertThat(history).filteredOn(h -> h.getEventType() == ContractEventType.BOTH_SIGNED_CONFIRMED)
+                .singleElement()
+                .satisfies(h -> {
+                    assertThat(h.getActorType()).isEqualTo(ContractActorType.ADMIN);
+                    assertThat(h.getDetail()).isNull();
+                });
+        // 저장 1회 = 감사 기록 1줄은 그대로다.
+        assertThat(history).filteredOn(h -> h.getEventType() == ContractEventType.SIGNATURE_UPDATED).hasSize(4);
+        assertThat(history.getLast().getEventType()).isEqualTo(ContractEventType.SIGNATURE_UPDATED);
     }
 
     @Test

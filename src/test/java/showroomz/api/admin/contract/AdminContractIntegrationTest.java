@@ -188,7 +188,7 @@ class AdminContractIntegrationTest extends IntegrationTestSupport {
         var request = new RegisterDocumentRequest(ContractDocumentType.SIGNED_PDF, key, "계약서.pdf", 100L);
         for (int i = 0; i < 2; i++) mockMvc.perform(post(BASE + "/" + c.getId() + "/documents").header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON).content(toJson(request))).andExpect(status().isOk());
-        assertThat(documents.findByContractIdOrderByDocumentTypeAsc(c.getId())).hasSize(1);
+        assertThat(documents.findByContractIdInTypeOrder(c.getId())).hasSize(1);
         verify(storage).deleteAfterCommit("sealed.pdf");
         mockMvc.perform(delete(BASE + "/" + c.getId() + "/documents/SIGNED_PDF").header("Authorization", token)).andExpect(status().isNoContent());
         mockMvc.perform(post(BASE + "/" + c.getId() + "/documents").header("Authorization", token)
@@ -271,7 +271,7 @@ class AdminContractIntegrationTest extends IntegrationTestSupport {
         when(renderer.render(anyString(), anyString())).thenThrow(new showroomz.global.error.exception.BusinessException(
                 showroomz.global.error.exception.ErrorCode.CONTRACT_PDF_GENERATION_FAILED));
         mockMvc.perform(get(BASE + "/" + c.getId() + "/document-draft").header("Authorization", token)).andExpect(status().isServiceUnavailable());
-        assertThat(documents.findByContractIdOrderByDocumentTypeAsc(c.getId())).isEmpty();
+        assertThat(documents.findByContractIdInTypeOrder(c.getId())).isEmpty();
         assertThat(histories.findByContractIdOrderByOccurredAtAscIdAsc(c.getId())).isEmpty();
         assertThat(contracts.findById(c.getId()).orElseThrow().getStatus()).isEqualTo(ContractStatus.REVIEW_PENDING);
     }

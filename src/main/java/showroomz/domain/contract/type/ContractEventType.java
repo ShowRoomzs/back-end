@@ -10,7 +10,10 @@ public enum ContractEventType {
     SIGNATURE_SENT,
     BRAND_SIGNED,
     CREATOR_SIGNED,
+    /** 운영자의 서명 현황 저장 1회 — 감사 기록이다. 변경 내역(detail)을 담아 어드민·파트너만 본다. */
     SIGNATURE_UPDATED,
+    /** 운영자 확인으로 양측 서명이 모두 차 체결 처리 대기로 넘어간 시점 — 스튜디오 「양측 서명 완료 확인」. */
+    BOTH_SIGNED_CONFIRMED,
     RESEND_REQUESTED,
     RESEND_HANDLED,
     CONTRACT_PDF_GENERATED,

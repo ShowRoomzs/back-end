@@ -89,7 +89,7 @@ class AdminContractConclusionIntegrationTest extends AdminContractTestSupport {
 
         upload(c, ContractDocumentType.SIGNED_PDF, SIGNED_PDF_NAME).andExpect(status().isOk());
 
-        assertThat(documents.findByContractIdOrderByDocumentTypeAsc(c.getId())).hasSize(1)
+        assertThat(documents.findByContractIdInTypeOrder(c.getId())).hasSize(1)
                 .first().extracting(ContractDocument::getOriginalName).isEqualTo(c.getContractNumber() + "_" + SIGNED_PDF_NAME);
         verify(storage).deleteAfterCommit(oldKey);
         assertThat(historyOf(c).getLast().getDetail()).contains("교체");
@@ -137,7 +137,7 @@ class AdminContractConclusionIntegrationTest extends AdminContractTestSupport {
             register(c, ContractDocumentType.SIGNED_PDF, foreignKey, SIGNED_PDF_NAME).andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("CONTRACT_DOCUMENT_INVALID"));
         }
-        assertThat(documents.findByContractIdOrderByDocumentTypeAsc(c.getId())).isEmpty();
+        assertThat(documents.findByContractIdInTypeOrder(c.getId())).isEmpty();
     }
 
     @Test
@@ -242,7 +242,7 @@ class AdminContractConclusionIntegrationTest extends AdminContractTestSupport {
         expire(c, true).andExpect(status().isConflict());
         handleResend(c).andExpect(status().isConflict());
 
-        assertThat(documents.findByContractIdOrderByDocumentTypeAsc(c.getId())).hasSize(2);
+        assertThat(documents.findByContractIdInTypeOrder(c.getId())).hasSize(2);
         assertThat(reload(c).getStatus()).isEqualTo(ContractStatus.CONCLUDED);
     }
 

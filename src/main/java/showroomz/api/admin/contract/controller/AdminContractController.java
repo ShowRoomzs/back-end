@@ -91,10 +91,4 @@ public class AdminContractController {
         if (principal == null || principal.getUserId() == null) throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         return principal.getUserId();
     }
-
-    @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<showroomz.api.app.auth.DTO.ErrorResponse> invalidParameter() {
-        return ResponseEntity.badRequest().body(new showroomz.api.app.auth.DTO.ErrorResponse(
-                ErrorCode.INVALID_INPUT_VALUE.getCode(), ErrorCode.INVALID_INPUT_VALUE.getMessage()));
-    }
 }

@@ -262,7 +262,7 @@ public class CreatorContractDetailAssembler {
         if (contract.getStatus() != ContractStatus.CONCLUDED) {
             return List.of();
         }
-        return contractDocumentRepository.findByContractIdOrderByDocumentTypeAsc(contract.getId()).stream()
+        return contractDocumentRepository.findByContractIdInTypeOrder(contract.getId()).stream()
                 .filter(document -> document.getDocumentType() != ContractDocumentType.GENERATED_DRAFT)
                 .map(document -> new CreatorContractDetailResponse.Document(
                         document.getDocumentType(),

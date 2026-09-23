@@ -72,8 +72,16 @@ public class AdminContractCommandService {
         if (!Objects.equals(c.getCreatorSignedAt(), request.creatorSignedAt())) changes.add("인플루언서 서명: " + c.getCreatorSignedAt() + " → " + request.creatorSignedAt());
         ContractStatus target = request.brandSignedAt() != null && request.creatorSignedAt() != null
                 ? ContractStatus.CONCLUSION_PENDING : ContractStatus.SIGNING;
+        boolean brandNewlySigned = c.getBrandSignedAt() == null && request.brandSignedAt() != null;
+        boolean creatorNewlySigned = c.getCreatorSignedAt() == null && request.creatorSignedAt() != null;
+        boolean bothNewlyConfirmed = c.getStatus() == ContractStatus.SIGNING && target == ContractStatus.CONCLUSION_PENDING;
         transition(c, target);
         c.updateSignatures(request.brandSignedAt(), request.creatorSignedAt(), now);
+        // 각자의 서명은 서명한 당사자·시각으로 남긴다 — 스튜디오 이력 「브랜드 서명 완료」·「내 서명 완료」(시안 S3a·S3b).
+        // 입력한 운영자와 변경 내역은 아래 SIGNATURE_UPDATED가 따로 기록한다.
+        if (brandNewlySigned) history.recordBySeller(c, ContractEventType.BRAND_SIGNED, null, request.brandSignedAt());
+        if (creatorNewlySigned) history.recordByCreator(c, ContractEventType.CREATOR_SIGNED, null, request.creatorSignedAt());
+        if (bothNewlyConfirmed) record(c, operator, name, ContractEventType.BOTH_SIGNED_CONFIRMED, null, now);
         record(c, operator, name, ContractEventType.SIGNATURE_UPDATED,
                 changes.isEmpty() ? "변경 없음 · 기준 시각만 갱신" : String.join(" / ", changes), now);
         return response(c);
@@ -85,7 +93,7 @@ public class AdminContractCommandService {
         Contract c = access.lock(id);
         if (c.getStatus() != ContractStatus.CONCLUSION_PENDING || c.getBrandSignedAt() == null || c.getCreatorSignedAt() == null) fail(ErrorCode.CONTRACT_STATUS_CONFLICT);
         Set<ContractDocumentType> types = new HashSet<>();
-        documents.findByContractIdOrderByDocumentTypeAsc(id).forEach(d -> types.add(d.getDocumentType()));
+        documents.findByContractIdInTypeOrder(id).forEach(d -> types.add(d.getDocumentType()));
         if (!types.containsAll(List.of(ContractDocumentType.SIGNED_PDF, ContractDocumentType.AUDIT_TRAIL))) {
             throw new ContractDocumentRequiredException();
         }

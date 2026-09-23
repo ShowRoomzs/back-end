@@ -194,16 +194,28 @@ class CreatorContractLifecycleIntegrationTest extends CreatorContractTestSupport
     @DisplayName("S3a 이력에는 「브랜드 서명 완료」가 서고, 체결완료(S6)까지 시안의 5줄이 순서대로 쌓인다")
     void signatureHistoryMatchesScreen() throws Exception {
         long contractId = arrivedAtMe();
+        LocalDateTime brandSignedAt = LocalDateTime.now().minusMinutes(40).withNano(0);
+        LocalDateTime mySignedAt = LocalDateTime.now().minusMinutes(20).withNano(0);
 
-        operatorRecordsSignatures(contractId,
-                LocalDateTime.now().minusMinutes(40).withNano(0), null);
+        operatorRecordsSignatures(contractId, brandSignedAt, null);
         // S3a — 브랜드 서명 완료 · 서명 요청 도착 · 연결 성립
-        // 「양측 서명 완료 확인」(SIGNATURE_UPDATED)이 여기 끼면 한쪽만 서명한 계약에 거짓 문구가 선다.
-        detail(contractId).andExpect(jsonPath("$.history[*].eventType").value(contains(
-                "BRAND_SIGNED", "SIGNATURE_SENT", null)));
+        // 「양측 서명 완료 확인」이 여기 끼면 한쪽만 서명한 계약에 거짓 문구가 선다.
+        detail(contractId)
+                .andExpect(jsonPath("$.history[*].eventType").value(contains("BRAND_SIGNED", "SIGNATURE_SENT", null)))
+                .andExpect(jsonPath("$.history[0].actorType").value("SELLER"))
+                .andExpect(jsonPath("$.history[0].actorDisplayName").value("퓨어랩"))
+                .andExpect(jsonPath("$.history[0].occurredAt").value(iso(brandSignedAt)))
+                // 운영자가 남긴 변경 내역 원문은 스튜디오에 내리지 않는다.
+                .andExpect(content().string(not(containsString("브랜드 서명:"))));
 
-        operatorRecordsSignatures(contractId,
-                LocalDateTime.now().minusMinutes(40).withNano(0), LocalDateTime.now().minusMinutes(20).withNano(0));
+        operatorRecordsSignatures(contractId, brandSignedAt, mySignedAt);
+        // S3c — 양측 서명 완료 확인 · 내 서명 완료 · 브랜드 서명 완료 · 서명 요청 도착 · 연결 성립
+        detail(contractId)
+                .andExpect(jsonPath("$.history[*].eventType").value(contains(
+                        "BOTH_SIGNED_CONFIRMED", "CREATOR_SIGNED", "BRAND_SIGNED", "SIGNATURE_SENT", null)))
+                .andExpect(jsonPath("$.history[1].actorDisplayName").value("뷰티_소연"))
+                .andExpect(content().string(not(containsString("인플루언서 서명:"))));
+
         operatorUploads(contractId, ContractDocumentType.SIGNED_PDF, "계약서.pdf");
         operatorUploads(contractId, ContractDocumentType.AUDIT_TRAIL, "감사추적.pdf");
         operatorConcludes(contractId);
@@ -212,7 +224,22 @@ class CreatorContractLifecycleIntegrationTest extends CreatorContractTestSupport
         String body = detail(contractId).andReturn().getResponse().getContentAsString();
         List<String> events = JsonPath.parse(body).read("$.history[*].eventType");
         assertThat(events).startsWith(
-                "CONCLUDED", "SIGNATURE_UPDATED", "CREATOR_SIGNED", "BRAND_SIGNED", "SIGNATURE_SENT");
+                "CONCLUDED", "BOTH_SIGNED_CONFIRMED", "CREATOR_SIGNED", "BRAND_SIGNED", "SIGNATURE_SENT");
+    }
+
+    @Test
+    @DisplayName("S3b 이력 — 내가 먼저 서명했으면 「내 서명 완료」가 서고 양측 확인은 아직 없다")
+    void mySignatureFirstShowsOnlyMine() throws Exception {
+        long contractId = arrivedAtMe();
+        LocalDateTime mySignedAt = LocalDateTime.now().minusMinutes(20).withNano(0);
+
+        operatorRecordsSignatures(contractId, null, mySignedAt);
+
+        detail(contractId)
+                .andExpect(jsonPath("$.history[*].eventType").value(contains("CREATOR_SIGNED", "SIGNATURE_SENT", null)))
+                .andExpect(jsonPath("$.history[0].actorType").value("CREATOR"))
+                .andExpect(jsonPath("$.history[0].actorDisplayName").value("뷰티_소연"))
+                .andExpect(jsonPath("$.history[0].occurredAt").value(iso(mySignedAt)));
     }
 
     @Test
