@@ -359,6 +359,14 @@ abstract class SellerContractTestSupport extends IntegrationTestSupport {
         return readLong(json, "$.version");
     }
 
+    /**
+     * 지금 저장에 써야 하는 버전. 임시저장은 <b>응답이 돌려준 버전</b>으로 이어 저장하는 것이 실제 흐름이라
+     * 테스트도 값을 세지 않고 물어본다 — 서버가 몇 씩 올리는지는 FE가 알 바가 아니다.
+     */
+    protected long currentVersion(long contractId) throws Exception {
+        return versionOf(detailOk(contractId));
+    }
+
     // ------------------------------------------------------------------ 계약 적재
 
     protected Contract seedInStatus(ContractStatus status) {
@@ -463,7 +471,13 @@ abstract class SellerContractTestSupport extends IntegrationTestSupport {
     // ------------------------------------------------------------------ 픽스처
 
     protected Creator createConnectedCreator(String showroomName, String accountId) {
-        Creator creator = createCreator(showroomName, accountId);
+        return createConnectedCreator(showroomName, accountId, CreatorBusinessType.INDIVIDUAL);
+    }
+
+    /** 사업 형태는 정산 요약의 원천징수 표기를 가르는 값이다(§25-5-6) — 픽스처에서 골라 쓴다. */
+    protected Creator createConnectedCreator(String showroomName, String accountId,
+                                             CreatorBusinessType businessType) {
+        Creator creator = createCreator(showroomName, accountId, businessType);
         Connection connection = Connection.requestPair(brand.market(), creator);
         connection.markConnected();
         connectionRepository.save(connection);
@@ -471,6 +485,10 @@ abstract class SellerContractTestSupport extends IntegrationTestSupport {
     }
 
     protected Creator createCreator(String showroomName, String accountId) {
+        return createCreator(showroomName, accountId, CreatorBusinessType.INDIVIDUAL);
+    }
+
+    protected Creator createCreator(String showroomName, String accountId, CreatorBusinessType businessType) {
         LocalDateTime now = LocalDateTime.now();
         Users owner = userRepository.save(new Users(
                 "creator-" + accountId, showroomName, accountId + "@showroomz.test", "Y", null,
@@ -484,7 +502,7 @@ abstract class SellerContractTestSupport extends IntegrationTestSupport {
                 .followerCount(12_000)
                 .businessEmail(accountId + "-biz@showroomz.test")
                 .showroomName(showroomName)
-                .businessType(CreatorBusinessType.INDIVIDUAL)
+                .businessType(businessType)
                 .build());
     }
 

@@ -141,8 +141,13 @@ class SellerContractLifecycleIntegrationTest extends SellerContractTestSupport {
         assertThat(historyOf(signing)).extracting(ContractHistory::getEventType)
                 .contains(ContractEventType.CANCELED);
 
-        // 양측 서명이 끝난 체결 처리 대기에서도 아직 취소할 수 있다.
-        cancelContract(seedInStatus(ContractStatus.CONCLUSION_PENDING).getId(),
+        // 한쪽이 서명한 뒤라도 양측 서명 전이면 아직 취소할 수 있다(B4a · B4c).
+        LocalDateTime signedAt = LocalDateTime.now().minusHours(1).withNano(0);
+        cancelContract(seedInStatus(ContractStatus.SIGNING,
+                        contract -> contract.updateSignatures(signedAt, null, signedAt)).getId(),
+                ContractCloseReasonCode.OUT_OF_STOCK, null).andExpect(status().isOk());
+        cancelContract(seedInStatus(ContractStatus.SIGNING,
+                        contract -> contract.updateSignatures(null, signedAt, signedAt)).getId(),
                 ContractCloseReasonCode.OUT_OF_STOCK, null).andExpect(status().isOk());
 
         for (ContractStatus notCancelable : List.of(ContractStatus.DRAFT, ContractStatus.REVIEW_REJECTED,
@@ -151,6 +156,30 @@ class SellerContractLifecycleIntegrationTest extends SellerContractTestSupport {
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.code").value("CONTRACT_STATUS_CONFLICT"));
         }
+    }
+
+    @Test
+    @DisplayName("양측 서명이 모두 끝나면 취소할 수 없다 — 버튼도 없고 호출도 막는다")
+    void refusesCancelAfterBothPartiesSigned() throws Exception {
+        long contractId = seedInStatus(ContractStatus.CONCLUSION_PENDING).getId();
+
+        // B4b — 체결 처리 대기. 모두싸인에는 이미 양측 서명이 남아 있다.
+        detail(contractId)
+                .andExpect(jsonPath("$.signature.brandSignedAt").exists())
+                .andExpect(jsonPath("$.signature.creatorSignedAt").exists())
+                .andExpect(jsonPath("$.permissions.canCancel").value(false));
+
+        cancelContract(contractId, ContractCloseReasonCode.CONDITION_REVIEW, null)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONTRACT_STATUS_CONFLICT"));
+
+        // 막힌 호출은 흔적을 남기지 않는다 — 상태도 종결 필드도 이력도 그대로다.
+        detail(contractId)
+                .andExpect(jsonPath("$.status").value("CONCLUSION_PENDING"))
+                .andExpect(jsonPath("$.closure.closedAt").doesNotExist())
+                .andExpect(jsonPath("$.fixedFee.obligationAlive").value(true));
+        assertThat(historyOf(contractId)).extracting(ContractHistory::getEventType)
+                .doesNotContain(ContractEventType.CANCELED);
     }
 
     @Test
@@ -392,7 +421,8 @@ class SellerContractLifecycleIntegrationTest extends SellerContractTestSupport {
         assertPermissions(ContractStatus.REVIEW_PENDING, "canCancelRequest");
         assertPermissions(ContractStatus.REVIEW_REJECTED, "canEdit", "canRequestReview");
         assertPermissions(ContractStatus.SIGNING, "canCancel", "canRequestResend");
-        assertPermissions(ContractStatus.CONCLUSION_PENDING, "canCancel");
+        // 양측 서명 완료 — 브랜드가 할 조작이 없다(B4b). 취소도 닫힌다.
+        assertPermissions(ContractStatus.CONCLUSION_PENDING);
         assertPermissions(ContractStatus.CONCLUDED, "canRecordPayment", "canCreateGroupBuy", "canDuplicate");
         assertPermissions(ContractStatus.CANCELED, "canDuplicate");
         assertPermissions(ContractStatus.EXPIRED, "canDuplicate");

@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum FixedFeeTrigger {
-    POST_REGISTERED("게시물 등록 후"),
+    POST_REGISTERED("공구 게시물 등록 후"),
     GROUP_BUY_ENDED("공구 종료 후"),
     SETTLEMENT_COMPLETED("정산 완료 후");
 

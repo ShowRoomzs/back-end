@@ -98,7 +98,7 @@ public record ContractDetailResponse(
     public record FixedFee(
             @Schema(nullable = true) Integer amount,
             @Schema(nullable = true) FixedFeeTrigger trigger,
-            @Schema(description = "지급 시점 라벨", example = "게시물 등록 후", nullable = true) String triggerLabel,
+            @Schema(description = "지급 시점 라벨", example = "공구 게시물 등록 후", nullable = true) String triggerLabel,
             @Schema(description = "고지 확인 체크 시각", nullable = true) LocalDateTime noticeAgreedAt,
             @Schema(description = "지급 완료 기록 시각", nullable = true) LocalDateTime paidAt,
             @Schema(description = "지급 의무가 살아 있는지 — 종결 3종이면 false. 화면이 「지급 의무 소멸」로 바뀌는 근거")

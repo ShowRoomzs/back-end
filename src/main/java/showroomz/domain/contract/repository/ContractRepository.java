@@ -19,6 +19,22 @@ public interface ContractRepository extends JpaRepository<Contract, Long>, Contr
     @Query("SELECT c FROM Contract c WHERE c.id = :contractId")
     Optional<Contract> findForAdminUpdate(@Param("contractId") Long contractId);
 
+    /**
+     * 임시저장의 낙관적 락 — <b>버전 검사와 증가를 조건부 UPDATE 하나로</b> 한다(설계서 3-3·3-4).
+     *
+     * <p>{@code items}는 {@code mappedBy} 역방향 컬렉션이라 항목만 갈아 끼운 저장은 계약 행을
+     * 더럽히지 않는다 — JPA에 맡기면 {@code @Version}이 오르지 않고, 탭 두 개가 같은 버전을 들고
+     * 번갈아 저장해도 둘 다 통과해 <b>나중 저장이 앞 저장을 말없이 덮는다</b>.
+     *
+     * <p>{@code OPTIMISTIC_FORCE_INCREMENT}를 쓰지 않는 이유는 그쪽 증가가 <b>커밋 시점</b>이라
+     * 응답에 실어 보내는 버전이 한 박자 뒤처지기 때문이다 — FE가 그 값을 그대로 다음 저장에 쓰면
+     * 자기 저장에 자기가 막힌다. 읽어서 비교하는 대신 DB가 한 번에 판정하게 두면 동시 요청에서도
+     * 한쪽만 1행을 얻는다.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Contract c SET c.version = c.version + 1 WHERE c.id = :contractId AND c.version = :version")
+    int bumpVersion(@Param("contractId") Long contractId, @Param("version") Long version);
+
     @Query("SELECT c.status, COUNT(c) FROM Contract c WHERE c.status <> showroomz.domain.contract.type.ContractStatus.DRAFT GROUP BY c.status")
     List<Object[]> countAdminStatuses();
 

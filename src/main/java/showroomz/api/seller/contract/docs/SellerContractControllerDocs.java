@@ -304,12 +304,14 @@ public interface SellerContractControllerDocs {
     @Operation(
             summary = "계약 취소",
             description = """
-                    `SIGNING`·`CONCLUSION_PENDING` → `CANCELED`. **항상 종결**이다(C4).
+                    `SIGNING` → `CANCELED`. **항상 종결**이다(C4).
 
                     **권한:** SELLER
 
                     - 사유 필수. `ETC`면 메모도 필수다(400 `CONTRACT_CANCEL_REASON_MEMO_REQUIRED`).
                     - 양측(상대·어드민)에 통지한다.
+                    - **양측 서명이 모두 끝나면 취소할 수 없다**(C4) — `CONCLUSION_PENDING`에서 호출하면 409다.
+                      한쪽만 서명한 `SIGNING`(B4a·B4c)은 아직 취소할 수 있다.
                     - `REVIEW_PENDING`에서 호출하면 404가 아니라 **409**다 — 서버가 상태를 안 보면
                       잘못된 호출 한 번에 종결돼야 할 계약이 다른 경로로 새어 나간다(설계서 3-2).
                     """)

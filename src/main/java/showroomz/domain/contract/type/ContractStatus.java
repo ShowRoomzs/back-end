@@ -40,8 +40,14 @@ public enum ContractStatus {
      */
     public static final Set<ContractStatus> EDITABLE = Set.of(DRAFT, REVIEW_REJECTED);
 
-    /** 브랜드의 [계약 취소]가 허용되는 구간 — 검토 대기는 [요청 취소]이지 취소가 아니다(설계서 3-2). */
-    public static final Set<ContractStatus> CANCELABLE = Set.of(SIGNING, CONCLUSION_PENDING);
+    /**
+     * 브랜드의 [계약 취소]가 허용되는 구간 — 검토 대기는 [요청 취소]이지 취소가 아니다(설계서 3-2).
+     *
+     * <p>{@link #CONCLUSION_PENDING}은 넣지 않는다 — 양측 서명이 모두 끝난 계약은 취소할 수 없다(시안 C4).
+     * 모두싸인에는 양측 서명이 이미 남아 있어, 여기서 취소로 종결하면 서명된 계약서와 우리 상태가 어긋난다.
+     * {@link #SIGNING}은 정의상 한쪽 이상이 미서명이다 — 양측이 서명하는 순간 체결 처리 대기로 넘어간다.
+     */
+    public static final Set<ContractStatus> CANCELABLE = Set.of(SIGNING);
 
     /** 재작성(이 조건으로 새 계약 작성) 허용 구간 — 진행 중 계약의 복제는 기획이 다룬 적 없다(설계서 4-3). */
     public static final Set<ContractStatus> DUPLICABLE = Set.of(CONCLUDED, DECLINED, EXPIRED, CANCELED);

@@ -101,7 +101,15 @@ public class SellerContractCommandService {
         Contract contract = accessGuard.loadOwned(contractId, market);
 
         requireEditable(contract);
-        requireSameVersion(contract, request.version());
+
+        // 버전 검사와 증가를 조건부 UPDATE 하나로 한다(설계서 3-3·3-4). 읽어서 비교만 하면
+        // ① 동시 요청 둘이 같은 버전을 보고 나란히 통과하고 ② 항목만 바꾼 저장은 계약 행을
+        // 더럽히지 않아 JPA가 버전을 올리지도 않는다 — 두 탭의 저장이 서로를 말없이 덮는다.
+        if (contractRepository.bumpVersion(contractId, request.version()) == 0) {
+            throw new BusinessException(ErrorCode.CONTRACT_MODIFIED_ELSEWHERE);
+        }
+        // 위 UPDATE가 영속성 컨텍스트를 비웠다 — 올라간 버전으로 다시 읽어 그 위에 값을 얹는다.
+        contract = accessGuard.loadOwned(contractId, market);
 
         applyCounterparty(contract, market, request.creatorId());
         applyTerms(contract, request);
@@ -270,6 +278,11 @@ public class SellerContractCommandService {
         if (contract.getStatus() != ContractStatus.SIGNING) {
             throw new BusinessException(ErrorCode.CONTRACT_STATUS_CONFLICT);
         }
+        // 내가 이미 서명했으면 다시 받을 안내가 없다(§26-B4a) — 상대의 안내를 브랜드가 대신
+        // 요청하는 경로는 시안에 없다. 스튜디오의 [서명 안내 다시 받기]와 같은 판정이다.
+        if (contract.getBrandSignedAt() != null) {
+            throw new BusinessException(ErrorCode.CONTRACT_RESEND_NOT_ALLOWED);
+        }
 
         return resendRequestRepository
                 .findFirstByContractIdAndHandledAtIsNullOrderByRequestedAtDesc(contract.getId())
@@ -390,13 +403,6 @@ public class SellerContractCommandService {
     private void requireEditable(Contract contract) {
         if (!contract.isEditable()) {
             throw new BusinessException(ErrorCode.CONTRACT_EDIT_LOCKED);
-        }
-    }
-
-    /** 브라우저 탭 두 개로 같은 계약을 열 수 있다(설계서 3-4). */
-    private void requireSameVersion(Contract contract, Long requestVersion) {
-        if (!Objects.equals(contract.getVersion(), requestVersion)) {
-            throw new BusinessException(ErrorCode.CONTRACT_MODIFIED_ELSEWHERE);
         }
     }
 

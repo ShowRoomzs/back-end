@@ -153,7 +153,7 @@ public record CreatorContractDetailResponse(
     public record Payout(
             @Schema(description = "고정 지급비(원)", example = "1200000", nullable = true) Integer fixedFeeAmount,
             @Schema(description = "지급 시점 — 계약서에 기재된 값", nullable = true) FixedFeeTrigger fixedFeeTrigger,
-            @Schema(example = "게시물 등록 후", nullable = true) String fixedFeeTriggerLabel,
+            @Schema(example = "공구 게시물 등록 후", nullable = true) String fixedFeeTriggerLabel,
             @Schema(description = "상품별 판매 리워드율") List<RewardRate> rewardRates,
             @Schema(description = "판매 리워드 정산 시점 — 플랫폼 고정 정책이다", example = "GROUP_BUY_ENDED")
             CreatorSettlementTiming settlementTiming,
@@ -223,7 +223,7 @@ public record CreatorContractDetailResponse(
     public record FixedFee(
             @Schema(example = "1200000", nullable = true) Integer amount,
             @Schema(nullable = true) FixedFeeTrigger trigger,
-            @Schema(example = "게시물 등록 후", nullable = true) String triggerLabel,
+            @Schema(example = "공구 게시물 등록 후", nullable = true) String triggerLabel,
             @Schema(description = "지급 상태. **fixed_fee_paid_at 원시값은 내리지 않는다**",
                     example = "NOT_YET") CreatorFixedFeePaymentState paymentState
     ) {

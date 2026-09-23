@@ -53,14 +53,14 @@ class SellerContractValidationIntegrationTest extends SellerContractTestSupport 
                 .andExpect(jsonPath("$.hardViolations[*].code", hasItem("H4")))
                 .andExpect(jsonPath("$.hardViolations[?(@.code == 'H4')].field", hasItem("groupBuyEndAt")));
 
-        saveOk(contractId, validForm(1L).period(startAt, startAt.plusDays(30)));
+        saveOk(contractId, validForm(currentVersion(contractId)).period(startAt, startAt.plusDays(30)));
         validate(contractId).andExpect(jsonPath("$.hardViolations[*].code", hasItem("H4")));
 
         // 경계 — 3일(양끝 포함)과 30일은 통과한다.
-        saveOk(contractId, validForm(2L).period(startAt, startAt.plusDays(2)));
+        saveOk(contractId, validForm(currentVersion(contractId)).period(startAt, startAt.plusDays(2)));
         validate(contractId).andExpect(jsonPath("$.canSubmit").value(true));
 
-        saveOk(contractId, validForm(3L).period(startAt, startAt.plusDays(29)));
+        saveOk(contractId, validForm(currentVersion(contractId)).period(startAt, startAt.plusDays(29)));
         validate(contractId).andExpect(jsonPath("$.canSubmit").value(true));
     }
 
@@ -82,7 +82,7 @@ class SellerContractValidationIntegrationTest extends SellerContractTestSupport 
                 .andExpect(jsonPath("$.hardViolations[?(@.code == 'H5')].kind", hasItem("RULE")));
 
         LocalDateTime justInTime = LocalDateTime.now().plusDays(7).plusHours(1).withNano(0);
-        saveOk(contractId, validForm(1L)
+        saveOk(contractId, validForm(currentVersion(contractId))
                 .period(justInTime, justInTime.plusDays(9))
                 .content(1, 1, 0, justInTime.plusDays(12).toLocalDate()));
         reviewRequest(contractId).andExpect(status().isOk());
@@ -101,7 +101,7 @@ class SellerContractValidationIntegrationTest extends SellerContractTestSupport 
                 // 순서가 뒤집힌 단계에서는 일수 규칙을 겹쳐 내리지 않는다 — 고칠 곳은 하나다.
                 .andExpect(jsonPath("$.hardViolations[?(@.code == 'H4')]").isEmpty());
 
-        saveOk(contractId, validForm(1L).period(startAt, null));
+        saveOk(contractId, validForm(currentVersion(contractId)).period(startAt, null));
         validate(contractId)
                 .andExpect(jsonPath("$.hardViolations[?(@.code == 'PERIOD_REQUIRED')].kind", hasItem("REQUIRED")));
     }
@@ -117,12 +117,12 @@ class SellerContractValidationIntegrationTest extends SellerContractTestSupport 
         validate(contractId)
                 .andExpect(jsonPath("$.hardViolations[?(@.code == 'TITLE_REQUIRED')].kind", hasItem("REQUIRED")));
 
-        saveOk(contractId, validForm(1L).title("가"));
+        saveOk(contractId, validForm(currentVersion(contractId)).title("가"));
         validate(contractId)
                 .andExpect(jsonPath("$.hardViolations[?(@.code == 'TITLE_LENGTH')].kind", hasItem("RULE")));
 
         // 40자 초과는 DTO가 먼저 막는다 — 검증 API까지 가지 않는다.
-        save(contractId, validForm(2L).title("공".repeat(41)))
+        save(contractId, validForm(currentVersion(contractId)).title("공".repeat(41)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -137,7 +137,7 @@ class SellerContractValidationIntegrationTest extends SellerContractTestSupport 
                 .andExpect(jsonPath("$.hardViolations[?(@.code == 'H6')].field", hasItem("contentFeedCount")));
 
         // 셋 다 미입력도 합계 0과 같은 취급이다 — null을 0으로 읽는다.
-        saveOk(contractId, validForm(1L).content(null, null, null, null));
+        saveOk(contractId, validForm(currentVersion(contractId)).content(null, null, null, null));
         validate(contractId)
                 .andExpect(jsonPath("$.hardViolations[*].code", hasItem("H6")))
                 .andExpect(jsonPath("$.hardViolations[?(@.code == 'CONTENT_DUE_DATE_REQUIRED')].kind",
@@ -154,10 +154,10 @@ class SellerContractValidationIntegrationTest extends SellerContractTestSupport 
                 .andExpect(jsonPath("$.hardViolations[?(@.code == 'SECONDARY_USE_MONTHS_REQUIRED')].field",
                         hasItem("secondaryUseMonths")));
 
-        saveOk(contractId, validForm(1L).secondaryUse(true, SecondaryUsePeriodType.UNLIMITED, null));
+        saveOk(contractId, validForm(currentVersion(contractId)).secondaryUse(true, SecondaryUsePeriodType.UNLIMITED, null));
         validate(contractId).andExpect(jsonPath("$.canSubmit").value(true));
 
-        saveOk(contractId, validForm(2L).secondaryUse(false, SecondaryUsePeriodType.FIXED, null));
+        saveOk(contractId, validForm(currentVersion(contractId)).secondaryUse(false, SecondaryUsePeriodType.FIXED, null));
         validate(contractId).andExpect(jsonPath("$.canSubmit").value(true));
     }
 
@@ -174,11 +174,11 @@ class SellerContractValidationIntegrationTest extends SellerContractTestSupport 
                 .andExpect(jsonPath("$.hardViolations[?(@.code == 'H8')].kind", hasItem("REQUIRED")))
                 .andExpect(jsonPath("$.hardViolations[?(@.code == 'H8')].field", hasItem("fixedFeeNoticeAgreed")));
 
-        saveOk(contractId, validForm(1L).fixedFee(500_000, FixedFeeTrigger.POST_REGISTERED, true));
+        saveOk(contractId, validForm(currentVersion(contractId)).fixedFee(500_000, FixedFeeTrigger.POST_REGISTERED, true));
         validate(contractId).andExpect(jsonPath("$.canSubmit").value(true));
 
         // 0원이면 고지 블록 자체가 뜨지 않는다 — 체크를 요구하면 화면에 없는 항목을 요구하는 셈이다.
-        saveOk(contractId, validForm(2L).fixedFee(0, FixedFeeTrigger.POST_REGISTERED, false));
+        saveOk(contractId, validForm(currentVersion(contractId)).fixedFee(0, FixedFeeTrigger.POST_REGISTERED, false));
         validate(contractId).andExpect(jsonPath("$.canSubmit").value(true));
     }
 
@@ -203,12 +203,12 @@ class SellerContractValidationIntegrationTest extends SellerContractTestSupport 
         String agreedAt = readString(first, "$.fixedFee.noticeAgreedAt");
 
         // 다시 저장해도 "언제 확인했는지"가 바뀌면 안 된다 — 기록의 요점이 그 시각이다.
-        String second = saveOk(contractId, validForm(1L)
+        String second = saveOk(contractId, validForm(currentVersion(contractId))
                 .fixedFee(700_000, FixedFeeTrigger.GROUP_BUY_ENDED, true));
         assertThat(readString(second, "$.fixedFee.noticeAgreedAt")).isEqualTo(agreedAt);
 
         // 체크를 풀면 확인 시각도 함께 지워진다 — 금액은 남고 동의만 사라지는 상태를 두지 않는다.
-        saveOk(contractId, validForm(2L).fixedFee(700_000, FixedFeeTrigger.GROUP_BUY_ENDED, false));
+        saveOk(contractId, validForm(currentVersion(contractId)).fixedFee(700_000, FixedFeeTrigger.GROUP_BUY_ENDED, false));
         detail(contractId)
                 .andExpect(jsonPath("$.fixedFee.amount").value(700_000))
                 .andExpect(jsonPath("$.fixedFee.noticeAgreedAt").doesNotExist());
@@ -243,7 +243,7 @@ class SellerContractValidationIntegrationTest extends SellerContractTestSupport 
         changeDisplayStatus(serum, ProductDisplayStatus.HIDDEN);
 
         // 작성 도중 잠깐 미진열이 된 상품 때문에 임시저장이 실패하면 안 된다.
-        saveOk(contractId, validForm(1L));
+        saveOk(contractId, validForm(currentVersion(contractId)));
 
         validate(contractId)
                 .andExpect(jsonPath("$.hardViolations[?(@.code == 'ITEM_PRODUCT_NOT_DISPLAYED')].kind",
@@ -312,7 +312,7 @@ class SellerContractValidationIntegrationTest extends SellerContractTestSupport 
         saveOk(contractId, validForm(0L).items(item(serum, 28_000, "15.50", 300)));
 
         // 상한 90%를 넘는 값은 DTO가 먼저 막아 H3까지 가지 않는다.
-        save(contractId, validForm(1L).items(item(serum, 28_000, "90.1", 300)))
+        save(contractId, validForm(currentVersion(contractId)).items(item(serum, 28_000, "90.1", 300)))
                 .andExpect(status().isBadRequest());
     }
 
