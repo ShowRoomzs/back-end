@@ -9,6 +9,7 @@ import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractItem;
 import showroomz.domain.contract.repository.ContractDocumentRepository;
 import showroomz.domain.contract.repository.ContractHistoryRepository;
+import showroomz.domain.contract.type.ContractActorType;
 import showroomz.domain.contract.type.ContractCloseReasonLabels;
 import showroomz.domain.contract.type.ContractStatus;
 import showroomz.domain.contract.type.WithholdingType;
