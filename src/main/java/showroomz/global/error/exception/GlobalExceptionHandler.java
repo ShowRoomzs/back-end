@@ -26,6 +26,28 @@ import java.util.stream.Collectors;
 @RestControllerAdvice(basePackages = "showroomz")
 public class GlobalExceptionHandler {
 
+    /**
+     * 계약 하드 검증 실패(설계서 2-2) — 위반 항목 목록을 함께 내린다.
+     * {@link BusinessException} 핸들러보다 먼저 잡히도록 구체 타입으로 선언한다.
+     */
+    @ExceptionHandler(ContractValidationException.class)
+    public ResponseEntity<ContractValidationErrorResponse> handleContractValidationException(
+            ContractValidationException e) {
+        log.warn("ContractValidationException: {} violations", e.getViolations().size());
+        ErrorCode errorCode = e.getErrorCode();
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(new ContractValidationErrorResponse(
+                        errorCode.getCode(), errorCode.getMessage(), e.getViolations()));
+    }
+
+    /** 위반 목록을 실은 에러 바디. 기존 ErrorResponse(code·message)에 hardViolations만 더한 모양이다. */
+    public record ContractValidationErrorResponse(
+            String code,
+            String message,
+            java.util.List<showroomz.domain.contract.type.ContractViolation> hardViolations) {
+    }
+
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ErrorResponse> handleBadRequestException(BusinessException e) {
         // 비즈니스 로직 예외(400 등)는 보통 Sentry에 보낼 필요 없음 (로그만 남김)

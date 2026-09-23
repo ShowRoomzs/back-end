@@ -251,7 +251,29 @@ public enum ErrorCode {
     INVALID_SHOWROOM_NAME_FORMAT(HttpStatus.BAD_REQUEST, "INVALID_SHOWROOM_NAME_FORMAT", "쇼룸명은 2~20자, 한글·영문·숫자·공백만 사용할 수 있습니다."),
     SHOWROOM_INTRODUCTION_TOO_LONG(HttpStatus.BAD_REQUEST, "SHOWROOM_INTRODUCTION_TOO_LONG", "쇼룸 소개글은 최대 50자까지 입력할 수 있습니다."),
     INVALID_INSTAGRAM_URL(HttpStatus.BAD_REQUEST, "INVALID_INSTAGRAM_URL", "https://로 시작하는 올바른 URL을 입력해 주세요."),
-    SHOWROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "SHOWROOM_NOT_FOUND", "존재하지 않는 쇼룸입니다.");
+    SHOWROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "SHOWROOM_NOT_FOUND", "존재하지 않는 쇼룸입니다."),
+
+    /* * 21. 계약 관리 (Contract, §25~§28)
+     */
+    CONTRACT_NOT_FOUND(HttpStatus.NOT_FOUND, "CONTRACT_NOT_FOUND", "존재하지 않는 계약입니다."),
+    CONTRACT_NOT_OWNED_BY_SELLER(HttpStatus.FORBIDDEN, "CONTRACT_NOT_OWNED_BY_SELLER", "해당 브랜드의 계약이 아닙니다."),
+    CONTRACT_EDIT_LOCKED(HttpStatus.CONFLICT, "CONTRACT_EDIT_LOCKED", "검토 요청 후에는 수정할 수 없습니다."),
+    CONTRACT_STATUS_CONFLICT(HttpStatus.CONFLICT, "CONTRACT_STATUS_CONFLICT", "계약 상태가 이미 변경되었습니다. 새로고침 후 다시 시도해 주세요."),
+    CONTRACT_MODIFIED_ELSEWHERE(HttpStatus.CONFLICT, "CONTRACT_MODIFIED_ELSEWHERE", "다른 곳에서 먼저 저장되었습니다."),
+    CONTRACT_WARNING_MISMATCH(HttpStatus.CONFLICT, "CONTRACT_WARNING_MISMATCH", "확인한 주의 항목이 현재 내용과 다릅니다. 다시 확인해 주세요."),
+    CONTRACT_COUNTERPARTY_NOT_CONNECTED(HttpStatus.BAD_REQUEST, "CONTRACT_COUNTERPARTY_NOT_CONNECTED", "연결됨 상태인 상대만 선택할 수 있습니다."),
+    CONTRACT_COUNTERPARTY_FIXED(HttpStatus.BAD_REQUEST, "CONTRACT_COUNTERPARTY_FIXED", "스레드에서 시작한 계약은 상대를 바꿀 수 없습니다."),
+    CONTRACT_PRODUCT_NOT_DISPLAYED(HttpStatus.BAD_REQUEST, "CONTRACT_PRODUCT_NOT_DISPLAYED", "진열 상태인 상품만 선택할 수 있습니다."),
+    CONTRACT_PRODUCT_NOT_OWNED(HttpStatus.BAD_REQUEST, "CONTRACT_PRODUCT_NOT_OWNED", "해당 브랜드의 상품이 아닙니다."),
+    CONTRACT_FIXED_FEE_NOTICE_REQUIRED(HttpStatus.BAD_REQUEST, "CONTRACT_FIXED_FEE_NOTICE_REQUIRED", "고정 지급비 지급 조건 확인이 필요합니다."),
+    CONTRACT_FIXED_FEE_ALREADY_PAID(HttpStatus.CONFLICT, "CONTRACT_FIXED_FEE_ALREADY_PAID", "이미 지급 완료로 기록된 계약입니다."),
+    CONTRACT_GROUP_BUY_ALREADY_CREATED(HttpStatus.CONFLICT, "CONTRACT_GROUP_BUY_ALREADY_CREATED", "이미 공구가 생성된 계약입니다."),
+    CONTRACT_DOCUMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "CONTRACT_DOCUMENT_NOT_FOUND", "체결 문서가 아직 등록되지 않았습니다."),
+    /* 하드 검증 H1~H8 실패. 응답 바디에 위반 항목 목록(hardViolations)이 함께 실린다(설계서 2-2·2-4). */
+    CONTRACT_VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "CONTRACT_VALIDATION_FAILED", "계약 내용을 다시 확인해 주세요."),
+    CONTRACT_CANCEL_REASON_MEMO_REQUIRED(HttpStatus.BAD_REQUEST, "CONTRACT_CANCEL_REASON_MEMO_REQUIRED", "기타 사유는 상세 설명이 필요합니다."),
+    CONTRACT_NOT_DUPLICABLE(HttpStatus.CONFLICT, "CONTRACT_NOT_DUPLICABLE", "종료되었거나 체결된 계약만 같은 조건으로 다시 작성할 수 있습니다."),
+    CONTRACT_CLAUSE_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "CONTRACT_CLAUSE_VERSION_NOT_FOUND", "시행중인 표준 조항이 없습니다.");
 
     private final HttpStatus status;
     private final String code;
