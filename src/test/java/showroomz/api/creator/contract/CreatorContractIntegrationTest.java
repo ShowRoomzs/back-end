@@ -1,53 +1,18 @@
 package showroomz.api.creator.contract;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import showroomz.api.app.auth.entity.ProviderType;
-import showroomz.api.app.auth.entity.RoleType;
-import showroomz.api.app.user.repository.UserRepository;
-import showroomz.domain.category.entity.Category;
-import showroomz.domain.category.repository.CategoryRepository;
-import showroomz.domain.connection.entity.Connection;
-import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.connection.type.ConnectionStatus;
 import showroomz.domain.contract.entity.Contract;
-import showroomz.domain.contract.entity.ContractClause;
-import showroomz.domain.contract.entity.ContractClauseVersion;
-import showroomz.domain.contract.entity.ContractHistory;
-import showroomz.domain.contract.entity.ContractItem;
 import showroomz.domain.contract.entity.ContractResendRequest;
-import showroomz.domain.contract.repository.ContractClauseVersionRepository;
-import showroomz.domain.contract.repository.ContractHistoryRepository;
-import showroomz.domain.contract.repository.ContractRepository;
-import showroomz.domain.contract.repository.ContractResendRequestRepository;
 import showroomz.domain.contract.type.ContractActorType;
-import showroomz.domain.contract.type.ContractClauseVersionStatus;
-import showroomz.domain.contract.type.ContractDeclineReason;
 import showroomz.domain.contract.type.ContractEventType;
 import showroomz.domain.contract.type.ContractStatus;
-import showroomz.domain.contract.type.FixedFeeTrigger;
-import showroomz.domain.contract.type.SecondaryUsePeriodType;
-import showroomz.domain.market.type.SnsType;
 import showroomz.domain.member.creator.entity.Creator;
-import showroomz.domain.member.creator.repository.CreatorRepository;
-import showroomz.domain.member.creator.type.CreatorBusinessType;
-import showroomz.domain.member.user.entity.Users;
-import showroomz.domain.message.entity.MessageThread;
-import showroomz.domain.message.repository.MessageThreadRepository;
-import showroomz.domain.product.entity.Product;
-import showroomz.domain.product.repository.ProductRepository;
-import showroomz.domain.product.type.ProductDisplayStatus;
-import showroomz.support.BrandFixture;
-import showroomz.support.IntegrationTestSupport;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,65 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 거절의 조건부 UPDATE(5-1) · 재발송 중복 억제(5-2) · 열람 기록의 부수 효과(5-3).
  */
 @DisplayName("[통합] 쇼룸 스튜디오 계약 관리")
-class CreatorContractIntegrationTest extends IntegrationTestSupport {
-
-    private static final String CONTRACTS = "/v1/creator/contracts";
-
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private CreatorRepository creatorRepository;
-    @Autowired
-    private ConnectionRepository connectionRepository;
-    @Autowired
-    private MessageThreadRepository messageThreadRepository;
-    @Autowired
-    private CategoryRepository categoryRepository;
-    @Autowired
-    private ProductRepository productRepository;
-    @Autowired
-    private ContractRepository contractRepository;
-    @Autowired
-    private ContractHistoryRepository contractHistoryRepository;
-    @Autowired
-    private ContractResendRequestRepository resendRequestRepository;
-    @Autowired
-    private ContractClauseVersionRepository clauseVersionRepository;
-
-    private BrandFixture.Brand brand;
-    private Creator me;
-    private String myToken;
-    private Connection myConnection;
-    private ContractClauseVersion clauseVersion;
-    private Product serum;
-    private int contractNumberSeq = 1;
-
-    @BeforeEach
-    void setUpActors() {
-        brand = fixture.createBrand("brand@showroomz.test", "퓨어랩");
-        serum = createProduct("수분진정 세럼 30ml", 32_000);
-        clauseVersion = seedClauseVersion();
-
-        Users owner = userRepository.save(new Users(
-                "creator-소연", "뷰티_소연", "soyeon@showroomz.test", "Y", null,
-                ProviderType.LOCAL, RoleType.CREATOR, LocalDateTime.now(), LocalDateTime.now()));
-        me = creatorRepository.save(Creator.builder()
-                .user(owner)
-                .snsType(SnsType.INSTAGRAM)
-                .channelUrl("https://instagram.com/soyeon")
-                .accountId("soyeon")
-                .followerCount(52_000)
-                .businessEmail("biz@showroomz.test")
-                .showroomName("뷰티_소연")
-                .businessType(CreatorBusinessType.INDIVIDUAL)
-                .build());
-        myToken = bearerToken(owner.getUsername(), RoleType.CREATOR, owner.getId());
-
-        myConnection = Connection.requestPair(brand.market(), me);
-        myConnection.markConnected();
-        connectionRepository.save(myConnection);
-        messageThreadRepository.save(MessageThread.openFor(myConnection));
-    }
+class CreatorContractIntegrationTest extends CreatorContractTestSupport {
 
     // ── 가시성 ──────────────────────────────────────────────────────────────
 
@@ -596,165 +503,11 @@ class CreatorContractIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isNotFound());
     }
 
-    // ── 픽스처 ──────────────────────────────────────────────────────────────
+    // ── 헬퍼 ────────────────────────────────────────────────────────────────
 
     private void assertDeadlineType(Long contractId, String expectedType) throws Exception {
         mockMvc.perform(get(CONTRACTS).header(HttpHeaders.AUTHORIZATION, myToken))
                 .andExpect(jsonPath("$.content[?(@.contractId == %d)].deadline.type".formatted(contractId))
                         .value(hasItem(expectedType)));
-    }
-
-    private Long signingContract() {
-        return saveContract(ContractStatus.SIGNING, this::approve);
-    }
-
-    private Long concludedContract() {
-        return saveContract(ContractStatus.CONCLUDED, contract -> {
-            approve(contract);
-            contract.updateSignatures(LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now());
-            contract.conclude(LocalDateTime.now());
-        });
-    }
-
-    private Long expiredContract() {
-        return saveContract(ContractStatus.EXPIRED, contract -> {
-            approve(contract, LocalDateTime.now().minusDays(1));
-            contract.expire(LocalDateTime.now());
-        });
-    }
-
-    /** 거절은 실제 조건부 UPDATE 경로를 태운다 — applyCanceled는 주체가 SELLER라 여기 쓸 수 없다. */
-    private Long declinedContract() {
-        Long contractId = signingContract();
-        transactionTemplate.executeWithoutResult(tx -> contractRepository.declineByCreator(
-                contractId, me.getId(), ContractDeclineReason.SCHEDULE_MISMATCH.name(),
-                null, LocalDateTime.now()));
-        return contractId;
-    }
-
-    private Long reviewRejectedContract() {
-        return saveContract(ContractStatus.REVIEW_REJECTED, contract -> {
-            requestReview(contract);
-            contract.rejectReview("PRICE_POLICY", "공구가가 정가보다 높습니다.", LocalDateTime.now());
-        });
-    }
-
-    private void requestReview(Contract contract) {
-        contract.applyReviewRequested(nextContractNumber(), clauseVersion, null, LocalDateTime.now());
-    }
-
-    private void approve(Contract contract) {
-        approve(contract, LocalDateTime.now().plusDays(8));
-    }
-
-    private void approve(Contract contract, LocalDateTime deadlineAt) {
-        approve(contract, LocalDateTime.now().minusDays(1), deadlineAt);
-    }
-
-    private void approve(Contract contract, LocalDateTime requestedAt, LocalDateTime deadlineAt) {
-        contract.applyReviewRequested(nextContractNumber(), clauseVersion, null, requestedAt.minusHours(1));
-        contract.approveReview(requestedAt, deadlineAt, requestedAt);
-    }
-
-    private String nextContractNumber() {
-        return "CTR-20260813-" + String.format("%05d", contractNumberSeq++);
-    }
-
-    private Long saveContract(ContractStatus status, java.util.function.Consumer<Contract> shape) {
-        return saveContractFor(me, status, shape);
-    }
-
-    /**
-     * 어드민 API 없이 상태를 직접 만든다 — Q4는 어드민 P7과 순서 의존이 없고(설계서 9),
-     * S3b 같은 분기는 값을 직접 넣어야 탄다.
-     */
-    private Long saveContractFor(Creator creator, ContractStatus status,
-                                 java.util.function.Consumer<Contract> shape) {
-        return transactionTemplate.execute(tx -> {
-            Connection connection = creator.getId().equals(me.getId()) ? myConnection : null;
-            Contract contract = Contract.createDraft(brand.market(), creator, connection);
-            contract.updateTerms(
-                    "여름 수분 세럼 공구",
-                    LocalDateTime.now().plusDays(10), LocalDateTime.now().plusDays(26),
-                    1_200_000, FixedFeeTrigger.POST_REGISTERED, LocalDateTime.now(),
-                    1, 1, 3, LocalDate.now().plusDays(30),
-                    true, SecondaryUsePeriodType.FIXED, 12, false, "비고");
-
-            ContractItem item = ContractItem.builder()
-                    .product(serum)
-                    .productName(serum.getName())
-                    .regularPrice(serum.getRegularPrice())
-                    .groupBuyPrice(28_000)
-                    .rewardRate(new BigDecimal("15.0"))
-                    .minQuantity(300)
-                    .sortOrder(0)
-                    .build();
-            contract.replaceItems(new ArrayList<>(List.of(item)));
-
-            shape.accept(contract);
-            // 종결·만료는 전이 메서드가 상태를 정하므로 요청한 상태와 어긋나지 않는지만 확인한다.
-            Contract saved = contractRepository.saveAndFlush(contract);
-            assertThat(saved.getStatus()).isEqualTo(status);
-            return saved.getId();
-        });
-    }
-
-    private void saveHistory(Contract contract, ContractEventType eventType,
-                             ContractActorType actorType, LocalDateTime occurredAt) {
-        contractHistoryRepository.save(ContractHistory.of(
-                contract, eventType, actorType, null, "표시명", null, occurredAt));
-    }
-
-    private Creator createOtherCreator() {
-        Users owner = userRepository.save(new Users(
-                "creator-지민", "글로우_지민", "jimin@showroomz.test", "Y", null,
-                ProviderType.LOCAL, RoleType.CREATOR, LocalDateTime.now(), LocalDateTime.now()));
-        return creatorRepository.save(Creator.builder()
-                .user(owner)
-                .snsType(SnsType.INSTAGRAM)
-                .channelUrl("https://instagram.com/jimin")
-                .accountId("jimin")
-                .followerCount(12_000)
-                .businessEmail("biz2@showroomz.test")
-                .showroomName("글로우_지민")
-                .businessType(CreatorBusinessType.BUSINESS)
-                .build());
-    }
-
-    private Product createProduct(String name, int regularPrice) {
-        Category category = new Category();
-        category.setName("뷰티 " + name);
-        categoryRepository.save(category);
-
-        Product product = new Product();
-        product.setMarket(brand.market());
-        product.setCategory(category);
-        product.setName(name);
-        product.setRegularPrice(regularPrice);
-        product.setSalePrice(regularPrice);
-        product.setDisplayStatus(ProductDisplayStatus.DISPLAY);
-        return productRepository.save(product);
-    }
-
-    /** Flyway가 꺼진 통합 테스트 프로필에서는 V120의 조항 seed가 없다 — 최소 버전을 직접 적재한다. */
-    private ContractClauseVersion seedClauseVersion() {
-        ContractClauseVersion version = ContractClauseVersion.builder()
-                .versionNumber("1.0")
-                .effectiveDate(LocalDate.now().minusDays(1))
-                .status(ContractClauseVersionStatus.EFFECTIVE)
-                .clauses(new ArrayList<>())
-                .build();
-
-        version.getClauses().add(ContractClause.builder()
-                .clauseVersion(version)
-                .code("PRICE_POLICY")
-                .sortOrder(1)
-                .summaryTitle("가격 정책")
-                .summaryDescription("공구 기간 중 타 채널 최저가 준수")
-                .fullTitle("제3조 최저가 정책")
-                .fullBody("브랜드는 공구 기간 중 동일 상품을 공구가보다 낮은 가격으로 타 채널에 판매하지 않는다.")
-                .build());
-
-        return clauseVersionRepository.save(version);
     }
 }
