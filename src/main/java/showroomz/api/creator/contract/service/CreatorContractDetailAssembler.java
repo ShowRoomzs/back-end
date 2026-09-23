@@ -321,7 +321,8 @@ public class CreatorContractDetailAssembler {
             entries.add(new CreatorContractDetailResponse.HistoryEntry(
                     entry.getEventType(),
                     entry.getActorType(),
-                    entry.getActorDisplayName(),
+                    // 운영자 실명은 어드민 화면에만 나간다 — 스튜디오는 「운영자」로 익명 표기한다(§25-9).
+                    entry.getActorType() == ContractActorType.ADMIN ? null : entry.getActorDisplayName(),
                     entry.getDetail(),
                     entry.getOccurredAt()));
         }

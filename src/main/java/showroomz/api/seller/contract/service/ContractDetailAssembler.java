@@ -230,7 +230,8 @@ public class ContractDetailAssembler {
                 .map(entry -> new ContractDetailResponse.HistoryEntry(
                         entry.getEventType(),
                         entry.getActorType(),
-                        entry.getActorDisplayName(),
+                        // 운영자 실명은 어드민 화면에만 나간다 — 파트너센터는 「어드민」으로 익명 표기한다(§25-9).
+                        entry.getActorType() == ContractActorType.ADMIN ? null : entry.getActorDisplayName(),
                         entry.getDetail(),
                         entry.getOccurredAt()))
                 .toList();
