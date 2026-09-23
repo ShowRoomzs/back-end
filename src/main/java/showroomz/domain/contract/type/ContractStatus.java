@@ -46,6 +46,19 @@ public enum ContractStatus {
     /** 재작성(이 조건으로 새 계약 작성) 허용 구간 — 진행 중 계약의 복제는 기획이 다룬 적 없다(설계서 4-3). */
     public static final Set<ContractStatus> DUPLICABLE = Set.of(CONCLUDED, DECLINED, EXPIRED, CANCELED);
 
+    /**
+     * 인플루언서에게 <b>도착한</b> 계약의 상태 집합(§27 설계서 1-1).
+     *
+     * <p>DRAFT · REVIEW_PENDING · REVIEW_REJECTED는 브랜드 전용이다. 이 계약들도 creator_id가
+     * 이미 채워져 있으므로(§25-5-1) creator_id만으로 조회하면 브랜드가 보내지도 않은 계약이,
+     * 운영자가 반려한 계약까지 인플루언서 목록에 뜬다.
+     *
+     * <p>가시성은 필터가 아니라 권한이다 — 이 집합을 탭 enum이 아니라 상태 enum에 두는 이유는
+     * 탭이 늘거나 바뀌어도 「무엇이 도착한 계약인가」의 정의는 한 곳에 남아야 하기 때문이다.
+     */
+    public static final Set<ContractStatus> RECEIVED_BY_CREATOR =
+            Set.of(SIGNING, CONCLUSION_PENDING, CONCLUDED, DECLINED, EXPIRED, CANCELED);
+
     public boolean isEditable() {
         return EDITABLE.contains(this);
     }

@@ -9,7 +9,7 @@ import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractItem;
 import showroomz.domain.contract.repository.ContractDocumentRepository;
 import showroomz.domain.contract.repository.ContractHistoryRepository;
-import showroomz.domain.contract.type.ContractCloseReasonCode;
+import showroomz.domain.contract.type.ContractCloseReasonLabels;
 import showroomz.domain.contract.type.ContractStatus;
 import showroomz.domain.contract.type.WithholdingType;
 import showroomz.global.utils.RewardCalculator;
@@ -180,19 +180,12 @@ public class ContractDetailAssembler {
     }
 
     /**
-     * 종결 사유 라벨. 브랜드 취소 사유 5종은 서버가 라벨을 안다.
-     * 인플루언서 거절 사유는 아직 확정 전이라(설계서 미결 #8) 코드를 그대로 내리고 라벨은 비운다 —
-     * 모르는 코드에 그럴듯한 문구를 지어내지 않는다.
+     * 종결 사유 라벨. 브랜드 취소 사유 5종과 인플루언서 거절 사유 5종이 같은 컬럼을 쓰므로
+     * 해석은 공용 리졸버에 맡긴다(§27 설계서 5-1 「사유는 브랜드에게 그대로 전달된다」).
+     * 모르는 코드에는 그럴듯한 문구를 지어내지 않고 null을 내린다.
      */
     private String closeReasonLabel(String reasonCode) {
-        if (reasonCode == null) {
-            return null;
-        }
-        try {
-            return ContractCloseReasonCode.valueOf(reasonCode).getLabel();
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
+        return ContractCloseReasonLabels.labelOf(reasonCode);
     }
 
     private ContractDetailResponse.GroupBuy groupBuy(Contract contract) {

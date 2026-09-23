@@ -34,6 +34,18 @@ public class ContractHistoryRecorder {
                 contract, eventType, actorType, actorId, actorDisplayName, detail, occurredAt));
     }
 
+    /**
+     * 인플루언서가 주체인 이력 — 표시명은 쇼룸명 스냅샷이다.
+     * 스튜디오에서 이 경로를 타는 것은 거절 하나뿐이다(§27 설계서 0-1).
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void recordByCreator(Contract contract, ContractEventType eventType, String detail,
+                                LocalDateTime occurredAt) {
+        String showroomName = contract.getCreator() == null ? null : contract.getCreator().getShowroomName();
+        Long creatorId = contract.getCreator() == null ? null : contract.getCreator().getId();
+        record(contract, eventType, ContractActorType.CREATOR, creatorId, showroomName, detail, occurredAt);
+    }
+
     /** 브랜드가 주체인 이력 — 표시명은 브랜드명 스냅샷이다. */
     @Transactional(propagation = Propagation.MANDATORY)
     public void recordBySeller(Contract contract, ContractEventType eventType, String detail,

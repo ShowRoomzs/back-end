@@ -8,6 +8,7 @@ import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.type.ContractStatus;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -83,4 +84,89 @@ public interface ContractRepository extends JpaRepository<Contract, Long>, Contr
             + "  OR (c.status = showroomz.domain.contract.type.ContractStatus.SIGNING"
             + "      AND c.creatorSignedAt IS NOT NULL AND c.brandSignedAt IS NULL))")
     long countActionRequired(@Param("marketId") Long marketId);
+
+    // ── §27 쇼룸 스튜디오 ────────────────────────────────────────────────────
+
+    /**
+     * 스튜디오 상세 조회 — <b>가시성 판정이 쿼리 안에 있다</b>(설계서 1-1).
+     *
+     * <p>판정 없는 {@code findByCreatorId} 류를 두지 않는다. 목록·상세·거절·재발송·문서·조항
+     * 여섯 경로가 전부 이 판정을 통과해야 하고, 한 곳만 빠져도 브랜드가 아직 보내지도 않은 계약이
+     * 인플루언서에게 나간다.
+     *
+     * <p>비어 있으면 <b>404</b>다 — 403이 아니다(설계서 1-2). 「있는데 못 본다」를 알리면
+     * 인플루언서가 브랜드가 자기 앞으로 계약을 작성 중이라는 사실을, 반려된 계약이라면
+     * 「나한테 보내려다 운영자에게 막혔다」까지 읽는다.
+     */
+    @Query("SELECT c FROM Contract c "
+            + "JOIN FETCH c.market m "
+            + "JOIN FETCH c.creator cr "
+            + "WHERE c.id = :contractId AND cr.id = :creatorId "
+            + "AND c.signatureRequestedAt IS NOT NULL "
+            + "AND c.status IN :statuses")
+    Optional<Contract> findReceivedByCreator(@Param("contractId") Long contractId,
+                                             @Param("creatorId") Long creatorId,
+                                             @Param("statuses") Collection<ContractStatus> statuses);
+
+    /** 스튜디오 탭 카운트(설계서 3) — 탭 묶음은 서버가 소유하므로 상태별 카운트를 받아 서비스가 묶는다. */
+    @Query("SELECT c.status, COUNT(c) FROM Contract c "
+            + "WHERE c.creator.id = :creatorId AND c.signatureRequestedAt IS NOT NULL "
+            + "AND c.status IN :statuses "
+            + "GROUP BY c.status")
+    List<Object[]> countByStatusForCreator(@Param("creatorId") Long creatorId,
+                                           @Param("statuses") Collection<ContractStatus> statuses);
+
+    /**
+     * GNB 배지 — <b>내 서명이 필요한 계약 건수</b>(설계서 3-1). 파트너와 정의가 다르다.
+     *
+     * <p>{@code brandSignedAt}을 조건에 넣지 않는다. S3a는 「내 차례」가 아니라 「내 몫이 남은 것」이고,
+     * 양측 미서명(S3)에서도 내 몫은 똑같이 남아 있다 — rev.2에서 서명 순서가 사라졌다(§27-2).
+     * 파트너가 B4c(상대만 서명함) 하나만 배지에 넣은 것과 반대인데, 대칭이 깨져서가 아니라
+     * 스튜디오가 그 순서 감각을 명시적으로 폐기했기 때문이다.
+     */
+    @Query("SELECT COUNT(c) FROM Contract c WHERE c.creator.id = :creatorId "
+            + "AND c.signatureRequestedAt IS NOT NULL "
+            + "AND c.status = showroomz.domain.contract.type.ContractStatus.SIGNING "
+            + "AND c.creatorSignedAt IS NULL")
+    long countCreatorActionRequired(@Param("creatorId") Long creatorId);
+
+    /**
+     * 인플루언서의 [거절](설계서 5-1) — 조건부 UPDATE에 <b>서명 조건까지</b> 건다.
+     *
+     * <p>{@code creatorSignedAt IS NULL}이 WHERE에 있어야 하는 이유: 내가 거절 모달을 열어 둔 사이에
+     * 운영자가 내 서명을 체크할 수 있다. 서명한 계약이 거절로 종결되면
+     * <b>모두싸인에는 내 서명이 남고 우리 시스템은 거절인</b> 상태가 된다.
+     *
+     * <p>{@code SIGNING}에서만 허용한다 — {@code CONCLUSION_PENDING}은 양측 서명이 끝난 계약이라
+     * 409다. 0행이면 상태나 서명 여부가 읽은 뒤에 바뀐 것이다.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Contract c "
+            + "SET c.status = showroomz.domain.contract.type.ContractStatus.DECLINED, "
+            + "    c.closedAt = :now, "
+            + "    c.closeActorType = showroomz.domain.contract.type.ContractActorType.CREATOR, "
+            + "    c.closeReasonCode = :reasonCode, "
+            + "    c.closeReasonMemo = :memo "
+            + "WHERE c.id = :contractId AND c.creator.id = :creatorId "
+            + "AND c.status = showroomz.domain.contract.type.ContractStatus.SIGNING "
+            + "AND c.creatorSignedAt IS NULL")
+    int declineByCreator(@Param("contractId") Long contractId,
+                         @Param("creatorId") Long creatorId,
+                         @Param("reasonCode") String reasonCode,
+                         @Param("memo") String memo,
+                         @Param("now") LocalDateTime now);
+
+    /**
+     * 열람 기록(설계서 5-3) — 상세 GET의 <b>부수 효과</b>다. 별도 API를 만들지 않는다.
+     *
+     * <p>FE가 {@code POST /view}를 부르는 안은, 호출을 빠뜨리거나 순서를 바꾸면 브랜드 화면이
+     * 「열람 안 함」(B7)으로 거짓말을 한다. 열람 여부는 FE가 선택할 사실이 아니다.
+     *
+     * <p>GET이 쓰기를 한다는 점이 걸리지만 <b>최초 1회 CAS라 멱등이다</b> —
+     * 두 번째 호출부터는 0행이고 시각이 덮어써지지 않는다.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Contract c SET c.creatorViewedAt = :now "
+            + "WHERE c.id = :contractId AND c.creatorViewedAt IS NULL")
+    int markCreatorViewed(@Param("contractId") Long contractId, @Param("now") LocalDateTime now);
 }

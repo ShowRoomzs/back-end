@@ -283,7 +283,18 @@ public enum ErrorCode {
     CONTRACT_VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "CONTRACT_VALIDATION_FAILED", "계약 내용을 다시 확인해 주세요."),
     CONTRACT_CANCEL_REASON_MEMO_REQUIRED(HttpStatus.BAD_REQUEST, "CONTRACT_CANCEL_REASON_MEMO_REQUIRED", "기타 사유는 상세 설명이 필요합니다."),
     CONTRACT_NOT_DUPLICABLE(HttpStatus.CONFLICT, "CONTRACT_NOT_DUPLICABLE", "종료되었거나 체결된 계약만 같은 조건으로 다시 작성할 수 있습니다."),
-    CONTRACT_CLAUSE_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "CONTRACT_CLAUSE_VERSION_NOT_FOUND", "시행중인 표준 조항이 없습니다.");
+    CONTRACT_CLAUSE_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "CONTRACT_CLAUSE_VERSION_NOT_FOUND", "시행중인 표준 조항이 없습니다."),
+
+    // ── §27 쇼룸 스튜디오 계약 관리 ────────────────────────────────────────────
+    // CONTRACT_NOT_RECEIVED의 문구가 CONTRACT_NOT_FOUND와 같다(설계서 7). 미도착과 부재를
+    // 화면에서 구분할 수 없어야 하기 때문이다 — 403을 주면 인플루언서가 「브랜드가 내 앞으로
+    // 계약을 작성 중」이라는 사실을, 반려된 계약이라면 「운영자에게 막혔다」까지 알게 된다.
+    // 코드를 따로 두는 것은 서버 로그에서만 구분하기 위해서다 — 전자는 정상 동작이고
+    // 후자는 잘못된 링크라 운영상 의미가 완전히 다르다.
+    CONTRACT_NOT_RECEIVED(HttpStatus.NOT_FOUND, "CONTRACT_NOT_RECEIVED", "존재하지 않는 계약입니다."),
+    CONTRACT_ALREADY_SIGNED(HttpStatus.CONFLICT, "CONTRACT_ALREADY_SIGNED", "이미 서명한 계약은 거절할 수 없습니다."),
+    CONTRACT_DECLINE_NOT_ALLOWED(HttpStatus.CONFLICT, "CONTRACT_DECLINE_NOT_ALLOWED", "지금은 거절할 수 없는 상태입니다."),
+    CONTRACT_RESEND_NOT_ALLOWED(HttpStatus.CONFLICT, "CONTRACT_RESEND_NOT_ALLOWED", "서명이 필요한 계약에서만 요청할 수 있습니다.");
 
     private final HttpStatus status;
     private final String code;
