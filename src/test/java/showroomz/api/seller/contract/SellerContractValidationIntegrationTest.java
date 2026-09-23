@@ -198,9 +198,11 @@ class SellerContractValidationIntegrationTest extends SellerContractTestSupport 
     void keepsFirstNoticeAgreementTimestamp() throws Exception {
         long contractId = createDraft();
 
-        String first = saveOk(contractId, validForm(0L)
+        saveOk(contractId, validForm(0L)
                 .fixedFee(500_000, FixedFeeTrigger.POST_REGISTERED, true));
-        String agreedAt = readString(first, "$.fixedFee.noticeAgreedAt");
+        // 첫 응답은 DB에 기록되기 전 나노초 값을 담을 수 있다. 다시 읽은 저장값을 비교 기준으로 쓴다.
+        String agreedAt = readString(detailOk(contractId), "$.fixedFee.noticeAgreedAt");
+        assertThat(agreedAt).isNotNull();
 
         // 다시 저장해도 "언제 확인했는지"가 바뀌면 안 된다 — 기록의 요점이 그 시각이다.
         String second = saveOk(contractId, validForm(currentVersion(contractId))

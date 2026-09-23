@@ -89,7 +89,10 @@ class AdminContractListIntegrationTest extends AdminContractTestSupport {
         }
 
         private void row(ContractStatus status, java.util.function.Consumer<Seed> shape) {
-            Contract contract = seed(status, shape);
+            Contract contract = seed(status, s -> {
+                shape.accept(s);
+                s.createdAt(now.minusMinutes(10 - rows.size()));
+            });
             rows.put(contract.getTitle(), contract);
         }
 
