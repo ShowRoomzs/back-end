@@ -151,16 +151,20 @@ class AdminContractReviewIntegrationTest extends AdminContractTestSupport {
     }
 
     @Test
-    @DisplayName("서명 전 계약서는 운영자만 받는다 — 브랜드·인플루언서에게 생성본 경로가 없다")
-    void generatedContractIsOperatorOnly() throws Exception {
+    @DisplayName("체결 전에는 브랜드·인플루언서도 운영자가 받는 생성본과 같은 파일을 받는다")
+    void generatedContractIsSharedWithBothParties() throws Exception {
         Contract c = seed(ContractStatus.REVIEW_PENDING);
-        draft(c).andExpect(status().isOk());
+        String fileName = readString(body(draft(c).andExpect(status().isOk())), "$.fileName");
         approve(c, checked(now.minusMinutes(30), now.plusDays(7))).andExpect(status().isOk());
 
         mockMvc.perform(get(SELLER_CONTRACTS + "/" + c.getId() + "/documents/GENERATED_DRAFT")
-                .header(HttpHeaders.AUTHORIZATION, brandToken)).andExpect(status().isNotFound());
+                        .header(HttpHeaders.AUTHORIZATION, brandToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.originalName").value(fileName));
         mockMvc.perform(get(CREATOR_CONTRACTS + "/" + c.getId() + "/documents/GENERATED_DRAFT")
-                .header(HttpHeaders.AUTHORIZATION, creatorToken)).andExpect(status().isNotFound());
+                        .header(HttpHeaders.AUTHORIZATION, creatorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.originalName").value(fileName));
         // 발송 뒤에도 운영자는 발송한 그 파일(캐시)을 다시 받을 수 있다.
         draft(c).andExpect(status().isOk());
         verify(renderer, times(1)).render(anyString(), anyString());

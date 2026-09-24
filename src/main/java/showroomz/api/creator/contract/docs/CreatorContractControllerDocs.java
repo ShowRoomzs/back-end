@@ -207,15 +207,20 @@ public interface CreatorContractControllerDocs {
     ResponseEntity<CreatorContractClausesResponse> getClauses(@PathVariable Long contractId);
 
     @Operation(
-            summary = "체결 문서 다운로드",
+            summary = "계약 문서 다운로드",
             description = """
-                    체결 완료 계약의 서명 PDF · 감사추적인증서를 내려받는다(S6).
+                    계약 문서를 내려받는다(S6). 상태에 따라 받을 수 있는 종류가 다르다.
 
                     **권한:** CREATOR
 
-                    **체결 전에는 우리가 계약서 파일을 갖고 있지 않다** — PDF·인증서는 체결 시 발급된다.
-                    `CONCLUDED`가 아니거나 아직 업로드 전이면 404다.
-                    계약서 생성본(`GENERATED_DRAFT`)은 브랜드·운영자용이라 이 경로로 내려가지 않는다.
+                    | 상태 | 받을 수 있는 문서 |
+                    |---|---|
+                    | `SIGNING` · `CONCLUSION_PENDING` | `GENERATED_DRAFT` 계약서 생성본 — 운영자가 내려받는 것과 같은 파일 |
+                    | `CONCLUDED` | `SIGNED_PDF` 서명 완료 계약서 · `AUDIT_TRAIL` 감사 추적 인증서 |
+                    | 종결 3종 | 없음 |
+
+                    서명 PDF·인증서는 체결 시 발급된다 — 그 전까지는 생성본이 계약서다.
+                    생성본이 아직 만들어지지 않았거나 체결 문서가 업로드 전이면 404다.
 
                     시안 S3의 「받은 계약서 보기」가 무엇을 여는지(모두싸인 링크 / 화면 내 조건 요약)는
                     미확정이라 **그 엔드포인트는 만들지 않았다**(설계서 미결 #5).

@@ -5,7 +5,7 @@ import showroomz.domain.contract.type.ContractDocumentType;
 
 import java.time.LocalDateTime;
 
-@Schema(description = "체결 문서 다운로드")
+@Schema(description = "계약 문서 다운로드 — 체결 전 생성본 또는 체결 문서")
 public record ContractDocumentDownloadResponse(
 
         ContractDocumentType documentType,

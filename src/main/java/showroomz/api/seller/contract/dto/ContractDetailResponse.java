@@ -176,7 +176,7 @@ public record ContractDetailResponse(
     ) {
     }
 
-    @Schema(description = "체결 문서")
+    @Schema(description = "계약 문서 — 검토 대기~체결 처리 대기는 계약서 생성본, 체결완료는 체결 문서 2종")
     public record Document(
             ContractDocumentType type,
             String typeLabel,

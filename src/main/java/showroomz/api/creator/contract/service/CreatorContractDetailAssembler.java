@@ -14,8 +14,8 @@ import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractDocument;
 import showroomz.domain.contract.entity.ContractHistory;
 import showroomz.domain.contract.entity.ContractItem;
-import showroomz.domain.contract.repository.ContractDocumentRepository;
 import showroomz.domain.contract.repository.ContractHistoryRepository;
+import showroomz.domain.contract.service.PartyContractDocuments;
 import showroomz.domain.contract.type.ContractActorType;
 import showroomz.domain.contract.type.ContractCloseReasonLabels;
 import showroomz.domain.contract.type.ContractDocumentType;
@@ -45,7 +45,7 @@ public class CreatorContractDetailAssembler {
     private static final int PLATFORM_FEE_RATE = 2;
 
     private final ContractHistoryRepository contractHistoryRepository;
-    private final ContractDocumentRepository contractDocumentRepository;
+    private final PartyContractDocuments partyContractDocuments;
     private final ConnectionRepository connectionRepository;
     private final MessageThreadRepository messageThreadRepository;
     private final ContractDocumentStorage contractDocumentStorage;
@@ -257,13 +257,9 @@ public class CreatorContractDetailAssembler {
                 contract.getStatus() == ContractStatus.CONCLUDED && contract.getGroupBuyId() == null);
     }
 
-    /** 체결 문서는 체결완료에서만 존재한다. 계약서 생성본은 브랜드·운영자용이라 내리지 않는다. */
+    /** 체결 전에는 계약서 생성본, 체결완료에서는 체결 문서 2종({@link PartyContractDocuments}). */
     private List<CreatorContractDetailResponse.Document> documents(Contract contract) {
-        if (contract.getStatus() != ContractStatus.CONCLUDED) {
-            return List.of();
-        }
-        return contractDocumentRepository.findByContractIdInTypeOrder(contract.getId()).stream()
-                .filter(document -> document.getDocumentType() != ContractDocumentType.GENERATED_DRAFT)
+        return partyContractDocuments.list(contract).stream()
                 .map(document -> new CreatorContractDetailResponse.Document(
                         document.getDocumentType(),
                         document.getDocumentType().getLabel(),
@@ -364,10 +360,6 @@ public class CreatorContractDetailAssembler {
 
     /** 문서 단건 다운로드에서 재사용한다 — 응답 조립과 같은 필터를 통과시키기 위해서다. */
     Optional<ContractDocument> findDownloadableDocument(Contract contract, ContractDocumentType documentType) {
-        if (contract.getStatus() != ContractStatus.CONCLUDED
-                || documentType == ContractDocumentType.GENERATED_DRAFT) {
-            return Optional.empty();
-        }
-        return contractDocumentRepository.findByContractIdAndDocumentType(contract.getId(), documentType);
+        return partyContractDocuments.find(contract, documentType);
     }
 }

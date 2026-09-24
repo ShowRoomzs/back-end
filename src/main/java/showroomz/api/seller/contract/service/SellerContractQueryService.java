@@ -21,6 +21,7 @@ import showroomz.domain.contract.repository.ContractClauseVersionRepository;
 import showroomz.domain.contract.repository.ContractDocumentRepository;
 import showroomz.domain.contract.repository.ContractItemRepository;
 import showroomz.domain.contract.repository.ContractRepository;
+import showroomz.domain.contract.service.PartyContractDocuments;
 import showroomz.domain.contract.type.ContractClauseVersionStatus;
 import showroomz.domain.contract.type.ContractDocumentType;
 import showroomz.domain.contract.type.ContractSortType;
@@ -55,7 +56,7 @@ public class SellerContractQueryService {
     private final ContractAccessGuard accessGuard;
     private final ContractRepository contractRepository;
     private final ContractItemRepository contractItemRepository;
-    private final ContractDocumentRepository contractDocumentRepository;
+    private final PartyContractDocuments partyContractDocuments;
     private final ContractClauseVersionRepository clauseVersionRepository;
     private final ConnectionRepository connectionRepository;
     private final ProductRepository productRepository;
@@ -131,17 +132,15 @@ public class SellerContractQueryService {
         return detailAssembler.assemble(contract);
     }
 
-    /** 체결 문서 다운로드(§25-3 #3). 아직 업로드 전이면 404다. */
+    /**
+     * 계약 문서 다운로드(§25-3 #3). 체결 전에는 운영자가 받는 계약서 생성본, 체결 후에는 체결 문서 2종이다
+     * ({@link PartyContractDocuments}). 지금 받을 수 없는 종류이거나 아직 없으면 404다.
+     */
     public ContractDocumentDownloadResponse getDocument(String sellerEmail, Long contractId,
                                                         ContractDocumentType documentType) {
         Market market = accessGuard.resolveMarket(sellerEmail);
         Contract contract = accessGuard.loadOwned(contractId, market);
-        if (contract.getStatus() != ContractStatus.CONCLUDED || documentType == ContractDocumentType.GENERATED_DRAFT) {
-            throw new BusinessException(ErrorCode.CONTRACT_DOCUMENT_NOT_FOUND);
-        }
-
-        ContractDocument document = contractDocumentRepository
-                .findByContractIdAndDocumentType(contractId, documentType)
+        ContractDocument document = partyContractDocuments.find(contract, documentType)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CONTRACT_DOCUMENT_NOT_FOUND));
 
         return new ContractDocumentDownloadResponse(

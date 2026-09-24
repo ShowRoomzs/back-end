@@ -149,19 +149,27 @@ public interface SellerContractControllerDocs {
     ResponseEntity<ContractDetailResponse> getContract(@PathVariable Long contractId);
 
     @Operation(
-            summary = "체결 문서 다운로드",
+            summary = "계약 문서 다운로드",
             description = """
-                    체결 문서 2종(`SIGNED_PDF` 서명 완료 계약서 / `AUDIT_TRAIL` 감사 추적 인증서)의
-                    다운로드 URL을 돌려준다.
+                    계약 문서의 다운로드 URL을 돌려준다. 상태에 따라 받을 수 있는 종류가 다르다.
 
                     **권한:** SELLER (본인 브랜드 계약만)
 
-                    문서는 어드민이 모두싸인에서 받아 업로드한다. 교체·삭제 경로는 만들지 않는다 —
+                    | 상태 | 받을 수 있는 문서 |
+                    |---|---|
+                    | `REVIEW_PENDING` · `SIGNING` · `CONCLUSION_PENDING` | `GENERATED_DRAFT` 계약서 생성본 — 운영자가 내려받는 것과 같은 파일 |
+                    | `CONCLUDED` | `SIGNED_PDF` 서명 완료 계약서 · `AUDIT_TRAIL` 감사 추적 인증서 |
+                    | 그 외 | 없음 |
+
+                    생성본은 운영자가 한 번이라도 내려받아 만들어진 뒤부터 받을 수 있다 — 그 전이면 404다.
+                    요청 취소 후 재제출한 경우 이전 제출본의 생성본은 내려가지 않는다.
+
+                    체결 문서는 어드민이 모두싸인에서 받아 업로드한다. 교체·삭제 경로는 만들지 않는다 —
                     서명 원본이 바뀌면 계약의 증거가 사라진다(§28-6).
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공"),
-            @ApiResponse(responseCode = "404", description = "문서가 아직 등록되지 않음",
+            @ApiResponse(responseCode = "404", description = "지금 상태에서 받을 수 없는 종류이거나 아직 없음",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<ContractDocumentDownloadResponse> getDocument(@PathVariable Long contractId,

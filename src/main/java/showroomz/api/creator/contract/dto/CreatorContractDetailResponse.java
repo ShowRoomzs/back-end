@@ -267,7 +267,7 @@ public record CreatorContractDetailResponse(
     ) {
     }
 
-    @Schema(description = "체결 문서 — CONCLUDED에서만 비어 있지 않다")
+    @Schema(description = "계약 문서 — 서명 진행중·체결 처리 대기는 계약서 생성본, 체결완료는 체결 문서 2종")
     public record Document(
             ContractDocumentType documentType,
             @Schema(example = "서명 완료 계약서") String documentTypeLabel,

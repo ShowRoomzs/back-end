@@ -196,7 +196,7 @@ class AdminContractIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isBadRequest());
     }
 
-    @Test void generatedPdfCacheIsInvalidatedByResubmissionAndHiddenFromSeller() throws Exception {
+    @Test void generatedPdfCacheIsInvalidatedByResubmissionAlsoForSeller() throws Exception {
         Contract c = contract(ContractStatus.REVIEW_PENDING);
         for (int i = 0; i < 2; i++) mockMvc.perform(get(BASE + "/" + c.getId() + "/document-draft").header("Authorization", token)).andExpect(status().isOk());
         verify(renderer, times(1)).render(anyString(), anyString());
@@ -206,10 +206,13 @@ class AdminContractIntegrationTest extends IntegrationTestSupport {
             return null;
         });
         mockMvc.perform(get(BASE + "/" + c.getId() + "/documents/GENERATED_DRAFT").header("Authorization", token)).andExpect(status().isNotFound());
+        // 브랜드도 같은 판정이다 — 이전 제출본의 생성본은 지금 계약서가 아니다.
+        mockMvc.perform(get("/v1/seller/contracts/" + c.getId() + "/documents/GENERATED_DRAFT").header("Authorization", sellerToken(brand.seller())))
+                .andExpect(status().isNotFound());
         mockMvc.perform(get(BASE + "/" + c.getId() + "/document-draft").header("Authorization", token)).andExpect(status().isOk());
         verify(renderer, times(2)).render(anyString(), anyString());
         mockMvc.perform(get("/v1/seller/contracts/" + c.getId() + "/documents/GENERATED_DRAFT").header("Authorization", sellerToken(brand.seller())))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk());
     }
 
     @Test void simultaneousSignatureUpdatesAcceptOnlyOneVersion() throws Exception {

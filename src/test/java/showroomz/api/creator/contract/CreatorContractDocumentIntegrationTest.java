@@ -8,6 +8,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import showroomz.api.admin.contract.dto.AdminContractDto.DownloadResponse;
 import showroomz.api.admin.contract.service.ContractDocumentStorage;
 import showroomz.domain.contract.entity.ContractDocument;
+import showroomz.domain.contract.type.ContractDeclineReason;
 import showroomz.domain.contract.type.ContractDocumentType;
 import showroomz.domain.contract.type.ContractStatus;
 import showroomz.domain.member.creator.entity.Creator;
@@ -21,10 +22,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * S6 계약 문서 카드 · 표준 조항 — 스튜디오가 내려받을 수 있는 것은 <b>체결완료 계약의 서명본·감사추적인증서 둘뿐</b>이다.
+ * S6 계약 문서 카드 · 표준 조항.
  *
- * <p>두 문서는 운영자가 모두싸인에서 내려받아 업로드한 파일이고(API 미도입) 체결 처리 시 「발급」된다.
- * 검토용 생성본(GENERATED_DRAFT)은 운영자·브랜드용이라 같은 경로로 요청해도 내려가지 않는다.
+ * <p>체결 전(서명 진행중 · 체결 처리 대기)에는 <b>운영자가 내려받는 계약서 생성본</b>을 같은 파일로 받는다.
+ * 체결완료 후에는 운영자가 모두싸인에서 받아 업로드한 서명본·감사추적인증서 둘뿐이다.
  *
  * <p>스토리지는 목으로 둔다 — presign은 실제 AWS 자격 증명을 요구한다. 여기서 볼 것은
  * URL을 <b>어떤 조건에서 내주는가</b>이지 서명 문자열이 아니다.
@@ -46,10 +47,44 @@ class CreatorContractDocumentIntegrationTest extends CreatorContractTestSupport 
     }
 
     @Test
-    @DisplayName("검토용 생성본은 같은 경로로도 내려가지 않고 문서 카드에도 없다")
-    void hidesGeneratedDraft() throws Exception {
+    @DisplayName("체결 전에는 운영자가 받는 계약서 생성본을 같은 파일로 내려준다")
+    void servesGeneratedDraftBeforeConclusion() throws Exception {
+        for (Long contractId : new Long[]{signingContract(), conclusionPendingContract()}) {
+            registerGeneratedDraft(contractId);
+
+            document(contractId, ContractDocumentType.GENERATED_DRAFT)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.documentType").value("GENERATED_DRAFT"))
+                    .andExpect(jsonPath("$.downloadUrl").value("https://signed.test/GENERATED_DRAFT"));
+            detail(contractId)
+                    .andExpect(jsonPath("$.documents.length()").value(1))
+                    .andExpect(jsonPath("$.documents[0].documentType").value("GENERATED_DRAFT"))
+                    // 문서 카드 권한은 체결 문서 2종 기준이다 — 생성본만으로 열리지 않는다.
+                    .andExpect(jsonPath("$.permissions.canDownloadDocuments").value(false));
+        }
+    }
+
+    @Test
+    @DisplayName("이전 제출본으로 만든 생성본과 종결된 계약의 생성본은 내려주지 않는다")
+    void hidesStaleOrClosedGeneratedDraft() throws Exception {
+        Long signing = signingContract();
+        registerDocument(signing, ContractDocumentType.GENERATED_DRAFT, "생성본.pdf");
+        document(signing, ContractDocumentType.GENERATED_DRAFT)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("CONTRACT_DOCUMENT_NOT_FOUND"));
+
+        Long declined = signingContract();
+        registerGeneratedDraft(declined);
+        declined(declined, ContractDeclineReason.SCHEDULE_MISMATCH, null);
+        document(declined, ContractDocumentType.GENERATED_DRAFT).andExpect(status().isNotFound());
+        detail(declined).andExpect(jsonPath("$.documents").isEmpty());
+    }
+
+    @Test
+    @DisplayName("체결완료 후에는 생성본이 내려가지 않고 체결 문서 2종만 문서 카드에 있다")
+    void hidesGeneratedDraftAfterConclusion() throws Exception {
         Long contractId = concludedContract();
-        registerDocument(contractId, ContractDocumentType.GENERATED_DRAFT, "생성본.pdf");
+        registerGeneratedDraft(contractId);
         registerDocument(contractId, ContractDocumentType.SIGNED_PDF, "계약서.pdf");
         registerDocument(contractId, ContractDocumentType.AUDIT_TRAIL, "감사추적.pdf");
 
@@ -61,6 +96,20 @@ class CreatorContractDocumentIntegrationTest extends CreatorContractTestSupport 
         detail(contractId)
                 .andExpect(jsonPath("$.documents.length()").value(2))
                 .andExpect(jsonPath("$.documents[?(@.documentType == 'GENERATED_DRAFT')]").isEmpty());
+    }
+
+    private void registerGeneratedDraft(Long contractId) {
+        contractDocumentRepository.save(ContractDocument.builder()
+                .contract(load(contractId))
+                .documentType(ContractDocumentType.GENERATED_DRAFT)
+                .s3Key("contracts/%d/GENERATED_DRAFT.pdf".formatted(contractId))
+                .originalName("생성본.pdf")
+                .sizeBytes(1_200_000L)
+                .contentType("application/pdf")
+                .uploadedAt(LocalDateTime.now().withNano(0))
+                // 운영자 다운로드가 만든 생성본처럼 지금 제출 시각을 원본으로 기록한다.
+                .sourceReviewRequestedAt(load(contractId).getReviewRequestedAt())
+                .build());
     }
 
     @Test

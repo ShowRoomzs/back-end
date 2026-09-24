@@ -5,8 +5,8 @@ import showroomz.domain.contract.type.ContractDocumentType;
 
 import java.time.LocalDateTime;
 
-/** 체결 문서 다운로드 — 체결완료 계약에서만 존재한다. */
-@Schema(description = "체결 문서 다운로드")
+/** 계약 문서 다운로드 — 체결 전에는 계약서 생성본, 체결완료에서는 체결 문서 2종이다. */
+@Schema(description = "계약 문서 다운로드 — 체결 전 생성본 또는 체결 문서")
 public record CreatorContractDocumentDownloadResponse(
 
         ContractDocumentType documentType,

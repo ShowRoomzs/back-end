@@ -23,10 +23,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * §25-3 #3 · 설계서 4-1 — 체결 문서 다운로드.
+ * §25-3 #3 · 설계서 4-1 — 계약 문서 다운로드.
  *
- * <p>브랜드가 받을 수 있는 것은 <b>체결완료 계약의 서명본·감사추적인증서 둘뿐</b>이다.
- * 검토용 생성본(GENERATED_DRAFT)은 어드민 검토 화면의 것이라 같은 경로로 요청해도 내려가지 않는다.
+ * <p>체결 전(검토 대기 ~ 체결 처리 대기)에는 <b>운영자가 내려받는 계약서 생성본</b>을 같은 파일로 받는다.
+ * 체결완료 후에는 서명본·감사추적인증서 둘뿐이고 생성본은 내려가지 않는다.
  *
  * <p>스토리지는 목으로 둔다 — presign은 실제 AWS 자격 증명을 요구해서 환경에 따라 결과가 달라진다.
  * 여기서 확인할 것은 URL을 <b>어떤 조건에서 내주는가</b>이지 서명 문자열이 아니다.
@@ -72,10 +72,55 @@ class SellerContractDocumentIntegrationTest extends SellerContractTestSupport {
     }
 
     @Test
-    @DisplayName("검토용 생성본은 같은 경로로도 내려가지 않는다 — 어드민 검토 화면의 것이다")
-    void hidesGeneratedDraftFromBrand() throws Exception {
+    @DisplayName("체결 전에는 운영자가 받는 계약서 생성본을 같은 파일로 내려준다")
+    void servesGeneratedDraftBeforeConclusion() throws Exception {
+        for (ContractStatus status : new ContractStatus[]{
+                ContractStatus.REVIEW_PENDING, ContractStatus.SIGNING, ContractStatus.CONCLUSION_PENDING}) {
+            Contract contract = seedInStatus(status);
+            registerGeneratedDraft(contract);
+
+            document(contract.getId(), ContractDocumentType.GENERATED_DRAFT)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.documentType").value("GENERATED_DRAFT"))
+                    .andExpect(jsonPath("$.documentTypeLabel").value("계약서 생성본"))
+                    .andExpect(jsonPath("$.downloadUrl").value("https://signed.test/GENERATED_DRAFT"));
+            detail(contract.getId())
+                    .andExpect(jsonPath("$.documents.length()").value(1))
+                    .andExpect(jsonPath("$.documents[0].type").value("GENERATED_DRAFT"));
+        }
+    }
+
+    @Test
+    @DisplayName("이전 제출본으로 만든 생성본은 내려주지 않는다 — 지금 제출본의 계약서가 아니다")
+    void hidesStaleGeneratedDraft() throws Exception {
+        Contract signing = seedInStatus(ContractStatus.SIGNING);
+        registerDocument(signing, ContractDocumentType.GENERATED_DRAFT, "생성본.pdf");
+
+        document(signing.getId(), ContractDocumentType.GENERATED_DRAFT)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("CONTRACT_DOCUMENT_NOT_FOUND"));
+        detail(signing.getId()).andExpect(jsonPath("$.documents").isEmpty());
+    }
+
+    @Test
+    @DisplayName("반려·종결 계약은 생성본이 남아 있어도 내려주지 않는다")
+    void hidesGeneratedDraftOutsideProgress() throws Exception {
+        for (ContractStatus status : new ContractStatus[]{
+                ContractStatus.REVIEW_REJECTED, ContractStatus.EXPIRED, ContractStatus.CANCELED}) {
+            Contract contract = seedInStatus(status);
+            registerGeneratedDraft(contract);
+
+            document(contract.getId(), ContractDocumentType.GENERATED_DRAFT)
+                    .andExpect(status().isNotFound());
+            detail(contract.getId()).andExpect(jsonPath("$.documents").isEmpty());
+        }
+    }
+
+    @Test
+    @DisplayName("체결완료 후에는 생성본이 내려가지 않는다 — 체결 문서로 바뀐다")
+    void hidesGeneratedDraftAfterConclusion() throws Exception {
         Contract concluded = seedInStatus(ContractStatus.CONCLUDED);
-        registerDocument(concluded, ContractDocumentType.GENERATED_DRAFT, "생성본.pdf");
+        registerGeneratedDraft(concluded);
         registerDocument(concluded, ContractDocumentType.SIGNED_PDF, "계약서.pdf");
 
         document(concluded.getId(), ContractDocumentType.GENERATED_DRAFT)
@@ -125,6 +170,17 @@ class SellerContractDocumentIntegrationTest extends SellerContractTestSupport {
     }
 
     private void registerDocument(Contract contract, ContractDocumentType type, String originalName) {
+        registerDocument(contract, type, originalName, null);
+    }
+
+    /** 운영자 다운로드가 만든 생성본처럼 지금 제출 시각을 원본으로 기록한다. */
+    private void registerGeneratedDraft(Contract contract) {
+        LocalDateTime submittedAt = contractRepository.findById(contract.getId()).orElseThrow().getReviewRequestedAt();
+        registerDocument(contract, ContractDocumentType.GENERATED_DRAFT, "생성본.pdf", submittedAt);
+    }
+
+    private void registerDocument(Contract contract, ContractDocumentType type, String originalName,
+                                  LocalDateTime sourceReviewRequestedAt) {
         contractDocumentRepository.save(ContractDocument.builder()
                 .contract(contract)
                 .documentType(type)
@@ -133,6 +189,7 @@ class SellerContractDocumentIntegrationTest extends SellerContractTestSupport {
                 .sizeBytes(2_048L)
                 .contentType("application/pdf")
                 .uploadedAt(LocalDateTime.now().withNano(0))
+                .sourceReviewRequestedAt(sourceReviewRequestedAt)
                 .build());
     }
 }

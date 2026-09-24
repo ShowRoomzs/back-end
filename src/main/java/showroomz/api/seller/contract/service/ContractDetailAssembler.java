@@ -7,8 +7,8 @@ import showroomz.api.seller.contract.dto.ContractDetailResponse;
 import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractItem;
-import showroomz.domain.contract.repository.ContractDocumentRepository;
 import showroomz.domain.contract.repository.ContractHistoryRepository;
+import showroomz.domain.contract.service.PartyContractDocuments;
 import showroomz.domain.contract.type.ContractActorType;
 import showroomz.domain.contract.type.ContractCloseReasonLabels;
 import showroomz.domain.contract.type.ContractStatus;
@@ -33,7 +33,7 @@ public class ContractDetailAssembler {
 
     private final ContractHistoryRepository contractHistoryRepository;
     private final ConnectionRepository connectionRepository;
-    private final ContractDocumentRepository contractDocumentRepository;
+    private final PartyContractDocuments partyContractDocuments;
     private final showroomz.api.admin.contract.service.ContractDocumentStorage contractDocumentStorage;
 
     public ContractDetailResponse assemble(Contract contract) {
@@ -196,9 +196,7 @@ public class ContractDetailAssembler {
     }
 
     private List<ContractDetailResponse.Document> documents(Contract contract) {
-        if (contract.getStatus() != ContractStatus.CONCLUDED) return List.of();
-        return contractDocumentRepository.findByContractIdInTypeOrder(contract.getId()).stream()
-                .filter(document -> document.getDocumentType() != showroomz.domain.contract.type.ContractDocumentType.GENERATED_DRAFT)
+        return partyContractDocuments.list(contract).stream()
                 .map(document -> new ContractDetailResponse.Document(
                         document.getDocumentType(),
                         document.getDocumentType().getLabel(),
