@@ -15,6 +15,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.springframework.security.access.AccessDeniedException;
@@ -25,6 +26,34 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestControllerAdvice(basePackages = "showroomz")
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ContractDocumentRequiredException.class)
+    public ResponseEntity<?> handleContractDocumentRequired(ContractDocumentRequiredException e) {
+        return ResponseEntity.status(e.getErrorCode().getStatus()).body(java.util.Map.of(
+                "code", e.getErrorCode().getCode(), "message", e.getErrorCode().getMessage(), "kind", "REQUIRED"));
+    }
+
+    /**
+     * 계약 하드 검증 실패(설계서 2-2) — 위반 항목 목록을 함께 내린다.
+     * {@link BusinessException} 핸들러보다 먼저 잡히도록 구체 타입으로 선언한다.
+     */
+    @ExceptionHandler(ContractValidationException.class)
+    public ResponseEntity<ContractValidationErrorResponse> handleContractValidationException(
+            ContractValidationException e) {
+        log.warn("ContractValidationException: {} violations", e.getViolations().size());
+        ErrorCode errorCode = e.getErrorCode();
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(new ContractValidationErrorResponse(
+                        errorCode.getCode(), errorCode.getMessage(), e.getViolations()));
+    }
+
+    /** 위반 목록을 실은 에러 바디. 기존 ErrorResponse(code·message)에 hardViolations만 더한 모양이다. */
+    public record ContractValidationErrorResponse(
+            String code,
+            String message,
+            java.util.List<showroomz.domain.contract.type.ContractViolation> hardViolations) {
+    }
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ErrorResponse> handleBadRequestException(BusinessException e) {
@@ -56,6 +85,18 @@ public class GlobalExceptionHandler {
             }
         }
         log.warn("HttpMessageNotReadableException: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(ErrorCode.INVALID_INPUT_VALUE.getCode(),
+                        ErrorCode.INVALID_INPUT_VALUE.getMessage()));
+    }
+
+    /**
+     * 쿼리·경로 파라미터 변환 실패 시 (예: ?tab=DRAFT, /documents/CONTRACT처럼 없는 enum 값) 400.
+     * 클라이언트가 만든 오류이므로 Sentry로 보내지 않는다 — 처리하지 않으면 아래 500 핸들러로 떨어진다.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
+        log.warn("MethodArgumentTypeMismatchException: {}={}", e.getName(), e.getValue());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(ErrorCode.INVALID_INPUT_VALUE.getCode(),
                         ErrorCode.INVALID_INPUT_VALUE.getMessage()));
@@ -188,4 +229,3 @@ public class GlobalExceptionHandler {
                         ErrorCode.INTERNAL_SERVER_ERROR.getMessage()));
     }
 }
-

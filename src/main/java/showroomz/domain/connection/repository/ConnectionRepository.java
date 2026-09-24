@@ -81,4 +81,22 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
            "AND p.groupBuyStatus = showroomz.domain.product.type.ProductGroupBuyStatus.IN_PROGRESS " +
            "AND p.displayStatus = showroomz.domain.product.type.ProductDisplayStatus.DISPLAY")
     List<Long> findCreatorIdsWithOngoingGroupBuy(@Param("creatorIds") Collection<Long> creatorIds);
+
+    /**
+     * 계약 작성 폼의 「계약 상대」 드롭다운(§25-5-1) — 연결됨 상대 <b>전량</b>이 한 번에 필요하다.
+     * 페이징·필터가 붙은 목록 API와 쓰임이 달라 별도로 둔다(설계서 4-1).
+     */
+    @Query("SELECT c FROM Connection c JOIN FETCH c.creator cr " +
+           "WHERE c.type = showroomz.domain.connection.type.ConnectionType.PAIR " +
+           "AND c.market.id = :marketId " +
+           "AND c.status = showroomz.domain.connection.type.ConnectionStatus.CONNECTED " +
+           "ORDER BY cr.showroomName ASC")
+    List<Connection> findConnectedPairsByMarketId(@Param("marketId") Long marketId);
+
+    /** 계약 상대 재확인 — FE 드롭다운이 보장하는 것도 서버가 다시 본다(설계서 2-2). */
+    @Query("SELECT c FROM Connection c " +
+           "WHERE c.type = showroomz.domain.connection.type.ConnectionType.PAIR " +
+           "AND c.market.id = :marketId AND c.creator.id = :creatorId " +
+           "AND c.status = showroomz.domain.connection.type.ConnectionStatus.CONNECTED")
+    Optional<Connection> findConnectedPair(@Param("marketId") Long marketId, @Param("creatorId") Long creatorId);
 }

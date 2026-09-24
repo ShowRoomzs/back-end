@@ -33,11 +33,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * C1·C4 소비자 피드 — 무엇이 보이고 무엇이 안 보이는지.
  *
- * <p>피드 카드에는 게시물뿐 아니라 <b>쇼룸명·프로필</b>이 함께 붙는다. 쇼룸(과 그 계정)을 조회
+ * <p>
+ * 피드 카드에는 게시물뿐 아니라 <b>쇼룸명·프로필</b>이 함께 붙는다. 쇼룸(과 그 계정)을 조회
  * 쿼리가 함께 읽지 않으면 카드 수만큼 조회가 더 나가는데, 단위 테스트는 리포지토리를 흉내 내므로
  * 그 사실을 잡지 못한다. 여기서는 실제 쿼리로 돌려 쇼룸명이 응답에 실리는지까지 확인한다.
  *
- * <p>노출 조건도 함께 본다 — 작성중·노출 중지가 소비자 목록에 새면 §24-1이 무너진다.
+ * <p>
+ * 노출 조건도 함께 본다 — 작성중·노출 중지가 소비자 목록에 새면 §24-1이 무너진다.
  */
 @DisplayName("[통합] C1 소비자 피드")
 class UserFeedIntegrationTest extends IntegrationTestSupport {
