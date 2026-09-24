@@ -17,7 +17,7 @@ import showroomz.global.error.exception.*;
 
 @RestController
 @RequestMapping("/v1/admin/contracts")
-@Tag(name = "어드민 계약 관리", description = "모두싸인에서 처리한 절차 기록 · 계약 조건은 읽기 전용")
+@Tag(name = "Admin - Contract", description = "관리자 계약 관리 API — 모두싸인에서 처리한 절차 기록 · 계약 조건은 읽기 전용")
 @RequiredArgsConstructor
 public class AdminContractController {
     private final AdminContractQueryService queries;
