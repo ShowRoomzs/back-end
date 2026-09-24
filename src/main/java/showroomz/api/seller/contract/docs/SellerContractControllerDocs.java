@@ -1,5 +1,6 @@
 package showroomz.api.seller.contract.docs;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -301,6 +302,8 @@ public interface SellerContractControllerDocs {
     })
     ResponseEntity<ContractDetailResponse> cancelReviewRequest(@PathVariable Long contractId);
 
+    // 요청이 가는 어드민 스레드가 아직 없어 Swagger에서 숨긴다 — 어드민 스레드 구현 후 제거.
+    @Hidden
     @Operation(
             summary = "서명 안내 다시 받기",
             description = """
