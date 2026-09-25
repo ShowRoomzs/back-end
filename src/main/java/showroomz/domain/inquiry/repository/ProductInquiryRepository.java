@@ -8,10 +8,25 @@ import org.springframework.data.repository.query.Param;
 import showroomz.domain.inquiry.entity.ProductInquiry;
 import showroomz.domain.inquiry.type.InquiryExposureStatus;
 import showroomz.domain.inquiry.type.InquiryStatus;
+import showroomz.domain.inquiry.type.ProductInquiryType;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 
 public interface ProductInquiryRepository extends JpaRepository<ProductInquiry, Long> {
+
+    /** 어드민 공구 B3 「요청 후 CS 문의」의 상품 문의 쪽 — 계약 상품 · 기준 시각 이후(32 설계 4-5). */
+    @Query("SELECT COUNT(pi) FROM ProductInquiry pi "
+            + "WHERE pi.product.productId IN :productIds AND pi.createdAt >= :since")
+    long countByProductIdsSince(@Param("productIds") Collection<Long> productIds,
+                                @Param("since") LocalDateTime since);
+
+    /** 어드민 공구 B4 「요청 후 품절 문의」 — 재입고 유형만(32 설계 4-5). */
+    @Query("SELECT COUNT(pi) FROM ProductInquiry pi "
+            + "WHERE pi.product.productId IN :productIds AND pi.type = :type AND pi.createdAt >= :since")
+    long countByProductIdsAndTypeSince(@Param("productIds") Collection<Long> productIds,
+                                       @Param("type") ProductInquiryType type,
+                                       @Param("since") LocalDateTime since);
 
     long countByUser_IdAndExposureStatusNot(Long userId, InquiryExposureStatus exposureStatus);
 

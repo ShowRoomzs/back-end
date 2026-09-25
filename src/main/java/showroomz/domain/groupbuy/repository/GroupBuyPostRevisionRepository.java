@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import showroomz.domain.groupbuy.entity.GroupBuyPostRevision;
+import showroomz.domain.groupbuy.type.GroupBuyPostRevisionKind;
 
 import java.util.List;
 
@@ -14,4 +15,7 @@ public interface GroupBuyPostRevisionRepository extends JpaRepository<GroupBuyPo
     int findLastRevisionNo(@Param("postId") Long postId);
 
     List<GroupBuyPostRevision> findByGroupBuyPostPostIdOrderByRevisionNoAsc(Long postId);
+
+    /** 어드민 「인플루언서 수정 N회」(32 설계 4-4). */
+    long countByGroupBuyPostPostIdAndKind(Long postId, GroupBuyPostRevisionKind kind);
 }

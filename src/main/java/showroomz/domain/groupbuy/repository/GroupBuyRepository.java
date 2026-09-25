@@ -117,6 +117,10 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, Group
                                    @Param("pattern") String pattern,
                                    Pageable pageable);
 
+    /** 어드민 탭 카운트 — 가시성 필터가 없다(32 설계 2-1). GNB 폴링용이라 GROUP BY 1회다(3-3). */
+    @Query("SELECT g.status, COUNT(g) FROM GroupBuy g GROUP BY g.status")
+    List<Object[]> countAllByStatus();
+
     /** 탭 카운트 — 탭 묶음은 서버가 소유하므로 상태별로 받아 서비스가 묶는다(설계서 1-3). */
     @Query("SELECT g.status, COUNT(g) FROM GroupBuy g WHERE g.market.id = :marketId GROUP BY g.status")
     List<Object[]> countByStatus(@Param("marketId") Long marketId);

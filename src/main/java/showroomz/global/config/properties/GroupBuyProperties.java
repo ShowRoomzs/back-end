@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.time.Duration;
+
 /**
  * 공구 운영 정책값 — 전부 {@code [근거 대기]}·{@code [미정]}이라 설정값으로 뺀다(설계서 7-2).
  *
@@ -23,6 +25,28 @@ public class GroupBuyProperties {
     private Appeal appeal = new Appeal();
     private Backfill backfill = new Backfill();
     private OpenReview openReview = new OpenReview();
+    private Suspension suspension = new Suspension();
+    private Settlement settlement = new Settlement();
+
+    @Getter
+    @Setter
+    public static class Suspension {
+        /** 제17조② 「최소 3영업일 전」 — 집행 예정 날짜의 하한(32 설계 6-1). */
+        private int noticeBusinessDays = 3;
+        /** 제17조④ 「수신일부터 3영업일 이내」 — 소명 기한의 하한. 기준일(통지일)은 세지 않는다. */
+        private int appealBusinessDays = 3;
+        /**
+         * 소명 기한과 집행 사이 최소 간격 — {@code [근거 대기 ⑨]}. 기본 0이고 「집행 예정 > 소명 기한」(엄격히 뒤)만 강제한다.
+         */
+        private Duration minGapAfterAppeal = Duration.ZERO;
+    }
+
+    @Getter
+    @Setter
+    public static class Settlement {
+        /** 정산 지연 감시 — 종료 +N일(§29-11). 경고 톤만 바꾸고 조치 큐에는 넣지 않는다(32 설계 3-3). */
+        private int watchDays = 30;
+    }
 
     @Getter
     @Setter

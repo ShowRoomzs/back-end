@@ -74,14 +74,38 @@ public class GroupBuyCommandService {
                 && checks.stream().anyMatch(GroupBuyFulfillmentCheck::isUnfulfilled);
     }
 
-    /** 연결·소통 → 공구 · 미이행 스레드 양측 동의 종결(제20조⑤). 당사자 합의이지 운영자 판정이 아니다. */
-    public void resolveFulfillmentDispute(Long groupBuyId, String note, LocalDateTime resolvedAt) {
-        GroupBuy groupBuy = load(groupBuyId);
+    /**
+     * 연결·소통 → 공구 · 이행 3자 스레드 양측 동의 종결(제20조⑤ · 32 설계 8-4). 당사자 합의이지 운영자 판정이 아니다 —
+     * 미이행 확인 행은 고치지 않는다(제20조② 불가역). <b>정산 보류는 여기서 풀리지 않는다</b> — 해제는 정산 관리가 한다.
+     * 멱등 — 이미 합의 시각이 있으면 무시한다.
+     */
+    public void recordFulfillmentAgreement(Long groupBuyId, LocalDateTime agreedAt, String note) {
+        GroupBuy groupBuy = groupBuyRepository.findForUpdate(groupBuyId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.GROUP_BUY_NOT_FOUND));
+        if (groupBuy.getFulfillmentAgreedAt() != null) {
+            return;
+        }
+        groupBuy.applyFulfillmentAgreed(note, agreedAt);
+        historyRecorder.recordBySystem(groupBuy, GroupBuyEventType.FULFILLMENT_AGREED, "양측 동의", agreedAt);
+    }
+
+    /**
+     * 정산 관리 → 공구 · 정산 보류 해제(32 설계 8-4). <b>합의 없이 해제가 오면 거부한다</b> — 제20조⑤ 「양측 모두 동의해야
+     * 종결·보류 해제」. D-2(보류 출구 없음)의 답이 나올 때까지 이 가드를 둔다. 멱등.
+     */
+    public void releaseFulfillmentHold(Long groupBuyId, Long operatorId, String operatorName,
+                                       LocalDateTime releasedAt) {
+        GroupBuy groupBuy = groupBuyRepository.findForUpdate(groupBuyId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.GROUP_BUY_NOT_FOUND));
         if (groupBuy.getFulfillmentResolvedAt() != null) {
             return;
         }
-        groupBuy.applyFulfillmentResolved(note, resolvedAt);
-        historyRecorder.recordBySystem(groupBuy, GroupBuyEventType.FULFILLMENT_RESOLVED, null, resolvedAt);
+        if (groupBuy.getFulfillmentAgreedAt() == null) {
+            throw new BusinessException(ErrorCode.GROUP_BUY_FULFILLMENT_NOT_AGREED);
+        }
+        groupBuy.applyFulfillmentHoldReleased(releasedAt);
+        historyRecorder.record(groupBuy, GroupBuyEventType.FULFILLMENT_RESOLVED,
+                GroupBuyActor.admin(operatorId, operatorName), "정산 관리", null, releasedAt);
     }
 
     /** 연결·소통 → 공구 · 이슈 스레드 종결. 이후 새 이견은 새 이슈다. */

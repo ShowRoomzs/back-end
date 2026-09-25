@@ -112,6 +112,14 @@ public class GroupBuyChangeRequest {
         }
     }
 
+    /** 운영자 판정(32 설계 7절) — 조건부 UPDATE가 경합을 막은 뒤 같은 트랜잭션의 응답이 새 값을 읽게 한다. */
+    public void applyDecision(ChangeRequestStatus result, String decisionReason, Long operatorId, LocalDateTime now) {
+        this.status = result;
+        this.decisionReason = decisionReason;
+        this.decidedAt = now;
+        this.decidedBy = operatorId;
+    }
+
     /** 판정 대상이 사라졌다 — 검토 중 요청을 남긴 채 공구가 기간 만료로 끝났다(설계서 1-6). */
     public void lapse(LocalDateTime now) {
         this.status = ChangeRequestStatus.LAPSED;

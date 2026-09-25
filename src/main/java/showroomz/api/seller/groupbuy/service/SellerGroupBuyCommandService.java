@@ -26,16 +26,16 @@ import showroomz.domain.groupbuy.repository.GroupBuyAdminSuspensionRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyAppealAttachmentRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyChangeRequestRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyExtensionRequestRepository;
-import showroomz.domain.groupbuy.repository.GroupBuyIssueRepository;
+import showroomz.domain.groupbuy.service.GroupBuyActor;
 import showroomz.domain.groupbuy.service.GroupBuyFacts;
 import showroomz.domain.groupbuy.service.GroupBuyFactsLoader;
 import showroomz.domain.groupbuy.service.GroupBuyFulfillmentService;
 import showroomz.domain.groupbuy.service.GroupBuyHistoryRecorder;
+import showroomz.domain.groupbuy.service.GroupBuyIssueService;
 import showroomz.domain.groupbuy.service.GroupBuyNotifier;
 import showroomz.domain.groupbuy.service.GroupBuyReadiness;
 import showroomz.domain.groupbuy.service.port.GroupBuySalesReader;
 import showroomz.domain.groupbuy.service.port.GroupBuySalesReader.GroupBuySales;
-import showroomz.domain.groupbuy.service.port.GroupBuyThreadGateway;
 import showroomz.domain.groupbuy.type.ChangeRequestStatus;
 import showroomz.domain.groupbuy.type.ChangeRequestType;
 import showroomz.domain.groupbuy.type.FulfillmentSide;
@@ -79,9 +79,8 @@ public class SellerGroupBuyCommandService {
     private final GroupBuyChangeRequestRepository changeRequestRepository;
     private final GroupBuyAdminSuspensionRepository adminSuspensionRepository;
     private final GroupBuyAppealAttachmentRepository appealAttachmentRepository;
-    private final GroupBuyIssueRepository issueRepository;
     private final GroupBuySalesReader salesReader;
-    private final GroupBuyThreadGateway threadGateway;
+    private final GroupBuyIssueService issueService;
     private final GroupBuyFulfillmentService fulfillmentService;
     private final GroupBuyAppealAttachmentStorage appealStorage;
     private final GroupBuyProperties properties;
@@ -371,20 +370,10 @@ public class SellerGroupBuyCommandService {
             throw new BusinessException(ErrorCode.GROUP_BUY_ACTION_NOT_ALLOWED);
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        String content = request.content().trim();
-        Long threadId = threadGateway.openIssueThread(groupBuy, FulfillmentSide.SELLER, request.issueType(), content);
-        GroupBuyIssue issue;
-        try {
-            issue = issueRepository.saveAndFlush(GroupBuyIssue.open(groupBuy, GroupBuyActorType.SELLER,
-                    scope.sellerId(), request.issueType(), content, threadId, now));
-        } catch (DataIntegrityViolationException e) {
-            throw new BusinessException(ErrorCode.GROUP_BUY_ISSUE_ALREADY_OPEN);
-        }
-        historyRecorder.recordBySeller(groupBuy, GroupBuyEventType.ISSUE_OPENED, request.issueType().getLabel(), now);
-        notifier.notifyCreator(groupBuy, "ISSUE_OPENED");
-        notifier.notifyAdmin(groupBuy, "ISSUE_OPENED");
-        return new GroupBuyIssueOpenResponse(issue.getId(), threadId);
+        // 어드민 개설과 같은 메서드를 연 사람만 바꿔 부른다 — 1건 제약·스레드·이력 규칙이 한 곳에 있다(32 설계 8-3).
+        GroupBuyIssue issue = issueService.open(groupBuy, GroupBuyActor.seller(groupBuy), scope.sellerId(),
+                request.issueType(), request.content().trim(), LocalDateTime.now());
+        return new GroupBuyIssueOpenResponse(issue.getId(), issue.getThreadId());
     }
 
     /**

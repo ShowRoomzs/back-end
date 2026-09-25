@@ -329,7 +329,27 @@ public enum ErrorCode {
     GROUP_BUY_POST_REQUIRED_FIELD(HttpStatus.BAD_REQUEST, "GROUP_BUY_POST_REQUIRED_FIELD", "제목과 본문을 모두 입력해 주세요."),
     GROUP_BUY_POST_TOO_LONG(HttpStatus.BAD_REQUEST, "GROUP_BUY_POST_TOO_LONG", "제목은 40자, 본문은 2,000자까지 입력할 수 있습니다."),
     GROUP_BUY_EXTENSION_NOT_PENDING(HttpStatus.CONFLICT, "GROUP_BUY_EXTENSION_NOT_PENDING", "응답할 연장 요청이 없습니다."),
-    GROUP_BUY_EXTENSION_RESPONSE_CLOSED(HttpStatus.CONFLICT, "GROUP_BUY_EXTENSION_RESPONSE_CLOSED", "공구 종료 시각이 지나 연장 요청에 응답할 수 없습니다.");
+    GROUP_BUY_EXTENSION_RESPONSE_CLOSED(HttpStatus.CONFLICT, "GROUP_BUY_EXTENSION_RESPONSE_CLOSED", "공구 종료 시각이 지나 연장 요청에 응답할 수 없습니다."),
+
+    // 어드민 공구 관리(32 설계 10절)
+    // *_REQUIRED · SCHEDULE_INVALID · EXECUTION_NOT_DUE는 FE가 버튼을 비활성으로 그리면 보이지 않는 에러다 — 그래도 서버가 막는다.
+    // CHANGED_SINCE_VIEW만은 운영자에게 보이는 게 정상이다 — 경합의 정상 결과이고 문구가 다음 행동을 말한다.
+    GROUP_BUY_OPEN_REVIEW_NOT_PENDING(HttpStatus.CONFLICT, "GROUP_BUY_OPEN_REVIEW_NOT_PENDING", "오픈 승인 대기 중인 게시물이 아닙니다."),
+    GROUP_BUY_REJECT_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "GROUP_BUY_REJECT_DETAIL_REQUIRED", "인플루언서에게 전달할 설명을 입력해 주세요."),
+    GROUP_BUY_POST_NOT_HIDEABLE(HttpStatus.CONFLICT, "GROUP_BUY_POST_NOT_HIDEABLE", "지금 상태에서는 게시물을 숨길 수 없습니다."),
+    GROUP_BUY_POST_ALREADY_HIDDEN(HttpStatus.CONFLICT, "GROUP_BUY_POST_ALREADY_HIDDEN", "이미 숨김 처리된 게시물입니다."),
+    GROUP_BUY_POST_NOT_HIDDEN(HttpStatus.CONFLICT, "GROUP_BUY_POST_NOT_HIDDEN", "숨김 상태인 게시물이 아닙니다."),
+    GROUP_BUY_POST_CHANGED_SINCE_VIEW(HttpStatus.CONFLICT, "GROUP_BUY_POST_CHANGED_SINCE_VIEW", "확인하신 뒤 게시물이 수정되었습니다. 최신 본문을 확인한 후 다시 시도해 주세요."),
+    GROUP_BUY_REQUEST_DECIDE_FIRST(HttpStatus.CONFLICT, "GROUP_BUY_REQUEST_DECIDE_FIRST", "검토 중인 요청을 먼저 판정해 주세요."),
+    GROUP_BUY_SUSPENSION_ALREADY_NOTICED(HttpStatus.CONFLICT, "GROUP_BUY_SUSPENSION_ALREADY_NOTICED", "이미 진행 중인 직권 중단 통지가 있습니다."),
+    GROUP_BUY_SUSPENSION_SCHEDULE_INVALID(HttpStatus.BAD_REQUEST, "GROUP_BUY_SUSPENSION_SCHEDULE_INVALID", "집행 예정 일시·소명 기한이 규정을 충족하지 않습니다."),
+    GROUP_BUY_SUSPENSION_NOT_NOTICED(HttpStatus.CONFLICT, "GROUP_BUY_SUSPENSION_NOT_NOTICED", "진행 중인 직권 중단 통지가 없습니다."),
+    GROUP_BUY_SUSPENSION_EXECUTION_NOT_DUE(HttpStatus.CONFLICT, "GROUP_BUY_SUSPENSION_EXECUTION_NOT_DUE", "집행 예정 일시가 되지 않았습니다."),
+    GROUP_BUY_CHANGE_REQUEST_NOT_PENDING(HttpStatus.CONFLICT, "GROUP_BUY_CHANGE_REQUEST_NOT_PENDING", "검토 중인 요청이 아닙니다."),
+    GROUP_BUY_DECISION_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "GROUP_BUY_DECISION_REASON_REQUIRED", "양측에 전달할 사유를 입력해 주세요."),
+    GROUP_BUY_SETTLEMENT_NOT_READY(HttpStatus.CONFLICT, "GROUP_BUY_SETTLEMENT_NOT_READY", "정산 확인 조건이 충족되지 않았습니다."),
+    GROUP_BUY_APPEAL_ATTACHMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "GROUP_BUY_APPEAL_ATTACHMENT_NOT_FOUND", "존재하지 않는 소명 첨부입니다."),
+    GROUP_BUY_FULFILLMENT_NOT_AGREED(HttpStatus.CONFLICT, "GROUP_BUY_FULFILLMENT_NOT_AGREED", "양측 합의 전에는 정산 보류를 해제할 수 없습니다.");
 
     private final HttpStatus status;
     private final String code;

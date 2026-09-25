@@ -97,9 +97,18 @@ public class GroupBuy extends BaseTimeEntity {
     @Column(name = "fulfillment_due_at")
     private LocalDateTime fulfillmentDueAt;
 
+    /**
+     * 이행 3자 스레드가 양측 동의로 종결된 시각(32 설계 1-1). 보류 해제({@link #fulfillmentResolvedAt})와 다른 사건이다 —
+     * 합의는 연결·소통이, 해제는 정산 관리가 각자 다른 화면·시각에 한다.
+     */
+    @Column(name = "fulfillment_agreed_at")
+    private LocalDateTime fulfillmentAgreedAt;
+
+    /** 정산 보류가 풀린 시각 — 보류 파생식(30 설계 1-9)의 기준이다. 합의만으로는 풀리지 않는다. */
     @Column(name = "fulfillment_resolved_at")
     private LocalDateTime fulfillmentResolvedAt;
 
+    /** 무엇으로 합의했나 — 당사자 합의이지 운영자 판정이 아니다(제20조④). */
     @Column(name = "fulfillment_resolution_note", length = 1000)
     private String fulfillmentResolutionNote;
 
@@ -161,14 +170,28 @@ public class GroupBuy extends BaseTimeEntity {
     }
 
     /**
-     * 기간 완주 종료. {@code endedAt = endAt}이지 {@code now}가 아니다 — 스케줄러가 23:56에 돌아도
-     * 공구는 23:55에 끝난 것이다(설계서 3-3).
+     * 종결 — 종결 경로 5개(기간 종료 · 조기 마감 승인 · 중단 요청 승인 · 직권 중단 집행 · 긴급)가 모두 이 메서드를 탄다
+     * (32 설계 8-1 {@code GroupBuyTerminator}). 상태 컬럼의 경합 차단은 리포지토리 조건부 UPDATE가 먼저 하고,
+     * 이 메서드는 같은 트랜잭션에서 딸린 필드를 채운다.
+     *
+     * @param endedAt          기간 종료는 {@link #endAt} — 스케줄러가 23:56에 돌아도 공구는 23:55에 끝난 것이다.
+     *                         판정 종결은 판정 시각이다
+     * @param fulfillmentDueAt 종료(ENDED)만 이행 확인 기한이 있다 — 중단은 null
      */
-    public void applyCompleted(LocalDateTime fulfillmentDueAt) {
-        this.status = GroupBuyStatus.ENDED;
-        this.endedAt = this.endAt;
-        this.closeType = GroupBuyCloseType.COMPLETED;
+    public void applyTerminated(GroupBuyStatus to, LocalDateTime endedAt, GroupBuyCloseType closeType,
+                                Long closingChangeRequestId, Long closingAdminSuspensionId,
+                                LocalDateTime fulfillmentDueAt) {
+        this.status = to;
+        this.endedAt = endedAt;
+        this.closeType = closeType;
+        this.closingChangeRequestId = closingChangeRequestId;
+        this.closingAdminSuspensionId = closingAdminSuspensionId;
         this.fulfillmentDueAt = fulfillmentDueAt;
+    }
+
+    /** 직권 중단 통지(IN_PROGRESS → SUSPENSION_SCHEDULED)와 철회(역방향) — 기간·판매는 그대로다. */
+    public void applyStatus(GroupBuyStatus to) {
+        this.status = to;
     }
 
     /** 연장 수락 — 조건부 UPDATE({@code extendEndAt})가 통과한 뒤 같은 값을 엔티티에 반영한다. 시작일은 불변이다. */
@@ -185,8 +208,14 @@ public class GroupBuy extends BaseTimeEntity {
         this.settledAt = transferredAt;
     }
 
-    public void applyFulfillmentResolved(String note, LocalDateTime now) {
-        this.fulfillmentResolvedAt = now;
+    /** 연결·소통 통보 — 양측 동의 종결(32 설계 8-4). 미이행 확인 행은 고치지 않는다(제20조② 불가역). */
+    public void applyFulfillmentAgreed(String note, LocalDateTime agreedAt) {
+        this.fulfillmentAgreedAt = agreedAt;
         this.fulfillmentResolutionNote = note;
+    }
+
+    /** 정산 관리 통보 — 보류 해제. 합의가 먼저여야 한다는 가드는 호출자가 건다(제20조⑤). */
+    public void applyFulfillmentHoldReleased(LocalDateTime releasedAt) {
+        this.fulfillmentResolvedAt = releasedAt;
     }
 }

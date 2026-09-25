@@ -21,6 +21,9 @@ public interface GroupBuyThreadGateway {
     /** 이슈 스레드(3자) 개설 — 첫 글은 이슈 내용이다. 개설된 스레드 id를 돌려준다. */
     Long openIssueThread(GroupBuy groupBuy, FulfillmentSide openerSide, GroupBuyIssueType issueType, String content);
 
+    /** 운영자가 여는 이슈 스레드(3자) — 어드민 B5 · B5b(32 설계 8-3). 긴급 중단 건의 사후 이의 창구이기도 하다. */
+    Long openAdminIssueThread(GroupBuy groupBuy, GroupBuyIssueType issueType, String content);
+
     /** 미이행 3자 스레드 개설 — 첫 글은 미이행 사유다(제20조②③). */
     Long openFulfillmentDisputeThread(GroupBuy groupBuy, FulfillmentSide checkerSide, String reason);
 }

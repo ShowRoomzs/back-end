@@ -26,4 +26,9 @@ public class EmptyGroupBuySalesReader implements GroupBuySalesReader {
     public Optional<Long> countOrdersSince(Long groupBuyId, LocalDateTime since) {
         return Optional.empty();
     }
+
+    @Override
+    public Optional<Long> countOneToOneInquiriesSince(Long groupBuyId, LocalDateTime since) {
+        return Optional.empty();
+    }
 }

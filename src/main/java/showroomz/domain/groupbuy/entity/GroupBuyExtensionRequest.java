@@ -84,6 +84,16 @@ public class GroupBuyExtensionRequest {
                 .build();
     }
 
+    /**
+     * 종결 시 무응답 = 변경 없이 종결(§29-6). 조건부 UPDATE({@code expirePending})가 통과한 뒤 같은 값을 엔티티에도
+     * 반영한다 — 같은 트랜잭션의 응답 조립이 대기 상태를 읽지 않게.
+     */
+    public void applyExpired(LocalDateTime now) {
+        this.status = ExtensionRequestStatus.EXPIRED;
+        this.respondedAt = now;
+        this.responseActorType = GroupBuyActorType.SYSTEM;
+    }
+
     public boolean isPending() {
         return status == ExtensionRequestStatus.PENDING;
     }

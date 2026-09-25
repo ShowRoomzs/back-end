@@ -52,6 +52,11 @@ public class PairOnlyGroupBuyThreadGateway implements GroupBuyThreadGateway {
     }
 
     @Override
+    public Long openAdminIssueThread(GroupBuy groupBuy, GroupBuyIssueType issueType, String content) {
+        throw new BusinessException(ErrorCode.GROUP_BUY_THREAD_UNAVAILABLE);
+    }
+
+    @Override
     public Long openFulfillmentDisputeThread(GroupBuy groupBuy, FulfillmentSide checkerSide, String reason) {
         throw new BusinessException(ErrorCode.GROUP_BUY_THREAD_UNAVAILABLE);
     }

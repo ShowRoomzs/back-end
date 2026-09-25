@@ -77,11 +77,19 @@ public class GroupBuyPost extends BaseTimeEntity {
     @Column(name = "hidden_reason_detail", length = 1000)
     private String hiddenReasonDetail;
 
+    /** 숨김 당시 판본 — 숨긴 뒤 고쳐져도 숨긴 이유가 된 문장을 리비전에서 되짚는다(32 설계 0-5). */
+    @Column(name = "hidden_revision_no")
+    private Integer hiddenRevisionNo;
+
     @Column(name = "unhidden_at")
     private LocalDateTime unhiddenAt;
 
     @Column(name = "unhidden_by")
     private Long unhiddenBy;
+
+    /** 해제 판단에 쓴 판본 — 「읽은 글 = 여는 글」의 기록(32 설계 5-4). */
+    @Column(name = "unhidden_revision_no")
+    private Integer unhiddenRevisionNo;
 
     /** 승인 후 마지막 수정 — 임시저장·제출은 찍지 않는다. 수정 내용은 리비전이 가진다(31 설계 2-5 · 2-6). */
     @Column(name = "last_edited_at")
@@ -121,6 +129,43 @@ public class GroupBuyPost extends BaseTimeEntity {
     /** 승인 후 수정 — 즉시 반영 · 재승인 없음(인플 제14조⑤). 심사 상태는 APPROVED 그대로다. */
     public void markEdited(LocalDateTime now) {
         this.lastEditedAt = now;
+    }
+
+    // ── 어드민 판정(32 설계 5절) — 호출자가 group_buy → group_buy_post 순으로 잠근 뒤 부른다 ───────────
+
+    /** 오픈 승인 — 게이트 ③. <b>반려 필드는 보존한다</b>(재심사 맥락 · 31 설계 2-4). */
+    public void approve(Long operatorId, LocalDateTime now) {
+        this.reviewStatus = GroupBuyPostReviewStatus.APPROVED;
+        this.reviewedAt = now;
+        this.reviewedBy = operatorId;
+    }
+
+    /** 오픈 반려 — 공구는 PREPARING에서 멈춘다(§29-3). 사유·설명은 덮어쓴다. */
+    public void reject(String reasonCode, String reasonDetail, Long operatorId, LocalDateTime now) {
+        this.reviewStatus = GroupBuyPostReviewStatus.REJECTED;
+        this.rejectReasonCode = reasonCode;
+        this.rejectReasonDetail = reasonDetail;
+        this.reviewedAt = now;
+        this.reviewedBy = operatorId;
+    }
+
+    /** 숨김 — 공구는 멈추지 않는다(§29-8 규칙 ①). 컬럼은 현재·마지막 숨김 1건만 담는다. */
+    public void hide(String reasonCode, String reasonDetail, Integer revisionNo, Long operatorId, LocalDateTime now) {
+        this.hiddenAt = now;
+        this.hiddenBy = operatorId;
+        this.hiddenReasonCode = reasonCode;
+        this.hiddenReasonDetail = reasonDetail;
+        this.hiddenRevisionNo = revisionNo;
+        this.unhiddenAt = null;
+        this.unhiddenBy = null;
+        this.unhiddenRevisionNo = null;
+    }
+
+    /** 숨김 해제 — 운영자만(§29-8 규칙 ③). 「고쳤는가」는 서버가 판정하지 않는다 — 무엇을 보고 풀었는지만 박는다. */
+    public void unhide(Integer revisionNo, Long operatorId, LocalDateTime now) {
+        this.unhiddenAt = now;
+        this.unhiddenBy = operatorId;
+        this.unhiddenRevisionNo = revisionNo;
     }
 
     public boolean isPendingReview() {

@@ -50,6 +50,12 @@ public class GroupBuyHistoryRecorder {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
+    public void record(GroupBuy groupBuy, GroupBuyEventType eventType, GroupBuyActor actor, String detail, Long refId,
+                       LocalDateTime occurredAt) {
+        record(groupBuy, eventType, actor.type(), actor.id(), actor.displayName(), detail, refId, occurredAt);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
     public void recordBySystem(GroupBuy groupBuy, GroupBuyEventType eventType, String detail,
                                LocalDateTime occurredAt) {
         record(groupBuy, eventType, GroupBuyActorType.SYSTEM, null, null, detail, occurredAt);

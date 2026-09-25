@@ -47,6 +47,9 @@ public enum GroupBuyEventType {
     FULFILLMENT_CONFIRMED,
     FULFILLMENT_DISPUTED,
     FULFILLMENT_AUTO_CONFIRMED,
+    /** 이행 3자 스레드 양측 동의 종결 — SYSTEM(연결·소통 통보). 보류 해제와 다른 사건이다(32 설계 1-4 ②). */
+    FULFILLMENT_AGREED,
+    /** 정산 보류 해제 — 정산 관리가 합의 이후에 푼다(32 설계 8-4). */
     FULFILLMENT_RESOLVED,
     SALES_FINALIZED,
     SETTLED

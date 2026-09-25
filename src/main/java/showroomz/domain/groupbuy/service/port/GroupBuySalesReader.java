@@ -27,6 +27,12 @@ public interface GroupBuySalesReader {
      */
     Optional<Long> countOrdersSince(Long groupBuyId, LocalDateTime since);
 
+    /**
+     * 기준 시각 이후 이 공구 주문에 연결된 1:1 문의 건수 — 어드민 B3 「CS 문의」(32 설계 4-5). 「이 주문이 어느 공구의
+     * 것인가」는 판매 모듈만 안다 — 공구가 1:1 문의 테이블을 직접 조인하면 판매 모듈이 생기기 전까지 항상 0이 나온다.
+     */
+    Optional<Long> countOneToOneInquiriesSince(Long groupBuyId, LocalDateTime since);
+
     record GroupBuySales(int orderCount, long amount, List<ItemQuantity> itemQuantities) {
     }
 
@@ -39,6 +45,15 @@ public interface GroupBuySalesReader {
      *                           (§29-11이 막은 것은 종결 경로 내역이고, 이 둘은 <b>남은 건이 어디 걸려 있나</b>다 — 31 설계 8-1)
      */
     record GroupBuyOrderClosure(int totalCount, int closedCount, int unclosedCount,
-                                Integer awaitingShipment, Integer inReturnOrExchange) {
+                                Integer awaitingShipment, Integer inReturnOrExchange,
+                                List<UnclosedStage> unclosedStages) {
+    }
+
+    /**
+     * 미종결 주문의 단계별 건수 — 서피스마다 다른 칸을 요구해(스튜디오 2칸 · 어드민 「교환 재발송 대기 · 반품 심사」)
+     * 판매 모듈이 단계 목록을 돌려주고 서피스가 묶는다(32 설계 4-8 ⑦). 단계 enum은 판매 관리가 소유한다.
+     * 종결 경로별 내역(구매확정·환불)은 싣지 않는다 — 판매 관리 소관이다(§29-11).
+     */
+    record UnclosedStage(String stage, String label, int count) {
     }
 }

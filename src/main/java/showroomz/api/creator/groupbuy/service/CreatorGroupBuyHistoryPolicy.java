@@ -66,6 +66,7 @@ final class CreatorGroupBuyHistoryPolicy {
         rules.put(GroupBuyEventType.FULFILLMENT_CONFIRMED, DetailRule.KEEP);
         rules.put(GroupBuyEventType.FULFILLMENT_DISPUTED, DetailRule.KEEP);
         rules.put(GroupBuyEventType.FULFILLMENT_AUTO_CONFIRMED, DetailRule.KEEP);
+        rules.put(GroupBuyEventType.FULFILLMENT_AGREED, DetailRule.KEEP);
         rules.put(GroupBuyEventType.FULFILLMENT_RESOLVED, DetailRule.KEEP);
         rules.put(GroupBuyEventType.SALES_FINALIZED, DetailRule.KEEP);
         rules.put(GroupBuyEventType.SETTLED, DetailRule.KEEP);

@@ -21,6 +21,7 @@ import showroomz.domain.groupbuy.service.GroupBuyFactsLoader;
 import showroomz.domain.groupbuy.service.GroupBuyFixedFeeText;
 import showroomz.domain.groupbuy.service.port.GroupBuySalesReader;
 import showroomz.domain.groupbuy.service.port.GroupBuyThreadGateway;
+import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.domain.groupbuy.type.AdminSuspensionKind;
 import showroomz.domain.groupbuy.type.FulfillmentSide;
 import showroomz.domain.groupbuy.type.GroupBuyActorType;
@@ -49,15 +50,14 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class GroupBuyDetailAssembler {
 
-    /** 어드민 정산 지연 감시 기준(§29-11) — 종료 +30일. 알림만 하고 강제 처리는 없다. */
-    private static final int SETTLEMENT_WATCH_DAYS = 30;
-
     private final GroupBuyFactsLoader factsLoader;
     private final GroupBuyHistoryRepository historyRepository;
     private final GroupBuyAppealAttachmentRepository appealAttachmentRepository;
     private final GroupBuySalesReader salesReader;
     private final GroupBuyThreadGateway threadGateway;
     private final GroupBuyPermissionPolicy permissionPolicy;
+    /** 정산 지연 감시 기준(§29-11) — 어드민 요약과 같은 설정값을 쓴다. */
+    private final GroupBuyProperties properties;
 
     public GroupBuyDetailResponse assemble(GroupBuy groupBuy) {
         LocalDateTime now = LocalDateTime.now();
@@ -314,7 +314,7 @@ public class GroupBuyDetailAssembler {
                 suspension.getExecuteScheduledAt(),
                 suspension.getAppealDeadlineAt(),
                 suspension.getWithdrawnAt(),
-                suspension.getWithdrawReason(),
+                suspension.getWithdrawDetail(),
                 suspension.getExecutedAt(),
                 appeal);
     }
@@ -375,7 +375,7 @@ public class GroupBuyDetailAssembler {
                 facts.openIssue().getOpenedAt(),
                 facts.openIssue().getThreadId());
         LocalDateTime watchAt = status == GroupBuyStatus.ENDED && groupBuy.getEndedAt() != null
-                ? groupBuy.getEndedAt().plusDays(SETTLEMENT_WATCH_DAYS) : null;
+                ? groupBuy.getEndedAt().plusDays(properties.getSettlement().getWatchDays()) : null;
         return new AfterEnd(fulfillment, openIssue, watchAt, groupBuy.getSettledAt());
     }
 

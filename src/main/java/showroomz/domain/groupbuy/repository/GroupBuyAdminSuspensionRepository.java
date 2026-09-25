@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import showroomz.domain.groupbuy.entity.GroupBuyAdminSuspension;
 import showroomz.domain.groupbuy.type.AdminSuspensionStatus;
+import showroomz.domain.groupbuy.type.SuspensionWithdrawReason;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -50,4 +51,34 @@ public interface GroupBuyAdminSuspensionRepository extends JpaRepository<GroupBu
                      @Param("content") String content,
                      @Param("sellerId") Long sellerId,
                      @Param("now") LocalDateTime now);
+
+    /**
+     * 철회(M7) — NOTICED일 때만. 집행·철회를 운영자 둘이 동시에 누르면 한쪽이 0행이다(32 설계 9-1).
+     * 소명 제출도 NOTICED 조건부라 철회가 먼저면 소명이 409가 된다.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE GroupBuyAdminSuspension s "
+            + "SET s.status = showroomz.domain.groupbuy.type.AdminSuspensionStatus.WITHDRAWN, "
+            + "    s.withdrawReasonCode = :reasonCode, s.withdrawDetail = :detail, "
+            + "    s.withdrawnAt = :now, s.withdrawnBy = :operatorId "
+            + "WHERE s.id = :suspensionId "
+            + "AND s.status = showroomz.domain.groupbuy.type.AdminSuspensionStatus.NOTICED")
+    int withdraw(@Param("suspensionId") Long suspensionId,
+                 @Param("reasonCode") SuspensionWithdrawReason reasonCode,
+                 @Param("detail") String detail,
+                 @Param("operatorId") Long operatorId,
+                 @Param("now") LocalDateTime now);
+
+    /** 집행(32 설계 6-3) — NOTICED ∧ 집행 시각 도달일 때만. 시각 조건을 UPDATE가 다시 본다. */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE GroupBuyAdminSuspension s "
+            + "SET s.status = showroomz.domain.groupbuy.type.AdminSuspensionStatus.EXECUTED, "
+            + "    s.executionNote = :note, s.executedAt = :now, s.executedBy = :operatorId "
+            + "WHERE s.id = :suspensionId "
+            + "AND s.status = showroomz.domain.groupbuy.type.AdminSuspensionStatus.NOTICED "
+            + "AND s.appealDeadlineAt < :now AND s.executeScheduledAt <= :now")
+    int execute(@Param("suspensionId") Long suspensionId,
+                @Param("note") String note,
+                @Param("operatorId") Long operatorId,
+                @Param("now") LocalDateTime now);
 }
