@@ -171,6 +171,15 @@ public class GroupBuy extends BaseTimeEntity {
         this.fulfillmentDueAt = fulfillmentDueAt;
     }
 
+    /** 연장 수락 — 조건부 UPDATE({@code extendEndAt})가 통과한 뒤 같은 값을 엔티티에 반영한다. 시작일은 불변이다. */
+    public void applyExtended(LocalDateTime afterEndAt) {
+        this.endAt = afterEndAt;
+    }
+
+    public boolean isOwnedByCreator(Long creatorId) {
+        return creator != null && creator.getId().equals(creatorId);
+    }
+
     public void applySettled(LocalDateTime transferredAt) {
         this.status = GroupBuyStatus.SETTLED;
         this.settledAt = transferredAt;

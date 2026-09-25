@@ -83,6 +83,55 @@ public class GroupBuyPost extends BaseTimeEntity {
     @Column(name = "unhidden_by")
     private Long unhiddenBy;
 
+    /** 승인 후 마지막 수정 — 임시저장·제출은 찍지 않는다. 수정 내용은 리비전이 가진다(31 설계 2-5 · 2-6). */
+    @Column(name = "last_edited_at")
+    private LocalDateTime lastEditedAt;
+
+    /**
+     * 최초 임시저장 또는 곧바로 제출 — 심사 상태는 DRAFT로 시작한다. 빈 제목은 {@code ''}로 둔다
+     * (컬럼이 NOT NULL이고, 필수 검증은 제출 시점의 일이다 — 31 설계 2-3).
+     */
+    public static GroupBuyPost draft(Post post, GroupBuy groupBuy, String title) {
+        return GroupBuyPost.builder()
+                .post(post)
+                .groupBuy(groupBuy)
+                .title(title)
+                .reviewStatus(GroupBuyPostReviewStatus.DRAFT)
+                .build();
+    }
+
+    /**
+     * 임시저장 · 제출 · 승인 후 수정이 공통으로 쓰는 본문 교체. <b>심사 상태는 건드리지 않는다</b> —
+     * 반려 게시물을 임시저장해도 반려 그대로여야 반려 사유 카드(B3)가 고치는 동안 화면에 남는다.
+     */
+    public void rewrite(String title, String content) {
+        this.title = title;
+        this.post.updateContent(content, null);
+    }
+
+    /**
+     * 등록하고 검토 요청 — 게이트 ②. 반려 필드는 <b>지우지 않는다</b> — 재심사하는 운영자가 이전 지적을 봐야 한다.
+     * 새 판정이 나면 어드민 API가 덮어쓴다(31 설계 2-4).
+     */
+    public void submit(LocalDateTime now) {
+        this.reviewStatus = GroupBuyPostReviewStatus.PENDING;
+        this.submittedAt = now;
+    }
+
+    /** 승인 후 수정 — 즉시 반영 · 재승인 없음(인플 제14조⑤). 심사 상태는 APPROVED 그대로다. */
+    public void markEdited(LocalDateTime now) {
+        this.lastEditedAt = now;
+    }
+
+    public boolean isPendingReview() {
+        return reviewStatus == GroupBuyPostReviewStatus.PENDING;
+    }
+
+    /** 작성·제출 가능한 심사 상태 — 작성중 · 반려(31 설계 0-2). */
+    public boolean isWritable() {
+        return reviewStatus == GroupBuyPostReviewStatus.DRAFT || reviewStatus == GroupBuyPostReviewStatus.REJECTED;
+    }
+
     /** 숨김 중인지 — 해제 시각이 숨김 시각보다 앞서거나 없으면 숨김이 살아 있다. */
     public boolean isHidden() {
         return hiddenAt != null && (unhiddenAt == null || unhiddenAt.isBefore(hiddenAt));

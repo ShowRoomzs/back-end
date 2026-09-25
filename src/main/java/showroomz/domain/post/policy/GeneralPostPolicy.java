@@ -31,7 +31,7 @@ public class GeneralPostPolicy implements PostPolicy {
         }
     }
 
-    /** 게시 후 수정에 제한이 없다 — 공구 게시물의 노출중 잠금과 다르다 (§24-3) */
+    /** 게시 후 수정에 제한이 없다 — 공구 게시물의 승인대기 잠금과 다르다 (§24-3) */
     @Override
     public void validateEditable(Post post) {
         if (!post.getStatus().isEditable()) {

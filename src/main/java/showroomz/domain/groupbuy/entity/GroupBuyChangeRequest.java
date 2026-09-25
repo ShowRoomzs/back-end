@@ -8,8 +8,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import showroomz.domain.groupbuy.type.ChangeRequestStatus;
 import showroomz.domain.groupbuy.type.ChangeRequestType;
+import showroomz.domain.groupbuy.type.CreatorSuspensionReason;
+import showroomz.domain.groupbuy.type.EarlyCloseReasonCode;
 import showroomz.domain.groupbuy.type.GroupBuyActorType;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
+import showroomz.domain.groupbuy.type.SuspensionReasonCode;
 
 import java.time.LocalDateTime;
 
@@ -85,6 +88,28 @@ public class GroupBuyChangeRequest {
 
     public boolean isPending() {
         return status == ChangeRequestStatus.PENDING;
+    }
+
+    public boolean isRequestedBy(GroupBuyActorType actorType) {
+        return requesterType == actorType;
+    }
+
+    /**
+     * 사유 코드의 표시 라벨 — {@code reason_code}의 해석은 요청자와 요청 유형이 정한다. 모르는 코드는 null이다 —
+     * 그럴듯한 문구를 지어내지 않는다. 3서피스와 이력 재구성(31 설계 6-2)이 이 메서드 하나를 쓴다.
+     */
+    public String reasonLabel() {
+        try {
+            if (requesterType == GroupBuyActorType.CREATOR) {
+                return requestType == ChangeRequestType.SUSPEND
+                        ? CreatorSuspensionReason.valueOf(reasonCode).getLabel() : null;
+            }
+            return requestType == ChangeRequestType.SUSPEND
+                    ? SuspensionReasonCode.valueOf(reasonCode).getLabel()
+                    : EarlyCloseReasonCode.valueOf(reasonCode).getLabel();
+        } catch (IllegalArgumentException | NullPointerException e) {
+            return null;
+        }
     }
 
     /** 판정 대상이 사라졌다 — 검토 중 요청을 남긴 채 공구가 기간 만료로 끝났다(설계서 1-6). */

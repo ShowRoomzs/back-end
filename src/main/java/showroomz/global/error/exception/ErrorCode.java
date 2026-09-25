@@ -316,7 +316,20 @@ public enum ErrorCode {
     GROUP_BUY_FULFILLMENT_ALREADY_CHECKED(HttpStatus.CONFLICT, "GROUP_BUY_FULFILLMENT_ALREADY_CHECKED", "이미 이행 확인을 제출했습니다."),
     GROUP_BUY_FULFILLMENT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "GROUP_BUY_FULFILLMENT_REASON_REQUIRED", "미이행 사유를 입력해 주세요."),
     // 이슈·미이행 3자 스레드는 연결·소통의 스레드 모델 변경이 선행돼야 한다(설계서 5-3). 그 전까지 이 코드로 막는다.
-    GROUP_BUY_THREAD_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "GROUP_BUY_THREAD_UNAVAILABLE", "지금은 스레드를 열 수 없습니다. 운영자에게 문의해 주세요.");
+    GROUP_BUY_THREAD_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "GROUP_BUY_THREAD_UNAVAILABLE", "지금은 스레드를 열 수 없습니다. 운영자에게 문의해 주세요."),
+
+    // 쇼룸 스튜디오 공구 관리(31 설계 7절)
+    // 남의 공구는 403이 아니라 404다 — 공구번호가 추측 가능해 403은 「그 번호의 공구가 있다」를 알려준다(31 설계 0-4).
+    // 문구가 GROUP_BUY_NOT_FOUND와 같은 것이 의도다. 코드는 서버 로그에서만 구분하려고 나눈다.
+    GROUP_BUY_NOT_OWNED_BY_CREATOR(HttpStatus.NOT_FOUND, "GROUP_BUY_NOT_OWNED_BY_CREATOR", "존재하지 않는 공구입니다."),
+    GROUP_BUY_POST_NOT_WRITABLE(HttpStatus.CONFLICT, "GROUP_BUY_POST_NOT_WRITABLE", "지금은 게시물을 작성할 수 없습니다."),
+    GROUP_BUY_POST_UNDER_REVIEW(HttpStatus.CONFLICT, "GROUP_BUY_POST_UNDER_REVIEW", "검토 중에는 게시물을 수정할 수 없습니다."),
+    GROUP_BUY_POST_NOT_EDITABLE(HttpStatus.CONFLICT, "GROUP_BUY_POST_NOT_EDITABLE", "지금 상태에서는 게시물을 수정할 수 없습니다."),
+    GROUP_BUY_POST_EMPTY_DRAFT(HttpStatus.BAD_REQUEST, "GROUP_BUY_POST_EMPTY_DRAFT", "제목이나 본문 중 하나는 입력해 주세요."),
+    GROUP_BUY_POST_REQUIRED_FIELD(HttpStatus.BAD_REQUEST, "GROUP_BUY_POST_REQUIRED_FIELD", "제목과 본문을 모두 입력해 주세요."),
+    GROUP_BUY_POST_TOO_LONG(HttpStatus.BAD_REQUEST, "GROUP_BUY_POST_TOO_LONG", "제목은 40자, 본문은 2,000자까지 입력할 수 있습니다."),
+    GROUP_BUY_EXTENSION_NOT_PENDING(HttpStatus.CONFLICT, "GROUP_BUY_EXTENSION_NOT_PENDING", "응답할 연장 요청이 없습니다."),
+    GROUP_BUY_EXTENSION_RESPONSE_CLOSED(HttpStatus.CONFLICT, "GROUP_BUY_EXTENSION_RESPONSE_CLOSED", "공구 종료 시각이 지나 연장 요청에 응답할 수 없습니다.");
 
     private final HttpStatus status;
     private final String code;

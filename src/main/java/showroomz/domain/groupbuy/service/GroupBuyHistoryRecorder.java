@@ -30,6 +30,13 @@ public class GroupBuyHistoryRecorder {
     @Transactional(propagation = Propagation.MANDATORY)
     public void record(GroupBuy groupBuy, GroupBuyEventType eventType, GroupBuyActorType actorType,
                        Long actorId, String actorDisplayName, String detail, LocalDateTime occurredAt) {
+        record(groupBuy, eventType, actorType, actorId, actorDisplayName, detail, null, occurredAt);
+    }
+
+    /** @param refId 이력을 만든 사실 행(요청·통지·확인)의 id — 읽는 서피스가 원천에서 문구를 다시 만든다(31 설계 6-2) */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void record(GroupBuy groupBuy, GroupBuyEventType eventType, GroupBuyActorType actorType,
+                       Long actorId, String actorDisplayName, String detail, Long refId, LocalDateTime occurredAt) {
         historyRepository.save(GroupBuyHistory.builder()
                 .groupBuy(groupBuy)
                 .eventType(eventType)
@@ -37,6 +44,7 @@ public class GroupBuyHistoryRecorder {
                 .actorId(actorId)
                 .actorDisplayName(actorDisplayName)
                 .detail(truncate(detail))
+                .refId(refId)
                 .occurredAt(occurredAt)
                 .build());
     }
@@ -51,8 +59,22 @@ public class GroupBuyHistoryRecorder {
     @Transactional(propagation = Propagation.MANDATORY)
     public void recordBySeller(GroupBuy groupBuy, GroupBuyEventType eventType, String detail,
                                LocalDateTime occurredAt) {
+        recordBySeller(groupBuy, eventType, detail, null, occurredAt);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void recordBySeller(GroupBuy groupBuy, GroupBuyEventType eventType, String detail, Long refId,
+                               LocalDateTime occurredAt) {
         record(groupBuy, eventType, GroupBuyActorType.SELLER,
-                groupBuy.getMarket().getId(), groupBuy.getMarket().getMarketName(), detail, occurredAt);
+                groupBuy.getMarket().getId(), groupBuy.getMarket().getMarketName(), detail, refId, occurredAt);
+    }
+
+    /** 인플루언서가 주체인 이력 — 표시명은 쇼룸명 스냅샷이다. actorId는 크리에이터 id다. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void recordByCreator(GroupBuy groupBuy, GroupBuyEventType eventType, String detail, Long refId,
+                                LocalDateTime occurredAt) {
+        record(groupBuy, eventType, GroupBuyActorType.CREATOR,
+                groupBuy.getCreator().getId(), groupBuy.getCreator().getShowroomName(), detail, refId, occurredAt);
     }
 
     private static String truncate(String detail) {

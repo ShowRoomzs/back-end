@@ -22,6 +22,17 @@ public class GroupBuyProperties {
     private Fulfillment fulfillment = new Fulfillment();
     private Appeal appeal = new Appeal();
     private Backfill backfill = new Backfill();
+    private OpenReview openReview = new OpenReview();
+
+    @Getter
+    @Setter
+    public static class OpenReview {
+        /**
+         * 오픈 승인(게시물 심사) SLA — 영업일(31 설계 4-4 · 근거 대기 ⑦). 스튜디오가 「예상 승인일」과
+         * 「등록 마감일」을 역산하는 기준이다. 제출일은 세지 않는다.
+         */
+        private int slaBusinessDays = 3;
+    }
 
     @Getter
     @Setter

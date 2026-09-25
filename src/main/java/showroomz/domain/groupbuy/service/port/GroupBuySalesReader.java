@@ -1,5 +1,6 @@
 package showroomz.domain.groupbuy.service.port;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,12 +21,24 @@ public interface GroupBuySalesReader {
     /** 전체·종결·미종결 주문 건수. §29-11 종결 경로 5종의 판정은 판매 모듈이 한다. */
     Optional<GroupBuyOrderClosure> readClosure(Long groupBuyId);
 
+    /**
+     * 기준 시각 이후 주문 건수 — 스튜디오 B5a 「숨김 이후 0건」(31 설계 8-1). empty와 0은 다르다 — 0은
+     * 「숨김이 판매를 멈췄다」는 사실 주장이라 판매 모듈이 없어서 0이 나오면 거짓말이 된다.
+     */
+    Optional<Long> countOrdersSince(Long groupBuyId, LocalDateTime since);
+
     record GroupBuySales(int orderCount, long amount, List<ItemQuantity> itemQuantities) {
     }
 
     record ItemQuantity(Long productId, int quantity) {
     }
 
-    record GroupBuyOrderClosure(int totalCount, int closedCount, int unclosedCount) {
+    /**
+     * @param awaitingShipment   미종결 중 배송 처리 대기 — 스튜디오 B7 「배송 처리 대기 18」. 모르면 null
+     * @param inReturnOrExchange 미종결 중 반품·교환 처리중 — B7 「반품 처리중 6」. 모르면 null
+     *                           (§29-11이 막은 것은 종결 경로 내역이고, 이 둘은 <b>남은 건이 어디 걸려 있나</b>다 — 31 설계 8-1)
+     */
+    record GroupBuyOrderClosure(int totalCount, int closedCount, int unclosedCount,
+                                Integer awaitingShipment, Integer inReturnOrExchange) {
     }
 }

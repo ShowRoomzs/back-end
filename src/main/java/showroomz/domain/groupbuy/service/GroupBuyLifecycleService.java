@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.entity.GroupBuyAdminSuspension;
-import showroomz.domain.groupbuy.entity.GroupBuyExtensionRequest;
 import showroomz.domain.groupbuy.entity.GroupBuyFulfillmentCheck;
 import showroomz.domain.groupbuy.repository.GroupBuyAdminSuspensionRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyChangeRequestRepository;
@@ -46,6 +45,7 @@ public class GroupBuyLifecycleService {
     private final GroupBuyFulfillmentCheckRepository fulfillmentCheckRepository;
     private final GroupBuyHistoryRecorder historyRecorder;
     private final ProductGroupBuyStatusSynchronizer productSynchronizer;
+    private final GroupBuyPostExposure postExposure;
     private final GroupBuyNotifier notifier;
     private final GroupBuyProperties properties;
 
@@ -79,6 +79,8 @@ public class GroupBuyLifecycleService {
         }
         groupBuy.applyOpened(now);
         historyRecorder.recordBySystem(groupBuy, GroupBuyEventType.OPENED, null, now);
+        // 게시물 노출 시작 — 빠지면 오픈된 공구의 게시물이 소비자에게 404다(31 설계 2-9).
+        postExposure.sync(groupBuy, now);
         productSynchronizer.resync(groupBuy);
         notifier.notifyBothParties(groupBuy, "OPENED");
         return true;
@@ -94,24 +96,24 @@ public class GroupBuyLifecycleService {
         if (groupBuy == null || !groupBuy.getStatus().isSelling() || groupBuy.getEndAt().isAfter(now)) {
             return false;
         }
-        if (groupBuyRepository.transition(groupBuyId, GroupBuyStatus.SELLING, GroupBuyStatus.ENDED) != 1) {
+        // 종료 시각도 UPDATE 조건으로 다시 본다 — 대상을 고른 뒤 연장이 수락됐으면 0행이다(31 설계 5-1).
+        if (groupBuyRepository.transitionIfDue(groupBuyId, GroupBuyStatus.SELLING, GroupBuyStatus.ENDED, now) != 1) {
             return false;
         }
         LocalDateTime endedAt = groupBuy.getEndAt();
         groupBuy.applyCompleted(endedAt.plusDays(properties.getFulfillment().getDueDays()));
 
-        extensionRequestRepository.findByGroupBuyId(groupBuyId)
-                .filter(GroupBuyExtensionRequest::isPending)
-                .ifPresent(extension -> {
-                    extension.expire(now);
-                    historyRecorder.recordBySystem(groupBuy, GroupBuyEventType.EXTENSION_EXPIRED, null, endedAt);
-                });
+        // 조건부 UPDATE — 인플루언서가 기한 직전에 거절했으면 0행이고 「만료」를 덮어쓰지 않는다(31 설계 5-2).
+        if (extensionRequestRepository.expirePending(groupBuyId, now) > 0) {
+            historyRecorder.recordBySystem(groupBuy, GroupBuyEventType.EXTENSION_EXPIRED, null, endedAt);
+        }
         changeRequestRepository.findFirstByGroupBuyIdAndStatus(groupBuyId, ChangeRequestStatus.PENDING)
                 .ifPresent(request -> request.lapse(now));
         adminSuspensionRepository.findFirstByGroupBuyIdAndStatus(groupBuyId, AdminSuspensionStatus.NOTICED)
                 .ifPresent(GroupBuyAdminSuspension::lapse);
 
         historyRecorder.recordBySystem(groupBuy, GroupBuyEventType.ENDED, null, endedAt);
+        postExposure.sync(groupBuy, now);
         productSynchronizer.resync(groupBuy);
         notifier.notifyBothParties(groupBuy, "ENDED");
         return true;

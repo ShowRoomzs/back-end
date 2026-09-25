@@ -77,7 +77,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  * <p>생성 이후의 상태(진행중·종료 등)는 다른 서피스(스튜디오·어드민)나 스케줄러가 만드는 값이라 SQL로 직접 옮긴다.
  * 파트너 화면의 분기가 남의 API 순서에 묶이지 않게 하기 위해서다.
  */
-abstract class GroupBuyTestSupport extends IntegrationTestSupport {
+public abstract class GroupBuyTestSupport extends IntegrationTestSupport {
 
     protected static final String GROUP_BUYS = "/v1/seller/group-buys";
 

@@ -21,16 +21,15 @@ import showroomz.domain.groupbuy.entity.GroupBuyAdminSuspension;
 import showroomz.domain.groupbuy.entity.GroupBuyAppealAttachment;
 import showroomz.domain.groupbuy.entity.GroupBuyChangeRequest;
 import showroomz.domain.groupbuy.entity.GroupBuyExtensionRequest;
-import showroomz.domain.groupbuy.entity.GroupBuyFulfillmentCheck;
 import showroomz.domain.groupbuy.entity.GroupBuyIssue;
 import showroomz.domain.groupbuy.repository.GroupBuyAdminSuspensionRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyAppealAttachmentRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyChangeRequestRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyExtensionRequestRepository;
-import showroomz.domain.groupbuy.repository.GroupBuyFulfillmentCheckRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyIssueRepository;
 import showroomz.domain.groupbuy.service.GroupBuyFacts;
 import showroomz.domain.groupbuy.service.GroupBuyFactsLoader;
+import showroomz.domain.groupbuy.service.GroupBuyFulfillmentService;
 import showroomz.domain.groupbuy.service.GroupBuyHistoryRecorder;
 import showroomz.domain.groupbuy.service.GroupBuyNotifier;
 import showroomz.domain.groupbuy.service.GroupBuyReadiness;
@@ -39,7 +38,6 @@ import showroomz.domain.groupbuy.service.port.GroupBuySalesReader.GroupBuySales;
 import showroomz.domain.groupbuy.service.port.GroupBuyThreadGateway;
 import showroomz.domain.groupbuy.type.ChangeRequestStatus;
 import showroomz.domain.groupbuy.type.ChangeRequestType;
-import showroomz.domain.groupbuy.type.FulfillmentResult;
 import showroomz.domain.groupbuy.type.FulfillmentSide;
 import showroomz.domain.groupbuy.type.GroupBuyActorType;
 import showroomz.domain.groupbuy.type.GroupBuyAttachmentStatus;
@@ -81,10 +79,10 @@ public class SellerGroupBuyCommandService {
     private final GroupBuyChangeRequestRepository changeRequestRepository;
     private final GroupBuyAdminSuspensionRepository adminSuspensionRepository;
     private final GroupBuyAppealAttachmentRepository appealAttachmentRepository;
-    private final GroupBuyFulfillmentCheckRepository fulfillmentCheckRepository;
     private final GroupBuyIssueRepository issueRepository;
     private final GroupBuySalesReader salesReader;
     private final GroupBuyThreadGateway threadGateway;
+    private final GroupBuyFulfillmentService fulfillmentService;
     private final GroupBuyAppealAttachmentStorage appealStorage;
     private final GroupBuyProperties properties;
 
@@ -189,10 +187,12 @@ public class SellerGroupBuyCommandService {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        createChangeRequest(groupBuy, scope, ChangeRequestType.EARLY_CLOSE, request.reasonCode().name(), memo, now);
+        GroupBuyChangeRequest created = createChangeRequest(groupBuy, scope, ChangeRequestType.EARLY_CLOSE,
+                request.reasonCode().name(), memo, now);
         historyRecorder.recordBySeller(groupBuy, GroupBuyEventType.EARLY_CLOSE_REQUESTED,
-                withMemo(request.reasonCode().getLabel(), memo), now);
+                withMemo(request.reasonCode().getLabel(), memo), created.getId(), now);
         notifier.notifyAdmin(groupBuy, "EARLY_CLOSE_REQUESTED");
+        notifier.notifyCreator(groupBuy, "EARLY_CLOSE_REQUESTED");
         return detailAssembler.assemble(groupBuy);
     }
 
@@ -219,15 +219,18 @@ public class SellerGroupBuyCommandService {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        createChangeRequest(groupBuy, scope, ChangeRequestType.SUSPEND, request.reasonCode().name(), memo, now);
+        GroupBuyChangeRequest created = createChangeRequest(groupBuy, scope, ChangeRequestType.SUSPEND,
+                request.reasonCode().name(), memo, now);
         historyRecorder.recordBySeller(groupBuy, GroupBuyEventType.SUSPENSION_REQUESTED,
-                withMemo(request.reasonCode().getLabel(), memo), now);
+                withMemo(request.reasonCode().getLabel(), memo), created.getId(), now);
         notifier.notifyAdmin(groupBuy, "SUSPENSION_REQUESTED");
+        // 인플루언서도 이 요청을 알아야 한다 — 요청 소식을 못 들으면 판정 전에 스스로 멈춘다(31 설계 8-3 · B10).
+        notifier.notifyCreator(groupBuy, "SUSPENSION_REQUESTED");
         return detailAssembler.assemble(groupBuy);
     }
 
-    private void createChangeRequest(GroupBuy groupBuy, SellerScope scope, ChangeRequestType type,
-                                     String reasonCode, String memo, LocalDateTime now) {
+    private GroupBuyChangeRequest createChangeRequest(GroupBuy groupBuy, SellerScope scope, ChangeRequestType type,
+                                                      String reasonCode, String memo, LocalDateTime now) {
         // 어드민 B3 「요청 후 증가분」의 기준점. 판매 포트가 비어 있으면 null — 0이 아니다(설계서 0-6).
         GroupBuySales sales = salesReader.readSales(groupBuy.getId()).orElse(null);
         GroupBuyChangeRequest changeRequest = GroupBuyChangeRequest.builder()
@@ -244,7 +247,7 @@ public class SellerGroupBuyCommandService {
                 .requestedAt(now)
                 .build();
         try {
-            changeRequestRepository.saveAndFlush(changeRequest);
+            return changeRequestRepository.saveAndFlush(changeRequest);
         } catch (DataIntegrityViolationException e) {
             // pending_group_buy_id UNIQUE — 브랜드·인플루언서 요청이 동시에 들어오면 하나는 DB에서 떨어진다.
             throw new BusinessException(ErrorCode.GROUP_BUY_REQUEST_ALREADY_PENDING);
@@ -400,29 +403,9 @@ public class SellerGroupBuyCommandService {
         if (!permissionPolicy.canCheckFulfillment(facts)) {
             throw new BusinessException(ErrorCode.GROUP_BUY_ACTION_NOT_ALLOWED);
         }
-        boolean unfulfilled = request.result() == FulfillmentResult.UNFULFILLED;
-        String reason = trimToNull(request.reason());
-        if (unfulfilled && reason == null) {
-            throw new BusinessException(ErrorCode.GROUP_BUY_FULFILLMENT_REASON_REQUIRED);
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-        Long threadId = unfulfilled
-                ? threadGateway.openFulfillmentDisputeThread(groupBuy, FulfillmentSide.SELLER, reason)
-                : null;
-        try {
-            fulfillmentCheckRepository.saveAndFlush(GroupBuyFulfillmentCheck.manual(groupBuy, FulfillmentSide.SELLER,
-                    request.result(), unfulfilled ? reason : null, scope.sellerId(), threadId, now));
-        } catch (DataIntegrityViolationException e) {
-            throw new BusinessException(ErrorCode.GROUP_BUY_FULFILLMENT_ALREADY_CHECKED);
-        }
-        historyRecorder.recordBySeller(groupBuy,
-                unfulfilled ? GroupBuyEventType.FULFILLMENT_DISPUTED : GroupBuyEventType.FULFILLMENT_CONFIRMED,
-                unfulfilled ? reason : null, now);
-        notifier.notifyCreator(groupBuy, unfulfilled ? "FULFILLMENT_DISPUTED" : "FULFILLMENT_CONFIRMED");
-        if (unfulfilled) {
-            notifier.notifyAdmin(groupBuy, "FULFILLMENT_DISPUTED");
-        }
+        // 스튜디오와 같은 메서드를 측만 바꿔 부른다 — 불가역·스레드 개설·이력 규칙이 한 곳에 있다(31 설계 5-4).
+        fulfillmentService.check(groupBuy, FulfillmentSide.SELLER, request.result(), trimToNull(request.reason()),
+                scope.sellerId(), LocalDateTime.now());
         return detailAssembler.assemble(groupBuy);
     }
 

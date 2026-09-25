@@ -51,6 +51,14 @@ public class GroupBuyHistory {
     @Column(name = "detail", length = 500)
     private String detail;
 
+    /**
+     * 이 이력을 만든 사실 행의 id — 요청({@code group_buy_change_request})·통지·확인. 읽는 서피스가 detail 원문 대신
+     * 원천 행에서 문구를 다시 만들 때 쓴다(31 설계 6-2). 「사유 라벨만」 내려야 하는 이벤트를 detail 문자열 가공으로
+     * 자르면 detail 문형이 바뀌는 날 메모가 조용히 샌다.
+     */
+    @Column(name = "ref_id")
+    private Long refId;
+
     @Column(name = "occurred_at", nullable = false)
     private LocalDateTime occurredAt;
 }

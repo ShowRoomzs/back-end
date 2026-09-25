@@ -155,6 +155,11 @@ public class AdminPostService {
                                                         AdminPostDto.SuspendRequest request) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
+        // 공구 게시물을 여기서 내리면 이의 신청 기한 뒤 영구 삭제로 넘어간다 — 분쟁 근거인 원문이 사라진다.
+        // 공구 게시물은 공구 관리의 숨김(되돌릴 수 있는 조치)으로 내린다(31 설계 0-6 ②).
+        if (!post.isGeneral()) {
+            throw new BusinessException(ErrorCode.POST_NOT_EDITABLE, "공구 게시물은 공구 관리에서 숨김 처리해 주세요.");
+        }
 
         if (request.getReasonCode().requiresDetail()
                 && (request.getReasonDetail() == null || request.getReasonDetail().isBlank())) {

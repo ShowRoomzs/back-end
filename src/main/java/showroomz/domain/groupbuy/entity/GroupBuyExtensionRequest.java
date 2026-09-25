@@ -88,10 +88,16 @@ public class GroupBuyExtensionRequest {
         return status == ExtensionRequestStatus.PENDING;
     }
 
-    /** 무응답 = 변경 없이 종결(§29-6). 종료 전이가 함께 닫는다. */
-    public void expire(LocalDateTime now) {
-        this.status = ExtensionRequestStatus.EXPIRED;
+    /**
+     * 인플루언서 응답을 엔티티에도 반영한다 — 경합 차단은 리포지토리의 조건부 UPDATE({@code respond})가 하고,
+     * 이 메서드는 같은 트랜잭션의 응답 조립이 새 값을 읽게 할 뿐이다.
+     */
+    public void applyResponse(ExtensionRequestStatus result, String rejectReasonCode, String rejectMemo,
+                              LocalDateTime now) {
+        this.status = result;
         this.respondedAt = now;
-        this.responseActorType = GroupBuyActorType.SYSTEM;
+        this.responseActorType = GroupBuyActorType.CREATOR;
+        this.rejectReasonCode = rejectReasonCode;
+        this.rejectMemo = rejectMemo;
     }
 }

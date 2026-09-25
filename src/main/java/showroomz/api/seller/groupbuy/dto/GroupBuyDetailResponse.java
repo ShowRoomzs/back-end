@@ -207,8 +207,9 @@ public record GroupBuyDetailResponse(
             GroupBuyActorType requesterType,
             @Schema(description = "브랜드명 또는 쇼룸명") String requesterName,
             String reasonCode,
-            @Schema(description = "알 수 없는 코드(인플루언서 사유 미정)는 null", nullable = true) String reasonLabel,
-            @Schema(nullable = true) String memo,
+            @Schema(description = "알 수 없는 코드는 null", nullable = true) String reasonLabel,
+            @Schema(description = "브랜드가 낸 요청일 때만 — 인플루언서 메모는 운영자에게 쓴 글이라 내리지 않는다", nullable = true)
+            String memo,
             @Schema(description = "요청 당시 상태 — C2(진행중)·C4(준비완료) 문구 분기") GroupBuyStatus statusAtRequest,
             LocalDateTime requestedAt
     ) {
@@ -264,7 +265,7 @@ public record GroupBuyDetailResponse(
             String name,
             String reasonCode,
             @Schema(nullable = true) String reasonLabel,
-            @Schema(nullable = true) String memo,
+            @Schema(description = "브랜드가 낸 요청일 때만 — 인플루언서 메모는 내리지 않는다", nullable = true) String memo,
             LocalDateTime requestedAt
     ) {
     }

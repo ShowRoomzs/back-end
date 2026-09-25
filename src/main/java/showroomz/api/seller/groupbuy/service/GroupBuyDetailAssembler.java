@@ -18,25 +18,21 @@ import showroomz.domain.groupbuy.repository.GroupBuyHistoryRepository;
 import showroomz.domain.groupbuy.service.GroupBuyCommandService;
 import showroomz.domain.groupbuy.service.GroupBuyFacts;
 import showroomz.domain.groupbuy.service.GroupBuyFactsLoader;
+import showroomz.domain.groupbuy.service.GroupBuyFixedFeeText;
 import showroomz.domain.groupbuy.service.port.GroupBuySalesReader;
 import showroomz.domain.groupbuy.service.port.GroupBuyThreadGateway;
 import showroomz.domain.groupbuy.type.AdminSuspensionKind;
-import showroomz.domain.groupbuy.type.ChangeRequestType;
-import showroomz.domain.groupbuy.type.EarlyCloseReasonCode;
 import showroomz.domain.groupbuy.type.FulfillmentSide;
 import showroomz.domain.groupbuy.type.GroupBuyActorType;
 import showroomz.domain.groupbuy.type.GroupBuyAttachmentStatus;
 import showroomz.domain.groupbuy.type.GroupBuyPostReviewStatus;
 import showroomz.domain.groupbuy.type.GroupBuyPostStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
-import showroomz.domain.groupbuy.type.SuspensionReasonCode;
 import showroomz.global.utils.RewardCalculator;
 
-import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -144,22 +140,13 @@ public class GroupBuyDetailAssembler {
                 .toList();
     }
 
-    /**
-     * 표준 표기 — 3서피스 문자 단위 동일(§29-9). FE 3개가 각자 조립하면 한 곳의 가운뎃점·띄어쓰기가 반드시
-     * 어긋나므로 이 문자열 하나는 예외적으로 서버가 짓는다.
-     */
+    /** 표준 표기 — 3서피스 문자 단위 동일(§29-9). 문자열은 {@link GroupBuyFixedFeeText} 한 곳이 짓는다. */
     private FixedFee fixedFee(Contract contract) {
-        String displayText = null;
-        if (contract.hasFixedFee() && contract.getFixedFeeTrigger() != null) {
-            displayText = "고정 지급비 %s원 · 지급 시점: %s · 브랜드 직접 지급".formatted(
-                    NumberFormat.getNumberInstance(Locale.KOREA).format(contract.getFixedFeeAmount()),
-                    contract.getFixedFeeTrigger().getLabel());
-        }
         return new FixedFee(
                 contract.getFixedFeeAmount(),
                 contract.getFixedFeeTrigger(),
                 contract.getFixedFeeTrigger() == null ? null : contract.getFixedFeeTrigger().getLabel(),
-                displayText);
+                GroupBuyFixedFeeText.of(contract));
     }
 
     private Readiness readiness(GroupBuy groupBuy, GroupBuyPost post) {
@@ -284,7 +271,7 @@ public class GroupBuyDetailAssembler {
                 requesterName(groupBuy, request.getRequesterType()),
                 request.getReasonCode(),
                 reasonLabel(request),
-                request.getMemo(),
+                memoVisibleToBrand(request),
                 request.getStatusAtRequest(),
                 request.getRequestedAt());
     }
@@ -351,7 +338,7 @@ public class GroupBuyDetailAssembler {
                 requesterName(groupBuy, request.getRequesterType()),
                 request.getReasonCode(),
                 reasonLabel(request),
-                request.getMemo(),
+                memoVisibleToBrand(request),
                 request.getRequestedAt());
         return new Closure(
                 groupBuy.getCloseType(),
@@ -414,17 +401,17 @@ public class GroupBuyDetailAssembler {
                 : groupBuy.getMarket().getMarketName();
     }
 
-    /** 브랜드 사유 코드만 라벨을 안다. 인플루언서 사유는 미정(§33-1 #9)이라 그럴듯한 문구를 지어내지 않고 null. */
+    /**
+     * 요청 메모는 <b>브랜드 자신이 쓴 것만</b> 내린다. 인플루언서의 중단 요청 메모는 운영자에게 쓴 글이다(C7 「운영자에게
+     * 전달할 내용」) — 상대에게 보이는 줄 모르고 쓴 글을 노출하면 다음부터 운영자에게 사실을 적지 않는다.
+     * 스튜디오가 브랜드 메모를 내리지 않는 것과 대칭이다(31 설계 4-6).
+     */
+    private static String memoVisibleToBrand(GroupBuyChangeRequest request) {
+        return request.isRequestedBy(GroupBuyActorType.SELLER) ? request.getMemo() : null;
+    }
+
+    /** 사유 라벨 — 요청자·유형별 해석은 요청 행이 한다. 모르는 코드는 null이다. */
     private static String reasonLabel(GroupBuyChangeRequest request) {
-        if (request.getRequesterType() != GroupBuyActorType.SELLER) {
-            return null;
-        }
-        try {
-            return request.getRequestType() == ChangeRequestType.SUSPEND
-                    ? SuspensionReasonCode.valueOf(request.getReasonCode()).getLabel()
-                    : EarlyCloseReasonCode.valueOf(request.getReasonCode()).getLabel();
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
+        return request.reasonLabel();
     }
 }

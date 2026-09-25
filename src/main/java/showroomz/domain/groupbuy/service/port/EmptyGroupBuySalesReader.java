@@ -2,6 +2,7 @@ package showroomz.domain.groupbuy.service.port;
 
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
@@ -18,6 +19,11 @@ public class EmptyGroupBuySalesReader implements GroupBuySalesReader {
 
     @Override
     public Optional<GroupBuyOrderClosure> readClosure(Long groupBuyId) {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Long> countOrdersSince(Long groupBuyId, LocalDateTime since) {
         return Optional.empty();
     }
 }
