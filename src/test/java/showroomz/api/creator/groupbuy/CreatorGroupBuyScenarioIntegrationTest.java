@@ -215,6 +215,120 @@ class CreatorGroupBuyScenarioIntegrationTest extends CreatorGroupBuyTestSupport 
     }
 
     @Test
+    @DisplayName("B10: 브랜드 중단 요청은 판매 중 그대로 보이고 쇼룸은 결정할 수 없으며 운영자 반려 후 요청이 풀린다")
+    void brandSuspensionRequestRejectedRestoresStudioAction() throws Exception {
+        GroupBuy groupBuy = seedIn(GroupBuyStatus.IN_PROGRESS);
+        seedPost(groupBuy.getId(), GroupBuyPostReviewStatus.APPROVED, false);
+        Seller admin = fixture.createAdmin("studio-brand-reject-admin@showroomz.test", "운영자");
+        LocalDateTime endAt = groupBuy.getEndAt();
+
+        action(groupBuy.getId(), "suspension-request",
+                Map.of("reasonCode", "QUALITY_ISSUE", "memo", "운영자에게만 보낼 내부 내용"))
+                .andExpect(status().isOk());
+        long requestId = changeRequestRepository.findByGroupBuyIdOrderByRequestedAtDescIdDesc(groupBuy.getId())
+                .get(0).getId();
+        studioDetail(groupBuy.getId()).andExpect(jsonPath("$.groupBuy.status").value("IN_PROGRESS"))
+                .andExpect(jsonPath("$.post.status").value("EXPOSED"))
+                .andExpect(jsonPath("$.activeRequest.type").value("SUSPEND"))
+                .andExpect(jsonPath("$.activeRequest.requesterType").value("SELLER"))
+                .andExpect(jsonPath("$.activeRequest.mine").value(false))
+                .andExpect(jsonPath("$.activeRequest.memo").doesNotExist())
+                .andExpect(jsonPath("$.permissions.canRequestSuspension").value(false));
+        studioAction(groupBuy.getId(), "suspension-request",
+                Map.of("reasonCode", "DELIVERY_FAILURE", "memo", "저도 문제가 있습니다."))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("GROUP_BUY_REQUEST_ALREADY_PENDING"));
+
+        mockMvc.perform(post("/v1/admin/group-buys/" + groupBuy.getId()
+                        + "/change-requests/" + requestId + "/reject")
+                        .header(HttpHeaders.AUTHORIZATION, adminToken(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(Map.of("decisionReason", "공구를 계속 진행합니다."))))
+                .andExpect(status().isOk());
+        studioDetail(groupBuy.getId()).andExpect(jsonPath("$.groupBuy.status").value("IN_PROGRESS"))
+                .andExpect(jsonPath("$.post.status").value("EXPOSED"))
+                .andExpect(jsonPath("$.activeRequest").doesNotExist())
+                .andExpect(jsonPath("$.permissions.canRequestSuspension").value(true));
+        assertThat(reload(groupBuy.getId()).getEndAt()).isEqualTo(endAt);
+    }
+
+    @Test
+    @DisplayName("브랜드 조기 마감 요청은 쇼룸에 노출되고 운영자 승인 전까지 판매하다 승인 시 종료된다")
+    void brandEarlyCloseRequestEndsOnlyAfterApproval() throws Exception {
+        GroupBuy groupBuy = seedIn(GroupBuyStatus.IN_PROGRESS);
+        GroupBuyPost groupBuyPost = seedPost(groupBuy.getId(), GroupBuyPostReviewStatus.APPROVED, false);
+        Seller admin = fixture.createAdmin("studio-early-close-admin@showroomz.test", "운영자");
+
+        action(groupBuy.getId(), "early-close-request",
+                Map.of("reasonCode", "STOCK_OUT", "memo", "운영자에게만 보낼 재고 사정"))
+                .andExpect(status().isOk());
+        long requestId = changeRequestRepository.findByGroupBuyIdOrderByRequestedAtDescIdDesc(groupBuy.getId())
+                .get(0).getId();
+        studioDetail(groupBuy.getId()).andExpect(jsonPath("$.groupBuy.status").value("IN_PROGRESS"))
+                .andExpect(jsonPath("$.post.status").value("EXPOSED"))
+                .andExpect(jsonPath("$.activeRequest.type").value("EARLY_CLOSE"))
+                .andExpect(jsonPath("$.activeRequest.requesterType").value("SELLER"))
+                .andExpect(jsonPath("$.activeRequest.mine").value(false))
+                .andExpect(jsonPath("$.activeRequest.memo").doesNotExist())
+                .andExpect(jsonPath("$.permissions.canRequestSuspension").value(false));
+
+        mockMvc.perform(post("/v1/admin/group-buys/" + groupBuy.getId()
+                        + "/change-requests/" + requestId + "/approve")
+                        .header(HttpHeaders.AUTHORIZATION, adminToken(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(Map.of("decisionReason", "재고 소진을 확인했습니다."))))
+                .andExpect(status().isOk());
+        studioDetail(groupBuy.getId()).andExpect(jsonPath("$.groupBuy.status").value("ENDED"))
+                .andExpect(jsonPath("$.post.status").value("CLOSED"))
+                .andExpect(jsonPath("$.activeRequest").doesNotExist())
+                .andExpect(jsonPath("$.closure.source").value("REQUEST"))
+                .andExpect(jsonPath("$.closure.requester.type").value("SELLER"))
+                .andExpect(jsonPath("$.closure.requester.mine").value(false))
+                .andExpect(jsonPath("$.closure.decisionReason").value("재고 소진을 확인했습니다."))
+                .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(true));
+        assertThat(postRepository.findById(groupBuyPost.getPostId()).orElseThrow().getStatus())
+                .isEqualTo(PostStatus.DRAFT);
+    }
+
+    @Test
+    @DisplayName("중단 예정 철회 뒤 게시물 수정과 대기 연장 응답이 다시 열리고 판매 기간은 유지된다")
+    void withdrawingNoticeRestoresStudioPermissions() throws Exception {
+        GroupBuy groupBuy = seedIn(GroupBuyStatus.IN_PROGRESS);
+        seedPost(groupBuy.getId(), GroupBuyPostReviewStatus.APPROVED, false);
+        seedExtension(groupBuy.getId(), 2);
+        Seller admin = fixture.createAdmin("studio-notice-withdraw-admin@showroomz.test", "운영자");
+        LocalDateTime endAt = groupBuy.getEndAt();
+        seedNotice(groupBuy.getId(), LocalDateTime.now().plusDays(2).withNano(0));
+
+        studioDetail(groupBuy.getId()).andExpect(jsonPath("$.groupBuy.status").value("SUSPENSION_SCHEDULED"))
+                .andExpect(jsonPath("$.post.status").value("EXPOSED"))
+                .andExpect(jsonPath("$.extension.status").value("PENDING"))
+                .andExpect(jsonPath("$.permissions.canEditPost").value(false))
+                .andExpect(jsonPath("$.permissions.canRespondExtension").value(false));
+        editPost(groupBuy.getId(), POST).andExpect(status().isConflict());
+        studioAction(groupBuy.getId(), "extension/acceptance", null).andExpect(status().isConflict());
+
+        mockMvc.perform(post("/v1/admin/group-buys/" + groupBuy.getId() + "/admin-suspension/withdraw")
+                        .header(HttpHeaders.AUTHORIZATION, adminToken(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(Map.of("reasonCode", "RECTIFIED", "detail", "위반 내용이 정정되었습니다."))))
+                .andExpect(status().isOk());
+        studioDetail(groupBuy.getId()).andExpect(jsonPath("$.groupBuy.status").value("IN_PROGRESS"))
+                .andExpect(jsonPath("$.adminSuspension").doesNotExist())
+                .andExpect(jsonPath("$.post.status").value("EXPOSED"))
+                .andExpect(jsonPath("$.extension.status").value("PENDING"))
+                .andExpect(jsonPath("$.permissions.canEditPost").value(true))
+                .andExpect(jsonPath("$.permissions.canRespondExtension").value(true));
+        assertThat(reload(groupBuy.getId()).getEndAt()).isEqualTo(endAt);
+
+        editPost(groupBuy.getId(), Map.of("title", "정정된 제목", "content", "정정된 본문"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.post.status").value("EXPOSED"));
+        studioAction(groupBuy.getId(), "extension/acceptance", null).andExpect(status().isOk())
+                .andExpect(jsonPath("$.extension.status").value("ACCEPTED"));
+        assertThat(reload(groupBuy.getId()).getEndAt()).isEqualTo(endAt.plusDays(2));
+    }
+
+    @Test
     @DisplayName("C3·C4: 제목·본문 경계 길이는 허용되고 초과 입력은 저장되지 않는다")
     void postInputBoundariesPreserveLastGoodDraft() throws Exception {
         GroupBuy groupBuy = seedPreparing();
@@ -290,6 +404,16 @@ class CreatorGroupBuyScenarioIntegrationTest extends CreatorGroupBuyTestSupport 
                 .andExpect(jsonPath("$.permissions.canWritePost").value(true));
         submitPost(groupBuy.getId(), POST).andExpect(status().isOk())
                 .andExpect(jsonPath("$.groupBuy.status").value("PREPARING"));
+        action(groupBuy.getId(), "stock-confirmation", null).andExpect(status().isOk());
+        Seller admin = fixture.createAdmin("studio-late-start-admin@showroomz.test", "운영자");
+        mockMvc.perform(post("/v1/admin/group-buys/" + groupBuy.getId() + "/open-review/approve")
+                        .header(HttpHeaders.AUTHORIZATION, adminToken(admin)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("READY"));
+        studioDetail(groupBuy.getId()).andExpect(jsonPath("$.groupBuy.status").value("READY"))
+                .andExpect(jsonPath("$.post.status").value("SCHEDULED"));
+        assertThat(lifecycleService.open(groupBuy.getId(), LocalDateTime.now())).isTrue();
+        studioDetail(groupBuy.getId()).andExpect(jsonPath("$.groupBuy.status").value("IN_PROGRESS"))
+                .andExpect(jsonPath("$.post.status").value("EXPOSED"));
     }
 
     @Test
@@ -352,6 +476,19 @@ class CreatorGroupBuyScenarioIntegrationTest extends CreatorGroupBuyTestSupport 
                 .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(true));
         studioAction(groupBuy.getId(), "fulfillment-check", Map.of("result", "FULFILLED"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("중단 및 정산완료 공구에서는 이행 확인을 새로 제출할 수 없다")
+    void fulfillmentCheckIsClosedOutsideEndedStatus() throws Exception {
+        for (GroupBuyStatus terminal : new GroupBuyStatus[]{GroupBuyStatus.SUSPENDED, GroupBuyStatus.SETTLED}) {
+            GroupBuy groupBuy = seedIn(terminal);
+            studioDetail(groupBuy.getId()).andExpect(jsonPath("$.permissions.canCheckFulfillment").value(false));
+            studioAction(groupBuy.getId(), "fulfillment-check", Map.of("result", "FULFILLED"))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("GROUP_BUY_ACTION_NOT_ALLOWED"));
+            assertThat(fulfillmentCheckRepository.findByGroupBuyId(groupBuy.getId())).isEmpty();
+        }
     }
 
     @Test
