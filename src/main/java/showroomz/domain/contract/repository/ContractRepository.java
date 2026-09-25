@@ -86,6 +86,15 @@ public interface ContractRepository extends JpaRepository<Contract, Long>, Contr
             + "AND c.groupBuyId IS NULL")
     int assignGroupBuy(@Param("contractId") Long contractId, @Param("groupBuyId") Long groupBuyId);
 
+    /**
+     * 공구 백필 대상 — 공구 모듈보다 먼저 체결된 계약(공구 설계서 2-3).
+     * 체결 트랜잭션이 공구를 만들기 시작한 뒤로는 이 집합이 새로 생기지 않는다.
+     */
+    @Query("SELECT c.id FROM Contract c "
+            + "WHERE c.status = showroomz.domain.contract.type.ContractStatus.CONCLUDED AND c.groupBuyId IS NULL "
+            + "ORDER BY c.concludedAt ASC, c.id ASC")
+    List<Long> findConcludedIdsWithoutGroupBuy();
+
     /** 탭 카운트(설계서 4-4). 탭 묶음은 서버가 소유하므로 상태별 카운트를 받아 서비스가 묶는다. */
     @Query("SELECT c.status, COUNT(c) FROM Contract c WHERE c.market.id = :marketId GROUP BY c.status")
     List<Object[]> countByStatus(@Param("marketId") Long marketId);

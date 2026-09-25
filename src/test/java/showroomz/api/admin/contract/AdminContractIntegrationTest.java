@@ -30,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AdminContractIntegrationTest extends IntegrationTestSupport {
     private static final String BASE = "/v1/admin/contracts";
     @Autowired ContractRepository contracts;
+    @Autowired showroomz.domain.groupbuy.repository.GroupBuyRepository groupBuys;
     @Autowired ContractHistoryRepository histories;
     @Autowired ContractDocumentRepository documents;
     @Autowired ContractResendRequestRepository resends;
@@ -157,7 +158,11 @@ class AdminContractIntegrationTest extends IntegrationTestSupport {
         mockMvc.perform(delete(BASE + "/" + c.getId() + "/documents/SIGNED_PDF").header("Authorization", token))
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CONTRACT_DOCUMENT_LOCKED"));
         mockMvc.perform(post(BASE + "/" + c.getId() + "/conclude").header("Authorization", token)).andExpect(status().isConflict());
-        assertThat(contracts.findById(c.getId()).orElseThrow().getGroupBuyId()).isNull();
+        // 체결이 만든 공구는 1건뿐이다 — 두 번째 체결 시도는 공구를 더 만들지 않는다(공구 설계서 0-2).
+        Long groupBuyId = contracts.findById(c.getId()).orElseThrow().getGroupBuyId();
+        assertThat(groupBuyId).isNotNull();
+        assertThat(groupBuys.findByContractId(c.getId())).hasValueSatisfying(g -> assertThat(g.getId()).isEqualTo(groupBuyId));
+        assertThat(groupBuys.count()).isEqualTo(1);
     }
 
     @Test void expiryRequiresElapsedDeadlineAndDashboardRecheck() throws Exception {

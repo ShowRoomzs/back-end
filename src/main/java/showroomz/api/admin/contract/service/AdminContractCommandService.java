@@ -8,6 +8,8 @@ import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.repository.*;
 import showroomz.domain.contract.service.*;
 import showroomz.domain.contract.type.*;
+import showroomz.domain.groupbuy.entity.GroupBuy;
+import showroomz.domain.groupbuy.service.GroupBuyFactory;
 import showroomz.global.error.exception.*;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -22,6 +24,7 @@ public class AdminContractCommandService {
     private final ContractResendRequestRepository resends;
     private final ContractHistoryRecorder history;
     private final ContractNotifier notifier;
+    private final GroupBuyFactory groupBuyFactory;
 
     public ProcessResponse approve(Long id, Long operator, ApproveRequest request) {
         String name = access.operatorName(operator);
@@ -101,9 +104,12 @@ public class AdminContractCommandService {
         transition(c, ContractStatus.CONCLUDED);
         c.conclude(now);
         record(c, operator, name, ContractEventType.CONCLUDED, null, now);
-        // 공구 모듈이 assignGroupBuy 조건부 게이트로 연결한다. 여기서 공구를 생성했다고 응답하지 않는다.
+        // 공구는 체결 트랜잭션 안에서 생긴다 — 생성 실패 = 체결 실패(공구 설계서 0-2 · 2-1).
+        // 「체결완료인데 공구가 없는 계약」이 구조적으로 생기지 않는다.
+        GroupBuy groupBuy = groupBuyFactory.createFromConcludedContract(c, now);
         notifier.notifyBothParties(c, "CONCLUDED");
-        return response(c);
+        contracts.flush();
+        return new ProcessResponse(c.getId(), c.getStatus(), c.getVersion(), groupBuy.getGroupBuyNumber());
     }
 
     public ProcessResponse expire(Long id, Long operator, ExpireRequest request) {
@@ -168,7 +174,7 @@ public class AdminContractCommandService {
     }
     private ProcessResponse response(Contract c) {
         contracts.flush();
-        return new ProcessResponse(c.getId(), c.getStatus(), c.getVersion());
+        return new ProcessResponse(c.getId(), c.getStatus(), c.getVersion(), null);
     }
     private static void fail(ErrorCode code) { throw new BusinessException(code); }
 }

@@ -9,6 +9,8 @@ import showroomz.domain.contract.entity.ContractDocument;
 import showroomz.domain.contract.entity.ContractHistory;
 import showroomz.domain.contract.type.*;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
@@ -155,28 +157,35 @@ class AdminContractConclusionIntegrationTest extends AdminContractTestSupport {
     // ------------------------------------------------------------------ C4
 
     @Test
-    @DisplayName("C4 체결 완료: 계약이 성립하고 처리자 실명 이력 · 양측 통지 · 양측 화면 체결완료 · 공구는 공구 모듈이 붙기 전까지 만들었다고 응답하지 않는다")
+    @DisplayName("C4 체결 완료: 계약이 성립하고 처리자 실명 이력 · 양측 통지 · 양측 화면 체결완료 · 같은 트랜잭션에서 공구가 생긴다")
     void concludesContract() throws Exception {
         Contract c = seed(ContractStatus.CONCLUSION_PENDING);
         upload(c, ContractDocumentType.SIGNED_PDF, SIGNED_PDF_NAME).andExpect(status().isOk());
         upload(c, ContractDocumentType.AUDIT_TRAIL, AUDIT_TRAIL_NAME).andExpect(status().isOk());
 
-        conclude(c).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CONCLUDED"));
+        conclude(c).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CONCLUDED"))
+                // C4 「생성될 공구」 — 체결 응답이 공구번호를 함께 돌려준다(공구 설계서 2-4).
+                .andExpect(jsonPath("$.groupBuyNumber").value(org.hamcrest.Matchers.startsWith("GB-")));
 
         Contract saved = reload(c);
         assertThat(saved.getStatus()).isEqualTo(ContractStatus.CONCLUDED);
         assertThat(saved.getConcludedAt()).isAfterOrEqualTo(now);
-        assertThat(saved.getGroupBuyId()).isNull();
+        // 「체결완료인데 공구가 없는 계약」이 구조적으로 생기지 않는다(공구 설계서 0-2).
+        assertThat(saved.getGroupBuyId()).isNotNull();
 
-        ContractHistory concluded = historyOf(c).getLast();
+        List<ContractHistory> history = historyOf(c);
+        ContractHistory concluded = history.get(history.size() - 2);
         assertThat(concluded.getEventType()).isEqualTo(ContractEventType.CONCLUDED);
         assertThat(concluded.getActorDisplayName()).isEqualTo(OPERATOR_NAME);
+        assertThat(history.getLast().getEventType()).isEqualTo(ContractEventType.GROUP_BUY_CREATED);
+        assertThat(history.getLast().getActorType()).isEqualTo(ContractActorType.SYSTEM);
 
         detail(c).andExpect(jsonPath("$.contract.statusLabel").value("체결완료"))
                 .andExpect(jsonPath("$.contract.statusTone").value("SUCCESS"))
                 .andExpect(jsonPath("$.stepper.concludedAt").exists())
                 .andExpect(jsonPath("$.stepper.concludedActorName").value(OPERATOR_NAME))
-                .andExpect(jsonPath("$.groupBuy.groupBuyId").doesNotExist());
+                .andExpect(jsonPath("$.groupBuy.groupBuyId").value(saved.getGroupBuyId()));
         sellerDetail(c).andExpect(jsonPath("$.status").value("CONCLUDED"));
         creatorDetail(c).andExpect(jsonPath("$.status").value("CONCLUDED"));
         summary().andExpect(jsonPath("$.queues.CONCLUSION").value(0)).andExpect(jsonPath("$.tabCounts.CONCLUDED").value(1));

@@ -166,7 +166,10 @@ class CreatorContractLifecycleIntegrationTest extends CreatorContractTestSupport
                 .andExpect(jsonPath("$.documents[*].documentType").value(containsInAnyOrder("SIGNED_PDF", "AUDIT_TRAIL")))
                 .andExpect(jsonPath("$.permissions.canDownloadDocuments").value(true))
                 .andExpect(jsonPath("$.fixedFee.paymentState").value("NOT_YET"))
-                .andExpect(jsonPath("$.groupBuy.awaitingBrandCreation").value(true));
+                // 공구는 체결 트랜잭션이 함께 만든다 — 「브랜드 생성 대기」가 생기지 않는다(공구 설계서 0-2).
+                .andExpect(jsonPath("$.groupBuy.groupBuyId").exists())
+                .andExpect(jsonPath("$.groupBuy.awaitingBrandCreation").value(false))
+                .andExpect(jsonPath("$.permissions.canOpenGroupBuy").value(true));
         document(contractId, ContractDocumentType.SIGNED_PDF)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.originalName").value(containsString("서명 완료 계약서.pdf")));

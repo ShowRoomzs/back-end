@@ -294,7 +294,29 @@ public enum ErrorCode {
     CONTRACT_NOT_RECEIVED(HttpStatus.NOT_FOUND, "CONTRACT_NOT_RECEIVED", "존재하지 않는 계약입니다."),
     CONTRACT_ALREADY_SIGNED(HttpStatus.CONFLICT, "CONTRACT_ALREADY_SIGNED", "이미 서명한 계약은 거절할 수 없습니다."),
     CONTRACT_DECLINE_NOT_ALLOWED(HttpStatus.CONFLICT, "CONTRACT_DECLINE_NOT_ALLOWED", "지금은 거절할 수 없는 상태입니다."),
-    CONTRACT_RESEND_NOT_ALLOWED(HttpStatus.CONFLICT, "CONTRACT_RESEND_NOT_ALLOWED", "서명이 필요한 계약에서만 요청할 수 있습니다.");
+    CONTRACT_RESEND_NOT_ALLOWED(HttpStatus.CONFLICT, "CONTRACT_RESEND_NOT_ALLOWED", "서명이 필요한 계약에서만 요청할 수 있습니다."),
+
+    // ── §29·§30 공구 관리 ────────────────────────────────────────────────────
+    // 필수 미입력은 FE에서 버튼 비활성이다(§30-5). 서버의 400은 규칙 위반 또는 FE 우회 호출뿐이다.
+    GROUP_BUY_NOT_FOUND(HttpStatus.NOT_FOUND, "GROUP_BUY_NOT_FOUND", "존재하지 않는 공구입니다."),
+    GROUP_BUY_NOT_OWNED_BY_SELLER(HttpStatus.FORBIDDEN, "GROUP_BUY_NOT_OWNED_BY_SELLER", "해당 브랜드의 공구가 아닙니다."),
+    GROUP_BUY_STATUS_CONFLICT(HttpStatus.CONFLICT, "GROUP_BUY_STATUS_CONFLICT", "공구 상태가 이미 변경되었습니다. 새로고침 후 다시 시도해 주세요."),
+    GROUP_BUY_ACTION_NOT_ALLOWED(HttpStatus.CONFLICT, "GROUP_BUY_ACTION_NOT_ALLOWED", "지금 상태에서는 요청할 수 없습니다."),
+    GROUP_BUY_STOCK_ALREADY_CONFIRMED(HttpStatus.CONFLICT, "GROUP_BUY_STOCK_ALREADY_CONFIRMED", "이미 최소 준비 물량 확보를 확인했습니다."),
+    GROUP_BUY_EXTENSION_ALREADY_USED(HttpStatus.CONFLICT, "GROUP_BUY_EXTENSION_ALREADY_USED", "기간 연장은 공구당 1회만 요청할 수 있습니다."),
+    GROUP_BUY_EXTENSION_WINDOW_CLOSED(HttpStatus.CONFLICT, "GROUP_BUY_EXTENSION_WINDOW_CLOSED", "공구 종료 12시간 전까지만 연장을 요청할 수 있습니다."),
+    GROUP_BUY_EXTENSION_EXCEEDS_LIMIT(HttpStatus.BAD_REQUEST, "GROUP_BUY_EXTENSION_EXCEEDS_LIMIT", "총 공구 기간은 30일을 넘을 수 없습니다."),
+    GROUP_BUY_REQUEST_ALREADY_PENDING(HttpStatus.CONFLICT, "GROUP_BUY_REQUEST_ALREADY_PENDING", "검토 중인 요청이 있어 추가로 요청할 수 없습니다."),
+    GROUP_BUY_REASON_MEMO_REQUIRED(HttpStatus.BAD_REQUEST, "GROUP_BUY_REASON_MEMO_REQUIRED", "기타 사유를 선택하면 메모를 입력해야 합니다."),
+    GROUP_BUY_APPEAL_NOT_OPEN(HttpStatus.CONFLICT, "GROUP_BUY_APPEAL_NOT_OPEN", "소명할 수 있는 직권 중단 통지가 없습니다."),
+    GROUP_BUY_APPEAL_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "GROUP_BUY_APPEAL_ALREADY_SUBMITTED", "이미 소명 자료를 제출했습니다."),
+    GROUP_BUY_APPEAL_DEADLINE_PASSED(HttpStatus.CONFLICT, "GROUP_BUY_APPEAL_DEADLINE_PASSED", "소명 제출 기한이 지났습니다."),
+    GROUP_BUY_APPEAL_ATTACHMENT_INVALID(HttpStatus.BAD_REQUEST, "GROUP_BUY_APPEAL_ATTACHMENT_INVALID", "PNG · JPG · PDF 10MB 이하 파일만 첨부할 수 있습니다."),
+    GROUP_BUY_ISSUE_ALREADY_OPEN(HttpStatus.CONFLICT, "GROUP_BUY_ISSUE_ALREADY_OPEN", "이미 진행 중인 이슈 스레드가 있습니다."),
+    GROUP_BUY_FULFILLMENT_ALREADY_CHECKED(HttpStatus.CONFLICT, "GROUP_BUY_FULFILLMENT_ALREADY_CHECKED", "이미 이행 확인을 제출했습니다."),
+    GROUP_BUY_FULFILLMENT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "GROUP_BUY_FULFILLMENT_REASON_REQUIRED", "미이행 사유를 입력해 주세요."),
+    // 이슈·미이행 3자 스레드는 연결·소통의 스레드 모델 변경이 선행돼야 한다(설계서 5-3). 그 전까지 이 코드로 막는다.
+    GROUP_BUY_THREAD_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "GROUP_BUY_THREAD_UNAVAILABLE", "지금은 스레드를 열 수 없습니다. 운영자에게 문의해 주세요.");
 
     private final HttpStatus status;
     private final String code;

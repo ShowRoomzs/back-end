@@ -345,6 +345,14 @@ public class Contract extends BaseTimeEntity {
         concludedAt = now;
     }
 
+    /**
+     * 공구 생성 게이트({@code ContractRepository.assignGroupBuy})가 DB에 쓴 값을 엔티티에도 반영한다.
+     * 게이트 자체는 조건부 UPDATE가 막는다 — 이 메서드는 같은 트랜잭션의 응답이 새 값을 읽게 할 뿐이다.
+     */
+    public void linkGroupBuy(Long groupBuyId) {
+        this.groupBuyId = groupBuyId;
+    }
+
     public void expire(LocalDateTime now) {
         status = ContractStatus.EXPIRED;
         closedAt = now;

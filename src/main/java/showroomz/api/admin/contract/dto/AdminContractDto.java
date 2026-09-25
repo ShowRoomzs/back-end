@@ -28,7 +28,8 @@ public final class AdminContractDto {
     public record PresignResponse(String s3Key, String uploadUrl, String contentType, long expiresInSeconds) {}
     public record DownloadResponse(String downloadUrl, String fileName, Long sizeBytes, long expiresInSeconds,
                                    LocalDateTime sourceReviewRequestedAt) {}
-    public record ProcessResponse(Long contractId, ContractStatus status, Long version) {}
+    /** @param groupBuyNumber 체결 처리 응답에만 — 체결 트랜잭션이 함께 만든 공구의 번호(공구 설계서 2-4). 그 외 null */
+    public record ProcessResponse(Long contractId, ContractStatus status, Long version, String groupBuyNumber) {}
     public record ListItem(Long contractId, String contractNumber, String title, String brandName, String creatorName,
                            int itemCount, LocalDateTime startAt, LocalDateTime endAt, LocalDateTime reviewRequestedAt,
                            ContractStatus status, String statusLabel, ContractStatusTone statusTone) {}

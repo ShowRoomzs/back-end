@@ -35,6 +35,7 @@ public class ContractDetailAssembler {
     private final ConnectionRepository connectionRepository;
     private final PartyContractDocuments partyContractDocuments;
     private final showroomz.api.admin.contract.service.ContractDocumentStorage contractDocumentStorage;
+    private final showroomz.domain.groupbuy.repository.GroupBuyRepository groupBuyRepository;
 
     public ContractDetailResponse assemble(Contract contract) {
         ContractStatus status = contract.getStatus();
@@ -190,9 +191,11 @@ public class ContractDetailAssembler {
     }
 
     private ContractDetailResponse.GroupBuy groupBuy(Contract contract) {
-        return new ContractDetailResponse.GroupBuy(
-                contract.getGroupBuyId(),
-                contract.getStatus() == ContractStatus.CONCLUDED && contract.getGroupBuyId() == null);
+        String groupBuyNumber = contract.getGroupBuyId() == null ? null
+                : groupBuyRepository.findById(contract.getGroupBuyId())
+                        .map(showroomz.domain.groupbuy.entity.GroupBuy::getGroupBuyNumber)
+                        .orElse(null);
+        return new ContractDetailResponse.GroupBuy(contract.getGroupBuyId(), groupBuyNumber);
     }
 
     private List<ContractDetailResponse.Document> documents(Contract contract) {
@@ -221,7 +224,6 @@ public class ContractDetailAssembler {
                 status == ContractStatus.CONCLUDED
                         && contract.hasFixedFee()
                         && contract.getFixedFeePaidAt() == null,
-                status == ContractStatus.CONCLUDED && contract.getGroupBuyId() == null,
                 ContractStatus.DUPLICABLE.contains(status));
     }
 

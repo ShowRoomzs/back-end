@@ -370,7 +370,8 @@ class SellerContractLifecycleIntegrationTest extends SellerContractTestSupport {
         assertPermissions(ContractStatus.SIGNING, "canRequestResend");
         // 양측 서명 완료 — 브랜드가 할 조작이 없다(B4b).
         assertPermissions(ContractStatus.CONCLUSION_PENDING);
-        assertPermissions(ContractStatus.CONCLUDED, "canRecordPayment", "canCreateGroupBuy", "canDuplicate");
+        // 공구는 체결 트랜잭션이 만든다 — 브랜드에게 생성 버튼이 없다(공구 설계서 0-2).
+        assertPermissions(ContractStatus.CONCLUDED, "canRecordPayment", "canDuplicate");
         assertPermissions(ContractStatus.CANCELED, "canDuplicate");
         assertPermissions(ContractStatus.EXPIRED, "canDuplicate");
         assertPermissions(ContractStatus.DECLINED, "canDuplicate");
@@ -414,7 +415,7 @@ class SellerContractLifecycleIntegrationTest extends SellerContractTestSupport {
         ResultActions result = detail(contractId).andExpect(status().isOk());
 
         List<String> allPermissions = List.of("canEdit", "canDelete", "canRequestReview", "canCancelRequest",
-                "canRequestResend", "canRecordPayment", "canCreateGroupBuy", "canDuplicate");
+                "canRequestResend", "canRecordPayment", "canDuplicate");
         List<String> expectedTrue = List.of(allowed);
         for (String permission : allPermissions) {
             result.andExpect(jsonPath("$.permissions." + permission).value(expectedTrue.contains(permission)));

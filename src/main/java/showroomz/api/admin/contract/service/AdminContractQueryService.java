@@ -30,6 +30,7 @@ public class AdminContractQueryService {
     private final ContractDocumentStorage storage;
     private final ConnectionRepository connections;
     private final MessageThreadRepository threads;
+    private final showroomz.domain.groupbuy.repository.GroupBuyRepository groupBuys;
 
     public PageResponse<ListItem> list(AdminContractTab tab, AdminContractQueue queue, String keyword,
                                        AdminContractSort sort, Pageable page) {
@@ -99,11 +100,19 @@ public class AdminContractQueryService {
                         actor(history, ContractEventType.SIGNATURE_UPDATED), due ? Duration.between(c.getSignatureDeadlineAt(), now).toDays() : 0),
                 shared.items(), shared.content(), shared.fixedFee(), shared.settlement(), shared.closure(), documentResponses,
                 new Resend(requests.stream().filter(r -> !r.isHandled()).count(), last == null ? null : last.getRequestedAt(), last == null ? null : last.getRequesterType()),
-                new GroupBuy(c.getGroupBuyId(), null, null),
+                groupBuy(c),
                 new Permissions(status == ContractStatus.REVIEW_PENDING, status == ContractStatus.REVIEW_PENDING,
                         signing || pending, pending && signed && completeDocs, signing && due, signing, pending,
                         ContractStatus.ADMIN_CANCELABLE.contains(status)),
                 history.stream().map(h -> new History(h.getEventType(), h.getActorType(), h.getActorId(), h.getActorDisplayName(), h.getDetail(), h.getOccurredAt())).toList(), c.getVersion());
+    }
+
+    /** 체결 트랜잭션이 만든 공구(공구 설계서 2-1). 체결 전에는 id·번호·상태 모두 null이다. */
+    private GroupBuy groupBuy(Contract c) {
+        if (c.getGroupBuyId() == null) return new GroupBuy(null, null, null);
+        return groupBuys.findById(c.getGroupBuyId())
+                .map(g -> new GroupBuy(g.getId(), g.getGroupBuyNumber(), g.getStatus().name()))
+                .orElse(new GroupBuy(c.getGroupBuyId(), null, null));
     }
 
     private String actor(List<ContractHistory> entries, ContractEventType type) {

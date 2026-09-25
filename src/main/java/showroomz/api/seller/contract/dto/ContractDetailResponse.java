@@ -168,11 +168,14 @@ public record ContractDetailResponse(
     ) {
     }
 
-    @Schema(description = "공구 생성 게이트 — 계약 1건 = 공구 1건(설계서 1-8)")
+    /**
+     * 연결된 공구 — B5a·B5b 「공구 관리에서 보기 ↗」의 목적지. 공구는 체결 트랜잭션 안에서 자동 생성되므로
+     * 생성 진입점이 없다(공구 설계서 0-2 · 2-4). 체결 전에는 둘 다 null이다.
+     */
+    @Schema(description = "연결된 공구 — 계약 1건 = 공구 1건. 체결 시 자동 생성된다")
     public record GroupBuy(
             @Schema(description = "생성된 공구 ID", nullable = true) Long groupBuyId,
-            @Schema(description = "지금 공구를 만들 수 있는지 — 체결완료이고 아직 공구가 없을 때만 true")
-            boolean canCreate
+            @Schema(description = "공구번호", example = "GB-20260806-018", nullable = true) String groupBuyNumber
     ) {
     }
 
@@ -200,7 +203,6 @@ public record ContractDetailResponse(
             boolean canCancelRequest,
             boolean canRequestResend,
             boolean canRecordPayment,
-            boolean canCreateGroupBuy,
             boolean canDuplicate
     ) {
     }
