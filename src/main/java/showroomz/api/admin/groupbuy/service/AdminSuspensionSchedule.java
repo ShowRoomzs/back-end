@@ -52,9 +52,18 @@ public class AdminSuspensionSchedule {
                 && executeScheduledAt.isBefore(groupBuy.getEndAt());
     }
 
-    /** 기본 소명 기한으로 고를 수 있는 집행 날짜가 하나라도 있는가 — 없으면 통지 버튼이 잠긴다(NO_WINDOW_BEFORE_END). */
+    /**
+     * 기본 소명 기한으로 유효한 집행 시각이 있는가. 칩은 종료 전날까지만 나열하지만, 직접 입력은 종료일의
+     * {@code end_at} 이전도 허용한다. 버튼 판정은 POST의 검증 범위와 같아야 한다.
+     */
     public boolean hasWindow(GroupBuy groupBuy, LocalDateTime now) {
-        return executionDates(groupBuy, now).stream().anyMatch(AdminGroupBuyDto.ExecutionDate::selectable);
+        LocalDate today = now.toLocalDate();
+        LocalDateTime afterAppeal = minAppealDeadline(today)
+                .plus(properties.getSuspension().getMinGapAfterAppeal())
+                .plusNanos(1);
+        LocalDateTime firstNoticeDate = minExecutionDate(today).atStartOfDay();
+        LocalDateTime earliest = afterAppeal.isAfter(firstNoticeDate) ? afterAppeal : firstNoticeDate;
+        return earliest.isBefore(groupBuy.getEndAt());
     }
 
     /**
