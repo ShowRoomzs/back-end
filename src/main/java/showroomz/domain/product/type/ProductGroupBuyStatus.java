@@ -24,4 +24,14 @@ public enum ProductGroupBuyStatus {
     public boolean isConnected() {
         return this != NOT_CONNECTED;
     }
+
+    /**
+     * 지금 살 수 있는지 — <b>진행중만</b>이다. {@link #isConnected()}는 상세 진입용 의미라 준비중·준비완료도 참이다.
+     *
+     * <p>공구 모듈이 이 값을 동기화하기 전에는 모든 상품이 NOT_CONNECTED라 차이가 드러나지 않았다.
+     * 구매 판정에 {@code isConnected()}를 쓰면 시작 전 공구 상품이 결제된다(공구 설계서 1-11 · P3 선행 조건).
+     */
+    public boolean isPurchasable() {
+        return this == IN_PROGRESS;
+    }
 }

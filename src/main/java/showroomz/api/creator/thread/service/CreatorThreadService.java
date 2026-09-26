@@ -20,6 +20,8 @@ import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.connection.type.ConnectionStatus;
 import showroomz.domain.connection.type.ConnectionType;
+import showroomz.domain.contract.repository.ContractRepository;
+import showroomz.domain.contract.type.ContractStatus;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
@@ -37,8 +39,11 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,6 +60,7 @@ public class CreatorThreadService {
     private final MessageThreadService messageThreadService;
     private final MessageAttachmentRepository messageAttachmentRepository;
     private final MessageAttachmentService messageAttachmentService;
+    private final ContractRepository contractRepository;
 
     /**
      * §14-3 `연결됨` 탭. 안 읽은 수는 페이지 전체를 한 쿼리로 집계한다(스레드당 카운트 금지).
@@ -70,7 +76,27 @@ public class CreatorThreadService {
                 threads.getContent().stream().map(MessageThread::getId).toList(),
                 ParticipantType.CREATOR, creator.getId());
 
-        return PageResponse.of(threads.map(thread -> toListItem(thread, unreadByThread)));
+        Set<Long> marketsWithContract = marketsWithReceivedContract(creator, threads.getContent());
+
+        return PageResponse.of(threads.map(thread -> toListItem(thread, unreadByThread, marketsWithContract)));
+    }
+
+    /**
+     * [계약 확인] 게이트(§14-2) — 페이지의 브랜드 중 나에게 <b>도착한</b> 계약이 있는 곳을 한 쿼리로 모은다.
+     * 브랜드가 작성 중이거나 운영자가 반려한 계약은 스튜디오에 존재하지 않는 계약이라 세지 않는다.
+     */
+    private Set<Long> marketsWithReceivedContract(Creator creator, List<MessageThread> threads) {
+        List<Long> marketIds = threads.stream()
+                .map(thread -> thread.getConnection().getMarket())
+                .filter(Objects::nonNull)
+                .map(market -> market.getId())
+                .distinct()
+                .toList();
+        if (marketIds.isEmpty()) {
+            return Set.of();
+        }
+        return new HashSet<>(contractRepository.findMarketIdsWithReceivedContract(
+                creator.getId(), marketIds, ContractStatus.RECEIVED_BY_CREATOR));
     }
 
     private static String normalizeKeyword(String keyword) {
@@ -179,16 +205,17 @@ public class CreatorThreadService {
                                         .toList())));
     }
 
-    private ThreadListItem toListItem(MessageThread thread, Map<Long, Long> unreadByThread) {
+    private ThreadListItem toListItem(MessageThread thread, Map<Long, Long> unreadByThread,
+                                      Set<Long> marketsWithContract) {
         Connection connection = thread.getConnection();
         boolean isOperator = connection.getType() == ConnectionType.OPERATOR_CREATOR;
         String name = isOperator ? OPERATOR_CHANNEL_NAME : connection.getMarket().getMarketName();
         long unread = unreadByThread.getOrDefault(thread.getId(), 0L);
+        boolean hasContract = !isOperator && marketsWithContract.contains(connection.getMarket().getId());
 
-        // 계약 도메인은 이번 스코프 밖 — hasContract는 항상 false로 스텁(§3-2, 계약 작업 시 연결).
         return new ThreadListItem(
                 thread.getId(), name, isOperator ? null : connection.getMarket().getMarketImageUrl(),
-                isOperator, false, thread.getLastMessagePreview(), thread.getLastMessageAt(), unread);
+                isOperator, hasContract, thread.getLastMessagePreview(), thread.getLastMessageAt(), unread);
     }
 
     private MessageItem toMessageItem(Message message, Long myCreatorId, List<AttachmentSummary> attachments) {

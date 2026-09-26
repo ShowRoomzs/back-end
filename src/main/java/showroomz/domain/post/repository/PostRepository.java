@@ -83,8 +83,14 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
 
     Optional<Post> findByIdAndStatus(Long postId, PostStatus status);
 
-    /** C4 쇼룸 프로필의 "게시물 N" — 소비자에게 보이는 것만 센다(작성중·노출 중지·삭제 제외). */
-    long countByCreator_IdAndStatus(Long creatorId, PostStatus status);
+    /**
+     * C4 쇼룸 프로필의 "게시물 N" — 소비자에게 보이는 것만 센다(작성중·노출 중지·삭제 제외).
+     * 공구 게시물은 세지 않는다 — 피드에도 뜨지 않는 글이 숫자에만 잡히면 안 된다(31 설계 10-2 #15).
+     */
+    @Query("SELECT COUNT(p) FROM Post p " +
+           "WHERE p.creator.id = :creatorId AND p.status = :status " +
+           "AND p.postType = showroomz.domain.post.type.PostType.GENERAL")
+    long countByCreator_IdAndStatus(@Param("creatorId") Long creatorId, @Param("status") PostStatus status);
 
     /**
      * C14 "활동 중인 쇼룸" — 최근에 게시물을 올린 쇼룸 순.

@@ -2,8 +2,7 @@ package showroomz.api.admin.contract.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import showroomz.api.seller.auth.repository.SellerRepository;
-import showroomz.api.app.auth.entity.RoleType;
+import showroomz.api.admin.common.AdminOperatorResolver;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.repository.ContractRepository;
 import showroomz.domain.contract.type.ContractStatus;
@@ -13,7 +12,7 @@ import showroomz.global.error.exception.*;
 @RequiredArgsConstructor
 public class AdminContractAccess {
     private final ContractRepository contracts;
-    private final SellerRepository sellers;
+    private final AdminOperatorResolver operators;
 
     public Contract read(Long id) {
         return visible(contracts.findDetailById(id).orElseThrow(() -> new BusinessException(ErrorCode.CONTRACT_NOT_FOUND)));
@@ -29,10 +28,7 @@ public class AdminContractAccess {
     }
 
     public String operatorName(Long operatorId) {
-        if (operatorId == null) throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
-        return sellers.findById(operatorId).filter(s -> s.getRoleType() == RoleType.ADMIN)
-                .map(s -> s.getName() == null ? "운영자" : s.getName())
-                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS));
+        return operators.operatorName(operatorId);
     }
 
     public void requireConclusionPermission(Long operatorId) {

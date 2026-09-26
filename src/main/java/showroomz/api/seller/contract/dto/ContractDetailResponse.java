@@ -46,6 +46,15 @@ public record ContractDetailResponse(
         @Schema(description = "재작성 출처 계약 ID — 작성 화면 상단이 출처를 밝힌다(§26-5)", nullable = true)
         Long sourceContractId,
 
+        @Schema(description = "브랜드의 마지막 임시저장 시각 — 작성 화면의 「마지막 저장」. "
+                + "어드민 반려·서명 반영 같은 다른 변경에는 바뀌지 않는다. 한 번도 저장하지 않았으면 null",
+                example = "2026-08-13T10:32:05", nullable = true)
+        LocalDateTime updatedAt,
+
+        @Schema(description = "체결 시각 — 체결완료가 아니면 null. closure는 종결 3종(거절·만료·취소) 전용이라 "
+                + "체결은 거기에 담기지 않는다", example = "2026-08-20T15:00:00", nullable = true)
+        LocalDateTime concludedAt,
+
         Counterparty counterparty,
         Period period,
         List<Item> items,
@@ -168,11 +177,14 @@ public record ContractDetailResponse(
     ) {
     }
 
-    @Schema(description = "공구 생성 게이트 — 계약 1건 = 공구 1건(설계서 1-8)")
+    /**
+     * 연결된 공구 — B5a·B5b 「공구 관리에서 보기 ↗」의 목적지. 공구는 체결 트랜잭션 안에서 자동 생성되므로
+     * 생성 진입점이 없다(공구 설계서 0-2 · 2-4). 체결 전에는 둘 다 null이다.
+     */
+    @Schema(description = "연결된 공구 — 계약 1건 = 공구 1건. 체결 시 자동 생성된다")
     public record GroupBuy(
             @Schema(description = "생성된 공구 ID", nullable = true) Long groupBuyId,
-            @Schema(description = "지금 공구를 만들 수 있는지 — 체결완료이고 아직 공구가 없을 때만 true")
-            boolean canCreate
+            @Schema(description = "공구번호", example = "GB-20260806-018", nullable = true) String groupBuyNumber
     ) {
     }
 
@@ -200,7 +212,6 @@ public record ContractDetailResponse(
             boolean canCancelRequest,
             boolean canRequestResend,
             boolean canRecordPayment,
-            boolean canCreateGroupBuy,
             boolean canDuplicate
     ) {
     }

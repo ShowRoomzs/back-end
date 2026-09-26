@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+.dv-sw{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:-2px 0 2px}
+.dv-swl{font:600 10px/1 Pretendard,sans-serif;color:rgba(0,0,0,.38);letter-spacing:.02em;margin-right:2px}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C13 배송지 관리 — 목록 · 추가/수정</span></div>
+<p class="dv-tsub">마이 탭 &gt; 쇼핑 정보에서 진입하고, 결제 화면에서도 같은 목록을 불러옵니다. 기본 배송지 지정·삭제 모달·배송 메모 시트가 동작합니다. 우측 Tweaks의 <b>state</b>로 빈 상태를 확인할 수 있습니다.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>C13 배송지 목록</div>
+<div class="dv-sw">
+<span class="dv-swl">목록</span>
+<sc-for list="{{ swList }}" as="o" hint-placeholder-count="2">
+<div onClick="{{ o.pick }}" style="padding:6px 10px;border-radius:6px;cursor:pointer;font:{{ o.font }};background:{{ o.bg }};color:{{ o.color }};border:1px solid {{ o.border }}">{{ o.label }}</div>
+</sc-for>
+</div>
+<div class="dv-card">
+<div data-screen-label="C13 배송지 목록" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">배송지 관리</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<sc-if value="{{ hasList }}" hint-placeholder-val="{{ true }}">
+<div>
+<sc-for list="{{ list }}" as="a" hint-placeholder-count="3">
+<div style="padding:16px 14px;border-top:{{ a.divider }}">
+<div style="display:flex;align-items:center;gap:7px;height:20px">
+<span style="font:600 14.5px/1 Pretendard,sans-serif">{{ a.receiver }}</span>
+<sc-if value="{{ a.isDefault }}" hint-placeholder-val="{{ true }}">
+<span style="flex:none;padding:4px 8px;border-radius:8px;background:#FEF4F6;color:#CF3D61;font:600 11px/1 Pretendard,sans-serif">기본 배송지</span>
+</sc-if>
+<div style="flex:1"></div>
+<sc-if value="{{ a.canSetDefault }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ a.setDefault }}" style="flex:none;display:flex;align-items:center;padding:7px 0 7px 12px;margin:-15px 0;cursor:pointer" style-active="opacity:.55">
+<span style="height:30px;padding:0 11px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;font:600 11.5px/1 Pretendard,sans-serif;color:#3C3C3C">기본 배송지</span>
+</div>
+</sc-if>
+</div>
+<div style="margin-top:8px;font:400 13px/1.4 Pretendard,sans-serif;color:#3C3C3C">{{ a.phone }}</div>
+<div style="margin-top:5px;font:400 13px/1.6 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">{{ a.address }}</div>
+<sc-if value="{{ a.hasMemo }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:6px;font:400 12px/1.5 Pretendard,sans-serif;color:#737373">{{ a.memo }}</div>
+</sc-if>
+<div style="margin-top:7px;display:flex;gap:8px">
+<div style="flex:none;display:flex;align-items:center;padding:5px 0;margin:-5px 0;cursor:pointer" style-active="opacity:.55"><span style="height:34px;padding:0 14px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;font:600 12.5px/1 Pretendard,sans-serif;color:#3C3C3C">수정</span></div>
+<div onClick="{{ a.askDelete }}" style="flex:none;display:flex;align-items:center;padding:5px 0;margin:-5px 0;cursor:pointer" style-active="opacity:.55"><span style="height:34px;padding:0 14px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;font:600 12.5px/1 Pretendard,sans-serif;color:#3C3C3C">삭제</span></div>
+</div>
+</div>
+</sc-for>
+<div style="height:26px"></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+<div style="padding:120px 40px 0;display:flex;flex-direction:column;align-items:center">
+<svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#D8D8DA" stroke-width="1.2" stroke-linejoin="miter" style="display:block"><path d="M12 21c4.5-4.8 7-8 7-11a7 7 0 1 0-14 0c0 3 2.5 6.2 7 11z"></path><circle cx="12" cy="10" r="2.6"></circle></svg>
+<div style="margin-top:18px;font:600 15.5px/1.5 Pretendard,sans-serif;text-align:center">저장된 배송지가 없어요</div>
+<div style="margin-top:7px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-align:center;text-wrap:pretty">배송지를 미리 등록해 두면<br>주문할 때 주소를 다시 쓰지 않아도 돼요</div>
+</div>
+</sc-if>
+
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:12px 14px 26px;background:#fff">
+<div style="height:52px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 15.5px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">배송지 추가</div>
+</div>
+
+<sc-if value="{{ deleteOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeDelete }}" style="position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:10;display:flex;align-items:center;justify-content:center;padding:0 32px">
+<div style="width:100%;background:#fff;border-radius:8px;overflow:hidden">
+<div style="padding:26px 22px 20px;text-align:center">
+<div style="font:700 16.5px/1.5 Pretendard,sans-serif;letter-spacing:-.3px">배송지를 삭제할까요?</div>
+<div style="margin-top:9px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">{{ deleteTarget }}<br>삭제하면 되돌릴 수 없어요</div>
+</div>
+<div style="display:flex;gap:8px;padding:0 18px 18px">
+<div onClick="{{ closeDelete }}" style="flex:1;height:48px;border:1px solid #DCDCDE;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">취소</div>
+<div onClick="{{ confirmDelete }}" style="flex:1;height:48px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">삭제하기</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+<p class="dv-note"><b>카드가 아니라 행</b> — 배송지는 <b>글자만으로 판별</b>되는 정보라 테두리 카드로 감싸지 않고 0.5px 구분선 행으로 두었습니다. <b>받는 분</b> → 연락처 → 주소 → 배송 메모 순으로, <b>받는 분 이름이 가장 크고 굵게</b>입니다 — 별칭(집·회사)을 없앴으므로 배송지를 구별하는 첫 단서는 누구에게 가는가입니다.<br><br><b>기본 배송지</b> — 로즈 틴트 배지로 표시하고, 기본이 아닌 항목에만 [기본으로 설정]이 붙습니다(눌러 보세요). 기본 배송지 행에는 그 버튼이 없어 <b>이미 기본이라는 사실이 버튼 부재로도</b> 읽힙니다.<br><br><b>액션 배치</b> — [기본으로 설정]은 <b>이름 줄 우측</b>에 작은 외곽선 버튼(높이 30 · 라벨 11.5)으로 두었습니다 — 아래 편집 버튼(34)보다 한 단계 작아 같은 줄의 배지와 무게가 맞습니다. 기본 배송지 배지와 같은 줄이라 <b>상태와 그 상태를 바꾸는 버튼이 나란히</b> 놓이고, 아래 줄은 편집 계열([수정]·[삭제])만 남아 성격이 갈립니다. 기본 배송지 행에는 배지만 있고 버튼이 없습니다. 우측 끝 아이콘(⋯)으로 숨기면 탭 수가 늘고, 배송지는 자주 손대는 데이터가 아니라 발견성이 더 중요합니다. <b>삭제도 중립 외곽선</b>이며 로즈는 쓰지 않습니다(파괴적 액션에 강조색 금지 규칙).<br><br><b>삭제 확인</b> — 받는 분과 주소를 모달 문구에 넣어 <b>어느 것을 지우는지</b> 명시합니다. 좌 [취소](중립 외곽선) / 우 [삭제하기](로즈 채움) 배치입니다 — 확인 모달은 이미 한 번 걸러진 단계라, 여기서는 <b>이 모달에서 하려던 일</b>을 주 버튼으로 둡니다.<br><br><b>남은 결정</b> — ① 배송지 개수 상한(보통 10~20개) ② 기본 배송지 삭제 시 다음 기본을 자동 지정할지 ③ 최근 배송지 자동 저장 여부 ④ 결제 화면에서의 배송지 선택 시트를 이 목록과 공유할지.</p>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>C13-1 배송지 추가</div>
+<div class="dv-sw">
+<span class="dv-swl">입력</span>
+<sc-for list="{{ swForm }}" as="o" hint-placeholder-count="2">
+<div onClick="{{ o.pick }}" style="padding:6px 10px;border-radius:6px;cursor:pointer;font:{{ o.font }};background:{{ o.bg }};color:{{ o.color }};border:1px solid {{ o.border }}">{{ o.label }}</div>
+</sc-for>
+</div>
+<div class="dv-card">
+<div data-screen-label="C13-1 배송지 추가" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">배송지 추가</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:20px 14px 0">
+<div style="font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">받는 분</div>
+<div style="margin-top:9px;height:48px;border:1px solid #E3E3E5;border-radius:8px;display:flex;align-items:center;padding:0 13px;font:400 15px/1 Pretendard,sans-serif;color:{{ fieldColor }}">{{ receiverValue }}</div>
+</div>
+
+<div style="padding:18px 14px 0">
+<div style="font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">연락처</div>
+<div style="margin-top:9px;height:48px;border:1px solid #E3E3E5;border-radius:8px;display:flex;align-items:center;padding:0 13px;font:400 15px/1 Pretendard,sans-serif;color:{{ fieldColor }}">{{ phoneValue }}</div>
+</div>
+
+<div style="padding:18px 14px 0">
+<div style="font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">주소</div>
+<div style="margin-top:9px;display:flex;gap:8px">
+<div style="flex:1;height:48px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;padding:0 13px;font:400 15px/1 Pretendard,sans-serif;color:{{ fieldColor }}">{{ zipValue }}</div>
+<div style="flex:none;height:48px;padding:0 16px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;background:#fff;display:flex;align-items:center;font:600 14px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">주소 검색</div>
+</div>
+<div style="margin-top:8px;height:48px;border:1px solid #E3E3E5;border-radius:8px;display:flex;align-items:center;padding:0 13px;font:400 15px/1.4 Pretendard,sans-serif;color:{{ fieldColor }};background:{{ roadBg }}">{{ roadValue }}</div>
+<div style="margin-top:8px;height:48px;border:1px solid #E3E3E5;border-radius:8px;display:flex;align-items:center;padding:0 13px;font:400 15px/1 Pretendard,sans-serif;color:{{ detailColor }}">{{ detailValue }}</div>
+</div>
+
+<div style="padding:18px 14px 0">
+<div style="font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">배송 메모 <span style="font-weight:400;color:#737373">(선택)</span></div>
+<div onClick="{{ openMemo }}" style="margin-top:9px;height:48px;border:1px solid #E3E3E5;border-radius:8px;display:flex;align-items:center;justify-content:space-between;padding:0 13px;cursor:pointer" style-active="background:#F7F7F8">
+<span style="font:400 15px/1 Pretendard,sans-serif;color:{{ memoColor }}">{{ memoLabel }}</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 9l7 7 7-7"></path></svg>
+</div>
+<sc-if value="{{ memoCustom }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:8px;height:48px;border:1px solid #E3E3E5;border-radius:8px;display:flex;align-items:center;padding:0 13px;font:400 15px/1 Pretendard,sans-serif;color:#B5B5B5">배송 시 요청사항을 입력해 주세요</div>
+<div style="margin-top:7px;display:flex;align-items:baseline;justify-content:space-between">
+<span style="font:400 11.5px/1.5 Pretendard,sans-serif;color:#737373">기사님께 그대로 전달돼요</span>
+<span style="font:400 12px/1 Pretendard,sans-serif;color:#737373;padding-right:2px">0/50</span>
+</div>
+</sc-if>
+</div>
+
+<div style="padding:16px 14px 0">
+<div onClick="{{ toggleDefault }}" style="display:flex;align-items:center;gap:10px;padding:8px 0;cursor:pointer" style-active="opacity:.6">
+<span style="width:21px;height:21px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:{{ defBg }};border:{{ defBorder }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{ defCheck }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg></span>
+<span style="flex:1;min-width:0;font:500 13.5px/1 Pretendard,sans-serif;color:#0F0F0F">기본 배송지로 설정</span>
+</div>
+</div>
+
+<div style="height:40px"></div>
+
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:12px 14px 26px;background:#fff">
+<div style="height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:{{ saveBg }};color:{{ saveColor }};font:600 15.5px/1 Pretendard,sans-serif;cursor:{{ saveCursor }}" style-active="opacity:{{ savePress }}">저장</div>
+</div>
+
+<sc-if value="{{ memoOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeMemo }}" style="position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:10"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:11;background:#fff;border-radius:8px 8px 0 0;padding:8px 0 24px;box-shadow:0 -8px 40px rgba(0,0,0,.16)">
+<div style="width:36px;height:4px;border-radius:100px;background:#DEDEE0;margin:0 auto 14px"></div>
+<div style="padding:0 20px 12px;font:600 15px/1.4 Pretendard,sans-serif;text-align:center">배송 메모</div>
+<sc-for list="{{ memos }}" as="m" hint-placeholder-count="5">
+<div onClick="{{ m.pick }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 20px;border-top:{{ m.divider }};cursor:pointer" style-active="background:#F7F7F8">
+<span style="font:{{ m.font }};color:{{ m.color }}">{{ m.label }}</span>
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#F2456E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block;opacity:{{ m.checked }}"><path d="M4.5 12.5l5 5 10-11"></path></svg>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+</div>
+</div>
+<p class="dv-note"><b>순서</b> — 받는 분 → 연락처 → 주소 → 배송 메모 → 기본 설정.<br><br><b>주소</b> — 우편번호 + [주소 검색](잉크 채움) → 도로명 주소(자동 입력) → 상세 주소. 도로명은 <b>검색 결과로만 채워지는 필드</b>라 직접 타이핑하지 않게 두었고(입력 전에는 회색 배경 + "주소 검색으로 입력돼요"로 <b>스스로 못 쓰는 칸</b>임을 알림), 상세 주소만 사용자가 씁니다. 우측 Tweaks의 <b>form</b>으로 입력 전·후를 확인해 보세요.<br><br><b>저장 활성 조건</b> — 필수 항목(받는 분 · 연락처 · 우편번호 · 도로명 · 상세 주소)이 모두 채워져야 [저장]이 로즈로 켜집니다. 입력 전에는 회색 비활성이고, <b>버튼을 숨기지는 않습니다</b> — 무엇을 향해 입력하는지가 보여야 끝이 예측됩니다. 배송 메모는 선택이라 활성 조건에서 제외했습니다. 주소 검색 버튼은 <b>중립 외곽선</b>입니다 — 이 화면의 주 액션은 하단 [저장]이고, 폼 안의 보조 액션이 색으로 앞서면 안 됩니다.<br><br><b>배송 메모</b> — 자유 입력 대신 <b>시트 선택</b>이 기본입니다(문 앞에 두세요 · 경비실에 맡겨주세요 · 배송 전 연락 주세요 · 부재 시 전화 · 직접 입력). 자유 입력만 두면 기사에게 전달되지 않는 문장이 쌓입니다. <b>[직접 입력]</b>을 고르면 그 아래 입력 필드가 펼쳐지고 <b>50자 제한</b>이 붙습니다(시트에서 골라 확인해 보세요) — 송장에 실리는 문구라 길면 잘리므로, 글자 수를 필드 우측에 상시 노출합니다.<br><br><b>주소 검색</b> — <b>카카오 우편번호 서비스(Daum Postcode)</b>를 연동합니다. SDK가 자체 검색 UI를 오버레이로 제공하므로 <b>앞단에서 검색 화면을 따로 그리지 않습니다</b> — 직접 만들면 검색어 처리·지번 병기·건물명 매칭을 중복 구현하게 되고 도로명 개정도 직접 따라가야 합니다. 선택 결과(우편번호·도로명)를 받아 이 화면의 두 필드를 채우고 <b>상세 주소 칸으로 포커스</b>를 이동시킵니다.<br><br><b>남은 결정</b> — ① 카카오 SDK 오버레이의 테마 커스터마이징 범위 ② 공동현관 비밀번호 필드 필요 여부 ③ 연락처 인증(본인 명의 외 수취인) 정책 ④ 배송 메모 직접 입력 시 글자 수 상한.</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;배송지 있음&quot;,&quot;빈 상태&quot;],&quot;default&quot;:&quot;배송지 있음&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;목록 상태&quot;},&quot;form&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;입력 전&quot;,&quot;입력 후&quot;],&quot;default&quot;:&quot;입력 후&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;배송지 추가&quot;}}">
+class Component extends DCLogic {
+  state = { defaultId: 'a1', deleteId: null, memo: null, memoOpen: false, isDefault: true, preset: '집' };
+
+  renderVals(){
+    const ADDRS = [
+      { id:'a1', name:'집', receiver:'김수민', phone:'010-1234-5678', address:'서울특별시 강남구 테헤란로 000, 00동 000호 (06234)', memo:'문 앞에 두세요' },
+      { id:'a2', name:'회사', receiver:'김수민', phone:'010-1234-5678', address:'서울특별시 마포구 양화로 00, 0층 (04044)', memo:'경비실에 맡겨주세요' },
+      { id:'a3', name:'부모님댁', receiver:'김영희', phone:'010-9876-5432', address:'경기도 성남시 분당구 판교로 000, 000동 0000호 (13494)', memo:'' }
+    ];
+    const sw = (key, opts, def, propKey) => {
+      const cur = this.state[key] ?? this.props[propKey || key] ?? def;
+      return opts.map(label => ({
+        label,
+        pick: () => this.setState({ [key]: label }),
+        bg: label === cur ? '#1a1a1a' : '#fff',
+        color: label === cur ? '#fff' : 'rgba(0,0,0,.62)',
+        border: label === cur ? '#1a1a1a' : 'rgba(0,0,0,.14)',
+        font: (label === cur ? '600' : '400') + ' 11px/1 Pretendard,sans-serif'
+      }));
+    };
+    const empty = (this.state.listState ?? this.props.state ?? '배송지 있음') === '빈 상태';
+    const rows = empty ? [] : ADDRS;
+
+    const list = rows.map((a, i) => ({
+      name: a.name,
+      receiver: a.receiver,
+      phone: a.phone,
+      address: a.address,
+      hasMemo: !!a.memo,
+      memo: a.memo,
+      isDefault: this.state.defaultId === a.id,
+      canSetDefault: this.state.defaultId !== a.id,
+      divider: i === 0 ? 'none' : '.5px solid #F0F0F0',
+      setDefault: () => this.setState({ defaultId: a.id }),
+      askDelete: () => this.setState({ deleteId: a.id })
+    }));
+
+    const target = ADDRS.find(a => a.id === this.state.deleteId);
+
+    const blank = (this.state.form ?? this.props.form ?? '입력 후') === '입력 전';
+
+    const MEMOS = ['문 앞에 두세요', '경비실에 맡겨주세요', '배송 전 연락 주세요', '부재 시 전화 주세요', '직접 입력'];
+    const memos = MEMOS.map((label, i) => {
+      const on = this.state.memo === label;
+      return {
+        label,
+        checked: on ? 1 : 0,
+        divider: i === 0 ? 'none' : '.5px solid #F0F0F0',
+        font: (on ? '600' : '400') + ' 15.5px/1.35 Pretendard,sans-serif',
+        color: on ? '#0F0F0F' : '#3C3C3C',
+        pick: () => this.setState({ memo: label, memoOpen: false })
+      };
+    });
+
+    const d = this.state.isDefault;
+    return {
+      swList: sw('listState', ['배송지 있음', '빈 상태'], '배송지 있음', 'state'),
+      swForm: sw('form', ['입력 전', '입력 후'], '입력 후'),
+      nameValue: blank ? '예) 집, 회사' : '집',
+      nameColor: blank ? '#B5B5B5' : '#0F0F0F',
+      fieldColor: blank ? '#B5B5B5' : '#0F0F0F',
+      receiverValue: blank ? '받는 분 이름을 입력해 주세요' : '김수민',
+      phoneValue: blank ? '숫자만 입력해 주세요' : '010-1234-5678',
+      zipValue: blank ? '우편번호' : '06234',
+      roadValue: blank ? '주소 검색으로 입력돼요' : '서울특별시 강남구 테헤란로 000',
+      roadBg: blank ? '#FAFAFA' : '#fff',
+      detailValue: blank ? '상세 주소를 입력해 주세요' : '00동 000호',
+      detailColor: blank ? '#B5B5B5' : '#0F0F0F',
+      saveBg: blank ? '#F4F4F5' : '#F2456E',
+      saveColor: blank ? '#B5B5B5' : '#fff',
+      saveCursor: blank ? 'default' : 'pointer',
+      savePress: blank ? '1' : '.75',
+      list,
+      hasList: rows.length > 0,
+      isEmpty: rows.length === 0,
+      deleteOpen: !!target,
+      deleteTarget: target ? (target.receiver + ' · ' + target.address) : '',
+      closeDelete: () => this.setState({ deleteId: null }),
+      confirmDelete: () => this.setState({ deleteId: null }),
+      memos,
+      memoCustom: !blank && this.state.memo === '직접 입력',
+      memoOpen: this.state.memoOpen,
+      openMemo: () => this.setState({ memoOpen: true }),
+      closeMemo: () => this.setState({ memoOpen: false }),
+      memoLabel: (!blank && this.state.memo) || '배송 메모를 선택해 주세요',
+      memoColor: (!blank && this.state.memo) ? '#0F0F0F' : '#B5B5B5',
+      defBg: d ? '#F2456E' : '#fff',
+      defBorder: d ? '1.5px solid #F2456E' : '1.5px solid #DEDEE0',
+      defCheck: d ? '#fff' : '#DEDEE0',
+      toggleDefault: () => this.setState(s => ({ isDefault: !s.isDefault }))
+    };
+  }
+}
+</script>
+</body>
+</html>

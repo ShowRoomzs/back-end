@@ -2,6 +2,7 @@ package showroomz.api.seller.contract;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractClause;
@@ -9,6 +10,7 @@ import showroomz.domain.contract.entity.ContractClauseVersion;
 import showroomz.domain.contract.type.ContractClauseVersionStatus;
 import showroomz.domain.contract.type.ContractStatus;
 import showroomz.domain.contract.type.FixedFeeTrigger;
+import showroomz.domain.groupbuy.service.GroupBuyFactory;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
 import showroomz.domain.product.entity.Product;
@@ -30,11 +32,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>앞의 세 클래스가 규칙(검증·전이·권한)을 본다면 여기는 <b>화면이 서버에서 받아야 하는 값</b>을 본다.
  * 시안이 문구로 못박은 것들 — B1 정산 요약의 원천징수 자동 전환, C3 확인 모달의 요약 수치,
- * B6·B7·B8 종결 카드가 서로 다르게 그려지는 근거, B4a에서 사라지는 버튼, B5b의 공구 생성 게이트 —
+ * B6·B7·B8 종결 카드가 서로 다르게 그려지는 근거, B4a에서 사라지는 버튼, B5b의 연결된 공구 —
  * 이 값이 비거나 뒤바뀌면 FE는 화면을 못 그리거나 없는 사실을 지어내게 된다.
  */
 @DisplayName("[통합] 파트너센터 계약 화면 대조")
 class SellerContractScreenSpecIntegrationTest extends SellerContractTestSupport {
+
+    @Autowired
+    private GroupBuyFactory groupBuyFactory;
 
     // ── B1 · 정산 조건 요약 ────────────────────────────────────────────────
 
@@ -202,32 +207,30 @@ class SellerContractScreenSpecIntegrationTest extends SellerContractTestSupport 
                 .andExpect(jsonPath("$.code").value("CONTRACT_RESEND_NOT_ALLOWED"));
     }
 
-    // ── B5 · B5b · 공구 생성 게이트 ────────────────────────────────────────
+    // ── B5 · B5b · 연결된 공구 ────────────────────────────────────────────
 
     @Test
-    @DisplayName("체결완료 1건당 공구 1건이다 — 공구가 붙으면 게이트가 닫히고 딥링크만 남는다")
-    void groupBuyGateOpensOncePerConcludedContract() throws Exception {
+    @DisplayName("체결완료 1건당 공구 1건이다 — 생성 버튼은 없고 「공구 관리에서 보기」 딥링크만 남는다")
+    void concludedContractLinksToItsGroupBuy() throws Exception {
         long contractId = seedInStatus(ContractStatus.CONCLUDED).getId();
 
-        detail(contractId)
-                .andExpect(jsonPath("$.groupBuy.groupBuyId").doesNotExist())
-                .andExpect(jsonPath("$.groupBuy.canCreate").value(true))
-                .andExpect(jsonPath("$.permissions.canCreateGroupBuy").value(true));
-
-        transactionTemplate.executeWithoutResult(tx ->
-                contractRepository.assignGroupBuy(contractId, 777L));
+        // 공구는 체결 트랜잭션이 만든다(공구 설계서 0-2) — 여기서는 적재한 체결 계약에 같은 생성 경로를 태운다.
+        String groupBuyNumber = transactionTemplate.execute(tx -> groupBuyFactory.createFromConcludedContract(
+                contractRepository.findById(contractId).orElseThrow(), LocalDateTime.now()).getGroupBuyNumber());
 
         detail(contractId)
-                .andExpect(jsonPath("$.groupBuy.groupBuyId").value(777))
-                // 「공구가 이미 생성돼 있어 추가로 만들 수 없습니다」
-                .andExpect(jsonPath("$.groupBuy.canCreate").value(false))
-                .andExpect(jsonPath("$.permissions.canCreateGroupBuy").value(false))
+                .andExpect(jsonPath("$.groupBuy.groupBuyId").exists())
+                .andExpect(jsonPath("$.groupBuy.groupBuyNumber").value(groupBuyNumber))
+                // 생성 진입점이 없다 — 버튼 판정 자체가 사라졌다.
+                .andExpect(jsonPath("$.groupBuy.canCreate").doesNotExist())
+                .andExpect(jsonPath("$.permissions.canCreateGroupBuy").doesNotExist())
                 // 공구가 생겼다고 지급 기록까지 닫히지는 않는다 — 두 버튼은 서로 무관하다.
                 .andExpect(jsonPath("$.permissions.canRecordPayment").value(true));
 
-        // 체결 전에는 게이트 자체가 없다.
+        // 체결 전에는 연결된 공구가 없다.
         detail(seedInStatus(ContractStatus.SIGNING).getId())
-                .andExpect(jsonPath("$.groupBuy.canCreate").value(false));
+                .andExpect(jsonPath("$.groupBuy.groupBuyId").doesNotExist())
+                .andExpect(jsonPath("$.groupBuy.groupBuyNumber").doesNotExist());
     }
 
     // ── A2 · A2a · 빈 목록 두 종류 ─────────────────────────────────────────

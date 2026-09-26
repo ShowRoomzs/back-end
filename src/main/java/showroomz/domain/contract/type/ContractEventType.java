@@ -16,6 +16,7 @@ public enum ContractEventType {
     BOTH_SIGNED_CONFIRMED,
     RESEND_REQUESTED,
     RESEND_HANDLED,
+    /** 계약서 생성본(제출본 PDF) 생성 — 검토 요청 시 SYSTEM이, 그때 실패했으면 어드민 첫 다운로드가 만든다. */
     CONTRACT_PDF_GENERATED,
     DOCUMENT_UPLOADED,
     DOCUMENT_DELETED,
@@ -24,5 +25,7 @@ public enum ContractEventType {
     EXPIRED,
     CANCELED,
     FIXED_FEE_PAID,
-    GROUP_BUY_CREATED
+    GROUP_BUY_CREATED,
+    /** 브랜드 삭제(작성중·검토 반려) — 행을 남기는 표시라 이력도 남는다. */
+    DELETED
 }

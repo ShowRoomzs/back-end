@@ -9,6 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
+import showroomz.api.admin.contract.service.ContractPdfRenderer;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.auth.token.AuthTokenProvider;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshTokenRepository;
@@ -17,10 +18,15 @@ import showroomz.domain.bank.repository.BankRepository;
 import showroomz.domain.changerequest.repository.BrandChangeRequestRepository;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.global.error.exception.BusinessException;
+import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.service.MailService;
 
 import java.util.Date;
 import java.util.function.Supplier;
+
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 
 /** 통합 테스트 공통 배선 — MockMvc·토큰 발급·DB 정리·메일 발송 검증 지점. */
 @IntegrationTest
@@ -62,12 +68,25 @@ public abstract class IntegrationTestSupport {
     @MockitoBean
     protected MailService mailService;
 
+    /**
+     * 계약서 PDF 렌더러 — 통합 테스트는 실제 Chromium을 띄우지 않는다. 검토 요청이 제출본을 만들므로
+     * 여기서 막지 않으면 Chromium 설치 여부·S3 자격 증명에 따라 결과가 달라진다(실제 렌더링은 contract-pdf 태그).
+     *
+     * <p>기본은 <b>실패</b>다 — 생성 실패가 검토 요청을 막지 않는다는 규칙을 모든 검토 요청이 함께 밟는다.
+     * 성공 경로가 필요한 테스트는 {@code doReturn(...).when(renderer)}로 바꾼다({@code when(...)}은 이 스텁을 호출해 던진다).
+     * 계약 테스트마다 따로 목을 선언하면 테스트 컨텍스트가 갈라져 캐시가 늘어난다 — 그래서 여기 한 곳에 둔다.
+     */
+    @MockitoBean
+    protected ContractPdfRenderer renderer;
+
     protected BrandFixture fixture;
     private DatabaseCleaner databaseCleaner;
     protected ChangeRequestSteps changeRequests;
 
     @BeforeEach
     void setUpSupport() {
+        doThrow(new BusinessException(ErrorCode.CONTRACT_PDF_GENERATION_FAILED))
+                .when(renderer).render(anyString(), anyString());
         fixture = new BrandFixture(sellerRepository, marketRepository, bankRepository, passwordEncoder, jdbcTemplate);
         databaseCleaner = new DatabaseCleaner(jdbcTemplate);
         changeRequests = new ChangeRequestSteps(mockMvc, objectMapper);

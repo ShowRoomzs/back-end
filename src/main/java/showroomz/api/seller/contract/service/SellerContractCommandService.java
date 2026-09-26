@@ -3,6 +3,7 @@ package showroomz.api.seller.contract.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.admin.contract.service.ContractDraftGenerator;
 import showroomz.api.seller.contract.dto.ContractCreateRequest;
 import showroomz.api.seller.contract.dto.ContractCreateResponse;
 import showroomz.api.seller.contract.dto.ContractDetailResponse;
@@ -72,6 +73,7 @@ public class SellerContractCommandService {
     private final ContractNumberGenerator contractNumberGenerator;
     private final ContractHistoryRecorder historyRecorder;
     private final ContractNotifier contractNotifier;
+    private final ContractDraftGenerator draftGenerator;
 
     // ── P3 · 작성 · 임시저장 ────────────────────────────────────────────────
 
@@ -104,7 +106,7 @@ public class SellerContractCommandService {
         // 버전 검사와 증가를 조건부 UPDATE 하나로 한다(설계서 3-3·3-4). 읽어서 비교만 하면
         // ① 동시 요청 둘이 같은 버전을 보고 나란히 통과하고 ② 항목만 바꾼 저장은 계약 행을
         // 더럽히지 않아 JPA가 버전을 올리지도 않는다 — 두 탭의 저장이 서로를 말없이 덮는다.
-        if (contractRepository.bumpVersion(contractId, request.version()) == 0) {
+        if (contractRepository.bumpVersion(contractId, request.version(), LocalDateTime.now()) == 0) {
             throw new BusinessException(ErrorCode.CONTRACT_MODIFIED_ELSEWHERE);
         }
         // 위 UPDATE가 영속성 컨텍스트를 비웠다 — 올라간 버전으로 다시 읽어 그 위에 값을 얹는다.
@@ -120,18 +122,28 @@ public class SellerContractCommandService {
         return detailAssembler.assemble(contract);
     }
 
-    /** 작성중 초안만 지운다. 검토 요청 이후의 되돌림은 취소이지 삭제가 아니다(설계서 4-2). */
+    /**
+     * 작성중·검토 반려만 지운다. 검토 대기 이후는 어드민이 보고 있거나 상대에게 나간 계약이라
+     * 되돌림은 취소이지 삭제가 아니다(설계서 4-2).
+     *
+     * <p>행을 지우지 않고 표시만 한다 — 검토 반려 계약은 계약번호·어드민 반려 이력·제출본 PDF를
+     * 이미 가지고 있다. 표시된 계약은 파트너센터·어드민 어디에서도 조회되지 않는다.
+     */
     public void delete(String sellerEmail, Long contractId) {
         Market market = accessGuard.resolveMarket(sellerEmail);
         Contract contract = accessGuard.loadOwned(contractId, market);
 
-        if (contract.getStatus() != ContractStatus.DRAFT) {
+        if (!contract.isDeletable()) {
             throw new BusinessException(ErrorCode.CONTRACT_EDIT_LOCKED);
         }
-        // 이력은 계약을 FK로 참조한다 — 초안이라도 생성 이력 한 줄은 반드시 있으므로
-        // 계약만 지우면 커밋에서 제약이 깨진다. 항목은 orphanRemoval이 함께 지운다.
-        historyRecorder.purgeForDeletedDraft(contract.getId());
-        contractRepository.delete(contract);
+
+        LocalDateTime now = LocalDateTime.now();
+        // 이력을 먼저 쌓는다 — 아래 UPDATE가 0행이면 예외로 함께 롤백된다.
+        historyRecorder.recordBySeller(contract, ContractEventType.DELETED, null, now);
+        // 다른 탭의 검토 요청과 경합하면 한쪽만 1행을 얻는다 — 읽은 뒤 상태가 바뀐 것이다.
+        if (contractRepository.softDelete(contract.getId(), ContractStatus.DELETABLE, now) == 0) {
+            throw new BusinessException(ErrorCode.CONTRACT_STATUS_CONFLICT);
+        }
     }
 
     // ── P4 · 검증 ──────────────────────────────────────────────────────────
@@ -197,6 +209,9 @@ public class SellerContractCommandService {
         contractNotifier.notifyAdmin(contract, ContractEventType.REVIEW_REQUESTED.name());
 
         contractRepository.saveAndFlush(contract);
+        // 제출본 PDF — 계약번호·조항 버전·제출 시각이 모두 정해진 뒤에 만든다. 실패해도 제출은 성공이고
+        // 생성본은 어드민 첫 다운로드가 만든다(기존 경로). 성공하면 응답에 제출본이 바로 실린다.
+        draftGenerator.generateOnSubmit(contract, now);
         return detailAssembler.assemble(contract);
     }
 

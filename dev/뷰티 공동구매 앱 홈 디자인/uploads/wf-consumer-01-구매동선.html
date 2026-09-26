@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>WF · 소비자 앱 01 — 구매 동선 (C4→C5→C7→C8→C9)</title>
+<style>
+/* ===== 와이어프레임 킷 v1 (그레이스케일 전용) ===== */
+body{margin:0;padding:32px;background:#e9e9e9;font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#333}
+.kit-header{max-width:2400px;margin:0 auto 24px;font-size:13px;color:#666}
+.kit-header h1{font-size:16px;color:#222;margin:0 0 4px}
+.flow{display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding-bottom:24px}
+.frame-wrap{flex:0 0 auto;width:390px}
+.frame-title{font-size:12px;font-weight:700;color:#222;margin:0 0 6px}
+.frame-title span{font-weight:400;color:#888}
+.frame{position:relative;width:390px;min-height:844px;background:#fff;border:2px solid #999;box-sizing:border-box}
+.fold{position:absolute;left:0;right:0;top:844px;border-top:2px dashed #bbb;z-index:5}
+.fold::after{content:"▲ 1st 뷰포트 (844px)";position:absolute;right:4px;top:2px;font-size:9px;color:#aaa}
+.arrow{flex:0 0 auto;width:90px;padding-top:380px;text-align:center}
+.arrow .line{font-size:26px;color:#666}
+.arrow .lbl{font-size:10px;color:#555;background:#fff;border:1px solid #ccc;border-radius:3px;padding:3px 4px;display:inline-block;line-height:1.4}
+/* 요소 */
+.hd{display:flex;align-items:center;gap:8px;padding:12px;border-bottom:1px solid #ddd;font-size:13px;font-weight:700}
+.hd .ic{margin-left:auto;display:flex;gap:10px}
+.ic i{width:22px;height:22px;border:1px solid #999;border-radius:4px;display:inline-block;font-style:normal;font-size:10px;text-align:center;line-height:22px;color:#777}
+.sec{padding:12px;border-bottom:1px solid #eee}
+.box{background:#ddd;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;color:#888;font-size:11px}
+.row{display:flex;gap:10px;align-items:center}
+.t1{font-size:14px;font-weight:700;color:#222}
+.t2{font-size:12px;color:#444}
+.t3{font-size:11px;color:#888}
+.price-old{font-size:12px;color:#999;text-decoration:line-through}
+.price{font-size:16px;font-weight:800;color:#111}
+.btn{display:block;text-align:center;background:#444;color:#fff;font-size:13px;font-weight:700;padding:13px;border-radius:6px}
+.btn-o{display:block;text-align:center;background:#fff;color:#444;border:1.5px solid #999;font-size:12px;font-weight:700;padding:9px;border-radius:6px}
+.btn-dis{display:block;text-align:center;background:#eee;color:#aaa;font-size:13px;font-weight:700;padding:13px;border-radius:6px}
+.badge{display:inline-block;font-size:10px;font-weight:700;border:1px solid #666;color:#555;border-radius:3px;padding:2px 6px}
+.badge-fill{display:inline-block;font-size:10px;font-weight:700;background:#666;color:#fff;border-radius:3px;padding:3px 6px}
+.chip{display:inline-block;font-size:11px;border:1px solid #ccc;border-radius:14px;padding:5px 10px;color:#555;margin:0 4px 4px 0}
+.input{background:#fafafa;border:1px solid #ccc;border-radius:5px;padding:10px;font-size:12px;color:#999}
+.tabbar{display:flex;border-top:1px solid #ddd;position:absolute;bottom:0;left:0;right:0;background:#fff}
+.tabbar div{flex:1;text-align:center;padding:10px 0 12px;font-size:10px;color:#888}
+.tabbar div.on{color:#222;font-weight:700}
+.tabbar div::before{content:"";display:block;width:20px;height:20px;border:1px solid #bbb;border-radius:4px;margin:0 auto 3px}
+.cta-fix{position:absolute;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;padding:10px 12px 14px;box-sizing:border-box;display:flex;gap:8px}
+.notice-fix{position:absolute;bottom:0;left:0;right:0;background:#f4f4f4;border-top:1.5px dashed #999;padding:10px 12px;box-sizing:border-box;font-size:10.5px;line-height:1.6;color:#555}
+.agree-fix{position:absolute;bottom:54px;left:0;right:0;background:#fff;border-top:1px solid #eee;padding:10px 12px;box-sizing:border-box;font-size:12px}
+.tabs{display:flex;border-bottom:1px solid #eee}
+.tabs .tab{flex:1;text-align:center;padding:12px 0;font-size:12.5px;color:#999}
+.tabs .tab.on{color:#222;font-weight:700;border-bottom:2px solid #222}
+.dots{display:flex;gap:5px;justify-content:center;padding:8px 0 2px}
+.dots i{width:6px;height:6px;border-radius:50%;background:#ccc;display:inline-block}
+.dots i.on{background:#444}
+.sheet-scrim{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;padding:16px;box-sizing:border-box;box-shadow:0 -2px 14px rgba(0,0,0,.12)}
+.sheet .grip{width:36px;height:4px;background:#ccc;border-radius:2px;margin:0 auto 14px}
+.acc{padding:12px}
+.acc summary{list-style:none;cursor:pointer;display:flex;align-items:center;font-size:13px;font-weight:700;color:#222}
+.acc summary::-webkit-details-marker{display:none}
+.acc .chev{margin-left:auto;color:#888;transition:transform .2s}
+.acc[open] .chev{transform:rotate(180deg)}
+.acc-body{line-height:2;margin-top:10px}
+.cta-fix .btn{flex:1;margin:0}
+.note{margin:8px 12px;border:1.5px dashed #999;background:#f4f4f4;border-radius:4px;padding:7px 9px;font-size:10.5px;line-height:1.55;color:#555}
+.note b{color:#333}
+.note.legal{border-color:#777;background:#ececec}
+.qty{display:inline-flex;border:1px solid #ccc;border-radius:4px;font-size:12px}
+.qty span{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-left:1px solid #ccc}
+.qty span:first-child{border-left:0}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#444;padding:6px 0}
+.check::before{content:"";flex:0 0 16px;height:16px;border:1.5px solid #999;border-radius:3px;margin-top:1px}
+hr.dv{border:0;border-top:8px solid #f1f1f1;margin:0}
+.ext-btn{font-size:10px;border:1px solid #999;border-radius:12px;padding:2px 8px;color:#555;white-space:nowrap}
+.postcard{padding-bottom:16px}
+.postcard + .postcard{border-top:1px solid #ddd;padding-top:16px;margin-top:0}
+.postcard .thumb{width:100%;height:150px;margin-bottom:8px}
+.postcard .title{font-size:13px;font-weight:700;color:#222;line-height:1.4}
+.postcard .desc{font-size:11.5px;color:#777;margin-top:4px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.postcard .meta{font-size:10.5px;color:#999;margin-top:6px}
+.post-hd{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.post-title{font-size:14px;font-weight:800;color:#222;line-height:1.4;flex:1}
+.post-like{flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;border:1px dashed #aaa;border-radius:14px;padding:4px 9px}
+.post-like .icn{font-size:14px;color:#888}
+.post-like .icn.on{color:#333}
+.post-like .cnt{font-size:11px;color:#888}
+.post-desc{font-size:12px;color:#555;line-height:1.55;margin:4px 0 10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.prod-card{display:flex;gap:10px;margin-bottom:8px}
+.prod-card .thumb{width:76px;height:76px;flex:0 0 auto;margin:0}
+.prod-brand{font-size:10px;color:#999;font-weight:700;letter-spacing:.3px}
+.prod-title{font-size:12.5px;font-weight:700;color:#222;line-height:1.4;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.post-meta{display:flex;gap:16px;font-size:11px;color:#888;margin-top:2px}
+/* 신규 카드 구조 (03과 정합) */
+.post-body{font-size:12.5px;color:#444;line-height:1.6;margin:4px 0 10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.post-ctx{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.post-ctx .avt{width:34px;height:34px;border-radius:50%;background:#ddd;border:1px solid #ccc;flex:0 0 auto}
+.more-prod{display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #ccc;border-radius:8px;padding:10px;font-size:12px;font-weight:700;color:#555;background:#fafafa;margin-top:8px}
+.post-act{display:flex;align-items:center;gap:6px;margin-top:10px}
+.post-act.tight{margin-top:8px;margin-bottom:6px}
+.heart{width:22px;height:22px;border:1.5px solid #999;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#777;flex:0 0 auto}
+.heart.on{background:#666;color:#fff;border-color:#666}
+.cap{font-size:12.5px;color:#444;line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cap b{color:#222;font-weight:700}
+.count-tag{font-size:10.5px;color:#666;font-weight:700;margin-top:8px}
+.media-full{position:relative;margin:0 -12px}
+.media-full .box{width:100%;border-left:0;border-right:0;aspect-ratio:4/5;height:auto}
+</style>
+</head>
+<body>
+
+<div class="kit-header">
+  <h1>소비자 앱 · 구매 동선 와이어프레임 (WF-C-01)</h1>
+  C4 쇼룸 → C5 공구 게시물 → C7 상품 상세 → C8 장바구니 → C9 결제 · 390×844 · lo-fi(구조·요소·상태만) · 근거: ④ draft13 §3 / ② draft28 · 2026.07
+</div>
+
+<div class="flow">
+
+<!-- ============ C4 쇼룸 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C4 쇼룸 <span>— 진입 기본 동선(SNS 링크 착지)</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 쇼룸
+      <span class="ic"><i>검색</i><i>장바구니</i></span>
+    </div>
+    <div class="sec">
+      <div class="row">
+        <div class="box" style="width:72px;height:72px;border-radius:50%">아바타</div>
+        <div style="flex:1">
+          <div class="row" style="gap:6px">
+            <div class="t1">인플루언서명</div>
+            <span class="ext-btn">Instagram ↗</span>
+          </div>
+          <div class="t3">팔로워 1,234 · 게시물 56</div>
+          <div class="t3" style="margin-top:4px">쇼룸 소개 문구 한 줄 영역</div>
+        </div>
+      </div>
+      <div style="margin-top:10px"><span class="btn-o" style="display:block">＋ 팔로우</span></div>
+    </div>
+    <div class="sec" style="padding-top:14px">
+      <!-- 게시물 카드 1 (공구 · 제목O · 상품 여러 개 → 대표 1 + 더보기 · ♡ 하단) -->
+      <div class="postcard">
+        <div class="post-ctx">
+          <div class="avt"></div>
+          <div style="flex:1"><span class="t2" style="font-weight:700">쇼룸 이름</span> <span class="t3">· 2시간 전</span></div>
+        </div>
+        <span class="badge-fill" style="display:inline-block;margin-bottom:6px">공구 진행중 · D-3</span>
+        <span class="badge" style="margin-bottom:6px">대가관계 표시</span>
+        <div class="post-title">공구 게시물 제목 — 소구 헤드라인</div>
+        <div class="post-body">게시물 본문 미리보기 2줄 말줄임. 전체 내용은 상세(C5)에서 확인.</div>
+        <div class="prod-card">
+          <div class="box thumb">상품</div>
+          <div style="flex:1">
+            <div class="prod-brand">브랜드명</div>
+            <div class="prod-title">상품명이 두 줄까지 노출되는 영역</div>
+            <div style="margin-top:6px">
+              <div class="price-old">32,000</div>
+              <div class="price">공구가 24,900</div>
+            </div>
+          </div>
+        </div>
+        <div class="more-prod">상품 2개 더보기 &nbsp;⌄</div>
+        <div class="post-act"><div class="heart">♡</div><span class="t3">24</span></div>
+      </div>
+      <!-- 게시물 카드 2 (일반 · 제목X · 인스타형: 헤더 → 미디어 → ♡ → 캡션) -->
+      <div class="postcard">
+        <div class="post-ctx">
+          <div class="avt"></div>
+          <div style="flex:1"><span class="t2" style="font-weight:700">쇼룸 이름</span> <span class="t3">· 어제</span></div>
+        </div>
+        <div class="media-full"><div class="box">미디어</div><div class="dots" style="position:absolute;left:0;right:0;bottom:8px;padding:0"><i class="on"></i><i></i><i></i><i></i><i></i></div></div>
+        <div class="post-act tight"><div class="heart on">♥</div><span class="t3">13</span></div>
+        <div class="cap">일반 게시물 캡션이 미디어 아래로. 제목 없이. 2줄 넘으면 …더보기</div>
+      </div>
+      <!-- 게시물 카드 3 (일반 · 축적 예시) -->
+      <div class="postcard">
+        <div class="post-ctx">
+          <div class="avt"></div>
+          <div style="flex:1"><span class="t2" style="font-weight:700">쇼룸 이름</span> <span class="t3">· 3일 전</span></div>
+        </div>
+        <div class="media-full"><div class="box">미디어</div><div class="dots" style="position:absolute;left:0;right:0;bottom:8px;padding:0"><i class="on"></i><i></i><i></i><i></i><i></i></div></div>
+        <div class="post-act tight"><div class="heart">♡</div><span class="t3">5</span></div>
+        <div class="cap">일반 게시물은 공구 종료와 무관하게 계속 쌓이는 콘텐츠.</div>
+      </div>
+    </div>
+    <div class="note">※ <b>비로그인 열람 허용.</b> 팔로우·좋아요 탭 시 소셜 로그인 요구(C0) → 완료 후 <b>직전 화면 복귀 + 중단 액션 이어서 실행</b></div>
+    <div class="note">※ 카드 구조 — <b>공구</b>: 헤더·배지·<b>제목</b>·본문·상품카드·♡ (상품 2개+ = 대표 1개 + <b>"상품 N개 더보기"</b>, 대표=계약 순서 첫 상품) / <b>일반</b>: 헤더·<b>미디어(4:5)</b>·♡·<b>캡션</b>(제목 없음, 인스타형). 각 게시물에 <b>프로필·쇼룸명·시간 헤더 표시(팔로우 버튼 없음)</b> — 단일 카드 컴포넌트 재사용. <b>게시물 사이 구분선</b>으로 경계. <b>노출중 공구 게시물 = 쇼룸 피드 최상단 고정</b>(일반 게시물 위, 복수 시 공구 시작일 최신순)</div>
+    <div class="note">※ <b>공구 종료 게시물은 피드에 노출되지 않음</b>(자동 숨김). <b>일반 게시물은 종료 여부와 무관하게 계속 축적</b>되어 피드에 남음</div>
+    <div class="note">※ <b>좋아요 ♡</b> = 카드 하단 고정(제목 줄 아님). ♡(미클릭)/♥(클릭됨, 채움)로 전/후 구분 — 탭 시 숫자 ±1, 색상 토글</div>
+    <div class="note">※ 상단 아이콘 = 검색·장바구니만(알림 삭제). 설정은 <b>마이페이지(C15)</b>에서만 접근</div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">공구 게시물<br>카드 탭</div></div>
+
+<!-- ============ C5 공구 게시물 상세 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C5 공구 게시물 상세 <span>— 판매 콘텐츠(글 필수)</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 게시물
+      <span class="ic"><i>장바구니</i></span>
+    </div>
+    <div class="sec">
+      <div class="post-ctx" style="margin:0">
+        <div class="avt"></div>
+        <div style="flex:1"><span class="t2" style="font-weight:700">쇼룸 이름</span> <span class="t3">· 5시간 전</span></div>
+      </div>
+    </div>
+    <div class="sec">
+      <span class="badge-fill" style="display:inline-block;margin-bottom:6px">공구 진행중 · D-3</span>
+      <span class="badge" style="margin-bottom:6px">대가관계 표시</span>
+      <div class="post-title">여러 상품 묶은 공구 — 3종 세트 제안</div>
+      <div class="t2" style="line-height:1.7;margin-top:6px">공구 게시물 본문(글 필수). 상품 소개·사용 후기·공구 조건 안내 텍스트. 상세는 <b>전체 노출</b>(말줄임 없음), 노출 중 본문 수정 잠금.</div>
+      <div class="t3" style="margin-top:8px">공구 기간 2026.08.10 ~ 08.17</div>
+      <div class="count-tag">이 공구 상품 3개 — 원하는 것만 담기(상세는 전부 나열, 더보기 없음)</div>
+      <div class="prod-card" style="margin-top:8px">
+        <div class="box thumb">상품</div>
+        <div style="flex:1">
+          <div class="prod-brand">브랜드 A</div>
+          <div class="prod-title">상품명 1</div>
+          <div style="margin-top:6px"><div class="price-old">32,000</div><div class="price">공구가 24,900</div></div>
+        </div>
+        <div class="t2">›</div>
+      </div>
+      <div class="prod-card" style="margin-top:8px">
+        <div class="box thumb">상품</div>
+        <div style="flex:1">
+          <div class="prod-brand">브랜드 A</div>
+          <div class="prod-title">상품명 2</div>
+          <div style="margin-top:6px"><div class="price-old">28,000</div><div class="price">공구가 19,900</div></div>
+        </div>
+        <div class="t2">›</div>
+      </div>
+      <div class="prod-card" style="margin-top:8px">
+        <div class="box thumb">상품</div>
+        <div style="flex:1">
+          <div class="prod-brand">브랜드 B</div>
+          <div class="prod-title">상품명 3</div>
+          <div style="margin-top:6px"><div class="price-old">45,000</div><div class="price">공구가 31,000</div></div>
+        </div>
+        <div class="t2">›</div>
+      </div>
+      <div class="post-act"><div class="heart">♡</div><span class="t3">좋아요 214</span></div>
+    </div>
+    <div class="note">※ <b>공구 게시물은 미디어 없음</b> — 글(본문)+상품 카드로만 구성. 미디어는 일반 게시물 전용</div>
+    <div class="note">※ 상품 여러 개면 <b>상세는 전부 나열</b>(피드는 대표 1 + 더보기). 각 상품 카드 탭 → <b>C7 상품 상세</b>(게시물 참조 유지). ♡는 카드 하단</div>
+    <div class="note">※ 상단 <b>프로필·쇼룸명·시간 헤더</b>(팔로우 버튼 없음). 헤더 영역 전체 탭 → <b>쇼룸(C4) 이동</b> — 별도 "쇼룸 가기" 링크 없이 자연스러운 진입</div>
+    <div class="note">※ <b>공구 종료 상태:</b> 열람 가능 + "공구 종료" 배지 + 상품 카드 탭 비활성 + <b>쇼룸 팔로우 유도 카드</b>(다음 공구 알림) 노출</div>
+    <div class="note legal">⚠ <b>[법률검토 대기 · 의뢰패키지 쟁점 A]</b> 판매자/추천인 표기 제거 요청 반영함. 단, 전자상거래법상 신원 표시 요건과 연결된 항목이라 <b>제거가 아니라 표기 방식·위치 변경</b>일 가능성 있음 — 법률 검토 결과에 따라 복원 여부 재확인 필요</div>
+    <div class="notice-fix">ⓘ 대가관계 표시 배지 — 판매 수익 일부를 리워드로 받는 추천 활동임을 고지 <span class="t3">(위치 결정 전까지 화면 하단 고정)</span></div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">상품 카드 탭</div></div>
+
+<!-- ============ C7 상품 상세 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C7 상품 상세 <span>— 갤러리·탭 구조</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 상품
+      <span class="ic"><i>장바구니</i></span>
+    </div>
+    <div class="sec" style="padding:0;position:relative">
+      <div class="box" style="width:100%;aspect-ratio:1/1">상품 이미지 (스와이프)</div>
+      <div class="dots" style="position:absolute;bottom:8px;left:0;right:0;padding:0"><i class="on"></i><i></i><i></i><i></i></div>
+    </div>
+    <div class="sec" style="display:flex;align-items:center;justify-content:space-between">
+      <span class="t2" style="font-weight:700">브랜드명</span>
+      <span class="btn-o" style="padding:6px 12px;font-size:11px;margin:0">사이트 방문</span>
+    </div>
+    <div class="sec">
+      <div class="t1">상품명 (SKU 조합 대상)</div>
+      <div style="margin-top:6px">
+        <div class="price-old">32,000</div>
+        <div class="price">공구가 24,900</div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="row" style="justify-content:space-between">
+        <span class="t2" style="font-weight:700">배송비</span>
+        <span class="t2">3,000원 <span class="t3">· 30,000원 이상 무료</span></span>
+      </div>
+      <div class="t3" style="margin-top:4px">제주 +3,000 · 도서산간 +5,000 (결제 시 배송지 우편번호로 자동 계산)</div>
+    </div>
+    <div class="tabs">
+      <div class="tab on">상세정보</div>
+      <div class="tab">문의</div>
+      <div class="tab">판매자 정보</div>
+    </div>
+    <div class="sec" style="padding:0">
+      <div class="box" style="width:100%;height:280px">상세 이미지 (라이프스타일 컷)</div>
+      <div style="padding:12px"><span class="btn-o" style="display:block">더 보기 ⌄</span></div>
+    </div>
+    <div class="note">※ 탭 구조: <b>상세정보</b>(이미지+설명, 스크롤 연장) / <b>문의</b>(상품 문의 경량 작성폼 — 주문번호 불필요, 브랜드 담당) / <b>판매자 정보</b>(상호·대표자·사업자등록번호·통신판매업 신고번호 — 법정 표시 이관)</div>
+    <div class="note legal">⚠ <b>[법률 확정 대기 · 패키지 쟁점 A]</b> 화장품 청약철회 제한·반송비 사전 표시 문구 — <b>판매자 정보 탭 내 위치 예약</b>, 문구는 변호사 검토 후 확정</div>
+    <div class="note">※ 하단 <b>좋아요 버튼 없음</b>. 옵션 선택은 CTA 진입 시 바텀시트로 처리(다음 프레임)</div>
+    <div class="cta-fix"><span class="btn">구매하기</span></div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">[판매자 정보]<br>탭 선택 시</div></div>
+
+<!-- ============ C7 판매자 정보 탭 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C7 판매자 정보 탭 <span>— 법정 표시 이관</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 상품
+      <span class="ic"><i>장바구니</i></span>
+    </div>
+    <div class="sec" style="padding:0;position:relative">
+      <div class="box" style="width:100%;height:130px">상품 이미지</div>
+    </div>
+    <div class="sec">
+      <div class="t1" style="font-size:13px">상품명 (SKU 조합 대상)</div>
+    </div>
+    <div class="tabs">
+      <div class="tab">상세정보</div>
+      <div class="tab">문의</div>
+      <div class="tab on">판매자 정보</div>
+    </div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:8px">판매자 정보</div>
+      <div class="t3" style="line-height:2">
+        상호명 : 브랜드명<br>
+        대표자 : 홍길동<br>
+        사업자등록번호 : 000-00-00000<br>
+        통신판매업 신고번호 : 제0000-서울OO-00000호<br>
+        사업장 소재지 : 서울특별시 ○○구 ○○로 00<br>
+        고객센터 연락처 : 000-0000-0000<br>
+        이메일 : brand@example.com
+      </div>
+    </div>
+    <hr class="dv">
+    <details class="acc">
+      <summary>배송 / 교환 / 반품 안내 <span class="chev">⌄</span></summary>
+      <div class="acc-body t3">
+        배송비 : 3,000원 (30,000원 이상 무료) · 제주 +3,000 · 도서산간 +5,000<br>
+        배송 방법 : 택배 · 발송 예정 : 결제 후 영업일 기준 안내<br>
+        교환/반품 : 배송완료 후 7일 이내 신청(문 앞 회수)<br>
+        반송비 : [법률 확정 대기 — 단순변심/불량 부담 주체 및 금액]<br>
+        청약철회 제한 : [법률 확정 대기 — 화장품 개봉·사용 시 제한 안내 문구]
+      </div>
+    </details>
+    <hr class="dv">
+    <details class="acc">
+      <summary>상품 정보 제공 고시 <span class="t3" style="font-weight:400">(화장품)</span> <span class="chev">⌄</span></summary>
+      <div class="acc-body t3">
+        용량·중량 / 제품 주요 사양<br>
+        사용기한·개봉 후 사용기간 / 사용방법<br>
+        화장품제조업자·책임판매업자<br>
+        제조국 / 전성분<br>
+        기능성 화장품 여부 / 사용 시 주의사항<br>
+        품질보증기준 / 소비자상담 전화번호
+      </div>
+    </details>
+    <div class="note">※ <b>배송/반품·상품 고시 = 아코디언</b>(접힘 기본, 헤더 탭 시 펼침·아이콘 ⌄↔⌃). 상품 고시는 브랜드가 상품 등록 시 입력 → 자동 노출</div>
+    <div class="note legal">⚠ <b>[법률 확정 대기 · 의뢰패키지 쟁점 A·B]</b> 청약철회 제한 문구·반송비 금액·왕복 배송비 부담 방식은 변호사 검토 후 확정. 상호·사업자등록번호 등 신원 항목은 브랜드 가입 정보(③ 브랜드 계정)에서 자동 연동</div>
+    <div class="note">※ 판매자 정보는 전자상거래법상 필수 표시 항목 — 탭으로 이동해도 <b>즉시 확인 가능한 위치</b>(첫 스크롤 내)에 배치</div>
+    <div class="cta-fix"><span class="btn">구매하기</span></div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">[문의]<br>탭 선택 시</div></div>
+
+<!-- ============ C7 문의 탭 (공개 QnA 목록) ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C7 문의 탭 <span>— 공개 QnA 목록</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 상품
+      <span class="ic"><i>장바구니</i></span>
+    </div>
+    <div class="sec" style="padding:0">
+      <div class="box" style="width:100%;height:130px">상품 이미지</div>
+    </div>
+    <div class="sec">
+      <div class="t1" style="font-size:13px">상품명 (SKU 조합 대상)</div>
+    </div>
+    <div class="tabs">
+      <div class="tab">상세정보</div>
+      <div class="tab on">문의</div>
+      <div class="tab">판매자 정보</div>
+    </div>
+    <div class="sec" style="display:flex;justify-content:space-between;align-items:center">
+      <span class="t2" style="font-weight:700">상품 문의 <span class="t3">(총 3건)</span></span>
+      <span class="btn-o" style="padding:8px 14px;font-size:12px;margin:0">상품 문의하기</span>
+    </div>
+    <div class="sec" style="padding-top:0">
+      <!-- QnA 1: 답변 완료 -->
+      <div style="padding-bottom:12px;border-bottom:1px solid #eee;margin-bottom:12px">
+        <div class="row" style="gap:6px"><span class="badge-fill">답변 완료</span><span class="t3">재입고 문의 · 소** · 2026.07.01</span></div>
+        <div class="t2" style="margin-top:6px;font-weight:700">Q. 재입고는 언제 되나요?</div>
+        <div class="t2" style="margin-top:6px;color:#555"><b>A.</b> 안녕하세요, 브랜드명입니다. 다음 주 중 재입고 예정입니다.</div>
+      </div>
+      <!-- QnA 2: 답변 대기 -->
+      <div style="padding-bottom:12px;border-bottom:1px solid #eee;margin-bottom:12px">
+        <div class="row" style="gap:6px"><span class="badge">답변 대기</span><span class="t3">상품 문의 · 김** · 2026.07.03</span></div>
+        <div class="t2" style="margin-top:6px;font-weight:700">Q. 민감성 피부에도 사용 가능한가요?</div>
+      </div>
+      <!-- QnA 3: 비공개 -->
+      <div style="padding-bottom:12px">
+        <div class="row" style="gap:6px"><span class="badge">답변 완료</span><span class="t3">이** · 2026.07.02</span></div>
+        <div class="t2" style="margin-top:6px;color:#999">🔒 비공개 문의입니다.</div>
+      </div>
+    </div>
+    <div class="note">※ <b>공개 QnA</b> — 질문·브랜드 답변 공개 노출, 닉네임 마스킹(소**). <b>비공개 문의는 잠금 표시</b>(본인·브랜드·운영자만 열람). 부적절 문의·답변은 운영자 숨김(사유·통지)</div>
+    <div class="note">※ <b>상품 문의하기 = 목록 상단 버튼</b>(QnA 헤더 우측) → C7-1 작성 페이지. 하단 고정은 <b>구매하기</b>로 통일(전 탭 공통 CTA). 본인 작성 건은 마이 &gt; 문의 내역(C12)에서도 확인</div>
+    <div class="cta-fix"><span class="btn">구매하기</span></div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">[상품 문의하기]<br>비로그인 시<br>C0 로그인</div></div>
+
+<!-- ============ C7-1 상품 문의 작성 페이지 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C7-1 상품 문의 작성 <span>— 별도 페이지(주문번호 불필요)</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 상품 문의하기</div>
+    <div class="sec">
+      <div class="row">
+        <div class="box" style="width:52px;height:52px">상품</div>
+        <div style="flex:1">
+          <div class="t2" style="font-weight:700">상품명</div>
+          <div class="t3">브랜드명</div>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="note" style="margin:0 0 12px">유의사항: 상품 관련 문의는 브랜드가 답변하며, 질문·답변은 상품 페이지에 공개됩니다. 답변은 마이 &gt; 문의 내역에서도 확인 가능합니다.</div>
+      <div class="t2" style="font-weight:700;margin-bottom:6px">문의 유형</div>
+      <div class="input" style="margin-bottom:12px">유형을 선택해 주세요 ▾ <span class="t3">(상품 / 사이즈·옵션 / 재고·재입고)</span></div>
+      <div class="t2" style="font-weight:700;margin-bottom:6px">문의 내용</div>
+      <div class="input" style="height:110px;align-items:flex-start;padding-top:10px">문의할 내용을 입력해 주세요 (최소 10자)</div>
+      <div class="t3" style="text-align:right;margin-top:4px">0 / 500</div>
+      <div class="check" style="margin-top:10px">비공개 문의로 등록 <span class="t3">(본인·브랜드·운영자만 열람)</span></div>
+    </div>
+    <div class="note">※ <b>주문번호 불필요</b>(C12 일반 CS와 차이) — 상품 참조만으로 등록. 등록 시 브랜드에 알림(#10)</div>
+    <div class="cta-fix"><span class="btn">문의하기</span></div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">[구매하기]<br>탭</div></div>
+
+<!-- ============ C7 옵션 선택 바텀시트 (옵션 다중) ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C7 옵션 바텀시트 <span>— 구매하기 탭 시 · 옵션 여러 개</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 상품
+      <span class="ic"><i>장바구니</i></span>
+    </div>
+    <div class="sec" style="padding:0">
+      <div class="box" style="width:100%;height:260px;opacity:.5">상품 이미지</div>
+    </div>
+    <div class="sheet-scrim"></div>
+    <div class="sheet">
+      <div class="grip"></div>
+      <div class="row">
+        <div class="box" style="width:56px;height:56px">상품</div>
+        <div style="flex:1">
+          <div class="t2" style="font-weight:700">상품명</div>
+        </div>
+      </div>
+      <div class="t2" style="font-weight:700;margin:16px 0 6px">옵션 선택 <span class="t3">(그룹 ≤3 · 조합 자동)</span></div>
+      <div class="input" style="margin-bottom:6px">옵션 그룹 1 선택 ▾</div>
+      <div class="input">옵션 그룹 2 선택 ▾</div>
+      <div class="row" style="margin-top:10px;justify-content:space-between">
+        <span class="t3">수량</span><span class="qty"><span>−</span><span>1</span><span>＋</span></span>
+      </div>
+      <div class="row" style="justify-content:space-between;margin-top:14px">
+        <span class="t1">총 금액</span><span class="price" style="font-size:16px">24,900</span>
+      </div>
+      <div class="row" style="gap:8px;margin-top:14px">
+        <span class="btn-o" style="flex:1;margin:0;padding:13px;font-size:13px">장바구니</span>
+        <span class="btn" style="flex:1;margin:0">구매하기</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">↘</div><div class="lbl">옵션이<br>1개일 때</div></div>
+
+<!-- ============ C7 옵션 선택 바텀시트 (옵션 단일) ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C7 옵션 바텀시트 <span>— 옵션 1개</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 상품
+      <span class="ic"><i>장바구니</i></span>
+    </div>
+    <div class="sec" style="padding:0">
+      <div class="box" style="width:100%;height:260px;opacity:.5">상품 이미지</div>
+    </div>
+    <div class="sheet-scrim"></div>
+    <div class="sheet">
+      <div class="grip"></div>
+      <div class="row">
+        <div class="box" style="width:56px;height:56px">상품</div>
+        <div style="flex:1">
+          <div class="t2" style="font-weight:700">상품명</div>
+        </div>
+      </div>
+      <div class="t2" style="font-weight:700;margin:16px 0 6px">옵션 선택</div>
+      <div class="input">옵션 선택 ▾</div>
+      <div class="row" style="margin-top:10px;justify-content:space-between">
+        <span class="t3">수량</span><span class="qty"><span>−</span><span>1</span><span>＋</span></span>
+      </div>
+      <div class="row" style="justify-content:space-between;margin-top:14px">
+        <span class="t1">총 금액</span><span class="price" style="font-size:16px">24,900</span>
+      </div>
+      <div class="row" style="gap:8px;margin-top:14px">
+        <span class="btn-o" style="flex:1;margin:0;padding:13px;font-size:13px">장바구니</span>
+        <span class="btn" style="flex:1;margin:0">구매하기</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">[장바구니]<br>담기 · 비로그인<br>시 C0 로그인 →<br>이어서 실행<br><br>[구매하기]<br>→ 장바구니(C8)</div></div>
+
+<!-- ============ C8 장바구니 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C8 장바구니 <span>— SKU 단위 항목</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 장바구니</div>
+    <div class="sec" style="display:flex;justify-content:space-between;align-items:center">
+      <div class="check" style="font-weight:700;padding:0">전체 선택</div>
+      <span class="btn-o" style="padding:6px 12px;font-size:11px;margin:0">선택 삭제</span>
+    </div>
+    <div class="sec">
+      <div class="check">
+        <div class="row" style="flex:1">
+          <div class="box" style="width:64px;height:64px">상품</div>
+          <div style="flex:1">
+            <div class="t3" style="font-weight:700">브랜드명</div>
+            <div class="t2" style="font-weight:700">상품명</div>
+            <div class="t3">옵션: A / B · SKU 단위 1행</div>
+            <div class="row" style="justify-content:space-between;align-items:flex-end;margin-top:8px">
+              <span class="qty"><span>−</span><span>2</span><span>＋</span></span>
+              <div style="text-align:right">
+                <div class="price-old" style="font-size:10px">64,000</div>
+                <div class="price" style="font-size:14px">공구가 49,800</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="check" style="opacity:.55">
+        <div class="row" style="flex:1">
+          <div class="box" style="width:64px;height:64px">상품</div>
+          <div style="flex:1">
+            <div class="t3" style="font-weight:700">브랜드명</div>
+            <div class="t2">상품명 <span class="badge">품절</span></div>
+            <div class="t3">품절 항목 — 표시 유지·선택 불가</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <hr class="dv">
+    <div class="sec">
+      <div class="row" style="justify-content:space-between"><span class="t2">총 상품 가격</span><span class="t2">64,000</span></div>
+      <div class="row" style="justify-content:space-between;margin-top:4px"><span class="t2">할인 가격</span><span class="t2">− 14,200</span></div>
+      <div class="row" style="justify-content:space-between;margin-top:4px"><span class="t2">배송비</span><span class="t2">3,000</span></div>
+      <div class="row" style="justify-content:space-between;margin-top:8px"><span class="t1">결제 예정 금액</span><span class="price">52,800</span></div>
+    </div>
+    <div class="note">※ 상품 항목 = <b>브랜드명 + 상품명 + 옵션 + 정가(취소선)·공구가</b>. 하단 요약 = 총 상품 가격(정가 합) − 할인 가격(정가−공구가 합) + 배송비 = 결제 예정 금액</div>
+    <div class="note">※ <b>공구 종료 항목 = 자동 제거</b> / 품절 = 표시 유지·선택 불가. 취소·환불도 SKU+수량 단위와 정합</div>
+    <div class="cta-fix"><span class="btn">52,800원 구매하기 (1건)</span></div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">[구매하기]</div></div>
+
+<!-- ============ C9 결제 페이지 (배송지 있음) ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C9 결제 페이지 <span>— 배송지 있음</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 주문/결제</div>
+    <div class="sec">
+      <div class="row" style="justify-content:space-between">
+        <span class="t2" style="font-weight:700">배송지</span>
+        <span class="badge">변경</span>
+      </div>
+      <div class="t3" style="margin-top:6px;line-height:1.7">홍길동 / 010-0000-0000<br>서울特別市 ○○구 ○○로 00 (기본 배송지)</div>
+      <div class="t2" style="font-weight:700;margin:12px 0 6px">배송 요청사항</div>
+      <div class="input">요청사항 선택 ▾ <span class="t3">(문 앞 / 경비실 / 부재 시 연락 / 직접 입력)</span></div>
+    </div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:6px">주문 상품 1건</div>
+      <div class="row">
+        <div class="box" style="width:52px;height:52px">상품</div>
+        <div style="flex:1"><div class="t3">브랜드명 / 상품명 / 옵션 A·B / 수량 2</div></div>
+        <span class="t2" style="font-weight:700">49,800</span>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:8px">결제수단 <span class="t3">(카드·간편 한정)</span></div>
+      <!-- 신용/체크카드 (선택됨 → 하위 옵션 펼침) -->
+      <div class="check" style="font-weight:700">신용/체크카드</div>
+      <div style="margin:6px 0 12px 24px">
+        <div class="input" style="margin-bottom:6px">카드사 선택 ▾</div>
+        <div class="row" style="gap:6px"><span class="chip">일시불</span><span class="chip">할부 ▾</span></div>
+      </div>
+      <!-- 간편결제 (미선택 → 접힘) -->
+      <div class="check">간편결제</div>
+      <div class="t3" style="margin:6px 0 0 24px;color:#bbb">선택 시 카카오·네이버·토스페이 목록(택1) 펼침</div>
+    </div>
+    <div class="sec">
+      <div class="row" style="justify-content:space-between"><span class="t2">총 상품 가격</span><span class="t2">64,000</span></div>
+      <div class="row" style="justify-content:space-between;margin-top:4px"><span class="t2">할인 가격</span><span class="t2">− 14,200</span></div>
+      <div class="row" style="justify-content:space-between;margin-top:4px"><span class="t2">배송비</span><span class="t2">3,000</span></div>
+      <div class="row" style="justify-content:space-between;margin-top:8px"><span class="t1">총 결제 금액</span><span class="price">52,800</span></div>
+    </div>
+    <div class="note">※ 요청사항 = 드롭다운. <b>"직접 입력" 선택 시 아래 입력창 노출</b>(다음 프레임)</div>
+    <div class="note">※ <b>결제수단 = 라디오 택1, 선택 항목만 하위 옵션 인라인 펼침</b> — 카드 선택 시 카드사·일시불/할부, 간편결제 선택 시 페이 목록. 카드번호 실입력은 PG 결제창(외부)</div>
+    <div class="note">※ 결제 실패/중단 → 장바구니 복귀(항목 유지)+사유 표시. 완료 → 주문 완료 → C10</div>
+    <div class="agree-fix">
+      <div class="check" style="padding:0">주문 내용 확인 및 결제 동의 (필수)</div>
+      <div class="check" style="color:#888;padding:4px 0 0">[패치 #1] 개인정보 제3자 제공 동의 — 위치만 예약(법률 대기)</div>
+    </div>
+    <div class="cta-fix"><span class="btn">52,800원 결제하기</span></div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">↘</div><div class="lbl">배송지<br>없을 때</div></div>
+
+<!-- ============ C9 결제 (배송지 없음) ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C9 결제 <span>— 배송지 없음(최초)</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 주문/결제</div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:8px">배송지</div>
+      <div style="border:1.5px dashed #bbb;border-radius:8px;padding:24px 12px;text-align:center">
+        <div class="t3">등록된 배송지가 없습니다</div>
+        <div style="margin-top:12px"><span class="btn" style="display:inline-block;padding:11px 20px">＋ 배송지 추가</span></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:6px">주문 상품 1건</div>
+      <div class="row">
+        <div class="box" style="width:52px;height:52px">상품</div>
+        <div style="flex:1"><div class="t3">브랜드명 / 상품명 / 옵션 / 수량 2</div></div>
+        <span class="t2" style="font-weight:700">49,800</span>
+      </div>
+    </div>
+    <div class="note">※ 배송지 미등록 시 <b>[배송지 추가]</b> 강조 → 입력 후 결제 진행. 추가 = C11 배송지 관리와 동일 입력폼(신규)</div>
+    <div class="note">※ 배송지 없으면 결제 버튼 <b>비활성</b></div>
+    <div class="agree-fix">
+      <div class="check" style="padding:0;color:#aaa">주문 내용 확인 및 결제 동의 (필수)</div>
+    </div>
+    <div class="cta-fix"><span class="btn-dis">배송지를 추가해 주세요</span></div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">↘</div><div class="lbl">요청사항<br>직접 입력<br>선택 시</div></div>
+
+<!-- ============ C9 결제 (요청사항 직접 입력) ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C9 결제 <span>— 요청사항 직접 입력</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 주문/결제</div>
+    <div class="sec">
+      <div class="row" style="justify-content:space-between">
+        <span class="t2" style="font-weight:700">배송지</span>
+        <span class="badge">변경</span>
+      </div>
+      <div class="t3" style="margin-top:6px;line-height:1.7">홍길동 / 010-0000-0000<br>서울特別市 ○○구 ○○로 00</div>
+      <div class="t2" style="font-weight:700;margin:12px 0 6px">배송 요청사항</div>
+      <div class="input" style="margin-bottom:6px">직접 입력 ▾</div>
+      <div class="input">요청사항을 입력해 주세요 (예: 부재 시 문 앞)</div>
+    </div>
+    <div class="note">※ 드롭다운에서 <b>"직접 입력" 선택 시에만</b> 하단 텍스트 입력창 노출. 다른 옵션 선택 시 입력창 숨김</div>
+    <div class="sec" style="opacity:.4">
+      <div class="t3">↓ 이하 주문 상품·결제수단·금액·동의·결제 버튼은 동일</div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

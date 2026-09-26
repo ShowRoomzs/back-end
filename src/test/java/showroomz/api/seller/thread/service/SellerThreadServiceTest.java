@@ -170,6 +170,29 @@ class SellerThreadServiceTest {
         }
 
         @Test
+        @DisplayName("[계약 작성]이 계약 초안 요청에 그대로 넘길 creatorId·connectionId를 내려준다 — 쇼룸명으로 상대를 찾지 않게")
+        void exposesCounterpartIdsForContractDraft() {
+            Creator creator = Creator.builder().id(12L).showroomName("뷰티_소연").build();
+            Connection connection = Connection.requestPair(market, creator);
+            connection.markConnected();
+            ReflectionTestUtils.setField(connection, "id", 41L);
+            MessageThread thread = MessageThread.builder()
+                    .id(THREAD_ID).connection(connection).status(ThreadStatus.OPEN).build();
+
+            givenAuthenticatedSeller();
+            given(messageThreadRepository.findOpenThreadsForMarket(eq(market), eq(ThreadStatus.OPEN), isNull(), any()))
+                    .willReturn(new PageImpl<>(List.of(thread)));
+            given(messageThreadService.countUnreadByThreadIds(List.of(THREAD_ID), ParticipantType.SELLER, MARKET_ID))
+                    .willReturn(Map.of());
+
+            ThreadListItem item = sellerThreadService.getThreads(SELLER_EMAIL, null, new PagingRequest())
+                    .getContent().get(0);
+
+            assertThat(item.getCreatorId()).isEqualTo(12L);
+            assertThat(item.getConnectionId()).isEqualTo(41L);
+        }
+
+        @Test
         @DisplayName("운영자 채널은 상대 크리에이터가 없으므로 아바타 없이 고정 표시명만 내려준다 (A2)")
         void operatorChannelHasNoCounterpartImage() {
             Connection operator = Connection.createOperatorMarket(market);
@@ -188,6 +211,7 @@ class SellerThreadServiceTest {
             assertThat(item.isOperatorChannel()).isTrue();
             assertThat(item.getCounterpartName()).isEqualTo("SHOWROOMZ 운영팀");
             assertThat(item.getCounterpartImageUrl()).isNull();
+            assertThat(item.getCreatorId()).isNull();
         }
 
         @Test

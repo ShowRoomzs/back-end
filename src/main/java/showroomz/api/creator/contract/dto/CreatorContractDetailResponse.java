@@ -263,7 +263,8 @@ public record CreatorContractDetailResponse(
     public record GroupBuy(
             @Schema(nullable = true) Long groupBuyId,
             @Schema(description = "체결완료인데 아직 공구가 없는 상태 — 시안 S6 「브랜드 생성 대기」. "
-                    + "**공구를 만드는 쪽은 브랜드다**", example = "true") boolean awaitingBrandCreation
+                    + "공구는 체결 트랜잭션에서 자동 생성되므로(공구 설계서 0-2) 공구 모듈 이전에 체결돼 "
+                    + "백필 전인 계약에서만 true다", example = "false") boolean awaitingBrandCreation
     ) {
     }
 

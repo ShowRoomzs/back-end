@@ -185,6 +185,7 @@ public class SellerThreadService {
         return new ThreadListItem(
                 thread.getId(), name, isOperator ? null : profileImageUrlOf(connection.getCreator()),
                 isOperator, connection.getStatus(),
+                isOperator ? null : connection.getCreator().getId(), connection.getId(),
                 thread.getLastMessagePreview(), thread.getLastMessageAt(), unread);
     }
 

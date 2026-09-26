@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C3 좋아요 — 좋아요한 게시물 모아보기</span></div>
+<p class="dv-tsub">좋아요는 <b>게시물 단위</b>이며 공구·일반이 섞여 좋아요한 순으로 쌓입니다. ♥를 해제하면 목록에서 사라집니다(실제로 동작합니다 — 하트를 눌러보세요). 종료된 공구는 목록에 남되 [공구 종료] 배지 + 딤 처리되고 상품 블록은 접힙니다.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>기본 — 공구 · 종료 공구 · 일반</div>
+<div class="dv-card">
+<div data-screen-label="C3 좋아요" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="display:flex;align-items:center;padding:2px 16px 12px">
+<span style="font: 700 20px/1 Pretendard,sans-serif; letter-spacing: -.5px; font-size: 18px">좋아요</span>
+<div style="flex:1"></div>
+<div style="display:flex;gap:18px;color:#0F0F0F">
+<div style="position:relative;display:flex;padding:9px;margin:-9px;cursor:pointer"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg></div>
+<div style="position:relative;display:flex;padding:9px;margin:-9px;cursor:pointer"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"><path d="M4.4 7.5h15.2l-1.1 12.3H5.5z"></path><path d="M8.8 10V6.6a3.2 3.2 0 0 1 6.4 0V10"></path></svg><span style="position:absolute;top:4px;right:2px;min-width:18px;height:18px;box-sizing:border-box;background:#F2456E;border:1.5px solid #fff;border-radius:100px;display:flex;align-items:center;justify-content:center;padding:0 3px"><span style="display:block;font:400 10px/1 Pretendard,sans-serif;color:#fff">3</span></span></div>
+</div>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<sc-if value="{{ hasLikes }}" hint-placeholder-val="{{ true }}">
+<div style="padding:14px 14px 4px;display:flex;align-items:center">
+<span style="font:500 12px/1 Pretendard,sans-serif;color:#8E8E8E">좋아요한 게시물 {{ likedCount }}</span>
+<div style="flex:1"></div>
+<div onClick="{{ openSort }}" style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:8px 0 8px 12px;margin:-8px 0" style-active="opacity:.5">
+<span style="font:600 12px/1 Pretendard,sans-serif;color:#3C3C3C">{{ sortLabel }}</span>
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3C3C3C" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"></path></svg>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ showA }}" hint-placeholder-val="{{ true }}">
+<div style="padding:12px 0 14px;border-bottom:.5px solid #EFEFEF">
+<div style="display:flex;align-items:center;gap:10px;padding:0 14px 10px">
+<div style="width:36px;height:36px;border-radius:50%;border:1.5px solid #F2456E;padding:2px;box-sizing:border-box;flex:none"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(140deg,#F4D9DF,#E6C3CD)"></div></div>
+<div style="flex:1;min-width:0;display:flex;align-items:center;gap:5px"><span style="font:600 13.5px/1.3 Pretendard,sans-serif">제니의 뷰티룸</span><span style="font:400 13px/1.3 Pretendard,sans-serif;color:#8E8E8E">· 3일 전</span></div>
+<div style="cursor:pointer;display:flex;padding:12px;margin:-12px"><svg width="20" height="20" viewBox="0 0 24 24" fill="#0F0F0F"><circle cx="5.5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="18.5" cy="12" r="1.6"></circle></svg></div>
+</div>
+<div style="display:flex;gap:6px;padding:0 14px 8px">
+<span style="padding:4px 8px;border-radius:8px;background:#F2456E;color:#fff;font:600 11px/1 Pretendard,sans-serif">공동구매 D-3</span>
+</div>
+<div style="padding:0 14px">
+<div style="font:700 16px/1.45 Pretendard,sans-serif;letter-spacing:-.4px;text-wrap:pretty">여름 끝 무너진 장벽, 3주면 돌아옵니다</div>
+<div style="margin-top:4px;font:400 13.5px/1.6 Pretendard,sans-serif;color:#3C3C3C;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">제가 두 달 동안 아침저녁으로 써본 조합이에요. 이번 공구는 리필까지 같이 넣었고 배송은 다음 주 월요일부터 순차로 나갑니다. <span style="color:#8E8E8E">더 보기</span></div>
+</div>
+<div style="margin-top:14px;padding:0 22px">
+<div style="display:flex;gap:12px;align-items:center">
+<div style="width:90px;height:90px;border-radius:4px;background:linear-gradient(135deg,#EFEBE7,#D9D2CB);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 13.5px/1.45 Pretendard,sans-serif;color:#2E2E2E;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">시카 리페어 앰플 30ml 리필 2개 세트 기획</div>
+<div style="margin-top:8px;font:400 12px/1 Pretendard,sans-serif;color:#B5B5B5;text-decoration:line-through">38,000</div>
+<div style="margin-top:5px;display:flex;align-items:baseline;gap:6px"><span style="font:700 15px/1 Pretendard,sans-serif;color:#F2456E">34%</span><span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">24,900원</span></div>
+</div>
+</div>
+</div>
+<div style="padding:14px 14px 0;display:flex;align-items:center">
+<div onClick="{{ toggleA }}" style="cursor:pointer;display:flex;align-items:center;gap:7px;padding:10px 8px;margin:-10px -8px" style-active="opacity:.4">
+<svg width="25" height="25" viewBox="0 0 24 24" fill="{{ heartFillA }}" stroke="{{ heartStrokeA }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg>
+<span style="display:block;font:600 13.5px/1 Pretendard,sans-serif;transform:translateY(1px)">24</span>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ showB }}" hint-placeholder-val="{{ true }}">
+<div style="padding:12px 0 14px;border-bottom:.5px solid #EFEFEF">
+<div style="display:flex;align-items:center;gap:10px;padding:0 14px 10px;opacity:.5">
+<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(140deg,#E4EAE2,#CBD6CC);flex:none"></div>
+<div style="flex:1;min-width:0;display:flex;align-items:center;gap:5px"><span style="font:600 13.5px/1.3 Pretendard,sans-serif">하루 코스메틱</span><span style="font:400 13px/1.3 Pretendard,sans-serif;color:#8E8E8E">· 2주 전</span></div>
+<div style="cursor:pointer;display:flex;padding:12px;margin:-12px"><svg width="20" height="20" viewBox="0 0 24 24" fill="#0F0F0F"><circle cx="5.5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="18.5" cy="12" r="1.6"></circle></svg></div>
+</div>
+<div style="display:flex;gap:6px;padding:0 14px 8px">
+<span style="padding:4px 8px;border-radius:8px;background:#F4F4F5;color:#737373;font:500 11px/1 Pretendard,sans-serif">공구 종료</span>
+</div>
+<div style="padding:0 14px;opacity:.5">
+<div style="font:700 16px/1.45 Pretendard,sans-serif;letter-spacing:-.4px;text-wrap:pretty">가을 초입, 각질 정리부터 다시</div>
+<div style="margin-top:4px;font:400 13.5px/1.6 Pretendard,sans-serif;color:#3C3C3C;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">이번 주부터 바꾼 루틴이에요. 순한 성분 위주로 골랐습니다. <span style="color:#8E8E8E">더 보기</span></div>
+</div>
+<div style="padding:14px 14px 0;display:flex;align-items:center">
+<div onClick="{{ toggleB }}" style="cursor:pointer;display:flex;align-items:center;gap:7px;padding:10px 8px;margin:-10px -8px" style-active="opacity:.4">
+<svg width="25" height="25" viewBox="0 0 24 24" fill="{{ heartFillB }}" stroke="{{ heartStrokeB }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg>
+<span style="display:block;font:600 13.5px/1 Pretendard,sans-serif;transform:translateY(1px)">8</span>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ showC }}" hint-placeholder-val="{{ true }}">
+<div style="padding:12px 0 18px">
+<div style="display:flex;align-items:center;gap:10px;padding:0 14px 10px">
+<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(140deg,#D9E2F0,#C3CEDD);flex:none"></div>
+<div style="flex:1;min-width:0;display:flex;align-items:center;gap:5px"><span style="font:600 13.5px/1.3 Pretendard,sans-serif">미아 스킨노트</span><span style="font:400 13px/1.3 Pretendard,sans-serif;color:#8E8E8E">· 1주 전</span></div>
+<div style="cursor:pointer;display:flex;padding:12px;margin:-12px"><svg width="20" height="20" viewBox="0 0 24 24" fill="#0F0F0F"><circle cx="5.5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="18.5" cy="12" r="1.6"></circle></svg></div>
+</div>
+<div style="position:relative;aspect-ratio:4/5;background:linear-gradient(150deg,#EFEAE6,#DCD4CD 55%,#E7DFE2)">
+<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:400 12px/1 Pretendard,sans-serif;color:#A9A19A">이미지 · 영상 캐러셀</div>
+</div>
+<div style="display:flex;align-items:center;justify-content:center;gap:5px;padding:11px 0 3px">
+<i style="width:4px;height:4px;border-radius:100px;background:#EAEAEC"></i>
+<i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i>
+<i style="width:6px;height:6px;border-radius:100px;background:#0F0F0F"></i>
+<i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i>
+<i style="width:4px;height:4px;border-radius:100px;background:#EAEAEC"></i>
+</div>
+<div style="padding:4px 14px 0;display:flex;align-items:center">
+<div onClick="{{ toggleC }}" style="cursor:pointer;display:flex;align-items:center;gap:7px;padding:10px 8px;margin:-10px -8px" style-active="opacity:.4">
+<svg width="25" height="25" viewBox="0 0 24 24" fill="{{ heartFillC }}" stroke="{{ heartStrokeC }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg>
+<span style="display:block;font:600 13.5px/1 Pretendard,sans-serif;transform:translateY(1px)">42</span>
+</div>
+</div>
+<div style="padding:9px 14px 0;font:400 13.5px/1.55 Pretendard,sans-serif;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden"><b style="font-weight:600">미아 스킨노트</b> 요즘 아침 루틴 정리했어요. 세안 후 3분 안에 끝내는 게 핵심 <span style="color:#8E8E8E">더 보기</span></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ allGone }}" hint-placeholder-val="{{ false }}">
+<div style="padding:120px 40px 0;display:flex;flex-direction:column;align-items:center">
+<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#D8D8DA" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg>
+<div style="margin-top:18px;font:600 15.5px/1.5 Pretendard,sans-serif;text-align:center">아직 좋아요한 게시물이 없어요</div>
+<div style="margin-top:7px;font:400 13px/1.7 Pretendard,sans-serif;color:#8E8E8E;text-align:center;text-wrap:pretty">마음에 드는 게시물의 ♥를 누르면<br>여기에 모여요</div>
+</div>
+</sc-if>
+
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:9px 0 0;background:#fff">
+<div style="display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.6 12 4.2l8 6.4V19a1.4 1.4 0 0 1-1.4 1.4h-3.9v-5.9h-5.4v5.9H5.4A1.4 1.4 0 0 1 4 19z"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">홈</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"></circle><path d="M3.5 19.5c0-3.1 2.5-5.2 5.5-5.2s5.5 2.1 5.5 5.2"></path><path d="M16.2 11.2a3 3 0 1 0 0-6"></path><path d="M17.2 14.4c2 .6 3.3 2.5 3.3 5.1"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">팔로잉</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#0F0F0F"><svg width="25" height="25" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg><span style="font:600 10px/1 Pretendard,sans-serif">좋아요</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">마이</span></div>
+</div>
+<div style="height:24px;display:flex;align-items:center;justify-content:center"><div style="width:140px;height:5px;border-radius:3px;background:#0F0F0F"></div></div>
+</div>
+
+<sc-if value="{{ sortOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeSort }}" style="position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:10"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:11;background:#fff;border-radius:8px 8px 0 0;padding:8px 0 24px;box-shadow:0 -8px 40px rgba(0,0,0,.16)">
+<div style="width:36px;height:4px;border-radius:100px;background:#DEDEE0;margin:0 auto 14px"></div>
+<div style="padding:0 20px 12px;font:600 15px/1.4 Pretendard,sans-serif;text-align:center">정렬 기준</div>
+<sc-for list="{{ sortOptions }}" as="opt" hint-placeholder-count="4">
+<div onClick="{{ opt.pick }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 20px;border-top:{{ opt.divider }};cursor:pointer" style-active="background:#F7F7F8">
+<div style="min-width:0">
+<div style="font:{{ opt.font }};color:{{ opt.color }}">{{ opt.label }}</div>
+<div style="margin-top:4px;font:400 12.5px/1.5 Pretendard,sans-serif;color:#737373">{{ opt.desc }}</div>
+</div>
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#F2456E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="opacity:{{ opt.checked }}"><path d="M4.5 12.5l5 5 10-11"></path></svg>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+</div>
+</div>
+<p class="dv-note"><b>마감·품절</b> — 마감된 공구 게시물은 목록에 <b>남기되</b> 하트를 #C8C8CA로 낮추고 <b>해제만 허용</b>합니다(새 좋아요 불가 · §02). 살 수 없게 된 것을 새로 담게 하면 이 탭이 죽은 목록이 되고, 반대로 자동으로 지우면 사용자가 저장한 기록을 앱이 임의로 없애는 셈입니다. <b>품절은 제한하지 않습니다</b> — 재입고·다음 공구로 되살아날 수 있습니다.<br><br><b>카드</b> — C1 홈과 같은 규격을 그대로 씁니다(제목 16/700 · 본문 2줄 · 상품 행 90 R4 · 하트 + 숫자). 좋아요 목록에서는 <b>상품 더보기 버튼을 넣지 않고 대표 1개만</b> 보여 스크롤을 짧게 했습니다. <b>종료 공구</b>는 [공구 종료] 중립 배지 + 본문·헤더만 50% 딤 — 배지와 하트는 딤에서 제외해 상태와 액션은 또렷하게 남습니다. <b>해제 동작</b> — <b>캐러셀 도트</b> — 이 카드는 첨부 12장의 예시로, 장수와 무관하게 도트는 <b>항상 5개</b>만 노출하고, 활성 도트를 3번째 칸에 고정한 채 나머지가 슬라이딩합니다. <b>남은 장이 있는 쪽의 맨 끝 도트는 4px로 축소</b>해 "더 있다"는 신호를 줍니다(이 카드는 중간 위치라 양쪽 모두 축소). 5장 이하일 때는 전체를 그립니다.<br><br>하트를 누르면 그 자리에서 아이콘만 빈 하트로 바뀌고 카드는 남습니다(오탭 복구 가능). 실제 제거는 <b>화면을 아래로 당겨 새로고침</b>할 때 일어납니다(별도 버튼 없음). 그 자리에는 C2와 같은 규격의 정렬 트리거를 두었습니다 — 기본 · 오래된순 · 좋아요 많은순 · 공구 게시물 먼저.</p>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>비로그인</div>
+<div class="dv-card">
+<div data-screen-label="C3 좋아요 · 비로그인" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="display:flex;align-items:center;padding:2px 16px 12px">
+<span style="font:700 18px/1 Pretendard,sans-serif;letter-spacing:-.5px">좋아요</span>
+<div style="flex:1"></div>
+<div style="display:flex;gap:18px;color:#0F0F0F">
+<div style="display:flex;padding:9px;margin:-9px;cursor:pointer"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg></div>
+</div>
+</div>
+</div>
+<div style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 40px 60px">
+<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#D8D8DA" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg>
+<div style="margin-top:20px;font:700 19px/1.4 Pretendard,sans-serif;letter-spacing:-.4px;text-align:center;text-wrap:pretty">마음에 든 게시물을<br>모아 보려면 로그인하세요</div>
+<div style="margin-top:10px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-align:center;text-wrap:pretty">좋아요를 누른 공구·게시물이<br>이 탭에 쌓여요</div>
+<div style="margin-top:22px;width:100%;height:45px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 14px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">3초 만에 시작하기</div>
+</div>
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:9px 0 0;background:#fff">
+<div style="display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.6 12 4.2l8 6.4V19a1.4 1.4 0 0 1-1.4 1.4h-3.9v-5.9h-5.4v5.9H5.4A1.4 1.4 0 0 1 4 19z"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">홈</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"></circle><path d="M3.5 19.5c0-3.1 2.5-5.2 5.5-5.2s5.5 2.1 5.5 5.2"></path><path d="M16.2 11.2a3 3 0 1 0 0-6"></path><path d="M17.2 14.4c2 .6 3.3 2.5 3.3 5.1"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">팔로잉</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#0F0F0F"><svg width="25" height="25" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg><span style="font:600 10px/1 Pretendard,sans-serif">좋아요</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">마이</span></div>
+</div>
+<div style="height:24px;display:flex;align-items:center;justify-content:center"><div style="width:140px;height:5px;border-radius:3px;background:#0F0F0F"></div></div>
+</div>
+</div>
+</div>
+<p class="dv-note"><b>비로그인</b> — 목록 대신 <b>로그인 유도 블록</b>(§05: 제목 19/700 + 설명 13/1.7 + 로즈 45px CTA)을 화면 중앙에 둡니다. 하단 탭바는 그대로 남겨 <b>어디에 왔는지</b>는 유지하고, ♥ 아이콘도 회색 라인으로 그려 "여기가 좋아요 탭"임을 알립니다. <b>로그인 후 좋아요가 없는 상태</b>(1a의 빈 상태)와 문구를 구분했습니다 — 비로그인은 "로그인하세요", 로그인 후 빈 상태는 "♥를 누르면 여기 모여요".</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = { liked: { A:true, B:true, C:true }, sort: 'recent', sortOpen: false };
+
+  toggle(k){ this.setState(s => ({ liked: { ...s.liked, [k]: !s.liked[k] } })); }
+  refresh = () => this.setState(s => ({
+    liked: s.liked,
+    present: Object.keys(s.liked).filter(k => s.liked[k])
+  }));
+
+  renderVals(){
+    const L = this.state.liked;
+    const present = this.state.present || ['A','B','C'];
+    const n = present.filter(k => L[k]).length;
+    const v = {
+      showA: present.includes('A'), showB: present.includes('B'), showC: present.includes('C'),
+      allGone: present.length === 0,
+      hasLikes: present.length > 0,
+      likedCount: String(n),
+      refresh: this.refresh
+    };
+    const SORTS = [
+      { k:'recent', label:'기본', desc:'최근에 좋아요한 순서' },
+      { k:'oldest', label:'좋아요한 날짜 : 오래된순', desc:'가장 먼저 좋아요한 게시물부터' },
+      { k:'popular', label:'좋아요 많은순', desc:'많은 사람이 좋아한 게시물부터' },
+      { k:'deal', label:'공구 게시물 먼저', desc:'진행 중 공구를 위로 모아서' }
+    ];
+    const cur = SORTS.find(s => s.k === this.state.sort) || SORTS[0];
+    v.sortLabel = cur.label;
+    v.sortOpen = this.state.sortOpen;
+    v.openSort = () => this.setState({ sortOpen: true });
+    v.closeSort = () => this.setState({ sortOpen: false });
+    v.sortOptions = SORTS.map((s, i) => ({
+      label: s.label,
+      desc: s.desc,
+      checked: s.k === this.state.sort ? 1 : 0,
+      divider: i === 0 ? 'none' : '.5px solid #F0F0F0',
+      font: (s.k === this.state.sort ? '600' : '400') + ' 15.5px/1.35 Pretendard,sans-serif',
+      color: s.k === this.state.sort ? '#0F0F0F' : '#3C3C3C',
+      pick: () => this.setState({ sort: s.k, sortOpen: false })
+    }));
+    const CLOSED = { A:false, B:true, C:false };
+    ['A','B','C'].forEach(k => {
+      const closed = CLOSED[k];
+      const on = L[k];
+      v['toggle'+k] = () => { if (closed && !on) return; this.toggle(k); };
+      v['heartFill'+k] = on ? (closed ? '#C8C8CA' : '#F2456E') : 'none';
+      v['heartStroke'+k] = on ? (closed ? '#C8C8CA' : '#F2456E') : (closed ? '#C8C8CA' : '#0F0F0F');
+      v['heartCursor'+k] = (closed && !on) ? 'default' : 'pointer';
+      v['heartPress'+k] = (closed && !on) ? '1' : '.4';
+      v['countColor'+k] = closed ? '#9E9E9E' : '#0F0F0F';
+    });
+    return v;
+  }
+}
+</script>
+</body>
+</html>

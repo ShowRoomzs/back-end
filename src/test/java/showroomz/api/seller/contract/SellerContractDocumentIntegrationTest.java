@@ -10,13 +10,20 @@ import showroomz.api.admin.contract.dto.AdminContractDto.DownloadResponse;
 import showroomz.api.admin.contract.service.ContractDocumentStorage;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractDocument;
+import showroomz.domain.contract.entity.ContractHistory;
+import showroomz.domain.contract.type.ContractActorType;
 import showroomz.domain.contract.type.ContractDocumentType;
+import showroomz.domain.contract.type.ContractEventType;
 import showroomz.domain.contract.type.ContractStatus;
 import showroomz.support.BrandFixture;
 
 import java.time.LocalDateTime;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -147,6 +154,63 @@ class SellerContractDocumentIntegrationTest extends SellerContractTestSupport {
         // 체결됐지만 아직 업로드 전이면 같은 404다.
         document(seedInStatus(ContractStatus.CONCLUDED).getId(), ContractDocumentType.SIGNED_PDF)
                 .andExpect(status().isNotFound());
+    }
+
+    // ── 검토 요청 시 제출본 생성 ────────────────────────────────────────────
+
+    @Test
+    @DisplayName("검토 요청이 제출본 PDF를 만든다 — 응답에 바로 실리고 SYSTEM 이력이 남는다")
+    void reviewRequestGeneratesSubmittedDraft() throws Exception {
+        doReturn("%PDF-1.7 test".getBytes()).when(renderer).render(anyString(), anyString());
+        when(contractDocumentStorage.putGenerated(anyLong(), any()))
+                .thenAnswer(invocation -> "contracts/" + invocation.getArgument(0) + "/documents/generated.pdf");
+
+        long contractId = draftReadyForReview();
+        String submitted = reviewRequestOk(contractId);
+        assertThat(readString(submitted, "$.documents[0].type")).isEqualTo("GENERATED_DRAFT");
+
+        document(contractId, ContractDocumentType.GENERATED_DRAFT).andExpect(status().isOk());
+        Contract contract = contractRepository.findById(contractId).orElseThrow();
+        ContractDocument generated = contractDocumentRepository
+                .findByContractIdAndDocumentType(contractId, ContractDocumentType.GENERATED_DRAFT).orElseThrow();
+        assertThat(generated.getSourceReviewRequestedAt()).isEqualTo(contract.getReviewRequestedAt());
+        assertThat(generated.getUploadedBy()).isNull();
+        assertThat(contractHistoryRepository.findByContractIdOrderByOccurredAtAscIdAsc(contractId))
+                .filteredOn(h -> h.getEventType() == ContractEventType.CONTRACT_PDF_GENERATED)
+                .singleElement()
+                .satisfies(h -> assertThat(h.getActorType()).isEqualTo(ContractActorType.SYSTEM));
+    }
+
+    @Test
+    @DisplayName("제출본 생성이 실패해도 검토 요청은 성공한다 — 생성본은 운영자 첫 다운로드가 만든다")
+    void reviewRequestSurvivesGenerationFailure() throws Exception {
+        // 기본 스텁이 렌더링 실패다(IntegrationTestSupport).
+        long contractId = draftReadyForReview();
+        reviewRequest(contractId).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("REVIEW_PENDING"))
+                .andExpect(jsonPath("$.documents").isEmpty());
+
+        assertThat(contractRepository.findById(contractId).orElseThrow().getStatus())
+                .isEqualTo(ContractStatus.REVIEW_PENDING);
+        assertThat(contractDocumentRepository
+                .findByContractIdAndDocumentType(contractId, ContractDocumentType.GENERATED_DRAFT)).isEmpty();
+        assertThat(contractHistoryRepository.findByContractIdOrderByOccurredAtAscIdAsc(contractId))
+                .extracting(ContractHistory::getEventType)
+                .contains(ContractEventType.REVIEW_REQUESTED)
+                .doesNotContain(ContractEventType.CONTRACT_PDF_GENERATED);
+    }
+
+    @Test
+    @DisplayName("S3 업로드가 실패해도 검토 요청은 성공한다")
+    void reviewRequestSurvivesUploadFailure() throws Exception {
+        doReturn("%PDF-1.7 test".getBytes()).when(renderer).render(anyString(), anyString());
+        when(contractDocumentStorage.putGenerated(anyLong(), any())).thenThrow(new RuntimeException("S3 down"));
+
+        long contractId = draftReadyForReview();
+        reviewRequest(contractId).andExpect(status().isOk())
+                .andExpect(jsonPath("$.documents").isEmpty());
+        assertThat(contractRepository.findById(contractId).orElseThrow().getStatus())
+                .isEqualTo(ContractStatus.REVIEW_PENDING);
     }
 
     @Test

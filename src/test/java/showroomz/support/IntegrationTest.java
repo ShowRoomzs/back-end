@@ -55,6 +55,8 @@ import java.lang.annotation.Target;
                 "aws.s3.secret-key=integration-test-secret-key",
                 "aws.s3.cloud-front-domain=",
                 "sentry.enabled=false",
+                // 공구 수명주기 스케줄러는 매분 돈다 — 테스트 중간에 오픈·종료가 끼어들지 않게 끄고 서비스를 직접 부른다.
+                "groupbuy.scheduler-enabled=false",
                 "sentry.dsn=",
                 "logging.level.org.hibernate.SQL=WARN"
         })

@@ -37,8 +37,8 @@ import java.util.List;
  * {@code group_buy_post}에서 {@code NOT NULL}로 만든다. 뿌리에 nullable로 두면
  * "일반인데 제목이 들어온" 데이터를 DB가 막지 못한다.
  *
- * <p>상품 연결도 없다. 상품이 붙는 것은 공구 게시물이고, 그때 {@code group_buy_post_product}로
- * 따로 만든다. 예전 구현이 한 엔티티에 "이미지 모드 / 상품 모드"를 욱여넣고
+ * <p>상품 연결도 없다. 공구 게시물의 상품은 계약 상품 전부이고 {@code contract_item}에서 읽는다 —
+ * 게시물 쪽에 상품을 따로 저장하지 않는다(30 설계 1-8). 예전 구현이 한 엔티티에 "이미지 모드 / 상품 모드"를 욱여넣고
  * {@code if (hasImage && hasProducts) throw}로 방어하던 자리는 {@link PostType} 판별자로 승격됐다.
  *
  * <p>클래스 이름을 {@code Post} 그대로 두는 이유 — 쇼룸 관리(§22-4)의 인기 콘텐츠·팔로잉 정렬이
@@ -157,6 +157,28 @@ public class Post extends BaseTimeEntity {
         return post;
     }
 
+    /**
+     * 공구 게시물의 뿌리 — 사진·비율이 없고({@code aspectRatio = null}) 비노출(DRAFT)로 시작한다(31 설계 2-1).
+     * 제목·심사 상태는 확장 테이블 {@code group_buy_post}가 가진다.
+     *
+     * <p>{@code creator}는 요청자가 아니라 <b>공구의 인플루언서</b>를 넘긴다 — 소유의 원천을 공구에 두어야
+     * 게시물과 공구의 주인이 어긋날 경로가 없다.
+     */
+    public static Post groupBuyDraft(Creator creator, String content) {
+        return new Post(creator, PostType.GROUP_BUY, PostStatus.DRAFT, content, null);
+    }
+
+    /**
+     * 공구 게시물의 노출 투영 — {@code GroupBuyPostExposure.sync}만 부른다(31 설계 0-3 · 2-9).
+     * 게시일은 처음 노출될 때만 찍는다 — 숨김 해제 후 재노출해도 피드 정렬이 튀지 않는다.
+     */
+    public void changeGroupBuyExposure(PostStatus target, LocalDateTime now) {
+        this.status = target;
+        if (target == PostStatus.PUBLISHED && this.publishedAt == null) {
+            this.publishedAt = now;
+        }
+    }
+
     /** 본문·비율 수정. 사진 교체는 {@link #replaceImages(List)}가 따로 맡는다 */
     public void updateContent(String content, BigDecimal aspectRatio) {
         this.content = content;
@@ -240,6 +262,10 @@ public class Post extends BaseTimeEntity {
 
     public boolean isDeleted() {
         return this.status == PostStatus.DELETED;
+    }
+
+    public boolean isGeneral() {
+        return this.postType == PostType.GENERAL;
     }
 
     public boolean isVisibleToConsumer() {

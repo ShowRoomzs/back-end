@@ -505,11 +505,12 @@ public class CartService {
     private CartUnavailableReason unavailableReason(ProductVariant variant) {
         Product product = variant.getProduct();
 
+        // 연결(isConnected)이 아니라 진행중만 판다 — 준비중·준비완료 공구 상품은 상세는 열리지만 결제되면 안 된다.
         ProductGroupBuyStatus groupBuyStatus = product.getGroupBuyStatus();
-        boolean isGroupBuyConnected = groupBuyStatus != null && groupBuyStatus.isConnected();
+        boolean isGroupBuySelling = groupBuyStatus != null && groupBuyStatus.isPurchasable();
         ProductDisplayStatus displayStatus = product.getDisplayStatus();
         boolean isDisplayed = displayStatus != null && displayStatus.isVisible();
-        if (!isGroupBuyConnected || !isDisplayed) {
+        if (!isGroupBuySelling || !isDisplayed) {
             return CartUnavailableReason.GROUP_BUY_CLOSED;
         }
 

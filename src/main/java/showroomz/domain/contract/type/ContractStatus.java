@@ -41,6 +41,12 @@ public enum ContractStatus {
     public static final Set<ContractStatus> EDITABLE = Set.of(DRAFT, REVIEW_REJECTED);
 
     /**
+     * 브랜드 삭제 허용 집합 — 아직 상대에게 나가지 않은 계약({@link #RECEIVED_BY_CREATOR} 밖)만.
+     * 검토 대기는 어드민이 보고 있는 중이라 [요청 취소]로 먼저 되돌려야 한다.
+     */
+    public static final Set<ContractStatus> DELETABLE = Set.of(DRAFT, REVIEW_REJECTED);
+
+    /**
      * 운영자의 [계약 취소]가 허용되는 구간 — 서명 요청 발송 이후 체결 전까지다.
      *
      * <p><b>브랜드에게는 계약 취소가 없다.</b> 발송 전의 되돌림은 [요청 취소](검토 대기 → 작성중)뿐이고,
@@ -68,5 +74,9 @@ public enum ContractStatus {
 
     public boolean isEditable() {
         return EDITABLE.contains(this);
+    }
+
+    public boolean isDeletable() {
+        return DELETABLE.contains(this);
     }
 }

@@ -548,12 +548,17 @@ public class ShowroomPostService {
         return post;
     }
 
-    /** 삭제된 게시물은 본인에게도 없는 것으로 보인다 — 별도 화면을 두지 않는다(§24-6) */
+    /**
+     * 삭제된 게시물은 본인에게도 없는 것으로 보인다 — 별도 화면을 두지 않는다(§24-6).
+     *
+     * <p>공구 게시물도 이 API에는 없는 것으로 보인다(31 설계 0-6 ①). 여기로 들어오면 승인대기 잠금을 우회해
+     * 본문을 바꾸거나 사진을 붙이거나 원문을 지울 수 있다 — 공구 게시물 쓰기는 {@code /v1/creator/group-buys}만 한다.
+     */
     private void requireOwnedAndAlive(Post post, Creator creator) {
         if (!post.isOwnedBy(creator.getId())) {
             throw new BusinessException(ErrorCode.POST_ACCESS_DENIED);
         }
-        if (post.isDeleted()) {
+        if (post.isDeleted() || !post.isGeneral()) {
             throw new BusinessException(ErrorCode.POST_NOT_FOUND);
         }
     }

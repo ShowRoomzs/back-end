@@ -26,6 +26,13 @@ public class ThreadListItem {
     @Schema(description = "현재 연결 상태 — [계약 작성] 버튼 게이트(§13-5)에 사용", example = "CONNECTED")
     private final ConnectionStatus connectionStatus;
 
+    @Schema(description = "상대 인플루언서 ID — [계약 작성] 시 계약 초안 생성 요청의 creatorId로 그대로 보낸다. "
+            + "운영자 채널이면 null", example = "12", nullable = true)
+    private final Long creatorId;
+
+    @Schema(description = "이 스레드의 연결 ID — 계약 초안 생성 요청의 connectionId로 보낸다", example = "41")
+    private final Long connectionId;
+
     @Schema(description = "최근 메시지 1줄 미리보기", example = "촬영본 보내드렸습니다", nullable = true)
     private final String lastMessagePreview;
 
@@ -37,12 +44,15 @@ public class ThreadListItem {
 
     public ThreadListItem(Long threadId, String counterpartName, String counterpartImageUrl,
                            boolean operatorChannel, ConnectionStatus connectionStatus,
+                           Long creatorId, Long connectionId,
                            String lastMessagePreview, LocalDateTime lastMessageAt, long unreadCount) {
         this.threadId = threadId;
         this.counterpartName = counterpartName;
         this.counterpartImageUrl = counterpartImageUrl;
         this.operatorChannel = operatorChannel;
         this.connectionStatus = connectionStatus;
+        this.creatorId = creatorId;
+        this.connectionId = connectionId;
         this.lastMessagePreview = lastMessagePreview;
         this.lastMessageAt = lastMessageAt;
         this.unreadCount = unreadCount;

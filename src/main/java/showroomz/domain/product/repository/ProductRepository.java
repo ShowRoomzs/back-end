@@ -167,5 +167,15 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
            "ORDER BY p.name ASC")
     List<Product> findDisplayedByMarketId(@Param("marketId") Long marketId);
 
+    /**
+     * 공구 모듈의 상품 공구 상태 동기화(공구 설계서 1-11). 값이 같은 행은 건드리지 않는다.
+     * clearAutomatically는 쓰지 않는다 — 호출자가 붙들고 있는 공구·계약 엔티티가 준영속으로 떨어진다.
+     */
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true)
+    @Query("UPDATE Product p SET p.groupBuyStatus = :status " +
+           "WHERE p.productId IN :productIds AND p.groupBuyStatus <> :status")
+    int updateGroupBuyStatus(@Param("productIds") Collection<Long> productIds,
+                             @Param("status") showroomz.domain.product.type.ProductGroupBuyStatus status);
+
 }
 

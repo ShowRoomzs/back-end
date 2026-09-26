@@ -49,8 +49,8 @@ class SellerContractLifecycleIntegrationTest extends SellerContractTestSupport {
         assertThat(readString(before, "$.review.rejectReason.code")).isEqualTo("INFO_MISMATCH");
         detail(contractId)
                 .andExpect(jsonPath("$.permissions.canEdit").value(true))
-                // 반려됐다고 지울 수 있는 것은 아니다 — 삭제는 작성중 초안만이다.
-                .andExpect(jsonPath("$.permissions.canDelete").value(false))
+                // 반려 계약은 아직 상대에게 나가지 않았으므로 지울 수 있다.
+                .andExpect(jsonPath("$.permissions.canDelete").value(true))
                 .andExpect(jsonPath("$.permissions.canRequestReview").value(true));
 
         saveOk(contractId, validForm(versionOf(before)).title("가을 앰플 신제품 공구 (수정)"));
@@ -92,29 +92,61 @@ class SellerContractLifecycleIntegrationTest extends SellerContractTestSupport {
     // ── 삭제 ───────────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("삭제는 작성중 초안만이다 — 검토 요청 이후의 되돌림은 취소이지 삭제가 아니다")
-    void deletesDraftsOnly() throws Exception {
+    @DisplayName("삭제는 작성중·검토 반려만이다 — 검토 대기 이후의 되돌림은 취소이지 삭제가 아니다")
+    void deletesDraftsAndRejectedOnly() throws Exception {
         long draft = createDraft();
         deleteContract(draft).andExpect(status().isNoContent());
         detail(draft).andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("CONTRACT_NOT_FOUND"));
-        // 생성 이력 한 줄은 어떤 초안에도 반드시 있다 — 함께 치우지 않으면 FK 때문에 삭제 자체가 깨진다.
-        assertThat(historyOf(draft)).isEmpty();
+        // 행은 남기고 표시만 한다 — 이력도 지우지 않고 삭제 한 줄이 더해진다.
+        assertThat(contractRepository.findById(draft).orElseThrow().getDeletedAt()).isNotNull();
+        assertThat(historyOf(draft)).extracting(ContractHistory::getEventType)
+                .containsExactly(ContractEventType.CREATED, ContractEventType.DELETED);
 
-        // 검토 요청을 냈다가 취소하고 돌아온 초안도 지울 수 있다. 이력이 세 줄이고 항목도 달려 있다.
+        // 검토 요청을 냈다가 취소하고 돌아온 초안도 지울 수 있다.
         long returned = draftReadyForReview();
         reviewRequest(returned).andExpect(status().isOk());
         cancelReviewRequest(returned).andExpect(status().isOk());
         deleteContract(returned).andExpect(status().isNoContent());
-        assertThat(contractRepository.findById(returned)).isEmpty();
-        assertThat(historyOf(returned)).isEmpty();
+        detail(returned).andExpect(status().isNotFound());
 
-        for (ContractStatus locked : List.of(ContractStatus.REVIEW_PENDING, ContractStatus.REVIEW_REJECTED,
+        // 검토 반려 — 계약번호·반려 사유가 그대로 남은 채 표시만 된다.
+        Contract rejected = seedInStatus(ContractStatus.REVIEW_REJECTED);
+        deleteContract(rejected.getId()).andExpect(status().isNoContent());
+        detail(rejected.getId()).andExpect(status().isNotFound());
+        Contract kept = contractRepository.findById(rejected.getId()).orElseThrow();
+        assertThat(kept.getDeletedAt()).isNotNull();
+        assertThat(kept.getStatus()).isEqualTo(ContractStatus.REVIEW_REJECTED);
+        assertThat(kept.getContractNumber()).isEqualTo(rejected.getContractNumber());
+        assertThat(kept.getRejectReasonCode()).isEqualTo(rejected.getRejectReasonCode());
+
+        for (ContractStatus locked : List.of(ContractStatus.REVIEW_PENDING,
                 ContractStatus.SIGNING, ContractStatus.CONCLUDED, ContractStatus.CANCELED)) {
             deleteContract(seedInStatus(locked).getId())
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.code").value("CONTRACT_EDIT_LOCKED"));
         }
+    }
+
+    @Test
+    @DisplayName("삭제된 계약은 없는 계약이다 — 목록·카운트에서 빠지고 저장·검토 요청·재삭제가 전부 404다")
+    void deletedContractIsGone() throws Exception {
+        long rejected = seedInStatus(ContractStatus.REVIEW_REJECTED).getId();
+        String before = detailOk(rejected);
+        deleteContract(rejected).andExpect(status().isNoContent());
+
+        mockMvc.perform(get(CONTRACTS).header(HttpHeaders.AUTHORIZATION, brandToken))
+                .andExpect(jsonPath("$.content").isEmpty());
+        mockMvc.perform(get(CONTRACTS + "/summary").header(HttpHeaders.AUTHORIZATION, brandToken))
+                .andExpect(jsonPath("$.tabCounts.ALL").value(0))
+                // 반려는 GNB 배지 대상이지만 지운 계약은 조치할 대상이 아니다.
+                .andExpect(jsonPath("$.actionRequiredCount").value(0));
+
+        save(rejected, validForm(versionOf(before))).andExpect(status().isNotFound());
+        reviewRequest(rejected).andExpect(status().isNotFound());
+        deleteContract(rejected).andExpect(status().isNotFound());
+        assertThat(contractRepository.findById(rejected).orElseThrow().getStatus())
+                .isEqualTo(ContractStatus.REVIEW_REJECTED);
     }
 
     // ── 취소 ────────────────────────────────────────────────────────────────
@@ -356,6 +388,65 @@ class SellerContractLifecycleIntegrationTest extends SellerContractTestSupport {
                 .andExpect(jsonPath("$.code").value("CONTRACT_COUNTERPARTY_NOT_CONNECTED"));
     }
 
+    // ── 시각 ───────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("마지막 저장 시각은 브랜드의 임시저장만 찍는다 — 초안 생성·검토 요청·어드민 반려는 바꾸지 않는다")
+    void updatedAtTracksBrandSavesOnly() throws Exception {
+        long contractId = createDraft();
+        detail(contractId).andExpect(jsonPath("$.updatedAt").doesNotExist());
+
+        String saved = saveOk(contractId, validForm(currentVersion(contractId)));
+        String savedAt = readString(saved, "$.updatedAt");
+        assertThat(savedAt).isNotNull();
+        assertThat(readString(detailOk(contractId), "$.updatedAt")).isEqualTo(savedAt);
+
+        reviewRequestOk(contractId);
+        assertThat(readString(detailOk(contractId), "$.updatedAt")).isEqualTo(savedAt);
+
+        // 적재한 반려 계약 — 어드민 반려가 행을 바꿨어도 브랜드는 저장한 적이 없다.
+        detail(seedInStatus(ContractStatus.REVIEW_REJECTED).getId())
+                .andExpect(jsonPath("$.updatedAt").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("체결 시각은 최상위 concludedAt에 있다 — closure는 종결 3종 전용이라 체결완료에서 비어 있다")
+    void concludedAtIsExposedOutsideClosure() throws Exception {
+        Contract concluded = seedInStatus(ContractStatus.CONCLUDED);
+        String body = detailOk(concluded.getId());
+        assertThat(readString(body, "$.concludedAt")).isNotNull();
+        detail(concluded.getId()).andExpect(jsonPath("$.closure.closedAt").doesNotExist());
+
+        for (ContractStatus notConcluded : List.of(ContractStatus.SIGNING, ContractStatus.CONCLUSION_PENDING,
+                ContractStatus.CANCELED)) {
+            detail(seedInStatus(notConcluded).getId()).andExpect(jsonPath("$.concludedAt").doesNotExist());
+        }
+    }
+
+    // ── 스튜디오 스레드 [계약 확인] 게이트 ──────────────────────────────────
+
+    @Test
+    @DisplayName("스레드 게이트는 인플루언서에게 도착한 계약만 센다 — 작성중·검토·반려·삭제는 없는 계약이다")
+    void threadGateCountsReceivedContractsOnly() {
+        List<Long> marketIds = List.of(brand.marketId());
+        for (ContractStatus notSent : List.of(ContractStatus.DRAFT, ContractStatus.REVIEW_PENDING,
+                ContractStatus.REVIEW_REJECTED)) {
+            seedInStatus(notSent);
+        }
+        assertThat(contractRepository.findMarketIdsWithReceivedContract(
+                counterparty.getId(), marketIds, ContractStatus.RECEIVED_BY_CREATOR)).isEmpty();
+
+        // connection_id가 비어 있는 계약(목록에서 상대를 고른 계약)도 (브랜드, 인플루언서) 쌍으로 잡힌다.
+        seedInStatus(ContractStatus.SIGNING);
+        assertThat(contractRepository.findMarketIdsWithReceivedContract(
+                counterparty.getId(), marketIds, ContractStatus.RECEIVED_BY_CREATOR))
+                .containsExactly(brand.marketId());
+
+        Creator stranger = createConnectedCreator("다른_쇼룸", "stranger");
+        assertThat(contractRepository.findMarketIdsWithReceivedContract(
+                stranger.getId(), marketIds, ContractStatus.RECEIVED_BY_CREATOR)).isEmpty();
+    }
+
     // ── 권한 · 격리 ────────────────────────────────────────────────────────
 
     @Test
@@ -364,13 +455,14 @@ class SellerContractLifecycleIntegrationTest extends SellerContractTestSupport {
         assertPermissions(ContractStatus.DRAFT, "canEdit", "canDelete", "canRequestReview");
         // 검토 대기 — 되돌림은 [요청 취소](작성중으로)뿐이다. 브랜드에게 계약 취소(종결)는 없다.
         assertPermissions(ContractStatus.REVIEW_PENDING, "canCancelRequest");
-        // 반려 — 수정 후 재요청만.
-        assertPermissions(ContractStatus.REVIEW_REJECTED, "canEdit", "canRequestReview");
+        // 반려 — 수정 후 재요청, 또는 삭제. 아직 상대에게 나가지 않았다.
+        assertPermissions(ContractStatus.REVIEW_REJECTED, "canEdit", "canDelete", "canRequestReview");
         // 서명 요청 발송 이후 — 취소는 운영자만 한다.
         assertPermissions(ContractStatus.SIGNING, "canRequestResend");
         // 양측 서명 완료 — 브랜드가 할 조작이 없다(B4b).
         assertPermissions(ContractStatus.CONCLUSION_PENDING);
-        assertPermissions(ContractStatus.CONCLUDED, "canRecordPayment", "canCreateGroupBuy", "canDuplicate");
+        // 공구는 체결 트랜잭션이 만든다 — 브랜드에게 생성 버튼이 없다(공구 설계서 0-2).
+        assertPermissions(ContractStatus.CONCLUDED, "canRecordPayment", "canDuplicate");
         assertPermissions(ContractStatus.CANCELED, "canDuplicate");
         assertPermissions(ContractStatus.EXPIRED, "canDuplicate");
         assertPermissions(ContractStatus.DECLINED, "canDuplicate");
@@ -414,7 +506,7 @@ class SellerContractLifecycleIntegrationTest extends SellerContractTestSupport {
         ResultActions result = detail(contractId).andExpect(status().isOk());
 
         List<String> allPermissions = List.of("canEdit", "canDelete", "canRequestReview", "canCancelRequest",
-                "canRequestResend", "canRecordPayment", "canCreateGroupBuy", "canDuplicate");
+                "canRequestResend", "canRecordPayment", "canDuplicate");
         List<String> expectedTrue = List.of(allowed);
         for (String permission : allPermissions) {
             result.andExpect(jsonPath("$.permissions." + permission).value(expectedTrue.contains(permission)));

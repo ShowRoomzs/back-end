@@ -106,6 +106,26 @@ class CartServiceTest {
     }
 
     @Test
+    @DisplayName("시작 전 공구(준비중·준비완료) 상품은 연결돼 있어도 살 수 없다 — 구매는 진행중만이다")
+    void notYetOpenedGroupBuyItemIsNotPurchasable() {
+        Market market = market(5L, "제니의 뷰티룸", 3000, 30000);
+        Cart preparing = cart(10L, variant(1L, product(market, ProductGroupBuyStatus.PREPARING, 10), 38000, 24900, 10), 1);
+        Cart ready = cart(11L, variant(2L, product(market, ProductGroupBuyStatus.READY, 10), 26000, 17500, 10), 1);
+
+        givenCart(List.of(preparing, ready));
+
+        CartDto.CartListResponse response = cartService.getCart(USERNAME, null);
+
+        for (Long cartId : List.of(10L, 11L)) {
+            CartDto.CartItem item = itemOf(response, cartId);
+            assertThat(item.getAvailability().getIsPurchasable()).isFalse();
+            assertThat(item.getAvailability().getReason()).isEqualTo("GROUP_BUY_CLOSED");
+        }
+        assertThat(response.getSummary().getSelectableCount()).isZero();
+        assertThat(response.getSummary().getSaleTotal()).isZero();
+    }
+
+    @Test
     @DisplayName("품절 항목은 사유를 달고 목록에 남는다 — 말없이 지우면 합계가 줄어든 이유를 알 수 없다")
     void soldOutItemKeepsItsPlaceWithReason() {
         Market market = market(5L, "제니의 뷰티룸", 3000, 30000);

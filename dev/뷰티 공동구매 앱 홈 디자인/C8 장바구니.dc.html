@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+.dv-sw{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:-2px 0 2px}
+.dv-swl{font:600 10px/1 Pretendard,sans-serif;color:rgba(0,0,0,.38);letter-spacing:.02em;margin-right:2px}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C8 장바구니</span></div>
+<p class="dv-tsub">공구 단위로 묶어 담기고, <b>배송비는 공구별로</b> 계산됩니다. 선택·수량·삭제·전체선택이 동작하고, 하단 요약은 선택 항목만 합산합니다. 우측 Tweaks의 <b>state</b>로 빈 상태를 확인할 수 있습니다.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>C8 장바구니</div>
+<div class="dv-sw">
+<span class="dv-swl">목록</span>
+<sc-for list="{{ swState }}" as="o" hint-placeholder-count="2">
+<div onClick="{{ o.pick }}" style="padding:6px 10px;border-radius:6px;cursor:pointer;font:{{ o.font }};background:{{ o.bg }};color:{{ o.color }};border:1px solid {{ o.border }}">{{ o.label }}</div>
+</sc-for>
+</div>
+<div class="dv-sw">
+<span class="dv-swl">담은 뒤 변경</span>
+<sc-for list="{{ swOut }}" as="o" hint-placeholder-count="3">
+<div onClick="{{ o.pick }}" style="padding:6px 10px;border-radius:6px;cursor:pointer;font:{{ o.font }};background:{{ o.bg }};color:{{ o.color }};border:1px solid {{ o.border }}">{{ o.label }}</div>
+</sc-for>
+</div>
+<div class="dv-card">
+<div data-screen-label="C8 장바구니" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">장바구니</span>
+</div>
+</div>
+
+<sc-if value="{{ hasItems }}" hint-placeholder-val="{{ true }}">
+<div style="flex:none;display:flex;align-items:center;padding:12px 14px;border-bottom:.5px solid #EFEFEF">
+<div onClick="{{ toggleAll }}" style="display:flex;align-items:center;gap:9px;cursor:pointer;padding:13px 12px 13px 0;margin:-13px 0" style-active="opacity:.55">
+<span style="width:21px;height:21px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:{{ allBg }};border:{{ allBorder }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{ allCheck }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg></span>
+<span style="font:500 13.5px/1 Pretendard,sans-serif;color:#3C3C3C">전체 선택 {{ selectedCount }}/{{ totalCount }}</span>
+</div>
+<div style="flex:1"></div>
+<div onClick="{{ askRemove }}" style="display:flex;align-items:center;padding:15px 0 15px 14px;margin:-15px 0;cursor:pointer" style-active="opacity:.5">
+<span style="font:500 12.5px/1 Pretendard,sans-serif;color:{{ removeColor }}">선택 삭제</span>
+</div>
+</div>
+</sc-if>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+<div>
+<div style="height:5px;background:#F7F7F8"></div>
+<div style="display:flex;align-items:center;gap:9px;padding:15px 14px 12px">
+<div onClick="{{ g.toggle }}" style="display:flex;align-items:center;cursor:pointer;padding:12px 11px;margin:-12px -11px" style-active="opacity:.55">
+<span style="width:21px;height:21px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:{{ g.checkBg }};border:{{ g.checkBorder }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{ g.checkColor }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg></span>
+</div>
+<div style="width:24px;height:24px;border-radius:50%;background:{{ g.avatar }};flex:none"></div>
+<span style="flex:1;min-width:0;font:600 13.5px/1.3 Pretendard,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.shop }}</span>
+<sc-if value="{{ g.hasDday }}" hint-placeholder-val="{{ true }}">
+<span style="flex:none;font:700 12.5px/1 Pretendard,sans-serif;color:#F2456E">{{ g.dday }}</span>
+</sc-if>
+</div>
+
+<sc-for list="{{ g.items }}" as="it" hint-placeholder-count="2">
+<div style="display:flex;gap:11px;padding:12px 14px;border-top:{{ it.divider }}">
+<div onClick="{{ it.toggle }}" style="flex:none;display:flex;align-items:flex-start;cursor:pointer;padding:12px 11px;margin:-12px -11px" style-active="opacity:.55">
+<span style="width:21px;height:21px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:{{ it.checkBg }};border:{{ it.checkBorder }};margin-top:2px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{ it.checkColor }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg></span>
+</div>
+<div style="flex:1;min-width:0">
+<div style="display:flex;gap:10px;align-items:flex-start">
+<div style="position:relative;width:60px;height:60px;border-radius:4px;flex:none;overflow:hidden">
+<div style="position:absolute;inset:0;background:{{ it.thumb }};filter:{{ it.thumbFilter }}"></div>
+<sc-if value="{{ it.out }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font:600 11px/1 Pretendard,sans-serif;color:#3C3C3C">{{ it.outLabel }}</div>
+</sc-if>
+</div>
+<div style="flex:1;min-width:0;min-height:60px;display:flex;flex-direction:column;justify-content:space-between">
+<div style="display:flex;align-items:flex-start;gap:8px;min-width:0;width:100%">
+<span style="flex:1;min-width:0;margin-top:5px;font:400 12px/1.4 Pretendard,sans-serif;color:{{ it.nameColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.name }}</span>
+<div onClick="{{ it.remove }}" style="flex:none;display:flex;align-items:center;justify-content:center;width:24px;height:24px;padding:10px;margin:-16px -14px -10px 0;cursor:pointer" style-active="opacity:.4">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="2.4" stroke-linecap="round" style="display:block"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>
+</div>
+</div>
+<div onClick="{{ it.openOption }}" style="display:flex;align-items:center;justify-content:space-between;gap:6px;height:32px;flex:none;padding:0 10px;border:1px solid {{ it.optBorder }};border-radius:8px;box-sizing:border-box;background:{{ it.optBg }};cursor:{{ it.optCursor }}" style-active="background:{{ it.optPress }}">
+<span style="flex:1;min-width:0;font:400 11.5px/1 Pretendard,sans-serif;color:{{ it.optColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.option }}</span>
+<sc-if value="{{ it.inStock }}" hint-placeholder-val="{{ true }}">
+<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none"><path d="M5 9l7 7 7-7"></path></svg>
+</sc-if>
+</div>
+</div>
+</div>
+<sc-if value="{{ it.out }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:6px;display:flex;align-items:center">
+<span style="font:500 12px/1 Pretendard,sans-serif;color:#9E9E9E">{{ it.outMsg }}</span>
+</div>
+</sc-if>
+<sc-if value="{{ it.inStock }}" hint-placeholder-val="{{ true }}">
+<div style="margin-top:11px;display:flex;align-items:flex-end;justify-content:space-between;gap:10px">
+<div style="flex:none;display:flex;align-items:center;border:1px solid #E3E3E5;border-radius:8px;overflow:hidden">
+<div onClick="{{ it.dec }}" style="width:32px;height:32px;padding:6px 0;margin:-6px 0;box-sizing:content-box;display:flex;align-items:center;justify-content:center;cursor:pointer" style-active="opacity:.5"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="{{ it.decColor }}" stroke-width="2.4" stroke-linecap="round" style="display:block"><path d="M6 12h12"></path></svg></div>
+<span style="min-width:30px;text-align:center;font:600 13px/1 Pretendard,sans-serif">{{ it.qty }}</span>
+<div onClick="{{ it.inc }}" style="width:32px;height:32px;padding:6px 0;margin:-6px 0;box-sizing:content-box;display:flex;align-items:center;justify-content:center;cursor:pointer" style-active="opacity:.5"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3C3C3C" stroke-width="2.4" stroke-linecap="round" style="display:block"><path d="M12 6v12"></path><path d="M6 12h12"></path></svg></div>
+</div>
+<div style="min-width:0;height:32px;display:flex;align-items:flex-end;gap:7px">
+<span style="font:400 11.5px/1 Pretendard,sans-serif;color:#B5B5B5;text-decoration:line-through">{{ it.was }}</span>
+<span style="font:700 14px/1 Pretendard,sans-serif;letter-spacing:-.2px">{{ it.price }}</span>
+</div>
+</div>
+</sc-if>
+</div>
+</div>
+</sc-for>
+
+<div style="display:flex;align-items:baseline;justify-content:space-between;padding:9px 14px;border-top:.5px solid #F0F0F0">
+<span style="font:400 12.5px/1.4 Pretendard,sans-serif;color:#737373">{{ g.shipLabel }}</span>
+<span style="font:600 12.5px/1.4 Pretendard,sans-serif;color:{{ g.shipColor }}">{{ g.shipValue }}</span>
+</div>
+</div>
+</sc-for>
+
+<sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+<div style="padding:110px 40px 0;display:flex;flex-direction:column;align-items:center">
+<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#D8D8DA" stroke-width="1.2" stroke-linejoin="miter" style="display:block"><path d="M4.4 7.5h15.2l-1.1 12.3H5.5z"></path><path d="M8.8 10V6.6a3.2 3.2 0 0 1 6.4 0V10"></path></svg>
+<div style="margin-top:18px;font:600 15.5px/1.5 Pretendard,sans-serif;text-align:center">장바구니가 비어 있어요</div>
+<div style="margin-top:7px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-align:center;text-wrap:pretty">진행 중인 공동구매를 둘러보고<br>마음에 드는 상품을 담아보세요</div>
+<div style="margin-top:20px;height:45px;padding:0 20px;border-radius:8px;background:#F2456E;display:flex;align-items:center;font:600 14px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">공동구매 둘러보기</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ hasItems }}" hint-placeholder-val="{{ true }}">
+<div>
+<div style="height:5px;background:#F7F7F8"></div>
+<div style="padding:18px 14px 12px;display:flex;align-items:center;gap:7px">
+<span style="flex:1;min-width:0;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">팔로우한 쇼룸의 공구</span>
+</div>
+<div class="noscroll" style="display:flex;gap:10px;padding:0 14px 20px;overflow-x:auto">
+<sc-for list="{{ recos }}" as="r" hint-placeholder-count="3">
+<div style="flex:none;width:130px;cursor:pointer" style-active="opacity:.6">
+<div style="position:relative;width:130px;height:130px;border-radius:4px;background:{{ r.thumb }}">
+<span style="position:absolute;left:6px;top:6px;padding:3px 7px;border-radius:8px;background:#F2456E;color:#fff;font:600 10.5px/1 Pretendard,sans-serif">{{ r.dday }}</span>
+</div>
+<div style="margin-top:8px;font:400 11.5px/1.3 Pretendard,sans-serif;color:#737373;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.shop }}</div>
+<div style="margin-top:3px;padding-right:4px;min-height:35px;font:400 12.5px/1.4 Pretendard,sans-serif;color:#2E2E2E;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-all">{{ r.name }}</div>
+<div style="margin-top:5px;display:flex;align-items:baseline;gap:5px">
+<span style="font:700 13.5px/1 Pretendard,sans-serif;color:#F2456E">{{ r.off }}</span>
+<span style="font:700 13.5px/1 Pretendard,sans-serif;letter-spacing:-.2px">{{ r.price }}</span>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<div style="height:26px"></div>
+
+</div>
+
+<sc-if value="{{ hasItems }}" hint-placeholder-val="{{ true }}">
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:14px 14px 26px;background:#fff">
+<div style="display:flex;align-items:baseline;justify-content:space-between">
+<span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">상품 금액</span>
+<span style="font:400 13px/1.5 Pretendard,sans-serif;color:#3C3C3C">{{ sumItems }}</span>
+</div>
+<div style="margin-top:5px;display:flex;align-items:baseline;justify-content:space-between">
+<span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">배송비</span>
+<span style="font:400 13px/1.5 Pretendard,sans-serif;color:#3C3C3C">{{ sumShip }}</span>
+</div>
+<div style="margin-top:11px;padding-top:11px;border-top:.5px solid #EFEFEF;display:flex;align-items:baseline;justify-content:space-between">
+<span style="font:600 13.5px/1 Pretendard,sans-serif">총 결제 금액</span>
+<span style="font:700 21px/1 Pretendard,sans-serif;letter-spacing:-.6px">{{ sumTotal }}</span>
+</div>
+<div style="margin-top:14px;height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:{{ buyBg }};color:{{ buyColor }};font:600 15.5px/1 Pretendard,sans-serif;cursor:{{ buyCursor }}" style-active="opacity:{{ buyPress }}">{{ buyLabel }}</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ optionOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeOption }}" style="position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:11"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:12;background:#fff;border-radius:8px 8px 0 0;padding:8px 0 20px;box-shadow:0 -8px 40px rgba(0,0,0,.16)">
+<div style="width:36px;height:4px;border-radius:100px;background:#DEDEE0;margin:0 auto 14px"></div>
+<div style="padding:0 20px 6px;font:600 15px/1.4 Pretendard,sans-serif;text-align:center">옵션 변경</div>
+<div style="padding:0 20px 14px;font:400 12.5px/1.5 Pretendard,sans-serif;color:#737373;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center">{{ optionProduct }}</div>
+
+<div class="noscroll" style="max-height:420px;overflow-y:auto">
+<sc-for list="{{ optGroups }}" as="g" hint-placeholder-count="2">
+<div style="padding:0 20px 8px">
+<div onClick="{{ g.toggle }}" style="min-height:44px;padding:0 13px;border:1px solid {{ g.border }};border-radius:{{ g.radius }};box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:{{ g.cursor }};background:{{ g.bg }}" style-active="opacity:{{ g.press }}">
+<span style="flex:1;min-width:0;font:400 14.5px/1.4 Pretendard,sans-serif;color:{{ g.valueColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.value }}</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none;transform:{{ g.chevron }}"><path d="M5 9l7 7 7-7"></path></svg>
+</div>
+<sc-if value="{{ g.open }}" hint-placeholder-val="{{ false }}">
+<div class="noscroll" style="border:1px solid #E3E3E5;border-top:none;border-radius:0 0 8px 8px;overflow:hidden;max-height:264px;overflow-y:auto">
+<sc-for list="{{ g.items }}" as="it" hint-placeholder-count="3">
+<div onClick="{{ it.pick }}" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 13px;border-top:{{ it.divider }};cursor:pointer;background:{{ it.bg }}" style-active="background:#F7F7F8">
+<span style="flex:1;min-width:0;font:{{ it.font }};color:{{ it.color }}">{{ it.label }}</span>
+<sc-if value="{{ it.hasExtra }}" hint-placeholder-val="{{ false }}">
+<span style="flex:none;font:400 12.5px/1.4 Pretendard,sans-serif;color:#737373">{{ it.extra }}</span>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+
+<sc-if value="{{ optAllPicked }}" hint-placeholder-val="{{ true }}">
+<div style="margin:8px 20px 0;padding:13px;border-radius:8px;background:#F7F7F8;display:flex;align-items:center;justify-content:space-between;gap:12px">
+<span style="flex:1;min-width:0;font:500 13px/1.45 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">{{ optPickLabel }}</span>
+<span style="flex:none;font:600 15px/1 Pretendard,sans-serif;letter-spacing:-.3px">{{ optPickPrice }}</span>
+</div>
+</sc-if>
+<div style="height:12px"></div>
+</div>
+
+<div style="padding:14px 20px 0;border-top:.5px solid #EFEFEF;display:flex;gap:8px">
+<div onClick="{{ closeOption }}" style="flex:1;height:52px;border:1px solid #DCDCDE;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">취소</div>
+<div onClick="{{ closeOption }}" style="flex:1;height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:{{ optSaveBg }};color:{{ optSaveColor }};font:600 15px/1 Pretendard,sans-serif;cursor:{{ optSaveCursor }}" style-active="opacity:{{ optSavePress }}">변경하기</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ removeOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeRemove }}" style="position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:10;display:flex;align-items:center;justify-content:center;padding:0 32px">
+<div style="width:100%;background:#fff;border-radius:8px;overflow:hidden">
+<div style="padding:26px 22px 20px;text-align:center">
+<div style="font:700 16.5px/1.5 Pretendard,sans-serif;letter-spacing:-.3px">선택한 상품을 삭제할까요?</div>
+<div style="margin-top:9px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373">{{ removeCount }}개 상품이 장바구니에서 빠집니다</div>
+</div>
+<div style="display:flex;gap:8px;padding:0 18px 18px">
+<div onClick="{{ closeRemove }}" style="flex:1;height:48px;border:1px solid #DCDCDE;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">취소</div>
+<div onClick="{{ confirmRemove }}" style="flex:1;height:48px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">삭제하기</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+<p class="dv-note">상태 표기는 §05 <b>판매 종료 상태</b>를 따릅니다(썸네일 grayscale + 흰색 55% 오버레이 · 텍스트 #9E9E9E · 취소선 #C7C7C7 · 사유는 칩 없이 글자만).<br><br><b>담은 뒤 마감·품절</b> — 장바구니는 <b>담은 시점과 결제 시점 사이에 시차</b>가 가장 큰 화면이라, 여기서 걸러 주지 않으면 결제 단계에서야 막혀 이탈이 큽니다(Tweaks의 outItem으로 확인). 해당 항목은 <b>썸네일 흑백(grayscale) + 흰 베일 + 라벨 · 상품명 탈색 · 체크박스 비활성</b>이 되고, 수량 스테퍼·가격 자리에는 <b>사유 문구</b>만 들어가고, <b>옵션 변경 버튼도 비활성</b>(회색 배경 + 셰브런 제거)됩니다 — 못 사는 상품에 수량이나 옵션을 조작하는 컨트롤을 남겨 두면 안 됩니다. 셰브런을 지운 이유는 <b>열리지 않는 문에 손잡이를 두지 않기</b> 위해서입니다. 삭제는 <b>행 우측 상단의 X</b>가 이미 담당하므로 버튼을 따로 두지 않았습니다(같은 일을 하는 조작이 한 행에 둘이면 어느 쪽이 무엇을 지우는지 흐려집니다).<br><br><b>마감된 공구의 D-day</b> — 그룹 머리의 D-3을 "마감"으로 바꾸지 않고 <b>아예 지웁니다</b>. D-day는 <b>남은 시간을 재촉하는 신호</b>인데 끝난 공구에 회색 라벨을 남기면 자리만 차지하고, 아래 상품 행이 이미 마감을 말하고 있어 같은 말을 두 번 하게 됩니다. 반대로 <b>새 공구가 열려 있고 그 상품을 담아 둔 경우</b>에는 D-day를 그대로 노출합니다 — 이때는 진짜로 재촉해야 하는 정보입니다.<br><br><b>목록에서 자동으로 지우지 않는 이유</b> — 사용자가 담아 둔 것은 <b>기억이자 의도</b>입니다. 말없이 사라지면 "내가 담았던 게 뭐였지"가 되고, 합계가 갑자기 줄어든 이유도 알 수 없습니다. 대신 <b>선택에서 빼 합계·배송비 계산에서 제외</b>하고 삭제는 사용자가 결정합니다. 전체 선택도 이 항목은 건너뜁니다.<br><br><b>공구 단위 묶음</b> — 상품이 아니라 <b>공동구매별로</b> 묶습니다. 배송비·마감일·발송 시점이 공구마다 다르기 때문이고, 일반 쇼핑몰의 "판매자별 묶음"과 같은 역할입니다. 그룹 머리에 쇼룸 아바타·이름·<b>D-day 배지</b>를 두어 <b>어느 공구가 먼저 마감되는지</b>가 장바구니에서도 보입니다.<br><br><b>그룹 체크박스</b> — 머리의 체크로 그 공구 전체를 켜고 끕니다. 일부만 선택되면 <b>회색 채움(부분 선택)</b>으로 표시해 전체 선택과 구분합니다.<br><br><b>배송비 줄</b> — 각 그룹 끝에 <b>그 공구의 배송비</b>를 붙였습니다(무료 조건 미달이면 "○○원 더 담으면 무료"). 결제 화면에서 처음 알게 되는 배송비가 가장 흔한 이탈 원인이라, 담는 단계에서 미리 보여 줍니다.<br><br><b>선택 합산</b> — 하단 요약과 [주문하기]는 <b>체크된 항목만</b> 계산합니다. 아무것도 선택하지 않으면 버튼이 비활성이고, 라벨에 <b>총 결제 금액과 선택 개수</b>를 함께 넣어("62,200원 주문하기 (3)") 버튼만 봐도 얼마를 결제하는지 확인됩니다 — 위 요약을 다시 올려다볼 필요가 없습니다.<br><br><b>옵션 변경</b> — 옵션 텍스트 뒤에 <b>[변경] 밑줄 링크</b>를 붙였습니다(눌러 보세요). 외곽선 버튼은 같은 행의 수량 스테퍼·가격과 무게를 다투고 옵션명이 길면 잘려 보였는데, 링크는 옵션명을 그대로 읽히게 두면서 바꿀 수 있다는 사실만 덧붙입니다. 시트는 <b>C7 상품 상세의 옵션 시트와 같은 구조</b>(그룹별 드롭다운 · 단계적 활성화 · 선택 요약)이되, 이미 담긴 상품이라 <b>수량 스테퍼는 없고</b> 기존 선택이 <b>미리 채워진 상태</b>로 열립니다. 하단에는 [취소] · [변경하기]가 고정되며, 상위 옵션을 다시 열면 하위가 초기화돼 [변경하기]가 잠깁니다. 장바구니에서 옵션이 틀린 것을 발견하면 지우고 다시 담는 것이 흔한데, 그 과정에서 이탈이 생깁니다. 상품명은 <b>한 줄 말줄임</b>이라 행 높이가 항상 같고, 옵션 버튼이 그 아래 자리를 안정적으로 차지합니다.<br><br><b>팔로우한 쇼룸의 공구</b> — 목록 아래에 가로 스크롤로 붙였습니다. 무료배송 조건이 <b>공구 단위</b>라 "13,200원 더 담으면 무료"를 본 직후 <b>같은 쇼룸의 다른 상품</b>이 바로 아래 있으면 실제로 도움이 됩니다. 썸네일 좌상단 D-day로 마감 임박도 함께 보여 줍니다.<br><br><b>남은 결정</b> — ① 공구 마감 후 남아 있는 항목 처리(자동 삭제 vs 품절 표기) ② 재고 소진·옵션 변경 알림 ③ 장바구니 보관 기간 ④ 결제 화면에서 공구별 분리 결제인지 통합 결제인지.</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;상품 있음&quot;,&quot;빈 상태&quot;],&quot;default&quot;:&quot;상품 있음&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;목록&quot;},&quot;outItem&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;없음&quot;,&quot;품절&quot;,&quot;공구 마감&quot;],&quot;default&quot;:&quot;없음&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;판매 상태&quot;}}">
+class Component extends DCLogic {
+  state = { off: {}, removeOpen: false, qty: {} };
+
+  sw(key, opts, def, propKey){
+    const cur = this.state[key] ?? this.props[propKey || key] ?? def;
+    return opts.map(label => ({
+      label,
+      pick: () => this.setState({ [key]: label }),
+      bg: label === cur ? '#1a1a1a' : '#fff',
+      color: label === cur ? '#fff' : 'rgba(0,0,0,.62)',
+      border: label === cur ? '#1a1a1a' : 'rgba(0,0,0,.14)',
+      font: (label === cur ? '600' : '400') + ' 11px/1 Pretendard,sans-serif'
+    }));
+  }
+
+  renderVals(){
+    const DATA = [
+      { key:'g1', shop:'제니의 뷰티룸', dday:'D-3', avatar:'linear-gradient(140deg,#F4D9DF,#E6C3CD)', ship:3000, freeAt:30000, items:[
+        { id:'i1', name:'시카 리페어 앰플 30ml 리필 2개 세트 기획', option:'30ml + 리필 2개', was:38000, price:24900, thumb:'linear-gradient(135deg,#EFEBE7,#D9D2CB)' },
+        { id:'i2', name:'진정 토너 패드 60매 리필 기획 세트 대용량 한정 구성', option:'단품 · 1개', was:26000, price:17500, thumb:'linear-gradient(135deg,#F1E7EA,#DCCCD3)' }
+      ]},
+      { key:'g2', shop:'미아 스킨노트', dday:'D-1', avatar:'linear-gradient(140deg,#E7ECE8,#CCD6CF)', ship:3000, freeAt:30000, items:[
+        { id:'i3', name:'마일드 필링 패드 70매 대용량', option:'리필 포함 · 1개', was:24000, price:16800, thumb:'linear-gradient(135deg,#E7ECE8,#CCD6CF)' }
+      ]}
+    ];
+    const empty = (this.state.cartState ?? this.props.state ?? '상품 있음') === '빈 상태';
+    const outMode0 = this.state.outItem ?? this.props.outItem ?? '없음';
+    const SRC = empty ? [] : DATA;
+    const won = n => n.toLocaleString() + '원';
+    const off = this.state.off || {};
+    const qtyOf = id => Math.max(1, (this.state.qty || {})[id] || 1);
+    const isOn = id => !off[id];
+
+    let sumItems = 0, sumShip = 0, selCount = 0, totalCount = 0;
+
+    const groups = SRC.map(g => {
+      const items = g.items.map((it, i) => {
+        totalCount++;
+        const outMode = outMode0;
+        const out = outMode === '품절' ? it.id === 'i2'
+          : (outMode === '공구 마감' ? g.key === 'g1' : false);
+        const on = isOn(it.id) && !out;
+        const q = qtyOf(it.id);
+        if (on) { selCount++; sumItems += it.price * q; }
+        return {
+          name: it.name,
+          out,
+          inStock: !out,
+          thumbFilter: out ? 'grayscale(1)' : 'none',
+          optBorder: out ? '#EDEDEF' : '#E3E3E5',
+          optBg: out ? '#FAFAFA' : '#fff',
+          optColor: out ? '#9E9E9E' : '#3C3C3C',
+          optCursor: out ? 'default' : 'pointer',
+          optPress: out ? '#FAFAFA' : '#F7F7F8',
+          outLabel: outMode === '품절' ? '품절' : '마감',
+          outMsg: outMode === '품절' ? '품절되어 주문할 수 없어요' : '공구가 마감되어 주문할 수 없어요',
+          nameColor: out ? '#9E9E9E' : '#2E2E2E',
+          option: it.option,
+          was: it.was.toLocaleString(),
+          price: won(it.price * q),
+          qty: String(q),
+          thumb: it.thumb,
+          divider: i === 0 ? '.5px solid #F0F0F0' : '.5px solid #F0F0F0',
+          checkBg: out ? '#F4F4F5' : (on ? '#F2456E' : '#fff'),
+          checkBorder: out ? '1.5px solid #E3E3E5' : (on ? '1.5px solid #F2456E' : '1.5px solid #DEDEE0'),
+          checkColor: out ? '#E3E3E5' : (on ? '#fff' : '#DEDEE0'),
+          decColor: q > 1 ? '#3C3C3C' : '#DEDEE0',
+          toggle: () => { if (out) return; this.setState(s => ({ off: { ...(s.off || {}), [it.id]: !(s.off || {})[it.id] } })); },
+          inc: () => this.setState(s => ({ qty: { ...(s.qty || {}), [it.id]: Math.min(99, ((s.qty || {})[it.id] || 1) + 1) } })),
+          dec: () => this.setState(s => ({ qty: { ...(s.qty || {}), [it.id]: Math.max(1, ((s.qty || {})[it.id] || 1) - 1) } })),
+          remove: () => this.setState(s => ({ off: { ...(s.off || {}), [it.id]: true } })),
+          openOption: () => { if (out) return; this.setState({ optionId: it.id }); }
+        };
+      });
+
+      const onIds = g.items.filter(it => isOn(it.id));
+      const groupSum = onIds.reduce((n, it) => n + it.price * qtyOf(it.id), 0);
+      const allOn = onIds.length === g.items.length;
+      const someOn = onIds.length > 0 && !allOn;
+      const free = groupSum >= g.freeAt;
+      if (onIds.length > 0 && !free) sumShip += g.ship;
+
+      return {
+        shop: g.shop,
+        dday: g.dday,
+        hasDday: !(outMode0 === '공구 마감' && g.key === 'g1'),
+        avatar: g.avatar,
+        items,
+        checkBg: allOn ? '#F2456E' : (someOn ? '#C7C7C7' : '#fff'),
+        checkBorder: allOn ? '1.5px solid #F2456E' : (someOn ? '1.5px solid #C7C7C7' : '1.5px solid #DEDEE0'),
+        checkColor: (allOn || someOn) ? '#fff' : '#DEDEE0',
+        shipLabel: onIds.length === 0 ? '배송비' : (free ? '배송비' : (won(g.freeAt - groupSum) + ' 더 담으면 무료배송')),
+        shipValue: onIds.length === 0 ? '—' : (free ? '무료배송' : won(g.ship)),
+        shipColor: free && onIds.length > 0 ? '#CF3D61' : '#3C3C3C',
+        toggle: () => this.setState(s => {
+          const next = { ...(s.off || {}) };
+          g.items.forEach(it => { next[it.id] = allOn; });
+          return { off: next };
+        })
+      };
+    });
+
+    const allSelected = totalCount > 0 && selCount === totalCount;
+    const ready = selCount > 0;
+
+    const optId = this.state.optionId;
+    let optProduct = '';
+    SRC.forEach(g => g.items.forEach(it => { if (it.id === optId) optProduct = it.name; }));
+
+    const OPT_GROUPS = [
+      { key:'o1', placeholder:'구성을 선택해 주세요', items:[
+        { label:'단품 30ml', add:0 },
+        { label:'30ml + 리필 1개', add:14000 },
+        { label:'30ml + 리필 2개', add:25000 }
+      ]},
+      { key:'o2', placeholder:'쇼핑백을 선택해 주세요', items:[
+        { label:'선택 안 함', add:0 },
+        { label:'선물 포장 쇼핑백', add:1500 }
+      ]}
+    ];
+    const osel = this.state.osel || { o1:'30ml + 리필 2개', o2:'선택 안 함' };
+    const optGroups = OPT_GROUPS.map((g, gi) => {
+      const pick = osel[g.key];
+      const locked = gi > 0 && !osel[OPT_GROUPS[gi - 1].key];
+      const isOpen = this.state.oOpen === g.key && !locked;
+      return {
+        value: pick || g.placeholder,
+        valueColor: locked ? '#C7C7C7' : (pick ? '#0F0F0F' : '#B5B5B5'),
+        border: locked ? '#F0F0F0' : '#E3E3E5',
+        bg: locked ? '#FAFAFA' : '#fff',
+        cursor: locked ? 'default' : 'pointer',
+        press: locked ? '1' : '.6',
+        radius: isOpen ? '8px 8px 0 0' : '8px',
+        chevron: isOpen ? 'rotate(180deg)' : 'none',
+        open: isOpen,
+        toggle: () => { if (!locked) this.setState(s => {
+          if (s.oOpen === g.key) return { oOpen: null };
+          const next = { ...(s.osel || osel) };
+          OPT_GROUPS.slice(gi).forEach(x => { delete next[x.key]; });
+          return { oOpen: g.key, osel: next };
+        }); },
+        items: g.items.map((it, i) => {
+          const on = pick === it.label;
+          return {
+            label: it.label,
+            hasExtra: it.add > 0,
+            extra: '+' + it.add.toLocaleString() + '원',
+            bg: on ? '#FEF4F6' : '#fff',
+            divider: i === 0 ? 'none' : '.5px solid #F0F0F0',
+            font: (on ? '600' : '400') + ' 14px/1.35 Pretendard,sans-serif',
+            color: on ? '#0F0F0F' : '#3C3C3C',
+            pick: () => this.setState(s => {
+              const next = { ...(s.osel || osel), [g.key]: it.label };
+              OPT_GROUPS.slice(gi + 1).forEach(x => { delete next[x.key]; });
+              const nx = OPT_GROUPS[gi + 1];
+              return { osel: next, oOpen: nx ? nx.key : null };
+            })
+          };
+        })
+      };
+    });
+    const optAllPicked = OPT_GROUPS.every(g => osel[g.key]);
+    let optUnit = 24900;
+    OPT_GROUPS.forEach(g => {
+      const f = g.items.find(x => x.label === osel[g.key]);
+      if (f) optUnit += f.add;
+    });
+
+    return {
+      swState: this.sw('cartState', ['상품 있음', '빈 상태'], '상품 있음', 'state'),
+      swOut: this.sw('outItem', ['없음', '품절', '공구 마감'], '없음'),
+      groups,
+      optionOpen: !!optId,
+      optionProduct: optProduct,
+      optGroups,
+      optAllPicked,
+      optPickLabel: OPT_GROUPS.map(g => osel[g.key]).filter(Boolean).join(' · '),
+      optPickPrice: won(optUnit),
+      optSaveBg: optAllPicked ? '#F2456E' : '#F4F4F5',
+      optSaveColor: optAllPicked ? '#fff' : '#B5B5B5',
+      optSaveCursor: optAllPicked ? 'pointer' : 'default',
+      optSavePress: optAllPicked ? '.75' : '1',
+      closeOption: () => this.setState({ optionId: null, oOpen: null, osel: null }),
+      recos: [
+        { shop:'제니의 뷰티룸', name:'배리어 크림 50ml 대용량 리뉴얼', dday:'D-3', off:'32%', price:'21,900원', thumb:'linear-gradient(135deg,#EFEBE7,#D9D2CB)' },
+        { shop:'하루의 살림', name:'수면 필로우 미스트 100ml', dday:'D-5', off:'28%', price:'18,000원', thumb:'linear-gradient(135deg,#E4E8EF,#CBD2DD)' },
+        { shop:'미아 스킨노트', name:'마일드 클렌징 폼 150ml', dday:'D-1', off:'26%', price:'14,000원', thumb:'linear-gradient(135deg,#EFE7DC,#DCCFBE)' }
+      ],
+      hasItems: SRC.length > 0,
+      isEmpty: SRC.length === 0,
+      selectedCount: String(selCount),
+      totalCount: String(totalCount),
+      allBg: allSelected ? '#F2456E' : '#fff',
+      allBorder: allSelected ? '1.5px solid #F2456E' : '1.5px solid #DEDEE0',
+      allCheck: allSelected ? '#fff' : '#DEDEE0',
+      toggleAll: () => this.setState(() => {
+        const next = {};
+        SRC.forEach(g => g.items.forEach(it => { next[it.id] = allSelected; }));
+        return { off: next };
+      }),
+      removeColor: ready ? '#3C3C3C' : '#B5B5B5',
+      askRemove: () => { if (ready) this.setState({ removeOpen: true }); },
+      removeOpen: this.state.removeOpen,
+      removeCount: String(selCount),
+      closeRemove: () => this.setState({ removeOpen: false }),
+      confirmRemove: () => this.setState({ removeOpen: false }),
+      sumItems: won(sumItems),
+      sumShip: sumShip === 0 ? '무료배송' : won(sumShip),
+      sumTotal: won(sumItems + sumShip),
+      buyLabel: ready ? (won(sumItems + sumShip) + ' 주문하기 (' + selCount + ')') : '주문하기',
+      buyBg: ready ? '#F2456E' : '#F4F4F5',
+      buyColor: ready ? '#fff' : '#B5B5B5',
+      buyCursor: ready ? 'pointer' : 'default',
+      buyPress: ready ? '.75' : '1'
+    };
+  }
+}
+</script>
+</body>
+</html>

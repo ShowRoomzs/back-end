@@ -46,7 +46,7 @@ class AdminContractLifecycleIntegrationTest extends AdminContractTestSupport {
                 .andExpect(jsonPath("$.content[0].brandName").value("글로우랩"))
                 .andExpect(jsonPath("$.content[0].creatorName").value("뷰티_하윤"));
 
-        // ②·③ 운영자가 제출본 기준 계약서를 받는다.
+        // ②·③ 검토 요청이 만든 제출본 기준 계약서를 운영자가 받는다.
         String firstDraft = body(draft(c).andExpect(status().isOk()));
         LocalDateTime firstSubmission = reload(c).getReviewRequestedAt();
         assertThat(time(firstDraft, "$.sourceReviewRequestedAt")).isEqualTo(firstSubmission.withNano(0));
@@ -73,10 +73,12 @@ class AdminContractLifecycleIntegrationTest extends AdminContractTestSupport {
         assertThat(time(resubmitted, "$.review.requestedAt")).isEqualTo(secondSubmission.withNano(0));
         assertThat(reload(c).getContractNumber()).isEqualTo(c.getContractNumber());
 
-        // 조건이 바뀌었으므로 계약서를 새로 받아야 한다 — 옛 제출본 파일은 더 이상 내려가지 않는다.
-        downloadDocument(c, ContractDocumentType.GENERATED_DRAFT).andExpect(status().isNotFound());
+        // 조건이 바뀌었으므로 재요청이 계약서를 새로 만든다 — 운영자가 받기 전에 이미 새 제출본 파일이다.
+        String secondDocument = body(downloadDocument(c, ContractDocumentType.GENERATED_DRAFT).andExpect(status().isOk()));
+        assertThat(time(secondDocument, "$.sourceReviewRequestedAt")).isEqualTo(secondSubmission.withNano(0));
         String secondDraft = body(draft(c).andExpect(status().isOk()));
         assertThat(time(secondDraft, "$.sourceReviewRequestedAt")).isEqualTo(secondSubmission.withNano(0));
+        // 렌더링은 제출 두 번뿐이다 — 운영자 다운로드는 제출 시 만든 파일을 그대로 준다.
         verify(renderer, times(2)).render(anyString(), anyString());
 
         // ④·⑤ 모두싸인에서 보낸 뒤 승인한다.
@@ -118,6 +120,10 @@ class AdminContractLifecycleIntegrationTest extends AdminContractTestSupport {
         summary().andExpect(jsonPath("$.actionRequiredCount").value(0)).andExpect(jsonPath("$.tabCounts.CONCLUDED").value(1));
 
         // 모든 수동 처리에 처리자·시각이 남는다 — 운영자 이력은 전부 실명 「김운영」.
+        // 계약서 생성은 검토 요청이 하므로 SYSTEM 주체다.
+        assertThat(historyOf(c)).filteredOn(h -> h.getEventType() == ContractEventType.CONTRACT_PDF_GENERATED)
+                .hasSize(2)
+                .allSatisfy(h -> assertThat(h.getActorType()).isEqualTo(ContractActorType.SYSTEM));
         List<ContractHistory> history = historyOf(c);
         assertThat(history).extracting(ContractHistory::getEventType).containsSubsequence(
                 ContractEventType.REVIEW_REQUESTED, ContractEventType.CONTRACT_PDF_GENERATED, ContractEventType.REVIEW_REJECTED,
@@ -149,6 +155,30 @@ class AdminContractLifecycleIntegrationTest extends AdminContractTestSupport {
         list().andExpect(jsonPath("$.content").isEmpty());
         detail(c).andExpect(status().isNotFound());
         approve(c, checked(LocalDateTime.now(), LocalDateTime.now().plusDays(7))).andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("브랜드가 반려 계약을 삭제하면 운영자 목록·카운트·상세에서 사라지되 번호·이력은 남는다")
+    void deletedRejectedContractLeavesAdminButKeepsRecord() throws Exception {
+        long id = createAndSubmit();
+        Contract c = contracts.findById(id).orElseThrow();
+        reject(c, ContractReviewRejectReason.AGREEMENT_MISMATCH, "2차 활용 기간을 명시해 주세요.").andExpect(status().isOk());
+        summary().andExpect(jsonPath("$.tabCounts.ALL").value(1));
+
+        mockMvc.perform(delete(SELLER_CONTRACTS + "/" + id).header(HttpHeaders.AUTHORIZATION, brandToken))
+                .andExpect(status().isNoContent());
+
+        summary().andExpect(jsonPath("$.tabCounts.ALL").value(0));
+        list().andExpect(jsonPath("$.content").isEmpty());
+        detail(c).andExpect(status().isNotFound());
+        draft(c).andExpect(status().isNotFound());
+
+        Contract deleted = reload(c);
+        assertThat(deleted.getDeletedAt()).isNotNull();
+        assertThat(deleted.getStatus()).isEqualTo(ContractStatus.REVIEW_REJECTED);
+        assertThat(deleted.getContractNumber()).isEqualTo(c.getContractNumber());
+        assertThat(historyOf(c)).extracting(ContractHistory::getEventType).containsSubsequence(
+                ContractEventType.REVIEW_REQUESTED, ContractEventType.REVIEW_REJECTED, ContractEventType.DELETED);
     }
 
     @Test

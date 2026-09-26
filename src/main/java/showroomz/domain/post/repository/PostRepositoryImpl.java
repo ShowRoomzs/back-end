@@ -83,7 +83,8 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
 
     @Override
     public Page<Post> findAdminPosts(Long creatorId, PostStatus status, Pageable pageable) {
-        BooleanBuilder where = new BooleanBuilder();
+        // 공구 게시물은 일반 게시물 콘솔에 섞지 않는다 — 여기서 노출 중지를 누르면 7일 뒤 원문이 지워진다(31 설계 0-6 ③).
+        BooleanBuilder where = new BooleanBuilder(post.postType.eq(PostType.GENERAL));
         if (creatorId != null) {
             where.and(post.creator.id.eq(creatorId));
         }
@@ -120,7 +121,10 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
      * (좋아요 목록 쿼리와 같은 방식이다).
      */
     private Page<Post> findPublished(BooleanExpression extraCondition, Pageable pageable) {
-        BooleanBuilder where = new BooleanBuilder(post.status.eq(PostStatus.PUBLISHED));
+        // 공구 게시물은 사진·비율이 없어 일반 피드 카드로 그리면 깨진다. 소비자 앱의 공구 게시물 노출 설계가
+        // 나올 때까지 일반 게시물만 내린다(31 설계 0-6 ④) — 그 설계가 판별자로 함께 내리게 되면 이 조건을 걷는다.
+        BooleanBuilder where = new BooleanBuilder(post.status.eq(PostStatus.PUBLISHED))
+                .and(post.postType.eq(PostType.GENERAL));
         if (extraCondition != null) {
             where.and(extraCondition);
         }

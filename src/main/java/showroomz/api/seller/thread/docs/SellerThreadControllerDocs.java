@@ -58,6 +58,8 @@ public interface SellerThreadControllerDocs {
                                                     "      \"counterpartImageUrl\": null,\n" +
                                                     "      \"operatorChannel\": true,\n" +
                                                     "      \"connectionStatus\": \"CONNECTED\",\n" +
+                                                    "      \"creatorId\": null,\n" +
+                                                    "      \"connectionId\": 3,\n" +
                                                     "      \"lastMessagePreview\": \"입점 승인되었습니다. 궁금한 점이 있으면 말씀해주세요.\",\n" +
                                                     "      \"lastMessageAt\": \"2026-08-01T10:00:00\",\n" +
                                                     "      \"unreadCount\": 0\n" +
@@ -68,6 +70,8 @@ public interface SellerThreadControllerDocs {
                                                     "      \"counterpartImageUrl\": \"https://s3.ap-northeast-2.amazonaws.com/bucket/creator/12.jpg\",\n" +
                                                     "      \"operatorChannel\": false,\n" +
                                                     "      \"connectionStatus\": \"CONNECTED\",\n" +
+                                                    "      \"creatorId\": 12,\n" +
+                                                    "      \"connectionId\": 41,\n" +
                                                     "      \"lastMessagePreview\": \"촬영본 보내드렸습니다\",\n" +
                                                     "      \"lastMessageAt\": \"2026-08-08T14:22:10\",\n" +
                                                     "      \"unreadCount\": 3\n" +

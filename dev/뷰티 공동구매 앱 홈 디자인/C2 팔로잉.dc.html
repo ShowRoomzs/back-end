@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C2 팔로잉 — 팔로우한 쇼룸 목록</span></div>
+<p class="dv-tsub">WF-C-03의 C2를 확정된 시각 언어로 옮겼습니다. 행 = 아바타 + 쇼룸 이름 + 진행 중 공구 수 + 팔로잉 버튼, 행 탭 → C4 쇼룸. <b>[팔로잉] 탭 시 즉시 언팔로우</b>되고 행은 남은 채 버튼만 [팔로우]로 바뀝니다(재팔로우 가능, 화면 이탈 시 제거). 헤더 아이콘은 와이어프레임대로 검색 · 장바구니입니다.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>기본 — 팔로잉 4</div>
+<div class="dv-card">
+<div data-screen-label="C2 팔로잉" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="display:flex;align-items:center;padding:2px 16px 12px">
+<span style="font: 700 20px/1 Pretendard,sans-serif; letter-spacing: -.5px; font-size: 18px">팔로잉</span>
+<div style="flex:1"></div>
+<div style="display:flex;gap:18px;color:#0F0F0F">
+<div style="position:relative;display:flex;padding:9px;margin:-9px;cursor:pointer"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg></div>
+<div style="position:relative;display:flex;padding:9px;margin:-9px;cursor:pointer"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"><path d="M4.4 7.5h15.2l-1.1 12.3H5.5z"></path><path d="M8.8 10V6.6a3.2 3.2 0 0 1 6.4 0V10"></path></svg><span style="position:absolute;top:4px;right:2px;min-width:18px;height:18px;box-sizing:border-box;background:#F2456E;border:1.5px solid #fff;border-radius:100px;display:flex;align-items:center;justify-content:center;padding:0 3px"><span style="display:block;font:400 10px/1 Pretendard,sans-serif;color:#fff">3</span></span></div>
+</div>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:14px 14px 12px;display:flex;align-items:center">
+<span style="font:500 12px/1 Pretendard,sans-serif;color:#8E8E8E">팔로잉 쇼룸 {{ followCount }}</span>
+<div style="flex:1"></div>
+<div onClick="{{ openSort }}" style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:8px 0 8px 12px;margin:-8px 0" style-active="opacity:.5">
+<span style="font:600 12px/1 Pretendard,sans-serif;color:#3C3C3C">{{ sortLabel }}</span>
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3C3C3C" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"></path></svg>
+</div>
+</div>
+
+<sc-for list="{{ rows }}" as="row" hint-placeholder-count="4">
+<div style="display:flex;align-items:center;gap:12px;padding:8px 14px;cursor:pointer" style-active="background:#F7F7F8">
+<div style="width:44px;height:44px;border-radius:50%;flex:none;box-sizing:border-box;border:{{ row.ring }};padding:{{ row.ringPad }}">
+<div style="width:100%;height:100%;border-radius:50%;background:{{ row.avatar }}"></div>
+</div>
+<div style="flex:1;min-width:0">
+<div style="font:600 14.5px/1.35 Pretendard,sans-serif;letter-spacing:-.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ row.name }}</div>
+</div>
+<div onClick="{{ row.toggle }}" style="flex:none;display:flex;align-items:center;justify-content:center;padding:7px 0;margin:-7px 0;cursor:pointer" style-active="opacity:.55">
+<span style="display:flex;align-items:center;justify-content:center;height:30px;padding:0 12px;border-radius:8px;box-sizing:border-box;border:{{ row.btnBorder }};background:{{ row.btnBg }};color:{{ row.btnColor }};font:600 12.5px/1 Pretendard,sans-serif">{{ row.btnLabel }}</span>
+</div>
+</div>
+</sc-for>
+
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:9px 0 0;background:#fff">
+<div style="display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.6 12 4.2l8 6.4V19a1.4 1.4 0 0 1-1.4 1.4h-3.9v-5.9h-5.4v5.9H5.4A1.4 1.4 0 0 1 4 19z"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">홈</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#0F0F0F"><svg width="25" height="25" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="8" r="3.4"></circle><path d="M9 13.4c-3.2 0-5.9 2.3-5.9 5.6 0 .6.4 1 1 1h9.8c.6 0 1-.4 1-1 0-3.3-2.7-5.6-5.9-5.6z"></path><path d="M16.4 11.4a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0-1 .16 4.8 4.8 0 0 1 0 6.08c.32.1.65.16 1 .16z"></path><path d="M17.4 13.6c-.5 0-1 .05-1.45.15 1.5 1.35 2.45 3.25 2.45 5.45 0 .28-.04.55-.12.8h2.62c.6 0 1.1-.45 1.1-1.05 0-3.1-2-5.35-4.6-5.35z"></path></svg><span style="font:600 10px/1 Pretendard,sans-serif">팔로잉</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">좋아요</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">마이</span></div>
+</div>
+<div style="height:24px;display:flex;align-items:center;justify-content:center"><div style="width:140px;height:5px;border-radius:3px;background:#0F0F0F"></div></div>
+</div>
+
+<sc-if value="{{ sortOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeSort }}" style="position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:10"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:11;background:#fff;border-radius:8px 8px 0 0;padding:8px 0 24px;box-shadow:0 -8px 40px rgba(0,0,0,.16)">
+<div style="width:36px;height:4px;border-radius:100px;background:#DEDEE0;margin:0 auto 14px"></div>
+<div style="padding: 0 20px 12px; font: 600 15px/1.4 Pretendard,sans-serif; text-align: center">정렬 기준</div>
+<sc-for list="{{ sortOptions }}" as="opt" hint-placeholder-count="3">
+<div onClick="{{ opt.pick }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 20px;border-top:{{ opt.divider }};cursor:pointer" style-active="background:#F7F7F8">
+<div style="min-width:0">
+<div style="font:{{ opt.font }};color:{{ opt.color }}">{{ opt.label }}</div>
+<div style="margin-top:4px;font:400 12.5px/1.5 Pretendard,sans-serif;color:#737373">{{ opt.desc }}</div>
+</div>
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#F2456E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="opacity:{{ opt.checked }}"><path d="M4.5 12.5l5 5 10-11"></path></svg>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+</div>
+</div>
+<p class="dv-note"><b>정렬</b> — 목록 상단 우측 텍스트 트리거 → 바텀 시트에서 3가지 중 선택(기본 · 팔로우 최신순 · 팔로우 오래된순). 선택값은 라벨에 그대로 드러나 현재 기준을 항상 알 수 있고, 확인 버튼 없이 탭 즉시 적용·닫힘입니다. <b>행</b> — 아바타 44(리스트 규격, 피드 36과 구분) · 이름 14.5/600 한 줄. 진행 중 공구 수 문구는 삭제하고, <b>공구 진행 중 신호는 아바타 로즈 링</b>만 남겼습니다(C1 피드와 동일 규칙). [팔로우]는 로즈 채움, [팔로잉]은 중립 외곽선 — 되돌릴 액션이 강조되지 않게 했습니다.</p>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>빈 상태 — 팔로우 0</div>
+<div class="dv-card">
+<div data-screen-label="C2 팔로잉 빈 상태" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="display:flex;align-items:center;padding:2px 16px 12px">
+<span style="font: 700 20px/1 Pretendard,sans-serif; letter-spacing: -.5px; font-size: 18px">팔로잉</span>
+<div style="flex:1"></div>
+<div style="display:flex;gap:18px;color:#0F0F0F">
+<div style="position:relative;display:flex;padding:9px;margin:-9px;cursor:pointer"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg></div>
+<div style="position:relative;display:flex;padding:9px;margin:-9px;cursor:pointer"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"><path d="M4.4 7.5h15.2l-1.1 12.3H5.5z"></path><path d="M8.8 10V6.6a3.2 3.2 0 0 1 6.4 0V10"></path></svg></div>
+</div>
+</div>
+</div>
+
+<div style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 40px">
+<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#D8D8DA" stroke-width="1.2" stroke-linejoin="miter"><path d="M4 4.5h16l1.4 4.2a3 3 0 0 1-5.8 1 3 3 0 0 1-5.6 0 3 3 0 0 1-5.8-1z"></path><path d="M5 10.8V20h14v-9.2"></path><path d="M9.6 20v-5.4h4.8V20"></path></svg>
+<div style="margin-top:18px;font:600 15.5px/1.5 Pretendard,sans-serif;text-align:center">아직 팔로우한 쇼룸이 없어요</div>
+<div style="margin-top:7px;font:400 13px/1.7 Pretendard,sans-serif;color:#8E8E8E;text-align:center;text-wrap:pretty">쇼룸을 팔로우하면 새 공구와 게시물을<br>홈 피드에서 확인할 수 있어요</div>
+<div style="margin-top:22px;height:44px;padding:0 22px;background:#F2456E;color:#fff;border-radius:8px;display:flex;align-items:center;font:600 13.5px/1 Pretendard,sans-serif;cursor:pointer">쇼룸 검색하기</div>
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:9px 0 0;background:#fff">
+<div style="display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.6 12 4.2l8 6.4V19a1.4 1.4 0 0 1-1.4 1.4h-3.9v-5.9h-5.4v5.9H5.4A1.4 1.4 0 0 1 4 19z"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">홈</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#0F0F0F"><svg width="25" height="25" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="8" r="3.4"></circle><path d="M9 13.4c-3.2 0-5.9 2.3-5.9 5.6 0 .6.4 1 1 1h9.8c.6 0 1-.4 1-1 0-3.3-2.7-5.6-5.9-5.6z"></path><path d="M16.4 11.4a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0-1 .16 4.8 4.8 0 0 1 0 6.08c.32.1.65.16 1 .16z"></path><path d="M17.4 13.6c-.5 0-1 .05-1.45.15 1.5 1.35 2.45 3.25 2.45 5.45 0 .28-.04.55-.12.8h2.62c.6 0 1.1-.45 1.1-1.05 0-3.1-2-5.35-4.6-5.35z"></path></svg><span style="font:600 10px/1 Pretendard,sans-serif">팔로잉</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">좋아요</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">마이</span></div>
+</div>
+<div style="height:24px;display:flex;align-items:center;justify-content:center"><div style="width:140px;height:5px;border-radius:3px;background:#0F0F0F"></div></div>
+</div>
+
+</div>
+</div>
+<p class="dv-note">§00 와이어프레임의 빈 상태 문구를 그대로 쓰고, CTA는 §05 <b>로그인 유도 블록</b>과 같은 규격(로즈 45px R8)입니다. 아이콘은 사람 대신 <b>쇼룸(차양 달린 상점)</b>으로 바꿔 "팔로우할 대상"을 가리킵니다. 빈 상태에서는 장바구니 배지도 숨겼습니다.<br><br>1b는 <b>로그인은 되어 있고 팔로우가 0</b>인 상태이므로 문구가 "쇼룸 검색하기"이고, 계정이 없는 <a class="dv-oid" href="#1c">1c</a>는 "로그인하세요"입니다 — 같은 빈 화면이라도 <b>다음 행동이 다르면 문구를 나눕니다</b>. 아바타 <b>로즈 링</b>은 진행 중 공구가 있는 쇼룸에만 그립니다(§02 · C4 쇼룸과 공통 규칙).</p>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>비로그인</div>
+<div class="dv-card">
+<div data-screen-label="C2 팔로잉 · 비로그인" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="display:flex;align-items:center;padding:2px 16px 12px">
+<span style="font: 700 20px/1 Pretendard,sans-serif; letter-spacing: -.5px; font-size: 18px">팔로잉</span>
+<div style="flex:1"></div>
+<div style="display:flex;gap:18px;color:#0F0F0F">
+<div style="position:relative;display:flex;padding:9px;margin:-9px;cursor:pointer"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg></div>
+</div>
+</div>
+</div>
+
+<div style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 40px 60px">
+<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#D8D8DA" stroke-width="1.2" stroke-linejoin="miter"><path d="M4 4.5h16l1.4 4.2a3 3 0 0 1-5.8 1 3 3 0 0 1-5.6 0 3 3 0 0 1-5.8-1z"></path><path d="M5 10.8V20h14v-9.2"></path><path d="M9.6 20v-5.4h4.8V20"></path></svg>
+<div style="margin-top:20px;font:700 19px/1.4 Pretendard,sans-serif;letter-spacing:-.4px;text-align:center;text-wrap:pretty">팔로우한 쇼룸을<br>한곳에서 보려면 로그인하세요</div>
+<div style="margin-top:10px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-align:center;text-wrap:pretty">팔로우하면 새 공구와 게시물이<br>이 탭에 모여요</div>
+<div style="margin-top:22px;width:100%;height:45px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 14px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">3초 만에 시작하기</div>
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:9px 0 0;background:#fff">
+<div style="display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.6 12 4.2l8 6.4V19a1.4 1.4 0 0 1-1.4 1.4h-3.9v-5.9h-5.4v5.9H5.4A1.4 1.4 0 0 1 4 19z"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">홈</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#0F0F0F"><svg width="25" height="25" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="8" r="3.4"></circle><path d="M9 13.4c-3.2 0-5.9 2.3-5.9 5.6 0 .6.4 1 1 1h9.8c.6 0 1-.4 1-1 0-3.3-2.7-5.6-5.9-5.6z"></path><path d="M16.4 11.4a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0-1 .16 4.8 4.8 0 0 1 0 6.08c.32.1.65.16 1 .16z"></path><path d="M17.4 13.6c-.5 0-1 .05-1.45.15 1.5 1.35 2.45 3.25 2.45 5.45 0 .28-.04.55-.12.8h2.62c.6 0 1.1-.45 1.1-1.05 0-3.1-2-5.35-4.6-5.35z"></path></svg><span style="font:600 10px/1 Pretendard,sans-serif">팔로잉</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">좋아요</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">마이</span></div>
+</div>
+<div style="height:24px;display:flex;align-items:center;justify-content:center"><div style="width:140px;height:5px;border-radius:3px;background:#0F0F0F"></div></div>
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>비로그인</b> — 목록 대신 <b>로그인 유도 블록</b>(§05: 제목 19/700 + 설명 13/1.7 + 로즈 45px CTA)을 중앙에 둡니다. 빈 상태(1b)와 <b>문구를 구분</b>했습니다 — 1b는 로그인은 됐지만 팔로우가 없어 "쇼룸 검색하기", 여기는 계정 자체가 없어 "로그인하세요". 아이콘·탭바는 1b와 공유해 같은 탭임을 유지하고, 상단 아이콘은 검색만 남겨 장바구니를 숨겼습니다(비로그인 장바구니는 C8에서 별도 처리).</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = { following: { a:true, b:true, c:true, d:true }, sort: 'recent', sortOpen: false };
+
+  toggle(k){ this.setState(s => ({ following: { ...s.following, [k]: !s.following[k] } })); }
+
+  renderVals(){
+    const F = this.state.following;
+    const SORTS = [
+      { k:'recent', label:'기본', desc:'최근에 게시물을 올린 순서' },
+      { k:'newest', label:'팔로우한 날짜 : 최신순', desc:'가장 최근에 팔로우한 쇼룸부터' },
+      { k:'oldest', label:'팔로우한 날짜 : 오래된순', desc:'가장 먼저 팔로우한 쇼룸부터' }
+    ];
+    const cur = SORTS.find(s => s.k === this.state.sort) || SORTS[0];
+    const sortOptions = SORTS.map((s, i) => ({
+      label: s.label,
+      desc: s.desc,
+      checked: s.k === this.state.sort ? 1 : 0,
+      divider: i === 0 ? 'none' : '.5px solid #F0F0F0',
+      font: (s.k === this.state.sort ? '600' : '400') + ' 15.5px/1.35 Pretendard,sans-serif',
+      color: s.k === this.state.sort ? '#0F0F0F' : '#3C3C3C',
+      pick: () => this.setState({ sort: s.k, sortOpen: false })
+    }));
+    const data = [
+      { k:'a', name:'제니의 뷰티룸', deals:1, posted:3, followed:4, avatar:'linear-gradient(140deg,#F4D9DF,#E6C3CD)' },
+      { k:'b', name:'미아 스킨노트', deals:0, posted:1, followed:2, avatar:'linear-gradient(140deg,#D9E2F0,#C3CEDD)' },
+      { k:'c', name:'하루 코스메틱', deals:2, posted:4, followed:1, avatar:'linear-gradient(140deg,#E4EAE2,#CBD6CC)' },
+      { k:'d', name:'윤의 클린뷰티', deals:0, posted:2, followed:3, avatar:'linear-gradient(140deg,#EFE7DC,#DCCFBE)' }
+    ];
+    const sorted = [...data].sort((x, y) =>
+      this.state.sort === 'newest' ? y.followed - x.followed
+      : this.state.sort === 'oldest' ? x.followed - y.followed
+      : y.posted - x.posted);
+    const rows = sorted.map(d => ({
+      name: d.name,
+      avatar: d.avatar,
+      meta: '진행 중 공구 ' + d.deals,
+      metaColor: d.deals > 0 ? '#3C3C3C' : '#737373',
+      ring: d.deals > 0 ? '1.5px solid #F2456E' : '1.5px solid transparent',
+      ringPad: '2px',
+      btnLabel: F[d.k] ? '팔로잉' : '팔로우',
+      btnBorder: F[d.k] ? '1px solid #E3E3E5' : '1px solid #F2456E',
+      btnBg: F[d.k] ? '#fff' : '#F2456E',
+      btnColor: F[d.k] ? '#3C3C3C' : '#fff',
+      toggle: () => this.toggle(d.k)
+    }));
+    return {
+      rows,
+      followCount: String(Object.values(F).filter(Boolean).length),
+      sortLabel: cur.label,
+      sortOptions,
+      sortOpen: this.state.sortOpen,
+      openSort: () => this.setState({ sortOpen: true }),
+      closeSort: () => this.setState({ sortOpen: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

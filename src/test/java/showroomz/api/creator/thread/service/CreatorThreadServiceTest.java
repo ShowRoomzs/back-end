@@ -14,6 +14,8 @@ import showroomz.api.common.attachment.service.MessageAttachmentService;
 import showroomz.api.creator.thread.dto.ThreadListItem;
 import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.connection.repository.ConnectionRepository;
+import showroomz.domain.contract.repository.ContractRepository;
+import showroomz.domain.contract.type.ContractStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
@@ -64,6 +66,8 @@ class CreatorThreadServiceTest {
     private MessageAttachmentRepository messageAttachmentRepository;
     @Mock
     private MessageAttachmentService messageAttachmentService;
+    @Mock
+    private ContractRepository contractRepository;
 
     @InjectMocks
     private CreatorThreadService creatorThreadService;
@@ -96,13 +100,15 @@ class CreatorThreadServiceTest {
     }
 
     @Test
-    @DisplayName("상대 브랜드 목록 항목은 브랜드명·대표 이미지를 내려주고, [계약 확인] 게이트는 계약 도메인 전까지 false다 (S1)")
+    @DisplayName("상대 브랜드 목록 항목은 브랜드명·대표 이미지를 내려주고, 받은 계약이 없으면 [계약 확인] 게이트가 false다 (S1)")
     void exposesCounterpartBrand() {
         givenAuthenticatedCreator();
         given(messageThreadRepository.findOpenThreadsForCreator(eq(me), eq(ThreadStatus.OPEN), isNull(), any()))
                 .willReturn(new PageImpl<>(List.of(connectedPairThread())));
         given(messageThreadService.countUnreadByThreadIds(List.of(THREAD_ID), ParticipantType.CREATOR, CREATOR_ID))
                 .willReturn(Map.of(THREAD_ID, 2L));
+        given(contractRepository.findMarketIdsWithReceivedContract(
+                CREATOR_ID, List.of(7L), ContractStatus.RECEIVED_BY_CREATOR)).willReturn(List.of());
 
         ThreadListItem item = creatorThreadService.getThreads(CREATOR_EMAIL, null, new PagingRequest())
                 .getContent().get(0);
@@ -112,6 +118,24 @@ class CreatorThreadServiceTest {
         assertThat(item.getCounterpartImageUrl()).isEqualTo("https://cdn.example.com/market/7.png");
         assertThat(item.isHasContract()).isFalse();
         assertThat(item.getUnreadCount()).isEqualTo(2L);
+    }
+
+    @Test
+    @DisplayName("이 브랜드에게서 받은 계약이 있으면 [계약 확인] 게이트가 true다 — 페이지 전체를 한 쿼리로 본다 (§14-2)")
+    void hasContractWhenReceivedFromBrand() {
+        givenAuthenticatedCreator();
+        given(messageThreadRepository.findOpenThreadsForCreator(eq(me), eq(ThreadStatus.OPEN), isNull(), any()))
+                .willReturn(new PageImpl<>(List.of(connectedPairThread())));
+        given(messageThreadService.countUnreadByThreadIds(List.of(THREAD_ID), ParticipantType.CREATOR, CREATOR_ID))
+                .willReturn(Map.of());
+        // 가시성 집합은 상세 조회와 같은 「도착한 계약」이다 — 작성중·검토 중인 계약은 세지 않는다.
+        given(contractRepository.findMarketIdsWithReceivedContract(
+                CREATOR_ID, List.of(7L), ContractStatus.RECEIVED_BY_CREATOR)).willReturn(List.of(7L));
+
+        ThreadListItem item = creatorThreadService.getThreads(CREATOR_EMAIL, null, new PagingRequest())
+                .getContent().get(0);
+
+        assertThat(item.isHasContract()).isTrue();
     }
 
     @Test
@@ -132,6 +156,9 @@ class CreatorThreadServiceTest {
         assertThat(item.isOperatorChannel()).isTrue();
         assertThat(item.getCounterpartName()).isEqualTo("SHOWROOMZ 운영팀");
         assertThat(item.getCounterpartImageUrl()).isNull();
+        // 운영자 채널에는 계약이 없다 — 조회할 브랜드가 없으므로 쿼리도 나가지 않는다.
+        assertThat(item.isHasContract()).isFalse();
+        verify(contractRepository, never()).findMarketIdsWithReceivedContract(any(), any(), any());
     }
 
     @Test

@@ -55,7 +55,7 @@ public class AdminContractController {
         return commands.updateSignatures(id, operator(principal), request);
     }
     @PostMapping("/{id}/conclude")
-    @Operation(summary = "체결 완료", description = "서명 2종·체결 문서 2종 필수. 공구 생성은 공구 모듈 도입 후 연결됩니다.")
+    @Operation(summary = "체결 완료", description = "서명 2종·체결 문서 2종 필수. 체결과 같은 트랜잭션에서 공구가 생성되고 응답의 groupBuyNumber로 돌려준다 — 공구 생성에 실패하면 체결도 롤백된다.")
     public ProcessResponse conclude(@PathVariable Long id, @AuthenticationPrincipal UserPrincipal principal) { return commands.conclude(id, operator(principal)); }
     @PostMapping("/{id}/expire")
     @Operation(summary = "대시보드 재확인 후 수동 만료")
