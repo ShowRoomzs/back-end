@@ -57,6 +57,8 @@ import java.lang.annotation.Target;
                 "sentry.enabled=false",
                 // 공구 수명주기 스케줄러는 매분 돈다 — 테스트 중간에 오픈·종료가 끼어들지 않게 끄고 서비스를 직접 부른다.
                 "groupbuy.scheduler-enabled=false",
+                // 제출본 PDF는 운영에서 커밋 이후 비동기로 만든다 — 테스트는 같은 스레드에서 돌려 검토 요청 직후 확인한다.
+                "contract.pdf.async-enabled=false",
                 "sentry.dsn=",
                 "logging.level.org.hibernate.SQL=WARN"
         })

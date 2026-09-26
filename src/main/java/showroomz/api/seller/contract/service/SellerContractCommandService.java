@@ -1,9 +1,9 @@
 package showroomz.api.seller.contract.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import showroomz.api.admin.contract.service.ContractDraftGenerator;
 import showroomz.api.seller.contract.dto.ContractCreateRequest;
 import showroomz.api.seller.contract.dto.ContractCreateResponse;
 import showroomz.api.seller.contract.dto.ContractDetailResponse;
@@ -18,6 +18,7 @@ import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractClauseVersion;
 import showroomz.domain.contract.entity.ContractItem;
 import showroomz.domain.contract.entity.ContractResendRequest;
+import showroomz.domain.contract.event.ContractReviewRequestedEvent;
 import showroomz.domain.contract.repository.ContractClauseVersionRepository;
 import showroomz.domain.contract.repository.ContractRepository;
 import showroomz.domain.contract.repository.ContractResendRequestRepository;
@@ -73,7 +74,7 @@ public class SellerContractCommandService {
     private final ContractNumberGenerator contractNumberGenerator;
     private final ContractHistoryRecorder historyRecorder;
     private final ContractNotifier contractNotifier;
-    private final ContractDraftGenerator draftGenerator;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ── P3 · 작성 · 임시저장 ────────────────────────────────────────────────
 
@@ -209,9 +210,10 @@ public class SellerContractCommandService {
         contractNotifier.notifyAdmin(contract, ContractEventType.REVIEW_REQUESTED.name());
 
         contractRepository.saveAndFlush(contract);
-        // 제출본 PDF — 계약번호·조항 버전·제출 시각이 모두 정해진 뒤에 만든다. 실패해도 제출은 성공이고
-        // 생성본은 어드민 첫 다운로드가 만든다(기존 경로). 성공하면 응답에 제출본이 바로 실린다.
-        draftGenerator.generateOnSubmit(contract, now);
+        // 제출본 PDF는 커밋 이후 별도 스레드가 만든다(ContractSubmitDraftListener) — 렌더링·업로드(10초 안팎)를
+        // 이 응답과 계약 행 잠금이 기다리지 않게 한다. 그래서 이 응답의 documents에는 아직 실리지 않는다.
+        // 실패하면 생성본은 어드민 첫 다운로드가 만든다(기존 경로).
+        eventPublisher.publishEvent(new ContractReviewRequestedEvent(contract.getId()));
         return detailAssembler.assemble(contract);
     }
 

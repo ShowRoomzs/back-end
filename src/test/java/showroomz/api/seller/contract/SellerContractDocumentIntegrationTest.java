@@ -159,15 +159,16 @@ class SellerContractDocumentIntegrationTest extends SellerContractTestSupport {
     // ── 검토 요청 시 제출본 생성 ────────────────────────────────────────────
 
     @Test
-    @DisplayName("검토 요청이 제출본 PDF를 만든다 — 응답에 바로 실리고 SYSTEM 이력이 남는다")
+    @DisplayName("검토 요청이 커밋 이후 제출본 PDF를 만든다 — 응답은 기다리지 않고, 다시 조회하면 실리며 SYSTEM 이력이 남는다")
     void reviewRequestGeneratesSubmittedDraft() throws Exception {
         doReturn("%PDF-1.7 test".getBytes()).when(renderer).render(anyString(), anyString());
         when(contractDocumentStorage.putGenerated(anyLong(), any()))
                 .thenAnswer(invocation -> "contracts/" + invocation.getArgument(0) + "/documents/generated.pdf");
 
         long contractId = draftReadyForReview();
-        String submitted = reviewRequestOk(contractId);
-        assertThat(readString(submitted, "$.documents[0].type")).isEqualTo("GENERATED_DRAFT");
+        // 응답은 커밋 직전에 조립된다 — 생성본은 그 뒤에 만들어지므로 이 응답에는 없다(렌더링을 기다리지 않는다).
+        reviewRequest(contractId).andExpect(status().isOk()).andExpect(jsonPath("$.documents").isEmpty());
+        detail(contractId).andExpect(jsonPath("$.documents[0].type").value("GENERATED_DRAFT"));
 
         document(contractId, ContractDocumentType.GENERATED_DRAFT).andExpect(status().isOk());
         Contract contract = contractRepository.findById(contractId).orElseThrow();
