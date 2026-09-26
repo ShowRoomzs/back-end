@@ -12,6 +12,7 @@ import showroomz.domain.member.creator.entity.Creator;
 import showroomz.support.BrandFixture;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.*;
@@ -262,9 +263,18 @@ class AdminContractListIntegrationTest extends AdminContractTestSupport {
         resendRequested(older, ContractActorType.SELLER, now.minusHours(6));
         // 브랜드·인플루언서가 각각 요청해도 계약 단위로 한 건이다.
         resendRequested(older, ContractActorType.CREATOR, now.minusHours(1));
+        // 서명 진행 중이 아닌 계약의 미처리 요청은 처리할 방법이 없다 — 큐에서 빠지고 상세 건수도 0이다.
+        for (ContractStatus closed : List.of(ContractStatus.DECLINED, ContractStatus.EXPIRED, ContractStatus.CANCELED,
+                ContractStatus.CONCLUSION_PENDING)) {
+            Contract left = seed(closed, s -> s.title("요청 후 " + closed));
+            resendRequested(left, ContractActorType.CREATOR, now.minusHours(2));
+            detail(left).andExpect(jsonPath("$.resend.pendingCount").value(0))
+                    .andExpect(jsonPath("$.permissions.canHandleResend").value(false));
+        }
         list("queue", "RESEND").andExpect(jsonPath("$.pageInfo.totalResults").value(2))
                 .andExpect(jsonPath("$.content[*].contractId", contains(older.getId().intValue(), newer.getId().intValue())));
         summary().andExpect(jsonPath("$.queues.RESEND").value(2));
+        detail(older).andExpect(jsonPath("$.resend.pendingCount").value(2));
     }
 
     @Test
