@@ -98,6 +98,12 @@ public class SecurityConfig {
             // 비로그인 열람이 조용히 막혀 있었다(C4 §비로그인 — 열람은 자유, 팔로우·♥만 로그인).
             "/v1/user/showrooms/*/posts", "/v1/user/showrooms/posts/*",
 
+            // 전체 피드 — C1 추천과 같은 규칙이라 같은 조건으로 연다(공구 게시물 설계 5-1).
+            "/v1/user/showrooms/posts",
+
+            // C4 「진행 중인 공구」 고정 섹션 — C4는 SNS 링크로 비로그인이 착지하는 화면이다(공구 게시물 설계 5-3).
+            "/v1/user/showrooms/*/group-buy-posts",
+
             // 쇼룸 방문 기록 (§22-4) — 비로그인 방문도 쇼룸 도달 지표에 포함되므로 인증을 요구하지 않는다.
             // 토큰이 실려 오면 필터가 인증을 채워 주므로, 로그인 방문은 사용자 기준으로 집계된다.
             "/v1/user/showrooms/*/visits",

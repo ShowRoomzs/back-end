@@ -76,6 +76,9 @@ class CreatorGroupBuyScenarioIntegrationTest extends CreatorGroupBuyTestSupport 
                 .andExpect(jsonPath("$.post.status").value("CLOSED"))
                 .andExpect(jsonPath("$.payout").doesNotExist())
                 .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(true));
+        // 종료 후 3일 동안은 마감 게시물로 소비자에게 남고, 스케줄러의 「마감 게시물 내리기」가 그 뒤 내린다(공구 게시물 설계 4-1 · 4-2)
+        assertThat(postRepository.findById(post.getPostId()).orElseThrow().getStatus()).isEqualTo(PostStatus.PUBLISHED);
+        assertThat(lifecycleService.retirePost(id, now.plusHours(72))).isEqualTo(1);
         assertThat(postRepository.findById(post.getPostId()).orElseThrow().getStatus()).isEqualTo(PostStatus.DRAFT);
     }
 

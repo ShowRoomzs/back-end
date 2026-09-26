@@ -9,14 +9,21 @@ import java.util.List;
 
 public interface PostRepositoryCustom {
 
-    /** 소비자 전체 피드 — 게시중만 */
+    /** 소비자 전체 피드 — 게시중만. 일반 + 진행 중 공구(C1과 같은 규칙) */
     Page<Post> findDisplayedPosts(Pageable pageable);
 
-    /** 소비자 쇼룸 피드 — 게시중만 */
+    /**
+     * C4 쇼룸 아래 피드 — 게시중만. 일반 + 마감 게시물(종료 3일 이내). 진행 중 공구는 고정 섹션
+     * ({@link #findOngoingGroupBuyPostsByCreatorId})과 겹치지 않게 뺀다.
+     */
     Page<Post> findDisplayedPostsByCreatorId(Long creatorId, Pageable pageable);
+
+    /** C4 고정 섹션 — 이 쇼룸의 진행 중 공구 게시물. 페이징 없음 · 공구 시작일 최신순 */
+    List<Post> findOngoingGroupBuyPostsByCreatorId(Long creatorId);
 
     /**
      * 팔로잉 피드 — 팔로우한 쇼룸이 <b>게시한</b> 게시물만. 작성중·노출 중지가 새면 안 된다.
+     * 일반 + 진행 중 공구다.
      *
      * @param creatorIds 대상 쇼룸. 비어 있으면 빈 페이지다 — 팔로잉이 0인 사용자에게 전체 피드를 주지 않는다
      */
@@ -24,6 +31,7 @@ public interface PostRepositoryCustom {
 
     /**
      * C1 추천 — 팔로우하지 않은 쇼룸의 게시중 게시물 (§C1 "회원님을 위한 추천" · 팔로잉 0 발견 피드).
+     * 일반 + 진행 중 공구다.
      *
      * <p>팔로잉 피드의 <b>여집합</b>이라 두 목록에 같은 게시물이 겹치지 않는다. 겹치면 "새 게시물을
      * 모두 확인했어요" 구분선 아래에 방금 본 게시물이 다시 나와 구분 자체가 무의미해진다.

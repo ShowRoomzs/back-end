@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 
 /**
- * 공구 수명주기 배치 — 오픈 · 종료 · 무응답 자동 이행(설계서 3-3).
+ * 공구 수명주기 배치 — 오픈 · 종료 · 무응답 자동 이행(설계서 3-3) · 마감 게시물 내리기(공구 게시물 설계 4-2).
  *
  * <p><b>1분 주기인 이유</b> — 공구는 「08.14 10:00 시작」을 소비자에게 공지한 시각이 있다. 1시간 주기면
  * 10:59에 열리는 공구가 생긴다. 반대로 스케줄러 사이 최대 1분 동안 종료 시각이 지났는데 IN_PROGRESS인 공구가
@@ -41,6 +41,10 @@ public class GroupBuyLifecycleScheduler {
                 (id, at) -> lifecycleService.end(id, at) ? 1 : 0);
         run("자동 이행", lifecycleService.findIdsToAutoConfirm(now, MAX_PER_RUN), now,
                 lifecycleService::autoConfirmFulfillment);
+        // 종료 후 3일이 지난 공구 게시물을 소비자에게서 내린다 — post.status는 저장된 값이라 스스로 바뀌지 않는다.
+        // 최대 1분 지연은 보정하지 않는다(72시간 중 1분).
+        run("마감 게시물 내리기", lifecycleService.findIdsToRetirePost(now, MAX_PER_RUN), now,
+                lifecycleService::retirePost);
     }
 
     private void run(String job, List<Long> ids, LocalDateTime now, BiFunction<Long, LocalDateTime, Integer> step) {

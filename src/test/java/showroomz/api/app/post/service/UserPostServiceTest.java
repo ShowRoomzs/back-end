@@ -1,5 +1,6 @@
 package showroomz.api.app.post.service;
 
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -16,6 +17,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 import showroomz.api.app.post.DTO.PostDto;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.connection.repository.ConnectionRepository;
+import showroomz.domain.groupbuy.service.GroupBuyPostCard;
+import showroomz.domain.groupbuy.service.GroupBuyPostCardLoader;
+import showroomz.domain.groupbuy.type.GroupBuyProductState;
+import showroomz.domain.groupbuy.type.GroupBuySaleState;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.creator.repository.CreatorRepository;
@@ -27,6 +32,7 @@ import showroomz.domain.post.repository.PostImageRepository;
 import showroomz.domain.post.repository.PostLikeRepository;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.post.type.LikedPostSort;
+import showroomz.domain.post.type.PostStatus;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
@@ -35,6 +41,7 @@ import showroomz.global.error.exception.ErrorCode;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,6 +82,10 @@ class UserPostServiceTest {
     private UserRepository userRepository;
     @Mock
     private ConnectionRepository connectionRepository;
+    @Mock
+    private GroupBuyPostCardLoader groupBuyPostCardLoader;
+    @Mock
+    private JPAQueryFactory queryFactory;
 
     private final PostPolicies postPolicies = new PostPolicies(List.of(new GeneralPostPolicy()));
 
@@ -85,7 +96,7 @@ class UserPostServiceTest {
         userPostService = new UserPostService(
                 postRepository, postLikeRepository, postImageRepository,
                 creatorFollowRepository, creatorRepository, userRepository,
-                connectionRepository, postPolicies);
+                connectionRepository, postPolicies, groupBuyPostCardLoader, queryFactory);
 
         Users user = new Users();
         user.setId(USER_ID);
@@ -482,6 +493,121 @@ class UserPostServiceTest {
             assertThat(response.getContent()).hasSize(1);
             assertThat(response.getContent().get(0).getPost().getIsLiked()).isFalse();
             verify(postLikeRepository, never()).findLikedPostIdsByUserIdAndPostIds(anyLong(), any());
+        }
+    }
+
+    /**
+     * 공구 블록 조립(공구 게시물 설계 5-2 · 6-3). 정책 목록에 공구 정책을 일부러 넣지 않았다 — 조립이 게시물마다
+     * {@code canLike}를 부르면(카드 수만큼 {@code findById}) {@code PostPolicies.of}가 예외를 던져 여기서 드러난다.
+     */
+    @Nested
+    @DisplayName("공구 블록 조립")
+    class GroupBuyCard {
+
+        private static final long GROUP_BUY_POST_ID = 777L;
+
+        @Test
+        @DisplayName("목록 · 진행 중 — 상품 전부를 싣고 하트는 열려 있다 · 정책을 부르지 않는다")
+        void ongoingListCardCarriesAllProducts() {
+            givenPublishedList(groupBuyPost());
+            givenCard(GroupBuySaleState.PARTIALLY_SOLD_OUT, 3);
+
+            PostDto.PostListItem item = userPostService.getPostList(null, new PagingRequest(), null)
+                    .getContent().get(0).getPost();
+
+            assertThat(item.getLikeLocked()).isFalse();
+            assertThat(item.getGroupBuy().getSaleState()).isEqualTo(GroupBuySaleState.PARTIALLY_SOLD_OUT);
+            assertThat(item.getGroupBuy().getDDay()).isEqualTo(3);
+            assertThat(item.getGroupBuy().getProductCount()).isEqualTo(2);
+            assertThat(item.getGroupBuy().getProducts()).hasSize(2);
+            assertThat(item.getGroupBuy().getProducts().get(1).getState()).isEqualTo(GroupBuyProductState.SOLD_OUT);
+            assertThat(item.getGroupBuy().getAdDisclosure().getLabel()).isEqualTo("유료 광고 포함");
+        }
+
+        @Test
+        @DisplayName("목록 · 마감 — 상품 행은 []지만 productCount는 실제 개수 · 하트 잠김")
+        void closedListCardIsTextOnly() {
+            givenPublishedList(groupBuyPost());
+            givenCard(GroupBuySaleState.CLOSED, null);
+
+            PostDto.FeedItemResponse response = userPostService.getPostList(null, new PagingRequest(), null)
+                    .getContent().get(0);
+
+            assertThat(response.getContentType()).isEqualTo("GROUP_BUY");
+            assertThat(response.getPost().getLikeLocked()).isTrue();
+            assertThat(response.getPost().getGroupBuy().getProducts()).isEmpty();
+            assertThat(response.getPost().getGroupBuy().getProductCount()).isEqualTo(2);
+            assertThat(response.getPost().getGroupBuy().getDDay()).isNull();
+        }
+
+        @Test
+        @DisplayName("상세 · 마감 — 상품 전부를 싣는다(흑백 + 공구 마감) · 하트 잠김")
+        void closedDetailKeepsProducts() {
+            given(postRepository.findByIdWithImages(GROUP_BUY_POST_ID)).willReturn(Optional.of(groupBuyPost()));
+            givenCard(GroupBuySaleState.CLOSED, null);
+
+            PostDto.PostDetailResponse response = userPostService.getPostById(null, GROUP_BUY_POST_ID);
+
+            assertThat(response.getContentType()).isEqualTo("GROUP_BUY");
+            assertThat(response.getLikeLocked()).isTrue();
+            assertThat(response.getGroupBuy().getProducts()).hasSize(2);
+            assertThat(response.getImageUrls()).isEmpty();
+            assertThat(response.getAspectRatio()).isNull();
+        }
+
+        @Test
+        @DisplayName("카드가 없는 공구 게시물(확장 행 유실)은 하트를 잠그고 블록 없이 나간다")
+        void missingCardLocksHeart() {
+            givenPublishedList(groupBuyPost());
+            given(groupBuyPostCardLoader.load(any(), any())).willReturn(Map.of());
+
+            PostDto.PostListItem item = userPostService.getPostList(null, new PagingRequest(), null)
+                    .getContent().get(0).getPost();
+
+            assertThat(item.getLikeLocked()).isTrue();
+            assertThat(item.getGroupBuy()).isNull();
+        }
+
+        @Test
+        @DisplayName("로더에는 공구 게시물 id만 넘기고, 일반 게시물 카드는 groupBuy null")
+        void loaderReceivesOnlyGroupBuyIds() {
+            givenPublishedList(publishedPost(), groupBuyPost());
+            givenCard(GroupBuySaleState.ON_SALE, 3);
+
+            List<PostDto.FeedItemResponse> content =
+                    userPostService.getPostList(null, new PagingRequest(), null).getContent();
+
+            verify(groupBuyPostCardLoader).load(eq(List.of(GROUP_BUY_POST_ID)), any());
+            assertThat(content.get(0).getContentType()).isEqualTo("GENERAL");
+            assertThat(content.get(0).getPost().getGroupBuy()).isNull();
+            assertThat(content.get(1).getContentType()).isEqualTo("GROUP_BUY");
+        }
+
+        private void givenPublishedList(Post... posts) {
+            given(postRepository.findDisplayedPosts(any()))
+                    .willAnswer(invocation -> new PageImpl<>(List.of(posts), invocation.getArgument(0), posts.length));
+        }
+
+        private void givenCard(GroupBuySaleState saleState, Integer dDay) {
+            boolean closed = saleState == GroupBuySaleState.CLOSED;
+            GroupBuyPostCard card = new GroupBuyPostCard(77L, "여름 끝 무너진 장벽", saleState, dDay,
+                    LocalDateTime.now().plusDays(3), "유료 광고 포함 · 글로우랩으로부터 대가를 받아 진행하는 공동구매입니다",
+                    List.of(product(901L, closed ? GroupBuyProductState.CLOSED : GroupBuyProductState.ON_SALE),
+                            product(902L, closed ? GroupBuyProductState.CLOSED : GroupBuyProductState.SOLD_OUT)));
+            given(groupBuyPostCardLoader.load(any(), any())).willReturn(Map.of(GROUP_BUY_POST_ID, card));
+        }
+
+        private GroupBuyPostCard.Product product(long productId, GroupBuyProductState state) {
+            return new GroupBuyPostCard.Product(productId, "상품 " + productId, null, 38_000, 24_900, 34, state,
+                    state != GroupBuyProductState.CLOSED);
+        }
+
+        private Post groupBuyPost() {
+            Creator creator = Creator.builder().id(10L).showroomName("미아 스킨노트").build();
+            Post post = Post.groupBuyDraft(creator, "제가 두 달 동안 써 본 앰플이에요");
+            post.changeGroupBuyExposure(PostStatus.PUBLISHED, LocalDateTime.now());
+            ReflectionTestUtils.setField(post, "id", GROUP_BUY_POST_ID);
+            return post;
         }
     }
 

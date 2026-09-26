@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import showroomz.domain.product.entity.ProductVariant;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,4 +34,14 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
     @Query("SELECT v.product.productId, COALESCE(SUM(v.stock), 0) FROM ProductVariant v " +
            "WHERE v.product.productId IN :productIds GROUP BY v.product.productId")
     List<Object[]> sumStockByProductIds(@Param("productIds") List<Long> productIds);
+
+    /**
+     * 상품별 재고가 남은 옵션 수 — 0이거나 행이 없으면 품절이다. C7 {@code status.isOutOfStock}과 같은 식
+     * (강제 품절 ∨ 재고 있는 옵션 없음)을 페이지 단위로 판정하려고 센다(공구 게시물 설계 6-2 ③).
+     *
+     * @return List of [productId, inStockVariantCount]
+     */
+    @Query("SELECT v.product.productId, COUNT(v) FROM ProductVariant v "
+            + "WHERE v.product.productId IN :productIds AND v.stock > 0 GROUP BY v.product.productId")
+    List<Object[]> countInStockVariantsByProductIds(@Param("productIds") Collection<Long> productIds);
 }

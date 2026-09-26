@@ -23,6 +23,7 @@ import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.DiscountRate;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -638,15 +639,7 @@ public class CartService {
     }
 
     private Integer calculateDiscountRate(Integer regularPrice, Integer salePrice) {
-        if (regularPrice == null || salePrice == null || regularPrice <= 0) {
-            return 0;
-        }
-        double rate = ((double) (regularPrice - salePrice) / regularPrice) * 100.0;
-        int rounded = (int) Math.round(rate);
-        if (rounded < 0) {
-            return 0;
-        }
-        return Math.min(rounded, 100);
+        return DiscountRate.of(regularPrice, salePrice);
     }
 
     /**

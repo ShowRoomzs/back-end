@@ -31,6 +31,7 @@ import showroomz.global.error.exception.ErrorCode;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
+import showroomz.global.utils.DiscountRate;
 
 import java.util.Comparator;
 import java.util.List;
@@ -272,15 +273,7 @@ public class ProductService {
     }
 
     private Integer calculateDiscountRate(Integer regularPrice, Integer salePrice) {
-        if (regularPrice == null || salePrice == null || regularPrice <= 0) {
-            return 0;
-        }
-        double rate = ((double) (regularPrice - salePrice) / regularPrice) * 100.0;
-        int rounded = (int) Math.round(rate);
-        if (rounded < 0) {
-            return 0;
-        }
-        return Math.min(rounded, 100);
+        return DiscountRate.of(regularPrice, salePrice);
     }
 
     private String normalize(String value) {

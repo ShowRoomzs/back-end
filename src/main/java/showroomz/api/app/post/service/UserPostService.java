@@ -1,5 +1,6 @@
 package showroomz.api.app.post.service;
 
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -10,9 +11,12 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.post.DTO.PostDto;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.connection.repository.ConnectionRepository;
+import showroomz.domain.groupbuy.service.GroupBuyPostCard;
+import showroomz.domain.groupbuy.service.GroupBuyPostCardLoader;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.creator.repository.CreatorRepository;
+import showroomz.domain.member.creator.repository.PublicShowrooms;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.entity.PostImage;
@@ -22,17 +26,22 @@ import showroomz.domain.post.repository.PostImageRepository;
 import showroomz.domain.post.repository.PostLikeRepository;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.post.type.LikedPostSort;
+import showroomz.domain.post.type.PostType;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static showroomz.domain.member.creator.entity.QCreator.creator;
+import static showroomz.domain.member.user.entity.QUsers.users;
 
 /**
  * 소비자에게 게시물을 보여주는 서비스.
@@ -44,6 +53,9 @@ import java.util.stream.Collectors;
  * <p>상세 조회에서 조회수를 올리지 않는다. 노출은 이제 뷰포트 진입을 기준으로
  * {@link PostImpressionService}가 적재한다 — 상세를 열 때마다 세면 피드에서 스쳐 지나간 노출과
  * 상세를 연 노출이 같은 지표에 뒤섞인다.
+ *
+ * <p>공구 게시물은 {@code groupBuy} 블록을 더해 같은 응답으로 나간다(공구 게시물 설계 5-2). 블록은
+ * {@link GroupBuyPostCardLoader}가 페이지 단위로 한 번에 읽는다 — 페이지 크기와 무관하게 쿼리 3회다(6-2).
  */
 @Slf4j
 @Service
@@ -59,7 +71,13 @@ public class UserPostService {
     private final UserRepository userRepository;
     private final ConnectionRepository connectionRepository;
     private final PostPolicies postPolicies;
+    private final GroupBuyPostCardLoader groupBuyPostCardLoader;
+    private final JPAQueryFactory queryFactory;
 
+    /**
+     * C5 상세. 공구 게시물은 마감이어도 종료 후 3일까지 열리고(투영식이 그때까지 PUBLISHED로 둔다), 이후 404다.
+     * 목록과 달리 마감이어도 상품 행을 전부 내린다 — 흑백 + 「공구 마감」으로 그린다(5-2).
+     */
     public PostDto.PostDetailResponse getPostById(String username, Long postId) {
         Post post = postRepository.findByIdWithImages(postId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
@@ -72,12 +90,15 @@ public class UserPostService {
         Users user = findUser(username);
         boolean liked = user != null && postLikeRepository.existsByUserIdAndPostId(user.getId(), postId);
 
-        Creator creator = post.getCreator();
+        GroupBuyPostCard card = groupBuyCards(List.of(post)).get(post.getId());
+
+        Creator showroom = post.getCreator();
         return PostDto.PostDetailResponse.builder()
+                .contentType(post.getPostType().name())
                 .postId(post.getId())
-                .showroomId(creator.getId())
-                .showroomName(showroomName(creator))
-                .showroomImageUrl(creator.getProfileImageUrl())
+                .showroomId(showroom.getId())
+                .showroomName(showroomName(showroom))
+                .showroomImageUrl(showroom.getProfileImageUrl())
                 .content(post.getContent())
                 .imageUrls(post.getImages().stream().map(PostImage::getImageUrl).toList())
                 .imageCount(post.getImageCount())
@@ -85,10 +106,26 @@ public class UserPostService {
                 .impressionCount(post.getImpressionCount())
                 .isLiked(liked)
                 .likeCount(post.getLikeCount())
-                .likeLocked(!postPolicies.of(post).canLike(post))
+                .likeLocked(likeLocked(post, card))
                 .publishedAt(post.getPublishedAt())
                 .modifiedAt(post.getModifiedAt())
+                .groupBuy(card == null ? null : PostDto.GroupBuyBlock.of(card, true))
                 .build();
+    }
+
+    /**
+     * C4 「진행 중인 공구」 고정 섹션 — 이 쇼룸의 진행 중 공구 게시물 전부(페이징 없음 · 공구 시작일 최신순).
+     *
+     * <p>빈 배열이면 앱이 섹션을 감춘다. 정의가 아바타 링({@code hasOngoingGroupBuy})과 같아 둘이 어긋나지 않는다(4-5).
+     * 없는·노출할 수 없는 쇼룸은 쇼룸 프로필({@code GET /{showroomId}})과 같은 404다.
+     */
+    public List<PostDto.FeedItemResponse> getOngoingGroupBuyPosts(String username, Long showroomId) {
+        requireVisibleShowroom(showroomId);
+        List<Post> posts = postRepository.findOngoingGroupBuyPostsByCreatorId(showroomId);
+
+        Users user = findUser(username);
+        FeedContext context = feedContext(posts, likedPostIds(user, posts), followedCreatorIds(user, posts));
+        return posts.stream().map(post -> toFeedItem(post, context)).toList();
     }
 
     public PageResponse<PostDto.FeedItemResponse> getPostList(String username, PagingRequest pagingRequest, Long showroomId) {
@@ -153,9 +190,9 @@ public class UserPostService {
     /**
      * 좋아요한 게시물 모음 (C3).
      *
-     * <p>그 사이 내려간 게시물은 목록에서 빠지지만, <b>마감된 공구는 남는다</b>. 살 수 없게
-     * 됐다고 앱이 사용자가 저장한 기록을 지우면 안 되고, 대신 {@code likeLocked}로 새 좋아요만
-     * 막는다(C3 §마감·품절).
+     * <p>그 사이 내려간 게시물은 목록에서 빠지지만, <b>마감된 공구는 종료 후 3일 동안 남는다</b>. 살 수 없게
+     * 됐다고 곧바로 사용자가 저장한 기록을 지우지 않고, 대신 {@code likeLocked}로 새 좋아요만 막는다(C3 §마감·품절).
+     * 3일이 지나면 투영이 DRAFT로 내려 같은 {@code PUBLISHED} 조건이 걸러 낸다(공구 게시물 설계 4-1).
      *
      * <p>화면 상단의 "좋아요한 게시물 N"은 {@code pageInfo.totalResults}다 — 페이지에 담긴
      * 수가 아니라 전체 수라 스크롤 위치와 무관하게 같은 값이 나온다.
@@ -214,35 +251,90 @@ public class UserPostService {
 
     private PageResponse<PostDto.FeedItemResponse> toFeed(
             Page<Post> postPage, Set<Long> likedPostIds, Set<Long> followedCreatorIds) {
-        Map<Long, List<String>> imagesByPost = imagesByPost(postPage.getContent());
-        Set<Long> ongoingGroupBuyCreatorIds = ongoingGroupBuyCreatorIds(postPage.getContent());
+        FeedContext context = feedContext(postPage.getContent(), likedPostIds, followedCreatorIds);
+        return new PageResponse<>(postPage.map(post -> toFeedItem(post, context)));
+    }
 
-        Page<PostDto.FeedItemResponse> dtoPage = postPage.map(post -> {
-            List<String> imageUrls = imagesByPost.getOrDefault(post.getId(), List.of());
-            Creator creator = post.getCreator();
-            PostDto.PostListItem item = PostDto.PostListItem.builder()
-                    .postId(post.getId())
-                    .showroomId(creator.getId())
-                    .showroomName(showroomName(creator))
-                    .showroomImageUrl(creator.getProfileImageUrl())
-                    .isFollowing(followedCreatorIds.contains(creator.getId()))
-                    .hasOngoingGroupBuy(ongoingGroupBuyCreatorIds.contains(creator.getId()))
-                    .content(post.getContent())
-                    .imageUrls(imageUrls)
-                    .imageCount(imageUrls.size())
-                    .aspectRatio(post.getAspectRatio())
-                    .impressionCount(post.getImpressionCount())
-                    .isLiked(likedPostIds.contains(post.getId()))
-                    .likeCount(post.getLikeCount())
-                    .likeLocked(!postPolicies.of(post).canLike(post))
-                    .publishedAt(post.getPublishedAt())
-                    .build();
-            return PostDto.FeedItemResponse.builder()
-                    .contentType(post.getPostType().name())
-                    .post(item)
-                    .build();
-        });
-        return new PageResponse<>(dtoPage);
+    /** 페이지 단위로 모아 읽은 것 — 사진 · 로즈 링 · 공구 블록. 카드마다 묻지 않는다. */
+    private FeedContext feedContext(List<Post> posts, Set<Long> likedPostIds, Set<Long> followedCreatorIds) {
+        return new FeedContext(imagesByPost(posts), ongoingGroupBuyCreatorIds(posts), groupBuyCards(posts),
+                likedPostIds, followedCreatorIds);
+    }
+
+    private record FeedContext(
+            Map<Long, List<String>> imagesByPost,
+            Set<Long> ongoingGroupBuyCreatorIds,
+            Map<Long, GroupBuyPostCard> groupBuyCards,
+            Set<Long> likedPostIds,
+            Set<Long> followedCreatorIds
+    ) {
+    }
+
+    /**
+     * 목록 카드. 공구 게시물이 마감이면 상품 행을 싣지 않는다 — C3·C4는 마감 게시물을 글만 보여준다(5-2).
+     * {@code productCount}는 그래도 실제 개수다.
+     */
+    private PostDto.FeedItemResponse toFeedItem(Post post, FeedContext context) {
+        List<String> imageUrls = context.imagesByPost().getOrDefault(post.getId(), List.of());
+        GroupBuyPostCard card = context.groupBuyCards().get(post.getId());
+        Creator showroom = post.getCreator();
+        PostDto.PostListItem item = PostDto.PostListItem.builder()
+                .postId(post.getId())
+                .showroomId(showroom.getId())
+                .showroomName(showroomName(showroom))
+                .showroomImageUrl(showroom.getProfileImageUrl())
+                .isFollowing(context.followedCreatorIds().contains(showroom.getId()))
+                .hasOngoingGroupBuy(context.ongoingGroupBuyCreatorIds().contains(showroom.getId()))
+                .content(post.getContent())
+                .imageUrls(imageUrls)
+                .imageCount(imageUrls.size())
+                .aspectRatio(post.getAspectRatio())
+                .impressionCount(post.getImpressionCount())
+                .isLiked(context.likedPostIds().contains(post.getId()))
+                .likeCount(post.getLikeCount())
+                .likeLocked(likeLocked(post, card))
+                .publishedAt(post.getPublishedAt())
+                .groupBuy(card == null ? null : PostDto.GroupBuyBlock.of(card, !card.saleState().isClosed()))
+                .build();
+        return PostDto.FeedItemResponse.builder()
+                .contentType(post.getPostType().name())
+                .post(item)
+                .build();
+    }
+
+    /**
+     * 페이지의 공구 게시물 블록 — 일반 게시물만 있으면 쿼리를 내지 않는다.
+     */
+    private Map<Long, GroupBuyPostCard> groupBuyCards(List<Post> posts) {
+        List<Long> groupBuyPostIds = posts.stream()
+                .filter(post -> post.getPostType() == PostType.GROUP_BUY)
+                .map(Post::getId)
+                .toList();
+        return groupBuyPostCardLoader.load(groupBuyPostIds, LocalDateTime.now());
+    }
+
+    /**
+     * 하트 잠금 — 공구는 로더가 읽은 판매 상태로 판정한다. 게시물마다 {@code canLike}를 부르면 카드 수만큼
+     * {@code findById}가 나간다(6-3). 쓰기(좋아요 {@code POST})는 계속 정책이 판정한다.
+     */
+    private boolean likeLocked(Post post, GroupBuyPostCard card) {
+        if (post.getPostType() == PostType.GROUP_BUY) {
+            return card == null || card.likeLocked();
+        }
+        return !postPolicies.of(post).canLike(post);
+    }
+
+    /** 쇼룸 프로필과 같은 노출 조건 — 상태를 구분해 알려주지 않는다. */
+    private void requireVisibleShowroom(Long showroomId) {
+        Integer found = queryFactory
+                .selectOne()
+                .from(creator)
+                .join(creator.user, users)
+                .where(PublicShowrooms.visible().and(creator.id.eq(showroomId)))
+                .fetchFirst();
+        if (found == null) {
+            throw new BusinessException(ErrorCode.SHOWROOM_NOT_FOUND);
+        }
     }
 
     private Set<Long> likedPostIds(Users user, List<Post> posts) {

@@ -18,6 +18,8 @@ import showroomz.api.app.post.service.UserPostService;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
+import java.util.List;
+
 /**
  * 소비자 쇼룸 피드.
  *
@@ -63,6 +65,15 @@ public class UserPostController implements PostControllerDocs {
             @ParameterObject @ModelAttribute PagingRequest pagingRequest) {
         String username = userPrincipal != null ? userPrincipal.getUsername() : null;
         return ResponseEntity.ok(postService.getPostList(username, pagingRequest, showroomId));
+    }
+
+    @Override
+    @GetMapping("/{showroomId}/group-buy-posts")
+    public ResponseEntity<List<PostDto.FeedItemResponse>> getOngoingGroupBuyPosts(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable("showroomId") Long showroomId) {
+        String username = userPrincipal != null ? userPrincipal.getUsername() : null;
+        return ResponseEntity.ok(postService.getOngoingGroupBuyPosts(username, showroomId));
     }
 
     @Override

@@ -85,11 +85,11 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
 
     /**
      * C4 쇼룸 프로필의 "게시물 N" — 소비자에게 보이는 것만 센다(작성중·노출 중지·삭제 제외).
-     * 공구 게시물은 세지 않는다 — 피드에도 뜨지 않는 글이 숫자에만 잡히면 안 된다(31 설계 10-2 #15).
+     * 타입을 가리지 않는다 — 게시중인 공구 게시물은 진행 중(고정 섹션) 아니면 마감 3일 이내(아래 피드)뿐이라,
+     * 이 값이 두 목록의 합과 같다(공구 게시물 설계 6절 · 31 설계 10-2 #15 해소).
      */
     @Query("SELECT COUNT(p) FROM Post p " +
-           "WHERE p.creator.id = :creatorId AND p.status = :status " +
-           "AND p.postType = showroomz.domain.post.type.PostType.GENERAL")
+           "WHERE p.creator.id = :creatorId AND p.status = :status")
     long countByCreator_IdAndStatus(@Param("creatorId") Long creatorId, @Param("status") PostStatus status);
 
     /**

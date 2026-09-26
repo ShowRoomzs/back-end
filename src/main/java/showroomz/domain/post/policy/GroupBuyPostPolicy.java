@@ -12,6 +12,8 @@ import showroomz.domain.post.type.PostType;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.time.LocalDateTime;
+
 /**
  * 공구 게시물 규칙(31 설계 2-2). {@link GeneralPostPolicy}와 달리 판단에 필요한 상태가 게시물 밖
  * ({@code group_buy_post} · {@code group_buy})에 있어 리포지토리를 주입받는다.
@@ -54,12 +56,21 @@ public class GroupBuyPostPolicy implements PostPolicy {
         requireEditable(load(post));
     }
 
-    /** 노출중일 때만 — 마감·숨김·예약 게시물은 좋아요를 받지 않는다. */
+    /**
+     * 노출중이고 종료 시각 전일 때만 — 마감·숨김·예약 게시물은 좋아요를 받지 않는다. 품절은 막지 않는다.
+     *
+     * <p>종료 후 3일 동안 남는 마감 게시물은 여기서 잠긴다(해제만). {@code end_at}도 보는 이유 — 종료 스케줄러의
+     * 최대 1분 지연 동안 상태는 아직 IN_PROGRESS다(공구 게시물 설계 4-3 · 4-4).
+     *
+     * <p>목록은 이 메서드를 부르지 않는다 — 카드 로더가 이미 읽은 판매 상태로 {@code likeLocked}를 계산한다(6-3).
+     */
     @Override
     public boolean canLike(Post post) {
+        LocalDateTime now = LocalDateTime.now();
         return groupBuyPostRepository.findById(post.getId())
                 .map(groupBuyPost -> GroupBuyPostStatus.of(groupBuyPost, groupBuyPost.getGroupBuy())
-                        == GroupBuyPostStatus.EXPOSED)
+                        == GroupBuyPostStatus.EXPOSED
+                        && groupBuyPost.getGroupBuy().getEndAt().isAfter(now))
                 .orElse(false);
     }
 

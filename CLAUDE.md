@@ -2,6 +2,10 @@
 
 Showroomz 백엔드 (Spring Boot / Gradle / Java).
 
+## 응답 언어
+
+사용자에게 하는 답변은 **항상 한국어**로 작성한다. 코드 식별자·경로·명령어는 원문 그대로 둔다.
+
 ## 패키지 구조
 
 - `showroomz.api.<역할>.<기능>.{controller, docs, dto|DTO, service}` — 역할은 `admin` / `seller` / `creator` / `app`(유저) / `common` / `test`

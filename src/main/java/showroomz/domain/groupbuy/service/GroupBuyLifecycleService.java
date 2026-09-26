@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 시간이 여는 전이 — 오픈 · 종료 · 무응답 자동 이행(설계서 0-5 · 3-3).
+ * 시간이 여는 전이 — 오픈 · 종료 · 무응답 자동 이행(설계서 0-5 · 3-3) · 마감 게시물 내리기(공구 게시물 설계 4-2).
  *
  * <p>사람이 판단하는 전이는 여기 넣지 않는다 — 직권 중단 집행은 소명 기한이 지나도 운영자가 누른다.
  *
@@ -59,6 +59,12 @@ public class GroupBuyLifecycleService {
         return groupBuyRepository.findIdsToAutoConfirmFulfillment(now, Pageable.ofSize(limit));
     }
 
+    @Transactional(readOnly = true)
+    public List<Long> findIdsToRetirePost(LocalDateTime now, int limit) {
+        return groupBuyRepository.findIdsToRetirePost(GroupBuyStatus.TERMINAL,
+                now.minus(GroupBuyPostExposure.CLOSED_POST_RETENTION), Pageable.ofSize(limit));
+    }
+
     /** READY → IN_PROGRESS. 시작 버튼이 없다 — 시작 시각이 되면 시스템이 연다(§29-4). */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean open(Long groupBuyId, LocalDateTime now) {
@@ -90,6 +96,22 @@ public class GroupBuyLifecycleService {
             return false;
         }
         return terminator.tryTerminate(groupBuy, GroupBuyTerminator.Termination.completed(groupBuy), now);
+    }
+
+    /**
+     * 마감 게시물 내리기 — 종료 후 보존 기간이 지난 공구 게시물을 PUBLISHED → DRAFT(공구 게시물 설계 4-2).
+     *
+     * <p>별도 전이 메서드를 두지 않는다 — 투영식({@link GroupBuyPostExposure})이 {@code now}로 다시 계산하면 DRAFT가 나온다.
+     * 공구 행을 먼저 잠근다(잠금 순서 {@code group_buy → group_buy_post}). 이미 내려갔으면 투영이 바꿀 것이 없어 0이다 —
+     * 중복 실행돼도 두 번 내려가지 않는다. {@code post_like}·{@code like_count}는 지우지 않는다(스튜디오 인사이트).
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public int retirePost(Long groupBuyId, LocalDateTime now) {
+        GroupBuy groupBuy = groupBuyRepository.findForUpdate(groupBuyId).orElse(null);
+        if (groupBuy == null || !groupBuy.getStatus().isTerminal()) {
+            return 0;
+        }
+        return postExposure.sync(groupBuy, now) ? 1 : 0;
     }
 
     /** 무응답 자동 이행 — 스위치가 켜졌을 때만(설계서 1-9 · 기본 꺼짐). 이미 확인한 측은 건드리지 않는다. */

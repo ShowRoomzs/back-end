@@ -15,6 +15,7 @@ import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.user.type.UserStatus;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -70,17 +71,25 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
     long countByTypeAndCreatorAndStatus(ConnectionType type, Creator creator, ConnectionStatus status);
 
     /**
-     * 진행 중 공구를 보유한 쇼룸 판별 (C2 팔로잉 목록의 아바타 링).
-     * 공구 상태는 상품(product.group_buy_status)에 있으므로, 연결(CONNECTED)된 브랜드의 진열 중 상품 가운데
-     * 공구 진행중(IN_PROGRESS)이 하나라도 있으면 그 쇼룸을 진행 중으로 본다.
+     * 진행 중 공구를 보유한 쇼룸 판별 — 아바타 로즈 링(C1·C2·C4·C14 · 공구 게시물 설계 4-5).
+     *
+     * <p>정의는 C4 고정 섹션과 <b>같다</b> — 이 쇼룸이 올린 공구 게시물이 게시중이고 그 공구가 판매 상태이며 종료 시각 전이다.
+     * 예전에는 브랜드 연결 + {@code product.group_buy_status}로 추정해, 같은 브랜드에 연결된 다른 쇼룸의 링까지 켜고 숨긴
+     * 게시물도 진행 중으로 봤다. 링이 켜졌는데 C4에 고정 섹션이 없는 어긋남을 막으려 교체했다. 마감 3일 동안의 게시물은
+     * 링을 켜지 않는다. 호출처가 5곳이라 시그니처는 유지한다.
      */
-    @Query("SELECT DISTINCT c.creator.id FROM Connection c, Product p " +
-           "WHERE p.market = c.market " +
-           "AND c.creator.id IN :creatorIds " +
-           "AND c.status = showroomz.domain.connection.type.ConnectionStatus.CONNECTED " +
-           "AND p.groupBuyStatus = showroomz.domain.product.type.ProductGroupBuyStatus.IN_PROGRESS " +
-           "AND p.displayStatus = showroomz.domain.product.type.ProductDisplayStatus.DISPLAY")
-    List<Long> findCreatorIdsWithOngoingGroupBuy(@Param("creatorIds") Collection<Long> creatorIds);
+    default List<Long> findCreatorIdsWithOngoingGroupBuy(Collection<Long> creatorIds) {
+        return findCreatorIdsWithOngoingGroupBuyPost(creatorIds, LocalDateTime.now());
+    }
+
+    @Query("SELECT DISTINCT p.creator.id FROM GroupBuyPost gp JOIN gp.post p JOIN gp.groupBuy g " +
+           "WHERE p.creator.id IN :creatorIds " +
+           "AND p.status = showroomz.domain.post.type.PostStatus.PUBLISHED " +
+           "AND g.status IN (showroomz.domain.groupbuy.type.GroupBuyStatus.IN_PROGRESS, " +
+           "                 showroomz.domain.groupbuy.type.GroupBuyStatus.SUSPENSION_SCHEDULED) " +
+           "AND g.endAt > :now")
+    List<Long> findCreatorIdsWithOngoingGroupBuyPost(@Param("creatorIds") Collection<Long> creatorIds,
+                                                    @Param("now") LocalDateTime now);
 
     /**
      * 계약 작성 폼의 「계약 상대」 드롭다운(§25-5-1) — 연결됨 상대 <b>전량</b>이 한 번에 필요하다.

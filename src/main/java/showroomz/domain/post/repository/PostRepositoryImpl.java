@@ -9,12 +9,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
+import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.post.entity.Post;
+import showroomz.domain.post.type.GroupBuyScope;
 import showroomz.domain.post.type.PostStatus;
 import showroomz.domain.post.type.PostType;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
+import static showroomz.domain.groupbuy.entity.QGroupBuy.groupBuy;
+import static showroomz.domain.groupbuy.entity.QGroupBuyPost.groupBuyPost;
 import static showroomz.domain.member.creator.entity.QCreator.creator;
 import static showroomz.domain.member.user.entity.QUsers.users;
 import static showroomz.domain.post.entity.QPost.post;
@@ -27,12 +32,12 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
 
     @Override
     public Page<Post> findDisplayedPosts(Pageable pageable) {
-        return findPublished(null, pageable);
+        return findPublished(null, GroupBuyScope.GENERAL_AND_ONGOING, pageable);
     }
 
     @Override
     public Page<Post> findDisplayedPostsByCreatorId(Long creatorId, Pageable pageable) {
-        return findPublished(post.creator.id.eq(creatorId), pageable);
+        return findPublished(post.creator.id.eq(creatorId), GroupBuyScope.GENERAL_AND_CLOSED, pageable);
     }
 
     @Override
@@ -40,15 +45,36 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
         if (creatorIds == null || creatorIds.isEmpty()) {
             return Page.empty(pageable);
         }
-        return findPublished(post.creator.id.in(creatorIds), pageable);
+        return findPublished(post.creator.id.in(creatorIds), GroupBuyScope.GENERAL_AND_ONGOING, pageable);
     }
 
     @Override
     public Page<Post> findRecommendedPosts(List<Long> excludedCreatorIds, Pageable pageable) {
         if (excludedCreatorIds == null || excludedCreatorIds.isEmpty()) {
-            return findPublished(null, pageable);
+            return findPublished(null, GroupBuyScope.GENERAL_AND_ONGOING, pageable);
         }
-        return findPublished(post.creator.id.notIn(excludedCreatorIds), pageable);
+        return findPublished(post.creator.id.notIn(excludedCreatorIds), GroupBuyScope.GENERAL_AND_ONGOING, pageable);
+    }
+
+    /**
+     * C4 고정 섹션 — 페이징 없음. 한 쇼룸의 동시 진행 공구는 계약 수로 제한돼 작다.
+     * 정렬은 공구 시작일 최신순이다(C4 남은 결정 ③).
+     */
+    @Override
+    public List<Post> findOngoingGroupBuyPostsByCreatorId(Long creatorId) {
+        BooleanBuilder where = new BooleanBuilder(post.status.eq(PostStatus.PUBLISHED))
+                .and(post.creator.id.eq(creatorId))
+                .and(scopeCondition(GroupBuyScope.ONGOING_ONLY, LocalDateTime.now()));
+
+        return queryFactory
+                .selectFrom(post)
+                .join(post.creator, creator).fetchJoin()
+                .join(creator.user, users).fetchJoin()
+                .leftJoin(groupBuyPost).on(groupBuyPost.postId.eq(post.id))
+                .leftJoin(groupBuyPost.groupBuy, groupBuy)
+                .where(where)
+                .orderBy(groupBuy.openedAt.desc(), post.id.desc())
+                .fetch();
     }
 
     @Override
@@ -115,16 +141,17 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
      * 구분하지 못했다. 상태가 5종으로 갈린 지금은 <b>게시중과의 일치</b>로만 판정한다 — 부정 조건
      * ("삭제가 아닌")으로 쓰면 상태가 늘어날 때마다 소비자 화면에 새 상태가 새어 나간다.
      *
+     * <p>공구 게시물은 {@link GroupBuyScope}로 범위를 정한다(공구 게시물 설계 6절). 일반 게시물은 확장 행이 없으므로
+     * 공구 테이블은 반드시 LEFT JOIN이다 — 1:1이라 행이 늘지 않고, 카운트 쿼리도 같은 조인·조건을 쓴다.
+     *
      * <p>쇼룸(크리에이터)과 그 계정을 함께 읽는다 — 카드마다 쇼룸명·프로필이 붙는데 지연 로딩에
      * 맡기면 한 페이지에 쿼리가 쇼룸 수만큼 더 나가고, 쇼룸명이 아직 없는 계정은 닉네임을 읽느라
      * 한 번 더 나간다. 컬렉션이 아니라 {@code ManyToOne}이라 페이징과 같이 써도 안전하다
      * (좋아요 목록 쿼리와 같은 방식이다).
      */
-    private Page<Post> findPublished(BooleanExpression extraCondition, Pageable pageable) {
-        // 공구 게시물은 사진·비율이 없어 일반 피드 카드로 그리면 깨진다. 소비자 앱의 공구 게시물 노출 설계가
-        // 나올 때까지 일반 게시물만 내린다(31 설계 0-6 ④) — 그 설계가 판별자로 함께 내리게 되면 이 조건을 걷는다.
+    private Page<Post> findPublished(BooleanExpression extraCondition, GroupBuyScope scope, Pageable pageable) {
         BooleanBuilder where = new BooleanBuilder(post.status.eq(PostStatus.PUBLISHED))
-                .and(post.postType.eq(PostType.GENERAL));
+                .and(scopeCondition(scope, LocalDateTime.now()));
         if (extraCondition != null) {
             where.and(extraCondition);
         }
@@ -133,6 +160,8 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                 .selectFrom(post)
                 .join(post.creator, creator).fetchJoin()
                 .join(creator.user, users).fetchJoin()
+                .leftJoin(groupBuyPost).on(groupBuyPost.postId.eq(post.id))
+                .leftJoin(groupBuyPost.groupBuy, groupBuy)
                 .where(where)
                 .orderBy(post.publishedAt.desc(), post.id.desc())
                 .offset(pageable.getOffset())
@@ -142,8 +171,25 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
         JPAQuery<Long> countQuery = queryFactory
                 .select(post.count())
                 .from(post)
+                .leftJoin(groupBuyPost).on(groupBuyPost.postId.eq(post.id))
+                .leftJoin(groupBuyPost.groupBuy, groupBuy)
                 .where(where);
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
+    }
+
+    /** {@code groupBuyPost}·{@code groupBuy}가 LEFT JOIN된 쿼리에서만 쓴다. */
+    private static BooleanExpression scopeCondition(GroupBuyScope scope, LocalDateTime now) {
+        BooleanExpression general = post.postType.eq(PostType.GENERAL);
+        BooleanExpression ongoing = post.postType.eq(PostType.GROUP_BUY)
+                .and(groupBuy.status.in(GroupBuyStatus.SELLING))
+                .and(groupBuy.endAt.gt(now));
+        BooleanExpression closed = post.postType.eq(PostType.GROUP_BUY)
+                .and(groupBuy.status.notIn(GroupBuyStatus.SELLING).or(groupBuy.endAt.loe(now)));
+        return switch (scope) {
+            case GENERAL_AND_ONGOING -> general.or(ongoing);
+            case GENERAL_AND_CLOSED -> general.or(closed);
+            case ONGOING_ONLY -> ongoing;
+        };
     }
 }
