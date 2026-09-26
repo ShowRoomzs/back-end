@@ -53,8 +53,8 @@ public class AdminSuspensionSchedule {
     }
 
     /**
-     * 기본 소명 기한으로 유효한 집행 시각이 있는가. 칩은 종료 전날까지만 나열하지만, 직접 입력은 종료일의
-     * {@code end_at} 이전도 허용한다. 버튼 판정은 POST의 검증 범위와 같아야 한다.
+     * 기본 소명 기한으로 유효한 집행 시각이 있는가. 종료일 당일도 {@code end_at} 이전이면 집행할 수 있다.
+     * 버튼 판정은 POST의 검증 범위와 같아야 한다.
      */
     public boolean hasWindow(GroupBuy groupBuy, LocalDateTime now) {
         LocalDate today = now.toLocalDate();
@@ -67,8 +67,12 @@ public class AdminSuspensionSchedule {
     }
 
     /**
-     * M6 칩 — 통지 다음 영업일부터 종료 전날까지 영업일만. 「3영업일 이전 날짜를 회색 취소선으로 잠근다」 ·
+     * M6 칩 — 통지 다음 영업일부터 종료일까지 영업일만. 「3영업일 이전 날짜를 회색 취소선으로 잠근다」 ·
      * 「주말이 영업일에서 빠지는 것이 칩에 그대로 보인다」(§32-3).
+     *
+     * <p>종료일 칩의 시각 상한은 {@code end_at}이다 — FE가 {@code latestExecutionBefore}로 막는다. {@code end_at}이
+     * 자정 정각이면 그날은 고를 시각이 없어 나열하지 않는다. 칩이 종료 전날에서 끊기면 종료일 오전만 창이 남는
+     * 공구에서 버튼은 열리는데 고를 칩이 없다({@link #hasWindow}).
      *
      * <p>칩은 하루 단위라 보수적으로 판정한다 — 최소 간격이 날짜 중간에 걸치면 그날은 잠근다.
      */
@@ -77,7 +81,9 @@ public class AdminSuspensionSchedule {
         LocalDate minDate = minExecutionDate(today);
         LocalDateTime earliestExecution = minAppealDeadline(today)
                 .plus(properties.getSuspension().getMinGapAfterAppeal());
-        LocalDate lastDate = groupBuy.getEndAt().toLocalDate().minusDays(1);
+        LocalDateTime endAt = groupBuy.getEndAt();
+        LocalDate lastDate = endAt.toLocalTime().equals(LocalTime.MIDNIGHT)
+                ? endAt.toLocalDate().minusDays(1) : endAt.toLocalDate();
 
         List<AdminGroupBuyDto.ExecutionDate> dates = new ArrayList<>();
         for (LocalDate date = today.plusDays(1); !date.isAfter(lastDate); date = date.plusDays(1)) {

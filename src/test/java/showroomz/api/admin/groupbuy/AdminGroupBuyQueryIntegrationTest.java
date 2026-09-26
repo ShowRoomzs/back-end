@@ -221,6 +221,28 @@ class AdminGroupBuyQueryIntegrationTest extends AdminGroupBuyTestSupport {
     }
 
     @Test
+    @DisplayName("M6 — 종료일 당일만 창이 남으면 버튼이 열리고 종료일 칩 하나만 고를 수 있다")
+    void noticeOptionsEndDayOnlyWindow() throws Exception {
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        LocalDate appealDay = businessCalendar.addBusinessDays(now.toLocalDate(), 3);
+        LocalDate endDay = businessCalendar.addBusinessDays(appealDay, 1);
+        GroupBuy groupBuy = seed(brand, creator, "종료일 창 공구", now.minusDays(2), endDay.atTime(23, 59, 59));
+        moveTo(groupBuy.getId(), GroupBuyStatus.IN_PROGRESS);
+
+        adminDetail(groupBuy.getId())
+                .andExpect(jsonPath("$.permissions.canNoticeSuspension").value(true));
+        JsonNode options = json(adminGet(groupBuy.getId(), "admin-suspension/notice-options"));
+        assertThat(options.get("available").asBoolean()).isTrue();
+        List<LocalDate> selectable = new ArrayList<>();
+        for (JsonNode chip : options.get("executionDates")) {
+            if (chip.get("selectable").asBoolean()) {
+                selectable.add(LocalDate.parse(chip.get("date").asText()));
+            }
+        }
+        assertThat(selectable).containsExactly(endDay);
+    }
+
+    @Test
     @DisplayName("이력 — 최신순 · 운영자 실명 · 게시물 수정은 리비전에서 합성한 POST_EDITED(synthetic)")
     void historyMergesSyntheticEdits() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.IN_PROGRESS);

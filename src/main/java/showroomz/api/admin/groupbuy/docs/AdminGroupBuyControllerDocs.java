@@ -126,7 +126,7 @@ public interface AdminGroupBuyControllerDocs {
 
                     - 소명 기한 하한 = 통지일 다음 날부터 3영업일째 23:59:59(제17조④ · 통지일 불산입)
                     - 집행 예정 = 통지일 +3영업일 이후(제17조②) ∧ **소명 기한보다 엄격히 뒤** ∧ 공구 종료 전
-                    - `executionDates`는 영업일만(주말이 빠지는 것이 칩에 그대로 보인다) · 종료 전날까지. 잠긴 날은 `selectable: false`(회색 취소선)
+                    - `executionDates`는 영업일만(주말이 빠지는 것이 칩에 그대로 보인다) · 종료일까지(종료일은 `latestExecutionBefore` 전 시각만 유효 · 종료가 자정 정각이면 전날까지). 잠긴 날은 `selectable: false`(회색 취소선)
                     - `available: false`면 M6을 열 수 없다 — `unavailableReason`(STATUS · REQUEST_PENDING · NO_WINDOW_BEFORE_END)
                     - 「직접 입력」도 통지 API가 같은 규칙으로 검증한다
                     """)
