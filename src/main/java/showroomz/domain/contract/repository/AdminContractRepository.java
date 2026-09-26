@@ -58,7 +58,9 @@ public class AdminContractRepository {
                 case REVIEW -> where.and(c.status.eq(ContractStatus.REVIEW_PENDING));
                 case CONCLUSION -> where.and(c.status.eq(ContractStatus.CONCLUSION_PENDING));
                 case EXPIRY -> where.and(c.status.eq(ContractStatus.SIGNING)).and(c.signatureDeadlineAt.lt(now));
-                case RESEND -> where.and(JPAExpressions.selectOne().from(r)
+                // 재발송 처리는 서명 진행 중에만 된다(handleResend) — 거절·만료·취소·서명 완료로 넘어간 계약의
+                // 미처리 요청은 처리할 방법이 없으므로 큐에 남기지 않는다.
+                case RESEND -> where.and(c.status.eq(ContractStatus.SIGNING)).and(JPAExpressions.selectOne().from(r)
                         .where(r.contract.eq(c), r.handledAt.isNull()).exists());
             }
         } else if (tab == AdminContractTab.CLOSED) {

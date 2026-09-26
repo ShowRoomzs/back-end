@@ -2,8 +2,10 @@ package showroomz.api.admin.contract;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import showroomz.api.admin.contract.service.ContractDraftGenerator;
 import showroomz.api.seller.contract.dto.ContractReviewRequestRequest;
 import showroomz.api.seller.contract.dto.ContractUpdateRequest;
 import showroomz.domain.contract.entity.Contract;
@@ -31,6 +33,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @DisplayName("[통합] 어드민 계약 관리 전체 흐름")
 class AdminContractLifecycleIntegrationTest extends AdminContractTestSupport {
+
+    @Autowired ContractDraftGenerator draftGenerator;
 
     @Test
     @DisplayName("제출 → 반려 → 재요청 → 승인 → 재발송 → 서명 → 문서 업로드 → 체결 → 양측 다운로드")
@@ -155,6 +159,35 @@ class AdminContractLifecycleIntegrationTest extends AdminContractTestSupport {
         list().andExpect(jsonPath("$.content").isEmpty());
         detail(c).andExpect(status().isNotFound());
         approve(c, checked(LocalDateTime.now(), LocalDateTime.now().plusDays(7))).andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("제출본 생성이 늦게 도착해도 취소된 검토 요청으로는 계약서를 만들지 않는다")
+    void lateDraftGenerationSkipsWithdrawnSubmission() throws Exception {
+        long id = createAndSubmit();
+        Contract c = contracts.findById(id).orElseThrow();
+        mockMvc.perform(post(SELLER_CONTRACTS + "/" + id + "/review-request/cancel").header(HttpHeaders.AUTHORIZATION, brandToken))
+                .andExpect(status().isOk());
+
+        // 운영에서는 별도 스레드라 취소가 생성보다 먼저 커밋될 수 있다 — 그 순서를 직접 재현한다.
+        draftGenerator.generateOnSubmit(id);
+
+        verify(renderer, times(1)).render(anyString(), anyString());
+        assertThat(historyOf(c)).filteredOn(h -> h.getEventType() == ContractEventType.CONTRACT_PDF_GENERATED).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("같은 제출본의 계약서가 이미 있으면 생성 작업이 다시 와도 렌더링하지 않는다")
+    void duplicateDraftGenerationIsNoop() throws Exception {
+        long id = createAndSubmit();
+        Contract c = contracts.findById(id).orElseThrow();
+
+        draftGenerator.generateOnSubmit(id);
+
+        verify(renderer, times(1)).render(anyString(), anyString());
+        assertThat(historyOf(c)).filteredOn(h -> h.getEventType() == ContractEventType.CONTRACT_PDF_GENERATED).hasSize(1);
+        String document = body(downloadDocument(c, ContractDocumentType.GENERATED_DRAFT).andExpect(status().isOk()));
+        assertThat(time(document, "$.sourceReviewRequestedAt")).isEqualTo(reload(c).getReviewRequestedAt().withNano(0));
     }
 
     @Test

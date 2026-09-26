@@ -47,8 +47,11 @@ class AdminContractReviewIntegrationTest extends AdminContractTestSupport {
                 .andExpect(jsonPath("$.contract.days").value(8))
                 .andExpect(jsonPath("$.contract.brand.name").value("글로우랩"))
                 .andExpect(jsonPath("$.contract.brand.link").value("/admin/brands/" + brand.marketId()))
+                // 승인 모달의 모두싸인 수신자 — 이름과 이메일을 함께 보여준다(계약서 PDF의 이메일과 같은 원천).
+                .andExpect(jsonPath("$.contract.brand.email").value("glowlab@showroomz.test"))
                 .andExpect(jsonPath("$.contract.creator.name").value("뷰티_하윤"))
                 .andExpect(jsonPath("$.contract.creator.link").value("/admin/creators/" + creator.getId()))
+                .andExpect(jsonPath("$.contract.creator.email").value("hayun-biz@showroomz.test"))
                 .andExpect(jsonPath("$.contract.threadId").value(thread.getId()))
                 .andExpect(jsonPath("$.review.waitingElapsed").value("1일 2시간"))
                 .andExpect(jsonPath("$.review.approvedAt").doesNotExist())
@@ -148,6 +151,25 @@ class AdminContractReviewIntegrationTest extends AdminContractTestSupport {
 
         draft(c).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CONTRACT_STATUS_CONFLICT"));
         verify(renderer, never()).render(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("렌더링 중에는 계약 행을 잠그지 않는다 — 그 사이 다시 제출되면 409이고 옛 제출본 파일은 저장하지 않는다")
+    void downloadDoesNotHoldLockWhileRendering() throws Exception {
+        Contract c = seed(ContractStatus.REVIEW_PENDING);
+        LocalDateTime resubmittedAt = c.getReviewRequestedAt().plusMinutes(1);
+        // 렌더링 도중 다른 연결이 같은 계약 행을 고친다(취소 후 재요청). 잠금을 쥔 채 렌더링하면 이 UPDATE가 잠금 대기로 실패한다.
+        doAnswer(invocation -> {
+            jdbc.update("UPDATE contract SET review_requested_at = ? WHERE contract_id = ?", resubmittedAt, c.getId());
+            return "%PDF-1.7 test".getBytes();
+        }).when(renderer).render(anyString(), anyString());
+
+        draft(c).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CONTRACT_STATUS_CONFLICT"));
+
+        assertThat(reload(c).getReviewRequestedAt()).isEqualTo(resubmittedAt);
+        assertThat(documents.findByContractIdAndDocumentType(c.getId(), ContractDocumentType.GENERATED_DRAFT)).isEmpty();
+        verify(storage, never()).putGenerated(anyLong(), any());
+        assertThat(historyOf(c)).noneMatch(h -> h.getEventType() == ContractEventType.CONTRACT_PDF_GENERATED);
     }
 
     @Test

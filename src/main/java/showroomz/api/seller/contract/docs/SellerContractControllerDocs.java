@@ -276,8 +276,9 @@ public interface SellerContractControllerDocs {
                     - `acknowledgedWarnings`가 서버 판정 경고 집합과 **다르면** 409(`CONTRACT_WARNING_MISMATCH`)다.
                       FE가 보낸 목록을 그대로 믿지 않는다 — 모달을 본 뒤 다른 탭에서 값을 고쳤을 수 있다.
                     - 이 요청 이후 편집이 잠긴다. 되돌리려면 `/review-request/cancel`(요청 취소)을 쓴다.
-                    - 커밋 전에 **계약서 생성본(제출본 PDF)**을 만든다. 성공하면 응답 `documents`에 `GENERATED_DRAFT`가
-                      바로 실린다. 생성이 실패해도 요청은 성공한다 — 실패 원인은 입력이 아니라 인프라다.
+                    - **계약서 생성본(제출본 PDF)**은 커밋 이후 서버가 백그라운드에서 만든다(10초 안팎).
+                      그래서 이 응답의 `documents`에는 `GENERATED_DRAFT`가 **아직 없다** — 상세를 다시 조회하면 실린다.
+                      생성이 실패해도 요청은 성공한다 — 실패 원인은 입력이 아니라 인프라다.
                       그 경우 생성본은 운영자가 처음 내려받을 때 만들어진다.
                     """)
     @ApiResponses({
