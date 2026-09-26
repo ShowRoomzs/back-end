@@ -161,7 +161,8 @@ public interface SellerContractControllerDocs {
                     | `CONCLUDED` | `SIGNED_PDF` 서명 완료 계약서 · `AUDIT_TRAIL` 감사 추적 인증서 |
                     | 그 외 | 없음 |
 
-                    생성본은 운영자가 한 번이라도 내려받아 만들어진 뒤부터 받을 수 있다 — 그 전이면 404다.
+                    생성본은 검토 요청 시점에 만들어진다. 그때 생성이 실패했으면(인프라 장애) 운영자가 처음 내려받을 때
+                    만들어지고, 그 전이면 404다.
                     요청 취소 후 재제출한 경우 이전 제출본의 생성본은 내려가지 않는다.
 
                     체결 문서는 어드민이 모두싸인에서 받아 업로드한다. 교체·삭제 경로는 만들지 않는다 —
@@ -223,17 +224,22 @@ public interface SellerContractControllerDocs {
                                                           @Valid @RequestBody ContractUpdateRequest request);
 
     @Operation(
-            summary = "초안 삭제",
+            summary = "계약 삭제",
             description = """
-                    **작성중 초안만** 지운다.
+                    **작성중 · 검토 반려** 계약을 지운다. 상세의 `permissions.canDelete`와 같은 판정이다.
 
-                    **권한:** SELLER · **허용 상태:** `DRAFT`
+                    **권한:** SELLER · **허용 상태:** `DRAFT` · `REVIEW_REJECTED`
 
-                    검토 요청 이후의 계약은 지울 수 없다 — 되돌림은 취소이지 삭제가 아니다(설계서 4-2).
+                    검토 대기 이후의 계약은 지울 수 없다 — 되돌림은 취소이지 삭제가 아니다(설계서 4-2).
+                    검토 대기는 먼저 [요청 취소]로 작성중으로 되돌린 뒤 지운다.
+
+                    행은 남기고 삭제 표시만 한다 — 검토 반려 계약은 계약번호·어드민 반려 이력·제출본 PDF를 이미 가지고 있다.
+                    삭제된 계약은 목록·탭 카운트·상세 어디에도 나오지 않고(상세는 404), 어드민 화면에서도 사라진다.
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "삭제 성공"),
-            @ApiResponse(responseCode = "409", description = "작성중이 아님",
+            @ApiResponse(responseCode = "409", description = "삭제할 수 없는 상태(`CONTRACT_EDIT_LOCKED`) · "
+                    + "다른 탭의 검토 요청과 경합(`CONTRACT_STATUS_CONFLICT`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<Void> deleteContract(@PathVariable Long contractId);
@@ -270,6 +276,9 @@ public interface SellerContractControllerDocs {
                     - `acknowledgedWarnings`가 서버 판정 경고 집합과 **다르면** 409(`CONTRACT_WARNING_MISMATCH`)다.
                       FE가 보낸 목록을 그대로 믿지 않는다 — 모달을 본 뒤 다른 탭에서 값을 고쳤을 수 있다.
                     - 이 요청 이후 편집이 잠긴다. 되돌리려면 `/review-request/cancel`(요청 취소)을 쓴다.
+                    - 커밋 전에 **계약서 생성본(제출본 PDF)**을 만든다. 성공하면 응답 `documents`에 `GENERATED_DRAFT`가
+                      바로 실린다. 생성이 실패해도 요청은 성공한다 — 실패 원인은 입력이 아니라 인프라다.
+                      그 경우 생성본은 운영자가 처음 내려받을 때 만들어진다.
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "요청 성공"),

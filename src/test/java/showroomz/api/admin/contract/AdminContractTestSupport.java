@@ -12,7 +12,6 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import showroomz.api.admin.contract.dto.AdminContractDto.*;
 import showroomz.api.admin.contract.service.ContractDocumentStorage;
-import showroomz.api.admin.contract.service.ContractPdfRenderer;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.user.repository.UserRepository;
@@ -46,6 +45,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -83,7 +83,6 @@ public abstract class AdminContractTestSupport extends IntegrationTestSupport {
     @Autowired protected JdbcTemplate jdbc;
 
     @MockitoBean protected ContractDocumentStorage storage;
-    @MockitoBean protected ContractPdfRenderer renderer;
     @MockitoSpyBean protected ContractNotifier notifier;
 
     /** 초 단위로 자른 기준 시각 — 응답 JSON과 문자열로 대조하기 위해 나노초를 버린다. */
@@ -137,7 +136,7 @@ public abstract class AdminContractTestSupport extends IntegrationTestSupport {
                 .thenAnswer(invocation -> "contracts/" + invocation.getArgument(1) + "/documents/" + java.util.UUID.randomUUID() + ".pdf");
         when(storage.putGenerated(anyLong(), any()))
                 .thenAnswer(invocation -> "contracts/" + invocation.getArgument(0) + "/documents/generated-" + java.util.UUID.randomUUID() + ".pdf");
-        when(renderer.render(anyString(), anyString())).thenReturn("%PDF-1.7 test".getBytes());
+        doReturn("%PDF-1.7 test".getBytes()).when(renderer).render(anyString(), anyString());
     }
 
     // ------------------------------------------------------------------ 시안 시각

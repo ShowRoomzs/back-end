@@ -16,7 +16,7 @@ public interface ContractRepository extends JpaRepository<Contract, Long>, Contr
 
     /** 문서 변경과 체결 검증도 동일한 계약 행을 잠가 원자적으로 처리한다. */
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT c FROM Contract c WHERE c.id = :contractId")
+    @Query("SELECT c FROM Contract c WHERE c.id = :contractId AND c.deletedAt IS NULL")
     Optional<Contract> findForAdminUpdate(@Param("contractId") Long contractId);
 
     /**
@@ -30,18 +30,35 @@ public interface ContractRepository extends JpaRepository<Contract, Long>, Contr
      * 응답에 실어 보내는 버전이 한 박자 뒤처지기 때문이다 — FE가 그 값을 그대로 다음 저장에 쓰면
      * 자기 저장에 자기가 막힌다. 읽어서 비교하는 대신 DB가 한 번에 판정하게 두면 동시 요청에서도
      * 한쪽만 1행을 얻는다.
+     *
+     * <p>「마지막 저장 시각」도 여기서 찍는다 — 엔티티에 따로 쓰면 행이 더러워져 {@code @Version}이
+     * 한 번 더 오른다. 삭제된 계약은 0행이라 다른 탭의 저장이 되살리지 못한다.
      */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("UPDATE Contract c SET c.version = c.version + 1 WHERE c.id = :contractId AND c.version = :version")
-    int bumpVersion(@Param("contractId") Long contractId, @Param("version") Long version);
+    @Query("UPDATE Contract c SET c.version = c.version + 1, c.lastSavedAt = :now "
+            + "WHERE c.id = :contractId AND c.version = :version AND c.deletedAt IS NULL")
+    int bumpVersion(@Param("contractId") Long contractId, @Param("version") Long version,
+                    @Param("now") LocalDateTime now);
 
-    @Query("SELECT c.status, COUNT(c) FROM Contract c WHERE c.status <> showroomz.domain.contract.type.ContractStatus.DRAFT GROUP BY c.status")
+    /**
+     * 브랜드 삭제 — 행을 지우지 않고 표시만 한다. 상태 조건이 WHERE에 있어 다른 탭의 검토 요청과
+     * 동시에 들어와도 한쪽만 1행을 얻는다.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Contract c SET c.deletedAt = :now "
+            + "WHERE c.id = :contractId AND c.status IN :statuses AND c.deletedAt IS NULL")
+    int softDelete(@Param("contractId") Long contractId,
+                   @Param("statuses") Collection<ContractStatus> statuses,
+                   @Param("now") LocalDateTime now);
+
+    @Query("SELECT c.status, COUNT(c) FROM Contract c WHERE c.status <> showroomz.domain.contract.type.ContractStatus.DRAFT "
+            + "AND c.deletedAt IS NULL GROUP BY c.status")
     List<Object[]> countAdminStatuses();
 
     @Query("SELECT c FROM Contract c "
             + "LEFT JOIN FETCH c.creator cr "
             + "LEFT JOIN FETCH c.market m "
-            + "WHERE c.id = :contractId")
+            + "WHERE c.id = :contractId AND c.deletedAt IS NULL")
     Optional<Contract> findDetailById(@Param("contractId") Long contractId);
 
     /**
@@ -58,9 +75,13 @@ public interface ContractRepository extends JpaRepository<Contract, Long>, Contr
                          @Param("from") ContractStatus from,
                          @Param("to") ContractStatus to);
 
-    /** 검토 요청·재요청은 출발 상태가 둘(DRAFT · REVIEW_REJECTED)이라 IN으로 받는다. */
+    /**
+     * 검토 요청·재요청은 출발 상태가 둘(DRAFT · REVIEW_REJECTED)이라 IN으로 받는다.
+     * 출발 상태가 삭제 허용 집합과 같으므로 삭제와 경합하면 삭제된 계약이 검토 큐에 올라가지 않게 막는다.
+     */
     @Modifying(flushAutomatically = true)
-    @Query("UPDATE Contract c SET c.status = :to WHERE c.id = :contractId AND c.status IN :from")
+    @Query("UPDATE Contract c SET c.status = :to "
+            + "WHERE c.id = :contractId AND c.status IN :from AND c.deletedAt IS NULL")
     int transitionStatusFromAny(@Param("contractId") Long contractId,
                                 @Param("from") List<ContractStatus> from,
                                 @Param("to") ContractStatus to);
@@ -96,7 +117,8 @@ public interface ContractRepository extends JpaRepository<Contract, Long>, Contr
     List<Long> findConcludedIdsWithoutGroupBuy();
 
     /** 탭 카운트(설계서 4-4). 탭 묶음은 서버가 소유하므로 상태별 카운트를 받아 서비스가 묶는다. */
-    @Query("SELECT c.status, COUNT(c) FROM Contract c WHERE c.market.id = :marketId GROUP BY c.status")
+    @Query("SELECT c.status, COUNT(c) FROM Contract c WHERE c.market.id = :marketId AND c.deletedAt IS NULL "
+            + "GROUP BY c.status")
     List<Object[]> countByStatus(@Param("marketId") Long marketId);
 
     /**
@@ -104,7 +126,7 @@ public interface ContractRepository extends JpaRepository<Contract, Long>, Contr
      * 검토 반려(브랜드 조치로만 풀리는 유일한 진행 상태)와 B4c(상대만 서명 완료)만 센다.
      * 검토 대기·체결 처리 대기·B4는 공이 상대에게 있는 정상 대기라 넣지 않는다.
      */
-    @Query("SELECT COUNT(c) FROM Contract c WHERE c.market.id = :marketId AND ("
+    @Query("SELECT COUNT(c) FROM Contract c WHERE c.market.id = :marketId AND c.deletedAt IS NULL AND ("
             + "  c.status = showroomz.domain.contract.type.ContractStatus.REVIEW_REJECTED"
             + "  OR (c.status = showroomz.domain.contract.type.ContractStatus.SIGNING"
             + "      AND c.creatorSignedAt IS NOT NULL AND c.brandSignedAt IS NULL))")
@@ -154,6 +176,20 @@ public interface ContractRepository extends JpaRepository<Contract, Long>, Contr
             + "AND c.status = showroomz.domain.contract.type.ContractStatus.SIGNING "
             + "AND c.creatorSignedAt IS NULL")
     long countCreatorActionRequired(@Param("creatorId") Long creatorId);
+
+    /**
+     * 스튜디오 스레드 목록의 [계약 확인] 게이트 — 이 페이지의 브랜드 중 <b>나에게 도착한</b> 계약이 있는 곳.
+     *
+     * <p>{@code connection_id}가 아니라 (브랜드, 인플루언서) 쌍으로 찾는다 — 목록에서 상대를 직접 고른
+     * 계약은 {@code connection_id}가 비어 있다. 가시성 판정은 상세 조회({@link #findReceivedByCreator})와 같다.
+     */
+    @Query("SELECT DISTINCT c.market.id FROM Contract c "
+            + "WHERE c.creator.id = :creatorId AND c.market.id IN :marketIds "
+            + "AND c.signatureRequestedAt IS NOT NULL "
+            + "AND c.status IN :statuses")
+    List<Long> findMarketIdsWithReceivedContract(@Param("creatorId") Long creatorId,
+                                                 @Param("marketIds") Collection<Long> marketIds,
+                                                 @Param("statuses") Collection<ContractStatus> statuses);
 
     /**
      * 인플루언서의 [거절](설계서 5-1) — 조건부 UPDATE에 <b>서명 조건까지</b> 건다.

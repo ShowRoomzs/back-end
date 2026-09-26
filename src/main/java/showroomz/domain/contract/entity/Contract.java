@@ -184,6 +184,20 @@ public class Contract extends BaseTimeEntity {
     @Column(name = "source_contract_id")
     private Long sourceContractId;
 
+    /**
+     * 브랜드의 마지막 임시저장(PUT) 시각. {@code modifiedAt}은 어드민 반려·서명 반영에도 갱신되므로
+     * 「마지막 저장」으로 쓸 수 없다. 버전 증가와 같은 조건부 UPDATE가 찍는다.
+     */
+    @Column(name = "last_saved_at")
+    private LocalDateTime lastSavedAt;
+
+    /**
+     * 브랜드 삭제 시각 — 행은 남긴다. 검토 반려 계약은 계약번호·어드민 반려 이력·제출본 PDF를
+     * 이미 가지고 있어 지우면 운영 기록이 함께 사라진다. 채워진 계약은 파트너센터·어드민 어디에도 보이지 않는다.
+     */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @Version
     @Column(name = "version", nullable = false)
     private Long version;
@@ -215,6 +229,10 @@ public class Contract extends BaseTimeEntity {
 
     public boolean isEditable() {
         return status.isEditable();
+    }
+
+    public boolean isDeletable() {
+        return status.isDeletable();
     }
 
     /** 스레드 경유로 상대가 고정된 계약인지 — 고정된 상대는 PUT에서 바꿀 수 없다(§25-5-1). */

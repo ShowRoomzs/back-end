@@ -38,7 +38,6 @@ class AdminContractIntegrationTest extends IntegrationTestSupport {
     @Autowired UserRepository users;
     @Autowired AdminContractCommandService commands;
     @MockitoBean ContractDocumentStorage storage;
-    @MockitoBean ContractPdfRenderer renderer;
     private BrandFixture.Brand brand;
     private Seller admin;
     private Creator creator;
@@ -62,7 +61,7 @@ class AdminContractIntegrationTest extends IntegrationTestSupport {
         });
         when(storage.sealUpload(anyString(), anyLong(), anyLong())).thenReturn("sealed.pdf");
         when(storage.putGenerated(anyLong(), any())).thenReturn("generated.pdf");
-        when(renderer.render(anyString(), anyString())).thenReturn("%PDF-test".getBytes());
+        doReturn("%PDF-test".getBytes()).when(renderer).render(anyString(), anyString());
     }
 
     @Test void hidesDraftsAndRequiresAdmin() throws Exception {

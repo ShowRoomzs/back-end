@@ -51,7 +51,7 @@ public class AdminContractRepository {
     }
 
     private BooleanBuilder filter(AdminContractTab tab, AdminContractQueue queue, LocalDateTime now) {
-        BooleanBuilder where = new BooleanBuilder(c.status.ne(ContractStatus.DRAFT));
+        BooleanBuilder where = new BooleanBuilder(c.status.ne(ContractStatus.DRAFT)).and(c.deletedAt.isNull());
         // Queue selection overrides the tab and sort, as each queue has its own status definition.
         if (queue != null) {
             switch (queue) {

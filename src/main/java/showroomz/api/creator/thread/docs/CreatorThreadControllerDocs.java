@@ -66,7 +66,7 @@ public interface CreatorThreadControllerDocs {
                                                     "      \"counterpartName\": \"쇼룸즈\",\n" +
                                                     "      \"counterpartImageUrl\": \"https://s3.ap-northeast-2.amazonaws.com/bucket/market/7.jpg\",\n" +
                                                     "      \"operatorChannel\": false,\n" +
-                                                    "      \"hasContract\": false,\n" +
+                                                    "      \"hasContract\": true,\n" +
                                                     "      \"lastMessagePreview\": \"계약서 확인 부탁드립니다\",\n" +
                                                     "      \"lastMessageAt\": \"2026-08-08T14:22:10\",\n" +
                                                     "      \"unreadCount\": 2\n" +

@@ -1,7 +1,6 @@
 package showroomz.domain.contract.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import showroomz.domain.contract.entity.ContractHistory;
@@ -12,24 +11,11 @@ import java.util.List;
  * append-only. 수정 메서드를 두지 않는다(설계서 1-6) —
  * 리포지토리에 경로가 없으면 실수로 이력을 고칠 수도 없다.
  *
- * <p>삭제는 계약 행이 통째로 사라지는 <b>작성중 초안 삭제</b> 하나뿐이다
- * ({@link #deleteByContractId}). 그 외에는 지우는 경로가 없다.
+ * <p>삭제 경로도 없다 — 계약 삭제는 행을 남기는 표시(deleted_at)라 이력도 그대로 남는다.
  */
 public interface ContractHistoryRepository extends JpaRepository<ContractHistory, Long> {
 
     List<ContractHistory> findByContractIdOrderByOccurredAtAscIdAsc(Long contractId);
-
-    /**
-     * 작성중 초안 삭제에 딸린 정리(설계서 4-2). append-only의 <b>예외가 아니라 범위 밖</b>이다 —
-     * 계약 행 자체가 사라지는 유일한 경로이고, 남겨두면 가리킬 계약이 없는 이력이 된다.
-     * 이력은 계약을 FK로 참조하므로 계약만 지우면 커밋이 깨진다.
-     *
-     * <p>삭제는 {@code DRAFT}에서만 허용되므로(설계서 4-2) 이 경로로 사라지는 이력은
-     * 아직 아무에게도 나가지 않은 브랜드 내부 기록뿐이다.
-     */
-    @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("DELETE FROM ContractHistory h WHERE h.contract.id = :contractId")
-    void deleteByContractId(@Param("contractId") Long contractId);
 
     /**
      * 스튜디오에 내리는 이력 — <b>화이트리스트 7종</b>(§27 설계서 6-4).

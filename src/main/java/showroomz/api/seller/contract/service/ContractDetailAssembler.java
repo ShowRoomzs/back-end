@@ -49,6 +49,8 @@ public class ContractDetailAssembler {
                 status.getTone(),
                 contract.getVersion(),
                 contract.getSourceContractId(),
+                contract.getLastSavedAt(),
+                contract.getConcludedAt(),
                 counterparty(contract),
                 period(contract),
                 items(contract),
@@ -214,8 +216,8 @@ public class ContractDetailAssembler {
 
         return new ContractDetailResponse.Permissions(
                 editable,
-                // 삭제는 작성중 초안만. 검토 요청 이후의 되돌림은 취소이지 삭제가 아니다(설계서 4-2).
-                status == ContractStatus.DRAFT,
+                // 삭제는 작성중·검토 반려만. 검토 대기 이후의 되돌림은 취소이지 삭제가 아니다(설계서 4-2).
+                contract.isDeletable(),
                 editable,
                 status == ContractStatus.REVIEW_PENDING,
                 // [서명 안내 다시 받기]는 「내 서명 안내」를 다시 보내달라는 요청이다 —

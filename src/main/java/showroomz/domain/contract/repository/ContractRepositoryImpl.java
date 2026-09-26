@@ -43,6 +43,7 @@ public class ContractRepositoryImpl implements ContractRepositoryCustom {
 
         BooleanBuilder where = new BooleanBuilder();
         where.and(contract.market.id.eq(marketId));
+        where.and(contract.deletedAt.isNull());
 
         // ALL은 상태 조건을 걸지 않는다 — IN 절에 9종을 모두 나열할 이유가 없다.
         if (tab != null && !tab.isAll()) {

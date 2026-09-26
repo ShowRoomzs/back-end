@@ -22,8 +22,10 @@ public class ThreadListItem {
     @Schema(description = "운영자 고정 채널 여부 — true면 목록 최상단 고정(§14-6)", example = "false")
     private final boolean operatorChannel;
 
-    @Schema(description = "계약이 존재하는지 여부 — [계약 확인] 버튼 노출 게이트(§14-2). 계약 도메인 미구현 구간은 항상 false",
-            example = "false")
+    @Schema(description = "이 브랜드에게서 **받은** 계약이 있는지 — [계약 확인] 버튼 노출 게이트(§14-2). "
+            + "서명 요청이 나간 계약(서명 진행중·체결 처리 대기·체결완료·거절·만료·취소)만 센다 — "
+            + "브랜드가 작성 중이거나 검토 중인 계약은 세지 않는다. 운영자 채널은 항상 false",
+            example = "true")
     private final boolean hasContract;
 
     @Schema(description = "최근 메시지 1줄 미리보기", example = "계약서 확인 부탁드립니다", nullable = true)
