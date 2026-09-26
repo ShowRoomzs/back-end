@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F7F8;font-family:Pretendard,-apple-system,sans-serif;color:#0F0F0F}
+a{color:#CF3D61;text-decoration:none}a:hover{color:#A93353}
+</style>
+</helmet>
+
+<div style="max-width:1080px;margin:0 auto;padding:56px 40px 96px">
+
+<div style="padding-bottom:28px;border-bottom:1px solid #E6E6E8">
+<div style="font:600 11px/1 ui-monospace,Menlo,monospace;color:#9A9A9A;letter-spacing:.6px">SHOWROOMZ · CONSUMER APP</div>
+<h1 style="margin:12px 0 0;font:700 34px/1.25 Pretendard,sans-serif;letter-spacing:-1px">디자인 시스템 v0.1</h1>
+<p style="margin:10px 0 0;max-width:640px;font:400 14px/1.75 Pretendard,sans-serif;color:#5A5A5A;text-wrap:pretty">C1 홈(팔로잉 피드) 확정안에서 역으로 정리한 토큰과 컴포넌트입니다. 이후 화면(C2 쇼룸, C3 공구 상세, C6 검색, C14 장바구니)은 여기 정의된 값만 사용하고, 새 값이 필요하면 이 문서에 먼저 추가합니다.</p>
+</div>
+
+<div style="margin-top:52px">
+<div style="font:700 19px/1 Pretendard,sans-serif;letter-spacing:-.3px">01 · 색</div>
+<p style="margin:10px 0 22px;font:400 13px/1.7 Pretendard,sans-serif;color:#7A7A7A;max-width:640px">배경은 순백, 구조는 무채색 헤어라인, 채도는 오직 로즈 하나입니다. <b style="color:#3C3C3C">로즈는 공구 신호에만</b> — D-day, 할인율, 알림 점, 장바구니 배지, 공구 진행 중 쇼룸의 아바타 링. 그 외 어디에도 쓰지 않습니다(탭바 활성 포함).</p>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;overflow:hidden">
+<div style="height:76px;background:#F2456E"></div>
+<div style="padding:12px 14px 14px"><div style="font:600 13px/1 Pretendard,sans-serif">Rose</div><div style="margin-top:6px;font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">#F2456E<br>brand / commerce signal</div></div>
+</div>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;overflow:hidden">
+<div style="height:76px;background:#0F0F0F"></div>
+<div style="padding:12px 14px 14px"><div style="font:600 13px/1 Pretendard,sans-serif">Ink</div><div style="margin-top:6px;font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">#0F0F0F<br>제목 · 가격 · 활성 탭</div></div>
+</div>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;overflow:hidden">
+<div style="height:76px;background:#2E2E2E"></div>
+<div style="padding:12px 14px 14px"><div style="font:600 13px/1 Pretendard,sans-serif">Ink 80</div><div style="margin-top:6px;font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">#2E2E2E<br>상품명</div></div>
+</div>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;overflow:hidden">
+<div style="height:76px;background:#3C3C3C"></div>
+<div style="padding:12px 14px 14px"><div style="font:600 13px/1 Pretendard,sans-serif">Ink 76</div><div style="margin-top:6px;font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">#3C3C3C<br>본문 · 버튼 라벨</div></div>
+</div>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;overflow:hidden">
+<div style="height:76px;background:#8E8E8E"></div>
+<div style="padding:12px 14px 14px"><div style="font:600 13px/1 Pretendard,sans-serif">Gray 55</div><div style="margin-top:6px;font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">#8E8E8E<br>타임스탬프 · 플레이스홀더</div></div>
+</div>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;overflow:hidden">
+<div style="height:76px;background:#9E9E9E"></div>
+<div style="padding:12px 14px 14px"><div style="font:600 13px/1 Pretendard,sans-serif">Gray 62</div><div style="margin-top:6px;font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">#9E9E9E<br>비활성 탭</div></div>
+</div>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;overflow:hidden">
+<div style="height:76px;background:#B5B5B5"></div>
+<div style="padding:12px 14px 14px"><div style="font:600 13px/1 Pretendard,sans-serif">Gray 71</div><div style="margin-top:6px;font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">#B5B5B5<br>정가 취소선 (텍스트 금지)</div></div>
+</div>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;overflow:hidden">
+<div style="height:76px;background:#737373"></div>
+<div style="padding:12px 14px 14px"><div style="font:600 13px/1 Pretendard,sans-serif">Gray 45</div><div style="margin-top:6px;font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">#737373<br>중립 배지 · 법정 고지 본문</div></div>
+</div>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;overflow:hidden">
+<div style="height:76px;background:#F4F4F5;border-bottom:1px solid #EDEDEF"></div>
+<div style="padding:12px 14px 14px"><div style="font:600 13px/1 Pretendard,sans-serif">Fill</div><div style="margin-top:6px;font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">#F4F4F5<br>검색 필드 · 중립 배지</div></div>
+</div>
+</div>
+
+<div style="margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:14px"><div style="height:0;border-top:1px solid #EFEFEF;margin-bottom:12px"></div><div style="font:600 12.5px/1 Pretendard,sans-serif">Divider · 게시물</div><div style="margin-top:6px;font:400 11.5px/1 ui-monospace,Menlo,monospace;color:#8E8E8E">#EFEFEF · 0.5px</div></div>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:14px"><div style="height:0;border-top:1px solid #F0F0F0;margin-bottom:12px"></div><div style="font:600 12.5px/1 Pretendard,sans-serif">Divider · 상품 행</div><div style="margin-top:6px;font:400 11.5px/1 ui-monospace,Menlo,monospace;color:#8E8E8E">#F0F0F0 · 0.5px</div></div>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:14px"><div style="height:0;border-top:1px solid #E3E3E5;margin-bottom:12px"></div><div style="font:600 12.5px/1 Pretendard,sans-serif">Border · 버튼</div><div style="margin-top:6px;font:400 11.5px/1 ui-monospace,Menlo,monospace;color:#8E8E8E">#E3E3E5 · 1px</div></div>
+</div>
+</div>
+
+<div style="margin-top:56px">
+<div style="font:700 19px/1 Pretendard,sans-serif;letter-spacing:-.3px">02 · 타이포그래피</div>
+<p style="margin:10px 0 22px;font:400 13px/1.7 Pretendard,sans-serif;color:#7A7A7A;max-width:640px">본문 서체는 Pretendard 하나. Fredoka는 워드마크 전용이며 UI 안에서는 쓰지 않습니다(헤더 로고 제거 후 앱 내 사용처 없음 — 스플래시·앱 아이콘·마이 탭 브랜딩에서만).</p>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;overflow:hidden">
+<div style="display:grid;grid-template-columns:150px 1fr 220px;gap:20px;padding:14px 20px;background:#FAFAFB;border-bottom:1px solid #EDEDEF;font:600 11px/1 ui-monospace,Menlo,monospace;color:#9A9A9A"><div>TOKEN</div><div>SAMPLE</div><div>SPEC</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr 220px;gap:20px;padding:16px 20px;border-bottom:1px solid #F2F2F4;align-items:center"><div style="font:600 12.5px/1.4 Pretendard,sans-serif">Post title</div><div style="font:700 16px/1.45 Pretendard,sans-serif;letter-spacing:-.4px">여름 끝 무너진 장벽, 3주면 돌아옵니다</div><div style="font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">700 · 16 / 1.45 · -0.4</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr 220px;gap:20px;padding:16px 20px;border-bottom:1px solid #F2F2F4;align-items:center"><div style="font:600 12.5px/1.4 Pretendard,sans-serif">Body</div><div style="font:400 13.5px/1.6 Pretendard,sans-serif;color:#3C3C3C">제가 두 달 동안 아침저녁으로 써본 조합이에요.</div><div style="font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">400 · 13.5 / 1.6<br>2줄 클램프</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr 220px;gap:20px;padding:16px 20px;border-bottom:1px solid #F2F2F4;align-items:center"><div style="font:600 12.5px/1.4 Pretendard,sans-serif">Handle</div><div style="font:600 13.5px/1.3 Pretendard,sans-serif">제니의 뷰티룸</div><div style="font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">600 · 13.5 / 1.3</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr 220px;gap:20px;padding:16px 20px;border-bottom:1px solid #F2F2F4;align-items:center"><div style="font:600 12.5px/1.4 Pretendard,sans-serif">Profile name</div><div style="font:700 16px/1.3 Pretendard,sans-serif;letter-spacing:-.4px">제니의 뷰티룸</div><div style="font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">700 · 16 / 1.3 · -.4<br>쇼룸(C4, 아바타 72)<br>마이는 600 · 14(아바타 50)</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr 220px;gap:20px;padding:16px 20px;border-bottom:1px solid #F2F2F4;align-items:center"><div style="font:600 12.5px/1.4 Pretendard,sans-serif">Product name</div><div style="font:400 13.5px/1.45 Pretendard,sans-serif;color:#2E2E2E">시카 리페어 앰플 30ml 리필 2개 세트</div><div style="font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">400 · 13.5 / 1.45<br>2줄 클램프</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr 220px;gap:20px;padding:16px 20px;border-bottom:1px solid #F2F2F4;align-items:center"><div style="font:600 12.5px/1.4 Pretendard,sans-serif">Price · Discount</div><div style="display:flex;align-items:baseline;gap:6px"><span style="font:700 15px/1 Pretendard,sans-serif;color:#F2456E">34%</span><span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">24,900원</span></div><div style="font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">700 · 15 / 1 · 동일 크기</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr 220px;gap:20px;padding:16px 20px;border-bottom:1px solid #F2F2F4;align-items:center"><div style="font:600 12.5px/1.4 Pretendard,sans-serif">List price</div><div style="font:400 12px/1 Pretendard,sans-serif;color:#B5B5B5;text-decoration:line-through">38,000</div><div style="font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">400 · 12 · line-through<br>단위 "원" 생략</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr 220px;gap:20px;padding:16px 20px;border-bottom:1px solid #F2F2F4;align-items:center"><div style="font:600 12.5px/1.4 Pretendard,sans-serif">Button</div><div style="font:600 12.5px/1 Pretendard,sans-serif;color:#3C3C3C">상품 2개 더보기</div><div style="font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">600 · 12.5 / 1</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr 220px;gap:20px;padding:16px 20px;border-bottom:1px solid #F2F2F4;align-items:center"><div style="font:600 12.5px/1.4 Pretendard,sans-serif">Badge</div><div style="font:600 11px/1 Pretendard,sans-serif">공동구매 D-3</div><div style="font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">600 · 11 / 1</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr 220px;gap:20px;padding:16px 20px;border-bottom:1px solid #F2F2F4;align-items:center"><div style="font:600 12.5px/1.4 Pretendard,sans-serif">Tab label</div><div style="font:500 10px/1 Pretendard,sans-serif">팔로잉</div><div style="font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">활성 600 · 비활성 500 · 10</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr 220px;gap:20px;padding:16px 20px;align-items:center"><div style="font:600 12.5px/1.4 Pretendard,sans-serif">Footer · legal</div><div style="font:400 11px/1.65 Pretendard,sans-serif;color:#737373">사업자등록번호 000-00-00000</div><div style="font:400 11.5px/1.6 ui-monospace,Menlo,monospace;color:#8E8E8E">400 · 11 / 1.65 · #737373<br>텍스트 최소 크기 11px</div></div>
+</div>
+<div style="margin-top:14px;padding:14px 16px;background:#fff;border:1px solid #EDEDEF;border-radius:8px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E">⚠ <b style="color:#3C3C3C">법정 고지 · 접근성</b> — 사업자 정보, 통신판매중개자 고지, 고객센터 연락처는 법정 표기이자 실제로 읽어야 하는 정보이므로 <b style="color:#3C3C3C">#737373 이상(≈4.6:1)</b>만 씁니다. #9E9E9E·<b style="color:#3C3C3C">#A9A9A9</b>·#B5B5B5·#C7C7C7·#DEDEE0는 3:1을 넘지 못해 <b style="color:#3C3C3C">텍스트로 쓰지 않습니다</b>(각각 비활성 탭·<b style="color:#3C3C3C">품절/마감 텍스트</b> · 사용 안 함 · 취소선 · 셰브런/비활성 · 도트·경계 전용). <b style="color:#3C3C3C">#9E9E9E는 예외적으로 텍스트에 씁니다</b> — 비활성 탭 라벨과 <b style="color:#3C3C3C">품절·마감된 항목</b>(상품명·가격·사유 문구·옵션 라벨)입니다. 두 경우 모두 <b style="color:#3C3C3C">조작할 수 없는 요소</b>라 WCAG의 disabled 예외에 해당하고, 이 위계를 #737373으로 올리면 살 수 있는 상품과 구분이 사라집니다. 품절 표기는 <b style="color:#3C3C3C">칩으로 감싸지 않습니다</b>(누를 수 있어 보이면 안 되는 상태 표시).<br><br><b style="color:#3C3C3C">마감·품절과 좋아요</b> — <b style="color:#3C3C3C">공구 마감</b>이면 하트를 #C8C8CA로 낮추고 새 좋아요를 막되 <b style="color:#3C3C3C">이미 누른 것의 해제는 허용</b>합니다(C5 게시물·C3 좋아요 목록 공통). <b style="color:#3C3C3C">품절은 제한하지 않습니다</b> — 재입고·다음 공구로 되살아날 수 있어 저장 가치가 남습니다. <b style="color:#3C3C3C">아바타 로즈 링</b>도 같은 기준입니다: "지금 살 수 있는 공구가 있다"는 신호이므로 진행 중 공구가 없는 쇼룸에는 링을 그리지 않습니다(C2 목록·C4 쇼룸 공통).<br><br><b style="color:#3C3C3C">비로그인 액션</b> — 로그인이 필요한 버튼을 <b style="color:#3C3C3C">비활성으로 두지 않습니다</b>. 탭하면 C0 로그인으로 보내고 <b style="color:#3C3C3C">원래 액션을 이어서 실행</b>합니다(마이 메뉴 · 고객센터 1:1 문의 · 상품 문의 · 팔로우 · 좋아요 공통). <b style="color:#3C3C3C">보조 텍스트는 #737373</b>이 최저선입니다 — 아이디(@handle), 시트 옵션 설명, 잠긴 행 라벨, 푸터 고지가 모두 이 값을 씁니다. 위계는 색이 아니라 <b style="color:#3C3C3C">크기·굵기</b>로 만들고, <b style="color:#3C3C3C">텍스트 최소 11px</b>을 지킵니다(10px은 탭 라벨 예외).</div>
+</div>
+
+<div style="margin-top:56px">
+<div style="font:700 19px/1 Pretendard,sans-serif;letter-spacing:-.3px">03 · 간격 · 반경</div>
+<div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:14px">좌우 여백 — 2단 구조</div>
+<div style="border:1px dashed #DCDCDE;border-radius:6px;padding:0 14px">
+<div style="border-left:1px dashed #F2456E;border-right:1px dashed #F2456E;padding:14px 8px;margin:14px 8px">
+<div style="font:400 11.5px/1.6 Pretendard,sans-serif;color:#8E8E8E">바깥 <b style="color:#0F0F0F">14</b> — 헤더 본문, 게시물 텍스트, 좋아요<br>안쪽 <b style="color:#F2456E">22</b> — 상품 묶음 (게시물 안에 담긴 느낌)</div>
+</div>
+</div>
+<div style="margin-top:14px;font:400 12px/1.7 Pretendard,sans-serif;color:#7A7A7A">헤더·바텀시트만 16 / 20을 씁니다. 미디어는 풀블리드(여백 0).</div>
+</div>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:16px">모서리 반경</div>
+<div style="display:flex;gap:22px;align-items:flex-end">
+<div><div style="width:64px;height:64px;background:#E9E5E1;border-radius:4px"></div><div style="margin-top:8px;font:600 11.5px/1.5 Pretendard,sans-serif">4</div><div style="font:400 11px/1.5 Pretendard,sans-serif;color:#8E8E8E">상품 썸네일<br>(1:1 90×90)</div></div>
+<div><div style="width:64px;height:64px;background:#E9E5E1;border-radius:8px"></div><div style="margin-top:8px;font:600 11.5px/1.5 Pretendard,sans-serif">8</div><div style="font:400 11px/1.5 Pretendard,sans-serif;color:#8E8E8E">그 외 전부<br>배지·필드·버튼·시트</div></div>
+<div><div style="width:64px;height:64px;background:#E9E5E1;border-radius:100px"></div><div style="margin-top:8px;font:600 11.5px/1.5 Pretendard,sans-serif">Full</div><div style="font:400 11px/1.5 Pretendard,sans-serif;color:#8E8E8E">아바타·알림 점<br>장바구니 배지·핸들</div></div>
+</div>
+</div>
+</div>
+</div>
+
+<div style="margin-top:56px">
+<div style="font:700 19px/1 Pretendard,sans-serif;letter-spacing:-.3px">04 · 아이콘</div>
+<p style="margin:10px 0 20px;font:400 13px/1.7 Pretendard,sans-serif;color:#7A7A7A;max-width:640px">각진 라인 세트 — stroke 1.6~1.7, <b style="color:#3C3C3C">miter join</b>, 24 그리드. 헤더·탭바 25×25, 게시물 ⋯ 20×20. 탭바 활성만 채움(fill), 나머지는 선.</p>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:26px 20px;display:grid;grid-template-columns:repeat(6,1fr);gap:22px;text-align:center;color:#0F0F0F">
+<div><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"><path d="M4.4 7.5h15.2l-1.1 12.3H5.5z"></path><path d="M8.8 10V6.6a3.2 3.2 0 0 1 6.4 0V10"></path></svg><div style="margin-top:8px;font:500 11px/1 Pretendard,sans-serif;color:#7A7A7A">장바구니</div></div>
+<div><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"><path d="M6 9.6a6 6 0 0 1 12 0v4.9l1.6 3H4.4l1.6-3z"></path><path d="M9.8 20.4h4.4"></path></svg><div style="margin-top:8px;font:500 11px/1 Pretendard,sans-serif;color:#7A7A7A">알림</div></div>
+<div><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg><div style="margin-top:8px;font:500 11px/1 Pretendard,sans-serif;color:#7A7A7A">검색</div></div>
+<div><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg><div style="margin-top:8px;font:500 11px/1 Pretendard,sans-serif;color:#7A7A7A">좋아요</div></div>
+<div><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M4 10.6 12 4.2l8 6.4V19a1.4 1.4 0 0 1-1.4 1.4h-3.9v-5.9h-5.4v5.9H5.4A1.4 1.4 0 0 1 4 19z"></path></svg><div style="margin-top:8px;font:500 11px/1 Pretendard,sans-serif;color:#7A7A7A">홈 (활성)</div></div>
+<div><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="18.5" cy="12" r="1.6"></circle></svg><div style="margin-top:8px;font:500 11px/1 Pretendard,sans-serif;color:#7A7A7A">더보기</div></div>
+</div>
+</div>
+
+<div style="margin-top:56px">
+<div style="font:700 19px/1 Pretendard,sans-serif;letter-spacing:-.3px">05 · 컴포넌트</div>
+
+<div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:16px">배지</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<span style="padding:4px 8px;border-radius:8px;background:#F2456E;color:#fff;font:600 11px/1 Pretendard,sans-serif">공동구매 D-3</span>
+<span style="padding:4px 8px;border-radius:8px;background:#F4F4F5;color:#737373;font:500 11px/1 Pretendard,sans-serif">유료 광고 포함</span>
+<span style="padding:4px 8px;border-radius:8px;background:#F4F4F5;color:#737373;font:500 11px/1 Pretendard,sans-serif">공구 종료</span>
+</div>
+<div style="margin-top:14px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E">패딩 4/8 · R8. 로즈 배지는 게시물당 <b style="color:#3C3C3C">1개</b>만. 대가관계 표시는 항상 중립 배지로, 로즈를 쓰지 않습니다.</div>
+</div>
+
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:16px">장바구니 배지 · 알림 점</div>
+<div style="display:flex;gap:26px;align-items:center;color:#0F0F0F">
+<div style="position:relative;display:flex"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"><path d="M6 9.6a6 6 0 0 1 12 0v4.9l1.6 3H4.4l1.6-3z"></path><path d="M9.8 20.4h4.4"></path></svg><i style="position:absolute;top:1px;right:1px;width:7px;height:7px;background:#F2456E;border:1.5px solid #fff;border-radius:100px"></i></div>
+<div style="position:relative;display:flex"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"><path d="M4.4 7.5h15.2l-1.1 12.3H5.5z"></path><path d="M8.8 10V6.6a3.2 3.2 0 0 1 6.4 0V10"></path></svg><span style="position:absolute;top:-5px;right:-7px;min-width:18px;height:18px;box-sizing:border-box;background:#F2456E;border:1.5px solid #fff;border-radius:100px;display:flex;align-items:center;justify-content:center;padding:0 3px"><span style="display:block;font:400 10px/1 Pretendard,sans-serif;color:#fff">3</span></span></div>
+<div style="position:relative;display:flex"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"><path d="M4.4 7.5h15.2l-1.1 12.3H5.5z"></path><path d="M8.8 10V6.6a3.2 3.2 0 0 1 6.4 0V10"></path></svg><span style="position:absolute;top:-5px;right:-7px;min-width:18px;height:18px;box-sizing:border-box;background:#F2456E;border:1.5px solid #fff;border-radius:100px;display:flex;align-items:center;justify-content:center;padding:0 3px"><span style="display:block;font:400 10px/1 Pretendard,sans-serif;color:#fff">99</span></span></div>
+</div>
+<div style="margin-top:14px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E">18px 원 · 흰 테두리 1.5 · 숫자 400/10 flex 중앙. 표시 범위 1~99, 0이면 배지 없음. 알림은 개수 없이 7px 점.</div>
+</div>
+
+</div>
+
+<div style="margin-top:20px;background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:16px">상품 행 — 1줄 / 2줄 (행 높이 90 고정)</div>
+<div style="max-width:346px">
+<div style="display:flex;gap:12px;align-items:center;padding-bottom:9px">
+<div style="width:90px;height:90px;border-radius:4px;background:linear-gradient(135deg,#EFEBE7,#D9D2CB);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 13.5px/1.45 Pretendard,sans-serif;color:#2E2E2E">시카 리페어 앰플</div>
+<div style="margin-top:8px;font:400 12px/1 Pretendard,sans-serif;color:#B5B5B5;text-decoration:line-through">38,000</div>
+<div style="margin-top:5px;display:flex;align-items:baseline;gap:6px"><span style="font:700 15px/1 Pretendard,sans-serif;color:#F2456E">34%</span><span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">24,900원</span></div>
+</div>
+</div>
+<div style="display:flex;gap:12px;align-items:center;padding:9px 0;border-top:.5px solid #F0F0F0">
+<div style="width:90px;height:90px;border-radius:4px;background:linear-gradient(135deg,#F1E7EA,#DCCCD3);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 13.5px/1.45 Pretendard,sans-serif;color:#2E2E2E;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">시카 리페어 앰플 30ml 리필 2개 세트 기획 · 토너 패드 증정</div>
+<div style="margin-top:8px;font:400 12px/1 Pretendard,sans-serif;color:#B5B5B5;text-decoration:line-through">38,000</div>
+<div style="margin-top:5px;display:flex;align-items:baseline;gap:6px"><span style="font:700 15px/1 Pretendard,sans-serif;color:#F2456E">34%</span><span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">24,900원</span></div>
+</div>
+</div>
+<div style="margin-top:5px;height:38px;border:1px solid #E3E3E5;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:6px;font:600 12.5px/1 Pretendard,sans-serif;color:#3C3C3C">상품 2개 더보기<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"></path></svg></div>
+</div>
+<div style="margin-top:16px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E;max-width:560px">썸네일 90×90(1:1) R4 · 썸네일↔텍스트 12 · 행 간격 9 · 구분 0.5px #F0F0F0. 텍스트 순서는 <b style="color:#3C3C3C">상품명 → 정가 → 할인율 + 공구가</b> 고정이며 브랜드명은 넣지 않습니다(상품 상세에서 노출). 더보기 버튼은 38px 외곽선 R8, 펼치면 라벨 "상품 접기" + 셰브런 180° 회전.</div>
+</div>
+
+<div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:16px">게시물 헤더 · 아바타</div>
+<div style="display:flex;align-items:center;gap:10px;max-width:330px">
+<div style="width:36px;height:36px;border-radius:50%;border:1.5px solid #F2456E;padding:2px;box-sizing:border-box;flex:none"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(140deg,#F4D9DF,#E6C3CD)"></div></div>
+<div style="flex:1;display:flex;align-items:center;gap:5px"><span style="font:600 13.5px/1.3 Pretendard,sans-serif">제니의 뷰티룸</span><span style="font:400 13px/1.3 Pretendard,sans-serif;color:#8E8E8E">· 2시간</span></div>
+<svg width="20" height="20" viewBox="0 0 24 24" fill="#0F0F0F"><circle cx="5.5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="18.5" cy="12" r="1.6"></circle></svg>
+</div>
+<div style="margin-top:14px;display:flex;align-items:center;gap:10px;max-width:330px">
+<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(140deg,#D9E2F0,#C3CEDD);flex:none"></div>
+<div style="flex:1;display:flex;align-items:center;gap:5px"><span style="font:600 13.5px/1.3 Pretendard,sans-serif">미아 스킨노트</span><span style="font:400 13px/1.3 Pretendard,sans-serif;color:#8E8E8E">· 어제</span></div>
+<svg width="20" height="20" viewBox="0 0 24 24" fill="#0F0F0F"><circle cx="5.5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="18.5" cy="12" r="1.6"></circle></svg>
+</div>
+<div style="margin-top:14px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E">아바타 36px. <b style="color:#3C3C3C">로즈 실선 링(1.5px + 2px 간격)은 공구 진행 중인 쇼룸에만</b> — 그라디언트 링은 사용하지 않습니다. ⋯은 신고 시트를 엽니다.</div>
+</div>
+
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:16px">좋아요</div>
+<div style="display:flex;gap:26px;align-items:center">
+<div style="display:flex;align-items:center;gap:7px"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg><span style="display:block;font:600 13.5px/1 Pretendard,sans-serif;transform:translateY(1px)">24</span></div>
+<div style="display:flex;align-items:center;gap:7px"><svg width="25" height="25" viewBox="0 0 24 24" fill="#F2456E" stroke="#F2456E" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg><span style="display:block;font:600 13.5px/1 Pretendard,sans-serif;transform:translateY(1px)">25</span></div>
+<div style="display:flex;align-items:center;gap:7px"><svg width="25" height="25" viewBox="0 0 24 24" fill="#C8C8CA" stroke="#C8C8CA" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg><span style="display:block;font:600 13.5px/1 Pretendard,sans-serif;color:#9E9E9E;transform:translateY(1px)">25</span></div>
+</div>
+<div style="margin-top:14px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E">기본 선(잉크) → 누르면 로즈 채움 → <b style="color:#3C3C3C">마감된 공구는 #C8C8CA</b>(새 좋아요 불가 · 해제만 가능 / 품절은 제한 없음). 옆에 <b style="color:#3C3C3C">숫자만</b> 표기하고 "좋아요 N개" 문구는 쓰지 않습니다. 간격 7.</div>
+<div style="margin-top:10px;padding:11px 12px;background:#FAFAFB;border-radius:8px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E">⚠ <b style="color:#3C3C3C">광학 정렬 규칙</b> — 하트 글리프의 시각적 무게는 박스 중앙보다 아래에 몰려 있어(잉크 범위 y 5→20.6, 중심 ≈12.8) 박스 기준 `align-items:center`만 쓰면 숫자가 <b style="color:#3C3C3C">위로 떠 보입니다</b>. 숫자에 <b style="color:#3C3C3C">translateY(1px)</b>을 적용해 하트의 광학 중심에 맞추고, 아이콘·숫자 모두 `display:block`으로 인라인 baseline 여백을 제거합니다. 하트를 위로 올리는 방식(아이콘 translateY 음수)은 간격을 더 벌리므로 쓰지 않습니다.</div>
+</div>
+</div>
+
+<div style="margin-top:20px;background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:16px">카테고리 필터 칩 · 아코디언</div>
+<div style="max-width:346px">
+<div style="display:flex;gap:7px;flex-wrap:wrap">
+<span style="display:flex;align-items:center;justify-content:center;height:34px;padding:0 13px;border-radius:8px;box-sizing:border-box;background:#0F0F0F;color:#fff;border:1px solid #0F0F0F;font:600 13px/1 Pretendard,sans-serif">전체</span>
+<span style="display:flex;align-items:center;justify-content:center;height:34px;padding:0 13px;border-radius:8px;box-sizing:border-box;background:#fff;color:#3C3C3C;border:1px solid #E3E3E5;font:400 13px/1 Pretendard,sans-serif">주문·결제</span>
+<span style="display:flex;align-items:center;justify-content:center;height:34px;padding:0 13px;border-radius:8px;box-sizing:border-box;background:#fff;color:#3C3C3C;border:1px solid #E3E3E5;font:400 13px/1 Pretendard,sans-serif">배송</span>
+</div>
+<div style="margin-top:16px;border-top:.5px solid #F0F0F0">
+<div style="display:flex;align-items:flex-start;gap:10px;padding:15px 0">
+<span style="flex:none;font:700 14.5px/1.45 Pretendard,sans-serif;color:#F2456E">Q</span>
+<span style="flex:1;min-width:0">
+<span style="display:block;font:600 11px/1 Pretendard,sans-serif;color:#737373">반품·교환</span>
+<span style="display:block;margin-top:6px;font:600 14.5px/1.45 Pretendard,sans-serif">반품은 어떻게 신청하나요?</span>
+</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none;margin-top:4px;transform:rotate(180deg)"><path d="M5 9l7 7 7-7"></path></svg>
+</div>
+<div style="display:flex;align-items:flex-start;gap:10px;padding:0 12px 16px;background:#F7F7F8">
+<span style="flex:none;font:700 14.5px/1.6 Pretendard,sans-serif;color:#737373;padding-top:14px">A</span>
+<span style="flex:1;min-width:0;font:400 13.5px/1.7 Pretendard,sans-serif;color:#3C3C3C;padding-top:14px">배송완료 후 7일 이내에 주문 내역에서 신청할 수 있어요.</span>
+</div>
+</div>
+</div>
+<div style="margin-top:14px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E;max-width:560px"><b style="color:#3C3C3C">필터 칩</b> — 높이 34 · R8 · 활성 잉크 채움(라벨 600) / 비활성 흰 배경 + 1px #E3E3E5(라벨 400) · 가로 스크롤 · 히트 영역 상하 패딩으로 44 확보. <b style="color:#3C3C3C">선택 상태를 로즈로 칠하지 않습니다</b>(로즈는 공구 신호 전용) — 필터는 잉크로 구분합니다. 최근 검색처럼 <b style="color:#3C3C3C">삭제 가능한 항목 목록에는 칩을 쓰지 않고</b>(→ 목록형 행), 칩은 <b style="color:#3C3C3C">배타 선택 필터</b>에만 씁니다.<br><br><b style="color:#3C3C3C">아코디언</b> — Q 마커 로즈 · 유형 라벨 11/600 #737373 · 질문 14.5(펼침 600 / 접힘 400) · 셰브런 14 #C7C7C7이 열릴 때 180° 회전. 답변 블록은 <b style="color:#3C3C3C">배경 #F7F7F8</b>(그룹 밴드와 같은 값) · A 마커 #737373 · 본문 13.5/1.7 #3C3C3C. 행 사이는 0.5px #F0F0F0 — 아코디언은 열림/닫힘 경계가 필요하므로 <b style="color:#3C3C3C">헤어라인을 쓰는 예외</b>입니다.</div>
+</div>
+
+<div style="margin-top:20px;background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:16px">미디어 캐러셀 도트</div>
+<div style="max-width:346px;display:grid;gap:14px">
+<div>
+<div style="font:600 10.5px/1 ui-monospace,Menlo,monospace;color:#B5B5B5;margin-bottom:9px">2–5장 · 전체 표시</div>
+<div style="display:flex;align-items:center;justify-content:center;gap:5px;height:14px">
+<i style="width:6px;height:6px;border-radius:100px;background:#0F0F0F"></i><i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i><i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i><i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i><i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i>
+</div>
+</div>
+<div>
+<div style="font:600 10.5px/1 ui-monospace,Menlo,monospace;color:#B5B5B5;margin-bottom:9px">6장 이상 · 첫 장 (오른쪽에 더 있음)</div>
+<div style="display:flex;align-items:center;justify-content:center;gap:5px;height:14px">
+<i style="width:6px;height:6px;border-radius:100px;background:#0F0F0F"></i><i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i><i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i><i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i><i style="width:4px;height:4px;border-radius:100px;background:#EAEAEC"></i>
+</div>
+</div>
+<div>
+<div style="font:600 10.5px/1 ui-monospace,Menlo,monospace;color:#B5B5B5;margin-bottom:9px">6장 이상 · 중간 (양쪽에 더 있음)</div>
+<div style="display:flex;align-items:center;justify-content:center;gap:5px;height:14px">
+<i style="width:4px;height:4px;border-radius:100px;background:#EAEAEC"></i><i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i><i style="width:6px;height:6px;border-radius:100px;background:#0F0F0F"></i><i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i><i style="width:4px;height:4px;border-radius:100px;background:#EAEAEC"></i>
+</div>
+</div>
+<div>
+<div style="font:600 10.5px/1 ui-monospace,Menlo,monospace;color:#B5B5B5;margin-bottom:9px">6장 이상 · 마지막 (왼쪽에 더 있음)</div>
+<div style="display:flex;align-items:center;justify-content:center;gap:5px;height:14px">
+<i style="width:4px;height:4px;border-radius:100px;background:#EAEAEC"></i><i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i><i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i><i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i><i style="width:6px;height:6px;border-radius:100px;background:#0F0F0F"></i>
+</div>
+</div>
+</div>
+<div style="margin-top:14px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E;max-width:560px">미디어 <b style="color:#3C3C3C">아래 중앙</b> · 도트 6px · 간격 5 · 상하 11/3 · 활성 잉크(#0F0F0F) / 비활성 #DEDEE0. 1장이면 노출하지 않습니다.<br><br><b style="color:#3C3C3C">6장 이상(최대 20)</b>이어도 화면에 노출하는 도트는 <b style="color:#3C3C3C">항상 5개</b>입니다 — 도트 수는 장수를 세는 눈금이 아니라 <b style="color:#3C3C3C">현재 위치를 알리는 신호</b>로만 씁니다. 활성 도트는 <b style="color:#3C3C3C">3번째 칸에 고정</b>하고 나머지가 좌우로 슬라이딩하며, 처음·마지막 2장 구간에서만 활성 도트가 창 안에서 이동합니다(첫 장 = 1번째, 마지막 장 = 5번째).<br><br><b style="color:#3C3C3C">끝 도트는 축소</b> — 5개가 모두 같은 크기면 "이게 전부"로 읽히므로, <b style="color:#3C3C3C">그 방향에 남은 장이 있는 쪽의 맨 끝 도트만 4px(#EAEAEC)</b>로 줄여 더 있다는 신호를 줍니다. 첫 장은 오른쪽만, 마지막 장은 왼쪽만, 중간은 양쪽이 축소됩니다. 5장 이하일 때는 축소 없이 전부 6px. 숫자 카운터(1/12)는 쓰지 않습니다.<br><br><b style="color:#3C3C3C">위치 구분(의도적)</b> — 피드 게시물 카드는 <b style="color:#3C3C3C">미디어 아래 중앙</b>(잉크/#DEDEE0), 상품 갤러리(상품 상세)는 <b style="color:#3C3C3C">이미지 안 하단</b>(흰 도트 + 옅은 그림자)입니다.<br><br><b style="color:#3C3C3C">D-day 표기 3형태</b> — ① 콘텐츠 카드(게시물·상품 상세) = <b style="color:#3C3C3C">로즈 채움 배지</b> ② 목록 그룹 머리·메타(장바구니) = <b style="color:#3C3C3C">로즈 텍스트</b>(배지를 반복하면 화면이 로즈로 덮여 급한 것이 안 보임) ③ 축소 썸네일(추천 카드) = <b style="color:#3C3C3C">이미지 좌상단 미니 배지</b>(텍스트 둘 자리가 없음).<br><br><b style="color:#3C3C3C">외곽선 보조 버튼의 터치 타깃</b> — 목록 안 [더보기]류 외곽선 버튼은 시각 높이 38로 두되, <b style="color:#3C3C3C">투명 패딩 래퍼(상하 3)</b>로 히트 영역을 44로 올립니다(배경 대신 opacity로 눌림 표현).</div>
+</div>
+
+<div style="margin-top:20px;background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:4px">쇼룸 리스트 행 — 팔로잉 · 검색 · 최근 검색 공통</div>
+<div style="margin-bottom:16px;font:400 11.5px/1.6 Pretendard,sans-serif;color:#8E8E8E">구분선 없음 · 아바타 44 · 간격 12 · 상하 8 / 좌우 14</div>
+<div style="max-width:346px">
+<div style="padding:6px 0 12px;display:flex;align-items:center">
+<span style="font:500 12px/1 Pretendard,sans-serif;color:#8E8E8E">팔로잉 쇼룸 4</span>
+<div style="flex:1"></div>
+<span style="display:flex;align-items:center;gap:4px"><span style="font:600 12px/1 Pretendard,sans-serif;color:#3C3C3C">기본</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3C3C3C" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 9l7 7 7-7"></path></svg></span>
+</div>
+<div style="display:flex;align-items:center;gap:12px;padding:8px 0">
+<div style="width:44px;height:44px;border-radius:50%;flex:none;box-sizing:border-box;border:1.5px solid #F2456E;padding:2px"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(140deg,#F4D9DF,#E6C3CD)"></div></div>
+<div style="flex:1;min-width:0"><div style="font:600 14.5px/1.35 Pretendard,sans-serif;letter-spacing:-.2px">제니의 뷰티룸</div></div>
+<div style="flex:none;display:flex;align-items:center;justify-content:center;padding:7px 0;margin:-7px 0"><span style="display:flex;align-items:center;justify-content:center;height:30px;padding:0 12px;border-radius:8px;box-sizing:border-box;border:1px solid #F2456E;background:#F2456E;color:#fff;font:600 12.5px/1 Pretendard,sans-serif">팔로우</span></div>
+</div>
+<div style="display:flex;align-items:center;gap:12px;padding:8px 0">
+<div style="width:44px;height:44px;border-radius:50%;flex:none;box-sizing:border-box;border:1.5px solid transparent;padding:2px"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(140deg,#D9E2F0,#C3CEDD)"></div></div>
+<div style="flex:1;min-width:0"><div style="font:600 14.5px/1.35 Pretendard,sans-serif;letter-spacing:-.2px">미아 스킨노트</div><div style="margin-top:3px;font:400 12.5px/1.35 Pretendard,sans-serif;color:#737373">@mia_skinnote</div></div>
+<div style="flex:none;display:flex;align-items:center;justify-content:center;padding:7px 0;margin:-7px 0"><span style="display:flex;align-items:center;justify-content:center;height:30px;padding:0 12px;border-radius:8px;box-sizing:border-box;border:1px solid #E3E3E5;background:#fff;color:#3C3C3C;font:600 12.5px/1 Pretendard,sans-serif">팔로잉</span></div>
+</div>
+</div>
+<div style="margin-top:14px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E;max-width:560px"><b style="color:#3C3C3C">행</b> 아바타 44(공구 진행 중이면 로즈 실선 링 1.5 + 2 간격) · 이름 14.5/600 · 보조 줄은 <b style="color:#3C3C3C">아이디 @handle 12.5/#737373</b> 하나만(한 줄 소개·팔로워 수·공구 수는 목록에 넣지 않습니다). <b style="color:#3C3C3C">구분선(0.5px)을 쓰지 않고</b> 상하 8 패딩만으로 리듬을 만들며, 세 목록(팔로잉·검색 결과·최근 검색)이 같은 규격을 공유합니다 — 목록마다 다른 행 높이를 만들지 않습니다.<br><br><b style="color:#3C3C3C">우측 액션</b> 팔로우 = 로즈 채움 / 팔로잉 = 중립 외곽선(되돌릴 액션은 강조하지 않음) · <b style="color:#3C3C3C">시각 높이 30</b>(좌우 패딩 12 · 라벨 12.5/600)에 <b style="color:#3C3C3C">상하 7 패딩 + 음수 마진</b>으로 히트 영역만 44로 넓힙니다 — 버튼을 44로 키우면 아바타 36과 균형이 깨지므로, 커지는 것은 <b style="color:#3C3C3C">보이지 않는 타깃</b>뿐입니다.<br><br><b style="color:#3C3C3C">배치에 따른 색</b> — 팔로우가 화면의 주 액션인 <b style="color:#3C3C3C">목록형 화면</b>(팔로잉·검색)에서는 로즈 채움, <b style="color:#3C3C3C">피드 게시물 헤더</b>에서는 회색 채움(Fill #F4F4F5 · 라벨 #3C3C3C · 테두리 없음)입니다. 피드 카드에는 이미 D-day·할인율이 로즈를 쓰고 있어, 헤더까지 로즈로 채우면 한 카드에 로즈가 두 번 나와 공구 신호가 묻힙니다. <b style="color:#3C3C3C">검색 결과에는 팔로우 버튼을 두지 않습니다</b> — 행 전체가 쇼룸으로 가는 단일 액션. <b style="color:#3C3C3C">셰브런(›)도 붙이지 않습니다</b>(행 전체가 탭 대상임이 자명한 목록). <b style="color:#3C3C3C">정렬</b>이 필요한 목록은 카운트 줄 우측에 텍스트 트리거 + 바텀 시트(라벨 15.5 · 설명 12.5/#737373 · 체크 로즈 19 · 첫 항목 위 구분선 없음).</div>
+</div>
+
+<div style="margin-top:20px;background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:16px">로그인 유도 블록</div>
+<div style="max-width:346px">
+<div style="padding:0 0 20px">
+<div style="font:700 19px/1.5 Pretendard,sans-serif;letter-spacing:-.5px">로그인하고<br>공구 소식을 받아보세요</div>
+<div style="margin-top:9px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373">팔로우한 쇼룸의 새 공구와 주문 내역을<br>한곳에서 확인할 수 있어요</div>
+<div style="margin-top:18px;height:45px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 14px/1 Pretendard,sans-serif;color:#fff">회원가입 하고 3초 만에 시작하기</div>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 0;border-top:.5px solid #F0F0F0"><span style="font:500 15px/1 Pretendard,sans-serif">주문 내역</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg></div>
+</div>
+<div style="margin-top:14px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E;max-width:560px"><b style="color:#3C3C3C">로그인 유도 블록</b> — 제목 19/700 + 설명 13/1.7 #737373 + <b style="color:#3C3C3C">로즈 Primary 45px R8 · 라벨 14/600</b>. 비로그인 화면에서 프로필·개인 데이터 영역을 대체하는 자리에만 쓰고, 한 화면에 하나만 둡니다. <b style="color:#3C3C3C">Primary 버튼 두 크기</b> — 화면 하단 고정 CTA(회원가입 완료 등)는 52px/15.5, 콘텐츠 안에 놓이는 유도 CTA는 <b style="color:#3C3C3C">45px/14</b>로 한 단계 낮춥니다.<br><br><b style="color:#3C3C3C">확인 모달 버튼 규칙</b> — 계정·흐름을 떠나는 모달(탈퇴·인증 이탈)은 <b style="color:#3C3C3C">머무르는 선택이 로즈·우측</b>, 파괴 액션은 중립 외곽선·좌측. 데이터 항목을 지우는 모달(장바구니·배송지 삭제)은 <b style="color:#3C3C3C">모달을 연 목적(삭제)이 로즈·우측</b>, [취소]가 중립·좌측입니다.<br><br><b style="color:#3C3C3C">비로그인 상태의 메뉴 행</b> — 로그인이 필요한 항목도 <b style="color:#3C3C3C">일반 항목과 동일하게</b> 표시합니다. 회색 처리·"로그인 필요" 꼬리표·비활성 스타일을 쓰지 않고, 탭하면 로그인으로 보낸 뒤 원래 목적지로 복귀시킵니다 — 잠긴 것처럼 보이는 행은 탭을 시도하지 않게 만들어 전환을 떨어뜨립니다.</div>
+</div>
+
+<div style="margin-top:20px;background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:16px">검색 필드 · 최근 검색 행</div>
+<div style="max-width:346px;display:grid;gap:10px">
+<div style="display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:8px;background:#F4F4F5">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="2" stroke-linecap="square" style="display:block"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg>
+<span style="font:400 14px/1 Pretendard,sans-serif;color:#8E8E8E">쇼룸 이름을 검색해 보세요</span>
+</div>
+<div style="display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:8px;background:#F4F4F5">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="2" stroke-linecap="square" style="display:block"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg>
+<span style="flex:1;font:400 14px/1 Pretendard,sans-serif;color:#0F0F0F">브라이</span>
+<span style="width:17px;height:17px;border-radius:50%;background:#9E9E9E;display:flex;align-items:center;justify-content:center;flex:none"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" style="display:block"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></span>
+</div>
+<div style="display:flex;align-items:center;gap:12px;padding:8px 0">
+<div style="width:44px;height:44px;border-radius:50%;flex:none;box-sizing:border-box;border:1.5px solid #F2456E;padding:2px"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(140deg,#F4D9DF,#E6C3CD)"></div></div>
+<div style="flex:1;min-width:0">
+<div style="font:600 14px/1.35 Pretendard,sans-serif;letter-spacing:-.2px">제니의 뷰티룸</div>
+<div style="margin-top:2px;font:400 12.5px/1.35 Pretendard,sans-serif;color:#737373">진행 중 공구 1 · 저자극 앰플</div>
+</div>
+<div style="flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.4" stroke-linecap="round" style="display:block"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></div>
+</div>
+<div style="display:flex;align-items:center;gap:12px;padding:8px 0">
+<div style="width:44px;height:44px;border-radius:50%;flex:none;box-sizing:border-box;border:1.5px solid transparent;padding:2px;background:#F4F4F5;display:flex;align-items:center;justify-content:center"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="2" stroke-linecap="square" style="display:block"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg></div>
+<div style="flex:1;min-width:0"><div style="font:600 14px/1.35 Pretendard,sans-serif;letter-spacing:-.2px">브라이</div></div>
+<div style="flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.4" stroke-linecap="round" style="display:block"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></div>
+</div>
+</div>
+<div style="margin-top:14px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E;max-width:560px"><b style="color:#3C3C3C">필드</b> 높이 40 · R8 · Fill(#F4F4F5) — 플레이스홀더 #8E8E8E, 입력 상태는 값 잉크 + 우측 지우기(⊗ 17px 원 #9E9E9E, 히트 영역 44는 음수 마진으로 확보).<br><br><b style="color:#3C3C3C">최근 검색 행</b> 두 변형 — <b style="color:#3C3C3C">쇼룸</b>: 아바타 44(공구 진행 중이면 로즈 링) + 이름 14/600 + 한 줄 소개 12.5/#737373, 탭 시 쇼룸으로 직행. <b style="color:#3C3C3C">검색어</b>: Fill 원 44 안에 돋보기 19 + 단어 한 줄, 탭 시 재검색. 우측 개별 삭제 X는 14px 아이콘 + <b style="color:#3C3C3C">44×44 히트 영역</b>, 목록 상단의 [전체 삭제]도 세로 패딩으로 44를 확보합니다. <b style="color:#3C3C3C">알약형(radius full) 칩은 쓰지 않습니다</b> — 삭제 가능한 항목 목록은 목록형 행으로 통일하고, 칩은 배타 선택 필터(위 [카테고리 필터 칩])에만 씁니다.</div>
+</div>
+
+<div style="margin-top:20px;background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:4px">판매 종료 상태 — 품절 · 공구 마감</div>
+<div style="margin-bottom:16px;font:400 11.5px/1.6 Pretendard,sans-serif;color:#8E8E8E">상품 행(위=판매중 / 아래=품절) · D-day 배지 · 옵션 항목</div>
+<div style="max-width:346px">
+<div style="display:flex;gap:12px;align-items:center;padding-bottom:9px">
+<div style="width:90px;height:90px;border-radius:4px;background:linear-gradient(135deg,#EFEBE7,#D9D2CB);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 13.5px/1.45 Pretendard,sans-serif;color:#2E2E2E">시카 리페어 앰플 30ml</div>
+<div style="margin-top:8px;font:400 12px/1 Pretendard,sans-serif;color:#B5B5B5;text-decoration:line-through">38,000</div>
+<div style="margin-top:5px;display:flex;align-items:baseline;gap:6px"><span style="font:700 15px/1 Pretendard,sans-serif;color:#F2456E">34%</span><span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">24,900원</span></div>
+</div>
+</div>
+<div style="display:flex;gap:12px;align-items:center;padding:9px 0;border-top:.5px solid #F0F0F0">
+<div style="position:relative;width:90px;height:90px;border-radius:4px;flex:none;overflow:hidden">
+<div style="position:absolute;inset:0;background:linear-gradient(135deg,#EFEBE7,#D9D2CB);filter:grayscale(1)"></div>
+<div style="position:absolute;inset:0;background:rgba(255,255,255,.55)"></div>
+</div>
+<div style="flex:1;min-width:0">
+<div style="font:400 13.5px/1.45 Pretendard,sans-serif;color:#9E9E9E">진정 토너 패드 60매</div>
+<div style="margin-top:8px;font:400 12px/1 Pretendard,sans-serif;color:#C7C7C7;text-decoration:line-through">26,000</div>
+<div style="margin-top:5px;display:flex;align-items:baseline;gap:6px"><span style="font:700 15px/1 Pretendard,sans-serif;color:#9E9E9E">33%</span><span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px;color:#9E9E9E">17,500원</span></div>
+<div style="margin-top:7px;font:600 12px/1 Pretendard,sans-serif;color:#9E9E9E">품절</div>
+</div>
+</div>
+<div style="margin-top:14px;display:flex;gap:6px;flex-wrap:wrap">
+<span style="padding:4px 8px;border-radius:8px;background:#F2456E;color:#fff;font:600 11px/1 Pretendard,sans-serif">공동구매 D-3</span>
+<span style="padding:4px 8px;border-radius:8px;background:#F1F1F2;color:#8E8E8E;font:600 11px/1 Pretendard,sans-serif">공구 마감</span>
+<span style="padding:4px 8px;border-radius:8px;background:#F1F1F2;color:#8E8E8E;font:600 11px/1 Pretendard,sans-serif">품절</span>
+</div>
+<div style="margin-top:14px;border:1px solid #E3E3E5;border-radius:8px;overflow:hidden">
+<div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 13px">
+<span style="flex:1;min-width:0;font:400 14px/1.35 Pretendard,sans-serif;color:#3C3C3C">30ml 단품</span>
+<span style="flex:none;font:400 12.5px/1.4 Pretendard,sans-serif;color:#737373">+0원</span>
+</div>
+<div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 13px;border-top:.5px solid #F0F0F0">
+<span style="flex:1;min-width:0;font:400 14px/1.35 Pretendard,sans-serif;color:#9E9E9E">50ml 대용량</span>
+<span style="flex:none;font:600 12px/1.3 Pretendard,sans-serif;color:#9E9E9E">품절</span>
+</div>
+</div>
+</div>
+<div style="margin-top:14px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E;max-width:560px"><b style="color:#3C3C3C">썸네일</b> — grayscale(1) <b style="color:#3C3C3C">+ 흰색 55% 오버레이</b>를 겹칩니다(탈색만으로는 여전히 선명해 판매중 상품과 구분되지 않습니다). 이미지는 <b style="color:#3C3C3C">가리지 않고 덮습니다</b> — 무슨 상품이었는지는 계속 보여야 재입고 알림·다음 공구로 이어집니다.<br><br><b style="color:#3C3C3C">텍스트</b> — 상품명·할인율·가격 모두 #9E9E9E, 취소선 정가는 한 단계 더 낮춰 #C7C7C7. 사유는 <b style="color:#3C3C3C">칩 없이 글자만</b>(12/600 · #9E9E9E) — 칩은 누를 수 있어 보입니다.<br><br><b style="color:#3C3C3C">배지</b> — D-day 로즈가 <b style="color:#3C3C3C">#F1F1F2 배경 + #8E8E8E</b>로 바뀝니다. 단 <b style="color:#3C3C3C">장바구니 그룹 머리에서는 배지를 아예 지웁니다</b>(재촉할 시간이 없는데 회색 라벨만 남으면 자리만 차지). <b style="color:#3C3C3C">게시물 배지는 전체 품절·전체 마감일 때만</b> 붙입니다(일부 품절은 상품 행이 알림).<br><br><b style="color:#3C3C3C">옵션 항목</b> — 품절 옵션은 <b style="color:#3C3C3C">목록에서 지우지 않고</b> 비활성으로 남깁니다(사라지면 원래 없던 옵션인지 팔린 것인지 알 수 없음). 탭·눌림 효과 없음, 추가금 표기는 감춥니다.</div>
+</div>
+
+<div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:16px">안내 배너 — 회색 인포 블록</div>
+<div style="max-width:330px;display:grid;gap:10px">
+<div style="display:flex;align-items:center;gap:9px;padding:12px 13px;border-radius:8px;background:#F7F7F8">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="1.5" stroke-linejoin="miter" style="display:block;flex:none"><path d="M4 4.5h16l1.4 4.2a3 3 0 0 1-5.8 1 3 3 0 0 1-5.6 0 3 3 0 0 1-5.8-1z"></path><path d="M5 10.8V20h14v-9.2"></path></svg>
+<span style="flex:1;min-width:0;font:400 12.5px/1.55 Pretendard,sans-serif;color:#3C3C3C">지금은 진행 중인 공구가 없어요. 팔로우하면 새 공구가 열릴 때 알려드려요.</span>
+</div>
+<div style="padding:13px;border-radius:8px;background:#F7F7F8;font:400 11.5px/1.7 Pretendard,sans-serif;color:#737373">탈퇴 이유는 서비스 개선에만 사용하고 계정 정보와 분리해 보관합니다.</div>
+</div>
+<div style="margin-top:14px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E;max-width:560px">배경 <b style="color:#3C3C3C">#F7F7F8</b> · R8 · 패딩 12–13. <b style="color:#3C3C3C">행동을 안내</b>할 때는 아이콘 18 + 본문 12.5/1.55 <b style="color:#3C3C3C">#3C3C3C</b>(위), <b style="color:#3C3C3C">참고 고지</b>는 아이콘 없이 11.5/1.7 #737373(아래). 로즈 틴트(#FEF4F6)는 <b style="color:#3C3C3C">경고·차단</b> 전용이라 안내에 쓰지 않고, 좌측 컬러 보더도 쓰지 않습니다.</div>
+</div>
+
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:16px">문서 본문 — 약관 · 정책 · 공지</div>
+<div style="max-width:330px">
+<div style="padding-bottom:12px;border-bottom:.5px solid #F0F0F0;font:400 12px/1.6 Pretendard,sans-serif;color:#737373">시행일 2026.08.01 · 버전 1.2</div>
+<div style="margin-top:14px;font:600 14.5px/1.5 Pretendard,sans-serif">제2조 (중개자의 지위)</div>
+<div style="margin-top:8px;font:400 13px/1.85 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">회사는 통신판매중개자로서 거래 당사자가 아니며, 상품의 판매·배송·환불 책임은 각 판매자에게 있습니다.</div>
+</div>
+<div style="margin-top:14px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E;max-width:560px">조 제목 14.5/600 · 본문 <b style="color:#3C3C3C">13/1.85</b>(다른 화면의 1.6~1.7보다 넉넉 — 긴 글은 행간이 가독성을 좌우) · 좌우 여백 <b style="color:#3C3C3C">20</b>(리스트 화면의 14보다 넓게). 상단에 <b style="color:#3C3C3C">시행일·버전 고정</b>. 약관·개인정보·운영정책·오픈소스 라이선스를 <b style="color:#3C3C3C">단일 뷰어</b>로 렌더해 문구가 갈라지지 않게 합니다.</div>
+</div>
+</div>
+
+<div style="margin-top:20px;background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:16px">탭바 · 바텀 시트</div>
+<div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">
+<div style="width:330px;border:1px solid #EFEFEF;border-radius:8px;overflow:hidden">
+<div style="display:flex;padding:9px 0 6px">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#0F0F0F"><svg width="25" height="25" viewBox="0 0 24 24" fill="currentColor"><path d="M4 10.6 12 4.2l8 6.4V19a1.4 1.4 0 0 1-1.4 1.4h-3.9v-5.9h-5.4v5.9H5.4A1.4 1.4 0 0 1 4 19z"></path></svg><span style="font:600 10px/1 Pretendard,sans-serif">홈</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"></circle><path d="M3.5 19.5c0-3.1 2.5-5.2 5.5-5.2s5.5 2.1 5.5 5.2"></path><path d="M16.2 11.2a3 3 0 1 0 0-6"></path><path d="M17.2 14.4c2 .6 3.3 2.5 3.3 5.1"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">팔로잉</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">좋아요</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">마이</span></div>
+</div>
+</div>
+<div style="width:330px;border:1px solid #EFEFEF;border-radius:8px;overflow:hidden">
+<div style="width:36px;height:4px;border-radius:100px;background:#DEDEE0;margin:10px auto 12px"></div>
+<div style="padding:0 20px 8px;font:600 15px/1.4 Pretendard,sans-serif">이 게시물을 신고하는 이유를 알려주세요</div>
+<div style="padding:0 20px 12px;font:400 12.5px/1.6 Pretendard,sans-serif;color:#8E8E8E">신고는 익명으로 접수됩니다.</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:.5px solid #F0F0F0;font:400 14.5px/1 Pretendard,sans-serif">스팸 또는 반복 홍보<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:.5px solid #F0F0F0;font:400 14.5px/1 Pretendard,sans-serif">허위·과장된 효능 표시<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+</div>
+</div>
+<div style="margin-top:16px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E;max-width:600px">탭바 활성은 <b style="color:#3C3C3C">채움 아이콘 + 잉크</b>, 비활성은 선 + #9E9E9E. 로즈는 쓰지 않습니다. 시트는 R8 상단 · 핸들 36×4 · 행 높이 47(패딩 15/20) · 딤 40%.</div>
+</div>
+</div>
+
+<div style="margin-top:56px">
+<div style="font:700 19px/1 Pretendard,sans-serif;letter-spacing:-.3px">06 · 규칙</div>
+<div style="margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:18px 20px"><div style="font:600 12.5px/1.5 Pretendard,sans-serif;color:#0F0F0F">로즈는 세는 색이다</div><div style="margin-top:7px;font:400 12px/1.7 Pretendard,sans-serif;color:#7A7A7A">한 화면에 로즈가 닿는 요소는 5개를 넘기지 않습니다. 넘으면 어떤 것도 강조가 되지 않습니다.</div></div>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:18px 20px"><div style="font:600 12.5px/1.5 Pretendard,sans-serif;color:#0F0F0F">스크롤바는 OS에, 캐러셀 도트는 우리가</div><div style="margin-top:7px;font:400 12px/1.7 Pretendard,sans-serif;color:#7A7A7A">스크롤바·페이지 카운터(1/5)는 그리지 않고 스크롤 영역의 스크롤바를 숨깁니다. 다만 <b style="color:#3C3C3C">미디어 캐러셀 도트는 예외</b> — 첨부가 여러 장이라는 사실은 OS가 알려주지 않으므로 미디어 <b style="color:#3C3C3C">아래 중앙</b>에 6px 도트를 둡니다(활성 잉크 · 비활성 #DEDEE0 · 간격 5, 상하 11/3). 1장일 때는 노출하지 않습니다.</div></div>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:18px 20px"><div style="font:600 12.5px/1.5 Pretendard,sans-serif;color:#0F0F0F">액션은 소속으로 구분한다</div><div style="margin-top:7px;font:400 12px/1.7 Pretendard,sans-serif;color:#7A7A7A">상품 관련 액션은 안쪽 여백(22)에, 게시물 액션(좋아요)은 바깥 여백(14)에 둡니다. 형태도 버튼 대 아이콘으로 다르게.</div></div>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:18px 20px"><div style="font:600 12.5px/1.5 Pretendard,sans-serif;color:#0F0F0F">터치 타깃 44 이상</div><div style="margin-top:7px;font:400 12px/1.7 Pretendard,sans-serif;color:#7A7A7A">아이콘이 25px여도 히트 영역은 음수 마진으로 44까지 넓힙니다(⋯, 좋아요, 헤더 아이콘).</div></div>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:18px 20px"><div style="font:600 12.5px/1.5 Pretendard,sans-serif;color:#0F0F0F">SNS 관용구는 쓰되 형태는 우리 것</div><div style="margin-top:7px;font:400 12px/1.7 Pretendard,sans-serif;color:#7A7A7A">피드 구조는 업계 표준을 따르지만, 그라디언트 스토리 링처럼 특정 서비스의 식별 요소는 쓰지 않습니다.</div></div>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:18px 20px"><div style="font:600 12.5px/1.5 Pretendard,sans-serif;color:#0F0F0F">워드마크는 앱 안에 없다</div><div style="margin-top:7px;font:400 12px/1.7 Pretendard,sans-serif;color:#7A7A7A">헤더 자리는 검색이 차지합니다. 브랜드는 스플래시·앱 아이콘·마이 탭에서만 노출합니다.</div></div>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:18px 20px"><div style="font:600 12.5px/1.5 Pretendard,sans-serif;color:#0F0F0F">목록은 선이 아니라 여백으로 나눈다</div><div style="margin-top:7px;font:400 12px/1.7 Pretendard,sans-serif;color:#7A7A7A">쇼룸·사람 목록에는 구분선을 쓰지 않고 상하 8 패딩으로 끊습니다. 설정·마이의 메뉴 행도 같습니다 — 그룹은 5px 회색 밴드로 나누고 행 사이에는 선을 넣지 않습니다. 0.5px 헤어라인은 <b style="color:#3C3C3C">게시물 경계와 헤더 하단</b>에만 남깁니다.</div></div>
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:18px 20px"><div style="font:600 12.5px/1.5 Pretendard,sans-serif;color:#0F0F0F">목록 행의 보조 정보는 하나만</div><div style="margin-top:7px;font:400 12px/1.7 Pretendard,sans-serif;color:#7A7A7A">이름 아래에는 아이디만 둡니다. 한 줄 소개·팔로워 수·공구 수는 목록에서 빼고, 상태는 아바타 링 같은 비문자 신호로 전달합니다.</div></div>
+</div>
+</div>
+
+<div style="margin-top:56px;padding:22px 24px;background:#fff;border:1px solid #EDEDEF;border-radius:8px">
+<div style="font:600 13px/1 Pretendard,sans-serif">확정 전 남은 것</div>
+<div style="margin-top:12px;display:grid;gap:9px;font:400 12.5px/1.7 Pretendard,sans-serif;color:#5A5A5A">
+<div>· 다크 모드 팔레트 — 순흑 배경 기준안은 탐색했으나 미확정</div>
+<div>· 빈 상태(팔로잉 0), 공구 종료·품절 카드, 로딩 스켈레톤 <b style="color:#3C3C3C">→ §05·§07 등재 완료</b></div>
+<div>· 신고 시트 문구 — 대가관계 표시 관련 법률 검토 후 확정</div>
+<div>· 상품 상세(C7)의 브랜드명 노출 위치와 서체</div>
+<div>· 결제·주문·교환·환불·알림 화면은 범위 밖 — 제작 시 §05·§07에 추가 예정</div>
+</div>
+</div>
+
+<div style="margin-top:56px">
+<div style="font:700 19px/1 Pretendard,sans-serif;letter-spacing:-.3px">07 · 상태 · 피드백</div>
+<div style="margin-top:8px;font:400 12px/1.7 Pretendard,sans-serif;color:#8E8E8E;max-width:620px">일시적 결과 알림(토스트), 로딩 대기(스켈레톤), 연결 실패(전체 오류)의 공용 규격입니다. 세 가지 모두 <b style="color:#3C3C3C">모달을 띄우지 않는다</b>는 원칙을 공유합니다 — 흐름을 멈추지 않고 제자리에서 알립니다.</div>
+
+<div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:16px">토스트 — 일시 알림</div>
+<div style="display:grid;gap:10px;max-width:330px">
+<div style="display:flex;align-items:center;gap:10px;padding:13px 15px;border-radius:8px;background:#0F0F0F">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none"><path d="M4.5 12.5l5 5 10-11"></path></svg>
+<span style="flex:1;min-width:0;font:500 13px/1.4 Pretendard,sans-serif;color:#fff">장바구니에 담았어요</span>
+<span style="flex:none;font:600 12.5px/1 Pretendard,sans-serif;color:#FF9DB5;cursor:pointer">보기</span>
+</div>
+<div style="display:flex;align-items:center;gap:10px;padding:13px 15px;border-radius:8px;background:#0F0F0F">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF9DB5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 8v5"></path><path d="M12 15.6v.1"></path></svg>
+<span style="flex:1;min-width:0;font:500 13px/1.4 Pretendard,sans-serif;color:#fff">잠시 후 다시 시도해 주세요</span>
+</div>
+</div>
+<div style="margin-top:14px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E;max-width:560px">잉크 배경(#0F0F0F) · 흰 글씨 13/500 · R8 · 하단 탭바 위 16 띄워 <b style="color:#3C3C3C">약 2초</b> 노출 후 자동 소멸. 좌측 상태 아이콘(성공=흰 체크 / 알림=로즈 라인), 되돌리거나 이동할 수 있으면 우측에 <b style="color:#3C3C3C">로즈 텍스트 액션 1개</b>([보기]·[실행 취소]). 액션은 하나까지만 — 둘 이상이면 토스트가 아니라 다른 UI가 필요합니다. <b style="color:#3C3C3C">파괴적·비가역 결과는 토스트로 알리지 않습니다</b>(삭제 확인은 모달).</div>
+</div>
+
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:16px">스켈레톤 — 로딩 대기</div>
+<div style="max-width:330px;border:1px solid #F2F2F4;border-radius:8px;overflow:hidden">
+<div style="display:flex;align-items:center;gap:10px;padding:12px 14px">
+<div style="width:36px;height:36px;border-radius:50%;background:#EFEFF1;flex:none"></div>
+<div style="flex:1;min-width:0;display:grid;gap:6px">
+<div style="width:38%;height:11px;border-radius:4px;background:#EFEFF1"></div>
+<div style="width:22%;height:9px;border-radius:4px;background:#F2F2F4"></div>
+</div>
+</div>
+<div style="aspect-ratio:16/10;background:#EFEFF1"></div>
+<div style="padding:13px 14px;display:grid;gap:7px">
+<div style="width:90%;height:11px;border-radius:4px;background:#EFEFF1"></div>
+<div style="width:64%;height:11px;border-radius:4px;background:#F2F2F4"></div>
+</div>
+</div>
+<div style="margin-top:14px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E;max-width:560px"><b style="color:#3C3C3C">그 화면이 채울 레이아웃 그대로</b>를 회색 블록(#EFEFF1, 보조 #F2F2F4)으로 그립니다 — 스피너를 쓰지 않습니다(위치·개수를 미리 알려 로드 후 점프를 줄임). 블록은 R4 · 은은한 밝기 펄스(1.4s). <b style="color:#3C3C3C">첫 진입·당겨서 새로고침·다음 페이지</b>에 쓰고, 텍스트 한 줄 갱신 같은 <b style="color:#3C3C3C">작은 대기에는 쓰지 않습니다</b>. 300ms 안에 끝나면 아예 띄우지 않습니다(깜빡임 방지).</div>
+</div>
+
+<div style="background:#fff;border:1px solid #EDEDEF;border-radius:8px;padding:20px;grid-column:1 / -1">
+<div style="font:600 13px/1 Pretendard,sans-serif;margin-bottom:16px">전체 오류 — 연결 실패</div>
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;max-width:330px;margin:0 auto;padding:26px 20px;border:1px solid #F2F2F4;border-radius:8px">
+<svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#D8D8DA" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M2.5 8.5a15 15 0 0 1 19 0"></path><path d="M5.5 11.8a10.5 10.5 0 0 1 13 0"></path><path d="M8.5 15a6 6 0 0 1 7 0"></path><circle cx="12" cy="18.3" r="1" fill="#D8D8DA" stroke="none"></circle><path d="M4 4l16 16" stroke="#C4C4C6"></path></svg>
+<div style="margin-top:16px;font:600 15px/1.5 Pretendard,sans-serif;text-align:center">연결이 원활하지 않아요</div>
+<div style="margin-top:6px;font:400 12.5px/1.7 Pretendard,sans-serif;color:#8E8E8E;text-align:center;text-wrap:pretty">네트워크 상태를 확인하고<br>다시 시도해 주세요</div>
+<div style="margin-top:18px;height:44px;padding:0 22px;border:1px solid #E3E3E5;border-radius:8px;display:flex;align-items:center;font:600 13.5px/1 Pretendard,sans-serif;color:#3C3C3C">다시 시도</div>
+</div>
+<div style="margin-top:14px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#8E8E8E;max-width:560px">데이터를 <b style="color:#3C3C3C">아직 한 번도 못 받은 화면</b>(빈 리스트)에만 씁니다 — 이미 내용이 떠 있는데 갱신만 실패했다면 <b style="color:#3C3C3C">토스트</b>로 알리고 기존 내용을 지우지 않습니다. [다시 시도]는 <b style="color:#3C3C3C">중립 외곽선</b>(로즈 아님 — 오류 복구는 권장 액션이 아니라 당연한 재시도). 아이콘은 회색 중립. 문구는 원인을 단정하지 않고("서버 오류" 대신 "연결이 원활하지 않아요") 사용자가 할 수 있는 행동을 안내합니다.</div>
+</div>
+
+</div>
+</div>
+
+</div>
+</x-dc>
+</body>
+</html>

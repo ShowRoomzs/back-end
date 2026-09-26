@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C17 공지사항</span></div>
+<p class="dv-tsub">운영자 게시 정적 콘텐츠입니다. 최신순 · [중요] 상단 고정 · 아코디언 열람이며, 약관·정책 개정 공지는 효력 발생일을 함께 표기합니다. 항목을 탭해 본문을 펼쳐 보세요.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>C17 공지사항</div>
+<div class="dv-card">
+<div data-screen-label="C17 공지사항" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">공지사항</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<sc-for list="{{ notices }}" as="n" hint-placeholder-count="5">
+<div>
+<div onClick="{{ n.toggle }}" style="display:flex;align-items:flex-start;gap:10px;padding:16px 14px;cursor:pointer;border-top:{{ n.divider }}" style-active="background:#F7F7F8">
+<div style="flex:1;min-width:0">
+<div style="display:flex;align-items:center;gap:6px">
+<sc-if value="{{ n.pinned }}" hint-placeholder-val="{{ false }}">
+<span style="flex:none;padding:4px 8px;border-radius:8px;background:#F2456E;color:#fff;font:600 11px/1 Pretendard,sans-serif">중요</span>
+</sc-if>
+<span style="font:400 11.5px/1 Pretendard,sans-serif;color:#737373">{{ n.date }}</span>
+</div>
+<div style="margin-top:7px;font:{{ n.titleFont }};color:#0F0F0F;text-wrap:pretty">{{ n.title }}</div>
+</div>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none;margin-top:22px;transform:{{ n.chevron }}"><path d="M5 9l7 7 7-7"></path></svg>
+</div>
+<sc-if value="{{ n.open }}" hint-placeholder-val="{{ false }}">
+<div style="background:#F7F7F8;padding:16px 14px 18px">
+<div style="font:400 13.5px/1.75 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">{{ n.body }}</div>
+
+<sc-if value="{{ n.hasImage }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top: 14px; border-radius: 0px; overflow: hidden; background: linear-gradient(140deg,#F4D9DF,#E6C3CD); aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center">
+<span style="font:400 12px/1 Pretendard,sans-serif;color:#8A6C74">공지 이미지</span>
+</div>
+<div style="margin-top:7px;font:400 11px/1.5 Pretendard,sans-serif;color:#737373">{{ n.imageCaption }}</div>
+</sc-if>
+
+<sc-if value="{{ n.hasTable }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:14px;border:1px solid #EDEDEF;overflow:hidden">
+<div style="display:flex;background:#FAFAFA;border-bottom:.5px solid #EDEDEF">
+<span style="flex:0 0 40%;box-sizing:border-box;padding:11px 12px;font:600 12px/1.4 Pretendard,sans-serif;color:#737373">구분</span>
+<span style="flex:1;box-sizing:border-box;padding:11px 12px;font:600 12px/1.4 Pretendard,sans-serif;color:#737373;border-left:.5px solid #EDEDEF">일정</span>
+</div>
+<sc-for list="{{ n.tableRows }}" as="r" hint-placeholder-count="3">
+<div style="display:flex;background:#fff;border-top:{{ r.divider }}">
+<span style="flex:0 0 40%;box-sizing:border-box;padding:11px 12px;font:500 12.5px/1.5 Pretendard,sans-serif;color:#0F0F0F">{{ r.k }}</span>
+<span style="flex:1;box-sizing:border-box;padding:11px 12px;font:400 12.5px/1.5 Pretendard,sans-serif;color:#3C3C3C;border-left:.5px solid #EDEDEF">{{ r.v }}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{ n.hasEffective }}" hint-placeholder-val="{{ false }}">
+
+</sc-if>
+<sc-if value="{{ n.hasLink }}" hint-placeholder-val="{{ false }}">
+
+</sc-if>
+</div>
+</sc-if>
+</div>
+</sc-for>
+
+
+
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>구조</b> — 고객센터 FAQ와 <b>같은 아코디언 규격</b>을 씁니다(셰브런 180° 회전 · 본문 배경 #F7F7F8 · 헤어라인 구분). 다만 Q/A 마커는 없고, 대신 <b>날짜와 [중요] 배지가 제목 위</b>에 옵니다 — 공지는 "언제 것인지"가 먼저 필요한 정보입니다.<br><br><b>[중요] 고정</b> — 로즈 배지를 붙이고 목록 상단에 고정합니다. 로즈를 쓰는 유일한 자리이므로 <b>동시에 여러 건을 중요로 올리지 않는다</b>는 운영 규칙이 필요합니다(전부 중요면 아무것도 중요하지 않습니다).<br><br>본문 타이포는 §05 <b>문서 본문</b>과 같은 계열이고, 개정 공지의 [문서 보기]는 <b>C18 문서 뷰어</b>로 연결됩니다.<br><br><b>약관·정책 개정</b> — 본문 아래에 <b>효력 발생일 블록</b>과 해당 문서로 가는 버튼을 붙였습니다. 개정 공지는 고지 의무가 있어 날짜가 본문에 묻히면 안 되고, 마이 탭 도움말의 문서와 연동됩니다.<br><br><b>표 · 이미지</b> — 공지 본문은 텍스트만으로 부족한 경우가 많아 두 블록을 규격화했습니다. <b>표</b>는 2열(구분 40% / 내용) · 헤더 12/600 회색 · 본문 12.5 · 흰 배경 + #EDEDEF 헤어라인 · <b>모서리 반경 0</b>(표는 데이터 격자이므로 라운드를 주지 않습니다)으로, 회색 본문 배경 위에 흰 카드로 떠 있어 읽기 영역이 분명합니다(추석 공지에서 확인). <b>이미지</b>는 16:9 · R8 · 하단에 캡션 한 줄(베타 공지에서 확인). 세로 이미지는 화면을 과하게 밀어내니 <b>가로 비율 권장</b>으로 정하고, 어드민 업로드 가이드에 1200×675를 명시하는 게 좋습니다.<br><br><b>남은 결정</b> — ① 읽지 않은 공지 표시(마이 탭 뱃지) 여부 ② 중요 공지를 앱 진입 시 팝업으로 띄울지 ③ 카테고리 필터 필요 여부(현재는 건수가 적어 단일 목록) ④ 개정 공지 문구·고지 기간은 법무 확정.</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = { open: { n0: true } };
+
+  renderVals(){
+    const DATA = [
+      { pinned:true, date:'2026.07.05', title:'개인정보 처리방침 개정 안내', effective:'2026.08.01', link:'개인정보 처리방침 보기',
+        body:'개인정보 처리방침이 개정됩니다. 주요 변경 사항은 본인확인 정보의 보관 기간 명확화, 위탁 업체 목록 갱신, 광고성 정보 수신 동의 철회 절차 안내 추가입니다. 개정 내용에 동의하지 않으시면 서비스 이용을 중단하고 탈퇴할 수 있어요.' },
+      { pinned:false, date:'2026.08.05', title:'추석 연휴 배송 일정 안내', 
+        body:'추석 연휴 기간에는 택배사 휴무로 배송이 지연될 수 있어요. 아래 일정을 확인해 주세요.',
+        table:[
+          ['연휴 전 마지막 발송', '9월 22일 15시 결제분까지'],
+          ['택배사 휴무', '9월 24일 – 9월 27일'],
+          ['발송 재개', '9월 28일부터 순차 발송'],
+          ['고객센터 운영', '9월 23일까지 정상 운영']
+        ] },
+      { pinned:false, date:'2026.07.18', title:'서비스 점검 안내 (7/20 02:00–04:00)', 
+        body:'더 안정적인 서비스를 위해 시스템 점검을 진행합니다. 점검 시간에는 주문·결제와 로그인이 일시 중단되며, 진행 중인 공동구매의 마감 시간은 점검 시간만큼 연장됩니다.' },
+      { pinned:false, date:'2026.07.01', title:'SHOWROOMZ 베타 오픈 안내', 
+        body:'쇼룸즈가 베타로 문을 열었습니다. 좋아하는 인플루언서의 쇼룸을 팔로우하면 새 공동구매를 가장 먼저 확인할 수 있어요. 베타 기간에는 일부 기능이 순차적으로 추가됩니다.',
+        image:'베타 오픈 기념 이미지 · 1200×675 권장' }
+    ];
+
+    const O = this.state.open;
+    const notices = DATA.map((d, i) => {
+      const key = 'n' + i;
+      const open = !!O[key];
+      return {
+        title: d.title,
+        date: d.date,
+        body: d.body,
+        pinned: d.pinned,
+        open,
+        divider: i === 0 ? 'none' : '.5px solid #F0F0F0',
+        titleFont: (open ? '600' : '500') + ' 14.5px/1.45 Pretendard,sans-serif',
+        chevron: open ? 'rotate(180deg)' : 'none',
+        hasImage: !!d.image,
+        imageCaption: d.image || '',
+        hasTable: !!d.table,
+        tableRows: (d.table || []).map((row, ri) => ({ k: row[0], v: row[1], divider: ri === 0 ? 'none' : '.5px solid #EDEDEF' })),
+        hasEffective: !!d.effective,
+        effective: d.effective || '',
+        hasLink: !!d.link,
+        linkLabel: d.link || '',
+        toggle: () => this.setState(s => ({ open: { ...s.open, [key]: !s.open[key] } }))
+      };
+    });
+
+    return { notices };
+  }
+}
+</script>
+</body>
+</html>

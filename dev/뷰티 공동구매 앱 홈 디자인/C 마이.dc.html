@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+.dv-sw{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:-2px 0 2px}
+.dv-swl{font:600 10px/1 Pretendard,sans-serif;color:rgba(0,0,0,.38);letter-spacing:.02em;margin-right:2px}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">마이 — 활동 내역 허브</span></div>
+<p class="dv-tsub">WF-C-02의 마이 탭 구조를 그대로 따릅니다 — 프로필 · 주문 현황 4단계 · 쇼핑 정보 · 문의 · 도움말, 헤더 아이콘은 장바구니 · 설정. 주문 현황 숫자는 탭하면 필터 없이 주문 내역(C10)으로 갑니다.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>마이 · 로그인 상태</div>
+<div class="dv-sw">
+<span class="dv-swl">계정 유형</span>
+<sc-for list="{{ swRole }}" as="o" hint-placeholder-count="2">
+<div onClick="{{ o.pick }}" style="padding:6px 10px;border-radius:6px;cursor:pointer;font:{{ o.font }};background:{{ o.bg }};color:{{ o.color }};border:1px solid {{ o.border }}">{{ o.label }}</div>
+</sc-for>
+</div>
+<div class="dv-card">
+<div data-screen-label="마이" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="display:flex;align-items:center;padding:2px 16px 12px">
+<span style="font: 700 20px/1 Pretendard,sans-serif; letter-spacing: -.5px; font-size: 18px">마이</span>
+<div style="flex:1"></div>
+<div style="display:flex;gap:18px;color:#0F0F0F">
+<div style="position:relative;display:flex;padding:9px;margin:-9px;cursor:pointer"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"><circle cx="12" cy="12" r="3.1"></circle><path d="M19.4 14.6a1.5 1.5 0 0 0 .3 1.65l.05.05a1.8 1.8 0 1 1-2.55 2.55l-.05-.05a1.5 1.5 0 0 0-1.65-.3 1.5 1.5 0 0 0-.9 1.37V20a1.8 1.8 0 1 1-3.6 0v-.07a1.5 1.5 0 0 0-.98-1.37 1.5 1.5 0 0 0-1.65.3l-.05.05A1.8 1.8 0 1 1 5.75 16.3l.05-.05a1.5 1.5 0 0 0 .3-1.65 1.5 1.5 0 0 0-1.37-.9H4a1.8 1.8 0 1 1 0-3.6h.07a1.5 1.5 0 0 0 1.37-.98 1.5 1.5 0 0 0-.3-1.65l-.05-.05A1.8 1.8 0 1 1 7.65 4.87l.05.05a1.5 1.5 0 0 0 1.65.3H9.4a1.5 1.5 0 0 0 .9-1.37V4a1.8 1.8 0 1 1 3.6 0v.07a1.5 1.5 0 0 0 .9 1.37 1.5 1.5 0 0 0 1.65-.3l.05-.05a1.8 1.8 0 1 1 2.55 2.55l-.05.05a1.5 1.5 0 0 0-.3 1.65v.08a1.5 1.5 0 0 0 1.37.9H20a1.8 1.8 0 1 1 0 3.6h-.07a1.5 1.5 0 0 0-1.37.9z"></path></svg></div>
+<div style="position:relative;display:flex;padding:9px;margin:-9px;cursor:pointer"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"><path d="M4.4 7.5h15.2l-1.1 12.3H5.5z"></path><path d="M8.8 10V6.6a3.2 3.2 0 0 1 6.4 0V10"></path></svg><span style="position:absolute;top:4px;right:2px;min-width:18px;height:18px;box-sizing:border-box;background:#F2456E;border:1.5px solid #fff;border-radius:100px;display:flex;align-items:center;justify-content:center;padding:0 3px"><span style="display:block;font:400 10px/1 Pretendard,sans-serif;color:#fff">3</span></span></div>
+</div>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="display: flex; align-items: center; gap: 14px; padding: 20px 14px; cursor: pointer; height: 40px" style-active="background:#F7F7F8">
+<div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(140deg,#EFE7DC,#DCCFBE); flex: none"></div>
+<div style="flex:1;min-width:0">
+<div style="font: 700 18px/1.3 Pretendard,sans-serif; letter-spacing: -.4px; font-weight: 600; font-size: 14px">수민</div>
+<span style="display: inline-block; margin-left: -4px; padding: 4px 9px; border-radius: 8px; background: {{ roleBg }}; color: {{ roleColor }}; font: 600 11px/1 Pretendard,sans-serif; letter-spacing: .3px">{{ roleLabel }}</span><div style="margin-top:4px"></div>
+</div>
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
+</div>
+
+<div style="margin:0 14px;border:1px solid #EFEFEF;border-radius:8px;display:flex;overflow:hidden;background:#fff">
+<sc-for list="{{ orderStats }}" as="stat" hint-placeholder-count="4">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:16px 0;cursor:{{ stat.cursor }}" style-active="opacity:{{ stat.pressOpacity }}">
+<span style="font:700 19px/1 Pretendard,sans-serif;color:{{ stat.color }}">{{ stat.count }}</span>
+<span style="font:400 11.5px/1 Pretendard,sans-serif;color:{{ stat.labelColor }}">{{ stat.label }}</span>
+</div>
+</sc-for>
+</div>
+
+<div style="height:8px"></div>
+
+<div style="padding:18px 14px 6px;font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">쇼핑 정보</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 14px;cursor:pointer"><span style="font:500 15px/1 Pretendard,sans-serif">주문 내역</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 14px;cursor:pointer"><span style="font:500 15px/1 Pretendard,sans-serif">배송지 관리</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:10px"></div>
+
+<div style="padding:18px 14px 6px;font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">문의</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 14px;cursor:pointer"><span style="font:500 15px/1 Pretendard,sans-serif">문의 내역</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 14px;cursor:pointer"><span style="font:500 15px/1 Pretendard,sans-serif">고객센터</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 14px;cursor:pointer"><span style="font:500 15px/1 Pretendard,sans-serif">공지사항</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:10px"></div>
+
+<div style="padding:18px 14px 6px;font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">도움말</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px;cursor:pointer"><span style="font:400 14.5px/1 Pretendard,sans-serif;color:#3C3C3C">서비스 이용약관</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px;cursor:pointer"><span style="font:400 14.5px/1 Pretendard,sans-serif;color:#3C3C3C">개인정보 처리방침</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px;cursor:pointer"><span style="font:400 14.5px/1 Pretendard,sans-serif;color:#3C3C3C">오픈소스 라이선스</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px"><span style="font:400 14.5px/1 Pretendard,sans-serif;color:#3C3C3C">버전 정보</span><span style="font:400 13px/1 Pretendard,sans-serif;color:#A9A9A9">v1.0.0</span></div>
+
+<div style="margin-top:10px;background:#F7F7F8;padding:20px 14px 26px">
+<div onClick="{{ toggleBiz }}" style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:6px 0;margin:-6px 0" style-active="opacity:.5">
+<span style="font:600 11.5px/1 Pretendard,sans-serif;color:#8E8E8E">쇼룸즈 사업자 정보</span>
+<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;transform:{{ bizChevron }}"><path d="M5 9l7 7 7-7"></path></svg>
+</div>
+<sc-if value="{{ bizOpen }}" hint-placeholder-val="{{ true }}">
+<div style="margin-top:12px;display:grid;gap:5px;font:400 11px/1.65 Pretendard,sans-serif;color:#737373">
+<div>주식회사 쇼룸즈 · 대표 김하진</div>
+<div>서울특별시 강남구 테헤란로 000, 00층</div>
+<div>사업자등록번호 000-00-00000</div>
+<div>통신판매업신고 제0000-서울강남-0000호</div>
+<div>개인정보보호책임자 이수민</div>
+<div>고객센터 1500-0000 · help@showroomz.kr</div>
+<div>평일 10:00–18:00 (점심 13:00–14:00 · 주말·공휴일 휴무)</div>
+</div>
+<div style="margin-top:14px;font:400 11px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">쇼룸즈는 통신판매중개자로서 공동구매의 거래 당사자가 아니며, 상품의 정보·거래·배송·환불에 대한 책임은 각 판매자에게 있습니다.</div>
+</sc-if>
+<div style="margin-top:16px;display:flex;gap:14px">
+<span style="font:500 11px/1 Pretendard,sans-serif;color:#8E8E8E;cursor:pointer">이용약관</span>
+<span style="font:500 11px/1 Pretendard,sans-serif;color:#8E8E8E;cursor:pointer">개인정보 처리방침</span>
+<span style="font:500 11px/1 Pretendard,sans-serif;color:#8E8E8E;cursor:pointer">사업자정보확인</span>
+</div>
+<div style="margin-top:14px;font:400 11px/1 Pretendard,sans-serif;color:#8E8E8E">© 2026 Showroomz Inc.</div>
+</div>
+
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:9px 0 0;background:#fff">
+<div style="display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.6 12 4.2l8 6.4V19a1.4 1.4 0 0 1-1.4 1.4h-3.9v-5.9h-5.4v5.9H5.4A1.4 1.4 0 0 1 4 19z"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">홈</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"></circle><path d="M3.5 19.5c0-3.1 2.5-5.2 5.5-5.2s5.5 2.1 5.5 5.2"></path><path d="M16.2 11.2a3 3 0 1 0 0-6"></path><path d="M17.2 14.4c2 .6 3.3 2.5 3.3 5.1"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">팔로잉</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">좋아요</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#0F0F0F"><svg width="25" height="25" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="3.7"></circle><path d="M12 13.6c-4.1 0-7.4 2.9-7.4 6.5 0 .5.4.9.9.9h13c.5 0 .9-.4.9-.9 0-3.6-3.3-6.5-7.4-6.5z"></path></svg><span style="font:600 10px/1 Pretendard,sans-serif">마이</span></div>
+</div>
+<div style="height:24px;display:flex;align-items:center;justify-content:center"><div style="width:140px;height:5px;border-radius:3px;background:#0F0F0F"></div></div>
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>구조</b> — 프로필 · 주문 현황 · 3개 그룹(쇼핑 정보 / 문의 / 도움말)을 8px 회색 밴드로 끊었습니다. 주문 현황은 칸 구분선 없이 하나의 카드(R8 외곽선)로 두고, <b>0건은 숫자·라벨 모두 회색 + 탭 불가</b>로 비활성화됩니다(예시의 상품준비중). 그룹 안에서 액션 항목은 15/500, 열람만 하는 도움말은 14.5/400 회색으로 낮췄습니다. <b>역할 칩</b> — 닉네임 옆 배지(R8, 배지 규격 동일). 이름 아랫줄에 놓았습니다. USER는 중립 회색, INFLUENCER는 바이올렛→핑크로 아주 옅게 흐르는 틴트 그라디언트(#E4DAFB → #F7DDEE → #FCDDE6) 위에 바이올렛 텍스트(#6B48CC) — 로즈와 겹치지 않아 공구 신호를 침범하지 않으면서, 그라디언트 없이 배지 규격(R8 · 11/600) 안에 머뭅니다. 우측 Tweaks에서 두 상태를 전환해 볼 수 있습니다. 헤더는 설정 · 장바구니 순으로 바꿨습니다. <b>푸터</b> — 회색 밴드(#F7F7F8) 안에 사업자 정보를 접기/펼치기로 넣고, 11px/#737373로 두었습니다 — 사업자등록번호·통신판매업신고번호·고객센터는 법정 고지이자 실제로 읽어야 하는 정보라 명도차(4.6:1)를 확보하고, 위계는 색이 아니라 <b>크기(11px)와 굵기</b>로만 낮췄습니다. 통신판매중개자 고지는 전자상거래법상 필수 표기라 별도 문단으로 분리했고, 약관·처리방침 링크는 위 [도움말] 그룹과 중복되지만 푸터 관례상 함께 두었습니다.</p>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>마이 · 로그인 전</div>
+<div class="dv-card">
+<div data-screen-label="마이 로그인 전" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="display:flex;align-items:center;padding:2px 16px 12px">
+<span style="font: 700 20px/1 Pretendard,sans-serif; letter-spacing: -.5px; font-size: 18px">마이</span>
+<div style="flex:1"></div>
+<div style="display:flex;gap:18px;color:#0F0F0F">
+<div style="position:relative;display:flex;padding:9px;margin:-9px;cursor:pointer"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"><circle cx="12" cy="12" r="3.1"></circle><path d="M19.4 14.6a1.5 1.5 0 0 0 .3 1.65l.05.05a1.8 1.8 0 1 1-2.55 2.55l-.05-.05a1.5 1.5 0 0 0-1.65-.3 1.5 1.5 0 0 0-.9 1.37V20a1.8 1.8 0 1 1-3.6 0v-.07a1.5 1.5 0 0 0-.98-1.37 1.5 1.5 0 0 0-1.65.3l-.05.05A1.8 1.8 0 1 1 5.75 16.3l.05-.05a1.5 1.5 0 0 0 .3-1.65 1.5 1.5 0 0 0-1.37-.9H4a1.8 1.8 0 1 1 0-3.6h.07a1.5 1.5 0 0 0 1.37-.98 1.5 1.5 0 0 0-.3-1.65l-.05-.05A1.8 1.8 0 1 1 7.65 4.87l.05.05a1.5 1.5 0 0 0 1.65.3H9.4a1.5 1.5 0 0 0 .9-1.37V4a1.8 1.8 0 1 1 3.6 0v.07a1.5 1.5 0 0 0 .9 1.37 1.5 1.5 0 0 0 1.65-.3l.05-.05a1.8 1.8 0 1 1 2.55 2.55l-.05.05a1.5 1.5 0 0 0-.3 1.65v.08a1.5 1.5 0 0 0 1.37.9H20a1.8 1.8 0 1 1 0 3.6h-.07a1.5 1.5 0 0 0-1.37.9z"></path></svg></div>
+<div style="position:relative;display:flex;padding:9px;margin:-9px;cursor:pointer"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"><path d="M4.4 7.5h15.2l-1.1 12.3H5.5z"></path><path d="M8.8 10V6.6a3.2 3.2 0 0 1 6.4 0V10"></path></svg></div>
+</div>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:24px 14px 22px">
+<div style="font:700 19px/1.5 Pretendard,sans-serif;letter-spacing:-.5px;text-wrap:pretty">로그인하고<br>공구 소식을 받아보세요</div>
+<div style="margin-top:9px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">팔로우한 쇼룸의 새 공구와 주문 내역을<br>한곳에서 확인할 수 있어요</div>
+<div style="margin-top: 18px; height: 45px; border-radius: 8px; background: #F2456E; display: flex; align-items: center; justify-content: center; font: 600 15.5px/1 Pretendard,sans-serif; color: #fff; cursor: pointer; font-size: 14px" style-active="opacity:.75">회원가입 하고 3초 만에 시작하기</div>
+</div>
+
+<div style="height:5px;background:#F7F7F8"></div>
+
+<div style="padding:18px 14px 6px;font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">쇼핑 정보</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 14px;cursor:pointer" style-active="background:#F7F7F8"><span style="font:500 15px/1 Pretendard,sans-serif">주문 내역</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 14px;cursor:pointer" style-active="background:#F7F7F8"><span style="font:500 15px/1 Pretendard,sans-serif">배송지 관리</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg></div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:10px"></div>
+
+<div style="padding:18px 14px 6px;font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">문의</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 14px;cursor:pointer" style-active="background:#F7F7F8"><span style="font:500 15px/1 Pretendard,sans-serif">고객센터</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 14px;cursor:pointer" style-active="background:#F7F7F8"><span style="font:500 15px/1 Pretendard,sans-serif">공지사항</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg></div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:10px"></div>
+
+<div style="padding:18px 14px 6px;font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">도움말</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px;cursor:pointer" style-active="background:#F7F7F8"><span style="font:400 14.5px/1 Pretendard,sans-serif;color:#3C3C3C">서비스 이용약관</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px;cursor:pointer" style-active="background:#F7F7F8"><span style="font:400 14.5px/1 Pretendard,sans-serif;color:#3C3C3C">개인정보 처리방침</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px;cursor:pointer" style-active="background:#F7F7F8"><span style="font:400 14.5px/1 Pretendard,sans-serif;color:#3C3C3C">오픈소스 라이선스</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px"><span style="font:400 14.5px/1 Pretendard,sans-serif;color:#3C3C3C">버전 정보</span><span style="font:400 13px/1 Pretendard,sans-serif;color:#8E8E8E">v1.0.0</span></div>
+
+<div style="margin-top:10px;background:#F7F7F8;padding:20px 14px 26px">
+<div style="font:600 11.5px/1 Pretendard,sans-serif;color:#8E8E8E">쇼룸즈 사업자 정보</div>
+<div style="margin-top:12px;display:grid;gap:5px;font:400 11px/1.65 Pretendard,sans-serif;color:#737373">
+<div>주식회사 쇼룸즈 · 대표 김하진</div>
+<div>서울특별시 강남구 테헤란로 000, 00층</div>
+<div>사업자등록번호 000-00-00000</div>
+<div>통신판매업신고 제0000-서울강남-0000호</div>
+<div>고객센터 1500-0000 · help@showroomz.kr</div>
+</div>
+<div style="margin-top:14px;font:400 11px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">쇼룸즈는 통신판매중개자로서 공동구매의 거래 당사자가 아니며, 상품의 정보·거래·배송·환불에 대한 책임은 각 판매자에게 있습니다.</div>
+<div style="margin-top:14px;font:400 11px/1 Pretendard,sans-serif;color:#8E8E8E">© 2026 Showroomz Inc.</div>
+</div>
+
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:9px 0 0;background:#fff">
+<div style="display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.6 12 4.2l8 6.4V19a1.4 1.4 0 0 1-1.4 1.4h-3.9v-5.9h-5.4v5.9H5.4A1.4 1.4 0 0 1 4 19z"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">홈</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"></circle><path d="M3.5 19.5c0-3.1 2.5-5.2 5.5-5.2s5.5 2.1 5.5 5.2"></path><path d="M16.2 11.2a3 3 0 1 0 0-6"></path><path d="M17.2 14.4c2 .6 3.3 2.5 3.3 5.1"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">팔로잉</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">좋아요</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#0F0F0F"><svg width="25" height="25" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="3.7"></circle><path d="M12 13.6c-4.1 0-7.4 2.9-7.4 6.5 0 .5.4.9.9.9h13c.5 0 .9-.4.9-.9 0-3.6-3.3-6.5-7.4-6.5z"></path></svg><span style="font:600 10px/1 Pretendard,sans-serif">마이</span></div>
+</div>
+<div style="height:24px;display:flex;align-items:center;justify-content:center"><div style="width:140px;height:5px;border-radius:3px;background:#0F0F0F"></div></div>
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>로그인 전</b> — 프로필·주문 현황 자리를 <b>가치 문구 + 로그인 CTA</b>로 대체했습니다. 로그인이 필요한 항목(주문 내역·배송지)도 <b>일반 항목과 똑같이</b> 보여줍니다 — 꼬리표나 회색 처리 없이, 탭하면 C0 로그인으로 보내고 로그인 후 원래 가려던 화면으로 복귀합니다(잠긴 것처럼 보이면 탭을 시도하지 않아 전환이 줄어듭니다). 로그인 없이 쓸 수 있는 고객센터·공지사항·도움말·푸터는 정상 색으로 유지하고, [문의 내역]은 계정에 종속되므로 이 상태에서는 제거했습니다. 헤더 장바구니 배지도 없앴습니다(비로그인 장바구니는 로컬 보관 여부에 따라 달라지니 확인이 필요합니다).</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;role&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;유저&quot;,&quot;인플루언서&quot;],&quot;default&quot;:&quot;유저&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;프로필&quot;}}">
+class Component extends DCLogic {
+  state = { biz: true };
+  renderVals(){
+    const stats = [
+      { label:'결제완료', count:2 },
+      { label:'상품준비중', count:0 },
+      { label:'배송중', count:1 },
+      { label:'배송완료', count:3 }
+    ];
+    const roleCur = this.state.role ?? this.props.role ?? '유저';
+    const influencer = roleCur === '인플루언서';
+    return {
+      swRole: ['유저', '인플루언서'].map(label => ({
+        label,
+        pick: () => this.setState({ role: label }),
+        bg: label === roleCur ? '#1a1a1a' : '#fff',
+        color: label === roleCur ? '#fff' : 'rgba(0,0,0,.62)',
+        border: label === roleCur ? '#1a1a1a' : 'rgba(0,0,0,.14)',
+        font: (label === roleCur ? '600' : '400') + ' 11px/1 Pretendard,sans-serif'
+      })),
+      bizOpen: this.state.biz,
+      bizChevron: this.state.biz ? 'rotate(180deg)' : 'none',
+      toggleBiz: () => this.setState(s => ({ biz: !s.biz })),
+      roleLabel: influencer ? 'INFLUENCER' : 'USER',
+      roleBg: influencer ? 'linear-gradient(100deg,#E4DAFB,#F7DDEE 62%,#FCDDE6)' : '#F4F4F5',
+      roleColor: influencer ? '#6B48CC' : '#737373',
+      orderStats: stats.map(s => ({
+        label: s.label,
+        count: String(s.count),
+        color: s.count > 0 ? '#0F0F0F' : '#C7C7C7',
+        labelColor: s.count > 0 ? '#8E8E8E' : '#C7C7C7',
+        cursor: s.count > 0 ? 'pointer' : 'default',
+        pressOpacity: s.count > 0 ? '.5' : '1'
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

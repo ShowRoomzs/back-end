@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>WF · 소비자 앱 02 — 주문·반품 (C10→C11→C12)</title>
+<style>
+/* ===== 와이어프레임 킷 v1 (그레이스케일 전용 · 01 파일과 동일 규격) ===== */
+body{margin:0;padding:32px;background:#e9e9e9;font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#333}
+.kit-header{max-width:2400px;margin:0 auto 24px;font-size:13px;color:#666}
+.kit-header h1{font-size:16px;color:#222;margin:0 0 4px}
+.flow{display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding-bottom:24px}
+.frame-wrap{flex:0 0 auto;width:390px}
+.frame-title{font-size:12px;font-weight:700;color:#222;margin:0 0 6px}
+.frame-title span{font-weight:400;color:#888}
+.frame{position:relative;width:390px;min-height:844px;background:#fff;border:2px solid #999;box-sizing:border-box}
+.fold{position:absolute;left:0;right:0;top:844px;border-top:2px dashed #bbb;z-index:5}
+.fold::after{content:"▲ 1st 뷰포트 (844px)";position:absolute;right:4px;top:2px;font-size:9px;color:#aaa}
+.arrow{flex:0 0 auto;width:90px;padding-top:380px;text-align:center}
+.arrow .line{font-size:26px;color:#666}
+.arrow .lbl{font-size:10px;color:#555;background:#fff;border:1px solid #ccc;border-radius:3px;padding:3px 4px;display:inline-block;line-height:1.4}
+.hd{display:flex;align-items:center;gap:8px;padding:12px;border-bottom:1px solid #ddd;font-size:13px;font-weight:700}
+.hd .ic{margin-left:auto;display:flex;gap:10px}
+.ic i{width:22px;height:22px;border:1px solid #999;border-radius:4px;display:inline-block;font-style:normal;font-size:10px;text-align:center;line-height:22px;color:#777}
+.sec{padding:12px;border-bottom:1px solid #eee}
+.box{background:#ddd;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;color:#888;font-size:11px}
+.row{display:flex;gap:10px;align-items:center}
+.t1{font-size:14px;font-weight:700;color:#222}
+.t2{font-size:12px;color:#444}
+.t3{font-size:11px;color:#888}
+.price-old{font-size:12px;color:#999;text-decoration:line-through}
+.price{font-size:16px;font-weight:800;color:#111}
+.btn{display:block;text-align:center;background:#444;color:#fff;font-size:13px;font-weight:700;padding:13px;border-radius:6px}
+.btn-o{display:block;text-align:center;background:#fff;color:#444;border:1.5px solid #999;font-size:12px;font-weight:700;padding:9px;border-radius:6px}
+.btn-dis{display:block;text-align:center;background:#eee;color:#aaa;font-size:13px;font-weight:700;padding:13px;border-radius:6px}
+.badge{display:inline-block;font-size:10px;font-weight:700;border:1px solid #666;color:#555;border-radius:3px;padding:2px 6px}
+.badge-fill{display:inline-block;font-size:10px;font-weight:700;background:#666;color:#fff;border-radius:3px;padding:3px 6px}
+.input{background:#fafafa;border:1px solid #ccc;border-radius:5px;padding:10px;font-size:12px;color:#999}
+.tabbar{display:flex;border-top:1px solid #ddd;position:absolute;bottom:0;left:0;right:0;background:#fff}
+.tabbar div{flex:1;text-align:center;padding:10px 0 12px;font-size:10px;color:#888}
+.tabbar div.on{color:#222;font-weight:700}
+.tabbar div::before{content:"";display:block;width:20px;height:20px;border:1px solid #bbb;border-radius:4px;margin:0 auto 3px}
+.cta-fix{position:absolute;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;padding:10px 12px 14px;box-sizing:border-box;display:flex;gap:8px}
+.cta-fix .btn{flex:1;margin:0}
+.tabs{display:flex;border-bottom:1px solid #eee}
+.tabs .tab{flex:1;text-align:center;padding:12px 0;font-size:12.5px;color:#999}
+.tabs .tab.on{color:#222;font-weight:700;border-bottom:2px solid #222}
+.note{margin:8px 12px;border:1.5px dashed #999;background:#f4f4f4;border-radius:4px;padding:7px 9px;font-size:10.5px;line-height:1.55;color:#555}
+.note b{color:#333}
+.note.legal{border-color:#777;background:#ececec}
+.delivbox{border:1px solid #e0e0e0;border-radius:6px;background:#fafafa;padding:10px;margin-top:8px}
+.qty{display:inline-flex;border:1px solid #ccc;border-radius:4px;font-size:12px}
+.qty span{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-left:1px solid #ccc}
+.qty span:first-child{border-left:0}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#444;padding:6px 0}
+.check::before{content:"";flex:0 0 16px;height:16px;border:1.5px solid #999;border-radius:3px;margin-top:1px}
+hr.dv{border:0;border-top:8px solid #f1f1f1;margin:0}
+/* 주문 상태 진행바 */
+.steps{display:flex;gap:0;padding:12px}
+.steps div{flex:1;text-align:center;font-size:10px;color:#bbb;position:relative}
+.steps div::before{content:"";display:block;width:12px;height:12px;border-radius:50%;background:#ddd;margin:0 auto 4px}
+.steps div.on{color:#222;font-weight:700}
+.steps div.on::before{background:#444}
+.radio-item{display:flex;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid #eee}
+.radio-item .rd{width:19px;height:19px;border:1.5px solid #999;border-radius:50%;flex:0 0 auto;position:relative;background:#fff}
+.radio-item.on .rd{border-color:#222;border-width:2px}
+.radio-item.on .rd::after{content:"";position:absolute;top:3.5px;left:3.5px;width:10px;height:10px;border-radius:50%;background:#222}
+.close-x{width:24px;height:24px;border:1px solid #999;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#666}
+.sheet-scrim{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;padding:16px;box-sizing:border-box;box-shadow:0 -2px 14px rgba(0,0,0,.12)}
+.sheet .grip{width:36px;height:4px;background:#ccc;border-radius:2px;margin:0 auto 14px}
+.sheet-cta{position:absolute;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;padding:12px 16px 16px;box-sizing:border-box}
+</style>
+</head>
+<body>
+
+<div class="kit-header">
+  <h1>소비자 앱 · 주문·반품 와이어프레임 (WF-C-02)</h1>
+  C10 주문 내역·상세·반품 요청 → C11 배송지 관리 → C12 문의 내역·작성 · 390×844 · lo-fi · 근거: ② draft29 §10 / ④ draft14 §3 · 2026.07
+</div>
+
+<div class="flow">
+
+<!-- ============ 마이 탭 (진입 허브) ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">마이 탭 <span>— 활동 내역 허브</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">마이
+      <span class="ic"><i>장바구니</i><i>설정</i></span>
+    </div>
+    <div class="sec">
+      <div class="row">
+        <div class="box" style="width:52px;height:52px;border-radius:50%">아바타</div>
+        <div style="flex:1"><div class="t1">닉네임</div><div class="t3">소셜 계정 연결</div></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="row" style="justify-content:space-between;text-align:center">
+        <div style="flex:1"><div class="t1" style="font-size:17px">2</div><div class="t3" style="margin-top:2px">결제완료</div></div>
+        <div style="flex:1"><div class="t1" style="font-size:17px">1</div><div class="t3" style="margin-top:2px">상품준비중</div></div>
+        <div style="flex:1"><div class="t1" style="font-size:17px">1</div><div class="t3" style="margin-top:2px">배송중</div></div>
+        <div style="flex:1"><div class="t1" style="font-size:17px">3</div><div class="t3" style="margin-top:2px">배송완료</div></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="t3" style="font-weight:700;margin-bottom:4px">쇼핑 정보</div>
+      <div class="row" style="justify-content:space-between;padding:8px 0"><span class="t2" style="font-weight:700">주문 내역</span><span class="t3">›</span></div>
+      <div class="row" style="justify-content:space-between;padding:8px 0"><span class="t2" style="font-weight:700">배송지 관리</span><span class="t3">›</span></div>
+    </div>
+    <div class="sec">
+      <div class="t3" style="font-weight:700;margin-bottom:4px">문의</div>
+      <div class="row" style="justify-content:space-between;padding:8px 0"><span class="t2" style="font-weight:700">문의 내역</span><span class="t3">›</span></div>
+      <div class="row" style="justify-content:space-between;padding:8px 0"><span class="t2">고객센터 (C16)</span><span class="t3">›</span></div>
+      <div class="row" style="justify-content:space-between;padding:8px 0"><span class="t2">공지사항 (C17)</span><span class="t3">›</span></div>
+    </div>
+    <div class="sec">
+      <div class="t3" style="font-weight:700;margin-bottom:4px">도움말</div>
+      <div class="row" style="justify-content:space-between;padding:6px 0"><span class="t2">서비스 이용약관</span><span class="t3">›</span></div>
+      <div class="row" style="justify-content:space-between;padding:6px 0"><span class="t2">개인정보 처리방침</span><span class="t3">›</span></div>
+      <div class="row" style="justify-content:space-between;padding:6px 0"><span class="t2">오픈소스 라이선스</span><span class="t3">›</span></div>
+      <div class="row" style="justify-content:space-between;padding:6px 0"><span class="t2">버전 정보</span><span class="t3">v1.0.0</span></div>
+    </div>
+    <div class="note">※ <b>주문 현황</b> = 진행 중 하위주문 상태별 개수(② 이행 상태). 숫자 탭 → <b>주문 내역(C10-a)으로 이동</b>(필터링 없음, 전체 목록 노출)</div>
+    <div class="note">※ 그룹 = <b>쇼핑 정보</b>(주문·배송지) / <b>문의</b>(문의 내역=C12·고객센터=C16·공지사항=C17 — 문의·안내성 액션 묶음) / <b>도움말</b>(약관·정책·버전, 문서 열람용·액션 없음)</div>
+    <div class="note">※ 상단 <b>장바구니 아이콘</b> 추가(설정 좌측) — 다른 소비자 앱 화면(C4·C7 등)과 헤더 아이콘 구성 통일. 탭 시 C8로 이동</div>
+    <div class="tabbar"><div>홈</div><div>팔로잉</div><div>좋아요</div><div class="on">마이</div></div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">[주문 내역]</div></div>
+
+<!-- ============ C10-a 주문 내역 목록 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C10-a 주문 내역 <span>— 하위주문(브랜드) 단위 카드</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 주문 내역</div>
+    <div class="sec">
+      <div class="t3" style="margin-bottom:6px">2026.07.05 주문 · NO. 2607050001</div>
+      <div style="border:1px solid #ddd;border-radius:8px;padding:10px;margin-bottom:8px">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px">
+          <span class="badge-fill">배송중</span><span class="t3">상세 ›</span>
+        </div>
+        <div class="row">
+          <div class="box" style="width:56px;height:56px">상품</div>
+          <div style="flex:1">
+            <div class="t3" style="font-weight:700">브랜드명</div>
+            <div class="t2">상품명 / 옵션 A / 수량 2</div>
+            <div class="t2" style="font-weight:700;margin-top:3px">33,200</div>
+          </div>
+        </div>
+      </div>
+      <div style="border:1px solid #ddd;border-radius:8px;padding:10px">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px">
+          <span class="badge-fill">배송중</span><span class="t3">상세 ›</span>
+        </div>
+        <div class="row">
+          <div class="box" style="width:56px;height:56px">상품</div>
+          <div style="flex:1">
+            <div class="t3" style="font-weight:700">브랜드명</div>
+            <div class="t2">상품명 / 옵션 B / 수량 1</div>
+            <div class="t2" style="font-weight:700;margin-top:3px">16,600</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="t3" style="margin-bottom:6px">2026.06.28 주문 · NO. 2606280003</div>
+      <div style="border:1px solid #ddd;border-radius:8px;padding:10px">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px">
+          <span class="badge">구매확정</span><span class="t3">상세 ›</span>
+        </div>
+        <div class="row">
+          <div class="box" style="width:56px;height:56px">상품</div>
+          <div style="flex:1">
+            <div class="t3" style="font-weight:700">브랜드명</div>
+            <div class="t2">상품명 / 옵션 C / 수량 1</div>
+            <div class="t2" style="font-weight:700;margin-top:3px">18,900</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="t3" style="margin-bottom:6px">2026.06.20 주문 · NO. 2606200011</div>
+      <div style="border:1px solid #ddd;border-radius:8px;padding:10px;opacity:.65">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px">
+          <span><span class="badge">취소</span> <span class="t3">완료 · 환불 18,900원</span></span><span class="t3">상세 ›</span>
+        </div>
+        <div class="row">
+          <div class="box" style="width:56px;height:56px">상품</div>
+          <div style="flex:1"><div class="t3" style="font-weight:700">브랜드명</div><div class="t2">상품명 / 옵션 A / 수량 1</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="t3" style="margin-bottom:6px">2026.06.15 주문 · NO. 2606150007</div>
+      <div style="border:1px solid #ddd;border-radius:8px;padding:10px">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px">
+          <span><span class="badge-fill">반품</span> <span class="t3">진행 중 · 회수중</span></span><span class="t3">상세 ›</span>
+        </div>
+        <div class="row">
+          <div class="box" style="width:56px;height:56px">상품</div>
+          <div style="flex:1"><div class="t3" style="font-weight:700">브랜드명</div><div class="t2">상품명 / 옵션 B / 수량 1</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="t3" style="margin-bottom:6px">2026.06.10 주문 · NO. 2606100002</div>
+      <div style="border:1px solid #ddd;border-radius:8px;padding:10px">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px">
+          <span><span class="badge-fill">교환</span> <span class="t3">진행 중 · 재발송</span></span><span class="t3">상세 ›</span>
+        </div>
+        <div class="row">
+          <div class="box" style="width:56px;height:56px">상품</div>
+          <div style="flex:1"><div class="t3" style="font-weight:700">브랜드명</div><div class="t2">상품명 / 옵션 A → C / 수량 1</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="note">※ <b>같은 브랜드·같은 주문이어도 SKU(옵션)별로 카드를 완전히 분리</b>(같은 상태 배지가 반복돼도 항목 단위 1카드 = 1항목). 반품·교환·취소가 항목 단위라 목록도 항목 단위로 나눠야 상세 진입이 명확함. 배지 = <b>진행 상태</b>(상품준비중/배송중/배송완료/구매확정) 또는 <b>취소 / 반품 / 교환</b>(한 단어 배지 + 옆에 진행 중·완료 표기). 환불은 결과라 배지 아님 — 취소·반품 카드에 <b>환불 금액</b>으로 표기</div>
+    <div class="note">※ 반품·교환의 세부 단계(요청→회수중→반송/재발송)는 상세에서. 목록은 "진행 중·완료"로 축약</div>
+    <div class="note">※ 시간 역순, 무한 스크롤. 빈 상태 = "주문 내역이 없습니다" + 홈 이동 버튼</div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">카드 탭</div></div>
+
+<!-- ============ C10-b 주문 상세 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C10-b 주문 상세 <span>— 배송 상태 + 항목 액션</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 주문 상세</div>
+    <div class="sec">
+      <div class="t3">NO. 2607050001 · 2026.07.05</div>
+      <div class="steps">
+        <div class="on">결제완료</div><div class="on">상품준비중</div><div class="on">배송중</div><div class="on">배송완료</div><div>구매확정</div>
+      </div>
+      <div class="delivbox">
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <span style="font-size:13px;font-weight:700;color:#222">배송완료</span>
+          <span class="t3">2026.07.09 14:20 기준</span>
+        </div>
+        <div class="t3" style="margin-top:5px">CJ대한통운 · 송장 0000-0000-0000</div>
+        <div class="t3" style="margin-top:3px">최종 위치: ○○지점 배송 완료</div>
+        <div class="row" style="justify-content:flex-end;margin-top:8px">
+          <span class="btn-o" style="padding:5px 12px;font-size:11px;margin:0">택배사에서 상세 보기 ↗</span>
+        </div>
+      </div>
+      <div class="t3" style="margin-top:6px">구매확정 예정 07.16</div>
+    </div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:8px">주문 상품 <span class="t3">(2개 항목)</span></div>
+      <div style="padding-bottom:12px;border-bottom:1px solid #f0f0f0;margin-bottom:12px">
+        <div class="row">
+          <div class="box" style="width:56px;height:56px">상품</div>
+          <div style="flex:1">
+            <div class="t3" style="font-weight:700">브랜드명</div>
+            <div class="t2">상품명 / 옵션 A / 수량 2</div>
+            <div style="margin-top:3px"><span class="price-old" style="font-size:10px">42,600</span> <span class="t2" style="font-weight:700">공구가 33,200</span></div>
+          </div>
+        </div>
+        <div class="row" style="gap:8px;margin-top:10px">
+          <span class="btn-o" style="flex:1;margin:0">반품 요청</span>
+          <span class="btn-o" style="flex:1;margin:0">교환 요청</span>
+        </div>
+      </div>
+      <div>
+        <div class="row">
+          <div class="box" style="width:56px;height:56px">상품</div>
+          <div style="flex:1">
+            <div class="t3" style="font-weight:700">브랜드명</div>
+            <div class="t2">상품명 / 옵션 B / 수량 1</div>
+            <div style="margin-top:3px"><span class="price-old" style="font-size:10px">21,400</span> <span class="t2" style="font-weight:700">공구가 16,600</span></div>
+          </div>
+        </div>
+        <div class="row" style="gap:8px;margin-top:10px">
+          <span class="btn-o" style="flex:1;margin:0">반품 요청</span>
+          <span class="btn-o" style="flex:1;margin:0">교환 요청</span>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:6px">배송지 <span class="t3">(주문 시점 스냅샷)</span></div>
+      <div class="t3" style="line-height:1.7">홍길동 / 010-0000-0000<br>서울특별시 ○○구 ○○로 00<br>요청사항: 문 앞에 놓아주세요</div>
+    </div>
+    <div class="sec">
+      <div class="row" style="justify-content:space-between"><span class="t2">총 상품 가격</span><span class="t2">64,000</span></div>
+      <div class="row" style="justify-content:space-between;margin-top:4px"><span class="t2">할인 가격</span><span class="t2">− 14,200</span></div>
+      <div class="row" style="justify-content:space-between;margin-top:4px"><span class="t2">배송비</span><span class="t2">3,000</span></div>
+      <div class="row" style="justify-content:space-between;margin-top:8px"><span class="t1">총 결제 금액</span><span class="price">52,800</span></div>
+      <div class="t3" style="margin-top:6px">결제수단: 신용카드 (일시불)</div>
+    </div>
+    <div class="note">※ 액션 노출 규칙(② §10 전이표): <b>결제완료·준비 전 = [주문 취소]</b> / 상품준비중·배송중 = <b>액션 없음</b> / <b>배송완료~구매확정 전 = [반품 요청]·[교환 요청]</b> / 구매확정 이후 = 액션 없음. <b>현재 예시 = 배송완료 상태</b>라 반품·교환 버튼 노출. 상품 문의 버튼 없음(상품 문의는 C7 QnA 경로로 일원화)</div>
+    <div class="note">※ <b>반품·교환·취소는 SKU(옵션) 항목 단위</b> — 항목마다 버튼 각각 노출, 항목별로 독립 신청. 버튼 탭 시 해당 항목 정보를 가지고 C10-c·C10-d로 진입(상품 재선택 없음)</div>
+    <div class="note">※ <b>배송 추적 = 인앱 내부 상태 표시(B안, 2026.07 변경)</b> — 택배 연동(A안, 파트너센터 wf-partner-05)의 <b>배송추적 API 자동 갱신</b> 데이터를 그대로 노출: 현재 상태(배송중·배송완료 등)·택배사·송장번호·<b>최종 위치·갱신 시각</b>. 전체 배송 이력 타임라인은 MVP 제외 — 상세는 <b>[택배사에서 상세 보기]</b> 외부 링크 병행. 미연동 브랜드(수기 송장) = 상태·송장만 표시, 최종 위치 미표시</div>
+    <div class="note">※ [교환 요청] = <b>교환 옵션 재고 있을 때만</b> 활성. 구매확정 = 배송완료 후 7일 자동</div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">↘</div><div class="lbl">반품·교환<br>진행 중 상태</div></div>
+
+<!-- ============ C10-b' 반품·교환 진행 상세 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C10-b' 반품/교환 진행 상세 <span>— 세부 상태 → 배지 매핑</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 주문 상세</div>
+    <div class="sec">
+      <div class="row" style="justify-content:space-between">
+        <span><span class="badge-fill">반품</span> <span class="t3">진행 중</span></span>
+        <span class="t3">NO. 2606150007</span>
+      </div>
+      <div class="steps" style="margin-top:8px">
+        <div class="on">접수</div><div class="on">회수중</div><div>입고 완료</div><div>환불 완료</div>
+      </div>
+      <div class="t3" style="text-align:center">회수 송장 0000-0000 · 수거 예정 07.12</div>
+    </div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:8px">반품 상품</div>
+      <div class="row">
+        <div class="box" style="width:52px;height:52px">상품</div>
+        <div style="flex:1"><div class="t3" style="font-weight:700">브랜드명</div><div class="t2">상품명 / 옵션 B / 수량 1</div></div>
+      </div>
+      <div class="t3" style="margin-top:8px;line-height:1.7">사유: 단순변심<br>예상 환불액: 18,900원 <span class="badge">[쟁점 B — 배송비 공제 문구]</span></div>
+    </div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:6px">진행 상태 안내</div>
+      <div class="t3" style="line-height:1.8">
+        접수 → 승인 대기<br>
+        <b>회수중 → 택배사 수거 진행 (현재)</b><br>
+        입고 완료 → 환불 대기<br>
+        환불 완료 → 카드 취소 · 금액·시점 표시
+      </div>
+    </div>
+    <div class="note">※ <b>세부 상태 → 소비자 표기 매핑</b>(② 상태 → 배지+한 줄). 반품: 반품요청=<b>접수</b> / 회수중=<b>회수중</b> / 반송완료=<b>입고 완료·환불 예정</b> / (환불 실행)=<b>완료·환불 ○○원</b> / 거절=<b>반려·사유 확인</b></div>
+    <div class="note legal">⚠ 거절 상태 화면 = 사유·증빙 열람 + <b>[배송비 결제하기]</b> 버튼(선결제) + 미결제 시 거절 보류 안내([쟁점 C — 보관 기간·처분])</div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">↘</div><div class="lbl">교환 진행<br>상세는 다름</div></div>
+
+<!-- ============ C10-b'' 교환 진행 상세 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C10-b'' 교환 진행 상세 <span>— 환불 없음·재발송으로 종결</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 주문 상세</div>
+    <div class="sec">
+      <div class="row" style="justify-content:space-between">
+        <span><span class="badge-fill">교환</span> <span class="t3">진행 중</span></span>
+        <span class="t3">NO. 2606100002</span>
+      </div>
+      <div class="steps" style="margin-top:8px">
+        <div class="on">접수</div><div class="on">회수중</div><div class="on">입고 완료</div><div class="on">재발송</div><div>배송완료</div>
+      </div>
+      <div class="t3" style="text-align:center">재발송 송장 0000-0000 · 도착 예정 07.13</div>
+    </div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:8px">교환 상품</div>
+      <div class="row">
+        <div class="box" style="width:52px;height:52px">상품</div>
+        <div style="flex:1"><div class="t3" style="font-weight:700">브랜드명</div><div class="t2">상품명 / <span class="price-old" style="font-size:11px">옵션 A</span> → <b>옵션 C</b> / 수량 1</div></div>
+      </div>
+      <div class="t3" style="margin-top:8px;line-height:1.7">사유: 단순변심<br>추가 결제 금액: <b>0원</b>(옵션 교환 차액 없음 — ② 교환 규칙 ✅)</div>
+    </div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:6px">진행 상태 안내</div>
+      <div class="t3" style="line-height:1.8">
+        접수 → 승인 대기<br>
+        회수중 → 기존 옵션 수거 진행<br>
+        입고 완료 → 브랜드 입고 검수 완료<br>
+        <b>재발송 → 새 옵션(C) 발송 완료 (현재)</b><br>
+        배송완료 → 도착 시 자동, <b>구매확정 7일 재시작</b>
+      </div>
+    </div>
+    <div class="note">※ <b>세부 상태 → 소비자 표기 매핑</b>. 교환요청=<b>접수</b> / 교환회수중=<b>회수중</b> / <b>(입고 확인)=입고 완료</b> / 교환재발송=<b>재발송</b> / (배송완료 복귀)=<b>완료</b> / 거절=<b>반려</b></div>
+    <div class="note"><b>반품과의 차이</b> — 환불 없음(반품은 환불 완료로 종결, 교환은 재발송 배송완료로 종결). 반품 요청·교환 요청 버튼 재노출 없음(교환 완료 후 새 옵션 기준으로 다시 배송완료~구매확정 구간 진입 시에만 가능)</div>
+    <div class="note legal">⚠ 거절 시 = 반품과 동일 — 사유·증빙 열람 + <b>[배송비 결제하기]</b>(선결제) + 미결제 시 거절 보류([쟁점 C])</div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">↘</div><div class="lbl">거절되면<br>이 화면</div></div>
+
+<!-- ============ C10-b''' 반품·교환 거절 상태 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C10-b''' 반품/교환 거절 상태 <span>— 재발송 배송비 결제 대기</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 주문 상세</div>
+    <div class="sec">
+      <div class="row" style="justify-content:space-between">
+        <span><span class="badge" style="border-color:#933;color:#933">반품 반려</span></span>
+        <span class="t3">NO. 2606150007</span>
+      </div>
+      <div class="t3" style="margin-top:6px">거절일 2026.07.11</div>
+    </div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:6px">거절 사유</div>
+      <div class="t3" style="line-height:1.7">상품 개봉·사용 흔적 확인(전자상거래법 제18조 청약철회 제한 사유 해당)</div>
+      <div class="row" style="gap:6px;margin-top:8px">
+        <div class="box" style="width:64px;height:64px">증빙①</div>
+        <div class="box" style="width:64px;height:64px">증빙②</div>
+      </div>
+      <div class="t3" style="margin-top:6px">브랜드 제출 증빙 사진 — 입고 검수 시 촬영</div>
+    </div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:6px">반품 상품</div>
+      <div class="row">
+        <div class="box" style="width:48px;height:48px">상품</div>
+        <div style="flex:1"><div class="t3" style="font-weight:700">브랜드명</div><div class="t2">상품명 / 옵션 B / 수량 1</div></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:6px">재발송 배송비 결제</div>
+      <div class="t3" style="line-height:1.7">상품을 다시 받으시려면 재발송 배송비를 결제해 주세요.<br>결제 기한: 2026.07.25까지 (14일)</div>
+      <div class="row" style="justify-content:space-between;margin-top:10px">
+        <span class="t2">재발송 배송비</span><span class="t2" style="font-weight:700">3,000원</span>
+      </div>
+    </div>
+    <div class="note">※ 이의 있으신가요? <span class="badge">1:1 문의하기</span> — 운영자가 증빙 재검토(C12 연결)</div>
+    <div class="note legal">⚠ <b>[법률 확정 대기 · 쟁점 C]</b> 결제 기한(잠정 14일)·기한 경과 후 보관 종료 처리 문구 — 변호사 검토 후 확정. 기한 내 미결제 시 "거절 보류" 안내로 전환</div>
+    <div class="cta-fix"><span class="btn">3,000원 결제하고 재발송 받기</span></div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">[반품 요청]<br>(배송완료 상태)</div></div>
+
+<!-- ============ C10-c 반품 요청 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C10-c 반품 요청 <span>— 사유·회수 희망일·수거지</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 반품 요청</div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:8px">반품 상품</div>
+      <div class="row">
+        <div class="box" style="width:48px;height:48px">상품</div>
+        <div style="flex:1">
+          <div class="t2">상품명 / 옵션 A</div>
+          <div class="t3" style="margin-top:2px">공구가 33,200 (수량 2 중 반품)</div>
+        </div>
+      </div>
+      <div class="row" style="justify-content:space-between;margin-top:10px">
+        <span class="t3">반품 수량</span><span class="qty"><span>−</span><span>1</span><span>＋</span></span>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:6px">반품 사유</div>
+      <div class="input" style="margin-bottom:6px">사유 선택 ▾ <span class="t3">(단순변심 / 불량·파손 / 오배송 / 기타)</span></div>
+      <div class="input" style="height:70px;align-items:flex-start;padding-top:10px">상세 사유 입력 (선택)</div>
+    </div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:6px">회수 정보 <span class="t3">(택배사 문 앞 수거)</span></div>
+      <div class="input" style="margin-bottom:6px">회수 희망일 선택 ▾</div>
+      <div class="t3" style="margin:8px 0 4px">수거지</div>
+      <div class="t3" style="line-height:1.7">홍길동 / 010-0000-0000<br>서울특별시 ○○구 ○○로 00 <span class="badge">변경</span></div>
+    </div>
+    <div class="note">※ <b>상품 선택 없음</b> — C10-b에서 항목별 [반품 요청] 버튼으로 진입했으므로 대상 상품은 이미 확정. <b>수량 조절만 노출</b>(구매 수량 1개면 조절 없이 자동 1개, 2개 이상일 때만 스테퍼 노출)</div>
+    <div class="note legal">⚠ <b>[법률 확정 대기 · 쟁점 B]</b> 반송비 부담 안내(단순변심=소비자/불량=브랜드) + 예상 환불액에서 공제 여부 표시 영역 — <b>위치만 예약</b>, 문구는 변호사 검토 후</div>
+    <div class="note">※ 회수 송장 = 택배사 자동 발급(소비자 입력 없음). 요청 → 운영자 승인 → 회수중 → 입고 → 운영자 환불 실행(② §10). 반품 거절 가능 — 거절 시 증빙 통지, 재발송 배송비 <b>선결제(PG 결제 링크)</b> 후 재발송, 미결제 = 거절 보류(보관 기간·처분 = [쟁점 C])</div>
+    <div class="cta-fix"><span class="btn">반품 요청하기</span></div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">[교환 요청]<br>(배송완료 상태)</div></div>
+
+<!-- ============ C10-d 교환 요청 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C10-d 교환 요청 <span>— 같은 상품 옵션 변경</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 교환 요청</div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:8px">교환 상품</div>
+      <div class="row">
+        <div class="box" style="width:48px;height:48px">상품</div>
+        <div style="flex:1">
+          <div class="t2">상품명 / 현재 옵션 B</div>
+          <div class="t3" style="margin-top:2px">공구가 16,600 (수량 1)</div>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:6px">변경할 옵션 <span class="t3">(같은 상품 내)</span></div>
+      <div class="input" style="margin-bottom:6px">옵션 그룹 1 선택 ▾</div>
+      <div class="input">옵션 그룹 2 선택 ▾</div>
+      <div class="t3" style="margin-top:6px">※ 재고 없는 옵션은 선택 불가(비활성). 재고 있는 옵션만 노출</div>
+      <div class="row" style="justify-content:space-between;margin-top:10px">
+        <span class="t2">추가 결제 금액</span><span class="t2" style="font-weight:700">0원 <span class="t3">(옵션 교환은 차액 없음)</span></span>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:6px">교환 사유</div>
+      <div class="input" style="margin-bottom:6px">사유 선택 ▾ <span class="t3">(단순변심 / 불량·파손 / 오배송)</span></div>
+      <div class="input" style="height:60px;align-items:flex-start;padding-top:10px">상세 사유 입력 (선택)</div>
+    </div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:6px">회수 정보 <span class="t3">(택배사 문 앞 수거)</span></div>
+      <div class="input" style="margin-bottom:6px">회수 희망일 선택 ▾</div>
+      <div class="t3" style="line-height:1.7">홍길동 / 010-0000-0000<br>서울특별시 ○○구 ○○로 00 <span class="badge">변경</span></div>
+    </div>
+    <div class="note">※ <b>상품 선택 없음</b> — C10-b 항목별 [교환 요청] 버튼으로 진입, 대상 이미 확정. 수량 2개 이상 구매 항목이면 수량 조절 스테퍼 노출(이 예시는 수량 1이라 조절 없음)</div>
+    <div class="note legal">⚠ <b>[법률 확정 대기 · 패치 #10]</b> 교환 배송비 부담 안내(단순변심=소비자 / 불량=브랜드) — 위치만 예약, 문구는 변호사 검토 후. 거절 시 재발송 = 선결제(PG 결제 링크, 반품과 동일)</div>
+    <div class="note">※ 흐름: 요청 → 운영자 승인 → 회수중 → 브랜드 입고 → <b>교환 옵션 재발송</b> → 배송완료(구매확정 7일 재시작). <b>환불 없음·차액 없음</b>(② 교환 규칙 ✅). 정산 불변</div>
+    <div class="cta-fix"><span class="btn">교환 요청하기</span></div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">마이 ><br>[배송지 관리]</div></div>
+
+<!-- ============ C11 배송지 관리 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C11 배송지 관리 <span>— 주소록</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 배송지 관리</div>
+    <div class="sec">
+      <div style="border:1.5px solid #666;border-radius:8px;padding:10px">
+        <div class="row" style="justify-content:space-between">
+          <span class="t2" style="font-weight:700">집 <span class="badge-fill">기본 배송지</span></span>
+          <span class="t3">수정 · 삭제</span>
+        </div>
+        <div class="t3" style="margin-top:6px;line-height:1.7">홍길동 / 010-0000-0000<br>서울특별시 ○○구 ○○로 00, 101동 101호 (06000)</div>
+      </div>
+    </div>
+    <div class="sec">
+      <div style="border:1px solid #ddd;border-radius:8px;padding:10px">
+        <div class="row" style="justify-content:space-between">
+          <span class="t2" style="font-weight:700">회사</span>
+          <span class="t3">수정 · 삭제</span>
+        </div>
+        <div class="t3" style="margin-top:6px;line-height:1.7">홍길동 / 010-0000-0000<br>서울특별시 △△구 △△로 00 (07000)</div>
+        <div class="t3" style="margin-top:6px"><span class="badge">기본 배송지로 설정</span></div>
+      </div>
+    </div>
+    <div class="note">※ 여러 개 저장, <b>기본 배송지 1개</b> 지정(③ §14). 주문에는 스냅샷 복사 — 여기서 수정·삭제해도 기존 주문 영향 없음</div>
+    <div class="note">※ 빈 상태 = "등록된 배송지가 없습니다" + [배송지 추가] (C9 배송지 없음 상태와 동일 폼)</div>
+    <div class="cta-fix"><span class="btn">＋ 배송지 추가</span></div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">[＋ 배송지 추가]</div></div>
+
+<!-- ============ C11-1 배송지 추가/수정 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C11-1 배송지 추가·수정 <span>— 공용 입력폼</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 배송지 추가</div>
+    <div class="sec">
+      <div class="t3" style="margin-bottom:4px">배송지 이름</div>
+      <div class="input" style="margin-bottom:10px">예: 집, 회사</div>
+      <div class="t3" style="margin-bottom:4px">수령인</div>
+      <div class="input" style="margin-bottom:10px">이름 입력</div>
+      <div class="t3" style="margin-bottom:4px">연락처</div>
+      <div class="input" style="margin-bottom:10px">010-0000-0000</div>
+      <div class="t3" style="margin-bottom:4px">주소</div>
+      <div class="row" style="gap:6px;margin-bottom:6px">
+        <div class="input" style="flex:1">우편번호</div>
+        <span class="btn-o" style="flex:0 0 90px;margin:0">주소 검색</span>
+      </div>
+      <div class="input" style="margin-bottom:6px">기본 주소 (검색 결과 자동)</div>
+      <div class="input" style="margin-bottom:10px">상세 주소 입력</div>
+      <div class="check">기본 배송지로 설정</div>
+    </div>
+    <div class="note">※ 우편번호 = 주소 검색 API. <b>도서산간 판별의 기준값</b>(② 배송비 규칙) — 결제 시 이 우편번호로 추가비 자동 계산</div>
+    <div class="cta-fix"><span class="btn">저장</span></div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">마이 ><br>[문의 내역]</div></div>
+
+<!-- ============ C12 문의 내역 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C12 문의 내역 <span>— 상품 문의 / 1:1 문의 탭</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 문의 내역</div>
+    <div class="tabs">
+      <div class="tab on">상품 문의</div>
+      <div class="tab">1:1 문의</div>
+    </div>
+    <div class="sec">
+      <div style="padding-bottom:12px;border-bottom:1px solid #eee;margin-bottom:12px">
+        <div class="row" style="gap:6px;justify-content:space-between">
+          <span><span class="badge-fill">답변 완료</span> <span class="t3">재입고 문의 · 2026.07.01</span></span>
+          <span class="badge">공개</span>
+        </div>
+        <div class="t2" style="margin-top:6px;font-weight:700">Q. 재입고는 언제 되나요?</div>
+        <div class="row" style="margin-top:6px">
+          <div class="box" style="width:36px;height:36px">상품</div>
+          <div class="t3" style="flex:1">브랜드명 / 상품명 › 상품으로 이동</div>
+        </div>
+        <div class="t2" style="margin-top:6px;color:#555"><b>A.</b> 안녕하세요, 브랜드명입니다. 다음 주 중 재입고 예정입니다.</div>
+      </div>
+      <div style="padding-bottom:12px">
+        <div class="row" style="gap:6px;justify-content:space-between">
+          <span><span class="badge">답변 대기</span> <span class="t3">상품 문의 · 2026.07.03</span></span>
+          <span class="badge">🔒 비공개</span>
+        </div>
+        <div class="t2" style="margin-top:6px;font-weight:700">Q. 선물 포장 가능한가요?</div>
+        <div class="t3" style="margin-top:6px">수정 · 삭제 <span style="color:#bbb">(답변 등록 전만 가능)</span></div>
+      </div>
+    </div>
+    <div class="note">※ 상품 문의 탭 = C7 문의 탭에서 작성한 건(공개/비공개 배지). <b>수정·삭제 = 답변 전만</b> 노출. 답변 등록 시 알림 #11</div>
+    <div class="note">※ 1:1 문의 탭 = 주문·배송·환불·기타(운영자 담당) — 다음 프레임</div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">[1:1 문의] 탭</div></div>
+
+<!-- ============ C12-a 1:1 문의 탭 목록 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C12-a 1:1 문의 탭 <span>— 목록(운영자 담당)</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 문의 내역</div>
+    <div class="tabs">
+      <div class="tab">상품 문의</div>
+      <div class="tab on">1:1 문의</div>
+    </div>
+    <div class="sec">
+      <div style="padding-bottom:12px;border-bottom:1px solid #eee;margin-bottom:12px">
+        <div class="row" style="gap:6px;justify-content:space-between">
+          <span><span class="badge-fill">답변 완료</span> <span class="t3">취소/반품/환불 · 2026.07.11</span></span>
+        </div>
+        <div class="t2" style="margin-top:6px;font-weight:700">Q. 반품 거절 사유가 이해되지 않습니다</div>
+        <div class="t3" style="margin-top:4px">연결 주문: NO. 2606150007 ›</div>
+        <div class="t2" style="margin-top:6px;color:#555"><b>A.</b> 안녕하세요, 확인 결과 개봉 흔적이 있어 부득이하게 거절 처리되었습니다. 자세한 사진 자료를 첨부해드립니다.</div>
+      </div>
+      <div style="padding-bottom:12px">
+        <div class="row" style="gap:6px;justify-content:space-between">
+          <span><span class="badge">답변 대기</span> <span class="t3">배송 · 2026.07.09</span></span>
+        </div>
+        <div class="t2" style="margin-top:6px;font-weight:700">Q. 배송이 지연되고 있어요</div>
+        <div class="t3" style="margin-top:4px">연결 주문: NO. 2607050001 ›</div>
+      </div>
+    </div>
+    <div class="note">※ 1:1 문의 = <b>항상 비공개</b>(공개 개념 없음), 게시판형(실시간 아님). 유형별 연결 주문 표시(있는 경우) → 탭 시 C10-b 이동</div>
+    <div class="note">※ [1:1 문의하기] = <b>하단 고정 버튼</b> → C12-1 작성 페이지로 이동</div>
+    <div class="cta-fix"><span class="btn">1:1 문의하기</span></div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">[1:1 문의하기]</div></div>
+
+<!-- ============ C12-1 1:1 문의 작성 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C12-1 1:1 문의 작성 <span>— 운영자 담당·주문 참조</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 1:1 문의하기</div>
+    <div class="sec">
+      <div class="t2" style="font-weight:700;margin-bottom:6px">문의 유형</div>
+      <div class="input" style="margin-bottom:12px">유형 선택 ▾ <span class="t3">(주문/결제 · 배송 · 취소/반품/환불 · 회원정보 · 기타)</span></div>
+      <div class="t2" style="font-weight:700;margin-bottom:6px">주문 선택 <span class="t3">(주문 관련 유형 시 필수)</span></div>
+      <div class="row" style="justify-content:space-between;border:1px solid #ccc;border-radius:5px;padding:10px">
+        <span class="t3">주문을 선택해 주세요</span><span class="t3">선택 ›</span>
+      </div>
+      <div class="t2" style="font-weight:700;margin:12px 0 6px">문의 내용</div>
+      <div class="input" style="height:110px;align-items:flex-start;padding-top:10px">내용을 입력해 주세요</div>
+      <div class="t3" style="text-align:right;margin-top:4px">0 / 500</div>
+    </div>
+    <div class="note">※ 담당 = <b>운영자 단일 창구</b>(② §12). "주문 선택" 탭 시 <b>주문 선택 바텀시트</b>(다음 프레임)에서 목록 중 고르는 방식 — 주문번호 직접 입력 없음. 1:1 문의는 <b>항상 비공개</b>(공개 개념 없음)</div>
+    <div class="note">※ 유형별 주문 선택 필수/선택 분기: 배송·취소/반품/환불 = 필수, 회원정보·기타 = 없음</div>
+    <div class="cta-fix"><span class="btn">문의하기</span></div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">[주문 선택]<br>탭 시</div></div>
+
+<!-- ============ C12-1' 주문 선택 바텀시트 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C12-1' 주문 선택 바텀시트 <span>— 최근 주문 목록, 단일 선택(라디오)</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 1:1 문의하기</div>
+    <div class="sec" style="opacity:.45">
+      <div class="t2" style="font-weight:700;margin-bottom:6px">문의 유형</div>
+      <div class="input" style="margin-bottom:12px;color:#666">배송</div>
+      <div class="t2" style="font-weight:700;margin-bottom:6px">주문 선택 <span class="t3">(주문 관련 유형 시 필수)</span></div>
+      <div class="row" style="justify-content:space-between;border:1.5px solid #666;border-radius:5px;padding:10px">
+        <span class="t3" style="color:#666">주문을 선택해 주세요</span><span class="t3">선택 ›</span>
+      </div>
+    </div>
+    <div class="sheet-scrim"></div>
+    <div class="sheet" style="padding-bottom:74px">
+      <div class="grip"></div>
+      <div class="row" style="justify-content:space-between;margin-bottom:14px">
+        <span class="t1">주문 선택</span><span class="close-x">✕</span>
+      </div>
+      <div class="radio-item on">
+        <span class="rd"></span>
+        <div class="box" style="width:48px;height:48px">상품</div>
+        <div style="flex:1">
+          <div class="t3" style="font-weight:700">NO. 2607050001 <span style="font-weight:400;color:#999">· 2026.07.05</span></div>
+          <div class="t2" style="margin-top:2px">상품명 / 옵션 A 외 1건</div>
+        </div>
+      </div>
+      <div class="radio-item">
+        <span class="rd"></span>
+        <div class="box" style="width:48px;height:48px">상품</div>
+        <div style="flex:1">
+          <div class="t3" style="font-weight:700">NO. 2606150007 <span style="font-weight:400;color:#999">· 2026.06.15</span></div>
+          <div class="t2" style="margin-top:2px">상품명 / 옵션 B</div>
+        </div>
+      </div>
+      <div class="radio-item" style="border-bottom:none">
+        <span class="rd"></span>
+        <div class="box" style="width:48px;height:48px">상품</div>
+        <div style="flex:1">
+          <div class="t3" style="font-weight:700">NO. 2606280003 <span style="font-weight:400;color:#999">· 2026.06.28</span></div>
+          <div class="t2" style="margin-top:2px">상품명 / 옵션 C</div>
+        </div>
+      </div>
+      <div class="sheet-cta"><span class="btn" style="margin:0">이 주문으로 선택</span></div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+</body>
+</html>
