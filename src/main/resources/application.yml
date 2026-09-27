@@ -129,7 +129,6 @@ order:
   reconciliation-enabled: true                      # 일일 대사 05:00 KST
   health-check-enabled: true                        # 운영 지표 10분 주기
   customer-email-enabled: true                      # 포트원 customer 블록에 이메일 포함 여부(9-1 ②)
-  webhook-tolerance-seconds: 300
 
 # Sentry 설정 (공통)
 sentry:

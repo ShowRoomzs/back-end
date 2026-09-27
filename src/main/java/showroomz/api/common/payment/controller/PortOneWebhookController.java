@@ -9,11 +9,9 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import showroomz.api.common.payment.service.PaymentWebhookService;
-import showroomz.global.config.properties.OrderProperties;
 import showroomz.global.payment.portone.PortOneProperties;
 import showroomz.global.payment.portone.PortOneWebhookVerifier;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 /**
@@ -32,12 +30,10 @@ public class PortOneWebhookController {
     private final PaymentWebhookService webhookService;
     private final PortOneWebhookVerifier verifier;
 
-    public PortOneWebhookController(PaymentWebhookService webhookService, PortOneProperties portOneProperties,
-                                    OrderProperties orderProperties) {
+    public PortOneWebhookController(PaymentWebhookService webhookService, PortOneProperties portOneProperties) {
         this.webhookService = webhookService;
         String secret = portOneProperties.getWebhookSecret();
-        this.verifier = secret == null || secret.isBlank()
-                ? null : new PortOneWebhookVerifier(secret, orderProperties.getWebhookToleranceSeconds());
+        this.verifier = secret == null || secret.isBlank() ? null : new PortOneWebhookVerifier(secret);
     }
 
     @PostMapping
@@ -45,8 +41,7 @@ public class PortOneWebhookController {
                                         @RequestHeader(value = "webhook-timestamp", required = false) String timestamp,
                                         @RequestHeader(value = "webhook-signature", required = false) String signature,
                                         @RequestBody(required = false) byte[] body) {
-        if (verifier == null || body == null
-                || !verifier.verify(body, webhookId, timestamp, signature, Instant.now())) {
+        if (verifier == null || body == null || !verifier.verify(body, webhookId, timestamp, signature)) {
             log.warn("포트원 웹훅 서명 검증 실패 - webhookId: {}", webhookId);
             return ResponseEntity.status(401).build();
         }

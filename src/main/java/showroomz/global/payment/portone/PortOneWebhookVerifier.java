@@ -1,65 +1,58 @@
 package showroomz.global.payment.portone;
 
+import io.portone.sdk.server.errors.WebhookVerificationException;
+import io.portone.sdk.server.webhook.WebhookVerifier;
+import lombok.extern.slf4j.Slf4j;
+
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
 import java.util.Base64;
 
 /**
- * 포트원 V2 웹훅 서명 검증 — Standard Webhooks(HMAC-SHA256)(결제 계획서 5-7 ①).
+ * 포트원 V2 웹훅 서명 검증 — SDK {@link WebhookVerifier}(Standard Webhooks, HMAC-SHA256)에 위임한다(결제 계획서 5-7 ①).
  *
- * <p>서명 대상은 {@code {webhook-id}.{webhook-timestamp}.{원문 본문}}이다. 본문은 <b>바이트 그대로</b> 써야 한다 — Jackson으로
- * 먼저 파싱하면 공백·순서가 바뀌어 서명이 안 맞는다(6-3). 시크릿은 {@code whsec_} 접두 뒤 base64다.
- * 헤더 {@code webhook-signature}는 공백으로 구분된 {@code v1,<base64>} 목록이고 하나라도 맞으면 통과다(키 로테이션).
+ * <p>본문은 <b>원문 바이트</b>로 받아 UTF-8 문자열로 넘긴다 — Jackson 으로 먼저 파싱하면 공백·순서가 바뀌어 서명이 안 맞는다(6-3).
+ * 시각 허용 오차(5분)는 SDK 가 정한다. {@link #sign}은 통합 테스트가 고정 시크릿으로 요청을 만들 때 쓴다 — SDK 와 같은 식이다.
  */
+@Slf4j
 public class PortOneWebhookVerifier {
 
     private static final String SECRET_PREFIX = "whsec_";
     private static final String HMAC_SHA256 = "HmacSHA256";
 
+    private final WebhookVerifier delegate;
     private final byte[] secret;
-    private final long toleranceSeconds;
 
-    public PortOneWebhookVerifier(String webhookSecret, long toleranceSeconds) {
+    public PortOneWebhookVerifier(String webhookSecret) {
         if (webhookSecret == null || webhookSecret.isBlank()) {
             throw new IllegalArgumentException("포트원 웹훅 시크릿이 비어 있습니다.");
         }
         String raw = webhookSecret.startsWith(SECRET_PREFIX) ? webhookSecret.substring(SECRET_PREFIX.length()) : webhookSecret;
         this.secret = Base64.getDecoder().decode(raw);
-        this.toleranceSeconds = toleranceSeconds;
+        this.delegate = new WebhookVerifier(webhookSecret);
     }
 
-    public boolean verify(byte[] body, String webhookId, String timestamp, String signatureHeader, Instant now) {
-        if (body == null || webhookId == null || timestamp == null || signatureHeader == null) {
+    public boolean verify(byte[] body, String webhookId, String timestamp, String signatureHeader) {
+        if (body == null) {
             return false;
         }
-        long ts;
         try {
-            ts = Long.parseLong(timestamp.trim());
-        } catch (NumberFormatException e) {
+            delegate.verify(new String(body, StandardCharsets.UTF_8), webhookId, signatureHeader, timestamp);
+            return true;
+        } catch (WebhookVerificationException e) {
+            log.debug("웹훅 서명 검증 실패 - {}", e.getMessage());
             return false;
+        } catch (RuntimeException e) {
+            // SDK 는 서명이 맞은 뒤에야 본문을 해석한다 — 여기서 터지면 서명은 맞고 본문 모양이 낯선 것이다. 처리 여부는 서비스가 정한다.
+            log.warn("웹훅 본문 해석 실패(서명은 일치) - {}", e.toString());
+            return true;
         }
-        if (Math.abs(now.getEpochSecond() - ts) > toleranceSeconds) {
-            return false;
-        }
-        String expected = sign(body, webhookId, timestamp.trim());
-        for (String candidate : signatureHeader.trim().split("\\s+")) {
-            String[] parts = candidate.split(",", 2);
-            if (parts.length != 2 || !"v1".equals(parts[0])) {
-                continue;
-            }
-            if (MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8), parts[1].getBytes(StandardCharsets.UTF_8))) {
-                return true;
-            }
-        }
-        return false;
     }
 
-    /** 테스트가 고정 시크릿으로 서명을 만들 때도 쓴다(8절 「고정 시크릿으로 서명 생성」). */
+    /** 테스트용 서명 — {@code {id}.{timestamp}.{body}} 의 HMAC-SHA256 base64. */
     public String sign(byte[] body, String webhookId, String timestamp) {
         try {
             Mac mac = Mac.getInstance(HMAC_SHA256);

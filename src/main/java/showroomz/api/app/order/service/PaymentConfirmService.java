@@ -16,6 +16,7 @@ import showroomz.domain.payment.type.PaymentStatus;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.payment.portone.PaymentGatewayException;
+import showroomz.global.payment.portone.PaymentGatewayRejectedException;
 import showroomz.global.payment.portone.PortOnePayment;
 import showroomz.global.payment.portone.PortOnePaymentGateway;
 
@@ -91,6 +92,10 @@ public class PaymentConfirmService {
             remote = gateway.getPayment(paymentId);
         } catch (PaymentGatewayException e) {
             log.warn("포트원 조회 실패 - paymentId: {} - {}", paymentId, e.getMessage());
+            throw new BusinessException(ErrorCode.PAYMENT_GATEWAY_ERROR);
+        } catch (PaymentGatewayRejectedException e) {
+            // 조회가 거절되는 건 자격·설정 문제(UNAUTHORIZED·FORBIDDEN)다 — 상태는 바꾸지 않고 502, 사람이 봐야 한다.
+            alerts.error("포트원 조회 거절 - paymentId: " + paymentId + " - " + e.getMessage());
             throw new BusinessException(ErrorCode.PAYMENT_GATEWAY_ERROR);
         }
         if (remote.isEmpty()) {

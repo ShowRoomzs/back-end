@@ -17,6 +17,12 @@ java {
 repositories {
 	mavenCentral()
 }
+
+// 포트원 서버 SDK(0.24.0)는 Kotlin 2.0.21 · kotlinx-serialization 1.7.3 · coroutines 1.9.0 으로 빌드됐다.
+// Spring Boot BOM 이 관리하는 버전(1.9.25 · 1.6.3 · 1.8.1)으로 내려가면 런타임에 메서드가 없다 — SDK 가 요구하는 버전으로 올린다.
+ext['kotlin.version'] = '2.0.21'
+ext['kotlin-serialization.version'] = '1.7.3'
+ext['kotlin-coroutines.version'] = '1.9.0'
 configurations {
     all {
         exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
@@ -42,6 +48,8 @@ dependencies {
 	implementation 'com.microsoft.playwright:playwright:1.58.0'
 	implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
 	implementation 'com.maxmind.geoip2:geoip2:4.4.0'
+	// 포트원 V2 서버 SDK — 결제 조회·취소·사전 등록·웹훅 서명 검증(결제 계획서 6-1)
+	implementation 'io.portone:server-sdk:0.24.0'
 	/*implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.1'*/
 	
 	// FCM 푸시 발송 (Firebase Admin SDK)

@@ -10,7 +10,11 @@ public class PaymentGatewayRejectedException extends RuntimeException {
     private final String type;
 
     public PaymentGatewayRejectedException(int httpStatus, String type, String message) {
-        super("포트원 거절 " + httpStatus + " " + type + (message != null ? " - " + message : ""));
+        this(httpStatus, type, message, null);
+    }
+
+    public PaymentGatewayRejectedException(int httpStatus, String type, String message, Throwable cause) {
+        super("포트원 거절 " + httpStatus + " " + type + (message != null ? " - " + message : ""), cause);
         this.httpStatus = httpStatus;
         this.type = type;
     }

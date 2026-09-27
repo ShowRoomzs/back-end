@@ -41,7 +41,4 @@ public class OrderProperties {
 
     /** 포트원 customer 블록에 이메일을 실을지 — 개인정보 제3자 제공 범위(9-1 ②) 법무 결과에 따라 끈다. */
     private boolean customerEmailEnabled = true;
-
-    /** 웹훅 timestamp 허용 오차(초) — 5-7 ①. */
-    private int webhookToleranceSeconds = 300;
 }

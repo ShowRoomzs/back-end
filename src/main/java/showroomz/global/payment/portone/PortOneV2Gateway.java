@@ -1,40 +1,60 @@
 package showroomz.global.payment.portone;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.portone.sdk.server.common.Currency;
+import io.portone.sdk.server.common.PageInput;
+import io.portone.sdk.server.errors.PaymentAlreadyCancelledException;
+import io.portone.sdk.server.errors.PaymentNotFoundException;
+import io.portone.sdk.server.errors.PortOneException;
+import io.portone.sdk.server.errors.UnknownException;
+import io.portone.sdk.server.payment.CancelPaymentResponse;
+import io.portone.sdk.server.payment.CancelRequester;
+import io.portone.sdk.server.payment.CancelledPayment;
+import io.portone.sdk.server.payment.FailedPayment;
+import io.portone.sdk.server.payment.FailedPaymentCancellation;
+import io.portone.sdk.server.payment.GetPaymentsResponse;
+import io.portone.sdk.server.payment.PaidPayment;
+import io.portone.sdk.server.payment.PartialCancelledPayment;
+import io.portone.sdk.server.payment.PayPendingPayment;
+import io.portone.sdk.server.payment.Payment;
+import io.portone.sdk.server.payment.PaymentCancellation;
+import io.portone.sdk.server.payment.PaymentClient;
+import io.portone.sdk.server.payment.PaymentFailure;
+import io.portone.sdk.server.payment.PaymentFilterInput;
+import io.portone.sdk.server.payment.PaymentMethodSerializer;
+import io.portone.sdk.server.payment.PaymentSerializer;
+import io.portone.sdk.server.payment.PaymentStatus;
+import io.portone.sdk.server.payment.PaymentTimestampType;
+import io.portone.sdk.server.payment.ReadyPayment;
+import io.portone.sdk.server.payment.SucceededPaymentCancellation;
+import io.portone.sdk.server.payment.VirtualAccountIssuedPayment;
+import jakarta.annotation.PreDestroy;
+import kotlinx.serialization.json.Json;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestClient;
 import showroomz.domain.payment.type.EasyPayProvider;
 import showroomz.domain.payment.type.PaymentMethod;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
- * 포트원 V2 REST 구현(결제 계획서 6-1). 서버 SDK 대신 Spring {@code RestClient}를 쓴다 — 서비스 계층은
- * {@link PortOnePaymentGateway}만 보므로 SDK로 바꿔도 이 클래스만 바뀐다.
+ * 포트원 V2 — 서버 SDK({@code io.portone:server-sdk}) 구현(결제 계획서 6-1). 서비스 계층은 {@link PortOnePaymentGateway}만 본다.
  *
- * <p>실패의 종류를 가른다 — 4xx는 {@link PaymentGatewayRejectedException}(결과 확정), 타임아웃·통신 오류·5xx는
- * {@link PaymentGatewayException}(결과 모름). 취소에서 이 구분이 돈이다(2-3 ⑧).
- * API Secret은 로그·예외 메시지에 싣지 않는다(6-3).
+ * <p>실패의 종류를 가른다 — 포트원이 오류 응답을 준 경우({@link PortOneException}, 4xx)는
+ * {@link PaymentGatewayRejectedException}(결과 확정), 타임아웃·통신 오류·5xx·해석 불가 응답({@link UnknownException})은
+ * {@link PaymentGatewayException}(결과 모름)이다. 취소에서 이 구분이 돈이다(2-3 ⑧).
+ *
+ * <p>SDK 의 내부 타임아웃은 60초라 그대로 두면 결제 확정 요청이 1분씩 매달린다 — 설정의 읽기 타임아웃으로 {@code Future}를 끊는다.
+ * API Secret 은 로그·예외 메시지에 싣지 않는다(6-3).
  */
 @Slf4j
 @Component
@@ -45,32 +65,26 @@ public class PortOneV2Gateway implements PortOnePaymentGateway {
     private static final int LIST_MAX_PAGES = 200;
 
     private final PortOneProperties properties;
-    private final ObjectMapper objectMapper;
-    private final RestClient client;
+    private final PaymentClient client;
 
-    public PortOneV2Gateway(PortOneProperties properties, ObjectMapper objectMapper) {
+    public PortOneV2Gateway(PortOneProperties properties) {
         requireText(properties.getStoreId(), "portone.store-id");
         requireText(properties.getApiSecret(), "portone.api-secret");
         requireText(properties.getWebhookSecret(), "portone.webhook-secret");
         requireText(properties.getChannelKeys().getCard(), "portone.channel-keys.card");
         this.properties = properties;
-        this.objectMapper = objectMapper;
-
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(properties.getConnectTimeoutMillis());
-        factory.setReadTimeout(properties.getReadTimeoutMillis());
-        this.client = RestClient.builder()
-                .baseUrl(properties.getBaseUrl())
-                .requestFactory(factory)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "PortOne " + properties.getApiSecret())
-                .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-                .build();
+        this.client = new PaymentClient(properties.getApiSecret(), properties.getBaseUrl(), properties.getStoreId());
     }
 
     private static void requireText(String value, String key) {
         if (value == null || value.isBlank()) {
             throw new IllegalStateException(key + " 설정이 비어 있습니다. portone.enabled=false 로 끄거나 값을 채우세요.");
         }
+    }
+
+    @PreDestroy
+    public void close() {
+        client.close();
     }
 
     @Override
@@ -80,79 +94,59 @@ public class PortOneV2Gateway implements PortOnePaymentGateway {
 
     @Override
     public void preRegister(String paymentId, long totalAmount, String currency) {
-        ObjectNode body = objectMapper.createObjectNode();
-        body.put("storeId", properties.getStoreId());
-        body.put("totalAmount", totalAmount);
-        body.put("currency", currency);
-        Response response = exchange("POST", uri("/payments/" + encode(paymentId) + "/pre-register"), body.toString());
-        if (response.is2xx()) {
-            return;
-        }
-        throw rejectedOrUnknown("사전 등록", response);
+        await(client.preRegisterPayment(paymentId, totalAmount, null, currencyOf(currency)), "사전 등록");
     }
 
     @Override
     public Optional<PortOnePayment> getPayment(String paymentId) {
-        Response response = exchange("GET", uri("/payments/" + encode(paymentId) + "?storeId=" + encode(properties.getStoreId())), null);
-        if (response.status == 404) {
-            return Optional.empty();
+        try {
+            return Optional.of(toModel(await(client.getPayment(paymentId), "결제 조회")));
+        } catch (PaymentGatewayRejectedException e) {
+            if (e.getCause() instanceof PaymentNotFoundException) {
+                return Optional.empty();
+            }
+            throw e;
         }
-        if (!response.is2xx()) {
-            throw rejectedOrUnknown("결제 조회", response);
-        }
-        return Optional.of(parsePayment(response.body));
     }
 
     @Override
     public PortOneCancelResult cancel(String paymentId, long amount, String reason) {
-        ObjectNode body = objectMapper.createObjectNode();
-        body.put("storeId", properties.getStoreId());
-        body.put("reason", reason == null || reason.isBlank() ? "주문 취소" : reason);
-        // amount 를 비우면 전액 취소다. 현재 취소 가능 금액을 함께 보내 이미 부분 취소된 결제가 있으면 PG 가 거절하게 한다.
-        body.put("currentCancellableAmount", amount);
-        Response response = exchange("POST", uri("/payments/" + encode(paymentId) + "/cancel"), body.toString());
-        if (response.is2xx()) {
-            JsonNode cancellation = readTree(response.body).path("cancellation");
-            String status = cancellation.path("status").asText("");
-            String pgCancellationId = textOrNull(cancellation, "pgCancellationId");
-            PortOneCancelResult.Outcome outcome = "SUCCEEDED".equals(status)
-                    ? PortOneCancelResult.Outcome.SUCCEEDED
-                    : PortOneCancelResult.Outcome.PENDING;
-            if ("FAILED".equals(status)) {
-                throw new PaymentGatewayRejectedException(200, "CANCELLATION_FAILED", cancellation.toString());
+        String cancelReason = reason == null || reason.isBlank() ? "주문 취소" : reason;
+        CancelPaymentResponse response;
+        try {
+            // amount 를 비우면 전액 취소다. 현재 취소 가능 금액을 함께 보내 이미 부분 취소된 결제면 PG 가 거절하게 한다.
+            response = await(client.cancelPayment(paymentId, null, null, null, cancelReason, CancelRequester.Customer.INSTANCE,
+                    null, amount, null, null, null), "결제 취소");
+        } catch (PaymentGatewayRejectedException e) {
+            if (e.getCause() instanceof PaymentAlreadyCancelledException) {
+                return new PortOneCancelResult(PortOneCancelResult.Outcome.ALREADY_CANCELLED, null, e.getMessage());
             }
-            return new PortOneCancelResult(outcome, pgCancellationId, response.body);
+            throw e;
         }
-        if (response.status >= 400 && response.status < 500) {
-            String type = readTree(response.body).path("type").asText("");
-            if ("PAYMENT_ALREADY_CANCELLED".equals(type)) {
-                return new PortOneCancelResult(PortOneCancelResult.Outcome.ALREADY_CANCELLED, null, response.body);
-            }
+        PaymentCancellation cancellation = response.getCancellation();
+        String raw = cancellation.toString();
+        if (cancellation instanceof SucceededPaymentCancellation succeeded) {
+            return new PortOneCancelResult(PortOneCancelResult.Outcome.SUCCEEDED, succeeded.getPgCancellationId(), raw);
         }
-        throw rejectedOrUnknown("결제 취소", response);
+        if (cancellation instanceof FailedPaymentCancellation failed) {
+            throw new PaymentGatewayRejectedException(200, "CANCELLATION_FAILED", failed.getReason());
+        }
+        return new PortOneCancelResult(PortOneCancelResult.Outcome.PENDING, null, raw);
     }
 
     @Override
     public List<PortOnePayment> listPayments(LocalDateTime from, LocalDateTime until, List<PortOneStatus> statuses) {
+        List<PaymentStatus> sdkStatuses = statuses.stream().map(PortOneV2Gateway::statusOf).filter(java.util.Objects::nonNull).toList();
+        PaymentFilterInput filter = new PaymentFilterInput(null, properties.getStoreId(), PaymentTimestampType.CreatedAt.INSTANCE,
+                toInstant(from), toInstant(until), sdkStatuses,
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+                null, null, null);
         List<PortOnePayment> result = new ArrayList<>();
         for (int page = 0; page < LIST_MAX_PAGES; page++) {
-            ObjectNode request = objectMapper.createObjectNode();
-            request.putObject("page").put("number", page).put("size", LIST_PAGE_SIZE);
-            ObjectNode filter = request.putObject("filter");
-            filter.put("storeId", properties.getStoreId());
-            filter.put("timestampType", "CREATED_AT");
-            filter.put("from", toIso(from));
-            filter.put("until", toIso(until));
-            var statusArray = filter.putArray("status");
-            statuses.forEach(status -> statusArray.add(status.name()));
-
-            Response response = exchange("GET", uri("/payments?requestBody=" + encode(request.toString())), null);
-            if (!response.is2xx()) {
-                throw rejectedOrUnknown("결제 목록 조회", response);
-            }
-            JsonNode items = readTree(response.body).path("items");
-            for (JsonNode item : items) {
-                result.add(parsePayment(item.toString()));
+            GetPaymentsResponse response = await(client.getPayments(new PageInput(page, LIST_PAGE_SIZE), filter), "결제 목록 조회");
+            List<Payment> items = response.getItems();
+            for (Payment item : items) {
+                result.add(toModel(item));
             }
             if (items.size() < LIST_PAGE_SIZE) {
                 break;
@@ -186,110 +180,138 @@ public class PortOneV2Gateway implements PortOnePaymentGateway {
         return Optional.of(key.trim());
     }
 
-    // ------------------------------------------------------------------ HTTP
+    // ------------------------------------------------------------------ SDK 호출
 
-    /**
-     * URI 는 직접 조립한다 — {@code RestClient.uri(String)} 은 문자열을 URI 템플릿으로 다뤄 목록 조회의 JSON 파라미터({@code {}})를
-     * 변수로 오해하고, 이미 인코딩된 값을 다시 인코딩한다. {@link URI} 객체를 넘기면 그대로 쓴다.
-     */
-    private URI uri(String pathAndQuery) {
-        return URI.create(properties.getBaseUrl() + pathAndQuery);
+    /** SDK 의 Future 를 설정 타임아웃으로 기다린다. 예외는 「거절」과 「모름」 둘로 접는다. */
+    private <T> T await(CompletableFuture<T> future, String action) {
+        try {
+            return future.get(properties.getReadTimeoutMillis() + properties.getConnectTimeoutMillis(), TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            throw new PaymentGatewayException("포트원 " + action + " 타임아웃", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new PaymentGatewayException("포트원 " + action + " 중단", e);
+        } catch (ExecutionException e) {
+            throw translate(e.getCause(), action);
+        }
     }
 
-    private Response exchange(String method, URI uri, String jsonBody) {
-        try {
-            RestClient.RequestBodySpec spec = client.method(org.springframework.http.HttpMethod.valueOf(method)).uri(uri);
-            if (jsonBody != null) {
-                spec = spec.contentType(MediaType.APPLICATION_JSON).body(jsonBody);
+    private static RuntimeException translate(Throwable cause, String action) {
+        if (cause instanceof UnknownException unknown) {
+            // 5xx · 해석 불가 응답 — 결과를 모른다.
+            log.error("포트원 {} 실패(알 수 없는 응답) - {}", action, unknown.getMessage());
+            return new PaymentGatewayException("포트원 " + action + " 실패: " + unknown.getMessage(), unknown);
+        }
+        if (cause instanceof PortOneException rejected) {
+            String type = typeOf(rejected);
+            log.warn("포트원 {} 거절 - type: {} - {}", action, type, rejected.getMessage());
+            return new PaymentGatewayRejectedException(400, type, rejected.getMessage(), rejected);
+        }
+        return new PaymentGatewayException("포트원 " + action + " 통신 실패: " + cause, cause);
+    }
+
+    /** {@code PaymentNotFoundException} → {@code PAYMENT_NOT_FOUND} — 포트원 오류 코드와 같은 꼴로 남긴다. */
+    private static String typeOf(PortOneException e) {
+        String name = e.getClass().getSimpleName().replaceAll("Exception$", "");
+        return name.replaceAll("([a-z0-9])([A-Z])", "$1_$2").toUpperCase();
+    }
+
+    // ------------------------------------------------------------------ 변환
+
+    private static PortOnePayment toModel(Payment payment) {
+        if (!(payment instanceof Payment.Recognized recognized)) {
+            return new PortOnePayment(null, PortOneStatus.UNKNOWN, null, null, null, null, null, null, null, null, null, null,
+                    String.valueOf(payment));
+        }
+        PortOneStatus status = statusOf(payment);
+        LocalDateTime paidAt = null;
+        LocalDateTime cancelledAt = null;
+        String failCode = null;
+        String failMessage = null;
+        if (payment instanceof PaidPayment paid) {
+            paidAt = toLocal(paid.getPaidAt());
+        } else if (payment instanceof CancelledPayment cancelled) {
+            paidAt = toLocal(cancelled.getPaidAt());
+            cancelledAt = toLocal(cancelled.getCancelledAt());
+        } else if (payment instanceof FailedPayment failed) {
+            PaymentFailure failure = failed.getFailure();
+            if (failure != null) {
+                failCode = failure.getPgCode() != null ? failure.getPgCode() : failure.getReason();
+                failMessage = failure.getPgMessage() != null ? failure.getPgMessage() : failure.getReason();
             }
-            return spec.exchange((request, response) -> {
-                HttpStatusCode status = response.getStatusCode();
-                String body = new String(response.getBody().readAllBytes(), StandardCharsets.UTF_8);
-                return new Response(status.value(), body);
-            });
-        } catch (ResourceAccessException e) {
-            // 타임아웃·연결 실패 — 결과를 모른다. 헤더(시크릿)는 메시지에 넣지 않는다.
-            throw new PaymentGatewayException("포트원 통신 실패: " + method + " " + uri.getPath(), e);
         }
-    }
-
-    private RuntimeException rejectedOrUnknown(String action, Response response) {
-        if (response.status >= 400 && response.status < 500) {
-            JsonNode node = readTree(response.body);
-            String type = node.path("type").asText("UNKNOWN");
-            String message = node.path("message").asText(null);
-            log.warn("포트원 {} 거절 - status: {}, type: {}", action, response.status, type);
-            return new PaymentGatewayRejectedException(response.status, type, message);
-        }
-        log.error("포트원 {} 실패 - status: {}", action, response.status);
-        return new PaymentGatewayException("포트원 " + action + " 실패: HTTP " + response.status);
-    }
-
-    private JsonNode readTree(String json) {
-        try {
-            return json == null || json.isBlank() ? objectMapper.createObjectNode() : objectMapper.readTree(json);
-        } catch (IOException e) {
-            return objectMapper.createObjectNode();
-        }
-    }
-
-    private PortOnePayment parsePayment(String json) {
-        JsonNode node = readTree(json);
-        JsonNode failure = node.path("failure");
-        String failCode = textOrNull(failure, "pgCode");
-        if (failCode == null) {
-            failCode = textOrNull(failure, "reason");
-        }
-        String failMessage = textOrNull(failure, "pgMessage");
-        if (failMessage == null) {
-            failMessage = textOrNull(failure, "reason");
-        }
-        JsonNode amount = node.path("amount");
         return new PortOnePayment(
-                textOrNull(node, "id"),
-                PortOneStatus.of(textOrNull(node, "status")),
-                textOrNull(node, "storeId"),
-                textOrNull(node, "currency"),
-                amount.hasNonNull("total") ? amount.get("total").asLong() : null,
-                textOrNull(node, "transactionId"),
-                textOrNull(node.path("channel"), "pgProvider"),
-                node.hasNonNull("method") ? node.get("method").toString() : null,
-                parseTime(textOrNull(node, "paidAt")),
-                parseTime(textOrNull(node, "cancelledAt")),
+                recognized.getId(),
+                status,
+                recognized.getStoreId(),
+                recognized.getCurrency() != null ? recognized.getCurrency().getValue() : null,
+                recognized.getAmount() != null ? recognized.getAmount().getTotal() : null,
+                recognized.getTransactionId(),
+                recognized.getChannel() != null && recognized.getChannel().getPgProvider() != null
+                        ? recognized.getChannel().getPgProvider().getValue() : null,
+                methodJson(recognized),
+                paidAt,
+                cancelledAt,
                 failCode,
                 failMessage,
-                json
+                rawJson(payment)
         );
     }
 
-    private static String textOrNull(JsonNode node, String field) {
-        return node != null && node.hasNonNull(field) ? node.get(field).asText() : null;
+    private static PortOneStatus statusOf(Payment payment) {
+        if (payment instanceof PaidPayment) return PortOneStatus.PAID;
+        if (payment instanceof FailedPayment) return PortOneStatus.FAILED;
+        if (payment instanceof CancelledPayment) return PortOneStatus.CANCELLED;
+        if (payment instanceof PartialCancelledPayment) return PortOneStatus.PARTIAL_CANCELLED;
+        if (payment instanceof ReadyPayment) return PortOneStatus.READY;
+        if (payment instanceof PayPendingPayment) return PortOneStatus.PAY_PENDING;
+        if (payment instanceof VirtualAccountIssuedPayment) return PortOneStatus.VIRTUAL_ACCOUNT_ISSUED;
+        return PortOneStatus.UNKNOWN;
     }
 
-    private static LocalDateTime parseTime(String iso) {
-        if (iso == null) {
+    private static PaymentStatus statusOf(PortOneStatus status) {
+        return switch (status) {
+            case PAID -> PaymentStatus.Paid.INSTANCE;
+            case FAILED -> PaymentStatus.Failed.INSTANCE;
+            case CANCELLED -> PaymentStatus.Cancelled.INSTANCE;
+            case PARTIAL_CANCELLED -> PaymentStatus.PartialCancelled.INSTANCE;
+            case READY -> PaymentStatus.Ready.INSTANCE;
+            case PENDING, PAY_PENDING -> PaymentStatus.Pending.INSTANCE;
+            case VIRTUAL_ACCOUNT_ISSUED -> PaymentStatus.VirtualAccountIssued.INSTANCE;
+            case UNKNOWN -> null;
+        };
+    }
+
+    private static Currency currencyOf(String currency) {
+        return currency == null || "KRW".equals(currency) ? Currency.Krw.INSTANCE : new Currency.Unrecognized(currency);
+    }
+
+    /** 원문 — 분쟁 근거({@code payment.raw_response}). 직렬화가 막히면 상태 확정을 막지 않고 toString 으로 남긴다. */
+    private static String rawJson(Payment payment) {
+        try {
+            return Json.Default.encodeToString(PaymentSerializer.INSTANCE, payment);
+        } catch (RuntimeException e) {
+            return String.valueOf(payment);
+        }
+    }
+
+    private static String methodJson(Payment.Recognized payment) {
+        if (payment.getMethod() == null) {
             return null;
         }
         try {
-            return OffsetDateTime.parse(iso).atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
-        } catch (Exception e) {
-            return null;
+            return Json.Default.encodeToString(PaymentMethodSerializer.INSTANCE, payment.getMethod());
+        } catch (RuntimeException e) {
+            return String.valueOf(payment.getMethod());
         }
     }
 
-    private static String toIso(LocalDateTime local) {
-        return local.atZone(ZoneId.systemDefault()).withZoneSameInstant(ZoneOffset.UTC)
-                .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    private static LocalDateTime toLocal(Instant instant) {
+        return instant == null ? null : LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
     }
 
-    /** 경로·쿼리 공용 — 공백은 {@code +} 가 아니라 {@code %20} 이어야 경로에서도 맞다. */
-    private static String encode(String value) {
-        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
-    }
-
-    private record Response(int status, String body) {
-        boolean is2xx() {
-            return status >= 200 && status < 300;
-        }
+    private static Instant toInstant(LocalDateTime local) {
+        return local.atZone(ZoneId.systemDefault()).toInstant();
     }
 }

@@ -8,11 +8,11 @@ import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** 웹훅 서명 검증(결제 계획서 5-7 ① · 8절) — 정상 · 위조 · 시각 초과 · 여러 서명 중 하나 일치. */
+/** 웹훅 서명 검증(결제 계획서 5-7 ① · 8절) — SDK WebhookVerifier 위임. 정상 · 위조 · 시각 초과 · 여러 서명 중 하나 일치. */
 class PortOneWebhookVerifierTest {
 
     private static final String SECRET = "whsec_aW50ZWdyYXRpb24tdGVzdC13ZWJob29rLXNlY3JldA==";
-    private final PortOneWebhookVerifier verifier = new PortOneWebhookVerifier(SECRET, 300);
+    private final PortOneWebhookVerifier verifier = new PortOneWebhookVerifier(SECRET);
     private final byte[] body = "{\"type\":\"Transaction.Paid\",\"data\":{\"paymentId\":\"20260927-000001-1\"}}"
             .getBytes(StandardCharsets.UTF_8);
 
@@ -23,7 +23,7 @@ class PortOneWebhookVerifierTest {
         String ts = String.valueOf(now.getEpochSecond());
         String signature = "v1," + verifier.sign(body, "msg_1", ts);
 
-        assertThat(verifier.verify(body, "msg_1", ts, signature, now)).isTrue();
+        assertThat(verifier.verify(body, "msg_1", ts, signature)).isTrue();
     }
 
     @Test
@@ -34,9 +34,9 @@ class PortOneWebhookVerifierTest {
         String signature = "v1," + verifier.sign(body, "msg_1", ts);
         byte[] tampered = new String(body, StandardCharsets.UTF_8).replace("000001", "000002").getBytes(StandardCharsets.UTF_8);
 
-        assertThat(verifier.verify(tampered, "msg_1", ts, signature, now)).isFalse();
-        assertThat(verifier.verify(body, "msg_2", ts, signature, now)).isFalse();
-        assertThat(verifier.verify(body, "msg_1", ts, "v1,AAAA", now)).isFalse();
+        assertThat(verifier.verify(tampered, "msg_1", ts, signature)).isFalse();
+        assertThat(verifier.verify(body, "msg_2", ts, signature)).isFalse();
+        assertThat(verifier.verify(body, "msg_1", ts, "v1,AAAA")).isFalse();
     }
 
     @Test
@@ -46,7 +46,7 @@ class PortOneWebhookVerifierTest {
         String ts = String.valueOf(now.minusSeconds(600).getEpochSecond());
         String signature = "v1," + verifier.sign(body, "msg_1", ts);
 
-        assertThat(verifier.verify(body, "msg_1", ts, signature, now)).isFalse();
+        assertThat(verifier.verify(body, "msg_1", ts, signature)).isFalse();
     }
 
     @Test
@@ -56,16 +56,15 @@ class PortOneWebhookVerifierTest {
         String ts = String.valueOf(now.getEpochSecond());
         String signature = "v1,invalid v1," + verifier.sign(body, "msg_1", ts);
 
-        assertThat(verifier.verify(body, "msg_1", ts, signature, now)).isTrue();
+        assertThat(verifier.verify(body, "msg_1", ts, signature)).isTrue();
     }
 
     @Test
     @DisplayName("헤더가 하나라도 없으면 거절한다")
     void missingHeadersFail() {
-        Instant now = Instant.now();
-        assertThat(verifier.verify(body, null, "1", "v1,x", now)).isFalse();
-        assertThat(verifier.verify(body, "msg_1", null, "v1,x", now)).isFalse();
-        assertThat(verifier.verify(body, "msg_1", "1", null, now)).isFalse();
-        assertThat(verifier.verify(body, "msg_1", "not-a-number", "v1,x", now)).isFalse();
+        assertThat(verifier.verify(body, null, "1", "v1,x")).isFalse();
+        assertThat(verifier.verify(body, "msg_1", null, "v1,x")).isFalse();
+        assertThat(verifier.verify(body, "msg_1", "1", null)).isFalse();
+        assertThat(verifier.verify(body, "msg_1", "not-a-number", "v1,x")).isFalse();
     }
 }

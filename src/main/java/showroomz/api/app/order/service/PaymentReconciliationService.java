@@ -12,6 +12,7 @@ import showroomz.domain.payment.type.PaymentStatus;
 import showroomz.domain.payment.type.ReconciliationIssueKind;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.payment.portone.PaymentGatewayException;
+import showroomz.global.payment.portone.PaymentGatewayRejectedException;
 import showroomz.global.payment.portone.PortOnePayment;
 import showroomz.global.payment.portone.PortOnePaymentGateway;
 import showroomz.global.payment.portone.PortOneStatus;
@@ -50,7 +51,7 @@ public class PaymentReconciliationService {
         List<PortOnePayment> remoteList;
         try {
             remoteList = gateway.listPayments(from, until, REMOTE_STATUSES);
-        } catch (PaymentGatewayException e) {
+        } catch (PaymentGatewayException | PaymentGatewayRejectedException e) {
             alerts.warning("일일 대사 - 포트원 목록 조회 실패(" + from + " ~ " + until + ") - " + e.getMessage());
             return Result.skippedResult();
         }

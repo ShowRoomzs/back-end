@@ -176,7 +176,7 @@ public abstract class OrderPaymentTestSupport extends GroupBuyTestSupport {
         byte[] body = ("{\"type\":\"" + type + "\",\"timestamp\":\"2026-09-27T05:00:00Z\",\"data\":{\"paymentId\":\"" + paymentId
                 + "\",\"storeId\":\"" + FakePaymentGateway.STORE_ID + "\"}}").getBytes(StandardCharsets.UTF_8);
         String ts = String.valueOf(Instant.now().getEpochSecond());
-        String signature = "v1," + new PortOneWebhookVerifier(WEBHOOK_SECRET, 300).sign(body, webhookId, ts);
+        String signature = "v1," + new PortOneWebhookVerifier(WEBHOOK_SECRET).sign(body, webhookId, ts);
         return mockMvc.perform(post(WEBHOOK).contentType(MediaType.APPLICATION_JSON).content(body)
                 .header("webhook-id", webhookId).header("webhook-timestamp", ts).header("webhook-signature", signature));
     }

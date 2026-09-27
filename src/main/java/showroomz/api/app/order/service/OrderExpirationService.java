@@ -14,6 +14,7 @@ import showroomz.domain.payment.type.PaymentStatus;
 import showroomz.global.config.properties.OrderProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.payment.portone.PaymentGatewayException;
+import showroomz.global.payment.portone.PaymentGatewayRejectedException;
 import showroomz.global.payment.portone.PortOnePayment;
 import showroomz.global.payment.portone.PortOnePaymentGateway;
 import showroomz.global.payment.portone.PortOneStatus;
@@ -65,7 +66,7 @@ public class OrderExpirationService {
             Optional<PortOnePayment> remote;
             try {
                 remote = gateway.getPayment(view.livePaymentId());
-            } catch (PaymentGatewayException e) {
+            } catch (PaymentGatewayException | PaymentGatewayRejectedException e) {
                 transitions.recordExpiryCheckFailure(orderId);
                 if (view.checkFailures() + 1 < properties.getExpiryMaxCheckFailures()) {
                     log.warn("만료 전 포트원 조회 실패({}회) - orderId: {}", view.checkFailures() + 1, orderId);
@@ -107,7 +108,8 @@ public class OrderExpirationService {
         Optional<PortOnePayment> remote;
         try {
             remote = gateway.getPayment(paymentId);
-        } catch (PaymentGatewayException e) {
+        } catch (PaymentGatewayException | PaymentGatewayRejectedException e) {
+            log.warn("취소 수렴 - 포트원 조회 실패 - paymentId: {} - {}", paymentId, e.getMessage());
             transitions.bumpCancelRetry(paymentId, now);
             return;
         }
