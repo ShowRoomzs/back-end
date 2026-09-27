@@ -22,14 +22,7 @@ import showroomz.global.dto.PagingRequest;
 
 import static showroomz.api.app.post.docs.PostDocsExamples.*;
 
-@Tag(name = "User Post", description = """
-        유저 피드(C1)·좋아요 게시글(C3) 조회 API. 일반 게시물과 공구 게시물이 섞여 나오고 `contentType`(`GENERAL` / `GROUP_BUY`)이 판별자다.
-        공구 게시물의 노출 기간·`groupBuy` 블록 해석은 「User - Post」 태그 설명을 따른다.
-
-        - C1 피드(팔로잉·추천)는 **진행 중인** 공구 게시물만 싣는다 — 살 수 없는 공구는 발견이 아니다
-        - C3 좋아요 목록은 **마감된 공구(종료 후 3일 이내)도** 남긴다 — `likeLocked: true`로 해제만 허용한다
-        - 목록에서는 마감 공구의 `groupBuy.products`가 `[]`(글만 표시)이고, 진행 중이면 **전부** 실린다(「상품 N개 더보기」를 추가 호출 없이 펼친다)
-        """)
+@Tag(name = "User Post", description = "소비자 피드·좋아요한 게시물 조회 API.")
 public interface UserFeedControllerDocs {
 
     @Operation(

@@ -31,30 +31,7 @@ import showroomz.domain.groupbuy.type.GroupBuyTab;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "Seller - GroupBuy", description = """
-        파트너센터(브랜드) 공구 관리 API (§29 공통 · §30 브랜드).
-
-        **공구는 계약 체결 시 시스템이 자동으로 만든다** — 생성·수정·삭제·기간 단축 API가 없다. 브랜드가 하는 일은
-        ① 최소 물량 확보 확인 ② 연장·조기 마감·중단 요청 ③ 직권 중단 소명 ④ 종료 후 이행 확인·이슈 개설뿐이다.
-
-        **상태 7종(3서피스 공통)**
-        - `PREPARING` 준비중 → `READY` 준비완료 → `IN_PROGRESS` 진행중 → `ENDED` 종료 → `SETTLED` 정산완료
-        - `SUSPENSION_SCHEDULED` 중단 예정 — 운영자 직권 중단 통지. **아직 판매 중이다**
-        - `SUSPENDED` 중단 — 재개 불가
-        - `ENDED` · `SETTLED` · `SUSPENDED`가 종결 3종이다. 조기 마감도 `ENDED`이고 `closeType`으로 구분한다.
-
-        **시간이 여는 전이는 스케줄러(1분 주기)가 한다** — 시작 시각이 되면 `READY → IN_PROGRESS`, 종료 시각이 되면
-        `IN_PROGRESS · SUSPENSION_SCHEDULED → ENDED`. 시작·종료 버튼은 없다.
-
-        **공통 규칙**
-        - 실행 API는 모두 **갱신된 상세(`GroupBuyDetailResponse`)를 그대로 돌려준다**(이슈 개설·presign 제외). FE는 응답으로 화면을 다시 그리면 된다.
-        - 버튼 노출은 상세의 `permissions`를 따른다. 실행 API가 **같은 판정 메서드**로 다시 검사해 409를 내므로 FE가 조건을 복제하지 않는다.
-        - **요청(연장·조기 마감·중단)은 상태를 바꾸지 않는다.** 상태를 바꾸는 것은 상대(인플루언서)의 수락 또는 운영자의 승인이다. 요청은 취소할 수 없다.
-        - 판매 모듈 연동 전이라 판매 숫자(`sales` · `orderClosure`)는 현재 항상 `null`이다. **`null`은 0이 아니다.**
-        - 모든 시각은 서버 기준 Asia/Seoul `LocalDateTime`이다.
-
-        **공통 에러** — 모든 API: 404 `SELLER_NOT_FOUND` · `MARKET_NOT_FOUND`(브랜드 미등록). `/{groupBuyId}` API: 404 `GROUP_BUY_NOT_FOUND` · 403 `GROUP_BUY_NOT_OWNED_BY_SELLER`.
-        """)
+@Tag(name = "Seller - GroupBuy", description = "파트너센터 공구 조회·준비 확인·변경 요청 API.")
 public interface SellerGroupBuyControllerDocs {
 
     // ── 조회 ────────────────────────────────────────────────────────────────

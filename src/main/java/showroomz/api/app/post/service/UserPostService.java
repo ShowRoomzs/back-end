@@ -108,7 +108,7 @@ public class UserPostService {
                 .likeCount(post.getLikeCount())
                 .likeLocked(likeLocked(post, card))
                 .publishedAt(post.getPublishedAt())
-                .modifiedAt(post.getModifiedAt())
+                .modifiedAt(post.getLastModifiedAt())
                 .groupBuy(card == null ? null : PostDto.GroupBuyBlock.of(card, true))
                 .build();
     }

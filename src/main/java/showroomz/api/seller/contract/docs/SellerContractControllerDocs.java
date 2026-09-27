@@ -38,19 +38,7 @@ import showroomz.global.dto.PagingRequest;
 
 import java.time.LocalDate;
 
-@Tag(name = "Seller - Contract", description = """
-        파트너센터(브랜드) 계약 관리 API. 모든 API는 SELLER JWT와 브랜드 등록이 필요하다.
-
-        **상태 9종**: `DRAFT` 작성중 → `REVIEW_PENDING` 검토 대기 → `REVIEW_REJECTED` 검토 반려
-        또는 `SIGNING` 서명 진행중 → `CONCLUSION_PENDING` 체결 처리 대기 → `CONCLUDED` 체결완료.
-        서명 구간에서 `DECLINED` 거절 · `EXPIRED` 만료 · `CANCELED` 취소로 종결될 수 있다.
-        검토 반려는 다시 임시저장·검토 요청할 수 있고, 검토 대기는 요청 취소로 작성중으로 돌아간다.
-
-        **공통 응답 규칙**: `/{contractId}`는 없는 계약 또는 삭제된 계약에 404 `CONTRACT_NOT_FOUND`,
-        다른 브랜드의 계약에 403 `CONTRACT_NOT_OWNED_BY_SELLER`를 반환한다.
-        브랜드 계정·마켓이 없으면 404 `SELLER_NOT_FOUND` · `MARKET_NOT_FOUND`다.
-        상태가 허용하지 않는 명령은 409를 반환한다. 날짜와 시각은 서버의 Asia/Seoul 기준이다.
-        """)
+@Tag(name = "Seller - Contract", description = "파트너센터 계약 작성·조회·검토 요청 API.")
 public interface SellerContractControllerDocs {
 
     @Operation(

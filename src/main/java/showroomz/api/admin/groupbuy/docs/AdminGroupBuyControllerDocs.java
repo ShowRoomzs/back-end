@@ -30,20 +30,7 @@ import java.util.List;
 
 import static showroomz.api.admin.groupbuy.docs.AdminGroupBuyDocsExamples.*;
 
-@Tag(name = "Admin - GroupBuy", description = """
-        어드민 공구 관리 API (§29·§32) — 목록 · 조치 큐 · 상세 · 판정.
-
-        **공통**
-        - 권한: ADMIN 토큰. 토큰이 없거나 만료되면 401, 운영자가 아니면 403 `{"code":"FORBIDDEN","message":"접근 권한이 없습니다."}`
-        - 가시성 필터가 없다 — 어드민은 모든 공구를 본다.
-        - 에러 바디는 `{"code","message"}` 하나다. 판정 API의 409는 **상세의 `permissions`와 같은 판정식**으로 난다 — 버튼이 꺼진 동작을 호출하면 409다.
-        - 일시는 오프셋 없는 `LocalDateTime`(서버 시각 Asia/Seoul), 날짜는 `LocalDate`다.
-        - **쓰기 API가 받는 것은 판정과 사유뿐이다** — 계약 조건 · 기간 · 게시물 본문을 고치는 API는 없다.
-        - 판정 API는 모두 `ActionResponse`(전이 결과)를 돌려준다. FE는 이 값으로 완료 문구를 고르고 상세를 다시 읽는다.
-
-        **예제 시나리오** — 공구 41 「여름 수분 세럼 공구」(글로우랩 · 민지의 쇼룸)와 공구 45 「비타민 앰플 공구」(퓨어셀)를 상태별로 이어 그렸다.
-        판매·정산 모듈 연동 전이라 판매 수치는 예제에서도 null이다.
-        """)
+@Tag(name = "Admin - GroupBuy", description = "관리자 공구 목록·상세 조회와 운영 판정 API.")
 public interface AdminGroupBuyControllerDocs {
 
     // ── 조회 ────────────────────────────────────────────────────────────────

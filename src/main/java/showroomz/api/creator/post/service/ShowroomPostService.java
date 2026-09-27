@@ -125,7 +125,7 @@ public class ShowroomPostService {
         postPolicies.of(post).validateEditable(post);
         validateSaveable(request.getAction(), images, request.getContent());
 
-        post.updateContent(request.getContent(), resolveAspectRatio(images));
+        post.updateContent(request.getContent(), resolveAspectRatio(images), LocalDateTime.now());
         replaceImages(post, images);
 
         boolean publishing = request.getAction() == PostSaveAction.PUBLISH;

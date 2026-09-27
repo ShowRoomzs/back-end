@@ -29,39 +29,7 @@ import showroomz.global.dto.PagingRequest;
 
 import static showroomz.api.creator.groupbuy.docs.CreatorGroupBuyDocsExamples.*;
 
-@Tag(name = "Creator - GroupBuy", description = """
-        쇼룸 스튜디오(인플루언서) 공구 관리 API (§29 공통 · §31 스튜디오).
-
-        **공구는 계약 체결 시 시스템이 자동으로 만든다** — 생성·수정·삭제 API가 없다. 인플루언서가 하는 일은
-        ① 공구 게시물 작성·제출(준비 게이트 ②) ② 승인 후 게시물 수정 ③ 브랜드의 기간 연장 요청에 응답
-        ④ 공구 중단 요청 ⑤ 종료 후 **브랜드의** 계약 이행 확인뿐이다.
-        연장·조기 마감 요청은 브랜드만 낼 수 있고, 직권 중단 소명·이슈 스레드 개설·요청 취소 API는 스튜디오에 없다.
-
-        **상태 7종(3서피스 공통)**
-        - `PREPARING` 준비중 → `READY` 준비완료 → `IN_PROGRESS` 진행중 → `ENDED` 종료 → `SETTLED` 정산완료
-        - `SUSPENSION_SCHEDULED` 중단 예정 — 운영자 직권 중단 통지. **아직 판매 중이다**
-        - `SUSPENDED` 중단 — 재개 불가
-        - `ENDED` · `SETTLED` · `SUSPENDED`가 종결 3종이다. 조기 마감도 `ENDED`이고 `closeType`으로 구분한다.
-
-        **준비 게이트 3개가 모두 채워지면 `READY`가 된다** — ① 브랜드 최소 물량 확인 ② **내 게시물 제출** ③ 운영자 오픈 승인.
-        시작 시각이 되면 스케줄러(1분 주기)가 `READY → IN_PROGRESS`, 종료 시각이 되면 `IN_PROGRESS · SUSPENSION_SCHEDULED → ENDED`로 바꾼다.
-
-        **공통 규칙**
-        - 실행 API 7종은 모두 **갱신된 상세(`CreatorGroupBuyDetailResponse`)를 그대로 돌려준다.** FE는 응답으로 화면을 다시 그리면 된다.
-          실행 응답의 `navigation`은 항상 `{prevGroupBuyId: null, nextGroupBuyId: null}`이다.
-        - 버튼 노출은 상세의 `permissions`를 따른다. 실행 API가 **같은 판정 메서드**로 다시 검사해 409를 내므로 FE가 조건을 복제하지 않는다.
-        - **파트너(브랜드) 응답과 DTO를 공유하지 않는다.** 최소 준비 물량 · 비고 · 직권 중단 소명 · 상대가 운영자에게 쓴 메모 ·
-          고정 지급비 지급 신고는 스튜디오에 내려오지 않는다.
-        - 판매 모듈·정산 모듈 연동 전이라 `sales` · `orderClosure` · `payout.salesReward` · `settlement.confirmedReward`는 현재 항상 `null`이다.
-          **`null`은 0이 아니다** — 0으로 그리지 않는다.
-        - 모든 시각은 서버 기준 Asia/Seoul `LocalDateTime`(`yyyy-MM-dd'T'HH:mm:ss`), 날짜는 `LocalDate`(`yyyy-MM-dd`)다.
-
-        **공통 에러**
-        - 401 — 토큰 없음·만료 / 403 — CREATOR 권한이 아닌 토큰(Security 계층)
-        - 404 `USER_NOT_FOUND` · `CREATOR_NOT_FOUND` — 토큰의 회원·크리에이터가 없음(모든 API)
-        - 404 `GROUP_BUY_NOT_FOUND` · `GROUP_BUY_NOT_OWNED_BY_CREATOR` — `/{groupBuyId}` API. **남의 공구도 403이 아니라 404다.**
-          공구번호(`GB-YYYYMMDD-NNN`)가 추측 가능해 403은 「그 번호의 공구가 있다」를 알려주기 때문이다. 두 코드의 문구는 같다.
-        """)
+@Tag(name = "Creator - GroupBuy", description = "쇼룸 스튜디오 공구 조회·게시물 제출·요청 응답 API.")
 public interface CreatorGroupBuyControllerDocs {
 
     // ── 조회 ────────────────────────────────────────────────────────────────

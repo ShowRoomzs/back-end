@@ -137,7 +137,7 @@ final class PostDocsExamples {
               "likeCount": 87,
               "likeLocked": true,
               "publishedAt": "2026-09-18T10:00:41",
-              "modifiedAt": "2026-09-24T23:59:59",
+              "modifiedAt": "2026-09-18T10:00:41",
               "groupBuy":
             """ + GB64_CLOSED_DETAIL + """
             }

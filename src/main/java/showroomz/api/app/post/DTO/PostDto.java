@@ -77,7 +77,8 @@ public class PostDto {
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
         private LocalDateTime publishedAt;
 
-        @Schema(description = "게시물 행의 마지막 변경 시각 — 좋아요 수·노출 상태 변경에도 갱신된다. 「수정됨」 표시 근거로 쓰지 않는다",
+        @Schema(description = "마지막 수정 시각 — 게시 후 본문·사진(공구는 제목·본문)을 고친 시각. 고친 적이 없으면 publishedAt과 같다. "
+                + "좋아요·노출 수·노출 상태 변경으로는 바뀌지 않는다 — publishedAt보다 늦으면 「수정됨」으로 표시할 수 있다",
                 example = "2026-03-04T13:00:00")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
         private LocalDateTime modifiedAt;

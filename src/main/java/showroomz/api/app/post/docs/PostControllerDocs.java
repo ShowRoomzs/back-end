@@ -24,53 +24,7 @@ import java.util.List;
 
 import static showroomz.api.app.post.docs.PostDocsExamples.*;
 
-@Tag(name = "User - Post", description = """
-        소비자 쇼룸 게시물 조회·좋아요 API. 일반 게시물과 **공구 게시물**이 같은 응답 구조로 나간다.
-
-        **게시물 종류** — `contentType`이 판별자다.
-        - `GENERAL` 일반 게시물 — 사진(`imageUrls` · `aspectRatio`) + 본문. `groupBuy: null`
-        - `GROUP_BUY` 공구 게시물 — **사진이 없다**(`imageUrls: []` · `imageCount: 0` · `aspectRatio: null`).
-          제목·판매 상태·상품은 `groupBuy` 블록에 있고 본문은 `content`다
-
-        **공구 게시물이 소비자에게 보이는 기간**
-        - 공구가 **오픈(진행중)되는 순간** 게시된다 — 인플루언서 제출 → 운영자 승인 → 시작 시각 도달. 그 전(작성중·승인대기·예약)에는 404다
-        - 진행 중에 운영자가 **숨기면** 즉시 내려가고(404 · 목록에서 빠짐), 해제하면 다시 나온다
-        - 운영자 직권 중단 **예고(중단 예정)** 중에는 그대로 판매·노출된다
-        - 공구가 **끝나면(기간 종료·조기 마감·요청 중단) 종료 후 3일(72시간)까지** 마감 상태(`saleState: CLOSED`)로 남고, 그 뒤 404다.
-          **운영자 직권 중단**으로 끝나면 즉시 404다. 숨긴 채 끝난 게시물은 다시 나오지 않는다
-        - 인플루언서가 승인 후 본문을 고치면 재승인 없이 **즉시** 반영된다
-
-        **목록별로 싣는 공구 게시물** — 모든 목록은 게시중 게시물만 싣고, 공구 게시물 범위만 다르다.
-
-        | 목록 | 일반 | 진행 중 공구 | 마감 공구(3일 이내) |
-        |---|---|---|---|
-        | C1 팔로잉 · 추천 피드, 전체 목록 | O | O | X |
-        | C4 쇼룸 고정 섹션(`/{showroomId}/group-buy-posts`) | X | O | X |
-        | C4 쇼룸 아래 피드(`/{showroomId}/posts`) | O | X | O |
-        | C3 좋아요 목록 | O | O | O |
-        | C5 상세 | O | O | O |
-
-        진행 중 = 게시중 ∧ 공구 판매 중(진행중·중단 예정) ∧ 종료 시각 전. 아바타 로즈 링(`hasOngoingGroupBuy`)도 **같은 정의**다.
-
-        **공구 블록(`groupBuy`) 읽는 법**
-        - `saleState` — 저장값이 아니라 조회 시점에 파생한다. 배지 문구는 앱이 정한다(C3 「공구 종료」 / C5 「공구 마감」처럼 화면마다 다르다).
-
-          | 값 | 조건 | 배지 | 상품 행 |
-          |---|---|---|---|
-          | `ON_SALE` | 판매 중 · 품절 없음 | 공동구매 D-n | 전부 `ON_SALE` |
-          | `PARTIALLY_SOLD_OUT` | 판매 중 · 일부 품절 | 공동구매 D-n | 품절 행만 `SOLD_OUT`(흑백) |
-          | `SOLD_OUT` | 판매 중 · 전부 품절 | 품절 | 전부 `SOLD_OUT` |
-          | `CLOSED` | 공구 종결 또는 종료 시각 경과 | 공구 마감 | 전부 `CLOSED` |
-
-        - `dDay` — KST 날짜 차이(마감 당일 0). `CLOSED`면 `null`. 시·분이 필요하면 `endAt`. 앱 시계로 다시 계산하지 않는다
-        - `products` — 계약 상품 순서. **목록은 마감이면 `[]`**(글만 표시), **상세는 마감이어도 전부**(흑백 + 「공구 마감」). `productCount`는 항상 실제 개수다
-        - 상품명·정가·공구가는 **계약 시점 값**이고, 썸네일·품절·상세 진입 가능 여부만 현재 상품에서 읽는다
-        - `discountRate` = round((정가 − 공구가) ÷ 정가 × 100), 0~100. 정가가 없으면 0
-        - `detailAvailable` — `false`면 C7 상품 상세로 보내지 않는다(마감 · 미진열 · 공구 연결 해제)
-        - `adDisclosure` — 「유료 광고 포함」 배지(`label`)와 대가관계 전문(`text`). 공구 게시물에 **항상** 붙는다
-
-        **좋아요** — `likeLocked = true`(마감된 공구)면 새 좋아요는 404로 거절되고 해제만 된다. 품절은 막지 않는다.
-        """)
+@Tag(name = "User - Post", description = "소비자 쇼룸 게시물 조회·좋아요 API.")
 public interface PostControllerDocs {
 
     @Operation(
@@ -88,8 +42,9 @@ public interface PostControllerDocs {
                     - `imageUrls` — 배열 순서가 노출 순서, 첫 장이 대표 사진. 공구 게시물은 `[]`
                     - `likeLocked` — `true`면 마감된 공구다. 하트를 눌러도 새로 걸리지 않고 해제만 된다(C3 §마감·품절과 같은 규칙)
                     - `publishedAt` — 처음 게시된 시각. 공구 게시물은 **공구가 오픈된 시각**이다(숨김·해제로 바뀌지 않는다)
-                    - `modifiedAt` — 게시물 행의 마지막 변경 시각이다. 본문 수정뿐 아니라 좋아요 수·노출 상태 변경에도 갱신되므로
-                      「수정됨」 표시의 근거로 쓰지 않는다
+                    - `modifiedAt` — **마지막 수정 시각.** 게시 후 본문·사진(공구 게시물은 제목·본문)을 고친 시각이고,
+                      고친 적이 없으면 `publishedAt`과 같다. 좋아요·노출 수·숨김/해제 같은 노출 상태 변경으로는 바뀌지 않는다 —
+                      `modifiedAt > publishedAt`이면 「수정됨」으로 표시할 수 있다. 공구 게시물은 공구 오픈 전(예약 상태)의 수정은 세지 않는다
 
                     **공구 게시물 (`contentType = GROUP_BUY`)**
                     - 진행 중이면 `groupBuy.saleState`가 `ON_SALE` · `PARTIALLY_SOLD_OUT` · `SOLD_OUT` 중 하나이고 `dDay`가 채워진다.

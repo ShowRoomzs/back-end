@@ -97,7 +97,7 @@ public class CreatorGroupBuyCommandService {
         if (locked.post() == null) {
             createPost(locked.groupBuy(), title, content);
         } else {
-            locked.post().rewrite(title, content);
+            locked.post().rewrite(title, content, LocalDateTime.now());
         }
         return detailAssembler.assemble(locked.groupBuy(), null);
     }
@@ -124,7 +124,7 @@ public class CreatorGroupBuyCommandService {
         if (post == null) {
             post = createPost(locked.groupBuy(), title, content);
         } else {
-            post.rewrite(title, content);
+            post.rewrite(title, content, now);
         }
         postPolicies.of(post.getPost()).validateForPublish(post.getPost());
         post.submit(now);
@@ -158,7 +158,7 @@ public class CreatorGroupBuyCommandService {
 
         LocalDateTime now = LocalDateTime.now();
         GroupBuyPost post = locked.post();
-        post.rewrite(title, content);
+        post.rewrite(title, content, now);
         postPolicies.of(post.getPost()).validateEditable(post.getPost());
         post.markEdited(now);
         appendRevision(post, GroupBuyPostRevisionKind.EDITED, locked.creatorId(), now);

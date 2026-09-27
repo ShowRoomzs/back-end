@@ -30,17 +30,7 @@ import showroomz.global.dto.PagingRequest;
 
 import static showroomz.api.creator.contract.docs.CreatorContractDocsExamples.*;
 
-@Tag(name = "Creator - Contract", description = """
-        쇼룸 스튜디오 계약 관리 API. CREATOR 계정의 **도착한 계약**만 조회·거절·재발송 요청할 수 있다.
-
-        `DRAFT`·`REVIEW_PENDING`·`REVIEW_REJECTED`는 도착 전이므로 목록에 나오지 않으며,
-        개별 경로에서도 404를 반환한다. 남의 계약도 같은 HTTP 상태로 숨긴다.
-        서명 자체와 계약 조건 변경은 이 API에서 처리하지 않는다.
-
-        모든 일시는 서버 기준 Asia/Seoul `yyyy-MM-dd'T'HH:mm:ss`, 날짜는 `yyyy-MM-dd`다.
-        인증 실패는 401, CREATOR 권한이 아닌 토큰은 403(Security 계층)이다.
-        토큰의 회원·크리에이터가 없으면 404 `USER_NOT_FOUND`·`CREATOR_NOT_FOUND`다.
-        """)
+@Tag(name = "Creator - Contract", description = "쇼룸 스튜디오에 도착한 계약 조회·거절·재발송 요청 API.")
 public interface CreatorContractControllerDocs {
 
     @Operation(
