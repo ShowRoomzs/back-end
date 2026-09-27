@@ -21,6 +21,7 @@ import showroomz.domain.member.user.type.UserStatus;
 import showroomz.domain.order.entity.QOrder;
 import showroomz.domain.order.entity.QOrderProduct;
 import showroomz.domain.order.type.OrderProductStatus;
+import showroomz.domain.order.type.OrderStatus;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -75,7 +76,9 @@ public class AdminUserQueryRepository {
                 .select(user.id, user.nickname, user.name, user.phoneNumber,
                         user.providerType, user.createdAt, user.status, orderCount)
                 .from(user)
-                .leftJoin(order).on(order.user.id.eq(user.id))
+                // 결제가 된 적 있는 주문만 — 결제 대기 30분 안의 주문·사전 등록만 되고 결제 안 된 주문은 누적 주문이 아니다
+                // (선행 수정 계획서 3-4). 결제 후 취소된 주문은 order_product.status = CANCELLED 로 아래 조건이 거른다.
+                .leftJoin(order).on(order.user.id.eq(user.id).and(order.status.in(OrderStatus.PAID_OR_LATER)))
                 .leftJoin(orderProduct).on(orderProduct.order.id.eq(order.id)
                         .and(orderProduct.status.ne(OrderProductStatus.CANCELLED)))
                 .where(where)

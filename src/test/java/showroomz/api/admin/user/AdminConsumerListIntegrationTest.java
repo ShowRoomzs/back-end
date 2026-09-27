@@ -16,8 +16,6 @@ import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.member.user.type.UserStatus;
-import showroomz.domain.order.entity.Order;
-import showroomz.domain.order.entity.OrderProduct;
 import showroomz.domain.order.repository.OrderProductRepository;
 import showroomz.domain.order.repository.OrderRepository;
 import showroomz.domain.order.type.OrderProductStatus;
@@ -26,6 +24,7 @@ import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.support.IntegrationTestSupport;
+import showroomz.support.OrderFixture;
 
 import java.time.LocalDateTime;
 
@@ -65,7 +64,7 @@ class AdminConsumerListIntegrationTest extends IntegrationTestSupport {
     private String adminToken;
     private ProductVariant variant;
 
-    private Users hong;      // 활성 · 카카오 · 주문 2건(+ 전부 취소된 주문 1건)
+    private Users hong;      // 활성 · 카카오 · 주문 2건(+ 전부 취소된 주문 1건 + 결제 대기 주문 1건)
     private Users yuri;      // 정지 · 애플 · 주문 0건
     private Users dohyun;    // 탈퇴 · 네이버 · 주문 1건
 
@@ -87,10 +86,13 @@ class AdminConsumerListIntegrationTest extends IntegrationTestSupport {
         // 가입만 하고 약관 동의를 끝내지 않은 계정 — 아직 회원이 아니라 목록에 나오면 안 된다
         createGuest("half-signed-up");
 
-        placeOrder(hong, OrderProductStatus.PURCHASE_CONFIRMED);
-        placeOrder(hong, OrderProductStatus.PENDING);
-        placeOrder(hong, OrderProductStatus.CANCELLED);
-        placeOrder(dohyun, OrderProductStatus.PURCHASE_CONFIRMED);
+        OrderFixture orders = new OrderFixture(orderRepository, orderProductRepository, transactionTemplate);
+        orders.paidOrder(hong, variant, 1, 24900, OrderProductStatus.PURCHASE_CONFIRMED);
+        orders.paidOrder(hong, variant, 1, 24900, OrderProductStatus.PAID);
+        orders.paidOrder(hong, variant, 1, 24900, OrderProductStatus.CANCELLED);
+        // 결제 대기(PAYMENT_PENDING) 주문은 누적 주문이 아니다 — 사전 등록만 되고 결제 안 된 주문을 세면 안 된다(선행 수정 계획서 3-4).
+        orders.pendingOrder(hong, variant, 1, 24900);
+        orders.paidOrder(dohyun, variant, 1, 24900, OrderProductStatus.PURCHASE_CONFIRMED);
     }
 
     @Test
@@ -181,7 +183,7 @@ class AdminConsumerListIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("누적 주문은 취소만 남은 주문을 세지 않고, 그 값으로 정렬된다")
+    @DisplayName("누적 주문은 취소만 남은 주문·결제 대기 주문을 세지 않고, 그 값으로 정렬된다")
     void orderCountExcludesFullyCancelledOrdersAndDrivesSorting() throws Exception {
         mockMvc.perform(get(PATH)
                         .param("sort", "ORDER_COUNT_DESC")
@@ -246,19 +248,5 @@ class AdminConsumerListIntegrationTest extends IntegrationTestSupport {
 
         return productVariantRepository.save(
                 new ProductVariant(product, "단품", 38000, 24900, 10, true));
-    }
-
-    private void placeOrder(Users user, OrderProductStatus status) {
-        Order order = orderRepository.save(Order.builder().user(user).build());
-        orderProductRepository.save(OrderProduct.builder()
-                .order(order)
-                .variant(variant)
-                .productName("시카 리페어 앰플 30ml")
-                .optionName("단품")
-                .quantity(1)
-                .price(24900)
-                .orderDate(LocalDateTime.now())
-                .status(status)
-                .build());
     }
 }

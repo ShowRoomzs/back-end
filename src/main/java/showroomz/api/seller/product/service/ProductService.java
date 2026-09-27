@@ -18,6 +18,7 @@ import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.domain.order.repository.OrderProductRepository;
 import showroomz.domain.product.entity.*;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.product.repository.ProductVariantRepository;
@@ -50,6 +51,7 @@ public class ProductService {
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
     private final ProductProcessingHistoryService processingHistoryService;
     private final ContractItemRepository contractItemRepository;
+    private final OrderProductRepository orderProductRepository;
 
     public ProductDto.CreateProductResponse createProduct(String adminEmail, ProductDto.CreateProductRequest request) {
         // 1. 카테고리 조회 및 검증 (카테고리 ID로 조회)
@@ -281,8 +283,11 @@ public class ProductService {
         List<Long> productIds = productPage.getContent().stream()
                 .map(Product::getProductId)
                 .collect(Collectors.toList());
+        // 셀러가 보는 재고는 실물 재고다 — DB 값(가용 재고)에 결제 대기 예약 수량을 더한다(선행 수정 계획서 3-8).
         Map<Long, Integer> stockSumMap = toStockSumMap(
                 productIds.isEmpty() ? List.of() : productVariantRepository.sumStockByProductIds(productIds));
+        toStockSumMap(productIds.isEmpty() ? List.of() : orderProductRepository.sumReservedQuantityByProductIds(productIds))
+                .forEach((productId, reserved) -> stockSumMap.merge(productId, reserved, Integer::sum));
 
         // 6. ProductListItem으로 변환
         List<ProductDto.ProductListItem> productList = productPage.getContent().stream()
@@ -895,7 +900,8 @@ public class ProductService {
                 })
                 .collect(Collectors.toList());
         
-        // Variant 목록 변환
+        // Variant 목록 변환 — 셀러가 보는 재고는 「저장값 + 결제 대기 예약 수량」이다(선행 수정 계획서 3-8).
+        Map<Long, Integer> reservedByVariant = reservedQuantities(product);
         List<ProductDto.VariantInfo> variants = product.getVariants().stream()
                 .map(variant -> {
                     List<Long> optionIds = variant.getOptions().stream()
@@ -906,7 +912,8 @@ public class ProductService {
                             .variantId(variant.getVariantId())
                             .name(variant.getName())
                             .regularPrice(variant.getRegularPrice())
-                            .stock(variant.getStock())
+                            .stock((variant.getStock() != null ? variant.getStock() : 0)
+                                    + reservedByVariant.getOrDefault(variant.getVariantId(), 0))
                             .isRepresentative(variant.getIsRepresentative())
                             .optionIds(optionIds)
                             .build();
@@ -988,6 +995,9 @@ public class ProductService {
                         (a, b) -> a
                 ));
 
+        // 셀러가 입력하는 값은 실물 재고다. DB 의 stock 은 가용 재고(주문 생성이 예약분을 이미 깎았다)라
+        // 「입력값 − 결제 대기 예약 수량」을 저장한다 — 절대값을 그대로 넣으면 예약이 사라지고 만료 복원 뒤 실물보다 많아진다(선행 수정 계획서 3-8).
+        Map<Long, Integer> reservedByVariant = reservedQuantities(product);
         for (ProductDto.VariantRequest variantRequest : variantRequests) {
             String variantName = variantRequest.getOptionNames().stream()
                     .collect(Collectors.joining(" / "));
@@ -995,8 +1005,31 @@ public class ProductService {
             if (existing == null) {
                 throw new BusinessException(ErrorCode.INVALID_VARIANT_OPTIONS);
             }
-            existing.setStock(variantRequest.getStock());
+            int requested = variantRequest.getStock() != null ? variantRequest.getStock() : 0;
+            int reserved = reservedByVariant.getOrDefault(existing.getVariantId(), 0);
+            int available = requested - reserved;
+            if (available < 0) {
+                log.warn("셀러 재고 입력값이 예약 수량보다 작다 - variantId: {}, 입력: {}, 예약: {} → 0 으로 저장",
+                        existing.getVariantId(), requested, reserved);
+                available = 0;
+            }
+            existing.setStock(available);
         }
+    }
+
+    /** 옵션별 결제 대기 예약 수량 — 재고를 돌려놓은 주문은 세지 않는다. */
+    private Map<Long, Integer> reservedQuantities(Product product) {
+        if (product.getVariants() == null || product.getVariants().isEmpty()) {
+            return Map.of();
+        }
+        List<Long> variantIds = product.getVariants().stream()
+                .map(ProductVariant::getVariantId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        if (variantIds.isEmpty()) {
+            return Map.of();
+        }
+        return toStockSumMap(orderProductRepository.sumReservedQuantityByVariantIds(variantIds));
     }
 
     private void applySellerDisplayStatusChange(

@@ -137,7 +137,8 @@ class AdminGroupBuyCommandIntegrationTest extends AdminGroupBuyTestSupport {
         adminDetail(groupBuy.getId())
                 .andExpect(jsonPath("$.post.hidden.revisionNo").value(latest))
                 .andExpect(jsonPath("$.post.hidden.hiddenByName").value(OPERATOR_NAME))
-                .andExpect(jsonPath("$.post.hidden.ordersSinceHidden").doesNotExist())
+                // 판매 포트가 주문 테이블을 읽는다(결제 계획서 7-2) — 숨김 이후 주문이 없으면 0이다.
+                .andExpect(jsonPath("$.post.hidden.ordersSinceHidden").value(0))
                 .andExpect(jsonPath("$.permissions.canUnhidePost").value(true));
     }
 
@@ -211,7 +212,8 @@ class AdminGroupBuyCommandIntegrationTest extends AdminGroupBuyTestSupport {
         GroupBuyAdminSuspension notice = adminSuspensionRepository
                 .findFirstByGroupBuyIdAndStatus(groupBuy.getId(), AdminSuspensionStatus.NOTICED).orElseThrow();
         assertThat(notice.getNoticeRevisionNo()).isEqualTo(latest);
-        assertThat(notice.getSalesOrderCountAtNotice()).isNull();
+        // 통지 시점 판매 스냅샷 — 판매 포트가 주문 테이블을 읽으므로 주문이 없으면 0이다(결제 계획서 7-2).
+        assertThat(notice.getSalesOrderCountAtNotice()).isZero();
         assertThat(notice.getNoticedBy()).isEqualTo(operator.getId());
         assertThat(history(groupBuy, GroupBuyEventType.SUSPENSION_NOTICED).getDetail())
                 .startsWith("제17조① 3호");
@@ -221,7 +223,7 @@ class AdminGroupBuyCommandIntegrationTest extends AdminGroupBuyTestSupport {
         adminDetail(groupBuy.getId())
                 .andExpect(jsonPath("$.adminSuspension.clauseLabel").value("제17조① 3호 중대 의무 불이행"))
                 .andExpect(jsonPath("$.adminSuspension.noticedByName").value(OPERATOR_NAME))
-                .andExpect(jsonPath("$.adminSuspension.salesSinceNotice").doesNotExist())
+                .andExpect(jsonPath("$.adminSuspension.salesSinceNotice.orders").value(0))
                 .andExpect(jsonPath("$.permissions.canExecuteSuspension").value(false))
                 .andExpect(jsonPath("$.permissions.canWithdrawSuspension").value(true));
         adminAction(groupBuy.getId(), "admin-suspension/notice", notice("ART17_1_LAW", execute, appeal))
@@ -301,7 +303,7 @@ class AdminGroupBuyCommandIntegrationTest extends AdminGroupBuyTestSupport {
                 .andExpect(jsonPath("$.closure.source").value("ADMIN_EMERGENCY"))
                 .andExpect(jsonPath("$.closure.adminBasis.basisLabel").value("행정·사법기관의 명령"))
                 .andExpect(jsonPath("$.closure.decidedByName").value(OPERATOR_NAME))
-                .andExpect(jsonPath("$.closure.acceptedOrderCount").doesNotExist())
+                .andExpect(jsonPath("$.closure.acceptedOrderCount").value(0))
                 .andExpect(jsonPath("$.permissions.canOpenIssue").value(true));
     }
 

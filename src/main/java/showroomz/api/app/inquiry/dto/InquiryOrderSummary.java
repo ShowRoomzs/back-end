@@ -7,7 +7,6 @@ import showroomz.domain.order.entity.Order;
 import showroomz.domain.order.entity.OrderProduct;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -19,12 +18,10 @@ import java.util.List;
 @Schema(description = "문의에 연결된 주문 요약 — 주문을 연결하지 않았으면 null")
 public class InquiryOrderSummary {
 
-    private static final DateTimeFormatter ORDER_NUMBER_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
-
     @Schema(description = "주문 ID — 주문 상세 이동용", example = "1147")
     private Long orderId;
 
-    @Schema(description = "주문번호 (주문일자 + 주문 ID 4자리)", example = "20260803-1147")
+    @Schema(description = "주문번호 (yyyyMMdd-NNNNNN)", example = "20260803-000123")
     private String orderNumber;
 
     @Schema(description = "주문 일시", example = "2026-08-03T13:20:00")
@@ -48,18 +45,11 @@ public class InquiryOrderSummary {
 
         return InquiryOrderSummary.builder()
                 .orderId(order.getId())
-                .orderNumber(formatOrderNumber(order.getId(), orderDate))
+                .orderNumber(order.getOrderNumber())
                 .orderDate(orderDate)
                 .productName(representative != null ? representative.getProductName() : null)
                 .productImageUrl(representative != null ? representative.getImageUrl() : null)
                 .productCount(products == null ? 0 : products.size())
                 .build();
-    }
-
-    private static String formatOrderNumber(Long orderId, LocalDateTime orderDate) {
-        if (orderDate == null) {
-            return String.format("%04d", orderId);
-        }
-        return ORDER_NUMBER_DATE.format(orderDate) + "-" + String.format("%04d", orderId);
     }
 }

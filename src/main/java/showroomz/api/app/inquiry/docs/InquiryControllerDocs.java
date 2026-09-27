@@ -35,7 +35,8 @@ public interface InquiryControllerDocs {
                     "- `content`: 문의 내용 (최대 1000자)\n\n" +
                     "**선택 값:**\n" +
                     "- `imageUrls`: 첨부 이미지 URL 리스트 (최대 5장)\n" +
-                    "- `orderId`: 참조 주문 ID — **모든 유형에서 선택값**입니다. 주문 없이도 문의할 수 있습니다\n\n" +
+                    "- `orderId`: 참조 주문 ID — **모든 유형에서 선택값**입니다. 주문 없이도 문의할 수 있습니다. " +
+                    "**본인 주문만** 연결할 수 있고, 남의 주문·없는 주문이면 403 `ORDER_ACCESS_DENIED`입니다(결제 대기·만료 주문도 연결 가능)\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -85,6 +86,23 @@ public interface InquiryControllerDocs {
                                             value = "{\n" +
                                                     "  \"code\": \"UNAUTHORIZED\",\n" +
                                                     "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "본인 주문이 아닌 orderId - Status: 403 Forbidden",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "남의 주문 연결",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ORDER_ACCESS_DENIED\",\n" +
+                                                    "  \"message\": \"해당 주문에 대한 권한이 없습니다.\"\n" +
                                                     "}"
                                     )
                             }
@@ -185,7 +203,7 @@ public interface InquiryControllerDocs {
                                                     "      \"orderId\": 1147,\n" +
                                                     "      \"order\": {\n" +
                                                     "        \"orderId\": 1147,\n" +
-                                                    "        \"orderNumber\": \"20260803-1147\",\n" +
+                                                    "        \"orderNumber\": \"20260803-000123\",\n" +
                                                     "        \"orderDate\": \"2026-08-03T13:20:00\",\n" +
                                                     "        \"productName\": \"시카 리페어 앰플 30ml 리필 2개 세트\",\n" +
                                                     "        \"productImageUrl\": \"https://example.com/orders/1147/thumb.jpg\",\n" +
@@ -358,7 +376,7 @@ public interface InquiryControllerDocs {
                                                     "  \"orderId\": 1147,\n" +
                                                     "  \"order\": {\n" +
                                                     "    \"orderId\": 1147,\n" +
-                                                    "    \"orderNumber\": \"20260803-1147\",\n" +
+                                                    "    \"orderNumber\": \"20260803-000123\",\n" +
                                                     "    \"orderDate\": \"2026-08-03T13:20:00\",\n" +
                                                     "    \"productName\": \"시카 리페어 앰플 30ml 리필 2개 세트\",\n" +
                                                     "    \"productImageUrl\": \"https://example.com/orders/1147/thumb.jpg\",\n" +
@@ -440,7 +458,7 @@ public interface InquiryControllerDocs {
             description = "접수(답변 대기) 상태인 1:1 문의의 내용을 수정합니다.\n\n" +
                     "- 본인이 등록한 문의만 수정할 수 있습니다.\n" +
                     "- 답변이 등록된 문의는 수정할 수 없습니다.\n" +
-                    "- `orderId`(참조 주문)는 모든 유형에서 선택값입니다.\n\n" +
+                    "- `orderId`(참조 주문)는 모든 유형에서 선택값입니다. 본인 주문만 연결할 수 있습니다(아니면 403 `ORDER_ACCESS_DENIED`).\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -485,7 +503,7 @@ public interface InquiryControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "403",
-                    description = "해당 문의에 대한 권한 없음 - Status: 403 Forbidden",
+                    description = "해당 문의에 대한 권한 없음 또는 본인 주문이 아닌 orderId - Status: 403 Forbidden",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -495,6 +513,13 @@ public interface InquiryControllerDocs {
                                             value = "{\n" +
                                                     "  \"code\": \"ACCESS_DENIED\",\n" +
                                                     "  \"message\": \"해당 리소스에 대한 접근 권한이 없습니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "남의 주문 연결",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ORDER_ACCESS_DENIED\",\n" +
+                                                    "  \"message\": \"해당 주문에 대한 권한이 없습니다.\"\n" +
                                                     "}"
                                     )
                             }

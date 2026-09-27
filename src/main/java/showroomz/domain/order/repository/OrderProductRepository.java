@@ -1,11 +1,13 @@
 package showroomz.domain.order.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import showroomz.domain.order.entity.OrderProduct;
 import showroomz.domain.order.type.OrderProductStatus;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -39,4 +41,60 @@ public interface OrderProductRepository extends JpaRepository<OrderProduct, Long
     long countOngoingByUserId(
             @Param("userId") Long userId,
             @Param("finishedStatuses") Collection<OrderProductStatus> finishedStatuses);
+
+    /** 주문의 상품 줄 — 재고 복원·응답 조립. */
+    @Query("SELECT op FROM OrderProduct op JOIN FETCH op.variant v JOIN FETCH v.product WHERE op.order.id = :orderId ORDER BY op.id ASC")
+    List<OrderProduct> findByOrderIdWithVariant(@Param("orderId") Long orderId);
+
+    /** 주문 상품 전체의 상태를 한 번에 — 주문 전이의 부수 효과(4-1). */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderProduct op SET op.status = :to WHERE op.order.id = :orderId AND op.status IN :from")
+    int transitionByOrder(@Param("orderId") Long orderId, @Param("from") Collection<OrderProductStatus> from,
+                          @Param("to") OrderProductStatus to);
+
+    /**
+     * 결제 대기 예약 수량 — 옵션별(선행 수정 계획서 3-8). 셀러 재고 저장은 「입력값 − 예약」, 조회는 「저장값 + 예약」이다.
+     * 재고를 돌려놓은 주문({@code stock_released_at}이 있는 주문)은 세지 않는다.
+     */
+    @Query("SELECT op.variant.variantId, COALESCE(SUM(op.quantity), 0) FROM OrderProduct op JOIN op.order o "
+            + "WHERE op.variant.variantId IN :variantIds "
+            + "AND o.status = showroomz.domain.order.type.OrderStatus.PAYMENT_PENDING AND o.stockReleasedAt IS NULL "
+            + "GROUP BY op.variant.variantId")
+    List<Object[]> sumReservedQuantityByVariantIds(@Param("variantIds") Collection<Long> variantIds);
+
+    /** 상품별 예약 합 — 셀러 상품 목록의 재고 칸. */
+    @Query("SELECT op.variant.product.productId, COALESCE(SUM(op.quantity), 0) FROM OrderProduct op JOIN op.order o "
+            + "WHERE op.variant.product.productId IN :productIds "
+            + "AND o.status = showroomz.domain.order.type.OrderStatus.PAYMENT_PENDING AND o.stockReleasedAt IS NULL "
+            + "GROUP BY op.variant.product.productId")
+    List<Object[]> sumReservedQuantityByProductIds(@Param("productIds") Collection<Long> productIds);
+
+    // ------------------------------------------------------------------ 판매 관리 포트(7-2)
+
+    /** 취소 반영 판매 실적 — [주문 수, 금액]. 결제 완료 주문의 취소되지 않은 줄만. */
+    @Query("SELECT COUNT(DISTINCT op.order.id), COALESCE(SUM(op.price * op.quantity), 0) FROM OrderProduct op JOIN op.order o "
+            + "WHERE op.groupBuy.id = :groupBuyId AND o.status IN :orderStatuses "
+            + "AND op.status <> showroomz.domain.order.type.OrderProductStatus.CANCELLED")
+    List<Object[]> sumSalesByGroupBuy(@Param("groupBuyId") Long groupBuyId,
+                                      @Param("orderStatuses") Collection<showroomz.domain.order.type.OrderStatus> orderStatuses);
+
+    /** 상품별 판매 수량 — [productId, quantity]. */
+    @Query("SELECT op.variant.product.productId, COALESCE(SUM(op.quantity), 0) FROM OrderProduct op JOIN op.order o "
+            + "WHERE op.groupBuy.id = :groupBuyId AND o.status IN :orderStatuses "
+            + "AND op.status <> showroomz.domain.order.type.OrderProductStatus.CANCELLED "
+            + "GROUP BY op.variant.product.productId ORDER BY op.variant.product.productId ASC")
+    List<Object[]> sumQuantityByProductForGroupBuy(@Param("groupBuyId") Long groupBuyId,
+                                                   @Param("orderStatuses") Collection<showroomz.domain.order.type.OrderStatus> orderStatuses);
+
+    /** 기준 시각 이후 결제 완료 주문 수 — 스튜디오 「숨김 이후 0건」. */
+    @Query("SELECT COUNT(DISTINCT op.order.id) FROM OrderProduct op JOIN op.order o "
+            + "WHERE op.groupBuy.id = :groupBuyId AND o.status IN :orderStatuses AND o.paidAt >= :since")
+    long countOrdersSince(@Param("groupBuyId") Long groupBuyId,
+                          @Param("orderStatuses") Collection<showroomz.domain.order.type.OrderStatus> orderStatuses,
+                          @Param("since") LocalDateTime since);
+
+    /** 이 공구 주문에 연결된 1:1 문의 수 — {@code OneToOneInquiry.orderId}는 연관이 아니라 id 컬럼이다. */
+    @Query("SELECT COUNT(i) FROM OneToOneInquiry i WHERE i.createdAt >= :since "
+            + "AND i.orderId IN (SELECT DISTINCT op.order.id FROM OrderProduct op WHERE op.groupBuy.id = :groupBuyId)")
+    long countOneToOneInquiriesSince(@Param("groupBuyId") Long groupBuyId, @Param("since") LocalDateTime since);
 }

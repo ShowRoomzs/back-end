@@ -149,10 +149,10 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
                 .andExpect(jsonPath("$.permissions.canRequestEarlyClose").value(false))
                 .andExpect(jsonPath("$.permissions.canRequestSuspension").value(false));
 
-        // 판매 모듈이 없으니 요청 시점 판매 스냅샷은 0이 아니라 null이다(설계서 0-6).
+        // 요청 시점 판매 스냅샷 — 판매 포트가 주문 테이블을 읽으므로 주문이 없으면 0이다(결제 계획서 7-2).
         var request = changeRequestRepository.findByGroupBuyIdOrderByRequestedAtDescIdDesc(groupBuy.getId()).getFirst();
-        assertThat(request.getSalesOrderCountAtRequest()).isNull();
-        assertThat(request.getSalesAmountAtRequest()).isNull();
+        assertThat(request.getSalesOrderCountAtRequest()).isZero();
+        assertThat(request.getSalesAmountAtRequest()).isZero();
 
         action(groupBuy.getId(), "suspension-request", Map.of("reasonCode", "QUALITY_ISSUE"))
                 .andExpect(status().isConflict())

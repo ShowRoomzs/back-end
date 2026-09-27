@@ -1,11 +1,15 @@
 package showroomz.api.app.cart.service;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import showroomz.api.app.cart.dto.CartDto;
+import showroomz.api.app.order.service.OrderPricingCalculator;
+import showroomz.api.app.order.service.OrderPricingCalculator.GroupKey;
+import showroomz.api.app.order.service.OrderPricingCalculator.Line;
+import showroomz.api.app.order.service.OrderPricingCalculator.Pricing;
+import showroomz.api.app.order.service.OrderPricingCalculator.Summary;
 import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.cart.entity.Cart;
@@ -50,14 +54,11 @@ import java.util.stream.Collectors;
  * <p><b>가격은 공구 계약에서 나온다</b>(가격 계획서 5절). 줄마다 담은 공구({@code cart.group_buy_id})가 있고, 그 공구
  * 계약의 옵션 판매가(공구가 + 옵션가)가 줄 단가다. {@code product_variant.sale_price}는 읽지 않는다 — 셀러가 정가를
  * 고쳐도 담긴 금액이 변하지 않아야 하고, 계약은 체결 뒤 불변이다. 가격은 요청마다 공구별로 한 번씩 읽어
- * {@link CartPricing}에 모은 뒤 목록·합계·배송비가 같은 값을 쓴다.
+ * {@link Pricing}에 모은 뒤 목록·합계·배송비가 같은 값을 쓴다. 가격·구매 가능 판정·합계·배송비 식은
+ * {@link OrderPricingCalculator}에 있다 — C9 주문서·주문 생성이 같은 식을 쓴다(결제 계획서 7-1).
  */
 @Service
-@RequiredArgsConstructor
 public class CartService {
-
-    /** 계약에 없는 옵션 — 「마감」 라벨로 접되 담기 시점에는 이유를 따로 말한다. */
-    private static final String NOT_IN_GROUP_BUY_MESSAGE = "이 공구에서 판매하지 않는 옵션이에요";
 
     /**
      * 추천 후보를 넉넉히 읽어 오는 배수 — 장바구니 쇼룸의 상품을 앞으로 당기는 재정렬이
@@ -71,7 +72,27 @@ public class CartService {
     private final ProductRepository productRepository;
     private final CreatorFollowRepository creatorFollowRepository;
     private final GroupBuyRepository groupBuyRepository;
-    private final GroupBuyPriceResolver priceResolver;
+    private final OrderPricingCalculator pricingCalculator;
+
+    /**
+     * 금액 계산기는 해석기에서 직접 만든다 — 계산기는 상태가 없고, 장바구니 단위 테스트가 해석기 목 하나로 합계까지 검증한다
+     * (계산기 추출이 결과를 바꾸지 않았다는 증거 · 선행 수정 계획서 3-2). 주문 서비스는 같은 계산기를 빈으로 주입받는다.
+     */
+    public CartService(CartRepository cartRepository,
+                       UserRepository userRepository,
+                       ProductVariantRepository productVariantRepository,
+                       ProductRepository productRepository,
+                       CreatorFollowRepository creatorFollowRepository,
+                       GroupBuyRepository groupBuyRepository,
+                       GroupBuyPriceResolver priceResolver) {
+        this.cartRepository = cartRepository;
+        this.userRepository = userRepository;
+        this.productVariantRepository = productVariantRepository;
+        this.productRepository = productRepository;
+        this.creatorFollowRepository = creatorFollowRepository;
+        this.groupBuyRepository = groupBuyRepository;
+        this.pricingCalculator = new OrderPricingCalculator(priceResolver);
+    }
 
     @Transactional
     public CartDto.AddCartResponse addCart(String username, CartDto.AddCartRequest request) {
@@ -130,18 +151,18 @@ public class CartService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         List<Cart> carts = sortedByRecentlyAdded(cartRepository.findAllByUser(user));
-        CartPricing pricing = priceOf(carts);
+        Pricing pricing = priceOf(carts);
         Set<Long> selectedIds = resolveSelection(carts, selectedCartItemIds, pricing);
 
         List<CartDto.CartGroup> groups = buildGroups(carts, selectedIds, pricing);
-        CartSummaryData summaryData = calculateSummary(carts, selectedIds, pricing);
+        Summary summaryData = calculateSummary(carts, selectedIds, pricing);
 
         CartDto.CartSummary summary = CartDto.CartSummary.builder()
-                .regularTotal(summaryData.regularTotal)
-                .saleTotal(summaryData.saleTotal)
-                .discountTotal(summaryData.discountTotal)
-                .deliveryFeeTotal(summaryData.deliveryFeeTotal)
-                .finalTotal(summaryData.finalTotal)
+                .regularTotal(summaryData.regularTotal())
+                .saleTotal(summaryData.saleTotal())
+                .discountTotal(summaryData.discountTotal())
+                .deliveryFeeTotal(summaryData.deliveryFeeTotal())
+                .finalTotal(summaryData.finalTotal())
                 .selectedCount(selectedIds.size())
                 .selectableCount((int) carts.stream().filter(cart -> unavailableReason(cart, pricing) == null).count())
                 .totalCount(carts.size())
@@ -178,14 +199,14 @@ public class CartService {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        requirePurchasable(cart.getGroupBuy(), cart.getVariant(), now);
+        pricingCalculator.requirePurchasable(cart.getGroupBuy(), cart.getVariant(), now);
 
         ProductVariant targetVariant = cart.getVariant();
         if (request.getVariantId() != null && !request.getVariantId().equals(cart.getVariant().getVariantId())) {
             targetVariant = productVariantRepository.findByVariantId(request.getVariantId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.VARIANT_NOT_FOUND));
             // 옵션 변경은 같은 공구 안에서만이다 — 새 옵션도 그 공구 계약에 있어야 한다.
-            requirePurchasable(cart.getGroupBuy(), targetVariant, now);
+            pricingCalculator.requirePurchasable(cart.getGroupBuy(), targetVariant, now);
         }
 
         int requestedQuantity = request.getQuantity() != null ? request.getQuantity() : cart.getQuantity();
@@ -199,7 +220,7 @@ public class CartService {
 
         if (mergedTarget != null && !mergedTarget.getId().equals(cart.getId())) {
             int finalQuantity = mergedTarget.getQuantity() + requestedQuantity;
-            requireWithinQuantityLimit(finalQuantity);
+            pricingCalculator.requireWithinQuantityLimit(finalQuantity);
             if (finalQuantity > availableStock) {
                 throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK, "재고가 부족합니다");
             }
@@ -207,7 +228,7 @@ public class CartService {
             cartRepository.delete(cart);
             cart = cartRepository.save(mergedTarget);
         } else {
-            requireWithinQuantityLimit(requestedQuantity);
+            pricingCalculator.requireWithinQuantityLimit(requestedQuantity);
             if (requestedQuantity > availableStock) {
                 throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK, "재고가 부족합니다");
             }
@@ -217,7 +238,7 @@ public class CartService {
         }
 
         List<Cart> carts = cartRepository.findAllByUser(user);
-        CartPricing pricing = priceOf(carts);
+        Pricing pricing = priceOf(carts);
         Set<Long> selectedIds =
                 resolveSelection(carts, carryOverSelection(selectedCartItemIds, cartItemId, cart.getId()), pricing);
         CartDto.UpdateSummary summary = toUpdateSummary(calculateSummary(carts, selectedIds, pricing));
@@ -280,7 +301,7 @@ public class CartService {
         }
 
         List<Cart> remainingCarts = cartRepository.findAllByUser(user);
-        CartPricing pricing = priceOf(remainingCarts);
+        Pricing pricing = priceOf(remainingCarts);
         CartDto.UpdateSummary summary = toUpdateSummary(calculateSummary(
                 remainingCarts, resolveSelection(remainingCarts, selectedCartItemIds, pricing), pricing));
 
@@ -364,7 +385,7 @@ public class CartService {
      * <p>여기서는 화면의 체크 상태를 받지 않으므로 목록 진입 시와 같은 기준(구매 가능한 항목 전체)으로
      * 본다 — 이 영역은 곁다리라 체크를 옮길 때마다 순서가 흔들릴 이유가 없다.
      */
-    private Set<Long> marketsShortOfFreeShipping(List<Cart> carts, CartPricing pricing) {
+    private Set<Long> marketsShortOfFreeShipping(List<Cart> carts, Pricing pricing) {
         Set<Long> selectedIds = resolveSelection(carts, null, pricing);
 
         // 배송비는 공구 그룹마다 매겨진다 — 그룹별로 모자란지 본 뒤, 추천 상품과 맞출 수 있게 그 그룹의 쇼룸을 돌려준다.
@@ -430,7 +451,7 @@ public class CartService {
      * <p>배송비·무료배송 기준은 여전히 쇼룸(마켓) 설정이고, <b>집계 단위만 공구</b>다. 그룹 전체가 마감·미진열이면
      * {@code isClosed}와 함께 D-day를 비운다.
      */
-    private List<CartDto.CartGroup> buildGroups(List<Cart> carts, Set<Long> selectedIds, CartPricing pricing) {
+    private List<CartDto.CartGroup> buildGroups(List<Cart> carts, Set<Long> selectedIds, Pricing pricing) {
         Map<GroupKey, List<Cart>> byGroup = new LinkedHashMap<>();
         for (Cart cart : carts) {
             byGroup.computeIfAbsent(groupKeyOf(cart), key -> new ArrayList<>()).add(cart);
@@ -477,33 +498,17 @@ public class CartService {
      * 아무것도 담기지 않은 그룹에 남은 금액을 띄우면 전액을 더 담아야 하는 것처럼 읽힌다.
      */
     private CartDto.GroupShipping buildGroupShipping(Market market, List<Cart> groupCarts, Set<Long> selectedIds,
-                                                     CartPricing pricing) {
-        int deliveryFee = market != null && market.getDefaultDeliveryFee() != null
-                ? market.getDefaultDeliveryFee()
-                : 0;
-        Integer threshold = market != null ? market.getFreeShippingThreshold() : null;
-
-        long selectedTotal = groupCarts.stream()
-                .filter(cart -> selectedIds.contains(cart.getId()))
-                .mapToLong(cart -> lineSaleTotal(cart, pricing))
-                .sum();
-
-        boolean hasSelectedItems = groupCarts.stream().anyMatch(cart -> selectedIds.contains(cart.getId()));
-        boolean isFreeShipping = hasSelectedItems && threshold != null && selectedTotal >= threshold;
-
-        Long amountToFreeShipping = null;
-        if (hasSelectedItems && threshold != null && selectedTotal < threshold) {
-            amountToFreeShipping = threshold - selectedTotal;
-        }
-
+                                                     Pricing pricing) {
+        OrderPricingCalculator.GroupShipping shipping =
+                pricingCalculator.groupShipping(market, lines(groupCarts), selectedIds, pricing);
         return CartDto.GroupShipping.builder()
-                .deliveryFee(deliveryFee)
-                .freeShippingThreshold(threshold)
-                .hasSelectedItems(hasSelectedItems)
-                .selectedProductTotal(selectedTotal)
-                .chargedDeliveryFee(hasSelectedItems && !isFreeShipping ? deliveryFee : 0)
-                .isFreeShipping(isFreeShipping)
-                .amountToFreeShipping(amountToFreeShipping)
+                .deliveryFee(shipping.deliveryFee())
+                .freeShippingThreshold(shipping.freeShippingThreshold())
+                .hasSelectedItems(shipping.hasSelectedItems())
+                .selectedProductTotal(shipping.selectedProductTotal())
+                .chargedDeliveryFee(shipping.chargedDeliveryFee())
+                .isFreeShipping(shipping.isFreeShipping())
+                .amountToFreeShipping(shipping.amountToFreeShipping())
                 .build();
     }
 
@@ -516,89 +521,24 @@ public class CartService {
      * 실제로 담겨 있고 살 수 있는 항목만 남긴다 — 마감·품절 항목이 요청에 섞여 들어와도
      * 합계에 들어가지 않는다.
      */
-    private Set<Long> resolveSelection(List<Cart> carts, Collection<Long> requested, CartPricing pricing) {
-        Set<Long> purchasable = carts.stream()
-                .filter(cart -> unavailableReason(cart, pricing) == null)
-                .map(Cart::getId)
-                .collect(Collectors.toCollection(HashSet::new));
-
-        if (requested == null) {
-            return purchasable;
-        }
-        purchasable.retainAll(new HashSet<>(requested));
-        return purchasable;
+    private Set<Long> resolveSelection(List<Cart> carts, Collection<Long> requested, Pricing pricing) {
+        return pricingCalculator.resolveSelection(lines(carts), requested, pricing);
     }
 
-    /**
-     * 담은 뒤 살 수 없게 된 사유. 살 수 있으면 null이다.
-     *
-     * <p>마감을 품절보다 먼저 본다 — 공구가 끝났으면 재고가 남아 있어도 살 수 없고, 이때는
-     * 다른 옵션으로 이어질 길도 없어 사유를 "품절"로 말하면 사용자를 헛걸음시킨다.
-     */
-    private CartUnavailableReason unavailableReason(Cart cart, CartPricing pricing) {
-        // 공구부터 본다 — 담은 공구가 없거나(귀속 못 한 옛 행) 끝났거나, 그 공구 계약에 이 옵션이 없으면
-        // 가격을 정할 수 없다. 사용자에게는 모두 「이 공구에서는 더 살 수 없다」로 같다.
-        GroupBuy groupBuy = cart.getGroupBuy();
-        if (groupBuy == null || !groupBuy.isOngoing(pricing.now()) || pricing.priceOf(cart) == null) {
-            return CartUnavailableReason.GROUP_BUY_CLOSED;
-        }
-        return unavailableReason(cart.getVariant());
-    }
-
-    private CartUnavailableReason unavailableReason(ProductVariant variant) {
-        Product product = variant.getProduct();
-
-        // 연결(isConnected)이 아니라 진행중만 판다 — 준비중·준비완료 공구 상품은 상세는 열리지만 결제되면 안 된다.
-        ProductGroupBuyStatus groupBuyStatus = product.getGroupBuyStatus();
-        boolean isGroupBuySelling = groupBuyStatus != null && groupBuyStatus.isPurchasable();
-        ProductDisplayStatus displayStatus = product.getDisplayStatus();
-        boolean isDisplayed = displayStatus != null && displayStatus.isVisible();
-        if (!isGroupBuySelling || !isDisplayed) {
-            return CartUnavailableReason.GROUP_BUY_CLOSED;
-        }
-
-        int stock = variant.getStock() != null ? variant.getStock() : 0;
-        if (Boolean.TRUE.equals(product.getIsOutOfStockForced()) || stock <= 0) {
-            return CartUnavailableReason.SOLD_OUT;
-        }
-        return null;
-    }
-
-    /**
-     * 담기·수정 판정 — 순서는 「공구 → 계약 → 상품 → 재고」다. 공구가 끝났는데 재고 부족 문구가 먼저 나가면
-     * 사용자가 헛수고한다. {@code groupBuyId}는 앱이 보내는 값이라 조작될 수 있다 — 다른 브랜드의 공구를 실어 와도
-     * 그 계약에 이 옵션이 없어 여기서 걸린다.
-     */
-    private void requirePurchasable(GroupBuy groupBuy, ProductVariant variant, LocalDateTime now) {
-        if (groupBuy == null || !groupBuy.isOngoing(now)) {
-            throw new BusinessException(ErrorCode.CART_ITEM_NOT_PURCHASABLE,
-                    CartUnavailableReason.GROUP_BUY_CLOSED.getMessage());
-        }
-        if (priceResolver.resolveVariants(groupBuy.getId(), List.of(variant.getVariantId())).isEmpty()) {
-            throw new BusinessException(ErrorCode.CART_ITEM_NOT_PURCHASABLE, NOT_IN_GROUP_BUY_MESSAGE);
-        }
-        CartUnavailableReason reason = unavailableReason(variant);
-        if (reason != null) {
-            throw new BusinessException(ErrorCode.CART_ITEM_NOT_PURCHASABLE, reason.getMessage());
-        }
-    }
-
-    private void requireWithinQuantityLimit(int quantity) {
-        if (quantity > CartDto.MAX_QUANTITY) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-                    "수량은 " + CartDto.MAX_QUANTITY + "개까지 담을 수 있습니다.");
-        }
+    /** 담은 뒤 살 수 없게 된 사유. 살 수 있으면 null이다 — 판정 순서는 계산기가 정한다(공구 → 계약 옵션 → 상품 → 재고). */
+    private CartUnavailableReason unavailableReason(Cart cart, Pricing pricing) {
+        return pricingCalculator.unavailableReason(line(cart), pricing);
     }
 
     // ------------------------------------------------------------------ 매핑
 
-    private CartDto.CartItem toCartItem(Cart cart, boolean isSelected, CartPricing pricing) {
+    private CartDto.CartItem toCartItem(Cart cart, boolean isSelected, Pricing pricing) {
         ProductVariant variant = cart.getVariant();
         Product product = variant.getProduct();
         Market market = product.getMarket();
 
         // 가격을 정할 수 없는 줄(마감)은 가격 칸을 비운다 — 정가로 물러서면 공구가 없는 가격이 화면에 남는다.
-        GroupBuyPrice price = pricing.priceOf(cart);
+        GroupBuyPrice price = pricing.priceOf(line(cart));
         ProductDto.PriceInfo priceInfo = price != null
                 ? buildPriceInfo(price.regularPrice(), price.salePrice())
                 : buildPriceInfo(null, null);
@@ -649,7 +589,7 @@ public class CartService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.VARIANT_NOT_FOUND));
         GroupBuy groupBuy = groupBuyRepository.findById(request.getGroupBuyId()).orElse(null);
 
-        requirePurchasable(groupBuy, variant, LocalDateTime.now());
+        pricingCalculator.requirePurchasable(groupBuy, variant, LocalDateTime.now());
 
         int stock = variant.getStock() != null ? variant.getStock() : 0;
         int addQuantity = request.getQuantity();
@@ -657,7 +597,7 @@ public class CartService {
         Cart cart = cartRepository.findByUserAndVariantAndGroupBuy(user, variant, groupBuy).orElse(null);
         int finalQuantity = cart != null ? cart.getQuantity() + addQuantity : addQuantity;
 
-        requireWithinQuantityLimit(finalQuantity);
+        pricingCalculator.requireWithinQuantityLimit(finalQuantity);
         if (finalQuantity > stock) {
             throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK, "재고가 부족합니다");
         }
@@ -711,73 +651,18 @@ public class CartService {
      * <p>하단 요약과 [주문하기]가 같은 값을 써야 하므로 버튼 라벨에 들어가는 금액도 여기서 나온다.
      * 배송비는 그룹(쇼룸)마다 따로 매겨지고, 그 그룹에서 선택된 것이 없으면 부과하지 않는다.
      */
-    private CartSummaryData calculateSummary(List<Cart> carts, Set<Long> selectedIds, CartPricing pricing) {
-        long regularTotal = 0L;
-        long saleTotal = 0L;
-
-        Map<GroupKey, MarketShippingAccumulator> shippingByMarket = new HashMap<>();
-
-        for (Cart cart : carts) {
-            if (!selectedIds.contains(cart.getId())) {
-                continue;
-            }
-
-            // 선택된 줄은 살 수 있는 줄이라 가격이 있다(resolveSelection이 가격 없는 줄을 뺀다).
-            GroupBuyPrice price = pricing.priceOf(cart);
-            int quantity = cart.getQuantity() != null ? cart.getQuantity() : 0;
-            long regular = price != null ? price.regularPrice() : 0;
-            long sale = price != null ? price.salePrice() : 0;
-
-            regularTotal += regular * quantity;
-            saleTotal += sale * quantity;
-
-            Market market = marketOf(cart);
-
-            MarketShippingAccumulator acc = shippingByMarket.computeIfAbsent(
-                    groupKeyOf(cart),
-                    key -> new MarketShippingAccumulator()
-            );
-            acc.saleTotal += sale * quantity;
-            Integer deliveryFee = market != null ? market.getDefaultDeliveryFee() : null;
-            if (deliveryFee != null && deliveryFee > acc.maxDeliveryFee) {
-                acc.maxDeliveryFee = deliveryFee;
-            }
-            Integer threshold = market != null ? market.getFreeShippingThreshold() : null;
-            if (threshold != null) {
-                if (acc.minFreeThreshold == null || threshold < acc.minFreeThreshold) {
-                    acc.minFreeThreshold = threshold;
-                }
-            }
-        }
-
-        long deliveryFeeTotal = 0L;
-        for (MarketShippingAccumulator acc : shippingByMarket.values()) {
-            if (acc.minFreeThreshold != null && acc.saleTotal >= acc.minFreeThreshold) {
-                continue;
-            }
-            deliveryFeeTotal += acc.maxDeliveryFee;
-        }
-
-        long discountTotal = regularTotal - saleTotal;
-        long finalTotal = saleTotal + deliveryFeeTotal;
-
-        return new CartSummaryData(
-                regularTotal,
-                saleTotal,
-                discountTotal,
-                deliveryFeeTotal,
-                finalTotal
-        );
+    private Summary calculateSummary(List<Cart> carts, Set<Long> selectedIds, Pricing pricing) {
+        return pricingCalculator.summarize(lines(carts), selectedIds, pricing);
     }
 
-    private CartDto.UpdateSummary toUpdateSummary(CartSummaryData data) {
+    private CartDto.UpdateSummary toUpdateSummary(Summary data) {
         return CartDto.UpdateSummary.builder()
-                .regularTotal(data.regularTotal)
-                .saleTotal(data.saleTotal)
-                .discountTotal(data.discountTotal)
-                .deliveryFeeTotal(data.deliveryFeeTotal)
-                .totalProductPrice(data.saleTotal)
-                .expectedTotalPrice(data.finalTotal)
+                .regularTotal(data.regularTotal())
+                .saleTotal(data.saleTotal())
+                .discountTotal(data.discountTotal())
+                .deliveryFeeTotal(data.deliveryFeeTotal())
+                .totalProductPrice(data.saleTotal())
+                .expectedTotalPrice(data.finalTotal())
                 .build();
     }
 
@@ -799,78 +684,33 @@ public class CartService {
                 .toList();
     }
 
-    private long lineSaleTotal(Cart cart, CartPricing pricing) {
-        GroupBuyPrice price = pricing.priceOf(cart);
-        long sale = price != null ? price.salePrice() : 0;
-        int quantity = cart.getQuantity() != null ? cart.getQuantity() : 0;
-        return sale * quantity;
+    private long lineSaleTotal(Cart cart, Pricing pricing) {
+        return pricingCalculator.lineSaleTotal(line(cart), pricing);
     }
 
     /**
      * 줄마다 담은 공구 계약의 가격 — 공구별로 한 번씩 읽는다(줄마다 읽으면 N+1). 귀속 없는 줄은 가격이 없다.
      * {@code now}도 여기서 한 번 정해 목록·합계·D-day가 같은 시각으로 판정한다.
      */
-    private CartPricing priceOf(List<Cart> carts) {
-        Map<Long, List<Cart>> byGroupBuy = new LinkedHashMap<>();
-        for (Cart cart : carts) {
-            if (cart.getGroupBuy() != null) {
-                byGroupBuy.computeIfAbsent(cart.getGroupBuy().getId(), key -> new ArrayList<>()).add(cart);
-            }
-        }
-
-        Map<Long, GroupBuyPrice> byCartId = new HashMap<>();
-        byGroupBuy.forEach((groupBuyId, groupCarts) -> {
-            Set<Long> variantIds = groupCarts.stream()
-                    .map(cart -> cart.getVariant().getVariantId())
-                    .collect(Collectors.toSet());
-            Map<Long, GroupBuyPrice> prices = priceResolver.resolveVariants(groupBuyId, variantIds);
-            for (Cart cart : groupCarts) {
-                GroupBuyPrice price = prices.get(cart.getVariant().getVariantId());
-                if (price != null) {
-                    byCartId.put(cart.getId(), price);
-                }
-            }
-        });
-        return new CartPricing(byCartId, LocalDateTime.now());
+    private Pricing priceOf(List<Cart> carts) {
+        return pricingCalculator.price(lines(carts), LocalDateTime.now());
     }
 
-    /** 공구로 묶는다. 귀속 없는 옛 행만 쇼룸으로 묶인다 — 합계에서 빠지지 않게 마켓이 없으면 0을 쓴다. */
     private GroupKey groupKeyOf(Cart cart) {
-        return cart.getGroupBuy() != null
-                ? new GroupKey(cart.getGroupBuy().getId(), null)
-                : new GroupKey(null, marketIdOf(cart));
+        return pricingCalculator.groupKeyOf(line(cart));
+    }
+
+    /** 장바구니 행 → 계산기 줄. 줄 id는 cart id라 화면의 선택 상태(cart id 목록)를 그대로 쓴다. */
+    private static Line line(Cart cart) {
+        return new Line(cart.getId(), cart.getGroupBuy(), cart.getVariant(),
+                cart.getQuantity() != null ? cart.getQuantity() : 0);
+    }
+
+    private static List<Line> lines(List<Cart> carts) {
+        return carts.stream().map(CartService::line).toList();
     }
 
     private Market marketOf(Cart cart) {
         return cart.getVariant().getProduct().getMarket();
     }
-
-    /** 마켓이 비어 있는 데이터도 한 그룹으로 모이도록 0을 쓴다 — 합계에서 빠지지 않게 하기 위한 것이다 */
-    private Long marketIdOf(Cart cart) {
-        Market market = marketOf(cart);
-        return market != null ? market.getId() : 0L;
-    }
-
-    private static class MarketShippingAccumulator {
-        private long saleTotal = 0L;
-        private int maxDeliveryFee = 0;
-        private Integer minFreeThreshold = null;
-    }
-
-    private record GroupKey(Long groupBuyId, Long marketId) {
-    }
-
-    private record CartPricing(Map<Long, GroupBuyPrice> byCartId, LocalDateTime now) {
-        GroupBuyPrice priceOf(Cart cart) {
-            return byCartId.get(cart.getId());
-        }
-    }
-
-    private record CartSummaryData(
-            long regularTotal,
-            long saleTotal,
-            long discountTotal,
-            long deliveryFeeTotal,
-            long finalTotal
-    ) {}
 }

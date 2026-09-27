@@ -133,6 +133,8 @@ public enum ErrorCode {
      */
     INQUIRY_ALREADY_ANSWERED(HttpStatus.BAD_REQUEST, "INQUIRY_ALREADY_ANSWERED", "이미 답변이 등록된 문의입니다. 답변은 1회만 등록할 수 있습니다."),
     INVALID_INQUIRY_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "올바르지 않은 문의 유형입니다. (DELIVERY, CANCEL_EXCHANGE_RETURN, ORDER_PAYMENT, SERVICE, ACCOUNT)"),
+    // 없는 주문도 같은 코드로 막는다 — 404로 나누면 남의 주문 ID가 있는지 없는지를 알려 주게 된다.
+    ORDER_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ORDER_ACCESS_DENIED", "해당 주문에 대한 권한이 없습니다."),
 
     /* 11-1. 상품 문의 (§23 파트너센터 문의 관리)
      */
@@ -355,7 +357,23 @@ public enum ErrorCode {
     GROUP_BUY_DECISION_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "GROUP_BUY_DECISION_REASON_REQUIRED", "양측에 전달할 사유를 입력해 주세요."),
     GROUP_BUY_SETTLEMENT_NOT_READY(HttpStatus.CONFLICT, "GROUP_BUY_SETTLEMENT_NOT_READY", "정산 확인 조건이 충족되지 않았습니다."),
     GROUP_BUY_APPEAL_ATTACHMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "GROUP_BUY_APPEAL_ATTACHMENT_NOT_FOUND", "존재하지 않는 소명 첨부입니다."),
-    GROUP_BUY_FULFILLMENT_NOT_AGREED(HttpStatus.CONFLICT, "GROUP_BUY_FULFILLMENT_NOT_AGREED", "양측 합의 전에는 정산 보류를 해제할 수 없습니다.");
+    GROUP_BUY_FULFILLMENT_NOT_AGREED(HttpStatus.CONFLICT, "GROUP_BUY_FULFILLMENT_NOT_AGREED", "양측 합의 전에는 정산 보류를 해제할 수 없습니다."),
+
+    // 주문·결제 (결제 계획서 5-8). ORDER_ACCESS_DENIED는 문의 주문 소유 검증에서 앞당겨 만들었다(3절).
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "주문을 찾을 수 없습니다."),
+    ORDER_ITEMS_EMPTY(HttpStatus.BAD_REQUEST, "ORDER_ITEMS_EMPTY", "주문할 상품이 없습니다."),
+    ORDER_ADDRESS_REQUIRED(HttpStatus.BAD_REQUEST, "ORDER_ADDRESS_REQUIRED", "배송지를 선택해 주세요."),
+    ORDER_AMOUNT_CHANGED(HttpStatus.CONFLICT, "ORDER_AMOUNT_CHANGED", "상품 가격 또는 배송비가 변경되었습니다. 주문서를 다시 확인해 주세요."),
+    ORDER_ALREADY_CLOSED(HttpStatus.CONFLICT, "ORDER_ALREADY_CLOSED", "이미 만료되었거나 취소된 주문입니다."),
+    ORDER_NOT_CANCELLABLE(HttpStatus.CONFLICT, "ORDER_NOT_CANCELLABLE", "지금 상태에서는 주문을 취소할 수 없습니다."),
+    PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PAYMENT_NOT_FOUND", "결제 정보를 찾을 수 없습니다."),
+    PAYMENT_METHOD_UNAVAILABLE(HttpStatus.BAD_REQUEST, "PAYMENT_METHOD_UNAVAILABLE", "현재 이용할 수 없는 결제수단입니다."),
+    PAYMENT_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "PAYMENT_ALREADY_IN_PROGRESS", "진행 중인 결제가 있습니다. 잠시 후 다시 시도해 주세요."),
+    PAYMENT_CANCEL_IN_PROGRESS(HttpStatus.CONFLICT, "PAYMENT_CANCEL_IN_PROGRESS", "이미 취소 처리 중인 주문입니다."),
+    PAYMENT_AMOUNT_MISMATCH(HttpStatus.CONFLICT, "PAYMENT_AMOUNT_MISMATCH", "결제 금액이 주문 금액과 일치하지 않아 결제가 취소되었습니다."),
+    PAYMENT_GATEWAY_ERROR(HttpStatus.BAD_GATEWAY, "PAYMENT_GATEWAY_ERROR", "결제사 통신에 실패했습니다. 잠시 후 다시 시도해 주세요."),
+    PAYMENT_CANCEL_FAILED(HttpStatus.BAD_GATEWAY, "PAYMENT_CANCEL_FAILED", "결제 취소에 실패했습니다. 고객센터로 문의해 주세요."),
+    WEBHOOK_SIGNATURE_INVALID(HttpStatus.UNAUTHORIZED, "WEBHOOK_SIGNATURE_INVALID", "웹훅 서명이 올바르지 않습니다.");
 
     private final HttpStatus status;
     private final String code;

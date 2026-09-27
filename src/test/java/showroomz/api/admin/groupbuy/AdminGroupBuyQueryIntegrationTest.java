@@ -151,8 +151,8 @@ class AdminGroupBuyQueryIntegrationTest extends AdminGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("B3 판단 근거 — 판매 포트가 비면 요청 후 증가분 · CS 문의 합계가 null이다(0이 아니다) · 상대 요청 메모도 내린다")
-    void decisionBasisIsNullNotZero() throws Exception {
+    @DisplayName("B3 판단 근거 — 요청 시점 스냅샷·증가분은 null(요청 행에 없다) · CS 문의 합계는 주문 테이블 실값(0) · 상대 요청 메모도 내린다")
+    void decisionBasisUsesOrderTable() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.IN_PROGRESS);
         seedPendingRequest(groupBuy.getId(), ChangeRequestType.SUSPEND, GroupBuyActorType.CREATOR, "PRODUCT_DEFECT");
 
@@ -162,10 +162,12 @@ class AdminGroupBuyQueryIntegrationTest extends AdminGroupBuyTestSupport {
                 .andExpect(jsonPath("$.activeRequest.requesterName").value("글로우_지민"))
                 .andExpect(jsonPath("$.activeRequest.elapsed").value("3h"))
                 .andExpect(jsonPath("$.activeRequest.decisionBasis.ordersAtRequest").doesNotExist())
+                // 판매 포트가 주문 테이블을 읽는다(결제 계획서 7-2) — 주문·문의가 없으면 0이다. 하자 분류는 문의 유형에 없어 여전히 null.
                 .andExpect(jsonPath("$.activeRequest.decisionBasis.ordersSinceRequest").doesNotExist())
-                .andExpect(jsonPath("$.activeRequest.decisionBasis.inquiries.total").doesNotExist())
+                .andExpect(jsonPath("$.activeRequest.decisionBasis.inquiries.total").value(0))
                 .andExpect(jsonPath("$.activeRequest.decisionBasis.inquiries.defectRelated").doesNotExist())
-                .andExpect(jsonPath("$.sales").doesNotExist())
+                .andExpect(jsonPath("$.sales.basis").value("LIVE"))
+                .andExpect(jsonPath("$.sales.orderCount").value(0))
                 .andExpect(jsonPath("$.permissions.canApproveRequest").value(true))
                 .andExpect(jsonPath("$.permissions.noticeUnavailableReason").value("REQUEST_PENDING"));
     }
@@ -179,7 +181,8 @@ class AdminGroupBuyQueryIntegrationTest extends AdminGroupBuyTestSupport {
         adminDetail(groupBuy.getId()).andExpect(status().isOk())
                 .andExpect(jsonPath("$.activeRequest.type").value("EARLY_CLOSE"))
                 .andExpect(jsonPath("$.activeRequest.decisionBasis.preparedQuantity").value(500))
-                .andExpect(jsonPath("$.activeRequest.decisionBasis.sellThroughRate").doesNotExist())
+                // 판매 수량은 주문 테이블 실값이다 — 주문이 없으면 소진율 0.
+                .andExpect(jsonPath("$.activeRequest.decisionBasis.sellThroughRate").value(0))
                 .andExpect(jsonPath("$.activeRequest.decisionBasis.soldOutInquiriesSinceRequest").value(0))
                 .andExpect(jsonPath("$.activeRequest.decisionBasis.endsImmediatelyIfApproved").value(true));
     }

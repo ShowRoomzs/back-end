@@ -1,6 +1,7 @@
 package showroomz.domain.product.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -52,4 +53,18 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
     @Query("SELECT v.product.productId, COUNT(v) FROM ProductVariant v "
             + "WHERE v.product.productId IN :productIds AND v.stock > 0 GROUP BY v.product.productId")
     List<Object[]> countInStockVariantsByProductIds(@Param("productIds") Collection<Long> productIds);
+
+    /**
+     * 재고 예약 — 주문 생성 시 차감(결제 계획서 4-3). 0행이면 재고 부족이다. 호출자는 {@code variant_id} 오름차순으로
+     * 부른다 — A,B와 B,A 순으로 잠그면 데드락이다.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE ProductVariant v SET v.stock = v.stock - :quantity "
+            + "WHERE v.variantId = :variantId AND v.stock >= :quantity")
+    int reserveStock(@Param("variantId") Long variantId, @Param("quantity") int quantity);
+
+    /** 재고 복원 — 주문당 1회 규칙은 {@code orders.stock_released_at}이 지킨다. */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE ProductVariant v SET v.stock = v.stock + :quantity WHERE v.variantId = :variantId")
+    int restoreStock(@Param("variantId") Long variantId, @Param("quantity") int quantity);
 }

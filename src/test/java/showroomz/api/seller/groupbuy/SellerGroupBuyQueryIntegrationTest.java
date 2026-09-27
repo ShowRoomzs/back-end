@@ -251,7 +251,7 @@ class SellerGroupBuyQueryIntegrationTest extends GroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("진행중 상세 — 게시물 노출중 · 게이트 없음 · 판매 모듈이 없으니 KPI는 0이 아니라 null")
+    @DisplayName("진행중 상세 — 게시물 노출중 · 게이트 없음 · 판매 실적은 주문 테이블에서 실값으로(주문 없음 = 0건)")
     void inProgressDetail() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.IN_PROGRESS);
         seedPost(groupBuy.getId(), GroupBuyPostReviewStatus.APPROVED, false);
@@ -264,7 +264,11 @@ class SellerGroupBuyQueryIntegrationTest extends GroupBuyTestSupport {
                 .andExpect(jsonPath("$.post.content").value("여름 한정 앵콜 공구 — 크림·세럼 세트"))
                 .andExpect(jsonPath("$.timeline.elapsedDays").value(4))
                 .andExpect(jsonPath("$.timeline.daysUntilEnd").value(4))
-                .andExpect(jsonPath("$.sales").doesNotExist())
+                // 판매 실적은 order_product.group_buy_id 로 읽는다(결제 계획서 7-2) — 주문이 없으면 0건이다.
+                .andExpect(jsonPath("$.sales.basis").value("LIVE"))
+                .andExpect(jsonPath("$.sales.orderCount").value(0))
+                .andExpect(jsonPath("$.sales.amount").value(0))
+                // 종결(배송·반품)은 아직 판매 모듈이 모른다 — 0이 아니라 null(포트 주석 0-6).
                 .andExpect(jsonPath("$.orderClosure").doesNotExist());
     }
 

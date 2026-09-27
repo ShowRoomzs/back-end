@@ -39,6 +39,7 @@ public class SecurityConfig {
     
     private static final String[] AUTH_WHITELIST = {
             "/", "/error", "/test/**",  // 기본
+            "/v1/webhooks/portone",     // 포트원 웹훅 — 서명 검증이 인증을 대신한다(결제 계획서 5-7 · 6-3)
             "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**", // Swagger
 
             //auth 관련

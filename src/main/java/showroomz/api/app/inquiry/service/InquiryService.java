@@ -51,6 +51,7 @@ public class InquiryService {
     public InquiryRegisterResponse registerInquiry(Long userId, InquiryRegisterRequest request) {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        requireOwnOrder(userId, request.getOrderId());
 
         OneToOneInquiry inquiry = OneToOneInquiry.builder()
                 .user(user)
@@ -118,6 +119,7 @@ public class InquiryService {
         if (inquiry.isAnswered()) {
             throw new BusinessException(ErrorCode.INQUIRY_ALREADY_ANSWERED);
         }
+        requireOwnOrder(userId, request.getOrderId());
 
         inquiry.update(
                 request.getType(),
@@ -125,6 +127,17 @@ public class InquiryService {
                 request.getImageUrls(),
                 request.getOrderId()
         );
+    }
+
+    /**
+     * 연결하려는 주문이 본인 것인지. 문의 카드({@link InquiryOrderSummary})는 연결된 주문의 상품명·썸네일·주문번호를 그리므로
+     * 남의 주문 ID를 받으면 그 주문 정보가 내 화면에 나온다. 주문 상태는 보지 않는다 — 결제 대기·만료 주문도
+     * 「결제가 안 돼요」(ORDER_PAYMENT) 문의의 대상이다.
+     */
+    private void requireOwnOrder(Long userId, Long orderId) {
+        if (orderId != null && !orderRepository.existsByIdAndUser_Id(orderId, userId)) {
+            throw new BusinessException(ErrorCode.ORDER_ACCESS_DENIED);
+        }
     }
 
     // 문의 삭제 (물리 삭제)
