@@ -205,7 +205,12 @@ public class PortOneV2Gateway implements PortOnePaymentGateway {
         }
         if (cause instanceof PortOneException rejected) {
             String type = typeOf(rejected);
-            log.warn("포트원 {} 거절 - type: {} - {}", action, type, rejected.getMessage());
+            if (rejected instanceof PaymentNotFoundException) {
+                // 결제창을 연 적 없는 결제는 404 가 정상이다(만료 전 조회에서 흔하다) — 경고로 올리지 않는다.
+                log.debug("포트원 {} - 결제 없음(404)", action);
+            } else {
+                log.warn("포트원 {} 거절 - type: {} - {}", action, type, rejected.getMessage());
+            }
             return new PaymentGatewayRejectedException(400, type, rejected.getMessage(), rejected);
         }
         return new PaymentGatewayException("포트원 " + action + " 통신 실패: " + cause, cause);

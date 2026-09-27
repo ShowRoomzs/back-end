@@ -1,5 +1,6 @@
 -- 결제 계획서 3-2 — payment · payment_cancel · payment_webhook_event · payment_reconciliation_issue.
--- 문자셋·콜레이션을 명시하지 않는다 — orders(V36)와 같은 DB 기본값을 따라야 orders.paid_payment_id → payment.payment_id FK 가 걸린다(콜레이션이 다르면 MySQL 3780).
+-- 문자셋·콜레이션을 양쪽 모두 utf8mb4_unicode_ci 로 고정한다 — orders(V36)는 문자셋 없이 만들어져 DB 기본값을 따르는데, 그 기본값이 환경마다 달라
+-- orders.paid_payment_id 와 payment.payment_id 의 콜레이션이 어긋나면 FK 가 MySQL 3780 으로 실패한다. 그래서 FK 를 걸기 전에 paid_payment_id 도 같은 콜레이션으로 맞춘다.
 -- payment.payment_id 는 포트원 paymentId 와 같은 문자열({order_number}-{attempt})이라 웹훅·조회에서 조인 없이 찾는다.
 CREATE TABLE `payment` (
     `payment_id`           VARCHAR(64)  NOT NULL,
@@ -32,7 +33,7 @@ CREATE TABLE `payment` (
     INDEX `idx_payment_status_next_cancel_retry` (`status`, `next_cancel_retry_at`),
     INDEX `idx_payment_order_status` (`order_id`, `status`),
     CONSTRAINT `fk_payment_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `payment_cancel` (
     `cancel_id`          BIGINT       NOT NULL AUTO_INCREMENT,
@@ -50,7 +51,7 @@ CREATE TABLE `payment_cancel` (
     PRIMARY KEY (`cancel_id`),
     INDEX `idx_payment_cancel_payment` (`payment_id`, `status`),
     CONSTRAINT `fk_payment_cancel_payment` FOREIGN KEY (`payment_id`) REFERENCES `payment` (`payment_id`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `payment_webhook_event` (
     `event_id`      BIGINT        NOT NULL AUTO_INCREMENT,
@@ -66,7 +67,7 @@ CREATE TABLE `payment_webhook_event` (
     PRIMARY KEY (`event_id`),
     UNIQUE KEY `uk_payment_webhook_event_webhook_id` (`webhook_id`),
     INDEX `idx_payment_webhook_event_result` (`result`, `attempts`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `payment_reconciliation_issue` (
     `issue_id`        BIGINT       NOT NULL AUTO_INCREMENT,
@@ -81,8 +82,11 @@ CREATE TABLE `payment_reconciliation_issue` (
     `resolution_note` VARCHAR(500) NULL,
     PRIMARY KEY (`issue_id`),
     UNIQUE KEY `uk_payment_reconciliation_issue_payment_kind` (`payment_id`, `kind`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- orders ↔ payment 순환 FK — payment 가 생긴 뒤에 건다(V143 참고).
+-- orders ↔ payment 순환 FK — payment 가 생긴 뒤에 건다(V143 참고). 컬럼은 아직 전부 NULL 이라 MODIFY 해도 데이터 영향이 없다.
+ALTER TABLE `orders`
+    MODIFY COLUMN `paid_payment_id` VARCHAR(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '이 주문을 완료한 결제(payment.payment_id)';
+
 ALTER TABLE `orders`
     ADD CONSTRAINT `fk_orders_paid_payment` FOREIGN KEY (`paid_payment_id`) REFERENCES `payment` (`payment_id`);
