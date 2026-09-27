@@ -11,10 +11,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "공구 게시물 제목·본문")
 public record CreatorGroupBuyPostRequest(
 
-        @Schema(description = "제목 — 40자. 임시저장은 비워도 된다", example = "여름 수분 세럼, 제가 쓰던 그 조합", nullable = true)
+        @Schema(description = "제목 — 40자, 앞뒤 공백 제거. 임시저장은 본문이 있으면 비워도 되고, 제출·승인 후 수정은 필수",
+                example = "여름 수분 세럼, 제가 쓰던 그 조합", nullable = true)
         String title,
 
-        @Schema(description = "본문 — 2,000자. 대가관계 문구를 넣지 않는다 — 서버가 렌더링 시점에 붙인다",
+        @Schema(description = "본문 — 2,000자, 공백만이면 빈 값. 임시저장은 제목이 있으면 비워도 되고, 제출·승인 후 수정은 필수. "
+                + "대가관계 문구를 넣지 않는다 — 서버가 렌더링 시점에 붙인다",
                 example = "건조한 여름에도…", nullable = true)
         String content
 ) {

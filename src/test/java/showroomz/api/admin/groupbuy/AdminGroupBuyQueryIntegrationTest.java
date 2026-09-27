@@ -187,7 +187,12 @@ class AdminGroupBuyQueryIntegrationTest extends AdminGroupBuyTestSupport {
     @Test
     @DisplayName("통지 창이 없으면 통지 버튼이 잠기고 사유가 NO_WINDOW_BEFORE_END다 — 긴급은 열려 있다")
     void noNoticeWindowBeforeEnd() throws Exception {
-        GroupBuy groupBuy = seedIn(GroupBuyStatus.IN_PROGRESS);   // 종료가 4일 뒤
+        // 소명 기한(오늘 +3영업일 23:59:59)에 끝나는 공구 — 집행은 기한보다 뒤여야 하므로 요일과 무관하게 창이 없다.
+        // 달력일(「4일 뒤」)로 잡으면 주말에 돌릴 때 3영업일이 그 안에 들어가 창이 생긴다.
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        LocalDateTime appealDeadline = businessCalendar.addBusinessDays(now.toLocalDate(), 3).atTime(23, 59, 59);
+        GroupBuy groupBuy = seed(brand, creator, "창 없는 공구", now.minusDays(2), appealDeadline);
+        moveTo(groupBuy.getId(), GroupBuyStatus.IN_PROGRESS);
 
         adminDetail(groupBuy.getId())
                 .andExpect(jsonPath("$.permissions.canNoticeSuspension").value(false))

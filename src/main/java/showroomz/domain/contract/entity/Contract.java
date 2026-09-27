@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import showroomz.domain.common.BaseTimeEntity;
 import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.contract.type.ContractActorType;
+import showroomz.domain.contract.type.ContractCancelRequestChannel;
+import showroomz.domain.contract.type.ContractCancelRequester;
 import showroomz.domain.contract.type.ContractStatus;
 import showroomz.domain.contract.type.FixedFeeTrigger;
 import showroomz.domain.contract.type.SecondaryUsePeriodType;
@@ -176,6 +178,18 @@ public class Contract extends BaseTimeEntity {
     @Column(name = "close_reason_memo", length = 1000)
     private String closeReasonMemo;
 
+    /** 운영자 [계약 취소]의 요청자 — 운영자가 기록한다. {@code ADMIN}은 직권. 기록 도입 이전 취소 건은 NULL(28-1 수정계획 1). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancel_requester_type", length = 16)
+    private ContractActorType cancelRequesterType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancel_request_channel", length = 16)
+    private ContractCancelRequestChannel cancelRequestChannel;
+
+    @Column(name = "cancel_requested_at")
+    private LocalDateTime cancelRequestedAt;
+
     /** 계약 1건 = 공구 1건. 공구 생성 게이트가 이 값의 NULL 여부로 중복을 막는다(설계서 1-8). */
     @Column(name = "group_buy_id")
     private Long groupBuyId;
@@ -320,11 +334,15 @@ public class Contract extends BaseTimeEntity {
      * 운영자의 [계약 취소] — 서명 요청 발송 이후 체결 전 구간. 항상 종결이다.
      * 브랜드에게는 계약 취소가 없다(발송 전 되돌림은 [요청 취소]뿐).
      */
-    public void applyCanceledByAdmin(String reasonCode, String memo, LocalDateTime now) {
+    public void applyCanceledByAdmin(String reasonCode, String memo, ContractCancelRequester requester,
+                                     LocalDateTime now) {
         this.closedAt = now;
         this.closeActorType = ContractActorType.ADMIN;
         this.closeReasonCode = reasonCode;
         this.closeReasonMemo = memo;
+        this.cancelRequesterType = requester.type();
+        this.cancelRequestChannel = requester.channel();
+        this.cancelRequestedAt = requester.requestedAt();
         this.status = ContractStatus.CANCELED;
     }
 

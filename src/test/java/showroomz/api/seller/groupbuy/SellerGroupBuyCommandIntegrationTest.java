@@ -47,11 +47,11 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
                 .andExpect(jsonPath("$.readiness.gates[0].state").value("DONE"))
                 .andExpect(jsonPath("$.readiness.gates[0].doneAt").exists())
                 .andExpect(jsonPath("$.permissions.canConfirmStock").value(false))
-                .andExpect(jsonPath("$.history[1].eventType").value("STOCK_CONFIRMED"))
-                .andExpect(jsonPath("$.history[1].actorType").value("SELLER"))
-                .andExpect(jsonPath("$.history[1].actorDisplayName").value("글로우랩"))
+                .andExpect(jsonPath("$.history[0].eventType").value("STOCK_CONFIRMED"))
+                .andExpect(jsonPath("$.history[0].actorType").value("SELLER"))
+                .andExpect(jsonPath("$.history[0].actorDisplayName").value("글로우랩"))
                 // 제25조 제재 판정 때 「무엇을 확인했는지」가 이력만으로 읽혀야 한다.
-                .andExpect(jsonPath("$.history[1].detail").value("글로우 크림 50ml 300개 · 글로우 세럼 30ml 200개"));
+                .andExpect(jsonPath("$.history[0].detail").value("글로우 크림 50ml 300개 · 글로우 세럼 30ml 200개"));
 
         assertThat(reload(groupBuy.getId()).getStockConfirmedBy()).isEqualTo(brand.seller().getId());
         action(groupBuy.getId(), "stock-confirmation", null).andExpect(status().isConflict())
@@ -69,8 +69,8 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
                 .andExpect(jsonPath("$.groupBuy.readyAt").exists())
                 .andExpect(jsonPath("$.readiness.gates[*].state").value(contains("DONE", "DONE", "DONE")))
                 .andExpect(jsonPath("$.post.status").value("SCHEDULED"))
-                .andExpect(jsonPath("$.history[*].eventType").value(contains("CREATED", "STOCK_CONFIRMED", "READY")))
-                .andExpect(jsonPath("$.history[2].actorType").value("SELLER"))
+                .andExpect(jsonPath("$.history[*].eventType").value(contains("READY", "STOCK_CONFIRMED", "CREATED")))
+                .andExpect(jsonPath("$.history[0].actorType").value("SELLER"))
                 .andExpect(jsonPath("$.permissions.canRequestSuspension").value(true));
 
         assertThat(productStatus(cream)).isEqualTo(ProductGroupBuyStatus.READY);
@@ -100,7 +100,7 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
                 // 대기 중인 연장은 차단 조건이 아니다 — B4c 「중단 요청만」, 원칙상 조기 마감도 열린다(설계서 4-5).
                 .andExpect(jsonPath("$.permissions.canRequestSuspension").value(true))
                 .andExpect(jsonPath("$.permissions.canRequestEarlyClose").value(true))
-                .andExpect(jsonPath("$.history[-1:].detail").value(contains("7일 · 수요 증가")));
+                .andExpect(jsonPath("$.history[:1].detail").value(contains("7일 · 수요 증가")));
 
         GroupBuyExtensionRequest saved = extensionRequestRepository.findByGroupBuyId(groupBuy.getId()).orElseThrow();
         assertThat(saved.getBeforeEndAt()).isEqualTo(endAt);
@@ -193,7 +193,7 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
                 .andExpect(jsonPath("$.groupBuy.status").value("READY"))
                 .andExpect(jsonPath("$.activeRequest.type").value("SUSPEND"))
                 .andExpect(jsonPath("$.activeRequest.statusAtRequest").value("READY"))
-                .andExpect(jsonPath("$.history[-1:].eventType").value(contains("SUSPENSION_REQUESTED")));
+                .andExpect(jsonPath("$.history[:1].eventType").value(contains("SUSPENSION_REQUESTED")));
 
         GroupBuy preparing = seedPreparing();
         action(preparing.getId(), "suspension-request", Map.of("reasonCode", "QUALITY_ISSUE"))
@@ -243,7 +243,7 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
                 .andExpect(jsonPath("$.adminSuspension.appeal.content").value("해당 표현은 시험성적서에 근거합니다."))
                 .andExpect(jsonPath("$.adminSuspension.appeal.submittedAt").exists())
                 .andExpect(jsonPath("$.permissions.canSubmitAppeal").value(false))
-                .andExpect(jsonPath("$.history[-1:].eventType").value(contains("APPEAL_SUBMITTED")));
+                .andExpect(jsonPath("$.history[:1].eventType").value(contains("APPEAL_SUBMITTED")));
 
         action(groupBuy.getId(), "appeal", Map.of("content", "추가 소명")).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("GROUP_BUY_APPEAL_ALREADY_SUBMITTED"));
@@ -305,6 +305,36 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
                 .andExpect(jsonPath("$.adminSuspension.appeal.attachments[0].sizeBytes").value(812_000));
     }
 
+    @Test
+    @DisplayName("소명 증빙 개수 상한은 제출 단계에서만 본다 — 발급은 5건을 넘어도 받고, 제출에 6건을 실으면 400")
+    void appealAttachmentLimitAppliesOnSubmitOnly() throws Exception {
+        GroupBuy groupBuy = seedIn(GroupBuyStatus.IN_PROGRESS);
+        seedNotice(groupBuy.getId(), LocalDateTime.now().plusDays(2).withNano(0));
+        given(appealStorage.newKey(any(), eq("application/pdf"))).willReturn(
+                "uploads/group-buy/appeal/1/0.pdf", "uploads/group-buy/appeal/1/1.pdf", "uploads/group-buy/appeal/1/2.pdf",
+                "uploads/group-buy/appeal/1/3.pdf", "uploads/group-buy/appeal/1/4.pdf", "uploads/group-buy/appeal/1/5.pdf",
+                "uploads/group-buy/appeal/1/6.pdf");
+        given(appealStorage.presignUpload(any(), any())).willReturn("https://upload.test/presigned");
+        given(appealStorage.head(any()))
+                .willReturn(Optional.of(new GroupBuyAppealAttachmentStorage.UploadedObject(1_000L, "application/pdf")));
+
+        // 업로드하지 않은 건 · FE에서 뺀 건이 자리를 차지하지 않는다 — 발급은 몇 번이든 받는다.
+        List<Long> ids = new java.util.ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            ids.add(readId(action(groupBuy.getId(), "appeal/attachments",
+                    Map.of("fileName", "증빙" + i + ".pdf", "contentType", "application/pdf", "sizeBytes", 1_000))
+                    .andExpect(status().isCreated())));
+        }
+
+        action(groupBuy.getId(), "appeal", Map.of("content", "근거 자료 첨부", "attachmentIds", ids.subList(0, 6)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("GROUP_BUY_APPEAL_ATTACHMENT_INVALID"));
+
+        action(groupBuy.getId(), "appeal", Map.of("content", "근거 자료 첨부", "attachmentIds", ids.subList(2, 7)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.adminSuspension.appeal.attachments.length()").value(5));
+    }
+
     private long readId(org.springframework.test.web.servlet.ResultActions result) throws Exception {
         return com.jayway.jsonpath.JsonPath.parse(result.andReturn().getResponse().getContentAsString())
                 .read("$.attachmentId", Number.class).longValue();
@@ -331,7 +361,7 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
                 .andExpect(jsonPath("$.afterEnd.fulfillment.theirs").doesNotExist())
                 .andExpect(jsonPath("$.afterEnd.fulfillment.onHold").value(false))
                 .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(false))
-                .andExpect(jsonPath("$.history[-1:].eventType").value(contains("FULFILLMENT_CONFIRMED")));
+                .andExpect(jsonPath("$.history[:1].eventType").value(contains("FULFILLMENT_CONFIRMED")));
 
         action(ended.getId(), "fulfillment-check", Map.of("result", "FULFILLED")).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("GROUP_BUY_FULFILLMENT_ALREADY_CHECKED"));

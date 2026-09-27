@@ -3,6 +3,7 @@ package showroomz.api.creator.contract.docs;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -27,7 +28,19 @@ import showroomz.domain.contract.type.CreatorContractTab;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "Creator - Contract", description = "쇼룸 스튜디오 계약 관리 API (§25·§27)")
+import static showroomz.api.creator.contract.docs.CreatorContractDocsExamples.*;
+
+@Tag(name = "Creator - Contract", description = """
+        쇼룸 스튜디오 계약 관리 API. CREATOR 계정의 **도착한 계약**만 조회·거절·재발송 요청할 수 있다.
+
+        `DRAFT`·`REVIEW_PENDING`·`REVIEW_REJECTED`는 도착 전이므로 목록에 나오지 않으며,
+        개별 경로에서도 404를 반환한다. 남의 계약도 같은 HTTP 상태로 숨긴다.
+        서명 자체와 계약 조건 변경은 이 API에서 처리하지 않는다.
+
+        모든 일시는 서버 기준 Asia/Seoul `yyyy-MM-dd'T'HH:mm:ss`, 날짜는 `yyyy-MM-dd`다.
+        인증 실패는 401, CREATOR 권한이 아닌 토큰은 403(Security 계층)이다.
+        토큰의 회원·크리에이터가 없으면 404 `USER_NOT_FOUND`·`CREATOR_NOT_FOUND`다.
+        """)
 public interface CreatorContractControllerDocs {
 
     @Operation(
@@ -68,23 +81,32 @@ public interface CreatorContractControllerDocs {
                     - `createdAt` — 생성일은 브랜드의 사정이다(§27-1 #3). 정렬 기준도 「받은 순」이다
                     - `entryMode` — 스튜디오에 작성 모드가 없다. 진입은 항상 상세다
 
-                    빈 상태(S2)는 서버가 구분하지 않는다 — `totalCount = 0`이면 FE가 그린다.
+                    `page`는 1부터 시작하고 기본값은 1, `size` 기본값은 20이다.
+                    응답은 `content`와 `pageInfo`(`currentPage`·`totalPages`·`totalResults`·`limit`·`hasNext`)로 구성된다.
+                    `content: []`만으로는 계약 자체가 없는지 검색 결과가 없는지 구분할 수 없다.
+                    전체 빈 상태(S2)는 요약 API의 `tabCounts.ALL = 0`으로 판정한다.
                     연결코드 안내는 기존 `GET /v1/creator/connections/code`를 쓴다.
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "200", description = "조회 성공. pageInfo.currentPage는 1부터 시작한다",
+                    content = @Content(schema = @Schema(implementation = PageResponse.class), examples = {
+                            @ExampleObject(name = "계약 목록", value = LIST),
+                            @ExampleObject(name = "빈 목록", value = LIST_EMPTY)
+                    })),
+            @ApiResponse(responseCode = "400", description = "tab·sort에 정의되지 않은 값",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "인플루언서 계정 없음",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<PageResponse<CreatorContractListItem>> getContracts(
             @Parameter(description = "상태 탭 — ALL(기본) / SIGNING / CONCLUSION_PENDING / CONCLUDED / CLOSED. "
                     + "**파트너의 SIGNING 탭과 집합이 다르다** — 파트너는 「서명 진행중 + 체결 처리 대기」 "
-                    + "묶음이지만 스튜디오는 둘이 쪼개져 각각 서 있다")
+                    + "묶음이지만 스튜디오는 둘이 쪼개져 각각 서 있다", example = "SIGNING")
             @RequestParam(required = false) CreatorContractTab tab,
-            @Parameter(description = "공구명 · 브랜드명 검색")
+            @Parameter(description = "공구명 · 브랜드명 검색", example = "퓨어랩")
             @RequestParam(required = false) String keyword,
             @Parameter(description = "정렬 — RECEIVED_DESC(기본 · 받은 순) / DEADLINE_ASC(서명 기한순 · NULL은 뒤) "
-                    + "/ START_AT_ASC(공구 시작일순)")
+                    + "/ START_AT_ASC(공구 시작일순)", example = "RECEIVED_DESC")
             @RequestParam(required = false) CreatorContractSortType sort,
             @ModelAttribute PagingRequest pagingRequest);
 
@@ -111,7 +133,13 @@ public interface CreatorContractControllerDocs {
                     세지 않는 것: 내 서명을 마친 `SIGNING`(되돌릴 수도 없다) · `CONCLUSION_PENDING`
                     (운영자 대기라 내가 할 수 있는 일이 없다) · `CONCLUDED` · 종결 3종.
                     """)
-    @ApiResponses(@ApiResponse(responseCode = "200", description = "조회 성공"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = CreatorContractSummaryResponse.class),
+                            examples = @ExampleObject(value = SUMMARY))),
+            @ApiResponse(responseCode = "404", description = "인플루언서 계정 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<CreatorContractSummaryResponse> getSummary();
 
     @Operation(
@@ -169,19 +197,23 @@ public interface CreatorContractControllerDocs {
                     이미 종결된 계약은 **200**이다 — 종결 계약도 읽을 수 있다.
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
-            @ApiResponse(responseCode = "404", description = "존재하지 않거나 아직 도착하지 않은 계약",
+            @ApiResponse(responseCode = "200", description = "조회 성공. 처음 열람하면 열람 시각이 기록된다",
+                    content = @Content(schema = @Schema(implementation = CreatorContractDetailResponse.class),
+                            examples = @ExampleObject(name = "서명 진행중 · 양측 미서명", value = DETAIL))),
+            @ApiResponse(responseCode = "400", description = "tab·sort에 정의되지 않은 값",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "계약이 없거나 남의 계약·미도착 계약(CONTRACT_NOT_RECEIVED)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<CreatorContractDetailResponse> getContract(
-            @Parameter(description = "계약 ID") @PathVariable Long contractId,
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId,
             @Parameter(description = "목록 탭 — **이전/다음 이동 계산용 선택 파라미터**. "
                     + "이전/다음 두 건은 현재 목록의 정렬·필터 안에서의 이웃이라 목록 조건을 모르면 계산할 수 없다. "
-                    + "셋 다 없으면 navigation의 두 값이 null이고 FE는 버튼을 비활성한다")
+                    + "셋 다 없으면 navigation의 두 값이 null이고 FE는 버튼을 비활성한다", example = "SIGNING")
             @RequestParam(required = false) CreatorContractTab tab,
-            @Parameter(description = "목록 검색어 — 이전/다음 이동 계산용")
+            @Parameter(description = "목록 검색어 — 이전/다음 이동 계산용", example = "퓨어랩")
             @RequestParam(required = false) String keyword,
-            @Parameter(description = "목록 정렬 — 이전/다음 이동 계산용")
+            @Parameter(description = "목록 정렬 — 이전/다음 이동 계산용", example = "RECEIVED_DESC")
             @RequestParam(required = false) CreatorContractSortType sort);
 
     @Operation(
@@ -200,11 +232,14 @@ public interface CreatorContractControllerDocs {
                     문안이 법률 검토 대기인 조항은 `fullTitle`·`fullBody`가 `null`이다.
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
-            @ApiResponse(responseCode = "404", description = "미도착 계약 또는 조항 버전 없음",
+            @ApiResponse(responseCode = "200", description = "계약에 고정된 버전의 조항 조회 성공",
+                    content = @Content(schema = @Schema(implementation = CreatorContractClausesResponse.class),
+                            examples = @ExampleObject(value = CLAUSES))),
+            @ApiResponse(responseCode = "404", description = "미도착 계약(CONTRACT_NOT_RECEIVED) 또는 조항 버전 없음(CONTRACT_CLAUSE_VERSION_NOT_FOUND)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<CreatorContractClausesResponse> getClauses(@PathVariable Long contractId);
+    ResponseEntity<CreatorContractClausesResponse> getClauses(
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId);
 
     @Operation(
             summary = "계약 문서 다운로드",
@@ -226,13 +261,19 @@ public interface CreatorContractControllerDocs {
                     미확정이라 **그 엔드포인트는 만들지 않았다**(설계서 미결 #5).
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
-            @ApiResponse(responseCode = "404", description = "미도착 계약 또는 문서 없음",
+            @ApiResponse(responseCode = "200", description = "다운로드 URL 반환. 파일 바이너리가 아닌 JSON 응답",
+                    content = @Content(schema = @Schema(implementation = CreatorContractDocumentDownloadResponse.class),
+                            examples = @ExampleObject(value = DOCUMENT))),
+            @ApiResponse(responseCode = "400", description = "정의되지 않은 문서 종류",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "미도착 계약(CONTRACT_NOT_RECEIVED) 또는 문서 없음(CONTRACT_DOCUMENT_NOT_FOUND)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<CreatorContractDocumentDownloadResponse> getDocument(
-            @Parameter(description = "계약 ID") @PathVariable Long contractId,
-            @Parameter(description = "문서 종류 — SIGNED_PDF / AUDIT_TRAIL") @PathVariable ContractDocumentType type);
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId,
+            @Parameter(description = "문서 종류 — SIGNING·CONCLUSION_PENDING: GENERATED_DRAFT, "
+                    + "CONCLUDED: SIGNED_PDF 또는 AUDIT_TRAIL", example = "SIGNED_PDF")
+            @PathVariable ContractDocumentType type);
 
     @Operation(
             summary = "계약 거절",
@@ -264,17 +305,24 @@ public interface CreatorContractControllerDocs {
                     연결이 끊기지는 않습니다」.
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "거절 완료 — 갱신된 상세를 돌려준다"),
-            @ApiResponse(responseCode = "400", description = "사유 구분 누락",
+            @ApiResponse(responseCode = "200", description = "거절 완료 — 갱신된 상세를 돌려준다. navigation의 이전·다음 ID는 null",
+                    content = @Content(schema = @Schema(implementation = CreatorContractDetailResponse.class))),
+            @ApiResponse(responseCode = "400", description = "사유 누락·잘못된 enum 값 또는 메모 1000자 초과",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "존재하지 않거나 아직 도착하지 않은 계약",
+            @ApiResponse(responseCode = "404", description = "계약이 없거나 남의 계약·미도착 계약(CONTRACT_NOT_RECEIVED)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409",
                     description = "이미 서명함(CONTRACT_ALREADY_SIGNED) 또는 거절 불가 상태(CONTRACT_DECLINE_NOT_ALLOWED)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<CreatorContractDetailResponse> decline(
-            @Parameter(description = "계약 ID") @PathVariable Long contractId,
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "reasonCode 필수: CONDITION_RENEGOTIATION / SCHEDULE_MISMATCH / "
+                            + "NOT_FIT_SHOWROOM / CONTENT_BURDEN / ETC. memo는 선택(최대 1000자)",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = CreatorContractDeclineRequest.class),
+                            examples = @ExampleObject(value = DECLINE_REQUEST)))
             @Valid @RequestBody CreatorContractDeclineRequest request);
 
     @Operation(
@@ -300,12 +348,14 @@ public interface CreatorContractControllerDocs {
                     이 구분이 흐려지면 인플루언서가 오지 않을 메일을 기다린다.
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "요청 접수 — 기존 미처리 요청이면 alreadyRequested=true"),
-            @ApiResponse(responseCode = "404", description = "존재하지 않거나 아직 도착하지 않은 계약",
+            @ApiResponse(responseCode = "200", description = "요청 접수 — 기존 미처리 요청이면 alreadyRequested=true",
+                    content = @Content(schema = @Schema(implementation = CreatorContractResendRequestResponse.class),
+                            examples = @ExampleObject(value = RESEND))),
+            @ApiResponse(responseCode = "404", description = "계약이 없거나 남의 계약·미도착 계약(CONTRACT_NOT_RECEIVED)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "서명이 필요한 계약이 아님(CONTRACT_RESEND_NOT_ALLOWED)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<CreatorContractResendRequestResponse> requestResend(
-            @Parameter(description = "계약 ID") @PathVariable Long contractId);
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId);
 }

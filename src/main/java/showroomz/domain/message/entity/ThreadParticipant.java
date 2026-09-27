@@ -47,19 +47,7 @@ public class ThreadParticipant extends BaseTimeEntity {
     @Column(name = "last_read_message_id")
     private Long lastReadMessageId;
 
+    /** 읽음 위치는 엔티티로 고치지 않는다 — {@code ThreadParticipantRepository.upsertReadPosition} 한 문장으로만 쓴다. */
     @Column(name = "last_read_at")
     private LocalDateTime lastReadAt;
-
-    public static ThreadParticipant create(MessageThread thread, ParticipantType type, Long participantId) {
-        return ThreadParticipant.builder()
-                .thread(thread)
-                .participantType(type)
-                .participantId(participantId)
-                .build();
-    }
-
-    public void markRead(Long lastReadMessageId) {
-        this.lastReadMessageId = lastReadMessageId;
-        this.lastReadAt = LocalDateTime.now();
-    }
 }

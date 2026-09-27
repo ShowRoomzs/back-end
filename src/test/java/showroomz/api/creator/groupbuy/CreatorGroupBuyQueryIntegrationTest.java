@@ -163,8 +163,8 @@ class CreatorGroupBuyQueryIntegrationTest extends CreatorGroupBuyTestSupport {
                 .andExpect(jsonPath("$.activeRequest.mine").value(false))
                 .andExpect(jsonPath("$.activeRequest.reasonLabel").value("상품 품질 이슈"))
                 .andExpect(jsonPath("$.activeRequest.memo").doesNotExist())
-                .andExpect(jsonPath("$.history[-1:].eventType").value(contains("SUSPENSION_REQUESTED")))
-                .andExpect(jsonPath("$.history[-1:].detail").value(contains("상품 품질 이슈")))
+                .andExpect(jsonPath("$.history[:1].eventType").value(contains("SUSPENSION_REQUESTED")))
+                .andExpect(jsonPath("$.history[:1].detail").value(contains("상품 품질 이슈")))
                 .andExpect(jsonPath("$.permissions.canRequestSuspension").value(false));
 
         // 브랜드 자신의 메모는 파트너 화면에 그대로 보인다.
@@ -201,8 +201,8 @@ class CreatorGroupBuyQueryIntegrationTest extends CreatorGroupBuyTestSupport {
                 groupBuy.getId(), Timestamp.valueOf(LocalDateTime.now()));
 
         studioDetail(groupBuy.getId()).andExpect(status().isOk())
-                .andExpect(jsonPath("$.history[*].eventType").value(contains("CREATED", "STOCK_CONFIRMED")))
-                .andExpect(jsonPath("$.history[1].detail").doesNotExist())
+                .andExpect(jsonPath("$.history[*].eventType").value(contains("STOCK_CONFIRMED", "CREATED")))
+                .andExpect(jsonPath("$.history[0].detail").doesNotExist())
                 .andExpect(jsonPath("$.history[*].eventType").value(not(hasItem("APPEAL_SUBMITTED"))))
                 .andExpect(jsonPath("$.readiness.gates[0].state").value("DONE"));
     }

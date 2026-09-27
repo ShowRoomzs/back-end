@@ -473,7 +473,7 @@ public class CreatorGroupBuyDetailAssembler {
     private List<HistoryEntry> history(GroupBuy groupBuy, GroupBuyFacts facts) {
         Map<Long, GroupBuyChangeRequest> requests = facts.changeRequests().stream()
                 .collect(Collectors.toMap(GroupBuyChangeRequest::getId, Function.identity(), (a, b) -> a));
-        return historyRepository.findByGroupBuyIdAndEventTypeInOrderByOccurredAtAscIdAsc(
+        return historyRepository.findByGroupBuyIdAndEventTypeInOrderByOccurredAtDescIdDesc(
                         groupBuy.getId(), CreatorGroupBuyHistoryPolicy.visibleEvents())
                 .stream()
                 .map(entry -> new HistoryEntry(

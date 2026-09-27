@@ -25,6 +25,7 @@ import showroomz.domain.contract.repository.ContractHistoryRepository;
 import showroomz.domain.contract.repository.ContractRepository;
 import showroomz.domain.contract.repository.ContractResendRequestRepository;
 import showroomz.domain.contract.type.ContractClauseVersionStatus;
+import showroomz.domain.contract.type.ContractCancelRequester;
 import showroomz.domain.contract.type.ContractCloseReasonCode;
 import showroomz.domain.contract.type.ContractDeclineReason;
 import showroomz.domain.contract.type.ContractReviewRejectReason;
@@ -449,7 +450,7 @@ abstract class SellerContractTestSupport extends IntegrationTestSupport {
             case EXPIRED -> contract.expire(now.minusDays(1));
             // 브랜드에게 계약 취소는 없다 — 취소는 서명 요청 발송 이후 운영자가 한다.
             case CANCELED -> contract.applyCanceledByAdmin(ContractCloseReasonCode.SCHEDULE_CHANGE.name(),
-                    "브랜드 요청으로 서명 요청을 회수했습니다.", now.minusDays(1));
+                    "브랜드 요청으로 서명 요청을 회수했습니다.", ContractCancelRequester.byAdmin(), now.minusDays(1));
             default -> throw new IllegalArgumentException("적재할 수 없는 상태: " + status);
         }
     }

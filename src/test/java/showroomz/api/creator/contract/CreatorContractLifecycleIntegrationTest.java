@@ -357,8 +357,8 @@ class CreatorContractLifecycleIntegrationTest extends CreatorContractTestSupport
         mockMvc.perform(post(ADMIN_CONTRACTS + "/" + contractId + "/cancel")
                         .header(HttpHeaders.AUTHORIZATION, operatorToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"signatureRequestWithdrawn\":true,\"reasonCode\":\"SCHEDULE_CHANGE\",\"memo\":\"%s\"}"
-                                .formatted(memo)))
+                        .content(("{\"signatureRequestWithdrawn\":true,\"reasonCode\":\"SCHEDULE_CHANGE\",\"memo\":\"%s\","
+                                + "\"requesterType\":\"ADMIN\"}").formatted(memo)))
                 .andExpect(status().isOk());
 
         detail(contractId)

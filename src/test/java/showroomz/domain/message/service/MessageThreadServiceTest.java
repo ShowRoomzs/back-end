@@ -4,7 +4,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -14,7 +13,6 @@ import showroomz.domain.market.entity.Market;
 import showroomz.domain.message.entity.Message;
 import showroomz.domain.message.entity.MessageAttachment;
 import showroomz.domain.message.entity.MessageThread;
-import showroomz.domain.message.entity.ThreadParticipant;
 import showroomz.domain.message.repository.MessageAttachmentRepository;
 import showroomz.domain.message.repository.MessageRepository;
 import showroomz.domain.message.repository.MessageThreadRepository;
@@ -137,7 +135,7 @@ class MessageThreadServiceTest {
 
             messageThreadService.markRead(openThread, ParticipantType.SELLER, MY_ID);
 
-            verify(threadParticipantRepository, never()).save(any());
+            verifyNoInteractions(threadParticipantRepository);
         }
 
         @Test
@@ -147,16 +145,12 @@ class MessageThreadServiceTest {
                     .senderType(ParticipantType.CREATOR).senderId(1L)
                     .clientMessageId("c").content("hi").build();
             given(messageRepository.findTopByThreadOrderByIdDesc(openThread)).willReturn(Optional.of(latest));
-            given(threadParticipantRepository.findByThreadAndParticipantTypeAndParticipantId(
-                    openThread, ParticipantType.SELLER, MY_ID))
-                    .willReturn(Optional.empty());
-            given(threadParticipantRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
             messageThreadService.markRead(openThread, ParticipantType.SELLER, MY_ID);
 
-            ArgumentCaptor<ThreadParticipant> saved = ArgumentCaptor.forClass(ThreadParticipant.class);
-            verify(threadParticipantRepository).save(saved.capture());
-            assertThat(saved.getValue().getLastReadMessageId()).isEqualTo(42L);
+            // 조회 후 저장이 아니라 upsert 한 번이다 — 동시 최초 열람·늦은 커밋 경합은 ThreadReadPositionIntegrationTest가 본다.
+            verify(threadParticipantRepository).upsertReadPosition(eq(THREAD_ID), eq("SELLER"), eq(MY_ID), eq(42L), any());
+            verify(threadParticipantRepository, never()).save(any());
         }
     }
 

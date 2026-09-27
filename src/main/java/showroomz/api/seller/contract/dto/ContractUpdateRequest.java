@@ -34,38 +34,38 @@ public record ContractUpdateRequest(
         @NotNull
         Long version,
 
-        @Schema(description = "계약 상대 — 스레드 경유로 고정된 계약이면 다른 값을 보낼 수 없다", nullable = true)
+        @Schema(description = "계약 상대 ID — 스레드 경유로 고정된 계약이면 다른 값을 보낼 수 없다", example = "31", nullable = true)
         Long creatorId,
 
-        @Schema(description = "공구명 — 2~40자 판정은 검토 요청 시점에 한다", nullable = true)
+        @Schema(description = "공구명 — 2~40자 판정은 검토 요청 시점에 한다", example = "가을 앰플 신제품 공구", nullable = true)
         @Size(max = 40)
         String title,
 
-        @Schema(nullable = true) LocalDateTime groupBuyStartAt,
-        @Schema(nullable = true) LocalDateTime groupBuyEndAt,
+        @Schema(description = "공구 시작 일시(Asia/Seoul)", example = "2026-09-01T10:00:00", nullable = true) LocalDateTime groupBuyStartAt,
+        @Schema(description = "공구 종료 일시(Asia/Seoul)", example = "2026-09-17T23:59:00", nullable = true) LocalDateTime groupBuyEndAt,
 
         @Schema(description = "고정 지급비(원) · 0원 허용 · 최대 1,000만원", nullable = true)
         @Min(0) @Max(10_000_000)
         Integer fixedFeeAmount,
 
-        @Schema(nullable = true) FixedFeeTrigger fixedFeeTrigger,
+        @Schema(description = "지급 시점: POST_REGISTERED / GROUP_BUY_ENDED / SETTLEMENT_COMPLETED", example = "POST_REGISTERED", nullable = true) FixedFeeTrigger fixedFeeTrigger,
 
         @Schema(description = "고지 확인 체크 — true로 바뀌는 순간의 시각이 저장된다. "
                 + "false를 보내면 확인 시각이 지워진다", nullable = true)
         Boolean fixedFeeNoticeAgreed,
 
-        @Schema(nullable = true) @Min(0) Integer contentFeedCount,
-        @Schema(nullable = true) @Min(0) Integer contentReelsCount,
-        @Schema(nullable = true) @Min(0) Integer contentStoryCount,
+        @Schema(description = "피드 게시 수", example = "1", nullable = true) @Min(0) Integer contentFeedCount,
+        @Schema(description = "릴스 게시 수", example = "1", nullable = true) @Min(0) Integer contentReelsCount,
+        @Schema(description = "스토리 게시 수", example = "0", nullable = true) @Min(0) Integer contentStoryCount,
 
         @Schema(description = "게시 완료 기한", nullable = true) LocalDate contentDueDate,
 
-        @Schema(nullable = true) Boolean secondaryUseAllowed,
-        @Schema(nullable = true) SecondaryUsePeriodType secondaryUsePeriodType,
-        @Schema(nullable = true) @Min(1) Integer secondaryUseMonths,
-        @Schema(nullable = true) Boolean brandPreReview,
+        @Schema(description = "브랜드의 콘텐츠 2차 활용 허용 여부", nullable = true) Boolean secondaryUseAllowed,
+        @Schema(description = "2차 활용 기간: FIXED / UNLIMITED", example = "FIXED", nullable = true) SecondaryUsePeriodType secondaryUsePeriodType,
+        @Schema(description = "FIXED일 때의 개월 수", example = "3", nullable = true) @Min(1) Integer secondaryUseMonths,
+        @Schema(description = "브랜드 사전 검수 여부", nullable = true) Boolean brandPreReview,
 
-        @Schema(nullable = true) @Size(max = 500) String note,
+        @Schema(description = "비고, 최대 500자", nullable = true) @Size(max = 500) String note,
 
         @Schema(description = "상품 항목 — 통째 교체된다. 빈 배열이면 전부 삭제다")
         @Valid
@@ -81,10 +81,10 @@ public record ContractUpdateRequest(
                     + "사용자가 보고 있는 값을 지운다", nullable = true)
             Long contractItemId,
 
-            @Schema(description = "상품 ID — 미선택 행도 저장할 수 있다", nullable = true)
+            @Schema(description = "상품 ID — 미선택 행도 저장할 수 있다", example = "87", nullable = true)
             Long productId,
 
-            @Schema(description = "공구가 — 10원 단위", nullable = true)
+            @Schema(description = "공구가(원) — 10원 단위", example = "28000", nullable = true)
             @Min(0) @Max(100_000_000)
             Integer groupBuyPrice,
 
@@ -92,7 +92,7 @@ public record ContractUpdateRequest(
             @DecimalMin("0.0") @DecimalMax("90.0")
             BigDecimal rewardRate,
 
-            @Schema(nullable = true) @Min(0) Integer minQuantity
+            @Schema(description = "최소 확보 물량", example = "100", nullable = true) @Min(0) Integer minQuantity
     ) {
     }
 }

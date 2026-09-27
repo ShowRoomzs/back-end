@@ -282,6 +282,8 @@ public enum ErrorCode {
     /* 하드 검증 H1~H8 실패. 응답 바디에 위반 항목 목록(hardViolations)이 함께 실린다(설계서 2-2·2-4). */
     CONTRACT_VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "CONTRACT_VALIDATION_FAILED", "계약 내용을 다시 확인해 주세요."),
     CONTRACT_CANCEL_REASON_MEMO_REQUIRED(HttpStatus.BAD_REQUEST, "CONTRACT_CANCEL_REASON_MEMO_REQUIRED", "기타 사유는 상세 설명이 필요합니다."),
+    /* 요청자·경로·시각 조합 위반. 어느 값이 문제인지는 message로 알린다(28-1 수정계획 1-3). */
+    CONTRACT_CANCEL_REQUESTER_INVALID(HttpStatus.BAD_REQUEST, "CONTRACT_CANCEL_REQUESTER_INVALID", "취소 요청자 정보를 다시 확인해 주세요."),
     CONTRACT_NOT_DUPLICABLE(HttpStatus.CONFLICT, "CONTRACT_NOT_DUPLICABLE", "종료되었거나 체결된 계약만 같은 조건으로 다시 작성할 수 있습니다."),
     CONTRACT_CLAUSE_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "CONTRACT_CLAUSE_VERSION_NOT_FOUND", "시행중인 표준 조항이 없습니다."),
 

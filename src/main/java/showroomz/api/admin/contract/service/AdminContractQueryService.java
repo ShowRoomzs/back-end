@@ -85,8 +85,9 @@ public class AdminContractQueryService {
             var d = docs.stream().filter(x -> x.getDocumentType() == type)
                     .filter(x -> type != ContractDocumentType.GENERATED_DRAFT || Objects.equals(x.getSourceReviewRequestedAt(), c.getReviewRequestedAt()))
                     .findFirst().orElse(null);
-            return d == null ? new Document(type, false, null, null, null, null)
-                    : new Document(type, true, d.getOriginalName(), storage.download(d).downloadUrl(), d.getUploadedAt(), d.getSourceReviewRequestedAt());
+            return d == null ? new Document(type, false, null, null, null, null, null)
+                    : new Document(type, true, d.getOriginalName(), storage.download(d).downloadUrl(), d.getSizeBytes(),
+                            d.getUploadedAt(), d.getSourceReviewRequestedAt());
         }).toList();
         var last = requests.isEmpty() ? null : requests.getFirst();
         return new Detail(new ContractInfo(id, c.getContractNumber(), c.getTitle(), status, status.getLabel(), status.getTone(),
@@ -100,7 +101,8 @@ public class AdminContractQueryService {
                 new Review(c.getReviewRequestedAt(), (minutes / 1440) + "일 " + (minutes % 1440 / 60) + "시간", c.getReviewApprovedAt(), c.getReviewRejectedAt(), shared.review().rejectReason()),
                 new Signature(c.getSignatureRequestedAt(), c.getSignatureDeadlineAt(), c.getBrandSignedAt(), c.getCreatorSignedAt(), c.getSignatureAsOf(),
                         actor(history, ContractEventType.SIGNATURE_UPDATED), due ? Duration.between(c.getSignatureDeadlineAt(), now).toDays() : 0),
-                shared.items(), shared.content(), shared.fixedFee(), shared.settlement(), shared.closure(), documentResponses,
+                shared.items(), shared.content(), shared.fixedFee(), shared.settlement(), shared.closure(),
+                cancelRequest(c, history), documentResponses,
                 // 미처리 건수는 처리할 수 있을 때(서명 진행 중)만 센다 — 목록의 재발송 큐와 같은 정의다.
                 new Resend(signing ? requests.stream().filter(r -> !r.isHandled()).count() : 0,
                         last == null ? null : last.getRequestedAt(), last == null ? null : last.getRequesterType()),
@@ -109,6 +111,21 @@ public class AdminContractQueryService {
                         signing || pending, pending && signed && completeDocs, signing && due, signing, pending,
                         ContractStatus.ADMIN_CANCELABLE.contains(status)),
                 history.stream().map(h -> new History(h.getEventType(), h.getActorType(), h.getActorId(), h.getActorDisplayName(), h.getDetail(), h.getOccurredAt())).toList(), c.getVersion());
+    }
+
+    /**
+     * 운영자 취소의 요청·처리(28-1 수정계획 1-5). 요청자 이름은 저장하지 않고 지금 이름을 읽는다 — 같은 화면의
+     * {@code contract.brand.name}·{@code contract.creator.name}과 어긋나지 않게 하기 위해서다(미결 ③).
+     */
+    private CancelRequestInfo cancelRequest(Contract c, List<ContractHistory> history) {
+        if (c.getStatus() != ContractStatus.CANCELED || c.getCloseActorType() != ContractActorType.ADMIN) return null;
+        ContractActorType type = c.getCancelRequesterType();
+        String name = type == ContractActorType.SELLER ? c.getMarket().getMarketName()
+                : type == ContractActorType.CREATOR && c.getCreator() != null ? c.getCreator().getShowroomName()
+                : null;
+        ContractCancelRequestChannel channel = c.getCancelRequestChannel();
+        return new CancelRequestInfo(type, name, channel, channel == null ? null : channel.getLabel(),
+                c.getCancelRequestedAt(), c.getClosedAt(), actor(history, ContractEventType.CANCELED));
     }
 
     /** 체결 트랜잭션이 만든 공구(공구 설계서 2-1). 체결 전에는 id·번호·상태 모두 null이다. */

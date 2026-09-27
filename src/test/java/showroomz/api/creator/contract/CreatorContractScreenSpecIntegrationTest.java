@@ -11,6 +11,7 @@ import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractDocument;
 import showroomz.domain.contract.type.ContractActorType;
+import showroomz.domain.contract.type.ContractCancelRequester;
 import showroomz.domain.contract.type.ContractCloseReasonCode;
 import showroomz.domain.contract.type.ContractDeclineReason;
 import showroomz.domain.contract.type.ContractDocumentType;
@@ -758,7 +759,8 @@ class CreatorContractScreenSpecIntegrationTest extends CreatorContractTestSuppor
         declined(spring, ContractDeclineReason.CONDITION_RENEGOTIATION, "리워드율 조정이 가능하면 다시 검토하고 싶습니다.");
         receive(oo, "수분 토너 리뉴얼 공구", 1, 7, now.minusHours(1), ContractStatus.EXPIRED, c -> c.expire(now));
         receive(tri, "클렌징 오일 여름 공구", 1, 8, now.plusDays(8), ContractStatus.CANCELED,
-                c -> c.applyCanceledByAdmin(ContractCloseReasonCode.SCHEDULE_CHANGE.name(), null, now));
+                c -> c.applyCanceledByAdmin(ContractCloseReasonCode.SCHEDULE_CHANGE.name(), null,
+                        ContractCancelRequester.byAdmin(), now));
 
         // 아직 도착하지 않은 계약 — 8건에 섞이면 안 된다.
         saveContract(ContractStatus.DRAFT, c -> { });

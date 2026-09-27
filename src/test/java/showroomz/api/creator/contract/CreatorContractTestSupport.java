@@ -25,6 +25,7 @@ import showroomz.domain.contract.repository.ContractRepository;
 import showroomz.domain.contract.repository.ContractResendRequestRepository;
 import showroomz.domain.contract.type.ContractActorType;
 import showroomz.domain.contract.type.ContractClauseVersionStatus;
+import showroomz.domain.contract.type.ContractCancelRequester;
 import showroomz.domain.contract.type.ContractCloseReasonCode;
 import showroomz.domain.contract.type.ContractDeclineReason;
 import showroomz.domain.contract.type.ContractDocumentType;
@@ -213,7 +214,7 @@ abstract class CreatorContractTestSupport extends IntegrationTestSupport {
             approve(contract);
             // 서명 요청이 도착한 뒤의 취소는 운영자만 한다 — 브랜드 취소는 발송 전이라 여기 오지 않는다.
             contract.applyCanceledByAdmin(ContractCloseReasonCode.SCHEDULE_CHANGE.name(),
-                    "생산 일정이 밀려 공구 기간을 다시 잡아야 합니다.", LocalDateTime.now());
+                    "생산 일정이 밀려 공구 기간을 다시 잡아야 합니다.", ContractCancelRequester.byAdmin(), LocalDateTime.now());
         });
     }
 

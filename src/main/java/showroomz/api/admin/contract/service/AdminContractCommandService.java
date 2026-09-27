@@ -142,8 +142,9 @@ public class AdminContractCommandService {
         String memo = request.memo() == null || request.memo().isBlank() ? null : request.memo().trim();
         if (request.reasonCode().requiresMemo() && memo == null) fail(ErrorCode.CONTRACT_CANCEL_REASON_MEMO_REQUIRED);
         LocalDateTime now = LocalDateTime.now();
+        ContractCancelRequester requester = requireRequester(c, request, now);
         transition(c, ContractStatus.CANCELED);
-        c.applyCanceledByAdmin(request.reasonCode().name(), memo, now);
+        c.applyCanceledByAdmin(request.reasonCode().name(), memo, requester, now);
         record(c, operator, name, ContractEventType.CANCELED, request.reasonCode().getLabel(), now);
         notifier.notifyBothParties(c, "CANCELED");
         return response(c);
@@ -157,6 +158,34 @@ public class AdminContractCommandService {
         int handled = resends.handleAll(id, operator, now);
         record(c, operator, name, ContractEventType.RESEND_HANDLED, "서명 안내 재발송 · 요청 " + handled + "건 처리", now);
         return response(c);
+    }
+
+    /**
+     * 취소 요청자(28-1 수정계획 1-3) — 서버가 스레드에서 요청을 특정할 수 없어 운영자가 기록한다. 브랜드·인플루언서 요청이면
+     * 경로·시각이 모두 있어야 하고, 직권이면 둘 다 없어야 한다 — 한쪽만 온 값을 조용히 버리면 운영자가 입력한 기록이 사라진다.
+     */
+    private ContractCancelRequester requireRequester(Contract c, CancelRequest request, LocalDateTime now) {
+        ContractActorType type = request.requesterType();
+        if (type == null || type == ContractActorType.SYSTEM) {
+            invalidRequester("요청자를 선택해 주세요.");
+        }
+        if (type == ContractActorType.ADMIN) {
+            if (request.requestChannel() != null || request.requestedAt() != null) {
+                invalidRequester("운영자 직권 취소에는 요청 경로·시각을 입력하지 않습니다.");
+            }
+            return ContractCancelRequester.byAdmin();
+        }
+        if (request.requestChannel() == null || request.requestedAt() == null) {
+            invalidRequester("요청 경로와 요청 시각을 입력해 주세요.");
+        }
+        if (request.requestedAt().isAfter(now)
+                || (c.getCreatedAt() != null && request.requestedAt().isBefore(c.getCreatedAt()))) {
+            invalidRequester("요청 시각은 계약 작성 이후 현재 이전이어야 합니다.");
+        }
+        return new ContractCancelRequester(type, request.requestChannel(), request.requestedAt());
+    }
+    private static void invalidRequester(String message) {
+        throw new BusinessException(ErrorCode.CONTRACT_CANCEL_REQUESTER_INVALID, message);
     }
 
     private void requireReview(Contract c) {

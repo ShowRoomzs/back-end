@@ -46,18 +46,18 @@ public class PostDto {
         private Long postId;
         @Schema(description = "쇼룸 ID", example = "10")
         private Long showroomId;
-        @Schema(description = "쇼룸명")
+        @Schema(description = "쇼룸명 — 쇼룸명이 아직 없는 가입 도중 계정만 닉네임", example = "제니의 뷰티룸")
         private String showroomName;
-        @Schema(description = "쇼룸 대표 이미지 URL")
+        @Schema(description = "쇼룸 대표 이미지 URL", nullable = true)
         private String showroomImageUrl;
-        @Schema(description = "본문 — 없을 수 있다(사진만 있는 게시물)")
+        @Schema(description = "본문 — 일반 게시물은 없을 수 있다(사진만 있는 게시물). 공구 게시물은 항상 있다", nullable = true)
         private String content;
-        @Schema(description = "게시글 이미지 URL 목록 — 배열 순서가 노출 순서이고 첫 장이 대표 사진")
+        @Schema(description = "게시글 이미지 URL 목록 — 배열 순서가 노출 순서이고 첫 장이 대표 사진. 공구 게시물은 사진이 없어 []")
         private List<String> imageUrls;
-        @Schema(description = "사진 장수", example = "5")
+        @Schema(description = "사진 장수 — 공구 게시물은 0", example = "5")
         private Integer imageCount;
-        @Schema(description = "게시물 비율(가로/세로) — 1.9100 ~ 0.8000. 카드 높이를 이 값으로 잡는다",
-                example = "0.8000")
+        @Schema(description = "게시물 비율(가로/세로) — 1.9100 ~ 0.8000. 카드 높이를 이 값으로 잡는다. 공구 게시물은 사진이 없어 null",
+                example = "0.8000", nullable = true)
         private BigDecimal aspectRatio;
         @Schema(description = "노출 수", example = "532")
         private Long impressionCount;
@@ -65,18 +65,20 @@ public class PostDto {
         private Boolean isLiked;
         @Schema(description = "좋아요 수", example = "12")
         private Long likeCount;
-        @Schema(description = "새 좋아요가 막힌 게시물인지 — true면 해제만 된다(마감된 공구). 하트를 눌러도 새로 걸리지 않는다",
+        @Schema(description = "새 좋아요가 막힌 게시물인지 — true면 해제만 된다(마감된 공구 = groupBuy.saleState CLOSED). "
+                + "하트를 눌러도 새로 걸리지 않는다. 일반 게시물은 false",
                 example = "false")
         private Boolean likeLocked;
 
-        @Schema(description = "공구 블록 — 공구 게시물만 있고 일반 게시물은 null. 상세는 마감이어도 상품 전부를 내린다")
+        @Schema(description = "공구 블록 — 공구 게시물만 있고 일반 게시물은 null. 상세는 마감이어도 상품 전부를 내린다", nullable = true)
         private GroupBuyBlock groupBuy;
 
-        @Schema(description = "게시 일시", example = "2026-03-04T12:34:56")
+        @Schema(description = "게시 일시 — 처음 게시된 시각. 공구 게시물은 공구가 오픈된 시각", example = "2026-03-04T12:34:56")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
         private LocalDateTime publishedAt;
 
-        @Schema(description = "수정 일시", example = "2026-03-04T13:00:00")
+        @Schema(description = "게시물 행의 마지막 변경 시각 — 좋아요 수·노출 상태 변경에도 갱신된다. 「수정됨」 표시 근거로 쓰지 않는다",
+                example = "2026-03-04T13:00:00")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
         private LocalDateTime modifiedAt;
     }
@@ -111,9 +113,9 @@ public class PostDto {
         private Long postId;
         @Schema(description = "쇼룸 ID", example = "10")
         private Long showroomId;
-        @Schema(description = "쇼룸명")
+        @Schema(description = "쇼룸명", example = "제니의 뷰티룸")
         private String showroomName;
-        @Schema(description = "쇼룸 대표 이미지 URL")
+        @Schema(description = "쇼룸 대표 이미지 URL", nullable = true)
         private String showroomImageUrl;
 
         /**
@@ -134,13 +136,13 @@ public class PostDto {
         @Schema(description = "이 쇼룸이 진행 중인 공구를 갖고 있는지 — 아바타 로즈 링 표시용", example = "true")
         private Boolean hasOngoingGroupBuy;
 
-        @Schema(description = "본문 — 없을 수 있다")
+        @Schema(description = "본문 — 일반 게시물은 없을 수 있다. 공구 게시물은 항상 있다", nullable = true)
         private String content;
-        @Schema(description = "게시글 이미지 URL 목록 (순서대로)")
+        @Schema(description = "게시글 이미지 URL 목록 (순서대로, 첫 장이 대표). 공구 게시물은 []")
         private List<String> imageUrls;
-        @Schema(description = "사진 장수", example = "5")
+        @Schema(description = "사진 장수 — 공구 게시물은 0", example = "5")
         private Integer imageCount;
-        @Schema(description = "게시물 비율(가로/세로)", example = "0.8000")
+        @Schema(description = "게시물 비율(가로/세로) — 카드 높이를 이 값으로 잡는다. 공구 게시물은 null", example = "0.8000", nullable = true)
         private BigDecimal aspectRatio;
         @Schema(description = "노출 수", example = "532")
         private Long impressionCount;
@@ -154,14 +156,15 @@ public class PostDto {
          * 서버가 {@code POST /wishlist}를 거절하는 것과 같은 규칙을 클라이언트가 미리 그릴 수 있게
          * 내려준다. 값이 정책({@code PostPolicy.canLike})에서 나오므로 둘이 어긋날 수 없다.
          */
-        @Schema(description = "새 좋아요가 막힌 게시물인지 — true면 해제만 된다(마감된 공구)", example = "false")
+        @Schema(description = "새 좋아요가 막힌 게시물인지 — true면 해제만 된다(마감된 공구 = groupBuy.saleState CLOSED). 일반 게시물은 false",
+                example = "false")
         private Boolean likeLocked;
 
-        @Schema(description = "게시 일시", example = "2026-03-04T12:34:56")
+        @Schema(description = "게시 일시 — 목록 정렬 기준. 공구 게시물은 공구가 오픈된 시각", example = "2026-03-04T12:34:56")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
         private LocalDateTime publishedAt;
 
-        @Schema(description = "공구 블록 — 공구 게시물만 있고 일반 게시물은 null. 목록에서 마감(CLOSED)이면 products는 []")
+        @Schema(description = "공구 블록 — 공구 게시물만 있고 일반 게시물은 null. 목록에서 마감(CLOSED)이면 products는 []", nullable = true)
         private GroupBuyBlock groupBuy;
     }
 
@@ -179,23 +182,26 @@ public class PostDto {
     public static class GroupBuyBlock {
         @Schema(description = "공구 ID", example = "77")
         private Long groupBuyId;
-        @Schema(description = "제목 — 공구 게시물에만 있다", example = "여름 끝 무너진 장벽, 3주면 돌아옵니다")
+        @Schema(description = "게시물 제목 — 인플루언서가 쓴 공구 게시물 제목(40자). 일반 게시물에는 제목이 없다",
+                example = "여름 끝 무너진 장벽, 3주면 돌아옵니다")
         private String title;
         @Schema(description = """
-                판매 상태 — ON_SALE · PARTIALLY_SOLD_OUT · SOLD_OUT · CLOSED.
+                판매 상태(조회 시점 파생) — ON_SALE(판매 중 · 품절 없음) · PARTIALLY_SOLD_OUT(일부 품절) · SOLD_OUT(전부 품절) ·
+                CLOSED(공구 종결 또는 종료 시각 경과).
                 ON_SALE·PARTIALLY_SOLD_OUT은 「공동구매 D-n」, SOLD_OUT은 「품절」, CLOSED는 「공구 마감」(C3는 「공구 종료」) 배지""",
                 example = "ON_SALE")
         private GroupBuySaleState saleState;
         @Schema(description = "D-day — KST 날짜 차이, 마감 당일 0. CLOSED면 null", example = "3", nullable = true)
         private Integer dDay;
-        @Schema(description = "종료 예정 일시 — 시분 단위 표시가 필요할 때", example = "2026-09-29T23:59:59")
+        @Schema(description = "종료 예정 일시 — 연장이 반영된 현재 값. 시분 단위 표시가 필요할 때. "
+                + "조기 마감·중단으로 일찍 끝나도 원래 종료 예정 값이다", example = "2026-09-29T23:59:59")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
         private LocalDateTime endAt;
         @Schema(description = "대가관계 표시 — 공구 게시물에 항상 붙는다")
         private AdDisclosure adDisclosure;
         @Schema(description = "상품 수 — 항상 실제 개수. 「상품 N개 더보기」 문구의 근거", example = "3")
         private Integer productCount;
-        @Schema(description = "상품 행 — 계약 상품 순서. 목록에서 CLOSED면 [](글만 표시), 상세는 마감이어도 전부")
+        @Schema(description = "상품 행 — 계약 상품 순서. 진행 중이면 목록·상세 모두 전부, 목록에서 CLOSED면 [](글만 표시), 상세는 마감이어도 전부")
         private List<GroupBuyProductItem> products;
 
         /** 게시물의 {@code dDay} 필드명 그대로 직렬화한다 — Lombok 게터 {@code getDDay}를 Jackson은 {@code dday}로 읽는다. */
@@ -244,17 +250,19 @@ public class PostDto {
         private Long productId;
         @Schema(description = "상품명 — 계약 시점 이름", example = "시카 리페어 앰플 30ml 리필 2개 세트 기획")
         private String name;
-        @Schema(description = "썸네일 URL")
+        @Schema(description = "썸네일 URL — 현재 상품에서 읽는다. 상품이 없으면 null", nullable = true)
         private String thumbnailUrl;
-        @Schema(description = "정가(취소선)", example = "38000")
+        @Schema(description = "정가(취소선) — 계약 시점 값", example = "38000")
         private Integer regularPrice;
-        @Schema(description = "공구가", example = "24900")
+        @Schema(description = "공구가 — 계약 시점 값", example = "24900")
         private Integer groupBuyPrice;
-        @Schema(description = "할인율(%) — 서버가 C7과 같은 반올림으로 계산한다", example = "34")
+        @Schema(description = "할인율(%) = round((정가 − 공구가) ÷ 정가 × 100), 0~100. 정가가 없으면 0 — C7과 같은 계산", example = "34")
         private Integer discountRate;
-        @Schema(description = "행 상태 — ON_SALE · SOLD_OUT · CLOSED. ON_SALE이 아니면 흑백 + 라벨", example = "ON_SALE")
+        @Schema(description = "행 상태 — ON_SALE · SOLD_OUT(강제 품절 또는 재고 있는 옵션 없음) · CLOSED(공구 마감 — 품절 여부 무관). "
+                + "ON_SALE이 아니면 흑백 + 라벨", example = "ON_SALE")
         private GroupBuyProductState state;
-        @Schema(description = "C7 상품 상세로 갈 수 있는지 — false면 탭을 막는다", example = "true")
+        @Schema(description = "C7 상품 상세로 갈 수 있는지 — 마감 전 ∧ 상품 진열중 ∧ 공구 연결 상태일 때만 true. false면 탭을 막는다. "
+                + "품절 행도 true일 수 있다", example = "true")
         private Boolean detailAvailable;
 
         static GroupBuyProductItem of(GroupBuyPostCard.Product product) {
