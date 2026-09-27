@@ -8,7 +8,6 @@ import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.message.entity.Message;
 import showroomz.domain.message.entity.MessageAttachment;
 import showroomz.domain.message.entity.MessageThread;
-import showroomz.domain.message.entity.ThreadParticipant;
 import showroomz.domain.message.repository.MessageAttachmentRepository;
 import showroomz.domain.message.repository.MessageRepository;
 import showroomz.domain.message.repository.MessageThreadRepository;
@@ -20,6 +19,7 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.AllowedAttachmentExtensions;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -154,11 +154,9 @@ public class MessageThreadService {
         if (latestId == null) {
             return;
         }
-        ThreadParticipant participant = threadParticipantRepository
-                .findByThreadAndParticipantTypeAndParticipantId(thread, participantType, participantId)
-                .orElseGet(() -> ThreadParticipant.create(thread, participantType, participantId));
-        participant.markRead(latestId);
-        threadParticipantRepository.save(participant);
+        // 조회 후 저장은 동시 최초 열람에서 유니크 키 충돌을, 늦게 커밋한 요청에서 읽음 위치 후퇴를 만든다 — 한 문장으로 쓴다.
+        threadParticipantRepository.upsertReadPosition(thread.getId(), participantType.name(), participantId,
+                latestId, LocalDateTime.now());
     }
 
     /**

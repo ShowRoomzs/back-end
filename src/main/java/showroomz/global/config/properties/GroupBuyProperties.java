@@ -82,7 +82,7 @@ public class GroupBuyProperties {
     @Getter
     @Setter
     public static class Appeal {
-        /** 소명 증빙 개수 상한 — 기획에 없어 5개로 잠정(설계서 7-2 #11). */
+        /** 소명 1건에 싣는 증빙 개수 상한 — 제출 단계에서만 본다. 기획에 없어 5개로 잠정(설계서 7-2 #11). */
         private int maxAttachments = 5;
         /** 소명 증빙 파일 크기 상한 — C9 「10MB 이하」. */
         private long maxAttachmentBytes = 10L * 1024 * 1024;

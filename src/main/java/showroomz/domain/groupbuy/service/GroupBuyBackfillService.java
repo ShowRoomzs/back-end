@@ -7,6 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.repository.ContractRepository;
 import showroomz.domain.contract.type.ContractStatus;
+import showroomz.domain.groupbuy.entity.GroupBuy;
+import showroomz.domain.groupbuy.repository.GroupBuyRepository;
+import showroomz.domain.groupbuy.type.GroupBuyStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +27,8 @@ public class GroupBuyBackfillService {
 
     private final ContractRepository contractRepository;
     private final GroupBuyFactory groupBuyFactory;
+    private final GroupBuyRepository groupBuyRepository;
+    private final GroupBuyPostExposure postExposure;
 
     @Transactional(readOnly = true)
     public List<Long> findTargets() {
@@ -45,5 +50,24 @@ public class GroupBuyBackfillService {
         LocalDateTime createdAt = contract.getConcludedAt() != null ? contract.getConcludedAt() : LocalDateTime.now();
         groupBuyFactory.createFromConcludedContract(contract, createdAt);
         return true;
+    }
+
+    // ── 마감 게시물 재동기화(공구 게시물 설계 4-1 「기존 데이터」) ─────────────────────
+
+    /** 보존 기간 안에 종결된 공구 — 투영식 변경 전에 종료 즉시 DRAFT로 내려간 게시물이 여기 있다. */
+    @Transactional(readOnly = true)
+    public List<Long> findClosedPostTargets(LocalDateTime now) {
+        return groupBuyRepository.findIdsWithPostEndedAfter(GroupBuyStatus.TERMINAL,
+                now.minus(GroupBuyPostExposure.CLOSED_POST_RETENTION));
+    }
+
+    /**
+     * 공구 1건 재투영 — 같은 식이 {@code now}로 판정하므로 종료 3일 이내이고 노출된 적이 있는 것만 PUBLISHED로 돌아온다.
+     * 스케줄러와 같은 잠금 순서다. 멱등이다.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean resyncClosedPost(Long groupBuyId, LocalDateTime now) {
+        GroupBuy groupBuy = groupBuyRepository.findForUpdate(groupBuyId).orElse(null);
+        return groupBuy != null && postExposure.sync(groupBuy, now);
     }
 }

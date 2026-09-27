@@ -38,7 +38,7 @@ import showroomz.global.dto.PagingRequest;
 
 import java.time.LocalDate;
 
-@Tag(name = "Seller - Contract", description = "파트너센터 계약 관리 API (§25·§26)")
+@Tag(name = "Seller - Contract", description = "파트너센터 계약 작성·조회·검토 요청 API.")
 public interface SellerContractControllerDocs {
 
     @Operation(
@@ -48,24 +48,35 @@ public interface SellerContractControllerDocs {
 
                     **권한:** SELLER
 
-                    - `tab`은 필터일 뿐이며 응답의 `status`는 항상 9종 중 하나로 내려간다 — 목록 배지는 묶음이 아니라 개별 값이다.
+                    - `tab`: `ALL`(기본) · `DRAFT` · `REVIEW`(검토 대기+반려) · `SIGNING`(서명 진행중+체결 처리 대기) · `CONCLUDED` · `CLOSED`(거절+만료+취소).
+                      탭은 필터일 뿐이며 응답의 `status`는 항상 9종 중 하나로 내려간다.
+                    - `page`는 1부터 시작하고 `size` 기본값은 20이다. 응답은 `content`와 `pageInfo`를 갖는다.
                     - `entryMode`로 행 클릭 시 진입 모드(EDIT/VIEW)를 서버가 판정해 내려준다. FE가 상태표를 다시 들 필요가 없다.
                     - `title`이 비어 있는 작성중 계약은 `null`로 내려간다 — 서버는 `(공구명 미입력)` 같은 표시 문구를 지어내지 않는다.
                     - `startDate`/`endDate`는 **공구 기간이 그 구간에 걸치는** 계약을 찾는다. 기간이 아직 비어 있는 작성중 계약은 이 조건을 걸면 빠진다.
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "200", description = "계약 목록과 페이징 정보",
+                    content = @Content(schema = @Schema(implementation = PageResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"content":[{"contractId":128,"contractNumber":"CTR-20260813-001",
+                                      "title":"가을 앰플 신제품 공구","counterpartyName":"글로우_지민",
+                                      "itemCount":2,"startAt":"2026-09-01T10:00:00","endAt":"2026-09-17T23:59:00",
+                                      "createdAt":"2026-08-13T10:00:00","status":"REVIEW_PENDING",
+                                      "statusLabel":"검토 대기","statusTone":"INFO","entryMode":"VIEW"}],
+                                     "pageInfo":{"currentPage":1,"totalPages":1,"totalResults":1,"limit":20,"hasNext":false}}
+                                    """))),
             @ApiResponse(responseCode = "404", description = "브랜드(마켓) 없음",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<PageResponse<ContractListItem>> getContracts(
-            @Parameter(description = "상태 탭 — 기본 ALL") @RequestParam(required = false) ContractTab tab,
-            @Parameter(description = "공구명 · 상대 쇼룸명 검색") @RequestParam(required = false) String keyword,
-            @Parameter(description = "공구 기간 조회 시작일(yyyy-MM-dd)")
+            @Parameter(description = "상태 탭. ALL/DRAFT/REVIEW/SIGNING/CONCLUDED/CLOSED; 생략 시 ALL", example = "REVIEW") @RequestParam(required = false) ContractTab tab,
+            @Parameter(description = "공구명 · 상대 쇼룸명 부분 검색", example = "앰플") @RequestParam(required = false) String keyword,
+            @Parameter(description = "공구 기간 조회 시작일(yyyy-MM-dd). 종료일과 함께 지정하면 기간이 겹치는 계약 조회", example = "2026-09-01")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "공구 기간 조회 종료일(yyyy-MM-dd)")
+            @Parameter(description = "공구 기간 조회 종료일(yyyy-MM-dd)", example = "2026-09-30")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @Parameter(description = "정렬 — CREATED_DESC(기본) / START_AT_ASC")
+            @Parameter(description = "정렬 — CREATED_DESC(기본) / START_AT_ASC", example = "CREATED_DESC")
             @RequestParam(required = false) ContractSortType sort,
             @ModelAttribute PagingRequest pagingRequest);
 
@@ -86,7 +97,12 @@ public interface SellerContractControllerDocs {
                     검토 대기·체결 처리 대기는 공이 상대에게 있는 정상 대기라 넣지 않는다 —
                     브랜드가 할 수 없는 일로 배지가 켜지면 안 된다.
                     """)
-    @ApiResponses(@ApiResponse(responseCode = "200", description = "조회 성공"))
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "6개 탭 건수와 조치 필요 건수",
+            content = @Content(schema = @Schema(implementation = ContractSummaryResponse.class),
+                    examples = @ExampleObject(value = """
+                            {"tabCounts":{"ALL":14,"DRAFT":2,"REVIEW":2,"SIGNING":2,"CONCLUDED":5,"CLOSED":3},
+                             "actionRequiredCount":1}
+                            """))))
     ResponseEntity<ContractSummaryResponse> getSummary();
 
     @Operation(
@@ -100,7 +116,14 @@ public interface SellerContractControllerDocs {
                     페이징·필터가 계약 폼과 다르기 때문이다. 상품에는 **현재 정가**를 동봉해,
                     공구가를 입력하는 즉시 할인율과 H1(공구가 > 정가)을 화면이 먼저 비출 수 있게 한다.
                     """)
-    @ApiResponses(@ApiResponse(responseCode = "200", description = "조회 성공"))
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "연결된 상대와 진열 상품 전체",
+            content = @Content(schema = @Schema(implementation = ContractFormSourcesResponse.class),
+                    examples = @ExampleObject(value = """
+                            {"counterparties":[{"creatorId":31,"showroomName":"글로우_지민",
+                              "connectionId":54,"profileImageUrl":null}],
+                             "products":[{"productId":87,"productName":"가을 앰플",
+                              "regularPrice":35000,"thumbnailUrl":null}]}
+                            """))))
     ResponseEntity<ContractFormSourcesResponse> getFormSources();
 
     @Operation(
@@ -117,7 +140,15 @@ public interface SellerContractControllerDocs {
                     전문 모달은 이 두 값이 있는 조항만 그린다.
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "200", description = "현행 조항 버전과 요약·전문",
+                    content = @Content(schema = @Schema(implementation = ContractClausesResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"clauseVersionId":1,"versionNumber":"1.0","effectiveDate":"2026-01-01",
+                                     "clauses":[{"code":"PRICE_POLICY","summaryTitle":"가격 정책",
+                                       "summaryDescription":"공구 기간 중 타 채널 최저가 준수",
+                                       "fullTitle":"제3조 최저가 정책",
+                                       "fullBody":"브랜드는 공구 기간 중 동일 상품을 공구가보다 낮은 가격으로 타 채널에 판매하지 않는다. 불가피한 사유가 있으면 사전에 인플루언서에게 알리고 협의한다."}]}
+                                    """))),
             @ApiResponse(responseCode = "404", description = "시행중인 표준 조항 버전 없음",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
@@ -140,13 +171,15 @@ public interface SellerContractControllerDocs {
                     - `version` — 임시저장(PUT)에 그대로 되돌려 보낸다.
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "200", description = "계약 조건·서명·문서·버튼 권한·이력",
+                    content = @Content(schema = @Schema(implementation = ContractDetailResponse.class))),
             @ApiResponse(responseCode = "403", description = "해당 브랜드의 계약이 아님",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 계약",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<ContractDetailResponse> getContract(@PathVariable Long contractId);
+    ResponseEntity<ContractDetailResponse> getContract(
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId);
 
     @Operation(
             summary = "계약 문서 다운로드",
@@ -169,12 +202,23 @@ public interface SellerContractControllerDocs {
                     서명 원본이 바뀌면 계약의 증거가 사라진다(§28-6).
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
-            @ApiResponse(responseCode = "404", description = "지금 상태에서 받을 수 없는 종류이거나 아직 없음",
+            @ApiResponse(responseCode = "200", description = "다운로드 URL과 파일 메타데이터",
+                    content = @Content(schema = @Schema(implementation = ContractDocumentDownloadResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"documentType":"SIGNED_PDF","documentTypeLabel":"서명 완료 계약서",
+                                     "downloadUrl":"https://example.com/contracts/128/signed.pdf",
+                                     "originalName":"signed-contract.pdf","sizeBytes":126384,
+                                     "contentType":"application/pdf","uploadedAt":"2026-08-20T15:00:00"}
+                                    """))),
+            @ApiResponse(responseCode = "403", description = "다른 브랜드의 계약 (`CONTRACT_NOT_OWNED_BY_SELLER`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "계약 없음 또는 지금 상태에서 문서 종류를 받을 수 없거나 아직 없음",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<ContractDocumentDownloadResponse> getDocument(@PathVariable Long contractId,
-                                                                 @PathVariable ContractDocumentType type);
+    ResponseEntity<ContractDocumentDownloadResponse> getDocument(
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId,
+            @Parameter(description = "문서 종류: GENERATED_DRAFT / SIGNED_PDF / AUDIT_TRAIL", example = "SIGNED_PDF")
+            @PathVariable ContractDocumentType type);
 
     @Operation(
             summary = "계약 초안 생성",
@@ -190,11 +234,23 @@ public interface SellerContractControllerDocs {
                     일련번호에 구멍이 생긴다 — 번호는 검토 요청 시점에 붙는다(설계서 1-7).
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "생성 성공"),
-            @ApiResponse(responseCode = "400", description = "연결됨 상태가 아닌 상대",
+            @ApiResponse(responseCode = "201", description = "빈 초안 생성 성공. contractId와 첫 저장용 version 반환",
+                    content = @Content(schema = @Schema(implementation = ContractCreateResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"contractId":128,"version":0}
+                                    """))),
+            @ApiResponse(responseCode = "400", description = "연결됨 상태가 아닌 상대 (`CONTRACT_COUNTERPARTY_NOT_CONNECTED`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<ContractCreateResponse> createContract(@Valid @RequestBody ContractCreateRequest request);
+    ResponseEntity<ContractCreateResponse> createContract(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "일반 진입은 빈 객체({})로 생성한다. 스레드 진입은 creatorId를 보낸다.",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = ContractCreateRequest.class),
+                            examples = {
+                                    @ExampleObject(name = "일반 진입", value = "{}"),
+                                    @ExampleObject(name = "스레드 진입", value = "{\"creatorId\":31,\"connectionId\":54}")
+                            }))
+            @Valid @RequestBody ContractCreateRequest request);
 
     @Operation(
             summary = "임시저장",
@@ -212,16 +268,36 @@ public interface SellerContractControllerDocs {
                     - 검토 요청 이후에는 409(`CONTRACT_EDIT_LOCKED`)다. 편집 잠금은 화면 상태가 아니라 서버 권한이다.
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "저장 성공 — 저장된 상세를 그대로 돌려준다"),
+            @ApiResponse(responseCode = "200", description = "저장 성공 — 갱신된 version과 서버가 보정한 항목을 포함한 상세",
+                    content = @Content(schema = @Schema(implementation = ContractDetailResponse.class))),
             @ApiResponse(responseCode = "400", description = "형식 위반(10원 단위 등) · 연결되지 않은 상대 · 남의 상품",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "409", description = "편집 잠금 · 다른 곳에서 먼저 저장됨",
+            @ApiResponse(responseCode = "403", description = "다른 브랜드의 계약 (`CONTRACT_NOT_OWNED_BY_SELLER`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "계약 없음 (`CONTRACT_NOT_FOUND`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "편집 잠금 (`CONTRACT_EDIT_LOCKED`) · 다른 곳에서 먼저 저장됨 (`CONTRACT_MODIFIED_ELSEWHERE`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(value = """
                                     {"code":"CONTRACT_MODIFIED_ELSEWHERE","message":"다른 곳에서 먼저 저장되었습니다."}""")))
     })
-    ResponseEntity<ContractDetailResponse> updateContract(@PathVariable Long contractId,
-                                                          @Valid @RequestBody ContractUpdateRequest request);
+    ResponseEntity<ContractDetailResponse> updateContract(
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "폼 전체를 교체한다. 미입력 필드는 null, 상품이 없으면 items는 빈 배열로 보낸다.",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = ContractUpdateRequest.class),
+                            examples = @ExampleObject(value = """
+                                    {"version":3,"creatorId":31,"title":"가을 앰플 신제품 공구",
+                                     "groupBuyStartAt":"2026-09-01T10:00:00","groupBuyEndAt":"2026-09-17T23:59:00",
+                                     "fixedFeeAmount":100000,"fixedFeeTrigger":"POST_REGISTERED",
+                                     "fixedFeeNoticeAgreed":true,"contentFeedCount":1,"contentReelsCount":1,
+                                     "contentStoryCount":0,"contentDueDate":"2026-09-03",
+                                     "secondaryUseAllowed":true,"secondaryUsePeriodType":"FIXED",
+                                     "secondaryUseMonths":3,"brandPreReview":true,"note":"제품 특징을 소개해 주세요.",
+                                     "items":[{"contractItemId":42,"productId":87,"groupBuyPrice":28000,
+                                               "rewardRate":15.0,"minQuantity":100}]}
+                                    """)))
+            @Valid @RequestBody ContractUpdateRequest request);
 
     @Operation(
             summary = "계약 삭제",
@@ -238,11 +314,16 @@ public interface SellerContractControllerDocs {
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "삭제 성공"),
+            @ApiResponse(responseCode = "403", description = "다른 브랜드의 계약 (`CONTRACT_NOT_OWNED_BY_SELLER`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "계약 없음 (`CONTRACT_NOT_FOUND`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "삭제할 수 없는 상태(`CONTRACT_EDIT_LOCKED`) · "
                     + "다른 탭의 검토 요청과 경합(`CONTRACT_STATUS_CONFLICT`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<Void> deleteContract(@PathVariable Long contractId);
+    ResponseEntity<Void> deleteContract(
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId);
 
     @Operation(
             summary = "검증 (상태 불변)",
@@ -259,8 +340,22 @@ public interface SellerContractControllerDocs {
 
                     이 구분 없이 메시지를 전부 뿌리면 빈 폼에 빨간 문구가 8개 뜬다(§25-6 · 설계서 2-5).
                     """)
-    @ApiResponses(@ApiResponse(responseCode = "200", description = "판정 성공"))
-    ResponseEntity<ContractValidationResponse> validateContract(@PathVariable Long contractId);
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "상태를 바꾸지 않은 검증 결과",
+                    content = @Content(schema = @Schema(implementation = ContractValidationResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"canSubmit":false,
+                                     "hardViolations":[{"code":"H1","kind":"RULE","field":"items[0].groupBuyPrice",
+                                       "message":"공구가는 정가 이하여야 합니다."}],
+                                     "warnings":[{"code":"W2","message":"리워드율이 40%를 넘습니다."}]}
+                                    """))),
+            @ApiResponse(responseCode = "403", description = "다른 브랜드의 계약 (`CONTRACT_NOT_OWNED_BY_SELLER`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "계약 없음 (`CONTRACT_NOT_FOUND`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<ContractValidationResponse> validateContract(
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId);
 
     @Operation(
             summary = "검토 요청",
@@ -282,7 +377,8 @@ public interface SellerContractControllerDocs {
                       그 경우 생성본은 운영자가 처음 내려받을 때 만들어진다.
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "요청 성공"),
+            @ApiResponse(responseCode = "200", description = "검토 대기로 변경된 계약 상세. 제출본 PDF는 비동기 생성",
+                    content = @Content(schema = @Schema(implementation = ContractDetailResponse.class))),
             @ApiResponse(responseCode = "400", description = "하드 검증 실패 — hardViolations[] 포함",
                     content = @Content(examples = @ExampleObject(value = """
                             {"code":"CONTRACT_VALIDATION_FAILED",
@@ -290,12 +386,23 @@ public interface SellerContractControllerDocs {
                              "hardViolations":[
                                {"code":"H1","kind":"RULE","field":"items[0].groupBuyPrice",
                                 "message":"공구가는 정가 이하여야 합니다."}]}"""))),
+            @ApiResponse(responseCode = "403", description = "다른 브랜드의 계약 (`CONTRACT_NOT_OWNED_BY_SELLER`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "계약 없음 또는 현행 조항 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "편집 잠금 · 상태 경합 · 경고 확인 불일치",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<ContractDetailResponse> requestReview(@PathVariable Long contractId,
-                                                         @RequestBody(required = false)
-                                                         ContractReviewRequestRequest request);
+    ResponseEntity<ContractDetailResponse> requestReview(
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "validate 응답의 warnings[].code 전부를 보낸다. 경고가 없으면 본문 생략 또는 빈 배열 가능.",
+                    required = false,
+                    content = @Content(schema = @Schema(implementation = ContractReviewRequestRequest.class),
+                            examples = {
+                                    @ExampleObject(name = "경고 확인", value = "{\"acknowledgedWarnings\":[\"W2\",\"W3\"]}"),
+                                    @ExampleObject(name = "경고 없음", value = "{\"acknowledgedWarnings\":[]}")
+                            }))
+            @RequestBody(required = false) ContractReviewRequestRequest request);
 
     @Operation(
             summary = "검토 요청 취소",
@@ -314,11 +421,17 @@ public interface SellerContractControllerDocs {
                     같은 번호가 서로 다른 계약을 가리키게 된다.
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "취소 성공"),
-            @ApiResponse(responseCode = "409", description = "검토 대기 상태가 아님",
+            @ApiResponse(responseCode = "200", description = "작성중으로 돌아간 계약 상세",
+                    content = @Content(schema = @Schema(implementation = ContractDetailResponse.class))),
+            @ApiResponse(responseCode = "403", description = "다른 브랜드의 계약 (`CONTRACT_NOT_OWNED_BY_SELLER`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "계약 없음 (`CONTRACT_NOT_FOUND`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "검토 대기 상태가 아님 (`CONTRACT_STATUS_CONFLICT`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<ContractDetailResponse> cancelReviewRequest(@PathVariable Long contractId);
+    ResponseEntity<ContractDetailResponse> cancelReviewRequest(
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId);
 
     // 요청이 가는 어드민 스레드가 아직 없어 Swagger에서 숨긴다 — 어드민 스레드 구현 후 제거.
     @Hidden
@@ -335,11 +448,13 @@ public interface SellerContractControllerDocs {
                     미처리 요청이 이미 있으면 새 행 대신 그 요청을 `alreadyRequested: true`로 돌려준다.
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "요청 접수(또는 기존 미처리 요청 반환)"),
+            @ApiResponse(responseCode = "200", description = "요청 접수 또는 기존 미처리 요청 반환",
+                    content = @Content(schema = @Schema(implementation = ContractResendRequestResponse.class))),
             @ApiResponse(responseCode = "409", description = "서명 진행중이 아님",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<ContractResendRequestResponse> requestResend(@PathVariable Long contractId);
+    ResponseEntity<ContractResendRequestResponse> requestResend(
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId);
 
     @Operation(
             summary = "고정 지급비 지급 완료 기록",
@@ -351,11 +466,17 @@ public interface SellerContractControllerDocs {
                     되돌리는 API를 만들지 않는다 — 시안에 취소 버튼이 없고 정정 경로가 미결이다(설계서 미결 #4).
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "기록 성공"),
-            @ApiResponse(responseCode = "409", description = "체결완료가 아니거나 이미 기록됨",
+            @ApiResponse(responseCode = "200", description = "지급 완료 시각이 반영된 계약 상세",
+                    content = @Content(schema = @Schema(implementation = ContractDetailResponse.class))),
+            @ApiResponse(responseCode = "403", description = "다른 브랜드의 계약 (`CONTRACT_NOT_OWNED_BY_SELLER`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "계약 없음 (`CONTRACT_NOT_FOUND`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "체결완료가 아니거나 이미 기록됨 (`CONTRACT_STATUS_CONFLICT` · `CONTRACT_FIXED_FEE_ALREADY_PAID`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<ContractDetailResponse> recordFixedFeePayment(@PathVariable Long contractId);
+    ResponseEntity<ContractDetailResponse> recordFixedFeePayment(
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId);
 
     @Operation(
             summary = "이 조건으로 새 계약 작성 (재작성)",
@@ -379,9 +500,22 @@ public interface SellerContractControllerDocs {
                     기획이 다룬 적 없다.
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "생성 성공"),
-            @ApiResponse(responseCode = "409", description = "복제할 수 없는 상태",
+            @ApiResponse(responseCode = "201", description = "새 초안 ID, 출처 ID, 복사 직후 검증 결과",
+                    content = @Content(schema = @Schema(implementation = ContractDuplicateResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"contractId":131,"sourceContractId":128,
+                                     "validation":{"canSubmit":false,
+                                       "hardViolations":[{"code":"H1","kind":"RULE",
+                                         "field":"items[0].groupBuyPrice",
+                                         "message":"공구가는 정가 이하여야 합니다."}],"warnings":[]}}
+                                    """))),
+            @ApiResponse(responseCode = "403", description = "다른 브랜드의 계약 (`CONTRACT_NOT_OWNED_BY_SELLER`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "계약 없음 (`CONTRACT_NOT_FOUND`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "복제할 수 없는 상태 (`CONTRACT_NOT_DUPLICABLE`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<ContractDuplicateResponse> duplicateContract(@PathVariable Long contractId);
+    ResponseEntity<ContractDuplicateResponse> duplicateContract(
+            @Parameter(description = "복사할 원본 계약 ID", example = "128") @PathVariable Long contractId);
 }

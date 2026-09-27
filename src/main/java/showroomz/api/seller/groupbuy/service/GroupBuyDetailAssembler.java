@@ -384,7 +384,7 @@ public class GroupBuyDetailAssembler {
     }
 
     private List<HistoryEntry> history(GroupBuy groupBuy) {
-        return historyRepository.findByGroupBuyIdOrderByOccurredAtAscIdAsc(groupBuy.getId()).stream()
+        return historyRepository.findByGroupBuyIdOrderByOccurredAtDescIdDesc(groupBuy.getId()).stream()
                 .map(entry -> new HistoryEntry(
                         entry.getEventType(),
                         entry.getActorType(),

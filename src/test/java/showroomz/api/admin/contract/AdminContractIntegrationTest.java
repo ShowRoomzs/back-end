@@ -194,6 +194,12 @@ class AdminContractIntegrationTest extends IntegrationTestSupport {
                 .contentType(MediaType.APPLICATION_JSON).content(toJson(request))).andExpect(status().isOk());
         assertThat(documents.findByContractIdInTypeOrder(c.getId())).hasSize(1);
         verify(storage).deleteAfterCommit("sealed.pdf");
+        // 용량은 상세에 실린다 — FE가 문서마다 다운로드 URL을 따로 발급받지 않아도 된다.
+        mockMvc.perform(get(BASE + "/" + c.getId()).header("Authorization", token))
+                .andExpect(jsonPath("$.documents[?(@.type == 'SIGNED_PDF')].sizeBytes").value(org.hamcrest.Matchers.contains(100)))
+                .andExpect(jsonPath("$.documents[?(@.type == 'AUDIT_TRAIL')].exists").value(org.hamcrest.Matchers.contains(false)))
+                .andExpect(jsonPath("$.documents[?(@.type == 'AUDIT_TRAIL')].sizeBytes")
+                        .value(org.hamcrest.Matchers.contains(org.hamcrest.Matchers.nullValue())));
         mockMvc.perform(delete(BASE + "/" + c.getId() + "/documents/SIGNED_PDF").header("Authorization", token)).andExpect(status().isNoContent());
         mockMvc.perform(post(BASE + "/" + c.getId() + "/documents").header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON).content(toJson(new RegisterDocumentRequest(ContractDocumentType.SIGNED_PDF, "other-contract.pdf", "x.pdf", 100L))))
@@ -204,6 +210,10 @@ class AdminContractIntegrationTest extends IntegrationTestSupport {
         Contract c = contract(ContractStatus.REVIEW_PENDING);
         for (int i = 0; i < 2; i++) mockMvc.perform(get(BASE + "/" + c.getId() + "/document-draft").header("Authorization", token)).andExpect(status().isOk());
         verify(renderer, times(1)).render(anyString(), anyString());
+        // 생성본의 용량은 렌더링된 PDF 바이트 수다.
+        mockMvc.perform(get(BASE + "/" + c.getId()).header("Authorization", token))
+                .andExpect(jsonPath("$.documents[?(@.type == 'GENERATED_DRAFT')].sizeBytes")
+                        .value(org.hamcrest.Matchers.contains("%PDF-test".getBytes().length)));
         inTransaction(() -> {
             Contract managed = contracts.findById(c.getId()).orElseThrow();
             managed.applyReviewRequested(c.getContractNumber(), null, null, now);

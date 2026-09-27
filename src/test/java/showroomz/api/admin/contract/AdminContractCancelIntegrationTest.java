@@ -1,19 +1,25 @@
 package showroomz.api.admin.contract;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.ResultActions;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractHistory;
 import showroomz.domain.contract.type.ContractActorType;
+import showroomz.domain.contract.type.ContractCancelRequestChannel;
 import showroomz.domain.contract.type.ContractCloseReasonCode;
 import showroomz.domain.contract.type.ContractEventType;
 import showroomz.domain.contract.type.ContractStatus;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -31,6 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("[통합] 어드민 계약 취소")
 class AdminContractCancelIntegrationTest extends AdminContractTestSupport {
 
+    private static final DateTimeFormatter RESPONSE_DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
     private static final String MEMO = "브랜드 요청으로 서명 요청을 회수했습니다.";
 
     @Test
@@ -156,6 +163,108 @@ class AdminContractCancelIntegrationTest extends AdminContractTestSupport {
                     .andExpect(status().isForbidden());
         }
         assertUntouched(c, ContractStatus.SIGNING);
+    }
+
+    // ── 취소 요청자(28-1 수정계획 1) ────────────────────────────────────────────
+
+    @Test
+    @DisplayName("요청자·경로·시각이 어드민 상세 cancelRequest에 그대로 나온다 — 이름은 마켓명·쇼룸명, 처리자는 취소한 운영자")
+    void recordsRequesterOnDetail() throws Exception {
+        LocalDateTime brandAskedAt = now.minusHours(2);
+        LocalDateTime creatorAskedAt = now.minusDays(1);
+        Contract byBrand = seed(ContractStatus.SIGNING, s -> s.createdAt(now.minusDays(10)));
+        Contract byCreator = seed(ContractStatus.CONCLUSION_PENDING, s -> s.createdAt(now.minusDays(10)));
+        Contract byOperator = seed(ContractStatus.SIGNING);
+
+        cancel(byBrand, true, ContractCloseReasonCode.NEGOTIATION_STOPPED, MEMO,
+                ContractActorType.SELLER, ContractCancelRequestChannel.THREAD, brandAskedAt).andExpect(status().isOk());
+        cancel(byCreator, true, ContractCloseReasonCode.SCHEDULE_CHANGE, null,
+                ContractActorType.CREATOR, ContractCancelRequestChannel.PHONE, creatorAskedAt).andExpect(status().isOk());
+        cancel(byOperator, true, ContractCloseReasonCode.CONDITION_REVIEW, null).andExpect(status().isOk());
+
+        JsonNode brandRequest = cancelRequestOf(byBrand);
+        assertThat(brandRequest.get("requesterType").asText()).isEqualTo("SELLER");
+        assertThat(brandRequest.get("requesterName").asText()).isEqualTo("글로우랩");
+        assertThat(brandRequest.get("requestChannel").asText()).isEqualTo("THREAD");
+        assertThat(brandRequest.get("requestChannelLabel").asText()).isEqualTo("소통 스레드");
+        assertThat(at(brandRequest.get("requestedAt"))).isEqualTo(brandAskedAt);
+        assertThat(brandRequest.get("processedByName").asText()).isEqualTo(OPERATOR_NAME);
+        assertThat(at(brandRequest.get("processedAt")))
+                .isEqualTo(reload(byBrand).getClosedAt().withNano(0));
+
+        JsonNode creatorRequest = cancelRequestOf(byCreator);
+        assertThat(creatorRequest.get("requesterType").asText()).isEqualTo("CREATOR");
+        assertThat(creatorRequest.get("requesterName").asText()).isEqualTo("뷰티_하윤");
+        assertThat(creatorRequest.get("requestChannelLabel").asText()).isEqualTo("전화");
+        assertThat(at(creatorRequest.get("requestedAt"))).isEqualTo(creatorAskedAt);
+
+        JsonNode operatorRequest = cancelRequestOf(byOperator);
+        assertThat(operatorRequest.get("requesterType").asText()).isEqualTo("ADMIN");
+        assertThat(operatorRequest.get("requesterName").isNull()).isTrue();
+        assertThat(operatorRequest.get("requestChannel").isNull()).isTrue();
+        assertThat(operatorRequest.get("requestedAt").isNull()).isTrue();
+        assertThat(operatorRequest.get("processedByName").asText()).isEqualTo(OPERATOR_NAME);
+    }
+
+    @Test
+    @DisplayName("요청자 조합이 어긋나면 400 CONTRACT_CANCEL_REQUESTER_INVALID이고 계약은 그대로다")
+    void rejectsInvalidRequester() throws Exception {
+        Contract c = seed(ContractStatus.SIGNING, s -> s.createdAt(now.minusDays(10)));
+        LocalDateTime askedAt = now.minusHours(1);
+
+        List<ResultActions> invalid = List.of(
+                cancel(c, true, ContractCloseReasonCode.SCHEDULE_CHANGE, MEMO, null, null, null),
+                cancel(c, true, ContractCloseReasonCode.SCHEDULE_CHANGE, MEMO,
+                        ContractActorType.SYSTEM, null, null),
+                // 브랜드·인플루언서 요청은 경로·시각이 둘 다 있어야 한다.
+                cancel(c, true, ContractCloseReasonCode.SCHEDULE_CHANGE, MEMO,
+                        ContractActorType.SELLER, null, askedAt),
+                cancel(c, true, ContractCloseReasonCode.SCHEDULE_CHANGE, MEMO,
+                        ContractActorType.CREATOR, ContractCancelRequestChannel.EMAIL, null),
+                // 직권에 경로·시각을 보내면 버리지 않고 거절한다 — 운영자가 요청자를 잘못 고른 것이다.
+                cancel(c, true, ContractCloseReasonCode.SCHEDULE_CHANGE, MEMO,
+                        ContractActorType.ADMIN, ContractCancelRequestChannel.THREAD, null),
+                cancel(c, true, ContractCloseReasonCode.SCHEDULE_CHANGE, MEMO,
+                        ContractActorType.ADMIN, null, askedAt),
+                // 미래 시각 · 계약 작성 이전 시각
+                cancel(c, true, ContractCloseReasonCode.SCHEDULE_CHANGE, MEMO,
+                        ContractActorType.SELLER, ContractCancelRequestChannel.THREAD, LocalDateTime.now().plusHours(1)),
+                cancel(c, true, ContractCloseReasonCode.SCHEDULE_CHANGE, MEMO,
+                        ContractActorType.SELLER, ContractCancelRequestChannel.THREAD, now.minusDays(11)));
+        for (ResultActions result : invalid) {
+            result.andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("CONTRACT_CANCEL_REQUESTER_INVALID"));
+        }
+        assertUntouched(c, ContractStatus.SIGNING);
+        assertThat(reload(c).getCancelRequesterType()).isNull();
+    }
+
+    @Test
+    @DisplayName("운영자 취소가 아니면 cancelRequest는 null이고, 요청자는 브랜드·스튜디오 상세에 나가지 않는다")
+    void requesterIsAdminOnly() throws Exception {
+        detail(seed(ContractStatus.SIGNING)).andExpect(jsonPath("$.cancelRequest").value(nullValue()));
+        detail(seed(ContractStatus.EXPIRED)).andExpect(jsonPath("$.cancelRequest").value(nullValue()));
+
+        Contract c = seed(ContractStatus.SIGNING, s -> s.createdAt(now.minusDays(10)));
+        cancel(c, true, ContractCloseReasonCode.NEGOTIATION_STOPPED, MEMO,
+                ContractActorType.SELLER, ContractCancelRequestChannel.THREAD, now.minusHours(2)).andExpect(status().isOk());
+
+        sellerDetail(c).andExpect(jsonPath("$.status").value("CANCELED"))
+                .andExpect(jsonPath("$.cancelRequest").doesNotExist())
+                .andExpect(jsonPath("$.closure.requesterType").doesNotExist());
+        creatorDetail(c).andExpect(jsonPath("$.status").value("CANCELED"))
+                .andExpect(jsonPath("$.cancelRequest").doesNotExist())
+                .andExpect(jsonPath("$.closure.requesterType").doesNotExist());
+    }
+
+    /** 응답의 일시 형식(JacksonConfig) — 초 단위에서 자른다. */
+    private static LocalDateTime at(JsonNode value) {
+        return LocalDateTime.parse(value.asText(), RESPONSE_DATE_TIME);
+    }
+
+    private JsonNode cancelRequestOf(Contract c) throws Exception {
+        return objectMapper.readTree(detail(c).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString()).get("cancelRequest");
     }
 
     private void assertUntouched(Contract c, ContractStatus expected) {

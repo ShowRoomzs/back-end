@@ -17,7 +17,7 @@ public record ContractListItem(
         @Schema(description = "계약번호 — 검토 요청 전에는 null(설계서 1-7)", example = "CTR-20260813-001", nullable = true)
         String contractNumber,
 
-        @Schema(description = "공구명 — 작성중이면 null. 서버는 (공구명 미입력) 같은 표시 문구를 지어내지 않는다. "
+        @Schema(description = "공구명 — 미입력 초안이면 null. 서버는 (공구명 미입력) 같은 표시 문구를 지어내지 않는다. "
                 + "서버가 가짜 값을 만들면 검색·정렬이 그 값에 걸린다",
                 example = "가을 앰플 신제품 공구", nullable = true)
         String title,

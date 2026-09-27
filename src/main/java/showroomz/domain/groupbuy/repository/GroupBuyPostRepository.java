@@ -27,6 +27,13 @@ public interface GroupBuyPostRepository extends JpaRepository<GroupBuyPost, Long
     @Query("SELECT gp FROM GroupBuyPost gp JOIN FETCH gp.post WHERE gp.groupBuy.id = :groupBuyId")
     Optional<GroupBuyPost> findByGroupBuyIdForUpdate(@Param("groupBuyId") Long groupBuyId);
 
+    /**
+     * 소비자 카드 조립 ①(공구 게시물 설계 6-2) — 페이지의 공구 게시물을 공구·브랜드와 함께 한 번에.
+     * 브랜드명은 대가관계 표시 문구에 들어간다.
+     */
+    @Query("SELECT gp FROM GroupBuyPost gp JOIN FETCH gp.groupBuy g JOIN FETCH g.market WHERE gp.postId IN :postIds")
+    List<GroupBuyPost> findCardsByPostIds(@Param("postIds") Collection<Long> postIds);
+
     /** 목록의 게시물 상태 열 — 페이지 단위로 한 번에 모은다(설계서 4-2 N+1 주의). */
     @Query("SELECT gp FROM GroupBuyPost gp WHERE gp.groupBuy.id IN :groupBuyIds")
     List<GroupBuyPost> findByGroupBuyIds(@Param("groupBuyIds") Collection<Long> groupBuyIds);

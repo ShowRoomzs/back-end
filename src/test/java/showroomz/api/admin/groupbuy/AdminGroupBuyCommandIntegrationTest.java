@@ -363,30 +363,38 @@ class AdminGroupBuyCommandIntegrationTest extends AdminGroupBuyTestSupport {
 
     /**
      * 종결 경로 5개 각각에서 같은 부수 효과가 일어나는지 고정한다(32 설계 8-1 테스트 1순위) —
-     * 상품 groupBuyStatus 재계산 · 게시물 비노출 · 대기 연장 EXPIRED · 검토 요청 LAPSED · 조치 큐 0.
+     * 상품 groupBuyStatus 재계산 · 게시물 투영 · 대기 연장 EXPIRED · 검토 요청 LAPSED · 조치 큐 0.
+     *
+     * <p>게시물은 종료·조기 마감이면 종료 후 3일 동안 마감으로 남고, 중단(close_type = SUSPENDED)이면 즉시 내려간다
+     * (공구 게시물 설계 4-1). 기간 종료는 판정 시각을 30일 뒤로 넘겨 보존 기간이 지난 경우를 본다.
      */
     @Test
-    @DisplayName("종결 5경로 × 부수 효과 5종 — 상품 재동기화 · 게시물 내림 · 연장 만료 · 요청 만료 · 조치 큐 0")
+    @DisplayName("종결 5경로 × 부수 효과 5종 — 상품 재동기화 · 게시물 투영 · 연장 만료 · 요청 만료 · 조치 큐 0")
     void terminatorMatrix() throws Exception {
         assertTerminates("기간 종료", g -> transactionTemplate.executeWithoutResult(
-                tx -> lifecycleService.end(g.getId(), LocalDateTime.now().plusDays(30))), true);
-        assertTerminates("조기 마감 승인", g -> approve(g, seedSellerRequest(g, ChangeRequestType.EARLY_CLOSE)), false);
-        assertTerminates("중단 요청 승인", g -> approve(g, seedSellerRequest(g, ChangeRequestType.SUSPEND)), false);
+                tx -> lifecycleService.end(g.getId(), LocalDateTime.now().plusDays(30))), true, PostStatus.DRAFT);
+        assertTerminates("조기 마감 승인", g -> approve(g, seedSellerRequest(g, ChangeRequestType.EARLY_CLOSE)), false,
+                PostStatus.PUBLISHED);
+        assertTerminates("중단 요청 승인", g -> approve(g, seedSellerRequest(g, ChangeRequestType.SUSPEND)), false,
+                PostStatus.DRAFT);
         assertTerminates("직권 중단 집행", g -> {
             seedNotice(g.getId(), LocalDateTime.now().minusDays(2));
             perform(() -> adminAction(g.getId(), "admin-suspension/execute", Map.of("executionNote", "집행합니다."))
                     .andExpect(status().isOk()));
-        }, false);
+        }, false, PostStatus.DRAFT);
         assertTerminates("긴급 직권 중단", g -> perform(() -> adminAction(g.getId(), "admin-suspension/emergency",
-                Map.of("emergencyReason", "DAMAGE_SURGE", "body", "피해 급증")).andExpect(status().isOk())), true);
+                Map.of("emergencyReason", "DAMAGE_SURGE", "body", "피해 급증")).andExpect(status().isOk())), true,
+                PostStatus.DRAFT);
 
         adminSummary().andExpect(jsonPath("$.actionRequiredCount").value(0));
     }
 
     /**
      * @param withStrayRequest 종결 경로 자신이 요청을 쓰지 않는 경로면 검토 중 요청을 하나 더 깔아 LAPSED를 확인한다
+     * @param expectedPost     종결 직후 게시물 노출 — 마감 3일 보존이면 PUBLISHED, 중단·보존 기간 경과면 DRAFT
      */
-    private void assertTerminates(String path, Consumer<GroupBuy> terminate, boolean withStrayRequest) {
+    private void assertTerminates(String path, Consumer<GroupBuy> terminate, boolean withStrayRequest,
+                                  PostStatus expectedPost) {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.IN_PROGRESS);
         GroupBuyPost post = seedPost(groupBuy.getId(), GroupBuyPostReviewStatus.APPROVED, false);
         transactionTemplate.executeWithoutResult(tx -> {
@@ -405,7 +413,7 @@ class AdminGroupBuyCommandIntegrationTest extends AdminGroupBuyTestSupport {
         GroupBuy terminated = reload(groupBuy.getId());
         assertThat(terminated.getStatus().isTerminal()).as(path + " · 종결").isTrue();
         assertThat(productStatus(cream)).as(path + " · 상품 재동기화").isEqualTo(ProductGroupBuyStatus.NOT_CONNECTED);
-        assertThat(loadPost(groupBuy.getId()).getPost().getStatus()).as(path + " · 게시물 내림").isEqualTo(PostStatus.DRAFT);
+        assertThat(loadPost(groupBuy.getId()).getPost().getStatus()).as(path + " · 게시물 투영").isEqualTo(expectedPost);
         assertThat(extensionRequestRepository.findById(extension.getId()).orElseThrow().getStatus())
                 .as(path + " · 대기 연장 만료").isEqualTo(ExtensionRequestStatus.EXPIRED);
         if (stray != null) {

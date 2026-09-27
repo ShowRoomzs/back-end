@@ -12,6 +12,4 @@ public interface GroupBuyAppealAttachmentRepository extends JpaRepository<GroupB
 
     List<GroupBuyAppealAttachment> findByAdminSuspensionIdAndStatusOrderByIdAsc(Long adminSuspensionId,
                                                                                GroupBuyAttachmentStatus status);
-
-    long countByAdminSuspensionIdAndStatusNot(Long adminSuspensionId, GroupBuyAttachmentStatus status);
 }

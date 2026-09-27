@@ -141,6 +141,16 @@ public class GroupBuy extends BaseTimeEntity {
     }
 
     /**
+     * 소비자가 지금 살 수 있는 공구 — 판매 상태 ∧ 종료 시각 전(공구 게시물 설계 4-5).
+     *
+     * <p>{@code end_at}도 보는 이유 — 종료 스케줄러는 1분 주기라 종료 시각이 지났는데 아직 IN_PROGRESS인 구간이 있다.
+     * 구매와 직결되는 판정이라 읽는 쪽에서 보정한다(30 설계 「읽기 쪽 보정」).
+     */
+    public boolean isOngoing(LocalDateTime now) {
+        return status.isSelling() && endAt.isAfter(now);
+    }
+
+    /**
      * 총 공구 일수 — 시작·종료 「일자」 기준 양끝 포함. 계약 H4({@code Contract.periodDays})와 같은 계산이어야
      * 연장 상한 30일 판정이 계약 검증과 어긋나지 않는다(설계서 4-6).
      */

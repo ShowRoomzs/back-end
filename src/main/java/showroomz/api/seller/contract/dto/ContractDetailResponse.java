@@ -28,7 +28,7 @@ public record ContractDetailResponse(
         @Schema(description = "계약번호 — 검토 요청 전에는 null", example = "CTR-20260813-001", nullable = true)
         String contractNumber,
 
-        @Schema(description = "공구명 — 작성중이면 null", example = "가을 앰플 신제품 공구", nullable = true)
+        @Schema(description = "공구명 — 미입력 초안이면 null", example = "가을 앰플 신제품 공구", nullable = true)
         String title,
 
         @Schema(description = "상태(9종)", example = "SIGNING")
@@ -55,19 +55,19 @@ public record ContractDetailResponse(
                 + "체결은 거기에 담기지 않는다", example = "2026-08-20T15:00:00", nullable = true)
         LocalDateTime concludedAt,
 
-        Counterparty counterparty,
-        Period period,
-        List<Item> items,
-        FixedFee fixedFee,
-        Content content,
-        Review review,
-        Signature signature,
-        Settlement settlement,
-        Closure closure,
-        GroupBuy groupBuy,
-        List<Document> documents,
-        Permissions permissions,
-        List<HistoryEntry> history
+        @Schema(description = "계약 상대 — 미선택 초안도 객체이며 내부 값이 null") Counterparty counterparty,
+        @Schema(description = "공구 기간 — 미입력 값은 null") Period period,
+        @Schema(description = "계약 상품. 미등록이면 빈 배열") List<Item> items,
+        @Schema(description = "고정 지급비 금액·지급 시점·확인·지급 기록") FixedFee fixedFee,
+        @Schema(description = "콘텐츠 의무와 2차 활용 조건") Content content,
+        @Schema(description = "검토 요청·승인·반려 기록") Review review,
+        @Schema(description = "서명 진행과 양측 서명 시각") Signature signature,
+        @Schema(description = "정산 조건 표시값") Settlement settlement,
+        @Schema(description = "종결 정보 객체. 거절·만료·취소 전에는 내부 값이 null") Closure closure,
+        @Schema(description = "체결 시 생성된 공구. 체결 전에는 내부 값이 null") GroupBuy groupBuy,
+        @Schema(description = "현재 상태에서 받을 수 있는 문서. 없으면 빈 배열") List<Document> documents,
+        @Schema(description = "현재 브랜드가 사용할 수 있는 버튼 판정") Permissions permissions,
+        @Schema(description = "계약 변경 이력. 없으면 빈 배열") List<HistoryEntry> history
 ) {
 
     @Schema(description = "계약 상대")
@@ -81,32 +81,32 @@ public record ContractDetailResponse(
 
     @Schema(description = "공구 기간")
     public record Period(
-            @Schema(nullable = true) LocalDateTime startAt,
-            @Schema(nullable = true) LocalDateTime endAt,
+            @Schema(description = "공구 시작 일시(Asia/Seoul)", example = "2026-09-01T10:00:00", nullable = true) LocalDateTime startAt,
+            @Schema(description = "공구 종료 일시(Asia/Seoul)", example = "2026-09-17T23:59:00", nullable = true) LocalDateTime endAt,
             @Schema(description = "일수 — 시작·종료 일자 양끝 포함", example = "17", nullable = true) Integer days
     ) {
     }
 
     @Schema(description = "계약 상품 항목 — 상품명·정가는 계약 시점의 스냅샷이다(설계서 0-5)")
     public record Item(
-            Long contractItemId,
+            @Schema(description = "계약 상품 항목 ID. 임시저장 때 그대로 돌려보낸다", example = "42") Long contractItemId,
             @Schema(description = "상품 ID — 공구 생성·정산 귀속용 참조", nullable = true) Long productId,
             @Schema(description = "상품명(스냅샷)", nullable = true) String productName,
             @Schema(description = "정가(스냅샷)", nullable = true) Integer regularPrice,
-            @Schema(nullable = true) Integer groupBuyPrice,
+            @Schema(description = "공구가(원, 10원 단위)", example = "28000", nullable = true) Integer groupBuyPrice,
             @Schema(description = "리워드율(%) — 정산이 이 값을 그대로 쓴다", example = "15.0", nullable = true)
             BigDecimal rewardRate,
             @Schema(description = "1개당 예상 리워드(원) — 저장하지 않는 파생값. 1원 단위 버림(설계서 1-5)",
                     example = "4200", nullable = true)
             Long unitReward,
-            @Schema(nullable = true) Integer minQuantity
+            @Schema(description = "최소 확보 물량", example = "100", nullable = true) Integer minQuantity
     ) {
     }
 
     @Schema(description = "고정 지급비")
     public record FixedFee(
-            @Schema(nullable = true) Integer amount,
-            @Schema(nullable = true) FixedFeeTrigger trigger,
+            @Schema(description = "고정 지급비(원). 0원이면 지급 의무 없음", example = "100000", nullable = true) Integer amount,
+            @Schema(description = "지급 시점: POST_REGISTERED / GROUP_BUY_ENDED / SETTLEMENT_COMPLETED", example = "POST_REGISTERED", nullable = true) FixedFeeTrigger trigger,
             @Schema(description = "지급 시점 라벨", example = "공구 게시물 등록 후", nullable = true) String triggerLabel,
             @Schema(description = "고지 확인 체크 시각", nullable = true) LocalDateTime noticeAgreedAt,
             @Schema(description = "지급 완료 기록 시각", nullable = true) LocalDateTime paidAt,
@@ -117,15 +117,15 @@ public record ContractDetailResponse(
 
     @Schema(description = "콘텐츠 의무 · 2차 활용 · 비고")
     public record Content(
-            @Schema(nullable = true) Integer feedCount,
-            @Schema(nullable = true) Integer reelsCount,
-            @Schema(nullable = true) Integer storyCount,
+            @Schema(description = "피드 게시 수", example = "1", nullable = true) Integer feedCount,
+            @Schema(description = "릴스 게시 수", example = "1", nullable = true) Integer reelsCount,
+            @Schema(description = "스토리 게시 수", example = "0", nullable = true) Integer storyCount,
             @Schema(description = "게시 완료 기한", nullable = true) LocalDate dueDate,
-            @Schema(nullable = true) Boolean secondaryUseAllowed,
-            @Schema(nullable = true) SecondaryUsePeriodType secondaryUsePeriodType,
+            @Schema(description = "브랜드의 콘텐츠 2차 활용 허용 여부", nullable = true) Boolean secondaryUseAllowed,
+            @Schema(description = "2차 활용 기간: FIXED / UNLIMITED", nullable = true) SecondaryUsePeriodType secondaryUsePeriodType,
             @Schema(description = "FIXED일 때의 개월 수", nullable = true) Integer secondaryUseMonths,
             @Schema(description = "브랜드 사전 검수", nullable = true) Boolean brandPreReview,
-            @Schema(nullable = true) String note
+            @Schema(description = "계약 비고", nullable = true) String note
     ) {
     }
 
@@ -190,8 +190,8 @@ public record ContractDetailResponse(
 
     @Schema(description = "계약 문서 — 검토 대기~체결 처리 대기는 계약서 생성본, 체결완료는 체결 문서 2종")
     public record Document(
-            ContractDocumentType type,
-            String typeLabel,
+            @Schema(description = "문서 종류: GENERATED_DRAFT / SIGNED_PDF / AUDIT_TRAIL") ContractDocumentType type,
+            @Schema(description = "화면 표시용 문서 종류") String typeLabel,
             @Schema(description = "다운로드 URL") String downloadUrl
     ) {
     }
@@ -206,13 +206,13 @@ public record ContractDetailResponse(
      */
     @Schema(description = "버튼 노출 판정 — 서버가 내려준다")
     public record Permissions(
-            boolean canEdit,
-            boolean canDelete,
-            boolean canRequestReview,
-            boolean canCancelRequest,
-            boolean canRequestResend,
-            boolean canRecordPayment,
-            boolean canDuplicate
+            @Schema(description = "임시저장 가능") boolean canEdit,
+            @Schema(description = "계약 삭제 가능") boolean canDelete,
+            @Schema(description = "상태상 검토 요청 가능. 필수값 검증은 validate.canSubmit으로 별도 확인") boolean canRequestReview,
+            @Schema(description = "검토 요청 취소 가능") boolean canCancelRequest,
+            @Schema(description = "서명 안내 재발송 요청 가능. 현재 API는 Swagger에서 숨김") boolean canRequestResend,
+            @Schema(description = "고정 지급비 지급 완료 기록 가능") boolean canRecordPayment,
+            @Schema(description = "이 조건으로 새 계약 작성 가능") boolean canDuplicate
     ) {
     }
 

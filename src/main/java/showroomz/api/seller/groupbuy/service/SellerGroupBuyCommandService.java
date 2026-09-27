@@ -255,7 +255,12 @@ public class SellerGroupBuyCommandService {
 
     // ── C9 직권 중단 소명 ─────────────────────────────────────────────────────
 
-    /** 소명 증빙 업로드 URL — PENDING 행을 먼저 만들고, 제출 시 HeadObject로 확정한다. */
+    /**
+     * 소명 증빙 업로드 URL — PENDING 행을 먼저 만들고, 제출 시 HeadObject로 확정한다.
+     *
+     * <p>개수 상한은 <b>제출 단계에서만</b> 본다 — 연결·소통 첨부와 같다. 발급 단계에서 세면 업로드하지 않은 건과
+     * FE에서 뺀 파일이 자리를 차지해, 삭제 API가 없는 브랜드는 파일을 바꿀 수 없게 된다.
+     */
     public GroupBuyAppealAttachmentPresignResponse presignAppealAttachment(String sellerEmail, Long groupBuyId,
                                                                            GroupBuyAppealAttachmentPresignRequest request) {
         SellerScope scope = accessGuard.resolve(sellerEmail);
@@ -267,12 +272,6 @@ public class SellerGroupBuyCommandService {
         if (!GroupBuyAppealAttachmentStorage.isAllowedContentType(request.contentType())
                 || request.sizeBytes() > properties.getAppeal().getMaxAttachmentBytes()) {
             throw new BusinessException(ErrorCode.GROUP_BUY_APPEAL_ATTACHMENT_INVALID);
-        }
-        long attached = appealAttachmentRepository.countByAdminSuspensionIdAndStatusNot(
-                notice.getId(), GroupBuyAttachmentStatus.REJECTED);
-        if (attached >= properties.getAppeal().getMaxAttachments()) {
-            throw new BusinessException(ErrorCode.GROUP_BUY_APPEAL_ATTACHMENT_INVALID,
-                    "증빙은 최대 " + properties.getAppeal().getMaxAttachments() + "개까지 첨부할 수 있습니다.");
         }
 
         String key = appealStorage.newKey(notice.getId(), request.contentType());

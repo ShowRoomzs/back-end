@@ -136,9 +136,9 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     /**
      * 팔로우한 쇼룸이 진행 중인 공구 상품 (C8 장바구니 하단 "팔로우한 쇼룸의 공구").
      *
-     * <p>공구 게시물이 아직 없어 "쇼룸의 공구"는 <b>연결(CONNECTED)된 브랜드의 진열 중 상품 가운데
-     * 공구 진행중(IN_PROGRESS)</b>으로 판별한다 — C2 팔로잉 목록의 아바타 링과 같은 기준이다
-     * ({@code findCreatorIdsWithOngoingGroupBuy}).
+     * <p>"쇼룸의 공구"는 <b>연결(CONNECTED)된 브랜드의 진열 중 상품 가운데 공구 진행중(IN_PROGRESS)</b>으로
+     * 판별한다. 아바타 링({@code findCreatorIdsWithOngoingGroupBuy})은 공구 게시물 기준으로 바뀌었고
+     * (공구 게시물 설계 4-5), 이 쿼리는 그 설계 범위 밖이라 옛 기준 그대로다.
      *
      * <p>{@code excludedProductIds}로 이미 담아 둔 상품을 뺀다. 장바구니에 있는 상품을 그 아래에서
      * 다시 권하면 목록을 두 번 읽게 만든다.

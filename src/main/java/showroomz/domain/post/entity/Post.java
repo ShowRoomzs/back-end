@@ -113,6 +113,15 @@ public class Post extends BaseTimeEntity {
     @Column(name = "published_at")
     private LocalDateTime publishedAt;
 
+    /**
+     * 게시 후 마지막 본문 수정 시각 — 본문·사진(공구는 제목·본문)을 고친 때만 찍는다.
+     *
+     * <p>{@code modified_at}(auditing)은 좋아요·노출 수·노출 상태가 바뀔 때도 갱신돼 「수정됨」의 근거가 못 된다.
+     * 게시 전 임시저장·제출은 찍지 않는다 — 소비자가 본 적 없는 글의 수정이다.
+     */
+    @Column(name = "edited_at")
+    private LocalDateTime editedAt;
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
@@ -179,10 +188,21 @@ public class Post extends BaseTimeEntity {
         }
     }
 
-    /** 본문·비율 수정. 사진 교체는 {@link #replaceImages(List)}가 따로 맡는다 */
-    public void updateContent(String content, BigDecimal aspectRatio) {
+    /**
+     * 본문·비율 수정. 사진 교체는 {@link #replaceImages(List)}가 따로 맡는다 — 일반 게시물 수정은 둘을 함께 부르므로
+     * 수정 시각은 여기서 한 번 찍는다. 이미 게시된 적이 있을 때만 찍는다({@link #editedAt}).
+     */
+    public void updateContent(String content, BigDecimal aspectRatio, LocalDateTime now) {
         this.content = content;
         this.aspectRatio = normalizeRatio(aspectRatio);
+        if (this.publishedAt != null) {
+            this.editedAt = now;
+        }
+    }
+
+    /** 소비자에게 보이는 「마지막 수정 시각」 — 게시 후 수정이 없으면 게시 시각이다. */
+    public LocalDateTime getLastModifiedAt() {
+        return this.editedAt != null ? this.editedAt : this.publishedAt;
     }
 
     /**

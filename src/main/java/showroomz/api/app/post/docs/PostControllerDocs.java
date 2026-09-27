@@ -20,154 +20,209 @@ import showroomz.api.app.post.DTO.PostDto;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "User - Post", description = "소비자 쇼룸 게시물 조회 API")
+import java.util.List;
+
+import static showroomz.api.app.post.docs.PostDocsExamples.*;
+
+@Tag(name = "User - Post", description = "소비자 쇼룸 게시물 조회·좋아요 API.")
 public interface PostControllerDocs {
 
     @Operation(
-            summary = "게시글 상세 조회",
+            summary = "게시글 상세 조회 (C5)",
             description = """
-                    게시중인 게시물만 조회된다. 작성중·노출 중지·삭제는 소비자에게 404다.
+                    게시중인 게시물 한 건을 조회한다. 작성중·노출 중지·삭제는 소비자에게 **404**다(상태를 구분해 알려주지 않는다).
 
-                    - **aspectRatio** — 게시물 비율(가로/세로). 게시물마다 높이가 다르므로
-                      **고정 높이 카드로 그리면 안 되고** 이 값으로 자리를 잡는다(§24-2)
-                    - **imageUrls** — 배열 순서가 노출 순서, 첫 장이 대표 사진
-                    - **likeLocked** — `true`면 마감된 공구다. 좋아요 버튼을 눌러도 새로 걸리지
-                      않고 해제만 된다(C3 §마감·품절과 같은 규칙)
-                    - 비로그인도 조회할 수 있고, 이 경우 `isLiked`는 false다
+                    **권한:** 없음(비로그인 허용). 토큰을 보내면 `isLiked`가 실제 값으로 채워지고, 없으면 `false`다.
+                    조회수를 올리지 않는다 — 노출은 `POST /v1/user/posts/impressions`가 따로 적재한다.
+
+                    **공통 필드**
+                    - `contentType` — `GENERAL` / `GROUP_BUY`
+                    - `aspectRatio` — 게시물 비율(가로/세로, 1.9100 ~ 0.8000). 게시물마다 높이가 다르므로 **고정 높이 카드로 그리면 안 되고** 이 값으로 자리를 잡는다(§24-2).
+                      공구 게시물은 사진이 없어 `null`
+                    - `imageUrls` — 배열 순서가 노출 순서, 첫 장이 대표 사진. 공구 게시물은 `[]`
+                    - `likeLocked` — `true`면 마감된 공구다. 하트를 눌러도 새로 걸리지 않고 해제만 된다(C3 §마감·품절과 같은 규칙)
+                    - `publishedAt` — 처음 게시된 시각. 공구 게시물은 **공구가 오픈된 시각**이다(숨김·해제로 바뀌지 않는다)
+                    - `modifiedAt` — **마지막 수정 시각.** 게시 후 본문·사진(공구 게시물은 제목·본문)을 고친 시각이고,
+                      고친 적이 없으면 `publishedAt`과 같다. 좋아요·노출 수·숨김/해제 같은 노출 상태 변경으로는 바뀌지 않는다 —
+                      `modifiedAt > publishedAt`이면 「수정됨」으로 표시할 수 있다. 공구 게시물은 공구 오픈 전(예약 상태)의 수정은 세지 않는다
+
+                    **공구 게시물 (`contentType = GROUP_BUY`)**
+                    - 진행 중이면 `groupBuy.saleState`가 `ON_SALE` · `PARTIALLY_SOLD_OUT` · `SOLD_OUT` 중 하나이고 `dDay`가 채워진다.
+                    - 끝난 공구는 **종료 후 3일(72시간)까지** `saleState: CLOSED` · `likeLocked: true`로 열리고, 그 뒤 404다. 직권 중단은 즉시 404다.
+                    - 상세는 마감이어도 `products`를 **전부** 내린다 — 행 상태가 모두 `CLOSED`이고 `detailAvailable: false`라 흑백 + 「공구 마감」으로 그린다.
+                    - 상품 행 탭 → `detailAvailable = true`일 때만 C7(`productId`)로 이동한다.
+                    - `groupBuy.title`이 게시물 제목이다(일반 게시물에는 제목이 없다).
                     """
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공",
-                    content = @Content(schema = @Schema(implementation = PostDto.PostDetailResponse.class),
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "postId": 123,
-                                      "showroomId": 10,
-                                      "showroomName": "리브의 방",
-                                      "showroomImageUrl": "https://cdn.example.com/showrooms/10.jpg",
-                                      "content": "3주 루틴 기록",
-                                      "imageUrls": [
-                                        "https://cdn.example.com/posts/123-0.jpg",
-                                        "https://cdn.example.com/posts/123-1.jpg"
-                                      ],
-                                      "imageCount": 2,
-                                      "aspectRatio": 0.8000,
-                                      "impressionCount": 532,
-                                      "isLiked": true,
-                                      "likeCount": 12,
-                                      "likeLocked": false,
-                                      "publishedAt": "2026-03-04T12:34:56",
-                                      "modifiedAt": "2026-03-04T13:00:00"
-                                    }
-                                    """))),
-            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없거나 게시중이 아님",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+                    content = @Content(schema = @Schema(implementation = PostDto.PostDetailResponse.class), examples = {
+                            @ExampleObject(name = "일반 게시물", value = DETAIL_GENERAL),
+                            @ExampleObject(name = "공구 게시물 · 진행 중(일부 품절)",
+                                    summary = "saleState PARTIALLY_SOLD_OUT · 품절 행만 SOLD_OUT", value = DETAIL_GROUP_BUY_ON_SALE),
+                            @ExampleObject(name = "공구 게시물 · 마감(종료 3일 이내)",
+                                    summary = "saleState CLOSED · 상품 전부 CLOSED · likeLocked", value = DETAIL_GROUP_BUY_CLOSED)
+                    })),
+            @ApiResponse(responseCode = "400", description = "INVALID_INPUT — `postId`가 숫자가 아님",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = ERR_INVALID_INPUT))),
+            @ApiResponse(responseCode = "404", description = "POST_NOT_FOUND — 없는 게시물 · 게시중 아님(작성중·노출 중지·삭제) · "
+                    + "공구 게시물의 오픈 전·숨김·종료 3일 경과·직권 중단",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = ERR_POST_NOT_FOUND)))
     })
     ResponseEntity<PostDto.PostDetailResponse> getPostById(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @Parameter(description = "게시글 ID", required = true, example = "123", in = ParameterIn.PATH)
+            @Parameter(description = "게시글 ID", required = true, example = "456", in = ParameterIn.PATH)
             @PathVariable("postId") Long postId);
 
     @Operation(summary = "전체 게시글 목록 조회 (내부용)",
             description = """
-                    게시중인 게시물을 최신순으로 조회한다.
+                    게시중인 게시물을 게시 시각 최신순으로 조회한다. 일반 게시물과 **진행 중인** 공구 게시물이 섞인다(C1과 같은 규칙) —
+                    마감된 공구 게시물은 싣지 않는다.
 
-                    경로가 `GET /v1/user/showrooms` → `GET /v1/user/showrooms/posts`로 옮겨졌다 —
-                    앞자리는 쇼룸 목록 조회가 쓴다.
+                    **권한:** 없음(비로그인 허용). 비로그인이면 `isLiked` · `isFollowing`은 `false`다.
+
+                    - 진행 중 공구 항목은 `post.groupBuy.products`가 **전부** 실려 있다
+                    - 경로가 `GET /v1/user/showrooms` → `GET /v1/user/showrooms/posts`로 옮겨졌다 — 앞자리는 쇼룸 목록 조회가 쓴다
                     """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(name = "일반 + 진행 중 공구", value = PAGE_GENERAL_AND_ONGOING),
+                            @ExampleObject(name = "게시물 없음", value = PAGE_EMPTY)
+                    }))
+    })
     ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getPostList(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Parameter(description = "페이징 정보 (page: 1부터, size: 기본 20)") PagingRequest pagingRequest);
 
     @Operation(
-            summary = "쇼룸별 게시글 목록 조회",
+            summary = "쇼룸별 게시글 목록 조회 (C4 아래 피드)",
             description = """
-                    한 쇼룸의 게시물을 최신순으로 조회한다. 게시중인 것만 나온다.
+                    C4 쇼룸의 **아래 피드** — 한 쇼룸의 게시중 게시물을 게시 시각 최신순으로 조회한다.
 
-                    **contentType**이 게시물 종류 판별자다 — 지금은 `GENERAL`뿐이고, 공구 게시물이
-                    들어오면 `GROUP_BUY`가 더해진다. 응답 구조는 그대로 유지된다.
+                    **권한:** 없음(비로그인 허용 — SNS 링크로 착지하는 화면). 비로그인이면 `isLiked` · `isFollowing`은 `false`다.
 
-                    - **isFollowing** — 이 쇼룸을 지금 팔로우 중인지. 조회 대상 쇼룸이 하나로 고정돼
-                      있어 목록 전체가 같은 값이다
-                    - **hasOngoingGroupBuy** — 이 쇼룸이 진행 중인 공구를 가졌는지. 쇼룸 안(C4)에서는
-                      모든 카드가 같은 쇼룸이라 아바타 링을 그리지 않는다 — 값은 프로필 영역이 쓴다
-                    - **likeLocked** — `true`면 마감된 공구다. 새 좋아요는 서버가 거절하고 해제만 된다
+                    **싣는 것** — 일반 게시물 + **마감된 공구 게시물(종료 후 3일 이내)**.
+                    진행 중인 공구는 상단 고정 섹션(`GET /v1/user/showrooms/{showroomId}/group-buy-posts`)이 따로 그리므로 **여기서 뺀다** —
+                    같은 게시물이 두 번 뜨지 않는다. 공구가 끝나면 그 게시물은 고정 섹션에서 이 피드로 내려오고, 3일 뒤 사라진다.
+
+                    **필드**
+                    - `contentType` — `GENERAL` / `GROUP_BUY`. 여기 실리는 공구 게시물은 항상 마감이라
+                      `post.groupBuy.saleState: CLOSED` · `products: []`(글만 표시) · `likeLocked: true`다. `productCount`는 실제 개수다
+                    - `isFollowing` — 이 쇼룸을 지금 팔로우 중인지. 조회 대상 쇼룸이 하나라 목록 전체가 같은 값이다
+                    - `hasOngoingGroupBuy` — 이 쇼룸이 진행 중인 공구를 가졌는지. C4 안에서는 모든 카드가 같은 쇼룸이라 아바타 링을 그리지 않는다 — 값은 프로필 영역이 쓴다
+
+                    **존재하지 않는 쇼룸** — 에러가 아니라 빈 페이지(`content: []`)가 온다. 쇼룸 자체의 404는 쇼룸 프로필·고정 섹션 API가 판단한다.
                     """
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = PageResponse.class),
-                            examples = @ExampleObject(value = """
-                            {
-                              "content": [
-                                {
-                                  "contentType": "GENERAL",
-                                  "post": {
-                                    "postId": 123,
-                                    "showroomId": 10,
-                                    "showroomName": "리브의 방",
-                                    "showroomImageUrl": "https://cdn.example.com/showrooms/10.jpg",
-                                    "isFollowing": false,
-                                    "hasOngoingGroupBuy": false,
-                                    "content": "3주 루틴 기록",
-                                    "imageUrls": ["https://cdn.example.com/posts/123-0.jpg"],
-                                    "imageCount": 1,
-                                    "aspectRatio": 0.8000,
-                                    "impressionCount": 532,
-                                    "isLiked": false,
-                                    "likeCount": 12,
-                                    "likeLocked": false,
-                                    "publishedAt": "2026-03-04T12:34:56"
-                                  }
-                                }
-                              ],
-                              "pageInfo": {
-                                "currentPage": 1, "totalPages": 1, "totalResults": 1, "limit": 20, "hasNext": false
-                              }
-                            }
-                            """)))
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(name = "일반 + 마감 공구", summary = "마감 공구는 products [] · likeLocked true",
+                                    value = PAGE_SHOWROOM),
+                            @ExampleObject(name = "게시물 없음", value = PAGE_EMPTY)
+                    })),
+            @ApiResponse(responseCode = "400", description = "INVALID_INPUT — `showroomId`가 숫자가 아님",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = ERR_INVALID_INPUT)))
     })
     ResponseEntity<PageResponse<PostDto.FeedItemResponse>> getPostListByShowroom(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @Parameter(description = "쇼룸 ID", required = true, example = "10", in = ParameterIn.PATH)
+            @Parameter(description = "쇼룸 ID", required = true, example = "5", in = ParameterIn.PATH)
             @PathVariable("showroomId") Long showroomId,
             @Parameter(description = "페이징 정보")
             @ParameterObject @ModelAttribute PagingRequest pagingRequest);
 
     @Operation(
-            summary = "게시글 좋아요",
+            summary = "쇼룸의 진행 중인 공구 게시물 (C4 고정 섹션)",
             description = """
-                    이미 눌러 뒀으면 아무 일도 일어나지 않고 204로 끝난다(멱등). 게시중이 아닌 게시물에는 누를 수 없다.
+                    C4 상단 **「진행 중인 공구」 고정 섹션**. 이 쇼룸의 진행 중 공구 게시물을 **전부** 내린다 —
+                    페이징 없음(배열 그대로), **공구 오픈 시각 최신순**(동률은 게시물 id 내림차순).
 
-                    목록 응답의 `likeLocked=true`인 게시물(마감된 공구)도 거절한다 — 해제만 가능하다.
-                    품절은 막지 않는다. 재입고·다음 공구로 되살아날 수 있다(C3 §마감·품절).
+                    **권한:** 없음(비로그인 허용 — SNS 링크로 착지하는 화면). 비로그인이면 `isLiked` · `isFollowing`은 `false`다.
+
+                    - **빈 배열이면 섹션 자체를 감춘다**(C4 1c)
+                    - 진행 중 = 게시중 ∧ 공구 판매 중(진행중 · 중단 예정) ∧ 종료 시각 전. 쇼룸 프로필의 `hasOngoingGroupBuy`(아바타 로즈 링)와
+                      **같은 정의**라 링이 켜졌는데 섹션이 비는 일이 없다
+                    - 모든 항목이 `contentType: GROUP_BUY`이고 `saleState`는 `ON_SALE` · `PARTIALLY_SOLD_OUT` · `SOLD_OUT` 중 하나다(`CLOSED`는 오지 않는다)
+                    - 각 항목의 `post.groupBuy.products`는 **전부** 실려 있다 — 대표 1개를 그리고 「상품 N개 더보기」는 추가 호출 없이 펼친다
+                    - 종료 시각이 지나면 다음 조회부터 이 섹션에서 빠지고 아래 피드(`GET /{showroomId}/posts`)에 마감 게시물로 남는다(종료 후 3일)
                     """
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "좋아요 완료"),
-            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없거나, 게시중이 아니거나, 좋아요가 막힌 게시물",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            @ApiResponse(responseCode = "200", description = "조회 성공 — 진행 중 공구가 없으면 빈 배열",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(name = "진행 중 공구 있음", value = LIST_ONGOING),
+                            @ExampleObject(name = "진행 중 공구 없음(섹션 감춤)", value = "[]")
+                    })),
+            @ApiResponse(responseCode = "400", description = "INVALID_INPUT — `showroomId`가 숫자가 아님",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = ERR_INVALID_INPUT))),
+            @ApiResponse(responseCode = "404", description = "SHOWROOM_NOT_FOUND — 없거나 노출할 수 없는 쇼룸(쇼룸 프로필 조회와 같은 조건)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = ERR_SHOWROOM_NOT_FOUND)))
+    })
+    ResponseEntity<List<PostDto.FeedItemResponse>> getOngoingGroupBuyPosts(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @Parameter(description = "쇼룸 ID", required = true, example = "5", in = ParameterIn.PATH)
+            @PathVariable("showroomId") Long showroomId);
+
+    @Operation(
+            summary = "게시글 좋아요",
+            description = """
+                    게시물에 좋아요를 누른다. 이미 눌러 뒀으면 아무 일도 일어나지 않고 204로 끝난다(멱등).
+
+                    **권한:** USER (비로그인은 401 — 앱은 하트를 누르는 순간 로그인을 유도한다)
+
+                    **누를 수 있는 게시물** — 게시물 종류별 규칙이다.
+                    - 일반 게시물 — 게시중이면 된다
+                    - 공구 게시물 — **노출중이고 종료 시각 전**일 때만. 마감된 공구(`likeLocked = true` — 종료 시각이 지난 순간부터)는 거절한다.
+                      품절은 막지 않는다 — 재입고·다음 공구로 되살아날 수 있다(C3 §마감·품절)
+
+                    거절은 **404 `POST_NOT_FOUND`**로 온다(없는 게시물과 구분하지 않는다). 앱은 `likeLocked = true`면 하트를 회색으로 낮춰 요청 자체를 보내지 않는다.
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "좋아요 완료(이미 눌렀어도 204)"),
+            @ApiResponse(responseCode = "401", description = "비로그인",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "POST_NOT_FOUND — 없는 게시물 · 게시중 아님 · 마감된 공구(`likeLocked`) / "
+                    + "USER_NOT_FOUND — 토큰의 사용자 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {
+                            @ExampleObject(name = "없는 게시물 · 마감된 공구", value = ERR_POST_NOT_FOUND),
+                            @ExampleObject(name = "토큰의 사용자 없음", value = ERR_USER_NOT_FOUND)
+                    }))
     })
     ResponseEntity<Void> likePost(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @Parameter(description = "게시글 ID", required = true, example = "123", in = ParameterIn.PATH)
+            @Parameter(description = "게시글 ID", required = true, example = "456", in = ParameterIn.PATH)
             @PathVariable("postId") Long postId);
 
     @Operation(
             summary = "게시글 좋아요 취소",
             description = """
-                    누른 적이 없으면 그대로 204로 끝난다(멱등).
-                    마감된 공구도 취소는 언제나 허용한다 — 막는 것은 새 좋아요뿐이다.
+                    좋아요를 해제한다. 누른 적이 없으면 그대로 204로 끝난다(멱등).
+
+                    **권한:** USER
+
+                    **언제나 해제할 수 있다** — 마감된 공구(`likeLocked = true`)도, 그 사이 내려간 게시물도 해제는 허용한다. 막는 것은 새 좋아요뿐이다.
+                    C3 좋아요 목록에서 해제해도 목록 응답이 바로 바뀌지는 않는다(다음 조회 때 빠진다).
                     """
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "취소 완료"),
-            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            @ApiResponse(responseCode = "204", description = "취소 완료(누른 적이 없어도 204)"),
+            @ApiResponse(responseCode = "401", description = "비로그인",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "POST_NOT_FOUND — 게시물 자체가 없음 / USER_NOT_FOUND — 토큰의 사용자 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {
+                            @ExampleObject(name = "없는 게시물", value = ERR_POST_NOT_FOUND),
+                            @ExampleObject(name = "토큰의 사용자 없음", value = ERR_USER_NOT_FOUND)
+                    }))
     })
     ResponseEntity<Void> unlikePost(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @Parameter(description = "게시글 ID", required = true, example = "123", in = ParameterIn.PATH)
+            @Parameter(description = "게시글 ID", required = true, example = "456", in = ParameterIn.PATH)
             @PathVariable("postId") Long postId);
 }

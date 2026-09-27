@@ -71,7 +71,7 @@ class GroupBuyPostGuardIntegrationTest extends CreatorGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("오픈하면 노출(PUBLISHED) — 소비자 상세·좋아요는 되고 일반 피드에는 뜨지 않는다 · 종료하면 비노출")
+    @DisplayName("오픈하면 노출(PUBLISHED) · 피드에 공구 카드로 뜬다 · 종료 후 3일 동안 마감으로 남고(좋아요 잠김) 그 뒤 비노출")
     void exposureFollowsLifecycle() throws Exception {
         GroupBuy groupBuy = openedGroupBuyWithApprovedPost();
         Long postId = groupBuyPostRepository.findByGroupBuyId(groupBuy.getId()).orElseThrow().getPostId();
@@ -85,18 +85,41 @@ class GroupBuyPostGuardIntegrationTest extends CreatorGroupBuyTestSupport {
         // 정책 빈이 없으면 여기서 500이다(31 설계 0-6).
         mockMvc.perform(post("/v1/user/showrooms/posts/" + postId + "/wishlist").header(HttpHeaders.AUTHORIZATION, consumer))
                 .andExpect(status().is2xxSuccessful());
+        // 진행 중 공구는 C1 피드에 공구 카드(contentType = GROUP_BUY + groupBuy 블록)로 섞인다(공구 게시물 설계 6절)
         mockMvc.perform(get("/v1/user/showrooms/posts").header(HttpHeaders.AUTHORIZATION, consumer))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[*].postId").value(not(hasItem(postId.intValue()))));
+                .andExpect(jsonPath("$.content[?(@.post.postId == " + postId + ")].contentType").value(hasItem("GROUP_BUY")))
+                .andExpect(jsonPath("$.content[?(@.post.postId == " + postId + ")].post.groupBuy.productCount")
+                        .value(hasItem(2)));
 
-        jdbc.update("UPDATE group_buy SET end_at = ? WHERE group_buy_id = ?",
-                Timestamp.valueOf(LocalDateTime.now().minusMinutes(1)), groupBuy.getId());
+        LocalDateTime endedAt = LocalDateTime.now().minusMinutes(1).withNano(0);
+        jdbc.update("UPDATE group_buy SET end_at = ? WHERE group_buy_id = ?", Timestamp.valueOf(endedAt), groupBuy.getId());
         assertThat(lifecycleService.end(groupBuy.getId(), LocalDateTime.now())).isTrue();
+
+        // 종료 후 3일 동안은 마감 게시물로 남는다 — 상세 200 · CLOSED · 새 좋아요 거절 · 해제는 허용 · C1 피드에서는 빠진다
+        assertThat(postRepository.findById(postId).orElseThrow().getStatus()).isEqualTo(PostStatus.PUBLISHED);
+        mockMvc.perform(get("/v1/user/showrooms/posts/" + postId).header(HttpHeaders.AUTHORIZATION, consumer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.groupBuy.saleState").value("CLOSED"))
+                .andExpect(jsonPath("$.likeLocked").value(true));
+        mockMvc.perform(post("/v1/user/showrooms/posts/" + postId + "/wishlist").header(HttpHeaders.AUTHORIZATION, consumer))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(delete("/v1/user/showrooms/posts/" + postId + "/wishlist").header(HttpHeaders.AUTHORIZATION, consumer))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/v1/user/showrooms/posts").header(HttpHeaders.AUTHORIZATION, consumer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[*].post.postId").value(not(hasItem(postId.intValue()))));
+
+        // 72시간이 지나면 스케줄러가 내린다 — 두 번째 실행은 할 일이 없다
+        assertThat(lifecycleService.retirePost(groupBuy.getId(), endedAt.plusHours(72))).isEqualTo(1);
+        assertThat(lifecycleService.retirePost(groupBuy.getId(), endedAt.plusHours(72))).isZero();
 
         Post closed = postRepository.findById(postId).orElseThrow();
         assertThat(closed.getStatus()).isEqualTo(PostStatus.DRAFT);
         // 게시일은 처음 세상에 나온 때다 — 비노출로 내려가도 지우지 않는다.
         assertThat(closed.getPublishedAt()).isEqualTo(opened.getPublishedAt());
+        mockMvc.perform(get("/v1/user/showrooms/posts/" + postId).header(HttpHeaders.AUTHORIZATION, consumer))
+                .andExpect(status().isNotFound());
     }
 
     /** 준비완료 + 승인 게시물 → 시작 시각을 과거로 옮기고 스케줄러의 오픈을 태운다. */

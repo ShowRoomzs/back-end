@@ -106,7 +106,7 @@ class GroupBuyLifecycleIntegrationTest extends GroupBuyTestSupport {
                 .isEqualTo(AdminSuspensionStatus.LAPSED);
 
         detail(groupBuy.getId())
-                .andExpect(jsonPath("$.history[-2:].eventType").value(contains("EXTENSION_EXPIRED", "ENDED")))
+                .andExpect(jsonPath("$.history[:2].eventType").value(contains("ENDED", "EXTENSION_EXPIRED")))
                 .andExpect(jsonPath("$.extension.status").value("EXPIRED"))
                 .andExpect(jsonPath("$.extension.responseActorType").value("SYSTEM"))
                 .andExpect(jsonPath("$.activeRequest").doesNotExist())

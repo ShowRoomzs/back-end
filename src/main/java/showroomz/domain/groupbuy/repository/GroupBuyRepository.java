@@ -152,6 +152,29 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, Group
             + "ORDER BY g.endAt ASC, g.id ASC")
     List<Long> findIdsToEnd(@Param("now") LocalDateTime now, Pageable pageable);
 
+    /**
+     * 마감 게시물 내리기 대상(공구 게시물 설계 4-2) — 종결된 지 {@code CLOSED_POST_RETENTION}이 지났는데 게시물이 아직
+     * 소비자에게 노출 중이다. {@code threshold = now − 보존 기간}.
+     */
+    @Query("SELECT g.id FROM GroupBuyPost gp JOIN gp.groupBuy g JOIN gp.post p "
+            + "WHERE g.status IN :terminalStatuses "
+            + "AND g.endedAt <= :threshold "
+            + "AND p.status = showroomz.domain.post.type.PostStatus.PUBLISHED "
+            + "ORDER BY g.endedAt ASC, g.id ASC")
+    List<Long> findIdsToRetirePost(@Param("terminalStatuses") Collection<GroupBuyStatus> terminalStatuses,
+                                   @Param("threshold") LocalDateTime threshold,
+                                   Pageable pageable);
+
+    /**
+     * 마감 게시물 백필 대상(공구 게시물 설계 4-1 「기존 데이터」) — 보존 기간 안에 종결됐고 게시물이 있는 공구.
+     * 노출 여부는 투영식이 다시 판정하므로 여기서는 기간만 거른다.
+     */
+    @Query("SELECT g.id FROM GroupBuyPost gp JOIN gp.groupBuy g "
+            + "WHERE g.status IN :terminalStatuses AND g.endedAt > :threshold "
+            + "ORDER BY g.endedAt ASC, g.id ASC")
+    List<Long> findIdsWithPostEndedAfter(@Param("terminalStatuses") Collection<GroupBuyStatus> terminalStatuses,
+                                         @Param("threshold") LocalDateTime threshold);
+
     /** 자동 이행 대상 — 기한이 지났는데 어느 한 측이라도 확인이 없다. */
     @Query("SELECT g.id FROM GroupBuy g "
             + "WHERE g.status = showroomz.domain.groupbuy.type.GroupBuyStatus.ENDED "

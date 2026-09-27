@@ -106,6 +106,7 @@ public class AdminPostReportService {
                 .reportId(report.getId())
                 .postId(report.getPost().getId())
                 .showroomId(creator.getId())
+                .postType(report.getPost().getPostType())
                 .showroomName(showroomName(creator))
                 .contentPreview(preview(report.getPost().getContent()))
                 .reasonCode(report.getReasonCode())

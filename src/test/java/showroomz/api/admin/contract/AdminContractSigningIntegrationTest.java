@@ -47,11 +47,14 @@ class AdminContractSigningIntegrationTest extends AdminContractTestSupport {
 
         signatures(c, brandSignedAt, null, c.getVersion()).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("SIGNING"));
+        // 상한도 하한처럼 초 단위로 둔다 — DB가 저장 시각을 마이크로초로 반올림하므로 나노초 now()와 바로 비교하면
+        // 올림된 값(…608205)이 직후에 읽은 now()(…608204900)를 넘어 드물게 실패한다
+        LocalDateTime after = LocalDateTime.now().withNano(0).plusSeconds(1);
 
         Contract saved = reload(c);
         assertThat(saved.getBrandSignedAt()).isEqualTo(brandSignedAt);
         assertThat(saved.getCreatorSignedAt()).isNull();
-        assertThat(saved.getSignatureAsOf()).isAfterOrEqualTo(before).isBeforeOrEqualTo(LocalDateTime.now());
+        assertThat(saved.getSignatureAsOf()).isAfterOrEqualTo(before).isBeforeOrEqualTo(after);
 
         String admin = body(detail(c).andExpect(jsonPath("$.contract.status").value("SIGNING"))
                 .andExpect(jsonPath("$.stepper.signedCount").value(1))

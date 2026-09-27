@@ -112,9 +112,9 @@ class CreatorGroupBuyCommandIntegrationTest extends CreatorGroupBuyTestSupport {
                 .andExpect(jsonPath("$.readiness.gates[*].state").value(contains("WAITING", "DONE", "IN_REVIEW")))
                 .andExpect(jsonPath("$.readiness.registrationOverdue").value(false))
                 .andExpect(jsonPath("$.permissions.canWritePost").value(false))
-                .andExpect(jsonPath("$.history[-1:].eventType").value(contains("POST_SUBMITTED")))
-                .andExpect(jsonPath("$.history[-1:].actorType").value(contains("CREATOR")))
-                .andExpect(jsonPath("$.history[-1:].actorDisplayName").value(contains("글로우_지민")));
+                .andExpect(jsonPath("$.history[:1].eventType").value(contains("POST_SUBMITTED")))
+                .andExpect(jsonPath("$.history[:1].actorType").value(contains("CREATOR")))
+                .andExpect(jsonPath("$.history[:1].actorDisplayName").value(contains("글로우_지민")));
 
         List<GroupBuyPostRevision> revisions = revisions(groupBuy.getId());
         assertThat(revisions).extracting(GroupBuyPostRevision::getKind).containsExactly(GroupBuyPostRevisionKind.SUBMITTED);
@@ -149,7 +149,7 @@ class CreatorGroupBuyCommandIntegrationTest extends CreatorGroupBuyTestSupport {
         submitPost(groupBuy.getId(), FULL_POST).andExpect(status().isOk())
                 .andExpect(jsonPath("$.post.status").value("PENDING_APPROVAL"))
                 .andExpect(jsonPath("$.post.rejection").doesNotExist())
-                .andExpect(jsonPath("$.history[-1:].detail").value(contains("재등록")));
+                .andExpect(jsonPath("$.history[:1].detail").value(contains("재등록")));
 
         GroupBuyPost saved = loadPost(groupBuy.getId());
         assertThat(saved.getReviewStatus()).isEqualTo(GroupBuyPostReviewStatus.PENDING);
@@ -231,8 +231,8 @@ class CreatorGroupBuyCommandIntegrationTest extends CreatorGroupBuyTestSupport {
                 .andExpect(jsonPath("$.extension.responseActorType").value("CREATOR"))
                 .andExpect(jsonPath("$.extension.respondDeadlineAt").doesNotExist())
                 .andExpect(jsonPath("$.permissions.canRespondExtension").value(false))
-                .andExpect(jsonPath("$.history[-1:].eventType").value(contains("EXTENSION_ACCEPTED")))
-                .andExpect(jsonPath("$.history[-1:].detail").value(contains(startsWithText("종료일 "))));
+                .andExpect(jsonPath("$.history[:1].eventType").value(contains("EXTENSION_ACCEPTED")))
+                .andExpect(jsonPath("$.history[:1].detail").value(contains(startsWithText("종료일 "))));
 
         assertThat(reload(groupBuy.getId()).getEndAt()).isEqualTo(extension.getAfterEndAt());
         assertThat(extensionRequestRepository.findByGroupBuyId(groupBuy.getId()).orElseThrow().getStatus())
@@ -272,7 +272,7 @@ class CreatorGroupBuyCommandIntegrationTest extends CreatorGroupBuyTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.extension.status").value("REJECTED"))
                 .andExpect(jsonPath("$.extension.rejectReasonLabel").value("다음 일정이 잡혀 있음"))
-                .andExpect(jsonPath("$.history[-1:].detail").value(contains("다음 일정이 잡혀 있음")));
+                .andExpect(jsonPath("$.history[:1].detail").value(contains("다음 일정이 잡혀 있음")));
 
         assertThat(reload(groupBuy.getId()).getEndAt()).isEqualTo(groupBuy.getEndAt());
         detail(groupBuy.getId()).andExpect(jsonPath("$.extension.rejectMemo").value("9월 첫 주에 다른 공구가 잡혀 있어요."));
@@ -331,8 +331,8 @@ class CreatorGroupBuyCommandIntegrationTest extends CreatorGroupBuyTestSupport {
                 .andExpect(jsonPath("$.activeRequest.reasonLabel").value("배송 지연 · 미발송이 계속됨"))
                 // 운영자에게 쓴 메모는 브랜드에게 내리지 않는다.
                 .andExpect(jsonPath("$.activeRequest.memo").doesNotExist())
-                .andExpect(jsonPath("$.history[-1:].detail").value(contains("배송 지연 · 미발송이 계속됨")))
-                .andExpect(jsonPath("$.history[-1:].detail").value(not(contains(containsString("18건")))));
+                .andExpect(jsonPath("$.history[:1].detail").value(contains("배송 지연 · 미발송이 계속됨")))
+                .andExpect(jsonPath("$.history[:1].detail").value(not(contains(containsString("18건")))));
 
         studioAction(groupBuy.getId(), "suspension-request",
                 Map.of("reasonCode", "ETC", "memo", "다시 요청")).andExpect(status().isConflict())
@@ -369,8 +369,8 @@ class CreatorGroupBuyCommandIntegrationTest extends CreatorGroupBuyTestSupport {
                 .andExpect(jsonPath("$.afterEnd.fulfillment.mine.result").value("FULFILLED"))
                 .andExpect(jsonPath("$.afterEnd.fulfillment.theirs").doesNotExist())
                 .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(false))
-                .andExpect(jsonPath("$.history[-1:].eventType").value(contains("FULFILLMENT_CONFIRMED")))
-                .andExpect(jsonPath("$.history[-1:].actorType").value(contains("CREATOR")));
+                .andExpect(jsonPath("$.history[:1].eventType").value(contains("FULFILLMENT_CONFIRMED")))
+                .andExpect(jsonPath("$.history[:1].actorType").value(contains("CREATOR")));
 
         assertThat(fulfillmentCheckRepository.existsByGroupBuyIdAndCheckerSide(groupBuy.getId(), FulfillmentSide.CREATOR))
                 .isTrue();

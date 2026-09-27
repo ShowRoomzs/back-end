@@ -12,12 +12,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record ContractCreateRequest(
 
         @Schema(description = "계약 상대 — 스레드 경유 진입일 때만 보낸다. 보내면 이후 변경할 수 없다",
-                nullable = true)
+                example = "31", nullable = true)
         Long creatorId,
 
         @Schema(description = "연결 ID — 참고용으로만 받는다. 서버는 이 값을 쓰지 않고 "
                 + "creatorId로 지금 실제 CONNECTED인 연결을 다시 찾는다. 보내온 id를 그대로 믿으면 "
-                + "남의 연결을 계약의 근거로 붙일 수 있다", nullable = true)
+                + "남의 연결을 계약의 근거로 붙일 수 있다", example = "54", nullable = true)
         Long connectionId
 ) {
 }

@@ -111,10 +111,11 @@ public class GroupBuyPost extends BaseTimeEntity {
     /**
      * 임시저장 · 제출 · 승인 후 수정이 공통으로 쓰는 본문 교체. <b>심사 상태는 건드리지 않는다</b> —
      * 반려 게시물을 임시저장해도 반려 그대로여야 반려 사유 카드(B3)가 고치는 동안 화면에 남는다.
+     * 소비자에게 보이는 수정 시각({@code post.edited_at})은 공구 오픈 뒤의 수정만 찍힌다.
      */
-    public void rewrite(String title, String content) {
+    public void rewrite(String title, String content, LocalDateTime now) {
         this.title = title;
-        this.post.updateContent(content, null);
+        this.post.updateContent(content, null, now);
     }
 
     /**
