@@ -44,7 +44,6 @@ abstract class GroupBuyPostTestSupport extends GroupBuyTestSupport {
 
     protected static final String SHOWROOMS = "/v1/user/showrooms/";
 
-    @Autowired protected ProductVariantRepository productVariantRepository;
     @Autowired protected CreatorFollowRepository creatorFollowRepository;
     @Autowired protected PostLikeRepository postLikeRepository;
 

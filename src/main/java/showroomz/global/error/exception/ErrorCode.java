@@ -109,6 +109,8 @@ public enum ErrorCode {
     VARIANT_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "VARIANT_NOT_AVAILABLE", "노출되지 않는 옵션입니다."),
     INSUFFICIENT_STOCK(HttpStatus.BAD_REQUEST, "INSUFFICIENT_STOCK", "재고가 부족합니다."),
     INVALID_VARIANT_OPTIONS(HttpStatus.BAD_REQUEST, "INVALID_VARIANT_OPTIONS", "옵션 조합이 올바르지 않습니다."),
+    /* 진행 중인 계약·공구가 옵션(variant)을 참조한다 — 재생성하면 계약 옵션 행과 판매 가격이 끊긴다(옵션 계획서 6-1). */
+    PRODUCT_OPTION_LOCKED_BY_CONTRACT(HttpStatus.BAD_REQUEST, "PRODUCT_OPTION_LOCKED_BY_CONTRACT", "진행 중인 계약·공구에 포함된 상품은 옵션 구성을 변경할 수 없습니다. 재고만 수정할 수 있습니다."),
     PRODUCT_EDIT_RESTRICTED(HttpStatus.BAD_REQUEST, "PRODUCT_EDIT_RESTRICTED",
             "진열 중이며 공구 진행 중인 상품은 옵션·재고만 수정할 수 있습니다."),
     CART_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "CART_ITEM_NOT_FOUND", "장바구니 항목을 찾을 수 없습니다."),
@@ -275,6 +277,8 @@ public enum ErrorCode {
     CONTRACT_COUNTERPARTY_FIXED(HttpStatus.BAD_REQUEST, "CONTRACT_COUNTERPARTY_FIXED", "스레드에서 시작한 계약은 상대를 바꿀 수 없습니다."),
     CONTRACT_PRODUCT_NOT_DISPLAYED(HttpStatus.BAD_REQUEST, "CONTRACT_PRODUCT_NOT_DISPLAYED", "진열 상태인 상품만 선택할 수 있습니다."),
     CONTRACT_PRODUCT_NOT_OWNED(HttpStatus.BAD_REQUEST, "CONTRACT_PRODUCT_NOT_OWNED", "해당 브랜드의 상품이 아닙니다."),
+    CONTRACT_ITEM_OPTION_NOT_OF_PRODUCT(HttpStatus.BAD_REQUEST, "CONTRACT_ITEM_OPTION_NOT_OF_PRODUCT", "선택한 상품의 옵션이 아닙니다."),
+    CONTRACT_ITEM_OPTION_DUPLICATED(HttpStatus.BAD_REQUEST, "CONTRACT_ITEM_OPTION_DUPLICATED", "같은 옵션이 두 번 입력되었습니다."),
     CONTRACT_FIXED_FEE_NOTICE_REQUIRED(HttpStatus.BAD_REQUEST, "CONTRACT_FIXED_FEE_NOTICE_REQUIRED", "고정 지급비 지급 조건 확인이 필요합니다."),
     CONTRACT_FIXED_FEE_ALREADY_PAID(HttpStatus.CONFLICT, "CONTRACT_FIXED_FEE_ALREADY_PAID", "이미 지급 완료로 기록된 계약입니다."),
     CONTRACT_GROUP_BUY_ALREADY_CREATED(HttpStatus.CONFLICT, "CONTRACT_GROUP_BUY_ALREADY_CREATED", "이미 공구가 생성된 계약입니다."),

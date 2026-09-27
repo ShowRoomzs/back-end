@@ -143,7 +143,11 @@ public class CreatorGroupBuyDetailAssembler {
                         item.getProductName(),
                         item.getGroupBuyPrice(),
                         item.getRewardRate(),
-                        RewardCalculator.calcUnitReward(item.getGroupBuyPrice(), item.getRewardRate())))
+                        RewardCalculator.calcUnitReward(item.getGroupBuyPrice(), item.getRewardRate()),
+                        item.getOptions().stream()
+                                .map(option -> new ItemOption(option.getVariantId(), option.getVariantName(),
+                                        option.salePrice()))
+                                .toList()))
                 .toList();
     }
 

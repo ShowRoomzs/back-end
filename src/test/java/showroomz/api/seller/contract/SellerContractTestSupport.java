@@ -39,8 +39,10 @@ import showroomz.domain.member.creator.type.CreatorBusinessType;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductRepository;
+import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.support.BrandFixture;
+import showroomz.support.ContractOptions;
 import showroomz.support.IntegrationTestSupport;
 
 import java.math.BigDecimal;
@@ -86,6 +88,8 @@ abstract class SellerContractTestSupport extends IntegrationTestSupport {
     protected CategoryRepository categoryRepository;
     @Autowired
     protected ProductRepository productRepository;
+    @Autowired
+    protected ProductVariantRepository productVariantRepository;
     @Autowired
     protected ContractRepository contractRepository;
     @Autowired
@@ -240,9 +244,14 @@ abstract class SellerContractTestSupport extends IntegrationTestSupport {
     }
 
     protected ContractUpdateRequest.Item item(Product product, int groupBuyPrice, String rewardRate,
-                                              int minQuantity) {
+                                              Integer minQuantity) {
         return new ContractUpdateRequest.Item(
-                null, product.getProductId(), groupBuyPrice, new BigDecimal(rewardRate), minQuantity);
+                null, product.getProductId(), groupBuyPrice, new BigDecimal(rewardRate), options(product, minQuantity));
+    }
+
+    /** 옵션별 최소 물량 — 첫 옵션에 전량(픽스처 상품은 옵션이 하나다). */
+    protected List<ContractUpdateRequest.Option> options(Product product, Integer minQuantity) {
+        return ContractOptions.request(ContractOptions.variantsOf(productVariantRepository, product), minQuantity);
     }
 
     /**
@@ -395,15 +404,15 @@ abstract class SellerContractTestSupport extends IntegrationTestSupport {
     }
 
     protected ContractItem seedItem(Product product, int groupBuyPrice) {
-        return ContractItem.builder()
+        ContractItem item = ContractItem.builder()
                 .product(product)
                 .productName(product.getName())
                 .regularPrice(product.getRegularPrice())
                 .groupBuyPrice(groupBuyPrice)
                 .rewardRate(new BigDecimal("15.0"))
-                .minQuantity(300)
                 .sortOrder(0)
                 .build();
+        return ContractOptions.attach(item, ContractOptions.variantsOf(productVariantRepository, product), 300);
     }
 
     /** 조건 일괄 세팅 — 목록 테스트가 공구명·기간만 갈아 끼우려고 쓴다. */
@@ -515,7 +524,10 @@ abstract class SellerContractTestSupport extends IntegrationTestSupport {
         product.setRegularPrice(regularPrice);
         product.setSalePrice(regularPrice);
         product.setDisplayStatus(ProductDisplayStatus.DISPLAY);
-        return productRepository.save(product);
+        Product saved = productRepository.save(product);
+        // 셀러 상품 등록처럼 옵션 없는 상품에도 기본 옵션 1행이 있다 — 계약 옵션 행은 이것을 가리킨다.
+        ContractOptions.defaultVariant(productVariantRepository, saved, 500);
+        return saved;
     }
 
     protected void changeDisplayStatus(Product product, ProductDisplayStatus displayStatus) {

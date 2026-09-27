@@ -19,6 +19,14 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
 
     Optional<ProductVariant> findByVariantId(Long variantId);
 
+    /**
+     * 여러 상품의 옵션 전량 — 계약 폼 선택지·계약 옵션 행 구성·검토 요청 검증(옵션 계획서 3-1~3-3).
+     * 상품 N건에 N번 쿼리하지 않도록 한 번에 읽는다. 순서는 상품 · variant id — 계약 옵션 행의 순서다.
+     */
+    @Query("SELECT v FROM ProductVariant v "
+            + "WHERE v.product.productId IN :productIds ORDER BY v.product.productId ASC, v.variantId ASC")
+    List<ProductVariant> findByProductIdsOrderByVariantId(@Param("productIds") Collection<Long> productIds);
+
     @Query("SELECT v FROM ProductVariant v " +
            "JOIN FETCH v.product " +
            "WHERE v.product.productId = :productId AND v.variantId IN :variantIds")

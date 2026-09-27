@@ -155,6 +155,11 @@ public interface UserProductControllerDocs {
                     "- 갤러리: representativeImageUrl(첫 장, 이미지 order == 0) + coverImageUrls(order >= 1)\n" +
                     "- 브랜드 줄: marketName + brandSiteUrl (brandSiteUrl이 null이면 [브랜드 사이트] 버튼을 숨깁니다)\n" +
                     "- 가격: regularPrice(취소선) + discountRate(%) + salePrice(공구가)\n" +
+                    "  - **가격은 공구 계약에서 나온다.** `groupBuyId`(쿼리)의 공구가 판매 중이고 계약에 이 상품이 있으면 그 계약의 " +
+                    "대표 옵션 가격을, variants[]에는 옵션별 판매가(공구가 + 옵션가)를 내린다. 계약에 없는 옵션은 isOutOfStock=true.\n" +
+                    "  - `groupBuyId`를 생략하면 이 상품을 담은 판매 중 공구가 정확히 1개일 때만 그 공구로 정한다. 정하지 못하면 " +
+                    "응답 groupBuyId가 null이고 가격은 계약 가격이 아니다 — 이때는 담기·바로 구매를 부를 수 없다.\n" +
+                    "  - 응답 groupBuyId를 장바구니 담기·바로 구매 요청에 그대로 싣는다. 상품 관리에서 정가를 고쳐도 이 가격은 변하지 않는다.\n" +
                     "- 배송 블록: delivery (발송 예정일 · 배송비 · 무료배송 기준 · 도서산간 추가비 · 반품비 · 교환비)\n" +
                     "- 상세정보 탭: description + productNotice\n" +
                     "- 판매자 정보 탭: productNotice(고시) + delivery(배송/교환/반품) + sellerInfo(사업자 정보)\n" +
@@ -265,7 +270,9 @@ public interface UserProductControllerDocs {
     })
     ResponseEntity<ProductDto.ProductDetailResponse> getProductDetail(
             @Parameter(name = "productId", description = "상품 ID", required = true, example = "1")
-            @PathVariable("productId") Long productId
+            @PathVariable("productId") Long productId,
+            @Parameter(name = "groupBuyId", description = "진입한 공구 게시물의 공구 ID — 가격을 이 공구 계약으로 정한다", example = "41")
+            @RequestParam(name = "groupBuyId", required = false) Long groupBuyId
     );
 
     @Operation(
@@ -277,7 +284,9 @@ public interface UserProductControllerDocs {
                     "- 비회원도 조회 가능합니다.\n" +
                     "- 진열중이면서 공구에 연결된 상품만 조회됩니다 (그 외 404 PRODUCT_NOT_FOUND).\n" +
                     "- IN 절로 1회 쿼리하여 N+1을 방지합니다.\n" +
-                    "- 재고 수량, 품절 여부(isOutOfStock), 강제 품절 여부(isOutOfStockForced)를 포함합니다.\n\n" +
+                    "- 재고 수량, 품절 여부(isOutOfStock), 강제 품절 여부(isOutOfStockForced)를 포함합니다.\n" +
+                    "- `groupBuyId`를 상세와 똑같이 실으면 같은 공구 계약의 옵션 판매가를 내린다(상세와 같은 판정). " +
+                    "그 계약에 없는 옵션은 isOutOfStock=true.\n\n" +
                     "**권한:** 선택사항 (게스트 가능)"
     )
     @ApiResponses(value = {
@@ -345,7 +354,9 @@ public interface UserProductControllerDocs {
             @Parameter(name = "productId", description = "상품 ID", required = true, example = "1024")
             @PathVariable("productId") Long productId,
             @Parameter(description = "조회할 옵션(Variant) ID 목록 (여러 개 테스트: 1, 2, 3)", required = true, example = "1")
-            @RequestParam(name = "variantIds") List<Long> variantIds
+            @RequestParam(name = "variantIds") List<Long> variantIds,
+            @Parameter(name = "groupBuyId", description = "상세 응답의 groupBuyId", example = "41")
+            @RequestParam(name = "groupBuyId", required = false) Long groupBuyId
     );
 
 }

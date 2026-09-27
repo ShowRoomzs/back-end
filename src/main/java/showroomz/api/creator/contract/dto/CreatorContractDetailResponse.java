@@ -215,7 +215,21 @@ public record CreatorContractDetailResponse(
             @Schema(description = "개당 예상 리워드(원) — 저장하지 않는 파생값. 1원 단위 버림. "
                     + "파트너와 **같은 공유 유틸**을 호출한다 — 같은 계약이 두 화면에서 다른 금액이 되면 안 된다",
                     example = "4200", nullable = true) Long expectedUnitReward,
-            @Schema(description = "**브랜드 준비 물량**", example = "300", nullable = true) Integer brandSupplyQuantity
+            @Schema(description = "**브랜드 준비 물량** — 옵션별 준비 물량의 합계", example = "300", nullable = true)
+            Integer brandSupplyQuantity,
+            @Schema(description = "옵션별 판매가·브랜드 준비 물량 — 공구가·리워드율은 상품 단위라 옵션마다 같다")
+            List<ItemOption> options
+    ) {
+    }
+
+    @Schema(description = "계약 상품 옵션 — 판매가 = 공구가 + 옵션가")
+    public record ItemOption(
+            @Schema(example = "301", nullable = true) Long variantId,
+            @Schema(description = "옵션명(스냅샷)", example = "2개 세트", nullable = true) String variantName,
+            @Schema(description = "옵션 정가(스냅샷)", example = "60000", nullable = true) Integer regularPrice,
+            @Schema(description = "옵션가 = 옵션 정가 − 상품 정가", example = "28000", nullable = true) Integer optionExtraPrice,
+            @Schema(description = "옵션 판매가 = 공구가 + 옵션가", example = "50000", nullable = true) Integer salePrice,
+            @Schema(description = "**브랜드 준비 물량**(옵션별)", example = "100", nullable = true) Integer brandSupplyQuantity
     ) {
     }
 

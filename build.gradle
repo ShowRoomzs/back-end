@@ -78,6 +78,12 @@ dependencies {
 	
 }
 
+// 테스트 워커 JVM 힙 — Gradle 기본값 512MB로는 목 조합별 Spring 컨텍스트(약 10개)가 캐시에 쌓이는 스위트 후반에
+// Hibernate 초기화 중 힙이 바닥난다. 테스트 실행 JVM에만 적용되며 배포 앱(docker-compose의 -Xmx)과는 무관하다.
+tasks.withType(Test).configureEach {
+	maxHeapSize = '1g'
+}
+
 tasks.named('test') {
 	useJUnitPlatform { excludeTags 'contract-pdf' }
 }

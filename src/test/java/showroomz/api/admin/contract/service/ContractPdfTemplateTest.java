@@ -41,10 +41,21 @@ class ContractPdfTemplateTest {
                 .secondaryUseAllowed(secondary).secondaryUsePeriodType(fixed ? SecondaryUsePeriodType.FIXED : SecondaryUsePeriodType.UNLIMITED)
                 .secondaryUseMonths(fixed ? 12 : null).build();
         List<ContractItem> rows = new ArrayList<>();
-        for (int i = 0; i < items; i++) rows.add(ContractItem.builder().productName("계약 상품 " + (i + 1)).regularPrice(32000)
-                .groupBuyPrice(28010).rewardRate(new BigDecimal("15.5")).minQuantity(300).build());
+        for (int i = 0; i < items; i++) {
+            ContractItem row = ContractItem.builder().productName("계약 상품 " + (i + 1)).regularPrice(32000)
+                    .groupBuyPrice(28010).rewardRate(new BigDecimal("15.5")).build();
+            // 첫 상품은 옵션 둘(단품 200 · 2개 세트 100 = 합계 300), 나머지는 옵션 없는 상품(이름 없는 1행 300).
+            row.replaceOptions(i == 0
+                    ? List.of(option("단품", 32000, 200), option("2개 세트", 60000, 100))
+                    : List.of(option(null, 32000, 300)));
+            rows.add(row);
+        }
         c.replaceItems(rows);
         return c;
+    }
+
+    private static ContractItemOption option(String name, int regularPrice, int minQuantity) {
+        return ContractItemOption.builder().variantName(name).regularPrice(regularPrice).minQuantity(minQuantity).sortOrder(0).build();
     }
 
     @ParameterizedTest
@@ -55,6 +66,11 @@ class ContractPdfTemplateTest {
         assertThat(doc.select("script")).isEmpty();
         assertThat(doc.text()).contains("4,341", "CTR-20260923-001", "미확정: 주소 수집 필요").doesNotContain("not-a-postal-address", "CTR-20260813-017", "글로우랩", "전 6면");
         assertThat(doc.select("tr").stream().filter(e -> e.text().contains("계약 상품")).count()).isEqualTo(10);
+        // 제5조 옵션 하위 행(생성규격 v0.2) — 첫 상품 2행 + 나머지 9상품 1행씩. 옵션 없는 상품은 「단품」으로 적는다.
+        assertThat(doc.select("tr.opt").size()).isEqualTo(11);
+        assertThat(doc.select("tr.opt").get(1).text()).contains("2개 세트", "100");
+        assertThat(doc.select("tr.opt").get(2).text()).contains("단품", "300");
+        assertThat(doc.text()).contains("상품의 옵션별로");
         assertThat(doc.select(".ack").size()).isEqualTo(fee ? 1 : 0);
         assertThat(doc.text().contains("초안을 플랫폼")).isEqualTo(preReview);
         assertThat(doc.text().contains("활용 기간이 만료된 후")).isEqualTo(secondary && fixed);

@@ -100,7 +100,16 @@ public record AdminGroupBuyDetailResponse(
             Integer groupBuyPrice,
             BigDecimal rewardRate,
             @Schema(nullable = true) Long expectedUnitReward,
-            @Schema(description = "최소 준비 물량 — B4 소진율의 분모") Integer minQuantity
+            @Schema(description = "최소 준비 물량 — 옵션별 최소 물량의 합계. B4 소진율의 분모") Integer minQuantity,
+            @Schema(description = "옵션별 판매가·최소 준비 물량") List<ItemOption> options
+    ) {
+    }
+
+    public record ItemOption(
+            @Schema(nullable = true) Long variantId,
+            @Schema(nullable = true) String variantName,
+            @Schema(description = "옵션 판매가 = 공구가 + 옵션가", nullable = true) Integer salePrice,
+            @Schema(description = "옵션별 최소 준비 물량") Integer minQuantity
     ) {
     }
 

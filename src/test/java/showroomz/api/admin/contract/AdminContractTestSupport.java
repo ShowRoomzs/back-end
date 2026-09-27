@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import showroomz.api.admin.contract.dto.AdminContractDto.*;
 import showroomz.api.admin.contract.service.ContractDocumentStorage;
 import showroomz.api.app.auth.entity.ProviderType;
+import showroomz.api.seller.contract.dto.ContractUpdateRequest;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.category.entity.Category;
@@ -33,8 +34,10 @@ import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.repository.MessageThreadRepository;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductRepository;
+import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.support.BrandFixture;
+import showroomz.support.ContractOptions;
 import showroomz.support.IntegrationTestSupport;
 
 import java.math.BigDecimal;
@@ -80,6 +83,7 @@ public abstract class AdminContractTestSupport extends IntegrationTestSupport {
     @Autowired protected MessageThreadRepository threads;
     @Autowired protected CategoryRepository categories;
     @Autowired protected ProductRepository products;
+    @Autowired protected ProductVariantRepository variants;
     @Autowired protected JdbcTemplate jdbc;
 
     @MockitoBean protected ContractDocumentStorage storage;
@@ -256,15 +260,20 @@ public abstract class AdminContractTestSupport extends IntegrationTestSupport {
     }
 
     private ContractItem item(Product product, int sortOrder) {
-        return ContractItem.builder()
+        ContractItem item = ContractItem.builder()
                 .product(product)
                 .productName(product.getName())
                 .regularPrice(product.getRegularPrice())
                 .groupBuyPrice(product == cream ? 33_600 : 28_000)
                 .rewardRate(new BigDecimal(product == cream ? "45.0" : "15.0"))
-                .minQuantity(product == cream ? 200 : 300)
                 .sortOrder(sortOrder)
                 .build();
+        return ContractOptions.attach(item, ContractOptions.variantsOf(variants, product), product == cream ? 200 : 300);
+    }
+
+    /** 임시저장 요청의 옵션별 최소 물량 — 첫 옵션에 전량. */
+    protected List<ContractUpdateRequest.Option> options(Product product, Integer minQuantity) {
+        return ContractOptions.request(ContractOptions.variantsOf(variants, product), minQuantity);
     }
 
     private String nextNumber() {
@@ -318,7 +327,9 @@ public abstract class AdminContractTestSupport extends IntegrationTestSupport {
         product.setRegularPrice(regularPrice);
         product.setSalePrice(regularPrice);
         product.setDisplayStatus(ProductDisplayStatus.DISPLAY);
-        return products.save(product);
+        Product saved = products.save(product);
+        ContractOptions.defaultVariant(variants, saved, 500);
+        return saved;
     }
 
     /** Flyway가 꺼진 통합 테스트 프로필에는 V120 조항 seed가 없다 — 최소 버전을 직접 적재한다. */

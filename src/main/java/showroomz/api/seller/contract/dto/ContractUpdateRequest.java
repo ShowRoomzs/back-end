@@ -92,7 +92,30 @@ public record ContractUpdateRequest(
             @DecimalMin("0.0") @DecimalMax("90.0")
             BigDecimal rewardRate,
 
-            @Schema(description = "최소 확보 물량", example = "100", nullable = true) @Min(0) Integer minQuantity
+            @Schema(description = "옵션별 최소 물량 — 상품의 옵션 전량이 행이 된다(옵션 계획서 3-2). "
+                    + "보내지 않은 옵션은 수량 null로 저장되고, 상품의 옵션이 아닌 variantId는 400이다. "
+                    + "상품을 바꾼 행은 여기 값을 버리고 새 상품의 옵션을 수량 null로 채운다. "
+                    + "상품 단위 최소 물량은 받지 않는다 — 옵션 합계의 파생값이다", nullable = true)
+            @Valid
+            List<Option> options
+    ) {
+
+        public List<Option> optionsOrEmpty() {
+            return options == null ? List.of() : options;
+        }
+    }
+
+    @Schema(description = "옵션별 최소 물량 — 옵션은 재고 확보 수량만 받는다. 공구가·리워드율은 상품 단위다")
+    public record Option(
+
+            @Schema(description = "옵션(variant) ID — 폼 선택지 products[].options[].variantId", example = "301",
+                    requiredMode = Schema.RequiredMode.REQUIRED)
+            @NotNull
+            Long variantId,
+
+            @Schema(description = "이 옵션의 최소 확보 물량", example = "200", nullable = true)
+            @Min(0) @Max(1_000_000)
+            Integer minQuantity
     ) {
     }
 }

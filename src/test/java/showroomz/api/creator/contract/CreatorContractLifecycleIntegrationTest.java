@@ -444,8 +444,8 @@ class CreatorContractLifecycleIntegrationTest extends CreatorContractTestSupport
                 true, SecondaryUsePeriodType.FIXED, 12,
                 true, "2차 활용 범위: 자사 상세페이지·인스타 광고 소재로 게시 후 12개월간 사용.",
                 List.of(
-                        new ContractUpdateRequest.Item(null, serum.getProductId(), 28_000, new BigDecimal("15.0"), 300),
-                        new ContractUpdateRequest.Item(null, cream.getProductId(), 22_000, new BigDecimal("12.0"), 150)));
+                        new ContractUpdateRequest.Item(null, serum.getProductId(), 28_000, new BigDecimal("15.0"), options(serum, 300)),
+                        new ContractUpdateRequest.Item(null, cream.getProductId(), 22_000, new BigDecimal("12.0"), options(cream, 150))));
     }
 
     /**

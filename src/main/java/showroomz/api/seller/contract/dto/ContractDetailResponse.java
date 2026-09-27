@@ -99,7 +99,26 @@ public record ContractDetailResponse(
             @Schema(description = "1개당 예상 리워드(원) — 저장하지 않는 파생값. 1원 단위 버림(설계서 1-5)",
                     example = "4200", nullable = true)
             Long unitReward,
-            @Schema(description = "최소 확보 물량", example = "100", nullable = true) Integer minQuantity
+            @Schema(description = "최소 물량 — 옵션별 최소 물량의 합계(파생값). 옵션 중 하나라도 비어 있으면 null",
+                    example = "300", nullable = true) Integer minQuantity,
+            @Schema(description = "옵션별 최소 물량 — 상품의 옵션 전량이 행이다. 순서는 옵션(variant) 순서")
+            List<ItemOption> options
+    ) {
+    }
+
+    @Schema(description = "계약 상품 옵션 — 옵션은 최소 물량만 받는다. 판매가는 공구가 + 옵션가다")
+    public record ItemOption(
+            @Schema(description = "계약 옵션 항목 ID", example = "7") Long contractItemOptionId,
+            @Schema(description = "옵션(variant) ID — 상품 관리에서 옵션이 지워졌으면 null", example = "301", nullable = true)
+            Long variantId,
+            @Schema(description = "옵션명(스냅샷) — 옵션 없는 상품은 null", example = "2개 세트", nullable = true)
+            String variantName,
+            @Schema(description = "옵션 정가(스냅샷)", example = "60000", nullable = true) Integer regularPrice,
+            @Schema(description = "옵션가 = 옵션 정가 − 상품 정가(스냅샷끼리)", example = "28000", nullable = true)
+            Integer optionExtraPrice,
+            @Schema(description = "옵션 판매가 = 공구가 + 옵션가 — 소비자가 이 옵션을 사는 가격. 공구가가 없으면 null",
+                    example = "50000", nullable = true) Integer salePrice,
+            @Schema(description = "옵션별 최소 물량", example = "100", nullable = true) Integer minQuantity
     ) {
     }
 

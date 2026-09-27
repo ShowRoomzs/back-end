@@ -264,6 +264,6 @@ class AdminContractLifecycleIntegrationTest extends AdminContractTestSupport {
         return new ContractUpdateRequest(version, creator.getId(), "가을 앰플 신제품 공구", startAt, startAt.plusDays(9),
                 0, FixedFeeTrigger.POST_REGISTERED, false, 1, 1, 0, startAt.plusDays(12).toLocalDate(),
                 true, SecondaryUsePeriodType.FIXED, secondaryUseMonths, false, null,
-                List.of(new ContractUpdateRequest.Item(null, serum.getProductId(), 28_000, new BigDecimal("15.0"), 300)));
+                List.of(new ContractUpdateRequest.Item(null, serum.getProductId(), 28_000, new BigDecimal("15.0"), options(serum, 300))));
     }
 }

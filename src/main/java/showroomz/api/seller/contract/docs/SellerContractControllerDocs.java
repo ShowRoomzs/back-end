@@ -115,14 +115,20 @@ public interface SellerContractControllerDocs {
                     기존 `/v1/seller/connections`·`/v1/seller/products`를 쓰지 않는 이유는 둘이 목록용이라
                     페이징·필터가 계약 폼과 다르기 때문이다. 상품에는 **현재 정가**를 동봉해,
                     공구가를 입력하는 즉시 할인율과 H1(공구가 > 정가)을 화면이 먼저 비출 수 있게 한다.
+
+                    상품마다 **옵션 전량**(`options[]`)을 동봉한다 — 상품을 고르면 이 목록이 그대로 옵션 행이 되고,
+                    옵션 행에는 **최소 물량만** 입력한다. 공구가·리워드율은 상품 단위다. `stock`은 참고값이며
+                    서버는 최소 물량 ≤ 재고를 판정하지 않는다.
                     """)
     @ApiResponses(@ApiResponse(responseCode = "200", description = "연결된 상대와 진열 상품 전체",
             content = @Content(schema = @Schema(implementation = ContractFormSourcesResponse.class),
                     examples = @ExampleObject(value = """
                             {"counterparties":[{"creatorId":31,"showroomName":"글로우_지민",
                               "connectionId":54,"profileImageUrl":null}],
-                             "products":[{"productId":87,"productName":"가을 앰플",
-                              "regularPrice":35000,"thumbnailUrl":null}]}
+                             "products":[{"productId":87,"productName":"수분진정 세럼 30ml",
+                              "regularPrice":32000,"thumbnailUrl":null,
+                              "options":[{"variantId":301,"variantName":"단품","regularPrice":32000,"stock":420,"isRepresentative":true},
+                                         {"variantId":302,"variantName":"2개 세트","regularPrice":60000,"stock":180,"isRepresentative":false}]}]}
                             """))))
     ResponseEntity<ContractFormSourcesResponse> getFormSources();
 
@@ -262,15 +268,19 @@ public interface SellerContractControllerDocs {
                     - 항목 배열은 통째로 교체되고 `sortOrder`는 배열 index로 채워진다. 빈 배열이면 전부 삭제다.
                     - **형식만** 본다 — 길이·숫자 범위·enum·10원 단위. 필수 미입력은 막지 않는다.
                       그러지 않으면 "검토 요청 전까지 임시저장할 수 있습니다"가 거짓이 된다(설계서 0-3).
-                    - **상품을 바꾼 행은 공구가·리워드율·최소 물량이 초기화된다**(§25-5-3). 서버도 집행하므로
+                    - **상품을 바꾼 행은 공구가·리워드율·옵션별 최소 물량이 초기화된다**(§25-5-3). 서버도 집행하므로
                       기존 행은 `contractItemId`를 그대로 돌려보내야 한다 — 식별자가 없으면 중간 행 삭제로
                       밀려 올라온 행을 상품 변경으로 오인한다.
+                    - **옵션 행은 서버가 만든다** — 상품의 현재 옵션 전량이 행이 되고, `items[].options[]`는 옵션별
+                      최소 물량만 싣는다. 보내지 않은 옵션은 수량 null로 저장된다. 상품 단위 최소 물량은 받지 않는다
+                      (옵션 합계의 파생값). 상품의 옵션이 아닌 `variantId`는 400 `CONTRACT_ITEM_OPTION_NOT_OF_PRODUCT`,
+                      같은 옵션 두 번은 400 `CONTRACT_ITEM_OPTION_DUPLICATED`.
                     - 검토 요청 이후에는 409(`CONTRACT_EDIT_LOCKED`)다. 편집 잠금은 화면 상태가 아니라 서버 권한이다.
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "저장 성공 — 갱신된 version과 서버가 보정한 항목을 포함한 상세",
                     content = @Content(schema = @Schema(implementation = ContractDetailResponse.class))),
-            @ApiResponse(responseCode = "400", description = "형식 위반(10원 단위 등) · 연결되지 않은 상대 · 남의 상품",
+            @ApiResponse(responseCode = "400", description = "형식 위반(10원 단위 등) · 연결되지 않은 상대 · 남의 상품 · 상품의 옵션이 아님 · 옵션 중복",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "403", description = "다른 브랜드의 계약 (`CONTRACT_NOT_OWNED_BY_SELLER`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
@@ -294,8 +304,10 @@ public interface SellerContractControllerDocs {
                                      "contentStoryCount":0,"contentDueDate":"2026-09-03",
                                      "secondaryUseAllowed":true,"secondaryUsePeriodType":"FIXED",
                                      "secondaryUseMonths":3,"brandPreReview":true,"note":"제품 특징을 소개해 주세요.",
-                                     "items":[{"contractItemId":42,"productId":87,"groupBuyPrice":28000,
-                                               "rewardRate":15.0,"minQuantity":100}]}
+                                     "items":[{"contractItemId":42,"productId":87,"groupBuyPrice":22000,
+                                               "rewardRate":15.0,
+                                               "options":[{"variantId":301,"minQuantity":200},
+                                                          {"variantId":302,"minQuantity":100}]}]}
                                     """)))
             @Valid @RequestBody ContractUpdateRequest request);
 
@@ -329,6 +341,10 @@ public interface SellerContractControllerDocs {
             summary = "검증 (상태 불변)",
             description = """
                     상태를 바꾸지 않고 하드 H1~H8 · 경고 W1~W6 판정만 돌려준다(설계서 2-4).
+
+                    옵션 판정 3종 — `ITEM_OPTIONS_MISMATCH`(저장 뒤 상품의 옵션 구성이 바뀜 · 다시 저장하면 풀린다,
+                    `items[i].options`) · `ITEM_OPTION_MIN_QUANTITY_REQUIRED`(`items[i].options[j].minQuantity`) ·
+                    `ITEM_OPTION_SALE_PRICE_NEGATIVE`(공구가 + 옵션가 < 0).
 
                     **권한:** SELLER
 

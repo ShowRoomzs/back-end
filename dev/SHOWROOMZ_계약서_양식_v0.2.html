@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SHOWROOMZ 공동구매 계약서 양식 v0.1</title>
+<title>SHOWROOMZ 공동구매 계약서 양식 v0.2</title>
 <style>
   * { box-sizing: border-box; }
   html { background: #6b6d72; }
@@ -89,6 +89,11 @@
   td.r { text-align: right; }
   th.lab, td.lab { background: #f6f6f6; font-weight: 700; text-align: center; width: 26mm; }
   tfoot td { background: #f6f6f6; font-weight: 700; }
+  /* 옵션 하위 행 (v0.2) */
+  tr.opt td { font-size: 8.2pt; color: #333; padding-top: .2mm; padding-bottom: .2mm; line-height: 1.25; white-space: nowrap; }
+  tr.opt td.optname { padding-left: 6mm; }
+  tr.opt td.blank { background: #fafafa; }
+  td .sum { font-size: 7.6pt; color: #555; }
 
   /* ── 치환 변수 ────────────────────────────────── */
   .v { padding: 0 1px; border-radius: 1.5px; }
@@ -183,11 +188,11 @@
     .page:last-child { page-break-after: auto; }
     body.hl .v { background: none !important; box-shadow: none !important; }
     body.hl .v::after { content: none !important; }
-    .ms { display: none !important; }
+    .sheetwrap .ms { display: none !important; } /* v0.2: body.ms까지 숨겨 PDF가 백지로 나오던 문제 수정 */
   }
   @page { size: A4; margin: 0; }
 
-  @media (max-width: 900px) {
+  @media screen and (max-width: 900px) {
     .page { width: 100%; min-height: auto; padding: 18px 16px 42px; }
     .sgrid { flex-direction: column; gap: 5mm; }
   }
@@ -197,7 +202,7 @@
 
 <div class="bar">
   <strong>SHOWROOMZ 공동구매 계약서 양식</strong>
-  <span class="tag">v0.1 초안</span>
+  <span class="tag">v0.2 초안</span>
   <span class="tag warn">[자문대기-법률] 문안 미확정 · 실제 체결 사용 금지</span>
   <label><input type="checkbox" id="t1" checked> 치환 변수 표시</label>
   <label><input type="checkbox" id="t2" checked> 모두싸인 입력란 영역 표시</label>
@@ -319,35 +324,52 @@
         <th style="width:8mm">번호</th><th>상품명</th>
         <th style="width:22mm">정가</th><th style="width:22mm">공동구매가</th>
         <th style="width:18mm">리워드율</th><th style="width:24mm">1개당 리워드</th>
-        <th style="width:20mm">최소 물량</th>
+        <th style="width:22mm">최소 물량<br><span class="sum">옵션 합계</span></th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td class="c">1</td>
+        <td class="c" rowspan="3">1</td>
         <td class="l"><span class="v" data-k="상품명[1]">글로우 세럼 앰플 30ml</span></td>
         <td class="r"><span class="v" data-k="정가[1]">38,000</span>원</td>
         <td class="r"><span class="v" data-k="공구가[1]">29,900</span>원</td>
         <td class="c"><span class="v" data-k="리워드율[1]">12.0</span>%</td>
         <td class="r"><span class="v" data-k="개당리워드[1]">3,588</span>원</td>
-        <td class="r"><span class="v" data-k="최소물량[1]">300</span>개</td>
+        <td class="r"><span class="v" data-k="최소물량합계[1]">300</span>개</td>
+      </tr>
+      <tr class="opt">
+        <td class="l optname">└ 옵션 <span class="v" data-k="옵션명[1][1]">단품</span></td>
+        <td class="blank" colspan="4"></td>
+        <td class="r"><span class="v" data-k="옵션최소물량[1][1]">200</span>개</td>
+      </tr>
+      <tr class="opt">
+        <td class="l optname">└ 옵션 <span class="v" data-k="옵션명[1][2]">2개 세트</span></td>
+        <td class="blank" colspan="4"></td>
+        <td class="r"><span class="v" data-k="옵션최소물량[1][2]">100</span>개</td>
       </tr>
       <tr>
-        <td class="c">2</td>
+        <td class="c" rowspan="2">2</td>
         <td class="l"><span class="v" data-k="상품명[2]">글로우 리페어 크림 50ml</span></td>
         <td class="r"><span class="v" data-k="정가[2]">45,000</span>원</td>
         <td class="r"><span class="v" data-k="공구가[2]">35,900</span>원</td>
         <td class="c"><span class="v" data-k="리워드율[2]">10.0</span>%</td>
         <td class="r"><span class="v" data-k="개당리워드[2]">3,590</span>원</td>
-        <td class="r"><span class="v" data-k="최소물량[2]">200</span>개</td>
+        <td class="r"><span class="v" data-k="최소물량합계[2]">200</span>개</td>
+      </tr>
+      <tr class="opt">
+        <td class="l optname">└ 옵션 <span class="v" data-k="옵션명[2][1]">단품</span></td>
+        <td class="blank" colspan="4"></td>
+        <td class="r"><span class="v" data-k="옵션최소물량[2][1]">200</span>개</td>
       </tr>
     </tbody>
   </table>
   <ol class="cl">
     <li>공동구매가는 <b>부가가치세가 포함된 소비자 판매가</b>이며, 정가를 초과할 수 없다.</li>
-    <li>최소 물량은 갑이 해당 상품에 대하여 확보를 약속하는 수량이다. 갑의 사유로 최소 물량이 확보되지 아니하여
+    <li>최소 물량은 갑이 <b>상품의 옵션별로</b> 확보를 약속하는 수량이며, 상품별 최소 물량은 그 옵션별 최소 물량의 합계로 한다.
+        옵션별 최소 물량은 해당 옵션 외의 옵션으로 대체하여 충족할 수 없다. 갑의 사유로 어느 옵션의 최소 물량이 확보되지 아니하여
         주문이 이행되지 못한 경우, 그에 따른 소비자 대응과 손해는 갑이 부담한다.</li>
-    <li>상품, 공동구매가, 리워드율 및 최소 물량은 <b>본 계약의 성립 후 변경할 수 없다.</b>
+    <li>공동구매가와 리워드율은 상품 단위로 정하며, 같은 상품의 모든 옵션에 동일하게 적용한다.</li>
+    <li>상품, 옵션, 공동구매가, 리워드율 및 옵션별 최소 물량은 <b>본 계약의 성립 후 변경할 수 없다.</b>
         변경이 필요한 경우 양 당사자의 합의로 본 계약을 해지하고 새로 체결한다.</li>
   </ol>
 
@@ -610,7 +632,8 @@
     <li>본 계약의 준거법은 <b>대한민국 법</b>으로 한다.</li>
     <li>본 계약에 관하여 분쟁이 발생한 경우 양 당사자는 먼저 협의로 해결하도록 노력하며,
         플랫폼의 이슈 스레드를 통한 중재를 요청할 수 있다.</li>
-    <li>협의로 해결되지 아니하는 경우 <b>갑의 주소지를 관할하는 법원</b>을 제1심 관할법원으로 한다.</li>
+    <li>협의로 해결되지 아니하는 경우 <b>갑의 주소지를 관할하는 법원</b>
+        (<span class="v" data-k="관할법원">서울중앙지방법원</span>)을 제1심 관할법원으로 한다.</li>
   </ol>
 
   <h2 class="art">제23조 (기타) <span class="arttag">표준</span></h2>

@@ -470,7 +470,8 @@ public interface ProductControllerDocs {
                     "- 진열 + 공구 진행 중: 옵션·재고만 수정 가능 (상품 정보 수정 시 `PRODUCT_EDIT_RESTRICTED`)\n" +
                     "- 미진열(운영자 사유) + 공구 무관: 전부 수정 가능 → 저장 시 `PENDING_REVIEW`(재검토 대기)로 전환 → 운영자 검토 후 진열\n" +
                     "- 미진열(브랜드 요청) + 공구 무관: 전부 수정 가능 → 재검토 대기 전환 없음(미진열 유지) → 운영자 검토 후 진열\n" +
-                    "- 재고 수량: 모든 상태에서 수정 가능 (`variants`만 전달하면 재고만 갱신)\n\n" +
+                    "- 재고 수량: 모든 상태에서 수정 가능 (`variants`만 전달하면 재고만 갱신)\n" +
+                    "- 옵션 구조 변경(`optionGroups` + `variants`): 진행 중인 계약·공구(체결 전 전 구간 · 공구 미종결)에 포함된 상품이면 400 `PRODUCT_OPTION_LOCKED_BY_CONTRACT` — 계약의 옵션별 최소 물량과 공구 판매가가 옵션에 매달려 있다. 재고만 수정은 허용\n\n" +
                     "**수정 가능한 항목:**\n" +
                     "- categoryId: 카테고리 ID\n" +
                     "- name: 상품명\n" +

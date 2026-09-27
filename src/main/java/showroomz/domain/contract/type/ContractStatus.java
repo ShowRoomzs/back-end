@@ -72,6 +72,13 @@ public enum ContractStatus {
     public static final Set<ContractStatus> RECEIVED_BY_CREATOR =
             Set.of(SIGNING, CONCLUSION_PENDING, CONCLUDED, DECLINED, EXPIRED, CANCELED);
 
+    /**
+     * 체결 전 진행 구간 — 아직 종결되지 않았고 체결도 되지 않은 계약. 이 계약들의 상품 옵션은 곧 계약서에
+     * 박히거나(검토·서명) 브랜드가 다시 고칠 것이라 상품 관리에서 옵션 구조를 바꾸면 안 된다(옵션 계획서 6-1).
+     */
+    public static final Set<ContractStatus> BEFORE_CONCLUSION =
+            Set.of(DRAFT, REVIEW_PENDING, REVIEW_REJECTED, SIGNING, CONCLUSION_PENDING);
+
     public boolean isEditable() {
         return EDITABLE.contains(this);
     }

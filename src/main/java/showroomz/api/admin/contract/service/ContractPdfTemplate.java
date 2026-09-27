@@ -78,11 +78,27 @@ public class ContractPdfTemplate {
         return templates.process("contracts/draft", context);
     }
 
-    private Map<String, String> item(ContractItem i) {
+    /**
+     * 제5조 상품 행 + 옵션 하위 행(계약서 생성규격 v0.2 §4-4). 상품 행의 최소 물량은 옵션 합계이고,
+     * 옵션이 1개뿐인 상품도 하위 행을 생략하지 않는다 — 어느 옵션에 물량을 약속했는지가 계약 내용이다.
+     */
+    private Map<String, Object> item(ContractItem i) {
+        List<Map<String, String>> options = i.getOptions().stream()
+                .map(option -> Map.of(
+                        "옵션명", optionName(option),
+                        "옵션최소물량", number(option.getMinQuantity())))
+                .toList();
         return Map.of("상품명", text(i.getProductName()), "정가", number(i.getRegularPrice()),
                 "공구가", number(i.getGroupBuyPrice()), "리워드율", text(i.getRewardRate()),
                 "개당리워드", number(RewardCalculator.calcUnitReward(i.getGroupBuyPrice(), i.getRewardRate())),
-                "최소물량", number(i.getMinQuantity()));
+                "최소물량합계", number(i.getMinQuantity()),
+                "옵션", options,
+                "행수", 1 + options.size());
+    }
+
+    /** 옵션 없는 상품은 variant 이름이 없다 — 단일 상품이라는 뜻으로 「단품」을 쓴다. */
+    private String optionName(ContractItemOption option) {
+        return option.getVariantName() == null || option.getVariantName().isBlank() ? "단품" : option.getVariantName();
     }
     private void put(Map<String, String> values, String key, Object value) { values.put(key, text(value)); }
     private String text(Object value) { return value == null ? "" : value.toString(); }

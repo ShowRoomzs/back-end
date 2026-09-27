@@ -121,7 +121,18 @@ public record GroupBuyDetailResponse(
             @Schema(description = "리워드율(%)", example = "12") BigDecimal rewardRate,
             @Schema(description = "개당 예상 리워드(원) — 공구가 × 리워드율 절사. 계약·정산·계약서 PDF와 같은 계산", example = "3264")
             Long expectedUnitReward,
-            @Schema(description = "최소 준비 물량(개) — 물량 확보 확인의 대상", example = "300") Integer minQuantity
+            @Schema(description = "최소 준비 물량(개) — 옵션별 최소 물량의 합계. 물량 확보 확인의 대상", example = "300") Integer minQuantity,
+            @Schema(description = "옵션별 판매가·최소 준비 물량 — 공구가·리워드율은 상품 단위라 옵션마다 같다")
+            List<ItemOption> options
+    ) {
+    }
+
+    @Schema(description = "공구 상품 옵션 — 판매가 = 공구가 + 옵션가")
+    public record ItemOption(
+            @Schema(description = "옵션(variant) id — 상품 관리에서 지워졌으면 null", example = "301", nullable = true) Long variantId,
+            @Schema(description = "옵션명(계약 스냅샷)", example = "2개 세트", nullable = true) String variantName,
+            @Schema(description = "옵션 판매가(원) = 공구가 + 옵션가", example = "50000", nullable = true) Integer salePrice,
+            @Schema(description = "옵션별 최소 준비 물량(개)", example = "100") Integer minQuantity
     ) {
     }
 

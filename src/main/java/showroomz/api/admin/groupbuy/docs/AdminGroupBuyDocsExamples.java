@@ -153,8 +153,11 @@ final class AdminGroupBuyDocsExamples {
               "creator": {"creatorId": 9, "name": "민지의 쇼룸", "accountId": "minji"},
               "contract": {"contractId": 12, "contractNumber": "CTR-20260728-012", "concludedAt": "2026-08-03T15:30:00"},
               "items": [
-                {"productId": 101, "productName": "글로우 수분 세럼 50ml", "regularPrice": 38000, "groupBuyPrice": 28000, "rewardRate": 15.0, "expectedUnitReward": 4200, "minQuantity": 200},
-                {"productId": 102, "productName": "글로우 수분 크림 60ml", "regularPrice": 42000, "groupBuyPrice": 32000, "rewardRate": 12.5, "expectedUnitReward": 4000, "minQuantity": 150}
+                {"productId": 101, "productName": "글로우 수분 세럼 50ml", "regularPrice": 38000, "groupBuyPrice": 28000, "rewardRate": 15.0, "expectedUnitReward": 4200, "minQuantity": 200,
+                  "options": [{"variantId": 301, "variantName": "단품", "salePrice": 28000, "minQuantity": 120},
+                              {"variantId": 302, "variantName": "2개 세트", "salePrice": 66000, "minQuantity": 80}]},
+                {"productId": 102, "productName": "글로우 수분 크림 60ml", "regularPrice": 42000, "groupBuyPrice": 32000, "rewardRate": 12.5, "expectedUnitReward": 4000, "minQuantity": 150,
+                  "options": [{"variantId": 311, "variantName": null, "salePrice": 32000, "minQuantity": 150}]}
               ],
               "fixedFee": {"amount": 300000, "trigger": "POST_REGISTERED", "triggerLabel": "공구 게시물 등록 후", "displayText": "고정 지급비 300,000원 · 지급 시점: 공구 게시물 등록 후 · 브랜드 직접 지급"},
             """;
@@ -365,7 +368,8 @@ final class AdminGroupBuyDocsExamples {
               "creator": {"creatorId": 9, "name": "민지의 쇼룸", "accountId": "minji"},
               "contract": {"contractId": 19, "contractNumber": "CTR-20260818-019", "concludedAt": "2026-08-20T11:00:00"},
               "items": [
-                {"productId": 131, "productName": "퓨어셀 비타민C 앰플 30ml", "regularPrice": 45000, "groupBuyPrice": 33000, "rewardRate": 10.0, "expectedUnitReward": 3300, "minQuantity": 300}
+                {"productId": 131, "productName": "퓨어셀 비타민C 앰플 30ml", "regularPrice": 45000, "groupBuyPrice": 33000, "rewardRate": 10.0, "expectedUnitReward": 3300, "minQuantity": 300,
+                  "options": [{"variantId": 401, "variantName": null, "salePrice": 33000, "minQuantity": 300}]}
               ],
               "fixedFee": {"amount": null, "trigger": null, "triggerLabel": null, "displayText": null},
             """;

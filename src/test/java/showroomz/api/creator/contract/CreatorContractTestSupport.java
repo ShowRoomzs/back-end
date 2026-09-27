@@ -6,6 +6,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 import showroomz.api.app.auth.entity.ProviderType;
+import showroomz.api.seller.contract.dto.ContractUpdateRequest;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.category.entity.Category;
@@ -43,8 +44,10 @@ import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.repository.MessageThreadRepository;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductRepository;
+import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.support.BrandFixture;
+import showroomz.support.ContractOptions;
 import showroomz.support.IntegrationTestSupport;
 
 import java.math.BigDecimal;
@@ -87,6 +90,8 @@ abstract class CreatorContractTestSupport extends IntegrationTestSupport {
     protected CategoryRepository categoryRepository;
     @Autowired
     protected ProductRepository productRepository;
+    @Autowired
+    protected ProductVariantRepository productVariantRepository;
     @Autowired
     protected ContractRepository contractRepository;
     @Autowired
@@ -322,15 +327,20 @@ abstract class CreatorContractTestSupport extends IntegrationTestSupport {
     }
 
     protected ContractItem item(Product product, int groupBuyPrice, String rewardRate, int brandSupplyQuantity) {
-        return ContractItem.builder()
+        ContractItem item = ContractItem.builder()
                 .product(product)
                 .productName(product.getName())
                 .regularPrice(product.getRegularPrice())
                 .groupBuyPrice(groupBuyPrice)
                 .rewardRate(new BigDecimal(rewardRate))
-                .minQuantity(brandSupplyQuantity)
                 .sortOrder(0)
                 .build();
+        return ContractOptions.attach(item, ContractOptions.variantsOf(productVariantRepository, product), brandSupplyQuantity);
+    }
+
+    /** 임시저장 요청의 옵션별 최소 물량 — 첫 옵션에 전량. */
+    protected List<ContractUpdateRequest.Option> options(Product product, Integer minQuantity) {
+        return ContractOptions.request(ContractOptions.variantsOf(productVariantRepository, product), minQuantity);
     }
 
     protected void saveHistory(Contract contract, ContractEventType eventType,
@@ -395,7 +405,9 @@ abstract class CreatorContractTestSupport extends IntegrationTestSupport {
         product.setRegularPrice(regularPrice);
         product.setSalePrice(regularPrice);
         product.setDisplayStatus(ProductDisplayStatus.DISPLAY);
-        return productRepository.save(product);
+        Product saved = productRepository.save(product);
+        ContractOptions.defaultVariant(productVariantRepository, saved, 500);
+        return saved;
     }
 
     /** Flyway가 꺼진 통합 테스트 프로필에서는 V120의 조항 seed가 없다 — 최소 버전을 직접 적재한다. */

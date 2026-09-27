@@ -7,6 +7,7 @@ import showroomz.api.seller.contract.dto.ContractDetailResponse;
 import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractItem;
+import showroomz.domain.contract.entity.ContractItemOption;
 import showroomz.domain.contract.repository.ContractHistoryRepository;
 import showroomz.domain.contract.service.PartyContractDocuments;
 import showroomz.domain.contract.type.ContractActorType;
@@ -111,7 +112,20 @@ public class ContractDetailAssembler {
                 item.getRewardRate(),
                 // 저장하지 않는 파생값 — 계약·정산·계약서 PDF가 같은 유틸을 부른다(설계서 1-5).
                 RewardCalculator.calcUnitReward(item.getGroupBuyPrice(), item.getRewardRate()),
-                item.getMinQuantity());
+                item.getMinQuantity(),
+                item.getOptions().stream().map(this::toOption).toList());
+    }
+
+    /** 옵션가·옵션 판매가는 저장하지 않는 파생값 — 엔티티 메서드 한 곳이 계산한다(옵션 계획서 3-4). */
+    private ContractDetailResponse.ItemOption toOption(ContractItemOption option) {
+        return new ContractDetailResponse.ItemOption(
+                option.getId(),
+                option.getVariantId(),
+                option.getVariantName(),
+                option.getRegularPrice(),
+                option.optionExtraPrice(),
+                option.salePrice(),
+                option.getMinQuantity());
     }
 
     private ContractDetailResponse.FixedFee fixedFee(Contract contract) {

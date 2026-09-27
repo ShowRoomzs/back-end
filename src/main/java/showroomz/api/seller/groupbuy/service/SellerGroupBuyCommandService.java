@@ -16,6 +16,7 @@ import showroomz.api.seller.groupbuy.dto.GroupBuyIssueOpenResponse;
 import showroomz.api.seller.groupbuy.dto.GroupBuySuspensionRequestRequest;
 import showroomz.api.seller.groupbuy.service.GroupBuyAccessGuard.SellerScope;
 import showroomz.domain.contract.entity.ContractItem;
+import showroomz.domain.contract.entity.ContractItemOption;
 import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.entity.GroupBuyAdminSuspension;
 import showroomz.domain.groupbuy.entity.GroupBuyAppealAttachment;
@@ -112,15 +113,33 @@ public class SellerGroupBuyCommandService {
         return detailAssembler.assemble(groupBuy);
     }
 
-    /** 「크림 300개 · 세럼 200개」. */
-    private static String minQuantitySnapshot(GroupBuy groupBuy) {
+    /**
+     * 「세럼 300개(단품 200 · 2개 세트 100) · 크림 150개」. 옵션별 내역까지 남긴다 — 옵션별 최소 물량은 다른 옵션으로
+     * 대체 충족할 수 없어(계약서 제5조 제2항) 제재 판정이 「어느 옵션을 몇 개 확인했나」를 읽을 수 있어야 한다.
+     * 옵션 없는 상품(옵션명 없음 1행)은 괄호를 생략한다.
+     */
+    static String minQuantitySnapshot(GroupBuy groupBuy) {
         return groupBuy.getContract().getItems().stream()
-                .map(item -> "%s %,d개".formatted(item.getProductName(), nullToZero(item)))
+                .map(item -> "%s %,d개%s".formatted(item.getProductName(), nullToZero(item.getMinQuantity()),
+                        optionBreakdown(item)))
                 .collect(Collectors.joining(" · "));
     }
 
-    private static int nullToZero(ContractItem item) {
-        return item.getMinQuantity() == null ? 0 : item.getMinQuantity();
+    private static String optionBreakdown(ContractItem item) {
+        List<ContractItemOption> options = item.getOptions();
+        boolean singleWithoutName = options.size() == 1 && options.get(0).getVariantName() == null;
+        if (options.isEmpty() || singleWithoutName) {
+            return "";
+        }
+        return options.stream()
+                .map(option -> "%s %,d".formatted(
+                        option.getVariantName() == null ? "단품" : option.getVariantName(),
+                        nullToZero(option.getMinQuantity())))
+                .collect(Collectors.joining(" · ", "(", ")"));
+    }
+
+    private static int nullToZero(Integer quantity) {
+        return quantity == null ? 0 : quantity;
     }
 
     // ── C1 기간 연장 요청 ─────────────────────────────────────────────────────

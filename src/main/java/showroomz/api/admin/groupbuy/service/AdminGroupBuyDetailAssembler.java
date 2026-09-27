@@ -161,7 +161,11 @@ public class AdminGroupBuyDetailAssembler {
                 .map(item -> new Item(item.getProductId(), item.getProductName(), item.getRegularPrice(),
                         item.getGroupBuyPrice(), item.getRewardRate(),
                         RewardCalculator.calcUnitReward(item.getGroupBuyPrice(), item.getRewardRate()),
-                        item.getMinQuantity()))
+                        item.getMinQuantity(),
+                        item.getOptions().stream()
+                                .map(option -> new ItemOption(option.getVariantId(), option.getVariantName(),
+                                        option.salePrice(), option.getMinQuantity()))
+                                .toList()))
                 .toList();
     }
 

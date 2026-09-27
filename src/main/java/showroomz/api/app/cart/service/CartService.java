@@ -11,6 +11,12 @@ import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.cart.entity.Cart;
 import showroomz.domain.cart.repository.CartRepository;
 import showroomz.domain.cart.type.CartUnavailableReason;
+import showroomz.domain.contract.entity.Contract;
+import showroomz.domain.groupbuy.entity.GroupBuy;
+import showroomz.domain.groupbuy.repository.GroupBuyRepository;
+import showroomz.domain.groupbuy.service.GroupBuyPostCardLoader;
+import showroomz.domain.groupbuy.service.GroupBuyPriceResolver;
+import showroomz.domain.groupbuy.service.GroupBuyPriceResolver.GroupBuyPrice;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.user.entity.Users;
@@ -25,6 +31,7 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.DiscountRate;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -37,9 +44,20 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * C8 장바구니.
+ *
+ * <p><b>가격은 공구 계약에서 나온다</b>(가격 계획서 5절). 줄마다 담은 공구({@code cart.group_buy_id})가 있고, 그 공구
+ * 계약의 옵션 판매가(공구가 + 옵션가)가 줄 단가다. {@code product_variant.sale_price}는 읽지 않는다 — 셀러가 정가를
+ * 고쳐도 담긴 금액이 변하지 않아야 하고, 계약은 체결 뒤 불변이다. 가격은 요청마다 공구별로 한 번씩 읽어
+ * {@link CartPricing}에 모은 뒤 목록·합계·배송비가 같은 값을 쓴다.
+ */
 @Service
 @RequiredArgsConstructor
 public class CartService {
+
+    /** 계약에 없는 옵션 — 「마감」 라벨로 접되 담기 시점에는 이유를 따로 말한다. */
+    private static final String NOT_IN_GROUP_BUY_MESSAGE = "이 공구에서 판매하지 않는 옵션이에요";
 
     /**
      * 추천 후보를 넉넉히 읽어 오는 배수 — 장바구니 쇼룸의 상품을 앞으로 당기는 재정렬이
@@ -52,6 +70,8 @@ public class CartService {
     private final ProductVariantRepository productVariantRepository;
     private final ProductRepository productRepository;
     private final CreatorFollowRepository creatorFollowRepository;
+    private final GroupBuyRepository groupBuyRepository;
+    private final GroupBuyPriceResolver priceResolver;
 
     @Transactional
     public CartDto.AddCartResponse addCart(String username, CartDto.AddCartRequest request) {
@@ -62,6 +82,7 @@ public class CartService {
         return CartDto.AddCartResponse.builder()
                 .cartId(saved.getId())
                 .variantId(saved.getVariant().getVariantId())
+                .groupBuyId(saved.getGroupBuyId())
                 .quantity(saved.getQuantity())
                 .message("장바구니에 추가되었습니다.")
                 .build();
@@ -109,10 +130,11 @@ public class CartService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         List<Cart> carts = sortedByRecentlyAdded(cartRepository.findAllByUser(user));
-        Set<Long> selectedIds = resolveSelection(carts, selectedCartItemIds);
+        CartPricing pricing = priceOf(carts);
+        Set<Long> selectedIds = resolveSelection(carts, selectedCartItemIds, pricing);
 
-        List<CartDto.CartGroup> groups = buildGroups(carts, selectedIds);
-        CartSummaryData summaryData = calculateSummary(carts, selectedIds);
+        List<CartDto.CartGroup> groups = buildGroups(carts, selectedIds, pricing);
+        CartSummaryData summaryData = calculateSummary(carts, selectedIds, pricing);
 
         CartDto.CartSummary summary = CartDto.CartSummary.builder()
                 .regularTotal(summaryData.regularTotal)
@@ -121,7 +143,7 @@ public class CartService {
                 .deliveryFeeTotal(summaryData.deliveryFeeTotal)
                 .finalTotal(summaryData.finalTotal)
                 .selectedCount(selectedIds.size())
-                .selectableCount((int) carts.stream().filter(cart -> unavailableReason(cart) == null).count())
+                .selectableCount((int) carts.stream().filter(cart -> unavailableReason(cart, pricing) == null).count())
                 .totalCount(carts.size())
                 .build();
 
@@ -155,13 +177,15 @@ public class CartService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "변경할 항목이 없습니다.");
         }
 
-        requirePurchasable(cart.getVariant());
+        LocalDateTime now = LocalDateTime.now();
+        requirePurchasable(cart.getGroupBuy(), cart.getVariant(), now);
 
         ProductVariant targetVariant = cart.getVariant();
         if (request.getVariantId() != null && !request.getVariantId().equals(cart.getVariant().getVariantId())) {
             targetVariant = productVariantRepository.findByVariantId(request.getVariantId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.VARIANT_NOT_FOUND));
-            requirePurchasable(targetVariant);
+            // 옵션 변경은 같은 공구 안에서만이다 — 새 옵션도 그 공구 계약에 있어야 한다.
+            requirePurchasable(cart.getGroupBuy(), targetVariant, now);
         }
 
         int requestedQuantity = request.getQuantity() != null ? request.getQuantity() : cart.getQuantity();
@@ -169,7 +193,8 @@ public class CartService {
 
         Cart mergedTarget = null;
         if (!targetVariant.getVariantId().equals(cart.getVariant().getVariantId())) {
-            mergedTarget = cartRepository.findByUserAndVariant(user, targetVariant).orElse(null);
+            mergedTarget = cartRepository.findByUserAndVariantAndGroupBuy(user, targetVariant, cart.getGroupBuy())
+                    .orElse(null);
         }
 
         if (mergedTarget != null && !mergedTarget.getId().equals(cart.getId())) {
@@ -192,9 +217,10 @@ public class CartService {
         }
 
         List<Cart> carts = cartRepository.findAllByUser(user);
+        CartPricing pricing = priceOf(carts);
         Set<Long> selectedIds =
-                resolveSelection(carts, carryOverSelection(selectedCartItemIds, cartItemId, cart.getId()));
-        CartDto.UpdateSummary summary = toUpdateSummary(calculateSummary(carts, selectedIds));
+                resolveSelection(carts, carryOverSelection(selectedCartItemIds, cartItemId, cart.getId()), pricing);
+        CartDto.UpdateSummary summary = toUpdateSummary(calculateSummary(carts, selectedIds, pricing));
 
         return CartDto.UpdateCartResponse.builder()
                 .cartId(cart.getId())
@@ -254,8 +280,9 @@ public class CartService {
         }
 
         List<Cart> remainingCarts = cartRepository.findAllByUser(user);
-        CartDto.UpdateSummary summary = toUpdateSummary(
-                calculateSummary(remainingCarts, resolveSelection(remainingCarts, selectedCartItemIds)));
+        CartPricing pricing = priceOf(remainingCarts);
+        CartDto.UpdateSummary summary = toUpdateSummary(calculateSummary(
+                remainingCarts, resolveSelection(remainingCarts, selectedCartItemIds, pricing), pricing));
 
         return CartDto.DeleteCartResponse.builder()
                 .deletedCartItemIds(deletedIds)
@@ -291,7 +318,7 @@ public class CartService {
         }
 
         List<Cart> carts = cartRepository.findAllByUser(user);
-        Set<Long> nearFreeShippingMarkets = marketsShortOfFreeShipping(carts);
+        Set<Long> nearFreeShippingMarkets = marketsShortOfFreeShipping(carts, priceOf(carts));
 
         List<Product> candidates = productRepository.findOngoingGroupBuyProductsOfShowrooms(
                 creatorIds,
@@ -337,28 +364,27 @@ public class CartService {
      * <p>여기서는 화면의 체크 상태를 받지 않으므로 목록 진입 시와 같은 기준(구매 가능한 항목 전체)으로
      * 본다 — 이 영역은 곁다리라 체크를 옮길 때마다 순서가 흔들릴 이유가 없다.
      */
-    private Set<Long> marketsShortOfFreeShipping(List<Cart> carts) {
-        Set<Long> selectedIds = resolveSelection(carts, null);
+    private Set<Long> marketsShortOfFreeShipping(List<Cart> carts, CartPricing pricing) {
+        Set<Long> selectedIds = resolveSelection(carts, null, pricing);
 
-        Map<Long, Long> selectedTotalByMarket = new LinkedHashMap<>();
-        Map<Long, Integer> thresholdByMarket = new HashMap<>();
+        // 배송비는 공구 그룹마다 매겨진다 — 그룹별로 모자란지 본 뒤, 추천 상품과 맞출 수 있게 그 그룹의 쇼룸을 돌려준다.
+        Map<GroupKey, Long> selectedTotalByGroup = new LinkedHashMap<>();
+        Map<GroupKey, Market> marketByGroup = new HashMap<>();
         for (Cart cart : carts) {
             if (!selectedIds.contains(cart.getId())) {
                 continue;
             }
-            Long marketId = marketIdOf(cart);
-            selectedTotalByMarket.merge(marketId, lineSaleTotal(cart), Long::sum);
-            Market market = marketOf(cart);
-            if (market != null && market.getFreeShippingThreshold() != null) {
-                thresholdByMarket.put(marketId, market.getFreeShippingThreshold());
-            }
+            GroupKey key = groupKeyOf(cart);
+            selectedTotalByGroup.merge(key, lineSaleTotal(cart, pricing), Long::sum);
+            marketByGroup.putIfAbsent(key, marketOf(cart));
         }
 
         Set<Long> markets = new HashSet<>();
-        selectedTotalByMarket.forEach((marketId, total) -> {
-            Integer threshold = thresholdByMarket.get(marketId);
+        selectedTotalByGroup.forEach((key, total) -> {
+            Market market = marketByGroup.get(key);
+            Integer threshold = market != null ? market.getFreeShippingThreshold() : null;
             if (threshold != null && total < threshold) {
-                markets.add(marketId);
+                markets.add(market.getId());
             }
         });
         return markets;
@@ -398,41 +424,50 @@ public class CartService {
     // ------------------------------------------------------------------ 그룹 구성
 
     /**
-     * 공구(쇼룸) 단위 묶음.
+     * 공구 단위 묶음(가격 계획서 5-2). 같은 쇼룸이라도 공구가 다르면 다른 그룹이다 — 마감일·발송이 공구마다 다르다.
+     * 귀속을 정하지 못한 옛 행(공구 없음)은 쇼룸 단위로 묶이고 마감으로 보인다.
      *
-     * <p>공구 게시물({@code group_buy_post})이 아직 없어 지금의 묶음 키는 상품이 속한 쇼룸(마켓)이다.
-     * 배송비가 쇼룸 단위로 매겨져 있어 배송비·무료배송 기준은 이 키로도 정확히 계산되고, 공구 게시물이
-     * 들어오면 키만 공구 ID로 바뀐다 — 그래서 응답 모양을 미리 그룹으로 잡았다. 같은 이유로 그룹
-     * 머리의 D-day(마감 시각)는 아직 내려보내지 않는다. 대신 그룹 전체가 마감·미진열이면
-     * {@code isClosed}로 알려, 화면이 끝난 공구에 D-day 자리를 비워 둘 수 있게 한다.
+     * <p>배송비·무료배송 기준은 여전히 쇼룸(마켓) 설정이고, <b>집계 단위만 공구</b>다. 그룹 전체가 마감·미진열이면
+     * {@code isClosed}와 함께 D-day를 비운다.
      */
-    private List<CartDto.CartGroup> buildGroups(List<Cart> carts, Set<Long> selectedIds) {
-        Map<Long, List<Cart>> byMarket = new LinkedHashMap<>();
+    private List<CartDto.CartGroup> buildGroups(List<Cart> carts, Set<Long> selectedIds, CartPricing pricing) {
+        Map<GroupKey, List<Cart>> byGroup = new LinkedHashMap<>();
         for (Cart cart : carts) {
-            byMarket.computeIfAbsent(marketIdOf(cart), key -> new ArrayList<>()).add(cart);
+            byGroup.computeIfAbsent(groupKeyOf(cart), key -> new ArrayList<>()).add(cart);
         }
 
         List<CartDto.CartGroup> groups = new ArrayList<>();
-        for (List<Cart> groupCarts : byMarket.values()) {
+        for (List<Cart> groupCarts : byGroup.values()) {
             Market market = marketOf(groupCarts.get(0));
+            GroupBuy groupBuy = groupCarts.get(0).getGroupBuy();
 
             List<CartDto.CartItem> items = groupCarts.stream()
-                    .map(cart -> toCartItem(cart, selectedIds.contains(cart.getId())))
+                    .map(cart -> toCartItem(cart, selectedIds.contains(cart.getId()), pricing))
                     .toList();
 
             boolean isClosed = groupCarts.stream()
-                    .allMatch(cart -> unavailableReason(cart) == CartUnavailableReason.GROUP_BUY_CLOSED);
+                    .allMatch(cart -> unavailableReason(cart, pricing) == CartUnavailableReason.GROUP_BUY_CLOSED);
 
             groups.add(CartDto.CartGroup.builder()
+                    .groupBuyId(groupBuy != null ? groupBuy.getId() : null)
+                    .groupBuyNumber(groupBuy != null ? groupBuy.getGroupBuyNumber() : null)
+                    .groupBuyTitle(titleOf(groupBuy))
+                    .endAt(groupBuy != null ? groupBuy.getEndAt() : null)
+                    .dDay(groupBuy != null && !isClosed ? GroupBuyPostCardLoader.dDay(groupBuy.getEndAt(), pricing.now()) : null)
                     .marketId(market != null ? market.getId() : null)
                     .marketName(market != null ? market.getMarketName() : null)
                     .marketImageUrl(market != null ? market.getMarketImageUrl() : null)
                     .isClosed(isClosed)
                     .items(items)
-                    .shipping(buildGroupShipping(market, groupCarts, selectedIds))
+                    .shipping(buildGroupShipping(market, groupCarts, selectedIds, pricing))
                     .build());
         }
         return groups;
+    }
+
+    private String titleOf(GroupBuy groupBuy) {
+        Contract contract = groupBuy != null ? groupBuy.getContract() : null;
+        return contract != null ? contract.getTitle() : null;
     }
 
     /**
@@ -441,7 +476,8 @@ public class CartService {
      * <p>선택된 것이 하나도 없으면 부과 배송비는 0이고 "○○원 더 담으면 무료"도 내려보내지 않는다.
      * 아무것도 담기지 않은 그룹에 남은 금액을 띄우면 전액을 더 담아야 하는 것처럼 읽힌다.
      */
-    private CartDto.GroupShipping buildGroupShipping(Market market, List<Cart> groupCarts, Set<Long> selectedIds) {
+    private CartDto.GroupShipping buildGroupShipping(Market market, List<Cart> groupCarts, Set<Long> selectedIds,
+                                                     CartPricing pricing) {
         int deliveryFee = market != null && market.getDefaultDeliveryFee() != null
                 ? market.getDefaultDeliveryFee()
                 : 0;
@@ -449,7 +485,7 @@ public class CartService {
 
         long selectedTotal = groupCarts.stream()
                 .filter(cart -> selectedIds.contains(cart.getId()))
-                .mapToLong(this::lineSaleTotal)
+                .mapToLong(cart -> lineSaleTotal(cart, pricing))
                 .sum();
 
         boolean hasSelectedItems = groupCarts.stream().anyMatch(cart -> selectedIds.contains(cart.getId()));
@@ -480,9 +516,9 @@ public class CartService {
      * 실제로 담겨 있고 살 수 있는 항목만 남긴다 — 마감·품절 항목이 요청에 섞여 들어와도
      * 합계에 들어가지 않는다.
      */
-    private Set<Long> resolveSelection(List<Cart> carts, Collection<Long> requested) {
+    private Set<Long> resolveSelection(List<Cart> carts, Collection<Long> requested, CartPricing pricing) {
         Set<Long> purchasable = carts.stream()
-                .filter(cart -> unavailableReason(cart) == null)
+                .filter(cart -> unavailableReason(cart, pricing) == null)
                 .map(Cart::getId)
                 .collect(Collectors.toCollection(HashSet::new));
 
@@ -499,7 +535,13 @@ public class CartService {
      * <p>마감을 품절보다 먼저 본다 — 공구가 끝났으면 재고가 남아 있어도 살 수 없고, 이때는
      * 다른 옵션으로 이어질 길도 없어 사유를 "품절"로 말하면 사용자를 헛걸음시킨다.
      */
-    private CartUnavailableReason unavailableReason(Cart cart) {
+    private CartUnavailableReason unavailableReason(Cart cart, CartPricing pricing) {
+        // 공구부터 본다 — 담은 공구가 없거나(귀속 못 한 옛 행) 끝났거나, 그 공구 계약에 이 옵션이 없으면
+        // 가격을 정할 수 없다. 사용자에게는 모두 「이 공구에서는 더 살 수 없다」로 같다.
+        GroupBuy groupBuy = cart.getGroupBuy();
+        if (groupBuy == null || !groupBuy.isOngoing(pricing.now()) || pricing.priceOf(cart) == null) {
+            return CartUnavailableReason.GROUP_BUY_CLOSED;
+        }
         return unavailableReason(cart.getVariant());
     }
 
@@ -522,7 +564,19 @@ public class CartService {
         return null;
     }
 
-    private void requirePurchasable(ProductVariant variant) {
+    /**
+     * 담기·수정 판정 — 순서는 「공구 → 계약 → 상품 → 재고」다. 공구가 끝났는데 재고 부족 문구가 먼저 나가면
+     * 사용자가 헛수고한다. {@code groupBuyId}는 앱이 보내는 값이라 조작될 수 있다 — 다른 브랜드의 공구를 실어 와도
+     * 그 계약에 이 옵션이 없어 여기서 걸린다.
+     */
+    private void requirePurchasable(GroupBuy groupBuy, ProductVariant variant, LocalDateTime now) {
+        if (groupBuy == null || !groupBuy.isOngoing(now)) {
+            throw new BusinessException(ErrorCode.CART_ITEM_NOT_PURCHASABLE,
+                    CartUnavailableReason.GROUP_BUY_CLOSED.getMessage());
+        }
+        if (priceResolver.resolveVariants(groupBuy.getId(), List.of(variant.getVariantId())).isEmpty()) {
+            throw new BusinessException(ErrorCode.CART_ITEM_NOT_PURCHASABLE, NOT_IN_GROUP_BUY_MESSAGE);
+        }
         CartUnavailableReason reason = unavailableReason(variant);
         if (reason != null) {
             throw new BusinessException(ErrorCode.CART_ITEM_NOT_PURCHASABLE, reason.getMessage());
@@ -538,12 +592,16 @@ public class CartService {
 
     // ------------------------------------------------------------------ 매핑
 
-    private CartDto.CartItem toCartItem(Cart cart, boolean isSelected) {
+    private CartDto.CartItem toCartItem(Cart cart, boolean isSelected, CartPricing pricing) {
         ProductVariant variant = cart.getVariant();
         Product product = variant.getProduct();
         Market market = product.getMarket();
 
-        ProductDto.PriceInfo priceInfo = buildPriceInfo(variant.getRegularPrice(), variant.getSalePrice());
+        // 가격을 정할 수 없는 줄(마감)은 가격 칸을 비운다 — 정가로 물러서면 공구가 없는 가격이 화면에 남는다.
+        GroupBuyPrice price = pricing.priceOf(cart);
+        ProductDto.PriceInfo priceInfo = price != null
+                ? buildPriceInfo(price.regularPrice(), price.salePrice())
+                : buildPriceInfo(null, null);
 
         Integer stock = variant.getStock() != null ? variant.getStock() : 0;
         boolean isOutOfStockForced = Boolean.TRUE.equals(product.getIsOutOfStockForced());
@@ -568,7 +626,7 @@ public class CartService {
                 .price(priceInfo)
                 .deliveryFee(market != null && market.getDefaultDeliveryFee() != null ? market.getDefaultDeliveryFee() : 0)
                 .stock(stockInfo)
-                .availability(buildAvailability(unavailableReason(cart)))
+                .availability(buildAvailability(unavailableReason(cart, pricing)))
                 .isSelected(isSelected)
                 .build();
     }
@@ -583,15 +641,20 @@ public class CartService {
     }
 
     private Cart addCartForUser(Users user, CartDto.AddCartRequest request) {
+        if (request.getGroupBuyId() == null) {
+            // 어느 공구에서 담았는지 모르면 가격을 정할 수 없다(가격 계획서 5-1).
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "공구를 지정해 주세요.");
+        }
         ProductVariant variant = productVariantRepository.findByVariantId(request.getVariantId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.VARIANT_NOT_FOUND));
+        GroupBuy groupBuy = groupBuyRepository.findById(request.getGroupBuyId()).orElse(null);
 
-        requirePurchasable(variant);
+        requirePurchasable(groupBuy, variant, LocalDateTime.now());
 
         int stock = variant.getStock() != null ? variant.getStock() : 0;
         int addQuantity = request.getQuantity();
 
-        Cart cart = cartRepository.findByUserAndVariant(user, variant).orElse(null);
+        Cart cart = cartRepository.findByUserAndVariantAndGroupBuy(user, variant, groupBuy).orElse(null);
         int finalQuantity = cart != null ? cart.getQuantity() + addQuantity : addQuantity;
 
         requireWithinQuantityLimit(finalQuantity);
@@ -600,7 +663,7 @@ public class CartService {
         }
 
         if (cart == null) {
-            cart = new Cart(user, variant, addQuantity);
+            cart = new Cart(user, variant, groupBuy, addQuantity);
         } else {
             cart.updateQuantity(finalQuantity);
         }
@@ -648,21 +711,22 @@ public class CartService {
      * <p>하단 요약과 [주문하기]가 같은 값을 써야 하므로 버튼 라벨에 들어가는 금액도 여기서 나온다.
      * 배송비는 그룹(쇼룸)마다 따로 매겨지고, 그 그룹에서 선택된 것이 없으면 부과하지 않는다.
      */
-    private CartSummaryData calculateSummary(List<Cart> carts, Set<Long> selectedIds) {
+    private CartSummaryData calculateSummary(List<Cart> carts, Set<Long> selectedIds, CartPricing pricing) {
         long regularTotal = 0L;
         long saleTotal = 0L;
 
-        Map<Long, MarketShippingAccumulator> shippingByMarket = new HashMap<>();
+        Map<GroupKey, MarketShippingAccumulator> shippingByMarket = new HashMap<>();
 
         for (Cart cart : carts) {
             if (!selectedIds.contains(cart.getId())) {
                 continue;
             }
 
-            ProductVariant variant = cart.getVariant();
+            // 선택된 줄은 살 수 있는 줄이라 가격이 있다(resolveSelection이 가격 없는 줄을 뺀다).
+            GroupBuyPrice price = pricing.priceOf(cart);
             int quantity = cart.getQuantity() != null ? cart.getQuantity() : 0;
-            long regular = variant.getRegularPrice() != null ? variant.getRegularPrice() : 0;
-            long sale = variant.getSalePrice() != null ? variant.getSalePrice() : 0;
+            long regular = price != null ? price.regularPrice() : 0;
+            long sale = price != null ? price.salePrice() : 0;
 
             regularTotal += regular * quantity;
             saleTotal += sale * quantity;
@@ -670,7 +734,7 @@ public class CartService {
             Market market = marketOf(cart);
 
             MarketShippingAccumulator acc = shippingByMarket.computeIfAbsent(
-                    marketIdOf(cart),
+                    groupKeyOf(cart),
                     key -> new MarketShippingAccumulator()
             );
             acc.saleTotal += sale * quantity;
@@ -735,10 +799,46 @@ public class CartService {
                 .toList();
     }
 
-    private long lineSaleTotal(Cart cart) {
-        long sale = cart.getVariant().getSalePrice() != null ? cart.getVariant().getSalePrice() : 0;
+    private long lineSaleTotal(Cart cart, CartPricing pricing) {
+        GroupBuyPrice price = pricing.priceOf(cart);
+        long sale = price != null ? price.salePrice() : 0;
         int quantity = cart.getQuantity() != null ? cart.getQuantity() : 0;
         return sale * quantity;
+    }
+
+    /**
+     * 줄마다 담은 공구 계약의 가격 — 공구별로 한 번씩 읽는다(줄마다 읽으면 N+1). 귀속 없는 줄은 가격이 없다.
+     * {@code now}도 여기서 한 번 정해 목록·합계·D-day가 같은 시각으로 판정한다.
+     */
+    private CartPricing priceOf(List<Cart> carts) {
+        Map<Long, List<Cart>> byGroupBuy = new LinkedHashMap<>();
+        for (Cart cart : carts) {
+            if (cart.getGroupBuy() != null) {
+                byGroupBuy.computeIfAbsent(cart.getGroupBuy().getId(), key -> new ArrayList<>()).add(cart);
+            }
+        }
+
+        Map<Long, GroupBuyPrice> byCartId = new HashMap<>();
+        byGroupBuy.forEach((groupBuyId, groupCarts) -> {
+            Set<Long> variantIds = groupCarts.stream()
+                    .map(cart -> cart.getVariant().getVariantId())
+                    .collect(Collectors.toSet());
+            Map<Long, GroupBuyPrice> prices = priceResolver.resolveVariants(groupBuyId, variantIds);
+            for (Cart cart : groupCarts) {
+                GroupBuyPrice price = prices.get(cart.getVariant().getVariantId());
+                if (price != null) {
+                    byCartId.put(cart.getId(), price);
+                }
+            }
+        });
+        return new CartPricing(byCartId, LocalDateTime.now());
+    }
+
+    /** 공구로 묶는다. 귀속 없는 옛 행만 쇼룸으로 묶인다 — 합계에서 빠지지 않게 마켓이 없으면 0을 쓴다. */
+    private GroupKey groupKeyOf(Cart cart) {
+        return cart.getGroupBuy() != null
+                ? new GroupKey(cart.getGroupBuy().getId(), null)
+                : new GroupKey(null, marketIdOf(cart));
     }
 
     private Market marketOf(Cart cart) {
@@ -755,6 +855,15 @@ public class CartService {
         private long saleTotal = 0L;
         private int maxDeliveryFee = 0;
         private Integer minFreeThreshold = null;
+    }
+
+    private record GroupKey(Long groupBuyId, Long marketId) {
+    }
+
+    private record CartPricing(Map<Long, GroupBuyPrice> byCartId, LocalDateTime now) {
+        GroupBuyPrice priceOf(Cart cart) {
+            return byCartId.get(cart.getId());
+        }
     }
 
     private record CartSummaryData(

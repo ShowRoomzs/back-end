@@ -111,7 +111,7 @@ public class GroupBuyPostCardLoader {
     }
 
     /** D-day — KST 날짜 차이. 앱 시계를 믿지 않도록 서버가 계산한다(4-4). 마감 당일은 0이다. */
-    static int dDay(LocalDateTime endAt, LocalDateTime now) {
+    public static int dDay(LocalDateTime endAt, LocalDateTime now) {
         return (int) ChronoUnit.DAYS.between(now.toLocalDate(), endAt.toLocalDate());
     }
 

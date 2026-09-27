@@ -183,6 +183,16 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, Group
             + "ORDER BY g.fulfillmentDueAt ASC, g.id ASC")
     List<Long> findIdsToAutoConfirmFulfillment(@Param("now") LocalDateTime now, Pageable pageable);
 
+    /**
+     * 이 상품을 담은 <b>지금 판매 중인</b> 공구 — C7에 {@code groupBuyId} 없이 들어왔을 때 가격을 정할 공구 후보
+     * (가격 계획서 4절). 판매 상태 ∧ 종료 시각 전 — {@link GroupBuy#isOngoing}과 같은 식이다.
+     */
+    @Query("SELECT DISTINCT g FROM GroupBuy g JOIN g.contract c JOIN c.items ci "
+            + "WHERE ci.product.productId = :productId AND g.status IN :sellingStatuses AND g.endAt > :now")
+    List<GroupBuy> findSellingByProductId(@Param("productId") Long productId,
+                                          @Param("sellingStatuses") Collection<GroupBuyStatus> sellingStatuses,
+                                          @Param("now") LocalDateTime now);
+
     // ── 상품 groupBuyStatus 동기화(설계서 1-11) ─────────────────────────────────
 
     /** 주어진 상품을 담은 <b>활성</b> 공구의 (상품 id, 공구 상태) 쌍. 종결 3종은 상품을 붙들지 않는다. */

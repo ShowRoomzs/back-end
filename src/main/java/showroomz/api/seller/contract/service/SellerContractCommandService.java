@@ -17,6 +17,7 @@ import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractClauseVersion;
 import showroomz.domain.contract.entity.ContractItem;
+import showroomz.domain.contract.entity.ContractItemOption;
 import showroomz.domain.contract.entity.ContractResendRequest;
 import showroomz.domain.contract.event.ContractReviewRequestedEvent;
 import showroomz.domain.contract.repository.ContractClauseVersionRepository;
@@ -34,7 +35,9 @@ import showroomz.domain.contract.type.ContractViolationCode;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.product.entity.Product;
+import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.product.repository.ProductRepository;
+import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ContractValidationException;
 import showroomz.global.error.exception.ErrorCode;
@@ -43,11 +46,13 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /**
  * 파트너센터 계약 작성·전이(설계서 4-2·4-3).
@@ -71,6 +76,7 @@ public class SellerContractCommandService {
     private final ContractClauseVersionRepository clauseVersionRepository;
     private final ConnectionRepository connectionRepository;
     private final ProductRepository productRepository;
+    private final ProductVariantRepository productVariantRepository;
     private final ContractNumberGenerator contractNumberGenerator;
     private final ContractHistoryRecorder historyRecorder;
     private final ContractNotifier contractNotifier;
@@ -349,15 +355,26 @@ public class SellerContractCommandService {
 
         List<ContractItem> copiedItems = new ArrayList<>();
         for (ContractItem item : source.getItems()) {
-            copiedItems.add(ContractItem.builder()
+            ContractItem copiedItem = ContractItem.builder()
                     .product(item.getProduct())
                     .productName(item.getProductName())
                     .regularPrice(item.getRegularPrice())
                     .groupBuyPrice(item.getGroupBuyPrice())
                     .rewardRate(item.getRewardRate())
-                    .minQuantity(item.getMinQuantity())
                     .sortOrder(item.getSortOrder())
-                    .build());
+                    .build();
+            // 옵션 행도 복사한다. 그 사이 지워진 옵션(variant null)은 그대로 넘어가 검증 응답에
+            // ITEM_OPTIONS_MISMATCH로 실린다 — 서버가 수량을 새 옵션에 임의 배분하지 않는다.
+            copiedItem.replaceOptions(item.getOptions().stream()
+                    .map(option -> ContractItemOption.builder()
+                            .variant(option.getVariant())
+                            .variantName(option.getVariantName())
+                            .regularPrice(option.getRegularPrice())
+                            .minQuantity(option.getMinQuantity())
+                            .sortOrder(option.getSortOrder())
+                            .build())
+                    .toList());
+            copiedItems.add(copiedItem);
         }
         copy.replaceItems(copiedItems);
 
@@ -460,6 +477,7 @@ public class SellerContractCommandService {
 
         List<ContractViolation> formViolations = new ArrayList<>();
         List<ContractItem> built = new ArrayList<>();
+        Map<Long, List<ProductVariant>> variantsByProduct = loadVariants(requestItems);
 
         for (int index = 0; index < requestItems.size(); index++) {
             ContractUpdateRequest.Item request = requestItems.get(index);
@@ -474,7 +492,8 @@ public class SellerContractCommandService {
 
             Integer groupBuyPrice = productChanged ? null : request.groupBuyPrice();
             BigDecimal rewardRate = productChanged ? null : request.rewardRate();
-            Integer minQuantity = productChanged ? null : request.minQuantity();
+            List<ContractUpdateRequest.Option> requestedOptions =
+                    productChanged ? List.of() : request.optionsOrEmpty();
 
             if (groupBuyPrice != null && groupBuyPrice % 10 != 0) {
                 formViolations.add(ContractViolation.of(ContractViolationCode.H2, prefix + ".groupBuyPrice"));
@@ -484,22 +503,75 @@ public class SellerContractCommandService {
                         ContractViolationCode.ITEM_REWARD_RATE_SCALE, prefix + ".rewardRate"));
             }
 
-            built.add(ContractItem.builder()
+            ContractItem item = ContractItem.builder()
                     .product(product)
                     // 상품명·정가는 지금 값을 복사해 둔다. 검토 요청 시점에 한 번 더 갱신된다(설계서 0-5).
                     .productName(product == null ? null : product.getName())
                     .regularPrice(product == null ? null : product.getRegularPrice())
                     .groupBuyPrice(groupBuyPrice)
                     .rewardRate(rewardRate)
-                    .minQuantity(minQuantity)
                     .sortOrder(index)
-                    .build());
+                    .build();
+            item.replaceOptions(buildOptions(product, requestedOptions, variantsByProduct));
+            built.add(item);
         }
 
         if (!formViolations.isEmpty()) {
             throw new ContractValidationException(formViolations);
         }
         return built;
+    }
+
+    /** 요청에 실린 상품들의 옵션 전량 — 행마다 읽지 않고 한 번에 읽는다. */
+    private Map<Long, List<ProductVariant>> loadVariants(List<ContractUpdateRequest.Item> requestItems) {
+        List<Long> productIds = requestItems.stream()
+                .map(ContractUpdateRequest.Item::productId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (productIds.isEmpty()) {
+            return Map.of();
+        }
+        return productVariantRepository.findByProductIdsOrderByVariantId(productIds).stream()
+                .collect(Collectors.groupingBy(variant -> variant.getProduct().getProductId(),
+                        LinkedHashMap::new, Collectors.toList()));
+    }
+
+    /**
+     * 옵션 행 = <b>상품의 현재 옵션 전량</b>(옵션 계획서 0절 「옵션 행의 집합」). 요청은 옵션별 수량만 싣는다.
+     *
+     * <p>행 집합을 FE가 아니라 상품이 정하게 하는 이유 — FE가 옵션 하나를 빠뜨려도 그 옵션이 계약에서 사라지지
+     * 않고 수량 null로 남아 검토 요청 때 잡힌다. 빼는 조작은 없다 — 수량 0은 「확보 약속 없음」이다.
+     *
+     * <p>남의 상품 옵션·중복 옵션은 400이다 — 남의 옵션을 받으면 그 옵션명·정가가 이 계약에 스냅샷으로 들어온다
+     * ({@link #resolveProduct}의 소유 검사와 같은 이유).
+     */
+    private List<ContractItemOption> buildOptions(Product product, List<ContractUpdateRequest.Option> requested,
+                                                  Map<Long, List<ProductVariant>> variantsByProduct) {
+        if (product == null) {
+            if (!requested.isEmpty()) {
+                throw new BusinessException(ErrorCode.CONTRACT_ITEM_OPTION_NOT_OF_PRODUCT);
+            }
+            return List.of();
+        }
+
+        List<ProductVariant> variants = variantsByProduct.getOrDefault(product.getProductId(), List.of());
+        Set<Long> variantIds = variants.stream().map(ProductVariant::getVariantId).collect(Collectors.toSet());
+
+        Map<Long, Integer> quantities = new HashMap<>();
+        for (ContractUpdateRequest.Option option : requested) {
+            if (!variantIds.contains(option.variantId())) {
+                throw new BusinessException(ErrorCode.CONTRACT_ITEM_OPTION_NOT_OF_PRODUCT);
+            }
+            if (quantities.containsKey(option.variantId())) {
+                throw new BusinessException(ErrorCode.CONTRACT_ITEM_OPTION_DUPLICATED);
+            }
+            quantities.put(option.variantId(), option.minQuantity());
+        }
+
+        return variants.stream()
+                .map(variant -> ContractItemOption.snapshotOf(variant, quantities.get(variant.getVariantId())))
+                .toList();
     }
 
     /**
@@ -519,7 +591,10 @@ public class SellerContractCommandService {
         return product;
     }
 
-    /** 스냅샷 정가를 현재 상품 정가로 맞춘다 — 그래야 H1을 지금 값으로 다시 볼 수 있다(설계서 2-2). */
+    /**
+     * 스냅샷 정가를 현재 상품 정가로 맞춘다 — 그래야 H1을 지금 값으로 다시 볼 수 있다(설계서 2-2).
+     * 옵션명·옵션 정가도 함께 맞춘다({@link ContractItem#refreshSnapshot}).
+     */
     private void refreshItemSnapshots(Contract contract) {
         for (ContractItem item : contract.getItems()) {
             Product product = item.getProduct();

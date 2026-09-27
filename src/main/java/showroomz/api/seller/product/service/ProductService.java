@@ -12,6 +12,9 @@ import showroomz.api.seller.product.DTO.ProductDto;
 import showroomz.api.seller.product.DTO.SellerProductSearchCondition;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.category.repository.CategoryRepository;
+import showroomz.domain.contract.repository.ContractItemRepository;
+import showroomz.domain.contract.type.ContractStatus;
+import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
@@ -46,6 +49,7 @@ public class ProductService {
     private final MarketRepository marketRepository;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
     private final ProductProcessingHistoryService processingHistoryService;
+    private final ContractItemRepository contractItemRepository;
 
     public ProductDto.CreateProductResponse createProduct(String adminEmail, ProductDto.CreateProductRequest request) {
         // 1. 카테고리 조회 및 검증 (카테고리 ID로 조회)
@@ -621,6 +625,9 @@ public class ProductService {
         boolean hasVariantUpdate = hasOptionStructureUpdate || hasStockOnlyUpdate;
 
         validateSellerProductEdit(product, hasInfoChange);
+        if (hasOptionStructureUpdate) {
+            requireOptionStructureUnlocked(product);
+        }
 
         // 3. 카테고리 업데이트 (제공된 경우)
         if (request.getCategoryId() != null) {
@@ -931,6 +938,20 @@ public class ProductService {
                 .optionGroups(optionGroups)
                 .variants(variants)
                 .build();
+    }
+
+    /**
+     * 옵션 구조 변경(옵션 그룹 + 조합 동시 전달)은 variant를 전부 지우고 다시 만든다. 진행 중인 계약·공구가
+     * 이 상품의 옵션을 참조하면 막는다 — 계약 옵션 행(옵션별 최소 물량)과 공구 판매 가격이 variant에 매달려 있어,
+     * 재생성하면 작성 중 계약의 옵션이 사라지고 진행 중 공구의 상품이 살 수 없게 된다(옵션 계획서 6-1).
+     * 재고만 수정·상품 정가 수정은 variant를 지우지 않으므로 막지 않는다.
+     */
+    private void requireOptionStructureUnlocked(Product product) {
+        boolean locked = contractItemRepository.existsOpenContractForProduct(
+                product.getProductId(), ContractStatus.BEFORE_CONCLUSION, GroupBuyStatus.TERMINAL);
+        if (locked) {
+            throw new BusinessException(ErrorCode.PRODUCT_OPTION_LOCKED_BY_CONTRACT);
+        }
     }
 
     /**
