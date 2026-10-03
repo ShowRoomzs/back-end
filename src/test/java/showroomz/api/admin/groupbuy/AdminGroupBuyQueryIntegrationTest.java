@@ -292,21 +292,22 @@ class AdminGroupBuyQueryIntegrationTest extends AdminGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("종료 — 정산 차단 사유를 서버가 판정한다 · 판매 포트가 비면 CLOSURE_UNKNOWN이고 정산 확인이 닫힌다")
+    @DisplayName("종료 — 정산 차단 사유를 서버가 판정한다 · 종결은 실값(주문 0건 = 미종결 0)이라 이행 확인만 남는다")
     void settlementBlockers() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);
 
         adminDetail(groupBuy.getId()).andExpect(status().isOk())
                 .andExpect(jsonPath("$.afterEnd.settlement.stage").value("WAITING"))
                 .andExpect(jsonPath("$.afterEnd.settlement.stageSource").value("DERIVED"))
-                .andExpect(jsonPath("$.afterEnd.settlement.blockers[0]").value("CLOSURE_UNKNOWN"))
-                .andExpect(jsonPath("$.afterEnd.settlement.blockers[1]").value("FULFILLMENT_PENDING"))
+                // 판매 포트가 하위주문 이행 상태로 종결을 실값 판정한다(34 설계서 5-3) — CLOSURE_UNKNOWN 구간이 닫혔다.
+                .andExpect(jsonPath("$.afterEnd.settlement.blockers[0]").value("FULFILLMENT_PENDING"))
+                .andExpect(jsonPath("$.afterEnd.settlement.blockers.length()").value(1))
                 .andExpect(jsonPath("$.afterEnd.settlement.preview.rewardAmount").doesNotExist())
                 .andExpect(jsonPath("$.afterEnd.settlement.watch.reached").value(false))
                 .andExpect(jsonPath("$.afterEnd.fulfillment.targets.brandToCreator.duties[0]").value("SHOWROOM_POST"))
                 .andExpect(jsonPath("$.afterEnd.fulfillment.targets.creatorToBrand.duties[0]").value("ORDER_DELIVERY"))
                 .andExpect(jsonPath("$.afterEnd.fulfillment.autoConfirmOnTimeout").value(false))
-                .andExpect(jsonPath("$.afterEnd.orderClosure").doesNotExist())
+                .andExpect(jsonPath("$.afterEnd.orderClosure.unclosedCount").value(0))
                 .andExpect(jsonPath("$.sales").doesNotExist())
                 .andExpect(jsonPath("$.permissions.canConfirmSettlement").value(false))
                 .andExpect(jsonPath("$.permissions.canOpenIssue").value(true));

@@ -373,7 +373,24 @@ public enum ErrorCode {
     PAYMENT_AMOUNT_MISMATCH(HttpStatus.CONFLICT, "PAYMENT_AMOUNT_MISMATCH", "결제 금액이 주문 금액과 일치하지 않아 결제가 취소되었습니다."),
     PAYMENT_GATEWAY_ERROR(HttpStatus.BAD_GATEWAY, "PAYMENT_GATEWAY_ERROR", "결제사 통신에 실패했습니다. 잠시 후 다시 시도해 주세요."),
     PAYMENT_CANCEL_FAILED(HttpStatus.BAD_GATEWAY, "PAYMENT_CANCEL_FAILED", "결제 취소에 실패했습니다. 고객센터로 문의해 주세요."),
-    WEBHOOK_SIGNATURE_INVALID(HttpStatus.UNAUTHORIZED, "WEBHOOK_SIGNATURE_INVALID", "웹훅 서명이 올바르지 않습니다.");
+    WEBHOOK_SIGNATURE_INVALID(HttpStatus.UNAUTHORIZED, "WEBHOOK_SIGNATURE_INVALID", "웹훅 서명이 올바르지 않습니다."),
+
+    // 파트너센터 주문 관리(34 설계서 4-4). 내 마켓 아님도 404 — 존재를 노출하지 않는다.
+    ORDER_GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_GROUP_NOT_FOUND", "존재하지 않는 주문입니다."),
+    ORDER_SEARCH_RANGE_EXCEEDED(HttpStatus.BAD_REQUEST, "ORDER_SEARCH_RANGE_EXCEEDED", "조회 기간은 최대 1년까지 설정할 수 있습니다."),
+    ORDER_STATE_CHANGED(HttpStatus.CONFLICT, "ORDER_STATE_CHANGED", "주문 상태가 변경되었습니다. 새로고침 후 다시 확인해 주세요."),
+    INVOICE_DUPLICATE(HttpStatus.CONFLICT, "INVOICE_DUPLICATE", "이미 다른 주문에 등록된 송장번호입니다."),
+    INVOICE_FORMAT_INVALID(HttpStatus.BAD_REQUEST, "INVOICE_FORMAT_INVALID", "송장번호 형식이 올바르지 않습니다. 다시 확인해 주세요."),
+    CANCEL_REQUEST_ALREADY_DECIDED(HttpStatus.CONFLICT, "CANCEL_REQUEST_ALREADY_DECIDED", "이미 처리된 취소 요청입니다."),
+    CANCEL_REQUEST_PENDING_EXISTS(HttpStatus.CONFLICT, "CANCEL_REQUEST_PENDING_EXISTS", "검토 중인 취소 요청이 있습니다. 요청을 먼저 처리해 주세요."),
+    CANCEL_REQUEST_REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "CANCEL_REQUEST_REJECT_REASON_REQUIRED", "소비자에게 전달할 거부 사유를 입력해 주세요."),
+    SELLER_CANCEL_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER_CANCEL_REASON_REQUIRED", "기타 사유를 선택하면 설명을 입력해야 합니다."),
+    PURCHASE_ORDER_COLUMNS_REQUIRED(HttpStatus.BAD_REQUEST, "PURCHASE_ORDER_COLUMNS_REQUIRED", "발주서 컬럼을 1개 이상 선택해 주세요."),
+    PURCHASE_ORDER_EMPTY(HttpStatus.BAD_REQUEST, "PURCHASE_ORDER_EMPTY", "발주서로 내려받을 주문이 없습니다."),
+    SHIPMENT_FILE_INVALID(HttpStatus.BAD_REQUEST, "SHIPMENT_FILE_INVALID", "엑셀 파일을 읽을 수 없습니다. 양식을 확인해 주세요."),
+    SHIPMENT_FILE_TOO_MANY_ROWS(HttpStatus.BAD_REQUEST, "SHIPMENT_FILE_TOO_MANY_ROWS", "엑셀 업로드는 최대 1,000행까지 가능합니다."),
+    /** 소비자 앱 — 준비 시작 후에는 취소 요청 경로만 남는다(약관 제17조② · 제18조①). */
+    ORDER_CANCEL_WINDOW_CLOSED(HttpStatus.CONFLICT, "ORDER_CANCEL_WINDOW_CLOSED", "배송 준비가 시작되어 바로 취소할 수 없습니다. 판매자에게 취소 요청을 보내 주세요.");
 
     private final HttpStatus status;
     private final String code;

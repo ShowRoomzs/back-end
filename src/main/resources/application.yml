@@ -129,6 +129,20 @@ order:
   reconciliation-enabled: true                      # 일일 대사 05:00 KST
   health-check-enabled: true                        # 운영 지표 10분 주기
   customer-email-enabled: true                      # 포트원 customer 블록에 이메일 포함 여부(9-1 ②)
+  purchase-confirm-days: 7                          # 구매확정 — 배송완료 + N일 자동(약관 제19조①)
+  purchase-confirm-scheduler-enabled: true          # 구매확정 배치(매시)
+  search-range-max-days: 365                        # 파트너센터 주문 조회 기간 상한(§34-2)
+  shipment-upload-max-rows: 1000                    # 송장 엑셀 일괄 업로드 행 상한(§34-5)
+
+# DeliveryTrackerProperties.java — 배송 추적 연동(34 설계서 3-3). enabled=false 면 Noop 스텁이 붙고
+# 감시 배치가 멈춘다(송장 형식 검증도 생략 기록). 연동 업체 스펙 확정(§34-13 #16) 후 켠다 — 런칭 게이트.
+delivery:
+  tracker:
+    enabled: ${DELIVERY_TRACKER_ENABLED:false}
+    poll-interval-ms: 1800000                       # 폴링 주기 — 잠정 30분
+    batch-size: 300
+    pickup-alert-hours: 24                          # 집화 확인 필요 — 송장 등록 후 N시간 추적 미조회
+    stall-alert-days: 7                             # 추적 정지 — 마지막 이벤트 후 N일 갱신 없음
 
 # Sentry 설정 (공통)
 sentry:

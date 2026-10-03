@@ -10,6 +10,7 @@ import showroomz.domain.order.entity.Order;
 import showroomz.domain.order.entity.OrderProduct;
 import showroomz.domain.order.repository.OrderProductRepository;
 import showroomz.domain.order.repository.OrderRepository;
+import showroomz.domain.order.service.OrderFulfillmentService;
 import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.domain.order.type.OrderStatus;
 import showroomz.domain.payment.entity.Payment;
@@ -43,6 +44,7 @@ public class PaymentTransitions {
     private final OrderProductRepository orderProductRepository;
     private final CartRepository cartRepository;
     private final StockReleaser stockReleaser;
+    private final OrderFulfillmentService fulfillmentService;
     private final ApplicationEventPublisher eventPublisher;
     private final OrderProperties orderProperties;
     private final PaymentAlerts alerts;
@@ -72,6 +74,8 @@ public class PaymentTransitions {
                 throw new IllegalStateException("결제 행 전이 실패: " + paymentId);
             }
             orderProductRepository.transitionByOrder(orderId, EnumSet.of(OrderProductStatus.PENDING), OrderProductStatus.PAID);
+            // 하위주문의 탄생(34 설계서 5-1) — 같은 트랜잭션에서 NEW 전이 · 하위주문번호 · 발송기한 스냅샷.
+            fulfillmentService.activateOnPaid(orderId, paidAt);
             List<Long> cartIds = orderProductRepository.findByOrderIdWithVariant(orderId).stream()
                     .map(OrderProduct::getCartId).filter(Objects::nonNull).distinct().toList();
             if (!cartIds.isEmpty()) {
@@ -154,6 +158,8 @@ public class PaymentTransitions {
         Long orderId = payment.getOrderId();
         if (orderRepository.cancelPaid(orderId, paymentId, now, reason) == 1) {
             stockReleaser.release(orderId, now);
+            // 하위주문에도 취소의 사실을 남긴다(34 설계서 5-2) — 그룹 CANCELLED(CONSUMER) + 항목 취소 메타 + 이력.
+            fulfillmentService.applyConsumerCancel(orderId, now);
         }
         if (mismatch) {
             alerts.error("결제 자동 취소 - paymentId: " + paymentId + ", 사유: " + payment.getMismatchReason());

@@ -64,6 +64,8 @@ import java.lang.annotation.Target;
                 "order.expiration-scheduler-enabled=false",
                 "order.reconciliation-enabled=false",
                 "order.health-check-enabled=false",
+                // 구매확정 배치(매시)도 끄고 서비스를 직접 부른다 — 추적 배치는 delivery.tracker.enabled 기본 false 라 안 뜬다.
+                "order.purchase-confirm-scheduler-enabled=false",
                 // 제출본 PDF는 운영에서 커밋 이후 비동기로 만든다 — 테스트는 같은 스레드에서 돌려 검토 요청 직후 확인한다.
                 "contract.pdf.async-enabled=false",
                 "sentry.dsn=",

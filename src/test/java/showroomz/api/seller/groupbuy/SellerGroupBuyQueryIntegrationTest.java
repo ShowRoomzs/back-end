@@ -268,8 +268,9 @@ class SellerGroupBuyQueryIntegrationTest extends GroupBuyTestSupport {
                 .andExpect(jsonPath("$.sales.basis").value("LIVE"))
                 .andExpect(jsonPath("$.sales.orderCount").value(0))
                 .andExpect(jsonPath("$.sales.amount").value(0))
-                // 종결(배송·반품)은 아직 판매 모듈이 모른다 — 0이 아니라 null(포트 주석 0-6).
-                .andExpect(jsonPath("$.orderClosure").doesNotExist());
+                // 종결은 하위주문 이행 상태로 실값 판정한다(34 설계서 5-3) — 주문이 없으면 0/0/0 이다.
+                .andExpect(jsonPath("$.orderClosure.totalCount").value(0))
+                .andExpect(jsonPath("$.orderClosure.unclosedCount").value(0));
     }
 
     @Test

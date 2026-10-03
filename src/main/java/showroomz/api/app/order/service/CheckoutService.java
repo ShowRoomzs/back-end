@@ -266,11 +266,11 @@ public class CheckoutService {
         if (order.getStatus() != OrderStatus.PAID || order.getPaidPaymentId() == null) {
             throw new BusinessException(ErrorCode.ORDER_NOT_CANCELLABLE);
         }
-        // 배송 전 — 지금은 order_product 전부 PAID(9-1 ⑤). 발송 처리가 생기면 PREPARING 이후를 막는다.
-        boolean beforeShipping = orderProductRepository.findByOrderIdWithVariant(orderId).stream()
-                .allMatch(p -> p.getStatus() == OrderProductStatus.PAID);
-        if (!beforeShipping) {
-            throw new BusinessException(ErrorCode.ORDER_NOT_CANCELLABLE);
+        // 소비자 단순 취소는 전 하위주문이 준비 시작 전(NEW)일 때만(34 설계서 5-2 · 약관 제17조②).
+        // 준비 시작 이후는 취소 요청 → 브랜드 승인·거부 경로다. 선점과 준비 시작의 레이스에서
+        // 준비 시작이 먼저 커밋되면 취소가 진다 — 약관의 방향과 일치한다.
+        if (deliveryGroupRepository.countPreparedByOrder(orderId) > 0) {
+            throw new BusinessException(ErrorCode.ORDER_CANCEL_WINDOW_CLOSED);
         }
         String paymentId = order.getPaidPaymentId();
         LocalDateTime retryAt = now.plusMinutes(orderProperties.getCancelRetryBaseMinutes());

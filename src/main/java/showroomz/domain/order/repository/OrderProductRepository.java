@@ -69,6 +69,51 @@ public interface OrderProductRepository extends JpaRepository<OrderProduct, Long
             + "GROUP BY op.variant.product.productId")
     List<Object[]> sumReservedQuantityByProductIds(@Param("productIds") Collection<Long> productIds);
 
+    // ------------------------------------------------------------------ 하위주문 이행(34 설계서)
+
+    /** 하위주문(그룹)들의 항목 — 목록 행 확장(▸)·상세 항목 표·발주서. */
+    @Query("SELECT op FROM OrderProduct op WHERE op.deliveryGroup.id IN :deliveryGroupIds ORDER BY op.id ASC")
+    List<OrderProduct> findByDeliveryGroupIds(@Param("deliveryGroupIds") Collection<Long> deliveryGroupIds);
+
+    /** 그룹 전 항목 전이 — 구매확정(PAID → PURCHASE_CONFIRMED)·직권 취소에 쓴다. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderProduct op SET op.status = :to WHERE op.deliveryGroup.id = :deliveryGroupId AND op.status IN :from")
+    int transitionByGroup(@Param("deliveryGroupId") Long deliveryGroupId,
+                          @Param("from") Collection<OrderProductStatus> from, @Param("to") OrderProductStatus to);
+
+    /** 항목 단위 취소 확정 — 1행일 때만 재고를 되돌린다(1회 규칙 · StockReleaser 와 같은 수법). */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderProduct op SET op.status = showroomz.domain.order.type.OrderProductStatus.CANCELLED, "
+            + "op.cancelType = :cancelType, op.cancelledAt = :now "
+            + "WHERE op.id = :orderProductId AND op.status = showroomz.domain.order.type.OrderProductStatus.PAID")
+    int cancelItem(@Param("orderProductId") Long orderProductId,
+                   @Param("cancelType") showroomz.domain.order.type.OrderCancelType cancelType,
+                   @Param("now") LocalDateTime now);
+
+    /** 그룹 전 항목 취소 — 직권 취소(하위주문 전체). 취소된 항목 수를 돌려준다. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderProduct op SET op.status = showroomz.domain.order.type.OrderProductStatus.CANCELLED, "
+            + "op.cancelType = :cancelType, op.cancelledAt = :now "
+            + "WHERE op.deliveryGroup.id = :deliveryGroupId "
+            + "AND op.status = showroomz.domain.order.type.OrderProductStatus.PAID")
+    int cancelItemsByGroup(@Param("deliveryGroupId") Long deliveryGroupId,
+                           @Param("cancelType") showroomz.domain.order.type.OrderCancelType cancelType,
+                           @Param("now") LocalDateTime now);
+
+    /** 소비자 전액 취소의 항목 취소 메타 — StockReleaser 가 이미 CANCELLED 로 내린 항목에 유형·시각만 채운다. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderProduct op SET op.cancelType = :cancelType, op.cancelledAt = :now "
+            + "WHERE op.order.id = :orderId AND op.status = showroomz.domain.order.type.OrderProductStatus.CANCELLED "
+            + "AND op.cancelType IS NULL")
+    int fillCancelMetaByOrder(@Param("orderId") Long orderId,
+                              @Param("cancelType") showroomz.domain.order.type.OrderCancelType cancelType,
+                              @Param("now") LocalDateTime now);
+
+    /** 그룹의 미취소 항목 수 — 0이면 전 항목 취소라 그룹도 취소 탭으로 간다(§34-8). */
+    @Query("SELECT COUNT(op) FROM OrderProduct op WHERE op.deliveryGroup.id = :deliveryGroupId "
+            + "AND op.status <> showroomz.domain.order.type.OrderProductStatus.CANCELLED")
+    long countActiveByGroup(@Param("deliveryGroupId") Long deliveryGroupId);
+
     // ------------------------------------------------------------------ 판매 관리 포트(7-2)
 
     /** 취소 반영 판매 실적 — [주문 수, 금액]. 결제 완료 주문의 취소되지 않은 줄만. */

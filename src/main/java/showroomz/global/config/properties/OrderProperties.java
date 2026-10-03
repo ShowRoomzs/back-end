@@ -41,4 +41,18 @@ public class OrderProperties {
 
     /** 포트원 customer 블록에 이메일을 실을지 — 개인정보 제3자 제공 범위(9-1 ②) 법무 결과에 따라 끈다. */
     private boolean customerEmailEnabled = true;
+
+    // ------------------------------------------------------------------ 파트너센터 주문 관리(34 설계서)
+
+    /** 구매확정 — 배송완료 + N일 자동(약관 제19조①). 약관 개정은 배포 없이 따라간다. */
+    private int purchaseConfirmDays = 7;
+
+    /** 구매확정 배치(매시) 가동 여부. */
+    private boolean purchaseConfirmSchedulerEnabled = true;
+
+    /** 목록 조회 기간 상한(§34-2) — 초과 조회 불가. */
+    private int searchRangeMaxDays = 365;
+
+    /** 송장 엑셀 일괄 업로드 행 상한(§34-5). */
+    private int shipmentUploadMaxRows = 1000;
 }

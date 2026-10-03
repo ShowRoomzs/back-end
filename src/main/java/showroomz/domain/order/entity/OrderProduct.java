@@ -78,6 +78,16 @@ public class OrderProduct extends BaseTimeEntity {
     @Column(name = "cart_id")
     private Long cartId;
 
+    // ── 항목 취소 메타(34 설계서 1-6) — 상태 4종은 늘리지 않는다. 취소의 사실만 더한다 ──
+
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
+
+    /** 그룹과 같은 3종 — 부분 취소(일부 항목만)는 항목에만 남는다. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancel_type", length = 30)
+    private showroomz.domain.order.type.OrderCancelType cancelType;
+
     @OneToOne(mappedBy = "orderProduct", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Review review;
 
