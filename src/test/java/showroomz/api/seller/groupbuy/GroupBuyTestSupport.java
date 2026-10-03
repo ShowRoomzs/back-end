@@ -139,6 +139,12 @@ public abstract class GroupBuyTestSupport extends IntegrationTestSupport {
         return mockMvc.perform(get(GROUP_BUYS + "/" + groupBuyId).header(HttpHeaders.AUTHORIZATION, brandToken));
     }
 
+    /** 목록 조건(tab · keyword · sort)을 넘긴 상세 — 이웃(navigation) 계산용. */
+    protected ResultActions detail(long groupBuyId, String query) throws Exception {
+        return mockMvc.perform(get(GROUP_BUYS + "/" + groupBuyId + "?" + query)
+                .header(HttpHeaders.AUTHORIZATION, brandToken));
+    }
+
     protected ResultActions action(long groupBuyId, String path, Object body) throws Exception {
         var request = post(GROUP_BUYS + "/" + groupBuyId + "/" + path).header(HttpHeaders.AUTHORIZATION, brandToken);
         if (body != null) {

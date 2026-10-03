@@ -45,7 +45,7 @@ public class GroupBuyFactory {
             throw new BusinessException(ErrorCode.CONTRACT_GROUP_BUY_ALREADY_CREATED);
         }
 
-        String number = numberGenerator.generate(now.toLocalDate());
+        String number = numberGenerator.generate(now);
         GroupBuy groupBuy = groupBuyRepository.save(GroupBuy.createFrom(contract, number));
 
         // 26 · 1-8 게이트 — 0행이면 다른 경로(백필 등)가 먼저 만들었다. 예외로 체결까지 롤백한다.

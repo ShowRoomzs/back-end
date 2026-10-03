@@ -28,7 +28,7 @@ public record ShipmentParseResponse(
             @Schema(description = "송장번호 — 숫자만 남긴 값", example = "640012345678") String trackingNumber,
             @Schema(description = "등록 가능 여부", example = "true") boolean valid,
             @Schema(description = "ALREADY_SHIPPED · INVOICE_DUPLICATE · ORDER_NOT_FOUND · TRACKING_REQUIRED · NEW_NOT_ALLOWED · "
-                    + "AMBIGUOUS_ORDER · CARRIER_INVALID · CANCEL_REQUEST_PENDING · STATE_INVALID — 정상 행은 null",
+                    + "AMBIGUOUS_ORDER · CARRIER_INVALID · CANCEL_REQUEST_PENDING · STATE_INVALID · ORDER_DUPLICATE_IN_FILE — 정상 행은 null",
                     example = "NEW_NOT_ALLOWED", nullable = true) String errorCode,
             @Schema(description = "오류 안내 문구 — 정상 행은 null",
                     example = "신규(준비 대기) 주문 · 준비 시작 전이라 송장을 등록할 수 없습니다.", nullable = true) String message

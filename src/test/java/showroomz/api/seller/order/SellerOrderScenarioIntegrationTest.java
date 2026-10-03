@@ -8,15 +8,12 @@ import org.springframework.test.web.servlet.ResultMatcher;
 import showroomz.domain.cart.entity.Cart;
 import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.service.port.GroupBuySalesReader;
-import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.order.entity.OrderCancelRequest;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.type.CancelRequestStatus;
 import showroomz.domain.order.type.FulfillmentStatus;
-import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductVariant;
 import showroomz.support.BrandFixture;
-import showroomz.support.ContractOptions;
 import showroomz.support.IntegrationTest;
 
 import java.time.LocalDateTime;
@@ -211,21 +208,6 @@ class SellerOrderScenarioIntegrationTest extends SellerOrderTestSupport {
             cancel(created.orderId())
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.code").value("ORDER_CANCEL_WINDOW_CLOSED"));
-        }
-
-        /** 다른 브랜드의 진행 중 공구 1건 — 상품 1개(공구가 27,200) · 재고 10 · 발송 리드타임 3일. */
-        private ProductVariant openOtherBrandGroupBuy(BrandFixture.Brand other) {
-            LocalDateTime now = LocalDateTime.now().withNano(0);
-            GroupBuy otherGroupBuy = seed(other, creator, "타브랜드 공구", now.minusDays(3), now.plusDays(4));
-            moveTo(otherGroupBuy.getId(), GroupBuyStatus.IN_PROGRESS);
-            Product product = productRepository.findAll().stream()
-                    .filter(p -> p.getName().equals("상품 타브랜드 공구")).findFirst().orElseThrow();
-            jdbc.update("UPDATE product SET group_buy_status = 'IN_PROGRESS' WHERE product_id = ?", product.getProductId());
-            jdbc.update("UPDATE market SET default_delivery_fee = ?, free_shipping_threshold = ?, shipping_lead_days = ? "
-                    + "WHERE market_id = ?", DELIVERY_FEE, FREE_SHIPPING_THRESHOLD, 3, other.marketId());
-            ProductVariant variant = ContractOptions.variantsOf(productVariantRepository, product).get(0);
-            setStock(variant, 10);
-            return variant;
         }
     }
 

@@ -25,7 +25,8 @@ public record PurchaseOrderRequest(
         @Schema(description = "이 구성을 기본값으로 저장 — 생략 시 저장하지 않음", example = "false", nullable = true)
         Boolean saveAsDefault,
         // ── 선택 없이 열었을 때의 대상 필터(목록과 동일) ──
-        @Schema(description = "대상 탭 — `deliveryGroupIds`가 비었을 때만 쓴다. **생략 시 `NEW`**(목록 API 기본값 `ALL`과 다르다)",
+        @Schema(description = "대상 탭 — `deliveryGroupIds`가 비었을 때만 쓴다. **생략 시 `NEW`**(목록 API 기본값 `ALL`과 다르다) · "
+                + "`NEW`·`PREPARING` 외 탭은 대상이 없다(발주서는 작업 큐의 액션)",
                 example = "NEW", nullable = true) OrderTab tab,
         @Schema(description = "조회 기준일 — 생략 시 `PAID`", example = "PAID", nullable = true) OrderDateBasis dateBasis,
         @Schema(description = "조회 시작일 — 생략 시 탭 기본 기간", example = "2026-09-26", nullable = true) LocalDate from,

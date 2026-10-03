@@ -26,7 +26,9 @@ public interface PaymentControllerDocs {
                     "**응답 해석:**\n" +
                     "- `orderStatus: PAID` → 완료 화면\n" +
                     "- `paymentStatus: FAILED` → C9 로 돌아가 재시도(`POST /orders/{orderId}/payments`)\n" +
-                    "- `orderStatus: PAYMENT_PENDING` + `paymentStatus: READY` → 결제창이 아직 열린 것으로 보고 잠시 뒤 다시 부른다\n" +
+                    "- `orderStatus: PAYMENT_PENDING` + `paymentStatus: READY` → 아직 결제되지 않았다. `onComplete` 에 `code` 가 있었으면" +
+                    "(창 닫음·인증 실패) 결제 안 된 것으로 보고 C9 유지. `code` 가 없는데 READY 면 승인 반영 지연이니 1~2초 간격으로 " +
+                    "몇 번(3회 정도) 다시 부르고, 그래도 READY 면 주문 상세로 보낸다(웹훅이 뒤이어 완료시킨다)\n" +
                     "- `paymentStatus: CANCELLED_MISMATCH` / `CANCEL_REQUESTED` → 금액 불일치·만료 후 결제 등으로 자동 취소됨(`failReason`)\n\n" +
                     "멱등이다 — 완료 화면에서 반복해 불러도 종결된 결제는 포트원으로 나가지 않는다. `clientResult` 는 힌트일 뿐이라 없어도 된다.\n\n" +
                     "**권한:** USER (본인 주문의 결제만)"

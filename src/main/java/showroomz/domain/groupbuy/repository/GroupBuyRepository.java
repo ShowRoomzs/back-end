@@ -3,6 +3,7 @@ package showroomz.domain.groupbuy.repository;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
@@ -116,6 +117,18 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, Group
                                    @Param("statuses") Collection<GroupBuyStatus> statuses,
                                    @Param("pattern") String pattern,
                                    Pageable pageable);
+
+    /** 파트너 목록과 <b>같은 조건·같은 정렬</b>의 id 전체 — 상세의 이웃(이전·다음)을 목록과 어긋나지 않게 고른다. */
+    @Query("SELECT g.id FROM GroupBuy g "
+            + "JOIN g.contract c "
+            + "JOIN g.creator cr "
+            + "WHERE g.market.id = :marketId AND g.status IN :statuses "
+            + "AND (:pattern IS NULL OR c.title LIKE :pattern OR cr.showroomName LIKE :pattern "
+            + "     OR g.groupBuyNumber LIKE :pattern)")
+    List<Long> findOrderedIdsForSeller(@Param("marketId") Long marketId,
+                                       @Param("statuses") Collection<GroupBuyStatus> statuses,
+                                       @Param("pattern") String pattern,
+                                       Sort sort);
 
     /** 어드민 탭 카운트 — 가시성 필터가 없다(32 설계 2-1). GNB 폴링용이라 GROUP BY 1회다(3-3). */
     @Query("SELECT g.status, COUNT(g) FROM GroupBuy g GROUP BY g.status")

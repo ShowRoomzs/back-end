@@ -55,8 +55,12 @@ public class SellerGroupBuyController implements SellerGroupBuyControllerDocs {
 
     @Override
     @GetMapping("/{groupBuyId}")
-    public ResponseEntity<GroupBuyDetailResponse> getGroupBuy(@PathVariable Long groupBuyId) {
-        return ResponseEntity.ok(queryService.getGroupBuy(getCurrentSellerEmail(), groupBuyId));
+    public ResponseEntity<GroupBuyDetailResponse> getGroupBuy(
+            @PathVariable Long groupBuyId,
+            @RequestParam(value = "tab", required = false) GroupBuyTab tab,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "sort", required = false) GroupBuySortType sort) {
+        return ResponseEntity.ok(queryService.getGroupBuy(getCurrentSellerEmail(), groupBuyId, tab, keyword, sort));
     }
 
     @Override

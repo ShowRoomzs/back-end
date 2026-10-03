@@ -9,7 +9,7 @@ package showroomz.api.admin.groupbuy.docs;
  *   <li>공구 41 「여름 수분 세럼 공구」 · 브랜드 「글로우랩」 · 쇼룸 「민지의 쇼룸」 — 오픈 승인 · 숨김 · 요청 판정 · 종료</li>
  *   <li>공구 45 「비타민 앰플 공구」 · 브랜드 「퓨어셀」 — 직권 중단 통지 · 소명 · 집행(고정 지급비 없는 계약)</li>
  * </ul>
- * 판매 모듈·정산 모듈 연동 전이라 {@code sales} · 판단 근거 주문 수 · {@code orderClosure} · 정산 미리보기 금액은 실제 응답처럼 null로 둔다.
+ * 정산 모듈 연동 전이라 정산 단계는 {@code DERIVED}이고 확정 리워드는 null이다. 판매 수치는 예제마다 필요한 칸만 채웠다.
  */
 final class AdminGroupBuyDocsExamples {
 
@@ -300,7 +300,7 @@ final class AdminGroupBuyDocsExamples {
                 "statusAtRequest": "IN_PROGRESS",
                 "requestedAt": "2026-08-18T09:10:00",
                 "elapsed": "5h",
-                "decisionBasis": {"ordersAtRequest": null, "ordersNow": null, "ordersSinceRequest": null, "quantityNow": null, "amountNow": null, "inquiries": null, "preparedQuantity": 350, "sellThroughRate": null, "soldOutInquiriesSinceRequest": 6, "originalEndAt": "2026-08-20T23:55:00", "endsImmediatelyIfApproved": true}
+                "decisionBasis": {"ordersAtRequest": null, "ordersNow": 318, "ordersSinceRequest": null, "quantityNow": 350, "amountNow": 13515000, "inquiries": null, "preparedQuantity": 350, "sellThroughRate": 100, "soldOutInquiriesSinceRequest": 6, "originalEndAt": "2026-08-20T23:55:00", "endsImmediatelyIfApproved": true}
               },
               "extension": null,
               "adminSuspension": null,
@@ -345,11 +345,11 @@ final class AdminGroupBuyDocsExamples {
                 "settlement": {
                   "stage": "WAITING",
                   "stageSource": "DERIVED",
-                  "blockers": ["CLOSURE_UNKNOWN", "FULFILLMENT_DISPUTE"],
+                  "blockers": ["UNCLOSED_ORDERS", "FULFILLMENT_DISPUTE"],
                   "watch": {"dueAt": "2026-09-19", "elapsedDays": 4, "reached": false},
-                  "preview": {"provisionalSalesAmount": null, "rewardRates": [15, 12.5], "rewardAmount": null}
+                  "preview": {"provisionalSalesAmount": 13515000, "rewardRates": [15, 12.5], "rewardAmount": null}
                 },
-                "orderClosure": null,
+                "orderClosure": {"totalCount": 312, "closedCount": 294, "unclosedCount": 18, "unclosed": [{"stage": "SHIPPING", "label": "배송중", "count": 12}, {"stage": "DELIVERED", "label": "배송완료", "count": 6}], "purchaseConfirmedCount": 275, "refundedCount": 19},
                 "openIssue": null
               },
               "closure": null,

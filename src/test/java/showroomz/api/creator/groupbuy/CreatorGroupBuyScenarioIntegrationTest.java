@@ -83,7 +83,7 @@ class CreatorGroupBuyScenarioIntegrationTest extends CreatorGroupBuyTestSupport 
     }
 
     @Test
-    @DisplayName("A1·A2: 빈 상태와 6개 탭의 합계는 같은 소유자 공구만 센다")
+    @DisplayName("A1·A2: 빈 상태와 5개 탭의 합계는 같은 소유자 공구만 센다")
     void emptyAndSixTabs() throws Exception {
         studioList(null).andExpect(status().isOk()).andExpect(jsonPath("$.content").isEmpty());
         studioSummary().andExpect(jsonPath("$.tabCounts.ALL").value(0))
@@ -101,13 +101,13 @@ class CreatorGroupBuyScenarioIntegrationTest extends CreatorGroupBuyTestSupport 
                 .andExpect(jsonPath("$.tabCounts.PREPARING").value(1))
                 .andExpect(jsonPath("$.tabCounts.READY").value(1))
                 .andExpect(jsonPath("$.tabCounts.IN_PROGRESS").value(2))
-                .andExpect(jsonPath("$.tabCounts.ENDED").value(2))
-                .andExpect(jsonPath("$.tabCounts.SUSPENDED").value(1));
+                .andExpect(jsonPath("$.tabCounts.ENDED").value(3))
+                .andExpect(jsonPath("$.tabCounts.SUSPENDED").doesNotExist());
         studioList("tab=IN_PROGRESS").andExpect(jsonPath("$.content[*].groupBuyId")
                 .value(containsInAnyOrder(selling.getId().intValue(), notice.getId().intValue())));
         studioList("tab=ENDED").andExpect(jsonPath("$.content[*].groupBuyId")
-                .value(containsInAnyOrder(ended.getId().intValue(), settled.getId().intValue())));
-        studioList("tab=SUSPENDED").andExpect(jsonPath("$.content[0].groupBuyId").value(suspended.getId()));
+                .value(containsInAnyOrder(ended.getId().intValue(), settled.getId().intValue(),
+                        suspended.getId().intValue())));
         studioList("tab=PREPARING").andExpect(jsonPath("$.content[0].groupBuyId").value(preparing.getId()));
         studioList("tab=READY").andExpect(jsonPath("$.content[0].groupBuyId").value(ready.getId()));
     }

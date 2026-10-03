@@ -11,10 +11,12 @@ import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.entity.OrderFulfillmentHistory;
 import showroomz.domain.order.entity.OrderProduct;
 import showroomz.domain.order.entity.OrderRefundTask;
+import showroomz.domain.order.repository.OrderCancelRequestRepository;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.domain.order.repository.OrderFulfillmentHistoryRepository;
 import showroomz.domain.order.repository.OrderProductRepository;
 import showroomz.domain.order.repository.OrderRefundTaskRepository;
+import showroomz.domain.order.type.DeliveryCarrier;
 import showroomz.domain.order.type.FulfillmentActorType;
 import showroomz.domain.order.type.FulfillmentEventType;
 import showroomz.domain.order.type.FulfillmentStatus;
@@ -45,6 +47,7 @@ public class OrderFulfillmentService {
     private final OrderProductRepository orderProductRepository;
     private final OrderFulfillmentHistoryRepository historyRepository;
     private final OrderRefundTaskRepository refundTaskRepository;
+    private final OrderCancelRequestRepository cancelRequestRepository;
     private final ProductVariantRepository productVariantRepository;
 
     // ------------------------------------------------------------------ 이력
@@ -96,9 +99,14 @@ public class OrderFulfillmentService {
 
     // ------------------------------------------------------------------ 소비자 전액 취소(설계서 5-2)
 
-    /** PG 취소가 확인된 뒤 주문 CANCELLED 전이와 같은 트랜잭션에서 — 그룹·항목에 취소의 사실을 남긴다. */
+    /**
+     * PG 취소가 확인된 뒤 주문 CANCELLED 전이와 같은 트랜잭션에서 — 그룹·항목에 취소의 사실을 남긴다.
+     * 그 주문에 걸린 검토 중 취소 요청은 시스템이 닫는다(VOIDED) — 남겨 두면 취소된 그룹에 「검토 중」이 붙고,
+     * 승인하면 0원 환불 큐가 선다.
+     */
     @Transactional(propagation = Propagation.MANDATORY)
     public void applyConsumerCancel(Long orderId, LocalDateTime now) {
+        cancelRequestRepository.voidPendingByOrder(orderId, now);
         List<Long> targetIds = deliveryGroupRepository.findByOrderId(orderId).stream()
                 .filter(g -> FulfillmentStatus.WORKABLE.contains(g.getFulfillmentStatus()))
                 .map(OrderDeliveryGroup::getId)
@@ -185,23 +193,29 @@ public class OrderFulfillmentService {
     public void applyTracking(OrderDeliveryGroup target, Optional<TrackSnapshot> result, LocalDateTime now,
                               int pickupAlertHours, int stallAlertDays) {
         Long id = target.getId();
+        // 폴링 당시의 송장 — 전이 WHERE 에 넣어 그사이 송장이 수정됐으면 0행이 된다(N11).
+        DeliveryCarrier carrier = target.getCarrier();
+        String trackingNumber = target.getTrackingNumber();
         if (result.isEmpty() || result.get().lastEventAt() == null) {
             // 이벤트 없음 — 집화 스캔 전에는 데이터가 없는 게 정상. 24시간이 지나야 1단 경고다(§34-6).
             if (target.getFulfillmentStatus() == FulfillmentStatus.SHIPPING
                     && target.getLastTrackingAt() == null
                     && target.getShippedAt() != null
                     && !target.getShippedAt().plusHours(pickupAlertHours).isAfter(now)
-                    && deliveryGroupRepository.setTrackingAlert(id, TrackingAlert.PICKUP_UNCONFIRMED) == 1) {
+                    && deliveryGroupRepository.setTrackingAlert(id, carrier, trackingNumber,
+                    TrackingAlert.PICKUP_UNCONFIRMED) == 1) {
                 appendHistory(id, FulfillmentEventType.PICKUP_UNCONFIRMED, FulfillmentActorType.TRACKER, null, null, now);
             }
             return;
         }
 
         TrackSnapshot snapshot = result.get();
-        deliveryGroupRepository.touchTracking(id, snapshot.lastEventAt());
+        if (deliveryGroupRepository.touchTracking(id, carrier, trackingNumber, snapshot.lastEventAt()) != 1) {
+            return; // 송장이 바뀌었거나 추적 대상 상태를 벗어났다 — 이 결과는 지금 송장의 것이 아니다.
+        }
 
         if (snapshot.returnCompleted() && target.getFulfillmentStatus() == FulfillmentStatus.RETURNING) {
-            if (deliveryGroupRepository.markReturnCompleted(id, now) == 1) {
+            if (deliveryGroupRepository.markReturnCompleted(id, carrier, trackingNumber, now) == 1) {
                 // 반송은 환불로 종결 — 이 주문으로 재발송하지 않는다. 금액은 예정액(왕복 배송비 차감은 약관 근거 대기).
                 enqueueRefund(target, RefundTaskSource.RETURN_COMPLETED, null, activeItemsAmount(id) + target.getDeliveryFee());
                 appendHistory(id, FulfillmentEventType.RETURN_COMPLETED, FulfillmentActorType.TRACKER, null, null, now);
@@ -209,13 +223,14 @@ public class OrderFulfillmentService {
             return;
         }
         if (snapshot.returnDetected() && target.getFulfillmentStatus() == FulfillmentStatus.SHIPPING) {
-            if (deliveryGroupRepository.markReturning(id, now) == 1) {
+            if (deliveryGroupRepository.markReturning(id, carrier, trackingNumber, now) == 1) {
                 appendHistory(id, FulfillmentEventType.RETURN_DETECTED, FulfillmentActorType.TRACKER, null, null, now);
             }
             return;
         }
         if (snapshot.deliveredAt() != null && target.getFulfillmentStatus() == FulfillmentStatus.SHIPPING) {
-            if (deliveryGroupRepository.markDeliveredByTracker(id, snapshot.deliveredAt()) == 1) {
+            if (deliveryGroupRepository.markDeliveredByTracker(id, carrier, trackingNumber,
+                    snapshot.deliveredAt()) == 1) {
                 appendHistory(id, FulfillmentEventType.DELIVERED, FulfillmentActorType.TRACKER, null,
                         "자동 확인", now);
             }
@@ -225,13 +240,13 @@ public class OrderFulfillmentService {
         // 2단 — 집화 후 N일 갱신 없음. 1단과 달리 이벤트가 있던 송장이다.
         if (target.getFulfillmentStatus() == FulfillmentStatus.SHIPPING
                 && !snapshot.lastEventAt().plusDays(stallAlertDays).isAfter(now)) {
-            if (deliveryGroupRepository.setTrackingAlert(id, TrackingAlert.STALLED) == 1) {
+            if (deliveryGroupRepository.setTrackingAlert(id, carrier, trackingNumber, TrackingAlert.STALLED) == 1) {
                 appendHistory(id, FulfillmentEventType.TRACKING_STALLED, FulfillmentActorType.TRACKER, null, null, now);
             }
             return;
         }
         // 이벤트 재개 — 배지 해제(해제 이력은 두지 않는다 — 소음).
-        deliveryGroupRepository.clearTrackingAlert(id);
+        deliveryGroupRepository.clearTrackingAlert(id, carrier, trackingNumber);
     }
 
     private int activeItemsAmount(Long deliveryGroupId) {

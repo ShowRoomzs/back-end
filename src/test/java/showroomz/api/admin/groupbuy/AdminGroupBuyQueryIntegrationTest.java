@@ -173,10 +173,12 @@ class AdminGroupBuyQueryIntegrationTest extends AdminGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("B4 조기 마감 근거 — 준비 물량(최소 물량 합) · 품절 문의는 상품 문의 테이블만으로 셀 수 있어 값이 나온다")
+    @DisplayName("B4 조기 마감 근거 — 준비 물량(판매 수량 + 현재 재고) · 품절 문의는 상품 문의 테이블만으로 셀 수 있어 값이 나온다")
     void earlyCloseBasis() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.IN_PROGRESS);
         seedSellerRequest(groupBuy, ChangeRequestType.EARLY_CLOSE);
+        jdbc.update("UPDATE product_variant SET stock = ? WHERE product_id = ?", 320, cream.getProductId());
+        jdbc.update("UPDATE product_variant SET stock = ? WHERE product_id = ?", 180, serum.getProductId());
 
         adminDetail(groupBuy.getId()).andExpect(status().isOk())
                 .andExpect(jsonPath("$.activeRequest.type").value("EARLY_CLOSE"))

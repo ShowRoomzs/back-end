@@ -69,7 +69,13 @@ public class SellerOrderQueryService {
         SellerScope scope = accessGuard.resolve(sellerEmail);
         SellerOrderSearchCondition condition = buildCondition(scope.market().getId(), tab, dateBasis, from, to,
                 searchType, keyword, sort, LocalDateTime.now());
-        Pageable pageable = PageRequest.of(Math.max(pagingRequest.getPage() - 1, 0), pagingRequest.getSize());
+        // page 는 1 미만이면 첫 페이지로 보정하지만, size 는 보정하지 않는다 — 0 이하는 PageRequest 가 500 으로 터지고
+        // 상한이 없으면 한 번에 마켓 전체를 끌어온다.
+        int size = pagingRequest.getSize();
+        if (size < 1 || size > orderProperties.getListPageSizeMax()) {
+            throw new BusinessException(ErrorCode.ORDER_PAGE_SIZE_INVALID);
+        }
+        Pageable pageable = PageRequest.of(Math.max(pagingRequest.getPage() - 1, 0), size);
 
         Page<SellerOrderRow> page = deliveryGroupRepository.searchForSeller(condition, pageable);
         List<SellerOrderListItem> content = assembleRows(page.getContent());
@@ -139,6 +145,10 @@ public class SellerOrderQueryService {
         OrderTab resolvedTab = tab == null ? OrderTab.ALL : tab;
         LocalDate resolvedTo = to != null ? to : now.toLocalDate();
         LocalDate resolvedFrom = from != null ? from : resolvedTo.minusDays(resolvedTab.getDefaultPeriodDays());
+        // 역전된 기간은 빈 목록이 아니라 입력 오류다 — 빈 결과로 내리면 「주문이 없다」로 읽힌다.
+        if (resolvedFrom.isAfter(resolvedTo)) {
+            throw new BusinessException(ErrorCode.ORDER_SEARCH_RANGE_INVALID);
+        }
         if (ChronoUnit.DAYS.between(resolvedFrom, resolvedTo) > orderProperties.getSearchRangeMaxDays()) {
             throw new BusinessException(ErrorCode.ORDER_SEARCH_RANGE_EXCEEDED);
         }

@@ -131,10 +131,10 @@ public interface SellerGroupBuyControllerDocs {
 
                     | 블록 | 언제 채워지나 |
                     |---|---|
-                    | `groupBuy` · `timeline` · `counterparty` · `contract` · `items` · `fixedFee` · `contentDuty` · `post` · `extension` · `permissions` · `history` | 항상 |
+                    | `groupBuy` · `timeline` · `counterparty` · `contract` · `items` · `fixedFee` · `contentDuty` · `post` · `extension` · `permissions` · `history` · `navigation` | 항상 |
                     | `readiness` | `PREPARING` · `READY` |
                     | `sales` | `IN_PROGRESS` · `SUSPENSION_SCHEDULED`(LIVE) · `SETTLED` · `SUSPENDED`(AT_SUSPENSION). **`ENDED`는 항상 null** |
-                    | `orderClosure` | `IN_PROGRESS` · `SUSPENSION_SCHEDULED` · `ENDED` · `SUSPENDED` |
+                    | `orderClosure` | `IN_PROGRESS` · `SUSPENSION_SCHEDULED` · `ENDED` · `SETTLED` · `SUSPENDED` |
                     | `activeRequest` | 검토 중(PENDING)인 중단·조기 마감 요청이 있을 때(요청자 무관) |
                     | `lastDecision` | 승인·반려된 요청이 1건 이상일 때 — 가장 최근 1건 |
                     | `adminSuspension` | 직권 중단 통지 이력이 있을 때 |
@@ -147,27 +147,40 @@ public interface SellerGroupBuyControllerDocs {
                     - `IN_PROGRESS` — 판매 중. 연장(`extension`) · 요청(`activeRequest` · `lastDecision`) · 게시물 숨김(`post.status = HIDDEN`)으로 B4a~B4j를 가른다.
                     - `SUSPENSION_SCHEDULED` — `adminSuspension`(통지 사유 · 집행 예정 · 소명 기한 · 제출한 소명). 가능한 액션은 소명뿐이다.
                     - `ENDED` — `afterEnd.fulfillment`(이행 확인) · `afterEnd.openIssue` · `closure.closeType`(기간 종료/조기 마감).
-                    - `SETTLED` — 확정 실적(`sales.basis = SETTLED`) · `afterEnd.settledAt`.
+                    - `SETTLED` — 확정 실적(`sales.basis = SETTLED`) · `afterEnd.settledAt` · 종결 내역(`orderClosure.purchaseConfirmedCount` · `refundedCount` — 「확정 310 · 환불 2」 · 「구매확정 310/312」).
                     - `SUSPENDED` — `closure.source`로 사유를 가른다: `REQUEST`(요청 승인 — `closure.requester`) · `ADMIN_NOTICE`(사전 통지 후 집행) · `ADMIN_EMERGENCY`(긴급 직권 중단).
 
                     **값 해석 주의**
                     - 계약 조건(공구명 · 상품 · 고정 지급비 · 콘텐츠 의무)은 계약에서 그대로 읽는다 — 공구에서 수정할 수 없다.
                     - `sales` · `orderClosure`는 판매 모듈(주문 관리 34 설계서)이 실값으로 내린다 — 종결 = 구매확정·취소, 반송중은 환불 집행 전까지 미종결이다. `null`이면 판정 불가이지 0이 아니다 — **0으로 그리지 않는다**(미종결 0은 「정산해도 된다」는 뜻이 된다).
+                      `orderClosure.purchaseConfirmedCount` · `refundedCount`는 종결의 경로별 내역(하위주문 단위)이다 — 판매 모듈이 판정한 값을 그대로 싣는다. 반품·교환 거절 확정은 구매확정으로 센다(반품·교환 모듈 전에는 해당 건이 없다).
                       종료(`ENDED`) 화면에 KPI를 두지 않는 것은 의미 규칙이다 — 잠정치가 지급액으로 오해된다(§30-4).
                     - `fixedFee.displayText` — 3서피스 문자 단위 동일 표기를 서버가 짓는다. FE가 조립하지 않는다. 지급 여부는 싣지 않는다.
                     - `timeline`의 일수는 서버 now(Asia/Seoul) 기준 · 양끝 포함 일자 계산이다. FE 시계로 다시 계산하지 않는다.
                     - `activeRequest.memo` · `closure.requester.memo`는 **브랜드가 쓴 메모만** 내려온다. 인플루언서의 요청 메모는 운영자에게 쓴 글이라 `null`이다.
+                    - `post.rejectedAt` — 마지막 오픈 반려 시각. `post.rejectReason`이 있을 때만 채워진다(재제출·재승인 후에도 반려 기록과 짝으로 남는다).
+                    - `afterEnd.fulfillment.autoConfirmOnTimeout` — 현재 `false`. false면 「기한까지 확인하지 않으면 이행으로 처리」 문구를 **쓰면 안 된다.**
                     - `history` — **최신순**(발생 시각 내림차순 · 동률은 id 내림차순). 3서피스 공통이다. `actorDisplayName`은 브랜드명·쇼룸명 스냅샷이고, 운영자(`ADMIN`)·시스템(`SYSTEM`)은 `null`이다 — 호칭은 FE가 고른다.
+                    - `navigation` — 쿼리에 `tab` · `keyword` · `sort` 중 하나라도 오면 **목록과 같은 조건·정렬**로 이전·다음 공구 id를 채운다.
+                      없으면 둘 다 `null`, 현재 공구가 그 목록 조건에 없으면(그 사이 탭이 바뀐 경우) 둘 다 `null`이다. 실행 API 응답에서는 항상 둘 다 `null`이다.
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "400", description = "`tab` · `sort`에 정의되지 않은 값",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "403", description = "GROUP_BUY_NOT_OWNED_BY_SELLER — 다른 브랜드의 공구",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "GROUP_BUY_NOT_FOUND — 존재하지 않는 공구 · SELLER_NOT_FOUND · MARKET_NOT_FOUND",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<GroupBuyDetailResponse> getGroupBuy(
-            @Parameter(description = "공구 id", example = "18") @PathVariable Long groupBuyId);
+            @Parameter(description = "공구 id", example = "18") @PathVariable Long groupBuyId,
+            @Parameter(description = "목록 탭 — 이전·다음 공구 계산용(목록에서 들어올 때 목록 조건을 그대로 넘긴다)", example = "ALL")
+            @RequestParam(required = false) GroupBuyTab tab,
+            @Parameter(description = "목록 검색어 — 이전·다음 공구 계산용")
+            @RequestParam(required = false) String keyword,
+            @Parameter(description = "목록 정렬 — 이전·다음 공구 계산용", example = "START_AT_ASC")
+            @RequestParam(required = false) GroupBuySortType sort);
 
     // ── 준비 ────────────────────────────────────────────────────────────────
 

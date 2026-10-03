@@ -112,8 +112,7 @@ final class CreatorGroupBuyDocsExamples {
                 "PREPARING": 3,
                 "READY": 1,
                 "IN_PROGRESS": 4,
-                "ENDED": 2,
-                "SUSPENDED": 1
+                "ENDED": 3
               },
               "actionRequiredCount": 3
             }
@@ -126,8 +125,7 @@ final class CreatorGroupBuyDocsExamples {
                 "PREPARING": 0,
                 "READY": 0,
                 "IN_PROGRESS": 0,
-                "ENDED": 0,
-                "SUSPENDED": 0
+                "ENDED": 0
               },
               "actionRequiredCount": 0
             }

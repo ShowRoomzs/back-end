@@ -378,6 +378,8 @@ public enum ErrorCode {
     // 파트너센터 주문 관리(34 설계서 4-4). 내 마켓 아님도 404 — 존재를 노출하지 않는다.
     ORDER_GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_GROUP_NOT_FOUND", "존재하지 않는 주문입니다."),
     ORDER_SEARCH_RANGE_EXCEEDED(HttpStatus.BAD_REQUEST, "ORDER_SEARCH_RANGE_EXCEEDED", "조회 기간은 최대 1년까지 설정할 수 있습니다."),
+    ORDER_SEARCH_RANGE_INVALID(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "조회 시작일은 종료일보다 늦을 수 없습니다."),
+    ORDER_PAGE_SIZE_INVALID(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "페이지 크기는 1~100 사이로 입력해 주세요."),
     ORDER_STATE_CHANGED(HttpStatus.CONFLICT, "ORDER_STATE_CHANGED", "주문 상태가 변경되었습니다. 새로고침 후 다시 확인해 주세요."),
     INVOICE_DUPLICATE(HttpStatus.CONFLICT, "INVOICE_DUPLICATE", "이미 다른 주문에 등록된 송장번호입니다."),
     INVOICE_FORMAT_INVALID(HttpStatus.BAD_REQUEST, "INVOICE_FORMAT_INVALID", "송장번호 형식이 올바르지 않습니다. 다시 확인해 주세요."),
@@ -387,6 +389,7 @@ public enum ErrorCode {
     SELLER_CANCEL_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER_CANCEL_REASON_REQUIRED", "기타 사유를 선택하면 설명을 입력해야 합니다."),
     PURCHASE_ORDER_COLUMNS_REQUIRED(HttpStatus.BAD_REQUEST, "PURCHASE_ORDER_COLUMNS_REQUIRED", "발주서 컬럼을 1개 이상 선택해 주세요."),
     PURCHASE_ORDER_EMPTY(HttpStatus.BAD_REQUEST, "PURCHASE_ORDER_EMPTY", "발주서로 내려받을 주문이 없습니다."),
+    PURCHASE_ORDER_TOO_MANY(HttpStatus.BAD_REQUEST, "PURCHASE_ORDER_TOO_MANY", "발주서 대상이 너무 많습니다. 기간·검색 조건으로 나눠 내려받아 주세요."),
     SHIPMENT_FILE_INVALID(HttpStatus.BAD_REQUEST, "SHIPMENT_FILE_INVALID", "엑셀 파일을 읽을 수 없습니다. 양식을 확인해 주세요."),
     SHIPMENT_FILE_TOO_MANY_ROWS(HttpStatus.BAD_REQUEST, "SHIPMENT_FILE_TOO_MANY_ROWS", "엑셀 업로드는 최대 1,000행까지 가능합니다."),
     /** 소비자 앱 — 준비 시작 후에는 취소 요청 경로만 남는다(약관 제17조② · 제18조①). */

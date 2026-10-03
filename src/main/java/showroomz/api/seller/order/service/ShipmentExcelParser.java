@@ -2,7 +2,9 @@ package showroomz.api.seller.order.service;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -15,6 +17,7 @@ import showroomz.global.error.exception.ErrorCode;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -60,9 +63,9 @@ public class ShipmentExcelParser {
                 if (row.getRowNum() == 0) {
                     continue; // 헤더
                 }
-                String orderNumber = formatter.formatCellValue(row.getCell(0)).trim();
-                String carrierText = formatter.formatCellValue(row.getCell(1)).trim();
-                String trackingNumber = formatter.formatCellValue(row.getCell(2)).trim();
+                String orderNumber = text(formatter, row.getCell(0));
+                String carrierText = text(formatter, row.getCell(1));
+                String trackingNumber = text(formatter, row.getCell(2));
                 if (orderNumber.isEmpty() && carrierText.isEmpty() && trackingNumber.isEmpty()) {
                     continue; // 빈 행
                 }
@@ -78,5 +81,21 @@ public class ShipmentExcelParser {
             // xlsx 가 아니거나 손상 — 양식 안내로 돌려보낸다.
             throw new BusinessException(ErrorCode.SHIPMENT_FILE_INVALID);
         }
+    }
+
+    /**
+     * 셀 표시값. 숫자 셀은 <b>자릿수 그대로</b> 읽는다 — 엑셀에 붙여넣은 12자리 송장번호는 일반 서식의 숫자 셀이 되는데,
+     * {@link DataFormatter}는 일반 서식의 큰 수를 지수 표기(1.23457E+11)로 돌려준다. 그대로 쓰면 숫자만 남기는 정제를
+     * 거쳐 엉뚱한 번호(12345711)가 정상 행으로 등록된다.
+     */
+    private static String text(DataFormatter formatter, Cell cell) {
+        if (cell == null) {
+            return "";
+        }
+        CellType type = cell.getCellType() == CellType.FORMULA ? cell.getCachedFormulaResultType() : cell.getCellType();
+        if (type == CellType.NUMERIC && !DateUtil.isCellDateFormatted(cell)) {
+            return BigDecimal.valueOf(cell.getNumericCellValue()).stripTrailingZeros().toPlainString();
+        }
+        return formatter.formatCellValue(cell).trim();
     }
 }

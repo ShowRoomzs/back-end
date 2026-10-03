@@ -208,12 +208,14 @@ public class SellerOrderAssembler {
      */
     private SellerOrderDetailResponse.Actions actions(OrderDeliveryGroup group, boolean pendingCancel) {
         FulfillmentStatus status = group.getFulfillmentStatus();
+        boolean workable = FulfillmentStatus.WORKABLE.contains(status);
         return new SellerOrderDetailResponse.Actions(
                 status == FulfillmentStatus.NEW && !pendingCancel,
                 status == FulfillmentStatus.PREPARING && !pendingCancel,
                 status == FulfillmentStatus.SHIPPING,
-                FulfillmentStatus.WORKABLE.contains(status) && !pendingCancel,
-                pendingCancel);
+                workable && !pendingCancel,
+                // 승인·거부는 작업 큐 상태에서만 — 발송 뒤 취소는 반품 경로다(서버 가드와 같은 판정).
+                workable && pendingCancel);
     }
 
     private Integer confirmRemainingDays(OrderDeliveryGroup group, LocalDateTime now, int confirmDays) {

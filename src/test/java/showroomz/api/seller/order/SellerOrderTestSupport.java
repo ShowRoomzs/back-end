@@ -13,6 +13,8 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.ResultActions;
 import showroomz.api.app.order.OrderPaymentTestSupport;
 import showroomz.domain.cart.entity.Cart;
+import showroomz.domain.groupbuy.entity.GroupBuy;
+import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.order.entity.OrderCancelRequest;
 import showroomz.domain.order.entity.OrderCancelRequestItem;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
@@ -25,9 +27,11 @@ import showroomz.domain.order.repository.OrderProductRepository;
 import showroomz.domain.order.service.OrderFulfillmentService;
 import showroomz.domain.order.type.CancelRequestReason;
 import showroomz.domain.order.type.FulfillmentEventType;
+import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductVariant;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackSnapshot;
 import showroomz.support.BrandFixture;
+import showroomz.support.ContractOptions;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -246,10 +250,61 @@ public abstract class SellerOrderTestSupport extends OrderPaymentTestSupport {
                 shippedAt, group.getId());
     }
 
+    /**
+     * 한 주문 · 같은 브랜드의 하위주문 2번째 — 결제 경로로 만들려면 같은 브랜드 공구 2건이 동시에 진행돼야 해서,
+     * 그룹 행만 덧붙이고 PAID 훅과 같은 전이(activate)로 NEW 에 올린다.
+     */
+    protected OrderDeliveryGroup addSecondGroup(OrderDeliveryGroup first) {
+        Long id = transactionTemplate.execute(tx -> {
+            OrderDeliveryGroup attached = deliveryGroupRepository.findById(first.getId()).orElseThrow();
+            OrderDeliveryGroup second = deliveryGroupRepository.save(OrderDeliveryGroup.builder()
+                    .order(attached.getOrder())
+                    .market(attached.getMarket())
+                    .productTotal(0)
+                    .deliveryFee(0)
+                    .freeShippingApplied(false)
+                    .marketName(attached.getMarketName())
+                    .build());
+            deliveryGroupRepository.activate(second.getId(), orderNumberOf(first) + "-02", first.getShipDueAt());
+            return second.getId();
+        });
+        return deliveryGroupRepository.findOwned(id, brand.marketId()).orElseThrow();
+    }
+
     // ------------------------------------------------------------------ 다른 브랜드
 
     protected BrandFixture.Brand otherBrand() {
         return fixture.createBrand("other-brand@showroomz.test", "타브랜드");
+    }
+
+    /** 다른 브랜드의 진행 중 공구 1건(상품 1종 · 재고 10 · 발송기한 D+3) — 그 공구의 옵션을 돌려준다. */
+    protected ProductVariant openOtherBrandGroupBuy(BrandFixture.Brand other) {
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        GroupBuy otherGroupBuy = seed(other, creator, "타브랜드 공구", now.minusDays(3), now.plusDays(4));
+        moveTo(otherGroupBuy.getId(), GroupBuyStatus.IN_PROGRESS);
+        Product product = productRepository.findAll().stream()
+                .filter(p -> p.getName().equals("상품 타브랜드 공구")).findFirst().orElseThrow();
+        jdbc.update("UPDATE product SET group_buy_status = 'IN_PROGRESS' WHERE product_id = ?", product.getProductId());
+        jdbc.update("UPDATE market SET default_delivery_fee = ?, free_shipping_threshold = ?, shipping_lead_days = ? "
+                + "WHERE market_id = ?", DELIVERY_FEE, FREE_SHIPPING_THRESHOLD, 3, other.marketId());
+        ProductVariant variant = ContractOptions.variantsOf(productVariantRepository, product).get(0);
+        setStock(variant, 10);
+        return variant;
+    }
+
+    /** 다른 브랜드 공구 옵션을 같은 소비자가 바로 구매·결제 → 그 브랜드의 하위주문 NEW(그 브랜드 마켓으로 다시 읽는다). */
+    protected OrderDeliveryGroup paidOtherBrandGroup(BrandFixture.Brand other, ProductVariant otherVariant)
+            throws Exception {
+        GroupBuy otherGroupBuy = groupBuyRepository.findAll().stream()
+                .filter(gb -> !gb.getId().equals(groupBuy.getId())).findFirst().orElseThrow();
+        Created created = created(createOrder(Map.of("idempotencyKey", newKey(),
+                "direct", Map.of("variantId", otherVariant.getVariantId(), "quantity", 1,
+                        "groupBuyId", otherGroupBuy.getId()),
+                "payment", Map.of("method", "CARD", "cardIssuer", "SHINHAN")))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
+        complete(created.paymentId()).andExpect(status().isOk());
+        Long id = deliveryGroupRepository.findByOrderId(created.orderId()).get(0).getId();
+        return deliveryGroupRepository.findOwned(id, other.marketId()).orElseThrow();
     }
 
     // ------------------------------------------------------------------ 요청

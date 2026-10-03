@@ -62,10 +62,10 @@ public interface SellerOrderControllerDocs {
                     - `dateBasis` — 조회 기준 5종: `PAID`(결제일 · 기본) · `PREPARE_STARTED`(발주확인일) · `SHIPPED`(발송처리일) ·
                       `DELIVERED`(배송완료일) · `CONFIRMED`(구매확정일)
                     - `from` · `to` — `yyyy-MM-dd` · 양끝 포함. `to` 생략 시 오늘, `from` 생략 시 `to`에서 탭 기본 기간
-                      (작업 큐 7일 · 조회 30일)을 뺀 날. **최대 1년** — 초과는 400
+                      (작업 큐 7일 · 조회 30일)을 뺀 날. **최대 1년** — 초과는 400 · 시작일이 종료일보다 늦으면 400
                     - `searchType` + `keyword` — `ORDER_NUMBER` · `RECIPIENT_NAME` · `TRACKING_NUMBER` · `PRODUCT_NAME`
                     - `sort` — 생략 시 작업 큐는 `OLDEST_FIRST`(오래된순), 조회 탭은 `LATEST_FIRST`. `SHIP_DUE_ASC`는 발송기한 열 정렬
-                    - `page`(1부터) · `size`(기본 20)
+                    - `page`(1부터 · 1 미만은 첫 페이지) · `size`(기본 20 · **1~100** — 밖이면 400)
 
                     **행 필드 해석**
                     - `statusLabel` · `statusTone`(NEUTRAL/INFO/WARNING/SUCCESS/DANGER)은 서버 배지 값이다 — FE가 매핑하지 않는다.
@@ -78,7 +78,7 @@ public interface SellerOrderControllerDocs {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공 — 조건에 맞는 주문이 없으면 `content: []`(요약 바 숫자는 유지된다)"),
             @ApiResponse(responseCode = "400", description = "ORDER_SEARCH_RANGE_EXCEEDED — 기간 1년 초과 · "
-                    + "INVALID_INPUT — 정의되지 않은 enum 값 · 날짜 형식 오류",
+                    + "INVALID_INPUT — 정의되지 않은 enum 값 · 날짜 형식 오류 · 시작일 > 종료일 · `size` 1~100 밖",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(name = "기간 1년 초과", value = """
                                     {
@@ -214,9 +214,12 @@ public interface SellerOrderControllerDocs {
 
                     **대상**
                     - `deliveryGroupIds`를 보내면 **선택 건**. 비우면 **현재 탭 전체** — 목록과 같은 필터(`tab` · `dateBasis` ·
-                      `from` · `to` · `searchType` · `keyword`)를 함께 보낸다 · 상한 2,000건.
-                      이때 **`tab` 생략 시 `NEW`** 다(목록 API 기본값 `ALL`과 다르다).
+                      `from` · `to` · `searchType` · `keyword`)를 함께 보낸다. 이때 **`tab` 생략 시 `NEW`** 다(목록 API 기본값
+                      `ALL`과 다르다). 발주서는 신규·상품준비중 탭의 액션이라 **`NEW` · `PREPARING` 탭만** 대상이 있다.
+                    - 어느 경로든 **결제된 신규·상품준비중만** 싣는다 — 선택 건에 배송중·배송완료·취소·결제 전이 섞이면 조용히 빠진다
+                      (개인정보 재반출 방지 · §34-11).
                     - 검토 중 취소 요청이 걸린 하위주문은 **자동으로 빠진다**(작업 큐 밖). 다 빠져서 남는 게 없으면 400.
+                    - 대상 상한 2,000건 — 넘으면 잘라 내려보내지 않고 400 `PURCHASE_ORDER_TOO_MANY`(기간·검색으로 나눠 받는다).
 
                     **옵션**
                     - `startPreparation` 생략 시 ON — 발주서를 뽑는 것은 보내겠다는 결정이다. 대상 중 **신규만** 준비 시작되고
@@ -261,7 +264,9 @@ public interface SellerOrderControllerDocs {
             @ApiResponse(responseCode = "200", description = "xlsx 바이너리(Content-Disposition attachment)",
                     content = @Content(mediaType = XLSX, schema = @Schema(type = "string", format = "binary"))),
             @ApiResponse(responseCode = "400", description = "PURCHASE_ORDER_EMPTY — 내려받을 대상 없음(취소 요청 건 제외 후 0건 포함) · "
-                    + "ORDER_SEARCH_RANGE_EXCEEDED — 필터 기간 1년 초과 · INVALID_INPUT — `columns` 비었음 · 정의되지 않은 enum 값",
+                    + "PURCHASE_ORDER_TOO_MANY — 대상 2,000건 초과 · "
+                    + "ORDER_SEARCH_RANGE_EXCEEDED — 필터 기간 1년 초과 · INVALID_INPUT — `columns` 비었음 · 정의되지 않은 enum 값 · "
+                    + "시작일 > 종료일",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(name = "대상 없음", value = """
@@ -344,7 +349,8 @@ public interface SellerOrderControllerDocs {
                     `DAESIN` 대신택배 · `LOGEN` 로젠택배 · `HAPDONG` 합동택배 · `COUPANG` 쿠팡택배 · `WOORI` 우리택배 · `CU` CU편의점택배
 
                     **`skipped[].code`**
-                    - `INVOICE_DUPLICATE` — 같은 요청 안 중복, 또는 다른 진행 중 주문에 이미 등록(`message`에 그 주문번호)
+                    - `INVOICE_DUPLICATE` — 같은 요청 안 중복, 또는 다른 진행 중 주문에 이미 등록(`message`에 그 주문번호 —
+                      **내 브랜드 주문일 때만**. 다른 브랜드 주문이면 「다른 주문에 이미 등록된 번호입니다.」)
                     - `INVOICE_FORMAT_INVALID` — 택배사 규칙에 맞지 않는 번호
                     - `CANCEL_REQUEST_PENDING_EXISTS` — 검토 중 취소 요청이 있다
                     - `ORDER_STATE_CHANGED` — 상품준비중이 아니다(신규 · 이미 배송중 · 취소됨)
@@ -400,7 +406,8 @@ public interface SellerOrderControllerDocs {
                     | `ALREADY_SHIPPED` | 이미 배송중 이후 단계 |
                     | `STATE_INVALID` | 취소 등 등록할 수 없는 상태 |
                     | `CANCEL_REQUEST_PENDING` | 취소 요청 검토 중 |
-                    | `INVOICE_DUPLICATE` | 다른 진행 중 주문에 등록된 번호(겹치는 주문번호 병기) · 파일 안 중복 |
+                    | `INVOICE_DUPLICATE` | 다른 진행 중 주문에 등록된 번호(내 브랜드 주문이면 주문번호 병기) · 파일 안 중복 |
+                    | `ORDER_DUPLICATE_IN_FILE` | 같은 하위주문이 파일에 두 번 — 첫 정상 행만 남는다 |
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "행별 분류 결과 — 부분 성공 허용",
@@ -564,7 +571,8 @@ public interface SellerOrderControllerDocs {
             @ApiResponse(responseCode = "200", description = "처리 후 상세"),
             @ApiResponse(responseCode = "404", description = "ORDER_GROUP_NOT_FOUND — 없는 취소 요청 · 타 브랜드 주문의 요청",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "409", description = "CANCEL_REQUEST_ALREADY_DECIDED — 이미 승인·거부된 요청",
+            @ApiResponse(responseCode = "409", description = "CANCEL_REQUEST_ALREADY_DECIDED — 이미 승인·거부된 요청 · "
+                    + "ORDER_STATE_CHANGED — 하위주문이 신규·상품준비중이 아님(발송 뒤 취소는 반품 경로)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(name = "이미 처리됨", value = """
                                     {
@@ -593,7 +601,8 @@ public interface SellerOrderControllerDocs {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "ORDER_GROUP_NOT_FOUND — 없는 취소 요청 · 타 브랜드 주문의 요청",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "409", description = "CANCEL_REQUEST_ALREADY_DECIDED — 이미 처리된 요청",
+            @ApiResponse(responseCode = "409", description = "CANCEL_REQUEST_ALREADY_DECIDED — 이미 처리된 요청 · "
+                    + "ORDER_STATE_CHANGED — 하위주문이 신규·상품준비중이 아님",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<SellerOrderDetailResponse> rejectCancelRequest(

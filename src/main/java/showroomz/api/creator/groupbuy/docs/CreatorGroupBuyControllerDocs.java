@@ -48,8 +48,7 @@ public interface CreatorGroupBuyControllerDocs {
                     - `tab` — 생략 시 `ALL`. 탭은 **필터일 뿐**이고 응답 `status`는 항상 7종 개별 값이다.
                       - `ALL` 전체 · `PREPARING` 준비중 · `READY` 준비완료
                       - `IN_PROGRESS` 진행중 — `IN_PROGRESS` + **`SUSPENSION_SCHEDULED`(중단 예정)** 포함. 중단 예정 행은 `status`가 그대로 `SUSPENSION_SCHEDULED`(경고 톤)로 내려온다
-                      - `ENDED` 종료·정산 — `ENDED` + `SETTLED`
-                      - `SUSPENDED` 중단 — 정상 종료와 성격이 달라 탭을 분리한다
+                      - `ENDED` 종료·정산 — `ENDED` + `SETTLED` + **`SUSPENDED`(중단)** — 종결 3종 전부. 중단 탭은 따로 없다(시안 A1 5탭)
                     - `keyword` — **부분 일치**(앞뒤 공백 제거, 빈 문자열은 미적용). 대상: 공구명(계약명) · 브랜드명 · 공구번호
                     - `sort` — 생략 시 `START_AT_ASC`
                       - `START_AT_ASC` — **비종결 먼저(시작일 오름차순) → 종결 3종(시작일 내림차순) → id 내림차순.** 순수 오름차순이 아니다 —
@@ -83,7 +82,7 @@ public interface CreatorGroupBuyControllerDocs {
                             examples = @ExampleObject(value = ERR_CREATOR_NOT_FOUND)))
     })
     ResponseEntity<PageResponse<CreatorGroupBuyListItem>> getGroupBuys(
-            @Parameter(description = "상태 탭 — ALL(기본) · PREPARING · READY · IN_PROGRESS(중단 예정 포함) · ENDED(정산완료 포함) · SUSPENDED",
+            @Parameter(description = "상태 탭 — ALL(기본) · PREPARING · READY · IN_PROGRESS(중단 예정 포함) · ENDED(정산완료·중단 포함)",
                     example = "ALL")
             @RequestParam(required = false) CreatorGroupBuyTab tab,
             @Parameter(description = "검색어(부분 일치) — 공구명 · 브랜드명 · 공구번호", example = "세럼")
@@ -104,8 +103,8 @@ public interface CreatorGroupBuyControllerDocs {
 
                     **파라미터를 받지 않는다** — 검색어·탭과 무관한 전체 기준 건수다.
 
-                    **`tabCounts`** — 6개 탭 코드(`ALL` · `PREPARING` · `READY` · `IN_PROGRESS` · `ENDED` · `SUSPENDED`)가 **항상 모두** 들어 있다(0건도 0으로).
-                    탭 ↔ 상태 묶음은 목록 API의 `tab`과 같다(`IN_PROGRESS`에 중단 예정, `ENDED`에 정산완료 포함).
+                    **`tabCounts`** — 5개 탭 코드(`ALL` · `PREPARING` · `READY` · `IN_PROGRESS` · `ENDED`)가 **항상 모두** 들어 있다(0건도 0으로).
+                    탭 ↔ 상태 묶음은 목록 API의 `tab`과 같다(`IN_PROGRESS`에 중단 예정, `ENDED`에 정산완료·중단 포함).
 
                     **`actionRequiredCount`** — 아래 중 **하나라도** 해당하는 공구 수다(공구 1건이 여러 조건에 걸려도 1로 센다). 공이 나에게 있는 것만 센다.
                     - 게시물 작성 필요 — `PREPARING` ∧ 게시물 없음·작성중(B1)
@@ -144,8 +143,8 @@ public interface CreatorGroupBuyControllerDocs {
                     | `groupBuy` · `timeline` · `brand` · `contract` · `items` · `fixedFee` · `post` · `permissions` · `history` · `navigation` | 항상 |
                     | `payout` | 비종결 4종(`PREPARING` · `READY` · `IN_PROGRESS` · `SUSPENSION_SCHEDULED`) |
                     | `readiness` | `PREPARING` · `READY` |
-                    | `sales` | `IN_PROGRESS` · `SUSPENSION_SCHEDULED`(LIVE) · `ENDED`(PROVISIONAL) · `SETTLED` · `SUSPENDED`(AT_SUSPENSION) — **현재 항상 null** |
-                    | `orderClosure` | `IN_PROGRESS` · `SUSPENSION_SCHEDULED` · `ENDED` · `SUSPENDED` — **현재 항상 null** |
+                    | `sales` | `IN_PROGRESS` · `SUSPENSION_SCHEDULED`(LIVE) · `ENDED`(PROVISIONAL) · `SETTLED` · `SUSPENDED`(AT_SUSPENSION) |
+                    | `orderClosure` | `IN_PROGRESS` · `SUSPENSION_SCHEDULED` · `ENDED` · `SUSPENDED` |
                     | `extension` | 브랜드가 연장을 요청한 적이 있을 때(대기·수락·거절·만료 모두) |
                     | `activeRequest` | 검토 중(PENDING)인 중단·조기 마감 요청이 있을 때(요청자 무관) |
                     | `adminSuspension` | `SUSPENSION_SCHEDULED`(진행 중 직권 중단 통지)에서만 |
@@ -176,7 +175,7 @@ public interface CreatorGroupBuyControllerDocs {
                       FE는 이 값으로 「플랫폼이 지급을 보증하지 않음」 고지(§29-9)를 붙이고, 분쟁 경로로 `disputeChannel.threadId`(브랜드와의 스레드)를 건다.
                     - `items[].unitReward` = ⌊공구가 × 내 리워드율 ÷ 100⌋ — 계약·파트너·정산과 같은 계산이다. 정가·최소 준비 물량은 싣지 않는다.
                     - `fixedFee.displayText` — 3서피스 문자 단위 동일 표기를 서버가 짓는다. FE가 조립하지 않는다. 지급 여부(브랜드 신고)는 싣지 않는다.
-                    - `sales` — 종료(`ENDED`)에서도 `basis: PROVISIONAL`(잠정 · 확정 시 변동)로 내린다(파트너와 반대 결정). 판매 모듈 연동 전이라 현재는 항상 `null`이다.
+                    - `sales` — 종료(`ENDED`)에서도 `basis: PROVISIONAL`(잠정 · 확정 시 변동)로 내린다(파트너와 반대 결정). `sales` · `orderClosure`는 판매 모듈(주문 관리)이 실값으로 내린다 — `null`이면 판정 불가이지 0이 아니다.
                     - `post.disclosureText` — 대가관계 표시 문구. 저장하지 않고 서버가 브랜드명으로 조립한다. 게시물이 없어도 미리보기용으로 내린다.
                     - `post.expectedReviewDate` — 승인대기일 때 예상 승인일 = 제출일 + SLA 영업일(`readiness.reviewSlaBusinessDays`, 제출일은 세지 않음).
                     - `readiness.registrationDeadline` — 승인 SLA를 역산한 등록 마감일(이날까지 제출하면 시작일 전날까지 승인이 난다). FE가 날짜를 계산하지 않는다.

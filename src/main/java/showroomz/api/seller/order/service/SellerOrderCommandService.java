@@ -101,7 +101,7 @@ public class SellerOrderCommandService {
                         scope.sellerId(), null, now);
                 succeeded++;
             } else {
-                skipped.add(skipReason(id));
+                skipped.add(skipReason(id, scope));
             }
         }
         return new BatchActionResponse(succeeded, skipped);
@@ -122,6 +122,10 @@ public class SellerOrderCommandService {
         }
 
         List<SellerOrderRow> rows = collectTargets(scope, request, now);
+        if (rows.size() > orderProperties.getPurchaseOrderMaxGroups()) {
+            // 조용히 잘라 내려보내면 브랜드는 전부 받은 줄 안다 — 나눠 받게 한다.
+            throw new BusinessException(ErrorCode.PURCHASE_ORDER_TOO_MANY);
+        }
         if (rows.isEmpty()) {
             throw new BusinessException(ErrorCode.PURCHASE_ORDER_EMPTY);
         }
@@ -240,10 +244,10 @@ public class SellerOrderCommandService {
                 continue;
             }
             // ③ 전역 중복 — 겹치는 주문을 지목한다(지목하지 않으면 어느 쪽을 고칠지 모른다 · §34-5).
-            String duplicateOrder = findDuplicateOrderNumber(row.carrier(), trackingNumber, row.deliveryGroupId());
-            if (duplicateOrder != null) {
+            OrderDeliveryGroup duplicate = findDuplicate(row.carrier(), trackingNumber, row.deliveryGroupId());
+            if (duplicate != null) {
                 skipped.add(new BatchActionResponse.Skipped(row.deliveryGroupId(), "INVOICE_DUPLICATE",
-                        duplicateOrder + "에 이미 등록된 번호입니다."));
+                        duplicateMessage(duplicate, scope)));
                 continue;
             }
             // ③ 형식 — 연동 업체가 최신 규칙으로 판정한다. 자릿수인지 체크디지트인지 구분하지 않는다(§34-5).
@@ -261,7 +265,7 @@ public class SellerOrderCommandService {
                         FulfillmentActorType.SELLER, scope.sellerId(), detail, now);
                 succeeded++;
             } else {
-                skipped.add(skipReason(row.deliveryGroupId()));
+                skipped.add(skipReason(row.deliveryGroupId(), scope));
             }
         }
         return new BatchActionResponse(succeeded, skipped);
@@ -280,15 +284,16 @@ public class SellerOrderCommandService {
 
         Map<String, List<OrderDeliveryGroup>> byOrderNumber = groupByOrderNumber(scope, rawRows);
         Map<String, OrderDeliveryGroup> bySubOrderNumber = groupBySubOrderNumber(scope, rawRows);
-        Map<String, String> activeInvoices = activeInvoiceOwners(rawRows);
+        Map<String, OrderDeliveryGroup> activeInvoices = activeInvoiceOwners(rawRows);
         Set<Long> pendingCancelIds = pendingCancelIds(byOrderNumber, bySubOrderNumber);
 
         Set<String> seenInFile = new HashSet<>();
+        Set<Long> seenGroups = new HashSet<>();
         List<ShipmentParseResponse.Row> rows = new ArrayList<>();
         int valid = 0;
         for (ShipmentExcelParser.RawRow raw : rawRows) {
-            ShipmentParseResponse.Row parsed = classify(raw, byOrderNumber, bySubOrderNumber, activeInvoices,
-                    pendingCancelIds, seenInFile);
+            ShipmentParseResponse.Row parsed = classify(scope, raw, byOrderNumber, bySubOrderNumber, activeInvoices,
+                    pendingCancelIds, seenInFile, seenGroups);
             if (parsed.valid()) {
                 valid++;
             }
@@ -313,8 +318,7 @@ public class SellerOrderCommandService {
                 || tracker.validateInvoice(request.carrier(), trackingNumber) == ValidationResult.INVALID) {
             throw new BusinessException(ErrorCode.INVOICE_FORMAT_INVALID);
         }
-        String duplicateOrder = findDuplicateOrderNumber(request.carrier(), trackingNumber, deliveryGroupId);
-        if (duplicateOrder != null) {
+        if (findDuplicate(request.carrier(), trackingNumber, deliveryGroupId) != null) {
             throw new BusinessException(ErrorCode.INVOICE_DUPLICATE);
         }
         String before = (group.getCarrier() == null ? "" : group.getCarrier().getLabel() + " ")
@@ -338,7 +342,9 @@ public class SellerOrderCommandService {
         LocalDateTime now = LocalDateTime.now();
         List<Long> ids = new ArrayList<>(new LinkedHashSet<>(request.deliveryGroupIds()));
         Map<Long, OrderDeliveryGroup> owned = deliveryGroupRepository.findAllOwned(ids, scope.market().getId())
-                .stream().collect(Collectors.toMap(OrderDeliveryGroup::getId, Function.identity()));
+                .stream()
+                .filter(group -> group.getOrder().getPaidAt() != null) // 결제 전은 셀러 화면 밖 — 없는 주문과 같다
+                .collect(Collectors.toMap(OrderDeliveryGroup::getId, Function.identity()));
         Map<Long, List<OrderProduct>> itemsByGroup = owned.isEmpty() ? Map.of()
                 : orderProductRepository.findByDeliveryGroupIds(owned.keySet()).stream()
                         .collect(Collectors.groupingBy(item -> item.getDeliveryGroup().getId()));
@@ -354,7 +360,7 @@ public class SellerOrderCommandService {
             }
             if (deliveryGroupRepository.cancelDirect(id, scope.market().getId(), request.reasonCode(),
                     request.consumerMessage(), now) != 1) {
-                skipped.add(skipReason(id));
+                skipped.add(skipReason(id, scope));
                 continue;
             }
             List<OrderProduct> paidItems = itemsByGroup.getOrDefault(id, List.of()).stream()
@@ -381,7 +387,7 @@ public class SellerOrderCommandService {
         Long groupId = request.getDeliveryGroup().getId();
 
         if (cancelRequestRepository.approve(cancelRequestId, scope.sellerId(), now) != 1) {
-            throw new BusinessException(ErrorCode.CANCEL_REQUEST_ALREADY_DECIDED);
+            throw decisionFailure(cancelRequestId);
         }
         List<OrderProduct> targets = request.getItems().stream()
                 .map(item -> item.getOrderProduct())
@@ -412,7 +418,7 @@ public class SellerOrderCommandService {
         Long groupId = cancelRequest.getDeliveryGroup().getId();
 
         if (cancelRequestRepository.reject(cancelRequestId, scope.sellerId(), request.reason(), now) != 1) {
-            throw new BusinessException(ErrorCode.CANCEL_REQUEST_ALREADY_DECIDED);
+            throw decisionFailure(cancelRequestId);
         }
         fulfillmentService.appendHistory(groupId, FulfillmentEventType.CANCEL_REQUEST_REJECTED,
                 FulfillmentActorType.SELLER, scope.sellerId(), request.reason(), now);
@@ -421,9 +427,12 @@ public class SellerOrderCommandService {
 
     // ------------------------------------------------------------------ 내부
 
-    /** 0행의 사유를 가른다 — 취소 요청이 걸렸는지, 그 사이 상태가 변했는지. */
-    private BatchActionResponse.Skipped skipReason(Long deliveryGroupId) {
-        if (cancelRequestRepository.existsByDeliveryGroup_IdAndStatus(deliveryGroupId, CancelRequestStatus.PENDING)) {
+    /**
+     * 0행의 사유를 가른다 — 취소 요청이 걸렸는지, 그 사이 상태가 변했는지. 요청 여부는 <b>내 마켓의</b> 하위주문일 때만
+     * 드러낸다 — 남의 하위주문이면 없는 주문과 같은 「상태 변경」으로 답한다(4-4 존재 비노출).
+     */
+    private BatchActionResponse.Skipped skipReason(Long deliveryGroupId, SellerScope scope) {
+        if (cancelRequestRepository.existsPendingOwned(deliveryGroupId, scope.market().getId())) {
             return new BatchActionResponse.Skipped(deliveryGroupId,
                     ErrorCode.CANCEL_REQUEST_PENDING_EXISTS.getCode(),
                     ErrorCode.CANCEL_REQUEST_PENDING_EXISTS.getMessage());
@@ -441,13 +450,32 @@ public class SellerOrderCommandService {
         return request;
     }
 
-    private String findDuplicateOrderNumber(DeliveryCarrier carrier, String trackingNumber, Long selfId) {
+    /** 승인·거부 0행 — 요청이 이미 결정됐으면 409 ALREADY_DECIDED, 아직 PENDING 이면 그룹이 작업 큐를 벗어난 것이다. */
+    private BusinessException decisionFailure(Long cancelRequestId) {
+        boolean stillPending = cancelRequestRepository.findStatus(cancelRequestId)
+                .map(status -> status == CancelRequestStatus.PENDING)
+                .orElse(false);
+        return new BusinessException(stillPending ? ErrorCode.ORDER_STATE_CHANGED
+                : ErrorCode.CANCEL_REQUEST_ALREADY_DECIDED);
+    }
+
+    /** 전역 송장 중복(§34-5 ③) — 종결 전 상태에서 같은 (택배사, 번호)를 쓰는 다른 하위주문. */
+    private OrderDeliveryGroup findDuplicate(DeliveryCarrier carrier, String trackingNumber, Long selfId) {
         return deliveryGroupRepository.findActiveByInvoice(carrier, trackingNumber,
                         FulfillmentStatus.INVOICE_ACTIVE).stream()
                 .filter(g -> !g.getId().equals(selfId))
                 .findFirst()
-                .map(g -> g.getOrder().getOrderNumber())
                 .orElse(null);
+    }
+
+    /**
+     * 중복 안내 — 내 주문이면 겹치는 주문번호를 지목하고(어느 쪽을 고칠지 알아야 한다 · §34-5),
+     * 다른 브랜드의 주문이면 번호를 숨긴다(4-4 존재 비노출).
+     */
+    private String duplicateMessage(OrderDeliveryGroup owner, SellerScope scope) {
+        return Objects.equals(owner.getMarketId(), scope.market().getId())
+                ? owner.getOrder().getOrderNumber() + "에 이미 등록된 번호입니다."
+                : "다른 주문에 이미 등록된 번호입니다.";
     }
 
     private void upsertTemplate(SellerScope scope, List<PurchaseOrderColumn> columns) {
@@ -458,10 +486,17 @@ public class SellerOrderCommandService {
                                 MarketPurchaseOrderTemplate.of(scope.market(), columns, scope.sellerId())));
     }
 
-    /** 발주서 대상 — 선택 건, 선택 없이 열면 현재 탭 전체(목록과 같은 필터 · §34-4). */
+    /**
+     * 발주서 대상 — 선택 건, 선택 없이 열면 현재 탭 전체(목록과 같은 필터 · §34-4). 발주서는 신규·상품준비중 탭의
+     * 액션이다(§34-3) — <b>결제된 작업 큐(NEW·PREPARING)</b>만 싣는다. 결제 전이나 발송 이후 주문의 수취인·연락처·주소를
+     * 다시 반출하지 않는다(§34-11). 상한 판정을 위해 상한 + 1건까지만 읽는다.
+     */
     private List<SellerOrderRow> collectTargets(SellerScope scope, PurchaseOrderRequest request, LocalDateTime now) {
         if (request.deliveryGroupIds() != null && !request.deliveryGroupIds().isEmpty()) {
-            return deliveryGroupRepository.findAllOwned(request.deliveryGroupIds(), scope.market().getId()).stream()
+            return deliveryGroupRepository.findAllOwned(new LinkedHashSet<>(request.deliveryGroupIds()),
+                            scope.market().getId()).stream()
+                    .filter(group -> group.getOrder().getPaidAt() != null
+                            && FulfillmentStatus.WORKABLE.contains(group.getFulfillmentStatus()))
                     .map(group -> new SellerOrderRow(group, group.getOrder().getOrderNumber(),
                             group.getOrder().getPaidAt(), group.getOrder().getRecipientName(),
                             queryService.resolveGroupBuyTitle(group)))
@@ -470,7 +505,11 @@ public class SellerOrderCommandService {
         OrderTab tab = request.tab() == null ? OrderTab.NEW : request.tab();
         SellerOrderSearchCondition condition = queryService.buildCondition(scope.market().getId(), tab,
                 request.dateBasis(), request.from(), request.to(), request.searchType(), request.keyword(), null, now);
-        return deliveryGroupRepository.searchForSeller(condition, PageRequest.of(0, 2000)).getContent();
+        if (tab != OrderTab.NEW && tab != OrderTab.PREPARING) {
+            return List.of(); // 발주서가 없는 탭 — 조건 검증(기간 상한 등)만 하고 대상은 없다
+        }
+        int limit = orderProperties.getPurchaseOrderMaxGroups() + 1;
+        return deliveryGroupRepository.searchForSeller(condition, PageRequest.of(0, limit)).getContent();
     }
 
     // ------------------------------------------------------------------ 업로드 분류(E3)
@@ -501,7 +540,7 @@ public class SellerOrderCommandService {
                 .collect(Collectors.toMap(OrderDeliveryGroup::getSubOrderNumber, Function.identity(), (a, b) -> a));
     }
 
-    private Map<String, String> activeInvoiceOwners(List<ShipmentExcelParser.RawRow> rows) {
+    private Map<String, OrderDeliveryGroup> activeInvoiceOwners(List<ShipmentExcelParser.RawRow> rows) {
         Set<String> trackingNumbers = rows.stream()
                 .map(raw -> normalize(raw.trackingNumber()))
                 .filter(tn -> !tn.isEmpty())
@@ -513,7 +552,7 @@ public class SellerOrderCommandService {
                 .stream()
                 .collect(Collectors.toMap(
                         g -> (g.getCarrier() == null ? "" : g.getCarrier().name()) + ":" + g.getTrackingNumber(),
-                        g -> g.getOrder().getOrderNumber(), (a, b) -> a));
+                        Function.identity(), (a, b) -> a));
     }
 
     private Set<Long> pendingCancelIds(Map<String, List<OrderDeliveryGroup>> byOrderNumber,
@@ -529,12 +568,13 @@ public class SellerOrderCommandService {
                 .collect(Collectors.toSet());
     }
 
-    private ShipmentParseResponse.Row classify(ShipmentExcelParser.RawRow raw,
+    private ShipmentParseResponse.Row classify(SellerScope scope, ShipmentExcelParser.RawRow raw,
                                                Map<String, List<OrderDeliveryGroup>> byOrderNumber,
                                                Map<String, OrderDeliveryGroup> bySubOrderNumber,
-                                               Map<String, String> activeInvoices,
+                                               Map<String, OrderDeliveryGroup> activeInvoices,
                                                Set<Long> pendingCancelIds,
-                                               Set<String> seenInFile) {
+                                               Set<String> seenInFile,
+                                               Set<Long> seenGroups) {
         String trackingNumber = normalize(raw.trackingNumber());
         DeliveryCarrier carrier = raw.carrierText().isEmpty() ? null : DeliveryCarrier.fromLabel(raw.carrierText());
 
@@ -555,8 +595,10 @@ public class SellerOrderCommandService {
         if (trackingNumber.isEmpty()) {
             return error(raw, carrier, trackingNumber, "TRACKING_REQUIRED", "송장번호가 없습니다.");
         }
+        // 택배사 칸이 비면 carrier: null 로 통과시킨다 — 「채우기」 뒤 목록 셀(택배사 일괄 적용)에서 고르고 확정한다.
+        // 미선택 차단은 확정 단계(FE ② · POST /shipments 의 @NotNull)의 몫이다.
         if (!raw.carrierText().isEmpty() && carrier == null) {
-            return error(raw, carrier, trackingNumber, "CARRIER_INVALID",
+            return error(raw, null, trackingNumber, "CARRIER_INVALID",
                     "지원하지 않는 택배사입니다. 목록의 11종으로 입력해 주세요.");
         }
         // 신규는 업로드에서 제외한다(rev.7) — 소비자 단순 취소권이 살아 있고, 배송중 → 준비중 복귀 경로가 없다.
@@ -578,13 +620,19 @@ public class SellerOrderCommandService {
                     "검토 중인 취소 요청이 있는 주문입니다.");
         }
         String invoiceKey = (carrier == null ? "" : carrier.name()) + ":" + trackingNumber;
-        String owner = activeInvoices.get(invoiceKey);
-        if (owner != null && !owner.equals(group.getOrder().getOrderNumber())) {
-            return error(raw, carrier, trackingNumber, "INVOICE_DUPLICATE", owner + "에 이미 등록된 번호입니다.");
+        OrderDeliveryGroup owner = activeInvoices.get(invoiceKey);
+        if (owner != null && !owner.getOrder().getOrderNumber().equals(group.getOrder().getOrderNumber())) {
+            return error(raw, carrier, trackingNumber, "INVOICE_DUPLICATE", duplicateMessage(owner, scope));
+        }
+        // 같은 하위주문이 두 번 — 둘 다 정상으로 내려가면 확정에서 하나가 「상태 변경」으로 빠져 원인을 알 수 없다.
+        if (seenGroups.contains(group.getId())) {
+            return error(raw, carrier, trackingNumber, "ORDER_DUPLICATE_IN_FILE",
+                    "파일 안에서 같은 주문이 두 번 입력되었습니다.");
         }
         if (!seenInFile.add(invoiceKey)) {
             return error(raw, carrier, trackingNumber, "INVOICE_DUPLICATE", "파일 안에서 중복된 송장번호입니다.");
         }
+        seenGroups.add(group.getId());
         return new ShipmentParseResponse.Row(raw.rowNumber(), group.getOrder().getOrderNumber(),
                 group.getSubOrderNumber(), group.getId(), carrier, trackingNumber, true, null, null);
     }

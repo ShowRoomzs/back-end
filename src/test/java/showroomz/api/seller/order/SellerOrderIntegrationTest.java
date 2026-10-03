@@ -234,8 +234,8 @@ class SellerOrderIntegrationTest extends SellerOrderTestSupport {
     void purchaseConfirm() throws Exception {
         OrderDeliveryGroup group = shippingGroup("555566667777");
         LocalDateTime now = LocalDateTime.now().withNano(0);
-        transactionTemplate.executeWithoutResult(tx ->
-                deliveryGroupRepository.markDeliveredByTracker(group.getId(), now.minusDays(8)));
+        transactionTemplate.executeWithoutResult(tx -> deliveryGroupRepository.markDeliveredByTracker(
+                group.getId(), group.getCarrier(), group.getTrackingNumber(), now.minusDays(8)));
 
         boolean confirmed = fulfillmentService.confirmPurchase(group.getId(), now, now.minusDays(7));
 

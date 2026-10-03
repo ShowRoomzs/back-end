@@ -92,6 +92,22 @@ class SellerOrderSearchConditionTest {
     }
 
     @Test
+    @DisplayName("시작일이 종료일보다 늦으면 ORDER_SEARCH_RANGE_INVALID — 같은 날은 된다 · from 만 미래로 줘도 역전이다(Q-01)")
+    void reversedRange() {
+        LocalDate day = LocalDate.of(2026, 9, 20);
+
+        assertThat(build(OrderTab.ALL, day, day, null).from()).isEqualTo(day.atStartOfDay());
+        assertThatThrownBy(() -> build(OrderTab.ALL, day.plusDays(1), day, null))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.ORDER_SEARCH_RANGE_INVALID);
+        assertThatThrownBy(() -> build(OrderTab.ALL, LocalDate.of(2026, 10, 4), null, null))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.ORDER_SEARCH_RANGE_INVALID);
+    }
+
+    @Test
     @DisplayName("상한은 설정값을 따른다")
     void rangeLimitFromProperties() {
         OrderProperties properties = new OrderProperties();

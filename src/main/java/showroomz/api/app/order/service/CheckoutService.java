@@ -123,7 +123,7 @@ public class CheckoutService {
             throw new BusinessException(ErrorCode.ORDER_AMOUNT_CHANGED);
         }
 
-        String orderNumber = orderNumberGenerator.generate(now.toLocalDate());
+        String orderNumber = orderNumberGenerator.generate(now);
         List<String> productNames = prepared.lines().stream()
                 .map(line -> line.variant().getProduct().getName()).toList();
         Order order = Order.create(user, orderNumber,

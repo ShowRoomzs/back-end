@@ -27,6 +27,7 @@ import showroomz.global.error.exception.BusinessException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -107,6 +108,33 @@ class AdminGroupBuyCommandIntegrationTest extends AdminGroupBuyTestSupport {
                 .andExpect(jsonPath("$.post.rejection.axis").value("AD_LAW"))
                 .andExpect(jsonPath("$.post.rejection.rejectedByName").value(OPERATOR_NAME))
                 .andExpect(jsonPath("$.readiness.gates[1].state").value("REJECTED"));
+    }
+
+    @Test
+    @DisplayName("오픈 반려 시각 — 파트너 상세는 반려 이벤트 시각을 내리고, 재제출·승인 뒤에도 승인 시각으로 덮이지 않는다")
+    void partnerSeesRejectedAtAfterReapproval() throws Exception {
+        GroupBuy groupBuy = seedPreparing();
+        seedPendingReview(groupBuy);
+        adminAction(groupBuy.getId(), "open-review/reject", Map.of("reasonCode", "AD_EFFECT_ASSERTION",
+                "detail", "효과를 단정하는 문장이 있습니다.")).andExpect(status().isOk());
+        // 반려 시각을 과거로 옮겨 승인 시각과 확실히 갈라 둔다.
+        LocalDateTime rejectedAt = LocalDateTime.now().withNano(0).minusHours(3);
+        jdbc.update("UPDATE group_buy_history SET occurred_at = ? WHERE group_buy_id = ? AND event_type = ?",
+                rejectedAt, groupBuy.getId(), GroupBuyEventType.OPEN_REJECTED.name());
+        String expected = rejectedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
+
+        detail(groupBuy.getId()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.post.rejectReason.code").value("AD_EFFECT_ASSERTION"))
+                .andExpect(jsonPath("$.post.rejectedAt").value(expected));
+
+        // 재제출 → 승인. 게시물의 reviewed_at은 승인 시각이 되지만 반려 사유는 보존된다(31 설계 2-4).
+        jdbc.update("UPDATE group_buy_post SET review_status = ? WHERE group_buy_id = ?",
+                GroupBuyPostReviewStatus.PENDING.name(), groupBuy.getId());
+        adminAction(groupBuy.getId(), "open-review/approve", null).andExpect(status().isOk());
+
+        detail(groupBuy.getId()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.post.rejectReason.code").value("AD_EFFECT_ASSERTION"))
+                .andExpect(jsonPath("$.post.rejectedAt").value(expected));
     }
 
     // ── 5-3 · 5-4 숨김 · 해제 ─────────────────────────────────────────────

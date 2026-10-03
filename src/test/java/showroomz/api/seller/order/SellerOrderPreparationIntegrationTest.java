@@ -17,15 +17,19 @@ import showroomz.domain.order.type.CancelRequestReason;
 import showroomz.domain.order.type.FulfillmentActorType;
 import showroomz.domain.order.type.FulfillmentEventType;
 import showroomz.domain.order.type.FulfillmentStatus;
+import showroomz.global.config.properties.OrderProperties;
 import showroomz.support.IntegrationTest;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.LongStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -54,6 +58,7 @@ class SellerOrderPreparationIntegrationTest extends SellerOrderTestSupport {
             "ORDER_NUMBER", "RECIPIENT", "PHONE", "ZIP_CODE", "ADDRESS", "PRODUCT_NAME", "OPTION", "QUANTITY");
 
     @Autowired private CheckoutService checkoutService;
+    @Autowired private OrderProperties orderProperties;
 
     @Nested
     @DisplayName("준비 시작")
@@ -380,7 +385,206 @@ class SellerOrderPreparationIntegrationTest extends SellerOrderTestSupport {
         }
     }
 
+    @Nested
+    @DisplayName("보강 — 요청 상한 · 발주서 대상 범위 · 반출 기록(PO)")
+    class Boundaries {
+
+        @Test
+        @DisplayName("[PO-01] 다건 요청 상한 — 준비 시작 500 · 직권 취소 200 · 송장 500행까지는 받고, 넘으면 400 · 한 건도 처리하지 않는다")
+        void batchSizeLimits() throws Exception {
+            OrderDeliveryGroup fresh = paidGroup();
+            OrderDeliveryGroup preparing = preparingGroup();
+
+            prepareStart(idsWith(fresh.getId(), 500).toArray(Long[]::new))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.succeeded").value(1))
+                    .andExpect(jsonPath("$.skipped.length()").value(499));
+            OrderDeliveryGroup another = paidGroup();
+            prepareStart(idsWith(another.getId(), 501).toArray(Long[]::new))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+            assertThat(reload(another).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.NEW);
+
+            directCancel(idsWith(another.getId(), 201), "SOLD_OUT", "품절")
+                    .andExpect(status().isBadRequest());
+            assertThat(reload(another).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.NEW);
+            directCancel(idsWith(another.getId(), 200), "SOLD_OUT", "품절")
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.succeeded").value(1))
+                    .andExpect(jsonPath("$.skipped.length()").value(199));
+
+            registerShipments(shipmentRowsWith(preparing.getId(), 501))
+                    .andExpect(status().isBadRequest());
+            assertThat(reload(preparing).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.PREPARING);
+            registerShipments(shipmentRowsWith(preparing.getId(), 500))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.succeeded").value(1))
+                    .andExpect(jsonPath("$.skipped.length()").value(499));
+        }
+
+        @Test
+        @DisplayName("[PO-02] 골라 보낸 id 에 배송중·배송완료·취소가 섞여도 발주서에는 작업 큐(신규·준비중)만 · 반출 건수도 그만큼(N7)")
+        void selectedTargetsLimitedToWorkQueue() throws Exception {
+            OrderDeliveryGroup fresh = paidGroup();
+            OrderDeliveryGroup preparing = preparingGroup();
+            OrderDeliveryGroup shipping = shippingGroup("620030004000");
+            OrderDeliveryGroup delivered = delivered(shippingGroup("620030004001"), LocalDateTime.now().withNano(0));
+            OrderDeliveryGroup cancelled = paidGroup();
+            directCancel(List.of(cancelled.getId()), "SOLD_OUT", "품절").andExpect(status().isOk());
+
+            byte[] file = downloadBytes(Map.of("deliveryGroupIds", List.of(fresh.getId(), preparing.getId(),
+                            shipping.getId(), delivered.getId(), cancelled.getId()),
+                    "columns", List.of("ORDER_NUMBER", "PHONE")));
+
+            assertThat(readSheet(file)).extracting(row -> row.get(0))
+                    .containsExactlyInAnyOrder("주문번호", orderNumberOf(fresh), orderNumberOf(preparing));
+            assertThat(jdbc.queryForObject("SELECT delivery_group_count FROM purchase_order_download_log",
+                    Integer.class)).isEqualTo(2);
+
+            downloadPurchaseOrder(Map.of("deliveryGroupIds", List.of(shipping.getId(), delivered.getId(),
+                    cancelled.getId()), "columns", List.of("PHONE", "ADDRESS")))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("PURCHASE_ORDER_EMPTY"));
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM purchase_order_download_log", Integer.class))
+                    .isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("[PO-02] 발주서가 없는 탭(전체 · 배송중 등)으로 열면 대상이 없다 — 400 PURCHASE_ORDER_EMPTY")
+        void tabsWithoutPurchaseOrder() throws Exception {
+            paidGroup();
+            shippingGroup("620030004002");
+
+            for (String tab : List.of("ALL", "SHIPPING", "CANCELLED")) {
+                downloadPurchaseOrder(Map.of("columns", List.of("ORDER_NUMBER"), "tab", tab))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value("PURCHASE_ORDER_EMPTY"));
+            }
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM purchase_order_download_log", Integer.class)).isZero();
+        }
+
+        @Test
+        @DisplayName("[PO-03] 탭 전체 발주서에 소비자 취소 PG 대기 건이 있으면 — 파일에는 싣고 준비 시작만 생략(이력 없음)")
+        void consumerCancelInFlightIsExportedButNotPrepared() throws Exception {
+            OrderDeliveryGroup fresh = paidGroup();
+            OrderDeliveryGroup claimed = paidGroup();
+            checkoutService.claimUserCancel(consumer.getId(), claimed.getOrder().getId(), "단순 변심",
+                    LocalDateTime.now());
+
+            assertThat(readSheet(downloadBytes(Map.of("columns", List.of("ORDER_NUMBER"))))).hasSize(1 + 2);
+
+            assertThat(reload(fresh).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.PREPARING);
+            assertThat(reload(claimed).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.NEW);
+            assertThat(historyCount(claimed, FulfillmentEventType.PREPARE_STARTED)).isZero();
+            Map<String, Object> log = jdbc.queryForMap("SELECT * FROM purchase_order_download_log");
+            assertThat(((Number) log.get("delivery_group_count")).intValue()).isEqualTo(2);
+            assertThat(log.get("prepare_started")).isEqualTo(true);
+        }
+
+        @Test
+        @DisplayName("[PO-04] 「준비 시작 없이 다운로드」를 3번 — 상태 NEW 그대로 · 반출 기록은 매번(3행)")
+        void downloadWithoutPreparationIsLoggedEveryTime() throws Exception {
+            OrderDeliveryGroup group = paidGroup();
+
+            for (int i = 0; i < 3; i++) {
+                downloadBytes(Map.of("deliveryGroupIds", List.of(group.getId()), "columns", List.of("RECIPIENT"),
+                        "startPreparation", false));
+            }
+
+            assertThat(reload(group).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.NEW);
+            assertThat(historyCount(group, FulfillmentEventType.PREPARE_STARTED)).isZero();
+            assertThat(jdbc.queryForList("SELECT prepare_started FROM purchase_order_download_log", Boolean.class))
+                    .containsExactly(false, false, false);
+        }
+
+        @Test
+        @DisplayName("[PO-05] 발주서 대상 상한 — 넘으면 조용히 자르지 않고 400 PURCHASE_ORDER_TOO_MANY · 반출·전이 없음(N7)")
+        void purchaseOrderCap() throws Exception {
+            OrderDeliveryGroup first = paidGroup();
+            OrderDeliveryGroup second = paidGroup();
+            OrderDeliveryGroup third = paidGroup();
+            int original = orderProperties.getPurchaseOrderMaxGroups();
+            orderProperties.setPurchaseOrderMaxGroups(2);
+            try {
+                downloadPurchaseOrder(Map.of("columns", List.of("ORDER_NUMBER")))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value("PURCHASE_ORDER_TOO_MANY"));
+                downloadPurchaseOrder(Map.of("deliveryGroupIds", List.of(first.getId(), second.getId(), third.getId()),
+                        "columns", List.of("ORDER_NUMBER")))
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value("PURCHASE_ORDER_TOO_MANY"));
+                assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM purchase_order_download_log", Integer.class))
+                        .isZero();
+                assertThat(List.of(first, second, third))
+                        .allSatisfy(g -> assertThat(reload(g).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.NEW));
+
+                assertThat(readSheet(downloadBytes(Map.of("deliveryGroupIds", List.of(first.getId(), second.getId()),
+                        "columns", List.of("ORDER_NUMBER"))))).hasSize(1 + 2);
+            } finally {
+                orderProperties.setPurchaseOrderMaxGroups(original);
+            }
+        }
+
+        @Test
+        @DisplayName("[PO-06] 기본값 저장 + 중복 컬럼 — 템플릿도 중복을 지운 순서로 저장된다")
+        void saveAsDefaultDeduplicates() throws Exception {
+            OrderDeliveryGroup group = paidGroup();
+
+            downloadBytes(Map.of("deliveryGroupIds", List.of(group.getId()),
+                    "columns", List.of("ORDER_NUMBER", "QUANTITY", "ORDER_NUMBER"), "saveAsDefault", true,
+                    "startPreparation", false));
+
+            sellerGet(SELLER_ORDERS + "/purchase-order/template")
+                    .andExpect(jsonPath("$.columns", contains("ORDER_NUMBER", "QUANTITY")));
+        }
+
+        @Test
+        @DisplayName("[PO-07] 탭 전체 발주서도 목록과 같은 기간 검증 — 366일 400 ORDER_SEARCH_RANGE_EXCEEDED · 역전 400 · 반출 없음")
+        void tabTargetUsesSameRangeRule() throws Exception {
+            paidGroup();
+            LocalDate today = LocalDate.now();
+
+            downloadPurchaseOrder(Map.of("columns", List.of("ORDER_NUMBER"),
+                    "from", today.minusDays(366).toString(), "to", today.toString()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("ORDER_SEARCH_RANGE_EXCEEDED"));
+            downloadPurchaseOrder(Map.of("columns", List.of("ORDER_NUMBER"),
+                    "from", today.toString(), "to", today.minusDays(1).toString()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM purchase_order_download_log", Integer.class)).isZero();
+        }
+
+        @Test
+        @DisplayName("[PO-08] 선택 id 와 탭 필터를 함께 보내면 선택이 이긴다 — 필터는 보지 않는다")
+        void selectionWinsOverFilter() throws Exception {
+            OrderDeliveryGroup group = paidGroup();
+
+            assertThat(readSheet(downloadBytes(Map.of("deliveryGroupIds", List.of(group.getId()),
+                    "columns", List.of("ORDER_NUMBER"), "startPreparation", false,
+                    "tab", "PREPARING", "searchType", "ORDER_NUMBER", "keyword", "NO-SUCH-ORDER"))))
+                    .containsExactly(List.of("주문번호"), List.of(orderNumberOf(group)));
+        }
+    }
+
     // ------------------------------------------------------------------ 보조
+
+    /** 실제 id 1개 + 없는 id 로 채운 {@code size}건. */
+    private static List<Long> idsWith(Long realId, int size) {
+        List<Long> ids = new ArrayList<>();
+        ids.add(realId);
+        LongStream.range(0, size - 1).forEach(i -> ids.add(9_000_000L + i));
+        return ids;
+    }
+
+    private List<Map<String, Object>> shipmentRowsWith(Long realId, int size) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        rows.add(shipmentRow(realId, "CJ", "630000000000"));
+        for (int i = 1; i < size; i++) {
+            rows.add(shipmentRow(9_000_000L + i, "CJ", "63%010d".formatted(i)));
+        }
+        return rows;
+    }
 
     private ResultActions downloadPurchaseOrder(Map<String, Object> body) throws Exception {
         return sellerPost(SELLER_ORDERS + "/purchase-order", new HashMap<>(body));

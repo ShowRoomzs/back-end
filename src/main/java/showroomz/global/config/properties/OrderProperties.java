@@ -55,4 +55,10 @@ public class OrderProperties {
 
     /** 송장 엑셀 일괄 업로드 행 상한(§34-5). */
     private int shipmentUploadMaxRows = 1000;
+
+    /** 목록 페이지 크기 상한 — 시안은 20건 고정(시안 정정 #22). 넘으면 400. */
+    private int listPageSizeMax = 100;
+
+    /** 발주서 1회 대상 하위주문 상한 — 넘으면 조용히 자르지 않고 400 으로 나눠 받게 한다. */
+    private int purchaseOrderMaxGroups = 2000;
 }

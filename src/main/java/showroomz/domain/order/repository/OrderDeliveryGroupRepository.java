@@ -153,45 +153,61 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
     int cancelByConsumer(@Param("orderId") Long orderId, @Param("now") LocalDateTime now);
 
     // ------------------------------------------------------------------ 감시 배치(설계서 3-3 · 3-4)
+    //
+    // 추적 반영 전이는 전부 「폴링 당시의 송장(carrier · tracking_number)」을 WHERE 에 넣는다 — 폴링과 반영 사이에
+    // 셀러가 송장을 고치면 구 송장의 결과(배송완료·반송·이벤트 시각)가 새 송장에 덮이면 안 된다(N11).
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderDeliveryGroup g SET g.lastTrackingAt = :at WHERE g.id = :id "
+            + "AND g.carrier = :carrier AND g.trackingNumber = :trackingNumber "
             + "AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.SHIPPING, "
             + "    showroomz.domain.order.type.FulfillmentStatus.RETURNING)")
-    int touchTracking(@Param("id") Long id, @Param("at") LocalDateTime at);
+    int touchTracking(@Param("id") Long id, @Param("carrier") DeliveryCarrier carrier,
+                      @Param("trackingNumber") String trackingNumber, @Param("at") LocalDateTime at);
 
     /** #5 SHIPPING → DELIVERED — 자동 확인. 운영자 직권은 어드민 모듈이 별도 메서드로 간다(범위 밖). */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderDeliveryGroup g SET g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.DELIVERED, "
             + "g.deliveredAt = :deliveredAt, g.deliveredSource = showroomz.domain.order.type.DeliveredSource.TRACKER, "
             + "g.trackingAlert = NULL "
-            + "WHERE g.id = :id AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING")
-    int markDeliveredByTracker(@Param("id") Long id, @Param("deliveredAt") LocalDateTime deliveredAt);
+            + "WHERE g.id = :id AND g.carrier = :carrier AND g.trackingNumber = :trackingNumber "
+            + "AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING")
+    int markDeliveredByTracker(@Param("id") Long id, @Param("carrier") DeliveryCarrier carrier,
+                               @Param("trackingNumber") String trackingNumber,
+                               @Param("deliveredAt") LocalDateTime deliveredAt);
 
     /** #4 SHIPPING → RETURNING — 반송 코드 감지. 구매확정 타이머 취소는 구조적이다(DELIVERED 가 아니므로). */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderDeliveryGroup g SET g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.RETURNING, "
             + "g.returnDetectedAt = :at, g.trackingAlert = NULL "
-            + "WHERE g.id = :id AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING")
-    int markReturning(@Param("id") Long id, @Param("at") LocalDateTime at);
+            + "WHERE g.id = :id AND g.carrier = :carrier AND g.trackingNumber = :trackingNumber "
+            + "AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING")
+    int markReturning(@Param("id") Long id, @Param("carrier") DeliveryCarrier carrier,
+                      @Param("trackingNumber") String trackingNumber, @Param("at") LocalDateTime at);
 
     /** 반송 완료 입고 — 1회만(환불 큐 중복 편입 방지). */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderDeliveryGroup g SET g.returnCompletedAt = :at WHERE g.id = :id "
+            + "AND g.carrier = :carrier AND g.trackingNumber = :trackingNumber "
             + "AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.RETURNING "
             + "AND g.returnCompletedAt IS NULL")
-    int markReturnCompleted(@Param("id") Long id, @Param("at") LocalDateTime at);
+    int markReturnCompleted(@Param("id") Long id, @Param("carrier") DeliveryCarrier carrier,
+                            @Param("trackingNumber") String trackingNumber, @Param("at") LocalDateTime at);
 
     /** 배지 설정 — 같은 값이면 0행(이력 1회 규칙). STALLED 는 PICKUP_UNCONFIRMED 를 덮어쓸 수 있다. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderDeliveryGroup g SET g.trackingAlert = :alert WHERE g.id = :id "
+            + "AND g.carrier = :carrier AND g.trackingNumber = :trackingNumber "
             + "AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING "
             + "AND (g.trackingAlert IS NULL OR g.trackingAlert <> :alert)")
-    int setTrackingAlert(@Param("id") Long id, @Param("alert") TrackingAlert alert);
+    int setTrackingAlert(@Param("id") Long id, @Param("carrier") DeliveryCarrier carrier,
+                         @Param("trackingNumber") String trackingNumber, @Param("alert") TrackingAlert alert);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("UPDATE OrderDeliveryGroup g SET g.trackingAlert = NULL WHERE g.id = :id AND g.trackingAlert IS NOT NULL")
-    int clearTrackingAlert(@Param("id") Long id);
+    @Query("UPDATE OrderDeliveryGroup g SET g.trackingAlert = NULL WHERE g.id = :id "
+            + "AND g.carrier = :carrier AND g.trackingNumber = :trackingNumber AND g.trackingAlert IS NOT NULL")
+    int clearTrackingAlert(@Param("id") Long id, @Param("carrier") DeliveryCarrier carrier,
+                           @Param("trackingNumber") String trackingNumber);
 
     /** #6 DELIVERED → CONFIRMED — 배송완료 + 7일(약관 제19조①). */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
@@ -225,9 +241,15 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
             + "AND g.order.paidAt IS NOT NULL GROUP BY g.fulfillmentStatus")
     List<Object[]> countByStatus(@Param("marketId") Long marketId);
 
-    /** 검토 중 취소 요청이 걸린 그룹 수 — 이행 상태별. NEW·PREPARING 탭에서 빼고 취소 요청 탭에 더한다. */
+    /**
+     * 검토 중 취소 요청이 걸린 그룹 수 — 이행 상태별. NEW·PREPARING 탭에서 빼고 취소 요청 탭에 더한다.
+     * 취소 요청 탭 목록과 같은 기준(작업 큐 상태 · 결제된 주문)만 센다 — 작업 큐 밖에 남은 요청을 세면 카운트와 목록이 어긋난다.
+     */
     @Query("SELECT g.fulfillmentStatus, COUNT(r) FROM OrderCancelRequest r JOIN r.deliveryGroup g "
             + "WHERE g.market.id = :marketId AND r.status = showroomz.domain.order.type.CancelRequestStatus.PENDING "
+            + "AND g.order.paidAt IS NOT NULL "
+            + "AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.NEW, "
+            + "    showroomz.domain.order.type.FulfillmentStatus.PREPARING) "
             + "GROUP BY g.fulfillmentStatus")
     List<Object[]> countPendingCancelByStatus(@Param("marketId") Long marketId);
 

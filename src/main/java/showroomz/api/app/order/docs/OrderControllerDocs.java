@@ -71,8 +71,10 @@ public interface OrderControllerDocs {
     @Operation(
             summary = "주문 생성 + 재고 예약 + 결제 준비",
             description = "주문을 만들고(결제 대기 · 30분) 재고를 차감(예약)한 뒤 포트원에 금액을 사전 등록하고 **결제창 재료**(`payment`)를 돌려준다.\n\n" +
-                    "**앱은 `payment` 블록을 포트원 RN SDK `<Payment request>` 에 그대로 넘긴다.** 금액을 앱이 조립하지 않는다. " +
-                    "`redirectUrl` 은 SDK 가 정하므로 내리지 않는다. 결제창이 끝나면 `onComplete` 의 `paymentId` 로 " +
+                    "**앱은 `payment` 블록으로 포트원 RN SDK `<Payment request>` 를 만든다.** 금액을 앱이 조립하지 않는다. " +
+                    "값은 그대로 쓰되 두 필드만 SDK 모양으로 중첩한다 — `cardCompany` → `card: { cardCompany }`, " +
+                    "`easyPayProvider` → `easyPay: { easyPayProvider }`(null 인 쪽은 뺀다). `customer.email` 이 null 이면 키를 뺀다. " +
+                    "`redirectUrl` 은 SDK 가 정하므로 내리지 않는다. 결제창이 끝나면 결과와 관계없이 `onComplete` 의 `paymentId` 로 " +
                     "`POST /v1/user/payments/{paymentId}/complete` 를 부른다.\n\n" +
                     "**멱등키:** `idempotencyKey` 는 주문 생성마다 새 UUID. 같은 키의 재요청(더블 탭·사전 등록 실패 후 재시도)은 " +
                     "새 주문을 만들지 않고 같은 주문으로 응답을 다시 조립한다. 그 주문이 만료·취소됐으면 409 `ORDER_ALREADY_CLOSED`.\n\n" +
@@ -160,7 +162,10 @@ public interface OrderControllerDocs {
                     "- 포트원이 명시적으로 거절 → 502 `PAYMENT_CANCEL_FAILED`(주문은 그대로)\n" +
                     "- 타임아웃·통신 오류 → **202** `paymentStatus: CANCEL_REQUESTED` — 취소됐을 수도 있어 되돌리지 않는다. 앱은 「취소 처리 중」으로 그리고 " +
                     "주문 상세를 다시 읽는다. 서버가 2분 뒤부터 재조회해 수렴시킨다.\n\n" +
-                    "동시에 두 번 누르면 둘째는 409 `PAYMENT_CANCEL_IN_PROGRESS`. 만료·이미 취소된 주문은 409 `ORDER_NOT_CANCELLABLE`.\n\n" +
+                    "동시에 두 번 누르면 둘째는 409 `PAYMENT_CANCEL_IN_PROGRESS`. 만료·이미 취소된 주문은 409 `ORDER_NOT_CANCELLABLE`. " +
+                    "브랜드가 하위 주문 하나라도 상품 준비를 시작했으면 409 `ORDER_CANCEL_WINDOW_CLOSED` — 바로 취소가 아니라 " +
+                    "취소 요청(브랜드 승인) 경로다(앱용 API 는 아직 없다).\n\n" +
+                    "취소 버튼은 주문 상세의 `cancellable` 이 true 일 때만 그린다.\n\n" +
                     "**권한:** USER (본인 주문만)"
     )
     @ApiResponses({
@@ -170,7 +175,7 @@ public interface OrderControllerDocs {
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderDto.CancelResponse.class))),
             @ApiResponse(responseCode = "403", description = "ORDER_ACCESS_DENIED",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "409", description = "ORDER_NOT_CANCELLABLE · PAYMENT_CANCEL_IN_PROGRESS",
+            @ApiResponse(responseCode = "409", description = "ORDER_NOT_CANCELLABLE · PAYMENT_CANCEL_IN_PROGRESS · ORDER_CANCEL_WINDOW_CLOSED(준비 시작 후)",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "502", description = "PAYMENT_CANCEL_FAILED",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))

@@ -157,6 +157,16 @@ class SellerOrderAssemblerTest {
     }
 
     @Test
+    @DisplayName("작업 큐 밖에 남은 검토 중 요청은 처리 버튼을 열지 않는다 — 발송 뒤 취소는 반품 경로다(CX-01 · CX-05)")
+    void pendingRequestOutsideWorkQueueIsNotDecidable() {
+        assertActions(FulfillmentStatus.SHIPPING, true, false, false, true, false, false);
+        for (FulfillmentStatus status : List.of(FulfillmentStatus.RETURNING, FulfillmentStatus.DELIVERED,
+                FulfillmentStatus.CONFIRMED, FulfillmentStatus.CANCELLED)) {
+            assertActions(status, true, false, false, false, false, false);
+        }
+    }
+
+    @Test
     @DisplayName("금액 요약 — 확정 취소분 = 취소 항목 합 · 요청분 = 검토 중 요청의 환불 예정 합 · 총액 = 판매가 합 + 배송비")
     void detailAmounts() {
         OrderProduct cream = item(1L, "크림", 1, 27_200, OrderProductStatus.CANCELLED);

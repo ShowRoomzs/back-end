@@ -201,7 +201,7 @@ public class SellerContractCommandService {
         }
 
         String contractNumber = contract.getContractNumber() == null
-                ? contractNumberGenerator.generate(now.toLocalDate())
+                ? contractNumberGenerator.generate(now)
                 : contract.getContractNumber();
 
         ContractClauseVersion clauseVersion = clauseVersionRepository

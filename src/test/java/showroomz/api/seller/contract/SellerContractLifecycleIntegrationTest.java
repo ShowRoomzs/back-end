@@ -76,7 +76,9 @@ class SellerContractLifecycleIntegrationTest extends SellerContractTestSupport {
         long first = draftReadyForReview();
         long second = draftReadyForReview();
 
-        String today = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE);
+        // 번호의 날짜는 한국 날짜다 — 서버 시간대(운영 UTC)와 무관하다.
+        String today = java.time.LocalDate.now(showroomz.global.utils.KstDates.KST)
+                .format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE);
         reviewRequest(first).andExpect(status().isOk())
                 .andExpect(jsonPath("$.contractNumber").value("CTR-" + today + "-001"));
         reviewRequest(second).andExpect(status().isOk())

@@ -134,6 +134,7 @@ class SellerOrderCommandServiceTrackerTest {
     @DisplayName("전역 중복이 형식 판정보다 먼저다 — 겹치면 연동 API 를 부르지 않는다")
     void duplicateCheckedBeforeFormat() {
         OrderDeliveryGroup owner = group(99L, "20261003-000099");
+        ReflectionTestUtils.setField(owner, "market", scope.market());
         when(deliveryGroupRepository.findActiveByInvoice(eq(DeliveryCarrier.CJ), eq("123456789012"), any()))
                 .thenReturn(List.of(owner));
 
@@ -144,6 +145,24 @@ class SellerOrderCommandServiceTrackerTest {
             assertThat(skipped.message()).isEqualTo("20261003-000099에 이미 등록된 번호입니다.");
         });
         verifyNoInteractions(tracker);
+    }
+
+    @Test
+    @DisplayName("겹치는 송장이 다른 브랜드 주문이면 주문번호를 숨긴다 — 존재 비노출(SH-04 · N9)")
+    void duplicateOfOtherBrandHidesOrderNumber() {
+        OrderDeliveryGroup owner = group(99L, "20261003-000099");
+        Market otherMarket = new Market();
+        ReflectionTestUtils.setField(otherMarket, "id", MARKET_ID + 1);
+        ReflectionTestUtils.setField(owner, "market", otherMarket);
+        when(deliveryGroupRepository.findActiveByInvoice(eq(DeliveryCarrier.CJ), eq("123456789012"), any()))
+                .thenReturn(List.of(owner));
+
+        BatchActionResponse response = service.registerShipments(EMAIL, register("123456789012"));
+
+        assertThat(response.skipped()).singleElement().satisfies(skipped -> {
+            assertThat(skipped.code()).isEqualTo("INVOICE_DUPLICATE");
+            assertThat(skipped.message()).isEqualTo("다른 주문에 이미 등록된 번호입니다.");
+        });
     }
 
     @Test

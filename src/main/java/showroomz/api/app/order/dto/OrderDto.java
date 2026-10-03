@@ -262,7 +262,8 @@ public class OrderDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @Schema(description = "결제창 재료 — 포트원 RN SDK <Payment request> 에 그대로 넘긴다. redirectUrl 은 SDK 가 정한다(2-4)")
+    @Schema(description = "결제창 재료 — 포트원 RN SDK <Payment request> 의 값. 평평하게 내리므로 앱이 cardCompany → card.cardCompany, "
+            + "easyPayProvider → easyPay.easyPayProvider 로 중첩한다(null 인 쪽은 뺀다). redirectUrl 은 SDK 가 정한다(2-4)")
     public static class PaymentWindow {
         private String paymentId;
         private String storeId;
@@ -272,9 +273,9 @@ public class OrderDto {
         private String currency;
         @Schema(description = "포트원 payMethod — CARD · EASY_PAY", example = "CARD")
         private String payMethod;
-        @Schema(description = "포트원 CardCompany 코드 — 카드일 때", nullable = true)
+        @Schema(description = "포트원 CardCompany 코드 — 카드일 때. SDK 요청에는 card: { cardCompany } 로 넣는다", nullable = true)
         private String cardCompany;
-        @Schema(description = "포트원 easyPayProvider — 간편결제일 때", nullable = true)
+        @Schema(description = "포트원 easyPayProvider — 간편결제일 때. SDK 요청에는 easyPay: { easyPayProvider } 로 넣는다", nullable = true)
         private String easyPayProvider;
         private Customer customer;
     }

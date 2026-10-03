@@ -8,6 +8,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.ResultActions;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.type.CancelRequestReason;
+import showroomz.domain.order.type.FulfillmentStatus;
+import showroomz.domain.order.type.OrderCancelType;
 import showroomz.domain.order.type.OrderTab;
 import showroomz.support.IntegrationTest;
 
@@ -458,6 +460,157 @@ class SellerOrderQueryIntegrationTest extends SellerOrderTestSupport {
             orderDetail(pending.getId())
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.code").value("ORDER_GROUP_NOT_FOUND"));
+        }
+    }
+
+    @Nested
+    @DisplayName("보강 — 입력 경계 · 발송기한 스냅샷 · 데이터 계약(Q)")
+    class Boundaries {
+
+        @Test
+        @DisplayName("[Q-01] 시작일이 종료일보다 늦으면 400 INVALID_INPUT — 빈 목록으로 「주문이 없다」고 답하지 않는다")
+        void reversedRangeIsBadRequest() throws Exception {
+            paidGroup();
+            LocalDate today = LocalDate.now();
+
+            sellerGet(SELLER_ORDERS + "?from=" + today + "&to=" + today.minusDays(1))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"))
+                    .andExpect(jsonPath("$.message").value("조회 시작일은 종료일보다 늦을 수 없습니다."));
+            // 같은 날은 정상 범위다.
+            sellerGet(SELLER_ORDERS + "?from=" + today + "&to=" + today)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content.length()").value(1));
+        }
+
+        @Test
+        @DisplayName("[Q-02] 검색 타입만 · 검색어만 · 공백 검색어는 검색 조건을 무시한다 — 400 아님 · 탭 전체와 같은 건수")
+        void incompleteSearchIsIgnored() throws Exception {
+            OrderDeliveryGroup first = paidGroup();
+            OrderDeliveryGroup second = paidGroup();
+
+            expectIds(mockMvc.perform(get(SELLER_ORDERS).header(HttpHeaders.AUTHORIZATION, brandToken)
+                    .param("searchType", "ORDER_NUMBER")), first, second);
+            expectIds(mockMvc.perform(get(SELLER_ORDERS).header(HttpHeaders.AUTHORIZATION, brandToken)
+                    .param("keyword", orderNumberOf(first))), first, second);
+            expectIds(search("RECIPIENT_NAME", "   "), first, second);
+        }
+
+        @Test
+        @DisplayName("[Q-03] page 1 미만은 첫 페이지로 보정 · size 는 1~100 밖이면 400 INVALID_INPUT(500 아님)")
+        void pagingBoundaries() throws Exception {
+            paidGroup();
+
+            for (String page : List.of("0", "-3")) {
+                sellerGet(SELLER_ORDERS + "?page=" + page)
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.pageInfo.currentPage").value(1))
+                        .andExpect(jsonPath("$.content.length()").value(1));
+            }
+            for (String size : List.of("0", "-1", "101")) {
+                sellerGet(SELLER_ORDERS + "?size=" + size)
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+            }
+            sellerGet(SELLER_ORDERS + "?size=100").andExpect(status().isOk());
+            sellerGet(SELLER_ORDERS + "?size=1").andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("[Q-04] 출고 소요일이 비어 있는 마켓 — 발송기한 null · 경과 없음 · 임박순 정렬에서 마지막 · 상세도 200")
+        void nullShippingLeadDays() throws Exception {
+            jdbc.update("UPDATE market SET shipping_lead_days = NULL WHERE market_id = ?", brand.marketId());
+            OrderDeliveryGroup noDue = paidGroup();
+            jdbc.update("UPDATE market SET shipping_lead_days = ? WHERE market_id = ?", SHIPPING_LEAD_DAYS,
+                    brand.marketId());
+            OrderDeliveryGroup withDue = paidGroup();
+            assertThat(noDue.getShipDueAt()).isNull();
+
+            expectOrder(sellerGet(SELLER_ORDERS + "?tab=NEW&sort=SHIP_DUE_ASC"), withDue, noDue);
+            sellerGet(SELLER_ORDERS + "?tab=NEW&sort=SHIP_DUE_ASC")
+                    .andExpect(jsonPath("$.content[1].shipDueAt").value(nullValue()))
+                    .andExpect(jsonPath("$.content[1].overlays.shipOverdue").value(false));
+            orderDetail(noDue.getId())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.timeline.shipDueAt").value(nullValue()))
+                    .andExpect(jsonPath("$.overlays.shipOverdue").value(false));
+        }
+
+        @Test
+        @DisplayName("[Q-05] 발송기한은 결제 시점 스냅샷 — 마켓 출고 소요일을 바꿔도 기존 하위주문은 그대로 · 새 결제만 새 값")
+        void shipDueAtIsSnapshot() throws Exception {
+            OrderDeliveryGroup before = paidGroup();
+            jdbc.update("UPDATE market SET shipping_lead_days = ? WHERE market_id = ?", 5, brand.marketId());
+            OrderDeliveryGroup after = paidGroup();
+
+            assertThat(reload(before).getShipDueAt())
+                    .isEqualTo(before.getOrder().getPaidAt().plusDays(SHIPPING_LEAD_DAYS));
+            assertThat(after.getShipDueAt()).isEqualTo(after.getOrder().getPaidAt().plusDays(5));
+            orderDetail(before.getId())
+                    .andExpect(jsonPath("$.timeline.shipDueAt").value(jsonTime(before.getShipDueAt())));
+        }
+
+        @Test
+        @DisplayName("[Q-06] 같은 브랜드 하위주문 2개인 주문 — 목록 2행 · 탭 카운트 2 · 소비자 전액 취소는 둘 다 취소(CONSUMER)")
+        void sameBrandTwoGroupsCancelledTogether() throws Exception {
+            OrderDeliveryGroup first = paidGroup();
+            OrderDeliveryGroup second = addSecondGroup(first);
+
+            expectTab("NEW", first, second);
+            sellerGet(SELLER_ORDERS + "/summary").andExpect(jsonPath("$.tabCounts.NEW").value(2));
+            sellerGet(SELLER_ORDERS + "?tab=NEW")
+                    .andExpect(jsonPath("$.content[*].subOrderNumber", containsInAnyOrder(
+                            orderNumberOf(first) + "-01", orderNumberOf(first) + "-02")));
+
+            cancel(first.getOrder().getId()).andExpect(status().isOk());
+
+            for (OrderDeliveryGroup group : List.of(first, second)) {
+                OrderDeliveryGroup cancelled = reload(group);
+                assertThat(cancelled.getFulfillmentStatus()).isEqualTo(FulfillmentStatus.CANCELLED);
+                assertThat(cancelled.getCancelType()).isEqualTo(OrderCancelType.CONSUMER);
+            }
+            sellerGet(SELLER_ORDERS + "/summary").andExpect(jsonPath("$.tabCounts.CANCELLED").value(2));
+        }
+
+        @Test
+        @DisplayName("[Q-06] 같은 브랜드 하위주문 중 하나만 준비 시작해도 소비자 전액 취소는 닫힌다 — 나머지는 NEW 그대로")
+        void sameBrandOnePreparedClosesConsumerCancel() throws Exception {
+            OrderDeliveryGroup first = paidGroup();
+            OrderDeliveryGroup second = addSecondGroup(first);
+            prepareStart(first.getId()).andExpect(jsonPath("$.succeeded").value(1));
+
+            cancel(first.getOrder().getId())
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("ORDER_CANCEL_WINDOW_CLOSED"));
+            assertThat(reload(second).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.NEW);
+        }
+
+        @Test
+        @DisplayName("[Q-07] 공구가 없는 하위주문(백필 행) — 목록·상세의 공구명 null · 200")
+        void groupWithoutGroupBuy() throws Exception {
+            OrderDeliveryGroup group = paidGroup();
+            jdbc.update("UPDATE order_delivery_group SET group_buy_id = NULL WHERE delivery_group_id = ?", group.getId());
+
+            sellerGet(SELLER_ORDERS + "?tab=NEW")
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content[0].deliveryGroupId").value(group.getId()))
+                    .andExpect(jsonPath("$.content[0].groupBuyName").value(nullValue()));
+            orderDetail(group.getId())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.groupBuyId").value(nullValue()))
+                    .andExpect(jsonPath("$.groupBuyName").value(nullValue()));
+        }
+
+        @Test
+        @DisplayName("[Q-08] 결제 행을 찾을 수 없는 주문(백필) — 상세의 결제수단 null · 500 아님")
+        void detailWithoutPaymentRow() throws Exception {
+            OrderDeliveryGroup group = paidGroup();
+            jdbc.update("UPDATE orders SET paid_payment_id = ? WHERE order_id = ?", "missing-payment",
+                    group.getOrder().getId());
+
+            orderDetail(group.getId())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.paymentMethod").value(nullValue()));
         }
     }
 

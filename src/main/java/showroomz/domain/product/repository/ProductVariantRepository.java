@@ -44,6 +44,10 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
            "WHERE v.product.productId IN :productIds GROUP BY v.product.productId")
     List<Object[]> sumStockByProductIds(@Param("productIds") List<Long> productIds);
 
+    /** 옵션 재고 합계 — 어드민 공구 B4 「준비 물량」의 잔여분. 없는 옵션은 0으로 센다. */
+    @Query("SELECT COALESCE(SUM(v.stock), 0) FROM ProductVariant v WHERE v.variantId IN :variantIds")
+    Long sumStockByVariantIds(@Param("variantIds") Collection<Long> variantIds);
+
     /**
      * 상품별 재고가 남은 옵션 수 — 0이거나 행이 없으면 품절이다. C7 {@code status.isOutOfStock}과 같은 식
      * (강제 품절 ∨ 재고 있는 옵션 없음)을 페이지 단위로 판정하려고 센다(공구 게시물 설계 6-2 ③).

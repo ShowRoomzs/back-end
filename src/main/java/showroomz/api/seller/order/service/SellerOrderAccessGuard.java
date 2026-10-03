@@ -35,8 +35,13 @@ public class SellerOrderAccessGuard {
         return new SellerScope(seller.getId(), market);
     }
 
+    /**
+     * 내 마켓의 <b>결제된 적 있는</b> 하위주문 — 결제 전(PENDING) 주문은 셀러 화면 밖이라 목록·요약과 같은 기준으로
+     * 상세·송장 수정에서도 404 다. 수취인 연락처·주소가 결제 전에 브랜드에게 나가지 않는다(§34-11).
+     */
     public OrderDeliveryGroup loadOwned(Long deliveryGroupId, SellerScope scope) {
         return deliveryGroupRepository.findOwned(deliveryGroupId, scope.market().getId())
+                .filter(group -> group.getOrder().getPaidAt() != null)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_GROUP_NOT_FOUND));
     }
 

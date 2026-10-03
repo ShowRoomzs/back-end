@@ -68,11 +68,10 @@ public class SellerGroupBuyQueryService {
                                                        GroupBuySortType sort, PagingRequest pagingRequest) {
         SellerScope scope = accessGuard.resolve(sellerEmail);
         Pageable pageable = PageRequest.of(Math.max(pagingRequest.getPage() - 1, 0), pagingRequest.getSize(),
-                sortOf(sort == null ? GroupBuySortType.START_AT_ASC : sort));
-        String pattern = keyword == null || keyword.isBlank() ? null : "%" + keyword.trim() + "%";
+                sortOf(sortOrDefault(sort)));
 
         Page<GroupBuy> page = groupBuyRepository.searchForSeller(
-                scope.market().getId(), (tab == null ? GroupBuyTab.ALL : tab).getStatuses(), pattern, pageable);
+                scope.market().getId(), tabOrAll(tab).getStatuses(), patternOf(keyword), pageable);
 
         List<GroupBuy> groupBuys = page.getContent();
         if (groupBuys.isEmpty()) {
@@ -145,6 +144,18 @@ public class SellerGroupBuyQueryService {
         return counts;
     }
 
+    private static GroupBuyTab tabOrAll(GroupBuyTab tab) {
+        return tab == null ? GroupBuyTab.ALL : tab;
+    }
+
+    private static GroupBuySortType sortOrDefault(GroupBuySortType sort) {
+        return sort == null ? GroupBuySortType.START_AT_ASC : sort;
+    }
+
+    private static String patternOf(String keyword) {
+        return keyword == null || keyword.isBlank() ? null : "%" + keyword.trim() + "%";
+    }
+
     private static Sort sortOf(GroupBuySortType sort) {
         return switch (sort) {
             case START_AT_ASC -> Sort.by(Sort.Order.asc("startAt"), Sort.Order.asc("id"));
@@ -177,9 +188,32 @@ public class SellerGroupBuyQueryService {
         return new GroupBuySummaryResponse(tabCounts, actionRequired);
     }
 
-    /** 상세(B1~B7a). */
-    public GroupBuyDetailResponse getGroupBuy(String sellerEmail, Long groupBuyId) {
+    /**
+     * 상세(B1~B7a). 목록 조건(tab · keyword · sort)이 오면 같은 조건·정렬로 앞뒤 1건씩 이웃을 고른다 — FE가 목록을 다시
+     * 불러와 계산하지 않게 한다. 한 브랜드의 공구는 수십~수백 건이라 id 목록으로 충분하다.
+     */
+    public GroupBuyDetailResponse getGroupBuy(String sellerEmail, Long groupBuyId, GroupBuyTab tab, String keyword,
+                                              GroupBuySortType sort) {
         SellerScope scope = accessGuard.resolve(sellerEmail);
-        return detailAssembler.assemble(accessGuard.loadOwned(groupBuyId, scope.market()));
+        GroupBuy groupBuy = accessGuard.loadOwned(groupBuyId, scope.market());
+        return detailAssembler.assemble(groupBuy, navigation(scope.market().getId(), groupBuyId, tab, keyword, sort));
+    }
+
+    private GroupBuyDetailResponse.Navigation navigation(Long marketId, Long groupBuyId, GroupBuyTab tab,
+                                                         String keyword, GroupBuySortType sort) {
+        boolean hasListContext = tab != null || sort != null || (keyword != null && !keyword.isBlank());
+        if (!hasListContext) {
+            return new GroupBuyDetailResponse.Navigation(null, null);
+        }
+        List<Long> ids = groupBuyRepository.findOrderedIdsForSeller(marketId, tabOrAll(tab).getStatuses(),
+                patternOf(keyword), sortOf(sortOrDefault(sort)));
+        int index = ids.indexOf(groupBuyId);
+        if (index < 0) {
+            // 현재 공구가 목록 조건에 맞지 않는다(그 사이 탭이 바뀌는 전이) — 근거 없는 이웃을 지어내지 않는다.
+            return new GroupBuyDetailResponse.Navigation(null, null);
+        }
+        return new GroupBuyDetailResponse.Navigation(
+                index > 0 ? ids.get(index - 1) : null,
+                index < ids.size() - 1 ? ids.get(index + 1) : null);
     }
 }

@@ -143,10 +143,11 @@ public interface AdminGroupBuyControllerDocs {
                     | `closure` | 중단 · 조기 마감 종결 — 요청 승인이면 `requester`, 직권이면 `adminBasis` |
 
                     **판단 근거 숫자는 포트에서 오고, 없으면 null이다** — 거짓 0은 오판으로 직행한다.
-                    판매 모듈 연동 전이라 `sales` · `decisionBasis`의 주문 수 · `inquiries.total` · `hidden.ordersSinceHidden` ·
-                    `salesSinceNotice` · `closure.acceptedOrderCount` · `settlement.preview.provisionalSalesAmount`는 현재 null이다.
-                    `decisionBasis.inquiries.defectRelated`는 항상 null(문의 유형에 하자 분류가 없다). 조기 마감의 `preparedQuantity`(계약 최소 물량 합)와
-                    `soldOutInquiriesSinceRequest`(재입고 문의)는 판매 포트 없이도 나온다.
+                    `sales` · `decisionBasis`의 주문 수 · `inquiries.total` · `hidden.ordersSinceHidden` · `salesSinceNotice` ·
+                    `closure.acceptedOrderCount` · `settlement.preview.provisionalSalesAmount` · `afterEnd.orderClosure`는 판매 모듈(주문 관리)이 실값으로 내린다.
+                    `decisionBasis.inquiries.defectRelated`는 항상 null(문의 유형에 하자 분류가 없다). 조기 마감의 `preparedQuantity`는
+                    판매 수량 + 계약 옵션의 현재 재고다(옵션 재고는 같은 상품의 다른 공구와 공유). `soldOutInquiriesSinceRequest`(재입고 문의)는 판매 포트 없이도 나온다.
+                    `afterEnd.orderClosure`의 `purchaseConfirmedCount` · `refundedCount`는 종결의 경로별 내역(하위주문 단위)이다 — 반품·교환 거절 확정은 구매확정으로 센다.
 
                     **필드별 주의**
                     - `post` — 원문 전체 · 판본(`latestRevisionNo`) · 승인 후 수정 횟수(`editCount`). 숨김 해제 요청에 `latestRevisionNo`를 그대로 돌려준다.
@@ -174,7 +175,7 @@ public interface AdminGroupBuyControllerDocs {
                             @ExampleObject(name = "B2c 소명 검토", summary = "중단 예정 · 소명 제출 · 기한 경과 · 집행 예정 도래 — 집행·철회 가능", value = DETAIL_APPEAL_REVIEW),
                             @ExampleObject(name = "B3 중단 요청 검토", summary = "인플루언서의 중단 요청 · 거절된 연장 카드 동반", value = DETAIL_SUSPEND_REQUEST),
                             @ExampleObject(name = "B4 조기 마감 요청 검토", summary = "브랜드의 재고 소진 요청 — 준비 물량 · 재입고 문의", value = DETAIL_EARLY_CLOSE_REQUEST),
-                            @ExampleObject(name = "B5 종료 · 이행 이견", summary = "이행 한쪽 UNFULFILLED → 정산 보류 · 판매 포트 없음", value = DETAIL_ENDED),
+                            @ExampleObject(name = "B5 종료 · 이행 이견", summary = "이행 한쪽 UNFULFILLED → 정산 보류 · 미종결 18건", value = DETAIL_ENDED),
                             @ExampleObject(name = "B6 직권 중단 종결", summary = "사전 통지 집행으로 중단 — closure.adminBasis", value = DETAIL_SUSPENDED_BY_NOTICE)
                     })),
             @ApiResponse(responseCode = "400", description = "없는 `tab` · `sort` 값",

@@ -21,6 +21,7 @@ import showroomz.support.IntegrationTest;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -322,6 +323,89 @@ class OrderFulfillmentTrackingIntegrationTest extends SellerOrderTestSupport {
     }
 
     @Nested
+    @DisplayName("보강 — 송장 수정과의 경합 · 스냅샷 조합(TR)")
+    class Crossings {
+
+        @Test
+        @DisplayName("[TR-03] 폴링한 뒤 송장이 수정되면 구 송장의 결과는 반영되지 않는다 — 배송완료·반송·이벤트 시각·배지 모두(N11)")
+        void staleInvoiceResultIsIgnored() throws Exception {
+            OrderDeliveryGroup group = shippingGroup("720010002000");
+            LocalDateTime now = batchNow();
+            backdateShippedAt(group, now.minusHours(25));
+            OrderDeliveryGroup polled = reload(group); // 폴링 시점 스냅샷 — 구 송장
+
+            updateShipment(group.getId(), "HANJIN", "720010002001").andExpect(status().isOk());
+
+            fulfillmentService.applyTracking(polled, Optional.of(new TrackSnapshot(now.minusHours(1),
+                    now.minusHours(1), false, false)), now, 24, 7);
+            fulfillmentService.applyTracking(polled, Optional.of(new TrackSnapshot(now.minusHours(1), null,
+                    true, false)), now, 24, 7);
+            fulfillmentService.applyTracking(polled, Optional.empty(), now, 24, 7);
+
+            OrderDeliveryGroup current = reload(group);
+            assertThat(current.getFulfillmentStatus()).isEqualTo(FulfillmentStatus.SHIPPING);
+            assertThat(current.getDeliveredAt()).isNull();
+            assertThat(current.getReturnDetectedAt()).isNull();
+            assertThat(current.getLastTrackingAt()).isNull();
+            assertThat(current.getTrackingAlert()).isNull();
+            assertThat(historyCount(group, FulfillmentEventType.DELIVERED)).isZero();
+            assertThat(historyCount(group, FulfillmentEventType.RETURN_DETECTED)).isZero();
+            assertThat(historyCount(group, FulfillmentEventType.PICKUP_UNCONFIRMED)).isZero();
+
+            // 새 송장으로 폴링한 결과는 정상 반영된다.
+            track(group, new TrackSnapshot(now.minusMinutes(5), now.minusMinutes(5), false, false), now);
+            assertThat(reload(group).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.DELIVERED);
+        }
+
+        @Test
+        @DisplayName("[TR-04] 배송중 + 반송·배송완료가 함께 오면 반송이 이긴다")
+        void returnWinsOverDelivered() throws Exception {
+            OrderDeliveryGroup group = shippingGroup("720010002002");
+            LocalDateTime now = batchNow();
+
+            track(group, new TrackSnapshot(now.minusHours(1), now.minusHours(1), true, false), now);
+
+            assertThat(reload(group).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.RETURNING);
+            assertThat(reload(group).getDeliveredAt()).isNull();
+            assertThat(historyCount(group, FulfillmentEventType.DELIVERED)).isZero();
+        }
+
+        @Test
+        @DisplayName("[TR-04] 배송중에 반송 감지 없이 「입고 완료」만 오면 무시한다 — 환불 큐가 서지 않는다")
+        void returnCompletedWithoutDetectionIsIgnored() throws Exception {
+            OrderDeliveryGroup group = shippingGroup("720010002003");
+            LocalDateTime now = batchNow();
+
+            track(group, new TrackSnapshot(now.minusHours(1), null, false, true), now);
+
+            OrderDeliveryGroup result = reload(group);
+            assertThat(result.getFulfillmentStatus()).isEqualTo(FulfillmentStatus.SHIPPING);
+            assertThat(result.getReturnCompletedAt()).isNull();
+            assertThat(refundTasks(group)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("[TR-04] 반송중에서는 나가는 전이가 없다 — 배송완료 무시 · 7일 정체·24시간 미조회 배지도 붙지 않는다")
+        void returningIgnoresDeliveryAndAlerts() throws Exception {
+            OrderDeliveryGroup group = returning(shippingGroup("720010002004"));
+            LocalDateTime now = batchNow();
+            backdateShippedAt(group, now.minusDays(10));
+
+            track(group, new TrackSnapshot(now.minusHours(1), now.minusHours(1), false, false), now);
+            track(group, new TrackSnapshot(now.minusDays(8), null, true, false), now);
+            track(group, null, now);
+
+            OrderDeliveryGroup result = reload(group);
+            assertThat(result.getFulfillmentStatus()).isEqualTo(FulfillmentStatus.RETURNING);
+            assertThat(result.getDeliveredAt()).isNull();
+            assertThat(result.getTrackingAlert()).isNull();
+            assertThat(historyCount(group, FulfillmentEventType.DELIVERED)).isZero();
+            assertThat(historyCount(group, FulfillmentEventType.TRACKING_STALLED)).isZero();
+            assertThat(historyCount(group, FulfillmentEventType.PICKUP_UNCONFIRMED)).isZero();
+        }
+    }
+
+    @Nested
     @DisplayName("공구 정산 게이트 — 미종결 집계(5-3)")
     class GroupBuyClosure {
 
@@ -344,6 +428,9 @@ class OrderFulfillmentTrackingIntegrationTest extends SellerOrderTestSupport {
             assertThat(closure.totalCount()).isEqualTo(6);
             assertThat(closure.closedCount()).isEqualTo(2);
             assertThat(closure.unclosedCount()).isEqualTo(4);
+            // 종결 경로별 — 구매확정 1 · 결제 후 취소(환불) 1. 결제 대기 건은 어디에도 세지 않는다.
+            assertThat(closure.purchaseConfirmedCount()).isEqualTo(1);
+            assertThat(closure.refundedCount()).isEqualTo(1);
             assertThat(closure.awaitingShipment()).isEqualTo(2);
             assertThat(closure.inReturnOrExchange()).isEqualTo(1);
             assertThat(closure.unclosedStages())

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.nullValue;
@@ -457,6 +458,197 @@ class SellerOrderCancelIntegrationTest extends SellerOrderTestSupport {
                     .andExpect(skippedCode(group.getId(), "CANCEL_REQUEST_PENDING_EXISTS"));
             assertThat(reload(group).getTrackingNumber()).isNull();
         }
+    }
+
+    @Nested
+    @DisplayName("보강 — 취소 경로끼리의 교차(CX)")
+    class Crossings {
+
+        @Test
+        @DisplayName("[CX-01] 검토 중 요청이 걸린 채 소비자가 전액 취소 — 요청은 시스템이 닫고(VOIDED) · 카운트=목록 · 승인 409 · 0원 환불 큐 없음(N10)")
+        void consumerFullCancelVoidsPendingRequest() throws Exception {
+            OrderDeliveryGroup group = paidGroup();
+            OrderCancelRequest request = seedCancelRequest(group);
+
+            cancel(group.getOrder().getId()).andExpect(status().isOk());
+
+            OrderCancelRequest voided = cancelRequestRepository.findById(request.getId()).orElseThrow();
+            assertThat(voided.getStatus()).isEqualTo(CancelRequestStatus.VOIDED);
+            assertThat(voided.getDecidedAt()).isNotNull();
+            assertThat(voided.getDecidedBy()).isNull();
+            assertThat(reload(group).getCancelType()).isEqualTo(OrderCancelType.CONSUMER);
+            sellerGet(SELLER_ORDERS + "/summary")
+                    .andExpect(jsonPath("$.tabCounts.CANCEL_REQUESTED").value(0))
+                    .andExpect(jsonPath("$.tabCounts.CANCELLED").value(1));
+            sellerGet(SELLER_ORDERS + "?tab=CANCEL_REQUESTED").andExpect(jsonPath("$.content", empty()));
+            orderDetail(group.getId())
+                    .andExpect(jsonPath("$.cancelRequest").value(nullValue()))
+                    .andExpect(jsonPath("$.actions.canDecideCancelRequest").value(false));
+
+            approve(request.getId())
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("CANCEL_REQUEST_ALREADY_DECIDED"));
+            reject(request.getId(), "사유")
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("CANCEL_REQUEST_ALREADY_DECIDED"));
+            assertThat(refundTasks(group)).isEmpty();
+            assertThat(historyCount(group, FulfillmentEventType.CANCEL_REQUEST_APPROVED)).isZero();
+        }
+
+        @Test
+        @DisplayName("[CX-05] 발송 뒤(배송중·배송완료)에 남은 요청은 승인·거부 모두 409 ORDER_STATE_CHANGED — 반품 경로 우회 없음 · 카운트=목록(N10)")
+        void requestAfterShippingCannotBeDecided() throws Exception {
+            OrderDeliveryGroup shipping = shippingGroup("710020003000");
+            OrderDeliveryGroup deliveredGroup = delivered(shippingGroup("710020003001"), LocalDateTime.now().withNano(0));
+            int stockBefore = stockOf(creamVariant);
+
+            for (OrderDeliveryGroup group : List.of(shipping, deliveredGroup)) {
+                OrderCancelRequest request = seedCancelRequest(group);
+
+                approve(request.getId())
+                        .andExpect(status().isConflict())
+                        .andExpect(jsonPath("$.code").value("ORDER_STATE_CHANGED"));
+                reject(request.getId(), "이미 발송되었습니다.")
+                        .andExpect(status().isConflict())
+                        .andExpect(jsonPath("$.code").value("ORDER_STATE_CHANGED"));
+                orderDetail(group.getId()).andExpect(jsonPath("$.actions.canDecideCancelRequest").value(false));
+
+                assertThat(cancelRequestRepository.findById(request.getId()).orElseThrow().getStatus())
+                        .isEqualTo(CancelRequestStatus.PENDING);
+                assertThat(items(group)).allMatch(item -> item.getStatus() == OrderProductStatus.PAID);
+                assertThat(refundTasks(group)).isEmpty();
+            }
+            assertThat(reload(shipping).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.SHIPPING);
+            assertThat(stockOf(creamVariant)).isEqualTo(stockBefore);
+            sellerGet(SELLER_ORDERS + "/summary").andExpect(jsonPath("$.tabCounts.CANCEL_REQUESTED").value(0));
+            sellerGet(SELLER_ORDERS + "?tab=CANCEL_REQUESTED").andExpect(jsonPath("$.content", empty()));
+        }
+
+        @Test
+        @DisplayName("[CX-02] 부분 승인 뒤 직권 취소 — 남은 항목만 SELLER_DIRECT · 환불 큐 2행(요청분 · 남은 항목+배송비) · 재고는 항목마다 1회")
+        void directCancelAfterPartialApproval() throws Exception {
+            OrderDeliveryGroup group = preparingTwoItemGroup();
+            OrderCancelRequest request = seedCancelRequest(group, List.of(itemOf(group, creamVariant)),
+                    CancelRequestReason.CHANGE_OF_MIND, null, LocalDateTime.now().withNano(0));
+            int creamBefore = stockOf(creamVariant);
+            int serumBefore = stockOf(serumVariant);
+            approve(request.getId()).andExpect(status().isOk());
+
+            directCancel(List.of(group.getId()), "SOLD_OUT", SOLD_OUT_MESSAGE)
+                    .andExpect(jsonPath("$.succeeded").value(1));
+
+            OrderDeliveryGroup cancelled = reload(group);
+            assertThat(cancelled.getCancelType()).isEqualTo(OrderCancelType.SELLER_DIRECT);
+            assertThat(cancelled.getStatusAtCancel()).isEqualTo(FulfillmentStatus.PREPARING);
+            assertThat(itemOf(group, creamVariant).getCancelType()).isEqualTo(OrderCancelType.REQUEST_APPROVED);
+            assertThat(itemOf(group, serumVariant).getCancelType()).isEqualTo(OrderCancelType.SELLER_DIRECT);
+            assertThat(refundTasks(group))
+                    .extracting(task -> task.get("source"), task -> ((Number) task.get("refund_amount")).intValue())
+                    .containsExactly(tuple("CANCEL_REQUEST_APPROVED", CREAM_PRICE),
+                            tuple("SELLER_DIRECT_CANCEL", SERUM_PRICE + DELIVERY_FEE));
+            assertThat(stockOf(creamVariant)).isEqualTo(creamBefore + 1);
+            assertThat(stockOf(serumVariant)).isEqualTo(serumBefore + 1);
+            sellerGet(SELLER_ORDERS + "?tab=CANCELLED")
+                    .andExpect(jsonPath("$.content[0].cancelTypeLabel").value("브랜드 직권 취소"));
+        }
+
+        @Test
+        @DisplayName("[CX-03] 부분 승인 뒤 남은 항목으로 새 요청을 승인 — 그때 그룹 취소 · 둘째 환불은 남은 항목 + 배송비 전액")
+        void secondRequestCompletesCancellation() throws Exception {
+            OrderDeliveryGroup group = preparingTwoItemGroup();
+            approve(seedCancelRequest(group, List.of(itemOf(group, creamVariant)), CancelRequestReason.CHANGE_OF_MIND,
+                    null, LocalDateTime.now().withNano(0)).getId()).andExpect(jsonPath("$.status").value("PREPARING"));
+
+            OrderCancelRequest second = seedCancelRequest(group, List.of(itemOf(group, serumVariant)),
+                    CancelRequestReason.ORDER_MISTAKE, null, LocalDateTime.now().withNano(0));
+            approve(second.getId())
+                    .andExpect(jsonPath("$.status").value("CANCELLED"))
+                    .andExpect(jsonPath("$.history[0].detail")
+                            .value("요청 1건 취소 · 환불 예정 " + (SERUM_PRICE + DELIVERY_FEE) + "원"));
+
+            OrderDeliveryGroup cancelled = reload(group);
+            assertThat(cancelled.getCancelType()).isEqualTo(OrderCancelType.REQUEST_APPROVED);
+            assertThat(cancelled.getCancelledAt()).isNotNull();
+            assertThat(refundTasks(group))
+                    .extracting(task -> ((Number) task.get("refund_amount")).intValue())
+                    .containsExactly(CREAM_PRICE, SERUM_PRICE + DELIVERY_FEE);
+        }
+
+        @Test
+        @DisplayName("[CX-04] 이미 취소된 항목이 섞인 요청을 승인 — 실제 취소분만 환불 · 재고 이중 원복 없음")
+        void requestIncludingCancelledItem() throws Exception {
+            OrderDeliveryGroup group = preparingTwoItemGroup();
+            approve(seedCancelRequest(group, List.of(itemOf(group, creamVariant)), CancelRequestReason.CHANGE_OF_MIND,
+                    null, LocalDateTime.now().withNano(0)).getId()).andExpect(status().isOk());
+            int creamAfterFirst = stockOf(creamVariant);
+            int serumBefore = stockOf(serumVariant);
+
+            OrderCancelRequest second = seedCancelRequest(group, items(group), CancelRequestReason.CHANGE_OF_MIND,
+                    null, LocalDateTime.now().withNano(0));
+            // 상세의 요청분은 요청 시점 스냅샷이다 — 실제 환불 예정액과 다를 수 있다.
+            orderDetail(group.getId())
+                    .andExpect(jsonPath("$.cancelRequest.totalRefundAmount").value(CREAM_PRICE + SERUM_PRICE));
+            approve(second.getId())
+                    .andExpect(jsonPath("$.status").value("CANCELLED"))
+                    .andExpect(jsonPath("$.history[0].detail")
+                            .value("요청 1건 취소 · 환불 예정 " + (SERUM_PRICE + DELIVERY_FEE) + "원"));
+
+            assertThat(stockOf(creamVariant)).isEqualTo(creamAfterFirst);
+            assertThat(stockOf(serumVariant)).isEqualTo(serumBefore + 1);
+            assertThat(((Number) refundTasks(group).get(1).get("refund_amount")).intValue())
+                    .isEqualTo(SERUM_PRICE + DELIVERY_FEE);
+        }
+
+        @Test
+        @DisplayName("[CX-06] 직권 취소에 같은 id 3번 — 1건 처리 · 환불 큐·재고·이력 1회")
+        void duplicateIdsInDirectCancel() throws Exception {
+            OrderDeliveryGroup group = paidGroup();
+            int stockBefore = stockOf(creamVariant);
+
+            directCancel(List.of(group.getId(), group.getId(), group.getId()), "SOLD_OUT", SOLD_OUT_MESSAGE)
+                    .andExpect(jsonPath("$.succeeded").value(1))
+                    .andExpect(jsonPath("$.skipped", empty()));
+
+            assertThat(refundTasks(group)).hasSize(1);
+            assertThat(stockOf(creamVariant)).isEqualTo(stockBefore + 1);
+            assertThat(historyCount(group, FulfillmentEventType.CANCELLED_BY_SELLER)).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("[CX-07] 승인·거부 응답은 갱신된 상세다 — 요청분 행이 사라지고 버튼이 상태에 맞게 다시 열린다")
+        void decisionResponseContract() throws Exception {
+            OrderDeliveryGroup partial = preparingTwoItemGroup();
+            approve(seedCancelRequest(partial, List.of(itemOf(partial, creamVariant)), CancelRequestReason.ETC, "변심",
+                    LocalDateTime.now().withNano(0)).getId())
+                    .andExpect(jsonPath("$.cancelRequest").value(nullValue()))
+                    .andExpect(jsonPath("$.amounts.cancelRequestedAmount").value(nullValue()))
+                    .andExpect(jsonPath("$.amounts.cancelledAmount").value(CREAM_PRICE))
+                    .andExpect(jsonPath("$.overlays.cancelRequested").value(false))
+                    .andExpect(actions(false, true, false, true, false));
+
+            OrderDeliveryGroup full = preparingGroup();
+            approve(seedCancelRequest(full).getId())
+                    .andExpect(jsonPath("$.status").value("CANCELLED"))
+                    .andExpect(jsonPath("$.amounts.cancelledAmount").value(CREAM_PRICE))
+                    .andExpect(actions(false, false, false, false, false));
+
+            OrderDeliveryGroup rejected = paidGroup();
+            reject(seedCancelRequest(rejected).getId(), "준비 중입니다.")
+                    .andExpect(jsonPath("$.status").value("NEW"))
+                    .andExpect(jsonPath("$.cancelRequest").value(nullValue()))
+                    .andExpect(actions(true, false, false, true, false));
+        }
+    }
+
+    private static ResultMatcher actions(boolean prepareStart, boolean registerInvoice, boolean updateInvoice,
+                                         boolean cancelDirectly, boolean decideCancelRequest) {
+        return result -> {
+            jsonPath("$.actions.canPrepareStart").value(prepareStart).match(result);
+            jsonPath("$.actions.canRegisterInvoice").value(registerInvoice).match(result);
+            jsonPath("$.actions.canUpdateInvoice").value(updateInvoice).match(result);
+            jsonPath("$.actions.canCancelDirectly").value(cancelDirectly).match(result);
+            jsonPath("$.actions.canDecideCancelRequest").value(decideCancelRequest).match(result);
+        };
     }
 
     private static ResultMatcher skippedCode(Long deliveryGroupId, String code) {

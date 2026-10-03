@@ -1,5 +1,11 @@
 package showroomz.api.seller.order;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -13,14 +19,18 @@ import showroomz.domain.order.type.FulfillmentEventType;
 import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.domain.order.type.TrackingAlert;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackSnapshot;
+import showroomz.support.BrandFixture;
 import showroomz.support.IntegrationTest;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -356,27 +366,203 @@ class SellerOrderShipmentIntegrationTest extends SellerOrderTestSupport {
         }
     }
 
+    @Nested
+    @DisplayName("보강 — 같은 주문 중복 · 택배사 빈칸 · 타 브랜드 송장 · 셀 형식(SH)")
+    class Boundaries {
+
+        @Test
+        @DisplayName("[SH-01] 한 요청에 같은 하위주문 2행 — 첫 행만 등록 · 둘째 행은 ORDER_STATE_CHANGED · 이력 1회")
+        void sameGroupTwiceInRequest() throws Exception {
+            OrderDeliveryGroup group = preparingGroup();
+
+            registerShipments(List.of(
+                    shipmentRow(group.getId(), "CJ", "640010002000"),
+                    shipmentRow(group.getId(), "CJ", "640010002001")))
+                    .andExpect(jsonPath("$.succeeded").value(1))
+                    .andExpect(skippedCode(group.getId(), "ORDER_STATE_CHANGED"));
+
+            assertThat(reload(group).getTrackingNumber()).isEqualTo("640010002000");
+            assertThat(historyCount(group, FulfillmentEventType.INVOICE_REGISTERED)).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("[SH-02] 업로드 파일에 같은 하위주문이 두 번(주문번호·하위주문번호 어느 쪽이든) — 둘째부터 ORDER_DUPLICATE_IN_FILE(N8)")
+        void sameGroupTwiceInFile() throws Exception {
+            OrderDeliveryGroup group = preparingGroup();
+
+            uploadShipments(brandToken, shipmentXlsx(List.of(
+                    new String[]{orderNumberOf(group), "CJ대한통운", "640010002002"},
+                    new String[]{orderNumberOf(group), "CJ대한통운", "640010002003"},
+                    new String[]{group.getSubOrderNumber(), "한진택배", "640010002004"})))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.validRows").value(1))
+                    .andExpect(rowField(2, "valid", true))
+                    .andExpect(rowError(3, "ORDER_DUPLICATE_IN_FILE"))
+                    .andExpect(rowField(3, "message", "파일 안에서 같은 주문이 두 번 입력되었습니다."))
+                    .andExpect(rowError(4, "ORDER_DUPLICATE_IN_FILE"));
+            assertThat(reload(group).getTrackingNumber()).isNull();
+        }
+
+        @Test
+        @DisplayName("[SH-03] 택배사 빈칸은 오류가 아니다 — carrier null 로 정상 분류 · 목록 셀에서 고른 택배사로 확정 · 미선택 확정은 400")
+        void blankCarrierIsFilledInGrid() throws Exception {
+            OrderDeliveryGroup blank = preparingGroup();
+            OrderDeliveryGroup ok = preparingGroup();
+
+            uploadShipments(brandToken, shipmentXlsx(List.of(
+                    new String[]{orderNumberOf(blank), "", "640010002005"},
+                    new String[]{orderNumberOf(ok), "CJ대한통운", "640010002006"})))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.validRows").value(2))
+                    .andExpect(rowField(2, "valid", true))
+                    .andExpect(rowField(2, "carrier", null))
+                    .andExpect(rowField(2, "deliveryGroupId", blank.getId().intValue()));
+
+            // 「택배사 일괄 적용」 전에 확정을 보내면 형식 오류 — 상태 불변.
+            sellerPost(SELLER_ORDERS + "/shipments", Map.of("rows", List.of(
+                    Map.of("deliveryGroupId", blank.getId(), "trackingNumber", "640010002005"))))
+                    .andExpect(status().isBadRequest());
+            assertThat(reload(blank).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.PREPARING);
+
+            registerShipments(List.of(shipmentRow(blank.getId(), "HANJIN", "640010002005"),
+                    shipmentRow(ok.getId(), "CJ", "640010002006")))
+                    .andExpect(jsonPath("$.succeeded").value(2));
+            assertThat(reload(blank).getCarrier()).isEqualTo(DeliveryCarrier.HANJIN);
+        }
+
+        @Test
+        @DisplayName("[SH-04] 타 브랜드의 살아 있는 송장과 겹치면 막되 그 주문번호는 알려 주지 않는다 — 등록 · 업로드 · 수정(N9)")
+        void otherBrandInvoiceIsNotNamed() throws Exception {
+            BrandFixture.Brand other = otherBrand();
+            String otherToken = sellerToken(other.seller());
+            OrderDeliveryGroup theirs = paidOtherBrandGroup(other, openOtherBrandGroupBuy(other));
+            sellerPost(otherToken, SELLER_ORDERS + "/prepare-start", Map.of("deliveryGroupIds", List.of(theirs.getId())))
+                    .andExpect(jsonPath("$.succeeded").value(1));
+            sellerPost(otherToken, SELLER_ORDERS + "/shipments",
+                    Map.of("rows", List.of(shipmentRow(theirs.getId(), "CJ", "650020003000"))))
+                    .andExpect(jsonPath("$.succeeded").value(1));
+            String theirOrderNumber = orderNumberOf(theirs);
+            OrderDeliveryGroup mine = preparingGroup();
+            OrderDeliveryGroup myShipping = shippingGroup("650020003001");
+
+            registerShipment(mine.getId(), "CJ", "650020003000")
+                    .andExpect(jsonPath("$.succeeded").value(0))
+                    .andExpect(skippedCode(mine.getId(), "INVOICE_DUPLICATE"))
+                    .andExpect(jsonPath("$.skipped[0].message").value("다른 주문에 이미 등록된 번호입니다."));
+            uploadShipments(brandToken, shipmentXlsx(List.<String[]>of(
+                    new String[]{orderNumberOf(mine), "CJ대한통운", "650020003000"})))
+                    .andExpect(rowError(2, "INVOICE_DUPLICATE"))
+                    .andExpect(rowField(2, "message", "다른 주문에 이미 등록된 번호입니다."));
+            String updateBody = updateShipment(myShipping.getId(), "CJ", "650020003000")
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("INVOICE_DUPLICATE"))
+                    .andReturn().getResponse().getContentAsString();
+
+            assertThat(updateBody).doesNotContain(theirOrderNumber);
+            assertThat(reload(mine).getTrackingNumber()).isNull();
+            assertThat(reload(myShipping).getTrackingNumber()).isEqualTo("650020003001");
+        }
+
+        @Test
+        @DisplayName("[SH-05] 송장 셀 — 숫자 없는 값은 TRACKING_REQUIRED · 문자 섞인 값은 숫자만 · 숫자 셀 12자리는 지수 표기 없이 그대로 확정")
+        void trackingCellFormats() throws Exception {
+            OrderDeliveryGroup letters = preparingGroup();
+            OrderDeliveryGroup mixed = preparingGroup();
+            OrderDeliveryGroup numericCell = preparingGroup();
+
+            String parsed = uploadShipments(brandToken, xlsx(sheet -> {
+                headerRow(sheet);
+                textRow(sheet, 1, orderNumberOf(letters), "CJ대한통운", "ABC-DEF");
+                textRow(sheet, 2, orderNumberOf(mixed), "CJ대한통운", "CJ 6600-1000-2000");
+                Row row = textRow(sheet, 3, orderNumberOf(numericCell), "CJ대한통운", null);
+                row.createCell(2).setCellValue(660010002001d);
+            }))
+                    .andExpect(status().isOk())
+                    .andExpect(rowError(2, "TRACKING_REQUIRED"))
+                    .andExpect(rowField(3, "trackingNumber", "660010002000"))
+                    .andExpect(rowField(4, "valid", true))
+                    .andExpect(rowField(4, "trackingNumber", "660010002001"))
+                    .andReturn().getResponse().getContentAsString();
+
+            registerShipments(validRowsOf(parsed)).andExpect(jsonPath("$.succeeded").value(2));
+            assertThat(reload(mixed).getTrackingNumber()).isEqualTo("660010002000");
+            assertThat(reload(numericCell).getTrackingNumber()).isEqualTo("660010002001");
+        }
+
+        @Test
+        @DisplayName("[SH-06] 헤더만 있는 파일 0행 · 첫 시트만 읽는다 · xls(BIFF)는 400 SHIPMENT_FILE_INVALID — 어느 경우도 상태 불변")
+        void fileShapes() throws Exception {
+            OrderDeliveryGroup group = preparingGroup();
+
+            uploadShipments(brandToken, shipmentXlsx(List.of()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.totalRows").value(0))
+                    .andExpect(jsonPath("$.validRows").value(0));
+            byte[] twoSheets;
+            try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                headerRow(workbook.createSheet("첫 시트"));
+                Sheet second = workbook.createSheet("둘째 시트");
+                headerRow(second);
+                textRow(second, 1, orderNumberOf(group), "CJ대한통운", "670010002000");
+                workbook.write(out);
+                twoSheets = out.toByteArray();
+            }
+            uploadShipments(brandToken, twoSheets)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.totalRows").value(0));
+            byte[] xls;
+            try (Workbook workbook = new HSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                Sheet sheet = workbook.createSheet("송장 업로드");
+                headerRow(sheet);
+                textRow(sheet, 1, orderNumberOf(group), "CJ대한통운", "670010002001");
+                workbook.write(out);
+                xls = out.toByteArray();
+            }
+            uploadShipments(brandToken, xls)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("SHIPMENT_FILE_INVALID"));
+
+            assertThat(reload(group).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.PREPARING);
+            assertThat(reload(group).getTrackingNumber()).isNull();
+        }
+    }
+
     // ------------------------------------------------------------------ 보조
 
-    /**
-     * 한 주문 · 같은 브랜드의 하위주문 2번째 — 결제 경로로 만들려면 같은 브랜드 공구 2건이 동시에 진행돼야 해서,
-     * 그룹 행만 덧붙이고 PAID 훅과 같은 전이(activate)로 NEW 에 올린다.
-     */
-    private OrderDeliveryGroup addSecondGroup(OrderDeliveryGroup first) {
-        Long id = transactionTemplate.execute(tx -> {
-            OrderDeliveryGroup attached = deliveryGroupRepository.findById(first.getId()).orElseThrow();
-            OrderDeliveryGroup second = deliveryGroupRepository.save(OrderDeliveryGroup.builder()
-                    .order(attached.getOrder())
-                    .market(attached.getMarket())
-                    .productTotal(0)
-                    .deliveryFee(0)
-                    .freeShippingApplied(false)
-                    .marketName(attached.getMarketName())
-                    .build());
-            deliveryGroupRepository.activate(second.getId(), orderNumberOf(first) + "-02", first.getShipDueAt());
-            return second.getId();
-        });
-        return deliveryGroupRepository.findOwned(id, brand.marketId()).orElseThrow();
+    /** 업로드 응답의 정상 행 → 확정 요청 행(FE 「채우기」 뒤 그대로 보내는 경우). */
+    private List<Map<String, Object>> validRowsOf(String parseResponse) throws Exception {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (JsonNode row : objectMapper.readTree(parseResponse).get("rows")) {
+            if (row.get("valid").asBoolean()) {
+                rows.add(shipmentRow(row.get("deliveryGroupId").asLong(), row.get("carrier").asText(),
+                        row.get("trackingNumber").asText()));
+            }
+        }
+        return rows;
+    }
+
+    private static byte[] xlsx(Consumer<Sheet> filler) {
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            filler.accept(workbook.createSheet("송장 업로드"));
+            workbook.write(out);
+            return out.toByteArray();
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static void headerRow(Sheet sheet) {
+        textRow(sheet, 0, "주문번호", "택배사", "송장번호");
+    }
+
+    private static Row textRow(Sheet sheet, int index, String... values) {
+        Row row = sheet.createRow(index);
+        for (int c = 0; c < values.length; c++) {
+            if (values[c] != null) {
+                row.createCell(c).setCellValue(values[c]);
+            }
+        }
+        return row;
     }
 
     private static List<String[]> dummyRows(int count) {
