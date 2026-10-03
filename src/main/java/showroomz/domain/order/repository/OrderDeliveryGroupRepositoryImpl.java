@@ -18,7 +18,6 @@ import showroomz.domain.order.entity.QOrderCancelRequest;
 import showroomz.domain.order.entity.QOrderDeliveryGroup;
 import showroomz.domain.order.entity.QOrderProduct;
 import showroomz.domain.order.type.CancelRequestStatus;
-import showroomz.domain.order.type.OrderStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,7 +42,8 @@ public class OrderDeliveryGroupRepositoryImpl implements OrderDeliveryGroupRepos
 
         BooleanBuilder where = new BooleanBuilder()
                 .and(g.market.id.eq(condition.marketId()))
-                .and(o.status.eq(OrderStatus.PAID))
+                // 결제된 적 있는 주문 — 결제 후 소비자 취소(orders.status = CANCELLED)도 취소 탭에 나와야 한다.
+                .and(o.paidAt.isNotNull())
                 .and(g.fulfillmentStatus.in(condition.tab().getStatuses()));
         applyPendingCancelFilter(where, condition, g);
         applyDateRange(where, condition, g, o);

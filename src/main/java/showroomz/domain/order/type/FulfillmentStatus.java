@@ -18,7 +18,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public enum FulfillmentStatus {
 
-    /** 결제 대기 — 화면 밖. 셀러 조회는 {@code orders.status = PAID}가 전제라 목록에 나타나지 않는다. */
+    /** 결제 대기 — 화면 밖. 셀러 조회는 결제된 적 있는 주문({@code orders.paid_at})이 전제라 목록에 나타나지 않는다. */
     PENDING("결제 대기", OrderBadgeTone.NEUTRAL),
     NEW("신규(준비 대기)", OrderBadgeTone.WARNING),
     PREPARING("상품준비중", OrderBadgeTone.INFO),

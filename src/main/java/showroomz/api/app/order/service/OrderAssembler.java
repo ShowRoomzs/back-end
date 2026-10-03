@@ -10,6 +10,7 @@ import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.entity.OrderProduct;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.domain.order.repository.OrderProductRepository;
+import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.domain.order.type.OrderStatus;
 import showroomz.domain.payment.entity.Payment;
 import showroomz.domain.payment.repository.PaymentRepository;
@@ -128,7 +129,7 @@ public class OrderAssembler {
                         .itemCount(products.size())
                         .build())
                 .payment(payment != null ? toPaymentInfo(payment) : null)
-                .cancellable(isCancellable(order, payment))
+                .cancellable(isCancellable(order, payment, groups))
                 .build();
     }
 
@@ -161,8 +162,12 @@ public class OrderAssembler {
                 .build();
     }
 
-    /** 결제 전이면 언제나, 결제 후면 배송 전(지금은 상품 전부 PAID)일 때 — 취소 처리 중이면 아니다(5-6 · 9-1 ⑤). */
-    private boolean isCancellable(Order order, Payment payment) {
+    /**
+     * 결제 전이면 언제나, 결제 후면 전 하위주문이 준비 시작 전(NEW)일 때 — 취소 처리 중이면 아니다(5-6 · 9-1 ⑤).
+     * 서버 취소 게이트({@code CheckoutService.claimUserCancel} · 34 설계서 5-2)와 같은 판정이어야 한다 —
+     * 어긋나면 앱이 취소 버튼을 그리고 서버가 409 를 낸다.
+     */
+    private boolean isCancellable(Order order, Payment payment, List<OrderDeliveryGroup> groups) {
         if (order.getStatus() == OrderStatus.PAYMENT_PENDING) {
             return true;
         }
@@ -171,7 +176,9 @@ public class OrderAssembler {
         }
         return payment != null && payment.getStatus() == PaymentStatus.PAID
                 && order.getOrderProducts().stream()
-                .allMatch(p -> p.getStatus() == showroomz.domain.order.type.OrderProductStatus.PAID);
+                .allMatch(p -> p.getStatus() == showroomz.domain.order.type.OrderProductStatus.PAID)
+                && groups.stream().allMatch(g -> g.getFulfillmentStatus() == FulfillmentStatus.NEW
+                || g.getFulfillmentStatus() == FulfillmentStatus.PENDING);
     }
 
     private OrderDto.Item toItem(OrderProduct product) {

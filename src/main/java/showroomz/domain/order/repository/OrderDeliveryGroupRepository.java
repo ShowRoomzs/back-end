@@ -113,7 +113,11 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
     int updateInvoice(@Param("id") Long id, @Param("marketId") Long marketId,
                       @Param("carrier") DeliveryCarrier carrier, @Param("trackingNumber") String trackingNumber);
 
-    /** #7 직권 취소(E5) — NEW·PREPARING 허용(설계서 0-7) · 취소 요청 PENDING 이 걸려 있으면 선처리 요구로 0행. */
+    /**
+     * #7 직권 취소(E5) — NEW·PREPARING 허용(설계서 0-7) · 취소 요청 PENDING 이 걸려 있으면 선처리 요구로 0행.
+     * 소비자 취소가 PG 응답 대기(CANCEL_REQUESTED)인 주문도 0행이다 — 그 취소가 수렴하면서 재고·환불을 처리하므로,
+     * 여기서 겹치면 재고가 두 번 돌아가고 PG 환불과 별개로 운영자 환불 큐까지 쌓인다.
+     */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderDeliveryGroup g SET g.statusAtCancel = g.fulfillmentStatus, "
             + "g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.CANCELLED, "
@@ -123,7 +127,9 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
             + "AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.NEW, "
             + "    showroomz.domain.order.type.FulfillmentStatus.PREPARING) "
             + "AND NOT EXISTS (SELECT r FROM OrderCancelRequest r WHERE r.deliveryGroup = g "
-            + "    AND r.status = showroomz.domain.order.type.CancelRequestStatus.PENDING)")
+            + "    AND r.status = showroomz.domain.order.type.CancelRequestStatus.PENDING) "
+            + "AND NOT EXISTS (SELECT p FROM Payment p WHERE p.order = g.order "
+            + "    AND p.status = showroomz.domain.payment.type.PaymentStatus.CANCEL_REQUESTED)")
     int cancelDirect(@Param("id") Long id, @Param("marketId") Long marketId,
                      @Param("reasonCode") showroomz.domain.order.type.SellerCancelReason reasonCode,
                      @Param("reasonDetail") String reasonDetail, @Param("now") LocalDateTime now);
@@ -211,9 +217,12 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
 
     // ------------------------------------------------------------------ 카운트(요약 바 · 탭)
 
-    /** 상태별 건수 — PAID 주문만. 탭 카운트·요약 바는 같은 응답에서 같은 데이터를 읽는다(동시 갱신). */
+    /**
+     * 상태별 건수 — 결제된 적 있는 주문만({@code paid_at}). 결제 후 소비자가 취소한 주문은 {@code orders.status}가
+     * CANCELLED 지만 취소 탭에 있어야 한다. 탭 카운트·요약 바는 같은 응답에서 같은 데이터를 읽는다(동시 갱신).
+     */
     @Query("SELECT g.fulfillmentStatus, COUNT(g) FROM OrderDeliveryGroup g WHERE g.market.id = :marketId "
-            + "AND g.order.status = showroomz.domain.order.type.OrderStatus.PAID GROUP BY g.fulfillmentStatus")
+            + "AND g.order.paidAt IS NOT NULL GROUP BY g.fulfillmentStatus")
     List<Object[]> countByStatus(@Param("marketId") Long marketId);
 
     /** 검토 중 취소 요청이 걸린 그룹 수 — 이행 상태별. NEW·PREPARING 탭에서 빼고 취소 요청 탭에 더한다. */
@@ -224,7 +233,7 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
 
     /** 공구별 이행 상태 분포 — 판매 포트 {@code readClosure}(공구 정산 게이트)의 원천(설계서 5-3). */
     @Query("SELECT g.fulfillmentStatus, COUNT(g) FROM OrderDeliveryGroup g WHERE g.groupBuy.id = :groupBuyId "
-            + "AND g.order.status = showroomz.domain.order.type.OrderStatus.PAID GROUP BY g.fulfillmentStatus")
+            + "AND g.order.paidAt IS NOT NULL GROUP BY g.fulfillmentStatus")
     List<Object[]> countByStatusForGroupBuy(@Param("groupBuyId") Long groupBuyId);
 
     /** 배송 이상 중 배지 분 — 요약 바 「배송 이상」 = 이 값 + RETURNING 카운트 합산(§34-2). */

@@ -1,22 +1,12 @@
 package showroomz.api.seller.order;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.ResultActions;
-import showroomz.api.app.order.OrderPaymentTestSupport;
 import showroomz.domain.order.entity.OrderCancelRequest;
-import showroomz.domain.order.entity.OrderCancelRequestItem;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.entity.OrderProduct;
-import showroomz.domain.order.repository.OrderCancelRequestRepository;
-import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
-import showroomz.domain.order.repository.OrderProductRepository;
-import showroomz.domain.order.service.OrderFulfillmentService;
-import showroomz.domain.order.type.CancelRequestReason;
 import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.support.IntegrationTest;
@@ -26,33 +16,19 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * 파트너센터 주문 관리(34 설계서) — PAID 훅(5-1) · 작업 큐 · 송장 · 취소 3경로 · 구매확정의 통합 검증.
  * 결제는 FakePaymentGateway 로 실제 PAID 전이를 태운다 — 하위주문의 탄생이 운영 경로 그대로다.
+ *
+ * <p>대표 흐름만 둔다. 기능별 세부 케이스는 {@code SellerOrderQueryIntegrationTest} · {@code SellerOrderPreparationIntegrationTest} ·
+ * {@code SellerOrderShipmentIntegrationTest} · {@code SellerOrderCancelIntegrationTest} · {@code OrderFulfillmentTrackingIntegrationTest}가 맡는다.
  */
 @IntegrationTest
-class SellerOrderIntegrationTest extends OrderPaymentTestSupport {
-
-    private static final String SELLER_ORDERS = "/v1/seller/orders";
-    private static final int SHIPPING_LEAD_DAYS = 2;
-
-    @Autowired private OrderDeliveryGroupRepository deliveryGroupRepository;
-    @Autowired private OrderProductRepository seedOrderProductRepository;
-    @Autowired private OrderCancelRequestRepository cancelRequestRepository;
-    @Autowired private OrderFulfillmentService fulfillmentService;
-
-    @BeforeEach
-    void setShippingLeadDays() {
-        // 발송기한 스냅샷의 출처(설계서 3-6) — PAID 전이 전에 박아 둔다.
-        jdbc.update("UPDATE market SET shipping_lead_days = ? WHERE market_id = ?",
-                SHIPPING_LEAD_DAYS, brand.marketId());
-    }
+class SellerOrderIntegrationTest extends SellerOrderTestSupport {
 
     // ------------------------------------------------------------------ PAID 훅(5-1)
 
@@ -255,7 +231,7 @@ class SellerOrderIntegrationTest extends OrderPaymentTestSupport {
 
     @Test
     @DisplayName("구매확정 — 배송완료 + 7일 자동 · 항목도 PURCHASE_CONFIRMED · 반송중은 대상이 아니다")
-    void purchaseConfirm() {
+    void purchaseConfirm() throws Exception {
         OrderDeliveryGroup group = shippingGroup("555566667777");
         LocalDateTime now = LocalDateTime.now().withNano(0);
         transactionTemplate.executeWithoutResult(tx ->
@@ -266,77 +242,9 @@ class SellerOrderIntegrationTest extends OrderPaymentTestSupport {
         assertThat(confirmed).isTrue();
         OrderDeliveryGroup result = reload(group);
         assertThat(result.getFulfillmentStatus()).isEqualTo(FulfillmentStatus.CONFIRMED);
-        List<OrderProduct> items = seedOrderProductRepository.findByDeliveryGroupIds(List.of(group.getId()));
+        List<OrderProduct> items = orderProductRepository.findByDeliveryGroupIds(List.of(group.getId()));
         assertThat(items).allMatch(item -> item.getStatus() == OrderProductStatus.PURCHASE_CONFIRMED);
         // 두 번째 호출은 0행 — 멱등.
         assertThat(fulfillmentService.confirmPurchase(group.getId(), now, now.minusDays(7))).isFalse();
-    }
-
-    // ------------------------------------------------------------------ 픽스처
-
-    private OrderDeliveryGroup paidGroup() throws Exception {
-        Created created = placeCardOrder(creamVariant, 1);
-        complete(created.paymentId()).andExpect(status().isOk());
-        List<OrderDeliveryGroup> groups = deliveryGroupRepository.findByOrderId(created.orderId());
-        assertThat(groups).hasSize(1);
-        return reload(groups.get(0));
-    }
-
-    private OrderDeliveryGroup preparingGroup() throws Exception {
-        OrderDeliveryGroup group = paidGroup();
-        sellerPost(SELLER_ORDERS + "/prepare-start", Map.of("deliveryGroupIds", List.of(group.getId())))
-                .andExpect(jsonPath("$.succeeded").value(1));
-        return reload(group);
-    }
-
-    private OrderDeliveryGroup shippingGroup(String trackingNumber) {
-        try {
-            OrderDeliveryGroup group = preparingGroup();
-            sellerPost(SELLER_ORDERS + "/shipments", Map.of("rows", List.of(
-                    Map.of("deliveryGroupId", group.getId(), "carrier", "CJ", "trackingNumber", trackingNumber))))
-                    .andExpect(jsonPath("$.succeeded").value(1));
-            return reload(group);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    /** 소비자 앱 C10 은 범위 밖 — 테이블 계약대로 직접 심는다(34 설계서 1-5). */
-    private OrderCancelRequest seedCancelRequest(OrderDeliveryGroup group) {
-        List<OrderProduct> items = seedOrderProductRepository.findByDeliveryGroupIds(List.of(group.getId()));
-        return transactionTemplate.execute(tx -> {
-            OrderDeliveryGroup attached = deliveryGroupRepository.findById(group.getId()).orElseThrow();
-            OrderCancelRequest request = OrderCancelRequest.builder()
-                    .deliveryGroup(attached)
-                    .order(attached.getOrder())
-                    .requestedBy(consumer.getId())
-                    .reasonCode(CancelRequestReason.CHANGE_OF_MIND)
-                    .statusAtRequest(attached.getFulfillmentStatus())
-                    .requestedAt(LocalDateTime.now().withNano(0))
-                    .build();
-            for (OrderProduct item : items) {
-                request.addItem(OrderCancelRequestItem.builder()
-                        .cancelRequest(request)
-                        .orderProduct(item)
-                        .quantity(item.getQuantity())
-                        .refundAmount(item.getPrice() * item.getQuantity())
-                        .build());
-            }
-            return cancelRequestRepository.save(request);
-        });
-    }
-
-    /** 주문을 fetch join 으로 함께 올린다 — 테스트는 트랜잭션 밖이라 지연 로딩이 안 된다. */
-    private OrderDeliveryGroup reload(OrderDeliveryGroup group) {
-        return deliveryGroupRepository.findOwned(group.getId(), brand.marketId()).orElseThrow();
-    }
-
-    private ResultActions sellerGet(String url) throws Exception {
-        return mockMvc.perform(get(url).header(HttpHeaders.AUTHORIZATION, brandToken));
-    }
-
-    private ResultActions sellerPost(String url, Object body) throws Exception {
-        return mockMvc.perform(post(url).header(HttpHeaders.AUTHORIZATION, brandToken)
-                .contentType(MediaType.APPLICATION_JSON).content(toJson(body)));
     }
 }

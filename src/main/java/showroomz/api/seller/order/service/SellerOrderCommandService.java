@@ -122,6 +122,9 @@ public class SellerOrderCommandService {
         }
 
         List<SellerOrderRow> rows = collectTargets(scope, request, now);
+        if (rows.isEmpty()) {
+            throw new BusinessException(ErrorCode.PURCHASE_ORDER_EMPTY);
+        }
         // 검토 중 취소 요청이 걸린 하위주문은 작업 큐 밖이다 — 발주서에도 싣지 않는다.
         Set<Long> pendingIds = cancelRequestRepository.findPendingByDeliveryGroupIds(
                         rows.stream().map(row -> row.group().getId()).toList()).stream()
@@ -136,20 +139,8 @@ public class SellerOrderCommandService {
                         rows.stream().map(row -> row.group().getId()).toList()).stream()
                 .collect(Collectors.groupingBy(item -> item.getDeliveryGroup().getId()));
 
-        // 「다운로드와 함께 준비 시작 처리」 — 기본 ON(§34-4). 발주서를 뽑는 것은 보내겠다는 결정이다.
-        int prepared = 0;
-        if (request.startPreparationOrDefault()) {
-            for (SellerOrderRow row : rows) {
-                if (row.group().getFulfillmentStatus() == FulfillmentStatus.NEW
-                        && deliveryGroupRepository.startPreparation(row.group().getId(), scope.market().getId(),
-                        scope.sellerId(), now) == 1) {
-                    fulfillmentService.appendHistory(row.group().getId(), FulfillmentEventType.PREPARE_STARTED,
-                            FulfillmentActorType.SELLER, scope.sellerId(), "발주서 다운로드 동시 처리", now);
-                    prepared++;
-                }
-            }
-        }
-
+        // 엑셀 행은 준비 시작 전에 다 읽어 둔다 — 준비 시작의 조건부 UPDATE 가 영속성 컨텍스트를 비우면
+        // 아직 초기화되지 않은 주문(배송지) 프록시를 더는 읽을 수 없다.
         List<PurchaseOrderExcelWriter.Line> lines = new ArrayList<>();
         for (SellerOrderRow row : rows) {
             OrderDeliveryGroup group = row.group();
@@ -166,6 +157,20 @@ public class SellerOrderCommandService {
                         item.getProductName(), item.getOptionName(), item.getQuantity(),
                         order.getDeliveryMemo(), row.groupBuyTitle(), row.paidAt(),
                         item.getPrice() * item.getQuantity()));
+            }
+        }
+
+        // 「다운로드와 함께 준비 시작 처리」 — 기본 ON(§34-4). 발주서를 뽑는 것은 보내겠다는 결정이다.
+        int prepared = 0;
+        if (request.startPreparationOrDefault()) {
+            for (SellerOrderRow row : rows) {
+                if (row.group().getFulfillmentStatus() == FulfillmentStatus.NEW
+                        && deliveryGroupRepository.startPreparation(row.group().getId(), scope.market().getId(),
+                        scope.sellerId(), now) == 1) {
+                    fulfillmentService.appendHistory(row.group().getId(), FulfillmentEventType.PREPARE_STARTED,
+                            FulfillmentActorType.SELLER, scope.sellerId(), "발주서 다운로드 동시 처리", now);
+                    prepared++;
+                }
             }
         }
 

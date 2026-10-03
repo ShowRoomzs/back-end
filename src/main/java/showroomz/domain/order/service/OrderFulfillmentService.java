@@ -26,6 +26,7 @@ import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackSnapshot;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
@@ -70,18 +71,27 @@ public class OrderFulfillmentService {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void activateOnPaid(Long orderId, LocalDateTime paidAt) {
-        List<OrderDeliveryGroup> groups = deliveryGroupRepository.findByOrderId(orderId);
+        // 값을 전부 계산한 뒤에 UPDATE 한다 — 조건부 UPDATE 가 영속성 컨텍스트를 비우므로, 그 뒤에는 아직 읽지 않은
+        // 프록시(다른 브랜드 하위주문의 마켓)를 초기화할 수 없다. 여러 브랜드가 섞인 주문에서 결제 확정이 롤백된다.
+        List<Activation> plan = new ArrayList<>();
         int seq = 0;
-        for (OrderDeliveryGroup group : groups) {
+        for (OrderDeliveryGroup group : deliveryGroupRepository.findByOrderId(orderId)) {
             seq++;
             Order order = group.getOrder();
-            String subOrderNumber = "%s-%02d".formatted(order.getOrderNumber(), seq);
             Integer leadDays = group.getMarket() == null ? null : group.getMarket().getShippingLeadDays();
-            LocalDateTime shipDueAt = leadDays == null ? null : paidAt.plusDays(leadDays);
-            if (deliveryGroupRepository.activate(group.getId(), subOrderNumber, shipDueAt) == 1) {
-                appendHistory(group.getId(), FulfillmentEventType.PAID, FulfillmentActorType.SYSTEM, null, null, paidAt);
+            plan.add(new Activation(group.getId(), "%s-%02d".formatted(order.getOrderNumber(), seq),
+                    leadDays == null ? null : paidAt.plusDays(leadDays)));
+        }
+        for (Activation activation : plan) {
+            if (deliveryGroupRepository.activate(activation.deliveryGroupId(), activation.subOrderNumber(),
+                    activation.shipDueAt()) == 1) {
+                appendHistory(activation.deliveryGroupId(), FulfillmentEventType.PAID, FulfillmentActorType.SYSTEM,
+                        null, null, paidAt);
             }
         }
+    }
+
+    private record Activation(Long deliveryGroupId, String subOrderNumber, LocalDateTime shipDueAt) {
     }
 
     // ------------------------------------------------------------------ 소비자 전액 취소(설계서 5-2)
