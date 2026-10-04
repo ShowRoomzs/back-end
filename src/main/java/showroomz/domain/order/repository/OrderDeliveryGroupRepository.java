@@ -231,11 +231,11 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
 
     // ------------------------------------------------------------------ 배치 대상
 
-    /** 추적 대상 — 인덱스 (fulfillment_status, shipped_at). */
+    /** 추적 대상 — id 커서({@code afterId} 초과)로 이어 읽는다. 첫 페이지는 0. */
     @Query("SELECT g FROM OrderDeliveryGroup g WHERE g.fulfillmentStatus IN :statuses "
-            + "AND g.carrier IS NOT NULL AND g.trackingNumber IS NOT NULL ORDER BY g.id ASC")
+            + "AND g.carrier IS NOT NULL AND g.trackingNumber IS NOT NULL AND g.id > :afterId ORDER BY g.id ASC")
     List<OrderDeliveryGroup> findTrackingTargets(@Param("statuses") Collection<FulfillmentStatus> statuses,
-                                                 Pageable pageable);
+                                                 @Param("afterId") Long afterId, Pageable pageable);
 
     @Query("SELECT g.id FROM OrderDeliveryGroup g "
             + "WHERE g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.DELIVERED "

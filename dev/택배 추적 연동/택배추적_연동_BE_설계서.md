@@ -142,8 +142,9 @@ global/delivery/tracker/
 
 - `SweetTrackerDeliveryTracker`는 `@ConditionalOnProperty(delivery.tracker.enabled=true)` — Noop과 정확히 반대 조건이라 빈이 항상 하나다.
 - HTTP 클라이언트는 전용 `RestClient` 빈을 만든다(connect 3초 · read 10초). 기존 공용 `RestTemplate` 빈은 타임아웃이 없어서 쓰지 않는다.
-- API 키는 요청 파라미터 `t_key`로 나간다. **요청 URL · 본문을 로그에 남기지 않는다.**
-- 포트 시그니처는 그대로다. 기존 테스트 스텁에 영향이 없다.
+- API 키는 폼 본문(`application/x-www-form-urlencoded`)의 `t_key`로 나간다. URL에 싣지 않으므로 통신 오류 메시지에 섞이지 않는다. 업체가 폼 본문을 받는지는 실호출로 확인한다(6절 1단계) — 쿼리 파라미터만 받으면 `SweetTrackerClient`를 바꾸고 URL 로깅을 막는다.
+- 포트 시그니처는 그대로다(`DeliveryTrackerBlockedException`만 추가). 기존 테스트 스텁에 영향이 없다.
+- 이력 시각은 `timeString`(KST 문자열)을 먼저 읽고, 없으면 `time`(epoch · 초/밀리초 자동 판별)으로 읽는다.
 
 ### 3-2. `track` → `TrackSnapshot`
 
@@ -186,7 +187,7 @@ global/delivery/tracker/
 
 한도 초과가 조용히 지나가면 배송완료 전환이 멈춘 것을 아무도 모른다.
 
-- **회차 중단**: `track`이 103 · 101 · 102를 받으면 어댑터가 「차단」 플래그를 세우고, 그 회차의 남은 대상은 호출하지 않고 건너뛴다. 플래그는 다음 회차 시작 때 푼다. `log.error` 1회(Sentry로 간다).
+- **회차 중단**: `track`이 103 · 101 · 102를 받으면 어댑터가 `DeliveryTrackerBlockedException`을 던지고, 감시 배치는 그 회차의 남은 대상을 호출하지 않고 끝낸다. 다음 회차는 처음부터 다시 돈다. `log.error` 1회(Sentry로 간다). `validateInvoice`는 이 예외를 던지지 않고 `UNAVAILABLE`을 돌려준다.
 - **사전 경고**: `SweetTrackerUsageMonitor`가 매일 09시에 `/api/v1/key/usage`를 호출해 `leftAmount / totalAmount`가 20% 밑이면 `log.error`를 남긴다. 사용량 조회가 한도를 쓰는지는 실호출로 확인한다.
 
 ### 3-5. 반송 감지
@@ -224,6 +225,7 @@ delivery:
     enabled: ${DELIVERY_TRACKER_ENABLED:false}
     poll-cron: "0 0 0,6-22/2 * * *"            # 02~06시 제외 2시간 간격 — 하루 10회(FREE 송장당 일 한도)
     batch-size: 300                             # 페이지 크기 — 한 회차에 대상 전량을 이 크기로 나눠 돈다
+    call-gap-ms: 100                            # 건 사이 호출 간격
     pickup-alert-hours: 24
     stall-alert-days: 7
     api-url: https://info.sweettracker.co.kr
@@ -253,11 +255,13 @@ delivery:
 
 ## 6. 구현 순서
 
+2 · 3단계는 구현됐다(2026-10-04). 1단계 스파이크는 API 키가 없어 하지 못했고, 코드는 API 명세만 보고 짰다 — **연동을 켜기 전에 1단계를 반드시 거친다.**
+
 | 단계 | 작업 | 산출 |
 | --- | --- | --- |
-| 1 | **스파이크** — FREE 키 발급 후 실호출로 ① `companylist`로 택배사 11종 코드 ② `key/usage`로 한도 단위(일 / 월)와 사용량 조회의 차감 여부 ③ 집화 전 정상 송장이 `level` 0인지 104인지(택배사별) ④ 이력 `time` 단위 ⑤ 송장 일 한도 초기화 시각 | 2 · 3절 미확정 항목 확정 |
-| 2 | `DeliveryCarrier.trackerCode` 채움 · `DeliveryTrackerProperties` 변경 · `SweetTrackerClient` · `SweetTrackerDeliveryTracker` | 포트 실구현 |
-| 3 | 스케줄러 cron 전환 · 대상 전량 순회 · 회차 중단 · `SweetTrackerUsageMonitor` | 4절 · 3-4 |
+| 1 | **스파이크(미완)** — FREE 키 발급 후 실호출로 ① `companylist`로 택배사 11종 코드(코드에 넣은 9종 대조 · 쿠팡 · 우리택배 확인) ② `key/usage`로 한도 단위(일 / 월)와 사용량 조회의 차감 여부 ③ 집화 전 정상 송장이 `level` 0인지 104인지(택배사별) ④ 이력 `timeString` 형식 · `time` 단위 ⑤ 송장 일 한도 초기화 시각 ⑥ 폼 본문 요청 수용 여부 · 에러 응답 형식(`status=false`) | 2 · 3절 미확정 항목 확정 |
+| 2 | **(완료)** `DeliveryCarrier.trackerCode` 채움 · `DeliveryTrackerProperties` 변경 · `SweetTrackerClient` · `SweetTrackerDeliveryTracker` | 포트 실구현 |
+| 3 | **(완료)** 스케줄러 cron 전환 · 대상 전량 순회 · 회차 중단 · `SweetTrackerUsageMonitor` | 4절 · 3-4 |
 | 4 | 스테이징에서 실송장으로 검증 후 `DELIVERY_TRACKER_ENABLED=true` | 런칭 게이트(P6) 해제 |
 | (후속) | 104 판정이 확인되면 `validation-enabled=true` + 엑셀 일괄 등록 병렬 선조회 | 3-3 |
 

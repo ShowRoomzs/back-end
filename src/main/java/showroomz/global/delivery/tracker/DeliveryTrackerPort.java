@@ -6,8 +6,8 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
- * 택배 연동 포트(34 설계서 0-4) — 연동 업체 스펙(§34-13 #16: 형식 판정 API · 반송/입고 코드 · 택배사 코드 매핑)이
- * 미확정이라 인터페이스에 책임만 걸어 둔다. 구현 전에는 {@link NoopDeliveryTracker}가 「판정 불가」를 돌려준다.
+ * 택배 연동 포트(34 설계서 0-4) — 형식 검증 · 추적 조회 두 책임만 건다. 연동이 꺼져 있으면
+ * {@link NoopDeliveryTracker}가 「판정 불가」를 돌려주고, 켜면 스마트택배 어댑터가 붙는다(택배 추적 설계서).
  *
  * <p>택배 연동 = 배송 추적만이다(§34-0) — 송장 자동 발번 없음 · 반품 회수 접수 없음.
  * 「송장은 사람이 넣고, 그다음부터는 시스템이 따라간다.」
@@ -34,6 +34,10 @@ public interface DeliveryTrackerPort {
 
     ValidationResult validateInvoice(DeliveryCarrier carrier, String trackingNumber);
 
-    /** 조회 실패(통신 오류 등)는 empty — 판정하지 않고 다음 회차에 맡긴다. */
+    /**
+     * 조회 실패(통신 오류 등)는 empty — 판정하지 않고 다음 회차에 맡긴다.
+     *
+     * @throws DeliveryTrackerBlockedException 키 사용량 초과·키 무효 — 이어서 불러도 전부 실패하므로 회차를 멈춘다
+     */
     Optional<TrackSnapshot> track(DeliveryCarrier carrier, String trackingNumber);
 }

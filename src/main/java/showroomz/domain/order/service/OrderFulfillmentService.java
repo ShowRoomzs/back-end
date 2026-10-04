@@ -181,8 +181,14 @@ public class OrderFulfillmentService {
 
     @Transactional(readOnly = true)
     public List<OrderDeliveryGroup> findTrackingTargets(int limit) {
+        return findTrackingTargets(0L, limit);
+    }
+
+    /** {@code afterId} 초과분을 id 오름차순으로 — 감시 배치가 마지막 id 를 넘기며 대상 전량을 돈다. */
+    @Transactional(readOnly = true)
+    public List<OrderDeliveryGroup> findTrackingTargets(long afterId, int limit) {
         return deliveryGroupRepository.findTrackingTargets(
-                EnumSet.of(FulfillmentStatus.SHIPPING, FulfillmentStatus.RETURNING), PageRequest.of(0, limit));
+                EnumSet.of(FulfillmentStatus.SHIPPING, FulfillmentStatus.RETURNING), afterId, PageRequest.of(0, limit));
     }
 
     /**
