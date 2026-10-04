@@ -51,7 +51,7 @@ public class GroupBuyIssueService {
         Long threadId = switch (opener.type()) {
             case SELLER -> threadGateway.openIssueThread(lockedGroupBuy, FulfillmentSide.SELLER, issueType, content);
             case CREATOR -> threadGateway.openIssueThread(lockedGroupBuy, FulfillmentSide.CREATOR, issueType, content);
-            case ADMIN -> threadGateway.openAdminIssueThread(lockedGroupBuy, issueType, content);
+            case ADMIN -> threadGateway.openAdminIssueThread(lockedGroupBuy, openerId, issueType, content);
             case SYSTEM -> throw new IllegalArgumentException("시스템은 이슈를 열지 않는다");
         };
         GroupBuyIssue issue;

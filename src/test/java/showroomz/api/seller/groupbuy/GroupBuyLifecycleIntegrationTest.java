@@ -7,16 +7,20 @@ import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.entity.GroupBuyAdminSuspension;
 import showroomz.domain.groupbuy.entity.GroupBuyChangeRequest;
 import showroomz.domain.groupbuy.entity.GroupBuyExtensionRequest;
+import showroomz.domain.groupbuy.entity.GroupBuyFulfillmentCheck;
+import showroomz.domain.groupbuy.repository.GroupBuyFulfillmentCheckRepository;
 import showroomz.domain.groupbuy.service.ProductGroupBuyStatusSynchronizer;
 import showroomz.domain.groupbuy.type.AdminSuspensionStatus;
 import showroomz.domain.groupbuy.type.ChangeRequestStatus;
 import showroomz.domain.groupbuy.type.ChangeRequestType;
 import showroomz.domain.groupbuy.type.ExtensionRequestStatus;
+import showroomz.domain.groupbuy.type.FulfillmentSide;
 import showroomz.domain.groupbuy.type.GroupBuyActorType;
 import showroomz.domain.groupbuy.type.GroupBuyCloseType;
 import showroomz.domain.groupbuy.type.GroupBuyEventType;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
+import showroomz.global.config.properties.GroupBuyProperties;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -34,6 +38,10 @@ class GroupBuyLifecycleIntegrationTest extends GroupBuyTestSupport {
 
     @Autowired
     private ProductGroupBuyStatusSynchronizer productSynchronizer;
+    @Autowired
+    private GroupBuyFulfillmentCheckRepository fulfillmentCheckRepository;
+    @Autowired
+    private GroupBuyProperties groupBuyProperties;
 
     @Test
     @DisplayName("시작 시각이 되면 시스템이 연다 — 준비완료만 · 이력 행위자 시스템 · 상품이 팔리기 시작한다")
@@ -142,5 +150,34 @@ class GroupBuyLifecycleIntegrationTest extends GroupBuyTestSupport {
 
         assertThat(lifecycleService.findIdsToAutoConfirm(LocalDateTime.now(), 200)).isEmpty();
         assertThat(lifecycleService.autoConfirmFulfillment(ended.getId(), LocalDateTime.now())).isZero();
+    }
+
+    @Test
+    @DisplayName("무응답 자동 이행 이력은 답하지 않은 측을 라벨로 적는다 — 행위자는 SYSTEM · enum 원문을 남기지 않는다")
+    void autoConfirmHistoryNamesSilentSideByLabel() throws Exception {
+        GroupBuy ended = seedIn(GroupBuyStatus.ENDED);
+        jdbc.update("UPDATE group_buy SET fulfillment_due_at = ? WHERE group_buy_id = ?",
+                LocalDateTime.now().minusDays(1).withNano(0), ended.getId());
+        action(ended.getId(), "fulfillment-check", Map.of("result", "FULFILLED")).andExpect(status().isOk());
+
+        boolean original = groupBuyProperties.getFulfillment().isAutoConfirmOnTimeout();
+        groupBuyProperties.getFulfillment().setAutoConfirmOnTimeout(true);
+        try {
+            assertThat(lifecycleService.autoConfirmFulfillment(ended.getId(), LocalDateTime.now())).isEqualTo(1);
+        } finally {
+            groupBuyProperties.getFulfillment().setAutoConfirmOnTimeout(original);
+        }
+
+        GroupBuyFulfillmentCheck auto = fulfillmentCheckRepository.findByGroupBuyId(ended.getId()).stream()
+                .filter(GroupBuyFulfillmentCheck::isAutoConfirmed).findFirst().orElseThrow();
+        assertThat(auto.getCheckerSide()).isEqualTo(FulfillmentSide.CREATOR);
+        assertThat(groupBuyHistoryRepository.findByGroupBuyIdOrderByOccurredAtAscIdAsc(ended.getId()))
+                .filteredOn(entry -> entry.getEventType() == GroupBuyEventType.FULFILLMENT_AUTO_CONFIRMED)
+                .singleElement()
+                .satisfies(entry -> {
+                    assertThat(entry.getActorType()).isEqualTo(GroupBuyActorType.SYSTEM);
+                    assertThat(entry.getDetail()).isEqualTo("인플루언서 무응답으로 자동 이행");
+                    assertThat(entry.getRefId()).isEqualTo(auto.getId());
+                });
     }
 }

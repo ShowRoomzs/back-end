@@ -22,6 +22,7 @@ import showroomz.domain.connection.type.ConnectionStatus;
 import showroomz.domain.connection.type.ConnectionType;
 import showroomz.domain.contract.repository.ContractRepository;
 import showroomz.domain.contract.type.ContractStatus;
+import showroomz.domain.groupbuy.repository.GroupBuyRepository;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
@@ -61,6 +62,7 @@ public class CreatorThreadService {
     private final MessageAttachmentRepository messageAttachmentRepository;
     private final MessageAttachmentService messageAttachmentService;
     private final ContractRepository contractRepository;
+    private final GroupBuyRepository groupBuyRepository;
 
     /**
      * §14-3 `연결됨` 탭. 안 읽은 수는 페이지 전체를 한 쿼리로 집계한다(스레드당 카운트 금지).
@@ -77,8 +79,11 @@ public class CreatorThreadService {
                 ParticipantType.CREATOR, creator.getId());
 
         Set<Long> marketsWithContract = marketsWithReceivedContract(creator, threads.getContent());
+        Map<Long, String> groupBuyTitles = groupBuyRepository.findTitleMapByIds(
+                threads.getContent().stream().map(MessageThread::getSubjectId).filter(Objects::nonNull).distinct().toList());
 
-        return PageResponse.of(threads.map(thread -> toListItem(thread, unreadByThread, marketsWithContract)));
+        return PageResponse.of(threads.map(thread ->
+                toListItem(thread, unreadByThread, marketsWithContract, groupBuyTitles)));
     }
 
     /**
@@ -205,17 +210,24 @@ public class CreatorThreadService {
                                         .toList())));
     }
 
+    /**
+     * 공구 3자 스레드는 같은 브랜드의 두 번째 · 세 번째 줄이다 — 종류와 공구를 함께 내려 구분하게 한다(30-1 1-5).
+     * [계약 확인] 게이트는 연결 쌍의 대화에만 붙는다.
+     */
     private ThreadListItem toListItem(MessageThread thread, Map<Long, Long> unreadByThread,
-                                      Set<Long> marketsWithContract) {
+                                      Set<Long> marketsWithContract, Map<Long, String> groupBuyTitles) {
         Connection connection = thread.getConnection();
         boolean isOperator = connection.getType() == ConnectionType.OPERATOR_CREATOR;
         String name = isOperator ? OPERATOR_CHANNEL_NAME : connection.getMarket().getMarketName();
         long unread = unreadByThread.getOrDefault(thread.getId(), 0L);
-        boolean hasContract = !isOperator && marketsWithContract.contains(connection.getMarket().getId());
+        boolean hasContract = !isOperator && !thread.getKind().isGroupBuy()
+                && marketsWithContract.contains(connection.getMarket().getId());
 
         return new ThreadListItem(
                 thread.getId(), name, isOperator ? null : connection.getMarket().getMarketImageUrl(),
-                isOperator, hasContract, thread.getLastMessagePreview(), thread.getLastMessageAt(), unread);
+                isOperator, hasContract, thread.getLastMessagePreview(), thread.getLastMessageAt(), unread,
+                thread.getKind(), thread.getSubjectId(),
+                thread.getSubjectId() == null ? null : groupBuyTitles.get(thread.getSubjectId()));
     }
 
     private MessageItem toMessageItem(Message message, Long myCreatorId, List<AttachmentSummary> attachments) {

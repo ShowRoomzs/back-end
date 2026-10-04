@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+</style>
+<template id="__bundler_thumbnail">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#F2456E"/><g fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"><path d="M38 32h34l10 10v46H38z"/><path d="M50 56h28"/><path d="M50 70h18"/></g></svg>
+</template>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C10-b 주문 상세 — 항목별 상태 5종</span></div>
+<p class="dv-tsub">주문 내역의 [상세]에서 진입합니다. 배송 추적은 <b>C10-2 배송 조회</b>가 송장 단위로 담당하므로, 이 화면은 <b>주문번호 → 배송지 → 주문 상품(항목별 상태 + 액션) → 결제 정보</b>로만 구성됩니다. 상태는 주문 전체가 아니라 <b>상품마다</b> 붙습니다.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>결제완료 — 취소 가능</div>
+<div class="dv-card">
+<div data-screen-label="C10-b 결제완료" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">주문 상세</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:20px 14px 0">
+<div style="font:700 19px/1.3 Pretendard,sans-serif;letter-spacing:-.4px">26.09.12 (금)</div>
+<div style="margin-top:7px;display:flex;align-items:center;gap:2px">
+<span style="font:400 12.5px/1.3 Pretendard,sans-serif;color:#737373">주문번호 20260912030201</span>
+<div style="flex:none;display:flex;padding:15px 15px 15px 8px;margin:-15px;cursor:pointer" style-active="opacity:.4">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="1.8" stroke-linejoin="miter" style="display:block"><rect x="8.5" y="8.5" width="11" height="11"></rect><path d="M15.5 5.5h-11v11"></path></svg>
+</div>
+</div>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+
+<div style="padding:18px 14px 0;display:flex;align-items:baseline;gap:7px">
+<span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">배송지</span>
+<span style="font:400 12px/1 Pretendard,sans-serif;color:#737373">주문 시점 정보</span>
+</div>
+<div style="padding:12px 14px 0">
+<div style="font:600 14.5px/1.4 Pretendard,sans-serif">김수*</div>
+<div style="margin-top:7px;font:400 13px/1.75 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">서울 강남구 테헤란로 000, 쇼룸타워 ******<br>010-****-5678<br><span style="color:#737373">문 앞에 놓아주세요</span></div>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+
+<div style="padding:18px 14px 0;display:flex;align-items:baseline;gap:7px">
+<span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">주문 상품</span>
+<span style="font:700 15px/1 Pretendard,sans-serif;color:#737373">2</span>
+</div>
+
+<sc-for list="{{ items0 }}" as="it" hint-placeholder-count="2">
+<div style="padding:16px 14px 16px;border-top:{{ it.divider }}">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+<span style="font:700 13px/1.3 Pretendard,sans-serif;color:{{ it.stColor }}">{{ it.status }}</span>
+<sc-if value="{{ it.hasSub }}" hint-placeholder-val="{{ false }}">
+<span style="flex:none;font:400 11.5px/1.3 Pretendard,sans-serif;color:#737373">{{ it.sub }}</span>
+</sc-if>
+</div>
+<sc-if value="{{ it.rejected }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:3px;margin:4px 0 -2px;padding:6px 0;cursor:pointer" style-active="opacity:.55">
+<span style="font:400 12px/1.3 Pretendard,sans-serif;color:#737373">취소 요청 반려 · 사유 보기</span>
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg>
+</div>
+</sc-if>
+<div style="margin-top:12px;display:flex;gap:12px">
+<div style="width:64px;height:64px;border-radius:4px;background:{{ it.thumb }};flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 11.5px/1.35 Pretendard,sans-serif;color:#737373">{{ it.brand }}</div>
+<div style="margin-top:3px;font:400 13.5px/1.45 Pretendard,sans-serif;color:#2E2E2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.name }}</div>
+<div style="margin-top:6px;display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+<span style="font:400 12px/1.4 Pretendard,sans-serif;color:#737373;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.option }}</span>
+<span style="flex:none;font:700 14px/1 Pretendard,sans-serif;letter-spacing:-.2px">{{ it.price }}</span>
+</div>
+</div>
+</div>
+<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:7px">
+<sc-for list="{{ it.actions }}" as="a" hint-placeholder-count="1">
+<div style="flex:1 1 calc(50% - 4px);min-width:0;display:flex;align-items:center;padding:2px 0;margin:-2px 0;cursor:{{ a.cursor }}" style-active="opacity:{{ a.press }}">
+<span style="flex:1;min-width:0;height:40px;border:1px solid {{ a.border }};border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 12.5px/1 Pretendard,sans-serif;color:{{ a.color }}">{{ a.label }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+
+<div style="height:5px;background:#F7F7F8"></div>
+
+<div style="padding:18px 14px 0;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">결제 정보</div>
+<div style="padding:13px 14px 0;display:grid;gap:8px">
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">상품 금액</span><span style="font:400 13.5px/1.5 Pretendard,sans-serif">90,000원</span></div>
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">공동구매 할인</span><span style="font:600 13.5px/1.5 Pretendard,sans-serif;color:#CF3D61">−47,600원</span></div>
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">배송비</span><span style="font:400 13.5px/1.5 Pretendard,sans-serif">무료배송</span></div>
+</div>
+<div style="margin:14px 14px 0;padding-top:13px;border-top:.5px solid #F0F0F0;display:flex;align-items:baseline;justify-content:space-between">
+<span style="font:700 14.5px/1 Pretendard,sans-serif">결제 금액</span>
+<div style="display:flex;align-items:baseline;gap:7px">
+<span style="font:700 14px/1 Pretendard,sans-serif;color:#F2456E">53%</span>
+<span style="font:700 17px/1 Pretendard,sans-serif;letter-spacing:-.4px">42,400원</span>
+</div>
+</div>
+<div style="padding:12px 14px 0;display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+<span style="flex:none;font:400 13px/1.5 Pretendard,sans-serif;color:#737373">결제수단</span>
+<span style="flex:1;text-align:right;font:500 13px/1.5 Pretendard,sans-serif">카카오페이</span>
+</div>
+
+<div style="height:30px"></div>
+
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>상태를 주문이 아니라 상품에 붙였습니다</b> — 공동구매는 브랜드가 다르면 따로 발송되므로 한 주문 안에서 <b>상품마다 상태가 갈립니다</b>(<a class="dv-oid" href="#1c">1c</a>에서 확인). 주문 전체에 큰 상태 헤드라인을 두면 일부만 도착한 주문에서 거짓이 되므로, 상태는 항목 위 13px 굵은 라벨로 올리고 그에 맞는 액션만 아래에 붙입니다.<br><br><b>배송 추적은 이 화면에 없습니다</b> — 이력은 송장 단위이므로 <b>C10-2 배송 조회</b>가 맡고, 여기서는 항목별 [배송 조회]로 넘깁니다. 주문 상세는 <b>무엇을·어디로·얼마에 샀는지</b>의 기록이라는 역할만 남습니다.<br><br><b>결제완료 구간에만 [주문 취소]</b>가 있습니다 — 브랜드가 포장을 시작하지 않아 되돌리는 비용이 0이기 때문입니다. 항목마다 붙어 부분 취소가 됩니다. 로즈 채움을 쓰지 않는 이유는 취소가 권장 행동이 아니기 때문입니다.<br><br><b>배송지·연락처를 마스킹</b>했습니다(김수* · 010-****-5678 · 주소 뒷부분 ******) — 주문 상세는 스크린샷으로 공유되는 일이 많아, 상세 주소 전체를 노출할 이유가 없습니다.<br><br><b>결제 금액에 할인율</b>을 붙였습니다 — 공동구매 앱에서 "얼마나 싸게 샀는지"는 재구매를 만드는 정보입니다. 로즈는 할인 수치에만 쓰고 금액은 잉크로 둡니다.</p>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>상품준비중 — 취소 요청 가능</div>
+<div class="dv-card">
+<div data-screen-label="C10-b 상품준비중" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">주문 상세</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:20px 14px 0">
+<div style="font:700 19px/1.3 Pretendard,sans-serif;letter-spacing:-.4px">26.09.12 (금)</div>
+<div style="margin-top:7px;display:flex;align-items:center;gap:2px">
+<span style="font:400 12.5px/1.3 Pretendard,sans-serif;color:#737373">주문번호 20260912030201</span>
+<div style="flex:none;display:flex;padding:15px 15px 15px 8px;margin:-15px;cursor:pointer" style-active="opacity:.4">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="1.8" stroke-linejoin="miter" style="display:block"><rect x="8.5" y="8.5" width="11" height="11"></rect><path d="M15.5 5.5h-11v11"></path></svg>
+</div>
+</div>
+</div>
+
+<div style="margin:16px 14px 0;padding:13px;border-radius:8px;background:#F7F7F8;display:flex;gap:9px;align-items:flex-start">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3C3C3C" stroke-width="1.7" stroke-linecap="round" style="display:block;flex:none;margin-top:1px"><circle cx="12" cy="12" r="8.5" stroke-width="1.5"></circle><path d="M12 7.6v5.2"></path><path d="M12 16.3v.2"></path></svg>
+<span style="flex:1;min-width:0;font:400 12.5px/1.6 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">브랜드가 발송을 준비하고 있어요. 지금 취소는 <b style="font-weight:600">요청으로 접수</b>되고, 그사이 발송되면 거절될 수 있어요.</span>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+
+<div style="padding:18px 14px 0;display:flex;align-items:baseline;gap:7px">
+<span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">배송지</span>
+<span style="font:400 12px/1 Pretendard,sans-serif;color:#737373">주문 시점 정보</span>
+</div>
+<div style="padding:12px 14px 0">
+<div style="font:600 14.5px/1.4 Pretendard,sans-serif">김수*</div>
+<div style="margin-top:7px;font:400 13px/1.75 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">서울 강남구 테헤란로 000, 쇼룸타워 ******<br>010-****-5678<br><span style="color:#737373">문 앞에 놓아주세요</span></div>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+
+<div style="padding:18px 14px 0;display:flex;align-items:baseline;gap:7px">
+<span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">주문 상품</span>
+<span style="font:700 15px/1 Pretendard,sans-serif;color:#737373">2</span>
+</div>
+
+<sc-for list="{{ items1 }}" as="it" hint-placeholder-count="2">
+<div style="padding:16px 14px 16px;border-top:{{ it.divider }}">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+<span style="font:700 13px/1.3 Pretendard,sans-serif;color:{{ it.stColor }}">{{ it.status }}</span>
+<sc-if value="{{ it.hasSub }}" hint-placeholder-val="{{ false }}">
+<span style="flex:none;font:400 11.5px/1.3 Pretendard,sans-serif;color:#737373">{{ it.sub }}</span>
+</sc-if>
+</div>
+<sc-if value="{{ it.rejected }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:3px;margin:4px 0 -2px;padding:6px 0;cursor:pointer" style-active="opacity:.55">
+<span style="font:400 12px/1.3 Pretendard,sans-serif;color:#737373">취소 요청 반려 · 사유 보기</span>
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg>
+</div>
+</sc-if>
+<div style="margin-top:12px;display:flex;gap:12px">
+<div style="width:64px;height:64px;border-radius:4px;background:{{ it.thumb }};flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 11.5px/1.35 Pretendard,sans-serif;color:#737373">{{ it.brand }}</div>
+<div style="margin-top:3px;font:400 13.5px/1.45 Pretendard,sans-serif;color:#2E2E2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.name }}</div>
+<div style="margin-top:6px;display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+<span style="font:400 12px/1.4 Pretendard,sans-serif;color:#737373;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.option }}</span>
+<span style="flex:none;font:700 14px/1 Pretendard,sans-serif;letter-spacing:-.2px">{{ it.price }}</span>
+</div>
+</div>
+</div>
+<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:7px">
+<sc-for list="{{ it.actions }}" as="a" hint-placeholder-count="1">
+<div style="flex:1 1 calc(50% - 4px);min-width:0;display:flex;align-items:center;padding:2px 0;margin:-2px 0;cursor:{{ a.cursor }}" style-active="opacity:{{ a.press }}">
+<span style="flex:1;min-width:0;height:40px;border:1px solid {{ a.border }};border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 12.5px/1 Pretendard,sans-serif;color:{{ a.color }}">{{ a.label }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+
+<div style="height:5px;background:#F7F7F8"></div>
+
+<div style="padding:18px 14px 0;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">결제 정보</div>
+<div style="padding:13px 14px 0;display:grid;gap:8px">
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">상품 금액</span><span style="font:400 13.5px/1.5 Pretendard,sans-serif">90,000원</span></div>
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">공동구매 할인</span><span style="font:600 13.5px/1.5 Pretendard,sans-serif;color:#CF3D61">−47,600원</span></div>
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">배송비</span><span style="font:400 13.5px/1.5 Pretendard,sans-serif">무료배송</span></div>
+</div>
+<div style="margin:14px 14px 0;padding-top:13px;border-top:.5px solid #F0F0F0;display:flex;align-items:baseline;justify-content:space-between">
+<span style="font:700 14.5px/1 Pretendard,sans-serif">결제 금액</span>
+<div style="display:flex;align-items:baseline;gap:7px">
+<span style="font:700 14px/1 Pretendard,sans-serif;color:#F2456E">53%</span>
+<span style="font:700 17px/1 Pretendard,sans-serif;letter-spacing:-.4px">42,400원</span>
+</div>
+</div>
+<div style="padding:12px 14px 0;display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+<span style="flex:none;font:400 13px/1.5 Pretendard,sans-serif;color:#737373">결제수단</span>
+<span style="flex:1;text-align:right;font:500 13px/1.5 Pretendard,sans-serif">카카오페이</span>
+</div>
+
+<div style="height:30px"></div>
+
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>상품준비중도 취소 요청 가능</b> — 상품 행의 액션은 <b>[취소 요청] 하나</b>이고(송장이 없어 배송 조회는 두지 않음), [취소 요청]은 결제완료와 같은 주문 취소 화면(C10 1b)으로 갑니다. 다만 결제완료와 달리 <b>브랜드가 이미 출고를 시작한 뒤</b>라 즉시 취소가 아니라 <b>요청 → 브랜드 승인</b>으로 확정되고, 그사이 발송되면 거절됩니다. 상단 회색 블록이 이 차이를 미리 알려, 거절됐을 때 "취소했는데 왜 왔지" 하는 문의를 막습니다. 취소가 완전히 막히는 건 <b>배송중부터</b>입니다. 상태 라벨은 <b>회색</b>입니다.</p>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>배송중 — 항목별 상태 분리</div>
+<div class="dv-card">
+<div data-screen-label="C10-b 배송중" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">주문 상세</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:20px 14px 0">
+<div style="font:700 19px/1.3 Pretendard,sans-serif;letter-spacing:-.4px">26.09.12 (금)</div>
+<div style="margin-top:7px;display:flex;align-items:center;gap:2px">
+<span style="font:400 12.5px/1.3 Pretendard,sans-serif;color:#737373">주문번호 20260912030201</span>
+<div style="flex:none;display:flex;padding:15px 15px 15px 8px;margin:-15px;cursor:pointer" style-active="opacity:.4">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="1.8" stroke-linejoin="miter" style="display:block"><rect x="8.5" y="8.5" width="11" height="11"></rect><path d="M15.5 5.5h-11v11"></path></svg>
+</div>
+</div>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+
+<div style="padding:18px 14px 0;display:flex;align-items:baseline;gap:7px">
+<span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">배송지</span>
+<span style="font:400 12px/1 Pretendard,sans-serif;color:#737373">주문 시점 정보</span>
+</div>
+<div style="padding:12px 14px 0">
+<div style="font:600 14.5px/1.4 Pretendard,sans-serif">김수*</div>
+<div style="margin-top:7px;font:400 13px/1.75 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">서울 강남구 테헤란로 000, 쇼룸타워 ******<br>010-****-5678<br><span style="color:#737373">문 앞에 놓아주세요</span></div>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+
+<div style="padding:18px 14px 0;display:flex;align-items:baseline;gap:7px">
+<span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">주문 상품</span>
+<span style="font:700 15px/1 Pretendard,sans-serif;color:#737373">2</span>
+</div>
+
+<sc-for list="{{ items2 }}" as="it" hint-placeholder-count="2">
+<div style="padding:16px 14px 16px;border-top:{{ it.divider }}">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+<span style="font:700 13px/1.3 Pretendard,sans-serif;color:{{ it.stColor }}">{{ it.status }}</span>
+<sc-if value="{{ it.hasSub }}" hint-placeholder-val="{{ false }}">
+<span style="flex:none;font:400 11.5px/1.3 Pretendard,sans-serif;color:#737373">{{ it.sub }}</span>
+</sc-if>
+</div>
+<sc-if value="{{ it.rejected }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:3px;margin:4px 0 -2px;padding:6px 0;cursor:pointer" style-active="opacity:.55">
+<span style="font:400 12px/1.3 Pretendard,sans-serif;color:#737373">취소 요청 반려 · 사유 보기</span>
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg>
+</div>
+</sc-if>
+<div style="margin-top:12px;display:flex;gap:12px">
+<div style="width:64px;height:64px;border-radius:4px;background:{{ it.thumb }};flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 11.5px/1.35 Pretendard,sans-serif;color:#737373">{{ it.brand }}</div>
+<div style="margin-top:3px;font:400 13.5px/1.45 Pretendard,sans-serif;color:#2E2E2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.name }}</div>
+<div style="margin-top:6px;display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+<span style="font:400 12px/1.4 Pretendard,sans-serif;color:#737373;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.option }}</span>
+<span style="flex:none;font:700 14px/1 Pretendard,sans-serif;letter-spacing:-.2px">{{ it.price }}</span>
+</div>
+</div>
+</div>
+<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:7px">
+<sc-for list="{{ it.actions }}" as="a" hint-placeholder-count="1">
+<div style="flex:1 1 calc(50% - 4px);min-width:0;display:flex;align-items:center;padding:2px 0;margin:-2px 0;cursor:{{ a.cursor }}" style-active="opacity:{{ a.press }}">
+<span style="flex:1;min-width:0;height:40px;border:1px solid {{ a.border }};border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 12.5px/1 Pretendard,sans-serif;color:{{ a.color }}">{{ a.label }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+
+<div style="height:5px;background:#F7F7F8"></div>
+
+<div style="padding:18px 14px 0;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">결제 정보</div>
+<div style="padding:13px 14px 0;display:grid;gap:8px">
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">상품 금액</span><span style="font:400 13.5px/1.5 Pretendard,sans-serif">90,000원</span></div>
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">공동구매 할인</span><span style="font:600 13.5px/1.5 Pretendard,sans-serif;color:#CF3D61">−47,600원</span></div>
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">배송비</span><span style="font:400 13.5px/1.5 Pretendard,sans-serif">무료배송</span></div>
+</div>
+<div style="margin:14px 14px 0;padding-top:13px;border-top:.5px solid #F0F0F0;display:flex;align-items:baseline;justify-content:space-between">
+<span style="font:700 14.5px/1 Pretendard,sans-serif">결제 금액</span>
+<div style="display:flex;align-items:baseline;gap:7px">
+<span style="font:700 14px/1 Pretendard,sans-serif;color:#F2456E">53%</span>
+<span style="font:700 17px/1 Pretendard,sans-serif;letter-spacing:-.4px">42,400원</span>
+</div>
+</div>
+<div style="padding:12px 14px 0;display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+<span style="flex:none;font:400 13px/1.5 Pretendard,sans-serif;color:#737373">결제수단</span>
+<span style="flex:1;text-align:right;font:500 13px/1.5 Pretendard,sans-serif">카카오페이</span>
+</div>
+
+<div style="height:30px"></div>
+
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>이 화면이 항목별 상태가 필요한 이유</b>입니다 — 첫 상품은 <b>배송중</b>(송장 있음, 도착 예정일 표시), 둘째는 아직 <b>상품준비중</b>입니다. 브랜드가 달라 발송 시점이 갈리는 공동구매에서는 이 조합이 흔합니다. 주문 하나에 상태 하나를 붙이는 설계로는 이 화면을 그릴 수 없습니다.<br><br><b>[배송 조회]는 두 항목 모두 활성</b>입니다 — 송장이 없는 준비중 항목도 배송 조회로 들어가면 발송 예정일과 "공구 마감 후 일괄 발송" 안내를 받습니다(C10-2의 송장 미등록 상태). 버튼을 잠그는 대신 <b>답이 있는 화면으로 보내는</b> 편이 낫습니다. 상태 라벨 우측에 <b>도착·발송 예정일</b>을 붙여, 조회로 들어가지 않고도 결론을 읽을 수 있게 했습니다.</p>
+</div>
+
+<div class="dv-opt" id="1d">
+<div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>배송완료 — 반품·교환 가능</div>
+<div class="dv-card">
+<div data-screen-label="C10-b 배송완료" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">주문 상세</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:20px 14px 0">
+<div style="font:700 19px/1.3 Pretendard,sans-serif;letter-spacing:-.4px">26.09.12 (금)</div>
+<div style="margin-top:7px;display:flex;align-items:center;gap:2px">
+<span style="font:400 12.5px/1.3 Pretendard,sans-serif;color:#737373">주문번호 20260912030201</span>
+<div style="flex:none;display:flex;padding:15px 15px 15px 8px;margin:-15px;cursor:pointer" style-active="opacity:.4">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="1.8" stroke-linejoin="miter" style="display:block"><rect x="8.5" y="8.5" width="11" height="11"></rect><path d="M15.5 5.5h-11v11"></path></svg>
+</div>
+</div>
+</div>
+
+<div style="margin:16px 14px 0;padding:13px;border-radius:8px;background:#FEF4F6;display:flex;gap:9px;align-items:flex-start">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#CF3D61" stroke-width="1.7" stroke-linecap="round" style="display:block;flex:none;margin-top:1px"><circle cx="12" cy="12" r="8.5" stroke-width="1.5"></circle><path d="M12 7.6v5.2"></path><path d="M12 16.3v.2"></path></svg>
+<span style="flex:1;min-width:0;font:400 12.5px/1.6 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty"><b style="font-weight:600">09.23에 구매확정</b>돼요. 확정 뒤에는 반품·교환을 신청할 수 없으니 그전에 확인해 주세요.</span>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+
+<div style="padding:18px 14px 0;display:flex;align-items:baseline;gap:7px">
+<span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">배송지</span>
+<span style="font:400 12px/1 Pretendard,sans-serif;color:#737373">주문 시점 정보</span>
+</div>
+<div style="padding:12px 14px 0">
+<div style="font:600 14.5px/1.4 Pretendard,sans-serif">김수*</div>
+<div style="margin-top:7px;font:400 13px/1.75 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">서울 강남구 테헤란로 000, 쇼룸타워 ******<br>010-****-5678<br><span style="color:#737373">문 앞에 놓아주세요</span></div>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+
+<div style="padding:18px 14px 0;display:flex;align-items:baseline;gap:7px">
+<span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">주문 상품</span>
+<span style="font:700 15px/1 Pretendard,sans-serif;color:#737373">2</span>
+</div>
+
+<sc-for list="{{ items3 }}" as="it" hint-placeholder-count="2">
+<div style="padding:16px 14px 16px;border-top:{{ it.divider }}">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+<span style="font:700 13px/1.3 Pretendard,sans-serif;color:{{ it.stColor }}">{{ it.status }}</span>
+<sc-if value="{{ it.hasSub }}" hint-placeholder-val="{{ false }}">
+<span style="flex:none;font:400 11.5px/1.3 Pretendard,sans-serif;color:#737373">{{ it.sub }}</span>
+</sc-if>
+</div>
+<sc-if value="{{ it.rejected }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:3px;margin:4px 0 -2px;padding:6px 0;cursor:pointer" style-active="opacity:.55">
+<span style="font:400 12px/1.3 Pretendard,sans-serif;color:#737373">취소 요청 반려 · 사유 보기</span>
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg>
+</div>
+</sc-if>
+<div style="margin-top:12px;display:flex;gap:12px">
+<div style="width:64px;height:64px;border-radius:4px;background:{{ it.thumb }};flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 11.5px/1.35 Pretendard,sans-serif;color:#737373">{{ it.brand }}</div>
+<div style="margin-top:3px;font:400 13.5px/1.45 Pretendard,sans-serif;color:#2E2E2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.name }}</div>
+<div style="margin-top:6px;display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+<span style="font:400 12px/1.4 Pretendard,sans-serif;color:#737373;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.option }}</span>
+<span style="flex:none;font:700 14px/1 Pretendard,sans-serif;letter-spacing:-.2px">{{ it.price }}</span>
+</div>
+</div>
+</div>
+<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:7px">
+<sc-for list="{{ it.actions }}" as="a" hint-placeholder-count="1">
+<div style="flex:1 1 calc(50% - 4px);min-width:0;display:flex;align-items:center;padding:2px 0;margin:-2px 0;cursor:{{ a.cursor }}" style-active="opacity:{{ a.press }}">
+<span style="flex:1;min-width:0;height:40px;border:1px solid {{ a.border }};border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 12.5px/1 Pretendard,sans-serif;color:{{ a.color }}">{{ a.label }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+
+<div style="height:5px;background:#F7F7F8"></div>
+
+<div style="padding:18px 14px 0;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">결제 정보</div>
+<div style="padding:13px 14px 0;display:grid;gap:8px">
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">상품 금액</span><span style="font:400 13.5px/1.5 Pretendard,sans-serif">90,000원</span></div>
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">공동구매 할인</span><span style="font:600 13.5px/1.5 Pretendard,sans-serif;color:#CF3D61">−47,600원</span></div>
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">배송비</span><span style="font:400 13.5px/1.5 Pretendard,sans-serif">무료배송</span></div>
+</div>
+<div style="margin:14px 14px 0;padding-top:13px;border-top:.5px solid #F0F0F0;display:flex;align-items:baseline;justify-content:space-between">
+<span style="font:700 14.5px/1 Pretendard,sans-serif">결제 금액</span>
+<div style="display:flex;align-items:baseline;gap:7px">
+<span style="font:700 14px/1 Pretendard,sans-serif;color:#F2456E">53%</span>
+<span style="font:700 17px/1 Pretendard,sans-serif;letter-spacing:-.4px">42,400원</span>
+</div>
+</div>
+<div style="padding:12px 14px 0;display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+<span style="flex:none;font:400 13px/1.5 Pretendard,sans-serif;color:#737373">결제수단</span>
+<span style="flex:1;text-align:right;font:500 13px/1.5 Pretendard,sans-serif">카카오페이</span>
+</div>
+
+<div style="height:30px"></div>
+
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>반품·교환은 여기서 갈립니다</b> — 주문 내역 목록의 [반품 · 교환]은 이 화면으로 들어오고, 상품 행의 <b>[반품 요청]</b>(→ C10-2 1a) / <b>[교환 요청]</b>(→ C10-2 1b) 중 하나를 누르는 순간 경로가 나뉩니다. 금액·수량·배송지를 본 뒤 고르게 하려는 것이며, 각 요청 화면은 사유 목록과 하단 버튼 문구로 무엇을 요청 중인지 한 번 더 보여줍니다.<br><br><b>기한이 있는 유일한 구간</b>이라 로즈 안내 블록을 상단에 둡니다 — 구매확정 뒤에는 반품·교환이 불가하므로 날짜를 굵게 적어 <b>지금 확인해야 하는 이유</b>를 만듭니다.<br><br>항목당 액션이 <b>[배송 조회] · [반품 요청] · [교환 요청]</b> 세 개로 늘어 2+1로 감싸집니다. 반품·교환이 옵션 단위라 주문 하나에 버튼을 모으면 대상이 흐려지므로 항목마다 붙입니다 — 버튼에서 들어가면 대상이 확정돼 요청 화면에 상품 선택 단계가 없습니다.<br><br><b>재고 없는 옵션의 교환은 라벨 자체를 바꿉니다</b>(둘째 항목 "교환 불가 (재고 없음)") — 교환은 같은 상품의 다른 옵션으로만 되므로 재고가 없으면 신청이 성립하지 않습니다. 비활성 버튼만 두면 왜 안 눌리는지 알 수 없어 이유를 라벨에 넣었습니다.</p>
+</div>
+
+<div class="dv-opt" id="1e">
+<div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>구매확정 — 종결</div>
+<div class="dv-card">
+<div data-screen-label="C10-b 구매확정" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">주문 상세</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:20px 14px 0">
+<div style="font:700 19px/1.3 Pretendard,sans-serif;letter-spacing:-.4px">26.09.12 (금)</div>
+<div style="margin-top:7px;display:flex;align-items:center;gap:2px">
+<span style="font:400 12.5px/1.3 Pretendard,sans-serif;color:#737373">주문번호 20260912030201</span>
+<div style="flex:none;display:flex;padding:15px 15px 15px 8px;margin:-15px;cursor:pointer" style-active="opacity:.4">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="1.8" stroke-linejoin="miter" style="display:block"><rect x="8.5" y="8.5" width="11" height="11"></rect><path d="M15.5 5.5h-11v11"></path></svg>
+</div>
+</div>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+
+<div style="padding:18px 14px 0;display:flex;align-items:baseline;gap:7px">
+<span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">배송지</span>
+<span style="font:400 12px/1 Pretendard,sans-serif;color:#737373">주문 시점 정보</span>
+</div>
+<div style="padding:12px 14px 0">
+<div style="font:600 14.5px/1.4 Pretendard,sans-serif">김수*</div>
+<div style="margin-top:7px;font:400 13px/1.75 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">서울 강남구 테헤란로 000, 쇼룸타워 ******<br>010-****-5678<br><span style="color:#737373">문 앞에 놓아주세요</span></div>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+
+<div style="padding:18px 14px 0;display:flex;align-items:baseline;gap:7px">
+<span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">주문 상품</span>
+<span style="font:700 15px/1 Pretendard,sans-serif;color:#737373">2</span>
+</div>
+
+<sc-for list="{{ items4 }}" as="it" hint-placeholder-count="2">
+<div style="padding:16px 14px 16px;border-top:{{ it.divider }}">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+<span style="font:700 13px/1.3 Pretendard,sans-serif;color:{{ it.stColor }}">{{ it.status }}</span>
+<sc-if value="{{ it.hasSub }}" hint-placeholder-val="{{ false }}">
+<span style="flex:none;font:400 11.5px/1.3 Pretendard,sans-serif;color:#737373">{{ it.sub }}</span>
+</sc-if>
+</div>
+<sc-if value="{{ it.rejected }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:3px;margin:4px 0 -2px;padding:6px 0;cursor:pointer" style-active="opacity:.55">
+<span style="font:400 12px/1.3 Pretendard,sans-serif;color:#737373">취소 요청 반려 · 사유 보기</span>
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg>
+</div>
+</sc-if>
+<div style="margin-top:12px;display:flex;gap:12px">
+<div style="width:64px;height:64px;border-radius:4px;background:{{ it.thumb }};flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 11.5px/1.35 Pretendard,sans-serif;color:#737373">{{ it.brand }}</div>
+<div style="margin-top:3px;font:400 13.5px/1.45 Pretendard,sans-serif;color:#2E2E2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.name }}</div>
+<div style="margin-top:6px;display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+<span style="font:400 12px/1.4 Pretendard,sans-serif;color:#737373;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.option }}</span>
+<span style="flex:none;font:700 14px/1 Pretendard,sans-serif;letter-spacing:-.2px">{{ it.price }}</span>
+</div>
+</div>
+</div>
+<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:7px">
+<sc-for list="{{ it.actions }}" as="a" hint-placeholder-count="1">
+<div style="flex:1 1 calc(50% - 4px);min-width:0;display:flex;align-items:center;padding:2px 0;margin:-2px 0;cursor:{{ a.cursor }}" style-active="opacity:{{ a.press }}">
+<span style="flex:1;min-width:0;height:40px;border:1px solid {{ a.border }};border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 12.5px/1 Pretendard,sans-serif;color:{{ a.color }}">{{ a.label }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+
+<div style="height:5px;background:#F7F7F8"></div>
+
+<div style="padding:18px 14px 0;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">결제 정보</div>
+<div style="padding:13px 14px 0;display:grid;gap:8px">
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">상품 금액</span><span style="font:400 13.5px/1.5 Pretendard,sans-serif">90,000원</span></div>
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">공동구매 할인</span><span style="font:600 13.5px/1.5 Pretendard,sans-serif;color:#CF3D61">−47,600원</span></div>
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">배송비</span><span style="font:400 13.5px/1.5 Pretendard,sans-serif">무료배송</span></div>
+</div>
+<div style="margin:14px 14px 0;padding-top:13px;border-top:.5px solid #F0F0F0;display:flex;align-items:baseline;justify-content:space-between">
+<span style="font:700 14.5px/1 Pretendard,sans-serif">결제 금액</span>
+<div style="display:flex;align-items:baseline;gap:7px">
+<span style="font:700 14px/1 Pretendard,sans-serif;color:#F2456E">53%</span>
+<span style="font:700 17px/1 Pretendard,sans-serif;letter-spacing:-.4px">42,400원</span>
+</div>
+</div>
+<div style="padding:12px 14px 0;display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+<span style="flex:none;font:400 13px/1.5 Pretendard,sans-serif;color:#737373">결제수단</span>
+<span style="flex:1;text-align:right;font:500 13px/1.5 Pretendard,sans-serif">카카오페이</span>
+</div>
+
+<div style="padding:20px 14px 0">
+<div style="display:flex;align-items:center;padding:2px 0;margin:-2px 0;cursor:pointer" style-active="opacity:.55">
+<span style="flex:1;height:44px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">문제가 있나요? 1:1 문의</span>
+</div>
+</div>
+
+<div style="height:30px"></div>
+
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>종결 상태라 로즈가 없습니다</b> — 개입할 것이 없는 주문에 색을 남기면 "지금 볼 것이 있다"는 신호가 닳습니다. 상태 라벨도 회색이고, 항목에는 <b>[배송 조회]만</b> 남깁니다(이력은 확정 후에도 조회 가치가 있습니다).<br><br><b>[1:1 문의]를 맨 아래에</b> 하나 둡니다 — 확정 후에도 하자가 드러나는 경우가 있고, 그때 고객센터를 헤매지 않도록 이 주문에서 곧바로 문의로 이어지는 길을 남깁니다. 상태 라벨 우측의 "09.23 확정"은 <b>언제 기간이 닫혔는지</b>를 기록으로 남기는 표기입니다.<br><br><b>남은 결정</b> — ① 구매확정 자동 기한 확정(배송완료 후 7일) ② 재구매 버튼을 둘지(공구는 종료되면 같은 가격으로 못 사므로 "쇼룸 보기"가 더 정확할 수 있음) ③ 주문 내역 삭제 기능 도입 여부와 보관 정책 ④ 영수증·거래명세서 발급 경로.</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  btn(label, kind){
+    const off = kind === 'off';
+    return {
+      label,
+      border: off ? '#F4F4F5' : '#E3E3E5',
+      color: off ? '#9E9E9E' : '#3C3C3C',
+      cursor: off ? 'default' : 'pointer',
+      press: off ? '1' : '.55'
+    };
+  }
+
+  rows(defs){
+    const BASE = [
+      { brand:'라보에이치', name:'시카 리페어 앰플 30ml 리필 2개 세트 기획', option:'30ml + 리필 2개 · 2개', price:'49,800원', thumb:'linear-gradient(135deg,#EFEBE7,#D9D2CB)' },
+      { brand:'라보에이치', name:'진정 토너 패드 60매', option:'2개 묶음 · 1개', price:'17,500원', thumb:'linear-gradient(135deg,#F1E7EA,#DCCCD3)' }
+    ];
+    return BASE.map((b, i) => {
+      const d = defs[i];
+      return {
+        brand: b.brand, name: b.name, option: b.option, price: b.price, thumb: b.thumb,
+        divider: i === 0 ? 'none' : '.5px solid #F0F0F0',
+        status: d.status,
+        stColor: d.live ? '#F2456E' : '#737373',
+        hasSub: !!d.sub,
+        sub: d.sub || '',
+        rejected: !!d.rejected,
+        actions: d.actions
+      };
+    });
+  }
+
+  renderVals(){
+    const B = (l, k) => this.btn(l, k);
+    return {
+      items0: this.rows([
+        { status:'결제완료', live:true, sub:'09.15 발송 예정', actions:[B('주문 취소')] },
+        { status:'결제완료', live:true, sub:'09.15 발송 예정', actions:[B('주문 취소')] }
+      ]),
+      items1: this.rows([
+        { status:'상품준비중', live:false, sub:'09.15 발송 예정', actions:[B('취소 요청')] },
+        { status:'상품준비중', live:false, sub:'09.15 발송 예정', actions:[B('취소 요청')] }
+      ]),
+      items2: this.rows([
+        { status:'배송중', live:true, sub:'09.16 (수) 도착 예정', rejected:true, actions:[B('배송 조회')] },
+        { status:'상품준비중', live:false, sub:'09.17 발송 예정', actions:[B('배송 조회')] }
+      ]),
+      items3: this.rows([
+        { status:'배송완료', live:true, sub:'09.16 14:20', actions:[B('배송 조회'), B('반품 요청'), B('교환 요청')] },
+        { status:'배송완료', live:true, sub:'09.16 14:20', actions:[B('배송 조회'), B('반품 요청'), B('교환 요청')] }
+      ]),
+      items4: this.rows([
+        { status:'구매확정', live:false, sub:'09.23 확정', actions:[B('배송 조회')] },
+        { status:'구매확정', live:false, sub:'09.23 확정', actions:[B('배송 조회')] }
+      ])
+    };
+  }
+}
+</script>
+</body>
+</html>

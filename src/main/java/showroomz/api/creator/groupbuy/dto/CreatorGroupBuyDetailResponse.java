@@ -242,6 +242,12 @@ public record CreatorGroupBuyDetailResponse(
     public record Sales(
             @Schema(description = "LIVE · PROVISIONAL(종료 · 확정 시 변동) · SETTLED · AT_SUSPENSION") SalesBasis basis,
             @Schema(description = "주문 수") int orderCount,
+            @Schema(description = "종결 중 구매확정 — B8 「구매확정 308건」. 파트너·어드민 orderClosure와 같은 값. 판매 모듈이 모르면 null",
+                    example = "308", nullable = true)
+            Integer purchaseConfirmedCount,
+            @Schema(description = "종결 중 환불(결제 후 취소) — B8 「환불 4건 반영」. 판매 모듈이 모르면 null",
+                    example = "4", nullable = true)
+            Integer refundedCount,
             @Schema(description = "상품별 판매 수량") List<ItemQuantity> itemQuantities,
             @Schema(description = "판매액(원)") long amount,
             @Schema(description = "내 리워드(원) — 항목별 수량 × 개당 리워드의 합") long myReward,

@@ -19,6 +19,16 @@ public interface OrderCancelRequestRepository extends JpaRepository<OrderCancelR
             + "AND r.status = showroomz.domain.order.type.CancelRequestStatus.PENDING")
     List<OrderCancelRequest> findPendingByDeliveryGroupIds(@Param("deliveryGroupIds") Collection<Long> deliveryGroupIds);
 
+    /**
+     * 소비자 앱 주문 내역·상세(C10 설계서 2-4 #3) — 검토 중(「취소 요청중」)과 반려(반려 줄)만. {@code order_id}
+     * 비정규화 컬럼이 이 용도다.
+     */
+    @Query("SELECT DISTINCT r FROM OrderCancelRequest r LEFT JOIN FETCH r.items "
+            + "WHERE r.order.id IN :orderIds "
+            + "AND r.status IN (showroomz.domain.order.type.CancelRequestStatus.PENDING, "
+            + "    showroomz.domain.order.type.CancelRequestStatus.REJECTED)")
+    List<OrderCancelRequest> findOpenOrRejectedByOrderIds(@Param("orderIds") Collection<Long> orderIds);
+
     @Query("SELECT DISTINCT r FROM OrderCancelRequest r JOIN FETCH r.deliveryGroup g JOIN FETCH g.order "
             + "LEFT JOIN FETCH r.items i LEFT JOIN FETCH i.orderProduct WHERE r.id = :id")
     Optional<OrderCancelRequest> findWithGroup(@Param("id") Long id);

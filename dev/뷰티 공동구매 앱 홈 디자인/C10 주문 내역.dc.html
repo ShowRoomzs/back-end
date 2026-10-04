@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+.dv-sw{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:-2px 0 2px}
+.dv-swl{font:600 10px/1 Pretendard,sans-serif;color:rgba(0,0,0,.38);letter-spacing:.02em;margin-right:2px}
+</style>
+<template id="__bundler_thumbnail">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#F2456E"></rect><g fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"><path d="M38 34h34l8 8v44H38z"></path><path d="M48 58h24"></path><path d="M48 70h16"></path></g></svg>
+</template>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C10 주문 내역</span></div>
+<p class="dv-tsub">마이 탭 &gt; 주문 내역, 그리고 마이의 배송 상태 카운터에서 진입합니다. <b>항목(옵션) 단위 행</b>이 주문일·주문번호 그룹 아래로 쌓입니다 — 취소·반품·교환이 항목 단위라 목록도 같은 단위로 쪼개야 상세 진입이 어긋나지 않습니다. 빈 상태는 우측 Tweaks의 <b>listState</b>로 확인합니다.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>C10 주문 내역</div>
+<div class="dv-card">
+<div data-screen-label="C10 주문 내역" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">주문 내역</span>
+</div>
+</div>
+
+<sc-if value="{{ hasOrders }}" hint-placeholder-val="{{ true }}">
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+<sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+<div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 14px 10px">
+<div style="min-width:0">
+<div style="font:700 14px/1.3 Pretendard,sans-serif">{{ g.date }}</div>
+<div style="margin-top:4px;font:400 11.5px/1.3 Pretendard,sans-serif;color:#737373;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">주문번호 {{ g.no }}</div>
+</div>
+<div style="flex:none;display:flex;align-items:center;gap:2px;padding:15px 0 15px 12px;margin:-15px 0;cursor:pointer" style-active="opacity:.5">
+<span style="font:500 12.5px/1 Pretendard,sans-serif;color:#737373">주문 상세</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg>
+</div>
+</div>
+<sc-for list="{{ g.items }}" as="it" hint-placeholder-count="2">
+<div style="padding:0 14px;border-top:{{ it.divider }}">
+<div style="display:flex;align-items:center;gap:6px;min-width:0;padding:13px 0 0">
+<span style="flex:none;font:{{ it.badgeFont }};color:{{ it.badgeColor }}">{{ it.badge }}</span>
+<sc-if value="{{ it.hasSub }}" hint-placeholder-val="{{ false }}">
+<span style="font:400 12px/1.3 Pretendard,sans-serif;color:#737373;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">· {{ it.sub }}</span>
+</sc-if>
+</div>
+<sc-if value="{{ it.rejected }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:3px;margin:2px 0 -4px;padding:6px 0;cursor:pointer" style-active="opacity:.55">
+<span style="font:400 12px/1.3 Pretendard,sans-serif;color:#737373">취소 요청 반려 · 사유 보기</span>
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg>
+</div>
+</sc-if>
+<div style="display:flex;gap:12px;padding:11px 0 14px;cursor:pointer" style-active="opacity:.6">
+<div style="width:64px;height:64px;border-radius:4px;flex:none;background:{{ it.thumb }};opacity:{{ it.fade }}"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 11.5px/1.35 Pretendard,sans-serif;color:#737373">{{ it.brand }}</div>
+<div style="margin-top:3px;font:400 13.5px/1.45 Pretendard,sans-serif;color:{{ it.nameColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.name }}</div>
+<div style="margin-top:6px;display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+<span style="font:400 12px/1.4 Pretendard,sans-serif;color:#737373;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.option }}</span>
+<span style="flex:none;font:{{ it.priceFont }};color:{{ it.priceColor }};letter-spacing:-.2px">{{ it.price }}</span>
+</div>
+</div>
+</div>
+<sc-if value="{{ it.hasAction }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;gap:7px;padding:0 0 14px">
+<sc-for list="{{ it.actions }}" as="a" hint-placeholder-count="2">
+<div style="flex:1;min-width:0;display:flex;align-items:center;padding:2px 0;margin:-2px 0;cursor:pointer" style-active="opacity:.55">
+<span style="flex:1;min-width:0;height:40px;border:1px solid {{ a.border }};border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 12.5px/1 Pretendard,sans-serif;color:{{ a.color }}">{{ a.label }}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+<div style="height:5px;background:#F7F7F8"></div>
+</div>
+</sc-for>
+<div style="padding:24px 14px;font:400 12px/1.7 Pretendard,sans-serif;color:#737373;text-align:center">최근 6개월 주문까지 보여드려요</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 40px 60px">
+<svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#D8D8DA" stroke-width="1.2" stroke-linejoin="miter" style="display:block"><path d="M6 4.5h9l3.5 3.5v11.5h-12.5z"></path><path d="M9 12.5h6"></path><path d="M9 16h4"></path></svg>
+<div style="margin-top:18px;font:600 15.5px/1.5 Pretendard,sans-serif;text-align:center">{{ emptyTitle }}</div>
+<div style="margin-top:7px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-align:center;text-wrap:pretty">{{ emptyDesc }}</div>
+<sc-if value="{{ emptyCta }}" hint-placeholder-val="{{ false }}">
+
+</sc-if>
+</div>
+</sc-if>
+
+</div>
+</div>
+<p class="dv-note"><b>취소 반려 이력</b> — 반려되면 주문은 일반 배송 흐름으로 돌아가므로 상태 라벨은 실제 상태(<b>배송중</b>)를 그대로 쓰고, 그 아래에 회색 한 줄 <b>"취소 요청 반려 · 사유 보기 ›"</b>를 붙입니다(09.12 주문의 배송중 상품). 누르면 <a class="dv-oid" href="#1d">1d</a> 취소 상세의 반려 상태로 갑니다. 반려 화면으로 들어오는 주 경로는 푸시·앱 내 알림이고, 이 줄은 나중에 다시 찾을 때를 위한 것입니다. <b>배송완료 후 반품 기간이 끝나면 사라집니다</b> — 반려 사실은 "받은 뒤 반품할 수 있다"로 이어질 때만 의미가 있기 때문입니다. 주문 상태를 "취소 반려"로 바꾸거나 모달로 알리지 않습니다.<br><br><b>[반품 · 교환] → 주문 상세</b> — 목록 카드는 버튼 하나만 둡니다. 누르면 <b>C10-1 주문 상세</b>로 이동하고, 거기서 해당 상품 행의 [반품 요청] / [교환 요청] 중 하나를 고릅니다. 반품·교환은 수량·환불 금액·배송지를 확인한 뒤 결정하는 행동이라 상세를 거치는 한 단계가 헛걸음이 아니고, 목록 카드는 버튼 2개로 가볍게 유지됩니다.<br><br><b>항목 단위 행</b> — 같은 주문·같은 브랜드라도 <b>옵션(SKU)마다 행을 분리</b>합니다. 취소·반품·교환이 항목 단위로 일어나므로 한 행에 두 항목을 묶으면 "어느 것을 반품하는지"가 목록에서 사라집니다. 주문일은 <b>그룹 머리</b>로 한 번만 적고, 그룹 사이는 5px 밴드 — C8 장바구니의 쇼룸 그룹과 같은 문법입니다(카드 테두리를 쓰지 않는 이유도 같습니다).<br><br><b>그룹 머리 = 날짜 + 주문번호 + [주문 상세]</b>로, <b>C10-1 주문 상세의 상단과 같은 형식</b>(26.09.12 (금) / 주문번호 20260912030201)을 씁니다. 목록에서 주문번호를 자주 읽지는 않지만, 상세·배송 조회·1:1 문의가 모두 이 번호로 대화하므로 <b>목록과 상세의 표기가 어긋나면 같은 주문인지 확인하는 단계가 생깁니다</b>. 11.5px 회색 보조 줄로 낮춰 날짜가 먼저 읽히게 했습니다.<br><br><b>상태는 칩이 아니라 글씨</b> — 배지로 감싸지 않고 굵기·색만 다르게 둡니다. 한 화면에 상태 표기가 6~7개 반복되는 목록에서 칩을 쓰면 알약이 줄줄이 늘어서 상품보다 배지가 먼저 읽히고, 칩은 누를 수 있어 보여 오해도 생깁니다. 굵기는 <b>13/700로 통일</b>하고 색으로만 층을 나눕니다 — <b>로즈: 지금 볼·할 것이 있는 상태</b>(결제완료 = 취소 가능 / 배송중 = 추적 가능 / 배송완료 = 반품·교환 기한), <b>#737373: 개입할 수 없는 상태</b>(상품준비중 · 구매확정 · 취소 · 반품 · 교환 진행). 상품준비중이 회색인 이유는 취소는 이미 불가하고 반품은 아직 불가한 <b>유일한 무액션 구간</b>이기 때문입니다. C10-1 주문 상세의 항목 상태 라벨과 <b>같은 규칙·같은 13/700</b>을 씁니다.<br><br>상태 우측 보조 텍스트에는 <b>그 상태에서 궁금한 날짜 하나</b>를 답으로 붙입니다 — 배송중 = 도착 예정, 상품준비중 = 발송 예정, 배송완료 = 구매확정 예정, 구매확정 = 확정일, 반품·교환 = 세부 단계. <b>환불은 배지가 아니라 결과</b>이므로 금액으로 표기합니다(취소 행의 "환불 18,900원").<br><br><b>취소·반품 행은 탈색</b> — 썸네일 불투명도와 상품명·금액 색을 낮춰(#9E9E9E) 살아 있는 주문과 한눈에 갈립니다. §02의 "품절·마감 텍스트" 예외와 같은 규칙입니다. 다만 <b>탈색된 행에도 [취소 상세]·[반품 상세]·[교환 상세] 버튼은 남깁니다</b> — 상태만 죽었을 뿐 <b>환불액·회수 일정·재발송 송장</b>은 사용자가 가장 자주 확인하는 정보이고, 이 행이 유일한 진입 경로입니다(C10-3). 그룹 머리의 [주문 상세]는 주문 전체를, 행의 [○○ 상세]는 <b>그 항목의 처리 흐름</b>을 엽니다 — 목적지가 달라 두 경로가 함께 있습니다.<br><br><b>결제완료</b>(맨 위 주문)는 <b>[주문 취소]가 열려 있는 유일한 구간</b>입니다 — 브랜드가 상품 준비에 들어가기 전이라 즉시 전액 취소가 가능하고, 준비중으로 넘어가면 버튼이 사라집니다. 상태 라벨이 로즈인 이유도 사용자가 <b>지금 개입할 수 있는</b> 상태이기 때문입니다. 공구는 마감 후 일괄 발송이라 부제에 <b>발송 예정일</b>을 적었습니다.<br><br><b>인라인 액션은 두 개까지</b> — 결제완료에 [배송 조회]·[주문 취소], 상품준비중·배송중·구매확정에 [배송 조회], 배송완료에 [배송 조회]·[반품 · 교환]입니다. <b>송장이 없는 상품준비중에도 [배송 조회]를 둡니다</b> — 그 화면이 발송 예정일과 "공구 마감 후 일괄 발송" 안내를 담고 있어, 이 구간에서 가장 궁금한 것에 답하는 경로입니다. 상세에서는 <b>[반품 요청]·[교환 요청]으로 갈라지지만</b> 목록에서는 한 버튼으로 묶었습니다 — 목록의 역할은 <b>어느 상품을 처리할지 고르는 것</b>이고, 반품이냐 교환이냐는 상세에서 대상이 확정된 뒤 결정하면 충분합니다(버튼 3개는 목록을 버튼 벽으로 만듭니다). 중립 외곽선만 쓰고, <b>로즈 채움 버튼은 목록에 두지 않습니다</b>.<br><br><b>[구매확정] 버튼은 뺐습니다</b> — 되돌릴 수 없는 확정을 목록에서 한 번의 탭으로 처리하게 하면 오조작 위험이 큽니다. 조기 확정 기능을 도입할 경우 상세에서 확인 모달과 함께 두는 편이 맞습니다.<br><br><b>필터를 두지 않았습니다</b> — 상태 필터 칩을 얹으면 화면 위 46px을 상시 차지하는데, 개인 주문 내역은 목록 자체가 짧아(최근 6개월) 스크롤로 다 훑는 편이 빠릅니다. 상태는 각 행에서 이미 읽히고, 특정 상태만 보고 싶은 수요는 <b>마이 탭의 배송 상태 카운터</b>가 이미 받고 있습니다.<br><br><b>빈 상태</b>는 주문이 아예 없을 때 하나뿐입니다(Tweaks의 listState) — 홈으로 보내는 [공구 구경하기]를 함께 둡니다.<br><br><b>남은 결정</b> — ① 6개월 이전 주문 조회 방식(기간 선택 or 더 불러오기) ② 구매확정 자동 처리 기한(배송완료 후 N일) ③ 조기 구매확정 기능을 상세에 둘지 ④ 부분 취소된 주문의 금액 표기 규칙 ⑤ 마이 탭 배송 상태 카운터를 탭했을 때의 동작(전체 목록 진입 / 해당 상태만 걸러 보여주기).</p>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>주문 취소 — 결제완료 (즉시 취소)</div>
+<div class="dv-sw"><span class="dv-swl">상품 수</span>
+<sc-for list="{{ countSw }}" as="s" hint-placeholder-count="2">
+<span onClick="{{ s.pick }}" style="padding:6px 10px;border-radius:100px;cursor:pointer;background:{{ s.bg }};color:{{ s.color }};border:1px solid {{ s.border }};font:{{ s.font }}">{{ s.label }}</span>
+</sc-for>
+<span class="dv-swl" style="margin-left:8px">배송비</span>
+<sc-for list="{{ shipSw }}" as="s" hint-placeholder-count="2">
+<span onClick="{{ s.pick }}" style="padding:6px 10px;border-radius:100px;cursor:pointer;background:{{ s.bg }};color:{{ s.color }};border:1px solid {{ s.border }};font:{{ s.font }}">{{ s.label }}</span>
+</sc-for>
+</div>
+<div class="dv-card">
+<div data-screen-label="C10-4 주문 취소 (결제완료)" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">주문 취소</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<sc-if value="{{ multi }}" hint-placeholder-val="{{ true }}">
+<div style="padding:16px 14px 2px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+<div onClick="{{ toggleAll }}" style="display:flex;align-items:center;gap:10px;padding:11px;margin:-11px;cursor:pointer" style-active="opacity:.55">
+<span style="width:21px;height:21px;border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:{{ allBg }};border:{{ allBorder }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{ allInk }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg></span>
+<span style="font:600 14px/1 Pretendard,sans-serif">전체 선택</span>
+</div>
+<span style="flex:none;font:400 12px/1 Pretendard,sans-serif;color:#737373">26.09.22 (화) 주문</span>
+</div>
+</sc-if>
+<sc-if value="{{ single }}" hint-placeholder-val="{{ false }}">
+<div style="padding:18px 14px 0;display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+<span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">취소할 상품</span>
+<span style="flex:none;font:400 12px/1 Pretendard,sans-serif;color:#737373">26.09.22 (화) 주문</span>
+</div>
+</sc-if>
+
+<sc-for list="{{ items }}" as="it" hint-placeholder-count="2">
+<div style="padding:14px 14px 0;border-top:{{ it.divider }};margin-top:{{ it.gap }}">
+<div style="display:flex;gap:10px;align-items:flex-start">
+<sc-if value="{{ it.showCheck }}" hint-placeholder-val="{{ true }}">
+<div onClick="{{ it.toggle }}" style="flex:none;display:flex;padding:11px;margin:-11px -1px -11px -11px;cursor:pointer" style-active="opacity:.55">
+<span style="width:21px;height:21px;border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:{{ it.checkBg }};border:{{ it.checkBorder }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{ it.checkInk }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg></span>
+</div>
+</sc-if>
+<div style="width:64px;height:64px;border-radius:4px;background:{{ it.thumb }};flex:none;opacity:{{ it.op }}"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 11.5px/1.35 Pretendard,sans-serif;color:#737373">{{ it.brand }}</div>
+<div style="margin-top:3px;font:400 13.5px/1.45 Pretendard,sans-serif;color:{{ it.nameColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.name }}</div>
+<div style="margin-top:6px;display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+<span style="font:400 12px/1.4 Pretendard,sans-serif;color:#737373;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.option }}</span>
+<span style="flex:none;font:700 14px/1 Pretendard,sans-serif;letter-spacing:-.2px;color:{{ it.nameColor }}">{{ it.price }}</span>
+</div>
+</div>
+</div>
+<sc-if value="{{ it.showQty }}" hint-placeholder-val="{{ false }}">
+<div style="padding:12px 0 0 {{ it.qtyPad }};display:flex;align-items:center;justify-content:space-between;gap:10px">
+<span style="font:500 12.5px/1 Pretendard,sans-serif;color:#3C3C3C">취소 수량</span>
+<div style="flex:none;display:flex;align-items:center;border:1px solid #E3E3E5;border-radius:8px;overflow:hidden">
+<div onClick="{{ it.dec }}" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer" style-active="background:#F7F7F8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{ it.decInk }}" stroke-width="2.4" stroke-linecap="round" style="display:block"><path d="M6 12h12"></path></svg></div>
+<span style="min-width:30px;text-align:center;font:600 14px/1 Pretendard,sans-serif">{{ it.qty }}</span>
+<div onClick="{{ it.inc }}" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer" style-active="background:#F7F7F8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{ it.incInk }}" stroke-width="2.4" stroke-linecap="round" style="display:block"><path d="M12 6v12"></path><path d="M6 12h12"></path></svg></div>
+</div>
+</div>
+</sc-if>
+<div style="height:14px"></div>
+</div>
+</sc-for>
+
+<div style="height:5px;background:#F7F7F8;margin-top:6px"></div>
+
+<div style="padding:18px 14px 0">
+<div style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">취소 사유</div>
+<div style="margin-top:6px">
+<sc-for list="{{ reasons }}" as="o" hint-placeholder-count="4">
+<div onClick="{{ o.pick }}" style="display:flex;align-items:center;gap:11px;min-height:44px;cursor:pointer" style-active="opacity:.55">
+<span style="width:20px;height:20px;border-radius:50%;flex:none;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:{{ o.dotBg }};border:{{ o.dotBorder }}"><i style="width:7px;height:7px;border-radius:50%;background:{{ o.dotInner }}"></i></span>
+<span style="flex:1;min-width:0;font:{{ o.font }};color:{{ o.color }};text-wrap:pretty">{{ o.label }}</span>
+</div>
+</sc-for>
+</div>
+<sc-if value="{{ isEtc }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:4px;min-height:80px;border:1px solid #E3E3E5;border-radius:8px;padding:12px;font:400 13.5px/1.65 Pretendard,sans-serif;color:#B5B5B5;text-wrap:pretty">취소 사유를 적어주세요</div>
+</sc-if>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+
+<div style="padding:18px 14px 0;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">환불 정보</div>
+<div style="margin:14px 14px 0;padding-bottom:14px;border-bottom:.5px solid #F0F0F0;display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+<span style="font:600 14px/1 Pretendard,sans-serif">환불 예정 금액</span>
+<span style="font:700 17px/1 Pretendard,sans-serif;letter-spacing:-.4px">{{ refund }}</span>
+</div>
+<div style="padding:8px 14px 0;display:flex;justify-content:space-between;gap:12px"><span style="flex:none;font:400 12.5px/1.5 Pretendard,sans-serif;color:#737373">배송비</span><span style="flex:1;text-align:right;font:400 12.5px/1.5 Pretendard,sans-serif;color:#3C3C3C">{{ shipLine }}</span></div>
+<div style="padding:16px 14px 0;display:grid;gap:7px">
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">결제 수단으로 결제 취소되며, 카드사 처리에 2~3영업일이 더 걸릴 수 있어요.</span></div>
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">일부 상품만 취소해 남은 금액이 무료배송 기준 미만이 되면 배송비가 환불 금액에서 차감돼요.</span></div>
+</div>
+
+<div style="height:26px"></div>
+
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:12px 14px 26px;background:#fff">
+<div onClick="{{ openConfirm }}" style="height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:{{ ctaBg }};color:{{ ctaColor }};font:600 15.5px/1 Pretendard,sans-serif;cursor:{{ ctaCursor }}" style-active="opacity:{{ ctaPress }}">{{ ctaLabel }}</div>
+</div>
+
+<sc-if value="{{ confirmOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeConfirm }}" style="position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:10;display:flex;align-items:center;justify-content:center;padding:0 32px">
+<div onClick="{{ stop }}" style="width:100%;background:#fff;border-radius:8px;overflow:hidden">
+<div style="padding:26px 22px 6px">
+<div style="font:700 16.5px/1.5 Pretendard,sans-serif;letter-spacing:-.3px;text-align:center">주문을 취소할까요?</div>
+<div style="margin-top:6px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-align:center">{{ confirmSub }}</div>
+<div onClick="{{ toggleRecart }}" style="margin:14px 0 0;display:flex;align-items:center;justify-content:center;gap:9px;min-height:44px;cursor:pointer" style-active="opacity:.55">
+<span style="width:21px;height:21px;border-radius:50%;flex:none;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:{{ recartBg }};border:{{ recartBorder }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{ recartCheck }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg></span>
+<span style="font:400 14px/1.4 Pretendard,sans-serif;color:#3C3C3C">장바구니에 다시 담기</span>
+</div>
+</div>
+<div style="display:flex;gap:8px;padding:12px 18px 18px">
+<div onClick="{{ closeConfirm }}" style="flex:1;height:48px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">닫기</div>
+<div onClick="{{ submitCancel }}" style="flex:1;height:48px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">취소하기</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ doneOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:11;background:#fff;display:flex;flex-direction:column">
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 4px 0 16px">
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">주문 취소</span>
+<div onClick="{{ closeDone }}" style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" style="display:block"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></div>
+</div>
+</div>
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+<div style="padding:24px 14px 20px">
+<div style="font:700 19px/1.45 Pretendard,sans-serif;letter-spacing:-.4px">주문이 취소되었어요</div>
+<div style="margin-top:6px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">환불은 결제 수단으로 바로 진행돼요.</div>
+<sc-if value="{{ recart }}" hint-placeholder-val="{{ true }}">
+<div style="margin-top:12px;display:flex;align-items:center;gap:6px;font:500 12.5px/1.4 Pretendard,sans-serif;color:#3C3C3C"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3C3C3C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg>취소한 상품을 장바구니에 다시 담았어요</div>
+</sc-if>
+</div>
+<div style="height:5px;background:#F7F7F8"></div>
+<div style="padding:18px 14px 0;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">환불 정보</div>
+<div style="padding:14px 14px 0;display:flex;justify-content:space-between;gap:12px"><span style="font:400 13.5px/1.4 Pretendard,sans-serif;color:#3C3C3C">취소 상품 금액</span><span style="font:400 13.5px/1.4 Pretendard,sans-serif">{{ itemSum }}</span></div>
+<div style="margin:10px 14px 0;padding-top:12px;border-top:.5px solid #F0F0F0;display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span style="font:600 14px/1 Pretendard,sans-serif">환불 예정 금액</span><span style="font:700 17px/1 Pretendard,sans-serif;letter-spacing:-.4px">{{ refund }}</span></div>
+<div style="padding:9px 14px 0;display:flex;justify-content:space-between;gap:12px"><span style="font:400 12.5px/1.5 Pretendard,sans-serif;color:#737373">환불 수단</span><span style="font:400 12.5px/1.5 Pretendard,sans-serif;color:#3C3C3C">카카오페이</span></div>
+<div style="height:5px;background:#F7F7F8;margin-top:18px"></div>
+<div style="padding:18px 14px 4px;display:flex;align-items:baseline;gap:6px"><span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">취소 상품</span><span style="font:700 15px/1 Pretendard,sans-serif;color:#737373">{{ doneCount }}</span></div>
+<sc-for list="{{ doneItems }}" as="d" hint-placeholder-count="1">
+<div style="display:flex;gap:12px;align-items:center;padding:12px 14px 0">
+<div style="width:72px;height:72px;border-radius:4px;background:{{ d.thumb }};flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:600 12px/1.3 Pretendard,sans-serif;color:#3C3C3C">{{ d.brand }}</div>
+<div style="margin-top:3px;font:400 13.5px/1.4 Pretendard,sans-serif;color:#2E2E2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ d.name }}</div>
+<div style="margin-top:3px;font:400 12px/1.4 Pretendard,sans-serif;color:#737373">{{ d.meta }}</div>
+<div style="margin-top:5px;font:700 14px/1 Pretendard,sans-serif;letter-spacing:-.2px">{{ d.price }}</div>
+</div>
+</div>
+</sc-for>
+<div style="padding:16px 14px 0;display:flex;gap:8px">
+<div style="flex:1;height:44px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 13.5px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">취소 상세</div>
+<div style="flex:1;height:44px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 13.5px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">주문 내역으로</div>
+</div>
+<div style="padding:16px 14px 26px;display:grid;gap:7px">
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">결제 시 사용한 쿠폰·적립금은 즉시 반환돼요.</span></div>
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">결제 수단별로 환불에 2~3영업일이 더 걸릴 수 있어요.</span></div>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+<p class="dv-note"><b>확인 모달 + 장바구니 다시 담기</b> — 사유를 고르고 [취소 요청하기]를 누르면 확인 모달이 뜹니다(눌러 보세요). 모달의 역할은 재확인보다 <b>"장바구니에 다시 담기"</b> 선택입니다 — 취소 사유의 상당수가 옵션·수량 실수나 결제 수단 변경이라, 취소와 동시에 다시 담아 두면 재주문까지 한 번에 이어집니다. 기본값은 체크. 버튼은 [닫기](좌 · 중립) / [취소 요청하기](우 · 로즈) — 모달 안에서 "취소"가 두 번 나오면 어느 쪽이 주문 취소인지 헷갈리므로 닫기 버튼을 "닫기"로 둡니다.<br><br><b>취소 완료 화면</b> — 결제완료 단계는 브랜드가 아직 준비를 시작하지 않아 <b>즉시 취소</b>됩니다. 그래서 버튼은 "취소하기", 완료 화면 제목은 <b>"주문이 취소되었어요"</b>입니다. 환불 정보 → 취소 상품 → [취소 상세] [주문 내역으로] → 안내 순이고, 장바구니에 다시 담았으면 제목 아래 한 줄로 알립니다. 닫기는 우상단 X — 뒤로가기를 두면 방금 끝난 취소 폼으로 돌아가게 됩니다. 브랜드 승인이 필요한 상품준비중은 <a class="dv-oid" href="#1c">1c</a>에서 따로 다룹니다.<br><br><b>반품·교환 요청과 같은 페이지 문법</b> — 대상 상품 → 사유 → 금액 → 하단 고정 CTA. 같은 종류의 요청을 같은 방식으로 열어, 사용자가 한 번 배운 흐름을 그대로 씁니다.<br><br><b>부분 취소</b> — 주문에 상품이 여러 개면 <b>체크로 고르고</b>, 선택한 상품이 2개 이상 수량이면 <b>취소 수량 스테퍼</b>가 붙습니다(체크를 풀었다 켜 보세요). 진입한 항목은 미리 체크됩니다. 체크를 푼 상품은 흐리게 낮춰, 무엇이 취소 대상인지 한눈에 갈립니다.<br><br><b>환불 금액이 실시간으로 바뀝니다</b> — 선택·수량에 따라 상품 금액과 <b>배송비 재계산</b>을 즉시 보여줍니다. 전체 취소면 배송비도 환불되고, 부분 취소로 남은 금액이 무료배송 기준 아래로 내려가면 <b>배송비가 환불되지 않는다</b>는 점을 줄에 적습니다 — 확정 후에 알게 되면 분쟁이 됩니다. 발송 전이라 <b>공제는 없습니다</b>.<br><br><b>구성</b> — 전체 선택 → 상품 체크 → <b>취소 사유 라디오 목록</b>(시트를 열지 않고 한 화면에서 고름 — 선택지가 4개뿐이라 펼쳐 두는 편이 한 번 덜 누릅니다) → 환불 정보 → 안내 → 하단 [취소 요청하기 (N개)]. 버튼 라벨에 <b>선택 개수</b>를 넣어 무엇을 취소하는지 누르기 직전에 한 번 더 확인시킵니다. 라디오는 C9 결제 수단과 같은 로즈 원입니다.<br><br><b>상품이 1개인 주문</b> — [상품 수: 1개]로 전환합니다. 고를 것이 없으므로 <b>전체 선택과 체크박스를 없애고</b> "취소할 상품" 제목 아래 상품만 보여줍니다 — 풀 수 없는 체크를 두면 눌러도 반응이 없어 고장처럼 보입니다. 이 경우는 항상 전체 취소라 배송비도 함께 환불됩니다.<br><br><b>배송비가 있는 주문</b> — 위 [배송비 있음]으로 전환합니다(22,900원 주문 · 배송비 3,000원). <b>전체 취소</b>면 배송비까지 함께 환불하고, <b>일부만 취소</b>하면 남은 상품이 그대로 배송되므로 배송비는 돌려주지 않고 그 이유를 배송비 줄에 적습니다. 두 경우 모두 환불 예정 금액에 즉시 반영됩니다.<br><br>사유를 고르기 전까지는 버튼 라벨이 막힌 이유를 말합니다.<br><br><b>남은 결정</b> — ① 부분 취소 시 공구 할인 조건(최소 수량) 재적용 여부 ② 무통장 결제 시 환불 계좌 입력 ③ 결제완료 즉시 취소의 PG 환불 소요 안내 문구.</p>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>주문 취소 — 상품준비중 (브랜드 승인 필요)</div>
+<div class="dv-sw"><span class="dv-swl">상품 수</span>
+<sc-for list="{{ countSw }}" as="s" hint-placeholder-count="2">
+<span onClick="{{ s.pick }}" style="padding:6px 10px;border-radius:100px;cursor:pointer;background:{{ s.bg }};color:{{ s.color }};border:1px solid {{ s.border }};font:{{ s.font }}">{{ s.label }}</span>
+</sc-for>
+<span class="dv-swl" style="margin-left:8px">배송비</span>
+<sc-for list="{{ shipSw }}" as="s" hint-placeholder-count="2">
+<span onClick="{{ s.pick }}" style="padding:6px 10px;border-radius:100px;cursor:pointer;background:{{ s.bg }};color:{{ s.color }};border:1px solid {{ s.border }};font:{{ s.font }}">{{ s.label }}</span>
+</sc-for>
+</div>
+<div class="dv-card">
+<div data-screen-label="C10-4b 주문 취소 요청 (상품준비중)" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">주문 취소</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<sc-if value="{{ multi }}" hint-placeholder-val="{{ true }}">
+<div style="padding:16px 14px 2px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+<div onClick="{{ toggleAll }}" style="display:flex;align-items:center;gap:10px;padding:11px;margin:-11px;cursor:pointer" style-active="opacity:.55">
+<span style="width:21px;height:21px;border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:{{ allBg }};border:{{ allBorder }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{ allInk }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg></span>
+<span style="font:600 14px/1 Pretendard,sans-serif">전체 선택</span>
+</div>
+<span style="flex:none;font:400 12px/1 Pretendard,sans-serif;color:#737373">26.09.22 (화) 주문</span>
+</div>
+</sc-if>
+<sc-if value="{{ single }}" hint-placeholder-val="{{ false }}">
+<div style="padding:18px 14px 0;display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+<span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">취소할 상품</span>
+<span style="flex:none;font:400 12px/1 Pretendard,sans-serif;color:#737373">26.09.22 (화) 주문</span>
+</div>
+</sc-if>
+
+<sc-for list="{{ items }}" as="it" hint-placeholder-count="2">
+<div style="padding:14px 14px 0;border-top:{{ it.divider }};margin-top:{{ it.gap }}">
+<div style="display:flex;gap:10px;align-items:flex-start">
+<sc-if value="{{ it.showCheck }}" hint-placeholder-val="{{ true }}">
+<div onClick="{{ it.toggle }}" style="flex:none;display:flex;padding:11px;margin:-11px -1px -11px -11px;cursor:pointer" style-active="opacity:.55">
+<span style="width:21px;height:21px;border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:{{ it.checkBg }};border:{{ it.checkBorder }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{ it.checkInk }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg></span>
+</div>
+</sc-if>
+<div style="width:64px;height:64px;border-radius:4px;background:{{ it.thumb }};flex:none;opacity:{{ it.op }}"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 11.5px/1.35 Pretendard,sans-serif;color:#737373">{{ it.brand }}</div>
+<div style="margin-top:3px;font:400 13.5px/1.45 Pretendard,sans-serif;color:{{ it.nameColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.name }}</div>
+<div style="margin-top:6px;display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+<span style="font:400 12px/1.4 Pretendard,sans-serif;color:#737373;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.option }}</span>
+<span style="flex:none;font:700 14px/1 Pretendard,sans-serif;letter-spacing:-.2px;color:{{ it.nameColor }}">{{ it.price }}</span>
+</div>
+</div>
+</div>
+<sc-if value="{{ it.showQty }}" hint-placeholder-val="{{ false }}">
+<div style="padding:12px 0 0 {{ it.qtyPad }};display:flex;align-items:center;justify-content:space-between;gap:10px">
+<span style="font:500 12.5px/1 Pretendard,sans-serif;color:#3C3C3C">취소 수량</span>
+<div style="flex:none;display:flex;align-items:center;border:1px solid #E3E3E5;border-radius:8px;overflow:hidden">
+<div onClick="{{ it.dec }}" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer" style-active="background:#F7F7F8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{ it.decInk }}" stroke-width="2.4" stroke-linecap="round" style="display:block"><path d="M6 12h12"></path></svg></div>
+<span style="min-width:30px;text-align:center;font:600 14px/1 Pretendard,sans-serif">{{ it.qty }}</span>
+<div onClick="{{ it.inc }}" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer" style-active="background:#F7F7F8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{ it.incInk }}" stroke-width="2.4" stroke-linecap="round" style="display:block"><path d="M12 6v12"></path><path d="M6 12h12"></path></svg></div>
+</div>
+</div>
+</sc-if>
+<div style="height:14px"></div>
+</div>
+</sc-for>
+
+<div style="height:5px;background:#F7F7F8;margin-top:6px"></div>
+
+<div style="padding:18px 14px 0">
+<div style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">취소 사유</div>
+<div style="margin-top:6px">
+<sc-for list="{{ reasons }}" as="o" hint-placeholder-count="4">
+<div onClick="{{ o.pick }}" style="display:flex;align-items:center;gap:11px;min-height:44px;cursor:pointer" style-active="opacity:.55">
+<span style="width:20px;height:20px;border-radius:50%;flex:none;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:{{ o.dotBg }};border:{{ o.dotBorder }}"><i style="width:7px;height:7px;border-radius:50%;background:{{ o.dotInner }}"></i></span>
+<span style="flex:1;min-width:0;font:{{ o.font }};color:{{ o.color }};text-wrap:pretty">{{ o.label }}</span>
+</div>
+</sc-for>
+</div>
+<sc-if value="{{ isEtc }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:4px;min-height:80px;border:1px solid #E3E3E5;border-radius:8px;padding:12px;font:400 13.5px/1.65 Pretendard,sans-serif;color:#B5B5B5;text-wrap:pretty">취소 사유를 적어주세요</div>
+</sc-if>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+
+<div style="padding:18px 14px 0;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">환불 정보</div>
+<div style="margin:14px 14px 0;padding-bottom:14px;border-bottom:.5px solid #F0F0F0;display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+<span style="font:600 14px/1 Pretendard,sans-serif">환불 예정 금액</span>
+<span style="font:700 17px/1 Pretendard,sans-serif;letter-spacing:-.4px">{{ refund }}</span>
+</div>
+<div style="padding:8px 14px 0;display:flex;justify-content:space-between;gap:12px"><span style="flex:none;font:400 12.5px/1.5 Pretendard,sans-serif;color:#737373">배송비</span><span style="flex:1;text-align:right;font:400 12.5px/1.5 Pretendard,sans-serif;color:#3C3C3C">{{ shipLine }}</span></div>
+<div style="padding:16px 14px 0;display:grid;gap:7px">
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">브랜드가 배송 준비를 시작해 이미 발송된 경우, 취소 요청이 거절되고 주문하신 상품을 받으실 수 있어요.</span></div>
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">결제 수단으로 결제 취소되며, 카드사 처리에 2~3영업일이 더 걸릴 수 있어요.</span></div>
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">일부 상품만 취소해 남은 금액이 무료배송 기준 미만이 되면 배송비가 환불 금액에서 차감돼요.</span></div>
+</div>
+
+<div style="height:26px"></div>
+
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:12px 14px 26px;background:#fff">
+<div onClick="{{ openConfirm2 }}" style="height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:{{ ctaBg }};color:{{ ctaColor }};font:600 15.5px/1 Pretendard,sans-serif;cursor:{{ ctaCursor }}" style-active="opacity:{{ ctaPress }}">{{ ctaLabel2 }}</div>
+</div>
+
+<sc-if value="{{ confirmOpen2 }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeConfirm2 }}" style="position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:10;display:flex;align-items:center;justify-content:center;padding:0 32px">
+<div onClick="{{ stop }}" style="width:100%;background:#fff;border-radius:8px;overflow:hidden">
+<div style="padding:26px 22px 6px">
+<div style="font:700 16.5px/1.5 Pretendard,sans-serif;letter-spacing:-.3px;text-align:center">주문을 취소할까요?</div>
+<div style="margin-top:6px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-align:center">{{ confirmSub }}</div>
+<div onClick="{{ toggleRecart }}" style="margin:14px 0 0;display:flex;align-items:center;justify-content:center;gap:9px;min-height:44px;cursor:pointer" style-active="opacity:.55">
+<span style="width:21px;height:21px;border-radius:50%;flex:none;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:{{ recartBg }};border:{{ recartBorder }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{ recartCheck }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg></span>
+<span style="font:400 14px/1.4 Pretendard,sans-serif;color:#3C3C3C">장바구니에 다시 담기</span>
+</div>
+</div>
+<div style="display:flex;gap:8px;padding:12px 18px 18px">
+<div onClick="{{ closeConfirm2 }}" style="flex:1;height:48px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">닫기</div>
+<div onClick="{{ submitCancel2 }}" style="flex:1;height:48px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">취소 요청하기</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ doneOpen2 }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:11;background:#fff;display:flex;flex-direction:column">
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 4px 0 16px">
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">주문 취소</span>
+<div onClick="{{ closeDone2 }}" style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" style="display:block"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></div>
+</div>
+</div>
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+<div style="padding:24px 14px 20px">
+<div style="font:700 19px/1.45 Pretendard,sans-serif;letter-spacing:-.4px">취소 요청이 접수되었어요</div>
+<div style="margin-top:6px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">브랜드가 확인하면 취소가 완료되고 알림으로 알려드려요.</div>
+<sc-if value="{{ recart }}" hint-placeholder-val="{{ true }}">
+<div style="margin-top:12px;display:flex;align-items:center;gap:6px;font:500 12.5px/1.4 Pretendard,sans-serif;color:#3C3C3C"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3C3C3C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg>취소한 상품을 장바구니에 다시 담았어요</div>
+</sc-if>
+</div>
+<div style="height:5px;background:#F7F7F8"></div>
+<div style="padding:18px 14px 0;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">환불 정보</div>
+<div style="padding:14px 14px 0;display:flex;justify-content:space-between;gap:12px"><span style="font:400 13.5px/1.4 Pretendard,sans-serif;color:#3C3C3C">취소 상품 금액</span><span style="font:400 13.5px/1.4 Pretendard,sans-serif">{{ itemSum }}</span></div>
+<div style="margin:10px 14px 0;padding-top:12px;border-top:.5px solid #F0F0F0;display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span style="font:600 14px/1 Pretendard,sans-serif">환불 예정 금액</span><span style="font:700 17px/1 Pretendard,sans-serif;letter-spacing:-.4px">{{ refund }}</span></div>
+<div style="padding:9px 14px 0;display:flex;justify-content:space-between;gap:12px"><span style="font:400 12.5px/1.5 Pretendard,sans-serif;color:#737373">환불 수단</span><span style="font:400 12.5px/1.5 Pretendard,sans-serif;color:#3C3C3C">카카오페이</span></div>
+<div style="height:5px;background:#F7F7F8;margin-top:18px"></div>
+<div style="padding:18px 14px 4px;display:flex;align-items:baseline;gap:6px"><span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">취소 상품</span><span style="font:700 15px/1 Pretendard,sans-serif;color:#737373">{{ doneCount }}</span></div>
+<sc-for list="{{ doneItems }}" as="d" hint-placeholder-count="1">
+<div style="display:flex;gap:12px;align-items:center;padding:12px 14px 0">
+<div style="width:72px;height:72px;border-radius:4px;background:{{ d.thumb }};flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:600 12px/1.3 Pretendard,sans-serif;color:#3C3C3C">{{ d.brand }}</div>
+<div style="margin-top:3px;font:400 13.5px/1.4 Pretendard,sans-serif;color:#2E2E2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ d.name }}</div>
+<div style="margin-top:3px;font:400 12px/1.4 Pretendard,sans-serif;color:#737373">{{ d.meta }}</div>
+<div style="margin-top:5px;font:700 14px/1 Pretendard,sans-serif;letter-spacing:-.2px">{{ d.price }}</div>
+</div>
+</div>
+</sc-for>
+<div style="padding:16px 14px 0;display:flex;gap:8px">
+<div style="flex:1;height:44px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 13.5px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">취소 상세</div>
+<div style="flex:1;height:44px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 13.5px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">주문 내역으로</div>
+</div>
+<div style="padding:16px 14px 26px;display:grid;gap:7px">
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">브랜드가 이미 발송한 경우 취소 요청이 거절될 수 있어요.</span></div>
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">결제 수단별로 환불에 2~3영업일이 더 걸릴 수 있어요.</span></div>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+<p class="dv-note"><b>상품준비중은 즉시 취소가 아니라 요청</b> — 브랜드가 포장·출고를 시작한 뒤라 <b>브랜드 승인 후 확정</b>됩니다. 화면 구성은 결제완료(<a class="dv-oid" href="#1b">1b</a>)와 같고 달라지는 곳은 세 군데뿐입니다 — ① 안내 첫 줄에 <b>이미 발송되면 거절될 수 있다</b>는 점 ② 버튼 라벨 <b>"취소 요청하기"</b> ③ 완료 화면 제목 <b>"취소 요청이 접수되었어요"</b>. "완료"라고 쓰면 거절됐을 때 약속을 어긴 셈이 되므로 끝까지 "요청"으로 표현합니다. 접수 후에는 <a class="dv-oid" href="#1d">1d</a> 승인 대기 상태로 넘어갑니다.</p>
+</div>
+
+<div class="dv-opt" id="1d">
+<div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>C10-5 취소 상세 — 확인 중 · 승인 · 반려</div>
+<div class="dv-sw"><span class="dv-swl">상태</span>
+<sc-for list="{{ apSw }}" as="s" hint-placeholder-count="3">
+<span onClick="{{ s.pick }}" style="padding:6px 10px;border-radius:100px;cursor:pointer;background:{{ s.bg }};color:{{ s.color }};border:1px solid {{ s.border }};font:{{ s.font }}">{{ s.label }}</span>
+</sc-for>
+</div>
+<sc-if value="{{ apRejected }}" hint-placeholder-val="{{ false }}">
+<div class="dv-sw"><span class="dv-swl">반려 사유</span>
+<sc-for list="{{ rjSw }}" as="s" hint-placeholder-count="4">
+<span onClick="{{ s.pick }}" style="padding:6px 10px;border-radius:100px;cursor:pointer;background:{{ s.bg }};color:{{ s.color }};border:1px solid {{ s.border }};font:{{ s.font }}">{{ s.label }}</span>
+</sc-for>
+</div>
+</sc-if>
+<div class="dv-card">
+<div data-screen-label="C10-5 취소 요청 상세" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">취소 상세</span>
+</div>
+</div>
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+<div style="padding:22px 14px 18px;display:flex;align-items:flex-end;gap:12px">
+<div style="flex:1;min-width:0">
+<div style="font:700 19px/1.3 Pretendard,sans-serif;letter-spacing:-.4px">26.09.14(월) 10:42</div>
+<div style="margin-top:7px;font:400 12.5px/1.4 Pretendard,sans-serif;color:#737373">주문번호 20260912-0418</div>
+</div>
+<span style="flex:none;padding:12px 0;margin:-12px 0;font:500 12.5px/1.4 Pretendard,sans-serif;color:#737373;text-decoration:underline;text-underline-offset:3px;cursor:pointer">주문 상세</span>
+</div>
+<div style="height:5px;background:#F7F7F8"></div>
+<div style="padding:18px 14px 0;display:flex;align-items:baseline;gap:6px"><span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">취소 상품</span><span style="font:700 15px/1 Pretendard,sans-serif;color:#737373">1개</span></div>
+<div style="padding:16px 14px 0;font:600 12.5px/1 Pretendard,sans-serif;color:{{ apStatusColor }}">{{ apStatus }}</div>
+<div style="display:flex;gap:12px;align-items:center;padding:12px 14px 0">
+<div style="width:72px;height:72px;border-radius:4px;background:linear-gradient(135deg,#F1E7EA,#DCCCD3);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:600 12px/1.3 Pretendard,sans-serif;color:#3C3C3C">라보에이치</div>
+<div style="margin-top:3px;font:400 13.5px/1.4 Pretendard,sans-serif;color:#2E2E2E">진정 토너 패드 60매</div>
+<div style="margin-top:3px;font:400 12px/1.4 Pretendard,sans-serif;color:#737373">2개 묶음 / 1개</div>
+<div style="margin-top:5px;font:700 14px/1 Pretendard,sans-serif;letter-spacing:-.2px">17,500원</div>
+</div>
+</div>
+<sc-if value="{{ apShowSub }}" hint-placeholder-val="{{ true }}">
+<div style="margin:14px 14px 0;padding:12px 13px;border-radius:8px;background:#F7F7F8;font:400 12.5px/1.6 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">{{ apSub }}</div>
+</sc-if>
+<div style="padding:12px 14px 0">
+<div onClick="{{ apAction }}" style="height:44px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 13.5px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">{{ apActionLabel }}</div>
+</div>
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+<div style="padding:18px 14px 8px;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">취소 신청 정보</div>
+<div style="padding:0 14px">
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:62px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">신청 일시</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:#0F0F0F">2026-09-14 10:42:18</span></div>
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:62px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">{{ apDoneLabel }}</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:{{ apDoneColor }}">{{ apDoneAt }}</span></div>
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:62px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">취소 사유</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:#0F0F0F">단순 변심</span></div>
+<sc-if value="{{ apRejected }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:62px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">반려 사유</span><span style="flex:1;min-width:0;font:600 13.5px/1.5 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">{{ rjReason }}</span></div>
+<sc-if value="{{ rjHasDetail }}" hint-placeholder-val="{{ false }}">
+<div style="margin:6px 0 2px;padding:12px 13px;border-radius:8px;background:#F7F7F8">
+<div style="font:600 12px/1 Pretendard,sans-serif;color:#3C3C3C">라보에이치의 메시지</div>
+<div style="margin-top:7px;font:400 13px/1.65 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">{{ rjDetail }}</div>
+</div>
+</sc-if>
+</sc-if>
+</div>
+<div style="height:5px;background:#F7F7F8;margin-top:14px"></div>
+<div style="padding:18px 14px 0;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">환불 정보</div>
+<div style="padding:14px 14px 0;display:flex;justify-content:space-between;gap:12px"><span style="flex:none;font:400 13.5px/1.4 Pretendard,sans-serif;color:#3C3C3C">결제 금액</span><span style="flex:1;min-width:0;text-align:right;font:400 13.5px/1.4 Pretendard,sans-serif">17,500원</span></div>
+<div style="margin:12px 14px 0;padding-top:12px;border-top:.5px solid #F0F0F0;display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span style="flex:none;font:600 14px/1 Pretendard,sans-serif">{{ apRefundLabel }}</span><span style="flex:1;min-width:0;text-align:right;font:700 17px/1 Pretendard,sans-serif;letter-spacing:-.4px;color:{{ apRefundColor }}">{{ apRefund }}</span></div>
+<div style="padding:9px 14px 0;display:flex;justify-content:space-between;gap:12px"><span style="flex:none;font:400 12.5px/1.5 Pretendard,sans-serif;color:#737373">환불 수단</span><span style="flex:1;min-width:0;text-align:right;font:400 12.5px/1.5 Pretendard,sans-serif;color:#3C3C3C">카카오페이</span></div>
+<div style="padding:18px 14px 26px;display:grid;gap:7px">
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">{{ apNote }}</span></div>
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">주문 시 사용한 쿠폰·적립금은 취소 완료 즉시 반환돼요.</span></div>
+</div>
+</div>
+<sc-if value="{{ withdrawOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeWithdraw }}" style="position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:10;display:flex;align-items:center;justify-content:center;padding:0 32px">
+<div style="width:100%;background:#fff;border-radius:8px;overflow:hidden">
+<div style="padding:26px 22px 20px;text-align:center">
+<div style="font:700 16.5px/1.5 Pretendard,sans-serif;letter-spacing:-.3px">취소 요청을 철회할까요?</div>
+<div style="margin-top:9px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">철회하면 주문이 그대로 진행되고<br>상품이 발송돼요.</div>
+</div>
+<div style="display:flex;gap:8px;padding:0 18px 18px">
+<div onClick="{{ closeWithdraw }}" style="flex:1;height:48px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">닫기</div>
+<div onClick="{{ closeWithdraw }}" style="flex:1;height:48px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">철회하기</div>
+</div>
+</div>
+</div>
+</sc-if>
+</div>
+</div>
+<p class="dv-note"><b>취소 상세 — 참고 화면 구성</b> — 주문 일시(19/700) + 주문번호 + 우측 [주문 상세] 링크 → <b>취소 상품 N개</b>(상품 위에 상태 라벨) → 상품 아래 행동 버튼 → <b>취소 신청 정보</b>(신청 일시 · 완료/반려 일시 · 취소 사유, 라벨 열 62 고정) → 환불 정보 → 안내. 위 [상태]로 확인 중 / 승인 / 반려를 전환합니다. 결제완료 단계의 <b>즉시 취소</b>도 이 화면의 "승인" 상태와 같은 모습입니다(신청 일시 = 완료 일시).<br><br><b>상태별 차이</b> — <b>확인 중</b>: 상태 라벨 로즈(사용자가 철회할 수 있는 상태) · 회색 안내 박스 · 완료 일시 자리는 "브랜드 확인 후 표시돼요"(회색) · 버튼 [취소 요청 철회](확인 모달). <b>승인</b>: 라벨 "취소 완료"(회색) · 안내 박스 없음 · 금액 라벨 "환불 금액" · 버튼 [재구매]. <b>반려</b>: 라벨 "취소 반려" · 박스에 "주문은 그대로 배송돼요" · 취소 신청 정보에 <b>반려 사유</b> 행 추가 · 일시 라벨이 "반려 일시"로 바뀜 · 금액 0원(회색) · 버튼 [배송 조회] — 받은 뒤 반품으로 이어가는 길을 바로 엽니다.<br><br><b>반려 사유 — 어드민과 1:1 대응</b> — 브랜드 어드민의 거부 사유 4종(이미 포장·출고가 완료됨 / 택배사 집화가 완료됨 / 주문 제작·맞춤 상품 / 기타)을 <b>문구 그대로</b> 표시합니다(위 [반려 사유]로 전환). 어드민에서 입력한 <b>상세 사유</b>가 있으면 "브랜드명의 메시지" 회색 박스로 그 아래 답니다 — 기타는 상세 사유가 필수라 항상 박스가 붙고, 나머지는 선택 입력이라 있을 때만 보입니다. 브랜드가 쓴 문장이라 <b>본문에 섞지 않고 출처를 밝혔습니다</b>. 주문 제작·맞춤 상품은 반품도 제한될 수 있어 하단 안내 문구가 바뀝니다.<br><br>참고 화면과 달리 상단 우측 홈 아이콘은 두지 않았습니다 — 앱 전역에서 서브 화면은 뒤로가기 하나로 통일했습니다. 주문 내역 목록의 상태 라벨은 확인 중일 때 <b>"취소 요청중"</b>(회색)입니다.<br><br><b>남은 결정</b> — ① 브랜드 응답 기한(예: 1영업일)과 기한 초과 시 자동 승인 여부 ② 철회 가능 시점(브랜드 응답 전까지만) ③ 결과 알림 문구.</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;listState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;주문 있음&quot;,&quot;빈 상태&quot;],&quot;default&quot;:&quot;주문 있음&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;목록&quot;}}">
+class Component extends DCLogic {
+  state = { chip: '전체', on: { a: true, b: false }, qty: { a: 1, b: 2 }, reason: null, sheet: false, rtQty: 2, rtReason: null, rtDate: null, rtSheet: null, exOpt: null, exReason: null, exDate: null, exSheet: null, reqType: '반품' };
+
+  reqSheet(title, opts, value, onPick){
+    return {
+      title,
+      options: opts.map((o, i) => {
+        const label = typeof o === 'string' ? o : o.label;
+        const soldOut = typeof o === 'object' && !!o.soldOut;
+        const on = value === label;
+        return {
+          label, soldOut, showCheck: !soldOut,
+          checked: on ? 1 : 0,
+          bg: on ? '#FEF4F6' : '#fff',
+          press: soldOut ? '#fff' : '#F7F7F8',
+          cursor: soldOut ? 'default' : 'pointer',
+          divider: i === 0 ? 'none' : '.5px solid #F0F0F0',
+          font: (on ? '600' : '400') + ' 15px/1.35 Pretendard,sans-serif',
+          color: soldOut ? '#9E9E9E' : (on ? '#0F0F0F' : '#3C3C3C'),
+          pick: () => { if (!soldOut) onPick(label); }
+        };
+      })
+    };
+  }
+
+  reqVals(){
+    const S = this.state;
+    const DATES = ['가장 빠른 날 (09.25 금)', '09.28 (월)', '09.29 (화)', '09.30 (수)'];
+    const fmt = n => n.toLocaleString() + '원';
+    const q = S.rtQty;
+    const rtReady = !!S.rtReason && !!S.rtDate;
+    let rt = { title: '', options: [] };
+    if (S.rtSheet === 'reason') rt = this.reqSheet('반품 사유', ['단순 변심', '불량 · 파손', '오배송', '기타'], S.rtReason, v => this.setState({ rtReason: v, rtSheet: null }));
+    if (S.rtSheet === 'date') rt = this.reqSheet('회수 희망일', DATES, S.rtDate, v => this.setState({ rtDate: v, rtSheet: null }));
+
+    const OPTS = [{ label:'단품 1개' }, { label:'3개 묶음' }, { label:'리필 포함 세트', soldOut:true }, { label:'대용량 100매', soldOut:true }];
+    let ex = { title: '', options: [] };
+    if (S.exSheet === 'opt') ex = this.reqSheet('변경할 옵션', OPTS, S.exOpt, v => this.setState({ exOpt: v, exSheet: null }));
+    if (S.exSheet === 'reason') ex = this.reqSheet('교환 사유', ['단순 변심', '불량 · 파손', '오배송'], S.exReason, v => this.setState({ exReason: v, exSheet: null }));
+    if (S.exSheet === 'date') ex = this.reqSheet('회수 희망일', DATES, S.exDate, v => this.setState({ exDate: v, exSheet: null }));
+    const exReady = !!S.exOpt && !!S.exReason && !!S.exDate;
+
+    const ph = (v, t) => ({ l: v || t, c: v ? '#0F0F0F' : '#B5B5B5' });
+    const rR = ph(S.rtReason, '반품 사유를 선택해 주세요'), rD = ph(S.rtDate, '회수 희망일을 선택해 주세요');
+    const eO = ph(S.exOpt, '변경할 옵션을 선택해 주세요'), eR = ph(S.exReason, '교환 사유를 선택해 주세요'), eD = ph(S.exDate, '회수 희망일을 선택해 주세요');
+    const ctaStyle = ok => ({ bg: ok ? '#F2456E' : '#F4F4F5', color: ok ? '#fff' : '#B5B5B5', cursor: ok ? 'pointer' : 'default', press: ok ? '.75' : '1' });
+    const rc = ctaStyle(rtReady), ec = ctaStyle(exReady);
+    const isRet = S.reqType === '반품';
+    const TYPES = [{ label:'반품', desc:'상품을 돌려보내고 환불받기' }, { label:'교환', desc:'같은 상품의 다른 옵션으로 받기' }];
+    const typeCards = TYPES.map(t => {
+      const on = S.reqType === t.label;
+      return { label: t.label, desc: t.desc,
+        border: on ? '1px solid #F2456E' : '1px solid #E3E3E5', bg: on ? '#FEF4F6' : '#fff',
+        dotBg: on ? '#F2456E' : '#fff', dotBorder: on ? '1.5px solid #F2456E' : '1.5px solid #DEDEE0', dotInner: on ? '#fff' : 'transparent',
+        font: (on ? '700' : '600') + ' 14.5px/1.3 Pretendard,sans-serif',
+        pick: () => this.setState({ reqType: t.label }) };
+    });
+    const cur = isRet ? rc : ec;
+
+    return {
+      typeCards,
+      isReturn: isRet,
+      isExchange: !isRet,
+      addrLabel: isRet ? '수거지' : '수거지 · 재발송지',
+      rqCtaLabel: isRet
+        ? (rtReady ? '반품 요청하기' : (!S.rtReason ? '반품 사유를 선택해 주세요' : '회수 희망일을 선택해 주세요'))
+        : (exReady ? '교환 요청하기' : (!S.exOpt ? '변경할 옵션을 선택해 주세요' : (!S.exReason ? '교환 사유를 선택해 주세요' : '회수 희망일을 선택해 주세요'))),
+      rqCtaBg: cur.bg, rqCtaColor: cur.color, rqCtaCursor: cur.cursor, rqCtaPress: cur.press,
+      rtQty: String(q),
+      rtDec: () => { if (q > 1) this.setState({ rtQty: q - 1 }); },
+      rtInc: () => { if (q < 2) this.setState({ rtQty: q + 1 }); },
+      rtDecInk: q > 1 ? '#3C3C3C' : '#DEDEE0',
+      rtIncInk: q < 2 ? '#3C3C3C' : '#DEDEE0',
+      rtItemSum: fmt(17900 * q),
+      rtReasonLabel: rR.l, rtReasonColor: rR.c,
+      rtDateLabel: rD.l, rtDateColor: rD.c,
+      rtNeedPhoto: S.rtReason === '불량 · 파손' || S.rtReason === '오배송',
+      rtOpenReason: () => this.setState({ rtSheet: 'reason' }),
+      rtOpenDate: () => this.setState({ rtSheet: 'date' }),
+      rtSheetOpen: !!S.rtSheet,
+      rtCloseSheet: () => this.setState({ rtSheet: null }),
+      rtSheetTitle: rt.title, rtSheetOptions: rt.options,
+      rtCtaLabel: rtReady ? '반품 요청하기' : (!S.rtReason ? '반품 사유를 선택해 주세요' : '회수 희망일을 선택해 주세요'),
+      rtCtaBg: rc.bg, rtCtaColor: rc.color, rtCtaCursor: rc.cursor, rtCtaPress: rc.press,
+
+      exOptLabel: eO.l, exOptColor: eO.c,
+      exReasonLabel: eR.l, exReasonColor: eR.c,
+      exDateLabel: eD.l, exDateColor: eD.c,
+      exOpenOpt: () => this.setState({ exSheet: 'opt' }),
+      exOpenReason: () => this.setState({ exSheet: 'reason' }),
+      exOpenDate: () => this.setState({ exSheet: 'date' }),
+      exSheetOpen: !!S.exSheet,
+      exCloseSheet: () => this.setState({ exSheet: null }),
+      exSheetTitle: ex.title, exSheetOptions: ex.options,
+      exCtaLabel: exReady ? '교환 요청하기' : (!S.exOpt ? '변경할 옵션을 선택해 주세요' : (!S.exReason ? '교환 사유를 선택해 주세요' : '회수 희망일을 선택해 주세요')),
+      exCtaBg: ec.bg, exCtaColor: ec.color, exCtaCursor: ec.cursor, exCtaPress: ec.press
+    };
+  }
+
+
+  cancelVals(){
+    const shipCase = this.state.shipCase ?? '무료배송';
+    const oneItem = (this.state.itemCount ?? '2개') === '1개';
+    const ALL_ITEMS = shipCase === '배송비 있음' ? [
+      { k:'a', brand:'라보에이치', name:'마일드 클렌징 폼 150ml', option:'단품', max:1, unit:14000, thumb:'linear-gradient(135deg,#E7ECE8,#CCD6CF)' },
+      { k:'b', brand:'라보에이치', name:'수분 립밤 4.5g', option:'단품', max:1, unit:8900, thumb:'linear-gradient(135deg,#F1E7EA,#DCCCD3)' }
+    ] : [
+      { k:'a', brand:'라보에이치', name:'마일드 클렌징 폼 150ml', option:'단품', max:1, unit:14000, thumb:'linear-gradient(135deg,#E7ECE8,#CCD6CF)' },
+      { k:'b', brand:'라보에이치', name:'진정 토너 패드 60매', option:'2개 묶음', max:2, unit:17500, thumb:'linear-gradient(135deg,#F1E7EA,#DCCCD3)' }
+    ];
+    const ITEMS = oneItem ? ALL_ITEMS.slice(0, 1) : ALL_ITEMS;
+    const fmt = n => n.toLocaleString() + '원';
+    const on = oneItem ? { a: true } : this.state.on;
+    const qty = { a: Math.min(this.state.qty.a, ALL_ITEMS[0].max), b: Math.min(this.state.qty.b, ALL_ITEMS[1].max) };
+
+    const items = ITEMS.map((it, i) => {
+      const sel = !!on[it.k];
+      const q = qty[it.k];
+      return {
+        brand: it.brand, name: it.name, thumb: it.thumb,
+        option: it.option + ' · 주문 ' + it.max + '개',
+        price: fmt(it.unit * (sel ? q : it.max)),
+        divider: i === 0 ? 'none' : '.5px solid #F0F0F0',
+        gap: '0',
+        showCheck: !oneItem,
+        qtyPad: oneItem ? '0' : '31px',
+        op: sel ? '1' : '.45',
+        nameColor: sel ? '#2E2E2E' : '#9E9E9E',
+        checkBg: sel ? '#F2456E' : '#fff',
+        checkBorder: sel ? '1.5px solid #F2456E' : '1.5px solid #DEDEE0',
+        checkInk: sel ? '#fff' : '#DEDEE0',
+        toggle: () => this.setState(s => ({ on: { ...s.on, [it.k]: !s.on[it.k] } })),
+        showQty: sel && it.max > 1,
+        qty: String(q),
+        dec: () => { if (q > 1) this.setState(s => ({ qty: { ...s.qty, [it.k]: q - 1 } })); },
+        inc: () => { if (q < it.max) this.setState(s => ({ qty: { ...s.qty, [it.k]: q + 1 } })); },
+        decInk: q > 1 ? '#3C3C3C' : '#DEDEE0',
+        incInk: q < it.max ? '#3C3C3C' : '#DEDEE0'
+      };
+    });
+
+    const orderTotal = ITEMS.reduce((a, it) => a + it.unit * it.max, 0);
+    const cancelSum = ITEMS.reduce((a, it) => a + (on[it.k] ? it.unit * qty[it.k] : 0), 0);
+    const remain = orderTotal - cancelSum;
+    const FREE = 30000, SHIP = 3000;
+    const paidShip = orderTotal >= FREE ? 0 : SHIP;
+    let shipRefund = 0, shipLine = '무료배송 주문 · 환불 없음';
+    if (cancelSum > 0 && remain === 0) {
+      shipRefund = paidShip;
+      shipLine = paidShip ? '+' + fmt(paidShip) + ' 함께 환불' : '무료배송 주문';
+    } else if (cancelSum > 0 && paidShip) {
+      shipLine = fmt(paidShip) + ' · 남은 상품 배송에 쓰여 환불 없음';
+    } else if (cancelSum > 0 && orderTotal >= FREE && remain < FREE) {
+      shipRefund = -SHIP;
+      shipLine = '−' + fmt(SHIP) + ' (남은 상품이 무료배송 기준 미만)';
+    }
+    const refund = Math.max(0, cancelSum + shipRefund);
+
+    const REASONS = ['단순 변심 (상품이 필요 없어졌어요)', '주문 실수 (상품·옵션·수량을 잘못 골랐어요)', '다른 결제 수단으로 변경', '기타'];
+    const reasons = REASONS.map(label => {
+      const sel = this.state.reason === label;
+      return {
+        label,
+        dotBg: sel ? '#F2456E' : '#fff',
+        dotBorder: sel ? '1.5px solid #F2456E' : '1.5px solid #DEDEE0',
+        dotInner: sel ? '#fff' : 'transparent',
+        font: (sel ? '600' : '400') + ' 14px/1.45 Pretendard,sans-serif',
+        color: sel ? '#0F0F0F' : '#3C3C3C',
+        pick: () => this.setState({ reason: label })
+      };
+    });
+    const selCount = ITEMS.filter(it => on[it.k]).length;
+    const allOn = selCount === ITEMS.length;
+
+    const anySel = cancelSum > 0;
+    const ready = anySel && !!this.state.reason;
+    const ctaLabel = !anySel ? '취소할 상품을 선택해 주세요'
+      : (!this.state.reason ? '취소 사유를 선택해 주세요' : '취소하기 (' + selCount + '개)');
+    const ctaLabel2 = ctaLabel.replace('취소하기', '취소 요청하기');
+    const AP = this.state.ap || '확인 중';
+    const RJS = ['이미 포장·출고가 완료됨', '택배사 집화가 완료됨', '주문 제작·맞춤 상품', '기타(직접 입력)'];
+    const RJ = this.state.rj || RJS[0];
+    const RJ_DETAIL = {
+      '주문 제작·맞춤 상품': '주문 접수 즉시 각인 제작에 들어가는 상품이라 취소가 어려워요. 불편을 드려 죄송합니다.',
+      '기타(직접 입력)': '요청하신 날짜에 맞춰 이미 특수 포장을 마친 상태예요. 받으신 뒤 반품을 신청해 주시면 빠르게 처리해 드릴게요.'
+    };
+    const apCls = k => 'dv-swb' + (AP === k ? ' on' : '');
+    const stepDef = AP === '반려' ? ['취소 요청', '브랜드 확인', '취소 반려'] : ['취소 요청', '브랜드 확인', '취소 완료'];
+    const doneIdx = AP === '확인 중' ? 1 : 2;
+    const apSteps = stepDef.map((label, i) => {
+      const reached = i <= doneIdx;
+      const cur = i === doneIdx;
+      const ink = AP === '반려' && i === 2 ? '#8E8E8E' : '#0F0F0F';
+      return { label,
+        dot: reached ? (cur && AP === '확인 중' ? '#fff' : ink) : '#fff',
+        ring: reached ? '2px solid ' + ink : '1.5px solid #DEDEE0',
+        lineL: i === 0 ? 'transparent' : (i <= doneIdx ? '#0F0F0F' : '#EDEDEF'),
+        lineR: i === 2 ? 'transparent' : (i < doneIdx ? '#0F0F0F' : '#EDEDEF'),
+        font: (cur ? '600' : '400') + ' 12px/1.3 Pretendard,sans-serif',
+        color: reached ? '#0F0F0F' : '#9E9E9E' };
+    });
+
+    const recart = this.state.recart !== false;
+    const doneItems = ITEMS.filter(it => on[it.k]).map(it => ({ brand: it.brand, name: it.name, thumb: it.thumb, meta: it.option + ' / ' + qty[it.k] + '개', price: fmt(it.unit * qty[it.k]) }));
+    return {
+      ctaLabel2,
+      confirmOpen2: !!this.state.confirm2,
+      openConfirm2: () => { if (ready) this.setState({ confirm2: true }); },
+      closeConfirm2: () => this.setState({ confirm2: false }),
+      submitCancel2: () => this.setState({ confirm2: false, done2: true }),
+      doneOpen2: !!this.state.done2,
+      closeDone2: () => this.setState({ done2: false }),
+      apSw: ['확인 중', '승인', '반려'].map(k => ({ label: k, pick: () => this.setState({ ap: k }), bg: AP === k ? '#1a1a1a' : '#fff', color: AP === k ? '#fff' : 'rgba(0,0,0,.6)', border: AP === k ? '#1a1a1a' : 'rgba(0,0,0,.15)', font: (AP === k ? '600' : '500') + ' 11px/1 Pretendard,sans-serif' })),
+      apSteps,
+      apTitle: AP === '확인 중' ? '브랜드가 취소 요청을 확인하고 있어요' : (AP === '승인' ? '취소가 완료되었어요' : '취소 요청이 반려되었어요'),
+      apSub: AP === '확인 중' ? '브랜드가 확인하고 있어요. 보통 1영업일 안에 결과를 알림으로 알려드려요.' : (AP === '승인' ? '09.15 브랜드가 승인했어요. 환불은 결제 수단으로 진행돼요.' : '브랜드가 취소 요청을 반려했어요. 주문은 그대로 배송돼요.'),
+      apRefundLabel: AP === '승인' ? '환불 금액' : '환불 예정 금액',
+      apRefund: AP === '반려' ? '0원' : '17,500원',
+      apRefundColor: AP === '반려' ? '#9E9E9E' : '#0F0F0F',
+      apNote: AP === '확인 중' ? '브랜드 확인 전까지는 요청을 철회할 수 있어요. 그사이 발송되면 요청이 반려돼요.' : (AP === '승인' ? '카드사 처리에 2~3영업일이 더 걸릴 수 있어요.' : (RJ === '주문 제작·맞춤 상품' ? '주문 제작·맞춤 상품은 단순 변심 반품이 제한될 수 있어요.' : '배송완료 후 7일 이내에 주문 상세에서 반품을 신청할 수 있어요.')),
+      apStatus: AP === '확인 중' ? '취소 요청 · 브랜드 확인 중' : (AP === '승인' ? '취소 완료' : '취소 반려'),
+      apRejected: AP === '반려',
+      rjSw: RJS.map(k => ({ label: k, pick: () => this.setState({ rj: k }), bg: RJ === k ? '#1a1a1a' : '#fff', color: RJ === k ? '#fff' : 'rgba(0,0,0,.6)', border: RJ === k ? '#1a1a1a' : 'rgba(0,0,0,.15)', font: (RJ === k ? '600' : '500') + ' 11px/1 Pretendard,sans-serif' })),
+      rjReason: RJ === '기타(직접 입력)' ? '기타' : RJ,
+      rjHasDetail: !!RJ_DETAIL[RJ],
+      rjDetail: RJ_DETAIL[RJ] || '',
+      apStatusColor: AP === '확인 중' ? '#CF3D61' : (AP === '승인' ? '#737373' : '#3C3C3C'),
+      apShowSub: AP !== '승인',
+      apDoneLabel: AP === '반려' ? '반려 일시' : '완료 일시',
+      apDoneAt: AP === '확인 중' ? '브랜드 확인 후 표시돼요' : (AP === '승인' ? '2026-09-15 09:12:40' : '2026-09-14 16:20:05'),
+      apDoneColor: AP === '확인 중' ? '#9E9E9E' : '#0F0F0F',
+      apActionLabel: AP === '확인 중' ? '취소 요청 철회' : (AP === '승인' ? '재구매' : '배송 조회'),
+      apAction: () => { if (AP === '확인 중') this.setState({ withdraw: true }); },
+      withdrawOpen: !!this.state.withdraw,
+      closeWithdraw: () => this.setState({ withdraw: false }),
+      confirmOpen: !!this.state.confirm,
+      openConfirm: () => { if (ready) this.setState({ confirm: true }); },
+      closeConfirm: () => this.setState({ confirm: false }),
+      stop: (e) => e.stopPropagation(),
+      confirmSub: '환불 예정 금액 ' + fmt(refund),
+      recart,
+      toggleRecart: () => this.setState({ recart: !recart }),
+      recartBg: recart ? '#F2456E' : '#fff',
+      recartBorder: recart ? '1.5px solid #F2456E' : '1.5px solid #DEDEE0',
+      recartCheck: recart ? '#fff' : '#DEDEE0',
+      submitCancel: () => this.setState({ confirm: false, done: true }),
+      doneOpen: !!this.state.done,
+      closeDone: () => this.setState({ done: false }),
+      doneItems,
+      doneCount: doneItems.length + '개',
+      items,
+      itemSum: fmt(cancelSum),
+      shipLine,
+      refund: fmt(refund),
+      reasons,
+      isEtc: this.state.reason === '기타',
+      shipSw: this.sw('shipCase', ['무료배송', '배송비 있음'], '무료배송'),
+      countSw: this.sw('itemCount', ['2개', '1개'], '2개'),
+      multi: !oneItem,
+      single: oneItem,
+      allBg: allOn ? '#F2456E' : '#fff',
+      allBorder: allOn ? '1.5px solid #F2456E' : '1.5px solid #DEDEE0',
+      allInk: allOn ? '#fff' : '#DEDEE0',
+      toggleAll: () => this.setState(() => { const n = {}; ITEMS.forEach(it => { n[it.k] = !allOn; }); return { on: n }; }),
+      ctaLabel,
+      ctaBg: ready ? '#F2456E' : '#F4F4F5',
+      ctaColor: ready ? '#fff' : '#B5B5B5',
+      ctaCursor: ready ? 'pointer' : 'default',
+      ctaPress: ready ? '.75' : '1'
+    };
+  }
+
+
+  sw(key, opts, def, propKey){
+    const cur = this.state[key] ?? this.props[propKey || key] ?? def;
+    return opts.map(label => ({
+      label,
+      pick: () => this.setState({ [key]: label }),
+      bg: label === cur ? '#1a1a1a' : '#fff',
+      color: label === cur ? '#fff' : 'rgba(0,0,0,.62)',
+      border: label === cur ? '#1a1a1a' : 'rgba(0,0,0,.14)',
+      font: (label === cur ? '600' : '400') + ' 11px/1 Pretendard,sans-serif'
+    }));
+  }
+
+  renderVals(){
+    const listState = this.state.listState ?? this.props.listState ?? '주문 있음';
+    const empty = listState === '빈 상태';
+
+    const DATA = [
+      { date:'26.09.22 (화)', no:'20260922031401', items:[
+        { state:'결제완료', sub:'공구 마감 후 09.26 발송 예정', brand:'라보에이치', name:'마일드 클렌징 폼 150ml', option:'단품 · 1개', price:'14,000원', thumb:'linear-gradient(135deg,#E7ECE8,#CCD6CF)', actions:['주문 취소'] }
+      ]},
+      { date:'26.09.12 (금)', no:'20260912030201', items:[
+        { state:'배송중', sub:'09.16 (수) 도착 예정', rejected:true, brand:'라보에이치', name:'시카 리페어 앰플 30ml 리필 2개 세트 기획', option:'30ml + 리필 2개 · 1개', price:'24,900원', thumb:'linear-gradient(135deg,#EFEBE7,#D9D2CB)', actions:['배송 조회'] },
+        { state:'상품준비중', sub:'09.17 발송 예정', brand:'라보에이치', name:'진정 토너 패드 60매', option:'2개 묶음 · 1개', price:'17,500원', thumb:'linear-gradient(135deg,#F1E7EA,#DCCCD3)', actions:['취소 요청'] }
+      ]},
+      { date:'26.09.04 (금)', no:'20260904030702', items:[
+        { state:'배송완료', sub:'09.23 구매확정 예정', brand:'하루 코스메틱', name:'마일드 필링 패드 70매 대용량', option:'리필 포함 · 2개', price:'35,800원', thumb:'linear-gradient(135deg,#E7ECE8,#CCD6CF)', actions:['배송 조회', '반품 · 교환'] }
+      ]},
+      { date:'26.08.21 (금)', no:'20260821030301', items:[
+        { state:'구매확정', sub:'08.28 확정', brand:'라보에이치', name:'배리어 크림 50ml 리뉴얼', option:'단품 · 1개', price:'21,900원', thumb:'linear-gradient(135deg,#E4E8EF,#CBD2DD)', actions:['배송 조회'] }
+      ]},
+      { date:'26.08.14 (금)', no:'20260814031101', items:[
+        { state:'반품', sub:'진행 중 · 회수중', brand:'하루 코스메틱', name:'수분 진정 마스크 10매', option:'단품 · 1개', price:'14,000원', thumb:'linear-gradient(135deg,#EFE7DC,#DCCFBE)', dim:true, actions:['반품 상세'] }
+      ]},
+      { date:'26.08.02 (일)', no:'20260802030501', items:[
+        { state:'취소', sub:'완료', brand:'라보에이치', name:'딥 클렌징 오일 200ml', option:'단품 · 1개', price:'환불 18,900원', thumb:'linear-gradient(135deg,#ECE9E4,#D5D0C8)', dim:true, actions:['취소 상세'] }
+      ]},
+      { date:'26.07.25 (토)', no:'20260725030901', items:[
+        { state:'교환', sub:'진행 중 · 재발송', brand:'하루 코스메틱', name:'리페어 세럼 50ml', option:'옵션 A → C · 1개', price:'29,900원', thumb:'linear-gradient(135deg,#E9EBEA,#D0D5D2)', dim:true, actions:['교환 상세'] }
+      ]}
+    ];
+
+    const BADGE = {
+      '결제완료':   { color:'#F2456E', w:'700' },
+      '상품준비중': { color:'#737373', w:'700' },
+      '배송중':     { color:'#F2456E', w:'700' },
+      '배송완료':   { color:'#F2456E', w:'700' },
+      '구매확정':   { color:'#737373', w:'700' },
+      '취소':       { color:'#737373', w:'700' },
+      '반품':       { color:'#737373', w:'700' },
+      '교환':       { color:'#737373', w:'700' }
+    };
+    const groups = DATA.map(g => ({
+      date: g.date,
+      no: g.no,
+      items: g.items.map((it, i) => {
+        const b = BADGE[it.state] || BADGE['구매확정'];
+        return {
+          badge: it.state,
+          badgeColor: b.color,
+          badgeFont: b.w + ' 13px/1.3 Pretendard,sans-serif',
+          hasSub: !!it.sub,
+          sub: it.sub || '',
+          rejected: !!it.rejected,
+          brand: it.brand,
+          name: it.name,
+          option: it.option,
+          price: it.price,
+          thumb: it.thumb,
+          fade: it.dim ? '.55' : '1',
+          nameColor: it.dim ? '#9E9E9E' : '#2E2E2E',
+          priceColor: it.dim ? '#9E9E9E' : '#0F0F0F',
+          priceFont: (it.dim ? '400' : '700') + ' 14px/1 Pretendard,sans-serif',
+          divider: i === 0 ? 'none' : '.5px solid #F0F0F0',
+          hasAction: !!it.actions,
+          actions: (it.actions || []).map(label => ({
+            label,
+            border: '#E3E3E5',
+            color: '#3C3C3C'
+          }))
+        };
+      })
+    })).filter(g => g.items.length > 0);
+
+    return {
+      ...this.cancelVals(),
+      ...this.reqVals(),
+      groups,
+      hasOrders: !empty,
+      isEmpty: empty,
+      emptyTitle: '아직 주문 내역이 없어요',
+      emptyDesc: '마음에 드는 공구를 찾아보세요',
+      emptyCta: true
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -133,6 +133,12 @@ order:
   purchase-confirm-scheduler-enabled: true          # 구매확정 배치(매시)
   search-range-max-days: 365                        # 파트너센터 주문 조회 기간 상한(§34-2)
   shipment-upload-max-rows: 1000                    # 송장 엑셀 일괄 업로드 행 상한(§34-5)
+  user-list-months: 6                               # 앱 주문 내역 조회 범위 — 최근 N개월(C10)
+  user-list-page-size-max: 50                       # 앱 주문 내역 페이지 크기 상한
+  arrival-default-days: 3                           # 도착 예정 — 집화일 + N배송일(일요일·공휴일 제외)
+  arrival-stats-window-days: 90                     # 택배사별 실제 소요일 평균의 표본 범위
+  arrival-stats-min-samples: 30                     # 표본이 이보다 적은 택배사는 기본값
+  arrival-stats-refresh-hours: 6                    # 평균 재집계 주기
 
 # DeliveryTrackerProperties.java — 배송 추적 연동(34 설계서 3-3). enabled=false 면 Noop 스텁이 붙고
 # 감시 배치가 멈춘다(송장 형식 검증도 생략 기록). 연동 업체 스펙 확정(§34-13 #16) 후 켠다 — 런칭 게이트.

@@ -374,8 +374,12 @@ public record GroupBuyDetailResponse(
     public record OpenIssue(
             @Schema(description = "이슈 id") Long issueId,
             @Schema(description = "CONTENT_FULFILLMENT · TERMS_INTERPRETATION · SETTLEMENT_AMOUNT · ETC") GroupBuyIssueType type,
+            @Schema(description = "개설 측 — SELLER(브랜드) · CREATOR(인플루언서) · ADMIN(운영자)") GroupBuyActorType openerType,
             @Schema(description = "개설 시각") LocalDateTime openedAt,
-            @Schema(description = "이슈 스레드 id", nullable = true) Long threadId
+            @Schema(description = "이슈 스레드 id", nullable = true) Long threadId,
+            @Schema(description = "답변 대기 — 스레드의 마지막 글을 개설 측이 썼으면 true(B5e 「답변 대기」). "
+                    + "스레드나 글이 없으면 null", nullable = true)
+            Boolean awaitingReply
     ) {
     }
 

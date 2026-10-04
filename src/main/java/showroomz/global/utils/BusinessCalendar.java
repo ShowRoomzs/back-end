@@ -31,6 +31,11 @@ public class BusinessCalendar {
                 .collect(Collectors.toUnmodifiableSet());
     }
 
+    /** 설정된 공휴일인가 — 주말은 보지 않는다. 토요일에도 움직이는 택배 배송일 계산이 쓴다. */
+    public boolean isHoliday(LocalDate date) {
+        return holidays.contains(date);
+    }
+
     public boolean isBusinessDay(LocalDate date) {
         DayOfWeek day = date.getDayOfWeek();
         return day != DayOfWeek.SATURDAY && day != DayOfWeek.SUNDAY && !holidays.contains(date);

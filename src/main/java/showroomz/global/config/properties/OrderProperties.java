@@ -59,6 +59,26 @@ public class OrderProperties {
     /** 목록 페이지 크기 상한 — 시안은 20건 고정(시안 정정 #22). 넘으면 400. */
     private int listPageSizeMax = 100;
 
+    // ------------------------------------------------------------------ 소비자 앱 주문 내역(C10 설계서)
+
+    /** 주문 내역 조회 범위 — 최근 N개월. 그 이전 주문의 조회 방식은 시안 미결(U7)이라 상수로 박지 않는다. */
+    private int userListMonths = 6;
+
+    /** 앱 주문 내역 페이지 크기 상한 — 넘으면 400. */
+    private int userListPageSizeMax = 50;
+
+    /** 도착 예정 — 집화일 + N배송일(일요일·공휴일 제외). 택배사별 실측 평균이 쌓이기 전의 기본값. */
+    private int arrivalDefaultDays = 3;
+
+    /** 택배사별 소요일 평균의 표본 범위 — 최근 N일의 배송완료. */
+    private int arrivalStatsWindowDays = 90;
+
+    /** 이 건수 미만인 택배사는 평균으로 보정하지 않고 기본값을 쓴다. */
+    private int arrivalStatsMinSamples = 30;
+
+    /** 평균 재집계 주기(시간). */
+    private int arrivalStatsRefreshHours = 6;
+
     /** 발주서 1회 대상 하위주문 상한 — 넘으면 조용히 자르지 않고 400 으로 나눠 받게 한다. */
     private int purchaseOrderMaxGroups = 2000;
 }

@@ -2,6 +2,7 @@ package showroomz.api.seller.groupbuy;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -46,8 +47,12 @@ import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.message.entity.Message;
 import showroomz.domain.message.entity.MessageThread;
+import showroomz.domain.message.repository.MessageRepository;
 import showroomz.domain.message.repository.MessageThreadRepository;
+import showroomz.domain.message.service.MessageThreadService;
+import showroomz.domain.message.type.ThreadKind;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.post.type.PostType;
@@ -87,6 +92,8 @@ public abstract class GroupBuyTestSupport extends IntegrationTestSupport {
     @Autowired protected CreatorRepository creatorRepository;
     @Autowired protected ConnectionRepository connectionRepository;
     @Autowired protected MessageThreadRepository messageThreadRepository;
+    @Autowired protected MessageRepository messageRepository;
+    @Autowired protected MessageThreadService messageThreadService;
     @Autowired protected CategoryRepository categoryRepository;
     @Autowired protected ProductRepository productRepository;
     @Autowired protected ProductVariantRepository productVariantRepository;
@@ -151,6 +158,27 @@ public abstract class GroupBuyTestSupport extends IntegrationTestSupport {
             request = request.contentType(MediaType.APPLICATION_JSON).content(body instanceof String s ? s : toJson(body));
         }
         return mockMvc.perform(request);
+    }
+
+    /** 파트너 연결·소통 좌측 목록 — 공구 3자 스레드가 같은 상대의 추가 줄로 나오는지 본다. */
+    protected ResultActions sellerThreads() throws Exception {
+        return mockMvc.perform(get("/v1/seller/connections/threads").header(HttpHeaders.AUTHORIZATION, brandToken));
+    }
+
+    // ------------------------------------------------------------------ 스레드
+
+    /** 공구의 미이행 3자 스레드 — 공구당 1개. */
+    protected MessageThread fulfillmentThread(long groupBuyId) {
+        return messageThreadRepository
+                .findFirstByKindAndSubjectIdOrderByIdAsc(ThreadKind.GROUP_BUY_FULFILLMENT, groupBuyId)
+                .orElseThrow();
+    }
+
+    /** 스레드의 글 — 오래된 순. */
+    protected List<Message> messagesOf(long threadId) {
+        MessageThread thread = messageThreadRepository.findById(threadId).orElseThrow();
+        List<Message> latestFirst = messageRepository.findByThreadOrderByIdDesc(thread, Pageable.ofSize(50));
+        return latestFirst.reversed();
     }
 
     // ------------------------------------------------------------------ 적재

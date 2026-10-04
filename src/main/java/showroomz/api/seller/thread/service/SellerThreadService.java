@@ -18,6 +18,7 @@ import showroomz.api.seller.thread.dto.ThreadListItem;
 import showroomz.api.seller.thread.dto.ThreadSummaryResponse;
 import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.connection.type.ConnectionType;
+import showroomz.domain.groupbuy.repository.GroupBuyRepository;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.creator.entity.Creator;
@@ -38,6 +39,7 @@ import showroomz.global.error.exception.ErrorCode;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,6 +55,7 @@ public class SellerThreadService {
     private final MessageThreadService messageThreadService;
     private final MessageAttachmentRepository messageAttachmentRepository;
     private final MessageAttachmentService messageAttachmentService;
+    private final GroupBuyRepository groupBuyRepository;
 
     /**
      * §13-1 좌측 목록. 안 읽은 수는 페이지 전체를 한 쿼리로 집계한다(스레드당 카운트 금지).
@@ -67,8 +70,10 @@ public class SellerThreadService {
         Map<Long, Long> unreadByThread = messageThreadService.countUnreadByThreadIds(
                 threads.getContent().stream().map(MessageThread::getId).toList(),
                 ParticipantType.SELLER, market.getId());
+        Map<Long, String> groupBuyTitles = groupBuyRepository.findTitleMapByIds(
+                threads.getContent().stream().map(MessageThread::getSubjectId).filter(Objects::nonNull).distinct().toList());
 
-        return PageResponse.of(threads.map(thread -> toListItem(thread, unreadByThread)));
+        return PageResponse.of(threads.map(thread -> toListItem(thread, unreadByThread, groupBuyTitles)));
     }
 
     private static String normalizeKeyword(String keyword) {
@@ -176,7 +181,9 @@ public class SellerThreadService {
                                         .toList())));
     }
 
-    private ThreadListItem toListItem(MessageThread thread, Map<Long, Long> unreadByThread) {
+    /** 공구 3자 스레드는 같은 상대의 두 번째 · 세 번째 줄이다 — 종류와 공구를 함께 내려 구분하게 한다(30-1 1-5). */
+    private ThreadListItem toListItem(MessageThread thread, Map<Long, Long> unreadByThread,
+                                      Map<Long, String> groupBuyTitles) {
         Connection connection = thread.getConnection();
         boolean isOperator = connection.getType() == ConnectionType.OPERATOR_MARKET;
         String name = isOperator ? OPERATOR_CHANNEL_NAME : connection.getCreator().getShowroomName();
@@ -186,7 +193,9 @@ public class SellerThreadService {
                 thread.getId(), name, isOperator ? null : profileImageUrlOf(connection.getCreator()),
                 isOperator, connection.getStatus(),
                 isOperator ? null : connection.getCreator().getId(), connection.getId(),
-                thread.getLastMessagePreview(), thread.getLastMessageAt(), unread);
+                thread.getLastMessagePreview(), thread.getLastMessageAt(), unread,
+                thread.getKind(), thread.getSubjectId(),
+                thread.getSubjectId() == null ? null : groupBuyTitles.get(thread.getSubjectId()));
     }
 
     /** 인플루언서 프로필 이미지는 CREATOR가 아니라 USERS에 있다(운영자 채널은 creator가 null). */

@@ -13,11 +13,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.order.dto.OrderDto;
+import showroomz.api.app.order.dto.UserOrderDto;
+import showroomz.global.dto.PageResponse;
 
-@Tag(name = "User - Order", description = "주문서 · 주문 생성 · 주문 상세 · 취소 (C9)")
+@Tag(name = "User - Order", description = "주문서 · 주문 생성 · 주문 내역 · 주문 상세 · 취소 (C9 · C10)")
 public interface OrderControllerDocs {
 
     @Operation(
@@ -138,9 +141,68 @@ public interface OrderControllerDocs {
                                                               @Valid @RequestBody OrderDto.RetryPaymentRequest request);
 
     @Operation(
+            summary = "주문 내역 목록 (C10)",
+            description = "최근 6개월의 **결제된 적 있는 주문**을 최신순으로 내린다. 결제 대기·만료·결제 전 취소 주문은 나오지 않고, " +
+                    "결제 후 취소된 주문은 「취소」 행으로 나온다.\n\n" +
+                    "**구조:** 페이지 단위는 **주문**(`content[]`)이고 그 아래 `items[]` 가 주문 항목(옵션) 행이다 — 주문이 페이지 경계에서 " +
+                    "쪼개지지 않는다. 한 주문 안에서도 브랜드가 다르면 항목마다 상태가 다를 수 있다.\n\n" +
+                    "**항목 행은 서버가 그릴 것을 전부 내린다** — 앱이 상태→색·버튼 매핑을 들지 않는다.\n" +
+                    "- `status` · `statusLabel` · `statusTone`(`ACTIVE` 로즈 / `MUTED` 회색) · `dimmed`(취소 행 탈색)\n" +
+                    "- `statusSub`: 상태 보조 문구 완성 문자열(「09.15 발송 예정」 「09.17 도착 예정」 「09.23 구매확정 예정」 「브랜드 확인 중」 「환불 처리 중」 「완료」). " +
+                    "다른 형식이 필요하면 `dates` 의 원시 시각을 쓴다. **배송중**은 집화 후에만 「도착 예정」(집화일 + 3배송일 · 일요일·공휴일 제외 · " +
+                    "택배사별 실제 소요일로 보정)이 붙고, 집화 전이거나 예정일이 지났으면 `statusSub` 가 null 이다 — 「배송중」만 그린다\n" +
+                    "- `amountLabel`: 「24,900원」, 결제 후 취소 항목은 「환불 24,900원」\n" +
+                    "- `cancelRejection`: 취소 요청이 반려된 항목의 회색 줄(「취소 요청 반려 · 사유 보기」) — 구매확정되면 사라진다\n" +
+                    "- `cancelRequestId`: `CANCEL_REQUESTED` 일 때 검토 중인 요청\n" +
+                    "- `actions[]`: **내려온 버튼만 그린다.** 지금은 `CANCEL`(주문 취소 — 주문 전체가 준비 시작 전일 때만) 하나다. " +
+                    "취소 요청·배송 조회·반품/교환·취소 상세는 해당 API 가 배포될 때 함께 내려간다\n" +
+                    "- `claim` · `claimRejection` · `returnedQuantity`: 반품·교환 모듈 배포 전에는 null · null · 0\n\n" +
+                    "**status 값:** `PAID`(결제완료) · `PREPARING`(상품준비중) · `SHIPPING`(배송중) · `RETURNING`(반송중) · `DELIVERED`(배송완료) · " +
+                    "`CONFIRMED`(구매확정) · `CANCEL_REQUESTED`(취소 요청중) · `CANCELLED`(취소) — " +
+                    "`RETURN_IN_PROGRESS` · `EXCHANGE_IN_PROGRESS` · `RETURNED` 는 반품·교환 모듈과 함께 나온다.\n\n" +
+                    "**페이지:** `page` 1부터 · `size` 1~50(밖이면 400). 필터는 없다. 빈 상태는 `content: []`.\n\n" +
+                    "**권한:** USER\n**요청 헤더:** Authorization: Bearer {accessToken}"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "주문 내역",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(name = "응답 예시", value = "{\n" +
+                                    "  \"content\": [ {\n" +
+                                    "    \"orderId\": 812, \"orderNumber\": \"20260912-000201\", \"orderedAt\": \"2026-09-12T10:21:07\",\n" +
+                                    "    \"items\": [ {\n" +
+                                    "      \"orderProductId\": 1501, \"productId\": 77, \"variantId\": 301,\n" +
+                                    "      \"brandName\": \"라보에이치\", \"productName\": \"시카 리페어 앰플 30ml 리필 2개 세트 기획\",\n" +
+                                    "      \"optionName\": \"30ml + 리필 2개\", \"quantity\": 1, \"returnedQuantity\": 0, \"thumbnailUrl\": \"https://cdn/…\",\n" +
+                                    "      \"status\": \"SHIPPING\", \"statusLabel\": \"배송중\", \"statusTone\": \"ACTIVE\", \"statusSub\": \"09.17 도착 예정\",\n" +
+                                    "      \"dimmed\": false, \"amount\": 24900, \"amountLabel\": \"24,900원\",\n" +
+                                    "      \"cancelRejection\": { \"cancelRequestId\": 31, \"rejectedAt\": \"2026-09-14T16:20:05\" },\n" +
+                                    "      \"cancelRequestId\": null, \"claim\": null, \"claimRejection\": null,\n" +
+                                    "      \"dates\": { \"shipDueAt\": \"2026-09-15T10:21:07\", \"shippedAt\": \"2026-09-14T15:02:11\", \"arrivalDueDate\": \"2026-09-17\", \"deliveredAt\": null,\n" +
+                                    "                 \"confirmDueAt\": null, \"confirmedAt\": null, \"cancelledAt\": null },\n" +
+                                    "      \"actions\": []\n" +
+                                    "    } ]\n" +
+                                    "  } ],\n" +
+                                    "  \"pageInfo\": { \"currentPage\": 1, \"totalPages\": 1, \"totalResults\": 7, \"limit\": 20, \"hasNext\": false }\n" +
+                                    "}"))),
+            @ApiResponse(responseCode = "400", description = "size 가 1~50 밖(INVALID_INPUT)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<PageResponse<UserOrderDto.OrderCard>> getOrders(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "페이지 번호(1부터)", example = "1") @RequestParam(name = "page", defaultValue = "1") int page,
+            @Parameter(description = "페이지당 주문 수(1~50)", example = "20") @RequestParam(name = "size", defaultValue = "20") int size);
+
+    @Operation(
             summary = "주문 상세",
             description = "결제 완료 화면 · 마이 진입점 · 문의 카드가 쓰는 주문 상세. 주문서와 같은 모양의 `groups`·`summary` 에 상태·주문번호·결제 시각·" +
                     "배송지 스냅샷·요청사항·결제 정보를 더한다. 결제 화면으로 돌아온 앱은 이 API 로 상태를 다시 읽는다(웹훅이 먼저 확정했을 수 있다).\n\n" +
+                    "**C10-1 주문 상세 화면용 필드**(기존 필드는 그대로다):\n" +
+                    "- `items[]` · `itemCount`: 쇼룸 그룹 없는 평면 항목 행 — 주문 내역 목록과 같은 모양이다. 배송완료 항목의 `statusSub` 만 " +
+                    "배송완료 시각(「09.16 14:20」)으로 다르다\n" +
+                    "- `maskedAddress`: 마스킹된 배송지(이름 마지막 글자 · 연락처 가운데 블록 · 상세 주소 전체를 가린다). " +
+                    "C10-1 은 `deliveryAddress`(원문) 대신 이것을 그린다\n" +
+                    "- `notices[]`: 상단 안내 — `CONFIRM_DUE`(구매확정 기한 · `date` = 가장 이른 구매확정 예정). 문구는 앱이 갖는다\n" +
+                    "- `summary.discountRate`: 할인율(%) — 상품 금액 기준, 배송비 제외\n\n" +
                     "**권한:** USER (본인 주문만)"
     )
     @ApiResponses({

@@ -24,6 +24,7 @@ import showroomz.domain.contract.type.ContractStatus;
 import showroomz.domain.contract.type.WithholdingType;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.repository.MessageThreadRepository;
+import showroomz.domain.message.type.ThreadKind;
 import showroomz.global.utils.RewardCalculator;
 
 import java.util.ArrayList;
@@ -365,7 +366,7 @@ public class CreatorContractDetailAssembler {
         if (connection == null) {
             return null;
         }
-        return messageThreadRepository.findByConnection(connection)
+        return messageThreadRepository.findByConnectionAndKind(connection, ThreadKind.CONNECTION)
                 .map(MessageThread::getId)
                 .orElse(null);
     }

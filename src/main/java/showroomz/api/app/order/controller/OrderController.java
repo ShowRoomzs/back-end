@@ -11,22 +11,36 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.order.docs.OrderControllerDocs;
 import showroomz.api.app.order.dto.OrderDto;
+import showroomz.api.app.order.dto.UserOrderDto;
 import showroomz.api.app.order.service.CheckoutService;
 import showroomz.api.app.order.service.OrderCommandService;
 import showroomz.api.app.order.service.OrderCommandService.CancelResult;
+import showroomz.api.app.order.service.UserOrderQueryService;
+import showroomz.global.dto.PageResponse;
 
 @RestController
 @RequestMapping("/v1/user/orders")
 @RequiredArgsConstructor
-@Tag(name = "User - Order", description = "주문서 · 주문 생성 · 주문 상세 · 취소 (C9)")
+@Tag(name = "User - Order", description = "주문서 · 주문 생성 · 주문 내역 · 주문 상세 · 취소 (C9 · C10)")
 public class OrderController implements OrderControllerDocs {
 
     private final CheckoutService checkoutService;
     private final OrderCommandService orderCommandService;
+    private final UserOrderQueryService userOrderQueryService;
+
+    @Override
+    @GetMapping
+    public ResponseEntity<PageResponse<UserOrderDto.OrderCard>> getOrders(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
+        return ResponseEntity.ok(userOrderQueryService.getOrders(principal.getUserId(), page, size));
+    }
 
     @Override
     @PostMapping("/checkout")

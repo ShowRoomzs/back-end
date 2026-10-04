@@ -15,6 +15,7 @@ import showroomz.domain.message.repository.ThreadParticipantRepository;
 import showroomz.domain.message.type.AttachmentStatus;
 import showroomz.domain.message.type.AttachmentType;
 import showroomz.domain.message.type.ParticipantType;
+import showroomz.domain.message.type.ThreadKind;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.AllowedAttachmentExtensions;
@@ -43,7 +44,7 @@ public class MessageThreadService {
     /** CONNECTION이 처음 CONNECTED가 되는 순간(최초 수락 또는 재연결) 호출한다(§1-3). */
     @Transactional
     public MessageThread activateThread(Connection connection) {
-        MessageThread thread = messageThreadRepository.findByConnection(connection)
+        MessageThread thread = messageThreadRepository.findByConnectionAndKind(connection, ThreadKind.CONNECTION)
                 .orElseGet(() -> messageThreadRepository.save(MessageThread.openFor(connection)));
         thread.open();
         return thread;

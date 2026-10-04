@@ -17,7 +17,7 @@ CREATE TABLE `order_delivery_group` (
     UNIQUE KEY `uk_order_delivery_group_order_group_buy` (`order_id`, `group_buy_id`),
     CONSTRAINT `fk_order_delivery_group_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
     CONSTRAINT `fk_order_delivery_group_group_buy` FOREIGN KEY (`group_buy_id`) REFERENCES `group_buy` (`group_buy_id`),
-    CONSTRAINT `fk_order_delivery_group_market` FOREIGN KEY (`market_id`) REFERENCES `MARKET` (`MARKET_ID`)
+    CONSTRAINT `fk_order_delivery_group_market` FOREIGN KEY (`market_id`) REFERENCES `market` (`MARKET_ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE `order_product`
@@ -35,7 +35,7 @@ SELECT op.`order_id`, NULL, p.`market_id`, SUM(op.`price` * op.`quantity`), 0, 0
   FROM `order_product` op
   JOIN `product_variant` pv ON pv.`variant_id` = op.`variant_id`
   JOIN `product` p          ON p.`product_id` = pv.`product_id`
-  JOIN `MARKET` m           ON m.`MARKET_ID` = p.`market_id`
+  JOIN `market` m           ON m.`MARKET_ID` = p.`market_id`
  GROUP BY op.`order_id`, p.`market_id`, m.`MARKET_NAME`;
 
 UPDATE `order_product` op

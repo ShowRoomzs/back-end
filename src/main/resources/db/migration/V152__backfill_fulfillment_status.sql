@@ -2,7 +2,7 @@
 -- 현존 데이터가 테스트 결제뿐이라 NEW 일괄로 충분하다(구매확정 이행 데이터가 없다).
 UPDATE `order_delivery_group` g
   JOIN `orders` o ON o.`order_id` = g.`order_id`
-  JOIN `MARKET` m ON m.`MARKET_ID` = g.`market_id`
+  JOIN `market` m ON m.`MARKET_ID` = g.`market_id`
    SET g.`fulfillment_status` = 'NEW',
        g.`ship_due_at` = CASE WHEN m.`shipping_lead_days` IS NULL THEN NULL
                               ELSE TIMESTAMPADD(DAY, m.`shipping_lead_days`, o.`paid_at`) END

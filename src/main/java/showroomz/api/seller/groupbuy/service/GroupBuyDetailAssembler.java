@@ -13,6 +13,7 @@ import showroomz.domain.groupbuy.entity.GroupBuyChangeRequest;
 import showroomz.domain.groupbuy.entity.GroupBuyExtensionRequest;
 import showroomz.domain.groupbuy.entity.GroupBuyFulfillmentCheck;
 import showroomz.domain.groupbuy.entity.GroupBuyHistory;
+import showroomz.domain.groupbuy.entity.GroupBuyIssue;
 import showroomz.domain.groupbuy.entity.GroupBuyPost;
 import showroomz.domain.groupbuy.repository.GroupBuyAppealAttachmentRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyHistoryRepository;
@@ -402,11 +403,20 @@ public class GroupBuyDetailAssembler {
         OpenIssue openIssue = facts.openIssue() == null ? null : new OpenIssue(
                 facts.openIssue().getId(),
                 facts.openIssue().getIssueType(),
+                facts.openIssue().getOpenerType(),
                 facts.openIssue().getOpenedAt(),
-                facts.openIssue().getThreadId());
+                facts.openIssue().getThreadId(),
+                awaitingReply(facts.openIssue()));
         LocalDateTime watchAt = status == GroupBuyStatus.ENDED && groupBuy.getEndedAt() != null
                 ? groupBuy.getEndedAt().plusDays(properties.getSettlement().getWatchDays()) : null;
         return new AfterEnd(fulfillment, openIssue, watchAt, groupBuy.getSettledAt());
+    }
+
+    /** 「답변 대기」는 이슈의 상태가 아니라 스레드의 사실이다 — 마지막 글을 개설 측이 썼으면 상대가 아직 답하지 않았다(30-1 2절). */
+    private Boolean awaitingReply(GroupBuyIssue issue) {
+        return threadGateway.findLastSpeaker(issue.getThreadId())
+                .map(speaker -> speaker == issue.getOpenerType())
+                .orElse(null);
     }
 
     private FulfillmentCheck toCheck(GroupBuyFulfillmentCheck check) {

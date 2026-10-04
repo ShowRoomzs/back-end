@@ -1,5 +1,6 @@
 package showroomz.api.admin.groupbuy;
 
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import showroomz.domain.groupbuy.type.GroupBuyEventType;
 import showroomz.domain.groupbuy.type.GroupBuyPostReviewStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.groupbuy.type.SuspensionWithdrawReason;
+import showroomz.domain.message.type.ParticipantType;
 import showroomz.domain.post.type.PostStatus;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.global.error.exception.BusinessException;
@@ -464,7 +466,7 @@ class AdminGroupBuyCommandIntegrationTest extends AdminGroupBuyTestSupport {
     // ── 8 이슈 · 정산 · 합의 통보 ──────────────────────────────────────────────
 
     @Test
-    @DisplayName("이슈 — 진행중이면 409 · 종료면 스레드 포트 선행 전이라 503 · 정산 확인은 착수 게이트라 409")
+    @DisplayName("이슈 — 진행중이면 409 · 종료면 운영자 이름으로 3자 스레드를 연다 · 정산 확인은 착수 게이트라 409")
     void issueAndSettlementGates() throws Exception {
         GroupBuy inProgress = seedIn(GroupBuyStatus.IN_PROGRESS);
         adminAction(inProgress.getId(), "issues", Map.of("issueType", "ETC", "content", "이견"))
@@ -472,9 +474,19 @@ class AdminGroupBuyCommandIntegrationTest extends AdminGroupBuyTestSupport {
                 .andExpect(jsonPath("$.code").value("GROUP_BUY_ACTION_NOT_ALLOWED"));
 
         GroupBuy ended = seedIn(GroupBuyStatus.ENDED);
-        adminAction(ended.getId(), "issues", Map.of("issueType", "SETTLEMENT_AMOUNT", "content", "정산 금액 이견"))
-                .andExpect(status().isServiceUnavailable())
-                .andExpect(jsonPath("$.code").value("GROUP_BUY_THREAD_UNAVAILABLE"));
+        long threadId = JsonPath.parse(adminAction(ended.getId(), "issues",
+                        Map.of("issueType", "SETTLEMENT_AMOUNT", "content", "정산 금액 이견"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.threadId").isNumber())
+                .andReturn().getResponse().getContentAsString())
+                .read("$.threadId", Number.class).longValue();
+        assertThat(messagesOf(threadId)).singleElement().satisfies(first -> {
+            assertThat(first.getSenderType()).isEqualTo(ParticipantType.ADMIN);
+            assertThat(first.getSenderId()).isEqualTo(operator.getId());
+            assertThat(first.getContent()).isEqualTo("정산 금액 이견");
+        });
+        adminDetail(ended.getId()).andExpect(jsonPath("$.afterEnd.openIssue.threadId").value(threadId))
+                .andExpect(jsonPath("$.afterEnd.openIssue.awaitingReply").value(true));
         adminAction(ended.getId(), "settlement/confirm", null)
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("GROUP_BUY_SETTLEMENT_NOT_READY"));

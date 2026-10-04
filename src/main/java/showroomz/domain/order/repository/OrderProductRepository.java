@@ -46,6 +46,14 @@ public interface OrderProductRepository extends JpaRepository<OrderProduct, Long
     @Query("SELECT op FROM OrderProduct op JOIN FETCH op.variant v JOIN FETCH v.product WHERE op.order.id = :orderId ORDER BY op.id ASC")
     List<OrderProduct> findByOrderIdWithVariant(@Param("orderId") Long orderId);
 
+    /**
+     * 소비자 앱 주문 내역(C10 설계서 2-4 #2) — 페이지의 주문들의 항목을 배송 그룹과 함께 IN 1번.
+     * 리뷰도 함께 올린다 — 역방향 OneToOne 은 지연 로딩이 안 돼, 빼면 항목마다 리뷰 조회가 한 번씩 나간다.
+     */
+    @Query("SELECT op FROM OrderProduct op LEFT JOIN FETCH op.deliveryGroup JOIN FETCH op.variant v JOIN FETCH v.product "
+            + "LEFT JOIN FETCH op.review WHERE op.order.id IN :orderIds ORDER BY op.id ASC")
+    List<OrderProduct> findByOrderIdsWithGroup(@Param("orderIds") Collection<Long> orderIds);
+
     /** 주문 상품 전체의 상태를 한 번에 — 주문 전이의 부수 효과(4-1). */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderProduct op SET op.status = :to WHERE op.order.id = :orderId AND op.status IN :from")

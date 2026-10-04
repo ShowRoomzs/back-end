@@ -20,6 +20,7 @@ import showroomz.domain.message.repository.ThreadParticipantRepository;
 import showroomz.domain.message.type.AttachmentStatus;
 import showroomz.domain.message.type.AttachmentType;
 import showroomz.domain.message.type.ParticipantType;
+import showroomz.domain.message.type.ThreadKind;
 import showroomz.domain.message.type.ThreadStatus;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -94,7 +95,7 @@ class MessageThreadServiceTest {
         @DisplayName("스레드가 없으면 CONNECTION에 묶인 OPEN 스레드를 새로 만든다 (§1-3)")
         void createsNewThreadWhenMissing() {
             Connection connection = Connection.createOperatorMarket(new Market());
-            given(messageThreadRepository.findByConnection(connection)).willReturn(Optional.empty());
+            given(messageThreadRepository.findByConnectionAndKind(connection, ThreadKind.CONNECTION)).willReturn(Optional.empty());
             given(messageThreadRepository.save(any(MessageThread.class))).willAnswer(inv -> {
                 MessageThread saved = inv.getArgument(0);
                 ReflectionTestUtils.setField(saved, "id", THREAD_ID);
@@ -114,7 +115,7 @@ class MessageThreadServiceTest {
             Connection connection = Connection.createOperatorMarket(new Market());
             MessageThread dormant = MessageThread.builder()
                     .id(THREAD_ID).connection(connection).status(ThreadStatus.DORMANT).build();
-            given(messageThreadRepository.findByConnection(connection)).willReturn(Optional.of(dormant));
+            given(messageThreadRepository.findByConnectionAndKind(connection, ThreadKind.CONNECTION)).willReturn(Optional.of(dormant));
 
             MessageThread result = messageThreadService.activateThread(connection);
 

@@ -3,14 +3,18 @@ package showroomz.api.app.order.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import showroomz.api.app.order.dto.OrderDto;
+import showroomz.api.app.order.dto.UserOrderDto;
 import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.order.entity.Order;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.entity.OrderProduct;
+import showroomz.domain.order.repository.OrderCancelRequestRepository;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.domain.order.repository.OrderProductRepository;
+import showroomz.domain.order.repository.OrderRefundTaskRepository;
 import showroomz.domain.order.type.FulfillmentStatus;
+import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.domain.order.type.OrderStatus;
 import showroomz.domain.payment.entity.Payment;
 import showroomz.domain.payment.repository.PaymentRepository;
@@ -22,11 +26,14 @@ import showroomz.global.utils.DiscountRate;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * 저장된 주문 → 응답 조립(결제 계획서 5-3 · 5-5). 주문 생성 응답은 저장해 두지 않는다 — {@code channelKey}·{@code storeId}는
@@ -40,6 +47,9 @@ public class OrderAssembler {
     private final OrderDeliveryGroupRepository deliveryGroupRepository;
     private final OrderProductRepository orderProductRepository;
     private final PaymentRepository paymentRepository;
+    private final OrderCancelRequestRepository cancelRequestRepository;
+    private final OrderRefundTaskRepository refundTaskRepository;
+    private final UserOrderItemAssembler itemAssembler;
     private final PortOnePaymentGateway gateway;
     private final OrderProperties orderProperties;
 
@@ -105,6 +115,9 @@ public class OrderAssembler {
         }
 
         Payment payment = representativePayment(order).orElse(null);
+        boolean cancellable = isCancellable(order, payment, products, groups);
+        List<UserOrderDto.ItemRow> itemRows = toItemRows(order, products, cancellable);
+        int productTotal = order.getProductTotal();
         return OrderDto.OrderDetailResponse.builder()
                 .orderId(order.getId())
                 .orderNumber(order.getOrderNumber())
@@ -127,10 +140,31 @@ public class OrderAssembler {
                         .deliveryFeeTotal(order.getDeliveryFeeTotal().longValue())
                         .totalAmount(order.getTotalAmount().longValue())
                         .itemCount(products.size())
+                        .discountRate(DiscountRate.of(productTotal, productTotal - order.getDiscountTotal()))
                         .build())
                 .payment(payment != null ? toPaymentInfo(payment) : null)
-                .cancellable(isCancellable(order, payment, groups))
+                .cancellable(cancellable)
+                .items(itemRows)
+                .itemCount(itemRows.size())
+                .maskedAddress(OrderAddressMasker.mask(order))
+                .notices(itemAssembler.notices(itemRows))
                 .build();
+    }
+
+    /**
+     * C10-1 「주문 상품 N」 — 쇼룸 그룹 없는 평면 행(C10 설계서 3-1). 목록과 같은 조립기를 탄다.
+     * 취소 요청·환불 큐는 결제된 주문에만 생기므로 결제 전 주문은 읽지 않는다.
+     */
+    private List<UserOrderDto.ItemRow> toItemRows(Order order, List<OrderProduct> products, boolean cancellable) {
+        List<Long> orderIds = List.of(order.getId());
+        boolean paid = order.getPaidAt() != null;
+        UserOrderItemAssembler.Context context = UserOrderItemAssembler.Context.of(
+                paid ? cancelRequestRepository.findOpenOrRejectedByOrderIds(orderIds) : List.of(),
+                paid ? new HashSet<>(refundTaskRepository.findPendingGroupIdsByOrderIds(orderIds)) : Set.of(),
+                cancellable ? Set.of(order.getId()) : Set.of());
+        return products.stream()
+                .map(product -> itemAssembler.toRow(product, context, UserOrderItemAssembler.View.DETAIL))
+                .toList();
     }
 
     /** 완료된 결제 → 살아 있는 결제 → 마지막 시도 순. */
@@ -165,9 +199,11 @@ public class OrderAssembler {
     /**
      * 결제 전이면 언제나, 결제 후면 전 하위주문이 준비 시작 전(NEW)일 때 — 취소 처리 중이면 아니다(5-6 · 9-1 ⑤).
      * 서버 취소 게이트({@code CheckoutService.claimUserCancel} · 34 설계서 5-2)와 같은 판정이어야 한다 —
-     * 어긋나면 앱이 취소 버튼을 그리고 서버가 409 를 낸다.
+     * 어긋나면 앱이 취소 버튼을 그리고 서버가 409 를 낸다. 주문 내역 목록({@code UserOrderQueryService})도 이 판정을 쓴다 —
+     * 항목·그룹은 호출자가 읽어 둔 것을 넘긴다(목록에서 주문마다 지연 로딩하지 않게).
      */
-    private boolean isCancellable(Order order, Payment payment, List<OrderDeliveryGroup> groups) {
+    boolean isCancellable(Order order, Payment payment, Collection<OrderProduct> products,
+                          Collection<OrderDeliveryGroup> groups) {
         if (order.getStatus() == OrderStatus.PAYMENT_PENDING) {
             return true;
         }
@@ -175,8 +211,7 @@ public class OrderAssembler {
             return false;
         }
         return payment != null && payment.getStatus() == PaymentStatus.PAID
-                && order.getOrderProducts().stream()
-                .allMatch(p -> p.getStatus() == showroomz.domain.order.type.OrderProductStatus.PAID)
+                && products.stream().allMatch(p -> p.getStatus() == OrderProductStatus.PAID)
                 && groups.stream().allMatch(g -> g.getFulfillmentStatus() == FulfillmentStatus.NEW
                 || g.getFulfillmentStatus() == FulfillmentStatus.PENDING);
     }

@@ -104,6 +104,10 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
     @Column(name = "shipped_at")
     private LocalDateTime shippedAt;
 
+    /** 집화 시각 — 추적 배치가 본 첫 이벤트. 도착 예정일의 기준이자 택배사별 소요일 집계의 원천. 송장 수정 시 NULL 로 돌아간다. */
+    @Column(name = "picked_up_at")
+    private LocalDateTime pickedUpAt;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "tracking_alert", length = 30)
     private TrackingAlert trackingAlert;

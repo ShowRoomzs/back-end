@@ -21,6 +21,7 @@ import showroomz.api.seller.thread.dto.SendMessageRequest;
 import showroomz.api.seller.thread.dto.ThreadListItem;
 import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.connection.type.ConnectionStatus;
+import showroomz.domain.groupbuy.repository.GroupBuyRepository;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.creator.entity.Creator;
@@ -72,6 +73,8 @@ class SellerThreadServiceTest {
     private MessageAttachmentRepository messageAttachmentRepository;
     @Mock
     private MessageAttachmentService messageAttachmentService;
+    @Mock
+    private GroupBuyRepository groupBuyRepository;
 
     @InjectMocks
     private SellerThreadService sellerThreadService;

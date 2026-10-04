@@ -11,6 +11,7 @@ import showroomz.domain.contract.repository.*;
 import showroomz.domain.contract.type.*;
 import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.message.repository.MessageThreadRepository;
+import showroomz.domain.message.type.ThreadKind;
 import showroomz.global.dto.PageResponse;
 import java.time.*;
 import java.util.*;
@@ -78,7 +79,7 @@ public class AdminContractQueryService {
                 && docs.stream().anyMatch(d -> d.getDocumentType() == ContractDocumentType.AUDIT_TRAIL);
         var connection = c.getConnection() != null ? c.getConnection() : c.getCreator() == null ? null
                 : connections.findConnectedPair(c.getMarket().getId(), c.getCreator().getId()).orElse(null);
-        Long threadId = connection == null ? null : threads.findByConnection(connection).map(t -> t.getId()).orElse(null);
+        Long threadId = connection == null ? null : threads.findByConnectionAndKind(connection, ThreadKind.CONNECTION).map(t -> t.getId()).orElse(null);
         long minutes = c.getReviewRequestedAt() == null ? 0 : Math.max(0, Duration.between(c.getReviewRequestedAt(),
                 c.getReviewApprovedAt() != null ? c.getReviewApprovedAt() : c.getReviewRejectedAt() != null ? c.getReviewRejectedAt() : now).toMinutes());
         List<Document> documentResponses = Arrays.stream(ContractDocumentType.values()).map(type -> {

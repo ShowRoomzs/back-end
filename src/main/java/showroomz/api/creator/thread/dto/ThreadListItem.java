@@ -2,6 +2,7 @@ package showroomz.api.creator.thread.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
+import showroomz.domain.message.type.ThreadKind;
 
 import java.time.LocalDateTime;
 
@@ -37,9 +38,21 @@ public class ThreadListItem {
     @Schema(description = "안 읽은 메시지 수", example = "2")
     private final long unreadCount;
 
+    @Schema(description = "스레드 종류 — CONNECTION(연결 쌍의 대화) · GROUP_BUY_ISSUE(공구 이슈 3자 스레드) · "
+            + "GROUP_BUY_FULFILLMENT(공구 미이행 3자 스레드). 같은 상대의 줄이 여러 개일 수 있어 이 값으로 구분한다",
+            example = "CONNECTION")
+    private final ThreadKind kind;
+
+    @Schema(description = "공구 3자 스레드의 공구 ID — CONNECTION이면 null", example = "88", nullable = true)
+    private final Long groupBuyId;
+
+    @Schema(description = "공구 3자 스레드의 공구명 — CONNECTION이면 null", example = "수분크림 8월 공구", nullable = true)
+    private final String groupBuyTitle;
+
     public ThreadListItem(Long threadId, String counterpartName, String counterpartImageUrl,
                            boolean operatorChannel, boolean hasContract,
-                           String lastMessagePreview, LocalDateTime lastMessageAt, long unreadCount) {
+                           String lastMessagePreview, LocalDateTime lastMessageAt, long unreadCount,
+                           ThreadKind kind, Long groupBuyId, String groupBuyTitle) {
         this.threadId = threadId;
         this.counterpartName = counterpartName;
         this.counterpartImageUrl = counterpartImageUrl;
@@ -48,5 +61,8 @@ public class ThreadListItem {
         this.lastMessagePreview = lastMessagePreview;
         this.lastMessageAt = lastMessageAt;
         this.unreadCount = unreadCount;
+        this.kind = kind;
+        this.groupBuyId = groupBuyId;
+        this.groupBuyTitle = groupBuyTitle;
     }
 }

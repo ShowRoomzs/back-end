@@ -103,11 +103,11 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
 
     /**
      * 송장 수정(§34-6) — 배송중만 · 반송중 불가. {@code shipped_at}은 유지한다(수정으로 기한 위반이 세탁되면 안 된다).
-     * 알림·최종 갱신을 리셋해 감시 배치가 새 송장 기준으로 다시 판정한다.
+     * 알림·최종 갱신·집화 시각을 리셋해 감시 배치가 새 송장 기준으로 다시 판정한다.
      */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderDeliveryGroup g SET g.carrier = :carrier, g.trackingNumber = :trackingNumber, "
-            + "g.trackingAlert = NULL, g.lastTrackingAt = NULL "
+            + "g.trackingAlert = NULL, g.lastTrackingAt = NULL, g.pickedUpAt = NULL "
             + "WHERE g.id = :id AND g.market.id = :marketId "
             + "AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING")
     int updateInvoice(@Param("id") Long id, @Param("marketId") Long marketId,
@@ -157,13 +157,24 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
     // 추적 반영 전이는 전부 「폴링 당시의 송장(carrier · tracking_number)」을 WHERE 에 넣는다 — 폴링과 반영 사이에
     // 셀러가 송장을 고치면 구 송장의 결과(배송완료·반송·이벤트 시각)가 새 송장에 덮이면 안 된다(N11).
 
+    /** 첫 이벤트가 곧 집화다(집화 전에는 추적 데이터가 없다) — {@code picked_up_at}은 비어 있을 때 1회만 적는다. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("UPDATE OrderDeliveryGroup g SET g.lastTrackingAt = :at WHERE g.id = :id "
+    @Query("UPDATE OrderDeliveryGroup g SET g.lastTrackingAt = :at, g.pickedUpAt = COALESCE(g.pickedUpAt, :at) "
+            + "WHERE g.id = :id "
             + "AND g.carrier = :carrier AND g.trackingNumber = :trackingNumber "
             + "AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.SHIPPING, "
             + "    showroomz.domain.order.type.FulfillmentStatus.RETURNING)")
     int touchTracking(@Param("id") Long id, @Param("carrier") DeliveryCarrier carrier,
                       @Param("trackingNumber") String trackingNumber, @Param("at") LocalDateTime at);
+
+    /**
+     * 택배사별 실제 소요일 표본 — [carrier, picked_up_at, delivered_at]. 추적이 확인한 배송완료만(직권 처리는 실제 도착 시각이 아니다).
+     * 집계는 {@code DeliveryArrivalEstimator}가 한다.
+     */
+    @Query("SELECT g.carrier, g.pickedUpAt, g.deliveredAt FROM OrderDeliveryGroup g "
+            + "WHERE g.deliveredAt >= :since AND g.pickedUpAt IS NOT NULL AND g.carrier IS NOT NULL "
+            + "AND g.deliveredSource = showroomz.domain.order.type.DeliveredSource.TRACKER")
+    List<Object[]> findTransitSamples(@Param("since") LocalDateTime since);
 
     /** #5 SHIPPING → DELIVERED — 자동 확인. 운영자 직권은 어드민 모듈이 별도 메서드로 간다(범위 밖). */
     @Modifying(flushAutomatically = true, clearAutomatically = true)

@@ -11,6 +11,7 @@ import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.message.entity.MessageThread;
+import showroomz.domain.message.type.ThreadKind;
 import showroomz.domain.message.type.ThreadStatus;
 
 import java.util.List;
@@ -19,7 +20,14 @@ import java.util.Optional;
 @Repository
 public interface MessageThreadRepository extends JpaRepository<MessageThread, Long> {
 
-    Optional<MessageThread> findByConnection(Connection connection);
+    /**
+     * 연결 쌍의 일반 스레드는 {@code kind = CONNECTION}으로 찾는다 — 같은 연결에 공구 3자 스레드가 함께 붙으므로
+     * 연결만으로 찾으면 여러 건이 나온다(30-1 1-3).
+     */
+    Optional<MessageThread> findByConnectionAndKind(Connection connection, ThreadKind kind);
+
+    /** 공구 미이행 3자 스레드 — 공구당 1개다(30-1 1-4). */
+    Optional<MessageThread> findFirstByKindAndSubjectIdOrderByIdAsc(ThreadKind kind, Long subjectId);
 
     /**
      * §13-1 좌측 목록 — 운영자 채널(OPERATOR_MARKET) 최상단 고정 + STATUS=OPEN만, 최근 메시지순.

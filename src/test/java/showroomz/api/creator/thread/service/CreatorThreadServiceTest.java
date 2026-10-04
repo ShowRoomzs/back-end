@@ -16,6 +16,7 @@ import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.contract.repository.ContractRepository;
 import showroomz.domain.contract.type.ContractStatus;
+import showroomz.domain.groupbuy.repository.GroupBuyRepository;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
@@ -68,6 +69,8 @@ class CreatorThreadServiceTest {
     private MessageAttachmentService messageAttachmentService;
     @Mock
     private ContractRepository contractRepository;
+    @Mock
+    private GroupBuyRepository groupBuyRepository;
 
     @InjectMocks
     private CreatorThreadService creatorThreadService;
