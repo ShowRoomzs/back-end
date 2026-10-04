@@ -12,7 +12,9 @@ import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.context.MessageSourceResolvable;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -21,6 +23,7 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.sql.SQLException;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -100,6 +103,24 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(ErrorCode.INVALID_INPUT_VALUE.getCode(),
                         ErrorCode.INVALID_INPUT_VALUE.getMessage()));
+    }
+
+    /**
+     * 목록 본문({@code @Valid @RequestBody List<X>})·파라미터 제약 검증 실패 — Spring 6.1부터 요소 검증은
+     * {@code MethodArgumentNotValidException}이 아니라 이 예외로 온다(예: 장바구니 일괄 담기의 공구 누락).
+     * 클라이언트 입력 오류이므로 400이고, 처리하지 않으면 아래 500 핸들러로 떨어진다.
+     */
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ErrorResponse> handleHandlerMethodValidationException(HandlerMethodValidationException e) {
+        String message = e.getAllErrors().stream()
+                .map(MessageSourceResolvable::getDefaultMessage)
+                .filter(Objects::nonNull)
+                .filter(text -> !text.isBlank())
+                .findFirst()
+                .orElse(ErrorCode.INVALID_INPUT_VALUE.getMessage());
+        log.warn("HandlerMethodValidationException: {}", message);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(ErrorCode.INVALID_INPUT_VALUE.getCode(), message));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

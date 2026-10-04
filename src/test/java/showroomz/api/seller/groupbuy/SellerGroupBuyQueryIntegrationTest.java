@@ -1,5 +1,6 @@
 package showroomz.api.seller.groupbuy;
 
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.ResultActions;
@@ -12,6 +13,7 @@ import showroomz.domain.groupbuy.type.GroupBuyPostReviewStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
+import showroomz.global.utils.KstDates;
 import showroomz.support.BrandFixture;
 
 import java.time.LocalDate;
@@ -36,7 +38,7 @@ class SellerGroupBuyQueryIntegrationTest extends GroupBuyTestSupport {
         GroupBuy groupBuy = seedPreparing();
 
         assertThat(groupBuy.getStatus()).isEqualTo(GroupBuyStatus.PREPARING);
-        String datePart = LocalDate.now().minusDays(1).format(DateTimeFormatter.BASIC_ISO_DATE);
+        String datePart = LocalDate.now(KstDates.KST).minusDays(1).format(DateTimeFormatter.BASIC_ISO_DATE);
         assertThat(groupBuy.getGroupBuyNumber()).isEqualTo("GB-" + datePart + "-001");
 
         Long contractId = inTransaction(() -> reload(groupBuy.getId()).getContract().getId());
@@ -251,7 +253,7 @@ class SellerGroupBuyQueryIntegrationTest extends GroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("진행중 상세 — 게시물 노출중 · 게이트 없음 · 판매 모듈이 없으니 KPI는 0이 아니라 null")
+    @DisplayName("진행중 상세 — 게시물 노출중 · 게이트 없음 · 판매 실적은 주문 테이블에서 실값으로(주문 없음 = 0건)")
     void inProgressDetail() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.IN_PROGRESS);
         seedPost(groupBuy.getId(), GroupBuyPostReviewStatus.APPROVED, false);
@@ -264,8 +266,55 @@ class SellerGroupBuyQueryIntegrationTest extends GroupBuyTestSupport {
                 .andExpect(jsonPath("$.post.content").value("여름 한정 앵콜 공구 — 크림·세럼 세트"))
                 .andExpect(jsonPath("$.timeline.elapsedDays").value(4))
                 .andExpect(jsonPath("$.timeline.daysUntilEnd").value(4))
-                .andExpect(jsonPath("$.sales").doesNotExist())
-                .andExpect(jsonPath("$.orderClosure").doesNotExist());
+                // 판매 실적은 order_product.group_buy_id 로 읽는다(결제 계획서 7-2) — 주문이 없으면 0건이다.
+                .andExpect(jsonPath("$.sales.basis").value("LIVE"))
+                .andExpect(jsonPath("$.sales.orderCount").value(0))
+                .andExpect(jsonPath("$.sales.amount").value(0))
+                // 종결은 하위주문 이행 상태로 실값 판정한다(34 설계서 5-3) — 주문이 없으면 0/0/0 이다.
+                .andExpect(jsonPath("$.orderClosure.totalCount").value(0))
+                .andExpect(jsonPath("$.orderClosure.unclosedCount").value(0))
+                .andExpect(jsonPath("$.orderClosure.purchaseConfirmedCount").value(0))
+                .andExpect(jsonPath("$.orderClosure.refundedCount").value(0))
+                // 목록 조건 없이 들어오면 이웃을 계산하지 않는다.
+                .andExpect(jsonPath("$.navigation.prevGroupBuyId").doesNotExist())
+                .andExpect(jsonPath("$.navigation.nextGroupBuyId").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("정산완료 상세 — 종결 내역(구매확정 · 환불)을 내린다(B6 「확정 310 · 환불 2」)")
+    void settledDetailCarriesClosureBreakdown() throws Exception {
+        GroupBuy groupBuy = seedIn(GroupBuyStatus.SETTLED);
+
+        detail(groupBuy.getId())
+                .andExpect(jsonPath("$.sales.basis").value("SETTLED"))
+                .andExpect(jsonPath("$.orderClosure.totalCount").value(0))
+                .andExpect(jsonPath("$.orderClosure.purchaseConfirmedCount").value(0))
+                .andExpect(jsonPath("$.orderClosure.refundedCount").value(0))
+                .andExpect(jsonPath("$.afterEnd.fulfillment.autoConfirmOnTimeout").value(false));
+    }
+
+    @Test
+    @DisplayName("상세 이웃 — 목록과 같은 탭·정렬로 이전·다음 공구 id를 고르고, 목록 조건에 없는 공구면 비운다")
+    void navigationFollowsListOrder() throws Exception {
+        seedIn(GroupBuyStatus.IN_PROGRESS);
+        seedIn(GroupBuyStatus.IN_PROGRESS);
+        seedIn(GroupBuyStatus.IN_PROGRESS);
+        GroupBuy ended = seedIn(GroupBuyStatus.ENDED);
+
+        String body = list("tab=IN_PROGRESS").andReturn().getResponse().getContentAsString();
+        List<Integer> ids = JsonPath.read(body, "$.content[*].groupBuyId");
+        assertThat(ids).hasSize(3);
+
+        detail(ids.get(1), "tab=IN_PROGRESS")
+                .andExpect(jsonPath("$.navigation.prevGroupBuyId").value(ids.get(0)))
+                .andExpect(jsonPath("$.navigation.nextGroupBuyId").value(ids.get(2)));
+        detail(ids.get(0), "tab=IN_PROGRESS&sort=START_AT_ASC")
+                .andExpect(jsonPath("$.navigation.prevGroupBuyId").doesNotExist())
+                .andExpect(jsonPath("$.navigation.nextGroupBuyId").value(ids.get(1)));
+        // 종료 공구는 진행중 탭에 없다 — 근거 없는 이웃을 짓지 않는다.
+        detail(ended.getId(), "tab=IN_PROGRESS")
+                .andExpect(jsonPath("$.navigation.prevGroupBuyId").doesNotExist())
+                .andExpect(jsonPath("$.navigation.nextGroupBuyId").doesNotExist());
     }
 
     @Test
@@ -282,6 +331,7 @@ class SellerGroupBuyQueryIntegrationTest extends GroupBuyTestSupport {
                 .andExpect(jsonPath("$.afterEnd.fulfillment.mine").doesNotExist())
                 .andExpect(jsonPath("$.afterEnd.fulfillment.dueAt").exists())
                 .andExpect(jsonPath("$.afterEnd.fulfillment.onHold").value(false))
+                .andExpect(jsonPath("$.afterEnd.fulfillment.autoConfirmOnTimeout").value(false))
                 .andExpect(jsonPath("$.afterEnd.settlementWatchAt").exists())
                 // 종료 화면에 KPI를 두지 않는다 — 잠정치가 지급액으로 오해된다(§30-4).
                 .andExpect(jsonPath("$.sales").doesNotExist());

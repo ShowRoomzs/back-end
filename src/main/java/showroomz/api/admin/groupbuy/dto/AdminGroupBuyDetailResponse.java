@@ -100,7 +100,16 @@ public record AdminGroupBuyDetailResponse(
             Integer groupBuyPrice,
             BigDecimal rewardRate,
             @Schema(nullable = true) Long expectedUnitReward,
-            @Schema(description = "최소 준비 물량 — B4 소진율의 분모") Integer minQuantity
+            @Schema(description = "최소 준비 물량 — 옵션별 최소 물량의 합계. B4 소진율의 분모") Integer minQuantity,
+            @Schema(description = "옵션별 판매가·최소 준비 물량") List<ItemOption> options
+    ) {
+    }
+
+    public record ItemOption(
+            @Schema(nullable = true) Long variantId,
+            @Schema(nullable = true) String variantName,
+            @Schema(description = "옵션 판매가 = 공구가 + 옵션가", nullable = true) Integer salePrice,
+            @Schema(description = "옵션별 최소 준비 물량") Integer minQuantity
     ) {
     }
 
@@ -238,7 +247,8 @@ public record AdminGroupBuyDetailResponse(
             @Schema(nullable = true) Integer quantityNow,
             @Schema(nullable = true) Long amountNow,
             @Schema(description = "SUSPEND · 요청 후 CS 문의", nullable = true) Inquiries inquiries,
-            @Schema(description = "EARLY_CLOSE · 계약 상품 최소 물량 합 — 실제 재고가 아니다", nullable = true) Integer preparedQuantity,
+            @Schema(description = "EARLY_CLOSE · 준비 물량 = 판매 수량 + 계약 옵션의 현재 재고(같은 상품의 다른 공구와 공유). "
+                    + "판매 수량을 모르면 null", nullable = true) Integer preparedQuantity,
             @Schema(description = "EARLY_CLOSE · 소진율(%)", nullable = true) Integer sellThroughRate,
             @Schema(description = "EARLY_CLOSE · 요청 후 재입고 문의", nullable = true) Long soldOutInquiriesSinceRequest,
             @Schema(description = "EARLY_CLOSE · 현재 종료 예정", nullable = true) LocalDateTime originalEndAt,
@@ -383,8 +393,18 @@ public record AdminGroupBuyDetailResponse(
     ) {
     }
 
-    /** 미종결만 단계별로 쪼갠다 — 종결 경로 내역은 판매 관리 소관이다(§29-11). */
-    public record OrderClosure(int totalCount, int closedCount, int unclosedCount, List<UnclosedStage> unclosed) {
+    /** 미종결은 단계별로, 종결은 경로별로 쪼갠다 — 둘 다 판매 모듈(주문 관리)이 판정한 숫자를 그대로 싣는다(§29-11). */
+    public record OrderClosure(
+            int totalCount,
+            int closedCount,
+            int unclosedCount,
+            List<UnclosedStage> unclosed,
+            @Schema(description = "종결 중 구매확정 — B5 「구매확정」. 반품·교환 거절 확정도 즉시 구매확정이라 여기 센다. 판매 모듈이 모르면 null",
+                    nullable = true)
+            Integer purchaseConfirmedCount,
+            @Schema(description = "종결 중 환불(결제 후 취소) — B5 「환불」. 판매 모듈이 모르면 null", nullable = true)
+            Integer refundedCount
+    ) {
     }
 
     public record UnclosedStage(String stage, String label, int count) {

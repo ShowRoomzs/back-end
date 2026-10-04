@@ -36,6 +36,11 @@ public class CartDto {
         @Schema(description = "옵션(Variant) ID", example = "1")
         private Long variantId;
 
+        @NotNull(message = "공구 ID는 필수입니다.")
+        @Schema(description = "담는 공구 — 상품 상세 응답의 groupBuyId를 그대로 싣는다. 가격은 이 공구 계약의 공구가 + 옵션가다",
+                example = "41")
+        private Long groupBuyId;
+
         @NotNull(message = "수량은 필수입니다.")
         @Min(value = 1, message = "수량은 1 이상이어야 합니다.")
         @Max(value = MAX_QUANTITY, message = "수량은 " + MAX_QUANTITY + " 이하여야 합니다.")
@@ -54,6 +59,9 @@ public class CartDto {
 
         @Schema(description = "옵션(Variant) ID", example = "1")
         private Long variantId;
+
+        @Schema(description = "담은 공구 ID", example = "41")
+        private Long groupBuyId;
 
         @Schema(description = "최종 수량", example = "3")
         private Integer quantity;
@@ -170,8 +178,27 @@ public class CartDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @Schema(description = "공구(쇼룸) 단위 장바구니 그룹")
+    @Schema(description = "공구 단위 장바구니 그룹 — 같은 쇼룸이라도 공구가 다르면 다른 그룹이다")
     public static class CartGroup {
+        @Schema(description = "공구 ID — 귀속을 정하지 못한 옛 행의 그룹이면 null(쇼룸 단위로 묶이고 마감으로 표시)",
+                example = "41", nullable = true)
+        private Long groupBuyId;
+
+        @Schema(description = "공구번호", example = "GB-20260901-003", nullable = true)
+        private String groupBuyNumber;
+
+        @Schema(description = "공구명(계약의 공구명)", example = "가을 앰플 신제품 공구", nullable = true)
+        private String groupBuyTitle;
+
+        @Schema(description = "공구 종료 시각(Asia/Seoul) — 연장되면 바뀐다", example = "2026-09-17T23:59:00", nullable = true)
+        @com.fasterxml.jackson.annotation.JsonFormat(
+                shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        private java.time.LocalDateTime endAt;
+
+        @Schema(description = "그룹 머리의 D-day — 종료 일자까지 남은 날 수(마감 당일 0). 마감 그룹이면 null",
+                example = "3", nullable = true)
+        private Integer dDay;
+
         @Schema(description = "쇼룸(마켓) ID", example = "5")
         private Long marketId;
 
@@ -192,6 +219,12 @@ public class CartDto {
 
         @Schema(description = "이 그룹(공구)의 배송비 정보")
         private GroupShipping shipping;
+
+        /** 게시물 D-day와 같은 필드명으로 직렬화한다 — Lombok 게터 {@code getDDay}를 Jackson은 {@code dday}로 읽는다. */
+        @com.fasterxml.jackson.annotation.JsonProperty("dDay")
+        public Integer getDDay() {
+            return dDay;
+        }
     }
 
     @Getter

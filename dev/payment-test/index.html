@@ -1,0 +1,390 @@
+<!doctype html>
+<!--
+  결제 테스트 페이지 — 로컬 전용. 앱(RN) 없이 포트원 결제창을 열어 서버 결제 흐름을 끝까지 돌린다.
+
+  실행
+    1) 서버를 띄운다 (기본 http://localhost:8080). .env 에 포트원 V2 자격이 있어야 한다.
+    2) dev/결제 테스트 시드 (로컬).sql 을 실행해 소비자·진행 중 공구를 만든다.
+    3) 이 폴더에서:  python -m http.server 5173
+    4) PC 브라우저로 http://localhost:5173 을 연다. (5173 은 서버 CORS 허용 목록에 있다)
+
+  흐름: 로그인 → 주문서 → [결제하기] = 주문 생성 → 포트원 결제창 → complete → 결과
+  테스트 채널이라 실제 출금은 되지 않는다.
+-->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>결제 테스트</title>
+<script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+<style>
+  :root { --line:#e3e3e8; --muted:#6b6b76; --accent:#3b5bdb; --ok:#2b8a3e; --err:#c92a2a; --bg:#f7f7f9; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.5 -apple-system, "Segoe UI", "Malgun Gothic", sans-serif; background:var(--bg); color:#1a1a1f; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; display:grid; gap:16px; grid-template-columns: 1fr 1fr; }
+  h1 { grid-column: 1 / -1; font-size: 20px; margin: 0; }
+  h1 small { font-weight: 400; color: var(--muted); font-size: 13px; margin-left: 8px; }
+  section { background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px; }
+  section.wide { grid-column: 1 / -1; }
+  h2 { font-size: 15px; margin: 0 0 12px; }
+  h2 .step { display:inline-block; width:20px; height:20px; border-radius:50%; background:var(--accent); color:#fff;
+             font-size:12px; text-align:center; line-height:20px; margin-right:6px; }
+  label { display:block; font-size:12px; color:var(--muted); margin: 8px 0 4px; }
+  input, select { width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:6px; font:inherit; }
+  .row { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; }
+  .row2 { display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+  button { margin-top:12px; padding:8px 14px; border:0; border-radius:6px; background:var(--accent); color:#fff; font:inherit; cursor:pointer; }
+  button.secondary { background:#fff; color:var(--accent); border:1px solid var(--accent); }
+  button.danger { background:#fff; color:var(--err); border:1px solid var(--err); }
+  button:disabled { opacity:.45; cursor:default; }
+  .buttons { display:flex; gap:8px; flex-wrap:wrap; }
+  .kv { display:grid; grid-template-columns: 110px 1fr; gap:4px 12px; font-size:13px; margin-top:8px; }
+  .kv dt { color:var(--muted); }
+  .kv dd { margin:0; word-break:break-all; }
+  .pill { display:inline-block; padding:1px 8px; border-radius:999px; font-size:12px; background:#edf2ff; color:var(--accent); }
+  .pill.ok { background:#ebfbee; color:var(--ok); }
+  .pill.err { background:#fff5f5; color:var(--err); }
+  .hint { font-size:12px; color:var(--muted); margin-top:6px; }
+  #log { font:12px/1.45 ui-monospace, Consolas, monospace; background:#111318; color:#d7dae0; border-radius:8px; padding:12px;
+         max-height:420px; overflow:auto; white-space:pre-wrap; margin:0; }
+  #log .req { color:#8fb8ff; } #log .ok { color:#8ce99a; } #log .err { color:#ff8787; } #log .info { color:#ffd43b; }
+  @media (max-width: 760px) { main { grid-template-columns: 1fr; } .row { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>결제 테스트 <small>포트원 V2 · 테스트 채널</small></h1>
+
+  <section>
+    <h2><span class="step">1</span>로그인</h2>
+    <label for="apiBase">서버 주소</label>
+    <input id="apiBase" value="http://localhost:8080">
+    <div class="row2">
+      <div><label for="loginId">아이디</label><input id="loginId" value="paytest"></div>
+      <div><label for="loginPw">비밀번호</label><input id="loginPw" type="password" value="Test1234!"></div>
+    </div>
+    <button id="btnLogin">로그인</button>
+    <label for="token">액세스 토큰 (직접 붙여 넣어도 된다)</label>
+    <input id="token" placeholder="로그인하면 채워진다">
+  </section>
+
+  <section>
+    <h2><span class="step">2</span>주문할 상품</h2>
+    <div class="row">
+      <div><label for="variantId">variantId</label><input id="variantId" type="number" placeholder="시드 결과"></div>
+      <div><label for="groupBuyId">groupBuyId</label><input id="groupBuyId" type="number" placeholder="시드 결과"></div>
+      <div><label for="quantity">수량</label><input id="quantity" type="number" value="1" min="1" max="99"></div>
+    </div>
+    <p class="hint">시드 SQL 마지막 SELECT 의 <code>variant_basic_id</code> · <code>group_buy_id</code> 를 넣는다.</p>
+    <button id="btnCheckout" class="secondary">주문서 조회</button>
+    <dl class="kv" id="checkoutView"></dl>
+  </section>
+
+  <section>
+    <h2><span class="step">3</span>결제수단</h2>
+    <div class="row2">
+      <div>
+        <label for="method">방식</label>
+        <select id="method">
+          <option value="CARD">카드</option>
+          <option value="EASY_PAY">간편결제</option>
+        </select>
+      </div>
+      <div>
+        <label for="methodDetail">카드사 / 간편결제</label>
+        <select id="methodDetail"></select>
+      </div>
+    </div>
+    <label for="issuerMode">카드사·간편결제를 결제창에 지정</label>
+    <select id="issuerMode">
+      <option value="send">지정한다 (서버 값 그대로 — 앱과 같은 동작)</option>
+      <option value="omit">지정하지 않는다 (결제창에서 고른다)</option>
+    </select>
+    <button id="btnPay">결제하기</button>
+    <p class="hint">주문 생성 → 결제창 → complete 를 차례로 부른다.</p>
+  </section>
+
+  <section>
+    <h2><span class="step">4</span>결과</h2>
+    <dl class="kv" id="resultView"><dt>상태</dt><dd>아직 없음</dd></dl>
+    <div class="buttons">
+      <button id="btnComplete" class="secondary" disabled>complete 다시 부르기</button>
+      <button id="btnDetail" class="secondary" disabled>주문 상세</button>
+      <button id="btnCancel" class="danger" disabled>주문 취소</button>
+    </div>
+  </section>
+
+  <section class="wide">
+    <h2>요청 · 응답 로그</h2>
+    <pre id="log"></pre>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const CARD_ISSUERS = [["SHINHAN","신한"],["SAMSUNG","삼성"],["HYUNDAI","현대"],["KB","KB국민"],["LOTTE","롯데"],
+                      ["HANA","하나"],["BC","BC"],["NH","NH농협"],["WOORI","우리"],["KAKAOBANK","카카오뱅크"]];
+const EASY_PAYS = [["KAKAOPAY","카카오페이"],["NAVERPAY","네이버페이"],["TOSSPAY","토스페이"]];
+const STORE_KEY = "paytest-page";
+
+const state = { orderId: null, paymentId: null };
+
+// ------------------------------------------------------------------ 로그
+
+function log(kind, title, body) {
+  const line = document.createElement("span");
+  line.className = kind;
+  const time = new Date().toLocaleTimeString("ko-KR", { hour12: false });
+  line.textContent = `[${time}] ${title}\n` + (body === undefined ? "" : (typeof body === "string" ? body : JSON.stringify(body, null, 2)) + "\n");
+  $("log").prepend(line);
+}
+
+// ------------------------------------------------------------------ API
+
+async function api(method, path, body) {
+  const headers = { "Content-Type": "application/json" };
+  const token = $("token").value.trim();
+  if (token) headers.Authorization = "Bearer " + token;
+  log("req", `${method} ${path}`, body);
+  let res;
+  try {
+    res = await fetch($("apiBase").value.replace(/\/$/, "") + path,
+                      { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+  } catch (e) {
+    log("err", "요청 실패 — 서버가 떠 있는지, CORS(5173)로 열었는지 확인", String(e));
+    throw e;
+  }
+  const text = await res.text();
+  let data;
+  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+  log(res.ok ? "ok" : "err", `← ${res.status}`, data);
+  if (!res.ok) {
+    const err = new Error((data && data.message) || `HTTP ${res.status}`);
+    err.status = res.status; err.data = data;
+    throw err;
+  }
+  return { status: res.status, data };
+}
+
+// ------------------------------------------------------------------ 화면
+
+function renderKv(el, pairs) {
+  el.innerHTML = "";
+  for (const [k, v] of pairs) {
+    const dt = document.createElement("dt"); dt.textContent = k;
+    const dd = document.createElement("dd");
+    if (v instanceof Node) dd.appendChild(v); else dd.textContent = v ?? "—";
+    el.append(dt, dd);
+  }
+}
+
+function pill(text, kind) {
+  const span = document.createElement("span");
+  span.className = "pill " + (kind || "");
+  span.textContent = text;
+  return span;
+}
+
+const won = (n) => n == null ? "—" : Number(n).toLocaleString("ko-KR") + "원";
+
+function fillMethodDetail() {
+  const list = $("method").value === "CARD" ? CARD_ISSUERS : EASY_PAYS;
+  $("methodDetail").innerHTML = list.map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
+}
+
+function setOrderButtons() {
+  $("btnComplete").disabled = !state.paymentId;
+  $("btnDetail").disabled = !state.orderId;
+  $("btnCancel").disabled = !state.orderId;
+}
+
+function showComplete(data) {
+  const orderKind = data.orderStatus === "PAID" ? "ok" : (data.orderStatus === "PAYMENT_PENDING" ? "" : "err");
+  const payKind = data.paymentStatus === "PAID" ? "ok" : (data.paymentStatus === "READY" ? "" : "err");
+  renderKv($("resultView"), [
+    ["주문", `${data.orderNumber} (#${data.orderId})`],
+    ["주문 상태", pill(data.orderStatus, orderKind)],
+    ["결제 상태", pill(data.paymentStatus, payKind)],
+    ["사유", data.failReason],
+  ]);
+}
+
+function directItem() {
+  return {
+    variantId: Number($("variantId").value),
+    quantity: Number($("quantity").value || 1),
+    groupBuyId: Number($("groupBuyId").value),
+  };
+}
+
+// 입력값은 새로고침·리다이렉트 복귀 뒤에도 남긴다
+function saveInputs() {
+  try {
+    const keep = {};
+    for (const id of ["apiBase", "loginId", "token", "variantId", "groupBuyId", "quantity", "method", "issuerMode"]) keep[id] = $(id).value;
+    keep.methodDetail = $("methodDetail").value;
+    keep.orderId = state.orderId; keep.paymentId = state.paymentId;
+    localStorage.setItem(STORE_KEY, JSON.stringify(keep));
+  } catch { /* 저장 불가 환경이면 넘어간다 */ }
+}
+
+function restoreInputs() {
+  try {
+    const keep = JSON.parse(localStorage.getItem(STORE_KEY) || "{}");
+    for (const [id, v] of Object.entries(keep)) if ($(id) && v != null && id !== "methodDetail") $(id).value = v;
+    fillMethodDetail();
+    if (keep.methodDetail) $("methodDetail").value = keep.methodDetail;
+    state.orderId = keep.orderId ?? null; state.paymentId = keep.paymentId ?? null;
+  } catch { fillMethodDetail(); }
+}
+
+// ------------------------------------------------------------------ 동작
+
+async function login() {
+  const { data } = await api("POST", "/v1/user/auth/local/login", { id: $("loginId").value, password: $("loginPw").value });
+  $("token").value = data.accessToken;
+  saveInputs();
+}
+
+async function checkout() {
+  const { data } = await api("POST", "/v1/user/orders/checkout", { direct: directItem() });
+  const s = data.summary;
+  renderKv($("checkoutView"), [
+    ["배송지", data.deliveryAddress ? `${data.deliveryAddress.recipientName} · ${data.deliveryAddress.address}` : "없음 (주문 불가)"],
+    ["상품", data.groups.flatMap(g => g.items).map(i => `${i.productName} ${i.optionName ?? ""} × ${i.quantity}`).join(", ")],
+    ["상품 금액", won(s.productTotal)],
+    ["할인", won(s.discountTotal)],
+    ["배송비", won(s.deliveryFeeTotal)],
+    ["결제 금액", won(s.totalAmount)],
+  ]);
+  saveInputs();
+  return data;
+}
+
+/** 서버가 준 payment 블록 → 포트원 브라우저 SDK 요청 */
+function toPortOneRequest(p) {
+  const req = {
+    storeId: p.storeId,
+    channelKey: p.channelKey,
+    paymentId: p.paymentId,
+    orderName: p.orderName,
+    totalAmount: p.totalAmount,
+    currency: p.currency, // 서버 값(KRW · SHINHAN_CARD · KAKAOPAY …)은 브라우저 SDK 표기와 같다 — 변환하지 않는다
+    payMethod: p.payMethod,
+    customer: p.customer,
+    // 모바일 브라우저는 결제창이 페이지를 떠났다가 이 주소로 돌아온다. PC 는 결과가 바로 돌아온다.
+    redirectUrl: location.origin + location.pathname,
+  };
+  if ($("issuerMode").value === "send") {
+    if (p.payMethod === "CARD" && p.cardCompany) req.card = { cardCompany: p.cardCompany };
+    if (p.payMethod === "EASY_PAY" && p.easyPayProvider) req.easyPay = { easyPayProvider: p.easyPayProvider };
+  }
+  return req;
+}
+
+async function pay() {
+  const method = $("method").value;
+  const detail = $("methodDetail").value;
+  const summary = await checkout();
+  const body = {
+    idempotencyKey: crypto.randomUUID(),
+    direct: directItem(),
+    payment: method === "CARD" ? { method, cardIssuer: detail } : { method, easyPayProvider: detail },
+    expectedTotalAmount: summary.summary.totalAmount,
+  };
+  const { data: order } = await api("POST", "/v1/user/orders", body);
+  state.orderId = order.orderId;
+  state.paymentId = order.payment.paymentId;
+  setOrderButtons();
+  saveInputs();
+  renderKv($("resultView"), [
+    ["주문", `${order.orderNumber} (#${order.orderId})`],
+    ["주문 상태", pill(order.status)],
+    ["만료", order.expiresAt],
+    ["결제창", "여는 중…"],
+  ]);
+
+  const request = toPortOneRequest(order.payment);
+  log("info", "PortOne.requestPayment", request);
+  let response;
+  try {
+    response = await PortOne.requestPayment(request);
+  } catch (e) {
+    log("err", "결제창 호출 실패 (SDK 예외)", String(e && e.message || e));
+    return;
+  }
+  log(response && response.code != null ? "err" : "info", "결제창 결과 (onComplete 에 해당)", response ?? "(응답 없음 — 리다이렉트 방식)");
+  if (!response) return; // 리다이렉트로 돌아오면 handleRedirect 가 complete 를 부른다
+
+  await complete(response);
+}
+
+async function complete(clientResult) {
+  if (!state.paymentId) return;
+  const body = clientResult
+    ? { clientResult: { code: clientResult.code ?? null, message: clientResult.message ?? null, txId: clientResult.txId ?? null } }
+    : {};
+  const { data } = await api("POST", `/v1/user/payments/${encodeURIComponent(state.paymentId)}/complete`, body);
+  showComplete(data);
+}
+
+async function detail() {
+  const { data } = await api("GET", `/v1/user/orders/${state.orderId}`);
+  renderKv($("resultView"), [
+    ["주문", `${data.orderNumber} (#${data.orderId})`],
+    ["주문 상태", pill(data.status, data.status === "PAID" ? "ok" : data.status === "PAYMENT_PENDING" ? "" : "err")],
+    ["결제", data.payment ? `${data.payment.methodLabel} · ${data.payment.status}` : "—"],
+    ["결제 금액", won(data.summary && data.summary.totalAmount)],
+    ["결제 시각", data.paidAt],
+    ["취소 가능", String(data.cancellable)],
+  ]);
+}
+
+async function cancel() {
+  if (!confirm("이 주문을 취소할까요? 결제된 주문이면 포트원에 전액 취소를 요청한다.")) return;
+  const { status, data } = await api("POST", `/v1/user/orders/${state.orderId}/cancel`, { reason: "결제 테스트 취소" });
+  renderKv($("resultView"), [
+    ["응답", status === 202 ? pill("202 취소 처리 중") : pill("200 취소 완료", "ok")],
+    ["주문 상태", data.status],
+    ["결제 상태", data.paymentStatus],
+    ["메시지", data.message],
+  ]);
+}
+
+/** 모바일 리다이렉트 복귀 — ?paymentId=…&code=…&message=… */
+async function handleRedirect() {
+  const q = new URLSearchParams(location.search);
+  if (!q.has("paymentId")) return;
+  state.paymentId = q.get("paymentId");
+  setOrderButtons();
+  log("info", "리다이렉트 복귀", Object.fromEntries(q));
+  history.replaceState(null, "", location.pathname);
+  await complete({ code: q.get("code"), message: q.get("message"), txId: q.get("txId") });
+}
+
+function guard(fn) {
+  return async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    try { await fn(); } catch (e) { /* 로그에 남았다 */ } finally { button.disabled = false; setOrderButtons(); }
+  };
+}
+
+$("method").addEventListener("change", () => { fillMethodDetail(); saveInputs(); });
+for (const id of ["variantId", "groupBuyId", "quantity", "methodDetail", "issuerMode", "apiBase", "token"]) {
+  $(id).addEventListener("change", saveInputs);
+}
+$("btnLogin").addEventListener("click", guard(login));
+$("btnCheckout").addEventListener("click", guard(checkout));
+$("btnPay").addEventListener("click", guard(pay));
+$("btnComplete").addEventListener("click", guard(() => complete(null)));
+$("btnDetail").addEventListener("click", guard(detail));
+$("btnCancel").addEventListener("click", guard(cancel));
+
+restoreInputs();
+setOrderButtons();
+if (typeof PortOne === "undefined") log("err", "포트원 SDK 를 불러오지 못했다 — 네트워크(cdn.portone.io)를 확인");
+handleRedirect();
+</script>
+</body>
+</html>

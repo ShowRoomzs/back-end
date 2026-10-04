@@ -28,7 +28,10 @@ import showroomz.domain.contract.type.ContractSortType;
 import showroomz.domain.contract.type.ContractStatus;
 import showroomz.domain.contract.type.ContractTab;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.product.entity.Product;
+import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.product.repository.ProductRepository;
+import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
@@ -39,6 +42,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 파트너센터 계약 조회(설계서 4-1).
@@ -60,6 +64,7 @@ public class SellerContractQueryService {
     private final ContractClauseVersionRepository clauseVersionRepository;
     private final ConnectionRepository connectionRepository;
     private final ProductRepository productRepository;
+    private final ProductVariantRepository productVariantRepository;
     private final ContractDetailAssembler detailAssembler;
 
     /** 목록(A1) — 탭·검색·기간·정렬. */
@@ -190,15 +195,40 @@ public class SellerContractQueryService {
                                 connection.getCreator().getProfileImageUrl()))
                         .toList();
 
-        List<ContractFormSourcesResponse.ProductOption> products =
-                productRepository.findDisplayedByMarketId(market.getId()).stream()
-                        .map(product -> new ContractFormSourcesResponse.ProductOption(
-                                product.getProductId(),
-                                product.getName(),
-                                product.getRegularPrice(),
-                                product.getThumbnailUrl()))
-                        .toList();
+        List<Product> displayed = productRepository.findDisplayedByMarketId(market.getId());
+        Map<Long, List<ContractFormSourcesResponse.Variant>> variantsByProduct = loadVariants(displayed);
+
+        List<ContractFormSourcesResponse.ProductOption> products = displayed.stream()
+                .map(product -> new ContractFormSourcesResponse.ProductOption(
+                        product.getProductId(),
+                        product.getName(),
+                        product.getRegularPrice(),
+                        product.getThumbnailUrl(),
+                        variantsByProduct.getOrDefault(product.getProductId(), List.of())))
+                .toList();
 
         return new ContractFormSourcesResponse(counterparties, products);
+    }
+
+    /** 옵션 행을 그리려면 상품 선택 즉시 옵션 목록이 필요하다 — 진열 상품 N건의 옵션을 한 번에 읽는다(옵션 계획서 3-1). */
+    private Map<Long, List<ContractFormSourcesResponse.Variant>> loadVariants(List<Product> products) {
+        if (products.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> productIds = products.stream().map(Product::getProductId).toList();
+        return productVariantRepository.findByProductIdsOrderByVariantId(productIds).stream()
+                .collect(Collectors.groupingBy(
+                        variant -> variant.getProduct().getProductId(),
+                        LinkedHashMap::new,
+                        Collectors.mapping(this::toVariant, Collectors.toList())));
+    }
+
+    private ContractFormSourcesResponse.Variant toVariant(ProductVariant variant) {
+        return new ContractFormSourcesResponse.Variant(
+                variant.getVariantId(),
+                variant.getName(),
+                variant.getRegularPrice(),
+                variant.getStock(),
+                Boolean.TRUE.equals(variant.getIsRepresentative()));
     }
 }

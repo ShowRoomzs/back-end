@@ -71,9 +71,10 @@ public class ProductController implements UserProductControllerDocs {
     @Override
     @GetMapping("/{productId}")
     public ResponseEntity<ProductDto.ProductDetailResponse> getProductDetail(
-            @PathVariable("productId") Long productId
+            @PathVariable("productId") Long productId,
+            @RequestParam(name = "groupBuyId", required = false) Long groupBuyId
     ) {
-        ProductDto.ProductDetailResponse response = productService.getProductDetail(productId);
+        ProductDto.ProductDetailResponse response = productService.getProductDetail(productId, groupBuyId);
         return ResponseEntity.ok(response);
     }
 
@@ -81,9 +82,10 @@ public class ProductController implements UserProductControllerDocs {
     @GetMapping("/{productId}/variants")
     public ResponseEntity<ProductDto.VariantStockListResponse> getVariantStocks(
             @PathVariable("productId") Long productId,
-            @RequestParam(name = "variantIds") List<Long> variantIds
+            @RequestParam(name = "variantIds") List<Long> variantIds,
+            @RequestParam(name = "groupBuyId", required = false) Long groupBuyId
     ) {
-        ProductDto.VariantStockListResponse response = productService.getVariantStocks(productId, variantIds);
+        ProductDto.VariantStockListResponse response = productService.getVariantStocks(productId, variantIds, groupBuyId);
         return ResponseEntity.ok(response);
     }
 

@@ -28,8 +28,10 @@ import showroomz.domain.member.user.entity.Users;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductRepository;
+import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.support.BrandFixture;
+import showroomz.support.ContractOptions;
 import showroomz.support.IntegrationTestSupport;
 
 import java.math.BigDecimal;
@@ -68,6 +70,8 @@ class SellerContractIntegrationTest extends IntegrationTestSupport {
     private CategoryRepository categoryRepository;
     @Autowired
     private ProductRepository productRepository;
+    @Autowired
+    private ProductVariantRepository productVariantRepository;
     @Autowired
     private ContractClauseVersionRepository clauseVersionRepository;
 
@@ -211,7 +215,7 @@ class SellerContractIntegrationTest extends IntegrationTestSupport {
 
         // 같은 행(contractItemId 유지)에서 상품만 바꾼다 — 값은 앞 상품 기준이라 살려두면 안 된다.
         ContractUpdateRequest.Item changed = new ContractUpdateRequest.Item(
-                itemId, cream.getProductId(), 28_000, new BigDecimal("15.0"), 300);
+                itemId, cream.getProductId(), 28_000, new BigDecimal("15.0"), options(cream, 300));
 
         mockMvc.perform(put(CONTRACTS + "/" + contractId)
                         .header(HttpHeaders.AUTHORIZATION, brandToken)
@@ -222,7 +226,11 @@ class SellerContractIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.items[0].regularPrice").value(24_000))
                 .andExpect(jsonPath("$.items[0].groupBuyPrice").doesNotExist())
                 .andExpect(jsonPath("$.items[0].rewardRate").doesNotExist())
-                .andExpect(jsonPath("$.items[0].minQuantity").doesNotExist());
+                .andExpect(jsonPath("$.items[0].minQuantity").doesNotExist())
+                // 옵션 행은 새 상품의 옵션으로 다시 만들어지되 수량은 비어 있다 — 앞 상품 옵션의 수량을 옮기지 않는다.
+                .andExpect(jsonPath("$.items[0].options.length()").value(1))
+                .andExpect(jsonPath("$.items[0].options[0].variantName").doesNotExist())
+                .andExpect(jsonPath("$.items[0].options[0].minQuantity").doesNotExist());
     }
 
     @Test
@@ -420,8 +428,13 @@ class SellerContractIntegrationTest extends IntegrationTestSupport {
     }
 
     private ContractUpdateRequest.Item item(Long productId, int groupBuyPrice, String rewardRate, int minQuantity) {
+        Product product = productRepository.findByProductId(productId).orElseThrow();
         return new ContractUpdateRequest.Item(
-                null, productId, groupBuyPrice, new BigDecimal(rewardRate), minQuantity);
+                null, productId, groupBuyPrice, new BigDecimal(rewardRate), options(product, minQuantity));
+    }
+
+    private List<ContractUpdateRequest.Option> options(Product product, Integer minQuantity) {
+        return ContractOptions.request(ContractOptions.variantsOf(productVariantRepository, product), minQuantity);
     }
 
     /** 레코드는 복사 생성자가 없어 항목만 갈아 끼우는 헬퍼를 둔다. */
@@ -484,7 +497,9 @@ class SellerContractIntegrationTest extends IntegrationTestSupport {
         product.setRegularPrice(regularPrice);
         product.setSalePrice(regularPrice);
         product.setDisplayStatus(ProductDisplayStatus.DISPLAY);
-        return productRepository.save(product);
+        Product saved = productRepository.save(product);
+        ContractOptions.defaultVariant(productVariantRepository, saved, 500);
+        return saved;
     }
 
     /** Flyway가 꺼진 통합 테스트 프로필에서는 V120의 조항 seed가 없다 — 최소 버전을 직접 적재한다. */

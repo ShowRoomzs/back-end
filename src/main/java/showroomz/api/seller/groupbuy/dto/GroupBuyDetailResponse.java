@@ -43,7 +43,7 @@ public record GroupBuyDetailResponse(
         @Schema(description = "판매 실적 — 진행중·중단 예정(LIVE) · 정산완료(SETTLED) · 중단(AT_SUSPENSION)에서만. "
                 + "준비중·준비완료·종료는 null이다. 판매 모듈이 없으면 항상 null — 0이 아니다", nullable = true)
         Sales sales,
-        @Schema(description = "주문 종결 건수 — 진행중·중단 예정·종료·중단에서만. 판매 모듈이 없으면 null(0이 아니다). "
+        @Schema(description = "주문 종결 건수 — 진행중·중단 예정·종료·정산완료·중단에서만. 판매 모듈이 없으면 null(0이 아니다). "
                 + "0은 「정산해도 된다」는 뜻이라 모르는 값을 0으로 내리지 않는다", nullable = true)
         OrderClosure orderClosure,
         @Schema(description = "기간 연장 — 항상(요청이 없으면 요청 필드만 null, maxDays·requestCutoffAt은 항상 채워진다)")
@@ -59,7 +59,9 @@ public record GroupBuyDetailResponse(
         @Schema(description = "종결 정보 — 종결 3종(ENDED·SETTLED·SUSPENDED)에서만", nullable = true) Closure closure,
         @Schema(description = "종료 후 — 종결 3종(ENDED·SETTLED·SUSPENDED)에서만", nullable = true) AfterEnd afterEnd,
         @Schema(description = "버튼 노출 판정 — 항상") Permissions permissions,
-        @Schema(description = "이력 — 최신순(발생 시각 내림차순)") List<HistoryEntry> history
+        @Schema(description = "이력 — 최신순(발생 시각 내림차순)") List<HistoryEntry> history,
+        @Schema(description = "목록 이웃 — 목록 조건(tab·keyword·sort)이 쿼리로 오지 않으면 둘 다 null. 실행 API 응답에서는 항상 둘 다 null")
+        Navigation navigation
 ) {
 
     public record Summary(
@@ -121,7 +123,18 @@ public record GroupBuyDetailResponse(
             @Schema(description = "리워드율(%)", example = "12") BigDecimal rewardRate,
             @Schema(description = "개당 예상 리워드(원) — 공구가 × 리워드율 절사. 계약·정산·계약서 PDF와 같은 계산", example = "3264")
             Long expectedUnitReward,
-            @Schema(description = "최소 준비 물량(개) — 물량 확보 확인의 대상", example = "300") Integer minQuantity
+            @Schema(description = "최소 준비 물량(개) — 옵션별 최소 물량의 합계. 물량 확보 확인의 대상", example = "300") Integer minQuantity,
+            @Schema(description = "옵션별 판매가·최소 준비 물량 — 공구가·리워드율은 상품 단위라 옵션마다 같다")
+            List<ItemOption> options
+    ) {
+    }
+
+    @Schema(description = "공구 상품 옵션 — 판매가 = 공구가 + 옵션가")
+    public record ItemOption(
+            @Schema(description = "옵션(variant) id — 상품 관리에서 지워졌으면 null", example = "301", nullable = true) Long variantId,
+            @Schema(description = "옵션명(계약 스냅샷)", example = "2개 세트", nullable = true) String variantName,
+            @Schema(description = "옵션 판매가(원) = 공구가 + 옵션가", example = "50000", nullable = true) Integer salePrice,
+            @Schema(description = "옵션별 최소 준비 물량(개)", example = "100") Integer minQuantity
     ) {
     }
 
@@ -181,6 +194,8 @@ public record GroupBuyDetailResponse(
             @Schema(description = "노출 종료 — 공구 종결 시각(종결 3종에서만)", nullable = true) LocalDateTime closedAt,
             @Schema(description = "노출 종료 사유 — 공구 종결 유형(종결 3종에서만)", nullable = true) GroupBuyCloseType closeReason,
             @Schema(description = "운영자 오픈 반려 사유 — 반려 기록이 있을 때", nullable = true) Reason rejectReason,
+            @Schema(description = "운영자 오픈 반려 시각 — rejectReason이 있을 때만(재제출해도 마지막 반려 시각이 남는다)", nullable = true)
+            LocalDateTime rejectedAt,
             @Schema(description = "운영자 숨김 사유 — 숨김 중일 때만", nullable = true) Reason hiddenReason,
             @Schema(description = "숨김 시각 — 숨김 중일 때만", nullable = true) LocalDateTime hiddenAt,
             @Schema(description = "숨김 경과 일수 — 숨김 중일 때만", nullable = true) Integer hiddenDays
@@ -210,11 +225,16 @@ public record GroupBuyDetailResponse(
     ) {
     }
 
-    @Schema(description = "주문 종결 건수 — 경로별 내역은 싣지 않는다. 공구 화면은 남은 건수만 센다(§29-11)")
+    @Schema(description = "주문 종결 건수(하위주문 단위) — 종결 = 구매확정 + 환불. 경로별 내역은 판매 모듈(주문 관리)이 판정한 값을 그대로 싣는다")
     public record OrderClosure(
-            @Schema(description = "전체 주문 건수") int totalCount,
-            @Schema(description = "종결된 주문 건수") int closedCount,
-            @Schema(description = "미종결 주문 건수 — 0이어야 정산할 수 있다") int unclosedCount
+            @Schema(description = "전체 주문 건수", example = "312") int totalCount,
+            @Schema(description = "종결된 주문 건수", example = "312") int closedCount,
+            @Schema(description = "미종결 주문 건수 — 0이어야 정산할 수 있다", example = "0") int unclosedCount,
+            @Schema(description = "종결 중 구매확정 — B6 「확정 310」 · 「구매확정 310/312」. 판매 모듈이 모르면 null",
+                    example = "310", nullable = true)
+            Integer purchaseConfirmedCount,
+            @Schema(description = "종결 중 환불(결제 후 취소) — B6 「환불 2」. 판매 모듈이 모르면 null", example = "2", nullable = true)
+            Integer refundedCount
     ) {
     }
 
@@ -335,6 +355,8 @@ public record GroupBuyDetailResponse(
             @Schema(description = "브랜드가 확인한 것 — 인플루언서의 콘텐츠 의무. 확인 전이면 null", nullable = true) FulfillmentCheck mine,
             @Schema(description = "인플루언서가 확인한 것 — 브랜드의 의무. 확인 전이면 null", nullable = true) FulfillmentCheck theirs,
             @Schema(description = "확인 기한 — 종료 시각 + 설정 일수(기본 3일). 자동 이행이 꺼져 있는 동안은 표시값이다", nullable = true) LocalDateTime dueAt,
+            @Schema(description = "기한까지 답하지 않으면 이행으로 처리되는가 — 현재 false. false면 「놔두면 이행」 문구를 쓰면 안 된다")
+            boolean autoConfirmOnTimeout,
             @Schema(description = "정산 보류 — 미이행이 있고 양측 합의 종결 전") boolean onHold,
             @Schema(description = "미이행 3자 스레드", nullable = true) Long threadId,
             @Schema(description = "미이행 합의 종결 시각 — 보류 해제", nullable = true) LocalDateTime resolvedAt
@@ -374,6 +396,11 @@ public record GroupBuyDetailResponse(
             @Schema(description = "[이행 확인] — ENDED ∧ 브랜드 측 미확인") boolean canCheckFulfillment,
             @Schema(description = "[스레드 열기] — 인플루언서와 PAIR 스레드가 있음(counterparty.pairThreadId != null)") boolean canOpenPairThread
     ) {
+    }
+
+    public record Navigation(
+            @Schema(description = "목록 기준 이전 공구 id", example = "52", nullable = true) Long prevGroupBuyId,
+            @Schema(description = "목록 기준 다음 공구 id", example = "38", nullable = true) Long nextGroupBuyId) {
     }
 
     public record HistoryEntry(

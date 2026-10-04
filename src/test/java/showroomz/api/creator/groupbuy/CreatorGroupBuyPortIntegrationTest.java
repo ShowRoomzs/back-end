@@ -85,7 +85,7 @@ class CreatorGroupBuyPortIntegrationTest extends CreatorGroupBuyTestSupport {
     void endedOrderClosureDoesNotExposeSellerAction() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);
         when(salesReader.readClosure(groupBuy.getId())).thenReturn(Optional.of(
-                new GroupBuySalesReader.GroupBuyOrderClosure(312, 288, 24, 18, 6, List.of())));
+                new GroupBuySalesReader.GroupBuyOrderClosure(312, 288, 24, 18, 6, List.of(), null, null)));
 
         studioDetail(groupBuy.getId()).andExpect(jsonPath("$.orderClosure.totalCount").value(312))
                 .andExpect(jsonPath("$.orderClosure.closedCount").value(288))
@@ -120,7 +120,7 @@ class CreatorGroupBuyPortIntegrationTest extends CreatorGroupBuyTestSupport {
         when(threadGateway.openFulfillmentDisputeThread(any(), eq(FulfillmentSide.CREATOR), eq(reason)))
                 .thenReturn(9_001L);
         when(salesReader.readClosure(groupBuy.getId())).thenReturn(Optional.of(
-                new GroupBuySalesReader.GroupBuyOrderClosure(10, 10, 0, 0, 0, List.of())));
+                new GroupBuySalesReader.GroupBuyOrderClosure(10, 10, 0, 0, 0, List.of(), null, null)));
 
         studioAction(groupBuy.getId(), "fulfillment-check", Map.of("result", "UNFULFILLED", "reason", reason))
                 .andExpect(status().isOk())
@@ -160,7 +160,7 @@ class CreatorGroupBuyPortIntegrationTest extends CreatorGroupBuyTestSupport {
         when(salesReader.readClosure(groupBuy.getId())).thenReturn(Optional.empty());
         assertThat(groupBuyCommandService.isSettlementReady(groupBuy.getId())).isFalse();
         when(salesReader.readClosure(groupBuy.getId())).thenReturn(Optional.of(
-                new GroupBuySalesReader.GroupBuyOrderClosure(10, 10, 0, 0, 0, List.of())));
+                new GroupBuySalesReader.GroupBuyOrderClosure(10, 10, 0, 0, 0, List.of(), null, null)));
         assertThat(groupBuyCommandService.isSettlementReady(groupBuy.getId())).isTrue();
     }
 }

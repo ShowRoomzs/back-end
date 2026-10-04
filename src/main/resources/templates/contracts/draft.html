@@ -88,6 +88,10 @@
   td.l { text-align: left; }
   td.c { text-align: center; }
   td.r { text-align: right; }
+  th .sum { font-size: 7.4pt; font-weight: 400; color: #555; }
+  tr.opt td { font-size: 8.2pt; color: #333; padding-top: .2mm; padding-bottom: .2mm; line-height: 1.25; white-space: nowrap; }
+  tr.opt td.optname { padding-left: 6mm; }
+  tr.opt td.blank { background: #fafafa; }
   th.lab, td.lab { background: #f6f6f6; font-weight: 700; text-align: center; width: 26mm; }
   tfoot td { background: #f6f6f6; font-weight: 700; }
 
@@ -315,27 +319,35 @@ h2, h3 { break-after:avoid; }
 <th style="width:8mm">번호</th><th>상품명</th>
 <th style="width:22mm">정가</th><th style="width:22mm">공동구매가</th>
 <th style="width:18mm">리워드율</th><th style="width:24mm">1개당 리워드</th>
-<th style="width:20mm">최소 물량</th>
+<th style="width:22mm">최소 물량<br/><span class="sum">옵션 합계</span></th>
 </tr>
 </thead>
 <tbody>
-<tr th:each="item, stat : ${items}">
-<td class="c" th:text="${stat.count}"></td>
+<th:block th:each="item, stat : ${items}">
+<tr>
+<td class="c" th:rowspan="${item['행수']}" th:text="${stat.count}"></td>
 <td class="l"><span class="v" th:text="${item['상품명']}"></span></td>
 <td class="r"><span class="v" th:text="${item['정가']}"></span>원</td>
 <td class="r"><span class="v" th:text="${item['공구가']}"></span>원</td>
 <td class="c"><span class="v" th:text="${item['리워드율']}"></span>%</td>
 <td class="r"><span class="v" th:text="${item['개당리워드']}"></span>원</td>
-<td class="r"><span class="v" th:text="${item['최소물량']}"></span>개</td>
+<td class="r"><span class="v" th:text="${item['최소물량합계']}"></span>개</td>
 </tr>
-
+<tr class="opt" th:each="option : ${item['옵션']}">
+<td class="l optname">└ 옵션 <span class="v" th:text="${option['옵션명']}"></span></td>
+<td class="blank" colspan="4"></td>
+<td class="r"><span class="v" th:text="${option['옵션최소물량']}"></span>개</td>
+</tr>
+</th:block>
 </tbody>
 </table>
 <ol class="cl">
 <li>공동구매가는 <b>부가가치세가 포함된 소비자 판매가</b>이며, 정가를 초과할 수 없다.</li>
-<li>최소 물량은 갑이 해당 상품에 대하여 확보를 약속하는 수량이다. 갑의 사유로 최소 물량이 확보되지 아니하여
+<li>최소 물량은 갑이 <b>상품의 옵션별로</b> 확보를 약속하는 수량이며, 상품별 최소 물량은 그 옵션별 최소 물량의 합계로 한다.
+        옵션별 최소 물량은 해당 옵션 외의 옵션으로 대체하여 충족할 수 없다. 갑의 사유로 어느 옵션의 최소 물량이 확보되지 아니하여
         주문이 이행되지 못한 경우, 그에 따른 소비자 대응과 손해는 갑이 부담한다.</li>
-<li>상품, 공동구매가, 리워드율 및 최소 물량은 <b>본 계약의 성립 후 변경할 수 없다.</b>
+<li>공동구매가와 리워드율은 상품 단위로 정하며, 같은 상품의 모든 옵션에 동일하게 적용한다.</li>
+<li>상품, 옵션, 공동구매가, 리워드율 및 옵션별 최소 물량은 <b>본 계약의 성립 후 변경할 수 없다.</b>
         변경이 필요한 경우 양 당사자의 합의로 본 계약을 해지하고 새로 체결한다.</li>
 </ol>
 <h2 class="art">제6조 (리워드 및 정산) <span class="arttag">협의 · 표준 혼합</span></h2>

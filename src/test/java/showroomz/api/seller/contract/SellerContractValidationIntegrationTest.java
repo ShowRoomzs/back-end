@@ -294,7 +294,7 @@ class SellerContractValidationIntegrationTest extends SellerContractTestSupport 
                 .andExpect(jsonPath("$.code").value("CONTRACT_PRODUCT_NOT_OWNED"));
 
         save(contractId, validForm(0L).items(
-                new ContractUpdateRequest.Item(null, 999_999L, 20_000, new BigDecimal("10.0"), 100)))
+                new ContractUpdateRequest.Item(null, 999_999L, 20_000, new BigDecimal("10.0"), null)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("PRODUCT_NOT_FOUND"));
     }

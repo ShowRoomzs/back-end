@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -70,8 +71,8 @@ class CreatorGroupBuyQueryIntegrationTest extends CreatorGroupBuyTestSupport {
                 .andExpect(jsonPath("$.actionRequiredCount").value(2))
                 .andExpect(jsonPath("$.tabCounts.ALL").value(4))
                 .andExpect(jsonPath("$.tabCounts.PREPARING").value(2))
-                .andExpect(jsonPath("$.tabCounts.ENDED").value(1))
-                .andExpect(jsonPath("$.tabCounts.SUSPENDED").value(1));
+                .andExpect(jsonPath("$.tabCounts.ENDED").value(2))
+                .andExpect(jsonPath("$.tabCounts.SUSPENDED").doesNotExist());
 
         studioList("sort=ACTION_REQUIRED_FIRST").andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[*].groupBuyId").value(contains(
@@ -98,14 +99,13 @@ class CreatorGroupBuyQueryIntegrationTest extends CreatorGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("탭 · 검색 — 중단은 별도 탭 · 검색은 공구명·브랜드명·공구번호")
+    @DisplayName("탭 · 검색 — 중단은 「종료·정산」 탭에 포함 · 검색은 공구명·브랜드명·공구번호")
     void tabAndKeyword() throws Exception {
         Fixture f = seedMixed();
 
-        studioList("tab=SUSPENDED").andExpect(jsonPath("$.content[*].groupBuyId")
-                .value(contains(f.suspended.getId().intValue())));
         studioList("tab=ENDED").andExpect(jsonPath("$.content[*].groupBuyId")
-                .value(contains(f.ended.getId().intValue())));
+                .value(containsInAnyOrder(f.ended.getId().intValue(), f.suspended.getId().intValue())));
+        studioList("tab=SUSPENDED").andExpect(status().isBadRequest());
         studioList("keyword=나중").andExpect(jsonPath("$.content[*].groupBuyId")
                 .value(contains(f.later.getId().intValue())));
         studioList("keyword=" + f.soon.getGroupBuyNumber()).andExpect(jsonPath("$.content[*].groupBuyId")

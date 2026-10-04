@@ -47,6 +47,15 @@ public enum ContractViolationCode {
     ITEM_REWARD_RATE_SCALE("ITEM_REWARD_RATE_SCALE", ContractViolationKind.RULE,
             "리워드율은 소수점 첫째 자리까지 입력할 수 있습니다."),
 
+    /** 저장 뒤 상품 관리에서 옵션이 추가·삭제됐다. 서버가 수량을 임의 배분하지 않고 다시 저장하게 한다. */
+    ITEM_OPTIONS_MISMATCH("ITEM_OPTIONS_MISMATCH", ContractViolationKind.RULE,
+            "상품의 옵션 구성이 바뀌었습니다. 옵션별 최소 물량을 다시 확인해 저장해 주세요."),
+    ITEM_OPTION_MIN_QUANTITY_REQUIRED("ITEM_OPTION_MIN_QUANTITY_REQUIRED", ContractViolationKind.REQUIRED,
+            "옵션별 최소 물량을 입력해 주세요."),
+    /** 옵션 정가가 상품 정가보다 공구가 이상 낮은 극단 — 공구가 + 옵션가가 0 미만이 된다. */
+    ITEM_OPTION_SALE_PRICE_NEGATIVE("ITEM_OPTION_SALE_PRICE_NEGATIVE", ContractViolationKind.RULE,
+            "옵션 판매가(공구가 + 옵션가)가 0원 미만입니다."),
+
     FIXED_FEE_REQUIRED("FIXED_FEE_REQUIRED", ContractViolationKind.REQUIRED, "고정 지급비를 입력해 주세요."),
     FIXED_FEE_TRIGGER_REQUIRED("FIXED_FEE_TRIGGER_REQUIRED", ContractViolationKind.REQUIRED,
             "지급 시점을 선택해 주세요."),

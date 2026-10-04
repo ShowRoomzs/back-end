@@ -65,6 +65,9 @@ class ProductServiceTest {
     @Mock
     private ObjectMapper objectMapper;
 
+    @Mock
+    private showroomz.domain.groupbuy.service.GroupBuyPriceResolver priceResolver;
+
     @InjectMocks
     private ProductService productService;
 
@@ -89,7 +92,7 @@ class ProductServiceTest {
         given(productRepository.findDetailByProductId(PRODUCT_ID))
                 .willReturn(Optional.of(product(ProductGroupBuyStatus.NOT_CONNECTED)));
 
-        assertThatThrownBy(() -> productService.getProductDetail(PRODUCT_ID))
+        assertThatThrownBy(() -> productService.getProductDetail(PRODUCT_ID, null))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PRODUCT_NOT_FOUND);
 
@@ -104,7 +107,7 @@ class ProductServiceTest {
         given(productOptionGroupRepository.findByProductIdWithOptions(PRODUCT_ID)).willReturn(List.of());
         given(productVariantRepository.findByProductIdWithOptions(PRODUCT_ID)).willReturn(List.of());
 
-        ProductDto.ProductDetailResponse response = productService.getProductDetail(PRODUCT_ID);
+        ProductDto.ProductDetailResponse response = productService.getProductDetail(PRODUCT_ID, null);
 
         assertThat(response.getId()).isEqualTo(PRODUCT_ID);
         assertThat(response.getGroupBuyStatus()).isEqualTo("PREPARING");
@@ -116,7 +119,7 @@ class ProductServiceTest {
         given(productRepository.findDetailByProductId(PRODUCT_ID))
                 .willReturn(Optional.of(product(ProductGroupBuyStatus.IN_PROGRESS, ProductDisplayStatus.HIDDEN)));
 
-        assertThatThrownBy(() -> productService.getProductDetail(PRODUCT_ID))
+        assertThatThrownBy(() -> productService.getProductDetail(PRODUCT_ID, null))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PRODUCT_NOT_FOUND);
 
@@ -129,7 +132,7 @@ class ProductServiceTest {
         given(productRepository.findDetailByProductId(PRODUCT_ID))
                 .willReturn(Optional.of(product(ProductGroupBuyStatus.NOT_CONNECTED, ProductDisplayStatus.DISPLAY)));
 
-        assertThatThrownBy(() -> productService.getProductDetail(PRODUCT_ID))
+        assertThatThrownBy(() -> productService.getProductDetail(PRODUCT_ID, null))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PRODUCT_NOT_FOUND);
     }
@@ -140,7 +143,7 @@ class ProductServiceTest {
         given(productRepository.findByProductId(PRODUCT_ID))
                 .willReturn(Optional.of(product(ProductGroupBuyStatus.NOT_CONNECTED)));
 
-        assertThatThrownBy(() -> productService.getVariantStocks(PRODUCT_ID, List.of(1L, 2L)))
+        assertThatThrownBy(() -> productService.getVariantStocks(PRODUCT_ID, List.of(1L, 2L), null))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PRODUCT_NOT_FOUND);
 
@@ -168,7 +171,7 @@ class ProductServiceTest {
         void detailCarriesBothPrices() {
             givenDetailReady(product(ProductGroupBuyStatus.IN_PROGRESS));
 
-            ProductDto.ProductDetailResponse response = productService.getProductDetail(PRODUCT_ID);
+            ProductDto.ProductDetailResponse response = productService.getProductDetail(PRODUCT_ID, null);
 
             assertThat(response.getRegularPrice()).isEqualTo(38000);
             assertThat(response.getSalePrice()).isEqualTo(24900);
@@ -184,7 +187,7 @@ class ProductServiceTest {
                     .willReturn(List.of(variant(target, 1L, 40000, 30000, 5)));
 
             ProductDto.ProductVariantStockResponse stock =
-                    productService.getVariantStocks(PRODUCT_ID, List.of(1L)).getVariants().get(0);
+                    productService.getVariantStocks(PRODUCT_ID, List.of(1L), null).getVariants().get(0);
 
             assertThat(stock.getPrice().getRegularPrice()).isEqualTo(40000);
             assertThat(stock.getPrice().getSalePrice()).isEqualTo(30000);
@@ -233,7 +236,7 @@ class ProductServiceTest {
             given(productVariantRepository.findByProductIdAndVariantIdIn(PRODUCT_ID, List.of(1L)))
                     .willReturn(List.of(variant(target, 1L, regularPrice, salePrice, 5)));
 
-            return productService.getVariantStocks(PRODUCT_ID, List.of(1L))
+            return productService.getVariantStocks(PRODUCT_ID, List.of(1L), null)
                     .getVariants().get(0).getPrice().getDiscountRate();
         }
     }
@@ -256,7 +259,7 @@ class ProductServiceTest {
                     .willReturn(List.of(variant(target, 1L, 38000, 24900, 3)));
 
             ProductDto.ProductVariantStockResponse stock =
-                    productService.getVariantStocks(PRODUCT_ID, List.of(1L)).getVariants().get(0);
+                    productService.getVariantStocks(PRODUCT_ID, List.of(1L), null).getVariants().get(0);
 
             assertThat(stock.getStock()).isEqualTo(3);
             assertThat(stock.getIsOutOfStock()).isFalse();
@@ -269,7 +272,7 @@ class ProductServiceTest {
             given(productVariantRepository.findByProductIdAndVariantIdIn(PRODUCT_ID, List.of(1L)))
                     .willReturn(List.of(variant(target, 1L, 38000, 24900, 0)));
 
-            assertThat(productService.getVariantStocks(PRODUCT_ID, List.of(1L))
+            assertThat(productService.getVariantStocks(PRODUCT_ID, List.of(1L), null)
                     .getVariants().get(0).getIsOutOfStock()).isTrue();
         }
 
@@ -283,7 +286,7 @@ class ProductServiceTest {
                     .willReturn(List.of(variant(target, 1L, 38000, 24900, 10)));
 
             ProductDto.ProductVariantStockResponse stock =
-                    productService.getVariantStocks(PRODUCT_ID, List.of(1L)).getVariants().get(0);
+                    productService.getVariantStocks(PRODUCT_ID, List.of(1L), null).getVariants().get(0);
 
             assertThat(stock.getStock()).isEqualTo(10);
             assertThat(stock.getIsOutOfStock()).isTrue();
@@ -299,7 +302,7 @@ class ProductServiceTest {
                             variant(target, 1L, 38000, 24900, 3),
                             variant(target, 2L, 38000, 24900, 0)));
 
-            assertThat(productService.getVariantStocks(PRODUCT_ID, List.of(1L, 2L)).getVariants())
+            assertThat(productService.getVariantStocks(PRODUCT_ID, List.of(1L, 2L), null).getVariants())
                     .hasSize(2)
                     .extracting(ProductDto.ProductVariantStockResponse::getVariantId)
                     .containsExactly(1L, 2L);
@@ -309,11 +312,11 @@ class ProductServiceTest {
         @Test
         @DisplayName("옵션 ID를 주지 않으면 거절한다")
         void emptyVariantIdsIsRejected() {
-            assertThatThrownBy(() -> productService.getVariantStocks(PRODUCT_ID, List.of()))
+            assertThatThrownBy(() -> productService.getVariantStocks(PRODUCT_ID, List.of(), null))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_INPUT_VALUE);
 
-            assertThatThrownBy(() -> productService.getVariantStocks(PRODUCT_ID, null))
+            assertThatThrownBy(() -> productService.getVariantStocks(PRODUCT_ID, null, null))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_INPUT_VALUE);
 
@@ -325,7 +328,7 @@ class ProductServiceTest {
         void unknownProductIsRejected() {
             given(productRepository.findByProductId(PRODUCT_ID)).willReturn(Optional.empty());
 
-            assertThatThrownBy(() -> productService.getVariantStocks(PRODUCT_ID, List.of(1L)))
+            assertThatThrownBy(() -> productService.getVariantStocks(PRODUCT_ID, List.of(1L), null))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PRODUCT_NOT_FOUND);
         }
@@ -355,7 +358,7 @@ class ProductServiceTest {
             target.setMarket(market());
             givenDetailReady(target);
 
-            ProductDto.ProductDetailResponse response = productService.getProductDetail(PRODUCT_ID);
+            ProductDto.ProductDetailResponse response = productService.getProductDetail(PRODUCT_ID, null);
 
             assertThat(response.getMarketName()).isEqualTo("라보에이치");
             assertThat(response.getBrandSiteUrl()).isEqualTo("https://labo-h.example.com");
@@ -368,7 +371,7 @@ class ProductServiceTest {
             givenDetailReady(product(ProductGroupBuyStatus.IN_PROGRESS));
 
             // 38,000 → 24,900 = 34.47% → 34%
-            assertThat(productService.getProductDetail(PRODUCT_ID).getDiscountRate()).isEqualTo(34);
+            assertThat(productService.getProductDetail(PRODUCT_ID, null).getDiscountRate()).isEqualTo(34);
         }
 
         @Test
@@ -378,7 +381,7 @@ class ProductServiceTest {
             target.setMarket(market());
             givenDetailReady(target);
 
-            ProductDto.DeliveryInfo delivery = productService.getProductDetail(PRODUCT_ID).getDelivery();
+            ProductDto.DeliveryInfo delivery = productService.getProductDetail(PRODUCT_ID, null).getDelivery();
 
             assertThat(delivery.getShippingLeadDays()).isEqualTo(2);
             assertThat(delivery.getDeliveryFee()).isEqualTo(3000);
@@ -395,7 +398,7 @@ class ProductServiceTest {
             target.setMarket(market());
             givenDetailReady(target);
 
-            ProductDto.SellerInfo sellerInfo = productService.getProductDetail(PRODUCT_ID).getSellerInfo();
+            ProductDto.SellerInfo sellerInfo = productService.getProductDetail(PRODUCT_ID, null).getSellerInfo();
 
             assertThat(sellerInfo.getCompanyName()).isEqualTo("주식회사 라보에이치");
             assertThat(sellerInfo.getRepresentativeName()).isEqualTo("홍길동");
@@ -413,7 +416,7 @@ class ProductServiceTest {
             target.setMarket(market());
             givenDetailReady(target);
 
-            assertThat(productService.getProductDetail(PRODUCT_ID).getSellerInfo().getBusinessAddress())
+            assertThat(productService.getProductDetail(PRODUCT_ID, null).getSellerInfo().getBusinessAddress())
                     .isEqualTo("서울특별시 강남구 ○○로 00 4층");
         }
 
@@ -426,7 +429,7 @@ class ProductServiceTest {
             target.setMarket(market);
             givenDetailReady(target);
 
-            assertThat(productService.getProductDetail(PRODUCT_ID).getSellerInfo().getBusinessAddress())
+            assertThat(productService.getProductDetail(PRODUCT_ID, null).getSellerInfo().getBusinessAddress())
                     .isEqualTo("서울특별시 강남구 ○○로 00");
         }
 
@@ -440,7 +443,7 @@ class ProductServiceTest {
             target.setMarket(market);
             givenDetailReady(target);
 
-            ProductDto.SellerInfo sellerInfo = productService.getProductDetail(PRODUCT_ID).getSellerInfo();
+            ProductDto.SellerInfo sellerInfo = productService.getProductDetail(PRODUCT_ID, null).getSellerInfo();
 
             assertThat(sellerInfo.getCsNumber()).isEqualTo("000-0000-0000");
             assertThat(sellerInfo.getCompanyName()).isNull();
@@ -458,7 +461,7 @@ class ProductServiceTest {
                             variant(target, 1L, 38000, 24900, 3),
                             variant(target, 2L, 38000, 24900, 0)));
 
-            List<ProductDto.VariantInfo> variants = productService.getProductDetail(PRODUCT_ID).getVariants();
+            List<ProductDto.VariantInfo> variants = productService.getProductDetail(PRODUCT_ID, null).getVariants();
 
             assertThat(variants).hasSize(2);
             assertThat(variants.get(0).getIsOutOfStock()).isFalse();
@@ -480,7 +483,7 @@ class ProductServiceTest {
                             variant(target, 1L, 38000, 24900, 0),
                             variant(target, 2L, 38000, 24900, 3)));
 
-            assertThat(productService.getProductDetail(PRODUCT_ID).getStatus().getIsOutOfStock()).isFalse();
+            assertThat(productService.getProductDetail(PRODUCT_ID, null).getStatus().getIsOutOfStock()).isFalse();
         }
 
         @Test
@@ -494,7 +497,7 @@ class ProductServiceTest {
                             variant(target, 1L, 38000, 24900, 0),
                             variant(target, 2L, 38000, 24900, 0)));
 
-            ProductDto.StockStatus status = productService.getProductDetail(PRODUCT_ID).getStatus();
+            ProductDto.StockStatus status = productService.getProductDetail(PRODUCT_ID, null).getStatus();
 
             assertThat(status.getIsOutOfStock()).isTrue();
             assertThat(status.getIsOutOfStockForced()).isFalse();
@@ -510,7 +513,7 @@ class ProductServiceTest {
             given(productVariantRepository.findByProductIdWithOptions(PRODUCT_ID))
                     .willReturn(List.of(variant(target, 1L, 38000, 24900, 10)));
 
-            ProductDto.StockStatus status = productService.getProductDetail(PRODUCT_ID).getStatus();
+            ProductDto.StockStatus status = productService.getProductDetail(PRODUCT_ID, null).getStatus();
 
             assertThat(status.getIsOutOfStock()).isTrue();
             assertThat(status.getIsOutOfStockForced()).isTrue();
@@ -526,7 +529,7 @@ class ProductServiceTest {
             given(productVariantRepository.findByProductIdWithOptions(PRODUCT_ID))
                     .willReturn(List.of(variant(target, 1L, 38000, 24900, 10)));
 
-            assertThat(productService.getProductDetail(PRODUCT_ID).getVariants().get(0).getIsOutOfStock())
+            assertThat(productService.getProductDetail(PRODUCT_ID, null).getVariants().get(0).getIsOutOfStock())
                     .isTrue();
         }
     }

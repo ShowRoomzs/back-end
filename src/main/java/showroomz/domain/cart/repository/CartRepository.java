@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import showroomz.domain.cart.entity.Cart;
+import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.product.entity.ProductVariant;
 
@@ -14,7 +15,8 @@ import java.util.List;
 
 @Repository
 public interface CartRepository extends JpaRepository<Cart, Long> {
-    Optional<Cart> findByUserAndVariant(Users user, ProductVariant variant);
+    /** 병합 판정 — 같은 옵션이라도 공구가 다르면 다른 줄이다(가격·리워드 귀속이 다르다). */
+    Optional<Cart> findByUserAndVariantAndGroupBuy(Users user, ProductVariant variant, GroupBuy groupBuy);
 
     Optional<Cart> findByIdAndUser(Long id, Users user);
 
@@ -23,7 +25,8 @@ public interface CartRepository extends JpaRepository<Cart, Long> {
             "variant.options",
             "variant.options.optionGroup",
             "variant.product",
-            "variant.product.market"
+            "variant.product.market",
+            "groupBuy"
     })
     Page<Cart> findByUser(Users user, Pageable pageable);
 
@@ -32,7 +35,8 @@ public interface CartRepository extends JpaRepository<Cart, Long> {
             "variant.options",
             "variant.options.optionGroup",
             "variant.product",
-            "variant.product.market"
+            "variant.product.market",
+            "groupBuy"
     })
     List<Cart> findAllByUser(Users user);
 

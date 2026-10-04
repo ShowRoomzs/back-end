@@ -9,6 +9,7 @@ import showroomz.api.admin.groupbuy.dto.AdminGroupBuyDetailResponse.*;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractItem;
+import showroomz.domain.contract.entity.ContractItemOption;
 import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.entity.GroupBuyAdminSuspension;
 import showroomz.domain.groupbuy.entity.GroupBuyChangeRequest;
@@ -47,6 +48,7 @@ import showroomz.domain.groupbuy.type.GroupBuyTone;
 import showroomz.domain.inquiry.repository.ProductInquiryRepository;
 import showroomz.domain.inquiry.type.ProductInquiryType;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.global.utils.BusinessCalendar;
 import showroomz.global.utils.RewardCalculator;
@@ -91,6 +93,7 @@ public class AdminGroupBuyDetailAssembler {
     private final GroupBuySettlementGateway settlementGateway;
     private final GroupBuyThreadGateway threadGateway;
     private final ProductInquiryRepository productInquiryRepository;
+    private final ProductVariantRepository productVariantRepository;
     private final SellerRepository sellerRepository;
     private final AdminGroupBuyPermissionPolicy permissionPolicy;
     private final BusinessCalendar businessCalendar;
@@ -161,7 +164,11 @@ public class AdminGroupBuyDetailAssembler {
                 .map(item -> new Item(item.getProductId(), item.getProductName(), item.getRegularPrice(),
                         item.getGroupBuyPrice(), item.getRewardRate(),
                         RewardCalculator.calcUnitReward(item.getGroupBuyPrice(), item.getRewardRate()),
-                        item.getMinQuantity()))
+                        item.getMinQuantity(),
+                        item.getOptions().stream()
+                                .map(option -> new ItemOption(option.getVariantId(), option.getVariantName(),
+                                        option.salePrice(), option.getMinQuantity()))
+                                .toList()))
                 .toList();
     }
 
@@ -343,19 +350,40 @@ public class AdminGroupBuyDetailAssembler {
     }
 
     /**
-     * B4 — 판매 수량 / 준비 물량(계약 최소 물량 합 · 실제 재고가 아니다) · 요청 후 재입고 문의. 품절 문의는 상품 문의
-     * 테이블만으로 셀 수 있어 판매 포트 없이도 값이 나온다.
+     * B4 — 판매 수량 / 준비 물량 · 요청 후 재입고 문의. 품절 문의는 상품 문의 테이블만으로 셀 수 있어 판매 포트 없이도
+     * 값이 나온다.
+     *
+     * <p>준비 물량 = 판매 수량 + 계약 옵션의 현재 재고. 주문이 재고를 차감하고 취소가 복원하므로(결제 계획서 4-3) 둘의 합이
+     * 「이 공구가 팔 수 있었던 실제 물량」이고, 소진율이 100%면 재고가 바닥났다는 뜻이 된다. 계약 최소 물량 합은 브랜드가
+     * 게이트 ①에서 약속한 하한이라 실물과 다르다. 판매 수량을 모르면 null이다 — 재고만으로는 분모가 되지 못한다.
      */
     private DecisionBasis earlyCloseBasis(GroupBuy groupBuy, GroupBuyChangeRequest request, GroupBuySales sales) {
         Integer quantityNow = quantityOf(sales);
-        List<Integer> minQuantities = groupBuy.getContract().getItems().stream().map(ContractItem::getMinQuantity).toList();
-        Integer prepared = minQuantities.stream().anyMatch(Objects::isNull) ? null
-                : minQuantities.stream().mapToInt(Integer::intValue).sum();
-        Integer rate = quantityNow == null || prepared == null || prepared == 0 ? null : quantityNow * 100 / prepared;
+        Integer prepared = quantityNow == null ? null : quantityNow + remainingStock(groupBuy);
+        Integer rate = quantityNow == null || prepared == 0 ? null : quantityNow * 100 / prepared;
         return new DecisionBasis(null, sales == null ? null : sales.orderCount(), null, quantityNow,
                 sales == null ? null : sales.amount(), null, prepared, rate,
                 countProductInquiries(groupBuy, request.getRequestedAt(), ProductInquiryType.RESTOCK),
                 groupBuy.getEndAt(), true);
+    }
+
+    /**
+     * 계약 옵션의 현재 재고 합. 옵션 재고는 같은 상품을 담은 다른 공구와 공유한다(기간 겹침 허용 ·
+     * {@code ProductGroupBuyStatusSynchronizer}) — 그래도 「지금 이 공구가 더 팔 수 있는 양」은 이 값이다.
+     * 상품 관리에서 지워진 옵션은 더 팔 수 없으므로 0으로 센다.
+     */
+    private int remainingStock(GroupBuy groupBuy) {
+        List<Long> variantIds = groupBuy.getContract().getItems().stream()
+                .flatMap(item -> item.getOptions().stream())
+                .map(ContractItemOption::getVariantId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (variantIds.isEmpty()) {
+            return 0;
+        }
+        Long stock = productVariantRepository.sumStockByVariantIds(variantIds);
+        return stock == null ? 0 : stock.intValue();
     }
 
     private long countProductInquiries(GroupBuy groupBuy, LocalDateTime since, ProductInquiryType type) {
@@ -447,7 +475,8 @@ public class AdminGroupBuyDetailAssembler {
                 .map(closure -> new OrderClosure(closure.totalCount(), closure.closedCount(), closure.unclosedCount(),
                         closure.unclosedStages() == null ? List.of() : closure.unclosedStages().stream()
                                 .map(stage -> new UnclosedStage(stage.stage(), stage.label(), stage.count()))
-                                .toList()))
+                                .toList(),
+                        closure.purchaseConfirmedCount(), closure.refundedCount()))
                 .orElse(null);
         OpenIssue openIssue = facts.openIssue() == null ? null : new OpenIssue(
                 facts.openIssue().getId(), facts.openIssue().getIssueType(),

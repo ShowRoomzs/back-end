@@ -39,6 +39,7 @@ public class SecurityConfig {
     
     private static final String[] AUTH_WHITELIST = {
             "/", "/error", "/test/**",  // 기본
+            "/v1/webhooks/portone",     // 포트원 웹훅 — 서명 검증이 인증을 대신한다(결제 계획서 5-7 · 6-3)
             "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**", // Swagger
 
             //auth 관련
@@ -149,6 +150,10 @@ public class SecurityConfig {
                 // SELLER auth - logout, withdraw, images는 ADMIN과 SELLER, CREATOR 모두 접근 가능
                 .requestMatchers("/v1/seller/auth/logout", "/v1/seller/auth/withdraw", "/v1/seller/images")
                     .hasAnyAuthority(RoleType.ADMIN.getCode(), RoleType.SELLER.getCode(), RoleType.CREATOR.getCode())
+
+                // 파트너센터 주문 관리 — 브랜드(SELLER)만. CREATOR 를 통과시키면 판매자 조회에서 404 SELLER_NOT_FOUND 로
+                // 떨어져 권한 오류가 「존재하지 않음」으로 포장된다(34 설계서 4-4의 404 는 존재 비노출 용도다).
+                .requestMatchers("/v1/seller/orders/**").hasAnyAuthority(RoleType.SELLER.getCode())
 
                 // SELLER 권한
                 .requestMatchers("/v1/seller/**").hasAnyAuthority(RoleType.SELLER.getCode(), RoleType.CREATOR.getCode())

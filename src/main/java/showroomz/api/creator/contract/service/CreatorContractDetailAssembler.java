@@ -14,6 +14,7 @@ import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractDocument;
 import showroomz.domain.contract.entity.ContractHistory;
 import showroomz.domain.contract.entity.ContractItem;
+import showroomz.domain.contract.entity.ContractItemOption;
 import showroomz.domain.contract.repository.ContractHistoryRepository;
 import showroomz.domain.contract.service.PartyContractDocuments;
 import showroomz.domain.contract.type.ContractActorType;
@@ -197,7 +198,18 @@ public class CreatorContractDetailAssembler {
                 item.getRewardRate(),
                 // 파트너와 같은 공유 유틸을 호출한다 — 자체 계산을 두지 않는다(설계서 미결 #8 확정).
                 RewardCalculator.calcUnitReward(item.getGroupBuyPrice(), item.getRewardRate()),
-                item.getMinQuantity());
+                item.getMinQuantity(),
+                item.getOptions().stream().map(this::toOption).toList());
+    }
+
+    private CreatorContractDetailResponse.ItemOption toOption(ContractItemOption option) {
+        return new CreatorContractDetailResponse.ItemOption(
+                option.getVariantId(),
+                option.getVariantName(),
+                option.getRegularPrice(),
+                option.optionExtraPrice(),
+                option.salePrice(),
+                option.getMinQuantity());
     }
 
     /**

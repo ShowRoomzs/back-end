@@ -12,6 +12,7 @@ import showroomz.domain.groupbuy.entity.GroupBuyAdminSuspension;
 import showroomz.domain.groupbuy.entity.GroupBuyChangeRequest;
 import showroomz.domain.groupbuy.entity.GroupBuyExtensionRequest;
 import showroomz.domain.groupbuy.entity.GroupBuyFulfillmentCheck;
+import showroomz.domain.groupbuy.entity.GroupBuyHistory;
 import showroomz.domain.groupbuy.entity.GroupBuyPost;
 import showroomz.domain.groupbuy.repository.GroupBuyAppealAttachmentRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyHistoryRepository;
@@ -26,6 +27,7 @@ import showroomz.domain.groupbuy.type.AdminSuspensionKind;
 import showroomz.domain.groupbuy.type.FulfillmentSide;
 import showroomz.domain.groupbuy.type.GroupBuyActorType;
 import showroomz.domain.groupbuy.type.GroupBuyAttachmentStatus;
+import showroomz.domain.groupbuy.type.GroupBuyEventType;
 import showroomz.domain.groupbuy.type.GroupBuyPostReviewStatus;
 import showroomz.domain.groupbuy.type.GroupBuyPostStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
@@ -59,11 +61,17 @@ public class GroupBuyDetailAssembler {
     /** 정산 지연 감시 기준(§29-11) — 어드민 요약과 같은 설정값을 쓴다. */
     private final GroupBuyProperties properties;
 
+    /** 실행 API 응답 — 목록 맥락이 없어 이웃은 비운다. */
     public GroupBuyDetailResponse assemble(GroupBuy groupBuy) {
+        return assemble(groupBuy, null);
+    }
+
+    public GroupBuyDetailResponse assemble(GroupBuy groupBuy, Navigation navigation) {
         LocalDateTime now = LocalDateTime.now();
         GroupBuyFacts facts = factsLoader.load(groupBuy);
         Contract contract = groupBuy.getContract();
         Long pairThreadId = threadGateway.findPairThreadId(groupBuy).orElse(null);
+        List<GroupBuyHistory> history = historyRepository.findByGroupBuyIdOrderByOccurredAtDescIdDesc(groupBuy.getId());
 
         return new GroupBuyDetailResponse(
                 summary(groupBuy, contract),
@@ -75,7 +83,7 @@ public class GroupBuyDetailAssembler {
                 new ContentDuty(contract.getContentFeedCount(), contract.getContentReelsCount(),
                         contract.getContentStoryCount(), contract.getContentDueDate()),
                 readiness(groupBuy, facts.post()),
-                post(groupBuy, facts.post(), now),
+                post(groupBuy, facts.post(), history, now),
                 sales(groupBuy, contract),
                 orderClosure(groupBuy),
                 extension(groupBuy, facts.extension()),
@@ -85,7 +93,8 @@ public class GroupBuyDetailAssembler {
                 closure(groupBuy, facts),
                 afterEnd(groupBuy, facts),
                 permissionPolicy.evaluate(facts, pairThreadId != null, now),
-                history(groupBuy));
+                history(history),
+                navigation == null ? new Navigation(null, null) : navigation);
     }
 
     private Summary summary(GroupBuy groupBuy, Contract contract) {
@@ -136,7 +145,11 @@ public class GroupBuyDetailAssembler {
                         item.getGroupBuyPrice(),
                         item.getRewardRate(),
                         RewardCalculator.calcUnitReward(item.getGroupBuyPrice(), item.getRewardRate()),
-                        item.getMinQuantity()))
+                        item.getMinQuantity(),
+                        item.getOptions().stream()
+                                .map(option -> new ItemOption(option.getVariantId(), option.getVariantName(),
+                                        option.salePrice(), option.getMinQuantity()))
+                                .toList()))
                 .toList();
     }
 
@@ -171,11 +184,11 @@ public class GroupBuyDetailAssembler {
                         approved ? GateState.DONE : rejected ? GateState.REJECTED : GateState.WAITING)));
     }
 
-    private Post post(GroupBuy groupBuy, GroupBuyPost post, LocalDateTime now) {
+    private Post post(GroupBuy groupBuy, GroupBuyPost post, List<GroupBuyHistory> history, LocalDateTime now) {
         GroupBuyPostStatus status = GroupBuyPostStatus.of(post, groupBuy);
         if (post == null) {
             return new Post(status, status.getLabel(), status.getTone(),
-                    null, null, null, null, null, null, null, null, null, null);
+                    null, null, null, null, null, null, null, null, null, null, null);
         }
         boolean terminal = groupBuy.getStatus().isTerminal();
         boolean hidden = post.isHidden();
@@ -191,9 +204,22 @@ public class GroupBuyDetailAssembler {
                 terminal ? groupBuy.getCloseType() : null,
                 post.getRejectReasonCode() == null ? null
                         : new Reason(post.getRejectReasonCode(), post.getRejectReasonDetail()),
+                post.getRejectReasonCode() == null ? null : lastRejectedAt(history),
                 hidden ? new Reason(post.getHiddenReasonCode(), post.getHiddenReasonDetail()) : null,
                 hidden ? post.getHiddenAt() : null,
                 hidden ? (int) ChronoUnit.DAYS.between(post.getHiddenAt().toLocalDate(), now.toLocalDate()) : null);
+    }
+
+    /**
+     * 마지막 오픈 반려 시각 — 이력에서 읽는다. 게시물의 {@code reviewed_at}은 재심사에서 승인되면 승인 시각으로 덮이지만
+     * 반려 사유는 보존되므로(31 설계 2-4) 그 값으로는 「반려 사유 · 반려 시각」 짝이 어긋난다.
+     */
+    private static LocalDateTime lastRejectedAt(List<GroupBuyHistory> newestFirst) {
+        return newestFirst.stream()
+                .filter(entry -> entry.getEventType() == GroupBuyEventType.OPEN_REJECTED)
+                .map(GroupBuyHistory::getOccurredAt)
+                .findFirst()
+                .orElse(null);
     }
 
     /**
@@ -232,13 +258,15 @@ public class GroupBuyDetailAssembler {
                 .orElse(null);
     }
 
+    /** 정산완료(B6)에서도 내린다 — 「확정 310 · 환불 2」 · 「구매확정 310/312」가 종결 내역이다. */
     private OrderClosure orderClosure(GroupBuy groupBuy) {
         GroupBuyStatus status = groupBuy.getStatus();
-        if (!status.isSelling() && status != GroupBuyStatus.ENDED && status != GroupBuyStatus.SUSPENDED) {
+        if (!status.isSelling() && !status.isTerminal()) {
             return null;
         }
         return salesReader.readClosure(groupBuy.getId())
-                .map(closure -> new OrderClosure(closure.totalCount(), closure.closedCount(), closure.unclosedCount()))
+                .map(closure -> new OrderClosure(closure.totalCount(), closure.closedCount(), closure.unclosedCount(),
+                        closure.purchaseConfirmedCount(), closure.refundedCount()))
                 .orElse(null);
     }
 
@@ -365,6 +393,8 @@ public class GroupBuyDetailAssembler {
                     facts.fulfillmentCheck(FulfillmentSide.SELLER).map(this::toCheck).orElse(null),
                     facts.fulfillmentCheck(FulfillmentSide.CREATOR).map(this::toCheck).orElse(null),
                     groupBuy.getFulfillmentDueAt(),
+                    // 스위치가 꺼진 채 「놔두면 이행」 문구가 나가면 확인을 미룬다 — FE가 이 값으로 문구를 고른다.
+                    properties.getFulfillment().isAutoConfirmOnTimeout(),
                     GroupBuyCommandService.isSettlementOnHold(groupBuy, checks),
                     threadId,
                     groupBuy.getFulfillmentResolvedAt());
@@ -383,8 +413,8 @@ public class GroupBuyDetailAssembler {
         return new FulfillmentCheck(check.getResult(), check.getReason(), check.getCheckedAt(), check.isAutoConfirmed());
     }
 
-    private List<HistoryEntry> history(GroupBuy groupBuy) {
-        return historyRepository.findByGroupBuyIdOrderByOccurredAtDescIdDesc(groupBuy.getId()).stream()
+    private List<HistoryEntry> history(List<GroupBuyHistory> newestFirst) {
+        return newestFirst.stream()
                 .map(entry -> new HistoryEntry(
                         entry.getEventType(),
                         entry.getActorType(),

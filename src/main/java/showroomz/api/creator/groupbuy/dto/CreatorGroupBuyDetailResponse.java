@@ -118,7 +118,17 @@ public record CreatorGroupBuyDetailResponse(
             @Schema(description = "내 리워드율(%)", example = "15.0") BigDecimal myRewardRate,
             @Schema(description = "개당 리워드(원) = ⌊공구가 × 리워드율 ÷ 100⌋ — RewardCalculator.calcUnitReward(계약·파트너·정산과 같은 메서드)",
                     example = "4200")
-            Long unitReward
+            Long unitReward,
+            @Schema(description = "옵션별 판매가 — 최소 준비 물량은 싣지 않는다(브랜드 소관)")
+            List<ItemOption> options
+    ) {
+    }
+
+    @Schema(description = "공구 상품 옵션 — 판매가 = 공구가 + 옵션가. 리워드는 상품 공구가 기준이라 옵션마다 같다")
+    public record ItemOption(
+            @Schema(example = "301", nullable = true) Long variantId,
+            @Schema(description = "옵션명(계약 스냅샷)", example = "2개 세트", nullable = true) String variantName,
+            @Schema(description = "옵션 판매가(원)", example = "50000", nullable = true) Integer salePrice
     ) {
     }
 

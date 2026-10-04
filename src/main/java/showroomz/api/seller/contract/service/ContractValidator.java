@@ -5,22 +5,28 @@ import org.springframework.stereotype.Component;
 import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractItem;
+import showroomz.domain.contract.entity.ContractItemOption;
 import showroomz.domain.contract.type.ContractViolation;
 import showroomz.domain.contract.type.ContractViolationCode;
 import showroomz.domain.contract.type.ContractWarning;
 import showroomz.domain.contract.type.ContractWarningCode;
 import showroomz.domain.contract.type.SecondaryUsePeriodType;
 import showroomz.domain.product.entity.Product;
+import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.product.repository.ProductRepository;
+import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.domain.product.type.ProductDisplayStatus;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -55,6 +61,7 @@ public class ContractValidator {
 
     private final ConnectionRepository connectionRepository;
     private final ProductRepository productRepository;
+    private final ProductVariantRepository productVariantRepository;
 
     /** 판정 결과. 경고는 같은 코드가 여러 항목에서 나올 수 있어 발생 건마다 한 줄씩 담는다. */
     public record Result(List<ContractViolation> violations, List<ContractWarning> warnings) {
@@ -200,16 +207,65 @@ public class ContractValidator {
         }
 
         Map<Long, Product> products = loadProducts(items);
+        Map<Long, Set<Long>> currentVariantIds = loadVariantIds(products.keySet());
 
         for (int index = 0; index < items.size(); index++) {
             validateItem(items.get(index), index, marketId, products, violations, warnings);
+            validateOptions(items.get(index), index, products, currentVariantIds, violations);
         }
+    }
+
+    /**
+     * 옵션별 최소 물량(옵션 계획서 3-3). 옵션 행 집합은 저장 시점에 상품의 옵션 전량으로 만들어지지만,
+     * 그 뒤 상품 관리에서 옵션이 지워지거나(variant null) 늘었을 수 있다 — 서버가 수량을 임의 배분하지 않고
+     * 다시 저장하게 한다.
+     */
+    private void validateOptions(ContractItem item, int index, Map<Long, Product> products,
+                                 Map<Long, Set<Long>> currentVariantIds, List<ContractViolation> violations) {
+        Product product = item.getProductId() == null ? null : products.get(item.getProductId());
+        if (product == null) {
+            return; // ITEM_PRODUCT_REQUIRED가 이미 잡았다.
+        }
+        String prefix = "items[%d]".formatted(index);
+
+        Set<Long> saved = item.getOptions().stream()
+                .map(ContractItemOption::getVariantId)
+                .collect(Collectors.toSet());
+        Set<Long> current = currentVariantIds.getOrDefault(product.getProductId(), Set.of());
+        // null(지워진 옵션)이 섞여 있거나 행이 없으면 current와 같을 수 없다.
+        if (item.getOptions().isEmpty() || !saved.equals(current)) {
+            violations.add(ContractViolation.of(ContractViolationCode.ITEM_OPTIONS_MISMATCH, prefix + ".options"));
+        }
+
+        List<ContractItemOption> options = item.getOptions();
+        for (int optionIndex = 0; optionIndex < options.size(); optionIndex++) {
+            ContractItemOption option = options.get(optionIndex);
+            String optionPrefix = "%s.options[%d]".formatted(prefix, optionIndex);
+            if (option.getMinQuantity() == null) {
+                violations.add(ContractViolation.of(
+                        ContractViolationCode.ITEM_OPTION_MIN_QUANTITY_REQUIRED, optionPrefix + ".minQuantity"));
+            }
+            Integer salePrice = option.salePrice();
+            if (salePrice != null && salePrice < 0) {
+                violations.add(ContractViolation.of(
+                        ContractViolationCode.ITEM_OPTION_SALE_PRICE_NEGATIVE, optionPrefix + ".variantId"));
+            }
+        }
+    }
+
+    private Map<Long, Set<Long>> loadVariantIds(Collection<Long> productIds) {
+        if (productIds.isEmpty()) {
+            return Map.of();
+        }
+        return productVariantRepository.findByProductIdsOrderByVariantId(productIds).stream()
+                .collect(Collectors.groupingBy(variant -> variant.getProduct().getProductId(),
+                        Collectors.mapping(ProductVariant::getVariantId, Collectors.toSet())));
     }
 
     private Map<Long, Product> loadProducts(List<ContractItem> items) {
         List<Long> productIds = items.stream()
                 .map(ContractItem::getProductId)
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .distinct()
                 .toList();
         if (productIds.isEmpty()) {

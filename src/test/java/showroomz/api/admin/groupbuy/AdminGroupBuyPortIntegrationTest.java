@@ -75,18 +75,21 @@ class AdminGroupBuyPortIntegrationTest extends AdminGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("조기 마감 판단 근거의 소진율은 계약 최소 물량 대비 판매 수량으로 계산한다")
-    void earlyCloseBasisUsesContractMinimumQuantity() throws Exception {
+    @DisplayName("조기 마감 판단 근거의 준비 물량은 판매 수량 + 계약 옵션의 현재 재고이고 소진율은 그 대비 판매 수량이다")
+    void earlyCloseBasisUsesSoldPlusRemainingStock() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.IN_PROGRESS);
         seedSellerRequest(groupBuy, ChangeRequestType.EARLY_CLOSE);
+        // 계약 최소 물량(300 · 200)과 다른 값 — 준비 물량이 계약 하한이 아니라 실물에서 나오는지 본다.
+        jdbc.update("UPDATE product_variant SET stock = ? WHERE product_id = ?", 100, cream.getProductId());
+        jdbc.update("UPDATE product_variant SET stock = ? WHERE product_id = ?", 0, serum.getProductId());
         when(salesReader.readSales(groupBuy.getId())).thenReturn(Optional.of(new GroupBuySalesReader.GroupBuySales(
                 80, 4_200_000, List.of(new GroupBuySalesReader.ItemQuantity(cream.getProductId(), 120),
                         new GroupBuySalesReader.ItemQuantity(serum.getProductId(), 80)))));
 
         adminDetail(groupBuy.getId()).andExpect(status().isOk())
-                .andExpect(jsonPath("$.activeRequest.decisionBasis.preparedQuantity").value(500))
+                .andExpect(jsonPath("$.activeRequest.decisionBasis.preparedQuantity").value(300))
                 .andExpect(jsonPath("$.activeRequest.decisionBasis.quantityNow").value(200))
-                .andExpect(jsonPath("$.activeRequest.decisionBasis.sellThroughRate").value(40))
+                .andExpect(jsonPath("$.activeRequest.decisionBasis.sellThroughRate").value(66))
                 .andExpect(jsonPath("$.activeRequest.decisionBasis.ordersNow").value(80))
                 .andExpect(jsonPath("$.activeRequest.decisionBasis.amountNow").value(4_200_000))
                 .andExpect(jsonPath("$.activeRequest.decisionBasis.endsImmediatelyIfApproved").value(true));
@@ -99,7 +102,7 @@ class AdminGroupBuyPortIntegrationTest extends AdminGroupBuyTestSupport {
         when(settlementGateway.readStage(groupBuy.getId()))
                 .thenReturn(Optional.of(GroupBuySettlementGateway.SettlementStage.WAITING));
         when(salesReader.readClosure(groupBuy.getId())).thenReturn(Optional.of(
-                new GroupBuySalesReader.GroupBuyOrderClosure(10, 9, 1, 0, 1, List.of())));
+                new GroupBuySalesReader.GroupBuyOrderClosure(10, 9, 1, 0, 1, List.of(), null, null)));
         adminDetail(groupBuy.getId()).andExpect(jsonPath("$.afterEnd.settlement.blockers[0]").value("UNCLOSED_ORDERS"))
                 .andExpect(jsonPath("$.afterEnd.settlement.blockers[1]").value("FULFILLMENT_PENDING"))
                 .andExpect(jsonPath("$.permissions.canConfirmSettlement").value(false));
@@ -112,8 +115,10 @@ class AdminGroupBuyPortIntegrationTest extends AdminGroupBuyTestSupport {
         verify(settlementGateway, never()).confirm(groupBuy.getId(), operator.getId());
 
         when(salesReader.readClosure(groupBuy.getId())).thenReturn(Optional.of(
-                new GroupBuySalesReader.GroupBuyOrderClosure(10, 10, 0, 0, 0, List.of())));
+                new GroupBuySalesReader.GroupBuyOrderClosure(10, 10, 0, 0, 0, List.of(), 9, 1)));
         adminDetail(groupBuy.getId()).andExpect(jsonPath("$.afterEnd.settlement.blockers.length()").value(0))
+                .andExpect(jsonPath("$.afterEnd.orderClosure.purchaseConfirmedCount").value(9))
+                .andExpect(jsonPath("$.afterEnd.orderClosure.refundedCount").value(1))
                 .andExpect(jsonPath("$.permissions.canConfirmSettlement").value(true));
         adminAction(groupBuy.getId(), "settlement/confirm", null).andExpect(status().isNoContent());
         verify(settlementGateway).confirm(groupBuy.getId(), operator.getId());

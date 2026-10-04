@@ -26,6 +26,11 @@ public interface CartControllerDocs {
     @Operation(
             summary = "장바구니 상품 추가",
             description = "사용자의 장바구니에 옵션(Variant)과 수량을 추가합니다.\n\n" +
+                    "**공구 지정 필수:** `groupBuyId`(상품 상세 응답의 값)를 반드시 싣는다. 가격은 그 공구 계약의 " +
+                    "옵션 판매가(공구가 + 옵션가)이고, 없으면 400 `INVALID_INPUT_VALUE`다. 같은 옵션이라도 공구가 다르면 " +
+                    "다른 줄로 담긴다(가격·리워드 귀속이 다르다).\n\n" +
+                    "**판정 순서:** 공구 판매 중 → 그 공구 계약에 이 옵션이 있음 → 상품 구매 가능 → 재고. " +
+                    "앞의 둘이 아니면 400 `CART_ITEM_NOT_PURCHASABLE`(message로 사유 구분).\n\n" +
                     "**담을 수 없는 상품:** 공구가 마감(연결 해제·미진열)되었거나 품절된 옵션은 담을 수 없고 " +
                     "400 `CART_ITEM_NOT_PURCHASABLE`을 반환합니다.\n\n" +
                     "**수량 상한:** 항목당 최대 99개까지입니다(기존 수량과 합산 기준). 초과하면 400입니다.\n\n" +
@@ -40,8 +45,8 @@ public interface CartControllerDocs {
                             @ExampleObject(
                                     name = "다중 추가 요청 예시",
                                     value = "[\n" +
-                                            "  {\"productId\": 1, \"variantId\": 10, \"quantity\": 2},\n" +
-                                            "  {\"productId\": 2, \"variantId\": 11, \"quantity\": 1}\n" +
+                                            "  {\"productId\": 1, \"variantId\": 10, \"groupBuyId\": 41, \"quantity\": 2},\n" +
+                                            "  {\"productId\": 2, \"variantId\": 11, \"groupBuyId\": 41, \"quantity\": 1}\n" +
                                             "]"
                             )
                     }
@@ -94,6 +99,10 @@ public interface CartControllerDocs {
                     "각 그룹은 그 공구의 배송비와 무료배송까지 남은 금액(`shipping.amountToFreeShipping`)을 함께 내려줍니다.\n\n" +
                     "**선택 합산:** `selectedCartItemIds`로 화면의 체크 상태를 넘기면 그 항목만으로 요약을 계산합니다. " +
                     "생략하면 **구매 가능한 항목 전체**가 선택된 것으로 봅니다(화면 진입 시 기본 상태).\n\n" +
+                    "**그룹·가격:** 항목은 **공구 단위**로 묶인다(`groups[].groupBuyId`·공구명·종료 시각·`dDay`). " +
+                    "가격(`items[].price`)은 담은 공구 계약의 옵션 판매가라 상품 관리에서 정가를 고쳐도 변하지 않는다. " +
+                    "배송비·무료배송 기준은 쇼룸 설정이고 공구 그룹마다 따로 매긴다. " +
+                    "공구를 모르는 옛 항목(`groupBuyId: null` 그룹)은 마감으로 표시되고 가격 칸이 비어 있다.\n\n" +
                     "**담은 뒤 마감·품절:** 살 수 없게 된 항목도 목록에서 지우지 않고 `availability`로 사유를 알려줍니다. " +
                     "이 항목은 `selectedCartItemIds`에 담겨 있어도 선택에서 빠지며 합계·배송비 계산에 들어가지 않습니다.\n\n" +
                     "**권한:** USER\n" +
@@ -112,6 +121,11 @@ public interface CartControllerDocs {
                                             value = "{\n" +
                                                     "  \"groups\": [\n" +
                                                     "    {\n" +
+                                                    "      \"groupBuyId\": 41,\n" +
+                                                    "      \"groupBuyNumber\": \"GB-20260901-003\",\n" +
+                                                    "      \"groupBuyTitle\": \"가을 앰플 신제품 공구\",\n" +
+                                                    "      \"endAt\": \"2026-09-17T23:59:00\",\n" +
+                                                    "      \"dDay\": 3,\n" +
                                                     "      \"marketId\": 5,\n" +
                                                     "      \"marketName\": \"제니의 뷰티룸\",\n" +
                                                     "      \"marketImageUrl\": \"https://example.com/market.jpg\",\n" +
@@ -228,7 +242,8 @@ public interface CartControllerDocs {
             description = "장바구니 항목의 옵션 또는 수량을 수정합니다.\n\n" +
                     "**담은 뒤 마감·품절된 항목은 수정할 수 없습니다**(400 `CART_ITEM_NOT_PURCHASABLE`) — " +
                     "화면도 그 행의 수량 스테퍼와 옵션 변경 버튼을 함께 비활성으로 그립니다. " +
-                    "바꾸려는 옵션(`variantId`) 쪽이 마감·품절인 경우도 같은 코드로 거절합니다.\n\n" +
+                    "바꾸려는 옵션(`variantId`) 쪽이 마감·품절이거나 **담은 공구의 계약에 없는 옵션**인 경우도 같은 코드로 거절합니다. " +
+                    "공구는 바꿀 수 없다 — 옵션 변경은 같은 공구 안에서만이다.\n\n" +
                     "**수량 상한:** 최종 수량은 최대 99개입니다(옵션을 합치는 경우 합산 후 기준). 초과하면 400입니다.\n\n" +
                     "**옵션 변경 시 병합:** 이미 담긴 다른 항목과 같은 옵션으로 바꾸면 두 항목이 하나로 합쳐지고 " +
                     "수량이 더해집니다(재고 초과 시 400 `INSUFFICIENT_STOCK`). 합쳐지기 전 항목이 선택돼 있었다면 " +

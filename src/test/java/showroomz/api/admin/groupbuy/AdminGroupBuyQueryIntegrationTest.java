@@ -151,8 +151,8 @@ class AdminGroupBuyQueryIntegrationTest extends AdminGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("B3 판단 근거 — 판매 포트가 비면 요청 후 증가분 · CS 문의 합계가 null이다(0이 아니다) · 상대 요청 메모도 내린다")
-    void decisionBasisIsNullNotZero() throws Exception {
+    @DisplayName("B3 판단 근거 — 요청 시점 스냅샷·증가분은 null(요청 행에 없다) · CS 문의 합계는 주문 테이블 실값(0) · 상대 요청 메모도 내린다")
+    void decisionBasisUsesOrderTable() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.IN_PROGRESS);
         seedPendingRequest(groupBuy.getId(), ChangeRequestType.SUSPEND, GroupBuyActorType.CREATOR, "PRODUCT_DEFECT");
 
@@ -162,24 +162,29 @@ class AdminGroupBuyQueryIntegrationTest extends AdminGroupBuyTestSupport {
                 .andExpect(jsonPath("$.activeRequest.requesterName").value("글로우_지민"))
                 .andExpect(jsonPath("$.activeRequest.elapsed").value("3h"))
                 .andExpect(jsonPath("$.activeRequest.decisionBasis.ordersAtRequest").doesNotExist())
+                // 판매 포트가 주문 테이블을 읽는다(결제 계획서 7-2) — 주문·문의가 없으면 0이다. 하자 분류는 문의 유형에 없어 여전히 null.
                 .andExpect(jsonPath("$.activeRequest.decisionBasis.ordersSinceRequest").doesNotExist())
-                .andExpect(jsonPath("$.activeRequest.decisionBasis.inquiries.total").doesNotExist())
+                .andExpect(jsonPath("$.activeRequest.decisionBasis.inquiries.total").value(0))
                 .andExpect(jsonPath("$.activeRequest.decisionBasis.inquiries.defectRelated").doesNotExist())
-                .andExpect(jsonPath("$.sales").doesNotExist())
+                .andExpect(jsonPath("$.sales.basis").value("LIVE"))
+                .andExpect(jsonPath("$.sales.orderCount").value(0))
                 .andExpect(jsonPath("$.permissions.canApproveRequest").value(true))
                 .andExpect(jsonPath("$.permissions.noticeUnavailableReason").value("REQUEST_PENDING"));
     }
 
     @Test
-    @DisplayName("B4 조기 마감 근거 — 준비 물량(최소 물량 합) · 품절 문의는 상품 문의 테이블만으로 셀 수 있어 값이 나온다")
+    @DisplayName("B4 조기 마감 근거 — 준비 물량(판매 수량 + 현재 재고) · 품절 문의는 상품 문의 테이블만으로 셀 수 있어 값이 나온다")
     void earlyCloseBasis() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.IN_PROGRESS);
         seedSellerRequest(groupBuy, ChangeRequestType.EARLY_CLOSE);
+        jdbc.update("UPDATE product_variant SET stock = ? WHERE product_id = ?", 320, cream.getProductId());
+        jdbc.update("UPDATE product_variant SET stock = ? WHERE product_id = ?", 180, serum.getProductId());
 
         adminDetail(groupBuy.getId()).andExpect(status().isOk())
                 .andExpect(jsonPath("$.activeRequest.type").value("EARLY_CLOSE"))
                 .andExpect(jsonPath("$.activeRequest.decisionBasis.preparedQuantity").value(500))
-                .andExpect(jsonPath("$.activeRequest.decisionBasis.sellThroughRate").doesNotExist())
+                // 판매 수량은 주문 테이블 실값이다 — 주문이 없으면 소진율 0.
+                .andExpect(jsonPath("$.activeRequest.decisionBasis.sellThroughRate").value(0))
                 .andExpect(jsonPath("$.activeRequest.decisionBasis.soldOutInquiriesSinceRequest").value(0))
                 .andExpect(jsonPath("$.activeRequest.decisionBasis.endsImmediatelyIfApproved").value(true));
     }
@@ -289,21 +294,22 @@ class AdminGroupBuyQueryIntegrationTest extends AdminGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("종료 — 정산 차단 사유를 서버가 판정한다 · 판매 포트가 비면 CLOSURE_UNKNOWN이고 정산 확인이 닫힌다")
+    @DisplayName("종료 — 정산 차단 사유를 서버가 판정한다 · 종결은 실값(주문 0건 = 미종결 0)이라 이행 확인만 남는다")
     void settlementBlockers() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);
 
         adminDetail(groupBuy.getId()).andExpect(status().isOk())
                 .andExpect(jsonPath("$.afterEnd.settlement.stage").value("WAITING"))
                 .andExpect(jsonPath("$.afterEnd.settlement.stageSource").value("DERIVED"))
-                .andExpect(jsonPath("$.afterEnd.settlement.blockers[0]").value("CLOSURE_UNKNOWN"))
-                .andExpect(jsonPath("$.afterEnd.settlement.blockers[1]").value("FULFILLMENT_PENDING"))
+                // 판매 포트가 하위주문 이행 상태로 종결을 실값 판정한다(34 설계서 5-3) — CLOSURE_UNKNOWN 구간이 닫혔다.
+                .andExpect(jsonPath("$.afterEnd.settlement.blockers[0]").value("FULFILLMENT_PENDING"))
+                .andExpect(jsonPath("$.afterEnd.settlement.blockers.length()").value(1))
                 .andExpect(jsonPath("$.afterEnd.settlement.preview.rewardAmount").doesNotExist())
                 .andExpect(jsonPath("$.afterEnd.settlement.watch.reached").value(false))
                 .andExpect(jsonPath("$.afterEnd.fulfillment.targets.brandToCreator.duties[0]").value("SHOWROOM_POST"))
                 .andExpect(jsonPath("$.afterEnd.fulfillment.targets.creatorToBrand.duties[0]").value("ORDER_DELIVERY"))
                 .andExpect(jsonPath("$.afterEnd.fulfillment.autoConfirmOnTimeout").value(false))
-                .andExpect(jsonPath("$.afterEnd.orderClosure").doesNotExist())
+                .andExpect(jsonPath("$.afterEnd.orderClosure.unclosedCount").value(0))
                 .andExpect(jsonPath("$.sales").doesNotExist())
                 .andExpect(jsonPath("$.permissions.canConfirmSettlement").value(false))
                 .andExpect(jsonPath("$.permissions.canOpenIssue").value(true));

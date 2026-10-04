@@ -205,8 +205,16 @@ public class ProductDto {
         @Schema(description = "할인율 (%) — 서버가 계산해 내려준다. 할인이 없으면 0", example = "34")
         private Integer discountRate;
 
-        @Schema(description = "공구 판매가", example = "24900")
+        @Schema(description = "공구 판매가 — groupBuyId가 있으면 그 공구 계약의 대표 옵션 판매가(공구가 + 옵션가)", example = "24900")
         private Integer salePrice;
+
+        @Schema(description = "가격을 정한 공구 — 담기·바로 구매에 그대로 싣는다. 요청한 공구가 판매 중이 아니거나 이 상품이 "
+                + "그 계약에 없으면 null이고, 요청이 없으면 이 상품을 담은 판매 중 공구가 정확히 1개일 때만 채워진다. "
+                + "null이면 가격은 계약 가격이 아니며 담기를 부를 수 없다", example = "41", nullable = true)
+        private Long groupBuyId;
+
+        @Schema(description = "공구번호", example = "GB-20260901-003", nullable = true)
+        private String groupBuyNumber;
 
         @Schema(
                 description = "공구 상태 — 공구에 연결된 상품만 조회되므로 NOT_CONNECTED는 내려오지 않습니다.",
@@ -379,7 +387,7 @@ public class ProductDto {
         @Schema(description = "정가", example = "59000")
         private Integer regularPrice;
 
-        @Schema(description = "할인 판매가", example = "49000")
+        @Schema(description = "판매가 — groupBuyId가 정해졌으면 그 공구 계약의 옵션 판매가(공구가 + 옵션가)", example = "49000")
         private Integer salePrice;
 
         @Schema(description = "재고 수량", example = "10")

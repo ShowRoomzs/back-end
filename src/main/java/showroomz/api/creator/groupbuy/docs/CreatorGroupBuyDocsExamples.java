@@ -112,8 +112,7 @@ final class CreatorGroupBuyDocsExamples {
                 "PREPARING": 3,
                 "READY": 1,
                 "IN_PROGRESS": 4,
-                "ENDED": 2,
-                "SUSPENDED": 1
+                "ENDED": 3
               },
               "actionRequiredCount": 3
             }
@@ -126,8 +125,7 @@ final class CreatorGroupBuyDocsExamples {
                 "PREPARING": 0,
                 "READY": 0,
                 "IN_PROGRESS": 0,
-                "ENDED": 0,
-                "SUSPENDED": 0
+                "ENDED": 0
               },
               "actionRequiredCount": 0
             }
@@ -140,8 +138,11 @@ final class CreatorGroupBuyDocsExamples {
               "brand": {"marketId": 7, "name": "글로우랩", "pairThreadId": 305},
               "contract": {"contractId": 12, "contractNumber": "CTR-20260728-012", "concludedAt": "2026-08-03T15:30:00", "contentDueDate": "2026-08-18"},
               "items": [
-                {"productId": 101, "productName": "글로우 수분 세럼 50ml", "groupBuyPrice": 28000, "myRewardRate": 15.0, "unitReward": 4200},
-                {"productId": 102, "productName": "글로우 수분 크림 60ml", "groupBuyPrice": 32000, "myRewardRate": 12.5, "unitReward": 4000}
+                {"productId": 101, "productName": "글로우 수분 세럼 50ml", "groupBuyPrice": 28000, "myRewardRate": 15.0, "unitReward": 4200,
+                  "options": [{"variantId": 301, "variantName": "단품", "salePrice": 28000},
+                              {"variantId": 302, "variantName": "2개 세트", "salePrice": 66000}]},
+                {"productId": 102, "productName": "글로우 수분 크림 60ml", "groupBuyPrice": 32000, "myRewardRate": 12.5, "unitReward": 4000,
+                  "options": [{"variantId": 311, "variantName": null, "salePrice": 32000}]}
               ],
               "fixedFee": {"amount": 300000, "trigger": "POST_REGISTERED", "triggerLabel": "공구 게시물 등록 후", "displayText": "고정 지급비 300,000원 · 지급 시점: 공구 게시물 등록 후 · 브랜드 직접 지급"},
             """;

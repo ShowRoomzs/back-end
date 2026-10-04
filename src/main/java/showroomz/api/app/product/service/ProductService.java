@@ -20,6 +20,9 @@ import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.domain.filter.entity.Filter;
 import showroomz.domain.filter.repository.FilterRepository;
+import showroomz.domain.groupbuy.service.GroupBuyPriceResolver;
+import showroomz.domain.groupbuy.service.GroupBuyPriceResolver.GroupBuyPrice;
+import showroomz.domain.groupbuy.service.GroupBuyPriceResolver.ProductOffer;
 import showroomz.domain.product.repository.ProductFilterCriteria;
 import showroomz.domain.product.repository.ProductOptionGroupRepository;
 import showroomz.domain.product.repository.ProductRepository;
@@ -33,8 +36,10 @@ import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.utils.DiscountRate;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -51,6 +56,7 @@ public class ProductService {
     private final ProductVariantRepository productVariantRepository;
     private final WishlistRepository wishlistRepository;
     private final ObjectMapper objectMapper;
+    private final GroupBuyPriceResolver priceResolver;
     private static final String DEFAULT_SORT = "RECOMMEND";
     private static final String SORT_FILTER_KEY = "sort";
 
@@ -109,19 +115,24 @@ public class ProductService {
      * 상세정보/판매자 정보 탭 · 옵션 시트. 문의 탭은 별도 API가, 찜은 게시물 단위가 담당하므로
      * 여기서 내려주지 않는다.
      */
-    public ProductDto.ProductDetailResponse getProductDetail(Long productId) {
+    public ProductDto.ProductDetailResponse getProductDetail(Long productId, Long groupBuyId) {
         Product product = productRepository.findDetailByProductId(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
         requireVisibleForDetail(product);
+
+        // 가격은 공구 계약에서 나온다(가격 계획서 4절). 정할 공구가 없으면 상세는 열리되 가격은 계약 가격이 아니다.
+        ProductOffer offer = priceResolver.resolveProductOffer(groupBuyId, productId, LocalDateTime.now()).orElse(null);
+        Map<Long, GroupBuyPrice> prices = offer != null ? offer.prices() : null;
 
         String representativeImageUrl = extractRepresentativeImageUrl(product);
         List<String> coverImageUrls = extractCoverImageUrls(product);
         List<ProductOptionGroup> optionGroupEntities = productOptionGroupRepository.findByProductIdWithOptions(productId);
         List<ProductVariant> variantEntities = productVariantRepository.findByProductIdWithOptions(productId);
         List<ProductDto.OptionGroupInfo> optionGroups = buildOptionGroups(optionGroupEntities);
-        List<ProductDto.VariantInfo> variants = buildVariants(variantEntities, product);
-        Integer regularPrice = product.getRegularPrice();
-        Integer salePrice = product.getSalePrice();
+        List<ProductDto.VariantInfo> variants = buildVariants(variantEntities, product, prices);
+        GroupBuyPrice headline = prices != null ? headlinePrice(variantEntities, prices) : null;
+        Integer regularPrice = headline != null ? Integer.valueOf(headline.regularPrice()) : product.getRegularPrice();
+        Integer salePrice = headline != null ? Integer.valueOf(headline.salePrice()) : product.getSalePrice();
         JsonNode productNotice = parseJsonSafely(product.getProductNotice());
         Market market = product.getMarket();
 
@@ -136,6 +147,8 @@ public class ProductService {
                 .regularPrice(regularPrice)
                 .discountRate(calculateDiscountRate(regularPrice, salePrice))
                 .salePrice(salePrice)
+                .groupBuyId(offer != null ? offer.groupBuy().getId() : null)
+                .groupBuyNumber(offer != null ? offer.groupBuy().getGroupBuyNumber() : null)
                 .groupBuyStatus(product.getGroupBuyStatus() != null
                         ? product.getGroupBuyStatus().name()
                         : ProductGroupBuyStatus.NOT_CONNECTED.name())
@@ -153,7 +166,7 @@ public class ProductService {
      * 옵션별 재고 및 가격 다중 조회 (IN 절로 1회 쿼리)
      * 페이징 미적용 - 요청한 variantIds에 해당하는 결과만 반환
      */
-    public ProductDto.VariantStockListResponse getVariantStocks(Long productId, List<Long> variantIds) {
+    public ProductDto.VariantStockListResponse getVariantStocks(Long productId, List<Long> variantIds, Long groupBuyId) {
         if (variantIds == null || variantIds.isEmpty()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "variantIds는 필수이며 1개 이상이어야 합니다.");
         }
@@ -162,10 +175,15 @@ public class ProductService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
         requireVisibleForDetail(product);
 
+        // 옵션 시트를 연 뒤의 재조회도 상세와 같은 공구·같은 가격을 봐야 한다 — 같은 판정을 한 번 더 한다.
+        Map<Long, GroupBuyPrice> prices = priceResolver.resolveProductOffer(groupBuyId, productId, LocalDateTime.now())
+                .map(ProductOffer::prices)
+                .orElse(null);
+
         List<ProductVariant> variants = productVariantRepository.findByProductIdAndVariantIdIn(productId, variantIds);
 
         List<ProductDto.ProductVariantStockResponse> list = variants.stream()
-                .map(this::toVariantStockResponse)
+                .map(variant -> toVariantStockResponse(variant, prices))
                 .collect(Collectors.toList());
 
         return ProductDto.VariantStockListResponse.builder()
@@ -173,10 +191,12 @@ public class ProductService {
                 .build();
     }
 
-    private ProductDto.ProductVariantStockResponse toVariantStockResponse(ProductVariant variant) {
+    private ProductDto.ProductVariantStockResponse toVariantStockResponse(ProductVariant variant,
+                                                                         Map<Long, GroupBuyPrice> prices) {
         Product product = variant.getProduct();
-        Integer regularPrice = variant.getRegularPrice();
-        Integer salePrice = variant.getSalePrice();
+        GroupBuyPrice price = prices != null ? prices.get(variant.getVariantId()) : null;
+        Integer regularPrice = price != null ? Integer.valueOf(price.regularPrice()) : variant.getRegularPrice();
+        Integer salePrice = price != null ? Integer.valueOf(price.salePrice()) : variant.getSalePrice();
         Integer discountRate = calculateDiscountRate(regularPrice, salePrice);
         ProductDto.PriceInfo priceInfo = ProductDto.PriceInfo.builder()
                 .regularPrice(regularPrice)
@@ -187,7 +207,9 @@ public class ProductService {
 
         boolean isOutOfStockForced = Boolean.TRUE.equals(product != null && product.getIsOutOfStockForced());
         int stock = variant.getStock() != null ? variant.getStock() : 0;
-        boolean isOutOfStock = isOutOfStockForced || stock <= 0;
+        // 공구가 정해졌는데 그 계약에 없는 옵션은 이 공구에서 살 수 없다 — C7에 그릴 자리가 품절뿐이다.
+        boolean notInGroupBuy = prices != null && price == null;
+        boolean isOutOfStock = isOutOfStockForced || stock <= 0 || notInGroupBuy;
 
         return ProductDto.ProductVariantStockResponse.builder()
                 .productId(product != null ? product.getProductId() : null)
@@ -410,18 +432,22 @@ public class ProductService {
      * 옵션 시트에 필요한 값만 담는다. 품절 판정은 옵션 재고 조회(getVariantStocks)와 같은 규칙이다 —
      * 재고 0이거나 상품이 강제 품절이면 품절. 시트를 연 뒤의 실시간 재고는 옵션 재고 API가 갱신한다.
      */
-    private List<ProductDto.VariantInfo> buildVariants(List<ProductVariant> variants, Product product) {
+    private List<ProductDto.VariantInfo> buildVariants(List<ProductVariant> variants, Product product,
+                                                       Map<Long, GroupBuyPrice> prices) {
         boolean isOutOfStockForced = Boolean.TRUE.equals(product.getIsOutOfStockForced());
         return variants.stream()
                 .map(variant -> {
                     int stock = variant.getStock() != null ? variant.getStock() : 0;
+                    GroupBuyPrice price = prices != null ? prices.get(variant.getVariantId()) : null;
+                    // 공구가 정해졌는데 그 계약에 없는 옵션은 이 공구에서 살 수 없다.
+                    boolean notInGroupBuy = prices != null && price == null;
                     return ProductDto.VariantInfo.builder()
                             .variantId(variant.getVariantId())
                             .name(variant.getName())
-                            .regularPrice(variant.getRegularPrice())
-                            .salePrice(variant.getSalePrice())
+                            .regularPrice(price != null ? Integer.valueOf(price.regularPrice()) : variant.getRegularPrice())
+                            .salePrice(price != null ? Integer.valueOf(price.salePrice()) : variant.getSalePrice())
                             .stock(variant.getStock())
-                            .isOutOfStock(isOutOfStockForced || stock <= 0)
+                            .isOutOfStock(isOutOfStockForced || stock <= 0 || notInGroupBuy)
                             .isRepresentative(variant.getIsRepresentative())
                             .optionIds(variant.getOptions().stream()
                                     .map(ProductOption::getOptionId)
@@ -430,6 +456,19 @@ public class ProductService {
                             .build();
                 })
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 상세 머리의 가격 — 대표 옵션의 계약 가격. 대표 옵션이 계약에 없으면 계약 옵션 순서의 첫 가격이다.
+     * 옵션 시트를 열기 전 화면이라 「이 공구에서 이 상품은 얼마」를 한 값으로 보여 준다.
+     */
+    private GroupBuyPrice headlinePrice(List<ProductVariant> variants, Map<Long, GroupBuyPrice> prices) {
+        return variants.stream()
+                .filter(variant -> Boolean.TRUE.equals(variant.getIsRepresentative()))
+                .map(variant -> prices.get(variant.getVariantId()))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElseGet(() -> prices.values().iterator().next());
     }
 
     /**

@@ -338,6 +338,6 @@ class SellerGroupBuyFunctionalIntegrationTest extends GroupBuyTestSupport {
     }
 
     private static GroupBuySalesReader.GroupBuyOrderClosure closure(int total, int closed, int unclosed) {
-        return new GroupBuySalesReader.GroupBuyOrderClosure(total, closed, unclosed, null, null, List.of());
+        return new GroupBuySalesReader.GroupBuyOrderClosure(total, closed, unclosed, null, null, List.of(), null, null);
     }
 }

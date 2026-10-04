@@ -104,6 +104,46 @@ post:
   purge-batch-size: ${POST_PURGE_BATCH_SIZE:100}
   impression-retention-days: ${POST_IMPRESSION_RETENTION_DAYS:0} # 0이면 노출 로그를 삭제하지 않는다
 
+# PortOneProperties.java 관련 설정 — 결제 연동(포트원 V2 · 토스페이먼츠 신모듈, 결제 계획서 6-2)
+# enabled=false 면 FakePaymentGateway 가 붙는다(자격 없는 로컬·CI). 그때는 나머지 값이 비어 있어도 기동한다.
+portone:
+  enabled: ${PORTONE_ENABLED:true}
+  store-id: ${PORTONE_STORE_ID:}
+  api-secret: ${PORTONE_API_SECRET:}                # V2 API Secret — Authorization: PortOne {secret}
+  webhook-secret: ${PORTONE_WEBHOOK_SECRET:}        # 콘솔 웹훅 설정의 시크릿(whsec_…)
+  channel-keys:                                     # 토스페이먼츠 허브형이라 지금은 네 값이 같은 키다(2-2). "-" 는 명시적으로 끈 채널
+    card: ${PORTONE_CHANNEL_CARD:}
+    kakaopay: ${PORTONE_CHANNEL_KAKAOPAY:}          # 비워 두면 카드 채널을 따라간다
+    naverpay: ${PORTONE_CHANNEL_NAVERPAY:}
+    tosspay: ${PORTONE_CHANNEL_TOSSPAY:}
+
+# OrderProperties.java 관련 설정 — 주문·결제 운영값(결제 계획서 4-4 · 4-8 · 6-2)
+order:
+  payment-timeout-minutes: ${ORDER_PAYMENT_TIMEOUT_MINUTES:30}
+  expiration-scheduler-enabled: true
+  expiry-deferral-minutes: 5                        # 포트원 PENDING 이면 만료를 미룬다 — 최대 3회
+  expiry-max-deferrals: 3
+  expiry-max-check-failures: 3
+  cancel-retry-base-minutes: 2                      # 취소 수렴 첫 재시도 간격 — 2·4·8·16·32분
+  cancel-retry-max-attempts: 5                      # 도달 시 CANCEL_FAILED
+  reconciliation-enabled: true                      # 일일 대사 05:00 KST
+  health-check-enabled: true                        # 운영 지표 10분 주기
+  customer-email-enabled: true                      # 포트원 customer 블록에 이메일 포함 여부(9-1 ②)
+  purchase-confirm-days: 7                          # 구매확정 — 배송완료 + N일 자동(약관 제19조①)
+  purchase-confirm-scheduler-enabled: true          # 구매확정 배치(매시)
+  search-range-max-days: 365                        # 파트너센터 주문 조회 기간 상한(§34-2)
+  shipment-upload-max-rows: 1000                    # 송장 엑셀 일괄 업로드 행 상한(§34-5)
+
+# DeliveryTrackerProperties.java — 배송 추적 연동(34 설계서 3-3). enabled=false 면 Noop 스텁이 붙고
+# 감시 배치가 멈춘다(송장 형식 검증도 생략 기록). 연동 업체 스펙 확정(§34-13 #16) 후 켠다 — 런칭 게이트.
+delivery:
+  tracker:
+    enabled: ${DELIVERY_TRACKER_ENABLED:false}
+    poll-interval-ms: 1800000                       # 폴링 주기 — 잠정 30분
+    batch-size: 300
+    pickup-alert-hours: 24                          # 집화 확인 필요 — 송장 등록 후 N시간 추적 미조회
+    stall-alert-days: 7                             # 추적 정지 — 마지막 이벤트 후 N일 갱신 없음
+
 # Sentry 설정 (공통)
 sentry:
   dsn: ${SENTRY_DSN:https://default-dsn-address@sentry.io/0} # Sentry에서 발급받은 DSN을 환경 변수에서 읽어옴

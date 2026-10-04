@@ -4,8 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.domain.contract.repository.ContractNumberSequenceRepository;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -16,6 +18,9 @@ import java.time.format.DateTimeFormatter;
  *
  * <p>별도 트랜잭션으로 떼지 않는다. 번호 부여가 전이와 같은 트랜잭션 안에 있어야
  * 번호 없는 REVIEW_PENDING이 생기지 않는다(설계서 4-3).
+ *
+ * <p>날짜 부분과 일련번호 시퀀스 키는 <b>한국 날짜</b>다 — 서버 시각(UTC)의 날짜를 쓰면 KST 00:00~08:59 검토 요청이
+ * 하루 전 번호를 받는다. 저장되는 시각 값은 그대로 서버 시각이다.
  */
 @Component
 @RequiredArgsConstructor
@@ -26,7 +31,8 @@ public class ContractNumberGenerator {
     private final ContractNumberSequenceRepository sequenceRepository;
 
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
-    public String generate(LocalDate date) {
+    public String generate(LocalDateTime now) {
+        LocalDate date = KstDates.toKstDate(now);
         sequenceRepository.increment(date);
         Integer seq = sequenceRepository.findLastSeq(date);
         return "CTR-%s-%03d".formatted(date.format(DATE_PART), seq);

@@ -37,7 +37,20 @@ public record ContractFormSourcesResponse(
             Long productId,
             String productName,
             @Schema(description = "현재 정가 — 계약 항목에는 이 값이 스냅샷으로 복사된다") Integer regularPrice,
-            @Schema(nullable = true) String thumbnailUrl
+            @Schema(nullable = true) String thumbnailUrl,
+            @Schema(description = "옵션 전량 — 상품을 고르면 이 목록이 옵션 행이 된다. 옵션은 최소 물량만 입력한다")
+            List<Variant> options
+    ) {
+    }
+
+    @Schema(description = "상품 옵션(variant) — 옵션 없는 상품도 1행이 있다")
+    public record Variant(
+            @Schema(example = "301") Long variantId,
+            @Schema(description = "옵션명 — 옵션 없는 상품은 null", example = "2개 세트", nullable = true) String variantName,
+            @Schema(description = "옵션 정가(옵션가 포함). 옵션가 = 이 값 − 상품 정가", example = "60000") Integer regularPrice,
+            @Schema(description = "현재 재고 — 참고값이다. 서버는 최소 물량 ≤ 재고를 판정하지 않는다", example = "180")
+            Integer stock,
+            @Schema(description = "대표 옵션 여부", example = "false") boolean isRepresentative
     ) {
     }
 }

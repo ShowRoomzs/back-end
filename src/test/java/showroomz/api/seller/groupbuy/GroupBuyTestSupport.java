@@ -53,9 +53,11 @@ import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.post.type.PostType;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductRepository;
+import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.support.BrandFixture;
+import showroomz.support.ContractOptions;
 import showroomz.support.IntegrationTestSupport;
 
 import java.math.BigDecimal;
@@ -87,6 +89,7 @@ public abstract class GroupBuyTestSupport extends IntegrationTestSupport {
     @Autowired protected MessageThreadRepository messageThreadRepository;
     @Autowired protected CategoryRepository categoryRepository;
     @Autowired protected ProductRepository productRepository;
+    @Autowired protected ProductVariantRepository productVariantRepository;
     @Autowired protected ContractRepository contractRepository;
     @Autowired protected ContractHistoryRepository contractHistoryRepository;
     @Autowired protected GroupBuyRepository groupBuyRepository;
@@ -134,6 +137,12 @@ public abstract class GroupBuyTestSupport extends IntegrationTestSupport {
 
     protected ResultActions detail(long groupBuyId) throws Exception {
         return mockMvc.perform(get(GROUP_BUYS + "/" + groupBuyId).header(HttpHeaders.AUTHORIZATION, brandToken));
+    }
+
+    /** 목록 조건(tab · keyword · sort)을 넘긴 상세 — 이웃(navigation) 계산용. */
+    protected ResultActions detail(long groupBuyId, String query) throws Exception {
+        return mockMvc.perform(get(GROUP_BUYS + "/" + groupBuyId + "?" + query)
+                .header(HttpHeaders.AUTHORIZATION, brandToken));
     }
 
     protected ResultActions action(long groupBuyId, String path, Object body) throws Exception {
@@ -300,15 +309,15 @@ public abstract class GroupBuyTestSupport extends IntegrationTestSupport {
     // ------------------------------------------------------------------ 픽스처
 
     protected ContractItem item(Product product, int groupBuyPrice, String rewardRate, int minQuantity) {
-        return ContractItem.builder()
+        ContractItem item = ContractItem.builder()
                 .product(product)
                 .productName(product.getName())
                 .regularPrice(product.getRegularPrice())
                 .groupBuyPrice(groupBuyPrice)
                 .rewardRate(new BigDecimal(rewardRate))
-                .minQuantity(minQuantity)
                 .sortOrder(0)
                 .build();
+        return ContractOptions.attach(item, ContractOptions.variantsOf(productVariantRepository, product), minQuantity);
     }
 
     protected Creator createCreator(String showroomName, String accountId) {
@@ -346,7 +355,10 @@ public abstract class GroupBuyTestSupport extends IntegrationTestSupport {
         product.setRegularPrice(regularPrice);
         product.setSalePrice(regularPrice);
         product.setDisplayStatus(ProductDisplayStatus.DISPLAY);
-        return productRepository.save(product);
+        Product saved = productRepository.save(product);
+        // 재고 0 — 게시물 테스트의 「재고를 넣기 전에는 품절」 전제를 유지한다(stock(product, n)이 별도 옵션을 더한다).
+        ContractOptions.defaultVariant(productVariantRepository, saved, 0);
+        return saved;
     }
 
     private String nextContractNumber() {

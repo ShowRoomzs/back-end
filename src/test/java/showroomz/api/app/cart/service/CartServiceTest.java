@@ -16,6 +16,11 @@ import showroomz.api.app.cart.dto.CartDto;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.cart.entity.Cart;
 import showroomz.domain.cart.repository.CartRepository;
+import showroomz.domain.groupbuy.entity.GroupBuy;
+import showroomz.domain.groupbuy.repository.GroupBuyRepository;
+import showroomz.domain.groupbuy.service.GroupBuyPriceResolver;
+import showroomz.domain.groupbuy.service.GroupBuyPriceResolver.GroupBuyPrice;
+import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.user.entity.Users;
@@ -28,7 +33,11 @@ import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -68,17 +78,44 @@ class CartServiceTest {
     private ProductRepository productRepository;
     @Mock
     private CreatorFollowRepository creatorFollowRepository;
+    @Mock
+    private GroupBuyRepository groupBuyRepository;
+    @Mock
+    private GroupBuyPriceResolver priceResolver;
 
     @InjectMocks
     private CartService cartService;
 
     private Users user;
 
+    /** 픽스처 옵션 — 해석기 스텁이 이 값으로 계약 가격을 만든다. */
+    private final Map<Long, ProductVariant> variants = new HashMap<>();
+    /** 쇼룸마다 진행 중 공구 하나 — 담은 공구가 그룹 키다. */
+    private final Map<Long, GroupBuy> groupBuys = new HashMap<>();
+    /** 공구 계약에 없는 옵션 id. */
+    private final java.util.Set<Long> notInContract = new java.util.HashSet<>();
+
     @BeforeEach
     void setUp() {
         user = new Users();
         ReflectionTestUtils.setField(user, "id", 1L);
         ReflectionTestUtils.setField(user, "username", USERNAME);
+
+        // 가격은 공구 계약에서 나온다 — 이 단위 테스트는 계약 대신 픽스처 옵션의 정가·판매가를 계약 가격으로 돌려준다.
+        // 계약에 없는 옵션은 notInContract에 넣어 가격이 없게 만든다.
+        given(priceResolver.resolveVariants(anyLong(), anyCollection())).willAnswer(invocation -> {
+            Collection<Long> ids = invocation.getArgument(1);
+            Map<Long, GroupBuyPrice> prices = new LinkedHashMap<>();
+            for (Long id : ids) {
+                ProductVariant v = variants.get(id);
+                if (v != null && !notInContract.contains(id)) {
+                    prices.put(id, new GroupBuyPrice(1L, id, v.getRegularPrice(), v.getSalePrice(), 0, v.getSalePrice()));
+                }
+            }
+            return prices;
+        });
+        given(groupBuyRepository.findById(anyLong()))
+                .willAnswer(invocation -> Optional.ofNullable(groupBuys.get((Long) invocation.getArgument(0))));
     }
 
     @Test
@@ -266,7 +303,7 @@ class CartServiceTest {
         given(productVariantRepository.findByVariantId(1L)).willReturn(Optional.of(closedVariant));
 
         List<CartDto.AddCartRequest> requests = List.of(
-                CartDto.AddCartRequest.builder().productId(1L).variantId(1L).quantity(1).build()
+                CartDto.AddCartRequest.builder().productId(1L).variantId(1L).groupBuyId(groupBuyId(market)).quantity(1).build()
         );
 
         assertThatThrownBy(() -> cartService.addCartBulk(USERNAME, requests))
@@ -290,7 +327,7 @@ class CartServiceTest {
         void firstAddCreatesNewItem() {
             ProductVariant target = purchasableVariant(1L, 10);
             givenAddable(target);
-            given(cartRepository.findByUserAndVariant(user, target)).willReturn(Optional.empty());
+            given(cartRepository.findByUserAndVariantAndGroupBuy(eq(user), eq(target), any())).willReturn(Optional.empty());
 
             cartService.addCart(USERNAME, addRequest(1L, 3));
 
@@ -305,7 +342,7 @@ class CartServiceTest {
             ProductVariant target = purchasableVariant(1L, 10);
             Cart existing = cart(10L, target, 2);
             givenAddable(target);
-            given(cartRepository.findByUserAndVariant(user, target)).willReturn(Optional.of(existing));
+            given(cartRepository.findByUserAndVariantAndGroupBuy(eq(user), eq(target), any())).willReturn(Optional.of(existing));
 
             cartService.addCart(USERNAME, addRequest(1L, 3));
 
@@ -321,7 +358,7 @@ class CartServiceTest {
         void mergedQuantityIsCheckedAgainstStock() {
             ProductVariant target = purchasableVariant(1L, 10);
             givenAddable(target);
-            given(cartRepository.findByUserAndVariant(user, target)).willReturn(Optional.of(cart(10L, target, 9)));
+            given(cartRepository.findByUserAndVariantAndGroupBuy(eq(user), eq(target), any())).willReturn(Optional.of(cart(10L, target, 9)));
 
             assertThatThrownBy(() -> cartService.addCart(USERNAME, addRequest(1L, 2)))
                     .isInstanceOf(BusinessException.class)
@@ -335,7 +372,7 @@ class CartServiceTest {
         void quantityEqualToStockIsAllowed() {
             ProductVariant target = purchasableVariant(1L, 10);
             givenAddable(target);
-            given(cartRepository.findByUserAndVariant(user, target)).willReturn(Optional.empty());
+            given(cartRepository.findByUserAndVariantAndGroupBuy(eq(user), eq(target), any())).willReturn(Optional.empty());
 
             cartService.addCart(USERNAME, addRequest(1L, 10));
 
@@ -347,7 +384,7 @@ class CartServiceTest {
         void mergedQuantityIsCheckedAgainstLimit() {
             ProductVariant target = purchasableVariant(1L, 500);
             givenAddable(target);
-            given(cartRepository.findByUserAndVariant(user, target))
+            given(cartRepository.findByUserAndVariantAndGroupBuy(eq(user), eq(target), any()))
                     .willReturn(Optional.of(cart(10L, target, CartDto.MAX_QUANTITY)));
 
             assertThatThrownBy(() -> cartService.addCart(USERNAME, addRequest(1L, 1)))
@@ -386,7 +423,7 @@ class CartServiceTest {
             given(userRepository.findByUsername(USERNAME)).willReturn(Optional.of(user));
             given(productVariantRepository.findByVariantId(1L)).willReturn(Optional.of(first));
             given(productVariantRepository.findByVariantId(2L)).willReturn(Optional.of(second));
-            given(cartRepository.findByUserAndVariant(any(), any())).willReturn(Optional.empty());
+            given(cartRepository.findByUserAndVariantAndGroupBuy(any(), any(), any())).willReturn(Optional.empty());
 
             CartDto.BulkAddCartResponse response = cartService.addCartBulk(USERNAME,
                     List.of(addRequest(1L, 1), addRequest(2L, 2)));
@@ -466,7 +503,7 @@ class CartServiceTest {
 
             givenUpdatable(item);
             given(productVariantRepository.findByVariantId(2L)).willReturn(Optional.of(next));
-            given(cartRepository.findByUserAndVariant(user, next)).willReturn(Optional.empty());
+            given(cartRepository.findByUserAndVariantAndGroupBuy(eq(user), eq(next), any())).willReturn(Optional.empty());
 
             cartService.updateCart(USERNAME, 10L,
                     CartDto.UpdateCartRequest.builder().variantId(2L).build(), null);
@@ -489,7 +526,7 @@ class CartServiceTest {
 
             givenUpdatable(item);
             given(productVariantRepository.findByVariantId(2L)).willReturn(Optional.of(next));
-            given(cartRepository.findByUserAndVariant(user, next)).willReturn(Optional.of(alreadyHeld));
+            given(cartRepository.findByUserAndVariantAndGroupBuy(eq(user), eq(next), any())).willReturn(Optional.of(alreadyHeld));
 
             CartDto.UpdateCartResponse response = cartService.updateCart(USERNAME, 10L,
                     CartDto.UpdateCartRequest.builder().variantId(2L).build(), null);
@@ -510,7 +547,7 @@ class CartServiceTest {
 
             givenUpdatable(item);
             given(productVariantRepository.findByVariantId(2L)).willReturn(Optional.of(next));
-            given(cartRepository.findByUserAndVariant(user, next)).willReturn(Optional.of(cart(11L, next, 3)));
+            given(cartRepository.findByUserAndVariantAndGroupBuy(eq(user), eq(next), any())).willReturn(Optional.of(cart(11L, next, 3)));
 
             assertThatThrownBy(() -> cartService.updateCart(USERNAME, 10L,
                     CartDto.UpdateCartRequest.builder().variantId(2L).build(), null))
@@ -724,7 +761,7 @@ class CartServiceTest {
             given(cartRepository.findByIdAndUser(10L, user)).willReturn(Optional.of(item));
             given(cartRepository.save(any(Cart.class))).willAnswer(invocation -> invocation.getArgument(0));
             given(productVariantRepository.findByVariantId(2L)).willReturn(Optional.of(next));
-            given(cartRepository.findByUserAndVariant(user, next)).willReturn(Optional.of(alreadyHeld));
+            given(cartRepository.findByUserAndVariantAndGroupBuy(eq(user), eq(next), any())).willReturn(Optional.of(alreadyHeld));
             given(cartRepository.findAllByUser(user)).willReturn(List.of(alreadyHeld));
 
             CartDto.UpdateCartResponse response = cartService.updateCart(USERNAME, 10L,
@@ -865,7 +902,26 @@ class CartServiceTest {
     }
 
     private CartDto.AddCartRequest addRequest(Long variantId, int quantity) {
-        return CartDto.AddCartRequest.builder().productId(1024L).variantId(variantId).quantity(quantity).build();
+        // 픽스처 옵션은 모두 쇼룸 5의 공구에서 담는다.
+        return CartDto.AddCartRequest.builder().productId(1024L).variantId(variantId)
+                .groupBuyId(groupBuyId(market(5L, "제니의 뷰티룸", 3000, 30000))).quantity(quantity).build();
+    }
+
+    /** 쇼룸마다 진행 중 공구 하나 — id는 100 + 쇼룸 id. */
+    private GroupBuy groupBuyOf(Market market) {
+        long id = 100L + (market != null ? market.getId() : 0L);
+        return groupBuys.computeIfAbsent(id, key -> GroupBuy.builder()
+                .id(key)
+                .groupBuyNumber("GB-20260901-%03d".formatted(key))
+                .market(market)
+                .status(GroupBuyStatus.IN_PROGRESS)
+                .startAt(LocalDateTime.now().minusDays(2))
+                .endAt(LocalDateTime.now().plusDays(3))
+                .build());
+    }
+
+    private Long groupBuyId(Market market) {
+        return groupBuyOf(market).getId();
     }
 
     private void givenCart(List<Cart> carts) {
@@ -898,11 +954,12 @@ class CartServiceTest {
     private ProductVariant variant(Long variantId, Product product, int regularPrice, int salePrice, int stock) {
         ProductVariant variant = new ProductVariant(product, "기본", regularPrice, salePrice, stock, true);
         variant.setVariantId(variantId);
+        variants.put(variantId, variant);
         return variant;
     }
 
     private Cart cart(Long cartId, ProductVariant variant, int quantity) {
-        Cart cart = new Cart(user, variant, quantity);
+        Cart cart = new Cart(user, variant, groupBuyOf(variant.getProduct().getMarket()), quantity);
         ReflectionTestUtils.setField(cart, "id", cartId);
         return cart;
     }

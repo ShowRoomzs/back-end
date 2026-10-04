@@ -40,19 +40,23 @@ public interface GroupBuySalesReader {
     }
 
     /**
-     * @param awaitingShipment   미종결 중 배송 처리 대기 — 스튜디오 B7 「배송 처리 대기 18」. 모르면 null
-     * @param inReturnOrExchange 미종결 중 반품·교환 처리중 — B7 「반품 처리중 6」. 모르면 null
-     *                           (§29-11이 막은 것은 종결 경로 내역이고, 이 둘은 <b>남은 건이 어디 걸려 있나</b>다 — 31 설계 8-1)
+     * @param awaitingShipment       미종결 중 배송 처리 대기 — 스튜디오 B7 「배송 처리 대기 18」. 모르면 null
+     * @param inReturnOrExchange     미종결 중 반품·교환 처리중 — B7 「반품 처리중 6」. 모르면 null
+     *                               (이 둘은 <b>남은 건이 어디 걸려 있나</b>다 — 31 설계 8-1)
+     * @param purchaseConfirmedCount 종결 중 구매확정 — 파트너 B6 「확정 310」 · 어드민 B5 「구매확정」. 모르면 null.
+     *                               반품·교환 거절 확정(§29-11 ③⑤)은 즉시 구매확정이라 반품·교환 모듈이 생기면 여기 들어온다
+     * @param refundedCount          종결 중 환불(결제 후 취소) — B6 「환불 2」. 모르면 null
+     *                               (종결 경로 판정은 판매 모듈이 한다 — 공구는 받은 숫자를 그대로 싣는다 · §29-11)
      */
     record GroupBuyOrderClosure(int totalCount, int closedCount, int unclosedCount,
                                 Integer awaitingShipment, Integer inReturnOrExchange,
-                                List<UnclosedStage> unclosedStages) {
+                                List<UnclosedStage> unclosedStages,
+                                Integer purchaseConfirmedCount, Integer refundedCount) {
     }
 
     /**
      * 미종결 주문의 단계별 건수 — 서피스마다 다른 칸을 요구해(스튜디오 2칸 · 어드민 「교환 재발송 대기 · 반품 심사」)
      * 판매 모듈이 단계 목록을 돌려주고 서피스가 묶는다(32 설계 4-8 ⑦). 단계 enum은 판매 관리가 소유한다.
-     * 종결 경로별 내역(구매확정·환불)은 싣지 않는다 — 판매 관리 소관이다(§29-11).
      */
     record UnclosedStage(String stage, String label, int count) {
     }

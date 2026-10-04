@@ -3,6 +3,7 @@ package showroomz.domain.groupbuy.repository;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
@@ -117,6 +118,18 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, Group
                                    @Param("pattern") String pattern,
                                    Pageable pageable);
 
+    /** 파트너 목록과 <b>같은 조건·같은 정렬</b>의 id 전체 — 상세의 이웃(이전·다음)을 목록과 어긋나지 않게 고른다. */
+    @Query("SELECT g.id FROM GroupBuy g "
+            + "JOIN g.contract c "
+            + "JOIN g.creator cr "
+            + "WHERE g.market.id = :marketId AND g.status IN :statuses "
+            + "AND (:pattern IS NULL OR c.title LIKE :pattern OR cr.showroomName LIKE :pattern "
+            + "     OR g.groupBuyNumber LIKE :pattern)")
+    List<Long> findOrderedIdsForSeller(@Param("marketId") Long marketId,
+                                       @Param("statuses") Collection<GroupBuyStatus> statuses,
+                                       @Param("pattern") String pattern,
+                                       Sort sort);
+
     /** 어드민 탭 카운트 — 가시성 필터가 없다(32 설계 2-1). GNB 폴링용이라 GROUP BY 1회다(3-3). */
     @Query("SELECT g.status, COUNT(g) FROM GroupBuy g GROUP BY g.status")
     List<Object[]> countAllByStatus();
@@ -182,6 +195,16 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, Group
             + "AND (SELECT COUNT(f) FROM GroupBuyFulfillmentCheck f WHERE f.groupBuy = g) < 2 "
             + "ORDER BY g.fulfillmentDueAt ASC, g.id ASC")
     List<Long> findIdsToAutoConfirmFulfillment(@Param("now") LocalDateTime now, Pageable pageable);
+
+    /**
+     * 이 상품을 담은 <b>지금 판매 중인</b> 공구 — C7에 {@code groupBuyId} 없이 들어왔을 때 가격을 정할 공구 후보
+     * (가격 계획서 4절). 판매 상태 ∧ 종료 시각 전 — {@link GroupBuy#isOngoing}과 같은 식이다.
+     */
+    @Query("SELECT DISTINCT g FROM GroupBuy g JOIN g.contract c JOIN c.items ci "
+            + "WHERE ci.product.productId = :productId AND g.status IN :sellingStatuses AND g.endAt > :now")
+    List<GroupBuy> findSellingByProductId(@Param("productId") Long productId,
+                                          @Param("sellingStatuses") Collection<GroupBuyStatus> sellingStatuses,
+                                          @Param("now") LocalDateTime now);
 
     // ── 상품 groupBuyStatus 동기화(설계서 1-11) ─────────────────────────────────
 

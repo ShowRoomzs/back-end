@@ -109,6 +109,8 @@ public enum ErrorCode {
     VARIANT_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "VARIANT_NOT_AVAILABLE", "노출되지 않는 옵션입니다."),
     INSUFFICIENT_STOCK(HttpStatus.BAD_REQUEST, "INSUFFICIENT_STOCK", "재고가 부족합니다."),
     INVALID_VARIANT_OPTIONS(HttpStatus.BAD_REQUEST, "INVALID_VARIANT_OPTIONS", "옵션 조합이 올바르지 않습니다."),
+    /* 진행 중인 계약·공구가 옵션(variant)을 참조한다 — 재생성하면 계약 옵션 행과 판매 가격이 끊긴다(옵션 계획서 6-1). */
+    PRODUCT_OPTION_LOCKED_BY_CONTRACT(HttpStatus.BAD_REQUEST, "PRODUCT_OPTION_LOCKED_BY_CONTRACT", "진행 중인 계약·공구에 포함된 상품은 옵션 구성을 변경할 수 없습니다. 재고만 수정할 수 있습니다."),
     PRODUCT_EDIT_RESTRICTED(HttpStatus.BAD_REQUEST, "PRODUCT_EDIT_RESTRICTED",
             "진열 중이며 공구 진행 중인 상품은 옵션·재고만 수정할 수 있습니다."),
     CART_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "CART_ITEM_NOT_FOUND", "장바구니 항목을 찾을 수 없습니다."),
@@ -131,6 +133,8 @@ public enum ErrorCode {
      */
     INQUIRY_ALREADY_ANSWERED(HttpStatus.BAD_REQUEST, "INQUIRY_ALREADY_ANSWERED", "이미 답변이 등록된 문의입니다. 답변은 1회만 등록할 수 있습니다."),
     INVALID_INQUIRY_TYPE(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "올바르지 않은 문의 유형입니다. (DELIVERY, CANCEL_EXCHANGE_RETURN, ORDER_PAYMENT, SERVICE, ACCOUNT)"),
+    // 없는 주문도 같은 코드로 막는다 — 404로 나누면 남의 주문 ID가 있는지 없는지를 알려 주게 된다.
+    ORDER_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ORDER_ACCESS_DENIED", "해당 주문에 대한 권한이 없습니다."),
 
     /* 11-1. 상품 문의 (§23 파트너센터 문의 관리)
      */
@@ -275,6 +279,8 @@ public enum ErrorCode {
     CONTRACT_COUNTERPARTY_FIXED(HttpStatus.BAD_REQUEST, "CONTRACT_COUNTERPARTY_FIXED", "스레드에서 시작한 계약은 상대를 바꿀 수 없습니다."),
     CONTRACT_PRODUCT_NOT_DISPLAYED(HttpStatus.BAD_REQUEST, "CONTRACT_PRODUCT_NOT_DISPLAYED", "진열 상태인 상품만 선택할 수 있습니다."),
     CONTRACT_PRODUCT_NOT_OWNED(HttpStatus.BAD_REQUEST, "CONTRACT_PRODUCT_NOT_OWNED", "해당 브랜드의 상품이 아닙니다."),
+    CONTRACT_ITEM_OPTION_NOT_OF_PRODUCT(HttpStatus.BAD_REQUEST, "CONTRACT_ITEM_OPTION_NOT_OF_PRODUCT", "선택한 상품의 옵션이 아닙니다."),
+    CONTRACT_ITEM_OPTION_DUPLICATED(HttpStatus.BAD_REQUEST, "CONTRACT_ITEM_OPTION_DUPLICATED", "같은 옵션이 두 번 입력되었습니다."),
     CONTRACT_FIXED_FEE_NOTICE_REQUIRED(HttpStatus.BAD_REQUEST, "CONTRACT_FIXED_FEE_NOTICE_REQUIRED", "고정 지급비 지급 조건 확인이 필요합니다."),
     CONTRACT_FIXED_FEE_ALREADY_PAID(HttpStatus.CONFLICT, "CONTRACT_FIXED_FEE_ALREADY_PAID", "이미 지급 완료로 기록된 계약입니다."),
     CONTRACT_GROUP_BUY_ALREADY_CREATED(HttpStatus.CONFLICT, "CONTRACT_GROUP_BUY_ALREADY_CREATED", "이미 공구가 생성된 계약입니다."),
@@ -351,7 +357,43 @@ public enum ErrorCode {
     GROUP_BUY_DECISION_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "GROUP_BUY_DECISION_REASON_REQUIRED", "양측에 전달할 사유를 입력해 주세요."),
     GROUP_BUY_SETTLEMENT_NOT_READY(HttpStatus.CONFLICT, "GROUP_BUY_SETTLEMENT_NOT_READY", "정산 확인 조건이 충족되지 않았습니다."),
     GROUP_BUY_APPEAL_ATTACHMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "GROUP_BUY_APPEAL_ATTACHMENT_NOT_FOUND", "존재하지 않는 소명 첨부입니다."),
-    GROUP_BUY_FULFILLMENT_NOT_AGREED(HttpStatus.CONFLICT, "GROUP_BUY_FULFILLMENT_NOT_AGREED", "양측 합의 전에는 정산 보류를 해제할 수 없습니다.");
+    GROUP_BUY_FULFILLMENT_NOT_AGREED(HttpStatus.CONFLICT, "GROUP_BUY_FULFILLMENT_NOT_AGREED", "양측 합의 전에는 정산 보류를 해제할 수 없습니다."),
+
+    // 주문·결제 (결제 계획서 5-8). ORDER_ACCESS_DENIED는 문의 주문 소유 검증에서 앞당겨 만들었다(3절).
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "주문을 찾을 수 없습니다."),
+    ORDER_ITEMS_EMPTY(HttpStatus.BAD_REQUEST, "ORDER_ITEMS_EMPTY", "주문할 상품이 없습니다."),
+    ORDER_ADDRESS_REQUIRED(HttpStatus.BAD_REQUEST, "ORDER_ADDRESS_REQUIRED", "배송지를 선택해 주세요."),
+    ORDER_AMOUNT_CHANGED(HttpStatus.CONFLICT, "ORDER_AMOUNT_CHANGED", "상품 가격 또는 배송비가 변경되었습니다. 주문서를 다시 확인해 주세요."),
+    ORDER_ALREADY_CLOSED(HttpStatus.CONFLICT, "ORDER_ALREADY_CLOSED", "이미 만료되었거나 취소된 주문입니다."),
+    ORDER_NOT_CANCELLABLE(HttpStatus.CONFLICT, "ORDER_NOT_CANCELLABLE", "지금 상태에서는 주문을 취소할 수 없습니다."),
+    PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PAYMENT_NOT_FOUND", "결제 정보를 찾을 수 없습니다."),
+    PAYMENT_METHOD_UNAVAILABLE(HttpStatus.BAD_REQUEST, "PAYMENT_METHOD_UNAVAILABLE", "현재 이용할 수 없는 결제수단입니다."),
+    PAYMENT_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "PAYMENT_ALREADY_IN_PROGRESS", "진행 중인 결제가 있습니다. 잠시 후 다시 시도해 주세요."),
+    PAYMENT_CANCEL_IN_PROGRESS(HttpStatus.CONFLICT, "PAYMENT_CANCEL_IN_PROGRESS", "이미 취소 처리 중인 주문입니다."),
+    PAYMENT_AMOUNT_MISMATCH(HttpStatus.CONFLICT, "PAYMENT_AMOUNT_MISMATCH", "결제 금액이 주문 금액과 일치하지 않아 결제가 취소되었습니다."),
+    PAYMENT_GATEWAY_ERROR(HttpStatus.BAD_GATEWAY, "PAYMENT_GATEWAY_ERROR", "결제사 통신에 실패했습니다. 잠시 후 다시 시도해 주세요."),
+    PAYMENT_CANCEL_FAILED(HttpStatus.BAD_GATEWAY, "PAYMENT_CANCEL_FAILED", "결제 취소에 실패했습니다. 고객센터로 문의해 주세요."),
+    WEBHOOK_SIGNATURE_INVALID(HttpStatus.UNAUTHORIZED, "WEBHOOK_SIGNATURE_INVALID", "웹훅 서명이 올바르지 않습니다."),
+
+    // 파트너센터 주문 관리(34 설계서 4-4). 내 마켓 아님도 404 — 존재를 노출하지 않는다.
+    ORDER_GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_GROUP_NOT_FOUND", "존재하지 않는 주문입니다."),
+    ORDER_SEARCH_RANGE_EXCEEDED(HttpStatus.BAD_REQUEST, "ORDER_SEARCH_RANGE_EXCEEDED", "조회 기간은 최대 1년까지 설정할 수 있습니다."),
+    ORDER_SEARCH_RANGE_INVALID(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "조회 시작일은 종료일보다 늦을 수 없습니다."),
+    ORDER_PAGE_SIZE_INVALID(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "페이지 크기는 1~100 사이로 입력해 주세요."),
+    ORDER_STATE_CHANGED(HttpStatus.CONFLICT, "ORDER_STATE_CHANGED", "주문 상태가 변경되었습니다. 새로고침 후 다시 확인해 주세요."),
+    INVOICE_DUPLICATE(HttpStatus.CONFLICT, "INVOICE_DUPLICATE", "이미 다른 주문에 등록된 송장번호입니다."),
+    INVOICE_FORMAT_INVALID(HttpStatus.BAD_REQUEST, "INVOICE_FORMAT_INVALID", "송장번호 형식이 올바르지 않습니다. 다시 확인해 주세요."),
+    CANCEL_REQUEST_ALREADY_DECIDED(HttpStatus.CONFLICT, "CANCEL_REQUEST_ALREADY_DECIDED", "이미 처리된 취소 요청입니다."),
+    CANCEL_REQUEST_PENDING_EXISTS(HttpStatus.CONFLICT, "CANCEL_REQUEST_PENDING_EXISTS", "검토 중인 취소 요청이 있습니다. 요청을 먼저 처리해 주세요."),
+    CANCEL_REQUEST_REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "CANCEL_REQUEST_REJECT_REASON_REQUIRED", "소비자에게 전달할 거부 사유를 입력해 주세요."),
+    SELLER_CANCEL_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER_CANCEL_REASON_REQUIRED", "기타 사유를 선택하면 설명을 입력해야 합니다."),
+    PURCHASE_ORDER_COLUMNS_REQUIRED(HttpStatus.BAD_REQUEST, "PURCHASE_ORDER_COLUMNS_REQUIRED", "발주서 컬럼을 1개 이상 선택해 주세요."),
+    PURCHASE_ORDER_EMPTY(HttpStatus.BAD_REQUEST, "PURCHASE_ORDER_EMPTY", "발주서로 내려받을 주문이 없습니다."),
+    PURCHASE_ORDER_TOO_MANY(HttpStatus.BAD_REQUEST, "PURCHASE_ORDER_TOO_MANY", "발주서 대상이 너무 많습니다. 기간·검색 조건으로 나눠 내려받아 주세요."),
+    SHIPMENT_FILE_INVALID(HttpStatus.BAD_REQUEST, "SHIPMENT_FILE_INVALID", "엑셀 파일을 읽을 수 없습니다. 양식을 확인해 주세요."),
+    SHIPMENT_FILE_TOO_MANY_ROWS(HttpStatus.BAD_REQUEST, "SHIPMENT_FILE_TOO_MANY_ROWS", "엑셀 업로드는 최대 1,000행까지 가능합니다."),
+    /** 소비자 앱 — 준비 시작 후에는 취소 요청 경로만 남는다(약관 제17조② · 제18조①). */
+    ORDER_CANCEL_WINDOW_CLOSED(HttpStatus.CONFLICT, "ORDER_CANCEL_WINDOW_CLOSED", "배송 준비가 시작되어 바로 취소할 수 없습니다. 판매자에게 취소 요청을 보내 주세요.");
 
     private final HttpStatus status;
     private final String code;
