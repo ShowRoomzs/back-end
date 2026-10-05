@@ -167,6 +167,21 @@ public class OrderClaimCollection {
         this.createdAt = createdAt;
     }
 
+    public boolean isFinalized() {
+        return finalizedAt != null;
+    }
+
+    /** 판정 종료 — 그 요청의 클레임이 전부 검수 판정을 받았다. 환불할 것이 없으면(전체 반려 · 교환) 환불액은 null. */
+    public void finalizeWith(Integer refundAmount, LocalDateTime now) {
+        this.refundAmount = refundAmount;
+        this.finalizedAt = now;
+    }
+
+    /** 운영자가 집행한 금액으로 환불액을 확정한다 — 예정액과 다를 수 있다. */
+    public void confirmRefund(int refundedAmount) {
+        this.refundAmount = refundedAmount;
+    }
+
     public boolean isOwnedBy(Long userId) {
         return this.userId.equals(userId);
     }

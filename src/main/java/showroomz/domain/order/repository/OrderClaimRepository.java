@@ -28,6 +28,7 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
 
     String COMPLETED = "showroomz.domain.order.type.ClaimStatus.COMPLETED";
     String CANCELLED = "showroomz.domain.order.type.ClaimResult.CANCELLED";
+    String REFUND_PENDING = "showroomz.domain.order.type.ClaimStatus.REFUND_PENDING";
 
     // ------------------------------------------------------------------ 조회
 
@@ -80,16 +81,18 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
 
     /**
      * 그 항목에서 다시 신청할 수 없는 수량 — 진행 중 클레임 + 거절된 클레임(종결 뒤에도 돌아오지 않는다 · 앱 클레임
-     * 설계서 1-3). 철회·자동 취소된 수량과 교환 완료된 수량은 돌아온다. 환불된 수량은 {@code returned_quantity}가 뺀다.
+     * 설계서 1-3). 철회·자동 취소된 수량과 교환 완료된 수량은 돌아온다. 환불된 수량은 {@code returned_quantity}가 뺀다 —
+     * <b>환불 대기(검수 통과)는 세지 않는다.</b> 통과 순간 {@code returned_quantity}에 이미 올라가 있어 여기서도 세면 두 번 빠진다.
      */
     @Query("SELECT COALESCE(SUM(c.quantity), 0) FROM OrderClaim c WHERE c.orderProduct.id = :orderProductId "
-            + "AND (c.status <> " + COMPLETED + " OR c.rejectedAt IS NOT NULL)")
+            + "AND (c.status NOT IN (" + COMPLETED + ", " + REFUND_PENDING + ") OR c.rejectedAt IS NOT NULL)")
     long sumOccupiedQuantity(@Param("orderProductId") Long orderProductId);
 
     /** {@link #sumOccupiedQuantity}의 하위주문 판 — [주문 항목 id, 점유 수량]. 신청 양식이 항목마다 묻지 않게 한다. */
     @Query("SELECT c.orderProduct.id, COALESCE(SUM(c.quantity), 0) FROM OrderClaim c "
             + "WHERE c.deliveryGroup.id = :deliveryGroupId "
-            + "AND (c.status <> " + COMPLETED + " OR c.rejectedAt IS NOT NULL) GROUP BY c.orderProduct.id")
+            + "AND (c.status NOT IN (" + COMPLETED + ", " + REFUND_PENDING + ") OR c.rejectedAt IS NOT NULL) "
+            + "GROUP BY c.orderProduct.id")
     List<Object[]> sumOccupiedQuantityByDeliveryGroup(@Param("deliveryGroupId") Long deliveryGroupId);
 
     /** 소비자 앱 — 내 클레임만. 남의 클레임은 없는 것이다(존재 비노출). */
@@ -133,6 +136,11 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
             + "WHERE c.collection.id = :collectionId "
             + "AND c.status = showroomz.domain.order.type.ClaimStatus.REFUND_PENDING")
     int completeRefundByCollection(@Param("collectionId") Long collectionId, @Param("now") LocalDateTime now);
+
+    /** 환불 집행액 기록 — 요청 단위로 집행된 금액을 항목에 나눠 적는다(완료 탭 「금액」 · 앱 항목 행). */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderClaim c SET c.refundedAmount = :amount WHERE c.id = :id")
+    int setRefundedAmount(@Param("id") Long id, @Param("amount") int amount);
 
     // ------------------------------------------------------------------ 항목 단위 전이
 

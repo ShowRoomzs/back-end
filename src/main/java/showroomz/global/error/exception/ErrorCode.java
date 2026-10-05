@@ -404,7 +404,9 @@ public enum ErrorCode {
     CLAIM_STATE_CHANGED(HttpStatus.CONFLICT, "CLAIM_STATE_CHANGED", "요청 상태가 변경되었습니다. 새로고침 후 다시 확인해 주세요."),
     CLAIM_INVOICE_NOT_EDITABLE(HttpStatus.CONFLICT, "CLAIM_INVOICE_NOT_EDITABLE", "이미 조회되는 송장이거나 수정 기한이 지나 송장을 수정할 수 없습니다."),
     CLAIM_WITHDRAW_NOT_ALLOWED(HttpStatus.CONFLICT, "CLAIM_WITHDRAW_NOT_ALLOWED", "이미 회수가 시작되어 요청을 철회할 수 없습니다."),
-    CLAIM_AMOUNT_CHANGED(HttpStatus.CONFLICT, "CLAIM_AMOUNT_CHANGED", "배송비 금액이 달라졌습니다. 화면을 다시 불러와 확인해 주세요.");
+    CLAIM_AMOUNT_CHANGED(HttpStatus.CONFLICT, "CLAIM_AMOUNT_CHANGED", "배송비 금액이 달라졌습니다. 화면을 다시 불러와 확인해 주세요."),
+    CLAIM_REJECT_INCOMPLETE(HttpStatus.BAD_REQUEST, "CLAIM_REJECT_INCOMPLETE", "거절 사유 · 상세 설명 · 증빙 사진을 모두 입력해 주세요."),
+    CLAIM_PAYMENT_NOT_REQUIRED(HttpStatus.CONFLICT, "CLAIM_PAYMENT_NOT_REQUIRED", "결제가 필요한 상태가 아닙니다.");
 
     private final HttpStatus status;
     private final String code;

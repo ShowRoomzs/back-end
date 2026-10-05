@@ -7,14 +7,19 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.api.seller.claim.dto.SellerClaimBatchResponse;
 import showroomz.api.seller.claim.dto.SellerClaimDetailResponse;
 import showroomz.api.seller.claim.dto.SellerClaimListItem;
+import showroomz.api.seller.claim.dto.SellerClaimReceiveRequest;
+import showroomz.api.seller.claim.dto.SellerClaimRejectRequest;
 import showroomz.api.seller.claim.dto.SellerClaimSummaryResponse;
 import showroomz.domain.order.type.ClaimReason;
 import showroomz.domain.order.type.ClaimTab;
@@ -120,4 +125,83 @@ public interface SellerClaimControllerDocs {
     })
     ResponseEntity<SellerClaimDetailResponse> getClaim(
             @Parameter(description = "클레임 id", example = "3021") @PathVariable Long claimId);
+
+    @Operation(
+            summary = "입고 확인 (다건)",
+            description = """
+                    회수된 상품이 도착했음을 확인한다. **검수 기한(입고 확인 + 2영업일)이 이 순간 발급된다.**
+
+                    **권한:** SELLER
+
+                    - 다건 · **행 단위 부분 성공** — 처리되지 않은 건만 `skipped` 에 사유와 함께 돌려주고 나머지는 진행한다
+                    - 대상은 「입고 확인 전」(추적상 도착) 건이다. 택배 추적이 꺼져 있는 동안에는 도착이 감지되지 않으므로
+                      「회수 중」 건도 받는다(목록의 `actions.canConfirmReceipt` 가 정본)
+                    - 한 박스로 같이 온 건 중 일부만 먼저 확인해도 된다
+                    - 내 마켓 것이 아닌 건과 단계가 맞지 않는 건은 같은 사유(`CLAIM_STATE_CHANGED`)로 제외된다
+                    - 되돌리기는 없다
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "처리 결과 — 전부 제외돼도 200"),
+            @ApiResponse(responseCode = "400", description = "INVALID_INPUT — `claimIds` 비었음 · 500건 초과",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<SellerClaimBatchResponse> receive(@Valid @RequestBody SellerClaimReceiveRequest request);
+
+    @Operation(
+            summary = "검수 통과 (단건)",
+            description = """
+                    「검수 대기」 건을 통과시킨다. 응답은 갱신된 상세다.
+
+                    **권한:** SELLER
+
+                    - **반품** → 「환불 대기」. 그 항목의 반품 수량이 이 순간 반영된다(전량이면 항목이 반품으로 종결).
+                      **환불은 브랜드가 실행하지 않는다** — 같은 박스의 판정이 전부 끝나면 환불 큐에 오르고 운영자가 집행한다
+                    - **교환** → 「재발송 대기」. 재발송 송장을 등록하면 된다
+                    - 환불 예정액은 **요청(박스) 단위**라 같은 박스에 판정이 남은 건이 있으면 아직 확정되지 않는다
+                    - 되돌리기는 없다. 통과와 거절이 동시에 들어오면 하나만 성공한다
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "통과 — 갱신된 상세"),
+            @ApiResponse(responseCode = "404", description = "CLAIM_NOT_FOUND — 없는 클레임이거나 내 마켓 것이 아님",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "CLAIM_STATE_CHANGED — 검수 대기가 아님(이미 판정됨 포함)",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<SellerClaimDetailResponse> passInspection(
+            @Parameter(description = "클레임 id", example = "3021") @PathVariable Long claimId);
+
+    @Operation(
+            summary = "검수 거절 (단건)",
+            description = """
+                    「검수 대기」 건을 거절한다. **제출 = 즉시 확정이고 되돌릴 수 없다.** 응답은 갱신된 상세다.
+
+                    **권한:** SELLER
+
+                    - `reasonCode` · `detail` · `evidenceImageUrls`(1~5장)가 **전부 필수**다 — 하나라도 빠지면 400.
+                      설명과 증빙은 **소비자에게 그대로 전달된다**
+                    - 거절된 상품은 소비자에게 돌려보낸다. 그 재발송 배송비는 소비자 부담이다
+                      - 같은 박스에 통과된 반품이 있으면 그 환불액에서 빼고 → 바로 「재발송 대기」
+                      - 교환 요청 때 낸 배송비가 있으면 그것으로 충당하고 → 바로 「재발송 대기」
+                      - 둘 다 아니면 소비자 결제를 기다린다 → 「거절 보류」
+                    - 같은 박스에 판정이 남은 건이 있으면 위 정산은 그 판정이 끝날 때 정해진다(그때까지 「거절 보류」)
+                    - **거절은 구매확정 보류를 푼다** — 배송완료 후 7일이 이미 지났으면 이 순간 구매확정된다
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "거절 — 갱신된 상세"),
+            @ApiResponse(responseCode = "400", description = "CLAIM_REJECT_INCOMPLETE — 사유 · 설명 · 증빙(1~5장) 누락",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "CLAIM_NOT_FOUND",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "CLAIM_STATE_CHANGED — 검수 대기가 아님(이미 판정됨 포함)",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<SellerClaimDetailResponse> rejectInspection(
+            @Parameter(description = "클레임 id", example = "3021") @PathVariable Long claimId,
+            @RequestBody SellerClaimRejectRequest request);
 }

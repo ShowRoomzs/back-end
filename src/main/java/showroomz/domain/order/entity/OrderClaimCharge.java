@@ -55,4 +55,20 @@ public class OrderClaimCharge {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    public boolean isPending() {
+        return status == ClaimChargeStatus.PENDING;
+    }
+
+    /** 정산 — 결제(PAID) · 환불액 차감(DEDUCTED) · 교환 선결제분 충당(COVERED) · 소멸(VOID). 요청 행을 잠근 뒤에만 부른다. */
+    public void settle(ClaimChargeStatus status, String paymentId, LocalDateTime now) {
+        this.status = status;
+        this.paidPaymentId = paymentId;
+        this.settledAt = now;
+    }
+
+    /** 결제 기한 발급 — 요청의 판정이 다 끝나 결제가 필요하다고 정해진 순간. */
+    public void openForPayment(LocalDateTime dueAt) {
+        this.dueAt = dueAt;
+    }
 }

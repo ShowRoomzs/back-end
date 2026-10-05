@@ -72,4 +72,16 @@ public class OrderRefundTask extends BaseTimeEntity {
         this.refundAmount = refundAmount;
         this.status = RefundTaskStatus.PENDING;
     }
+
+    public boolean isPending() {
+        return status == RefundTaskStatus.PENDING;
+    }
+
+    /** 집행 완료 — PG 취소({@code payment_cancel})를 붙이는 것은 어드민 거래 관리의 몫이다. */
+    public void markExecuted(int executedAmount, Long executedBy, LocalDateTime now) {
+        this.refundAmount = executedAmount;
+        this.status = RefundTaskStatus.DONE;
+        this.executedBy = executedBy;
+        this.executedAt = now;
+    }
 }
