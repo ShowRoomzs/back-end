@@ -128,6 +128,19 @@ tasks.register('integrationTest', Test) {
     // systemProperty 'spring.profiles.active', 'test' 
 }
 
+// 배포(deploy.yml) 전용 — 실 MySQL에 Flyway 마이그레이션 + Hibernate validate 만 검증한다.
+// H2 기반 @IntegrationTest 스위트 등 나머지 테스트는 배포에서 돌리지 않는다.
+tasks.register('dbMigrationTest', Test) {
+    description = 'Runs the Flyway migration / schema validation test only (used by deploy).'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform { includeTags 'db-migration' }
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+
 tasks.withType(JavaCompile) {
     options.compilerArgs << '-parameters'
 }

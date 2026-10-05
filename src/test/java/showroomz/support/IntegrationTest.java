@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
 /**
  * HTTP 진입점부터 DB까지 한 번에 태우는 통합 테스트 표식.
  *
- * <p><b>왜 프로퍼티를 여기서 못 박는가</b> — 스키마 검증용 CI 잡(`./gradlew integrationTest`)은
+ * <p><b>왜 프로퍼티를 여기서 못 박는가</b> — 스키마 검증용 CI 잡(`./gradlew dbMigrationTest`)은
  * `SPRING_DATASOURCE_URL` 환경변수로 실 MySQL을 가리킨다. 환경변수는 `application-test.yml`보다
  * 우선순위가 높아서 yml에 datasource를 적으면 CI에서 조용히 MySQL로 붙는다. 반면 애노테이션의
  * {@code properties}는 환경변수보다 우선하므로, 여기 적어야 로컬·CI 어디서든 같은 인메모리 DB로 돈다.
