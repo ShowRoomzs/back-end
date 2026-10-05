@@ -139,6 +139,18 @@ order:
   arrival-stats-window-days: 90                     # 택배사별 실제 소요일 평균의 표본 범위
   arrival-stats-min-samples: 30                     # 표본이 이보다 적은 택배사는 기본값
   arrival-stats-refresh-hours: 6                    # 평균 재집계 주기
+  claim:                                            # 반품·교환(35 설계서 · 앱 클레임 설계서) — 기한·횟수는 미결이 많아 전부 설정값
+    collect-due-business-days: 2                    # 기한 ① 회수 대기 방치 — 신청 + N영업일(「지연」 표시)
+    inspect-due-business-days: 2                    # 기한 ② 검수 완료 — 입고 확인 + N영업일
+    inspect-due-basis: RECEIVED                     # 기한 ②의 기산점 — RECEIVED(입고 확인) | ARRIVED(추적상 도착)
+    invoice-due-days: 7                             # 회수 송장 등록 기한 — 지나면 요청 자동 취소
+    reship-pay-due-days: 14                         # 반려 상품 재발송비 결제 기한 — 지나면 미결제 고지 시작
+    payment-pending-minutes: 30                     # 교환 재발송비 결제 대기 — 지나면 요청 초안 삭제
+    storage-required-notices: 2                     # 보관 기한이 생기는 최소 고지 횟수
+    storage-months: 3                               # 보관 기간 — 최종 고지일 + N개월
+    evidence-max: 5                                 # 검수 거절 증빙 사진 상한
+    receive-before-arrival: true                    # 추적상 도착 전에도 입고 확인 허용 — 택배 추적이 꺼져 있는 동안의 출구
+    invoice-expiry-scheduler-enabled: true          # 회수 송장 미등록 자동 취소 배치
 
 # DeliveryTrackerProperties.java — 배송 추적 연동(34 설계서 3-3). enabled=false 면 Noop 스텁이 붙고
 # 감시 배치가 멈춘다(송장 형식 검증도 생략 기록). true 면 스마트택배 조회 API 어댑터가 붙는다(택배 추적 설계서) — 런칭 게이트.

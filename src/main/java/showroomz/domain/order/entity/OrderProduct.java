@@ -57,6 +57,13 @@ public class OrderProduct extends BaseTimeEntity {
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
+    /**
+     * 반품 검수 통과 수량(35 설계서 1-10) — 수량 부분 반품을 항목 분할 없이 기록한다.
+     * 정산·판매 집계의 유효 수량 = {@code quantity − returnedQuantity}. 쓰기는 리포지토리 조건부 UPDATE 로만.
+     */
+    @Column(name = "returned_quantity", nullable = false)
+    private Integer returnedQuantity = 0;
+
     /** 판매가(공구가 + 옵션가) 스냅샷 — 주문 단가. */
     @Column(name = "price", nullable = false)
     private Integer price;

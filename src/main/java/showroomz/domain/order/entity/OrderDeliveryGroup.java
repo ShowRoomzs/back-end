@@ -132,6 +132,13 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
     @Column(name = "delivered_at")
     private LocalDateTime deliveredAt;
 
+    /**
+     * 구매확정 기산점 재시작 — 교환 재발송 도착 시각(35 설계서 1-10 · §35-7). {@code deliveredAt}을 덮지 않는다 —
+     * 최초 배송완료 시각은 사실이다.
+     */
+    @Column(name = "confirm_restart_at")
+    private LocalDateTime confirmRestartAt;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "delivered_source", length = 16)
     private DeliveredSource deliveredSource;
@@ -176,6 +183,14 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
         this.freeShippingApplied = freeShippingApplied;
         this.marketName = marketName;
         this.groupBuyNumber = groupBuyNumber;
+    }
+
+    /**
+     * 구매확정 N일의 기준 시각 — 교환 재발송이 도착했으면 그 시각, 아니면 배송완료 시각(35 설계서 3-6).
+     * 배치의 WHERE({@code COALESCE(confirm_restart_at, delivered_at)})와 화면의 예정일 계산이 같은 값을 써야 한다.
+     */
+    public LocalDateTime confirmBaseAt() {
+        return confirmRestartAt != null ? confirmRestartAt : deliveredAt;
     }
 
     public Long getGroupBuyId() {

@@ -25,6 +25,7 @@ import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.domain.order.type.RefundTaskSource;
 import showroomz.domain.order.type.TrackingAlert;
 import showroomz.domain.product.repository.ProductVariantRepository;
+import showroomz.global.config.properties.OrderProperties;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackSnapshot;
 
 import java.time.LocalDateTime;
@@ -50,6 +51,7 @@ public class OrderFulfillmentService {
     private final OrderCancelRequestRepository cancelRequestRepository;
     private final ProductVariantRepository productVariantRepository;
     private final DeliveryTrackingEventRecorder trackingEventRecorder;
+    private final OrderProperties orderProperties;
 
     // ------------------------------------------------------------------ 이력
 
@@ -176,6 +178,16 @@ public class OrderFulfillmentService {
         appendHistory(deliveryGroupId, FulfillmentEventType.PURCHASE_CONFIRMED, FulfillmentActorType.SYSTEM, null,
                 null, now);
         return true;
+    }
+
+    /**
+     * 단건 구매확정 시도(35 설계서 3-6) — 배치와 같은 조건부 UPDATE 를 그 자리에서 연다. 클레임이 구매확정 보류를 푸는
+     * 순간(검수 거절 · 철회 · 자동 취소)에 부른다 — 기준 시각 + N일이 이미 지났고 다른 보류 클레임이 없으면 배치 회차를
+     * 기다리지 않고 확정된다. 조건이 안 맞으면 아무 일도 없다.
+     */
+    @Transactional
+    public boolean confirmIfDue(Long deliveryGroupId, LocalDateTime now) {
+        return confirmPurchase(deliveryGroupId, now, now.minusDays(orderProperties.getPurchaseConfirmDays()));
     }
 
     // ------------------------------------------------------------------ 배송 추적(설계서 3-3)

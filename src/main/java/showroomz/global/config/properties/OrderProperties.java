@@ -81,4 +81,47 @@ public class OrderProperties {
 
     /** 발주서 1회 대상 하위주문 상한 — 넘으면 조용히 자르지 않고 400 으로 나눠 받게 한다. */
     private int purchaseOrderMaxGroups = 2000;
+
+    // ------------------------------------------------------------------ 반품·교환(35 설계서 · 앱 클레임 설계서)
+
+    private Claim claim = new Claim();
+
+    /** {@code order.claim.*} — 기한·횟수는 약관·기획 미결이 많아 전부 설정값이다. 이미 발급된 기한은 소급해 움직이지 않는다. */
+    @Getter
+    @Setter
+    public static class Claim {
+
+        /** 기한 ① 회수 대기 방치 — 신청 + N영업일. 지나면 파트너센터에 「지연」으로 보인다(자동 취소와 다른 기한). */
+        private int collectDueBusinessDays = 2;
+
+        /** 기한 ② 검수 완료 — 입고 확인 + N영업일. */
+        private int inspectDueBusinessDays = 2;
+
+        /** 기한 ②의 기산점 — RECEIVED(입고 확인 · 시안) | ARRIVED(추적상 도착 · 약관 제20조①). §35-9 A-5 확정 대기. */
+        private String inspectDueBasis = "RECEIVED";
+
+        /** 회수 송장 등록 기한 — 접수 + N일의 끝. 지나면 요청이 자동 취소된다. 송장 수정 기한도 같다. */
+        private int invoiceDueDays = 7;
+
+        /** 반려 상품 재발송비 결제 기한 — 판정 종료 + N일. 지나면 미결제 고지가 시작된다. */
+        private int reshipPayDueDays = 14;
+
+        /** 교환 재발송비 결제 대기 — N분 안에 결제되지 않으면 요청 초안을 지운다. */
+        private int paymentPendingMinutes = 30;
+
+        /** 보관 기한이 생기는 최소 고지 횟수. */
+        private int storageRequiredNotices = 2;
+
+        /** 보관 기간 — 최종 고지일 + N개월. */
+        private int storageMonths = 3;
+
+        /** 검수 거절 증빙 사진 상한. */
+        private int evidenceMax = 5;
+
+        /** 추적상 도착 전에도 입고 확인을 받을지 — 택배 추적이 꺼져 있는 동안의 출구(35 설계서 0-7). */
+        private boolean receiveBeforeArrival = true;
+
+        /** 회수 송장 미등록 자동 취소 배치 가동 여부. */
+        private boolean invoiceExpirySchedulerEnabled = true;
+    }
 }

@@ -122,6 +122,7 @@ public class SellerOrderAssembler {
                                             Set<Long> requestedProductIds) {
         boolean cancelled = item.getStatus() == OrderProductStatus.CANCELLED;
         String label = cancelled ? "취소"
+                : item.getStatus() == OrderProductStatus.RETURNED ? "반품"
                 : item.getStatus() == OrderProductStatus.PURCHASE_CONFIRMED ? "구매확정"
                 : groupStatus.getLabel();
         return new SellerOrderListItem.Item(
@@ -194,7 +195,7 @@ public class SellerOrderAssembler {
                 group.getReturnDetectedAt(),
                 group.getDeliveredAt(),
                 group.getDeliveredSource() == null ? null : group.getDeliveredSource().getLabel(),
-                group.getDeliveredAt() == null ? null : group.getDeliveredAt().plusDays(confirmDays),
+                group.confirmBaseAt() == null ? null : group.confirmBaseAt().plusDays(confirmDays),
                 group.getConfirmedAt(),
                 group.getCancelledAt(),
                 group.getCancelType() == null ? null : group.getCancelType().getLabel(),
@@ -222,7 +223,7 @@ public class SellerOrderAssembler {
         if (group.getFulfillmentStatus() != FulfillmentStatus.DELIVERED || group.getDeliveredAt() == null) {
             return null;
         }
-        long hours = Duration.between(now, group.getDeliveredAt().plusDays(confirmDays)).toHours();
+        long hours = Duration.between(now, group.confirmBaseAt().plusDays(confirmDays)).toHours();
         return (int) Math.max(0, (hours + 23) / 24);
     }
 

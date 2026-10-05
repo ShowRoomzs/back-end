@@ -46,6 +46,14 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
     @Query("SELECT g FROM OrderDeliveryGroup g JOIN FETCH g.order WHERE g.id IN :ids ORDER BY g.id ASC")
     List<OrderDeliveryGroup> findAllWithOrderForShare(@Param("ids") Collection<Long> ids);
 
+    /**
+     * 클레임 신청의 잠금(35 설계서 3-6) — 하위주문 행만 잠근다(주문·마켓은 잠그지 않는다). 구매확정 배치의 조건부
+     * UPDATE 와 같은 행을 다투므로, 배치가 먼저면 신청이 지고 신청이 먼저면 배치의 NOT EXISTS 가 건너뛴다.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT g FROM OrderDeliveryGroup g WHERE g.id = :id")
+    Optional<OrderDeliveryGroup> findForUpdate(@Param("id") Long id);
+
     @Query("SELECT g FROM OrderDeliveryGroup g JOIN FETCH g.order WHERE g.id = :id AND g.market.id = :marketId")
     Optional<OrderDeliveryGroup> findOwned(@Param("id") Long id, @Param("marketId") Long marketId);
 
@@ -238,12 +246,18 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
     int clearTrackingAlert(@Param("id") Long id, @Param("carrier") DeliveryCarrier carrier,
                            @Param("trackingNumber") String trackingNumber);
 
-    /** #6 DELIVERED → CONFIRMED — 배송완료 + 7일(약관 제19조①). */
+    /**
+     * #6 DELIVERED → CONFIRMED — 배송완료 + 7일(약관 제19조①). 기준 시각은 교환 재발송이 도착했으면 그 시각이다
+     * ({@code confirm_restart_at} · 35 설계서 3-6). <b>보류 클레임</b>(진행 중이고 거절되지 않은 반품·교환)이 있으면
+     * 확정하지 않는다 — 거절 보류·거절 반송만 남은 하위주문은 확정된다.
+     */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderDeliveryGroup g SET g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.CONFIRMED, "
             + "g.confirmedAt = :now "
             + "WHERE g.id = :id AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.DELIVERED "
-            + "AND g.deliveredAt <= :threshold")
+            + "AND COALESCE(g.confirmRestartAt, g.deliveredAt) <= :threshold "
+            + "AND NOT EXISTS (SELECT c FROM OrderClaim c WHERE c.deliveryGroup = g "
+            + "    AND c.status <> showroomz.domain.order.type.ClaimStatus.COMPLETED AND c.rejectedAt IS NULL)")
     int confirmPurchase(@Param("id") Long id, @Param("now") LocalDateTime now,
                         @Param("threshold") LocalDateTime threshold);
 
@@ -255,9 +269,13 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
     List<OrderDeliveryGroup> findTrackingTargets(@Param("statuses") Collection<FulfillmentStatus> statuses,
                                                  @Param("afterId") Long afterId, Pageable pageable);
 
+    /** 구매확정 대상 — {@link #confirmPurchase}와 같은 조건(보류 클레임이 있는 하위주문은 회차마다 다시 집히지 않는다). */
     @Query("SELECT g.id FROM OrderDeliveryGroup g "
             + "WHERE g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.DELIVERED "
-            + "AND g.deliveredAt <= :threshold ORDER BY g.deliveredAt ASC, g.id ASC")
+            + "AND COALESCE(g.confirmRestartAt, g.deliveredAt) <= :threshold "
+            + "AND NOT EXISTS (SELECT c FROM OrderClaim c WHERE c.deliveryGroup = g "
+            + "    AND c.status <> showroomz.domain.order.type.ClaimStatus.COMPLETED AND c.rejectedAt IS NULL) "
+            + "ORDER BY COALESCE(g.confirmRestartAt, g.deliveredAt) ASC, g.id ASC")
     List<Long> findIdsToConfirm(@Param("threshold") LocalDateTime threshold, Pageable pageable);
 
     // ------------------------------------------------------------------ 카운트(요약 바 · 탭)

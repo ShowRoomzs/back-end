@@ -394,7 +394,16 @@ public enum ErrorCode {
     SHIPMENT_FILE_TOO_MANY_ROWS(HttpStatus.BAD_REQUEST, "SHIPMENT_FILE_TOO_MANY_ROWS", "엑셀 업로드는 최대 1,000행까지 가능합니다."),
     /** 소비자 앱 — 준비 시작 후에는 취소 요청 경로만 남는다(약관 제17조② · 제18조①). */
     ORDER_CANCEL_WINDOW_CLOSED(HttpStatus.CONFLICT, "ORDER_CANCEL_WINDOW_CLOSED", "배송 준비가 시작되어 바로 취소할 수 없습니다. 판매자에게 취소 요청을 보내 주세요."),
-    ORDER_ADDRESS_NOT_CHANGEABLE(HttpStatus.CONFLICT, "ORDER_ADDRESS_NOT_CHANGEABLE", "배송 준비가 시작되어 배송지를 변경할 수 없습니다.");
+    ORDER_ADDRESS_NOT_CHANGEABLE(HttpStatus.CONFLICT, "ORDER_ADDRESS_NOT_CHANGEABLE", "배송 준비가 시작되어 배송지를 변경할 수 없습니다."),
+
+    // 반품·교환(35 설계서 · 앱 클레임 설계서 3-8)
+    CLAIM_NOT_FOUND(HttpStatus.NOT_FOUND, "CLAIM_NOT_FOUND", "반품·교환 요청을 찾을 수 없습니다."),
+    CLAIM_NOT_ELIGIBLE(HttpStatus.CONFLICT, "CLAIM_NOT_ELIGIBLE", "반품·교환을 요청할 수 없는 상품입니다."),
+    CLAIM_QUANTITY_EXCEEDED(HttpStatus.CONFLICT, "CLAIM_QUANTITY_EXCEEDED", "요청할 수 있는 수량을 초과했습니다."),
+    CLAIM_REASON_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "CLAIM_REASON_DETAIL_REQUIRED", "상세 내용을 입력해 주세요."),
+    CLAIM_STATE_CHANGED(HttpStatus.CONFLICT, "CLAIM_STATE_CHANGED", "요청 상태가 변경되었습니다. 새로고침 후 다시 확인해 주세요."),
+    CLAIM_INVOICE_NOT_EDITABLE(HttpStatus.CONFLICT, "CLAIM_INVOICE_NOT_EDITABLE", "이미 조회되는 송장이거나 수정 기한이 지나 송장을 수정할 수 없습니다."),
+    CLAIM_WITHDRAW_NOT_ALLOWED(HttpStatus.CONFLICT, "CLAIM_WITHDRAW_NOT_ALLOWED", "이미 회수가 시작되어 요청을 철회할 수 없습니다.");
 
     private final HttpStatus status;
     private final String code;

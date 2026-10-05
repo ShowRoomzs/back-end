@@ -254,8 +254,8 @@ public class UserOrderItemAssembler {
      * 클레임 보류 — 35 설계서 3-6 · 5-1)을 내놓으면 그것을 부르도록 바꾼다.
      */
     private LocalDateTime confirmDueAt(OrderDeliveryGroup group) {
-        return group.getDeliveredAt() == null ? null
-                : group.getDeliveredAt().plusDays(orderProperties.getPurchaseConfirmDays());
+        return group.confirmBaseAt() == null ? null
+                : group.confirmBaseAt().plusDays(orderProperties.getPurchaseConfirmDays());
     }
 
     // ------------------------------------------------------------------ 금액(1-3)
