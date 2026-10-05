@@ -50,6 +50,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -120,6 +121,12 @@ public class SellerOrderCommandService {
         if (columns.isEmpty()) {
             throw new BusinessException(ErrorCode.PURCHASE_ORDER_COLUMNS_REQUIRED);
         }
+        if (request.downloadOnlyRequested()) {
+            // 「다운로드만」은 없어졌다(34 설계서 3-1). 조용히 무시하면 그 옵션을 고른 브랜드의 주문이 준비 시작되고
+            // 소비자 취소권이 닫힌다 — 되돌릴 수 없으므로 거절한다.
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                    "발주서를 내려받으면 준비 시작으로 처리됩니다. 다운로드만 하는 옵션은 지원하지 않습니다.");
+        }
 
         List<SellerOrderRow> rows = collectTargets(scope, request, now);
         if (rows.size() > orderProperties.getPurchaseOrderMaxGroups()) {
@@ -139,15 +146,42 @@ public class SellerOrderCommandService {
             throw new BusinessException(ErrorCode.PURCHASE_ORDER_EMPTY);
         }
 
+        // 발주서 = 준비 시작(34 설계서 3-1) — 발주서를 뽑는 것은 보내겠다는 결정이다(§34-4). 신규 행을 하위주문 id
+        // 오름차순으로 전이한다 — 소비자 배송지 변경(하위주문 → 주문 순서로 잠근다)과 잠금 순서가 같아 교착이 없다.
+        int prepared = 0;
+        List<SellerOrderRow> newRows = rows.stream()
+                .filter(row -> row.group().getFulfillmentStatus() == FulfillmentStatus.NEW)
+                .sorted(Comparator.comparing(row -> row.group().getId()))
+                .toList();
+        for (SellerOrderRow row : newRows) {
+            if (deliveryGroupRepository.startPreparation(row.group().getId(), scope.market().getId(),
+                    scope.sellerId(), now) == 1) {
+                fulfillmentService.appendHistory(row.group().getId(), FulfillmentEventType.PREPARE_STARTED,
+                        FulfillmentActorType.SELLER, scope.sellerId(), "발주서 다운로드", now);
+                prepared++;
+            }
+        }
+
+        // 전이 뒤에 하위주문·주문을 잠금 읽기로 다시 읽는다 — 앞에서 읽은 엔티티는 전이 UPDATE 가 영속성 컨텍스트를
+        // 비워 분리됐고, 일반 SELECT 는 그사이 커밋된 배송지 변경을 보지 못한다(REPEATABLE READ 스냅숏).
+        // 상품준비중이 아닌 행(결제 취소 선점 · 그사이 도착한 취소 요청 · 상태 변경으로 전이 0행)은 파일에서도 뺀다 —
+        // 발주서에 실린 주문은 배송지가 더는 바뀌지 않아야 한다.
+        Map<Long, OrderDeliveryGroup> preparing = deliveryGroupRepository.findAllWithOrderForShare(
+                        rows.stream().map(row -> row.group().getId()).toList()).stream()
+                .filter(group -> group.getFulfillmentStatus() == FulfillmentStatus.PREPARING)
+                .collect(Collectors.toMap(OrderDeliveryGroup::getId, group -> group));
+        rows = rows.stream().filter(row -> preparing.containsKey(row.group().getId())).toList();
+        if (rows.isEmpty()) {
+            throw new BusinessException(ErrorCode.PURCHASE_ORDER_EMPTY);
+        }
+
         Map<Long, List<OrderProduct>> itemsByGroup = orderProductRepository.findByDeliveryGroupIds(
                         rows.stream().map(row -> row.group().getId()).toList()).stream()
                 .collect(Collectors.groupingBy(item -> item.getDeliveryGroup().getId()));
 
-        // 엑셀 행은 준비 시작 전에 다 읽어 둔다 — 준비 시작의 조건부 UPDATE 가 영속성 컨텍스트를 비우면
-        // 아직 초기화되지 않은 주문(배송지) 프록시를 더는 읽을 수 없다.
         List<PurchaseOrderExcelWriter.Line> lines = new ArrayList<>();
         for (SellerOrderRow row : rows) {
-            OrderDeliveryGroup group = row.group();
+            OrderDeliveryGroup group = preparing.get(row.group().getId());
             var order = group.getOrder();
             String address = (order.getAddress() == null ? "" : order.getAddress())
                     + (order.getDetailAddress() == null ? "" : " " + order.getDetailAddress());
@@ -164,20 +198,6 @@ public class SellerOrderCommandService {
             }
         }
 
-        // 「다운로드와 함께 준비 시작 처리」 — 기본 ON(§34-4). 발주서를 뽑는 것은 보내겠다는 결정이다.
-        int prepared = 0;
-        if (request.startPreparationOrDefault()) {
-            for (SellerOrderRow row : rows) {
-                if (row.group().getFulfillmentStatus() == FulfillmentStatus.NEW
-                        && deliveryGroupRepository.startPreparation(row.group().getId(), scope.market().getId(),
-                        scope.sellerId(), now) == 1) {
-                    fulfillmentService.appendHistory(row.group().getId(), FulfillmentEventType.PREPARE_STARTED,
-                            FulfillmentActorType.SELLER, scope.sellerId(), "발주서 다운로드 동시 처리", now);
-                    prepared++;
-                }
-            }
-        }
-
         if (Boolean.TRUE.equals(request.saveAsDefault())) {
             upsertTemplate(scope, columns);
         }
@@ -188,7 +208,7 @@ public class SellerOrderCommandService {
                 .sellerId(scope.sellerId())
                 .deliveryGroupCount(rows.size())
                 .columns(columnCsv)
-                .prepareStarted(request.startPreparationOrDefault())
+                .prepareStarted(true)
                 .downloadedAt(now)
                 .build());
 

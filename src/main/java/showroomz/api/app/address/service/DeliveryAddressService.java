@@ -40,7 +40,7 @@ public class DeliveryAddressService {
 
     // 1. 배송지 추가
     @Transactional
-    public void addAddress(String username, DeliveryAddressDto.Request request) {
+    public Long addAddress(String username, DeliveryAddressDto.Request request) {
         Users user = getUserByUsername(username);
 
         // 최대 배송지 개수 제한 로직이 필요하다면 여기에 추가 (예: 10개)
@@ -67,7 +67,7 @@ public class DeliveryAddressService {
                 .isDefault(request.isDefault() || isFirst)
                 .build();
 
-        deliveryAddressRepository.save(address);
+        return deliveryAddressRepository.save(address).getId();
     }
 
     // 2. 배송지 삭제

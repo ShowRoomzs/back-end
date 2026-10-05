@@ -1,7 +1,9 @@
 package showroomz.domain.order.repository;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,6 +29,22 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
 
     @Query("SELECT g FROM OrderDeliveryGroup g LEFT JOIN FETCH g.groupBuy WHERE g.order.id = :orderId ORDER BY g.id ASC")
     List<OrderDeliveryGroup> findByOrderId(@Param("orderId") Long orderId);
+
+    /**
+     * 주문 배송지 변경의 잠금(C10 설계서 3-6) — 그 주문의 하위주문 전부를 id 오름차순으로. 준비 시작(#2)과 같은 행을
+     * 다투므로, 잠근 뒤 본 상태가 커밋까지 유지된다.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT g FROM OrderDeliveryGroup g WHERE g.order.id = :orderId ORDER BY g.id ASC")
+    List<OrderDeliveryGroup> findByOrderIdForUpdate(@Param("orderId") Long orderId);
+
+    /**
+     * 발주서 행의 원본(34 설계서 3-1 ③) — 준비 시작 전이 뒤에 하위주문과 주문(배송지)을 잠금 읽기로 다시 읽는다.
+     * 일반 SELECT 는 트랜잭션 시작 시점의 스냅숏을 보므로, 그사이 커밋된 배송지 변경을 놓친다.
+     */
+    @Lock(LockModeType.PESSIMISTIC_READ)
+    @Query("SELECT g FROM OrderDeliveryGroup g JOIN FETCH g.order WHERE g.id IN :ids ORDER BY g.id ASC")
+    List<OrderDeliveryGroup> findAllWithOrderForShare(@Param("ids") Collection<Long> ids);
 
     @Query("SELECT g FROM OrderDeliveryGroup g JOIN FETCH g.order WHERE g.id = :id AND g.market.id = :marketId")
     Optional<OrderDeliveryGroup> findOwned(@Param("id") Long id, @Param("marketId") Long marketId);

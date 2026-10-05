@@ -144,6 +144,7 @@ public class OrderAssembler {
                         .build())
                 .payment(payment != null ? toPaymentInfo(payment) : null)
                 .cancellable(cancellable)
+                .addressChangeable(isAddressChangeable(order, groups))
                 .items(itemRows)
                 .itemCount(itemRows.size())
                 .maskedAddress(OrderAddressMasker.mask(order))
@@ -214,6 +215,19 @@ public class OrderAssembler {
                 && products.stream().allMatch(p -> p.getStatus() == OrderProductStatus.PAID)
                 && groups.stream().allMatch(g -> g.getFulfillmentStatus() == FulfillmentStatus.NEW
                 || g.getFulfillmentStatus() == FulfillmentStatus.PENDING);
+    }
+
+    /**
+     * 배송지 변경 가능(C10 설계서 3-6) — 결제된 주문이고 취소되지 않은 하위주문이 전부 준비 시작 전(NEW).
+     * 변경 API 와 같은 판정이어야 한다 — 버튼 노출의 정본은 서버다.
+     */
+    static boolean isAddressChangeable(Order order, Collection<OrderDeliveryGroup> groups) {
+        if (order.getStatus() != OrderStatus.PAID || order.getPaidAt() == null) {
+            return false;
+        }
+        List<OrderDeliveryGroup> alive = groups.stream()
+                .filter(g -> g.getFulfillmentStatus() != FulfillmentStatus.CANCELLED).toList();
+        return !alive.isEmpty() && alive.stream().allMatch(g -> g.getFulfillmentStatus() == FulfillmentStatus.NEW);
     }
 
     private OrderDto.Item toItem(OrderProduct product) {

@@ -16,12 +16,14 @@ import org.springframework.web.client.RestClient;
 import showroomz.domain.order.type.DeliveryCarrier;
 import showroomz.global.config.properties.DeliveryTrackerProperties;
 import showroomz.global.delivery.tracker.DeliveryTrackerBlockedException;
+import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackEvent;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackSnapshot;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.ValidationResult;
 
 import java.net.SocketTimeoutException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -131,7 +133,7 @@ class SweetTrackerDeliveryTrackerTest {
                      "receiverAddr":"","receiverName":"","recipient":"","result":"N","senderName":"","orderNumber":null,
                      "estimate":null,"productInfo":null,"zipCode":null,"completeYN":"N"}""");
 
-            assertThat(tracker.track(DeliveryCarrier.CJ, INVOICE)).contains(noEvent());
+            assertThat(judged(tracker.track(DeliveryCarrier.CJ, INVOICE))).contains(noEvent());
         }
 
         @Test
@@ -139,7 +141,7 @@ class SweetTrackerDeliveryTrackerTest {
         void levelZeroWithEmptyDetails() {
             respond("{\"level\":0,\"complete\":false,\"trackingDetails\":[]}");
 
-            assertThat(tracker.track(DeliveryCarrier.CJ, INVOICE)).contains(noEvent());
+            assertThat(judged(tracker.track(DeliveryCarrier.CJ, INVOICE))).contains(noEvent());
         }
 
         @ParameterizedTest(name = "level {0}")
@@ -148,7 +150,7 @@ class SweetTrackerDeliveryTrackerTest {
         void inProgressLevels(int level) {
             respond(details(level, false, detail("2026-10-03 14:05:00", 2), detail("2026-10-03 21:10:00", level)));
 
-            assertThat(tracker.track(DeliveryCarrier.CJ, INVOICE))
+            assertThat(judged(tracker.track(DeliveryCarrier.CJ, INVOICE)))
                     .contains(new TrackSnapshot(kst(2026, 10, 3, 21, 10), null, false, false));
         }
 
@@ -158,7 +160,7 @@ class SweetTrackerDeliveryTrackerTest {
             respond(details(6, true, detail("2026-10-03 14:05:00", 2), detail("2026-10-04 13:30:00", 6)));
 
             LocalDateTime deliveredAt = kst(2026, 10, 4, 13, 30);
-            assertThat(tracker.track(DeliveryCarrier.CJ, INVOICE))
+            assertThat(judged(tracker.track(DeliveryCarrier.CJ, INVOICE)))
                     .contains(new TrackSnapshot(deliveredAt, deliveredAt, false, false));
         }
 
@@ -168,7 +170,7 @@ class SweetTrackerDeliveryTrackerTest {
             respond(details(5, true, detail("2026-10-04 13:30:00", 5)));
 
             LocalDateTime at = kst(2026, 10, 4, 13, 30);
-            assertThat(tracker.track(DeliveryCarrier.CJ, INVOICE)).contains(new TrackSnapshot(at, at, false, false));
+            assertThat(judged(tracker.track(DeliveryCarrier.CJ, INVOICE))).contains(new TrackSnapshot(at, at, false, false));
         }
 
         @Test
@@ -177,7 +179,7 @@ class SweetTrackerDeliveryTrackerTest {
             respond(details(6, false, detail("2026-10-04 13:30:00", 6)));
 
             LocalDateTime at = kst(2026, 10, 4, 13, 30);
-            assertThat(tracker.track(DeliveryCarrier.CJ, INVOICE)).contains(new TrackSnapshot(at, at, false, false));
+            assertThat(judged(tracker.track(DeliveryCarrier.CJ, INVOICE))).contains(new TrackSnapshot(at, at, false, false));
         }
 
         @Test
@@ -185,7 +187,24 @@ class SweetTrackerDeliveryTrackerTest {
         void deliveredWithoutAnyTimeIsNoEvent() {
             respond("{\"level\":6,\"complete\":true,\"trackingDetails\":[{\"level\":6,\"kind\":\"배달완료\"}]}");
 
-            assertThat(tracker.track(DeliveryCarrier.CJ, INVOICE)).contains(noEvent());
+            assertThat(judged(tracker.track(DeliveryCarrier.CJ, INVOICE))).contains(noEvent());
+        }
+
+        @Test
+        @DisplayName("스캔 이력 — 시간순으로 세우고 위치·문구는 원문 그대로, 시각을 못 읽는 줄은 뺀다")
+        void scanEvents() {
+            respond("""
+                    {"level":4,"complete":false,"trackingDetails":[
+                      {"timeString":"2026-10-04 06:40:00","level":4,"kind":"간선하차","where":"곤지암Hub"},
+                      {"timeString":"","time":0,"level":3,"kind":"간선상차","where":"서울강남"},
+                      {"timeString":"2026-10-03 14:05:00","level":2,"kind":"집화처리","where":"서울강남"}]}""");
+
+            TrackSnapshot snapshot = tracker.track(DeliveryCarrier.CJ, INVOICE).orElseThrow();
+
+            assertThat(snapshot.level()).isEqualTo(4);
+            assertThat(snapshot.events()).containsExactly(
+                    new TrackEvent(kst(2026, 10, 3, 14, 5), "서울강남", "집화처리", 2),
+                    new TrackEvent(kst(2026, 10, 4, 6, 40), "곤지암Hub", "간선하차", 4));
         }
 
         @Test
@@ -196,7 +215,7 @@ class SweetTrackerDeliveryTrackerTest {
                     detail("2026-10-04 06:40:00", 4),
                     detail("2026-10-03 14:05:00", 2)));
 
-            assertThat(tracker.track(DeliveryCarrier.CJ, INVOICE))
+            assertThat(judged(tracker.track(DeliveryCarrier.CJ, INVOICE)))
                     .contains(new TrackSnapshot(kst(2026, 10, 4, 6, 40), null, false, false));
         }
 
@@ -208,7 +227,7 @@ class SweetTrackerDeliveryTrackerTest {
                      "trackingDetails":[{"timeString":"2026-10-04 06:40:00","level":4}],
                      "lastDetail":{"timeString":"2026-10-04 09:15:00","level":5}}""");
 
-            assertThat(tracker.track(DeliveryCarrier.CJ, INVOICE))
+            assertThat(judged(tracker.track(DeliveryCarrier.CJ, INVOICE)))
                     .contains(new TrackSnapshot(kst(2026, 10, 4, 9, 15), null, false, false));
         }
 
@@ -217,7 +236,7 @@ class SweetTrackerDeliveryTrackerTest {
         void lastDetailWithoutDetails() {
             respond("{\"level\":3,\"complete\":false,\"lastDetail\":{\"timeString\":\"2026-10-04 09:15:00\",\"level\":3}}");
 
-            assertThat(tracker.track(DeliveryCarrier.CJ, INVOICE))
+            assertThat(judged(tracker.track(DeliveryCarrier.CJ, INVOICE)))
                     .contains(new TrackSnapshot(kst(2026, 10, 4, 9, 15), null, false, false));
         }
 
@@ -242,7 +261,7 @@ class SweetTrackerDeliveryTrackerTest {
                      "trackingDetails":[{"timeString":"2026-10-04 09:15:00","level":3,"manName":"김기사","telno":"02-000",
                                          "where":"서울","code":"30","newDetailField":1}]}""");
 
-            assertThat(tracker.track(DeliveryCarrier.CJ, INVOICE))
+            assertThat(judged(tracker.track(DeliveryCarrier.CJ, INVOICE)))
                     .contains(new TrackSnapshot(kst(2026, 10, 4, 9, 15), null, false, false));
         }
     }
@@ -277,8 +296,8 @@ class SweetTrackerDeliveryTrackerTest {
             respond("{\"level\":5,\"complete\":false,\"trackingDetails\":[{\"time\":" + epochSecond + ",\"level\":5}]}");
 
             TrackSnapshot expected = new TrackSnapshot(kst(2026, 10, 4, 13, 30), null, false, false);
-            assertThat(tracker.track(DeliveryCarrier.CJ, INVOICE)).contains(expected);
-            assertThat(tracker.track(DeliveryCarrier.CJ, INVOICE)).contains(expected);
+            assertThat(judged(tracker.track(DeliveryCarrier.CJ, INVOICE))).contains(expected);
+            assertThat(judged(tracker.track(DeliveryCarrier.CJ, INVOICE))).contains(expected);
         }
 
         @Test
@@ -288,7 +307,7 @@ class SweetTrackerDeliveryTrackerTest {
             respond("{\"level\":5,\"complete\":false,\"trackingDetails\":[{\"timeString\":\"2026.10.04 13시30분\","
                     + "\"time\":" + epochMillis + ",\"level\":5}]}");
 
-            assertThat(tracker.track(DeliveryCarrier.CJ, INVOICE))
+            assertThat(judged(tracker.track(DeliveryCarrier.CJ, INVOICE)))
                     .contains(new TrackSnapshot(kst(2026, 10, 4, 13, 30), null, false, false));
         }
 
@@ -302,7 +321,7 @@ class SweetTrackerDeliveryTrackerTest {
                       {"time":-1,"level":4},
                       {"timeString":"2026-10-03 21:10:00","level":3}]}""");
 
-            assertThat(tracker.track(DeliveryCarrier.CJ, INVOICE))
+            assertThat(judged(tracker.track(DeliveryCarrier.CJ, INVOICE)))
                     .contains(new TrackSnapshot(kst(2026, 10, 3, 21, 10), null, false, false));
         }
 
@@ -327,7 +346,7 @@ class SweetTrackerDeliveryTrackerTest {
         void invalidInvoiceIsNoEvent() {
             respond("{\"status\":false,\"msg\":\"유효하지 않은 운송장번호 이거나 택배사 코드 입니다.\",\"code\":\"104\"}");
 
-            assertThat(tracker.track(DeliveryCarrier.CJ, INVOICE)).contains(noEvent());
+            assertThat(judged(tracker.track(DeliveryCarrier.CJ, INVOICE))).contains(noEvent());
         }
 
         @ParameterizedTest(name = "code {0}")
@@ -533,6 +552,12 @@ class SweetTrackerDeliveryTrackerTest {
 
     private static TrackSnapshot noEvent() {
         return new TrackSnapshot(null, null, false, false);
+    }
+
+    /** 판정에 쓰는 네 값만 — 스캔 이력·단계는 {@code scanEvents}가 따로 본다. */
+    private static Optional<TrackSnapshot> judged(Optional<TrackSnapshot> snapshot) {
+        return snapshot.map(s -> new TrackSnapshot(s.lastEventAt(), s.deliveredAt(), s.returnDetected(),
+                s.returnCompleted()));
     }
 
     /** 업체 시각(KST)을 서버 시간대의 LocalDateTime 으로 — 어댑터와 같은 변환. */

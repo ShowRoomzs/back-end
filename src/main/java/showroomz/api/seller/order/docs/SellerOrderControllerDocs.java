@@ -219,11 +219,18 @@ public interface SellerOrderControllerDocs {
                     - 어느 경로든 **결제된 신규·상품준비중만** 싣는다 — 선택 건에 배송중·배송완료·취소·결제 전이 섞이면 조용히 빠진다
                       (개인정보 재반출 방지 · §34-11).
                     - 검토 중 취소 요청이 걸린 하위주문은 **자동으로 빠진다**(작업 큐 밖). 다 빠져서 남는 게 없으면 400.
+                    - 소비자 취소가 결제 쪽에서 처리 중이라 **준비 시작이 되지 않은 신규 주문도 빠진다** — 발주서에 실린 주문은
+                      전부 상품준비중이다.
                     - 대상 상한 2,000건 — 넘으면 잘라 내려보내지 않고 400 `PURCHASE_ORDER_TOO_MANY`(기간·검색으로 나눠 받는다).
 
+                    **발주서 = 준비 시작**
+                    - 발주서를 내려받으면 대상 중 **신규 주문이 항상 준비 시작**된다 — 발주서를 뽑는 것은 보내겠다는 결정이다.
+                      이력 `detail`에 「발주서 다운로드」가 남는다. **소비자 단순 취소권과 배송지 변경이 이 순간 닫힌다**
+                      (되돌리기 없음) — 그래서 발주서에 실린 주소는 그 뒤 바뀌지 않는다.
+                    - 「다운로드만」은 없다. `startPreparation` 은 보내지 않는다 — `false` 를 보내면 400 `INVALID_INPUT`.
+                      견적·재고 확인은 목록의 행 확장(상품 · 옵션 · 수량)으로 본다.
+
                     **옵션**
-                    - `startPreparation` 생략 시 ON — 발주서를 뽑는 것은 보내겠다는 결정이다. 대상 중 **신규만** 준비 시작되고
-                      이력 `detail`에 「발주서 다운로드 동시 처리」가 남는다. OFF 면 다운로드만(견적·재고 확인용)
                     - `saveAsDefault` — 이 구성을 기본값으로 저장(기본정보 관리에서 수정)
 
                     **응답** — 파일명 `발주서_yyyyMMdd_HHmmss.xlsx`(Content-Disposition `filename*=UTF-8''…`).
@@ -235,7 +242,7 @@ public interface SellerOrderControllerDocs {
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                     schema = @Schema(implementation = PurchaseOrderRequest.class),
                     examples = {
-                            @ExampleObject(name = "선택 건 · 준비 시작 동시 처리(기본)", value = """
+                            @ExampleObject(name = "선택 건", value = """
                                     {
                                       "deliveryGroupIds": [1024, 1025],
                                       "columns": ["ORDER_NUMBER", "RECIPIENT", "PHONE", "ZIP_CODE", "ADDRESS", "PRODUCT_NAME", "OPTION", "QUANTITY"]
@@ -251,21 +258,14 @@ public interface SellerOrderControllerDocs {
                                       "from": "2026-09-26",
                                       "to": "2026-10-03"
                                     }
-                                    """),
-                            @ExampleObject(name = "다운로드만(준비 시작 안 함)", value = """
-                                    {
-                                      "deliveryGroupIds": [1024],
-                                      "columns": ["PRODUCT_NAME", "OPTION", "QUANTITY"],
-                                      "startPreparation": false
-                                    }
                                     """)
                     }))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "xlsx 바이너리(Content-Disposition attachment)",
                     content = @Content(mediaType = XLSX, schema = @Schema(type = "string", format = "binary"))),
-            @ApiResponse(responseCode = "400", description = "PURCHASE_ORDER_EMPTY — 내려받을 대상 없음(취소 요청 건 제외 후 0건 포함) · "
+            @ApiResponse(responseCode = "400", description = "PURCHASE_ORDER_EMPTY — 내려받을 대상 없음(취소 요청 건 · 준비 시작이 안 된 건 제외 후 0건 포함) · "
                     + "PURCHASE_ORDER_TOO_MANY — 대상 2,000건 초과 · "
-                    + "ORDER_SEARCH_RANGE_EXCEEDED — 필터 기간 1년 초과 · INVALID_INPUT — `columns` 비었음 · 정의되지 않은 enum 값 · "
+                    + "ORDER_SEARCH_RANGE_EXCEEDED — 필터 기간 1년 초과 · INVALID_INPUT — `columns` 비었음 · 정의되지 않은 enum 값 · `startPreparation: false` · "
                     + "시작일 > 종료일",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ErrorResponse.class),

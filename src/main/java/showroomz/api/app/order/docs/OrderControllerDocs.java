@@ -217,6 +217,60 @@ public interface OrderControllerDocs {
                                                           @Parameter(description = "주문 ID", example = "1147") @PathVariable("orderId") Long orderId);
 
     @Operation(
+            summary = "배송 조회 (C10-2)",
+            description = "주문 항목이 든 하위주문의 송장을 조회한다. 스캔 이력은 서버가 주기적으로 저장해 둔 것을 내린다 — " +
+                    "방금 스캔된 이력은 다음 추적 회차 뒤에 보인다.\n\n" +
+                    "**`state`**\n" +
+                    "- `NOT_SHIPPED`: 송장 없음(결제완료 · 상품준비중) — `stageIndex = -1` · `carrier` · `trackingNumber` null · " +
+                    "`shipDueAt` · `groupBuyEndAt` 을 내린다\n" +
+                    "- `IN_TRANSIT`: 송장 있음 · 미완료 — `headline.date` 는 도착 예정일(집화 전·예정일 경과면 null), " +
+                    "`stageIndex` 는 이력 0건이면 0, 있으면 1\n" +
+                    "- `DELIVERED`: 배송완료 — `headline.date` 는 배송완료일 · `stageIndex = 2`\n\n" +
+                    "**`scans[]`** 는 최신순 전체다 — 접기(최근 N건)는 앱이 한다. 위치·문구는 택배사 원문 그대로다.\n\n" +
+                    "**`carrier.tel` · `carrier.trackingUrl`** 이 null 이면 [택배사 전화하기] · [택배사에서 조회]를 그리지 않는다.\n\n" +
+                    "`context` 는 이 경로에서 항상 `ORDER` 다(`contextLabel` · `contextNote` null).\n\n" +
+                    "**권한:** USER (본인 주문만)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "403", description = "ORDER_ACCESS_DENIED — 남의 주문",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "ORDER_NOT_FOUND · ORDER_PRODUCT_NOT_FOUND — 그 주문의 항목이 아님",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<UserOrderDto.TrackingResponse> getItemTracking(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "주문 ID", example = "1147") @PathVariable("orderId") Long orderId,
+            @Parameter(description = "주문 항목 ID", example = "1501") @PathVariable("orderProductId") Long orderProductId);
+
+    @Operation(
+            summary = "주문 배송지 변경 (C10-1 · C13-2)",
+            description = "주문의 배송지를 내 배송지 중 하나로 바꾼다. 주문은 배송지를 참조하지 않고 값을 복사해 든다 — " +
+                    "바꾼 뒤 그 배송지를 수정·삭제해도 주문은 그대로다. 배송 요청사항도 고른 배송지의 것으로 바뀐다.\n\n" +
+                    "**조건:** 결제된 주문이고 **취소되지 않은 하위 주문이 전부 결제완료(준비 시작 전)** 일 때만. " +
+                    "브랜드가 하나라도 상품 준비를 시작했으면(발주서를 내려받은 것 포함) 409 `ORDER_ADDRESS_NOT_CHANGEABLE`. " +
+                    "버튼은 주문 상세의 `addressChangeable` 이 true 일 때만 그린다.\n\n" +
+                    "새 주소는 `POST /v1/user/delivery-addresses` 로 먼저 만들고 응답의 `id` 를 넘긴다. " +
+                    "배송비는 다시 계산하지 않는다.\n\n" +
+                    "**권한:** USER (본인 주문 · 본인 배송지만)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "변경 성공 — 바뀐 배송지(마스킹)"),
+            @ApiResponse(responseCode = "400", description = "INVALID_INPUT — `addressId` 없음",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "ORDER_ACCESS_DENIED — 남의 주문",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "ORDER_NOT_FOUND · ADDRESS_NOT_FOUND — 없는 배송지이거나 남의 배송지",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "ORDER_ADDRESS_NOT_CHANGEABLE — 준비 시작 이후 · 결제 전 · 취소된 주문",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<OrderDto.ChangeAddressResponse> changeDeliveryAddress(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "주문 ID", example = "1147") @PathVariable("orderId") Long orderId,
+            @Valid @RequestBody OrderDto.ChangeAddressRequest request);
+
+    @Operation(
             summary = "주문 취소 (결제 전 · 배송 전 전액)",
             description = "**결제 전(PAYMENT_PENDING):** 즉시 취소하고 재고를 돌려놓는다 → 200.\n\n" +
                     "**결제 후(PAID, 배송 전):** 취소를 선점한 뒤 포트원에 전액 취소를 요청한다.\n" +

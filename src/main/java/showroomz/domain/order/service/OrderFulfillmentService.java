@@ -49,6 +49,7 @@ public class OrderFulfillmentService {
     private final OrderRefundTaskRepository refundTaskRepository;
     private final OrderCancelRequestRepository cancelRequestRepository;
     private final ProductVariantRepository productVariantRepository;
+    private final DeliveryTrackingEventRecorder trackingEventRecorder;
 
     // ------------------------------------------------------------------ 이력
 
@@ -219,6 +220,8 @@ public class OrderFulfillmentService {
         if (deliveryGroupRepository.touchTracking(id, carrier, trackingNumber, snapshot.lastEventAt()) != 1) {
             return; // 송장이 바뀌었거나 추적 대상 상태를 벗어났다 — 이 결과는 지금 송장의 것이 아니다.
         }
+        // 소비자 앱 배송 조회가 읽는 이력 — 화면은 택배 API 를 부르지 않는다(앱 클레임 설계서 1-6).
+        trackingEventRecorder.record(carrier, trackingNumber, snapshot.events());
 
         if (snapshot.returnCompleted() && target.getFulfillmentStatus() == FulfillmentStatus.RETURNING) {
             if (deliveryGroupRepository.markReturnCompleted(id, carrier, trackingNumber, now) == 1) {

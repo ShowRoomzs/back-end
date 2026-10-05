@@ -17,9 +17,11 @@ public record SweetTrackerTrackingResponse(Boolean status, String code, String m
     /**
      * @param time       진행 시각(epoch)
      * @param timeString 진행 시각(KST 문자열)
+     * @param where      진행 위치
+     * @param kind       진행 상태 문구
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Detail(Long time, String timeString, Integer level, String kind) {
+    public record Detail(Long time, String timeString, Integer level, String kind, String where) {
     }
 
     public boolean isError() {

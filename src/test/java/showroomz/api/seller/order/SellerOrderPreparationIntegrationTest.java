@@ -159,8 +159,7 @@ class SellerOrderPreparationIntegrationTest extends SellerOrderTestSupport {
 
             byte[] file = downloadPurchaseOrder(Map.of(
                     "deliveryGroupIds", List.of(twoItems.getId(), single.getId()),
-                    "columns", ALL_COLUMNS,
-                    "startPreparation", false))
+                    "columns", ALL_COLUMNS))
                     .andExpect(status().isOk())
                     .andExpect(content().contentType(XLSX))
                     .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, startsWith(
@@ -181,8 +180,9 @@ class SellerOrderPreparationIntegrationTest extends SellerOrderTestSupport {
             // 같은 하위주문의 세럼 행도 수취인·주소를 반복한다.
             assertThat(rowOf(sheet, orderNumberOf(twoItems), "글로우 세럼 30ml"))
                     .contains("김수민", "서울 강남구 테헤란로 000 쇼룸타워 12층", String.valueOf(SERUM_PRICE));
-            assertThat(reload(twoItems).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.NEW);
-            assertThat(reload(single).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.NEW);
+            // 발주서 = 준비 시작(34 설계서 3-1) — 실린 하위주문은 전부 상품준비중이다.
+            assertThat(reload(twoItems).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.PREPARING);
+            assertThat(reload(single).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.PREPARING);
         }
 
         @Test
@@ -192,7 +192,7 @@ class SellerOrderPreparationIntegrationTest extends SellerOrderTestSupport {
             OrderDeliveryGroup second = paidGroup();
 
             downloadPurchaseOrder(Map.of("deliveryGroupIds", List.of(first.getId(), second.getId()),
-                    "columns", List.of("RECIPIENT", "PHONE", "ADDRESS"), "startPreparation", false))
+                    "columns", List.of("RECIPIENT", "PHONE", "ADDRESS")))
                     .andExpect(status().isOk());
 
             Map<String, Object> log = jdbc.queryForMap("SELECT * FROM purchase_order_download_log");
@@ -200,13 +200,13 @@ class SellerOrderPreparationIntegrationTest extends SellerOrderTestSupport {
             assertThat(((Number) log.get("seller_id")).longValue()).isEqualTo(brand.seller().getId());
             assertThat(((Number) log.get("delivery_group_count")).intValue()).isEqualTo(2);
             assertThat(log.get("columns")).isEqualTo("RECIPIENT,PHONE,ADDRESS");
-            assertThat(log.get("prepare_started")).isEqualTo(false);
+            assertThat(log.get("prepare_started")).isEqualTo(true);
             assertThat(log.get("downloaded_at")).isNotNull();
         }
 
         @Test
-        @DisplayName("「다운로드와 함께 준비 시작」은 기본 ON — NEW 만 전이 · 이미 준비중인 건은 파일에만 실리고 이력이 늘지 않는다")
-        void startsPreparationByDefault() throws Exception {
+        @DisplayName("발주서 다운로드 = 준비 시작 — NEW 만 전이 · 이미 준비중인 건은 파일에만 실리고 이력이 늘지 않는다")
+        void downloadStartsPreparation() throws Exception {
             OrderDeliveryGroup fresh = paidGroup();
             OrderDeliveryGroup alreadyPreparing = preparingGroup();
 
@@ -218,7 +218,7 @@ class SellerOrderPreparationIntegrationTest extends SellerOrderTestSupport {
 
             assertThat(readSheet(file)).hasSize(1 + 2);
             assertThat(reload(fresh).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.PREPARING);
-            assertThat(history(fresh).get(0).getDetail()).isEqualTo("발주서 다운로드 동시 처리");
+            assertThat(history(fresh).get(0).getDetail()).isEqualTo("발주서 다운로드");
             assertThat(historyCount(alreadyPreparing, FulfillmentEventType.PREPARE_STARTED)).isEqualTo(1);
             assertThat(jdbc.queryForObject("SELECT prepare_started FROM purchase_order_download_log", Boolean.class))
                     .isTrue();
@@ -232,13 +232,19 @@ class SellerOrderPreparationIntegrationTest extends SellerOrderTestSupport {
             OrderDeliveryGroup preparing = preparingGroup();
 
             assertThat(readSheet(downloadBytes(Map.of("columns", List.of("ORDER_NUMBER"),
-                    "startPreparation", false)))).hasSize(1 + 2);
-            assertThat(readSheet(downloadBytes(Map.of("columns", List.of("ORDER_NUMBER"),
-                    "startPreparation", false, "tab", "PREPARING"))))
+                    "tab", "PREPARING"))))
                     .containsExactly(List.of("주문번호"), List.of(orderNumberOf(preparing)));
+            // 탭 생략 = 신규 탭 — 내려받는 순간 그 둘이 상품준비중으로 넘어간다.
+            assertThat(readSheet(downloadBytes(Map.of("columns", List.of("ORDER_NUMBER"))))).hasSize(1 + 2);
             assertThat(readSheet(downloadBytes(Map.of("columns", List.of("ORDER_NUMBER"),
-                    "startPreparation", false, "searchType", "ORDER_NUMBER", "keyword", orderNumberOf(first)))))
+                    "tab", "PREPARING")))).hasSize(1 + 3);
+            assertThat(readSheet(downloadBytes(Map.of("columns", List.of("ORDER_NUMBER"),
+                    "tab", "PREPARING", "searchType", "ORDER_NUMBER", "keyword", orderNumberOf(first)))))
                     .containsExactly(List.of("주문번호"), List.of(orderNumberOf(first)));
+            // 신규 탭에는 남은 것이 없다.
+            downloadPurchaseOrder(Map.of("columns", List.of("ORDER_NUMBER")))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("PURCHASE_ORDER_EMPTY"));
         }
 
         @Test
@@ -279,7 +285,7 @@ class SellerOrderPreparationIntegrationTest extends SellerOrderTestSupport {
             OrderDeliveryGroup unpaid = onlyGroupOf(placeCardOrder(creamVariant, 1).orderId());
 
             downloadPurchaseOrder(Map.of("deliveryGroupIds", List.of(unpaid.getId()),
-                    "columns", List.of("RECIPIENT", "PHONE", "ADDRESS"), "startPreparation", false))
+                    "columns", List.of("RECIPIENT", "PHONE", "ADDRESS")))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("PURCHASE_ORDER_EMPTY"));
             assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM purchase_order_download_log", Integer.class)).isZero();
@@ -304,7 +310,7 @@ class SellerOrderPreparationIntegrationTest extends SellerOrderTestSupport {
             OrderDeliveryGroup group = paidGroup();
 
             assertThat(readSheet(downloadBytes(Map.of("deliveryGroupIds", List.of(group.getId()),
-                    "columns", List.of("ORDER_NUMBER", "QUANTITY", "ORDER_NUMBER"), "startPreparation", false)))
+                    "columns", List.of("ORDER_NUMBER", "QUANTITY", "ORDER_NUMBER"))))
                     .get(0)).containsExactly("주문번호", "수량");
             downloadPurchaseOrder(Map.of("deliveryGroupIds", List.of(group.getId()), "columns", List.of()))
                     .andExpect(status().isBadRequest());
@@ -464,37 +470,62 @@ class SellerOrderPreparationIntegrationTest extends SellerOrderTestSupport {
         }
 
         @Test
-        @DisplayName("[PO-03] 탭 전체 발주서에 소비자 취소 PG 대기 건이 있으면 — 파일에는 싣고 준비 시작만 생략(이력 없음)")
-        void consumerCancelInFlightIsExportedButNotPrepared() throws Exception {
+        @DisplayName("[PO-03] 탭 전체 발주서에 소비자 취소 PG 대기 건이 있으면 — 준비 시작이 안 되므로 파일에서도 뺀다")
+        void consumerCancelInFlightIsNotExported() throws Exception {
             OrderDeliveryGroup fresh = paidGroup();
             OrderDeliveryGroup claimed = paidGroup();
             checkoutService.claimUserCancel(consumer.getId(), claimed.getOrder().getId(), "단순 변심",
                     LocalDateTime.now());
 
-            assertThat(readSheet(downloadBytes(Map.of("columns", List.of("ORDER_NUMBER"))))).hasSize(1 + 2);
+            // 발주서에 실린 주문은 전부 상품준비중이어야 한다 — 신규로 남는 주문은 배송지가 바뀔 수 있다(34 설계서 3-1).
+            assertThat(readSheet(downloadBytes(Map.of("columns", List.of("ORDER_NUMBER")))))
+                    .containsExactly(List.of("주문번호"), List.of(orderNumberOf(fresh)));
 
             assertThat(reload(fresh).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.PREPARING);
             assertThat(reload(claimed).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.NEW);
             assertThat(historyCount(claimed, FulfillmentEventType.PREPARE_STARTED)).isZero();
             Map<String, Object> log = jdbc.queryForMap("SELECT * FROM purchase_order_download_log");
-            assertThat(((Number) log.get("delivery_group_count")).intValue()).isEqualTo(2);
+            assertThat(((Number) log.get("delivery_group_count")).intValue()).isEqualTo(1);
             assertThat(log.get("prepare_started")).isEqualTo(true);
+
+            // 그 건만 남았으면 내려받을 것이 없다.
+            downloadPurchaseOrder(Map.of("columns", List.of("ORDER_NUMBER")))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("PURCHASE_ORDER_EMPTY"));
         }
 
         @Test
-        @DisplayName("[PO-04] 「준비 시작 없이 다운로드」를 3번 — 상태 NEW 그대로 · 반출 기록은 매번(3행)")
-        void downloadWithoutPreparationIsLoggedEveryTime() throws Exception {
+        @DisplayName("[PO-04] 「다운로드만」(startPreparation=false)은 400 — 조용히 무시해 준비 시작시키지 않는다")
+        void downloadOnlyIsRejected() throws Exception {
+            OrderDeliveryGroup group = paidGroup();
+
+            downloadPurchaseOrder(Map.of("deliveryGroupIds", List.of(group.getId()), "columns", List.of("RECIPIENT"),
+                    "startPreparation", false))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+
+            assertThat(reload(group).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.NEW);
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM purchase_order_download_log", Integer.class)).isZero();
+            // 구 FE 가 true 를 보내는 것은 받는다.
+            downloadPurchaseOrder(Map.of("deliveryGroupIds", List.of(group.getId()), "columns", List.of("RECIPIENT"),
+                    "startPreparation", true))
+                    .andExpect(status().isOk());
+            assertThat(reload(group).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.PREPARING);
+        }
+
+        @Test
+        @DisplayName("[PO-04] 같은 주문을 3번 내려받으면 — 첫 회에만 준비 시작 · 반출 기록은 매번(3행)")
+        void repeatedDownloadPreparesOnceAndLogsEveryTime() throws Exception {
             OrderDeliveryGroup group = paidGroup();
 
             for (int i = 0; i < 3; i++) {
-                downloadBytes(Map.of("deliveryGroupIds", List.of(group.getId()), "columns", List.of("RECIPIENT"),
-                        "startPreparation", false));
+                downloadBytes(Map.of("deliveryGroupIds", List.of(group.getId()), "columns", List.of("RECIPIENT")));
             }
 
-            assertThat(reload(group).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.NEW);
-            assertThat(historyCount(group, FulfillmentEventType.PREPARE_STARTED)).isZero();
+            assertThat(reload(group).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.PREPARING);
+            assertThat(historyCount(group, FulfillmentEventType.PREPARE_STARTED)).isEqualTo(1);
             assertThat(jdbc.queryForList("SELECT prepare_started FROM purchase_order_download_log", Boolean.class))
-                    .containsExactly(false, false, false);
+                    .containsExactly(true, true, true);
         }
 
         @Test
@@ -531,8 +562,7 @@ class SellerOrderPreparationIntegrationTest extends SellerOrderTestSupport {
             OrderDeliveryGroup group = paidGroup();
 
             downloadBytes(Map.of("deliveryGroupIds", List.of(group.getId()),
-                    "columns", List.of("ORDER_NUMBER", "QUANTITY", "ORDER_NUMBER"), "saveAsDefault", true,
-                    "startPreparation", false));
+                    "columns", List.of("ORDER_NUMBER", "QUANTITY", "ORDER_NUMBER"), "saveAsDefault", true));
 
             sellerGet(SELLER_ORDERS + "/purchase-order/template")
                     .andExpect(jsonPath("$.columns", contains("ORDER_NUMBER", "QUANTITY")));
@@ -561,8 +591,7 @@ class SellerOrderPreparationIntegrationTest extends SellerOrderTestSupport {
             OrderDeliveryGroup group = paidGroup();
 
             assertThat(readSheet(downloadBytes(Map.of("deliveryGroupIds", List.of(group.getId()),
-                    "columns", List.of("ORDER_NUMBER"), "startPreparation", false,
-                    "tab", "PREPARING", "searchType", "ORDER_NUMBER", "keyword", "NO-SUCH-ORDER"))))
+                    "columns", List.of("ORDER_NUMBER"), "tab", "PREPARING", "searchType", "ORDER_NUMBER", "keyword", "NO-SUCH-ORDER"))))
                     .containsExactly(List.of("주문번호"), List.of(orderNumberOf(group)));
         }
     }

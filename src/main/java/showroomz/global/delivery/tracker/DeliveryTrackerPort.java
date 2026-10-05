@@ -3,6 +3,7 @@ package showroomz.global.delivery.tracker;
 import showroomz.domain.order.type.DeliveryCarrier;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -23,13 +24,32 @@ public interface DeliveryTrackerPort {
     }
 
     /**
+     * 스캔 이력 한 줄 — 위치·문구는 연동 업체 원문 그대로다(앱 클레임 설계서 1-6).
+     *
+     * @param level 진행 단계 0~6 — 업체가 주지 않으면 null
+     */
+    record TrackEvent(LocalDateTime occurredAt, String location, String description, Integer level) {
+    }
+
+    /**
      * @param lastEventAt     마지막 추적 이벤트 시각 — 이벤트가 아직 없으면 null(집화 전은 데이터가 없는 게 정상)
      * @param deliveredAt     배송완료 시각 — 완료 전이면 null
      * @param returnDetected  반송 코드 감지 — 사유는 받지 않는다(API 가 코드·시각만 준다 · §34-6)
      * @param returnCompleted 반송 완료(입고) 감지
+     * @param events          스캔 이력 전체 — 시간순(오래된 것부터). 이력을 주지 않는 구현은 빈 목록
+     * @param level           현재 진행 단계 0~6 — 모르면 null
      */
     record TrackSnapshot(LocalDateTime lastEventAt, LocalDateTime deliveredAt, boolean returnDetected,
-                         boolean returnCompleted) {
+                         boolean returnCompleted, List<TrackEvent> events, Integer level) {
+
+        public TrackSnapshot {
+            events = events == null ? List.of() : List.copyOf(events);
+        }
+
+        public TrackSnapshot(LocalDateTime lastEventAt, LocalDateTime deliveredAt, boolean returnDetected,
+                             boolean returnCompleted) {
+            this(lastEventAt, deliveredAt, returnDetected, returnCompleted, List.of(), null);
+        }
     }
 
     ValidationResult validateInvoice(DeliveryCarrier carrier, String trackingNumber);

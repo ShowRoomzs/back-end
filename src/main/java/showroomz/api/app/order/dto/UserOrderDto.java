@@ -20,6 +20,107 @@ import java.util.List;
  */
 public class UserOrderDto {
 
+    /** C10-2 배송 조회의 상태(앱 클레임 설계서 5-2). */
+    public enum TrackingState {
+        NOT_SHIPPED, IN_TRANSIT, DELIVERED
+    }
+
+    /** 무엇의 송장인가 — 주문 출고 · 교환 새 상품 · 반려 상품 재발송. */
+    public enum TrackingContext {
+        ORDER, EXCHANGE_RESHIP, REJECT_RESHIP
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "배송 조회 상단 문구")
+    public static class TrackingHeadline {
+        @Schema(description = "도착 예정일(배송중) 또는 배송완료일 — 없으면 null", example = "2026-09-17")
+        private LocalDate date;
+        @Schema(description = "주 문구", example = "도착 예정이에요")
+        private String text;
+        @Schema(description = "보조 문구 — 최종 위치·시각 등. 없으면 null", example = "곤지암Hub · 09.15 03:12")
+        private String sub;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "배송 조회의 상품")
+    public static class TrackingItem {
+        private String brandName;
+        private String productName;
+        private String optionName;
+        private Integer quantity;
+        private Long amount;
+        private String thumbnailUrl;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "택배사 — 값은 서버가 내린다")
+    public static class TrackingCarrier {
+        @Schema(example = "CJ")
+        private String code;
+        @Schema(example = "CJ대한통운")
+        private String label;
+        @Schema(description = "[택배사 전화하기] — 없으면 null", example = "1588-1255")
+        private String tel;
+        @Schema(description = "[택배사에서 조회] — 없으면 null")
+        private String trackingUrl;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "스캔 이력 한 줄 — 위치·문구는 택배사 원문 그대로")
+    public static class TrackingScan {
+        @Schema(example = "곤지암Hub")
+        private String location;
+        @Schema(example = "간선하차")
+        private String description;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = OrderDto.TIME_PATTERN)
+        private LocalDateTime occurredAt;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "C10-2 배송 조회")
+    public static class TrackingResponse {
+        private TrackingState state;
+        private TrackingContext context;
+        @Schema(description = "재발송일 때만 — 「교환 상품 발송」 등")
+        private String contextLabel;
+        @Schema(description = "재발송일 때만 — 안내 문구")
+        private String contextNote;
+        private TrackingHeadline headline;
+        @Schema(description = "3구간 바(배송 시작 · 배송중 · 배송 완료)의 현재 칸 — -1 은 전부 빈 칸", example = "1")
+        private Integer stageIndex;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = OrderDto.TIME_PATTERN)
+        private LocalDateTime orderedAt;
+        private Long orderId;
+        private TrackingItem item;
+        @Schema(description = "송장이 없으면 null")
+        private TrackingCarrier carrier;
+        @Schema(description = "송장이 없으면 null")
+        private String trackingNumber;
+        @Schema(description = "스캔 이력 — 최신순 전체(앱이 접는다)")
+        private List<TrackingScan> scans;
+        @Schema(description = "발송 기한 — NOT_SHIPPED 일 때만")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = OrderDto.TIME_PATTERN)
+        private LocalDateTime shipDueAt;
+        @Schema(description = "공구 종료 시각 — NOT_SHIPPED 일 때만")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = OrderDto.TIME_PATTERN)
+        private LocalDateTime groupBuyEndAt;
+    }
+
     public enum NoticeType {
         /** 구매확정 기한 안내(C10-1 1d). */
         CONFIRM_DUE,

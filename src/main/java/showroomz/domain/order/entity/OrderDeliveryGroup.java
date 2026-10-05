@@ -64,6 +64,13 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
     @Column(name = "delivery_fee", nullable = false)
     private Integer deliveryFee;
 
+    /**
+     * 주문 시점 기본 배송비 — 무료배송이어도 원래 값(앱 클레임 설계서 1-4). 반품 배송비 차감 · 재발송비의 기준이다.
+     * 주문 생성 때 1회 적고 이후 바꾸지 않는다 — 마켓 설정이 바뀌어도 불변.
+     */
+    @Column(name = "base_delivery_fee", nullable = false)
+    private Integer baseDeliveryFee;
+
     @Column(name = "free_shipping_applied", nullable = false)
     private boolean freeShippingApplied;
 
@@ -157,12 +164,15 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
 
     @Builder
     public OrderDeliveryGroup(Order order, GroupBuy groupBuy, Market market, Integer productTotal, Integer deliveryFee,
-                              boolean freeShippingApplied, String marketName, String groupBuyNumber) {
+                              Integer baseDeliveryFee, boolean freeShippingApplied, String marketName,
+                              String groupBuyNumber) {
         this.order = order;
         this.groupBuy = groupBuy;
         this.market = market;
         this.productTotal = productTotal;
         this.deliveryFee = deliveryFee;
+        // 지정하지 않으면 부과액 — 유료배송 그룹은 둘이 같다.
+        this.baseDeliveryFee = baseDeliveryFee != null ? baseDeliveryFee : deliveryFee;
         this.freeShippingApplied = freeShippingApplied;
         this.marketName = marketName;
         this.groupBuyNumber = groupBuyNumber;

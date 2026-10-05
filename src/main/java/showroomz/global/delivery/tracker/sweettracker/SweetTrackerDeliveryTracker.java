@@ -7,6 +7,7 @@ import showroomz.domain.order.type.DeliveryCarrier;
 import showroomz.global.config.properties.DeliveryTrackerProperties;
 import showroomz.global.delivery.tracker.DeliveryTrackerBlockedException;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort;
+import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackEvent;
 import showroomz.global.delivery.tracker.sweettracker.dto.SweetTrackerTrackingResponse;
 import showroomz.global.delivery.tracker.sweettracker.dto.SweetTrackerTrackingResponse.Detail;
 import showroomz.global.utils.KstDates;
@@ -17,6 +18,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -93,7 +95,8 @@ public class SweetTrackerDeliveryTracker implements DeliveryTrackerPort {
         LocalDateTime lastEventAt = lastEventAt(response);
         boolean delivered = Boolean.TRUE.equals(response.complete())
                 || (response.level() != null && response.level() == LEVEL_DELIVERED);
-        return Optional.of(new TrackSnapshot(lastEventAt, delivered ? lastEventAt : null, false, false));
+        return Optional.of(new TrackSnapshot(lastEventAt, delivered ? lastEventAt : null, false, false,
+                events(response), response.level()));
     }
 
     private Optional<TrackSnapshot> onTrackError(SweetTrackerTrackingResponse response) {
@@ -129,6 +132,21 @@ public class SweetTrackerDeliveryTracker implements DeliveryTrackerPort {
                 .filter(Objects::nonNull)
                 .max(LocalDateTime::compareTo)
                 .orElse(null);
+    }
+
+    /** 스캔 이력 — 시각을 읽을 수 있는 줄만, 시간순. 순서가 같은 시각이면 응답 순서를 따른다(안정 정렬). */
+    private List<TrackEvent> events(SweetTrackerTrackingResponse response) {
+        if (response.trackingDetails() == null) {
+            return List.of();
+        }
+        return response.trackingDetails().stream()
+                .map(detail -> {
+                    LocalDateTime at = eventTime(detail);
+                    return at == null ? null : new TrackEvent(at, detail.where(), detail.kind(), detail.level());
+                })
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(TrackEvent::occurredAt))
+                .toList();
     }
 
     /** 업체 시각은 KST 다 — 다른 시각 컬럼과 같이 서버 시간대의 LocalDateTime 으로 맞춘다. */

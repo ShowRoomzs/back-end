@@ -393,7 +393,8 @@ public enum ErrorCode {
     SHIPMENT_FILE_INVALID(HttpStatus.BAD_REQUEST, "SHIPMENT_FILE_INVALID", "엑셀 파일을 읽을 수 없습니다. 양식을 확인해 주세요."),
     SHIPMENT_FILE_TOO_MANY_ROWS(HttpStatus.BAD_REQUEST, "SHIPMENT_FILE_TOO_MANY_ROWS", "엑셀 업로드는 최대 1,000행까지 가능합니다."),
     /** 소비자 앱 — 준비 시작 후에는 취소 요청 경로만 남는다(약관 제17조② · 제18조①). */
-    ORDER_CANCEL_WINDOW_CLOSED(HttpStatus.CONFLICT, "ORDER_CANCEL_WINDOW_CLOSED", "배송 준비가 시작되어 바로 취소할 수 없습니다. 판매자에게 취소 요청을 보내 주세요.");
+    ORDER_CANCEL_WINDOW_CLOSED(HttpStatus.CONFLICT, "ORDER_CANCEL_WINDOW_CLOSED", "배송 준비가 시작되어 바로 취소할 수 없습니다. 판매자에게 취소 요청을 보내 주세요."),
+    ORDER_ADDRESS_NOT_CHANGEABLE(HttpStatus.CONFLICT, "ORDER_ADDRESS_NOT_CHANGEABLE", "배송 준비가 시작되어 배송지를 변경할 수 없습니다.");
 
     private final HttpStatus status;
     private final String code;

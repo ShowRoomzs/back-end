@@ -167,6 +167,16 @@ public class Order extends BaseTimeEntity {
         orderProducts.add(orderProduct);
     }
 
+    /** 배송지 스냅샷 교체(C10 설계서 3-6) — 준비 시작 전에만 불린다. 판정은 호출자가 하위주문을 잠근 뒤 한다. */
+    public void changeDeliveryAddress(AddressSnapshot address, String deliveryMemo) {
+        this.recipientName = address.recipientName();
+        this.recipientPhone = address.recipientPhone();
+        this.zipCode = address.zipCode();
+        this.address = address.address();
+        this.detailAddress = address.detailAddress();
+        this.deliveryMemo = deliveryMemo;
+    }
+
     public boolean isOwnedBy(Long userId) {
         return user != null && user.getId().equals(userId);
     }

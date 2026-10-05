@@ -246,8 +246,8 @@ class UserOrderItemAssemblerTest {
     // ------------------------------------------------------------------ 액션(1-6)
 
     @Test
-    @DisplayName("운영 설정은 API 가 있는 CANCEL 만 내린다 — 그것도 주문 단위로 취소 가능할 때만")
-    void onlyCancelIsEnabled() {
+    @DisplayName("운영 설정은 API 가 있는 CANCEL · TRACK_DELIVERY 만 내린다 — CANCEL 은 주문 단위로 취소 가능할 때만")
+    void onlyCancelAndTrackingAreEnabled() {
         OrderProduct paid = item(1L, group(FulfillmentStatus.NEW), OrderProductStatus.PAID);
         Context cancellable = Context.of(List.of(), Set.of(), Set.of(ORDER_ID));
 
@@ -256,10 +256,16 @@ class UserOrderItemAssemblerTest {
         // 준비 시작된 그룹이 섞인 주문 — 「결제완료」로 보이되 버튼이 없다.
         assertThat(assembler.toRow(paid, EMPTY, View.LIST).getActions()).isEmpty();
 
-        for (FulfillmentStatus status : List.of(FulfillmentStatus.PREPARING, FulfillmentStatus.SHIPPING,
-                FulfillmentStatus.DELIVERED, FulfillmentStatus.CONFIRMED, FulfillmentStatus.RETURNING)) {
+        for (FulfillmentStatus status : List.of(FulfillmentStatus.PREPARING, FulfillmentStatus.RETURNING)) {
             OrderProduct item = item(2L, group(status), OrderProductStatus.PAID);
             assertThat(assembler.toRow(item, cancellable, View.DETAIL).getActions()).as(status.name()).isEmpty();
+        }
+        // 배송 조회는 송장이 생긴 뒤부터다 — 반품·교환 액션은 아직 내리지 않는다.
+        for (FulfillmentStatus status : List.of(FulfillmentStatus.SHIPPING, FulfillmentStatus.DELIVERED,
+                FulfillmentStatus.CONFIRMED)) {
+            OrderProduct item = item(2L, group(status), OrderProductStatus.PAID);
+            assertThat(types(assembler.toRow(item, cancellable, View.DETAIL))).as(status.name())
+                    .containsExactly(UserOrderAction.TRACK_DELIVERY);
         }
     }
 
