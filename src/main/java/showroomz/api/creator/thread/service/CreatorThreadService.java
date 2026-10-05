@@ -186,16 +186,20 @@ public class CreatorThreadService {
     }
 
     /**
-     * §13-8 — 첨부 다운로드 URL 발급. 스레드 참가자면 상대(브랜드)가 보낸 첨부도 받을 수 있어야 하므로
-     * 업로더 본인 여부가 아니라 <b>첨부가 속한 스레드가 내 것인지</b>로 권한을 판정한다.
+     * §13-8 · §13-9 — 첨부 다운로드 URL <b>일괄</b> 발급. 파일 하나를 누를 때도, 메시지의 「전체 다운로드」도 이 길이다.
+     * 스레드 참가자면 상대(브랜드)가 보낸 첨부도 받을 수 있어야 하므로 업로더 본인 여부가 아니라
+     * <b>첨부가 속한 스레드가 내 것인지</b>로 권한을 판정한다. 스레드는 서로 다른 것만 한 번씩 본다.
+     *
+     * <p>하나라도 권한이 없으면 전체를 거절한다 — 서명은 전부 검증한 뒤에 한다.
      */
-    public AttachmentDownloadResponse getDownloadUrl(String creatorEmail, Long attachmentId) {
+    public List<AttachmentDownloadResponse> getDownloadUrls(String creatorEmail, List<Long> attachmentIds) {
         Creator creator = getMyCreator(creatorEmail);
-        MessageAttachment attachment = messageAttachmentRepository.findById(attachmentId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ATTACHMENT_ACCESS_DENIED));
-
-        getMyThread(creator, attachment.getThread().getId());
-        return messageAttachmentService.createDownloadUrl(attachment, ParticipantType.CREATOR, creator.getId());
+        List<MessageAttachment> attachments = messageAttachmentService.loadForDownload(attachmentIds);
+        attachments.stream()
+                .map(attachment -> attachment.getThread().getId())
+                .distinct()
+                .forEach(threadId -> getMyThread(creator, threadId));
+        return messageAttachmentService.createDownloadUrls(attachments, ParticipantType.CREATOR, creator.getId());
     }
 
     private Map<Long, List<AttachmentSummary>> loadAttachments(List<Message> messages) {

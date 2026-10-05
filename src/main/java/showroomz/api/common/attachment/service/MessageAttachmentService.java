@@ -38,7 +38,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * §4 — S3 Presigned URL 직접 업로드. 파트너센터·쇼룸 스튜디오 양쪽이 공유한다(스레드 종류와 무관하게
@@ -141,6 +144,40 @@ public class MessageAttachmentService {
      */
     public AttachmentDownloadResponse createDownloadUrl(MessageAttachment attachment,
                                                           ParticipantType viewerType, Long viewerId) {
+        requireDownloadable(attachment, viewerType, viewerId);
+        return sign(attachment);
+    }
+
+    /**
+     * 다운로드 URL 일괄 발급 — 첨부 하나든 메시지의 「전체 다운로드」든 같은 길이다. FE는 받은 URL마다 숨긴
+     * {@code <a download>}를 차례로 눌러 S3에서 바로 받는다(서버 경유 · 서버 압축 없음).
+     *
+     * <p><b>전부 되거나 전부 안 된다.</b> 서명하기 전에 모두 검증한다 — 일부만 받으면 사용자는 몇 개가 빠졌는지
+     * 모른 채 「전체 다운로드」를 끝낸 것으로 안다. 스레드 권한은 호출자(각 서피스의 Thread 서비스)가 먼저 본다.
+     *
+     * <p>5분 만료는 순차 다운로드에 문제가 되지 않는다 — presigned URL은 요청이 <b>시작되는</b> 시점에만 검증된다.
+     */
+    public List<AttachmentDownloadResponse> createDownloadUrls(List<MessageAttachment> attachments,
+                                                               ParticipantType viewerType, Long viewerId) {
+        attachments.forEach(attachment -> requireDownloadable(attachment, viewerType, viewerId));
+        return attachments.stream().map(this::sign).toList();
+    }
+
+    /**
+     * 일괄 다운로드 대상 — 요청 순서대로(중복은 처음 것만) 돌려준다. 하나라도 없으면 전체를 거절한다(403) —
+     * 존재 여부를 따로 알려주면 남의 첨부 id를 더듬어 볼 수 있다.
+     */
+    public List<MessageAttachment> loadForDownload(List<Long> attachmentIds) {
+        List<Long> ids = attachmentIds.stream().distinct().toList();
+        Map<Long, MessageAttachment> byId = attachmentRepository.findAllByIdIn(ids).stream()
+                .collect(Collectors.toMap(MessageAttachment::getId, Function.identity()));
+        if (byId.size() != ids.size()) {
+            throw new BusinessException(ErrorCode.ATTACHMENT_ACCESS_DENIED);
+        }
+        return ids.stream().map(byId::get).toList();
+    }
+
+    private void requireDownloadable(MessageAttachment attachment, ParticipantType viewerType, Long viewerId) {
         if (!attachment.isUploaded()) {
             throw new BusinessException(ErrorCode.ATTACHMENT_NOT_UPLOADED);
         }
@@ -149,7 +186,9 @@ public class MessageAttachmentService {
         if (!attachment.isSent() && !attachment.isUploadedBy(viewerType, viewerId)) {
             throw new BusinessException(ErrorCode.ATTACHMENT_ACCESS_DENIED);
         }
+    }
 
+    private AttachmentDownloadResponse sign(MessageAttachment attachment) {
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(s3Properties.getBucket())
                 .key(attachment.getS3Key())

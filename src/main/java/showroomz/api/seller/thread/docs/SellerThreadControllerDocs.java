@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.api.common.attachment.dto.AttachmentDownloadRequest;
 import showroomz.api.common.attachment.dto.AttachmentDownloadResponse;
 import showroomz.api.common.attachment.dto.AttachmentSummary;
 import showroomz.api.common.attachment.dto.CompleteAttachmentRequest;
@@ -27,6 +28,8 @@ import showroomz.api.seller.thread.dto.ThreadListItem;
 import showroomz.api.seller.thread.dto.ThreadSummaryResponse;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
+
+import java.util.List;
 
 @Tag(name = "Seller - Thread", description = "파트너센터 연결·소통 스레드/메시지 API (§13)")
 public interface SellerThreadControllerDocs {
@@ -723,106 +726,48 @@ public interface SellerThreadControllerDocs {
     );
 
     @Operation(
-            summary = "첨부 다운로드 URL 발급",
-            description = "대화에 첨부된 파일을 내려받기 위한 presigned GET URL을 발급한다(§13-8). " +
-                    "FE는 응답의 downloadUrl로 이동시키기만 하면 되며, 원본 파일명으로 저장되도록 " +
-                    "Content-Disposition이 서명에 포함돼 있다.\n\n" +
-                    "메시지 목록의 `fileUrl`은 미리보기·재생용이다 — **저장은 반드시 이 API로** 받아야 " +
-                    "파일명이 UUID가 아닌 원본 이름으로 떨어진다.\n\n" +
-                    "URL은 300초 후 만료되므로 캐시하지 말고 클릭 시점에 호출한다. 한 메시지의 첨부를 " +
-                    "`전체 다운로드`할 때는 첨부 개수만큼 각각 호출한다(§13-9 — 서버 압축 없음).\n\n" +
-                    "메시지에 아직 연결되지 않은(전송 전) 첨부는 업로드한 본인만 다운로드할 수 있다 — " +
-                    "같은 스레드 참가자라도 상대가 보낸 뒤여야 받을 수 있다.\n\n" +
-                    "**권한:** SELLER(본인 스레드의 첨부만 — 상대가 보낸 첨부도 포함)"
+            summary = "첨부 다운로드 URL 일괄 발급",
+            description = """
+                    대화 첨부를 내려받을 presigned GET URL을 **한 번에** 발급한다(§13-8 · §13-9).
+                    파일 하나를 누를 때도, 메시지의 **전체 다운로드**도 이 API 하나다 — 파일 하나면 ID 하나를 보낸다.
+
+                    **FE 처리** — 응답 순서대로 URL마다 숨긴 `<a download>`를 클릭하거나 약간의 간격을 두고 차례로 연다.
+                    파일은 서버를 거치지 않고 S3에서 바로 내려오며, 원본 파일명으로 저장되도록 Content-Disposition이
+                    서명에 들어 있다. 브라우저가 처음 한 번 「여러 파일 다운로드 허용」을 물을 수 있다(ZIP으로 묶지 않는다).
+
+                    - 응답은 요청한 `attachmentIds` 순서를 따른다. 같은 ID는 한 번만 발급한다.
+                    - **전부 되거나 전부 안 된다** — 하나라도 권한이 없거나 업로드가 끝나지 않았으면 아무 URL도 발급하지 않는다.
+                    - URL은 300초 뒤 만료된다. 만료는 다운로드가 **시작되는** 시점에만 검사하므로 큰 파일을 차례로 받아도
+                      문제없다. 다만 캐시하지 말고 클릭할 때마다 새로 받는다.
+                    - 메시지 목록의 `fileUrl`은 미리보기 · 재생용이다 — 저장은 반드시 이 API로 받아야 파일명이 UUID가 되지 않는다.
+                    - 아직 메시지에 붙지 않은(전송 전) 첨부는 올린 본인만 받을 수 있다.
+
+                    최대 20개(메시지 1건의 첨부 상한). 이전의 `GET /v1/seller/attachments/{attachmentId}/download`(단건)는 이 API로 대체됐다.
+
+                    **권한:** SELLER (본인 스레드의 첨부만 — 상대가 보낸 첨부도 포함)
+                    """
     )
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "발급 성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = AttachmentDownloadResponse.class),
-                            examples = {
-                                    @ExampleObject(
-                                            name = "발급 성공",
-                                            value = "{\n" +
-                                                    "  \"attachmentId\": 501,\n" +
-                                                    "  \"downloadUrl\": \"https://bucket.s3.ap-northeast-2.amazonaws.com/uploads/message/55/uuid.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=300&response-content-disposition=attachment%3B%20filename%2A%3DUTF-8%27%27...\",\n" +
-                                                    "  \"originalName\": \"촬영본.mp4\",\n" +
-                                                    "  \"sizeBytes\": 31457280,\n" +
-                                                    "  \"expiresInSeconds\": 300\n" +
-                                                    "}"
-                                    )
-                            }
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "업로드가 완료되지 않은 첨부(ATTACHMENT_NOT_UPLOADED)",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class),
-                            examples = {
-                                    @ExampleObject(
-                                            name = "업로드 미완료",
-                                            value = "{\n" +
-                                                    "  \"code\": \"ATTACHMENT_NOT_UPLOADED\",\n" +
-                                                    "  \"message\": \"업로드가 완료되지 않은 첨부입니다.\"\n" +
-                                                    "}"
-                                    )
-                            }
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "인증 실패",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class),
-                            examples = {
-                                    @ExampleObject(
-                                            name = "인증 실패",
-                                            value = "{\n" +
-                                                    "  \"code\": \"UNAUTHORIZED\",\n" +
-                                                    "  \"message\": \"인증 정보가 유효하지 않습니다. 다시 로그인해주세요.\"\n" +
-                                                    "}"
-                                    )
-                            }
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "존재하지 않거나 접근 권한이 없는 첨부 / 본인 스레드가 아님",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class),
-                            examples = {
-                                    @ExampleObject(
-                                            name = "첨부 권한 없음",
-                                            value = "{\n" +
-                                                    "  \"code\": \"ATTACHMENT_ACCESS_DENIED\",\n" +
-                                                    "  \"message\": \"해당 첨부에 대한 권한이 없습니다.\"\n" +
-                                                    "}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "스레드 권한 없음",
-                                            value = "{\n" +
-                                                    "  \"code\": \"THREAD_ACCESS_DENIED\",\n" +
-                                                    "  \"message\": \"해당 스레드에 대한 권한이 없습니다.\"\n" +
-                                                    "}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "미전송 첨부",
-                                            value = "{\n" +
-                                                    "  \"code\": \"ATTACHMENT_ACCESS_DENIED\",\n" +
-                                                    "  \"message\": \"해당 첨부에 대한 권한이 없습니다.\"\n" +
-                                                    "}"
-                                    )
-                            }
-                    )
-            )
+            @ApiResponse(responseCode = "200", description = "요청 순서대로 발급된 URL 목록",
+                    content = @Content(mediaType = "application/json",
+                            array = @io.swagger.v3.oas.annotations.media.ArraySchema(
+                                    schema = @Schema(implementation = AttachmentDownloadResponse.class)),
+                            examples = @ExampleObject(name = "전체 다운로드(2건)", value = """
+                                    [
+                                      {"attachmentId": 501, "downloadUrl": "https://bucket.s3.ap-northeast-2.amazonaws.com/uploads/message/55/uuid-1.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=300&...", "originalName": "촬영본.mp4", "sizeBytes": 31457280, "expiresInSeconds": 300},
+                                      {"attachmentId": 502, "downloadUrl": "https://bucket.s3.ap-northeast-2.amazonaws.com/uploads/message/55/uuid-2.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=300&...", "originalName": "촬영가이드.pdf", "sizeBytes": 204800, "expiresInSeconds": 300}
+                                    ]
+                                    """))),
+            @ApiResponse(responseCode = "400", description = "attachmentIds가 비었거나 20개 초과 · null 포함 (`INVALID_INPUT`) / "
+                    + "업로드가 끝나지 않은 첨부 포함 (`ATTACHMENT_NOT_UPLOADED`)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "없는 첨부 · 전송 전인 남의 첨부 포함 (`ATTACHMENT_ACCESS_DENIED`) / "
+                    + "본인 스레드가 아닌 첨부 포함 (`THREAD_ACCESS_DENIED`)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<AttachmentDownloadResponse> getDownloadUrl(
-            @Parameter(description = "첨부 ID", required = true, example = "501") @PathVariable("attachmentId") Long attachmentId
+    ResponseEntity<List<AttachmentDownloadResponse>> getDownloadUrls(
+            @Valid @RequestBody AttachmentDownloadRequest request
     );
 }

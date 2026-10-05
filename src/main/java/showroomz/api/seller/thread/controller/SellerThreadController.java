@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.api.common.attachment.dto.AttachmentDownloadRequest;
 import showroomz.api.common.attachment.dto.AttachmentDownloadResponse;
 import showroomz.api.common.attachment.dto.AttachmentSummary;
 import showroomz.api.common.attachment.dto.CompleteAttachmentRequest;
@@ -23,6 +24,8 @@ import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -94,10 +97,10 @@ public class SellerThreadController implements SellerThreadControllerDocs {
     }
 
     @Override
-    @GetMapping("/v1/seller/attachments/{attachmentId}/download")
-    public ResponseEntity<AttachmentDownloadResponse> getDownloadUrl(
-            @PathVariable("attachmentId") Long attachmentId) {
-        return ResponseEntity.ok(sellerThreadService.getDownloadUrl(getCurrentSellerEmail(), attachmentId));
+    @PostMapping("/v1/seller/attachments/download")
+    public ResponseEntity<List<AttachmentDownloadResponse>> getDownloadUrls(
+            @Valid @RequestBody AttachmentDownloadRequest request) {
+        return ResponseEntity.ok(sellerThreadService.getDownloadUrls(getCurrentSellerEmail(), request.getAttachmentIds()));
     }
 
     private String getCurrentSellerEmail() {

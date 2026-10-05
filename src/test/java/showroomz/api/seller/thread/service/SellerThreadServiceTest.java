@@ -332,40 +332,45 @@ class SellerThreadServiceTest {
         }
 
         @Test
-        @DisplayName("내 스레드의 첨부면 상대(인플루언서)가 올린 것도 다운로드 URL 발급으로 위임한다 (§13-8)")
+        @DisplayName("내 스레드의 첨부면 상대(인플루언서)가 올린 것도 일괄 발급으로 위임한다 — 같은 스레드는 한 번만 확인한다 (§13-8 · §13-9)")
         void downloadDelegatesForCounterpartAttachment() {
-            MessageAttachment attachment = counterpartAttachment(myThread);
-            AttachmentDownloadResponse expected =
-                    new AttachmentDownloadResponse(501L, "https://s3.example/download", "촬영본.pdf", 2048L, 300L);
+            MessageAttachment first = counterpartAttachment(myThread);
+            MessageAttachment second = counterpartAttachment(myThread);
+            List<AttachmentDownloadResponse> expected = List.of(
+                    new AttachmentDownloadResponse(501L, "https://s3.example/download/1", "촬영본.pdf", 2048L, 300L),
+                    new AttachmentDownloadResponse(502L, "https://s3.example/download/2", "촬영본.pdf", 2048L, 300L));
 
             givenAuthenticatedSeller();
-            given(messageAttachmentRepository.findById(501L)).willReturn(Optional.of(attachment));
+            given(messageAttachmentService.loadForDownload(List.of(501L, 502L))).willReturn(List.of(first, second));
             given(messageThreadRepository.findById(THREAD_ID)).willReturn(Optional.of(myThread));
-            given(messageAttachmentService.createDownloadUrl(attachment, ParticipantType.SELLER, MARKET_ID))
+            given(messageAttachmentService.createDownloadUrls(List.of(first, second), ParticipantType.SELLER, MARKET_ID))
                     .willReturn(expected);
 
-            assertThat(sellerThreadService.getDownloadUrl(SELLER_EMAIL, 501L)).isSameAs(expected);
+            assertThat(sellerThreadService.getDownloadUrls(SELLER_EMAIL, List.of(501L, 502L))).isSameAs(expected);
+            verify(messageThreadRepository, org.mockito.Mockito.times(1)).findById(THREAD_ID);
         }
 
         @Test
-        @DisplayName("다른 브랜드의 스레드에 속한 첨부는 다운로드 URL을 발급하지 않는다")
+        @DisplayName("다른 브랜드의 스레드에 속한 첨부가 하나라도 섞이면 아무 URL도 발급하지 않는다")
         void downloadDeniedForOtherMarketsThread() {
             Market other = new Market();
             other.setId(999L);
             Connection connection = Connection.requestPair(other, Creator.builder().id(12L).build());
             connection.markConnected();
             MessageThread otherThread = MessageThread.builder()
-                    .id(THREAD_ID).connection(connection).status(ThreadStatus.OPEN).build();
+                    .id(2L).connection(connection).status(ThreadStatus.OPEN).build();
+            MessageAttachment mine = counterpartAttachment(myThread);
+            MessageAttachment others = counterpartAttachment(otherThread);
 
             givenAuthenticatedSeller();
-            given(messageAttachmentRepository.findById(501L))
-                    .willReturn(Optional.of(counterpartAttachment(otherThread)));
-            given(messageThreadRepository.findById(THREAD_ID)).willReturn(Optional.of(otherThread));
+            given(messageAttachmentService.loadForDownload(List.of(501L, 502L))).willReturn(List.of(mine, others));
+            given(messageThreadRepository.findById(THREAD_ID)).willReturn(Optional.of(myThread));
+            given(messageThreadRepository.findById(2L)).willReturn(Optional.of(otherThread));
 
-            assertThatThrownBy(() -> sellerThreadService.getDownloadUrl(SELLER_EMAIL, 501L))
+            assertThatThrownBy(() -> sellerThreadService.getDownloadUrls(SELLER_EMAIL, List.of(501L, 502L)))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.THREAD_ACCESS_DENIED);
-            verify(messageAttachmentService, never()).createDownloadUrl(any(), any(), any());
+            verify(messageAttachmentService, never()).createDownloadUrls(any(), any(), any());
         }
     }
 

@@ -18,7 +18,6 @@ import showroomz.domain.contract.type.ContractStatus;
 import showroomz.domain.message.entity.Message;
 import showroomz.domain.message.entity.MessageAttachment;
 import showroomz.domain.message.entity.MessageThread;
-import showroomz.domain.message.repository.MessageAttachmentRepository;
 import showroomz.domain.message.repository.MessageRepository;
 import showroomz.domain.message.service.MessageThreadService;
 import showroomz.domain.message.type.MessageCardType;
@@ -27,6 +26,7 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 어드민 소통 스레드 쓰기(36 설계 3-6 ~ 3-8 · 5-2).
@@ -50,7 +50,6 @@ public class AdminThreadCommandService {
     private final AdminThreadAccess access;
     private final MessageThreadService messageThreadService;
     private final MessageRepository messages;
-    private final MessageAttachmentRepository attachments;
     private final MessageAttachmentService attachmentService;
     private final ContractResendRequestRepository resendRequests;
     private final AdminMessageAssembler messageAssembler;
@@ -83,13 +82,18 @@ public class AdminThreadCommandService {
                 request.getDurationSeconds());
     }
 
-    /** 첨부가 속한 스레드가 운영팀 채널인지로 판정한다 — 상대가 보낸 첨부도 받을 수 있어야 한다. */
+    /**
+     * 다운로드 URL 일괄 발급(파트너센터 · 스튜디오와 같은 규칙) — 첨부가 속한 스레드가 운영팀 채널인지로 판정한다.
+     * 상대가 보낸 첨부도 받을 수 있어야 한다. 하나라도 안 되면 전체를 거절한다.
+     */
     @Transactional(readOnly = true)
-    public AttachmentDownloadResponse download(Long attachmentId, Long operatorId) {
-        MessageAttachment attachment = attachments.findById(attachmentId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ATTACHMENT_ACCESS_DENIED));
-        access.requireOperatorChannel(attachment.getThread().getId());
-        return attachmentService.createDownloadUrl(attachment, ParticipantType.ADMIN, operatorId);
+    public List<AttachmentDownloadResponse> download(List<Long> attachmentIds, Long operatorId) {
+        List<MessageAttachment> targets = attachmentService.loadForDownload(attachmentIds);
+        targets.stream()
+                .map(attachment -> attachment.getThread().getId())
+                .distinct()
+                .forEach(access::requireOperatorChannel);
+        return attachmentService.createDownloadUrls(targets, ParticipantType.ADMIN, operatorId);
     }
 
     /**

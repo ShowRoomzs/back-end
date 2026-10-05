@@ -19,6 +19,7 @@ import showroomz.api.admin.thread.dto.AdminThreadDto.Summary;
 import showroomz.api.admin.thread.type.AdminChannelTab;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.api.common.attachment.dto.AttachmentDownloadRequest;
 import showroomz.api.common.attachment.dto.AttachmentDownloadResponse;
 import showroomz.api.common.attachment.dto.AttachmentSummary;
 import showroomz.api.common.attachment.dto.CompleteAttachmentRequest;
@@ -26,6 +27,8 @@ import showroomz.api.common.attachment.dto.PresignRequest;
 import showroomz.api.common.attachment.dto.PresignResponse;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
+
+import java.util.List;
 
 @Tag(name = "Admin - Thread", description = """
         관리자 소통 스레드 API — 운영팀 1:1 채널(브랜드 · 인플루언서 탭).
@@ -163,13 +166,25 @@ public interface AdminThreadControllerDocs {
             CompleteAttachmentRequest request,
             @Parameter(hidden = true) UserPrincipal principal);
 
-    @Operation(summary = "첨부 다운로드 URL 발급", description = "운영팀 채널의 첨부를 받는 임시 URL입니다. 상대가 보낸 첨부도 받을 수 있습니다.")
+    @Operation(summary = "첨부 다운로드 URL 일괄 발급", description = """
+            운영팀 채널 첨부의 presigned GET URL을 **한 번에** 발급합니다. 파일 하나를 누를 때도, 메시지의 **전체 다운로드**도 이 API 하나입니다.
+            파트너센터 · 스튜디오의 `POST /attachments/download`와 같은 규칙입니다.
+
+            - FE는 응답 순서대로 URL마다 숨긴 `<a download>`를 클릭하거나 간격을 두고 차례로 엽니다. 파일은 S3에서 바로 내려옵니다(ZIP 없음).
+            - 응답은 `attachmentIds` 순서를 따르고, 같은 ID는 한 번만 발급합니다. 최대 20개입니다.
+            - **전부 되거나 전부 안 됩니다** — 하나라도 운영팀 채널의 첨부가 아니거나 받을 수 없으면 아무 URL도 발급하지 않습니다.
+            - URL은 300초 뒤 만료되지만 다운로드가 **시작되는** 시점에만 검사하므로 차례로 받아도 됩니다.
+            - 상대가 보낸 첨부도 받을 수 있습니다. 아직 보내지 않은 첨부는 올린 운영자 본인만 받습니다.
+            """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "임시 다운로드 URL", content = @Content(schema = @Schema(implementation = AttachmentDownloadResponse.class))),
-            @ApiResponse(responseCode = "403", description = "운영팀 채널의 첨부가 아님", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            @ApiResponse(responseCode = "200", description = "요청 순서대로 발급된 URL 목록",
+                    content = @Content(array = @io.swagger.v3.oas.annotations.media.ArraySchema(
+                            schema = @Schema(implementation = AttachmentDownloadResponse.class)))),
+            @ApiResponse(responseCode = "400", description = "attachmentIds가 비었거나 20개 초과 (`INVALID_INPUT`) · 업로드 미완료 (`ATTACHMENT_NOT_UPLOADED`)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "운영팀 채널의 첨부가 아님 (`THREAD_ACCESS_DENIED`) · 없는 첨부 · 전송 전인 남의 첨부 (`ATTACHMENT_ACCESS_DENIED`)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    AttachmentDownloadResponse download(
-            @Parameter(description = "첨부 ID", example = "501") Long attachmentId,
+    List<AttachmentDownloadResponse> download(
+            AttachmentDownloadRequest request,
             @Parameter(hidden = true) UserPrincipal principal);
 
     @Operation(summary = "재발송 완료 알림 보내기", description = """

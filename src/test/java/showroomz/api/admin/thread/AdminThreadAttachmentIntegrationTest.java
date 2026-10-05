@@ -1,27 +1,16 @@
 package showroomz.api.admin.thread;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.ResultActions;
 import showroomz.domain.message.entity.MessageAttachment;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.type.AttachmentStatus;
-import showroomz.domain.message.type.AttachmentType;
 import showroomz.domain.message.type.ParticipantType;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -29,48 +18,24 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 첨부 3단계 — presign → S3 직접 PUT → complete, 그리고 다운로드(36 설계 3-8 · (1) §13-7 ~ §13-11).
+ * 운영자의 첨부 업로드 3단계 — presign → S3 직접 PUT → complete → 전송(36 설계 3-8 · (1) §13-7 ~ §13-11).
  *
- * <p>규칙은 파트너센터 · 스튜디오와 같고 업로더만 운영자다. S3는 외부 의존이라 서명기 · HeadObject를 모의한다 —
- * 이 클래스만 S3 빈을 바꾸므로 별도 테스트 컨텍스트로 돈다.
+ * <p>규칙은 파트너센터 · 스튜디오와 같고 업로더만 운영자다. 다운로드(URL 일괄 발급)는
+ * {@link ThreadAttachmentDownloadIntegrationTest}가 세 서피스를 함께 본다.
  */
-@DisplayName("[통합] 어드민 소통 스레드 — 첨부 업로드 · 다운로드")
+@DisplayName("[통합] 어드민 소통 스레드 — 첨부 업로드")
 class AdminThreadAttachmentIntegrationTest extends AdminThreadTestSupport {
 
-    @MockitoBean private S3Presigner s3Presigner;
-    @MockitoBean private S3Client s3Client;
-
-    @BeforeEach
-    void stubS3() throws Exception {
-        PresignedPutObjectRequest put = mock(PresignedPutObjectRequest.class);
-        given(put.url()).willReturn(URI.create("https://s3.test/upload").toURL());
-        given(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).willReturn(put);
-        PresignedGetObjectRequest download = mock(PresignedGetObjectRequest.class);
-        given(download.url()).willReturn(URI.create("https://s3.test/download").toURL());
-        given(s3Presigner.presignGetObject(any(GetObjectPresignRequest.class))).willReturn(download);
-        givenUploaded(1_200_000L, "application/pdf");
-    }
-
-    private void givenUploaded(long size, String contentType) {
-        given(s3Client.headObject(any(HeadObjectRequest.class)))
-                .willReturn(HeadObjectResponse.builder().contentLength(size).contentType(contentType).build());
-    }
-
-    // ------------------------------------------------------------------ 3단계 전체
-
     @Test
-    @DisplayName("운영자가 올린 파일이 상대에게 그대로 간다 — presign · complete · 전송 · 상대 다운로드까지")
+    @DisplayName("운영자가 올린 파일이 상대에게 그대로 간다 — presign · complete · 전송 · 상대가 일괄 발급으로 받기까지")
     void operatorUploadReachesMember() throws Exception {
         String presigned = body(presign(brandChannel, adminToken, "9월_정산내역.pdf", "application/pdf", 1_200_000L)
                 .andExpect(status().isCreated())
@@ -96,30 +61,13 @@ class AdminThreadAttachmentIntegrationTest extends AdminThreadTestSupport {
                 .andExpect(jsonPath("$.attachments[0].originalName").value("9월_정산내역.pdf"));
 
         sellerMessages(brandChannel).andExpect(jsonPath("$.content[0].attachments[0].attachmentId").value(attachmentId));
-        mockMvc.perform(get("/v1/seller/attachments/" + attachmentId + "/download").header(HttpHeaders.AUTHORIZATION, brandToken))
+        downloadUrls("seller", brandToken, List.of(attachmentId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.downloadUrl").value("https://s3.test/download"))
-                .andExpect(jsonPath("$.originalName").value("9월_정산내역.pdf"));
-        download(attachmentId, otherAdminToken).andExpect(status().isOk());
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].downloadUrl").value(downloadUrlOf(pending)))
+                .andExpect(jsonPath("$[0].originalName").value("9월_정산내역.pdf"));
+        downloadUrls("admin", otherAdminToken, List.of(attachmentId)).andExpect(status().isOk());
     }
-
-    @Test
-    @DisplayName("상대가 보낸 첨부를 운영자가 받는다")
-    void operatorDownloadsMemberAttachment() throws Exception {
-        MessageAttachment fromSeller = uploadedAttachment(brandChannel, ParticipantType.SELLER, brand.marketId(),
-                "입점서류.pdf", AttachmentType.DOCUMENT, 2_000L);
-        mockMvc.perform(post("/v1/seller/threads/" + brandChannel.getId() + "/messages")
-                        .header(HttpHeaders.AUTHORIZATION, brandToken).contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(Map.of("clientMessageId", UUID.randomUUID().toString(),
-                                "attachmentIds", List.of(fromSeller.getId())))))
-                .andExpect(status().isCreated());
-
-        download(fromSeller.getId(), adminToken).andExpect(status().isOk())
-                .andExpect(jsonPath("$.attachmentId").value(fromSeller.getId()))
-                .andExpect(jsonPath("$.originalName").value("입점서류.pdf"));
-    }
-
-    // ------------------------------------------------------------------ presign 거절
 
     @Test
     @DisplayName("presign — 쌍 스레드 403 · 탈퇴 회원 채널 409 · 허용하지 않는 확장자 · 500MB 초과 400. 거절되면 행도 서명도 없다")
@@ -138,8 +86,6 @@ class AdminThreadAttachmentIntegrationTest extends AdminThreadTestSupport {
         assertThat(attachmentRepository.findAll()).isEmpty();
         verify(s3Presigner, never()).presignPutObject(any(PutObjectPresignRequest.class));
     }
-
-    // ------------------------------------------------------------------ complete
 
     @Test
     @DisplayName("complete — 발급받은 운영자 본인만 한다. 다른 운영자는 같은 운영팀이어도 403이다")
@@ -171,42 +117,16 @@ class AdminThreadAttachmentIntegrationTest extends AdminThreadTestSupport {
     }
 
     @Test
-    @DisplayName("complete 전(PENDING) 첨부는 메시지에 붙일 수 없다")
-    void pendingAttachmentCannotBeSent() throws Exception {
+    @DisplayName("complete 전(PENDING) 첨부는 메시지에 붙일 수도, 내려받을 수도 없다")
+    void pendingAttachmentCannotBeSentOrDownloaded() throws Exception {
         long attachmentId = readLong(body(presign(brandChannel, adminToken, "a.pdf", "application/pdf", 1_000L)),
                 "$.attachmentId");
 
         adminSend(brandChannel.getId(), adminToken, UUID.randomUUID().toString(), null, List.of(attachmentId))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("ATTACHMENT_NOT_UPLOADED"));
-    }
-
-    // ------------------------------------------------------------------ 다운로드 권한
-
-    @Test
-    @DisplayName("다운로드 — 쌍 스레드의 첨부는 403이고 S3 서명을 만들지 않는다")
-    void pairThreadAttachmentIsNotDownloadable() throws Exception {
-        MessageAttachment pair = uploadedAttachment(thread, ParticipantType.SELLER, brand.marketId(),
-                "촬영가이드.pdf", AttachmentType.DOCUMENT, 1_000L);
-
-        download(pair.getId(), adminToken).andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("THREAD_ACCESS_DENIED"));
-        download(999_999L, adminToken).andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("ATTACHMENT_ACCESS_DENIED"));
-        verify(s3Presigner, never()).presignGetObject(any(GetObjectPresignRequest.class));
-    }
-
-    @Test
-    @DisplayName("다운로드 — 아직 보내지 않은 첨부는 올린 운영자만 받는다. 같은 운영팀의 다른 운영자도 전송 전에는 못 받는다")
-    void unsentAttachmentIsUploaderOnly() throws Exception {
-        MessageAttachment draft = uploadedAttachment(brandChannel, ParticipantType.ADMIN, admin.getId(),
-                "초안.pdf", AttachmentType.DOCUMENT, 1_000L);
-
-        download(draft.getId(), adminToken).andExpect(status().isOk());
-        download(draft.getId(), otherAdminToken).andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("ATTACHMENT_ACCESS_DENIED"));
-        mockMvc.perform(get("/v1/seller/attachments/" + draft.getId() + "/download").header(HttpHeaders.AUTHORIZATION, brandToken))
-                .andExpect(status().isForbidden());
+        downloadUrls("admin", adminToken, List.of(attachmentId)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("ATTACHMENT_NOT_UPLOADED"));
     }
 
     // ------------------------------------------------------------------ 요청
@@ -221,9 +141,5 @@ class AdminThreadAttachmentIntegrationTest extends AdminThreadTestSupport {
     private ResultActions complete(long attachmentId, String token) throws Exception {
         return mockMvc.perform(patch("/v1/admin/attachments/" + attachmentId + "/complete")
                 .header(HttpHeaders.AUTHORIZATION, token).contentType(MediaType.APPLICATION_JSON).content("{}"));
-    }
-
-    private ResultActions download(long attachmentId, String token) throws Exception {
-        return mockMvc.perform(get("/v1/admin/attachments/" + attachmentId + "/download").header(HttpHeaders.AUTHORIZATION, token));
     }
 }

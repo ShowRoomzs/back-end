@@ -25,6 +25,7 @@ import showroomz.api.admin.thread.service.AdminThreadCommandService;
 import showroomz.api.admin.thread.service.AdminThreadQueryService;
 import showroomz.api.admin.thread.type.AdminChannelTab;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.api.common.attachment.dto.AttachmentDownloadRequest;
 import showroomz.api.common.attachment.dto.AttachmentDownloadResponse;
 import showroomz.api.common.attachment.dto.AttachmentSummary;
 import showroomz.api.common.attachment.dto.CompleteAttachmentRequest;
@@ -34,6 +35,8 @@ import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -111,10 +114,10 @@ public class AdminThreadController implements AdminThreadControllerDocs {
     }
 
     @Override
-    @GetMapping("/v1/admin/attachments/{attachmentId}/download")
-    public AttachmentDownloadResponse download(@PathVariable Long attachmentId,
-                                               @AuthenticationPrincipal UserPrincipal principal) {
-        return commands.download(attachmentId, operator(principal));
+    @PostMapping("/v1/admin/attachments/download")
+    public List<AttachmentDownloadResponse> download(@Valid @RequestBody AttachmentDownloadRequest request,
+                                                     @AuthenticationPrincipal UserPrincipal principal) {
+        return commands.download(request.getAttachmentIds(), operator(principal));
     }
 
     @Override

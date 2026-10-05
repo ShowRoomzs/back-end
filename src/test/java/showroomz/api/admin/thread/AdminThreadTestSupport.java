@@ -25,12 +25,26 @@ import showroomz.domain.message.type.AttachmentType;
 import showroomz.domain.message.type.ParticipantType;
 import showroomz.support.BrandFixture;
 
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
+
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
@@ -62,17 +76,50 @@ public abstract class AdminThreadTestSupport extends AdminContractTestSupport {
     @Autowired protected MessageAttachmentRepository attachmentRepository;
     @Autowired protected AdminThreadCommandService threadCommands;
 
+    /**
+     * S3는 외부 의존이라 서명기 · HeadObject를 모의한다. 첨부를 다루지 않는 테스트도 같은 빈 구성을 써야
+     * 어드민 스레드 테스트 전체가 컨텍스트 하나를 공유한다.
+     */
+    @MockitoBean protected S3Presigner s3Presigner;
+    @MockitoBean protected S3Client s3Client;
+
     protected MessageThread brandChannel;
     protected MessageThread creatorChannel;
     protected Seller otherAdmin;
     protected String otherAdminToken;
 
     @BeforeEach
-    void setUpOperatorChannels() {
+    void setUpOperatorChannels() throws Exception {
+        stubS3();
         brandChannel = channelOf(brand.market());
         creatorChannel = channelOf(creator);
         otherAdmin = fixture.createAdmin("operator2@showroomz.test", OTHER_OPERATOR_NAME);
         otherAdminToken = adminToken(otherAdmin);
+    }
+
+    // ------------------------------------------------------------------ S3
+
+    /** 업로드 URL · 다운로드 URL은 고정 값, HeadObject는 1.2MB PDF로 답한다. 다운로드 URL에는 S3 키가 실린다. */
+    private void stubS3() throws Exception {
+        PresignedPutObjectRequest put = mock(PresignedPutObjectRequest.class);
+        given(put.url()).willReturn(URI.create("https://s3.test/upload").toURL());
+        given(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).willReturn(put);
+        given(s3Presigner.presignGetObject(any(GetObjectPresignRequest.class))).willAnswer(invocation -> {
+            GetObjectPresignRequest request = invocation.getArgument(0);
+            PresignedGetObjectRequest signed = mock(PresignedGetObjectRequest.class);
+            given(signed.url()).willReturn(URI.create("https://s3.test/download/" + request.getObjectRequest().key()).toURL());
+            return signed;
+        });
+        givenUploaded(1_200_000L, "application/pdf");
+    }
+
+    protected void givenUploaded(long size, String contentType) {
+        given(s3Client.headObject(any(HeadObjectRequest.class)))
+                .willReturn(HeadObjectResponse.builder().contentLength(size).contentType(contentType).build());
+    }
+
+    protected static String downloadUrlOf(MessageAttachment attachment) {
+        return "https://s3.test/download/" + attachment.getS3Key();
     }
 
     // ------------------------------------------------------------------ 적재
@@ -207,6 +254,13 @@ public abstract class AdminThreadTestSupport extends AdminContractTestSupport {
     protected ResultActions resendNotice(Long threadId, Long cardMessageId, String token) throws Exception {
         return mockMvc.perform(post(ADMIN_THREADS + threadId + "/cards/" + cardMessageId + "/resend-notice")
                 .header(HttpHeaders.AUTHORIZATION, token));
+    }
+
+    /** 다운로드 URL 일괄 발급 — 어드민 · 파트너센터 · 스튜디오가 같은 모양이다. */
+    protected ResultActions downloadUrls(String surface, String token, List<Long> attachmentIds) throws Exception {
+        return mockMvc.perform(post("/v1/" + surface + "/attachments/download")
+                .header(HttpHeaders.AUTHORIZATION, token).contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(Map.of("attachmentIds", attachmentIds))));
     }
 
     // ------------------------------------------------------------------ 당사자 요청
