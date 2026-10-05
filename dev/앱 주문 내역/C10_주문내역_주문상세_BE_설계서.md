@@ -1,10 +1,10 @@
 # 앱 주문 내역 · 주문 상세 (C10 · C10-1) — 백엔드 기능 설계서
 
-- 근거 시안: `dev/뷰티 공동구매 앱 홈 디자인/C10 주문 내역.dc.html`(1a 목록) · `C10-1 주문 상세.dc.html`(1a~1e)
+- 근거 시안: `dev/뷰티 공동구매 앱 홈 디자인/C10 주문 내역.dc.html`(1a 목록) · `C10-1 주문 상세.dc.html`(1a~1e) — **2026-10-04 수령본 `dev/공유용_1004/`가 최신이다**(할 일 줄 · 배송지 변경 추가)
 - 상류 설계: `dev/결제 기능 구현 계획서.md`(주문·결제·전액 취소) · `dev/브랜드 주문관리/34_파트너센터_주문관리_BE_설계서.md`(하위주문 이행 상태 · 취소 요청 테이블 · 환불 큐) · `dev/브랜드 주문취소, 환불/35_파트너센터_반품교환관리_BE_설계서.md`(반품·교환 클레임 · 구매확정 보류 — **이하 35 설계서**)
 - 범위: 소비자 앱의 **주문 내역 목록 조회(신규)** · **주문 상세 조회(기존 API 확장)** — 항목별 표시 상태(**반품·교환 진행 상태 포함**) · 상태 보조 문구 · 취소·반품 반려 줄 · 항목별 액션 · 배송지 마스킹 · 결제 정보
-- 범위 밖: 주문 취소 폼·취소 요청 생성·철회·취소 상세(C10 시안 1b·1c·1d) · 배송 조회(C10-2) · 반품·교환 **신청·회수 송장 입력·재배송비 결제·클레임 상세**(앱 클레임 설계서 — 도메인 진입점은 35 설계서 3-7에 있다) — **조회 응답은 이들을 전부 수용하는 모양으로 만들고, 쓰기 흐름은 후속 설계서로 뺀다**(7절에 지금 보이는 충돌을 적어 둔다)
-- 작성일: 2026-10-04 · 개정: 2026-10-04(35 설계서 반영 — 반품·교환 표시 상태 · 구매확정 보류 · 쿼리 1회 추가) · 2026-10-04(배송중 「도착 예정」 확정 — U1 · 컬럼 1개 추가)
+- 범위 밖: 주문 취소 폼·취소 요청 생성·철회·취소 상세(C10 시안 1b·1c·1d) · 배송 조회(C10-2) · 반품·교환 **신청·회수 송장 입력·재배송비 결제·클레임 상세**(**앱 클레임 설계서** `dev/앱 반품 교환/C10-2~5_앱_배송조회_반품교환_BE_설계서.md` — 도메인 진입점은 35 설계서 3-7에 있다) — **조회 응답은 이들을 전부 수용하는 모양으로 만들고, 쓰기 흐름은 후속 설계서로 뺀다**(7절에 지금 보이는 충돌을 적어 둔다)
+- 작성일: 2026-10-04 · 개정: 2026-10-04(35 설계서 반영 — 반품·교환 표시 상태 · 구매확정 보류 · 쿼리 1회 추가) · 2026-10-04(배송중 「도착 예정」 확정 — U1 · 컬럼 1개 추가) · 2026-10-05(35 설계서 v0.39 개정 반영 — 거절된 클레임은 구매확정을 보류하지 않는다 · 「보관 종료」 → 「폐기」 · 1-1 · 1-2 · 1-4 · U13) · 2026-10-05(공유용_1004 시안 반영 — 항목 「할 일」 줄(`todo`) · 클레임 보조 문구를 앱 클레임 설계서 4-2로 통일 · 화면 번호 정정 · 주문 배송지 변경(3-6 신설) · 액션 켜는 시점 · U14 · U15)
 
 ---
 
@@ -54,8 +54,8 @@
 | --- | --- | --- | --- | --- | --- |
 | 1 | `order_product.status = CANCELLED` | `CANCELLED` | 취소 | MUTED | ✅ |
 | 2 | `order_product.status = RETURNED`(전량 반품 — 검수 통과 시점) | `RETURNED` | 반품 | MUTED | ✅ |
-| 3 | 항목에 **진행 중**(`status <> COMPLETED`) 반품 클레임 | `RETURN_IN_PROGRESS` | 반품 | ACTIVE | ❌ |
-| 4 | 항목에 **진행 중** 교환 클레임 | `EXCHANGE_IN_PROGRESS` | 교환 | ACTIVE | ❌ |
+| 3 | 항목에 **진행 중**(`status NOT IN (COMPLETED, PAYMENT_PENDING)` — 결제 대기는 아직 접수 전이다) 반품 클레임 | `RETURN_IN_PROGRESS` | 반품 | MUTED | ✅(검수 반려 단계는 ❌) |
+| 4 | 항목에 **진행 중** 교환 클레임 | `EXCHANGE_IN_PROGRESS` | 교환 | MUTED | ✅(검수 반려 단계는 ❌) |
 | 5 | 항목이 `PENDING` 취소 요청의 대상(`order_cancel_request_item`) | `CANCEL_REQUESTED` | 취소 요청중 | MUTED | ❌ |
 | 6 | 그룹 `NEW` | `PAID` | 결제완료 | ACTIVE | ❌ |
 | 7 | 그룹 `PREPARING` | `PREPARING` | 상품준비중 | MUTED | ❌ |
@@ -73,7 +73,10 @@
   - #2가 #3보다 앞이다 — 전량 반품 항목은 검수 통과 순간 `RETURNED`가 되고 클레임은 환불 집행 전(`REFUND_PENDING`)이라 아직 진행 중이다. 그때의 표시는 「반품 · 환불 처리 중」(1-2)이다.
   - **수량 부분 신청**(2개 중 1개)도 항목 행은 하나라 상태도 하나다 — 진행 중 클레임이 있으면 그것이 이긴다. 한 항목에 진행 중 클레임이 둘이면(1개 반품 + 1개 교환) **가장 최근 신청 건**으로 표시한다.
   - 클레임이 종결되면 항목은 원래 줄로 돌아간다 — 교환 완료·거절 종결 → #10(→ #11), 수량 일부만 환불된 항목 → #10(`returnedQuantity`만 남는다 · 1-5).
-  - 톤이 `ACTIVE`인 이유 — 진행 중 클레임에는 소비자가 볼·할 것이 있다(회수 송장 입력 · 재배송비 결제 · 진행 확인).
+  - **거절된 클레임은 구매확정을 막지 않는다**(35 설계서 0-9 · 3-6 — 2026-10-05). 그래서 거절 보류·반송 중(#3·#4)인 항목의 그룹이 먼저 `CONFIRMED`가 될 수 있다 — #3·#4가 #11보다 앞이라 표시는 그대로 「반품 · 검수 반려」이고, 거절이 종결되면 #10을 거치지 않고 **바로 #11**로 간다.
+  - **톤은 `MUTED`, 행은 탈색이다**(2026-10-05 재검토 — 종전 `ACTIVE` · 탈색 없음은 시안과 달랐다). 시안 C10: 「#737373: 개입할 수 없는 상태(상품준비중 · 구매확정 · 취소 · **반품 · 교환 진행**)」 · 「취소·반품 행은 탈색」 · 목업의 `진행 중 · 요청` · `진행 중 · 재발송` 행이 탈색돼 있다. 고객이 할 일이 있다는 신호는 상태 색이 아니라 **`todo` 줄(로즈)** 이 맡는다(1-5 — 「로즈는 행동이 필요할 때만」).
+  - **검수 반려 단계(`REJECTED_*` — 앱 클레임 설계서 4-2)는 탈색하지 않는다** — 목업의 `검수 반려` 행이 살아 있다. 반려된 상품은 고객에게 돌아오는 물건이라 「끝난 주문」이 아니다.
+  - 주문 상세(C10-1) 목업은 같은 항목을 로즈로 그렸다(`반품 요청` · live) — 목록과 다르다. 목록 기준으로 통일했다(미결 U15).
 
 ### 1-2. 상태 보조 문구 — `statusSub`
 
@@ -98,17 +101,16 @@
 | `CONSUMER`(PG 자동) | 항상 `완료` — 항목이 CANCELLED로 내려간 시점이 곧 PG 취소 확인 뒤다(결제 계획서 5-6) |
 | `REQUEST_APPROVED` · `SELLER_DIRECT` | 그 그룹의 `order_refund_task`에 `PENDING`이 남아 있으면 `환불 처리 중`, 아니면 `완료` — 환불은 운영자 집행 큐를 탄다(34 설계서 1-9) |
 
-**클레임 단계 문구** — 35 설계서 1-2의 저장 상태 9종을 소비자 말로 옮긴다. 시안이 보여 준 것은 「진행 중」 「재발송」 둘뿐이라 나머지는 잠정이다(미결 U9).
+**클레임 단계 문구** — **앱 클레임 설계서 4-2의 표(`UserClaimPresenter`)가 정본이다**(2026-10-05). 주문 내역 · 주문 상세 · 반품·교환 상세가 같은 유도를 쓰고, 이 화면은 그 표의 「목록 보조」 열을 `statusSub`로 싣는다. 공유용_1004 시안이 보여 준 값은 넷이다.
 
-| `order_claim.status` | 반품 | 교환 |
-| --- | --- | --- |
-| `REQUESTED` | `상품을 보내 주세요` | 같음 |
-| `COLLECTING` | `회수 중` | 같음 |
-| `ARRIVED` · `RECEIVED` | `검수 중` | 같음 |
-| `REFUND_PENDING` | `환불 처리 중` | — |
-| `RESHIP_READY` · `RESHIPPING`(거절 아님) | — | `재발송 준비 중` · `재발송` |
-| `REJECT_HOLD` | `반려 · 재배송비 결제 대기` | 같음 |
-| `RESHIP_READY` · `RESHIPPING`(거절 반송 — `rejected_at` 존재) | `반려 · 반송 준비 중` · `반려 · 반송 중` | 같음 |
+| 시안(C10 목록) | 저장 상태 | `statusSub` | `todo`(1-5) |
+| --- | --- | --- | --- |
+| 반품 · `진행 중 · 요청` | `REQUESTED` | `진행 중 · 요청` | `회수 송장 등록 필요 · 10.11까지` |
+| 반품 · `진행 중 · 회수중` | `COLLECTING` | `진행 중 · 회수중` | — |
+| 교환 · `진행 중 · 재발송` | `RESHIPPING`(거절 아님) | `진행 중 · 재발송` | — |
+| 반품 · `검수 반려` | `REJECT_HOLD` · 재발송비 결제 필요 | `검수 반려` | `재발송 배송비 결제 필요 · 10.23까지` |
+
+나머지 단계(검수 중 · 환불 처리 중 · 재발송 준비 · 반려 상품 재발송)는 시안에 없어 그 표의 잠정 문구를 쓴다(미결 U9).
 
 **도착 예정일(`arrivalDueDate`)** — 택배 연동이 도착 예정을 주지 않으므로 직접 센다(`DeliveryArrivalEstimator`).
 
@@ -129,8 +131,10 @@
 
 | 그룹의 상태 | `confirmDueAt` | 목록 보조 문구 |
 | --- | --- | --- |
-| 진행 중 클레임 없음 | `COALESCE(confirm_restart_at, delivered_at)` + `order.purchase-confirm-days` — 교환 완료 뒤에는 재발송 도착일부터 다시 센다 | `09.23 구매확정 예정` |
-| **진행 중 클레임 있음**(그 그룹의 어느 항목이든) | `null` — 클레임이 구매확정을 그룹째 세운다. 보류 중인 날짜를 약속하지 않는다 | null(신청 밖 「배송완료」 항목도 날짜가 사라진다) |
+| 보류 클레임 없음 | `COALESCE(confirm_restart_at, delivered_at)` + `order.purchase-confirm-days` — 교환 완료 뒤에는 재발송 도착일부터 다시 센다 | `09.23 구매확정 예정` |
+| **보류 클레임 있음**(그 그룹의 어느 항목이든) | `null` — 클레임이 구매확정을 그룹째 세운다. 보류 중인 날짜를 약속하지 않는다 | null(신청 밖 「배송완료」 항목도 날짜가 사라진다) |
+
+「보류 클레임」 = 진행 중(`status <> COMPLETED`)이면서 **거절되지 않은**(`rejected_at IS NULL`) 클레임이다(35 설계서 3-6 — 2026-10-05 개정). 거절 보류·거절 반송만 남은 그룹은 보류가 아니라서 날짜가 나오고, 대개는 거절 시점에 이미 구매확정된다.
 
 시안의 「공구 마감 후 09.26 발송 예정」은 **발송 방식(마감 후 일괄 발송)이 미결**(34 설계서 7절 #3)이라 접두 문구 없이 `ship_due_at`만 쓴다. 확정되면 이 표 한 줄이 바뀐다.
 
@@ -152,12 +156,12 @@
 
 - 대상: 이 항목이 든 `REJECTED` 요청 중 **가장 최근 것**. 같은 항목에 그 뒤 `PENDING`·`APPROVED` 요청이 있으면 싣지 않는다(상태가 이미 그것을 말한다).
 - 노출 구간: 표시 상태가 `PAID`·`PREPARING`·`SHIPPING`·`DELIVERED`일 때만. `CONFIRMED`에서 사라진다 — 「반려 사실은 받은 뒤 반품할 수 있다로 이어질 때만 의미」(시안)이고, 반품 창이 닫히는 시점이 곧 구매확정이다.
-- 내용: `{ cancelRequestId, rejectedAt }` — 사유 본문은 싣지 않는다. 「사유 보기」의 목적지는 취소 상세(C10-5)다.
+- 내용: `{ cancelRequestId, rejectedAt }` — 사유 본문은 싣지 않는다. 「사유 보기」의 목적지는 취소 상세(C10 1d)다.
 
-**반품·교환 반려 줄 — `claimRejection`** — 같은 원리다. 검수 거절이 **종결**(`COMPLETED(REJECTED)` — 반송 완료 또는 보관 종료)되면 항목은 「배송완료」로 돌아가고, 그 아래 회색 한 줄 「반품 요청 반려 · 사유 보기 ›」(교환이면 「교환 요청 반려」)를 싣는다.
+**반품·교환 반려 줄 — `claimRejection`** — 같은 원리다. 검수 거절이 **종결**(`COMPLETED(REJECTED)` — 반송 완료 또는 보관 기간 만료 후 폐기)되면 항목은 「배송완료」로 돌아가고, 그 아래 회색 한 줄 「반품 요청 반려 · 사유 보기 ›」(교환이면 「교환 요청 반려」)를 싣는다.
 
-- 대상: 이 항목의 거절 종결 클레임 중 **가장 최근 것**. 그 뒤에 신청한 진행 중 클레임이 있으면 싣지 않는다(상태가 이미 말한다). 거절 **보류**(`REJECT_HOLD`) 동안은 줄이 아니라 상태 자체가 「반품 · 반려 · 재배송비 결제 대기」다.
-- 노출 구간: 표시 상태 `DELIVERED`일 때만 — `CONFIRMED`에서 사라진다(취소 반려 줄과 같은 이유).
+- 대상: 이 항목의 거절 종결 클레임 중 **가장 최근 것**. 그 뒤에 신청한 진행 중 클레임이 있으면 싣지 않는다(상태가 이미 말한다). 거절 **보류**(`REJECT_HOLD`) 동안은 줄이 아니라 상태 자체가 「반품 · 검수 반려」다.
+- 노출 구간: 표시 상태 `DELIVERED`일 때만 — `CONFIRMED`에서 사라진다(취소 반려 줄과 같은 이유). **거절은 구매확정 보류를 풀기 때문에(35 설계서 3-6) 거절이 종결될 때는 그룹이 대개 이미 `CONFIRMED`다 — 이 줄이 실제로 보이는 경우는 드물다**(미결 U13).
 - 내용: `{ claimId, type, rejectedAt }` — 거절 사유·브랜드 증빙은 클레임 상세의 몫이다(약관 제20조③의 전달 창구).
 - 취소 반려 줄과 겹치면 **클레임 쪽 하나만** 싣는다 — 더 나중 사건이다.
 
@@ -176,6 +180,8 @@ cancelRequestId(nullable)      — CANCEL_REQUESTED 일 때 검토 중 요청. [
 claim: { claimId, type(RETURN|EXCHANGE), claimStatus, quantity, exchangeOptionName } | null
                                — RETURN_IN_PROGRESS · EXCHANGE_IN_PROGRESS · RETURNED 일 때. [반품·교환 상세]의 대상
 claimRejection: { claimId, type, rejectedAt } | null
+todo: { type(REGISTER_COLLECTION_INVOICE|PAY_RESHIP_FEE), label, dueDate, claimId } | null
+                               — 고객이 직접 해야 하는 일이 남은 클레임. 상태 아래 로즈 한 줄 — 누르면 반품·교환 상세
 dates: { shipDueAt, shippedAt, arrivalDueDate, deliveredAt, confirmDueAt, confirmedAt, cancelledAt }   — 전부 nullable
 actions: [ { type, label, enabled } ]
 ```
@@ -183,19 +189,20 @@ actions: [ { type, label, enabled } ]
 - 시각은 기존 주문 API와 같은 규약(`OrderDto.TIME_PATTERN` · KST).
 - `returnedQuantity`는 환불로 끝난 수량(`order_product.returned_quantity`)이다 — 0이면 앱은 그리지 않는다. `claim.quantity`는 **신청 수량**이라 주문 수량과 다를 수 있다(2개 중 1개).
 - `confirmDueAt`은 진행 중 클레임이 있는 그룹에서 null이다(1-2).
+- **`todo`**(공유용_1004 시안 「할 일 표시」) — 로즈는 **행동이 필요할 때만**이다. 값이 붙는 경우는 둘뿐이다: 회수 송장 미등록(`REQUESTED` — 기한 = `collection.invoice_due_at`) · 반려 후 재발송 배송비 결제 필요(`REJECT_HOLD` + charge `PENDING` — 기한 = `charge.due_at`). 진행만 기다리면 되는 구간은 회색 `statusSub`만 둔다. `label`은 서버가 날짜까지 조립해 내린다(`회수 송장 등록 필요 · 10.11까지`) — 결제 기한이 지난 뒤에는 날짜 없이 `재발송 배송비 결제 필요`. 송장 기한이 지나 자동 취소되면 클레임이 `CANCELLED`로 닫혀 항목이 「배송완료」로 돌아가고 `todo`도 사라진다(상세 화면 없이 알림만 — 시안).
 - `optionName`과 `quantity`는 따로 내린다 — 「단품 · 1개」 조합은 앱이 한다(장바구니·주문서와 같다).
 
 ### 1-6. 액션 — `UserOrderAction`
 
 | type | 라벨 | 목적지 | API 현황 |
 | --- | --- | --- | --- |
-| `CANCEL` | 주문 취소 | C10-4 주문 취소 | **있음** — 전액 취소만 |
-| `CANCEL_REQUEST` | 취소 요청 | C10-4b | 없음(후속) |
-| `TRACK_DELIVERY` | 배송 조회 | C10-2 | 없음(후속) |
-| `RETURN_EXCHANGE` | 반품 · 교환 | 목록 전용 → 주문 상세 | 화면 이동뿐 — 반품·교환 모듈과 함께 켠다 |
-| `RETURN_REQUEST` / `EXCHANGE_REQUEST` | 반품 요청 / 교환 요청 | 상세 전용 | 도메인 진입점만 있다(35 설계서 3-7 `request`) — 앱 신청 API와 함께 켠다 |
-| `CLAIM_DETAIL` | 반품 상세 / 교환 상세(유형으로 라벨이 갈린다) | 클레임 상세 | 없음(앱 클레임 설계서) |
-| `CANCEL_DETAIL` | 취소 상세 | C10-5 | 없음(후속) |
+| `CANCEL` | 주문 취소 | C10 1b 주문 취소 | **있음** — 전액 취소만 |
+| `CANCEL_REQUEST` | 취소 요청 | C10 1c | 없음(후속) |
+| `TRACK_DELIVERY` | 배송 조회 | C10-2 | **앱 클레임 설계서 5-2** — `GET /v1/user/orders/{orderId}/items/{orderProductId}/tracking` |
+| `RETURN_EXCHANGE` | 반품 · 교환 | 목록 전용 → 주문 상세 | 화면 이동뿐 — 신청 API와 함께 켠다 |
+| `RETURN_REQUEST` / `EXCHANGE_REQUEST` | 반품 요청 / 교환 요청 | 상세 전용 → C10-3 1a / 1b | **앱 클레임 설계서 3-1 · 3-2** — `GET /v1/user/claims/form` · `POST /v1/user/claims` |
+| `CLAIM_DETAIL` | 반품 상세 / 교환 상세(유형으로 라벨이 갈린다) | C10-5 | **앱 클레임 설계서 4절** — `GET /v1/user/claims/{claimId}` |
+| `CANCEL_DETAIL` | 취소 상세 | C10 1d | 없음(후속) |
 
 상태별 노출(목표 상태 — 0-5의 `ENABLED_ACTIONS`로 걸러서 나간다):
 
@@ -210,11 +217,12 @@ actions: [ { type, label, enabled } ]
 | `RETURN_IN_PROGRESS` · `EXCHANGE_IN_PROGRESS` · `RETURNED` | `CLAIM_DETAIL` | `CLAIM_DETAIL` |
 | `RETURNING` · `PAYMENT_PENDING` | — | — |
 
+- 화면 번호는 공유용_1004 기준이다 — **C10-2 배송 조회 · C10-3 반품·교환 요청 · C10-4 회수 조회 · C10-5 반품·교환 상세.** 주문 취소 흐름(취소 폼 · 취소 요청 · 취소 상세)은 별도 번호 없이 C10 파일 안의 1b · 1c · 1d다(종전 표기 「C10-4 주문 취소」 「C10-5 취소 상세」를 고쳤다).
 - 이 표는 **시안의 목업 데이터** 기준이다. 시안 주석은 같은 파일 안에서 다르게 말한다(결제완료·상품준비중에 [배송 조회]를 두느냐 — 미결 U2). 서버가 표를 소유하므로 확정되면 여기만 고친다.
 - 인라인 액션은 목록 2개 · 상세 3개까지(시안). [구매확정] 버튼은 없다(시안이 뺐다).
-- `enabled=false` + 사유 라벨(「교환 불가 (재고 없음)」)은 `EXCHANGE_REQUEST` 전용이다 — **같은 상품의 다른 옵션 중 재고가 있는 것이 하나도 없을 때**. 교환은 신청 때 재고를 선점하므로(35 설계서 3-8) 이 판정이 신청 API의 `CLAIM_EXCHANGE_OUT_OF_STOCK`과 같은 기준이어야 한다. **상세에서만** 판정한다(쿼리 1회 · 3-1) — 목록은 `RETURN_EXCHANGE` 하나라 필요 없다.
-- `DELIVERED` 줄의 반품·교환 버튼에 **잔여 수량 조건을 따로 걸지 않는다** — 표시 상태가 `DELIVERED`라는 것이 이미 「진행 중 클레임 없음 · 전량 반품 아님」이고, 그러면 잔여(`quantity − returned_quantity`)는 1 이상이다. 구매확정 뒤(`CONFIRMED`)에는 붙지 않는다 — 사후 클레임을 받지 않는다(35 설계서 3-1).
-- 회수 송장 입력·재배송비 결제는 **항목 행의 버튼으로 두지 않는다** — `CLAIM_DETAIL`로 들어간 클레임 상세 안의 액션이다(인라인 상한 2·3개를 지킨다).
+- `enabled=false` + 사유 라벨(「교환 불가 (재고 없음)」)은 `EXCHANGE_REQUEST` 전용이다 — **교환 가능한 옵션(같은 상품 · 같은 공구가 — 받은 옵션 포함) 중 재고가 있는 것이 하나도 없을 때**(2026-10-05 재검토 — C10-3은 불량·오배송이면 받은 옵션과 같은 옵션으로도 교환을 받는다. 종전 「다른 옵션 중」으로 판정하면 옵션이 하나뿐인 상품의 불량 교환이 막힌다. 폼 API의 `exchangeOptions`와 같은 집합이어야 한다 — 앱 클레임 설계서 3-1). 교환은 신청 때 재고를 선점하므로(35 설계서 3-8) 이 판정이 신청 API의 `CLAIM_EXCHANGE_OUT_OF_STOCK`과 같은 기준이어야 한다. **상세에서만** 판정한다(쿼리 1회 · 3-1) — 목록은 `RETURN_EXCHANGE` 하나라 필요 없다.
+- `DELIVERED` 줄의 반품·교환 버튼에 **잔여 수량 조건을 따로 걸지 않는다** — 표시 상태가 `DELIVERED`라는 것이 이미 「진행 중 클레임 없음 · 전량 반품 아님」이다. **예외가 하나 생겼다**(2026-10-05) — 거절된 수량은 다시 신청할 수 없으므로(35 설계서 3-1 · 시안 「반려된 상품은 반품 · 교환할 수 없어요」) 전량이 거절 종결된 항목은 `DELIVERED`로 돌아와도 신청 가능 수량이 0이다. 그 항목에는 `RETURN_EXCHANGE` · `RETURN_REQUEST` · `EXCHANGE_REQUEST`를 붙이지 않는다 — 클레임 맵(쿼리 #6)에서 `quantity − returned_quantity − 거절 수량 ≥ 1`을 본다. 구매확정 뒤(`CONFIRMED`)에는 붙지 않는다 — 사후 클레임을 받지 않는다(35 설계서 3-1).
+- 회수 송장 입력·재배송비 결제는 **항목 행의 버튼으로 두지 않는다** — `CLAIM_DETAIL`로 들어간 클레임 상세 안의 액션이다(인라인 상한 2·3개를 지킨다). 대신 해야 할 일이 있다는 사실은 `todo` 줄이 알린다(1-5).
 
 **`CANCEL`의 게이트는 지금의 취소 API와 같아야 한다.** 현행 취소는 주문 전체 · 전 그룹 NEW일 때만이다(`CheckoutService.claimUserCancel` — `countPreparedByOrder == 0`). 그래서 `PAID` 항목이라도 `CANCEL`은 **주문 단위 `cancellable`이 참일 때만** 붙인다(`OrderAssembler.isCancellable`을 그대로 쓴다). 한 주문 안에 준비 시작된 그룹이 섞이면 NEW 쪽 항목은 「결제완료」로 보이되 버튼이 없다 — 앱이 버튼을 그리고 서버가 409를 내는 것보다 낫다. 항목 단위 부분 취소가 생기면(후속) 이 게이트가 항목 단위로 내려간다.
 
@@ -302,6 +310,7 @@ ORDER BY o.order_id DESC
 | `items[]` | 1-5의 `ItemRow` 평면 목록(상세용 `statusSub`·`actions`) — 시안 「주문 상품 N」이 쇼룸 그룹 없이 평면이다. 기존 `groups[].items[]`는 유지 |
 | `itemCount` | `items.size()` — 「주문 상품 2」 |
 | `maskedAddress` | 3-2 |
+| `addressChangeable` | 3-6 — [배송지 변경] 노출 여부 |
 | `notices[]` | 3-3 |
 | `summary.discountRate` | 3-4 |
 
@@ -358,10 +367,29 @@ maskedAddress: { recipientName, phoneNumber, address, detailAddress, memo }
 | 시안 | 응답 |
 | --- | --- |
 | 26.09.12 (금) / 주문번호 + 복사 | `orderedAt` · `orderNumber` |
-| 배송지 「주문 시점 정보」 | `maskedAddress`(주문 스냅샷) |
+| 배송지 · 우측 [배송지 변경](결제완료에서만) | `maskedAddress`(주문 스냅샷) · `addressChangeable`(3-6) — 거짓이면 앱이 「주문 시점 정보」로 고정 표기 |
 | 주문 상품 N + 항목 카드(상태 · 우측 보조 · 반려 줄 · 버튼) | `itemCount` · `items[]` |
 | 결제 정보 | `summary` · `payment` |
 | 구매확정 화면 하단 [1:1 문의] | 앱 고정 — 문의 생성 API에 `orderId`를 넘긴다(기존) |
+
+### 3-6. 주문 배송지 변경 — `PATCH /v1/user/orders/{orderId}/delivery-address` (신규 · 2026-10-05)
+
+공유용_1004 C10-1 1a: 「배송지 변경은 결제완료에서만 — 브랜드가 출고 준비를 시작하면 주소를 바꿀 수 없다」. [배송지 변경] → **C13-2 배송지 선택** → 고르면 주문 상세로 돌아온다.
+
+| 항목 | 내용 |
+| --- | --- |
+| 요청 | `{ addressId }` — 내 배송지(`delivery_address`) 중 하나. 새 주소는 C13-2 안에서 기존 `POST /v1/user/delivery-addresses`로 먼저 만든다 |
+| 처리 | 그 배송지의 값을 `orders.recipient_name` · `recipient_phone` · `zip_code` · `address` · `detail_address` · `delivery_memo`에 **복사**한다(주문은 스냅샷을 든다 — 배송지 id를 참조하지 않는다) |
+| 조건 | 결제된 주문(`paid_at`)이고 **취소되지 않은 하위주문이 전부 `NEW`**. 하나라도 준비 시작(`PREPARING`) 이후면 409 `ORDER_ADDRESS_NOT_CHANGEABLE` |
+| 경합 | 브랜드의 「준비 시작」(34 설계서 전이 #2)과 겹친다 — 하위주문을 `SELECT … FOR UPDATE`로 잠근 뒤 상태를 보고 복사한다. 준비 시작이 먼저면 변경이 지고, 변경이 먼저면 발주서는 새 주소로 나간다 |
+| 응답 | 갱신된 `maskedAddress` |
+| `addressChangeable` | 상세 응답에 내린다 — 같은 조건. 버튼 노출의 정본은 서버다 |
+| C13-2 | 목록은 기존 `GET /v1/user/delivery-addresses`. **기존 `POST /v1/user/delivery-addresses`의 응답에 생성된 `id`를 더한다**(지금은 본문 없는 200이다) — 시안 「[새 배송지 추가] → 저장하면 이 목록으로 돌아와 새 주소가 선택된 상태」를 하려면 앱이 방금 만든 배송지를 알아야 한다. 「현재 주문의 주소가 처음부터 선택돼 있다」는 앱이 주문의 주소 값과 목록을 비교해 판단한다(주문이 배송지 id를 들지 않는다) |
+
+- 배송지가 **주문에 하나**라(브랜드별로 다르지 않다) 조건도 주문 단위다. 브랜드가 둘이고 한쪽만 준비를 시작했으면 바꿀 수 없다 — 「결제완료」 항목이 보여도 버튼이 없는 것은 주문 취소 게이트(1-6)와 같은 모양이다.
+- 주소가 바뀌어도 배송비는 다시 계산하지 않는다(도서산간 추가 운임 모델이 없다).
+- **발주서를 준비 시작 없이 먼저 내려받을 수 있다면 구멍이 난다**(34 설계서 3-1 — 발주서 대상이 「결제된 NEW · PREPARING」이다). 브랜드가 `NEW`에서 받아 둔 발주서의 주소가 낡는다 — 미결 U14.
+- 교환받을 배송지 변경(C10-3 · C10-5)은 주문이 아니라 클레임 요청의 수취지를 바꾼다 — 앱 클레임 설계서 3-6.
 
 ---
 
@@ -379,7 +407,8 @@ maskedAddress: { recipientName, phoneNumber, address, detailAddress, memo }
 | `api/app/order/service/OrderAddressMasker` | 신규(3-2) |
 | `OrderAssembler.toDetail` | 수정 — `items` · `itemCount` · `maskedAddress` · `notices` · `summary.discountRate` 추가. `isCancellable`을 목록도 쓰도록 패키지 공개로 연다 |
 | `OrderDto.OrderDetailResponse` · `OrderDto.Summary` | 수정 — 필드 추가(3-1 · 3-4) |
-| `OrderController` · `OrderControllerDocs` | 수정 — `GET /v1/user/orders` 추가. 문서 어노테이션은 docs 인터페이스에(프로젝트 규약) |
+| `OrderCommandService.changeDeliveryAddress` | 신규(3-6) — 에러 코드 `ORDER_ADDRESS_NOT_CHANGEABLE` 1종 추가 |
+| `OrderController` · `OrderControllerDocs` | 수정 — `GET /v1/user/orders` · `PATCH /{orderId}/delivery-address`(3-6) 추가. 문서 어노테이션은 docs 인터페이스에(프로젝트 규약) |
 | `OrderRepository` · `OrderProductRepository` · `OrderCancelRequestRepository` · `OrderRefundTaskRepository` · `OrderClaimRepository` | 조회 메서드 추가(2-4) |
 | 구매확정 예정일 계산 | 35 설계서 5-1이 모으는 공용 메서드를 **부른다** — 여기서 `delivered_at + N일`을 따로 계산하지 않는다 |
 | `OrderProperties` · `application.yml` | `user-list-months: 6` · `user-list-page-size-max: 50` |
@@ -388,7 +417,7 @@ maskedAddress: { recipientName, phoneNumber, address, detailAddress, memo }
 | Flyway | `V156__alter_order_delivery_group_add_picked_up_at` — 클레임 테이블·컬럼은 35 설계서 몫이다(V154·V155는 다른 작업이 썼으므로 그 번호는 V157부터로 밀린다) |
 | `@Hidden` 기획 제외 영역 | **접촉 없음** |
 
-에러 코드는 신규가 없다 — `ORDER_NOT_FOUND` · `ORDER_ACCESS_DENIED` · `ORDER_PAGE_SIZE_INVALID` 재사용(마지막 것의 메시지 「1~100」은 셀러 기준이라, 앱 목록은 메시지를 넘겨 「1~50」으로 낸다).
+에러 코드는 목록·상세 조회에는 신규가 없다(배송지 변경의 1종은 3-6) — `ORDER_NOT_FOUND` · `ORDER_ACCESS_DENIED` · `ORDER_PAGE_SIZE_INVALID` 재사용(마지막 것의 메시지 「1~100」은 셀러 기준이라, 앱 목록은 메시지를 넘겨 「1~50」으로 낸다).
 
 ---
 
@@ -402,7 +431,7 @@ maskedAddress: { recipientName, phoneNumber, address, detailAddress, memo }
 | P4 | 통합 테스트(6절 #1~15) | |
 | P5 | 클레임 반영 — 표시 상태 #2~#4 · `claim` · `claimRejection` · `confirmDueAt` 보류 · 쿼리 #6 + 테스트 #16~24 | **35 설계서 P1·P2(테이블 · 구매확정 연동) 뒤** — 그 전에는 읽을 테이블이 없다. 35 설계서 P6과 같은 단계다 |
 
-`ENABLED_ACTIONS`의 초기값은 `{ CANCEL }`이다. 후속 설계(취소 요청 · 배송 조회 · 반품/교환)가 각자 자기 액션을 켠다. P5는 **표시만** 넣는다 — `RETURN_EXCHANGE` · `RETURN_REQUEST` · `EXCHANGE_REQUEST` · `CLAIM_DETAIL`은 앱 클레임 API가 생기는 배포에서 켠다. 그전에도 클레임은 생길 수 있고(어드민·테스트 경로) 그때 항목이 「배송완료」로 보이면 거짓이므로 표시가 액션보다 먼저 간다.
+`ENABLED_ACTIONS`의 초기값은 `{ CANCEL }`이다. 후속 설계(취소 요청 · 배송 조회 · 반품/교환)가 각자 자기 액션을 켠다. P5는 **표시만** 넣는다 — `RETURN_EXCHANGE` · `RETURN_REQUEST` · `EXCHANGE_REQUEST` · `CLAIM_DETAIL`은 앱 클레임 API가 생기는 배포에서 켠다. 그전에도 클레임은 생길 수 있고(어드민·테스트 경로) 그때 항목이 「배송완료」로 보이면 거짓이므로 표시가 액션보다 먼저 간다. **켜는 순서는 앱 클레임 설계서 7절**이다(2026-10-05) — `TRACK_DELIVERY`는 A1(주문 배송 조회 — 클레임 없이 먼저 나갈 수 있다), 나머지 넷과 `todo`는 A6.
 
 ---
 
@@ -427,15 +456,24 @@ maskedAddress: { recipientName, phoneNumber, address, detailAddress, memo }
 | 13 | 상세 마스킹 — 1글자 이름 · 하이픈 없는 번호 · 상세 주소 없음 | 3-2 규칙 |
 | 14 | 상세 기존 필드 | `groups` · `deliveryAddress` · `cancellable` 등 변화 없음 |
 | 15 | 목록 쿼리 수 | 주문 20건 페이지에서 6회 이하 |
-| 16 | 그룹 DELIVERED · 항목 2개 중 1개만 반품 신청 | 신청 항목 `RETURN_IN_PROGRESS` · 보조 `상품을 보내 주세요`, 나머지 `DELIVERED` — **둘 다 `confirmDueAt` null** |
+| 16 | 그룹 DELIVERED · 항목 2개 중 1개만 반품 신청 | 신청 항목 `RETURN_IN_PROGRESS` · `MUTED` · `dimmed` · 보조 `진행 중 · 요청` · `todo` 있음, 나머지 `DELIVERED` — **둘 다 `confirmDueAt` null** |
 | 17 | 수량 2 항목에 1개 반품 → 환불 완료 | 상태 `DELIVERED` 복귀 · `returnedQuantity = 1` · 금액은 항목 금액 그대로 |
 | 18 | 전량 반품 검수 통과 → 환불 집행 | `RETURNED` · `dimmed` · 보조 `환불 처리 중` → `완료` · 「환불 N원」 = 예정액 → 집행액 |
 | 19 | 교환 신청 → 재발송 등록 → 도착 | `EXCHANGE_IN_PROGRESS`(보조 `재발송`) → `DELIVERED` · `confirmDueAt` = 재발송 도착 + 7일 |
-| 20 | 검수 거절 → 보류 → 반송 완료 | 보조 `반려 · 재배송비 결제 대기` → … → `DELIVERED` + `claimRejection` |
+| 20 | 검수 거절 → 보류 → 반송 완료(그룹이 아직 `DELIVERED` — 7일 미경과 또는 다른 보류 클레임) | 보조 `검수 반려` → … → `DELIVERED` + `claimRejection` · 거절 뒤 `confirmDueAt`이 null이 아니다(다른 보류 클레임이 없을 때) |
 | 21 | #20에서 그룹 CONFIRMED / 같은 항목 재신청 | `claimRejection` 없음 |
+| 21-1 | 검수 거절 시점에 그룹 구매확정(7일 경과) → 보류 → 반송 완료 | 그룹 `CONFIRMED`인 동안에도 `RETURN_IN_PROGRESS` · 보조 `검수 반려` → 종결 뒤 `CONFIRMED` · `claimRejection` 없음 |
 | 22 | 한 항목에 진행 중 반품 1개 + 교환 1개 | 나중에 신청한 쪽으로 표시 |
 | 23 | 상세 — 다른 옵션 재고 0 | `EXCHANGE_REQUEST.enabled = false`(액션이 켜진 설정에서) |
 | 24 | 상세 `CONFIRM_DUE` — 두 그룹 중 하나만 클레임 진행 중 / 둘 다 | 보류 아닌 그룹의 날짜 / 안내 없음 |
+| 25 | 반품 `REQUESTED` / `COLLECTING` / 반려 · 결제 필요 / 반려 · 결제 기한 경과 | `todo` 「회수 송장 등록 필요 · MM.dd까지」 / null / 「재발송 배송비 결제 필요 · MM.dd까지」 / 날짜 없는 라벨 |
+| 26 | 송장 기한 경과 자동 취소 · 소비자 철회 | 항목 `DELIVERED` 복귀 · `claim` · `todo` · `claimRejection` 전부 null |
+| 27 | `PAYMENT_PENDING` 클레임만 있는 항목 | `DELIVERED` 그대로(진행 중으로 보이지 않는다) |
+| 28 | 전량이 거절 종결된 `DELIVERED` 항목 | 반품·교환 액션 없음 |
+| 28-1 | 검수 반려 단계의 항목(결제 필요 · 재발송 중) | `dimmed = false` · 톤 `MUTED` · 결제 필요일 때만 `todo` |
+| 28-2 | 옵션이 하나뿐인 상품 — 그 옵션 재고 있음 / 없음 | `EXCHANGE_REQUEST.enabled` true / false |
+| 29 | 배송지 변경 — 전 그룹 `NEW` / 한 그룹 `PREPARING` / 남의 주문 · 남의 배송지 | 스냅샷 6필드 갱신 · `maskedAddress` 반영 / 409 `ORDER_ADDRESS_NOT_CHANGEABLE` / 403 · 404 |
+| 30 | 배송지 변경 vs 준비 시작 동시 | 하나만 — 준비 시작이 이기면 409 |
 
 기획 제외 영역은 테스트 범위에 넣지 않는다.
 
@@ -455,10 +493,13 @@ maskedAddress: { recipientName, phoneNumber, address, detailAddress, memo }
 | U6 | 상세 응답의 원문 배송지(`deliveryAddress`) 제거 시점 | 유지(결제 완료 화면 사용) | 필드 제거 |
 | U7 | 6개월 이전 주문 조회 방식(시안 미결 ①) | 설정값 6개월 · 그 이전은 조회 불가 | 기간 파라미터 |
 | U8 | 발송 예정 문구의 「공구 마감 후」 접두 — 발송 방식 미결(34 설계서 #3) | `ship_due_at`만 | 1-2 표 |
-| U9 | **반품·교환 단계 문구** — 시안에는 「반품 · 진행 중」 「교환 · 재발송」 둘뿐이고 회수 대기·검수·환불 대기·거절 보류·반송의 소비자 문구가 없다 | 1-2의 단계 문구 표(잠정) | 1-2 표 |
+| U9 | **반품·교환 단계 문구** — 공유용_1004가 요청 · 회수중 · 재발송 · 검수 반려 넷을 정했다. 검수 중 · 환불 처리 중 · 재발송 준비 · 반려 상품 재발송의 문구는 여전히 없다 | 앱 클레임 설계서 4-2(정한 것은 시안대로 · 나머지 잠정) | 그 표 |
 | U10 | **수량 일부 반품의 항목 표기** — 2개 중 1개가 환불된 항목의 수량·금액을 어떻게 그리나 | 상태·금액은 원래대로, `returnedQuantity`만 내린다 | `amountLabel` 규칙 · 보조 문구 |
 | U11 | **구매확정 보류 중의 안내** — 클레임이 걸린 그룹은 신청 밖 항목까지 구매확정 예정일이 사라진다(35 설계서 3-6). 소비자에게 이유를 말할지 | 날짜 null · 안내 없음 | `notices`에 type 1종 추가 |
 | U12 | 한 항목에 진행 중 클레임이 둘일 때의 표시 | 최근 신청 건 하나 | 1-1 주석 |
+| U13 | **구매확정 뒤의 거절 표시** — 거절이 구매확정 보류를 풀어(35 설계서 3-6) 거절 종결 시점에는 대개 `CONFIRMED`라 `claimRejection` 줄이 뜨지 않는다. 구매확정 항목에도 「반품 요청 반려 · 사유 보기」를 남길지 · 거절 보류 중의 **미결제 고지 · 보관 기한 안내**(기획 §35-9 C-13)를 주문 내역에 실을지 | 반려 줄은 `DELIVERED`에서만 · 보관 기한은 싣지 않는다 — 결제 기한은 `todo`가, 보관 기한은 반품·교환 상세(앱 클레임 설계서 4-3 `reshipFee.storage`)가 보여 준다 | 1-4 노출 구간 |
+| U14 | **배송지 변경과 발주서** — 브랜드가 `NEW`에서 발주서를 먼저 내려받았다면 그 뒤 바뀐 주소가 반영되지 않는다(3-6) | 전 그룹 `NEW`만 본다 | 발주서 다운로드 이력이 있는 그룹은 변경 불가로 막거나, 파트너센터 목록에 「주소 변경됨」 표시(34 설계서) |
+| U15 | **C10-1 목업의 클레임 상태 표기** — 주문 상세 1d가 라벨 「반품 요청」(**로즈**) + 우측 `10.04 요청`으로 그렸고, 주문 내역은 라벨 「반품」(**회색 · 탈색**) + `진행 중 · 요청`이다. 같은 항목의 라벨 · 색 · 보조 문구가 두 화면에서 다르다 | 목록·상세 모두 라벨 「반품」/「교환」 · `MUTED` · `statusSub`(같은 조립기) | 상세 전용 라벨·톤·보조 문구 |
 
 ### 7-2. 후속 설계(주문 취소 — C10 1b·1c·1d)로 넘기는 것과, 지금 보이는 충돌
 
@@ -476,7 +517,7 @@ maskedAddress: { recipientName, phoneNumber, address, detailAddress, memo }
 
 ### 7-3. 후속 설계(앱 반품·교환 — 신청 · 클레임 상세)로 넘기는 것
 
-도메인과 브랜드 쪽은 35 설계서가 끝냈다. 앱 쪽에 남은 것:
+도메인과 브랜드 쪽은 35 설계서가 끝냈다. **앱 쪽은 앱 클레임 설계서(2026-10-05)가 받았다** — R1 → 3-1 · 3-2(한 요청 = 한 하위주문 · 한 유형 · 한 사유를 시안이 받았다) / R2 → 3-4(등록·수정 겸용 · 소비자 택배사 목록 1-7) / R3 → 1-5 · 3-3 · 3-7(`order_claim_payment` — 교환은 요청 시 선결제) / R4 → 4절 · 5-3 / R5 → 3-5 · 전이 #13(송장 입력 전까지만). 아래는 넘길 때의 기록이다:
 
 | # | 항목 | 35 설계서의 현황 |
 | --- | --- | --- |
