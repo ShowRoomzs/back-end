@@ -25,7 +25,7 @@ public final class OrderAddressMasker {
     }
 
     /** 마지막 글자 → {@code *}(김수진 → 김수*). 1글자면 그대로. */
-    static String maskName(String name) {
+    public static String maskName(String name) {
         if (name == null || name.length() <= 1) {
             return name;
         }
@@ -51,7 +51,7 @@ public final class OrderAddressMasker {
     }
 
     /** 상세 주소는 통째로 가린다 — 비면 null. */
-    static String maskDetail(String detailAddress) {
+    public static String maskDetail(String detailAddress) {
         return detailAddress == null || detailAddress.isBlank() ? null : DETAIL_MASK;
     }
 }

@@ -86,6 +86,17 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
             + "AND (c.status <> " + COMPLETED + " OR c.rejectedAt IS NOT NULL)")
     long sumOccupiedQuantity(@Param("orderProductId") Long orderProductId);
 
+    /** {@link #sumOccupiedQuantity}의 하위주문 판 — [주문 항목 id, 점유 수량]. 신청 양식이 항목마다 묻지 않게 한다. */
+    @Query("SELECT c.orderProduct.id, COALESCE(SUM(c.quantity), 0) FROM OrderClaim c "
+            + "WHERE c.deliveryGroup.id = :deliveryGroupId "
+            + "AND (c.status <> " + COMPLETED + " OR c.rejectedAt IS NOT NULL) GROUP BY c.orderProduct.id")
+    List<Object[]> sumOccupiedQuantityByDeliveryGroup(@Param("deliveryGroupId") Long deliveryGroupId);
+
+    /** 소비자 앱 — 내 클레임만. 남의 클레임은 없는 것이다(존재 비노출). */
+    @Query("SELECT c FROM OrderClaim c JOIN FETCH c.collection JOIN FETCH c.deliveryGroup g JOIN FETCH g.order "
+            + "WHERE c.id = :id AND c.userId = :userId")
+    java.util.Optional<OrderClaim> findOwnedByUser(@Param("id") Long id, @Param("userId") Long userId);
+
     // ------------------------------------------------------------------ 묶음(박스) 단위 전이
 
     /**

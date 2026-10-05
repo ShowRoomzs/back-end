@@ -39,6 +39,14 @@ public enum DeliveryCarrier {
     private final String tel;
     private final String trackingUrlTemplate;
 
+    /**
+     * 소비자가 회수 송장에 고를 수 있는 택배사(앱 클레임 설계서 1-7) — 시안의 목록이다. GS25 반값택배는 스마트택배
+     * 코드가 확인되면 더한다(Q9). 브랜드 출고 목록(11종 전부)과는 다른 목록이다.
+     */
+    public boolean isConsumerSelectable() {
+        return this == CJ || this == EPOST || this == HANJIN || this == LOTTE || this == LOGEN || this == CU;
+    }
+
     /** 택배사 조회 페이지 주소 — 템플릿이 없으면 null. */
     public String trackingUrl(String trackingNumber) {
         return trackingUrlTemplate == null || trackingNumber == null

@@ -115,6 +115,12 @@ public class OrderProperties {
         /** 보관 기간 — 최종 고지일 + N개월. */
         private int storageMonths = 3;
 
+        /** 소비자 상세 내용 글자 수 상한. */
+        private int detailMaxLength = 250;
+
+        /** 소비자 첨부 사진 상한. */
+        private int photoMax = 10;
+
         /** 검수 거절 증빙 사진 상한. */
         private int evidenceMax = 5;
 

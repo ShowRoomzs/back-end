@@ -148,6 +148,8 @@ order:
     payment-pending-minutes: 30                     # 교환 재발송비 결제 대기 — 지나면 요청 초안 삭제
     storage-required-notices: 2                     # 보관 기한이 생기는 최소 고지 횟수
     storage-months: 3                               # 보관 기간 — 최종 고지일 + N개월
+    detail-max-length: 250                          # 소비자 상세 내용 글자 수 상한
+    photo-max: 10                                   # 소비자 첨부 사진 상한
     evidence-max: 5                                 # 검수 거절 증빙 사진 상한
     receive-before-arrival: true                    # 추적상 도착 전에도 입고 확인 허용 — 택배 추적이 꺼져 있는 동안의 출구
     invoice-expiry-scheduler-enabled: true          # 회수 송장 미등록 자동 취소 배치
