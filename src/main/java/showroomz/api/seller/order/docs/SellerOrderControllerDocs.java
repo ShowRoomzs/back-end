@@ -70,7 +70,8 @@ public interface SellerOrderControllerDocs {
                     **행 필드 해석**
                     - `statusLabel` · `statusTone`(NEUTRAL/INFO/WARNING/SUCCESS/DANGER)은 서버 배지 값이다 — FE가 매핑하지 않는다.
                     - `overlays` — 이행 상태와 별 축: `cancelRequested`(취소 요청 검토 중) · `trackingAlert`(집화 확인 필요/추적 정지) ·
-                      `shipOverdue`(발송기한 경과 · 브랜드 귀책). 한 행에 여럿이 함께 뜰 수 있다.
+                      `shipOverdue`(발송기한 경과 · 브랜드 귀책) · `openClaimCount`(진행 중인 반품·교환 건수). 한 행에 여럿이 함께 뜰 수 있다.
+                    - `confirmRemainingDays`는 거절되지 않은 진행 중 반품·교환이 있으면 `null`이다 — 그 건이 끝날 때까지 구매확정이 선다.
                     - `recipientName`은 전체 표기(rev.6). 연락처·주소는 목록에 없다 — 상세·발주서에만(§34-11).
                     - `settlementLabel`은 정산 모듈 전이라 `null`이다 — 0이 아니다.
                     - `items[]`는 행 확장(▸) 미리보기다 — 상품·옵션 · 수량 · 공구가 · 금액 · 항목 상태.

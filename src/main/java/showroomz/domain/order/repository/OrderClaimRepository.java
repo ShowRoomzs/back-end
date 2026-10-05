@@ -24,7 +24,7 @@ import java.util.List;
  * {@link #existsOpenByDeliveryGroupId} / {@link #existsConfirmBlockingByDeliveryGroupId} 둘로 고정해 호출부가
  * 섞어 쓰지 않게 한다(3-6).
  */
-public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long> {
+public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, OrderClaimRepositoryCustom {
 
     String COMPLETED = "showroomz.domain.order.type.ClaimStatus.COMPLETED";
     String CANCELLED = "showroomz.domain.order.type.ClaimResult.CANCELLED";
@@ -33,6 +33,40 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long> {
 
     @Query("SELECT c FROM OrderClaim c WHERE c.collection.id = :collectionId ORDER BY c.id ASC")
     List<OrderClaim> findByCollectionId(@Param("collectionId") Long collectionId);
+
+    /** 소비자 앱 주문 내역(C10 설계서 2-4 #6) — 그 주문들의 클레임 전부를 요청과 함께 IN 1번. 상태 조건 없이 읽는다. */
+    @Query("SELECT c FROM OrderClaim c JOIN FETCH c.collection WHERE c.orderId IN :orderIds ORDER BY c.id ASC")
+    List<OrderClaim> findByOrderIdsWithCollection(@Param("orderIds") Collection<Long> orderIds);
+
+    @Query("SELECT c FROM OrderClaim c WHERE c.collection.id IN :collectionIds ORDER BY c.id ASC")
+    List<OrderClaim> findByCollectionIds(@Param("collectionIds") Collection<Long> collectionIds);
+
+    /** 파트너센터 상세 — 내 마켓 것만. 남의 마켓 클레임은 없는 것이다(존재 비노출). */
+    @Query("SELECT c FROM OrderClaim c JOIN FETCH c.collection JOIN FETCH c.deliveryGroup g JOIN FETCH g.order "
+            + "JOIN FETCH c.orderProduct WHERE c.id = :id AND c.marketId = :marketId "
+            + "AND c.status <> showroomz.domain.order.type.ClaimStatus.PAYMENT_PENDING")
+    java.util.Optional<OrderClaim> findOwned(@Param("id") Long id, @Param("marketId") Long marketId);
+
+    /** 요약 — [상태, 유형, 건수]. 탭 카운트 · KPI · 유형 카운트를 한 번에 푼다. */
+    @Query("SELECT c.status, c.type, COUNT(c) FROM OrderClaim c WHERE c.marketId = :marketId "
+            + "GROUP BY c.status, c.type")
+    List<Object[]> countByStatusAndType(@Param("marketId") Long marketId);
+
+    /** 기한 초과 — 회수 대기 방치(기한 ①) + 검수 기한 경과(기한 ②). */
+    @Query("SELECT COUNT(c) FROM OrderClaim c WHERE c.marketId = :marketId AND ("
+            + "(c.status = showroomz.domain.order.type.ClaimStatus.REQUESTED AND c.collectDueAt < :now) OR "
+            + "(c.status = showroomz.domain.order.type.ClaimStatus.RECEIVED AND c.inspectDueAt < :now))")
+    long countOverdue(@Param("marketId") Long marketId, @Param("now") LocalDateTime now);
+
+    /**
+     * 주문 관리 화면의 오버레이(35 설계서 5-2) — [하위주문 id, 진행 중 건수, 그중 보류 건수]. 결제 대기는 세지 않는다.
+     * 진행 중은 거절 보류를 포함하고, 구매확정 D-N 이 비는 것은 보류 건수가 있을 때뿐이다.
+     */
+    @Query("SELECT c.deliveryGroup.id, COUNT(c), SUM(CASE WHEN c.rejectedAt IS NULL THEN 1 ELSE 0 END) "
+            + "FROM OrderClaim c WHERE c.deliveryGroup.id IN :deliveryGroupIds "
+            + "AND c.status NOT IN (" + COMPLETED + ", showroomz.domain.order.type.ClaimStatus.PAYMENT_PENDING) "
+            + "GROUP BY c.deliveryGroup.id")
+    List<Object[]> countOpenByDeliveryGroupIds(@Param("deliveryGroupIds") Collection<Long> deliveryGroupIds);
 
     /** 진행 중 — 종결 전 전부(거절 보류·거절 반송 포함). */
     @Query("SELECT COUNT(c) > 0 FROM OrderClaim c WHERE c.deliveryGroup.id = :deliveryGroupId "

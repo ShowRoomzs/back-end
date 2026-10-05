@@ -33,7 +33,7 @@ public final class OrderAddressMasker {
     }
 
     /** 가운데 블록 → {@code ****}(010-****-5678). 하이픈 없는 값은 뒤 4자리만 남긴다. */
-    static String maskPhone(String phone) {
+    public static String maskPhone(String phone) {
         if (phone == null) {
             return null;
         }

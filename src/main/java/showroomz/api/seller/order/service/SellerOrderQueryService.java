@@ -11,10 +11,12 @@ import showroomz.api.seller.order.dto.SellerOrderDetailResponse;
 import showroomz.api.seller.order.dto.SellerOrderListItem;
 import showroomz.api.seller.order.dto.SellerOrderSummaryResponse;
 import showroomz.api.seller.order.service.SellerOrderAccessGuard.SellerScope;
+import showroomz.api.seller.order.service.SellerOrderAssembler.ClaimOverlay;
 import showroomz.domain.order.entity.OrderCancelRequest;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.entity.OrderProduct;
 import showroomz.domain.order.repository.OrderCancelRequestRepository;
+import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.domain.order.repository.OrderFulfillmentHistoryRepository;
 import showroomz.domain.order.repository.OrderProductRepository;
@@ -37,6 +39,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +60,7 @@ public class SellerOrderQueryService {
     private final OrderProductRepository orderProductRepository;
     private final OrderCancelRequestRepository cancelRequestRepository;
     private final OrderFulfillmentHistoryRepository historyRepository;
+    private final OrderClaimRepository claimRepository;
     private final PaymentRepository paymentRepository;
     private final SellerOrderAssembler assembler;
     private final OrderProperties orderProperties;
@@ -133,7 +137,8 @@ public class SellerOrderQueryService {
                         .map(payment -> payment.getMethod().getLabel()).orElse(null);
         return assembler.toDetail(group, groupBuyTitle, paymentMethod, items, pending,
                 historyRepository.findByDeliveryGroupId(deliveryGroupId), LocalDateTime.now(),
-                orderProperties.getPurchaseConfirmDays());
+                orderProperties.getPurchaseConfirmDays(),
+                claimOverlays(List.of(group)).getOrDefault(deliveryGroupId, ClaimOverlay.NONE));
     }
 
     // ------------------------------------------------------------------ 내부 · 공용
@@ -173,13 +178,35 @@ public class SellerOrderQueryService {
         Map<Long, OrderCancelRequest> pendingByGroup = cancelRequestRepository.findPendingByDeliveryGroupIds(ids)
                 .stream()
                 .collect(Collectors.toMap(r -> r.getDeliveryGroup().getId(), Function.identity(), (a, b) -> a));
+        Map<Long, ClaimOverlay> claimsByGroup = claimOverlays(rows.stream().map(SellerOrderRow::group).toList());
         LocalDateTime now = LocalDateTime.now();
         int confirmDays = orderProperties.getPurchaseConfirmDays();
         return rows.stream()
                 .map(row -> assembler.toListItem(row.group(), row.orderNumber(), row.paidAt(), row.recipientName(),
                         row.groupBuyTitle(), itemsByGroup.getOrDefault(row.group().getId(), List.of()),
-                        pendingByGroup.get(row.group().getId()), now, confirmDays))
+                        pendingByGroup.get(row.group().getId()), now, confirmDays,
+                        claimsByGroup.getOrDefault(row.group().getId(), ClaimOverlay.NONE)))
                 .toList();
+    }
+
+    /**
+     * 반품·교환 오버레이 — 클레임은 배송완료 뒤에만 생기고 거절 건은 구매확정 뒤에도 이어지므로, 배송완료·구매확정
+     * 하위주문이 있는 페이지에서만 한 번 읽는다.
+     */
+    private Map<Long, ClaimOverlay> claimOverlays(List<OrderDeliveryGroup> groups) {
+        List<Long> ids = groups.stream()
+                .filter(g -> g.getFulfillmentStatus() == FulfillmentStatus.DELIVERED
+                        || g.getFulfillmentStatus() == FulfillmentStatus.CONFIRMED)
+                .map(OrderDeliveryGroup::getId).toList();
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, ClaimOverlay> overlays = new HashMap<>();
+        for (Object[] row : claimRepository.countOpenByDeliveryGroupIds(ids)) {
+            overlays.put((Long) row[0], new ClaimOverlay(((Number) row[1]).intValue(),
+                    row[2] != null && ((Number) row[2]).longValue() > 0));
+        }
+        return overlays;
     }
 
     String resolveGroupBuyTitle(OrderDeliveryGroup group) {

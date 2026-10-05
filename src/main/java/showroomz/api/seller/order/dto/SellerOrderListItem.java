@@ -58,7 +58,9 @@ public record SellerOrderListItem(
             @Schema(description = "배송 이상 — PICKUP_UNCONFIRMED 집화 확인 필요 · STALLED 추적 정지. 없으면 null",
                     example = "PICKUP_UNCONFIRMED", nullable = true) TrackingAlert trackingAlert,
             @Schema(description = "배송 이상 배지 문구", example = "집화 확인 필요", nullable = true) String trackingAlertLabel,
-            @Schema(description = "발송기한 경과 — 브랜드 귀책(위험). 신규·상품준비중에서만 판정", example = "false") boolean shipOverdue
+            @Schema(description = "발송기한 경과 — 브랜드 귀책(위험). 신규·상품준비중에서만 판정", example = "false") boolean shipOverdue,
+            @Schema(description = "진행 중인 반품·교환 건수(거절 보류 포함) — 배송완료 탭에서 구매확정 D-N 이 왜 비었는지 설명한다. "
+                    + "D-N 이 비는 것은 거절되지 않은 진행 중 건이 있을 때뿐이다", example = "0") int openClaimCount
     ) {
     }
 

@@ -25,9 +25,27 @@ import java.util.stream.Collectors;
 @Component
 public class SellerOrderAssembler {
 
+    /**
+     * 하위주문의 반품·교환 오버레이(35 설계서 5-2).
+     *
+     * @param open           진행 중 건수 — 거절 보류 포함
+     * @param blocksConfirm  보류 클레임(진행 중이고 거절되지 않은 것)이 있는가 — 있으면 구매확정 예정일을 약속하지 않는다
+     */
+    public record ClaimOverlay(int open, boolean blocksConfirm) {
+        public static final ClaimOverlay NONE = new ClaimOverlay(0, false);
+    }
+
     public SellerOrderListItem toListItem(OrderDeliveryGroup group, String orderNumber, LocalDateTime paidAt,
                                           String recipientName, String groupBuyTitle, List<OrderProduct> items,
                                           OrderCancelRequest pendingRequest, LocalDateTime now, int confirmDays) {
+        return toListItem(group, orderNumber, paidAt, recipientName, groupBuyTitle, items, pendingRequest, now,
+                confirmDays, ClaimOverlay.NONE);
+    }
+
+    public SellerOrderListItem toListItem(OrderDeliveryGroup group, String orderNumber, LocalDateTime paidAt,
+                                          String recipientName, String groupBuyTitle, List<OrderProduct> items,
+                                          OrderCancelRequest pendingRequest, LocalDateTime now, int confirmDays,
+                                          ClaimOverlay claims) {
         FulfillmentStatus status = group.getFulfillmentStatus();
         Set<Long> requestedProductIds = requestedProductIds(pendingRequest);
         String firstName = items.isEmpty() ? null : items.get(0).getProductName();
@@ -45,7 +63,7 @@ public class SellerOrderAssembler {
                 status,
                 status.getLabel(),
                 status.getTone(),
-                overlays(group, pendingRequest != null, now),
+                overlays(group, pendingRequest != null, now, claims),
                 paidAt,
                 group.getShipDueAt(),
                 group.getCarrier(),
@@ -54,7 +72,7 @@ public class SellerOrderAssembler {
                 group.getLastTrackingAt(),
                 group.getDeliveredAt(),
                 group.getDeliveredSource() == null ? null : group.getDeliveredSource().getLabel(),
-                confirmRemainingDays(group, now, confirmDays),
+                confirmRemainingDays(group, now, confirmDays, claims),
                 group.getConfirmedAt(),
                 group.getProductTotal() + group.getDeliveryFee(),
                 null, // 정산 — 정산 모듈 전이라 null. 0이 아니다(설계서 0-6)
@@ -68,6 +86,14 @@ public class SellerOrderAssembler {
                                               List<OrderProduct> items, OrderCancelRequest pendingRequest,
                                               List<OrderFulfillmentHistory> history, LocalDateTime now,
                                               int confirmDays) {
+        return toDetail(group, groupBuyTitle, paymentMethod, items, pendingRequest, history, now, confirmDays,
+                ClaimOverlay.NONE);
+    }
+
+    public SellerOrderDetailResponse toDetail(OrderDeliveryGroup group, String groupBuyTitle, String paymentMethod,
+                                              List<OrderProduct> items, OrderCancelRequest pendingRequest,
+                                              List<OrderFulfillmentHistory> history, LocalDateTime now,
+                                              int confirmDays, ClaimOverlay claims) {
         FulfillmentStatus status = group.getFulfillmentStatus();
         Set<Long> requestedProductIds = requestedProductIds(pendingRequest);
         var order = group.getOrder();
@@ -87,7 +113,7 @@ public class SellerOrderAssembler {
                 status,
                 status.getLabel(),
                 status.getTone(),
-                overlays(group, pendingCancel, now),
+                overlays(group, pendingCancel, now, claims),
                 new SellerOrderDetailResponse.Recipient(order.getRecipientName(), order.getRecipientPhone(),
                         order.getZipCode(), order.getAddress(), order.getDetailAddress(), order.getDeliveryMemo()),
                 items.stream().map(item -> toItem(item, status, requestedProductIds)).toList(),
@@ -97,7 +123,7 @@ public class SellerOrderAssembler {
                         group.getProductTotal() + group.getDeliveryFee(),
                         pendingRequest == null ? null : pendingRequest.totalRefundAmount(),
                         cancelledAmount),
-                timeline(group, now, confirmDays),
+                timeline(group, now, confirmDays, claims),
                 cancelRequestBlock(group, pendingRequest, items),
                 actions(group, pendingCancel),
                 history.stream().map(h -> new SellerOrderDetailResponse.HistoryItem(
@@ -107,7 +133,8 @@ public class SellerOrderAssembler {
 
     // ------------------------------------------------------------------ 내부
 
-    private SellerOrderListItem.Overlays overlays(OrderDeliveryGroup group, boolean pendingCancel, LocalDateTime now) {
+    private SellerOrderListItem.Overlays overlays(OrderDeliveryGroup group, boolean pendingCancel, LocalDateTime now,
+                                                  ClaimOverlay claims) {
         // 발송기한 경과와 배송 이상은 별 축 — 한 행에 둘 다 뜰 수 있다(§34-6). 발송된 건은 경과를 따지지 않는다(판정 = 송장 등록 시각).
         boolean shipOverdue = FulfillmentStatus.WORKABLE.contains(group.getFulfillmentStatus())
                 && group.getShipDueAt() != null && group.getShipDueAt().isBefore(now);
@@ -115,7 +142,8 @@ public class SellerOrderAssembler {
                 pendingCancel,
                 group.getTrackingAlert(),
                 group.getTrackingAlert() == null ? null : group.getTrackingAlert().getLabel(),
-                shipOverdue);
+                shipOverdue,
+                claims.open());
     }
 
     private SellerOrderListItem.Item toItem(OrderProduct item, FulfillmentStatus groupStatus,
@@ -183,7 +211,8 @@ public class SellerOrderAssembler {
                 item.getRefundAmount());
     }
 
-    private SellerOrderDetailResponse.Timeline timeline(OrderDeliveryGroup group, LocalDateTime now, int confirmDays) {
+    private SellerOrderDetailResponse.Timeline timeline(OrderDeliveryGroup group, LocalDateTime now, int confirmDays,
+                                                        ClaimOverlay claims) {
         return new SellerOrderDetailResponse.Timeline(
                 group.getShipDueAt(),
                 group.getPrepareStartedAt(),
@@ -195,7 +224,9 @@ public class SellerOrderAssembler {
                 group.getReturnDetectedAt(),
                 group.getDeliveredAt(),
                 group.getDeliveredSource() == null ? null : group.getDeliveredSource().getLabel(),
-                group.confirmBaseAt() == null ? null : group.confirmBaseAt().plusDays(confirmDays),
+                // 보류 클레임이 구매확정을 세운다 — 보류 중인 날짜를 약속하지 않는다(35 설계서 5-1).
+                group.confirmBaseAt() == null || claims.blocksConfirm() ? null
+                        : group.confirmBaseAt().plusDays(confirmDays),
                 group.getConfirmedAt(),
                 group.getCancelledAt(),
                 group.getCancelType() == null ? null : group.getCancelType().getLabel(),
@@ -219,8 +250,10 @@ public class SellerOrderAssembler {
                 workable && pendingCancel);
     }
 
-    private Integer confirmRemainingDays(OrderDeliveryGroup group, LocalDateTime now, int confirmDays) {
-        if (group.getFulfillmentStatus() != FulfillmentStatus.DELIVERED || group.getDeliveredAt() == null) {
+    private Integer confirmRemainingDays(OrderDeliveryGroup group, LocalDateTime now, int confirmDays,
+                                         ClaimOverlay claims) {
+        if (group.getFulfillmentStatus() != FulfillmentStatus.DELIVERED || group.getDeliveredAt() == null
+                || claims.blocksConfirm()) {
             return null;
         }
         long hours = Duration.between(now, group.confirmBaseAt().plusDays(confirmDays)).toHours();

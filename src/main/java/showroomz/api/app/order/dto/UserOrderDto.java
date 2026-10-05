@@ -156,7 +156,7 @@ public class UserOrderDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @Schema(description = "반품·교환 클레임 — 반품·교환 모듈 배포 전에는 항상 null")
+    @Schema(description = "반품·교환 클레임 — 표시 상태가 반품·교환 진행 중이거나 반품일 때. [반품·교환 상세]의 대상")
     public static class Claim {
         private Long claimId;
         @Schema(description = "RETURN | EXCHANGE", example = "RETURN")
@@ -172,13 +172,35 @@ public class UserOrderDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @Schema(description = "반품·교환 반려 줄 — 반품·교환 모듈 배포 전에는 항상 null")
+    @Schema(description = "반품·교환 반려 줄 — 검수 거절이 종결돼 배송완료로 돌아온 항목. 구매확정에서 사라진다")
     public static class ClaimRejection {
         private Long claimId;
         @Schema(description = "RETURN | EXCHANGE", example = "RETURN")
         private String type;
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = OrderDto.TIME_PATTERN)
         private LocalDateTime rejectedAt;
+    }
+
+    public enum TodoType {
+        /** 회수 송장 미등록. */
+        REGISTER_COLLECTION_INVOICE,
+        /** 검수 반려 뒤 재발송 배송비 결제 필요. */
+        PAY_RESHIP_FEE
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "할 일 줄 — 고객이 직접 해야 하는 일이 남은 클레임. 상태 아래 로즈 한 줄이고 누르면 반품·교환 상세")
+    public static class Todo {
+        private TodoType type;
+        @Schema(description = "완성 문구 — 기한이 지났으면 날짜가 없다", example = "회수 송장 등록 필요 · 10.11까지")
+        private String label;
+        @Schema(description = "기한 — 지났거나 없으면 null", example = "2026-10-11", nullable = true)
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        private LocalDate dueDate;
+        private Long claimId;
     }
 
     @Getter
@@ -229,7 +251,7 @@ public class UserOrderDto {
         private UserOrderTone statusTone;
         @Schema(description = "상태 보조 문구 — 완성 문자열", example = "09.14 발송", nullable = true)
         private String statusSub;
-        @Schema(description = "행 탈색 — 취소·반품으로 끝난 항목")
+        @Schema(description = "행 탈색 — 취소·반품으로 끝난 항목과 반품·교환 진행 중(검수 반려 단계는 탈색하지 않는다)")
         private Boolean dimmed;
 
         @Schema(description = "항목 금액 — 취소면 환불 대상액", example = "24900")
@@ -245,6 +267,8 @@ public class UserOrderDto {
         private Claim claim;
         @Schema(nullable = true)
         private ClaimRejection claimRejection;
+        @Schema(nullable = true)
+        private Todo todo;
 
         private Dates dates;
         private List<Action> actions;

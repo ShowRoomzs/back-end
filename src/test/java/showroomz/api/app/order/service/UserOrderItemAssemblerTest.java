@@ -9,12 +9,17 @@ import showroomz.api.app.order.service.UserOrderItemAssembler.View;
 import showroomz.domain.order.entity.Order;
 import showroomz.domain.order.entity.OrderCancelRequest;
 import showroomz.domain.order.entity.OrderCancelRequestItem;
+import showroomz.domain.order.entity.OrderClaim;
+import showroomz.domain.order.entity.OrderClaimCollection;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.entity.OrderProduct;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.domain.order.service.DeliveryArrivalEstimator;
 import showroomz.domain.order.type.CancelRequestReason;
 import showroomz.domain.order.type.CancelRequestStatus;
+import showroomz.domain.order.type.ClaimResult;
+import showroomz.domain.order.type.ClaimStatus;
+import showroomz.domain.order.type.ClaimType;
 import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.domain.order.type.OrderCancelType;
 import showroomz.domain.order.type.OrderProductStatus;
@@ -290,6 +295,24 @@ class UserOrderItemAssemblerTest {
         assertThat(types(allActions.toRow(requested, pending, View.LIST))).containsExactly(UserOrderAction.CANCEL_DETAIL);
     }
 
+    @Test
+    @DisplayName("거절된 수량은 다시 신청할 수 없다 — 전량이 거절 종결된 배송완료 항목에는 반품·교환 버튼이 없고 반려 줄이 붙는다(#28)")
+    void rejectedQuantityCannotBeClaimedAgain() {
+        OrderProduct item = item(1L, group(FulfillmentStatus.DELIVERED), OrderProductStatus.PAID);
+
+        Context partlyRejected = EMPTY.withClaims(UserOrderClaimContext.of(List.of(rejectedClaim(51L, item, 1)), List.of()));
+        assertThat(types(allActions.toRow(item, partlyRejected, View.DETAIL))).containsExactly(
+                UserOrderAction.TRACK_DELIVERY, UserOrderAction.RETURN_REQUEST, UserOrderAction.EXCHANGE_REQUEST);
+
+        Context fullyRejected = EMPTY.withClaims(UserOrderClaimContext.of(List.of(rejectedClaim(52L, item, 2)), List.of()));
+        UserOrderDto.ItemRow row = allActions.toRow(item, fullyRejected, View.DETAIL);
+        assertThat(types(row)).containsExactly(UserOrderAction.TRACK_DELIVERY);
+        assertThat(types(allActions.toRow(item, fullyRejected, View.LIST))).containsExactly(UserOrderAction.TRACK_DELIVERY);
+        assertThat(row.getStatus()).isEqualTo(UserOrderItemStatus.DELIVERED);
+        assertThat(row.getClaimRejection().getClaimId()).isEqualTo(52L);
+        assertThat(row.getClaim()).isNull();
+    }
+
     // ------------------------------------------------------------------ 안내(3-3)
 
     @Test
@@ -384,6 +407,18 @@ class UserOrderItemAssemblerTest {
                 .productName("크림").optionName("기본").quantity(2).price(27_200).status(status).build();
         ReflectionTestUtils.setField(item, "id", id);
         return item;
+    }
+
+    /** 검수 거절이 종결된 반품 클레임 — 반송 완료. */
+    private static OrderClaim rejectedClaim(Long id, OrderProduct item, int quantity) {
+        OrderClaim claim = OrderClaim.builder()
+                .collection(OrderClaimCollection.builder().type(ClaimType.RETURN).invoiceDueAt(NOW).createdAt(NOW).build())
+                .deliveryGroup(item.getDeliveryGroup()).orderProduct(item).type(ClaimType.RETURN).quantity(quantity)
+                .status(ClaimStatus.COMPLETED).requestedAt(NOW).collectDueAt(NOW).build();
+        ReflectionTestUtils.setField(claim, "id", id);
+        ReflectionTestUtils.setField(claim, "result", ClaimResult.REJECTED);
+        ReflectionTestUtils.setField(claim, "rejectedAt", NOW);
+        return claim;
     }
 
     private static void cancelMeta(OrderProduct item, OrderCancelType cancelType) {

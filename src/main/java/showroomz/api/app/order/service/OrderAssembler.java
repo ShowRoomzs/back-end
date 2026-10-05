@@ -50,6 +50,7 @@ public class OrderAssembler {
     private final OrderCancelRequestRepository cancelRequestRepository;
     private final OrderRefundTaskRepository refundTaskRepository;
     private final UserOrderItemAssembler itemAssembler;
+    private final UserOrderClaimLoader claimLoader;
     private final PortOnePaymentGateway gateway;
     private final OrderProperties orderProperties;
 
@@ -162,7 +163,8 @@ public class OrderAssembler {
         UserOrderItemAssembler.Context context = UserOrderItemAssembler.Context.of(
                 paid ? cancelRequestRepository.findOpenOrRejectedByOrderIds(orderIds) : List.of(),
                 paid ? new HashSet<>(refundTaskRepository.findPendingGroupIdsByOrderIds(orderIds)) : Set.of(),
-                cancellable ? Set.of(order.getId()) : Set.of());
+                cancellable ? Set.of(order.getId()) : Set.of())
+                .withClaims(paid ? claimLoader.load(products) : UserOrderClaimContext.EMPTY);
         return products.stream()
                 .map(product -> itemAssembler.toRow(product, context, UserOrderItemAssembler.View.DETAIL))
                 .toList();

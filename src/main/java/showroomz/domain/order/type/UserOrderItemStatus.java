@@ -17,8 +17,9 @@ public enum UserOrderItemStatus {
 
     CANCELLED("취소", UserOrderTone.MUTED, true),
     RETURNED("반품", UserOrderTone.MUTED, true),
-    RETURN_IN_PROGRESS("반품", UserOrderTone.ACTIVE, false),
-    EXCHANGE_IN_PROGRESS("교환", UserOrderTone.ACTIVE, false),
+    /** 탈색이 기본이다 — 검수 반려 단계(반려된 상품이 돌아오는 중)만 조립기가 탈색을 푼다(C10 설계서 1-1). */
+    RETURN_IN_PROGRESS("반품", UserOrderTone.MUTED, true),
+    EXCHANGE_IN_PROGRESS("교환", UserOrderTone.MUTED, true),
     CANCEL_REQUESTED("취소 요청중", UserOrderTone.MUTED, false),
     PAID("결제완료", UserOrderTone.ACTIVE, false),
     PREPARING("상품준비중", UserOrderTone.MUTED, false),
@@ -32,6 +33,6 @@ public enum UserOrderItemStatus {
 
     private final String label;
     private final UserOrderTone tone;
-    /** 행 탈색 — 끝난 항목(취소·반품). */
+    /** 행 탈색 — 끝난 항목(취소·반품)과 반품·교환 진행 중. */
     private final boolean dimmed;
 }

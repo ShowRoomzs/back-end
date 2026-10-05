@@ -56,6 +56,7 @@ public class UserOrderQueryService {
     private final PaymentRepository paymentRepository;
     private final OrderAssembler orderAssembler;
     private final UserOrderItemAssembler itemAssembler;
+    private final UserOrderClaimLoader claimLoader;
     private final OrderProperties orderProperties;
 
     public PageResponse<UserOrderDto.OrderCard> getOrders(Long userId, int page, int size) {
@@ -78,7 +79,8 @@ public class UserOrderQueryService {
 
         UserOrderItemAssembler.Context context = UserOrderItemAssembler.Context.of(
                 loadCancelRequests(products), loadRefundPendingGroupIds(products),
-                cancellableOrderIds(orders.getContent(), productsByOrder));
+                cancellableOrderIds(orders.getContent(), productsByOrder))
+                .withClaims(claimLoader.load(products));
 
         List<UserOrderDto.OrderCard> cards = orders.getContent().stream()
                 .map(order -> UserOrderDto.OrderCard.builder()
