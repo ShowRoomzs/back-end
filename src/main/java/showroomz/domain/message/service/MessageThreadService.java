@@ -88,11 +88,13 @@ public class MessageThreadService {
                     Message saved = messageRepository.save(
                             Message.create(thread, senderType, senderId, clientMessageId, content));
 
+                    // 첨부 연결보다 먼저 기록한다 — 연결 UPDATE가 영속성 컨텍스트를 비우므로 뒤에 고치면
+                    // 분리된 스레드를 고치게 되어 미리보기 · 최근 시각이 저장되지 않는다(연결 직전에 flush된다).
+                    thread.recordLastMessage(preview(content, attachments), saved.getCreatedAt(), senderType);
+
                     if (hasAttachments) {
                         linkAttachments(saved, thread, senderType, senderId, attachmentIds);
                     }
-
-                    thread.recordLastMessage(preview(content, attachments), saved.getCreatedAt(), senderType);
                     return new SendResult(saved, true);
                 });
     }

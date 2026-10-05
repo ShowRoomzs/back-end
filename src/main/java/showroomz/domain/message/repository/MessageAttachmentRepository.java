@@ -47,8 +47,12 @@ public interface MessageAttachmentRepository extends JpaRepository<MessageAttach
     /**
      * §4-5 조건부 UPDATE — 낙관적 잠금 역할. 조건에 안 맞으면(이미 다른 메시지에 붙었거나, 소유자·스레드·상태
      * 불일치) 영향 행 수가 0이 되므로, 서비스 레이어에서 반환값을 반드시 확인해 롤백 여부를 판단해야 한다.
+     *
+     * <p>실행 뒤 영속성 컨텍스트를 비운다 — 검증 때 읽어 둔 첨부(message = null)가 남아 있으면 직후의 첨부 조회가
+     * 낡은 값을 돌려준다. 비우기 전에 <b>먼저 flush한다</b> — 같은 트랜잭션에서 고친 스레드(미리보기 · 최근 시각)가
+     * 반영되지 않은 채 버려지지 않게 한다.
      */
-    @Modifying(clearAutomatically = true)
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE MessageAttachment a SET a.message = :message, a.sortOrder = :sortOrder " +
            "WHERE a.id = :id AND a.message IS NULL AND a.status = :uploadedStatus " +
            "AND a.thread = :thread AND a.uploaderType = :uploaderType AND a.uploaderId = :uploaderId")
