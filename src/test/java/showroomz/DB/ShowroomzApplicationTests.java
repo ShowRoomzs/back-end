@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @Tag("integration") // 핵심: 이 테스트를 'integration' 그룹으로 지정
+@Tag("db-migration") // 배포 파이프라인은 이 태그만 실행한다(./gradlew dbMigrationTest)
 @SpringBootTest
 class ShowroomzApplicationTests {
 

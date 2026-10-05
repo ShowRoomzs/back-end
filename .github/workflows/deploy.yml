@@ -101,11 +101,11 @@ jobs:
         echo "${{ secrets.APPLICATION_ENV }}" > .env
       shell: bash
 
-    # 3. 통합 테스트 실행
-    - name: Run Integration Tests (DB Schema Validation)
+    # 3. DB 마이그레이션 검증 (Flyway + Hibernate validate) — 그 외 테스트는 배포에서 실행하지 않는다
+    - name: Run DB Migration Test
       run: |
         chmod +x gradlew
-        ./gradlew integrationTest
+        ./gradlew dbMigrationTest
       env:
         SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/showroomz?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
         SPRING_DATASOURCE_USERNAME: root

@@ -39,7 +39,7 @@ import showroomz.global.dto.PagingRequest;
 
 import java.time.LocalDate;
 
-@Tag(name = "Seller - Order", description = "파트너센터 주문 관리 API — 조회용 대시보드가 아니라 매일 여는 작업 큐다(§34-0).")
+@Tag(name = "Seller - Order", description = "파트너센터 주문 관리 API (§34)")
 public interface SellerOrderControllerDocs {
 
     String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -127,7 +127,23 @@ public interface SellerOrderControllerDocs {
                     - 「배송완료 처리」 칸은 없다 — 자동 전환이라 상시 대기 항목이 아니다.
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = SellerOrderSummaryResponse.class),
+                            examples = @ExampleObject(name = "요약", value = """
+                                    {
+                                      "actionBar": {
+                                        "prepareStart": 12,
+                                        "invoiceRegister": 7,
+                                        "deliveryIssue": 3,
+                                        "incomingCheck": 4,
+                                        "reshipExchange": 2
+                                      },
+                                      "tabCounts": {
+                                        "ALL": 128, "NEW": 12, "PREPARING": 7, "CANCEL_REQUESTED": 2, "SHIPPING": 21,
+                                        "RETURNING": 1, "DELIVERED": 15, "CONFIRMED": 64, "CANCELLED": 6
+                                      }
+                                    }
+                                    """))),
             @ApiResponse(responseCode = "404", description = "SELLER_NOT_FOUND · MARKET_NOT_FOUND",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
@@ -184,9 +200,23 @@ public interface SellerOrderControllerDocs {
                     **되돌리기는 없다**(§34-4) — 되돌림을 열면 소비자 취소권이 열렸다 닫혔다 한다. 문제는 직권 취소로 푼다.
 
                     다건 부분 성공 — 취소 요청이 걸렸거나 상태가 변한 행은 `skipped`에 사유와 함께 빠지고 나머지는 진행된다.
+                    중복 id 는 한 번만 처리한다. 성공한 건마다 처리 이력에 「준비 시작」이 남는다.
+
+                    **`skipped[].code`**
                     - `CANCEL_REQUEST_PENDING_EXISTS` — 검토 중 취소 요청이 있다(먼저 승인·거부)
-                    - `ORDER_STATE_CHANGED` — 이미 신규가 아니다(그 사이 준비 시작·취소됨)
+                    - `ORDER_STATE_CHANGED` — 이미 신규가 아니다(그 사이 준비 시작·취소됨). **없는 id · 타 브랜드 주문도 같은 사유다**
+                      (존재 비노출)
                     """)
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            required = true,
+            content = @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = PrepareStartRequest.class),
+                    examples = @ExampleObject(name = "3건 준비 시작", value = """
+                            {
+                              "deliveryGroupIds": [1024, 1025, 1031]
+                            }
+                            """)))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "처리 결과 — `succeeded` + `skipped[]`",
                     content = @Content(schema = @Schema(implementation = BatchActionResponse.class),
@@ -351,13 +381,32 @@ public interface SellerOrderControllerDocs {
                     `CJ` CJ대한통운 · `LOTTE` 롯데택배 · `HANJIN` 한진택배 · `EPOST` 우체국택배 · `KYUNGDONG` 경동택배 ·
                     `DAESIN` 대신택배 · `LOGEN` 로젠택배 · `HAPDONG` 합동택배 · `COUPANG` 쿠팡택배 · `WOORI` 우리택배 · `CU` CU편의점택배
 
+                    **행별 검사 순서:** 요청 안 중복 → 전역 중복 → 형식 → 상태
+
+                    성공한 행은 처리 이력 `detail`에 「CJ대한통운 640012345678」이 남는다. 택배사 연동이 꺼져 형식 판정을 못 했으면
+                    「· 형식 검증 생략(연동 전)」이 붙고 등록은 진행된다.
+
                     **`skipped[].code`**
-                    - `INVOICE_DUPLICATE` — 같은 요청 안 중복, 또는 다른 진행 중 주문에 이미 등록(`message`에 그 주문번호 —
-                      **내 브랜드 주문일 때만**. 다른 브랜드 주문이면 「다른 주문에 이미 등록된 번호입니다.」)
+                    - `INVOICE_DUPLICATE` — 같은 요청 안 중복(「같은 요청 안에서 중복된 송장번호입니다.」), 또는 다른 진행 중 주문에
+                      이미 등록(`message`에 그 주문번호 — **내 브랜드 주문일 때만**. 다른 브랜드 주문이면 「다른 주문에 이미 등록된 번호입니다.」)
                     - `INVOICE_FORMAT_INVALID` — 택배사 규칙에 맞지 않는 번호
                     - `CANCEL_REQUEST_PENDING_EXISTS` — 검토 중 취소 요청이 있다
-                    - `ORDER_STATE_CHANGED` — 상품준비중이 아니다(신규 · 이미 배송중 · 취소됨)
+                    - `ORDER_STATE_CHANGED` — 상품준비중이 아니다(신규 · 이미 배송중 · 취소됨) · 없는 id · 타 브랜드 주문
                     """)
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            required = true,
+            content = @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = ShipmentRegisterRequest.class),
+                    examples = @ExampleObject(name = "3행 확정(빈 값 1행)", value = """
+                            {
+                              "rows": [
+                                { "deliveryGroupId": 1024, "carrier": "CJ", "trackingNumber": "6400-1234-5678" },
+                                { "deliveryGroupId": 1025, "carrier": "CJ", "trackingNumber": "640099998888" },
+                                { "deliveryGroupId": 1031, "carrier": "HANJIN", "trackingNumber": "" }
+                              ]
+                            }
+                            """)))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "부분 성공 결과 — 결과 배너(몇 건이 어디로)는 이 응답으로 그린다",
                     content = @Content(schema = @Schema(implementation = BatchActionResponse.class),
@@ -492,8 +541,23 @@ public interface SellerOrderControllerDocs {
 
                     **권한:** SELLER · **버튼 노출:** `actions.canUpdateInvoice`
 
-                    검사 순서: 형식(400) → 전역 중복(409) → 상태(409). 이력 `detail` 예: 「CJ대한통운 640012345678 → 한진택배 512345678901」
+                    송장번호는 숫자만 남기고 판정한다. 등록과 달리 중복 `message`는 겹치는 주문을 지목하지 않는다
+                    (「이미 다른 주문에 등록된 송장번호입니다.」).
+
+                    **검사 순서:** 주문 소유(404) → 형식(400) → 전역 중복(409) → 상태(409).
+                    이력 `detail` 예: 「CJ대한통운 640012345678 → 한진택배 512345678901」
                     """)
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            required = true,
+            content = @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = ShipmentUpdateRequest.class),
+                    examples = @ExampleObject(name = "택배사·번호 정정", value = """
+                            {
+                              "carrier": "HANJIN",
+                              "trackingNumber": "512345678901"
+                            }
+                            """)))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "수정 후 상세"),
             @ApiResponse(responseCode = "400", description = "INVOICE_FORMAT_INVALID — 송장번호가 비었거나 택배사 규칙에 맞지 않음 · "
@@ -525,15 +589,32 @@ public interface SellerOrderControllerDocs {
 
                     **권한:** SELLER · **버튼 노출:** `actions.canCancelDirectly`
 
-                    `consumerMessage`는 사유와 함께 **소비자에게 그대로 전달**된다(약관 제18조②).
+                    **입력**
+                    - `reasonCode` — `SOLD_OUT` 품절 · `DEFECT` 상품 하자 · `UNDELIVERABLE_AREA` 배송 불가 지역 · `ETC` 기타
+                    - `consumerMessage` — 필수 · 300자. 사유와 함께 **소비자에게 그대로 전달**된다(약관 제18조②)
+                    - 한 사유 · 한 설명이 선택한 하위주문 전부에 적용된다
 
                     허용 단계는 신규·상품준비중이다(§34-13 #1 확정 전 시안 기준 집행 — 취소 당시 상태가 기록된다).
+
+                    성공한 건마다 환불 큐에 「항목 금액 합 + 배송비」가 오르고, 처리 이력 `detail`에 「품절 · {consumerMessage}」가 남는다.
 
                     **`skipped[].code`**
                     - `CANCEL_REQUEST_PENDING_EXISTS` — 검토 중 취소 요청이 걸린 건(선처리 요구)
                     - `ORDER_STATE_CHANGED` — 신규·상품준비중이 아니다(이미 배송중 · 취소됨)
-                    - `ORDER_GROUP_NOT_FOUND` — 없는 id · 타 브랜드 주문
+                    - `ORDER_GROUP_NOT_FOUND` — 없는 id · 타 브랜드 주문 · 결제 전 주문
                     """)
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            required = true,
+            content = @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = SellerDirectCancelRequest.class),
+                    examples = @ExampleObject(name = "품절 취소", value = """
+                            {
+                              "deliveryGroupIds": [1024, 1040],
+                              "reasonCode": "SOLD_OUT",
+                              "consumerMessage": "준비 중 재고 오차로 2개 세트 옵션이 품절되었습니다. 결제하신 금액은 전액 환불됩니다."
+                            }
+                            """)))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "부분 성공 결과",
                     content = @Content(schema = @Schema(implementation = BatchActionResponse.class),
@@ -597,7 +678,18 @@ public interface SellerOrderControllerDocs {
                     **권한:** SELLER · **버튼 노출:** `actions.canDecideCancelRequest`
 
                     처리 후 하위주문은 원래 탭(신규/상품준비중)으로 복귀한다. 이력 `detail`에 거부 사유가 그대로 남는다.
+                    일괄 거부는 없다.
                     """)
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            required = true,
+            content = @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = CancelRequestRejectRequest.class),
+                    examples = @ExampleObject(name = "출고 완료", value = """
+                            {
+                              "reason": "이미 출고 작업이 끝나 취소가 어렵습니다. 수령 후 반품으로 접수해 주세요."
+                            }
+                            """)))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "처리 후 상세"),
             @ApiResponse(responseCode = "400", description = "INVALID_INPUT — `reason` 공백 · 500자 초과",
