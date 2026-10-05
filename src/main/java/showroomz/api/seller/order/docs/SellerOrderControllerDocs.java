@@ -121,7 +121,9 @@ public interface SellerOrderControllerDocs {
                       `NEW` · `PREPARING`은 검토 중 취소 요청이 걸린 건을 뺀 수이고, 그 건들은 `CANCEL_REQUESTED`로 센다.
                     - `actionBar.prepareStart` = `tabCounts.NEW`, `actionBar.invoiceRegister` = `tabCounts.PREPARING`
                     - `deliveryIssue` = 집화 확인 필요 + 추적 정지 + 반송중 **합산** — 구분은 목록이 한다.
-                    - `incomingCheck` · `reshipExchange`는 반품·교환 관리(미제작) 몫이라 **`null`** 이다. 0으로 그리지 말 것.
+                    - `incomingCheck` · `reshipExchange`는 반품·교환 **클레임(항목) 건수**다 — 하위주문 수가 아니다.
+                      `incomingCheck` = 검수 단계(브랜드 도착 + 입고 확인 후 검수 대기), `reshipExchange` = 재발송 대기.
+                      각각 `GET /v1/seller/claims/summary` 의 `tabCounts.INSPECTION` · `tabCounts.RESHIP` 과 같은 수다.
                     - 「배송완료 처리」 칸은 없다 — 자동 전환이라 상시 대기 항목이 아니다.
                     """)
     @ApiResponses({

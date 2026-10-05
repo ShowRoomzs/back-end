@@ -1,6 +1,7 @@
 package showroomz.domain.order.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +16,7 @@ import showroomz.domain.order.entity.OrderClaimNotice;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.entity.OrderProduct;
 import showroomz.domain.order.entity.OrderRefundTask;
+import showroomz.domain.order.event.ClaimHistoryRecordedEvent;
 import showroomz.domain.order.repository.DeliveryTrackingEventRepository;
 import showroomz.domain.order.repository.OrderClaimAttachmentRepository;
 import showroomz.domain.order.repository.OrderClaimChargeRepository;
@@ -100,6 +102,7 @@ public class OrderClaimService {
     private final ClaimFeePolicy feePolicy;
     private final DeliveryTrackerPort tracker;
     private final OrderProperties orderProperties;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ------------------------------------------------------------------ 값 타입
 
@@ -1137,6 +1140,8 @@ public class OrderClaimService {
         historyRepository.save(OrderClaimHistory.builder()
                 .claim(claim).eventType(eventType).actorType(actorType).actorId(actorId).detail(detail)
                 .occurredAt(now).build());
+        // 알림 모듈 연계 — 수신자는 커밋 뒤에 받는다. 이 모듈은 알림을 보내지 않는다.
+        eventPublisher.publishEvent(new ClaimHistoryRecordedEvent(claim.getId(), eventType, detail, now));
     }
 
     private static String invoiceLabel(Invoice invoice) {

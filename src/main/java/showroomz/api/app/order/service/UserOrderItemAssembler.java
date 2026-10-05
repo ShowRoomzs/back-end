@@ -45,9 +45,10 @@ import java.util.Set;
 @Component
 public class UserOrderItemAssembler {
 
-    /** 지금 서버에 API 가 있는 액션만(0-5) — 후속 설계(취소 요청 · 배송 조회 · 반품/교환)가 각자 자기 액션을 켠다. */
+    /** 지금 서버에 API 가 있는 액션만(0-5) — 후속 설계(취소 요청)가 자기 액션을 켠다. */
     static final Set<UserOrderAction> ENABLED_ACTIONS = EnumSet.of(UserOrderAction.CANCEL,
-            UserOrderAction.TRACK_DELIVERY);
+            UserOrderAction.TRACK_DELIVERY, UserOrderAction.RETURN_EXCHANGE, UserOrderAction.RETURN_REQUEST,
+            UserOrderAction.EXCHANGE_REQUEST, UserOrderAction.CLAIM_DETAIL);
 
     /** 취소 반려 줄의 노출 구간(1-4) — 구매확정에서 사라진다(반품 창이 닫힌다). */
     private static final Set<UserOrderItemStatus> REJECTION_VISIBLE = EnumSet.of(UserOrderItemStatus.PAID,

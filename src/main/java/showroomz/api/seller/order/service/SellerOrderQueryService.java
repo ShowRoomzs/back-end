@@ -22,6 +22,8 @@ import showroomz.domain.order.repository.OrderFulfillmentHistoryRepository;
 import showroomz.domain.order.repository.OrderProductRepository;
 import showroomz.domain.order.repository.SellerOrderRow;
 import showroomz.domain.order.repository.SellerOrderSearchCondition;
+import showroomz.domain.order.type.ClaimStatus;
+import showroomz.domain.order.type.ClaimTab;
 import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.domain.order.type.OrderDateBasis;
 import showroomz.domain.order.type.OrderSearchType;
@@ -118,8 +120,20 @@ public class SellerOrderQueryService {
         }
 
         long deliveryIssue = deliveryGroupRepository.countTrackingAlerts(marketId) + returningCount;
+        // 반품·교환 두 칸은 클레임(항목) 건수다 — 반품·교환 관리의 검수 · 재발송 탭 카운트와 같은 수.
+        long incomingCheck = 0;
+        long reshipExchange = 0;
+        for (Object[] row : claimRepository.countByStatusAndType(marketId)) {
+            ClaimStatus status = (ClaimStatus) row[0];
+            if (ClaimTab.INSPECTION.getStatuses().contains(status)) {
+                incomingCheck += (Long) row[2];
+            } else if (ClaimTab.RESHIP.getStatuses().contains(status)) {
+                reshipExchange += (Long) row[2];
+            }
+        }
         return new SellerOrderSummaryResponse(
-                new SellerOrderSummaryResponse.ActionBar(newCount, preparingCount, deliveryIssue, null, null),
+                new SellerOrderSummaryResponse.ActionBar(newCount, preparingCount, deliveryIssue, incomingCheck,
+                        reshipExchange),
                 tabCounts);
     }
 

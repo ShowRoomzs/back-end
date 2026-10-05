@@ -51,7 +51,7 @@ class SellerOrderIntegrationTest extends SellerOrderTestSupport {
         sellerGet(SELLER_ORDERS + "/summary")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.actionBar.prepareStart").value(1))
-                .andExpect(jsonPath("$.actionBar.incomingCheck").isEmpty())
+                .andExpect(jsonPath("$.actionBar.incomingCheck").value(0))
                 .andExpect(jsonPath("$.tabCounts.NEW").value(1));
     }
 

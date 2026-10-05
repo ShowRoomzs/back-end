@@ -219,7 +219,7 @@ public interface UserProductControllerDocs {
                                                     "    \"freeShippingThreshold\": 30000,\n" +
                                                     "    \"remoteAreaSurcharge\": 5000,\n" +
                                                     "    \"returnFee\": 3000,\n" +
-                                                    "    \"exchangeFee\": 6000\n" +
+                                                    "    \"exchangeFee\": 3000\n" +
                                                     "  },\n" +
                                                     "  \"description\": \"<p>상품 상세 설명</p>\",\n" +
                                                     "  \"productNotice\": {\"용량 또는 중량\":\"30ml (리필 30ml × 2)\",\"제조국\":\"대한민국\"},\n" +

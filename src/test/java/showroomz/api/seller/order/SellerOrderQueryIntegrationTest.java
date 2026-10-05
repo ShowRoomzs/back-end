@@ -65,7 +65,7 @@ class SellerOrderQueryIntegrationTest extends SellerOrderTestSupport {
         }
 
         @Test
-        @DisplayName("요약 바 — 작업 큐는 취소 요청 건을 빼고 · 배송 이상은 배지 + 반송중 합산 · 모듈 밖 칸은 null")
+        @DisplayName("요약 바 — 작업 큐는 취소 요청 건을 빼고 · 배송 이상은 배지 + 반송중 합산 · 반품·교환 칸은 클레임이 없으면 0")
         void summaryActionBar() throws Exception {
             paidGroup();
             seedCancelRequest(paidGroup());
@@ -82,9 +82,9 @@ class SellerOrderQueryIntegrationTest extends SellerOrderTestSupport {
                     .andExpect(jsonPath("$.actionBar.prepareStart").value(1))
                     .andExpect(jsonPath("$.actionBar.invoiceRegister").value(1))
                     .andExpect(jsonPath("$.actionBar.deliveryIssue").value(2))
-                    // 반품·교환 모듈 전 — 0 은 「처리할 일이 없다」는 거짓 정보다(설계서 0-6).
-                    .andExpect(jsonPath("$.actionBar.incomingCheck").value(nullValue()))
-                    .andExpect(jsonPath("$.actionBar.reshipExchange").value(nullValue()))
+                    // 반품·교환 두 칸은 클레임 건수다 — 클레임이 없으면 0(실제 값 검증은 반품·교환 시나리오).
+                    .andExpect(jsonPath("$.actionBar.incomingCheck").value(0))
+                    .andExpect(jsonPath("$.actionBar.reshipExchange").value(0))
                     .andExpect(jsonPath("$.tabCounts.ALL").value(6))
                     .andExpect(jsonPath("$.tabCounts.NEW").value(1))
                     .andExpect(jsonPath("$.tabCounts.PREPARING").value(1))

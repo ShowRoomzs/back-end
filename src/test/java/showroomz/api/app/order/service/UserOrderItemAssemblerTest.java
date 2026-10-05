@@ -251,8 +251,8 @@ class UserOrderItemAssemblerTest {
     // ------------------------------------------------------------------ 액션(1-6)
 
     @Test
-    @DisplayName("운영 설정은 API 가 있는 CANCEL · TRACK_DELIVERY 만 내린다 — CANCEL 은 주문 단위로 취소 가능할 때만")
-    void onlyCancelAndTrackingAreEnabled() {
+    @DisplayName("운영 설정은 API 가 있는 액션만 내린다 — 취소 요청(CANCEL_REQUEST)만 아직 꺼져 있고, CANCEL 은 주문 단위로 취소 가능할 때만")
+    void onlyActionsWithApiAreEnabled() {
         OrderProduct paid = item(1L, group(FulfillmentStatus.NEW), OrderProductStatus.PAID);
         Context cancellable = Context.of(List.of(), Set.of(), Set.of(ORDER_ID));
 
@@ -265,13 +265,17 @@ class UserOrderItemAssemblerTest {
             OrderProduct item = item(2L, group(status), OrderProductStatus.PAID);
             assertThat(assembler.toRow(item, cancellable, View.DETAIL).getActions()).as(status.name()).isEmpty();
         }
-        // 배송 조회는 송장이 생긴 뒤부터다 — 반품·교환 액션은 아직 내리지 않는다.
-        for (FulfillmentStatus status : List.of(FulfillmentStatus.SHIPPING, FulfillmentStatus.DELIVERED,
-                FulfillmentStatus.CONFIRMED)) {
+        // 배송 조회는 송장이 생긴 뒤부터다 — 반품·교환은 배송완료에서만 열리고 구매확정에서 닫힌다.
+        for (FulfillmentStatus status : List.of(FulfillmentStatus.SHIPPING, FulfillmentStatus.CONFIRMED)) {
             OrderProduct item = item(2L, group(status), OrderProductStatus.PAID);
             assertThat(types(assembler.toRow(item, cancellable, View.DETAIL))).as(status.name())
                     .containsExactly(UserOrderAction.TRACK_DELIVERY);
         }
+        OrderProduct delivered = item(2L, group(FulfillmentStatus.DELIVERED), OrderProductStatus.PAID);
+        assertThat(types(assembler.toRow(delivered, cancellable, View.LIST)))
+                .containsExactly(UserOrderAction.TRACK_DELIVERY, UserOrderAction.RETURN_EXCHANGE);
+        assertThat(types(assembler.toRow(delivered, cancellable, View.DETAIL))).containsExactly(
+                UserOrderAction.TRACK_DELIVERY, UserOrderAction.RETURN_REQUEST, UserOrderAction.EXCHANGE_REQUEST);
     }
 
     @Test

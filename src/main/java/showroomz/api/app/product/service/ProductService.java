@@ -474,18 +474,23 @@ public class ProductService {
     /**
      * 배송 · 교환 · 반품 값은 브랜드(마켓)의 배송 설정에서 온다. 화면은 이 숫자로 "3,000원",
      * "30,000원 이상 구매시 무료배송", "N일 이내 출발 예정" 문구를 조립하므로 서버는 금액만 내려준다.
+     *
+     * <p>반품 · 교환 배송비는 <b>기본 배송비</b>다(앱 클레임 설계서 1-8) — 실제 반품·교환이 주문 시점의 기본 배송비로
+     * 계산되므로 주문 전에 보는 값도 같은 설정을 가리켜야 한다. 마켓의 {@code return_fee} · {@code exchange_fee}는
+     * 더 읽지 않는다.
      */
     private ProductDto.DeliveryInfo buildDeliveryInfo(Market market) {
         if (market == null) {
             return null;
         }
+        int claimFee = market.getDefaultDeliveryFee() == null ? 0 : market.getDefaultDeliveryFee();
         return ProductDto.DeliveryInfo.builder()
                 .shippingLeadDays(market.getShippingLeadDays())
                 .deliveryFee(market.getDefaultDeliveryFee())
                 .freeShippingThreshold(market.getFreeShippingThreshold())
                 .remoteAreaSurcharge(market.getRemoteAreaSurcharge())
-                .returnFee(market.getReturnFee())
-                .exchangeFee(market.getExchangeFee())
+                .returnFee(claimFee)
+                .exchangeFee(claimFee)
                 .build();
     }
 
