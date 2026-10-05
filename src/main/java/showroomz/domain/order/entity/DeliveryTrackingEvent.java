@@ -50,6 +50,6 @@ public class DeliveryTrackingEvent {
     private String description;
 
     /** 진행 단계 0~6. */
-    @Column(name = "level")
+    @Column(name = "level", columnDefinition = "TINYINT")
     private Integer level;
 }
