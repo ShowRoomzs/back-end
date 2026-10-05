@@ -21,6 +21,7 @@ import showroomz.domain.groupbuy.service.GroupBuyFacts;
 import showroomz.domain.groupbuy.service.GroupBuyFactsLoader;
 import showroomz.domain.groupbuy.service.GroupBuyFixedFeeText;
 import showroomz.domain.groupbuy.service.port.GroupBuySalesReader;
+import showroomz.domain.groupbuy.service.port.GroupBuySalesReader.GroupBuyOrderClosure;
 import showroomz.domain.groupbuy.service.port.GroupBuySalesReader.GroupBuySales;
 import showroomz.domain.groupbuy.service.port.GroupBuySettlementReader;
 import showroomz.domain.groupbuy.service.port.GroupBuyThreadGateway;
@@ -72,6 +73,8 @@ public class CreatorGroupBuyDetailAssembler {
         Contract contract = groupBuy.getContract();
         Long pairThreadId = threadGateway.findPairThreadId(groupBuy).orElse(null);
         GroupBuySales sales = salesReader.readSales(groupBuy.getId()).orElse(null);
+        // 판매 실적의 종결 경로 건수와 B7 미종결 내역이 같은 분포에서 나와야 한다 — 한 번 읽어 두 곳에 쓴다.
+        GroupBuyOrderClosure closure = salesReader.readClosure(groupBuy.getId()).orElse(null);
         Long myReward = sales == null ? null : myReward(contract, sales);
 
         return new CreatorGroupBuyDetailResponse(
@@ -85,8 +88,8 @@ public class CreatorGroupBuyDetailAssembler {
                 payout(groupBuy, contract, myReward, pairThreadId),
                 readiness(groupBuy, facts.post(), now),
                 post(groupBuy, facts.post(), now),
-                sales(groupBuy, facts, sales, myReward),
-                orderClosure(groupBuy),
+                sales(groupBuy, facts, sales, closure, myReward),
+                orderClosure(groupBuy, closure),
                 extension(groupBuy, facts.extension()),
                 facts.pendingChangeRequest().map(this::activeRequest).orElse(null),
                 adminSuspension(groupBuy, facts, now),
@@ -250,7 +253,8 @@ public class CreatorGroupBuyDetailAssembler {
      * 종료(ENDED)에서도 <b>잠정치로 내린다</b> — 파트너(§30-4 「종료 화면에 KPI 없음」)와 반대 결정이다. 스튜디오 B7은
      * 「판매 실적(잠정) · 확정 시 변동」을 그렸고, {@code basis = PROVISIONAL}로 잠정임을 못박는다(31 설계 4-5 · 10-1 #4).
      */
-    private Sales sales(GroupBuy groupBuy, GroupBuyFacts facts, GroupBuySales sales, Long myReward) {
+    private Sales sales(GroupBuy groupBuy, GroupBuyFacts facts, GroupBuySales sales, GroupBuyOrderClosure closure,
+                        Long myReward) {
         SalesBasis basis = switch (groupBuy.getStatus()) {
             case IN_PROGRESS, SUSPENSION_SCHEDULED -> SalesBasis.LIVE;
             case ENDED -> SalesBasis.PROVISIONAL;
@@ -268,7 +272,11 @@ public class CreatorGroupBuyDetailAssembler {
         List<ItemQuantity> quantities = sales.itemQuantities().stream()
                 .map(quantity -> new ItemQuantity(quantity.productId(), quantity.quantity()))
                 .toList();
-        return new Sales(basis, sales.orderCount(), quantities, sales.amount(), myReward, ordersSinceHidden);
+        // B8 「구매확정 308건 · 환불 4건 반영」 — 파트너·어드민 orderClosure와 같은 포트 값이다(30-1 3절).
+        return new Sales(basis, sales.orderCount(),
+                closure == null ? null : closure.purchaseConfirmedCount(),
+                closure == null ? null : closure.refundedCount(),
+                quantities, sales.amount(), myReward, ordersSinceHidden);
     }
 
     /** 항목별 수량 × 개당 리워드의 합 — 파트너 KPI와 같은 계산이다. */
@@ -286,15 +294,14 @@ public class CreatorGroupBuyDetailAssembler {
                 .sum();
     }
 
-    private OrderClosure orderClosure(GroupBuy groupBuy) {
+    private OrderClosure orderClosure(GroupBuy groupBuy, GroupBuyOrderClosure closure) {
         GroupBuyStatus status = groupBuy.getStatus();
-        if (!status.isSelling() && status != GroupBuyStatus.ENDED && status != GroupBuyStatus.SUSPENDED) {
+        if (closure == null
+                || !status.isSelling() && status != GroupBuyStatus.ENDED && status != GroupBuyStatus.SUSPENDED) {
             return null;
         }
-        return salesReader.readClosure(groupBuy.getId())
-                .map(closure -> new OrderClosure(closure.totalCount(), closure.closedCount(),
-                        new Unclosed(closure.unclosedCount(), closure.awaitingShipment(), closure.inReturnOrExchange())))
-                .orElse(null);
+        return new OrderClosure(closure.totalCount(), closure.closedCount(),
+                new Unclosed(closure.unclosedCount(), closure.awaitingShipment(), closure.inReturnOrExchange()));
     }
 
     private Extension extension(GroupBuy groupBuy, GroupBuyExtensionRequest request) {

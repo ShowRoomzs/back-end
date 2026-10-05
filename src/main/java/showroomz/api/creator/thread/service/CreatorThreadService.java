@@ -22,6 +22,7 @@ import showroomz.domain.connection.type.ConnectionStatus;
 import showroomz.domain.connection.type.ConnectionType;
 import showroomz.domain.contract.repository.ContractRepository;
 import showroomz.domain.contract.type.ContractStatus;
+import showroomz.domain.groupbuy.repository.GroupBuyRepository;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
@@ -30,6 +31,8 @@ import showroomz.domain.message.entity.MessageAttachment;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.repository.MessageAttachmentRepository;
 import showroomz.domain.message.repository.MessageThreadRepository;
+import showroomz.api.common.thread.dto.MessageCardResponse;
+import showroomz.domain.message.service.MessageCardReader;
 import showroomz.domain.message.service.MessageThreadService;
 import showroomz.domain.message.type.ParticipantType;
 import showroomz.domain.message.type.ThreadStatus;
@@ -60,7 +63,9 @@ public class CreatorThreadService {
     private final MessageThreadService messageThreadService;
     private final MessageAttachmentRepository messageAttachmentRepository;
     private final MessageAttachmentService messageAttachmentService;
+    private final MessageCardReader messageCardReader;
     private final ContractRepository contractRepository;
+    private final GroupBuyRepository groupBuyRepository;
 
     /**
      * §14-3 `연결됨` 탭. 안 읽은 수는 페이지 전체를 한 쿼리로 집계한다(스레드당 카운트 금지).
@@ -77,8 +82,11 @@ public class CreatorThreadService {
                 ParticipantType.CREATOR, creator.getId());
 
         Set<Long> marketsWithContract = marketsWithReceivedContract(creator, threads.getContent());
+        Map<Long, String> groupBuyTitles = groupBuyRepository.findTitleMapByIds(
+                threads.getContent().stream().map(MessageThread::getSubjectId).filter(Objects::nonNull).distinct().toList());
 
-        return PageResponse.of(threads.map(thread -> toListItem(thread, unreadByThread, marketsWithContract)));
+        return PageResponse.of(threads.map(thread ->
+                toListItem(thread, unreadByThread, marketsWithContract, groupBuyTitles)));
     }
 
     /**
@@ -128,8 +136,10 @@ public class CreatorThreadService {
         Long nextCursor = hasNext ? page.get(page.size() - 1).getId() : null;
 
         Map<Long, List<AttachmentSummary>> attachmentsByMessage = loadAttachments(page);
+        Map<Long, MessageCardReader.CardView> cards = loadCards(page);
         List<MessageItem> items = page.stream()
-                .map(m -> toMessageItem(m, creator.getId(), attachmentsByMessage.getOrDefault(m.getId(), List.of())))
+                .map(m -> toMessageItem(m, creator.getId(), attachmentsByMessage.getOrDefault(m.getId(), List.of()),
+                        cards.get(m.getId())))
                 .toList();
         return new MessageListResponse(items, nextCursor, hasNext);
     }
@@ -148,7 +158,7 @@ public class CreatorThreadService {
 
         Map<Long, List<AttachmentSummary>> attachments = loadAttachments(List.of(result.message()));
         MessageItem item = toMessageItem(result.message(), creator.getId(),
-                attachments.getOrDefault(result.message().getId(), List.of()));
+                attachments.getOrDefault(result.message().getId(), List.of()), null);
         return new SendMessageOutcome(item, result.created());
     }
 
@@ -176,16 +186,20 @@ public class CreatorThreadService {
     }
 
     /**
-     * §13-8 — 첨부 다운로드 URL 발급. 스레드 참가자면 상대(브랜드)가 보낸 첨부도 받을 수 있어야 하므로
-     * 업로더 본인 여부가 아니라 <b>첨부가 속한 스레드가 내 것인지</b>로 권한을 판정한다.
+     * §13-8 · §13-9 — 첨부 다운로드 URL <b>일괄</b> 발급. 파일 하나를 누를 때도, 메시지의 「전체 다운로드」도 이 길이다.
+     * 스레드 참가자면 상대(브랜드)가 보낸 첨부도 받을 수 있어야 하므로 업로더 본인 여부가 아니라
+     * <b>첨부가 속한 스레드가 내 것인지</b>로 권한을 판정한다. 스레드는 서로 다른 것만 한 번씩 본다.
+     *
+     * <p>하나라도 권한이 없으면 전체를 거절한다 — 서명은 전부 검증한 뒤에 한다.
      */
-    public AttachmentDownloadResponse getDownloadUrl(String creatorEmail, Long attachmentId) {
+    public List<AttachmentDownloadResponse> getDownloadUrls(String creatorEmail, List<Long> attachmentIds) {
         Creator creator = getMyCreator(creatorEmail);
-        MessageAttachment attachment = messageAttachmentRepository.findById(attachmentId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ATTACHMENT_ACCESS_DENIED));
-
-        getMyThread(creator, attachment.getThread().getId());
-        return messageAttachmentService.createDownloadUrl(attachment, ParticipantType.CREATOR, creator.getId());
+        List<MessageAttachment> attachments = messageAttachmentService.loadForDownload(attachmentIds);
+        attachments.stream()
+                .map(attachment -> attachment.getThread().getId())
+                .distinct()
+                .forEach(threadId -> getMyThread(creator, threadId));
+        return messageAttachmentService.createDownloadUrls(attachments, ParticipantType.CREATOR, creator.getId());
     }
 
     private Map<Long, List<AttachmentSummary>> loadAttachments(List<Message> messages) {
@@ -205,22 +219,41 @@ public class CreatorThreadService {
                                         .toList())));
     }
 
+    /**
+     * 공구 3자 스레드는 같은 브랜드의 두 번째 · 세 번째 줄이다 — 종류와 공구를 함께 내려 구분하게 한다(30-1 1-5).
+     * [계약 확인] 게이트는 연결 쌍의 대화에만 붙는다.
+     */
     private ThreadListItem toListItem(MessageThread thread, Map<Long, Long> unreadByThread,
-                                      Set<Long> marketsWithContract) {
+                                      Set<Long> marketsWithContract, Map<Long, String> groupBuyTitles) {
         Connection connection = thread.getConnection();
         boolean isOperator = connection.getType() == ConnectionType.OPERATOR_CREATOR;
         String name = isOperator ? OPERATOR_CHANNEL_NAME : connection.getMarket().getMarketName();
         long unread = unreadByThread.getOrDefault(thread.getId(), 0L);
-        boolean hasContract = !isOperator && marketsWithContract.contains(connection.getMarket().getId());
+        boolean hasContract = !isOperator && !thread.getKind().isGroupBuy()
+                && marketsWithContract.contains(connection.getMarket().getId());
 
         return new ThreadListItem(
                 thread.getId(), name, isOperator ? null : connection.getMarket().getMarketImageUrl(),
-                isOperator, hasContract, thread.getLastMessagePreview(), thread.getLastMessageAt(), unread);
+                isOperator, hasContract, thread.getLastMessagePreview(), thread.getLastMessageAt(), unread,
+                thread.getKind(), thread.getSubjectId(),
+                thread.getSubjectId() == null ? null : groupBuyTitles.get(thread.getSubjectId()));
     }
 
-    private MessageItem toMessageItem(Message message, Long myCreatorId, List<AttachmentSummary> attachments) {
-        boolean mine = message.getSenderType() == ParticipantType.CREATOR && message.getSenderId().equals(myCreatorId);
-        return new MessageItem(message.getId(), message.getSenderType(), mine, message.getContent(), attachments, message.getCreatedAt());
+    /** 카드가 있는 페이지만 읽는다 — 카드 없는 대화가 대부분이다. */
+    private Map<Long, MessageCardReader.CardView> loadCards(List<Message> messages) {
+        return messages.stream().anyMatch(Message::isCard) ? messageCardReader.read(messages) : Map.of();
+    }
+
+    /**
+     * 카드는 내가 누른 요청으로 생겼어도 내 말풍선이 아니다 — {@code mine}은 항상 false다(36 설계 7절).
+     * 운영자 이름 · id · 자동 안내 표시는 이 응답에 싣지 않는다 — 상대에게 운영팀은 「SHOWROOMZ 운영팀」뿐이다(§36-4).
+     */
+    private MessageItem toMessageItem(Message message, Long myCreatorId, List<AttachmentSummary> attachments,
+                                      MessageCardReader.CardView card) {
+        boolean mine = !message.isCard()
+                && message.getSenderType() == ParticipantType.CREATOR && message.getSenderId().equals(myCreatorId);
+        return new MessageItem(message.getId(), message.getSenderType(), mine, message.getContent(), attachments,
+                message.getCreatedAt(), message.getMessageType(), MessageCardResponse.from(card));
     }
 
     private MessageThread getMyThread(Creator creator, Long threadId) {

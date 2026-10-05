@@ -507,7 +507,7 @@ public interface SellerAuthControllerDocs {
                     "- 수취인 연락처 (`010/011/016/017/018/019-xxxx-xxxx` 형식)\n" +
                     "- 주소 (우편번호 검색 결과), 상세 주소\n" +
                     "- 기본 배송비, 출고 소요일\n" +
-                    "- 반품비 (기본값 3000), 교환비 (기본값 6000)\n\n" +
+                    "- 반품비 · 교환비는 **사용하지 않는다**(생략 가능) — 반품·교환 금액은 기본 배송비 기준이다\n\n" +
                     "**선택 입력:**\n" +
                     "- 무료배송 기준금액\n" +
                     "- 도서산간 추가비 (미입력 시 0원)\n\n" +
@@ -581,9 +581,7 @@ public interface SellerAuthControllerDocs {
                                     "  \"defaultDeliveryFee\": 3000,\n" +
                                     "  \"freeShippingThreshold\": 50000,\n" +
                                     "  \"remoteAreaSurcharge\": 3000,\n" +
-                                    "  \"shippingLeadDays\": 3,\n" +
-                                    "  \"returnFee\": 3000,\n" +
-                                    "  \"exchangeFee\": 6000\n" +
+                                    "  \"shippingLeadDays\": 3\n" +
                                     "}"
                     )
             )

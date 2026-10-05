@@ -46,9 +46,16 @@ public class GroupBuyCommandService {
         historyRecorder.recordBySystem(groupBuy, GroupBuyEventType.SETTLED, null, transferredAt);
     }
 
-    /** 정산 → 공구 · B6 「전 주문 종결 · 실적 확정」. 상태는 바꾸지 않는다. */
+    /**
+     * 정산 → 공구 · B6 「전 주문 종결 · 실적 확정」. 상태는 바꾸지 않는다.
+     * 문구 「구매확정 308건」은 기록 시점의 판매 포트 값이다 — 모르면 detail을 비운다(0건으로 적지 않는다).
+     */
     public void recordSalesFinalized(Long groupBuyId, LocalDateTime finalizedAt) {
-        historyRecorder.recordBySystem(load(groupBuyId), GroupBuyEventType.SALES_FINALIZED, null, finalizedAt);
+        String detail = salesReader.readClosure(groupBuyId)
+                .map(GroupBuySalesReader.GroupBuyOrderClosure::purchaseConfirmedCount)
+                .map(count -> "구매확정 %,d건".formatted(count))
+                .orElse(null);
+        historyRecorder.recordBySystem(load(groupBuyId), GroupBuyEventType.SALES_FINALIZED, detail, finalizedAt);
     }
 
     /**

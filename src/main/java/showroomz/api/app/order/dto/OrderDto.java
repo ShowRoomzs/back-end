@@ -125,6 +125,27 @@ public class OrderDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
+    @Schema(description = "주문 배송지 변경 요청")
+    public static class ChangeAddressRequest {
+        @NotNull(message = "배송지를 선택해 주세요.")
+        @Schema(description = "내 배송지 ID — 새 주소는 배송지 추가 API 로 먼저 만든다", example = "55")
+        private Long addressId;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "주문 배송지 변경 결과")
+    public static class ChangeAddressResponse {
+        @Schema(description = "바뀐 배송지(마스킹)")
+        private UserOrderDto.MaskedAddress maskedAddress;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
     @Schema(description = "주문 취소 요청")
     public static class CancelRequest {
         @Size(max = 255, message = "취소 사유는 255자 이내여야 합니다.")
@@ -230,6 +251,8 @@ public class OrderDto {
         @Schema(description = "총 결제 금액", example = "27900")
         private Long totalAmount;
         private Integer itemCount;
+        @Schema(description = "할인율(%) — 상품 금액 기준, 배송비 제외. 주문 상세에만", example = "34", nullable = true)
+        private Integer discountRate;
     }
 
     @Getter
@@ -349,6 +372,16 @@ public class OrderDto {
         private PaymentInfo payment;
         @Schema(description = "지금 취소할 수 있는가(결제 전 · 배송 전)")
         private Boolean cancellable;
+        @Schema(description = "배송지를 바꿀 수 있는가 — 결제완료이고 브랜드가 준비를 시작하기 전. 거짓이면 [배송지 변경]을 그리지 않는다")
+        private Boolean addressChangeable;
+        @Schema(description = "C10-1 주문 상품 — 쇼룸 그룹 없는 평면 행. 항목별 표시 상태·보조 문구·버튼을 서버가 내린다")
+        private List<UserOrderDto.ItemRow> items;
+        @Schema(description = "주문 상품 수 — items 의 크기", example = "2")
+        private Integer itemCount;
+        @Schema(description = "마스킹된 배송지 — C10-1 은 deliveryAddress 대신 이것을 그린다")
+        private UserOrderDto.MaskedAddress maskedAddress;
+        @Schema(description = "상단 안내 블록 — 없으면 빈 배열")
+        private List<UserOrderDto.Notice> notices;
     }
 
     @Getter

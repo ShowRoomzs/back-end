@@ -10,6 +10,7 @@ import showroomz.domain.groupbuy.service.port.GroupBuySalesReader;
 import showroomz.domain.groupbuy.service.port.GroupBuySettlementReader;
 import showroomz.domain.groupbuy.service.port.GroupBuyThreadGateway;
 import showroomz.domain.groupbuy.type.FulfillmentSide;
+import showroomz.domain.groupbuy.type.GroupBuyEventType;
 import showroomz.domain.groupbuy.type.GroupBuyPostReviewStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
 
@@ -92,6 +93,51 @@ class CreatorGroupBuyPortIntegrationTest extends CreatorGroupBuyTestSupport {
                 .andExpect(jsonPath("$.orderClosure.unclosed.total").value(24))
                 .andExpect(jsonPath("$.orderClosure.unclosed.awaitingShipment").value(18))
                 .andExpect(jsonPath("$.orderClosure.unclosed.inReturnOrExchange").value(6));
+    }
+
+    @Test
+    @DisplayName("B8: 판매 실적의 구매확정·환불 건수는 파트너·어드민 orderClosure와 같은 포트 값이다 — 모르면 null")
+    void settledSalesCarryClosurePathCounts() throws Exception {
+        GroupBuy groupBuy = seedIn(GroupBuyStatus.SETTLED);
+        when(salesReader.readSales(groupBuy.getId())).thenReturn(Optional.of(new GroupBuySalesReader.GroupBuySales(
+                312, 8_486_400, List.of(new GroupBuySalesReader.ItemQuantity(cream.getProductId(), 312)))));
+        when(salesReader.readClosure(groupBuy.getId())).thenReturn(Optional.of(
+                new GroupBuySalesReader.GroupBuyOrderClosure(312, 312, 0, 0, 0, List.of(), 308, 4)));
+
+        studioDetail(groupBuy.getId()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.sales.basis").value("SETTLED"))
+                .andExpect(jsonPath("$.sales.orderCount").value(312))
+                .andExpect(jsonPath("$.sales.purchaseConfirmedCount").value(308))
+                .andExpect(jsonPath("$.sales.refundedCount").value(4))
+                // 정산완료에는 미종결 내역 블록이 없다 — 건수는 sales에서만 읽는다.
+                .andExpect(jsonPath("$.orderClosure").doesNotExist());
+
+        when(salesReader.readClosure(groupBuy.getId())).thenReturn(Optional.empty());
+        studioDetail(groupBuy.getId()).andExpect(jsonPath("$.sales.orderCount").value(312))
+                .andExpect(jsonPath("$.sales.purchaseConfirmedCount").doesNotExist())
+                .andExpect(jsonPath("$.sales.refundedCount").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("B6: 실적 확정 이력은 기록 시점의 구매확정 건수를 문구로 남긴다 — 모르면 detail을 비운다")
+    void salesFinalizedHistoryRecordsPurchaseConfirmedCount() {
+        GroupBuy known = seedIn(GroupBuyStatus.ENDED);
+        GroupBuy unknown = seedIn(GroupBuyStatus.ENDED);
+        when(salesReader.readClosure(known.getId())).thenReturn(Optional.of(
+                new GroupBuySalesReader.GroupBuyOrderClosure(1_312, 1_312, 0, 0, 0, List.of(), 1_308, 4)));
+        LocalDateTime finalizedAt = LocalDateTime.now().withNano(0);
+
+        groupBuyCommandService.recordSalesFinalized(known.getId(), finalizedAt);
+        groupBuyCommandService.recordSalesFinalized(unknown.getId(), finalizedAt);
+
+        assertThat(salesFinalizedDetail(known.getId())).isEqualTo("구매확정 1,308건");
+        assertThat(salesFinalizedDetail(unknown.getId())).isNull();
+    }
+
+    private String salesFinalizedDetail(long groupBuyId) {
+        return groupBuyHistoryRepository.findByGroupBuyIdOrderByOccurredAtAscIdAsc(groupBuyId).stream()
+                .filter(entry -> entry.getEventType() == GroupBuyEventType.SALES_FINALIZED)
+                .findFirst().orElseThrow().getDetail();
     }
 
     @Test

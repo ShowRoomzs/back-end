@@ -12,7 +12,11 @@ import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.message.entity.Message;
 import showroomz.domain.message.entity.MessageAttachment;
+import showroomz.domain.message.entity.MessageCardPayload;
 import showroomz.domain.message.entity.MessageThread;
+import showroomz.domain.message.type.MessageCardType;
+import showroomz.domain.message.type.MessageRefType;
+import showroomz.domain.message.type.MessageType;
 import showroomz.domain.message.repository.MessageAttachmentRepository;
 import showroomz.domain.message.repository.MessageRepository;
 import showroomz.domain.message.repository.MessageThreadRepository;
@@ -20,6 +24,7 @@ import showroomz.domain.message.repository.ThreadParticipantRepository;
 import showroomz.domain.message.type.AttachmentStatus;
 import showroomz.domain.message.type.AttachmentType;
 import showroomz.domain.message.type.ParticipantType;
+import showroomz.domain.message.type.ThreadKind;
 import showroomz.domain.message.type.ThreadStatus;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -94,7 +99,7 @@ class MessageThreadServiceTest {
         @DisplayName("스레드가 없으면 CONNECTION에 묶인 OPEN 스레드를 새로 만든다 (§1-3)")
         void createsNewThreadWhenMissing() {
             Connection connection = Connection.createOperatorMarket(new Market());
-            given(messageThreadRepository.findByConnection(connection)).willReturn(Optional.empty());
+            given(messageThreadRepository.findByConnectionAndKind(connection, ThreadKind.CONNECTION)).willReturn(Optional.empty());
             given(messageThreadRepository.save(any(MessageThread.class))).willAnswer(inv -> {
                 MessageThread saved = inv.getArgument(0);
                 ReflectionTestUtils.setField(saved, "id", THREAD_ID);
@@ -114,7 +119,7 @@ class MessageThreadServiceTest {
             Connection connection = Connection.createOperatorMarket(new Market());
             MessageThread dormant = MessageThread.builder()
                     .id(THREAD_ID).connection(connection).status(ThreadStatus.DORMANT).build();
-            given(messageThreadRepository.findByConnection(connection)).willReturn(Optional.of(dormant));
+            given(messageThreadRepository.findByConnectionAndKind(connection, ThreadKind.CONNECTION)).willReturn(Optional.of(dormant));
 
             MessageThread result = messageThreadService.activateThread(connection);
 
@@ -357,6 +362,114 @@ class MessageThreadServiceTest {
                     openThread, ParticipantType.SELLER, MY_ID, "uuid-1", "본문", List.of(10L)))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ATTACHMENT_ALREADY_ATTACHED);
+        }
+    }
+
+    @Nested
+    @DisplayName("시스템 카드 · 자동 안내 (36 설계 5-1 · 5-2)")
+    class SystemCard {
+
+        private final MessageCardPayload payload = MessageCardPayload.resendRequest(
+                41L, "CTR-20260813-041", "겨울 리페어 크림 공구", "CREATOR", "뷰티_소연", null);
+
+        @Test
+        @DisplayName("카드는 SYSTEM 메시지로 저장되고 본문 · 미리보기가 카드 제목이 된다 — 마지막 발신자는 카드를 생기게 한 주체다")
+        void postsCardWithTitleAsContentAndPreview() {
+            givenNoExistingMessage();
+            givenMessageSaved();
+
+            MessageThreadService.SendResult result = messageThreadService.postSystemCard(openThread,
+                    ParticipantType.CREATOR, MY_ID, "resend-card-9", MessageCardType.CONTRACT_RESEND_REQUEST,
+                    MessageRefType.CONTRACT_RESEND_REQUEST, 9L, payload);
+
+            Message card = result.message();
+            assertThat(result.created()).isTrue();
+            assertThat(card.isCard()).isTrue();
+            assertThat(card.getMessageType()).isEqualTo(MessageType.SYSTEM);
+            assertThat(card.getCardType()).isEqualTo(MessageCardType.CONTRACT_RESEND_REQUEST);
+            assertThat(card.getRefType()).isEqualTo(MessageRefType.CONTRACT_RESEND_REQUEST);
+            assertThat(card.getRefId()).isEqualTo(9L);
+            assertThat(card.getContent()).isEqualTo("요청 · 서명 안내 다시 받기");
+            assertThat(card.isAutoNotice()).isFalse();
+            assertThat(MessageCardPayload.parse(card.getCardPayload())).isEqualTo(payload);
+            assertThat(openThread.getLastMessagePreview()).isEqualTo("요청 · 서명 안내 다시 받기");
+            assertThat(openThread.getLastMessageSenderType()).isEqualTo(ParticipantType.CREATOR);
+        }
+
+        @Test
+        @DisplayName("같은 멱등키의 카드가 이미 있으면 새로 저장하지 않고 미리보기도 건드리지 않는다")
+        void sameKeyReturnsExistingCard() {
+            Message existing = Message.createCard(openThread, ParticipantType.CREATOR, MY_ID, "resend-card-9",
+                    MessageCardType.CONTRACT_RESEND_REQUEST, MessageRefType.CONTRACT_RESEND_REQUEST, 9L, payload.toJson());
+            given(messageRepository.findByThreadAndClientMessageId(openThread, "resend-card-9"))
+                    .willReturn(Optional.of(existing));
+
+            MessageThreadService.SendResult result = messageThreadService.postSystemCard(openThread,
+                    ParticipantType.CREATOR, MY_ID, "resend-card-9", MessageCardType.CONTRACT_RESEND_REQUEST,
+                    MessageRefType.CONTRACT_RESEND_REQUEST, 9L, payload);
+
+            assertThat(result.created()).isFalse();
+            assertThat(result.message()).isSameAs(existing);
+            verify(messageRepository, never()).save(any());
+            assertThat(openThread.getLastMessagePreview()).isNull();
+        }
+
+        @Test
+        @DisplayName("자동 안내는 TEXT 말풍선에 자동 안내 표시만 남고, 마지막 발신자가 운영팀이 된다")
+        void autoNoticeIsTextBubbleWithFlag() {
+            givenNoExistingMessage();
+            givenMessageSaved();
+
+            Message notice = messageThreadService.sendAutoNotice(openThread, ParticipantType.ADMIN, 3L,
+                    "resend-notice-9", "모두싸인에서 서명 안내를 다시 보내드렸습니다.").message();
+
+            assertThat(notice.getMessageType()).isEqualTo(MessageType.TEXT);
+            assertThat(notice.isAutoNotice()).isTrue();
+            assertThat(notice.isCard()).isFalse();
+            assertThat(notice.getSenderId()).isEqualTo(3L);
+            assertThat(openThread.getLastMessagePreview()).isEqualTo("모두싸인에서 서명 안내를 다시 보내드렸습니다.");
+            assertThat(openThread.getLastMessageSenderType()).isEqualTo(ParticipantType.ADMIN);
+        }
+
+        @Test
+        @DisplayName("일반 전송도 마지막 발신자를 남긴다 — 어드민 목록의 「운영팀: 」 접두 판정값이다")
+        void sendRecordsLastSenderType() {
+            givenNoExistingMessage();
+            givenMessageSaved();
+
+            messageThreadService.sendMessage(openThread, ParticipantType.SELLER, MY_ID, "uuid-1", "취소 요청드립니다", null);
+
+            assertThat(openThread.getLastMessageSenderType()).isEqualTo(ParticipantType.SELLER);
+        }
+    }
+
+    @Nested
+    @DisplayName("운영팀 기준 안 읽은 수 · 읽음 (36 설계 0-5 · 3-3)")
+    class OperatorTeam {
+
+        @Test
+        @DisplayName("스레드가 없으면 쿼리를 돌지 않고, 있으면 팀 공용 참가자 id로 한 번에 집계한다")
+        void countsWithTeamParticipantInSingleQuery() {
+            assertThat(messageThreadService.countUnreadForOperatorTeam(List.of())).isEmpty();
+            verify(messageRepository, never()).countUnreadForOperatorTeam(anyList(), anyLong());
+
+            given(messageRepository.countUnreadForOperatorTeam(List.of(1L, 2L), 0L))
+                    .willReturn(List.of(new Object[]{1L, 2L}, new Object[]{2L, 0L}));
+
+            assertThat(messageThreadService.countUnreadForOperatorTeam(List.of(1L, 2L)))
+                    .containsExactlyInAnyOrderEntriesOf(Map.of(1L, 2L, 2L, 0L));
+        }
+
+        @Test
+        @DisplayName("누가 읽든 운영팀 공용 행(ADMIN · 0)의 읽음 위치가 앞으로 간다")
+        void markReadUsesTeamRow() {
+            Message latest = Message.builder().id(42L).thread(openThread)
+                    .senderType(ParticipantType.SELLER).senderId(MY_ID).clientMessageId("k").build();
+            given(messageRepository.findTopByThreadOrderByIdDesc(openThread)).willReturn(Optional.of(latest));
+
+            messageThreadService.markReadByOperatorTeam(openThread);
+
+            verify(threadParticipantRepository).upsertReadPosition(eq(THREAD_ID), eq("ADMIN"), eq(0L), eq(42L), any());
         }
     }
 

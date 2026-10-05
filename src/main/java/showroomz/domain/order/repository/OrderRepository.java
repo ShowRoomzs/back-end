@@ -1,6 +1,7 @@
 package showroomz.domain.order.repository;
 
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -39,6 +40,16 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT o.id FROM Order o WHERE o.status = showroomz.domain.order.type.OrderStatus.PAYMENT_PENDING "
             + "AND o.expiresAt <= :now ORDER BY o.expiresAt ASC, o.id ASC")
     List<Long> findIdsToExpire(@Param("now") LocalDateTime now, Pageable pageable);
+
+    /**
+     * 소비자 앱 주문 내역(C10 설계서 2-2) — 결제된 적 있는 주문만, 최근 N개월. 페이지 단위는 주문이다.
+     * 전용 인덱스는 없다 — {@code uk_orders_user_idempotency_key}가 {@code user_id} 선두다.
+     */
+    @Query(value = "SELECT o FROM Order o WHERE o.user.id = :userId AND o.paidAt IS NOT NULL "
+            + "AND o.createdAt >= :since ORDER BY o.id DESC",
+            countQuery = "SELECT COUNT(o) FROM Order o WHERE o.user.id = :userId AND o.paidAt IS NOT NULL "
+                    + "AND o.createdAt >= :since")
+    Page<Order> findPaidByUser(@Param("userId") Long userId, @Param("since") LocalDateTime since, Pageable pageable);
 
     // ------------------------------------------------------------------ 전이
 

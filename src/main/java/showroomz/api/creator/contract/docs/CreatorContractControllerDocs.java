@@ -322,15 +322,15 @@ public interface CreatorContractControllerDocs {
 
                     **권한:** CREATOR
 
-                    **상태는 변하지 않는다.** `contract_resend_request` 한 행이 생길 뿐이다
-                    (`requester_type = 'CREATOR'`).
+                    **상태는 변하지 않는다.** 내 **운영팀 채널에 요청 카드가 자동 등록**된다
+                    (연결·소통의 SHOWROOMZ 운영팀 스레드) — 운영자가 재발송한 뒤 같은 채널로 안내 메시지를 보낸다.
 
                     허용 조건은 `permissions.canRequestResend`와 같다 — `SIGNING`이고 내 서명이
                     아직 없을 때만이다. 이미 서명한 사람에게 재발송할 이유가 없다. 그 밖은 409.
 
-                    **중복 억제**: 미처리(`handled_at IS NULL`) 요청이 이미 있으면 새 행을 만들지 않고
-                    기존 요청을 200으로 돌려준다(`alreadyRequested: true`) — 어드민 큐에 같은 계약이
-                    여러 줄 쌓이는 것을 막는다. 횟수 제한 정책은 §28-8 D #7로 미정이다.
+                    **중복 억제**: **내가 낸** 미처리 요청이 이미 있으면 새 카드를 만들지 않고
+                    기존 요청을 200으로 돌려준다(`alreadyRequested: true`) — 같은 채널에 같은 요청 카드가
+                    여러 장 쌓이는 것을 막는다. 횟수 제한 정책은 §28-8 D #7로 미정이다.
 
                     ### 화면 문구 주의
                     **실제 재발송은 우리가 하지 않는다.** 운영자가 모두싸인에서 한다.

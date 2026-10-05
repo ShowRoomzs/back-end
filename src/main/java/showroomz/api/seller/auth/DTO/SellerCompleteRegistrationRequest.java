@@ -55,13 +55,13 @@ public class SellerCompleteRegistrationRequest {
     @Schema(description = "출고 소요일", example = "3")
     private Integer shippingLeadDays;
 
-    @NotNull(message = "반품비는 필수 입력값입니다.")
     @Min(value = 0, message = "반품비는 0 이상이어야 합니다.")
-    @Schema(description = "반품비(회수비) (기본값 3000)", example = "3000")
+    @Schema(description = "사용하지 않음 — 반품·교환 금액은 기본 배송비(defaultDeliveryFee) 기준이다. 생략 가능(생략 시 3000 저장)",
+            example = "3000", nullable = true, deprecated = true)
     private Integer returnFee;
 
-    @NotNull(message = "교환비는 필수 입력값입니다.")
     @Min(value = 0, message = "교환비는 0 이상이어야 합니다.")
-    @Schema(description = "교환비 (기본값 6000)", example = "6000")
+    @Schema(description = "사용하지 않음 — 반품·교환 금액은 기본 배송비(defaultDeliveryFee) 기준이다. 생략 가능(생략 시 6000 저장)",
+            example = "6000", nullable = true, deprecated = true)
     private Integer exchangeFee;
 }

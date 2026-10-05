@@ -1,7 +1,9 @@
 package showroomz.domain.order.repository;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,6 +29,30 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
 
     @Query("SELECT g FROM OrderDeliveryGroup g LEFT JOIN FETCH g.groupBuy WHERE g.order.id = :orderId ORDER BY g.id ASC")
     List<OrderDeliveryGroup> findByOrderId(@Param("orderId") Long orderId);
+
+    /**
+     * 주문 배송지 변경의 잠금(C10 설계서 3-6) — 그 주문의 하위주문 전부를 id 오름차순으로. 준비 시작(#2)과 같은 행을
+     * 다투므로, 잠근 뒤 본 상태가 커밋까지 유지된다.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT g FROM OrderDeliveryGroup g WHERE g.order.id = :orderId ORDER BY g.id ASC")
+    List<OrderDeliveryGroup> findByOrderIdForUpdate(@Param("orderId") Long orderId);
+
+    /**
+     * 발주서 행의 원본(34 설계서 3-1 ③) — 준비 시작 전이 뒤에 하위주문과 주문(배송지)을 잠금 읽기로 다시 읽는다.
+     * 일반 SELECT 는 트랜잭션 시작 시점의 스냅숏을 보므로, 그사이 커밋된 배송지 변경을 놓친다.
+     */
+    @Lock(LockModeType.PESSIMISTIC_READ)
+    @Query("SELECT g FROM OrderDeliveryGroup g JOIN FETCH g.order WHERE g.id IN :ids ORDER BY g.id ASC")
+    List<OrderDeliveryGroup> findAllWithOrderForShare(@Param("ids") Collection<Long> ids);
+
+    /**
+     * 클레임 신청의 잠금(35 설계서 3-6) — 하위주문 행만 잠근다(주문·마켓은 잠그지 않는다). 구매확정 배치의 조건부
+     * UPDATE 와 같은 행을 다투므로, 배치가 먼저면 신청이 지고 신청이 먼저면 배치의 NOT EXISTS 가 건너뛴다.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT g FROM OrderDeliveryGroup g WHERE g.id = :id")
+    Optional<OrderDeliveryGroup> findForUpdate(@Param("id") Long id);
 
     @Query("SELECT g FROM OrderDeliveryGroup g JOIN FETCH g.order WHERE g.id = :id AND g.market.id = :marketId")
     Optional<OrderDeliveryGroup> findOwned(@Param("id") Long id, @Param("marketId") Long marketId);
@@ -103,11 +129,11 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
 
     /**
      * 송장 수정(§34-6) — 배송중만 · 반송중 불가. {@code shipped_at}은 유지한다(수정으로 기한 위반이 세탁되면 안 된다).
-     * 알림·최종 갱신을 리셋해 감시 배치가 새 송장 기준으로 다시 판정한다.
+     * 알림·최종 갱신·집화 시각을 리셋해 감시 배치가 새 송장 기준으로 다시 판정한다.
      */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderDeliveryGroup g SET g.carrier = :carrier, g.trackingNumber = :trackingNumber, "
-            + "g.trackingAlert = NULL, g.lastTrackingAt = NULL "
+            + "g.trackingAlert = NULL, g.lastTrackingAt = NULL, g.pickedUpAt = NULL "
             + "WHERE g.id = :id AND g.market.id = :marketId "
             + "AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING")
     int updateInvoice(@Param("id") Long id, @Param("marketId") Long marketId,
@@ -157,13 +183,24 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
     // 추적 반영 전이는 전부 「폴링 당시의 송장(carrier · tracking_number)」을 WHERE 에 넣는다 — 폴링과 반영 사이에
     // 셀러가 송장을 고치면 구 송장의 결과(배송완료·반송·이벤트 시각)가 새 송장에 덮이면 안 된다(N11).
 
+    /** 첫 이벤트가 곧 집화다(집화 전에는 추적 데이터가 없다) — {@code picked_up_at}은 비어 있을 때 1회만 적는다. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("UPDATE OrderDeliveryGroup g SET g.lastTrackingAt = :at WHERE g.id = :id "
+    @Query("UPDATE OrderDeliveryGroup g SET g.lastTrackingAt = :at, g.pickedUpAt = COALESCE(g.pickedUpAt, :at) "
+            + "WHERE g.id = :id "
             + "AND g.carrier = :carrier AND g.trackingNumber = :trackingNumber "
             + "AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.SHIPPING, "
             + "    showroomz.domain.order.type.FulfillmentStatus.RETURNING)")
     int touchTracking(@Param("id") Long id, @Param("carrier") DeliveryCarrier carrier,
                       @Param("trackingNumber") String trackingNumber, @Param("at") LocalDateTime at);
+
+    /**
+     * 택배사별 실제 소요일 표본 — [carrier, picked_up_at, delivered_at]. 추적이 확인한 배송완료만(직권 처리는 실제 도착 시각이 아니다).
+     * 집계는 {@code DeliveryArrivalEstimator}가 한다.
+     */
+    @Query("SELECT g.carrier, g.pickedUpAt, g.deliveredAt FROM OrderDeliveryGroup g "
+            + "WHERE g.deliveredAt >= :since AND g.pickedUpAt IS NOT NULL AND g.carrier IS NOT NULL "
+            + "AND g.deliveredSource = showroomz.domain.order.type.DeliveredSource.TRACKER")
+    List<Object[]> findTransitSamples(@Param("since") LocalDateTime since);
 
     /** #5 SHIPPING → DELIVERED — 자동 확인. 운영자 직권은 어드민 모듈이 별도 메서드로 간다(범위 밖). */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
@@ -209,26 +246,45 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
     int clearTrackingAlert(@Param("id") Long id, @Param("carrier") DeliveryCarrier carrier,
                            @Param("trackingNumber") String trackingNumber);
 
-    /** #6 DELIVERED → CONFIRMED — 배송완료 + 7일(약관 제19조①). */
+    /**
+     * #6 DELIVERED → CONFIRMED — 배송완료 + 7일(약관 제19조①). 기준 시각은 교환 재발송이 도착했으면 그 시각이다
+     * ({@code confirm_restart_at} · 35 설계서 3-6). <b>보류 클레임</b>(진행 중이고 거절되지 않은 반품·교환)이 있으면
+     * 확정하지 않는다 — 거절 보류·거절 반송만 남은 하위주문은 확정된다.
+     */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderDeliveryGroup g SET g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.CONFIRMED, "
             + "g.confirmedAt = :now "
             + "WHERE g.id = :id AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.DELIVERED "
-            + "AND g.deliveredAt <= :threshold")
+            + "AND COALESCE(g.confirmRestartAt, g.deliveredAt) <= :threshold "
+            + "AND NOT EXISTS (SELECT c FROM OrderClaim c WHERE c.deliveryGroup = g "
+            + "    AND c.status <> showroomz.domain.order.type.ClaimStatus.COMPLETED AND c.rejectedAt IS NULL)")
     int confirmPurchase(@Param("id") Long id, @Param("now") LocalDateTime now,
                         @Param("threshold") LocalDateTime threshold);
 
+    /**
+     * 교환 재발송 도착 — 구매확정 N일을 그 시각부터 다시 센다(35 설계서 3-4 · §35-7). 최초 배송완료 시각은 덮지 않는다.
+     * 같은 하위주문에 교환이 여럿이면 가장 늦은 도착이 기준이다.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderDeliveryGroup g SET g.confirmRestartAt = :at "
+            + "WHERE g.id = :id AND (g.confirmRestartAt IS NULL OR g.confirmRestartAt < :at)")
+    int restartConfirmTimer(@Param("id") Long id, @Param("at") LocalDateTime at);
+
     // ------------------------------------------------------------------ 배치 대상
 
-    /** 추적 대상 — 인덱스 (fulfillment_status, shipped_at). */
+    /** 추적 대상 — id 커서({@code afterId} 초과)로 이어 읽는다. 첫 페이지는 0. */
     @Query("SELECT g FROM OrderDeliveryGroup g WHERE g.fulfillmentStatus IN :statuses "
-            + "AND g.carrier IS NOT NULL AND g.trackingNumber IS NOT NULL ORDER BY g.id ASC")
+            + "AND g.carrier IS NOT NULL AND g.trackingNumber IS NOT NULL AND g.id > :afterId ORDER BY g.id ASC")
     List<OrderDeliveryGroup> findTrackingTargets(@Param("statuses") Collection<FulfillmentStatus> statuses,
-                                                 Pageable pageable);
+                                                 @Param("afterId") Long afterId, Pageable pageable);
 
+    /** 구매확정 대상 — {@link #confirmPurchase}와 같은 조건(보류 클레임이 있는 하위주문은 회차마다 다시 집히지 않는다). */
     @Query("SELECT g.id FROM OrderDeliveryGroup g "
             + "WHERE g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.DELIVERED "
-            + "AND g.deliveredAt <= :threshold ORDER BY g.deliveredAt ASC, g.id ASC")
+            + "AND COALESCE(g.confirmRestartAt, g.deliveredAt) <= :threshold "
+            + "AND NOT EXISTS (SELECT c FROM OrderClaim c WHERE c.deliveryGroup = g "
+            + "    AND c.status <> showroomz.domain.order.type.ClaimStatus.COMPLETED AND c.rejectedAt IS NULL) "
+            + "ORDER BY COALESCE(g.confirmRestartAt, g.deliveredAt) ASC, g.id ASC")
     List<Long> findIdsToConfirm(@Param("threshold") LocalDateTime threshold, Pageable pageable);
 
     // ------------------------------------------------------------------ 카운트(요약 바 · 탭)

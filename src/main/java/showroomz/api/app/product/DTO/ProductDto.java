@@ -264,10 +264,12 @@ public class ProductDto {
         @Schema(description = "도서산간 추가 배송비", example = "5000")
         private Integer remoteAreaSurcharge;
 
-        @Schema(description = "반품 배송비", example = "3000")
+        @Schema(description = "단순 변심 반품 때 부담하는 최초 배송비 — 기본 배송비와 같은 값. 무료배송으로 받은 주문은 환불액에서 "
+                + "빼고, 배송비를 내고 받은 주문은 낸 배송비를 돌려받지 않는다. 불량·오배송은 0원. 반송 택배비는 별도", example = "3000")
         private Integer returnFee;
 
-        @Schema(description = "교환 배송비", example = "6000")
+        @Schema(description = "단순 변심 교환의 재발송 배송비(편도) — 기본 배송비와 같은 값. 교환을 요청할 때 결제한다. "
+                + "불량·오배송은 0원. 반송 택배비는 별도", example = "3000")
         private Integer exchangeFee;
     }
 

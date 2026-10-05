@@ -129,7 +129,8 @@ class AdminGroupBuyPortIntegrationTest extends AdminGroupBuyTestSupport {
     @DisplayName("운영자 이슈 개설은 3자 스레드·이력·열린 이슈 1건을 묶고 중복 개설을 막는다")
     void adminIssueOpensExactlyOneThread() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.SUSPENDED);
-        when(threadGateway.openAdminIssueThread(any(), eq(GroupBuyIssueType.SETTLEMENT_AMOUNT),
+        // 첫 글의 보낸 사람이 처리 운영자여야 한다 — 3자 스레드에서 누가 열었는지가 남는다.
+        when(threadGateway.openAdminIssueThread(any(), eq(operator.getId()), eq(GroupBuyIssueType.SETTLEMENT_AMOUNT),
                 eq("정산 금액에 이견이 있습니다."))).thenReturn(9_001L);
 
         adminAction(groupBuy.getId(), "issues",
@@ -144,7 +145,7 @@ class AdminGroupBuyPortIntegrationTest extends AdminGroupBuyTestSupport {
         adminAction(groupBuy.getId(), "issues", Map.of("issueType", "ETC", "content", "중복"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("GROUP_BUY_ISSUE_ALREADY_OPEN"));
-        verify(threadGateway).openAdminIssueThread(any(), eq(GroupBuyIssueType.SETTLEMENT_AMOUNT),
+        verify(threadGateway).openAdminIssueThread(any(), eq(operator.getId()), eq(GroupBuyIssueType.SETTLEMENT_AMOUNT),
                 eq("정산 금액에 이견이 있습니다."));
     }
 

@@ -154,6 +154,8 @@ public class SecurityConfig {
                 // 파트너센터 주문 관리 — 브랜드(SELLER)만. CREATOR 를 통과시키면 판매자 조회에서 404 SELLER_NOT_FOUND 로
                 // 떨어져 권한 오류가 「존재하지 않음」으로 포장된다(34 설계서 4-4의 404 는 존재 비노출 용도다).
                 .requestMatchers("/v1/seller/orders/**").hasAnyAuthority(RoleType.SELLER.getCode())
+                // 파트너센터 반품·교환 관리 — 주문 관리와 같은 이유로 브랜드(SELLER)만(35 설계서 4절).
+                .requestMatchers("/v1/seller/claims/**").hasAnyAuthority(RoleType.SELLER.getCode())
 
                 // SELLER 권한
                 .requestMatchers("/v1/seller/**").hasAnyAuthority(RoleType.SELLER.getCode(), RoleType.CREATOR.getCode())

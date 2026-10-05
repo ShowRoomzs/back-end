@@ -16,6 +16,7 @@ import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.contract.repository.ContractRepository;
 import showroomz.domain.contract.type.ContractStatus;
+import showroomz.domain.groupbuy.repository.GroupBuyRepository;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
@@ -68,6 +69,8 @@ class CreatorThreadServiceTest {
     private MessageAttachmentService messageAttachmentService;
     @Mock
     private ContractRepository contractRepository;
+    @Mock
+    private GroupBuyRepository groupBuyRepository;
 
     @InjectMocks
     private CreatorThreadService creatorThreadService;
@@ -185,39 +188,39 @@ class CreatorThreadServiceTest {
     }
 
     @Test
-    @DisplayName("내 스레드의 첨부면 상대(브랜드)가 올린 것도 다운로드 URL 발급으로 위임한다 (§13-8)")
+    @DisplayName("내 스레드의 첨부면 상대(브랜드)가 올린 것도 일괄 발급으로 위임한다 (§13-8 · §13-9)")
     void delegatesDownloadForCounterpartAttachment() {
         MessageThread thread = connectedPairThread();
         MessageAttachment attachment = counterpartAttachment(thread);
-        AttachmentDownloadResponse expected =
-                new AttachmentDownloadResponse(501L, "https://s3.example/download", "계약서.pdf", 2048L, 300L);
+        List<AttachmentDownloadResponse> expected = List.of(
+                new AttachmentDownloadResponse(501L, "https://s3.example/download", "계약서.pdf", 2048L, 300L));
 
         givenAuthenticatedCreator();
-        given(messageAttachmentRepository.findById(501L)).willReturn(Optional.of(attachment));
+        given(messageAttachmentService.loadForDownload(List.of(501L))).willReturn(List.of(attachment));
         given(messageThreadRepository.findById(THREAD_ID)).willReturn(Optional.of(thread));
-        given(messageAttachmentService.createDownloadUrl(attachment, ParticipantType.CREATOR, CREATOR_ID))
+        given(messageAttachmentService.createDownloadUrls(List.of(attachment), ParticipantType.CREATOR, CREATOR_ID))
                 .willReturn(expected);
 
-        assertThat(creatorThreadService.getDownloadUrl(CREATOR_EMAIL, 501L)).isSameAs(expected);
+        assertThat(creatorThreadService.getDownloadUrls(CREATOR_EMAIL, List.of(501L))).isSameAs(expected);
     }
 
     @Test
-    @DisplayName("남의 스레드에 속한 첨부는 다운로드 URL을 발급하지 않는다")
+    @DisplayName("남의 스레드에 속한 첨부가 섞이면 아무 URL도 발급하지 않는다")
     void deniesDownloadForOtherCreatorsThread() {
         Creator otherCreator = Creator.builder().id(999L).showroomName("남의쇼룸").build();
         Connection connection = Connection.requestPair(market(), otherCreator);
         connection.markConnected();
         MessageThread otherThread = MessageThread.builder()
                 .id(THREAD_ID).connection(connection).status(ThreadStatus.OPEN).build();
+        MessageAttachment others = counterpartAttachment(otherThread);
 
         givenAuthenticatedCreator();
-        given(messageAttachmentRepository.findById(501L))
-                .willReturn(Optional.of(counterpartAttachment(otherThread)));
+        given(messageAttachmentService.loadForDownload(List.of(501L))).willReturn(List.of(others));
         given(messageThreadRepository.findById(THREAD_ID)).willReturn(Optional.of(otherThread));
 
-        assertThatThrownBy(() -> creatorThreadService.getDownloadUrl(CREATOR_EMAIL, 501L))
+        assertThatThrownBy(() -> creatorThreadService.getDownloadUrls(CREATOR_EMAIL, List.of(501L)))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.THREAD_ACCESS_DENIED);
-        verify(messageAttachmentService, never()).createDownloadUrl(any(), any(), any());
+        verify(messageAttachmentService, never()).createDownloadUrls(any(), any(), any());
     }
 }

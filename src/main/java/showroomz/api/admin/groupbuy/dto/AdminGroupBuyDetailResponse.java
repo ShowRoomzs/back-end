@@ -411,7 +411,10 @@ public record AdminGroupBuyDetailResponse(
     }
 
     public record OpenIssue(Long issueId, GroupBuyIssueType issueType, String issueTypeLabel,
-                            GroupBuyActorType openerType, LocalDateTime openedAt, @Schema(nullable = true) Long threadId) {
+                            GroupBuyActorType openerType, LocalDateTime openedAt, @Schema(nullable = true) Long threadId,
+                            @Schema(description = "답변 대기 — 스레드의 마지막 글을 개설 측이 썼으면 true. 스레드나 글이 없으면 null",
+                                    nullable = true)
+                            Boolean awaitingReply) {
     }
 
     public record Closure(

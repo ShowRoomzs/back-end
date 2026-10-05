@@ -38,10 +38,11 @@ public class DeliveryAddressController implements DeliveryAddressControllerDocs 
     @Override
     // 1. 배송지 추가
     @PostMapping
-    public ResponseEntity<Void> addAddress(@Valid @RequestBody DeliveryAddressDto.Request request) {
+    public ResponseEntity<DeliveryAddressDto.CreatedResponse> addAddress(
+            @Valid @RequestBody DeliveryAddressDto.Request request) {
         UserPrincipal userPrincipal = getAuthenticatedUser();
-        deliveryAddressService.addAddress(userPrincipal.getUsername(), request);
-        return ResponseEntity.ok().build();
+        Long id = deliveryAddressService.addAddress(userPrincipal.getUsername(), request);
+        return ResponseEntity.ok(new DeliveryAddressDto.CreatedResponse(id));
     }
 
     @Override

@@ -267,13 +267,13 @@ class OrderCrossCuttingScenarioIntegrationTest extends OrderFlowTestSupport {
                 .andExpect(jsonPath("$.recipient.address").value("서울 강남구 테헤란로 000"));
 
         byte[] file = sellerPost(SELLER_ORDERS + "/purchase-order", Map.of(
-                "columns", List.of("ORDER_NUMBER", "RECIPIENT", "PHONE", "ADDRESS"), "startPreparation", false))
+                "columns", List.of("ORDER_NUMBER", "RECIPIENT", "PHONE", "ADDRESS")))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsByteArray();
         assertThat(readSheet(file).get(1)).containsExactly(group.getOrder().getOrderNumber(), "김수민", "010-1234-5678",
                 "서울 강남구 테헤란로 000 쇼룸타워 12층");
-        // 다운로드만(견적·재고 확인용) — 준비 시작하지 않는다.
-        assertThat(reloadGroup(group).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.NEW);
+        // 발주서 = 준비 시작(34 설계서 3-1) — 「다운로드만」은 없다.
+        assertThat(reloadGroup(group).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.PREPARING);
 
         Map<String, Object> log = jdbc.queryForMap("SELECT market_id, seller_id, delivery_group_count, columns, prepare_started "
                 + "FROM purchase_order_download_log");
@@ -281,7 +281,7 @@ class OrderCrossCuttingScenarioIntegrationTest extends OrderFlowTestSupport {
         assertThat(((Number) log.get("seller_id")).longValue()).isEqualTo(brand.seller().getId());
         assertThat(((Number) log.get("delivery_group_count")).intValue()).isEqualTo(1);
         assertThat(log.get("columns")).isEqualTo("ORDER_NUMBER,RECIPIENT,PHONE,ADDRESS");
-        assertThat(log.get("prepare_started")).isEqualTo(false);
+        assertThat(log.get("prepare_started")).isEqualTo(true);
     }
 
     // ------------------------------------------------------------------ 픽스처

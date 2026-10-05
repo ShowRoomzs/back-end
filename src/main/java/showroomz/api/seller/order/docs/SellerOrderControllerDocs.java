@@ -70,7 +70,8 @@ public interface SellerOrderControllerDocs {
                     **행 필드 해석**
                     - `statusLabel` · `statusTone`(NEUTRAL/INFO/WARNING/SUCCESS/DANGER)은 서버 배지 값이다 — FE가 매핑하지 않는다.
                     - `overlays` — 이행 상태와 별 축: `cancelRequested`(취소 요청 검토 중) · `trackingAlert`(집화 확인 필요/추적 정지) ·
-                      `shipOverdue`(발송기한 경과 · 브랜드 귀책). 한 행에 여럿이 함께 뜰 수 있다.
+                      `shipOverdue`(발송기한 경과 · 브랜드 귀책) · `openClaimCount`(진행 중인 반품·교환 건수). 한 행에 여럿이 함께 뜰 수 있다.
+                    - `confirmRemainingDays`는 거절되지 않은 진행 중 반품·교환이 있으면 `null`이다 — 그 건이 끝날 때까지 구매확정이 선다.
                     - `recipientName`은 전체 표기(rev.6). 연락처·주소는 목록에 없다 — 상세·발주서에만(§34-11).
                     - `settlementLabel`은 정산 모듈 전이라 `null`이다 — 0이 아니다.
                     - `items[]`는 행 확장(▸) 미리보기다 — 상품·옵션 · 수량 · 공구가 · 금액 · 항목 상태.
@@ -120,7 +121,9 @@ public interface SellerOrderControllerDocs {
                       `NEW` · `PREPARING`은 검토 중 취소 요청이 걸린 건을 뺀 수이고, 그 건들은 `CANCEL_REQUESTED`로 센다.
                     - `actionBar.prepareStart` = `tabCounts.NEW`, `actionBar.invoiceRegister` = `tabCounts.PREPARING`
                     - `deliveryIssue` = 집화 확인 필요 + 추적 정지 + 반송중 **합산** — 구분은 목록이 한다.
-                    - `incomingCheck` · `reshipExchange`는 반품·교환 관리(미제작) 몫이라 **`null`** 이다. 0으로 그리지 말 것.
+                    - `incomingCheck` · `reshipExchange`는 반품·교환 **클레임(항목) 건수**다 — 하위주문 수가 아니다.
+                      `incomingCheck` = 검수 단계(브랜드 도착 + 입고 확인 후 검수 대기), `reshipExchange` = 재발송 대기.
+                      각각 `GET /v1/seller/claims/summary` 의 `tabCounts.INSPECTION` · `tabCounts.RESHIP` 과 같은 수다.
                     - 「배송완료 처리」 칸은 없다 — 자동 전환이라 상시 대기 항목이 아니다.
                     """)
     @ApiResponses({
@@ -219,11 +222,18 @@ public interface SellerOrderControllerDocs {
                     - 어느 경로든 **결제된 신규·상품준비중만** 싣는다 — 선택 건에 배송중·배송완료·취소·결제 전이 섞이면 조용히 빠진다
                       (개인정보 재반출 방지 · §34-11).
                     - 검토 중 취소 요청이 걸린 하위주문은 **자동으로 빠진다**(작업 큐 밖). 다 빠져서 남는 게 없으면 400.
+                    - 소비자 취소가 결제 쪽에서 처리 중이라 **준비 시작이 되지 않은 신규 주문도 빠진다** — 발주서에 실린 주문은
+                      전부 상품준비중이다.
                     - 대상 상한 2,000건 — 넘으면 잘라 내려보내지 않고 400 `PURCHASE_ORDER_TOO_MANY`(기간·검색으로 나눠 받는다).
 
+                    **발주서 = 준비 시작**
+                    - 발주서를 내려받으면 대상 중 **신규 주문이 항상 준비 시작**된다 — 발주서를 뽑는 것은 보내겠다는 결정이다.
+                      이력 `detail`에 「발주서 다운로드」가 남는다. **소비자 단순 취소권과 배송지 변경이 이 순간 닫힌다**
+                      (되돌리기 없음) — 그래서 발주서에 실린 주소는 그 뒤 바뀌지 않는다.
+                    - 「다운로드만」은 없다. `startPreparation` 은 보내지 않는다 — `false` 를 보내면 400 `INVALID_INPUT`.
+                      견적·재고 확인은 목록의 행 확장(상품 · 옵션 · 수량)으로 본다.
+
                     **옵션**
-                    - `startPreparation` 생략 시 ON — 발주서를 뽑는 것은 보내겠다는 결정이다. 대상 중 **신규만** 준비 시작되고
-                      이력 `detail`에 「발주서 다운로드 동시 처리」가 남는다. OFF 면 다운로드만(견적·재고 확인용)
                     - `saveAsDefault` — 이 구성을 기본값으로 저장(기본정보 관리에서 수정)
 
                     **응답** — 파일명 `발주서_yyyyMMdd_HHmmss.xlsx`(Content-Disposition `filename*=UTF-8''…`).
@@ -235,7 +245,7 @@ public interface SellerOrderControllerDocs {
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                     schema = @Schema(implementation = PurchaseOrderRequest.class),
                     examples = {
-                            @ExampleObject(name = "선택 건 · 준비 시작 동시 처리(기본)", value = """
+                            @ExampleObject(name = "선택 건", value = """
                                     {
                                       "deliveryGroupIds": [1024, 1025],
                                       "columns": ["ORDER_NUMBER", "RECIPIENT", "PHONE", "ZIP_CODE", "ADDRESS", "PRODUCT_NAME", "OPTION", "QUANTITY"]
@@ -251,21 +261,14 @@ public interface SellerOrderControllerDocs {
                                       "from": "2026-09-26",
                                       "to": "2026-10-03"
                                     }
-                                    """),
-                            @ExampleObject(name = "다운로드만(준비 시작 안 함)", value = """
-                                    {
-                                      "deliveryGroupIds": [1024],
-                                      "columns": ["PRODUCT_NAME", "OPTION", "QUANTITY"],
-                                      "startPreparation": false
-                                    }
                                     """)
                     }))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "xlsx 바이너리(Content-Disposition attachment)",
                     content = @Content(mediaType = XLSX, schema = @Schema(type = "string", format = "binary"))),
-            @ApiResponse(responseCode = "400", description = "PURCHASE_ORDER_EMPTY — 내려받을 대상 없음(취소 요청 건 제외 후 0건 포함) · "
+            @ApiResponse(responseCode = "400", description = "PURCHASE_ORDER_EMPTY — 내려받을 대상 없음(취소 요청 건 · 준비 시작이 안 된 건 제외 후 0건 포함) · "
                     + "PURCHASE_ORDER_TOO_MANY — 대상 2,000건 초과 · "
-                    + "ORDER_SEARCH_RANGE_EXCEEDED — 필터 기간 1년 초과 · INVALID_INPUT — `columns` 비었음 · 정의되지 않은 enum 값 · "
+                    + "ORDER_SEARCH_RANGE_EXCEEDED — 필터 기간 1년 초과 · INVALID_INPUT — `columns` 비었음 · 정의되지 않은 enum 값 · `startPreparation: false` · "
                     + "시작일 > 종료일",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ErrorResponse.class),

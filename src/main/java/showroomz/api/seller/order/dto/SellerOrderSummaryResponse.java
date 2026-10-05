@@ -21,9 +21,10 @@ public record SellerOrderSummaryResponse(
             @Schema(description = "준비 시작 — 신규(취소 요청 걸린 건 제외)", example = "12") long prepareStart,
             @Schema(description = "송장 등록 — 상품준비중(〃)", example = "7") long invoiceRegister,
             @Schema(description = "배송 이상 — 집화 확인 필요 + 추적 정지 + 반송중 합산", example = "3") long deliveryIssue,
-            @Schema(description = "입고 확인 — 반품·교환 관리 모듈 전이라 null. 0이 아니다(설계서 0-6)", nullable = true)
-            Long incomingCheck,
-            @Schema(description = "재발송·교환 — 〃", nullable = true) Long reshipExchange
+            @Schema(description = "입고 확인 — 반품·교환의 검수 단계(브랜드 도착 · 입고 확인 후 검수 대기) 클레임 건수", example = "4")
+            long incomingCheck,
+            @Schema(description = "재발송·교환 — 재발송 송장을 기다리는(재발송 대기) 클레임 건수. 교환 새 상품 + 거절 반송", example = "2")
+            long reshipExchange
     ) {
     }
 }

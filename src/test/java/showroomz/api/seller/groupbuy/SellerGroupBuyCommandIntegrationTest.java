@@ -12,6 +12,9 @@ import showroomz.domain.groupbuy.type.GroupBuyActorType;
 import showroomz.domain.groupbuy.type.GroupBuyEventType;
 import showroomz.domain.groupbuy.type.GroupBuyPostReviewStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
+import showroomz.domain.message.entity.MessageThread;
+import showroomz.domain.message.type.ParticipantType;
+import showroomz.domain.message.type.ThreadKind;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
 
 import java.time.LocalDateTime;
@@ -343,16 +346,12 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
     // ── B5 · C5~C7 종료 후 ────────────────────────────────────────────────
 
     @Test
-    @DisplayName("이행 확인 — 이행은 1회 · 불가역 · 미이행은 사유 필수 · 3자 스레드 전에는 503")
+    @DisplayName("이행 확인 — 이행은 1회 · 불가역 · 미이행은 사유 필수")
     void fulfillmentCheck() throws Exception {
         GroupBuy ended = seedIn(GroupBuyStatus.ENDED);
         action(ended.getId(), "fulfillment-check", Map.of("result", "UNFULFILLED"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("GROUP_BUY_FULFILLMENT_REASON_REQUIRED"));
-        // 미이행은 3자 스레드가 첫 글을 받아야 성립한다 — 스레드 모델 변경 전에는 열지 않는다(설계서 5-3).
-        action(ended.getId(), "fulfillment-check", Map.of("result", "UNFULFILLED", "reason", "스토리 1건 누락"))
-                .andExpect(status().isServiceUnavailable())
-                .andExpect(jsonPath("$.code").value("GROUP_BUY_THREAD_UNAVAILABLE"));
 
         action(ended.getId(), "fulfillment-check", Map.of("result", "FULFILLED"))
                 .andExpect(status().isOk())
@@ -372,7 +371,59 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("이슈 스레드 — 진행중엔 409 · 종료 후에는 3자 스레드 전까지 503이고 이슈 행도 남지 않는다")
+    @DisplayName("미이행 — 같은 쌍에 3자 스레드를 열고 사유가 첫 글이 된다 · 연결 스레드는 그대로 하나다")
+    void unfulfilledOpensDisputeThread() throws Exception {
+        GroupBuy ended = seedIn(GroupBuyStatus.ENDED);
+
+        action(ended.getId(), "fulfillment-check", Map.of("result", "UNFULFILLED", "reason", "스토리 1건 누락"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.afterEnd.fulfillment.mine.result").value("UNFULFILLED"))
+                .andExpect(jsonPath("$.afterEnd.fulfillment.mine.reason").value("스토리 1건 누락"))
+                .andExpect(jsonPath("$.afterEnd.fulfillment.onHold").value(true))
+                .andExpect(jsonPath("$.afterEnd.fulfillment.threadId").isNumber())
+                // 같은 연결에 스레드가 둘이 돼도 「스레드 열기」는 연결 쌍의 대화를 가리킨다.
+                .andExpect(jsonPath("$.counterparty.pairThreadId").value(pairThreadId));
+
+        MessageThread thread = fulfillmentThread(ended.getId());
+        long threadId = thread.getId();
+        assertThat(threadId).isNotEqualTo(pairThreadId);
+        assertThat(thread.getConnection().getId()).isEqualTo(connection.getId());
+        detail(ended.getId()).andExpect(jsonPath("$.afterEnd.fulfillment.threadId").value(threadId));
+        assertThat(messagesOf(threadId)).singleElement().satisfies(first -> {
+            assertThat(first.getContent()).isEqualTo("스토리 1건 누락");
+            assertThat(first.getSenderType()).isEqualTo(ParticipantType.SELLER);
+            assertThat(first.getSenderId()).isEqualTo(brand.market().getId());
+        });
+
+        // 연결·소통 목록에 같은 상대의 두 번째 줄로 나온다 — 종류와 공구로 구분한다.
+        String pair = "$.content[?(@.threadId == " + pairThreadId + ")]";
+        String dispute = "$.content[?(@.threadId == " + threadId + ")]";
+        sellerThreads().andExpect(status().isOk())
+                .andExpect(jsonPath(pair + ".kind").value(contains("CONNECTION")))
+                .andExpect(jsonPath(dispute + ".kind").value(contains("GROUP_BUY_FULFILLMENT")))
+                .andExpect(jsonPath(dispute + ".groupBuyId").value(contains(ended.getId().intValue())))
+                .andExpect(jsonPath(dispute + ".groupBuyTitle").value(contains("글로우 크림 앵콜 공구")))
+                .andExpect(jsonPath(dispute + ".counterpartName").value(contains("글로우_지민")));
+    }
+
+    @Test
+    @DisplayName("미이행 — 쌍의 연결이 끊겼으면 스레드를 붙일 곳이 없어 503 · 확인도 남지 않는다")
+    void unfulfilledWithoutConnectionIsUnavailable() throws Exception {
+        GroupBuy ended = seedIn(GroupBuyStatus.ENDED);
+        transactionTemplate.executeWithoutResult(tx ->
+                connectionRepository.findById(connection.getId()).orElseThrow().markDisconnected());
+
+        action(ended.getId(), "fulfillment-check", Map.of("result", "UNFULFILLED", "reason", "스토리 1건 누락"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("GROUP_BUY_THREAD_UNAVAILABLE"));
+        detail(ended.getId()).andExpect(jsonPath("$.afterEnd.fulfillment.mine").doesNotExist())
+                .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(true));
+        assertThat(messageThreadRepository
+                .findFirstByKindAndSubjectIdOrderByIdAsc(ThreadKind.GROUP_BUY_FULFILLMENT, ended.getId())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("이슈 스레드 — 진행중엔 409 · 종료 후에는 3자 스레드를 열고 상대가 답하기 전까지 「답변 대기」다")
     void issueThread() throws Exception {
         GroupBuy selling = seedIn(GroupBuyStatus.IN_PROGRESS);
         action(selling.getId(), "issues", Map.of("issueType", "CONTENT_FULFILLMENT", "content", "스토리 누락"))
@@ -381,12 +432,30 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
 
         GroupBuy ended = seedIn(GroupBuyStatus.ENDED);
         action(ended.getId(), "issues", Map.of("issueType", "CONTENT_FULFILLMENT", "content", "스토리 누락"))
-                .andExpect(status().isServiceUnavailable())
-                .andExpect(jsonPath("$.code").value("GROUP_BUY_THREAD_UNAVAILABLE"));
-        detail(ended.getId()).andExpect(jsonPath("$.afterEnd.openIssue").doesNotExist())
-                .andExpect(jsonPath("$.permissions.canOpenIssue").value(true));
+                .andExpect(status().isCreated());
+        detail(ended.getId())
+                .andExpect(jsonPath("$.afterEnd.openIssue.type").value("CONTENT_FULFILLMENT"))
+                .andExpect(jsonPath("$.afterEnd.openIssue.openerType").value("SELLER"))
+                .andExpect(jsonPath("$.afterEnd.openIssue.threadId").isNumber())
+                .andExpect(jsonPath("$.afterEnd.openIssue.awaitingReply").value(true))
+                .andExpect(jsonPath("$.permissions.canOpenIssue").value(false));
         assertThat(groupBuyHistoryRepository.findByGroupBuyIdOrderByOccurredAtAscIdAsc(ended.getId()))
-                .noneMatch(entry -> entry.getEventType() == GroupBuyEventType.ISSUE_OPENED);
+                .anyMatch(entry -> entry.getEventType() == GroupBuyEventType.ISSUE_OPENED);
+
+        MessageThread thread = messageThreadRepository.findAll().stream()
+                .filter(candidate -> candidate.getKind() == ThreadKind.GROUP_BUY_ISSUE
+                        && ended.getId().equals(candidate.getSubjectId()))
+                .findFirst().orElseThrow();
+        assertThat(messagesOf(thread.getId())).singleElement()
+                .satisfies(first -> assertThat(first.getContent()).isEqualTo("스토리 누락"));
+
+        // 인플루언서가 스레드에 답하면 답변 대기가 풀린다 — 이슈는 그대로 열려 있다.
+        transactionTemplate.executeWithoutResult(tx -> messageThreadService.sendMessage(
+                messageThreadRepository.findById(thread.getId()).orElseThrow(), ParticipantType.CREATOR,
+                creator.getId(), "reply-1", "확인해 보겠습니다.", null));
+        detail(ended.getId())
+                .andExpect(jsonPath("$.afterEnd.openIssue.threadId").value(thread.getId()))
+                .andExpect(jsonPath("$.afterEnd.openIssue.awaitingReply").value(false));
     }
 
     @Test

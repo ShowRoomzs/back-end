@@ -10,6 +10,7 @@ import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractResendRequest;
 import showroomz.domain.contract.repository.ContractRepository;
 import showroomz.domain.contract.repository.ContractResendRequestRepository;
+import showroomz.domain.contract.service.port.ContractChannelGateway;
 import showroomz.domain.contract.service.ContractHistoryRecorder;
 import showroomz.domain.contract.service.ContractNotifier;
 import showroomz.domain.contract.type.ContractActorType;
@@ -40,6 +41,7 @@ public class CreatorContractCommandService {
     private final CreatorContractReader reader;
     private final ContractRepository contractRepository;
     private final ContractResendRequestRepository resendRequestRepository;
+    private final ContractChannelGateway channelGateway;
     private final CreatorContractDetailAssembler detailAssembler;
     private final ContractHistoryRecorder historyRecorder;
     private final ContractNotifier contractNotifier;
@@ -120,13 +122,17 @@ public class CreatorContractCommandService {
         }
 
         return resendRequestRepository
-                .findFirstByContractIdAndHandledAtIsNullOrderByRequestedAtDesc(contract.getId())
+                .findFirstByContractIdAndRequesterTypeAndHandledAtIsNullOrderByRequestedAtDesc(
+                        contract.getId(), ContractActorType.CREATOR)
                 .map(existing -> new CreatorContractResendRequestResponse(
                         existing.getId(), existing.getRequestedAt(), true))
                 .orElseGet(() -> {
                     LocalDateTime now = LocalDateTime.now();
                     ContractResendRequest saved = resendRequestRepository.save(ContractResendRequest.of(
                             contract, ContractActorType.CREATOR, creator.getId(), now));
+                    // 요청은 내 운영팀 채널에 카드로 등록된다 — 운영자가 거기서 재발송 완료를 알린다(36 설계 5-1).
+                    ContractChannelGateway.ChannelCard card = channelGateway.postResendRequestCard(contract, saved);
+                    saved.attachCard(card.threadId(), card.messageId());
                     historyRecorder.recordByCreator(
                             contract, ContractEventType.RESEND_REQUESTED, null, now);
                     contractNotifier.notifyAdmin(contract, ContractEventType.RESEND_REQUESTED.name());

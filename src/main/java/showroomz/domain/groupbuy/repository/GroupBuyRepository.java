@@ -14,7 +14,9 @@ import showroomz.domain.groupbuy.type.GroupBuyStatus;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, GroupBuyRepositoryCustom {
@@ -214,4 +216,20 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, Group
             + "WHERE ci.product.productId IN :productIds AND g.status IN :activeStatuses")
     List<Object[]> findActiveStatusesByProductIds(@Param("productIds") Collection<Long> productIds,
                                                  @Param("activeStatuses") Collection<GroupBuyStatus> activeStatuses);
+
+    /** 연결·소통 목록의 공구 3자 스레드 표시명(30-1 1-5) — 공구명은 계약명이다. */
+    @Query("SELECT g.id, c.title FROM GroupBuy g JOIN g.contract c WHERE g.id IN :groupBuyIds")
+    List<Object[]> findTitlesByIdIn(@Param("groupBuyIds") Collection<Long> groupBuyIds);
+
+    /** 공구 id → 공구명. 빈 목록이면 조회하지 않는다. */
+    default Map<Long, String> findTitleMapByIds(Collection<Long> groupBuyIds) {
+        Map<Long, String> titles = new HashMap<>();
+        if (groupBuyIds == null || groupBuyIds.isEmpty()) {
+            return titles;
+        }
+        for (Object[] row : findTitlesByIdIn(groupBuyIds)) {
+            titles.put((Long) row[0], (String) row[1]);
+        }
+        return titles;
+    }
 }

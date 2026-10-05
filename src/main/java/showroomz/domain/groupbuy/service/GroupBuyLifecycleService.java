@@ -133,8 +133,11 @@ public class GroupBuyLifecycleService {
             if (checked.contains(side)) {
                 continue;
             }
-            fulfillmentCheckRepository.save(GroupBuyFulfillmentCheck.autoConfirmed(groupBuy, side, now));
-            historyRecorder.recordBySystem(groupBuy, GroupBuyEventType.FULFILLMENT_AUTO_CONFIRMED, side.name(), now);
+            GroupBuyFulfillmentCheck check = fulfillmentCheckRepository.save(
+                    GroupBuyFulfillmentCheck.autoConfirmed(groupBuy, side, now));
+            // 행위자는 SYSTEM이다 — 답하지 않은 측은 사건의 내용이라 detail에 라벨로 남긴다(30-1 5절).
+            historyRecorder.record(groupBuy, GroupBuyEventType.FULFILLMENT_AUTO_CONFIRMED, GroupBuyActor.SYSTEM,
+                    side.getLabel() + " 무응답으로 자동 이행", check.getId(), now);
             created++;
         }
         return created;

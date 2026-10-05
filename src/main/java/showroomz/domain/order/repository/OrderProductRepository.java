@@ -1,6 +1,8 @@
 package showroomz.domain.order.repository;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -45,6 +47,14 @@ public interface OrderProductRepository extends JpaRepository<OrderProduct, Long
     /** 주문의 상품 줄 — 재고 복원·응답 조립. */
     @Query("SELECT op FROM OrderProduct op JOIN FETCH op.variant v JOIN FETCH v.product WHERE op.order.id = :orderId ORDER BY op.id ASC")
     List<OrderProduct> findByOrderIdWithVariant(@Param("orderId") Long orderId);
+
+    /**
+     * 소비자 앱 주문 내역(C10 설계서 2-4 #2) — 페이지의 주문들의 항목을 배송 그룹과 함께 IN 1번.
+     * 리뷰도 함께 올린다 — 역방향 OneToOne 은 지연 로딩이 안 돼, 빼면 항목마다 리뷰 조회가 한 번씩 나간다.
+     */
+    @Query("SELECT op FROM OrderProduct op LEFT JOIN FETCH op.deliveryGroup JOIN FETCH op.variant v JOIN FETCH v.product "
+            + "LEFT JOIN FETCH op.review WHERE op.order.id IN :orderIds ORDER BY op.id ASC")
+    List<OrderProduct> findByOrderIdsWithGroup(@Param("orderIds") Collection<Long> orderIds);
 
     /** 주문 상품 전체의 상태를 한 번에 — 주문 전이의 부수 효과(4-1). */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
@@ -114,19 +124,46 @@ public interface OrderProductRepository extends JpaRepository<OrderProduct, Long
             + "AND op.status <> showroomz.domain.order.type.OrderProductStatus.CANCELLED")
     long countActiveByGroup(@Param("deliveryGroupId") Long deliveryGroupId);
 
+    // ------------------------------------------------------------------ 반품·교환(35 설계서)
+
+    /** 클레임 신청의 잔여 수량 검사 — 항목을 id 오름차순으로 잠근다(동시 신청 2건이 같은 수량을 나눠 갖지 못하게). */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT op FROM OrderProduct op WHERE op.id IN :ids ORDER BY op.id ASC")
+    List<OrderProduct> findAllByIdForUpdate(@Param("ids") Collection<Long> ids);
+
+    /** 반품 검수 통과 — 반품 수량을 올린다. 주문 수량을 넘으면 0행. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderProduct op SET op.returnedQuantity = op.returnedQuantity + :quantity "
+            + "WHERE op.id = :orderProductId AND op.returnedQuantity + :quantity <= op.quantity")
+    int addReturnedQuantity(@Param("orderProductId") Long orderProductId, @Param("quantity") int quantity);
+
+    /** 전량 반품된 항목을 RETURNED 로 — 구매확정 배치가 PURCHASE_CONFIRMED 로 올리지 않게 한다. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderProduct op SET op.status = showroomz.domain.order.type.OrderProductStatus.RETURNED "
+            + "WHERE op.id = :orderProductId AND op.returnedQuantity >= op.quantity "
+            + "AND op.status = showroomz.domain.order.type.OrderProductStatus.PAID")
+    int markReturnedIfFull(@Param("orderProductId") Long orderProductId);
+
     // ------------------------------------------------------------------ 판매 관리 포트(7-2)
 
-    /** 취소 반영 판매 실적 — [주문 수, 금액]. 결제 완료 주문의 취소되지 않은 줄만. */
-    @Query("SELECT COUNT(DISTINCT op.order.id), COALESCE(SUM(op.price * op.quantity), 0) FROM OrderProduct op JOIN op.order o "
+    /**
+     * 취소·반품 반영 판매 실적 — [주문 수, 금액]. 결제 완료 주문의 취소되지 않은 줄만, 유효 수량
+     * ({@code quantity − returned_quantity})으로 센다. 전량 반품(RETURNED) 줄은 뺀다(35 설계서 5-2).
+     */
+    @Query("SELECT COUNT(DISTINCT op.order.id), COALESCE(SUM(op.price * (op.quantity - op.returnedQuantity)), 0) "
+            + "FROM OrderProduct op JOIN op.order o "
             + "WHERE op.groupBuy.id = :groupBuyId AND o.status IN :orderStatuses "
-            + "AND op.status <> showroomz.domain.order.type.OrderProductStatus.CANCELLED")
+            + "AND op.status NOT IN (showroomz.domain.order.type.OrderProductStatus.CANCELLED, "
+            + "showroomz.domain.order.type.OrderProductStatus.RETURNED)")
     List<Object[]> sumSalesByGroupBuy(@Param("groupBuyId") Long groupBuyId,
                                       @Param("orderStatuses") Collection<showroomz.domain.order.type.OrderStatus> orderStatuses);
 
-    /** 상품별 판매 수량 — [productId, quantity]. */
-    @Query("SELECT op.variant.product.productId, COALESCE(SUM(op.quantity), 0) FROM OrderProduct op JOIN op.order o "
+    /** 상품별 판매 수량 — [productId, quantity]. 유효 수량 기준. */
+    @Query("SELECT op.variant.product.productId, COALESCE(SUM(op.quantity - op.returnedQuantity), 0) "
+            + "FROM OrderProduct op JOIN op.order o "
             + "WHERE op.groupBuy.id = :groupBuyId AND o.status IN :orderStatuses "
-            + "AND op.status <> showroomz.domain.order.type.OrderProductStatus.CANCELLED "
+            + "AND op.status NOT IN (showroomz.domain.order.type.OrderProductStatus.CANCELLED, "
+            + "showroomz.domain.order.type.OrderProductStatus.RETURNED) "
             + "GROUP BY op.variant.product.productId ORDER BY op.variant.product.productId ASC")
     List<Object[]> sumQuantityByProductForGroupBuy(@Param("groupBuyId") Long groupBuyId,
                                                    @Param("orderStatuses") Collection<showroomz.domain.order.type.OrderStatus> orderStatuses);

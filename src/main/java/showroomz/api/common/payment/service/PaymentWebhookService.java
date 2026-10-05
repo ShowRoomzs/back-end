@@ -6,7 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
+import showroomz.api.app.claim.service.ClaimPaymentService;
 import showroomz.api.app.order.service.PaymentConfirmService;
+import showroomz.domain.order.entity.OrderClaimPayment;
 import showroomz.domain.payment.entity.PaymentWebhookEvent;
 import showroomz.domain.payment.repository.PaymentRepository;
 import showroomz.domain.payment.repository.PaymentWebhookEventRepository;
@@ -34,15 +36,18 @@ public class PaymentWebhookService {
     private final PaymentWebhookEventRepository eventRepository;
     private final PaymentRepository paymentRepository;
     private final PaymentConfirmService confirmService;
+    private final ClaimPaymentService claimPaymentService;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate newTransaction;
 
     public PaymentWebhookService(PaymentWebhookEventRepository eventRepository, PaymentRepository paymentRepository,
-                                 PaymentConfirmService confirmService, ObjectMapper objectMapper,
+                                 PaymentConfirmService confirmService, ClaimPaymentService claimPaymentService,
+                                 ObjectMapper objectMapper,
                                  org.springframework.transaction.PlatformTransactionManager transactionManager) {
         this.eventRepository = eventRepository;
         this.paymentRepository = paymentRepository;
         this.confirmService = confirmService;
+        this.claimPaymentService = claimPaymentService;
         this.objectMapper = objectMapper;
         this.newTransaction = new TransactionTemplate(transactionManager);
         this.newTransaction.setPropagationBehavior(org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -86,6 +91,10 @@ public class PaymentWebhookService {
             return Outcome.DUPLICATE;
         }
 
+        // 클레임 재발송 배송비 결제는 paymentId 접두로 갈린다 — 수신 컨트롤러를 따로 두지 않는다(앱 클레임 설계서 3-3).
+        if (OrderClaimPayment.isClaimPaymentId(paymentId)) {
+            return handleClaimPayment(eventId, webhookId, paymentId, type, now);
+        }
         if (paymentId == null || !paymentRepository.existsById(paymentId)) {
             log.info("모르는 결제의 웹훅 - webhookId: {}, paymentId: {}, type: {}", webhookId, paymentId, type);
             finish(eventId, WebhookEventResult.IGNORED, null, now);
@@ -112,6 +121,33 @@ public class PaymentWebhookService {
         } catch (RuntimeException e) {
             // 우리 코드의 버그 — Sentry 에 두 번 찍히는 게 「조용히 잃는 것」보다 낫다.
             log.error("웹훅 처리 실패 - webhookId: {}, paymentId: {}", webhookId, paymentId, e);
+            finish(eventId, WebhookEventResult.FAILED, e.toString(), now);
+            return Outcome.FAILED;
+        }
+    }
+
+    /** 클레임 결제의 확정 — 주문 결제와 같은 결과 규칙(모르는 결제·무관한 이벤트는 무시, 일시 장애는 500 으로 재전송). */
+    private Outcome handleClaimPayment(Long eventId, String webhookId, String paymentId, String type,
+                                       LocalDateTime now) {
+        if (type == null || !CONFIRM_TYPES.contains(type)) {
+            finish(eventId, WebhookEventResult.IGNORED, null, now);
+            return Outcome.IGNORED;
+        }
+        try {
+            claimPaymentService.confirm(paymentId, true);
+            finish(eventId, WebhookEventResult.PROCESSED, null, now);
+            return Outcome.PROCESSED;
+        } catch (BusinessException e) {
+            if (e.getErrorCode() == ErrorCode.PAYMENT_NOT_FOUND) {
+                finish(eventId, WebhookEventResult.IGNORED, e.getMessage(), now);
+                return Outcome.IGNORED;
+            }
+            log.warn("클레임 결제 웹훅 일시 실패 - webhookId: {}, paymentId: {} - {}", webhookId, paymentId,
+                    e.getMessage());
+            finish(eventId, WebhookEventResult.FAILED, e.getMessage(), now);
+            return Outcome.FAILED;
+        } catch (RuntimeException e) {
+            log.error("클레임 결제 웹훅 처리 실패 - webhookId: {}, paymentId: {}", webhookId, paymentId, e);
             finish(eventId, WebhookEventResult.FAILED, e.toString(), now);
             return Outcome.FAILED;
         }

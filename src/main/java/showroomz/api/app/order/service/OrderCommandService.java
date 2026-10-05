@@ -69,6 +69,13 @@ public class OrderCommandService {
         return checkoutService.buildCreateResponse(created.orderId(), created.paymentId());
     }
 
+    /** 주문 배송지 변경(C10 설계서 3-6) — 준비 시작 전에만. */
+    public OrderDto.ChangeAddressResponse changeDeliveryAddress(Long userId, Long orderId, Long addressId) {
+        return OrderDto.ChangeAddressResponse.builder()
+                .maskedAddress(checkoutService.changeDeliveryAddressTx(userId, orderId, addressId))
+                .build();
+    }
+
     /**
      * 주문 취소(5-6). 결제 전이면 즉시. 결제 후면 선점(T8) → 포트원 취소 → 결과에 따라 T9 / T9' / 202.
      */

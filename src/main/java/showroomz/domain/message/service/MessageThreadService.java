@@ -14,7 +14,11 @@ import showroomz.domain.message.repository.MessageThreadRepository;
 import showroomz.domain.message.repository.ThreadParticipantRepository;
 import showroomz.domain.message.type.AttachmentStatus;
 import showroomz.domain.message.type.AttachmentType;
+import showroomz.domain.message.entity.MessageCardPayload;
+import showroomz.domain.message.type.MessageCardType;
+import showroomz.domain.message.type.MessageRefType;
 import showroomz.domain.message.type.ParticipantType;
+import showroomz.domain.message.type.ThreadKind;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.AllowedAttachmentExtensions;
@@ -35,6 +39,12 @@ public class MessageThreadService {
 
     private static final int PREVIEW_MAX_LENGTH = 255;
 
+    /**
+     * 운영팀 공용 읽음 위치의 참가자 id(36 설계 0-5) — 운영자별로 읽음을 따로 세면 A가 답한 채널이 B에게 안 읽음으로 남는다.
+     * 자동 발송 메시지의 발신 id({@code OperatorChannelService.SYSTEM_OPERATOR_ID})와 같은 값이다.
+     */
+    public static final long OPERATOR_TEAM_PARTICIPANT_ID = 0L;
+
     private final MessageThreadRepository messageThreadRepository;
     private final ThreadParticipantRepository threadParticipantRepository;
     private final MessageRepository messageRepository;
@@ -43,7 +53,7 @@ public class MessageThreadService {
     /** CONNECTION이 처음 CONNECTED가 되는 순간(최초 수락 또는 재연결) 호출한다(§1-3). */
     @Transactional
     public MessageThread activateThread(Connection connection) {
-        MessageThread thread = messageThreadRepository.findByConnection(connection)
+        MessageThread thread = messageThreadRepository.findByConnectionAndKind(connection, ThreadKind.CONNECTION)
                 .orElseGet(() -> messageThreadRepository.save(MessageThread.openFor(connection)));
         thread.open();
         return thread;
@@ -78,11 +88,48 @@ public class MessageThreadService {
                     Message saved = messageRepository.save(
                             Message.create(thread, senderType, senderId, clientMessageId, content));
 
+                    // 첨부 연결보다 먼저 기록한다 — 연결 UPDATE가 영속성 컨텍스트를 비우므로 뒤에 고치면
+                    // 분리된 스레드를 고치게 되어 미리보기 · 최근 시각이 저장되지 않는다(연결 직전에 flush된다).
+                    thread.recordLastMessage(preview(content, attachments), saved.getCreatedAt(), senderType);
+
                     if (hasAttachments) {
                         linkAttachments(saved, thread, senderType, senderId, attachmentIds);
                     }
+                    return new SendResult(saved, true);
+                });
+    }
 
-                    thread.recordLastMessage(preview(content, attachments), saved.getCreatedAt());
+    /**
+     * 시스템 카드 등록(36 설계 5-1) — 카드는 서버의 다른 흐름(계약 관리)에서만 생긴다. 화면이 보내는 전송 API는
+     * 이 메서드로 오지 않는다.
+     *
+     * <p>멱등키는 호출자가 참조 객체에서 만든 고정값이다 — 같은 요청 · 같은 계약에 카드가 두 장 붙지 않는다.
+     * 미리보기는 카드 제목이 된다.
+     */
+    @Transactional
+    public SendResult postSystemCard(MessageThread thread, ParticipantType senderType, Long senderId,
+                                     String clientMessageId, MessageCardType cardType,
+                                     MessageRefType refType, Long refId, MessageCardPayload payload) {
+        return messageRepository.findByThreadAndClientMessageId(thread, clientMessageId)
+                .map(existing -> new SendResult(existing, false))
+                .orElseGet(() -> {
+                    Message saved = messageRepository.save(Message.createCard(thread, senderType, senderId,
+                            clientMessageId, cardType, refType, refId, payload.toJson()));
+                    thread.recordLastMessage(cardType.getTitle(), saved.getCreatedAt(), senderType);
+                    return new SendResult(saved, true);
+                });
+    }
+
+    /** 정해진 문구의 자동 안내 말풍선(36 설계 5-2) — 멱등키가 같으면 기존 메시지를 돌려준다. */
+    @Transactional
+    public SendResult sendAutoNotice(MessageThread thread, ParticipantType senderType, Long senderId,
+                                     String clientMessageId, String content) {
+        return messageRepository.findByThreadAndClientMessageId(thread, clientMessageId)
+                .map(existing -> new SendResult(existing, false))
+                .orElseGet(() -> {
+                    Message saved = messageRepository.save(
+                            Message.createAutoNotice(thread, senderType, senderId, clientMessageId, content));
+                    thread.recordLastMessage(preview(content, List.of()), saved.getCreatedAt(), senderType);
                     return new SendResult(saved, true);
                 });
     }
@@ -170,6 +217,24 @@ public class MessageThreadService {
         }
         return messageRepository.countUnreadByThreadIds(threadIds, participantType, participantId).stream()
                 .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
+    }
+
+    /**
+     * 운영팀 기준 안 읽은 수(36 설계 3-3) — 읽음 위치는 팀 공용 1행이고, 어느 운영자가 보냈든 운영팀 메시지는 세지 않는다.
+     * {@link #countUnreadByThreadIds}는 「보낸 사람 = 나」만 빼므로 다른 운영자의 말풍선이 안 읽은 수로 잡힌다.
+     */
+    public Map<Long, Long> countUnreadForOperatorTeam(List<Long> threadIds) {
+        if (threadIds.isEmpty()) {
+            return Map.of();
+        }
+        return messageRepository.countUnreadForOperatorTeam(threadIds, OPERATOR_TEAM_PARTICIPANT_ID).stream()
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
+    }
+
+    /** 누가 열든 운영팀의 읽음 위치가 앞으로 간다(36 설계 0-5). */
+    @Transactional
+    public void markReadByOperatorTeam(MessageThread thread) {
+        markRead(thread, ParticipantType.ADMIN, OPERATOR_TEAM_PARTICIPANT_ID);
     }
 
     /** 배지 합계 — countUnreadByThreadIds와 같은 한 쿼리를 쓰고 값만 합친다. */

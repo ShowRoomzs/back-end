@@ -23,6 +23,7 @@ import showroomz.domain.contract.event.ContractReviewRequestedEvent;
 import showroomz.domain.contract.repository.ContractClauseVersionRepository;
 import showroomz.domain.contract.repository.ContractRepository;
 import showroomz.domain.contract.repository.ContractResendRequestRepository;
+import showroomz.domain.contract.service.port.ContractChannelGateway;
 import showroomz.domain.contract.service.ContractHistoryRecorder;
 import showroomz.domain.contract.service.ContractNotifier;
 import showroomz.domain.contract.service.ContractNumberGenerator;
@@ -73,6 +74,7 @@ public class SellerContractCommandService {
     private final ContractDetailAssembler detailAssembler;
     private final ContractRepository contractRepository;
     private final ContractResendRequestRepository resendRequestRepository;
+    private final ContractChannelGateway channelGateway;
     private final ContractClauseVersionRepository clauseVersionRepository;
     private final ConnectionRepository connectionRepository;
     private final ProductRepository productRepository;
@@ -274,13 +276,17 @@ public class SellerContractCommandService {
         }
 
         return resendRequestRepository
-                .findFirstByContractIdAndHandledAtIsNullOrderByRequestedAtDesc(contract.getId())
+                .findFirstByContractIdAndRequesterTypeAndHandledAtIsNullOrderByRequestedAtDesc(
+                        contract.getId(), ContractActorType.SELLER)
                 .map(existing -> new ContractResendRequestResponse(
                         existing.getId(), existing.getRequestedAt(), true))
                 .orElseGet(() -> {
                     LocalDateTime now = LocalDateTime.now();
                     ContractResendRequest saved = resendRequestRepository.save(ContractResendRequest.of(
                             contract, ContractActorType.SELLER, market.getId(), now));
+                    // 요청은 내 운영팀 채널에 카드로 등록된다 — 운영자가 거기서 재발송 완료를 알린다(36 설계 5-1).
+                    ContractChannelGateway.ChannelCard card = channelGateway.postResendRequestCard(contract, saved);
+                    saved.attachCard(card.threadId(), card.messageId());
                     historyRecorder.recordBySeller(contract, ContractEventType.RESEND_REQUESTED, null, now);
                     contractNotifier.notifyAdmin(contract, ContractEventType.RESEND_REQUESTED.name());
                     return new ContractResendRequestResponse(saved.getId(), saved.getRequestedAt(), false);

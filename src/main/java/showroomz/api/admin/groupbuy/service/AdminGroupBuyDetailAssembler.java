@@ -16,6 +16,7 @@ import showroomz.domain.groupbuy.entity.GroupBuyChangeRequest;
 import showroomz.domain.groupbuy.entity.GroupBuyExtensionRequest;
 import showroomz.domain.groupbuy.entity.GroupBuyFulfillmentCheck;
 import showroomz.domain.groupbuy.entity.GroupBuyHistory;
+import showroomz.domain.groupbuy.entity.GroupBuyIssue;
 import showroomz.domain.groupbuy.entity.GroupBuyPost;
 import showroomz.domain.groupbuy.entity.GroupBuyPostRevision;
 import showroomz.domain.groupbuy.repository.GroupBuyAppealAttachmentRepository;
@@ -481,7 +482,7 @@ public class AdminGroupBuyDetailAssembler {
         OpenIssue openIssue = facts.openIssue() == null ? null : new OpenIssue(
                 facts.openIssue().getId(), facts.openIssue().getIssueType(),
                 facts.openIssue().getIssueType().getLabel(), facts.openIssue().getOpenerType(),
-                facts.openIssue().getOpenedAt(), facts.openIssue().getThreadId());
+                facts.openIssue().getOpenedAt(), facts.openIssue().getThreadId(), awaitingReply(facts.openIssue()));
         return new AfterEnd(
                 ended ? fulfillment(groupBuy, facts, contract, now) : null,
                 ended ? settlement(groupBuy, facts, contract, sales, now) : null,
@@ -493,6 +494,13 @@ public class AdminGroupBuyDetailAssembler {
      * 미이행 행은 그대로 UNFULFILLED다 — 이행 확인은 불가역이다(제20조②). 「합의로 해소」 표기는 FE가
      * {@code UNFULFILLED + agreedAt} 조합으로 만든다(4-8 ④).
      */
+    /** 파트너 상세와 같은 판정 — 마지막 글을 개설 측이 썼으면 상대가 아직 답하지 않았다(30-1 2절). */
+    private Boolean awaitingReply(GroupBuyIssue issue) {
+        return threadGateway.findLastSpeaker(issue.getThreadId())
+                .map(speaker -> speaker == issue.getOpenerType())
+                .orElse(null);
+    }
+
     private Fulfillment fulfillment(GroupBuy groupBuy, GroupBuyFacts facts, Contract contract, LocalDateTime now) {
         List<GroupBuyFulfillmentCheck> checks = facts.fulfillmentChecks();
         Long threadId = checks.stream().map(GroupBuyFulfillmentCheck::getThreadId)

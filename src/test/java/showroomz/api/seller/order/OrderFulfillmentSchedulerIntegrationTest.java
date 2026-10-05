@@ -4,18 +4,21 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.scheduling.support.CronExpression;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.type.DeliveryCarrier;
 import showroomz.domain.order.type.FulfillmentEventType;
 import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.global.config.properties.DeliveryTrackerProperties;
 import showroomz.global.config.properties.OrderProperties;
+import showroomz.global.delivery.tracker.DeliveryTrackerBlockedException;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort;
 import showroomz.global.delivery.tracker.NoopDeliveryTracker;
 import showroomz.global.scheduler.OrderDeliveryTrackingScheduler;
 import showroomz.global.scheduler.PurchaseConfirmScheduler;
 import showroomz.support.IntegrationTest;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,8 +63,8 @@ class OrderFulfillmentSchedulerIntegrationTest extends SellerOrderTestSupport {
     }
 
     @Test
-    @DisplayName("[TR-01] 추적 배치 — 회차당 상한(batchSize)까지만 폴링한다 · 송장 없는 건·배송중 아닌 건은 대상이 아니다")
-    void trackingTickRespectsBatchSize() throws Exception {
+    @DisplayName("[TR-01] 추적 배치 — 대상이 페이지 크기(batchSize)를 넘어도 한 회차에 전량을 돈다 · 송장 없는 건·배송중 아닌 건은 대상이 아니다")
+    void trackingTickSweepsAllPages() throws Exception {
         preparingGroup();
         shippingGroup("730010002003");
         shippingGroup("730010002004");
@@ -70,7 +73,88 @@ class OrderFulfillmentSchedulerIntegrationTest extends SellerOrderTestSupport {
 
         trackingScheduler(tracker, 2).tick();
 
-        assertThat(tracker.calls).containsExactly("730010002003", "730010002004");
+        assertThat(tracker.calls).containsExactly("730010002003", "730010002004", "730010002005");
+    }
+
+    @Test
+    @DisplayName("[TR-01] 추적 배치 — 회차 중에 대상이 배송완료로 빠져도 다음 페이지를 건너뛰지 않는다(id 커서 · 오프셋이면 누락)")
+    void trackingTickCursorSurvivesShrinkingTargets() throws Exception {
+        OrderDeliveryGroup first = shippingGroup("730010002010");
+        OrderDeliveryGroup second = shippingGroup("730010002011");
+        OrderDeliveryGroup third = shippingGroup("730010002012");
+        LocalDateTime deliveredAt = LocalDateTime.now().withNano(0).minusHours(1);
+        StubTracker tracker = new StubTracker(trackingNumber ->
+                Optional.of(new DeliveryTrackerPort.TrackSnapshot(deliveredAt, deliveredAt, false, false)));
+
+        trackingScheduler(tracker, 1).tick();
+
+        assertThat(tracker.calls).containsExactly("730010002010", "730010002011", "730010002012");
+        assertThat(List.of(reload(first), reload(second), reload(third)))
+                .allMatch(group -> group.getFulfillmentStatus() == FulfillmentStatus.DELIVERED);
+    }
+
+    @Test
+    @DisplayName("[TR-01] 추적 배치 — 반송중도 함께 돈다(id 순) · 배송완료·준비중은 대상이 아니다")
+    void trackingTickIncludesReturning() throws Exception {
+        OrderDeliveryGroup shipping = shippingGroup("730010002013");
+        returning(shippingGroup("730010002014"));
+        delivered(shippingGroup("730010002015"), LocalDateTime.now().withNano(0).minusHours(1));
+        preparingGroup();
+        StubTracker tracker = new StubTracker(trackingNumber -> Optional.empty());
+
+        trackingScheduler(tracker, 300).tick();
+
+        assertThat(tracker.calls).containsExactly("730010002013", "730010002014");
+        assertThat(reload(shipping).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.SHIPPING);
+    }
+
+    @Test
+    @DisplayName("[TR-01] 추적 배치 — 대상이 없으면 포트를 부르지 않는다")
+    void trackingTickWithNoTargets() throws Exception {
+        preparingGroup();
+        StubTracker tracker = new StubTracker(trackingNumber -> Optional.empty());
+
+        trackingScheduler(tracker, 300).tick();
+
+        assertThat(tracker.calls).isEmpty();
+    }
+
+    @Test
+    @DisplayName("[TR-01] 추적 배치 — 키 단위 차단(사용량 초과)이면 그 회차를 멈춘다 · 앞 건은 반영되고 뒤 건은 부르지 않는다")
+    void trackingTickStopsWhenBlocked() throws Exception {
+        OrderDeliveryGroup first = shippingGroup("730010002006");
+        OrderDeliveryGroup blocked = shippingGroup("730010002007");
+        shippingGroup("730010002008");
+        LocalDateTime deliveredAt = LocalDateTime.now().withNano(0).minusHours(1);
+        StubTracker tracker = new StubTracker(trackingNumber -> {
+            if (trackingNumber.equals("730010002007")) {
+                throw new DeliveryTrackerBlockedException("키 사용량 초과");
+            }
+            return Optional.of(new DeliveryTrackerPort.TrackSnapshot(deliveredAt, deliveredAt, false, false));
+        });
+
+        trackingScheduler(tracker, 300).tick();
+
+        assertThat(tracker.calls).containsExactly("730010002006", "730010002007");
+        assertThat(reload(first).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.DELIVERED);
+        assertThat(reload(blocked).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.SHIPPING);
+    }
+
+    @Test
+    @DisplayName("[TR-01] 폴링 일정 — KST 02~06시를 빼고 2시간 간격, 하루 10회(연동 업체의 송장당 일 조회 한도)")
+    void pollCronFiresTenTimesADay() {
+        CronExpression cron = CronExpression.parse(new DeliveryTrackerProperties().getPollCron());
+        LocalDateTime cursor = LocalDateTime.of(2026, 10, 4, 23, 59, 59);
+        List<Integer> hours = new ArrayList<>();
+        while (true) {
+            cursor = cron.next(cursor);
+            if (cursor == null || !cursor.toLocalDate().equals(LocalDate.of(2026, 10, 5))) {
+                break;
+            }
+            hours.add(cursor.getHour());
+        }
+
+        assertThat(hours).containsExactly(0, 6, 8, 10, 12, 14, 16, 18, 20, 22);
     }
 
     @Test
@@ -111,6 +195,7 @@ class OrderFulfillmentSchedulerIntegrationTest extends SellerOrderTestSupport {
     private OrderDeliveryTrackingScheduler trackingScheduler(DeliveryTrackerPort tracker, int batchSize) {
         DeliveryTrackerProperties properties = new DeliveryTrackerProperties();
         properties.setBatchSize(batchSize);
+        properties.setCallGapMs(0);
         return new OrderDeliveryTrackingScheduler(fulfillmentService, tracker, properties);
     }
 

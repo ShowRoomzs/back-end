@@ -56,13 +56,14 @@ public class UserService {
     private final DeviceTokenService deviceTokenService;
 
     /**
-     * 더 이상 진행 중이 아닌 주문 상태 — 이 둘을 뺀 나머지가 탈퇴를 막는다.
+     * 더 이상 진행 중이 아닌 주문 상태 — 이 셋을 뺀 나머지가 탈퇴를 막는다. 전량 반품(RETURNED)도 항목의 종결이다.
      *
      * <p>결제 대기(PENDING)도 막는다. 결제창이 열린 사이 탈퇴하면 뒤늦게 도착한 웹훅이 결제를 확정할 사용자가 없다.
      * 결제하지 않은 주문은 만료 스케줄러가 30분 뒤 CANCELLED로 내리므로 오래 막히지 않는다(결제 계획서 4-1 · 선행 수정 계획서 3-4).
      */
     private static final Set<OrderProductStatus> FINISHED_ORDER_STATUSES =
-            EnumSet.of(OrderProductStatus.PURCHASE_CONFIRMED, OrderProductStatus.CANCELLED);
+            EnumSet.of(OrderProductStatus.PURCHASE_CONFIRMED, OrderProductStatus.CANCELLED,
+                    OrderProductStatus.RETURNED);
 
     public Optional<Users> getUser(String username) {
         return userRepository.findByUsername(username);

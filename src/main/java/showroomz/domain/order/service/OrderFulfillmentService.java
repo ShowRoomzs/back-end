@@ -25,6 +25,7 @@ import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.domain.order.type.RefundTaskSource;
 import showroomz.domain.order.type.TrackingAlert;
 import showroomz.domain.product.repository.ProductVariantRepository;
+import showroomz.global.config.properties.OrderProperties;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackSnapshot;
 
 import java.time.LocalDateTime;
@@ -49,6 +50,8 @@ public class OrderFulfillmentService {
     private final OrderRefundTaskRepository refundTaskRepository;
     private final OrderCancelRequestRepository cancelRequestRepository;
     private final ProductVariantRepository productVariantRepository;
+    private final DeliveryTrackingEventRecorder trackingEventRecorder;
+    private final OrderProperties orderProperties;
 
     // ------------------------------------------------------------------ 이력
 
@@ -177,12 +180,28 @@ public class OrderFulfillmentService {
         return true;
     }
 
+    /**
+     * 단건 구매확정 시도(35 설계서 3-6) — 배치와 같은 조건부 UPDATE 를 그 자리에서 연다. 클레임이 구매확정 보류를 푸는
+     * 순간(검수 거절 · 철회 · 자동 취소)에 부른다 — 기준 시각 + N일이 이미 지났고 다른 보류 클레임이 없으면 배치 회차를
+     * 기다리지 않고 확정된다. 조건이 안 맞으면 아무 일도 없다.
+     */
+    @Transactional
+    public boolean confirmIfDue(Long deliveryGroupId, LocalDateTime now) {
+        return confirmPurchase(deliveryGroupId, now, now.minusDays(orderProperties.getPurchaseConfirmDays()));
+    }
+
     // ------------------------------------------------------------------ 배송 추적(설계서 3-3)
 
     @Transactional(readOnly = true)
     public List<OrderDeliveryGroup> findTrackingTargets(int limit) {
+        return findTrackingTargets(0L, limit);
+    }
+
+    /** {@code afterId} 초과분을 id 오름차순으로 — 감시 배치가 마지막 id 를 넘기며 대상 전량을 돈다. */
+    @Transactional(readOnly = true)
+    public List<OrderDeliveryGroup> findTrackingTargets(long afterId, int limit) {
         return deliveryGroupRepository.findTrackingTargets(
-                EnumSet.of(FulfillmentStatus.SHIPPING, FulfillmentStatus.RETURNING), PageRequest.of(0, limit));
+                EnumSet.of(FulfillmentStatus.SHIPPING, FulfillmentStatus.RETURNING), afterId, PageRequest.of(0, limit));
     }
 
     /**
@@ -213,6 +232,8 @@ public class OrderFulfillmentService {
         if (deliveryGroupRepository.touchTracking(id, carrier, trackingNumber, snapshot.lastEventAt()) != 1) {
             return; // 송장이 바뀌었거나 추적 대상 상태를 벗어났다 — 이 결과는 지금 송장의 것이 아니다.
         }
+        // 소비자 앱 배송 조회가 읽는 이력 — 화면은 택배 API 를 부르지 않는다(앱 클레임 설계서 1-6).
+        trackingEventRecorder.record(carrier, trackingNumber, snapshot.events());
 
         if (snapshot.returnCompleted() && target.getFulfillmentStatus() == FulfillmentStatus.RETURNING) {
             if (deliveryGroupRepository.markReturnCompleted(id, carrier, trackingNumber, now) == 1) {

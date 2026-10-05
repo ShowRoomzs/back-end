@@ -349,6 +349,66 @@ class MessageAttachmentServiceTest {
 
             assertThat(response.getDownloadUrl()).isEqualTo("https://s3.example/download");
         }
+
+        // ------------------------------------------------------------------ 일괄 발급
+
+        private MessageAttachment sent(long id, String originalName) {
+            MessageAttachment attachment = sentAttachment(originalName);
+            ReflectionTestUtils.setField(attachment, "id", id);
+            return attachment;
+        }
+
+        @Test
+        @DisplayName("일괄 발급 — 받은 순서대로 첨부마다 URL을 하나씩 서명한다")
+        void bulkSignsEachInOrder() throws Exception {
+            givenDownloadPresignUrl();
+
+            List<AttachmentDownloadResponse> responses = messageAttachmentService.createDownloadUrls(
+                    List.of(sent(503L, "c.pdf"), sent(501L, "a.mp4"), sent(502L, "b.png")), VIEWER_TYPE, VIEWER_ID);
+
+            assertThat(responses).extracting(AttachmentDownloadResponse::getAttachmentId).containsExactly(503L, 501L, 502L);
+            assertThat(responses).extracting(AttachmentDownloadResponse::getOriginalName).containsExactly("c.pdf", "a.mp4", "b.png");
+            verify(s3Presigner, org.mockito.Mockito.times(3)).presignGetObject(any(GetObjectPresignRequest.class));
+        }
+
+        @Test
+        @DisplayName("일괄 발급은 전부 되거나 전부 안 된다 — 마지막 하나가 막히면 앞의 것도 서명하지 않는다")
+        void bulkIsAllOrNothing() {
+            MessageAttachment unsentByOther = uploadedAttachment("작업중.mp4");
+            ReflectionTestUtils.setField(unsentByOther, "id", 509L);
+
+            assertThatThrownBy(() -> messageAttachmentService.createDownloadUrls(
+                    List.of(sent(501L, "a.mp4"), sent(502L, "b.png"), unsentByOther), VIEWER_TYPE, VIEWER_ID))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ATTACHMENT_ACCESS_DENIED);
+            assertThatThrownBy(() -> messageAttachmentService.createDownloadUrls(
+                    List.of(sent(501L, "a.mp4"), pendingAttachment(510L)), VIEWER_TYPE, VIEWER_ID))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ATTACHMENT_NOT_UPLOADED);
+            verify(s3Presigner, never()).presignGetObject(any(GetObjectPresignRequest.class));
+        }
+
+        @Test
+        @DisplayName("대상 조회 — 요청 순서를 지키고 중복은 한 번만, 한 번의 조회로 읽는다")
+        void loadKeepsOrderAndDedupes() {
+            MessageAttachment a = sent(501L, "a.mp4");
+            MessageAttachment b = sent(502L, "b.png");
+            given(attachmentRepository.findAllByIdIn(List.of(502L, 501L))).willReturn(List.of(a, b));
+
+            List<MessageAttachment> loaded = messageAttachmentService.loadForDownload(List.of(502L, 501L, 502L));
+
+            assertThat(loaded).containsExactly(b, a);
+        }
+
+        @Test
+        @DisplayName("대상 조회 — 하나라도 없으면 전체를 403으로 거절한다(어느 것이 없는지 알려주지 않는다)")
+        void loadRejectsWhenAnyMissing() {
+            given(attachmentRepository.findAllByIdIn(List.of(501L, 999L))).willReturn(List.of(sent(501L, "a.mp4")));
+
+            assertThatThrownBy(() -> messageAttachmentService.loadForDownload(List.of(501L, 999L)))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ATTACHMENT_ACCESS_DENIED);
+        }
     }
 
     @Nested

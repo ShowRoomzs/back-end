@@ -375,7 +375,7 @@ class ProductServiceTest {
         }
 
         @Test
-        @DisplayName("배송 블록은 마켓의 배송·교환·반품 설정을 그대로 싣는다")
+        @DisplayName("배송 블록은 마켓의 배송 설정을 싣고, 반품·교환 배송비는 기본 배송비다")
         void deliveryBlockComesFromMarketSettings() {
             Product target = product(ProductGroupBuyStatus.IN_PROGRESS);
             target.setMarket(market());
@@ -388,7 +388,22 @@ class ProductServiceTest {
             assertThat(delivery.getFreeShippingThreshold()).isEqualTo(30000);
             assertThat(delivery.getRemoteAreaSurcharge()).isEqualTo(5000);
             assertThat(delivery.getReturnFee()).isEqualTo(3000);
-            assertThat(delivery.getExchangeFee()).isEqualTo(6000);
+            assertThat(delivery.getExchangeFee()).isEqualTo(3000);
+        }
+
+        @Test
+        @DisplayName("[ON-04] 마켓에 기본 배송비가 없으면 반품·교환 배송비는 0 이다 — 마켓의 반품비·교환비(3,000 / 6,000)를 읽지 않는다")
+        void claimFeesWithoutDefaultDeliveryFee() {
+            Market market = market();
+            market.setDefaultDeliveryFee(null);
+            Product target = product(ProductGroupBuyStatus.IN_PROGRESS);
+            target.setMarket(market);
+            givenDetailReady(target);
+
+            ProductDto.DeliveryInfo delivery = productService.getProductDetail(PRODUCT_ID, null).getDelivery();
+
+            assertThat(delivery.getReturnFee()).isZero();
+            assertThat(delivery.getExchangeFee()).isZero();
         }
 
         @Test

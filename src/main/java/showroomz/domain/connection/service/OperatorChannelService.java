@@ -76,6 +76,34 @@ public class OperatorChannelService {
         openWithWelcome(connection, CREATOR_WELCOME_MESSAGE.formatted(creator.getShowroomName()));
     }
 
+    /**
+     * 브랜드의 운영팀 채널 — 없으면 그 자리에서 만든다(36 설계 5-1). 시스템 카드를 붙이는 흐름이 쓴다:
+     * 백필에서 빠진 회원이라는 이유로 계약 흐름이 실패하면 안 된다.
+     */
+    @Transactional
+    public MessageThread requireMarketChannel(Market market) {
+        Connection connection = connectionRepository
+                .findByTypeAndMarket(ConnectionType.OPERATOR_MARKET, market)
+                .orElseGet(() -> connectionRepository.save(Connection.createOperatorMarket(market)));
+        return messageThreadService.activateThread(connection);
+    }
+
+    /** 인플루언서의 운영팀 채널 — 없으면 만든다. 새로 만들 때는 등록 완료 훅과 같은 안내로 연다. */
+    @Transactional
+    public MessageThread requireCreatorChannel(Creator creator) {
+        Connection existing = connectionRepository
+                .findByTypeAndCreator(ConnectionType.OPERATOR_CREATOR, creator)
+                .orElse(null);
+        if (existing != null) {
+            return messageThreadService.activateThread(existing);
+        }
+        Connection created = connectionRepository.save(Connection.createOperatorCreator(creator));
+        if (creator.getShowroomName() != null && !creator.getShowroomName().isBlank()) {
+            openWithWelcome(created, CREATOR_WELCOME_MESSAGE.formatted(creator.getShowroomName()));
+        }
+        return messageThreadService.activateThread(created);
+    }
+
     private void openWithWelcome(Connection connection, String welcomeMessage) {
         MessageThread thread = messageThreadService.activateThread(connection);
         messageThreadService.sendMessage(thread, ParticipantType.ADMIN, SYSTEM_OPERATOR_ID,

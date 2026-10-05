@@ -45,6 +45,14 @@ public class DeliveryAddressDto {
         private boolean isDefault;
     }
 
+    /** 배송지 추가 결과 — 방금 만든 배송지를 앱이 바로 고를 수 있게 id 를 내린다(C10 설계서 3-6). */
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CreatedResponse {
+        private Long id;
+    }
+
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor

@@ -13,6 +13,9 @@ import java.util.List;
 /**
  * 발주서 다운로드(E1 · §34-4) — 대상은 선택 건, 선택 없이 열면 현재 탭 전체(목록과 같은 필터를 함께 보낸다).
  * 컬럼 선택 순서 = 엑셀 좌→우 열 순서다.
+ *
+ * <p><b>발주서를 내려받으면 항상 준비 시작이다</b>(34 설계서 3-1 · 2026-10-05) — 「다운로드만」 옵션은 없다.
+ * {@code startPreparation}은 구 FE 호환용으로만 남긴다: {@code false}는 400, 그 밖(생략 · true)은 받는다.
  */
 public record PurchaseOrderRequest(
         @Schema(description = "선택 건 — 비어 있으면 아래 필터(현재 탭 전체)로 대상을 정한다",
@@ -20,8 +23,8 @@ public record PurchaseOrderRequest(
         @Schema(description = "엑셀 열 구성 — 필수. 배열 순서 = 좌→우 열 순서 · 중복은 첫 위치만 남는다",
                 example = "[\"ORDER_NUMBER\", \"RECIPIENT\", \"PHONE\", \"ZIP_CODE\", \"ADDRESS\", \"PRODUCT_NAME\", \"OPTION\", \"QUANTITY\"]")
         @NotEmpty List<PurchaseOrderColumn> columns,
-        @Schema(description = "다운로드와 함께 준비 시작 처리 — 생략 시 ON. OFF 면 다운로드만(견적·재고 확인용)",
-                example = "true", nullable = true) Boolean startPreparation,
+        @Schema(description = "**폐지 예정 — 보내지 않는다.** 발주서 다운로드는 항상 준비 시작이다. `false` 를 보내면 400",
+                example = "true", nullable = true, deprecated = true) Boolean startPreparation,
         @Schema(description = "이 구성을 기본값으로 저장 — 생략 시 저장하지 않음", example = "false", nullable = true)
         Boolean saveAsDefault,
         // ── 선택 없이 열었을 때의 대상 필터(목록과 동일) ──
@@ -35,7 +38,8 @@ public record PurchaseOrderRequest(
         @Schema(description = "검색어", example = "글로우 크림", nullable = true) String keyword
 ) {
 
-    public boolean startPreparationOrDefault() {
-        return startPreparation == null || startPreparation;
+    /** 구 FE 가 「다운로드만」을 골랐는가 — 받지 않는다. */
+    public boolean downloadOnlyRequested() {
+        return Boolean.FALSE.equals(startPreparation);
     }
 }

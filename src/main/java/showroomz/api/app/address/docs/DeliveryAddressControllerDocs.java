@@ -208,7 +208,13 @@ public interface DeliveryAddressControllerDocs {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "등록 성공 - Status: 200 OK (응답 본문 없음)"
+                    description = "등록 성공 - Status: 200 OK. 생성된 배송지의 `id` 를 내린다 — " +
+                            "배송지 선택 화면(C13-2)이 방금 만든 주소를 선택 상태로 두는 데 쓴다.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = DeliveryAddressDto.CreatedResponse.class),
+                            examples = @ExampleObject(value = "{ \"id\": 55 }")
+                    )
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -305,7 +311,7 @@ public interface DeliveryAddressControllerDocs {
                     }
             )
     )
-    ResponseEntity<Void> addAddress(@RequestBody DeliveryAddressDto.Request request);
+    ResponseEntity<DeliveryAddressDto.CreatedResponse> addAddress(@RequestBody DeliveryAddressDto.Request request);
 
     @Operation(
             summary = "배송지 삭제",

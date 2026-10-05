@@ -67,8 +67,10 @@ class OrderFulfillmentTypesTest {
         assertThat(DeliveryCarrier.fromLabel("페덱스")).isNull();
         assertThat(DeliveryCarrier.fromLabel("")).isNull();
         assertThat(DeliveryCarrier.fromLabel(null)).isNull();
-        // 연동 업체 코드는 스펙 확정(§34-13 #16) 전까지 비어 있다.
-        assertThat(DeliveryCarrier.values()).allSatisfy(c -> assertThat(c.getTrackerCode()).isNull());
+        // 스마트택배 택배사 코드 — 채워진 것끼리 겹치면 다른 택배사의 송장을 조회한다. 쿠팡택배는 스마트택배 미지원.
+        assertThat(DeliveryCarrier.values()).extracting(DeliveryCarrier::getTrackerCode)
+                .filteredOn(code -> code != null).doesNotHaveDuplicates().hasSize(10);
+        assertThat(DeliveryCarrier.COUPANG.getTrackerCode()).isNull();
     }
 
     @Test

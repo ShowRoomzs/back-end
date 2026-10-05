@@ -64,6 +64,13 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
     @Column(name = "delivery_fee", nullable = false)
     private Integer deliveryFee;
 
+    /**
+     * 주문 시점 기본 배송비 — 무료배송이어도 원래 값(앱 클레임 설계서 1-4). 반품 배송비 차감 · 재발송비의 기준이다.
+     * 주문 생성 때 1회 적고 이후 바꾸지 않는다 — 마켓 설정이 바뀌어도 불변.
+     */
+    @Column(name = "base_delivery_fee", nullable = false)
+    private Integer baseDeliveryFee;
+
     @Column(name = "free_shipping_applied", nullable = false)
     private boolean freeShippingApplied;
 
@@ -104,6 +111,10 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
     @Column(name = "shipped_at")
     private LocalDateTime shippedAt;
 
+    /** 집화 시각 — 추적 배치가 본 첫 이벤트. 도착 예정일의 기준이자 택배사별 소요일 집계의 원천. 송장 수정 시 NULL 로 돌아간다. */
+    @Column(name = "picked_up_at")
+    private LocalDateTime pickedUpAt;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "tracking_alert", length = 30)
     private TrackingAlert trackingAlert;
@@ -120,6 +131,13 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
 
     @Column(name = "delivered_at")
     private LocalDateTime deliveredAt;
+
+    /**
+     * 구매확정 기산점 재시작 — 교환 재발송 도착 시각(35 설계서 1-10 · §35-7). {@code deliveredAt}을 덮지 않는다 —
+     * 최초 배송완료 시각은 사실이다.
+     */
+    @Column(name = "confirm_restart_at")
+    private LocalDateTime confirmRestartAt;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "delivered_source", length = 16)
@@ -153,15 +171,26 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
 
     @Builder
     public OrderDeliveryGroup(Order order, GroupBuy groupBuy, Market market, Integer productTotal, Integer deliveryFee,
-                              boolean freeShippingApplied, String marketName, String groupBuyNumber) {
+                              Integer baseDeliveryFee, boolean freeShippingApplied, String marketName,
+                              String groupBuyNumber) {
         this.order = order;
         this.groupBuy = groupBuy;
         this.market = market;
         this.productTotal = productTotal;
         this.deliveryFee = deliveryFee;
+        // 지정하지 않으면 부과액 — 유료배송 그룹은 둘이 같다.
+        this.baseDeliveryFee = baseDeliveryFee != null ? baseDeliveryFee : deliveryFee;
         this.freeShippingApplied = freeShippingApplied;
         this.marketName = marketName;
         this.groupBuyNumber = groupBuyNumber;
+    }
+
+    /**
+     * 구매확정 N일의 기준 시각 — 교환 재발송이 도착했으면 그 시각, 아니면 배송완료 시각(35 설계서 3-6).
+     * 배치의 WHERE({@code COALESCE(confirm_restart_at, delivered_at)})와 화면의 예정일 계산이 같은 값을 써야 한다.
+     */
+    public LocalDateTime confirmBaseAt() {
+        return confirmRestartAt != null ? confirmRestartAt : deliveredAt;
     }
 
     public Long getGroupBuyId() {

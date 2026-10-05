@@ -10,6 +10,7 @@ import showroomz.api.app.order.service.OrderPricingCalculator.Pricing;
 import showroomz.api.app.order.service.OrderPricingCalculator.Summary;
 import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.api.app.order.dto.UserOrderDto;
 import showroomz.domain.address.entity.DeliveryAddress;
 import showroomz.domain.address.repository.DeliveryAddressRepository;
 import showroomz.domain.cart.type.CartUnavailableReason;
@@ -38,6 +39,7 @@ import showroomz.domain.payment.type.PaymentStatus;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductOption;
 import showroomz.domain.product.entity.ProductVariant;
+import showroomz.domain.product.service.VariantOptionNames;
 import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.global.config.properties.OrderProperties;
 import showroomz.global.error.exception.BusinessException;
@@ -148,6 +150,8 @@ public class CheckoutService {
                     .market(group.market())
                     .productTotal((int) shipping.selectedProductTotal())
                     .deliveryFee(shipping.chargedDeliveryFee())
+                    // 무료배송이어도 원래 배송비를 남긴다 — 반품 차감 · 재발송비가 주문 시점 값을 쓴다(앱 클레임 설계서 1-4).
+                    .baseDeliveryFee(shipping.deliveryFee())
                     .freeShippingApplied(shipping.isFreeShipping())
                     .marketName(group.market() != null ? group.market().getMarketName() : null)
                     .groupBuyNumber(group.groupBuy().getGroupBuyNumber())
@@ -236,6 +240,34 @@ public class CheckoutService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
         requireOwner(order, userId);
         return assembler.toDetail(order);
+    }
+
+    // ------------------------------------------------------------------ 배송지 변경
+
+    /**
+     * 주문 배송지 변경(C10 설계서 3-6) — 결제된 주문이고 취소되지 않은 하위주문이 전부 준비 시작 전(NEW)일 때만.
+     * 주문은 배송지 id 를 참조하지 않고 스냅샷을 든다 — 고른 배송지의 값을 복사한다.
+     *
+     * <p>브랜드의 준비 시작 · 발주서 다운로드와 겹친다. 하위주문을 id 오름차순으로 잠근 뒤 상태를 본다 —
+     * 발주서와 같은 잠금 순서(하위주문 → 주문)라 교착이 없고, 준비 시작이 먼저 커밋되면 변경이 진다.
+     */
+    @Transactional
+    public UserOrderDto.MaskedAddress changeDeliveryAddressTx(Long userId, Long orderId, Long addressId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+        requireOwner(order, userId);
+        // 남의 배송지는 있는지도 알리지 않는다.
+        DeliveryAddress address = deliveryAddressRepository.findById(addressId)
+                .filter(found -> found.getUser().getId().equals(userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.ADDRESS_NOT_FOUND));
+
+        List<OrderDeliveryGroup> groups = deliveryGroupRepository.findByOrderIdForUpdate(orderId);
+        if (!OrderAssembler.isAddressChangeable(order, groups)) {
+            throw new BusinessException(ErrorCode.ORDER_ADDRESS_NOT_CHANGEABLE);
+        }
+        order.changeDeliveryAddress(new Order.AddressSnapshot(address.getRecipientName(), address.getPhoneNumber(),
+                address.getZipCode(), address.getAddress(), address.getDetailAddress()), address.getMemo());
+        return OrderAddressMasker.mask(order);
     }
 
     // ------------------------------------------------------------------ 취소
@@ -461,18 +493,7 @@ public class CheckoutService {
 
     /** 장바구니와 같은 형식 — 「용량: 30ml」·「색상: 베이지 / 사이즈: M」. 옵션 없는 단일 옵션은 옵션명(있으면). */
     static String buildOptionName(ProductVariant variant) {
-        List<ProductOption> options = variant.getOptions();
-        if (options == null || options.isEmpty()) {
-            return variant.getName();
-        }
-        return options.stream()
-                .sorted(Comparator.comparing(option -> option.getOptionGroup() != null
-                        ? option.getOptionGroup().getOptionGroupId() : 0L))
-                .map(option -> {
-                    String groupName = option.getOptionGroup() != null ? option.getOptionGroup().getName() : null;
-                    return (groupName != null ? groupName : "옵션") + ": " + option.getName();
-                })
-                .collect(Collectors.joining(" / "));
+        return VariantOptionNames.of(variant);
     }
 
     private Users requireUser(Long userId) {

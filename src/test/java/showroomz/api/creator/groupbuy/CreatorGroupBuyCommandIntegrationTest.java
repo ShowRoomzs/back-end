@@ -13,6 +13,8 @@ import showroomz.domain.groupbuy.type.GroupBuyActorType;
 import showroomz.domain.groupbuy.type.GroupBuyPostReviewStatus;
 import showroomz.domain.groupbuy.type.GroupBuyPostRevisionKind;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
+import showroomz.domain.message.entity.MessageThread;
+import showroomz.domain.message.type.ParticipantType;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.type.PostStatus;
 import showroomz.domain.post.type.PostType;
@@ -24,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.containsString;
@@ -383,8 +386,8 @@ class CreatorGroupBuyCommandIntegrationTest extends CreatorGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("미이행 — 사유 필수 · 3자 스레드를 못 열면 확인도 남지 않는다(503)")
-    void unfulfilledNeedsThread() throws Exception {
+    @DisplayName("미이행 — 사유 필수 · 3자 스레드의 첫 글이 되고, 양측 미이행은 한 스레드로 모인다")
+    void unfulfilledOpensOneThreadForBothSides() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);
 
         studioAction(groupBuy.getId(), "fulfillment-check", Map.of("result", "UNFULFILLED"))
@@ -393,10 +396,24 @@ class CreatorGroupBuyCommandIntegrationTest extends CreatorGroupBuyTestSupport {
         Map<String, Object> body = new HashMap<>();
         body.put("result", "UNFULFILLED");
         body.put("reason", "18건이 아직 배송 시작되지 않았습니다.");
-        studioAction(groupBuy.getId(), "fulfillment-check", body).andExpect(status().isServiceUnavailable())
-                .andExpect(jsonPath("$.code").value("GROUP_BUY_THREAD_UNAVAILABLE"));
+        studioAction(groupBuy.getId(), "fulfillment-check", body).andExpect(status().isOk())
+                .andExpect(jsonPath("$.afterEnd.fulfillment.mine.result").value("UNFULFILLED"))
+                .andExpect(jsonPath("$.afterEnd.fulfillment.onHold").value(true))
+                .andExpect(jsonPath("$.afterEnd.fulfillment.threadId").isNumber());
 
-        assertThat(fulfillmentCheckRepository.findByGroupBuyId(groupBuy.getId())).isEmpty();
+        MessageThread thread = fulfillmentThread(groupBuy.getId());
+        action(groupBuy.getId(), "fulfillment-check", Map.of("result", "UNFULFILLED", "reason", "스토리 1건 누락"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.afterEnd.fulfillment.threadId").value(thread.getId()));
+
+        assertThat(fulfillmentCheckRepository.findByGroupBuyId(groupBuy.getId()))
+                .extracting(check -> check.getThreadId())
+                .containsExactly(thread.getId(), thread.getId());
+        assertThat(messagesOf(thread.getId()))
+                .extracting(message -> message.getSenderType(), message -> message.getContent())
+                .containsExactly(
+                        tuple(ParticipantType.CREATOR, "18건이 아직 배송 시작되지 않았습니다."),
+                        tuple(ParticipantType.SELLER, "스토리 1건 누락"));
     }
 
     @Test

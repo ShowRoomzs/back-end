@@ -226,6 +226,8 @@ public enum ErrorCode {
     THREAD_NOT_FOUND(HttpStatus.NOT_FOUND, "THREAD_NOT_FOUND", "존재하지 않는 스레드입니다."),
     THREAD_ACCESS_DENIED(HttpStatus.FORBIDDEN, "THREAD_ACCESS_DENIED", "해당 스레드에 대한 권한이 없습니다."),
     THREAD_DORMANT(HttpStatus.CONFLICT, "THREAD_DORMANT", "연결이 해제된 스레드입니다. 열람만 가능합니다."),
+    THREAD_READ_ONLY(HttpStatus.CONFLICT, "THREAD_READ_ONLY", "탈퇴한 회원의 채널에는 메시지를 보낼 수 없습니다."),
+    MESSAGE_CARD_NOT_FOUND(HttpStatus.NOT_FOUND, "MESSAGE_CARD_NOT_FOUND", "요청 카드를 찾을 수 없습니다."),
     MESSAGE_EMPTY(HttpStatus.BAD_REQUEST, "MESSAGE_EMPTY", "메시지 내용 또는 첨부 중 하나는 필요합니다."),
     ATTACHMENT_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "ATTACHMENT_COUNT_EXCEEDED", "첨부는 메시지 1건당 최대 20개까지 가능합니다."),
     ATTACHMENT_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "ATTACHMENT_SIZE_EXCEEDED", "첨부 총 용량은 메시지 1건당 500MB를 초과할 수 없습니다."),
@@ -393,7 +395,28 @@ public enum ErrorCode {
     SHIPMENT_FILE_INVALID(HttpStatus.BAD_REQUEST, "SHIPMENT_FILE_INVALID", "엑셀 파일을 읽을 수 없습니다. 양식을 확인해 주세요."),
     SHIPMENT_FILE_TOO_MANY_ROWS(HttpStatus.BAD_REQUEST, "SHIPMENT_FILE_TOO_MANY_ROWS", "엑셀 업로드는 최대 1,000행까지 가능합니다."),
     /** 소비자 앱 — 준비 시작 후에는 취소 요청 경로만 남는다(약관 제17조② · 제18조①). */
-    ORDER_CANCEL_WINDOW_CLOSED(HttpStatus.CONFLICT, "ORDER_CANCEL_WINDOW_CLOSED", "배송 준비가 시작되어 바로 취소할 수 없습니다. 판매자에게 취소 요청을 보내 주세요.");
+    ORDER_CANCEL_WINDOW_CLOSED(HttpStatus.CONFLICT, "ORDER_CANCEL_WINDOW_CLOSED", "배송 준비가 시작되어 바로 취소할 수 없습니다. 판매자에게 취소 요청을 보내 주세요."),
+    ORDER_ADDRESS_NOT_CHANGEABLE(HttpStatus.CONFLICT, "ORDER_ADDRESS_NOT_CHANGEABLE", "배송 준비가 시작되어 배송지를 변경할 수 없습니다."),
+
+    // 반품·교환(35 설계서 · 앱 클레임 설계서 3-8)
+    CLAIM_NOT_FOUND(HttpStatus.NOT_FOUND, "CLAIM_NOT_FOUND", "반품·교환 요청을 찾을 수 없습니다."),
+    CLAIM_NOT_ELIGIBLE(HttpStatus.CONFLICT, "CLAIM_NOT_ELIGIBLE", "반품·교환을 요청할 수 없는 상품입니다."),
+    CLAIM_QUANTITY_EXCEEDED(HttpStatus.CONFLICT, "CLAIM_QUANTITY_EXCEEDED", "요청할 수 있는 수량을 초과했습니다."),
+    CLAIM_REASON_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "CLAIM_REASON_DETAIL_REQUIRED", "상세 내용을 입력해 주세요."),
+    CLAIM_STATE_CHANGED(HttpStatus.CONFLICT, "CLAIM_STATE_CHANGED", "요청 상태가 변경되었습니다. 새로고침 후 다시 확인해 주세요."),
+    CLAIM_INVOICE_NOT_EDITABLE(HttpStatus.CONFLICT, "CLAIM_INVOICE_NOT_EDITABLE", "이미 조회되는 송장이거나 수정 기한이 지나 송장을 수정할 수 없습니다."),
+    CLAIM_WITHDRAW_NOT_ALLOWED(HttpStatus.CONFLICT, "CLAIM_WITHDRAW_NOT_ALLOWED", "이미 회수가 시작되어 요청을 철회할 수 없습니다."),
+    CLAIM_AMOUNT_CHANGED(HttpStatus.CONFLICT, "CLAIM_AMOUNT_CHANGED", "배송비 금액이 달라졌습니다. 화면을 다시 불러와 확인해 주세요."),
+    CLAIM_REJECT_INCOMPLETE(HttpStatus.BAD_REQUEST, "CLAIM_REJECT_INCOMPLETE", "거절 사유 · 상세 설명 · 증빙 사진을 모두 입력해 주세요."),
+    CLAIM_PAYMENT_NOT_REQUIRED(HttpStatus.CONFLICT, "CLAIM_PAYMENT_NOT_REQUIRED", "결제가 필요한 상태가 아닙니다."),
+    CLAIM_EXCHANGE_OPTION_INVALID(HttpStatus.BAD_REQUEST, "CLAIM_EXCHANGE_OPTION_INVALID", "교환할 수 없는 옵션입니다."),
+    CLAIM_EXCHANGE_SAME_OPTION(HttpStatus.BAD_REQUEST, "CLAIM_EXCHANGE_SAME_OPTION", "같은 옵션은 불량 · 오배송일 때만 교환돼요."),
+    CLAIM_EXCHANGE_OUT_OF_STOCK(HttpStatus.CONFLICT, "CLAIM_EXCHANGE_OUT_OF_STOCK", "교환할 옵션의 재고가 없습니다."),
+    CLAIM_ADDRESS_NOT_CHANGEABLE(HttpStatus.CONFLICT, "CLAIM_ADDRESS_NOT_CHANGEABLE", "검수가 끝나 배송지를 변경할 수 없습니다."),
+    CLAIM_STORAGE_NOT_EXPIRED(HttpStatus.CONFLICT, "CLAIM_STORAGE_NOT_EXPIRED", "보관 기한이 지나지 않아 폐기 처리할 수 없습니다."),
+    CLAIM_EXPORT_EMPTY(HttpStatus.BAD_REQUEST, "CLAIM_EXPORT_EMPTY", "내려받을 재발송 대기 건이 없습니다."),
+    CLAIM_EXPORT_COLUMNS_REQUIRED(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "컬럼을 1개 이상 선택해 주세요."),
+    CLAIM_UPLOAD_HEADER_MISSING(HttpStatus.BAD_REQUEST, "CLAIM_UPLOAD_HEADER_MISSING", "파일에 접수번호 · 택배사 · 송장번호 열이 있어야 합니다.");
 
     private final HttpStatus status;
     private final String code;

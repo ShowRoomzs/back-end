@@ -8,7 +8,7 @@ CREATE TABLE `market_purchase_order_template` (
     `modified_at` DATETIME(6)  NOT NULL,
     PRIMARY KEY (`template_id`),
     CONSTRAINT `uk_market_purchase_order_template` UNIQUE (`market_id`),
-    CONSTRAINT `fk_market_purchase_order_template_market` FOREIGN KEY (`market_id`) REFERENCES `MARKET` (`MARKET_ID`)
+    CONSTRAINT `fk_market_purchase_order_template_market` FOREIGN KEY (`market_id`) REFERENCES `market` (`MARKET_ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 발주서 반출 이력 — 엑셀로 개인정보가 나간다. 기록만 하고 조회 화면은 어드민 몫이다.

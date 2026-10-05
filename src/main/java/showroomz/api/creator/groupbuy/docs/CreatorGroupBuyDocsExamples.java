@@ -524,7 +524,7 @@ final class CreatorGroupBuyDocsExamples {
               "permissions": {"canWritePost": false, "canEditPost": false, "canRespondExtension": false, "canRequestSuspension": false, "canCheckFulfillment": false, "canOpenPairThread": true},
               "history": [
                 {"eventType": "SETTLED", "actorType": "SYSTEM", "actorDisplayName": null, "detail": null, "occurredAt": "2026-09-05T15:00:00"},
-                {"eventType": "SALES_FINALIZED", "actorType": "SYSTEM", "actorDisplayName": null, "detail": null, "occurredAt": "2026-08-28T00:10:00"},
+                {"eventType": "SALES_FINALIZED", "actorType": "SYSTEM", "actorDisplayName": null, "detail": "구매확정 308건", "occurredAt": "2026-08-28T00:10:00"},
                 {"eventType": "FULFILLMENT_CONFIRMED", "actorType": "CREATOR", "actorDisplayName": "민지의 쇼룸", "detail": null, "occurredAt": "2026-08-22T10:30:00"},
             """ + HISTORY_ENDED_TAIL + NAV_LIST;
 
