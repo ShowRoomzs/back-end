@@ -31,6 +31,8 @@ import showroomz.domain.message.entity.MessageAttachment;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.repository.MessageAttachmentRepository;
 import showroomz.domain.message.repository.MessageThreadRepository;
+import showroomz.api.common.thread.dto.MessageCardResponse;
+import showroomz.domain.message.service.MessageCardReader;
 import showroomz.domain.message.service.MessageThreadService;
 import showroomz.domain.message.type.ParticipantType;
 import showroomz.domain.message.type.ThreadStatus;
@@ -61,6 +63,7 @@ public class CreatorThreadService {
     private final MessageThreadService messageThreadService;
     private final MessageAttachmentRepository messageAttachmentRepository;
     private final MessageAttachmentService messageAttachmentService;
+    private final MessageCardReader messageCardReader;
     private final ContractRepository contractRepository;
     private final GroupBuyRepository groupBuyRepository;
 
@@ -133,8 +136,10 @@ public class CreatorThreadService {
         Long nextCursor = hasNext ? page.get(page.size() - 1).getId() : null;
 
         Map<Long, List<AttachmentSummary>> attachmentsByMessage = loadAttachments(page);
+        Map<Long, MessageCardReader.CardView> cards = loadCards(page);
         List<MessageItem> items = page.stream()
-                .map(m -> toMessageItem(m, creator.getId(), attachmentsByMessage.getOrDefault(m.getId(), List.of())))
+                .map(m -> toMessageItem(m, creator.getId(), attachmentsByMessage.getOrDefault(m.getId(), List.of()),
+                        cards.get(m.getId())))
                 .toList();
         return new MessageListResponse(items, nextCursor, hasNext);
     }
@@ -153,7 +158,7 @@ public class CreatorThreadService {
 
         Map<Long, List<AttachmentSummary>> attachments = loadAttachments(List.of(result.message()));
         MessageItem item = toMessageItem(result.message(), creator.getId(),
-                attachments.getOrDefault(result.message().getId(), List.of()));
+                attachments.getOrDefault(result.message().getId(), List.of()), null);
         return new SendMessageOutcome(item, result.created());
     }
 
@@ -230,9 +235,21 @@ public class CreatorThreadService {
                 thread.getSubjectId() == null ? null : groupBuyTitles.get(thread.getSubjectId()));
     }
 
-    private MessageItem toMessageItem(Message message, Long myCreatorId, List<AttachmentSummary> attachments) {
-        boolean mine = message.getSenderType() == ParticipantType.CREATOR && message.getSenderId().equals(myCreatorId);
-        return new MessageItem(message.getId(), message.getSenderType(), mine, message.getContent(), attachments, message.getCreatedAt());
+    /** 카드가 있는 페이지만 읽는다 — 카드 없는 대화가 대부분이다. */
+    private Map<Long, MessageCardReader.CardView> loadCards(List<Message> messages) {
+        return messages.stream().anyMatch(Message::isCard) ? messageCardReader.read(messages) : Map.of();
+    }
+
+    /**
+     * 카드는 내가 누른 요청으로 생겼어도 내 말풍선이 아니다 — {@code mine}은 항상 false다(36 설계 7절).
+     * 운영자 이름 · id · 자동 안내 표시는 이 응답에 싣지 않는다 — 상대에게 운영팀은 「SHOWROOMZ 운영팀」뿐이다(§36-4).
+     */
+    private MessageItem toMessageItem(Message message, Long myCreatorId, List<AttachmentSummary> attachments,
+                                      MessageCardReader.CardView card) {
+        boolean mine = !message.isCard()
+                && message.getSenderType() == ParticipantType.CREATOR && message.getSenderId().equals(myCreatorId);
+        return new MessageItem(message.getId(), message.getSenderType(), mine, message.getContent(), attachments,
+                message.getCreatedAt(), message.getMessageType(), MessageCardResponse.from(card));
     }
 
     private MessageThread getMyThread(Creator creator, Long threadId) {

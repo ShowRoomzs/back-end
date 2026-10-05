@@ -34,7 +34,9 @@ public interface UserClaimControllerDocs {
                       `soldOut` 으로 내린다. `current`(받은 옵션)는 불량 · 오배송일 때만 고를 수 있다
                     - `reshipTo`(교환 폼만) — 교환받을 배송지의 기본값(원 주문 배송지 · 원문). 다른 배송지를 고르면
                       요청의 `reshipAddressId` 로 보낸다
-                    - `items[].claimableQuantity` — 요청하면 이 수량 **전부**가 접수된다(수량 선택 없음)
+                    - `items[].claimableQuantity` — 신청할 수 있는 수량(주문 수량 − 이미 반품된 수량 − 진행 중 · 반려된 수량).
+                      2 이상이면 수량 선택을 그리고, 고른 값을 요청의 `items[].quantity` 로 보낸다(일부 수량만 반품·교환 가능).
+                      금액은 `unitPrice × 수량` 이다 — 배송비는 수량과 무관하다
                     - `reasons[]` — `feeBearer` 가 `CONSUMER` 면 배송비가 발생하고 반송 택배비는 선불, `SELLER` 면 0원 · 착불.
                       `detailRequired` 면 상세 내용 필수, `photoAllowed` 면 사진 블록을 연다
                     - `fees.consumerFault` — 고객 귀책일 때의 배송비. **반품**은 환불액에서 빼는 최초 배송비(무료배송으로 받은

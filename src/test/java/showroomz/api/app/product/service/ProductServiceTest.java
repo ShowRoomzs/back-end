@@ -392,6 +392,21 @@ class ProductServiceTest {
         }
 
         @Test
+        @DisplayName("[ON-04] 마켓에 기본 배송비가 없으면 반품·교환 배송비는 0 이다 — 마켓의 반품비·교환비(3,000 / 6,000)를 읽지 않는다")
+        void claimFeesWithoutDefaultDeliveryFee() {
+            Market market = market();
+            market.setDefaultDeliveryFee(null);
+            Product target = product(ProductGroupBuyStatus.IN_PROGRESS);
+            target.setMarket(market);
+            givenDetailReady(target);
+
+            ProductDto.DeliveryInfo delivery = productService.getProductDetail(PRODUCT_ID, null).getDelivery();
+
+            assertThat(delivery.getReturnFee()).isZero();
+            assertThat(delivery.getExchangeFee()).isZero();
+        }
+
+        @Test
         @DisplayName("판매자 정보는 셀러의 사업자 정보와 마켓의 고객센터 번호를 합쳐 만든다")
         void sellerInfoMergesSellerAndMarket() {
             Product target = product(ProductGroupBuyStatus.IN_PROGRESS);

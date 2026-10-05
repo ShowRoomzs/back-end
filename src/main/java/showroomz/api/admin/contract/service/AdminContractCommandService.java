@@ -7,6 +7,7 @@ import showroomz.api.admin.contract.dto.AdminContractDto.*;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.repository.*;
 import showroomz.domain.contract.service.*;
+import showroomz.domain.contract.service.port.ContractChannelGateway;
 import showroomz.domain.contract.type.*;
 import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.service.GroupBuyFactory;
@@ -22,6 +23,7 @@ public class AdminContractCommandService {
     private final ContractRepository contracts;
     private final ContractDocumentRepository documents;
     private final ContractResendRequestRepository resends;
+    private final ContractChannelGateway channelGateway;
     private final ContractHistoryRecorder history;
     private final ContractNotifier notifier;
     private final GroupBuyFactory groupBuyFactory;
@@ -145,6 +147,11 @@ public class AdminContractCommandService {
         ContractCancelRequester requester = requireRequester(c, request, now);
         transition(c, ContractStatus.CANCELED);
         c.applyCanceledByAdmin(request.reasonCode().name(), memo, requester, now);
+        // 스레드로 들어온 요청이면 그 요청자의 운영팀 채널에 결과 카드가 붙는다(36 설계 6절). 채널은 회원당 하나라
+        // 요청자에서 유도한다 — 운영자가 스레드를 고르지 않는다. 상대방 채널에는 붙이지 않는다(§36-9 A-5 미결).
+        if (requester.channel() == ContractCancelRequestChannel.THREAD) {
+            c.recordCancelRequestThread(channelGateway.postAdminCanceledCard(c, requester.type(), operator).threadId());
+        }
         record(c, operator, name, ContractEventType.CANCELED, request.reasonCode().getLabel(), now);
         notifier.notifyBothParties(c, "CANCELED");
         return response(c);

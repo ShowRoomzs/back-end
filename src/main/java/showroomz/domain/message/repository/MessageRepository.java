@@ -6,10 +6,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import showroomz.domain.connection.type.ConnectionType;
 import showroomz.domain.message.entity.Message;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.type.ParticipantType;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,4 +51,33 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Object[]> countUnreadByThreadIds(@Param("threadIds") List<Long> threadIds,
                                            @Param("participantType") ParticipantType participantType,
                                            @Param("participantId") Long participantId);
+
+    /**
+     * 운영팀 기준 안 읽은 수(36 설계 3-3) — 읽음 위치는 팀 공용 1행({@code ADMIN} · {@code teamParticipantId})이고
+     * 운영팀이 보낸 메시지는 어느 운영자의 것이든 세지 않는다.
+     */
+    @Query("SELECT t.id, COUNT(m.id) FROM MessageThread t " +
+           "LEFT JOIN ThreadParticipant p ON p.thread = t " +
+           "    AND p.participantType = showroomz.domain.message.type.ParticipantType.ADMIN " +
+           "    AND p.participantId = :teamParticipantId " +
+           "LEFT JOIN Message m ON m.thread = t " +
+           "    AND (p.lastReadMessageId IS NULL OR m.id > p.lastReadMessageId) " +
+           "    AND m.senderType <> showroomz.domain.message.type.ParticipantType.ADMIN " +
+           "WHERE t.id IN :threadIds " +
+           "GROUP BY t.id")
+    List<Object[]> countUnreadForOperatorTeam(@Param("threadIds") List<Long> threadIds,
+                                              @Param("teamParticipantId") Long teamParticipantId);
+
+    /** 탭 배지 — 운영팀 채널 전체의 팀 기준 안 읽은 수를 연결 타입별로 한 쿼리에 합친다(36 설계 3-2). */
+    @Query("SELECT c.type, COUNT(m.id) FROM Message m JOIN m.thread t JOIN t.connection c " +
+           "LEFT JOIN ThreadParticipant p ON p.thread = t " +
+           "    AND p.participantType = showroomz.domain.message.type.ParticipantType.ADMIN " +
+           "    AND p.participantId = :teamParticipantId " +
+           "WHERE c.type IN :types " +
+           "AND t.kind = showroomz.domain.message.type.ThreadKind.CONNECTION " +
+           "AND m.senderType <> showroomz.domain.message.type.ParticipantType.ADMIN " +
+           "AND (p.lastReadMessageId IS NULL OR m.id > p.lastReadMessageId) " +
+           "GROUP BY c.type")
+    List<Object[]> sumUnreadForOperatorTeamByConnectionType(@Param("types") Collection<ConnectionType> types,
+                                                            @Param("teamParticipantId") Long teamParticipantId);
 }

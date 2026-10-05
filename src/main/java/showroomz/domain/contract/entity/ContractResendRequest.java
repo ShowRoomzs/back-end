@@ -52,6 +52,17 @@ public class ContractResendRequest {
     @Column(name = "handled_by")
     private Long handledBy;
 
+    /** 요청 카드가 등록된 운영팀 채널(36 설계 1-3). 카드 도입 이전의 요청은 null이다. */
+    @Column(name = "thread_id")
+    private Long threadId;
+
+    @Column(name = "card_message_id")
+    private Long cardMessageId;
+
+    /** 재발송 완료 자동 안내 말풍선 — 알림 전송 후 채워진다. */
+    @Column(name = "notice_message_id")
+    private Long noticeMessageId;
+
     public static ContractResendRequest of(Contract contract, ContractActorType requesterType,
                                            Long requesterId, LocalDateTime requestedAt) {
         return ContractResendRequest.builder()
@@ -60,6 +71,21 @@ public class ContractResendRequest {
                 .requesterId(requesterId)
                 .requestedAt(requestedAt)
                 .build();
+    }
+
+    public void attachCard(Long threadId, Long cardMessageId) {
+        this.threadId = threadId;
+        this.cardMessageId = cardMessageId;
+    }
+
+    /**
+     * 재발송 완료 알림 전송(36 설계 5-2) — 「처리」가 곧 카드 버튼이다. 계약 상태도, 계약 이력도 바꾸지 않는다.
+     * 호출자가 행을 잠그고 {@link #isHandled()}를 먼저 본다.
+     */
+    public void markNotified(Long operatorId, Long noticeMessageId, LocalDateTime now) {
+        this.handledBy = operatorId;
+        this.handledAt = now;
+        this.noticeMessageId = noticeMessageId;
     }
 
     public boolean isHandled() {

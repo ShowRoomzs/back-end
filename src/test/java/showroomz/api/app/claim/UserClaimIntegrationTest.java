@@ -361,6 +361,47 @@ class UserClaimIntegrationTest extends SellerOrderTestSupport {
 
     // ------------------------------------------------------------------ 픽스처
 
+    @Test
+    @DisplayName("수량 일부만 신청 — 3개 중 1개를 요청하면 남은 2개가 신청 가능 수량으로 남고, 초과·0은 받지 않는다. 수량을 생략하면 남은 전량이다(D3)")
+    void partialQuantity() throws Exception {
+        OrderDeliveryGroup group = deliveredGroup(3);
+        Long orderProductId = items(group).get(0).getId();
+        String formUrl = CLAIMS + "/form?orderProductId=" + orderProductId + "&type=RETURN";
+        mockMvc.perform(get(formUrl).header(HttpHeaders.AUTHORIZATION, consumerToken))
+                .andExpect(jsonPath("$.items[0].claimableQuantity").value(3));
+
+        create(quantityBody(group, orderProductId, 4))
+                .andExpect(jsonPath("$.code").value("CLAIM_QUANTITY_EXCEEDED"));
+        create(quantityBody(group, orderProductId, 0)).andExpect(status().isBadRequest());
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM order_claim", Integer.class)).isZero();
+
+        Long first = created(create(quantityBody(group, orderProductId, 1)).andExpect(status().isCreated()));
+        assertThat(jdbc.queryForObject("SELECT quantity FROM order_claim WHERE claim_id = ?", Integer.class, first))
+                .isEqualTo(1);
+        claimDetail(first).andExpect(jsonPath("$.items[0].quantity").value(1))
+                .andExpect(jsonPath("$.items[0].amount").value(CREAM_PRICE));
+        mockMvc.perform(get(formUrl).header(HttpHeaders.AUTHORIZATION, consumerToken))
+                .andExpect(jsonPath("$.items[0].claimableQuantity").value(2));
+        create(quantityBody(group, orderProductId, 3))
+                .andExpect(jsonPath("$.code").value("CLAIM_QUANTITY_EXCEEDED"));
+
+        // 수량을 생략하면 남은 전량.
+        Long second = created(create(quantityBody(group, orderProductId, null)).andExpect(status().isCreated()));
+        assertThat(jdbc.queryForObject("SELECT quantity FROM order_claim WHERE claim_id = ?", Integer.class, second))
+                .isEqualTo(2);
+        mockMvc.perform(get(formUrl).header(HttpHeaders.AUTHORIZATION, consumerToken))
+                .andExpect(jsonPath("$.code").value("CLAIM_NOT_ELIGIBLE"));
+    }
+
+    private Map<String, Object> quantityBody(OrderDeliveryGroup group, Long orderProductId, Integer quantity) {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("orderProductId", orderProductId);
+        item.put("quantity", quantity);
+        Map<String, Object> body = body(group, "CHANGE_OF_MIND", null, null, null);
+        body.put("items", List.of(item));
+        return body;
+    }
+
     private OrderDeliveryGroup deliveredGroup(int quantity) throws Exception {
         return delivered(shipped(prepared(paidGroup(creamVariant, quantity)), "CJ", newInvoice()),
                 LocalDateTime.now().minusHours(1).withNano(0));

@@ -3,6 +3,7 @@ package showroomz.api.app.claim.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -108,7 +109,7 @@ public class UserClaimDto {
         private String thumbnailUrl;
         @Schema(description = "단가(공구가)", example = "27200")
         private Integer unitPrice;
-        @Schema(description = "신청 가능 수량 — 요청하면 이 수량 전부가 접수된다", example = "1")
+        @Schema(description = "신청 가능 수량 — 요청의 items[].quantity 상한. 2 이상이면 수량 선택을 그린다", example = "2")
         private Integer claimableQuantity;
         @Schema(description = "진입한 항목 — 체크된 채로 그린다")
         private Boolean preselected;
@@ -252,6 +253,10 @@ public class UserClaimDto {
     public static class CreateItem {
         @NotNull(message = "상품을 선택해 주세요.")
         private Long orderProductId;
+        @Min(value = 1, message = "수량은 1개 이상이어야 합니다.")
+        @Schema(description = "신청 수량 — 1 이상 · 폼의 claimableQuantity 이하. 생략하면 신청 가능 수량 전부", example = "1",
+                nullable = true)
+        private Integer quantity;
         @Schema(description = "교환받을 옵션 — 교환에서 필수. 폼의 exchangeOptions 중 하나", example = "302", nullable = true)
         private Long exchangeVariantId;
     }

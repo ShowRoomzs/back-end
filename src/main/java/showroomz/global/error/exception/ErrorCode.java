@@ -226,6 +226,8 @@ public enum ErrorCode {
     THREAD_NOT_FOUND(HttpStatus.NOT_FOUND, "THREAD_NOT_FOUND", "존재하지 않는 스레드입니다."),
     THREAD_ACCESS_DENIED(HttpStatus.FORBIDDEN, "THREAD_ACCESS_DENIED", "해당 스레드에 대한 권한이 없습니다."),
     THREAD_DORMANT(HttpStatus.CONFLICT, "THREAD_DORMANT", "연결이 해제된 스레드입니다. 열람만 가능합니다."),
+    THREAD_READ_ONLY(HttpStatus.CONFLICT, "THREAD_READ_ONLY", "탈퇴한 회원의 채널에는 메시지를 보낼 수 없습니다."),
+    MESSAGE_CARD_NOT_FOUND(HttpStatus.NOT_FOUND, "MESSAGE_CARD_NOT_FOUND", "요청 카드를 찾을 수 없습니다."),
     MESSAGE_EMPTY(HttpStatus.BAD_REQUEST, "MESSAGE_EMPTY", "메시지 내용 또는 첨부 중 하나는 필요합니다."),
     ATTACHMENT_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "ATTACHMENT_COUNT_EXCEEDED", "첨부는 메시지 1건당 최대 20개까지 가능합니다."),
     ATTACHMENT_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "ATTACHMENT_SIZE_EXCEEDED", "첨부 총 용량은 메시지 1건당 500MB를 초과할 수 없습니다."),

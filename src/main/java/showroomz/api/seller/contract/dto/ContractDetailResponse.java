@@ -229,7 +229,7 @@ public record ContractDetailResponse(
             @Schema(description = "계약 삭제 가능") boolean canDelete,
             @Schema(description = "상태상 검토 요청 가능. 필수값 검증은 validate.canSubmit으로 별도 확인") boolean canRequestReview,
             @Schema(description = "검토 요청 취소 가능") boolean canCancelRequest,
-            @Schema(description = "서명 안내 재발송 요청 가능. 현재 API는 Swagger에서 숨김") boolean canRequestResend,
+            @Schema(description = "서명 안내 재발송 요청 가능") boolean canRequestResend,
             @Schema(description = "고정 지급비 지급 완료 기록 가능") boolean canRecordPayment,
             @Schema(description = "이 조건으로 새 계약 작성 가능") boolean canDuplicate
     ) {

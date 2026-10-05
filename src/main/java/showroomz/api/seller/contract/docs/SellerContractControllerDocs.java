@@ -1,6 +1,5 @@
 package showroomz.api.seller.contract.docs;
 
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -449,19 +448,17 @@ public interface SellerContractControllerDocs {
     ResponseEntity<ContractDetailResponse> cancelReviewRequest(
             @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId);
 
-    // 요청이 가는 어드민 스레드가 아직 없어 Swagger에서 숨긴다 — 어드민 스레드 구현 후 제거.
-    @Hidden
     @Operation(
             summary = "서명 안내 다시 받기",
             description = """
-                    어드민의 「재발송 요청」 큐에 요청 행을 남긴다. **상태는 변하지 않는다.**
+                    내 **운영팀 채널에 요청 카드가 자동 등록**된다(연결·소통의 SHOWROOMZ 운영팀 스레드). **상태는 변하지 않는다.**
 
                     **권한:** SELLER · **허용 상태:** `SIGNING`
 
-                    요청은 발송이 아니다 — 실제 재발송은 어드민이 모두싸인에서 한다.
+                    요청은 발송이 아니다 — 실제 재발송은 어드민이 모두싸인에서 하고, 끝나면 같은 채널로 안내 메시지가 온다.
 
                     횟수 제한은 정책 미정(§28-8 D #7)이라 만들지 않되 연타는 막는다 —
-                    미처리 요청이 이미 있으면 새 행 대신 그 요청을 `alreadyRequested: true`로 돌려준다.
+                    **내가 낸** 미처리 요청이 이미 있으면 새 카드 대신 그 요청을 `alreadyRequested: true`로 돌려준다.
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "요청 접수 또는 기존 미처리 요청 반환",

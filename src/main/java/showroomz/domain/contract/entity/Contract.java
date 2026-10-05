@@ -190,6 +190,10 @@ public class Contract extends BaseTimeEntity {
     @Column(name = "cancel_requested_at")
     private LocalDateTime cancelRequestedAt;
 
+    /** 직권 취소 결과 카드가 등록된 운영팀 채널(36 설계 1-4) — 요청 경로가 스레드가 아니면 NULL. */
+    @Column(name = "cancel_request_thread_id")
+    private Long cancelRequestThreadId;
+
     /** 계약 1건 = 공구 1건. 공구 생성 게이트가 이 값의 NULL 여부로 중복을 막는다(설계서 1-8). */
     @Column(name = "group_buy_id")
     private Long groupBuyId;
@@ -344,6 +348,11 @@ public class Contract extends BaseTimeEntity {
         this.cancelRequestChannel = requester.channel();
         this.cancelRequestedAt = requester.requestedAt();
         this.status = ContractStatus.CANCELED;
+    }
+
+    /** 취소 결과 카드를 붙인 채널 — 요청자에서 서버가 유도한 값이다. 운영자가 고르지 않는다(36 설계 6절). */
+    public void recordCancelRequestThread(Long threadId) {
+        this.cancelRequestThreadId = threadId;
     }
 
     /** 고정 지급비 [지급 완료 기록](B5a) — 되돌리는 경로는 만들지 않는다(설계서 미결 #4). */

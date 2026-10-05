@@ -47,7 +47,7 @@ public class UserClaimCommandService {
     private final OrderProperties orderProperties;
 
     /**
-     * 요청 — 수량은 받지 않는다(시안에 수량 선택이 없다). 고른 항목의 신청 가능 수량 전량으로 접수한다.
+     * 요청 — 항목마다 수량을 받는다(일부 수량만 반품·교환). 수량을 생략하면 그 항목의 신청 가능 수량 전량이다.
      * 같은 멱등키의 재요청은 새로 만들지 않고 기존 요청을 돌려준다.
      */
     public UserClaimDto.CreateResponse create(Long userId, UserClaimDto.CreateRequest request) {
@@ -99,11 +99,12 @@ public class UserClaimCommandService {
         }
         List<Item> items = new ArrayList<>();
         for (UserClaimDto.CreateItem item : request.getItems()) {
-            Integer quantity = claimable.get(item.getOrderProductId());
-            if (quantity == null) {
+            Integer available = claimable.get(item.getOrderProductId());
+            if (available == null) {
                 throw new BusinessException(ErrorCode.ORDER_PRODUCT_NOT_FOUND); // 그 하위주문의 살아 있는 항목이 아니다
             }
-            if (quantity < 1) {
+            int quantity = item.getQuantity() != null ? item.getQuantity() : available;
+            if (quantity < 1 || quantity > available) {
                 throw new BusinessException(ErrorCode.CLAIM_QUANTITY_EXCEEDED);
             }
             if (exchange && item.getExchangeVariantId() == null) {

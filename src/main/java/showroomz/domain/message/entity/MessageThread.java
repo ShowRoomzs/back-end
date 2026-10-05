@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import showroomz.domain.common.BaseTimeEntity;
 import showroomz.domain.connection.entity.Connection;
+import showroomz.domain.message.type.ParticipantType;
 import showroomz.domain.message.type.ThreadKind;
 import showroomz.domain.message.type.ThreadStatus;
 
@@ -57,6 +58,11 @@ public class MessageThread extends BaseTimeEntity {
     @Column(name = "last_message_preview", length = 255)
     private String lastMessagePreview;
 
+    /** 어드민 목록의 「운영팀: 」 접두 판정(36 설계 1-2) — 미리보기 문자열에는 접두를 박지 않는다. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "last_message_sender_type", length = 20)
+    private ParticipantType lastMessageSenderType;
+
     public static MessageThread openFor(Connection connection) {
         return MessageThread.builder()
                 .connection(connection)
@@ -92,8 +98,9 @@ public class MessageThread extends BaseTimeEntity {
     }
 
     /** 첨부만 전송된 경우 등을 대비해 목록 미리보기는 표시용 텍스트를 그대로 받는다(P3에서 첨부 케이스 문구를 결정). */
-    public void recordLastMessage(String preview, LocalDateTime sentAt) {
+    public void recordLastMessage(String preview, LocalDateTime sentAt, ParticipantType senderType) {
         this.lastMessagePreview = preview;
         this.lastMessageAt = sentAt;
+        this.lastMessageSenderType = senderType;
     }
 }
