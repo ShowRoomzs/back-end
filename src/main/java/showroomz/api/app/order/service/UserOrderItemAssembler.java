@@ -53,6 +53,7 @@ public class UserOrderItemAssembler {
     private static final Set<UserOrderItemStatus> REJECTION_VISIBLE = EnumSet.of(UserOrderItemStatus.PAID,
             UserOrderItemStatus.PREPARING, UserOrderItemStatus.SHIPPING, UserOrderItemStatus.DELIVERED);
 
+    private static final String EXCHANGE_SOLD_OUT_LABEL = "교환 불가 (재고 없음)";
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("MM.dd");
     private static final DateTimeFormatter DAY_TIME = DateTimeFormatter.ofPattern("MM.dd HH:mm");
 
@@ -73,6 +74,11 @@ public class UserOrderItemAssembler {
         this.enabledActions = enabledActions;
     }
 
+    /** 그 액션을 지금 내리는가 — 호출자가 꺼진 액션을 위한 조회를 하지 않게 한다. */
+    public boolean isEnabled(UserOrderAction action) {
+        return enabledActions.contains(action);
+    }
+
     /** 목록과 상세는 DELIVERED 의 보조 문구와 버튼 구성만 다르다(1-2 · 1-6). */
     public enum View {
         LIST, DETAIL
@@ -87,17 +93,24 @@ public class UserOrderItemAssembler {
      * @param cancellableOrderIds       지금 전액 취소가 되는 주문 — {@code OrderAssembler.isCancellable}
      * @param today                     조회일 — 도착 예정일 · 할 일 기한이 지났는지의 기준
      * @param claims                    그 주문들의 반품·교환 클레임 — 없으면 {@link UserOrderClaimContext#EMPTY}
+     * @param exchangeUnavailableProductIds 교환할 수 있는 옵션의 재고가 하나도 없는 항목 — 상세에서만 판정한다
      */
     public record Context(Map<Long, Long> pendingRequestIdByProduct,
                           Map<Long, OrderCancelRequest> latestRejectedByProduct,
                           Set<Long> refundPendingGroupIds,
                           Set<Long> cancellableOrderIds,
                           LocalDate today,
-                          UserOrderClaimContext claims) {
+                          UserOrderClaimContext claims,
+                          Set<Long> exchangeUnavailableProductIds) {
 
         public Context withClaims(UserOrderClaimContext claims) {
             return new Context(pendingRequestIdByProduct, latestRejectedByProduct, refundPendingGroupIds,
-                    cancellableOrderIds, today, claims);
+                    cancellableOrderIds, today, claims, exchangeUnavailableProductIds);
+        }
+
+        public Context withExchangeUnavailable(Set<Long> exchangeUnavailableProductIds) {
+            return new Context(pendingRequestIdByProduct, latestRejectedByProduct, refundPendingGroupIds,
+                    cancellableOrderIds, today, claims, exchangeUnavailableProductIds);
         }
 
         public static Context of(Collection<OrderCancelRequest> requests, Set<Long> refundPendingGroupIds,
@@ -121,7 +134,7 @@ public class UserOrderItemAssembler {
                 }
             }
             return new Context(pending, rejected, refundPendingGroupIds, cancellableOrderIds, today,
-                    UserOrderClaimContext.EMPTY);
+                    UserOrderClaimContext.EMPTY, Set.of());
         }
     }
 
@@ -429,8 +442,16 @@ public class UserOrderItemAssembler {
         };
         return target.stream()
                 .filter(enabledActions::contains)
-                .map(action -> UserOrderDto.Action.builder()
-                        .type(action).label(labelOf(action, shownClaim)).enabled(true).build())
+                .map(action -> {
+                    // 교환할 옵션의 재고가 하나도 없으면 버튼을 지우지 않고 눌리지 않게 내린다 — 왜 안 되는지 보여야 한다.
+                    boolean soldOut = action == UserOrderAction.EXCHANGE_REQUEST
+                            && context.exchangeUnavailableProductIds().contains(product.getId());
+                    return UserOrderDto.Action.builder()
+                            .type(action)
+                            .label(soldOut ? EXCHANGE_SOLD_OUT_LABEL : labelOf(action, shownClaim))
+                            .enabled(!soldOut)
+                            .build();
+                })
                 .toList();
     }
 }

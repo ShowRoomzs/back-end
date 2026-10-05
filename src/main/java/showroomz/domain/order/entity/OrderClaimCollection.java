@@ -167,6 +167,17 @@ public class OrderClaimCollection {
         this.createdAt = createdAt;
     }
 
+    /** 교환받을 배송지 변경 — 고른 배송지의 값을 복사한다(스냅샷). 바꿀 수 있는 단계인지는 호출자가 본다. */
+    public void changeReshipAddress(String recipient, String phone, String zipCode, String address,
+                                    String detailAddress, String memo) {
+        this.reshipRecipient = recipient;
+        this.reshipPhone = phone;
+        this.reshipZipCode = zipCode;
+        this.reshipAddress = address;
+        this.reshipDetailAddress = detailAddress;
+        this.reshipMemo = memo;
+    }
+
     public boolean isFinalized() {
         return finalizedAt != null;
     }

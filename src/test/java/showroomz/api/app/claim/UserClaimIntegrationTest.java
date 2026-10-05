@@ -95,7 +95,9 @@ class UserClaimIntegrationTest extends SellerOrderTestSupport {
                 .andExpect(jsonPath("$.items[0].claimableQuantity").value(4));
         getForm(items(shipping).get(0).getId(), "RETURN").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CLAIM_NOT_ELIGIBLE"));
-        getForm(items(freeShipping).get(0).getId(), "EXCHANGE").andExpect(status().isBadRequest());
+        // 교환 폼의 고객 귀책 금액은 차감이 아니라 요청할 때 결제하는 재발송 배송비다.
+        getForm(items(freeShipping).get(0).getId(), "EXCHANGE").andExpect(status().isOk())
+                .andExpect(jsonPath("$.fees.consumerFault").value(DELIVERY_FEE));
         mockMvc.perform(get(CLAIMS + "/form?orderProductId=" + items(freeShipping).get(0).getId() + "&type=RETURN")
                 .header(HttpHeaders.AUTHORIZATION, strangerToken)).andExpect(status().isNotFound());
     }
@@ -222,6 +224,7 @@ class UserClaimIntegrationTest extends SellerOrderTestSupport {
                 .andExpect(status().isBadRequest());
         create(body(group, "CHANGE_OF_MIND", null, invoice("CJ", "---"), null)).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVOICE_FORMAT_INVALID"));
+        // 결제가 필요한 교환인데 결제 수단이 없다.
         Map<String, Object> exchange = body(group, "CHANGE_OF_MIND", null, null, null);
         exchange.put("type", "EXCHANGE");
         create(exchange).andExpect(status().isBadRequest());

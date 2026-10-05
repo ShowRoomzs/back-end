@@ -9,21 +9,27 @@ import showroomz.api.app.claim.dto.UserClaimDto.CourierPayment;
 import showroomz.api.app.claim.dto.UserClaimDto.ReshipFeeState;
 import showroomz.api.app.order.dto.UserOrderDto;
 import showroomz.api.app.order.service.OrderAddressMasker;
+import showroomz.domain.address.entity.DeliveryAddress;
+import showroomz.domain.address.repository.DeliveryAddressRepository;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.order.entity.Order;
 import showroomz.domain.order.entity.OrderClaim;
 import showroomz.domain.order.entity.OrderClaimAttachment;
 import showroomz.domain.order.entity.OrderClaimCharge;
 import showroomz.domain.order.entity.OrderClaimCollection;
+import showroomz.domain.order.entity.OrderClaimPayment;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.entity.OrderProduct;
 import showroomz.domain.order.repository.OrderClaimAttachmentRepository;
 import showroomz.domain.order.repository.OrderClaimChargeRepository;
+import showroomz.domain.order.repository.OrderClaimPaymentRepository;
 import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.domain.order.repository.OrderProductRepository;
+import showroomz.domain.order.service.ClaimExchangeOptionReader;
 import showroomz.domain.order.service.ClaimFeePolicy;
 import showroomz.domain.order.service.ClaimStoragePolicy;
+import showroomz.domain.order.service.OrderClaimService;
 import showroomz.domain.order.service.UserClaimPresenter;
 import showroomz.domain.order.type.ClaimAttachmentOwner;
 import showroomz.domain.order.type.ClaimChargeStatus;
@@ -66,6 +72,9 @@ public class UserClaimQueryService {
     static final Set<ActionType> ENABLED_ACTIONS = EnumSet.of(ActionType.WITHDRAW,
             ActionType.REGISTER_COLLECTION_INVOICE, ActionType.INQUIRY);
 
+    /** 아직 검수 판정을 받지 않은 단계 — 교환받을 배송지를 바꿀 수 있는 구간이다. */
+    private static final Set<ClaimStatus> AWAITING_JUDGEMENT = EnumSet.of(ClaimStatus.REQUESTED,
+            ClaimStatus.COLLECTING, ClaimStatus.ARRIVED, ClaimStatus.RECEIVED);
     private static final String METHOD_LABEL = "고객 직접 발송";
     /** 법적 근거 한 줄 — 사유별 문구는 법무 확정 대기라 한 문구로 둔다(Q11). */
     private static final String LEGAL_NOTE = "전자상거래법상 청약철회 제한 사유에 해당해요";
@@ -76,6 +85,9 @@ public class UserClaimQueryService {
     private final OrderClaimChargeRepository chargeRepository;
     private final OrderClaimAttachmentRepository attachmentRepository;
     private final PaymentRepository paymentRepository;
+    private final DeliveryAddressRepository deliveryAddressRepository;
+    private final OrderClaimPaymentRepository claimPaymentRepository;
+    private final ClaimExchangeOptionReader exchangeOptionReader;
     private final ClaimFeePolicy feePolicy;
     private final ClaimStoragePolicy storagePolicy;
     private final OrderProperties orderProperties;
@@ -83,7 +95,6 @@ public class UserClaimQueryService {
     // ------------------------------------------------------------------ 폼(3-1)
 
     public UserClaimDto.FormResponse getForm(Long userId, Long orderProductId, ClaimType type) {
-        requireSupported(type);
         OrderProduct entry = orderProductRepository.findById(orderProductId)
                 .filter(product -> product.getOrder().isOwnedBy(userId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_PRODUCT_NOT_FOUND));
@@ -104,8 +115,14 @@ public class UserClaimQueryService {
                         .unitPrice(product.getPrice())
                         .claimableQuantity(claimable.get(product.getId()))
                         .preselected(product.getId().equals(orderProductId))
+                        .exchangeOptions(type != ClaimType.EXCHANGE ? null
+                                : exchangeOptionReader.optionsOf(product).stream()
+                                .map(option -> new UserClaimDto.ExchangeOption(option.variantId(),
+                                        option.optionName(), option.soldOut(), option.current()))
+                                .toList())
                         .build())
                 .toList();
+        Order order = entry.getOrder();
         Market market = group.getMarket();
         OrderProperties.Claim config = orderProperties.getClaim();
         return UserClaimDto.FormResponse.builder()
@@ -130,7 +147,11 @@ public class UserClaimQueryService {
                         .toList())
                 .returnTo(new UserClaimDto.ReturnTo(market.getShippingRecipientName(), market.getShippingContact(),
                         market.getShippingAddress(), market.getShippingDetailAddress()))
-                .fees(new UserClaimDto.Fees(feePolicy.returnDeduction(type, ClaimFeeBearer.CONSUMER, group), 0))
+                // 요청 화면의 「받을 곳」은 지금 고르는 값이라 원문이다.
+                .reshipTo(type != ClaimType.EXCHANGE ? null : new UserClaimDto.ReshipTo(order.getRecipientName(),
+                        order.getRecipientPhone(), order.getZipCode(), order.getAddress(), order.getDetailAddress(),
+                        order.getDeliveryMemo()))
+                .fees(new UserClaimDto.Fees(consumerFee(type, ClaimFeeBearer.CONSUMER, group), 0))
                 .courierPayment(new UserClaimDto.CourierPayments(CourierPayment.PREPAID, CourierPayment.COLLECT))
                 .refundMethodLabel(refundMethodLabel(entry.getOrder()))
                 .invoiceDueDays(config.getInvoiceDueDays())
@@ -175,14 +196,22 @@ public class UserClaimQueryService {
         OrderDeliveryGroup group = deliveryGroupRepository.findById(deliveryGroupId)
                 .filter(found -> found.getOrder().isOwnedBy(userId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_GROUP_NOT_FOUND));
-        return new CreatePlan(feePolicy.returnDeduction(type, feeBearer, group), claimableQuantities(group));
+        return new CreatePlan(consumerFee(type, feeBearer, group), claimableQuantities(group));
     }
 
-    /** 교환(옵션 · 재고 선점 · 재발송비 선결제)은 구현 계획서 S7 에서 연다. */
-    static void requireSupported(ClaimType type) {
-        if (type != ClaimType.RETURN) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "교환 요청은 아직 지원하지 않습니다.");
-        }
+    /** 내 배송지의 값을 재발송 수취지로 — 남의 배송지는 있는지도 알리지 않는다. */
+    public OrderClaimService.ReshipAddress reshipAddressOf(Long userId, Long addressId) {
+        DeliveryAddress address = deliveryAddressRepository.findById(addressId)
+                .filter(found -> found.getUser().getId().equals(userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.ADDRESS_NOT_FOUND));
+        return new OrderClaimService.ReshipAddress(address.getRecipientName(), address.getPhoneNumber(),
+                address.getZipCode(), address.getAddress(), address.getDetailAddress(), address.getMemo());
+    }
+
+    /** 앱이 다루는 배송비 — 반품은 환불액에서 빼는 최초 배송비, 교환은 요청할 때 결제하는 재발송 배송비. */
+    private int consumerFee(ClaimType type, ClaimFeeBearer feeBearer, OrderDeliveryGroup group) {
+        return type == ClaimType.EXCHANGE ? feePolicy.exchangeReshipFee(feeBearer, group)
+                : feePolicy.returnDeduction(type, feeBearer, group);
     }
 
     /** 사유의 괄호 설명 — 시안 문구. 브랜드 화면에는 옮기지 않는다(§35-3). */
@@ -217,7 +246,8 @@ public class UserClaimQueryService {
                 .filter(claim -> claim.getStatus() != ClaimStatus.PAYMENT_PENDING)
                 .filter(claim -> claim.getResult() != ClaimResult.CANCELLED || claim.getId().equals(claimId))
                 .toList();
-        OrderClaimCharge rejectCharge = chargeRepository.findByCollectionId(collection.getId()).stream()
+        List<OrderClaimCharge> charges = chargeRepository.findByCollectionId(collection.getId());
+        OrderClaimCharge rejectCharge = charges.stream()
                 .filter(charge -> charge.getType() == ClaimChargeType.REJECT_RESHIP)
                 .reduce((first, second) -> second).orElse(null);
         Map<Long, List<String>> evidences = attachmentRepository
@@ -257,10 +287,15 @@ public class UserClaimQueryService {
                                 collection.getReturnContact(), collection.getReturnAddress(),
                                 collection.getReturnDetailAddress()))
                         .reshipTo(collection.getType() == ClaimType.EXCHANGE ? maskedShipTo(collection) : null)
-                        .reshipAddressChangeable(false)
+                        // 검수 판정 전까지만 — 브랜드가 재발송 목록을 내려받을 수 있는 시점부터 잠근다.
+                        .reshipAddressChangeable(collection.getType() == ClaimType.EXCHANGE
+                                && shown.stream().anyMatch(OrderClaim::isOpen)
+                                && shown.stream().filter(OrderClaim::isOpen)
+                                .allMatch(claim -> AWAITING_JUDGEMENT.contains(claim.getStatus())))
                         .build())
                 .refund(collection.getType() == ClaimType.RETURN ? refund(collection, shown, rejectCharge, order)
                         : null)
+                .exchangePayment(collection.getType() == ClaimType.EXCHANGE ? exchangePayment(charges) : null)
                 .reshipFee(reshipFee(collection, shown, rejectCharge, today))
                 .build();
     }
@@ -364,6 +399,21 @@ public class UserClaimQueryService {
                 .confirmed(anyRefunded && !anyPending)
                 .refundMethodLabel(refundMethodLabel(order))
                 .build();
+    }
+
+    /** 교환 결제 정보 — 요청 때 낸 재발송 배송비. 브랜드 귀책(0원 요청)은 청구가 없다. */
+    private UserClaimDto.ExchangePayment exchangePayment(List<OrderClaimCharge> charges) {
+        OrderClaimCharge charge = charges.stream()
+                .filter(found -> found.getType() == ClaimChargeType.EXCHANGE_RESHIP)
+                .reduce((first, second) -> second).orElse(null);
+        if (charge == null) {
+            return new UserClaimDto.ExchangePayment(0, 0, "결제 없음");
+        }
+        boolean paid = charge.getStatus() == ClaimChargeStatus.PAID;
+        String methodLabel = charge.getPaidPaymentId() == null ? "결제 없음"
+                : claimPaymentRepository.findById(charge.getPaidPaymentId())
+                .map(OrderClaimPayment::methodLabel).orElse("결제 없음");
+        return new UserClaimDto.ExchangePayment(charge.getAmount(), paid ? charge.getAmount() : 0, methodLabel);
     }
 
     /** 「상품 다시 받기」(4-3) — 반려된 항목이 있을 때만. 결제 기한이 지난 뒤에는 미결제 고지·보관 기한을 함께 내린다. */

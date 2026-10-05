@@ -3,8 +3,8 @@ package showroomz.api.app.claim.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import showroomz.api.app.claim.dto.UserClaimDto;
+import showroomz.api.app.order.dto.OrderDto;
 import showroomz.domain.order.entity.OrderClaim;
-import showroomz.domain.order.entity.OrderClaimCollection;
 import showroomz.domain.order.repository.OrderClaimCollectionRepository;
 import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.service.OrderClaimService;
@@ -12,10 +12,12 @@ import showroomz.domain.order.service.OrderClaimService.Invoice;
 import showroomz.domain.order.service.OrderClaimService.Item;
 import showroomz.domain.order.service.OrderClaimService.RequestCommand;
 import showroomz.domain.order.service.OrderClaimService.RequestResult;
+import showroomz.domain.order.service.OrderClaimService.ReshipAddress;
 import showroomz.domain.order.type.ClaimFeeBearer;
 import showroomz.domain.order.type.ClaimReason;
 import showroomz.domain.order.type.ClaimResult;
 import showroomz.domain.order.type.ClaimStatus;
+import showroomz.domain.order.type.ClaimType;
 import showroomz.global.config.properties.OrderProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -24,7 +26,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * 소비자 앱 반품·교환 요청 · 변경(앱 클레임 설계서 3-2 · 3-4 · 3-5). 여기는 앱의 입력 규칙(고를 수 있는 사유·택배사 ·
@@ -35,6 +36,7 @@ import java.util.Optional;
 public class UserClaimCommandService {
 
     private final OrderClaimService claimService;
+    private final ClaimPaymentService claimPaymentService;
     private final UserClaimQueryService queryService;
     private final OrderClaimRepository claimRepository;
     private final OrderClaimCollectionRepository collectionRepository;
@@ -45,16 +47,14 @@ public class UserClaimCommandService {
      * 같은 멱등키의 재요청은 새로 만들지 않고 기존 요청을 돌려준다.
      */
     public UserClaimDto.CreateResponse create(Long userId, UserClaimDto.CreateRequest request) {
-        UserClaimQueryService.requireSupported(request.getType());
-        if (request.getIdempotencyKey() != null) {
-            Optional<OrderClaimCollection> existing = collectionRepository
-                    .findByUserIdAndIdempotencyKey(userId, request.getIdempotencyKey());
-            if (existing.isPresent()) {
-                List<OrderClaim> claims = claimRepository.findByCollectionId(existing.get().getId());
-                return new UserClaimDto.CreateResponse(existing.get().getId(),
-                        claims.stream().map(OrderClaim::getId).toList(),
-                        claims.isEmpty() ? null : claims.get(0).getStatus());
-            }
+        boolean exchange = request.getType() == ClaimType.EXCHANGE;
+        if (request.getIdempotencyKey() != null && collectionRepository
+                .findByUserIdAndIdempotencyKey(userId, request.getIdempotencyKey()).isPresent()) {
+            // 재요청 — 도메인이 기존 요청을 그대로 돌려준다(검증 전에 갈린다). 아직 결제 대기면 결제 시도만 새로 만든다.
+            RequestResult replay = claimService.request(new RequestCommand(userId, request.getDeliveryGroupId(),
+                    request.getType(), request.getReasonCode(), null, List.of(), List.of(), null,
+                    request.getIdempotencyKey()), LocalDateTime.now());
+            return toResponse(userId, replay, request.getPayment());
         }
 
         ClaimReason reason = request.getReasonCode();
@@ -83,6 +83,12 @@ public class UserClaimCommandService {
             throw new BusinessException(ErrorCode.CLAIM_AMOUNT_CHANGED);
         }
 
+        // 결제가 필요한 교환인데 수단이 없으면 초안을 만들기 전에 막는다.
+        if (exchange && plan.fee() > 0
+                && (request.getPayment() == null || request.getPayment().getMethod() == null)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "결제 수단을 선택해 주세요.");
+        }
+
         Map<Long, Integer> claimable = plan.claimable();
         if (claimable.isEmpty()) {
             throw new BusinessException(ErrorCode.CLAIM_NOT_ELIGIBLE);
@@ -96,13 +102,39 @@ public class UserClaimCommandService {
             if (quantity < 1) {
                 throw new BusinessException(ErrorCode.CLAIM_QUANTITY_EXCEEDED);
             }
-            items.add(new Item(item.getOrderProductId(), quantity));
+            if (exchange && item.getExchangeVariantId() == null) {
+                throw new BusinessException(ErrorCode.CLAIM_EXCHANGE_OPTION_INVALID);
+            }
+            items.add(new Item(item.getOrderProductId(), quantity, exchange ? item.getExchangeVariantId() : null));
         }
+        ReshipAddress reshipAddress = exchange && request.getReshipAddressId() != null
+                ? queryService.reshipAddressOf(userId, request.getReshipAddressId()) : null;
 
-        RequestResult result = claimService.request(new RequestCommand(userId, request.getDeliveryGroupId(), request.getType(),
-                reason, detail, imageUrls, items, invoice, request.getIdempotencyKey()), LocalDateTime.now());
-        return new UserClaimDto.CreateResponse(result.collectionId(), result.claimIds(),
-                invoice != null ? ClaimStatus.COLLECTING : ClaimStatus.REQUESTED);
+        RequestResult result = claimService.request(new RequestCommand(userId, request.getDeliveryGroupId(),
+                request.getType(), reason, detail, imageUrls, items, invoice, request.getIdempotencyKey(),
+                reshipAddress), LocalDateTime.now());
+        return toResponse(userId, result, request.getPayment());
+    }
+
+    /** 결제가 필요한 요청이면 결제 시도를 만들어 결제창 파라미터를 함께 내린다 — 결제가 끝나야 접수된다. */
+    private UserClaimDto.CreateResponse toResponse(Long userId, RequestResult result,
+                                                   OrderDto.PaymentSelection payment) {
+        OrderDto.PaymentWindow window = result.pendingChargeId() == null ? null
+                : claimPaymentService.open(userId, result.pendingChargeId(), payment);
+        return new UserClaimDto.CreateResponse(result.collectionId(), result.claimIds(), result.status(), window);
+    }
+
+    /** 결제창 복귀 — 포트원 조회 결과로 확정한다. 멱등이다. */
+    public UserClaimDto.PaymentCompleteResponse completePayment(Long userId, String paymentId) {
+        return claimPaymentService.complete(userId, paymentId);
+    }
+
+    /** 교환받을 배송지 변경 — 내 배송지의 값을 요청에 복사한다. 검수 판정 전까지만. */
+    public UserClaimDto.DetailResponse changeReshipAddress(Long userId, Long claimId, Long addressId) {
+        OrderClaim claim = requireOwned(userId, claimId);
+        claimService.changeReshipAddress(claim.getCollection().getId(), userId,
+                queryService.reshipAddressOf(userId, addressId), LocalDateTime.now());
+        return queryService.getDetail(userId, claimId);
     }
 
     /**
@@ -127,6 +159,8 @@ public class UserClaimCommandService {
     public UserClaimDto.WithdrawResponse withdraw(Long userId, Long claimId) {
         requireOwned(userId, claimId);
         claimService.withdraw(claimId, userId, LocalDateTime.now());
+        // 요청이 통째로 사라졌으면 선결제한 재발송 배송비를 돌려준다 — 포트원 취소는 커밋 뒤에 한다(실패하면 배치가 재시도).
+        claimPaymentService.cancelRequested();
         return new UserClaimDto.WithdrawResponse(claimId, ClaimStatus.COMPLETED, ClaimResult.CANCELLED);
     }
 

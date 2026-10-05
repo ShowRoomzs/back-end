@@ -88,10 +88,15 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
             + "AND (c.status NOT IN (" + COMPLETED + ", " + REFUND_PENDING + ") OR c.rejectedAt IS NOT NULL)")
     long sumOccupiedQuantity(@Param("orderProductId") Long orderProductId);
 
-    /** {@link #sumOccupiedQuantity}의 하위주문 판 — [주문 항목 id, 점유 수량]. 신청 양식이 항목마다 묻지 않게 한다. */
+    /**
+     * {@link #sumOccupiedQuantity}의 하위주문 판 — [주문 항목 id, 점유 수량]. 신청 양식이 항목마다 묻지 않게 한다.
+     * <b>결제 대기 초안은 세지 않는다</b> — 아직 접수 전이고, 다시 요청하면 신청이 그 초안을 먼저 지운다. 세면 결제에
+     * 실패한 소비자가 같은 항목으로 폼을 다시 열 수 없다.
+     */
     @Query("SELECT c.orderProduct.id, COALESCE(SUM(c.quantity), 0) FROM OrderClaim c "
             + "WHERE c.deliveryGroup.id = :deliveryGroupId "
-            + "AND (c.status NOT IN (" + COMPLETED + ", " + REFUND_PENDING + ") OR c.rejectedAt IS NOT NULL) "
+            + "AND (c.status NOT IN (" + COMPLETED + ", " + REFUND_PENDING + ", "
+            + "showroomz.domain.order.type.ClaimStatus.PAYMENT_PENDING) OR c.rejectedAt IS NOT NULL) "
             + "GROUP BY c.orderProduct.id")
     List<Object[]> sumOccupiedQuantityByDeliveryGroup(@Param("deliveryGroupId") Long deliveryGroupId);
 
@@ -99,6 +104,12 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
     @Query("SELECT c FROM OrderClaim c JOIN FETCH c.collection JOIN FETCH c.deliveryGroup g JOIN FETCH g.order "
             + "WHERE c.id = :id AND c.userId = :userId")
     java.util.Optional<OrderClaim> findOwnedByUser(@Param("id") Long id, @Param("userId") Long userId);
+
+    /** 결제 대기 초안의 삭제(전이 0b) — 아직 접수된 적 없는 요청이라 행을 지운다. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("DELETE FROM OrderClaim c WHERE c.collection.id = :collectionId "
+            + "AND c.status = showroomz.domain.order.type.ClaimStatus.PAYMENT_PENDING")
+    int deletePaymentPendingByCollection(@Param("collectionId") Long collectionId);
 
     // ------------------------------------------------------------------ 묶음(박스) 단위 전이
 

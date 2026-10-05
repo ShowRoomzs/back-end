@@ -129,5 +129,8 @@ public class OrderProperties {
 
         /** 회수 송장 미등록 자동 취소 배치 가동 여부. */
         private boolean invoiceExpirySchedulerEnabled = true;
+
+        /** 클레임 결제 정리 배치(5분) 가동 여부 — 미확정 결제 수렴 · 결제 없는 초안 삭제 · 취소 재시도. */
+        private boolean paymentReconcileSchedulerEnabled = true;
     }
 }

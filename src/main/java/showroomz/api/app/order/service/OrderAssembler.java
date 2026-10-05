@@ -13,7 +13,9 @@ import showroomz.domain.order.repository.OrderCancelRequestRepository;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.domain.order.repository.OrderProductRepository;
 import showroomz.domain.order.repository.OrderRefundTaskRepository;
+import showroomz.domain.order.service.ClaimExchangeOptionReader;
 import showroomz.domain.order.type.FulfillmentStatus;
+import showroomz.domain.order.type.UserOrderAction;
 import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.domain.order.type.OrderStatus;
 import showroomz.domain.payment.entity.Payment;
@@ -51,6 +53,7 @@ public class OrderAssembler {
     private final OrderRefundTaskRepository refundTaskRepository;
     private final UserOrderItemAssembler itemAssembler;
     private final UserOrderClaimLoader claimLoader;
+    private final ClaimExchangeOptionReader exchangeOptionReader;
     private final PortOnePaymentGateway gateway;
     private final OrderProperties orderProperties;
 
@@ -164,10 +167,31 @@ public class OrderAssembler {
                 paid ? cancelRequestRepository.findOpenOrRejectedByOrderIds(orderIds) : List.of(),
                 paid ? new HashSet<>(refundTaskRepository.findPendingGroupIdsByOrderIds(orderIds)) : Set.of(),
                 cancellable ? Set.of(order.getId()) : Set.of())
-                .withClaims(paid ? claimLoader.load(products) : UserOrderClaimContext.EMPTY);
+                .withClaims(paid ? claimLoader.load(products) : UserOrderClaimContext.EMPTY)
+                .withExchangeUnavailable(exchangeUnavailable(products));
         return products.stream()
                 .map(product -> itemAssembler.toRow(product, context, UserOrderItemAssembler.View.DETAIL))
                 .toList();
+    }
+
+    /**
+     * [교환 요청]을 눌리지 않게 내릴 항목(C10 설계서 1-6) — 교환할 수 있는 옵션(받은 옵션 포함) 중 재고가 있는 것이 하나도
+     * 없다. 신청 API 의 재고 판정과 같은 곳({@link ClaimExchangeOptionReader})을 읽는다. 상세에서만 본다 — 목록은
+     * [반품 · 교환] 하나라 필요 없다. 버튼이 꺼져 있는 동안에는 조회하지 않는다.
+     */
+    private Set<Long> exchangeUnavailable(List<OrderProduct> products) {
+        if (!itemAssembler.isEnabled(UserOrderAction.EXCHANGE_REQUEST)) {
+            return Set.of();
+        }
+        Set<Long> unavailable = new HashSet<>();
+        for (OrderProduct product : products) {
+            if (product.getStatus() == OrderProductStatus.PAID && product.getDeliveryGroup() != null
+                    && product.getDeliveryGroup().getFulfillmentStatus() == FulfillmentStatus.DELIVERED
+                    && !exchangeOptionReader.hasAvailableOption(product)) {
+                unavailable.add(product.getId());
+            }
+        }
+        return unavailable;
     }
 
     /** 완료된 결제 → 살아 있는 결제 → 마지막 시도 순. */

@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 import showroomz.api.app.order.dto.OrderDto;
 import showroomz.api.app.order.dto.UserOrderDto;
 import showroomz.domain.order.type.ClaimFeeBearer;
+import showroomz.domain.order.type.ClaimPaymentStatus;
 import showroomz.domain.order.type.ClaimReason;
 import showroomz.domain.order.type.ClaimResult;
 import showroomz.domain.order.type.ClaimStatus;
@@ -79,6 +80,8 @@ public class UserClaimDto {
         private List<FormCarrier> carriers;
         @Schema(description = "브랜드 반품 수취 주소 — 송장에 적는 값이라 원문이다")
         private ReturnTo returnTo;
+        @Schema(description = "교환받을 배송지의 기본값 — 원 주문 배송지. 교환 폼만", nullable = true)
+        private ReshipTo reshipTo;
         private Fees fees;
         private CourierPayments courierPayment;
         @Schema(description = "환불 수단 문구", example = "신한카드 결제 취소", nullable = true)
@@ -106,6 +109,37 @@ public class UserClaimDto {
         private Integer claimableQuantity;
         @Schema(description = "진입한 항목 — 체크된 채로 그린다")
         private Boolean preselected;
+        @Schema(description = "교환할 수 있는 옵션 — 교환 폼만. 같은 상품 · 같은 가격의 옵션이고 받은 옵션도 든다. 반품 폼은 null",
+                nullable = true)
+        private List<ExchangeOption> exchangeOptions;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ExchangeOption {
+        private Long variantId;
+        @Schema(example = "용량: 리필")
+        private String optionName;
+        @Schema(description = "재고 없음 — 목록에서 빼지 않고 회색 + 「품절」로 그린다")
+        private Boolean soldOut;
+        @Schema(description = "받은 옵션 — 불량 · 오배송일 때만 고를 수 있다(같은 옵션으로 다시 받기)")
+        private Boolean current;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "교환받을 배송지 — 요청 화면은 지금 고르는 값이라 원문이다")
+    public static class ReshipTo {
+        private String recipientName;
+        private String phone;
+        private String zipCode;
+        private String address;
+        private String detailAddress;
+        private String memo;
     }
 
     @Getter
@@ -154,7 +188,8 @@ public class UserClaimDto {
     @Builder
     @Schema(description = "앱이 다루는 배송비 — 사유의 feeBearer 로 갈라 쓴다. 신청 때 서버가 다시 계산해 검증한다")
     public static class Fees {
-        @Schema(description = "고객 귀책 사유일 때 — 반품은 환불액에서 빼는 최초 배송비(무료배송으로 받은 주문만, 아니면 0)", example = "3000")
+        @Schema(description = "고객 귀책 사유일 때 — 반품은 환불액에서 빼는 최초 배송비(무료배송으로 받은 주문만, 아니면 0), "
+                + "교환은 요청할 때 결제하는 재발송 배송비", example = "3000")
         private Integer consumerFault;
         @Schema(description = "브랜드 귀책 사유일 때 — 항상 0", example = "0")
         private Integer sellerFault;
@@ -200,6 +235,11 @@ public class UserClaimDto {
         private InvoiceRequest invoice;
         @Schema(description = "폼에서 본 배송비 — 서버 계산값과 다르면 409. 생략하면 검증하지 않는다", example = "3000", nullable = true)
         private Integer expectedFee;
+        @Schema(description = "교환받을 배송지 — 내 배송지 ID. 생략하면 원 주문 배송지. 교환만", example = "55", nullable = true)
+        private Long reshipAddressId;
+        @Valid
+        @Schema(description = "결제 수단 — 재발송 배송비 결제가 필요한 교환(고객 귀책)에서 필수", nullable = true)
+        private OrderDto.PaymentSelection payment;
     }
 
     @Getter
@@ -209,6 +249,8 @@ public class UserClaimDto {
     public static class CreateItem {
         @NotNull(message = "상품을 선택해 주세요.")
         private Long orderProductId;
+        @Schema(description = "교환받을 옵션 — 교환에서 필수. 폼의 exchangeOptions 중 하나", example = "302", nullable = true)
+        private Long exchangeVariantId;
     }
 
     @Getter
@@ -234,8 +276,36 @@ public class UserClaimDto {
         private Long requestId;
         @Schema(description = "항목별 클레임 id — items 순서")
         private List<Long> claimIds;
-        @Schema(description = "REQUESTED(송장 나중에) · COLLECTING(송장 같이 냄)")
+        @Schema(description = "REQUESTED(송장 나중에) · COLLECTING(송장 같이 냄) · PAYMENT_PENDING(결제가 끝나야 접수된다)")
         private ClaimStatus status;
+        @Schema(description = "포트원 결제창 파라미터 — 주문 결제와 같은 모양. null 이면 결제 없이 접수된 것이다", nullable = true)
+        private OrderDto.PaymentWindow payment;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "결제창 복귀 결과")
+    public static class PaymentCompleteResponse {
+        @Schema(description = "PAID 면 결제 완료. READY · FAILED 면 결제되지 않았다")
+        private ClaimPaymentStatus paymentStatus;
+        private Long requestId;
+        @Schema(description = "그 요청의 클레임 — 요청이 이미 지워졌으면 빈 배열")
+        private List<Long> claimIds;
+        @Schema(description = "REQUESTED · COLLECTING 이면 접수됨, PAYMENT_PENDING 그대로면 요청 화면으로 돌아간다", nullable = true)
+        private ClaimStatus claimStatus;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "교환받을 배송지 변경")
+    public static class ReshipAddressRequest {
+        @NotNull(message = "배송지를 선택해 주세요.")
+        @Schema(description = "내 배송지 ID", example = "55")
+        private Long addressId;
     }
 
     @Getter
@@ -272,8 +342,24 @@ public class UserClaimDto {
         private Info info;
         @Schema(description = "환불 정보 — 반품만", nullable = true)
         private Refund refund;
+        @Schema(description = "결제 정보 — 교환만", nullable = true)
+        private ExchangePayment exchangePayment;
         @Schema(description = "상품 다시 받기 — 반려된 항목이 있을 때만", nullable = true)
         private ReshipFee reshipFee;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "교환 재발송 배송비 결제")
+    public static class ExchangePayment {
+        @Schema(description = "재발송 배송비 — 브랜드 귀책이면 0", example = "3000")
+        private Integer reshipFee;
+        @Schema(description = "결제한 금액 — 결제 취소됐으면 0", example = "3000")
+        private Integer paidAmount;
+        @Schema(description = "결제 수단 — 결제가 없었으면 「결제 없음」", example = "신한카드")
+        private String methodLabel;
     }
 
     @Getter

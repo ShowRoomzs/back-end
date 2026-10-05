@@ -1,6 +1,7 @@
 package showroomz.domain.order.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import showroomz.domain.order.entity.OrderClaimCharge;
@@ -12,6 +13,10 @@ public interface OrderClaimChargeRepository extends JpaRepository<OrderClaimChar
 
     @Query("SELECT h FROM OrderClaimCharge h WHERE h.collection.id = :collectionId ORDER BY h.id ASC")
     List<OrderClaimCharge> findByCollectionId(@Param("collectionId") Long collectionId);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("DELETE FROM OrderClaimCharge h WHERE h.collection.id = :collectionId")
+    int deleteByCollectionId(@Param("collectionId") Long collectionId);
 
     @Query("SELECT h FROM OrderClaimCharge h WHERE h.collection.id IN :collectionIds ORDER BY h.id ASC")
     List<OrderClaimCharge> findByCollectionIds(@Param("collectionIds") Collection<Long> collectionIds);

@@ -67,6 +67,12 @@ public class OrderClaimCharge {
         this.settledAt = now;
     }
 
+    /** 결제 취소로 돌려줌 — 선결제한 교환 요청이 통째로 사라졌을 때. 결제 id 는 남긴다(무엇을 취소했는지). */
+    public void refund(LocalDateTime now) {
+        this.status = ClaimChargeStatus.REFUNDED;
+        this.settledAt = now;
+    }
+
     /** 결제 기한 발급 — 요청의 판정이 다 끝나 결제가 필요하다고 정해진 순간. */
     public void openForPayment(LocalDateTime dueAt) {
         this.dueAt = dueAt;

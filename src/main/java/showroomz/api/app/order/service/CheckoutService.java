@@ -39,6 +39,7 @@ import showroomz.domain.payment.type.PaymentStatus;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductOption;
 import showroomz.domain.product.entity.ProductVariant;
+import showroomz.domain.product.service.VariantOptionNames;
 import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.global.config.properties.OrderProperties;
 import showroomz.global.error.exception.BusinessException;
@@ -492,18 +493,7 @@ public class CheckoutService {
 
     /** 장바구니와 같은 형식 — 「용량: 30ml」·「색상: 베이지 / 사이즈: M」. 옵션 없는 단일 옵션은 옵션명(있으면). */
     static String buildOptionName(ProductVariant variant) {
-        List<ProductOption> options = variant.getOptions();
-        if (options == null || options.isEmpty()) {
-            return variant.getName();
-        }
-        return options.stream()
-                .sorted(Comparator.comparing(option -> option.getOptionGroup() != null
-                        ? option.getOptionGroup().getOptionGroupId() : 0L))
-                .map(option -> {
-                    String groupName = option.getOptionGroup() != null ? option.getOptionGroup().getName() : null;
-                    return (groupName != null ? groupName : "옵션") + ": " + option.getName();
-                })
-                .collect(Collectors.joining(" / "));
+        return VariantOptionNames.of(variant);
     }
 
     private Users requireUser(Long userId) {

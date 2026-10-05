@@ -153,6 +153,7 @@ order:
     evidence-max: 5                                 # 검수 거절 증빙 사진 상한
     receive-before-arrival: true                    # 추적상 도착 전에도 입고 확인 허용 — 택배 추적이 꺼져 있는 동안의 출구
     invoice-expiry-scheduler-enabled: true          # 회수 송장 미등록 자동 취소 배치
+    payment-reconcile-scheduler-enabled: true       # 클레임 결제 정리 배치 — 미확정 결제 수렴 · 초안 삭제 · 취소 재시도
 
 # DeliveryTrackerProperties.java — 배송 추적 연동(34 설계서 3-3). enabled=false 면 Noop 스텁이 붙고
 # 감시 배치가 멈춘다(송장 형식 검증도 생략 기록). true 면 스마트택배 조회 API 어댑터가 붙는다(택배 추적 설계서) — 런칭 게이트.

@@ -313,6 +313,22 @@ class UserOrderItemAssemblerTest {
         assertThat(row.getClaim()).isNull();
     }
 
+    @Test
+    @DisplayName("교환할 옵션의 재고가 없으면 [교환 요청]은 눌리지 않는 「교환 불가 (재고 없음)」으로 내린다 — 반품은 그대로(#23 · #28-2)")
+    void exchangeSoldOut() {
+        OrderProduct item = item(1L, group(FulfillmentStatus.DELIVERED), OrderProductStatus.PAID);
+
+        UserOrderDto.ItemRow available = allActions.toRow(item, EMPTY, View.DETAIL);
+        assertThat(available.getActions()).allSatisfy(action -> assertThat(action.getEnabled()).isTrue());
+
+        UserOrderDto.ItemRow soldOut = allActions.toRow(item, EMPTY.withExchangeUnavailable(Set.of(1L)), View.DETAIL);
+        assertThat(types(soldOut)).containsExactly(UserOrderAction.TRACK_DELIVERY, UserOrderAction.RETURN_REQUEST,
+                UserOrderAction.EXCHANGE_REQUEST);
+        assertThat(soldOut.getActions().get(1).getEnabled()).isTrue();
+        assertThat(soldOut.getActions().get(2).getEnabled()).isFalse();
+        assertThat(soldOut.getActions().get(2).getLabel()).isEqualTo("교환 불가 (재고 없음)");
+    }
+
     // ------------------------------------------------------------------ 안내(3-3)
 
     @Test

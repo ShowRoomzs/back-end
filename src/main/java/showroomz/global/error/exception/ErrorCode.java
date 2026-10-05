@@ -406,7 +406,11 @@ public enum ErrorCode {
     CLAIM_WITHDRAW_NOT_ALLOWED(HttpStatus.CONFLICT, "CLAIM_WITHDRAW_NOT_ALLOWED", "이미 회수가 시작되어 요청을 철회할 수 없습니다."),
     CLAIM_AMOUNT_CHANGED(HttpStatus.CONFLICT, "CLAIM_AMOUNT_CHANGED", "배송비 금액이 달라졌습니다. 화면을 다시 불러와 확인해 주세요."),
     CLAIM_REJECT_INCOMPLETE(HttpStatus.BAD_REQUEST, "CLAIM_REJECT_INCOMPLETE", "거절 사유 · 상세 설명 · 증빙 사진을 모두 입력해 주세요."),
-    CLAIM_PAYMENT_NOT_REQUIRED(HttpStatus.CONFLICT, "CLAIM_PAYMENT_NOT_REQUIRED", "결제가 필요한 상태가 아닙니다.");
+    CLAIM_PAYMENT_NOT_REQUIRED(HttpStatus.CONFLICT, "CLAIM_PAYMENT_NOT_REQUIRED", "결제가 필요한 상태가 아닙니다."),
+    CLAIM_EXCHANGE_OPTION_INVALID(HttpStatus.BAD_REQUEST, "CLAIM_EXCHANGE_OPTION_INVALID", "교환할 수 없는 옵션입니다."),
+    CLAIM_EXCHANGE_SAME_OPTION(HttpStatus.BAD_REQUEST, "CLAIM_EXCHANGE_SAME_OPTION", "같은 옵션은 불량 · 오배송일 때만 교환돼요."),
+    CLAIM_EXCHANGE_OUT_OF_STOCK(HttpStatus.CONFLICT, "CLAIM_EXCHANGE_OUT_OF_STOCK", "교환할 옵션의 재고가 없습니다."),
+    CLAIM_ADDRESS_NOT_CHANGEABLE(HttpStatus.CONFLICT, "CLAIM_ADDRESS_NOT_CHANGEABLE", "검수가 끝나 배송지를 변경할 수 없습니다.");
 
     private final HttpStatus status;
     private final String code;

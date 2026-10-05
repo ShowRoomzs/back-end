@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -57,6 +58,23 @@ public class UserClaimController implements UserClaimControllerDocs {
             @PathVariable("claimId") Long claimId,
             @Valid @RequestBody UserClaimDto.InvoiceRequest request) {
         return ResponseEntity.ok(commandService.putCollectionInvoice(principal.getUserId(), claimId, request));
+    }
+
+    @Override
+    @PostMapping("/payments/{paymentId}/complete")
+    public ResponseEntity<UserClaimDto.PaymentCompleteResponse> completePayment(
+            @AuthenticationPrincipal UserPrincipal principal, @PathVariable("paymentId") String paymentId) {
+        return ResponseEntity.ok(commandService.completePayment(principal.getUserId(), paymentId));
+    }
+
+    @Override
+    @PatchMapping("/{claimId}/reship-address")
+    public ResponseEntity<UserClaimDto.DetailResponse> changeReshipAddress(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable("claimId") Long claimId,
+            @Valid @RequestBody UserClaimDto.ReshipAddressRequest request) {
+        return ResponseEntity.ok(
+                commandService.changeReshipAddress(principal.getUserId(), claimId, request.getAddressId()));
     }
 
     @Override

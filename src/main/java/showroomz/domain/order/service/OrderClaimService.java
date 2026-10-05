@@ -19,6 +19,7 @@ import showroomz.domain.order.repository.OrderClaimAttachmentRepository;
 import showroomz.domain.order.repository.OrderClaimChargeRepository;
 import showroomz.domain.order.repository.OrderClaimCollectionRepository;
 import showroomz.domain.order.repository.OrderClaimHistoryRepository;
+import showroomz.domain.order.repository.OrderClaimPaymentRepository;
 import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.domain.order.repository.OrderProductRepository;
@@ -29,6 +30,7 @@ import showroomz.domain.order.type.ClaimChargeStatus;
 import showroomz.domain.order.type.ClaimChargeType;
 import showroomz.domain.order.type.ClaimEventType;
 import showroomz.domain.order.type.ClaimFeeBearer;
+import showroomz.domain.order.type.ClaimPaymentStatus;
 import showroomz.domain.order.type.ClaimReason;
 import showroomz.domain.order.type.ClaimRejectReason;
 import showroomz.domain.order.type.ClaimResult;
@@ -39,6 +41,7 @@ import showroomz.domain.order.type.FulfillmentActorType;
 import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.domain.order.type.RefundTaskSource;
+import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.global.config.properties.OrderProperties;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.ValidationResult;
@@ -48,10 +51,12 @@ import showroomz.global.error.exception.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -76,6 +81,9 @@ public class OrderClaimService {
     private final OrderClaimAttachmentRepository attachmentRepository;
     private final OrderClaimChargeRepository chargeRepository;
     private final OrderRefundTaskRepository refundTaskRepository;
+    private final OrderClaimPaymentRepository claimPaymentRepository;
+    private final ProductVariantRepository productVariantRepository;
+    private final ClaimExchangeOptionReader exchangeOptionReader;
     private final OrderDeliveryGroupRepository deliveryGroupRepository;
     private final OrderProductRepository orderProductRepository;
     private final DeliveryTrackingEventRepository trackingEventRepository;
@@ -94,17 +102,40 @@ public class OrderClaimService {
      */
     public record RequestCommand(Long userId, Long deliveryGroupId, ClaimType type, ClaimReason reasonCode,
                                  String reasonDetail, List<String> imageUrls, List<Item> items, Invoice invoice,
-                                 String idempotencyKey) {
+                                 String idempotencyKey, ReshipAddress reshipAddress) {
+
+        /** 재발송 수취지를 따로 정하지 않는 요청 — 원 주문 배송지의 사본을 쓴다. */
+        public RequestCommand(Long userId, Long deliveryGroupId, ClaimType type, ClaimReason reasonCode,
+                              String reasonDetail, List<String> imageUrls, List<Item> items, Invoice invoice,
+                              String idempotencyKey) {
+            this(userId, deliveryGroupId, type, reasonCode, reasonDetail, imageUrls, items, invoice, idempotencyKey,
+                    null);
+        }
     }
 
-    public record Item(Long orderProductId, int quantity) {
+    /** @param exchangeVariantId 교환받을 옵션 — 교환만. 반품은 null */
+    public record Item(Long orderProductId, int quantity, Long exchangeVariantId) {
+
+        public Item(Long orderProductId, int quantity) {
+            this(orderProductId, quantity, null);
+        }
+    }
+
+    /** 교환 새 상품 · 반려 상품이 가는 곳 — 고른 배송지의 값을 복사해 든다(스냅샷). */
+    public record ReshipAddress(String recipient, String phone, String zipCode, String address,
+                                String detailAddress, String memo) {
     }
 
     public record Invoice(DeliveryCarrier carrier, String trackingNumber) {
     }
 
-    /** @param created 이번 호출이 요청을 만들었는가 — 같은 키의 재시도면 false */
-    public record RequestResult(Long collectionId, List<Long> claimIds, boolean created) {
+    /**
+     * @param created         이번 호출이 요청을 만들었는가 — 같은 키의 재시도면 false
+     * @param status          접수 상태 — PAYMENT_PENDING 이면 아직 접수 전이다(재발송 배송비 결제가 끝나야 접수된다)
+     * @param pendingChargeId 결제해야 하는 청구 — 결제가 필요 없으면 null
+     */
+    public record RequestResult(Long collectionId, List<Long> claimIds, boolean created, ClaimStatus status,
+                                Long pendingChargeId) {
     }
 
     // ------------------------------------------------------------------ 신청(3-1 · 전이 #1)
@@ -114,15 +145,21 @@ public class OrderClaimService {
         if (command.idempotencyKey() != null) {
             var existing = collectionRepository.findByUserIdAndIdempotencyKey(command.userId(), command.idempotencyKey());
             if (existing.isPresent()) {
-                return new RequestResult(existing.get().getId(), claimIdsOf(existing.get().getId()), false);
+                Long collectionId = existing.get().getId();
+                List<OrderClaim> claims = claimRepository.findByCollectionId(collectionId);
+                ClaimStatus status = claims.isEmpty() ? null : claims.get(0).getStatus();
+                OrderClaimCharge pending = status == ClaimStatus.PAYMENT_PENDING
+                        ? pendingCharge(collectionId, ClaimChargeType.EXCHANGE_RESHIP) : null;
+                return new RequestResult(collectionId, claims.stream().map(OrderClaim::getId).toList(), false,
+                        status, pending == null ? null : pending.getId());
             }
-        }
-        if (command.type() != ClaimType.RETURN) {
-            // 교환(옵션 검증 · 재고 선점 · 재발송비 선결제)은 구현 계획서 S7 에서 더한다.
-            throw new UnsupportedOperationException("교환 신청은 아직 지원하지 않습니다.");
         }
         if (command.items() == null || command.items().isEmpty()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "신청할 상품을 선택해 주세요.");
+        }
+        // 결제하지 않고 남긴 초안이 있으면 먼저 지운다 — 결제 실패 뒤 내용을 고쳐 다시 요청하는 경우 묶인 수량·재고를 푼다.
+        for (Long draftId : collectionRepository.findDraftIds(command.userId(), command.deliveryGroupId())) {
+            discardDraft(draftId);
         }
 
         // 하위주문을 잠근 뒤 상태를 본다 — 구매확정 배치와 같은 행을 다툰다. 배치가 먼저면 신청이 진다(3-6).
@@ -154,6 +191,13 @@ public class OrderClaimService {
         }
 
         ClaimFeeBearer feeBearer = reason.getFeeBearer();
+        boolean exchange = command.type() == ClaimType.EXCHANGE;
+        Map<Long, ClaimExchangeOptionReader.Option> exchangeOptions = exchange
+                ? reserveExchangeOptions(command.items(), products, feeBearer) : Map.of();
+        // 고객 귀책 교환은 재발송 배송비를 결제해야 접수된다 — 그때까지는 브랜드 화면 어디에도 나오지 않는다.
+        int exchangeFee = exchange ? feePolicy.exchangeReshipFee(feeBearer, group) : 0;
+        boolean paymentRequired = exchangeFee > 0;
+        ReshipAddress reshipTo = command.reshipAddress();
         Market market = group.getMarket();
         OrderProperties.Claim config = orderProperties.getClaim();
         OrderClaimCollection collection = OrderClaimCollection.builder()
@@ -173,22 +217,26 @@ public class OrderClaimService {
                 .returnAddress(market.getShippingAddress())
                 .returnDetailAddress(market.getShippingDetailAddress())
                 .returnDeduction(feePolicy.returnDeduction(command.type(), feeBearer, group))
-                // 재발송 수취지 — 기본은 원 주문 배송지의 사본.
-                .reshipRecipient(order.getRecipientName())
-                .reshipPhone(order.getRecipientPhone())
-                .reshipZipCode(order.getZipCode())
-                .reshipAddress(order.getAddress())
-                .reshipDetailAddress(order.getDetailAddress())
-                .reshipMemo(order.getDeliveryMemo())
+                // 재발송 수취지 — 기본은 원 주문 배송지의 사본. 교환은 요청 때 다른 배송지를 고를 수 있다.
+                .reshipRecipient(reshipTo != null ? reshipTo.recipient() : order.getRecipientName())
+                .reshipPhone(reshipTo != null ? reshipTo.phone() : order.getRecipientPhone())
+                .reshipZipCode(reshipTo != null ? reshipTo.zipCode() : order.getZipCode())
+                .reshipAddress(reshipTo != null ? reshipTo.address() : order.getAddress())
+                .reshipDetailAddress(reshipTo != null ? reshipTo.detailAddress() : order.getDetailAddress())
+                .reshipMemo(reshipTo != null ? reshipTo.memo() : order.getDeliveryMemo())
                 .createdAt(now)
                 .build();
         if (invoice != null) {
             collection.registerInvoice(invoice.carrier(), invoice.trackingNumber(), now);
         }
         collectionRepository.save(collection);
+        Long pendingChargeId = !paymentRequired ? null : chargeRepository.save(OrderClaimCharge.builder()
+                .collection(collection).type(ClaimChargeType.EXCHANGE_RESHIP).amount(exchangeFee)
+                .status(ClaimChargeStatus.PENDING).createdAt(now).build()).getId();
 
         LocalDateTime collectDueAt = businessDayCalculator.dueAt(now, config.getCollectDueBusinessDays());
-        ClaimStatus initial = invoice != null ? ClaimStatus.COLLECTING : ClaimStatus.REQUESTED;
+        ClaimStatus initial = paymentRequired ? ClaimStatus.PAYMENT_PENDING
+                : invoice != null ? ClaimStatus.COLLECTING : ClaimStatus.REQUESTED;
         List<String> imageUrls = command.imageUrls() == null ? List.of() : command.imageUrls();
         List<Long> claimIds = new ArrayList<>();
         for (Item item : command.items()) {
@@ -204,6 +252,8 @@ public class OrderClaimService {
                     .reasonCode(reason)
                     .reasonDetail(reasonDetail)
                     .feeBearer(feeBearer)
+                    .exchangeVariantId(item.exchangeVariantId())
+                    .exchangeOptionName(!exchange ? null : exchangeOptions.get(item.orderProductId()).optionName())
                     .status(initial)
                     .requestedAt(now)
                     .collectDueAt(collectDueAt)
@@ -215,13 +265,132 @@ public class OrderClaimService {
                         .claim(claim).owner(ClaimAttachmentOwner.CONSUMER).imageUrl(imageUrls.get(i)).sortOrder(i)
                         .build());
             }
-            appendHistory(claim, ClaimEventType.REQUESTED, FulfillmentActorType.CONSUMER, command.userId(), null, now);
-            if (invoice != null) {
-                appendHistory(claim, ClaimEventType.COLLECTION_INVOICE_REGISTERED, FulfillmentActorType.CONSUMER,
-                        command.userId(), invoiceLabel(invoice), now);
+            // 결제 대기는 아직 접수 전이다 — 접수 이력은 결제가 확정되는 순간에 남긴다.
+            if (!paymentRequired) {
+                appendAccepted(claim, command.userId(), invoice, now);
             }
         }
-        return new RequestResult(collection.getId(), claimIds, true);
+        return new RequestResult(collection.getId(), claimIds, true, initial, pendingChargeId);
+    }
+
+    /**
+     * 교환 옵션 검증 · 재고 선점(3-8) — 고를 수 있는 옵션(같은 상품 · 같은 공구 · 같은 판매가)이어야 하고, 고객 귀책인데
+     * 받은 옵션과 같은 옵션이면 교환할 이유가 없다. 재고는 <b>신청 때</b> 잡는다 — 회수·검수에 며칠이 걸리는 동안
+     * 품절되면 「통과시켰는데 보낼 물건이 없는」 막다른 길이 된다. 잠금 순서는 옵션 id 오름차순.
+     *
+     * @return 주문 항목 id → 고른 교환 옵션
+     */
+    private Map<Long, ClaimExchangeOptionReader.Option> reserveExchangeOptions(List<Item> items,
+                                                                               Map<Long, OrderProduct> products,
+                                                                               ClaimFeeBearer feeBearer) {
+        Map<Long, ClaimExchangeOptionReader.Option> chosen = new HashMap<>();
+        Map<Long, Integer> quantityByVariant = new TreeMap<>();
+        for (Item item : items) {
+            ClaimExchangeOptionReader.Option option = exchangeOptionReader
+                    .optionsOf(products.get(item.orderProductId())).stream()
+                    .filter(candidate -> candidate.variantId().equals(item.exchangeVariantId()))
+                    .findFirst()
+                    .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_EXCHANGE_OPTION_INVALID));
+            if (option.current() && feeBearer == ClaimFeeBearer.CONSUMER) {
+                throw new BusinessException(ErrorCode.CLAIM_EXCHANGE_SAME_OPTION);
+            }
+            chosen.put(item.orderProductId(), option);
+            quantityByVariant.merge(option.variantId(), item.quantity(), Integer::sum);
+        }
+        for (Map.Entry<Long, Integer> entry : quantityByVariant.entrySet()) {
+            if (productVariantRepository.reserveStock(entry.getKey(), entry.getValue()) != 1) {
+                throw new BusinessException(ErrorCode.CLAIM_EXCHANGE_OUT_OF_STOCK);
+            }
+        }
+        return chosen;
+    }
+
+    // ------------------------------------------------------------------ 결제 대기(앱 클레임 설계서 2절 · 전이 0a · 0b)
+
+    /**
+     * 청구 결제 확정의 도메인 훅 — 교환 선결제면 결제 대기 요청이 접수되고(송장을 같이 냈으면 회수 중), 반려 재발송비면
+     * 거절 보류가 재발송 대기로 간다. 받을 수 없는 결제(요청이 이미 사라짐 · 이미 정산됨)는 예외로 알린다 —
+     * 호출자가 그 결제를 자동 취소한다.
+     */
+    @Transactional
+    public void onChargePaid(Long chargeId, String paymentId, LocalDateTime now) {
+        OrderClaimCharge found = chargeRepository.findById(chargeId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_PAYMENT_NOT_REQUIRED));
+        Long collectionId = found.getCollection().getId();
+        OrderClaimCollection collection = collectionRepository.findForUpdate(collectionId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_PAYMENT_NOT_REQUIRED));
+        if (found.getType() == ClaimChargeType.REJECT_RESHIP) {
+            markReshipFeePaid(chargeId, paymentId, collection.getUserId(), now);
+            return;
+        }
+        OrderClaimCharge charge = pendingCharge(collectionId, ClaimChargeType.EXCHANGE_RESHIP);
+        if (charge == null || !charge.getId().equals(chargeId)) {
+            throw new BusinessException(ErrorCode.CLAIM_PAYMENT_NOT_REQUIRED);
+        }
+        Long userId = collection.getUserId();
+        Invoice invoice = collection.hasInvoice()
+                ? new Invoice(collection.getCarrier(), collection.getTrackingNumber()) : null;
+        List<Long> draftIds = claimRepository.findByCollectionId(collectionId).stream()
+                .filter(claim -> claim.getStatus() == ClaimStatus.PAYMENT_PENDING).map(OrderClaim::getId).toList();
+        charge.settle(ClaimChargeStatus.PAID, paymentId, now);
+        ClaimStatus to = invoice != null ? ClaimStatus.COLLECTING : ClaimStatus.REQUESTED;
+        if (claimRepository.moveByCollection(collectionId, ClaimStatus.PAYMENT_PENDING, to, now) == 0) {
+            throw new BusinessException(ErrorCode.CLAIM_PAYMENT_NOT_REQUIRED);
+        }
+        for (Long claimId : draftIds) {
+            appendAccepted(claimRepository.getReferenceById(claimId), userId, invoice, now);
+        }
+    }
+
+    /** 결제 없이 남은 오래된 초안 — 삭제 배치의 대상(결제창이 아직 열려 있을 수 있는 것은 빠진다). */
+    @Transactional(readOnly = true)
+    public List<Long> findStaleDraftIds(LocalDateTime before, int limit) {
+        return collectionRepository.findStaleDraftIds(before, PageRequest.of(0, limit));
+    }
+
+    /**
+     * 결제 대기 초안 삭제(전이 0b) — 아직 접수된 적 없는 요청이라 행을 지운다. 선점한 교환 재고를 되돌린다.
+     * 이미 결제돼 접수된 요청은 건드리지 않는다.
+     */
+    @Transactional
+    public void discardDraft(Long collectionId) {
+        if (collectionRepository.findForUpdate(collectionId).isEmpty()) {
+            return;
+        }
+        List<OrderClaim> claims = claimRepository.findByCollectionId(collectionId);
+        List<OrderClaim> drafts = claims.stream()
+                .filter(claim -> claim.getStatus() == ClaimStatus.PAYMENT_PENDING).toList();
+        if (drafts.isEmpty() || drafts.size() != claims.size()) {
+            return;
+        }
+        restoreExchangeStock(drafts);
+        attachmentRepository.deleteByClaimIds(drafts.stream().map(OrderClaim::getId).toList());
+        claimRepository.deletePaymentPendingByCollection(collectionId);
+        chargeRepository.deleteByCollectionId(collectionId);
+        collectionRepository.deleteById(collectionId);
+    }
+
+    // ------------------------------------------------------------------ 교환받을 배송지(앱 클레임 설계서 3-6)
+
+    /**
+     * 교환받을 배송지 변경 — 교환이고 그 요청의 진행 중 클레임이 전부 검수 판정 전일 때만. 하나라도 검수를 통과해 재발송
+     * 대기가 됐으면 잠긴다 — 브랜드가 재발송 목록을 내려받을 수 있는 시점부터 주소가 바뀌면 구 주소로 나간다.
+     */
+    @Transactional
+    public void changeReshipAddress(Long collectionId, Long userId, ReshipAddress address, LocalDateTime now) {
+        OrderClaimCollection collection = requireOwnedCollectionForUpdate(collectionId, userId);
+        List<OrderClaim> open = claimRepository.findByCollectionId(collectionId).stream()
+                .filter(OrderClaim::isOpen).toList();
+        if (collection.getType() != ClaimType.EXCHANGE || open.isEmpty()
+                || open.stream().anyMatch(claim -> !AWAITING_JUDGEMENT.contains(claim.getStatus()))) {
+            throw new BusinessException(ErrorCode.CLAIM_ADDRESS_NOT_CHANGEABLE);
+        }
+        collection.changeReshipAddress(address.recipient(), address.phone(), address.zipCode(), address.address(),
+                address.detailAddress(), address.memo());
+        for (OrderClaim claim : open) {
+            appendHistory(claim, ClaimEventType.RESHIP_ADDRESS_CHANGED, FulfillmentActorType.CONSUMER, userId, null,
+                    now);
+        }
     }
 
     // ------------------------------------------------------------------ 회수 송장(3-2 · 전이 #2)
@@ -281,10 +450,12 @@ public class OrderClaimService {
                 .filter(found -> found.getUserId().equals(userId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
         Long deliveryGroupId = claim.getDeliveryGroup().getId();
+        Long collectionId = claim.getCollection().getId();
         if (claimRepository.withdraw(claimId, userId, now) != 1) {
             throw new BusinessException(ErrorCode.CLAIM_WITHDRAW_NOT_ALLOWED);
         }
         appendHistory(claimId, ClaimEventType.WITHDRAWN, FulfillmentActorType.CONSUMER, userId, null, now);
+        releaseAfterCancel(collectionId, List.of(claimId), now);
         fulfillmentService.confirmIfDue(deliveryGroupId, now);
     }
 
@@ -311,11 +482,14 @@ public class OrderClaimService {
         if (closed == 0) {
             return 0;
         }
+        List<Long> expiredIds = new ArrayList<>();
         for (OrderClaim claim : claimRepository.findByCollectionId(collectionId)) {
             if (claim.getCancelReason() == ClaimCancelReason.INVOICE_EXPIRED) {
                 appendHistory(claim, ClaimEventType.INVOICE_EXPIRED, FulfillmentActorType.SYSTEM, null, null, now);
+                expiredIds.add(claim.getId());
             }
         }
+        releaseAfterCancel(collectionId, expiredIds, now);
         fulfillmentService.confirmIfDue(deliveryGroupId, now);
         return closed;
     }
@@ -329,10 +503,12 @@ public class OrderClaimService {
         OrderClaim claim = claimRepository.findById(claimId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
         Long deliveryGroupId = claim.getDeliveryGroup().getId();
+        Long collectionId = claim.getCollection().getId();
         if (claimRepository.closeByAdmin(claimId, now) != 1) {
             throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED);
         }
         appendHistory(claimId, ClaimEventType.CLOSED_BY_ADMIN, FulfillmentActorType.ADMIN, adminId, reason, now);
+        releaseAfterCancel(collectionId, List.of(claimId), now);
         fulfillmentService.confirmIfDue(deliveryGroupId, now);
     }
 
@@ -412,6 +588,8 @@ public class OrderClaimService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
         Long collectionId = claim.getCollection().getId();
         Long deliveryGroupId = claim.getDeliveryGroup().getId();
+        Long exchangeVariantId = claim.getExchangeVariantId();
+        int quantity = claim.getQuantity();
         int reshipFee = feePolicy.rejectReshipFee(claim.getDeliveryGroup());
         if (claimRepository.rejectInspection(claimId, marketId, reasonCode, rejectDetail, sellerId, now) != 1) {
             throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED);
@@ -431,6 +609,10 @@ public class OrderClaimService {
         }
         appendHistory(rejected, ClaimEventType.INSPECTION_REJECTED, FulfillmentActorType.SELLER, sellerId,
                 reasonCode.getLabel(), now);
+        // 교환은 무효다 — 받은 상품을 그대로 돌려보내므로 잡아 둔 새 옵션의 재고를 되돌린다.
+        if (exchangeVariantId != null) {
+            productVariantRepository.restoreStock(exchangeVariantId, quantity);
+        }
         finalizeCollection(collectionId, now);
         fulfillmentService.confirmIfDue(deliveryGroupId, now);
     }
@@ -568,9 +750,59 @@ public class OrderClaimService {
 
     /** 그 요청의 미정산 반려 재발송비 — 한 요청에 1건까지다. */
     private OrderClaimCharge pendingRejectCharge(Long collectionId) {
+        return pendingCharge(collectionId, ClaimChargeType.REJECT_RESHIP);
+    }
+
+    private OrderClaimCharge pendingCharge(Long collectionId, ClaimChargeType type) {
         return chargeRepository.findByCollectionId(collectionId).stream()
-                .filter(charge -> charge.getType() == ClaimChargeType.REJECT_RESHIP && charge.isPending())
+                .filter(charge -> charge.getType() == type && charge.isPending())
                 .findFirst().orElse(null);
+    }
+
+    /** 접수 이력 — 접수되는 순간(요청 즉시 또는 결제 확정)에 한 번. 송장을 같이 냈으면 송장 입력 이력도 남긴다. */
+    private void appendAccepted(OrderClaim claim, Long userId, Invoice invoice, LocalDateTime now) {
+        appendHistory(claim, ClaimEventType.REQUESTED, FulfillmentActorType.CONSUMER, userId, null, now);
+        if (invoice != null) {
+            appendHistory(claim, ClaimEventType.COLLECTION_INVOICE_REGISTERED, FulfillmentActorType.CONSUMER, userId,
+                    invoiceLabel(invoice), now);
+        }
+    }
+
+    /** 선점한 교환 옵션 재고를 되돌린다 — 차감과 같은 순서(옵션 id 오름차순). 반품 클레임은 잡은 재고가 없다. */
+    private void restoreExchangeStock(List<OrderClaim> claims) {
+        Map<Long, Integer> quantityByVariant = new TreeMap<>();
+        for (OrderClaim claim : claims) {
+            if (claim.getExchangeVariantId() != null) {
+                quantityByVariant.merge(claim.getExchangeVariantId(), claim.getQuantity(), Integer::sum);
+            }
+        }
+        quantityByVariant.forEach(productVariantRepository::restoreStock);
+    }
+
+    /**
+     * 요청이 사라진 뒤의 정리(철회 · 자동 취소 · 직권 종결) — 교환이면 선점 재고를 되돌리고, <b>그 요청에 남은 클레임이
+     * 하나도 없으면</b> 선결제한 재발송 배송비를 돌려준다. 포트원 취소는 트랜잭션 밖에서 한다 — 여기서는 결제 행을 취소
+     * 요청으로 선점만 하고, 커밋 뒤 호출자(또는 정리 배치)가 집행한다.
+     */
+    private void releaseAfterCancel(Long collectionId, List<Long> cancelledClaimIds, LocalDateTime now) {
+        List<OrderClaim> claims = claimRepository.findByCollectionId(collectionId);
+        restoreExchangeStock(claims.stream().filter(claim -> cancelledClaimIds.contains(claim.getId())).toList());
+        if (claims.stream().anyMatch(claim -> claim.getResult() != ClaimResult.CANCELLED)) {
+            return;
+        }
+        List<String> paymentIds = new ArrayList<>();
+        for (OrderClaimCharge charge : chargeRepository.findByCollectionId(collectionId)) {
+            if (charge.getType() == ClaimChargeType.EXCHANGE_RESHIP && charge.getStatus() == ClaimChargeStatus.PAID) {
+                charge.refund(now);
+                if (charge.getPaidPaymentId() != null) {
+                    paymentIds.add(charge.getPaidPaymentId());
+                }
+            }
+        }
+        // 선점 UPDATE 가 영속성 컨텍스트를 비운다 — 청구의 변경을 다 적어 둔 뒤에 부른다.
+        for (String paymentId : paymentIds) {
+            claimPaymentRepository.requestCancel(paymentId, List.of(ClaimPaymentStatus.PAID), now);
+        }
     }
 
     /** 교환 요청 때 낸 재발송비가 있는가 — 있으면 반려 상품을 그 돈으로 돌려보낸다. */
