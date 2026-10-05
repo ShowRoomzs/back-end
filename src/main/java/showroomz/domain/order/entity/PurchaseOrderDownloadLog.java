@@ -29,6 +29,11 @@ public class PurchaseOrderDownloadLog {
     @Column(name = "seller_id", nullable = false)
     private Long sellerId;
 
+    /** 무엇을 반출했나 — 발주서 · 재발송 목록(35 설계서 1-10). 둘 다 수취인 개인정보 반출이라 같은 로그에 남긴다. */
+    @Column(name = "kind", nullable = false, length = 20)
+    private String kind = MarketPurchaseOrderTemplate.TYPE_PURCHASE_ORDER;
+
+    /** 반출한 건수 — 발주서는 하위주문 수, 재발송 목록은 클레임 수. */
     @Column(name = "delivery_group_count", nullable = false)
     private Integer deliveryGroupCount;
 
@@ -43,8 +48,11 @@ public class PurchaseOrderDownloadLog {
     private LocalDateTime downloadedAt;
 
     @Builder
-    public PurchaseOrderDownloadLog(Long marketId, Long sellerId, Integer deliveryGroupCount, String columns,
-                                    boolean prepareStarted, LocalDateTime downloadedAt) {
+    public PurchaseOrderDownloadLog(Long marketId, Long sellerId, String kind, Integer deliveryGroupCount,
+                                    String columns, boolean prepareStarted, LocalDateTime downloadedAt) {
+        if (kind != null) {
+            this.kind = kind;
+        }
         this.marketId = marketId;
         this.sellerId = sellerId;
         this.deliveryGroupCount = deliveryGroupCount;

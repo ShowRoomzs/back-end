@@ -410,7 +410,11 @@ public enum ErrorCode {
     CLAIM_EXCHANGE_OPTION_INVALID(HttpStatus.BAD_REQUEST, "CLAIM_EXCHANGE_OPTION_INVALID", "교환할 수 없는 옵션입니다."),
     CLAIM_EXCHANGE_SAME_OPTION(HttpStatus.BAD_REQUEST, "CLAIM_EXCHANGE_SAME_OPTION", "같은 옵션은 불량 · 오배송일 때만 교환돼요."),
     CLAIM_EXCHANGE_OUT_OF_STOCK(HttpStatus.CONFLICT, "CLAIM_EXCHANGE_OUT_OF_STOCK", "교환할 옵션의 재고가 없습니다."),
-    CLAIM_ADDRESS_NOT_CHANGEABLE(HttpStatus.CONFLICT, "CLAIM_ADDRESS_NOT_CHANGEABLE", "검수가 끝나 배송지를 변경할 수 없습니다.");
+    CLAIM_ADDRESS_NOT_CHANGEABLE(HttpStatus.CONFLICT, "CLAIM_ADDRESS_NOT_CHANGEABLE", "검수가 끝나 배송지를 변경할 수 없습니다."),
+    CLAIM_STORAGE_NOT_EXPIRED(HttpStatus.CONFLICT, "CLAIM_STORAGE_NOT_EXPIRED", "보관 기한이 지나지 않아 폐기 처리할 수 없습니다."),
+    CLAIM_EXPORT_EMPTY(HttpStatus.BAD_REQUEST, "CLAIM_EXPORT_EMPTY", "내려받을 재발송 대기 건이 없습니다."),
+    CLAIM_EXPORT_COLUMNS_REQUIRED(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "컬럼을 1개 이상 선택해 주세요."),
+    CLAIM_UPLOAD_HEADER_MISSING(HttpStatus.BAD_REQUEST, "CLAIM_UPLOAD_HEADER_MISSING", "파일에 접수번호 · 택배사 · 송장번호 열이 있어야 합니다.");
 
     private final HttpStatus status;
     private final String code;

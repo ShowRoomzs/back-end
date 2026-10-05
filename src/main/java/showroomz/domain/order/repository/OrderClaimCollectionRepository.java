@@ -4,6 +4,7 @@ import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import showroomz.domain.order.entity.OrderClaimCollection;
@@ -21,6 +22,27 @@ public interface OrderClaimCollectionRepository extends JpaRepository<OrderClaim
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT k FROM OrderClaimCollection k WHERE k.id = :id")
     Optional<OrderClaimCollection> findForUpdate(@Param("id") Long id);
+
+    /** 회수 추적 대상 — 회수 중인 클레임이 있고 송장이 있는 요청. id 커서로 이어 읽는다. */
+    @Query("SELECT k FROM OrderClaimCollection k WHERE k.carrier IS NOT NULL AND k.trackingNumber IS NOT NULL "
+            + "AND k.id > :afterId AND EXISTS (SELECT c FROM OrderClaim c WHERE c.collection = k "
+            + "    AND c.status = showroomz.domain.order.type.ClaimStatus.COLLECTING) ORDER BY k.id ASC")
+    List<OrderClaimCollection> findCollectionTrackingTargets(@Param("afterId") Long afterId, Pageable pageable);
+
+    /** 회수 추적 갱신 — 폴링 당시 송장이 그대로일 때만(그사이 정정됐으면 0행). */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderClaimCollection k SET k.lastTrackingAt = :at, k.lastTrackingLabel = :label "
+            + "WHERE k.id = :id AND k.carrier = :carrier AND k.trackingNumber = :trackingNumber")
+    int touchTracking(@Param("id") Long id, @Param("carrier") showroomz.domain.order.type.DeliveryCarrier carrier,
+                      @Param("trackingNumber") String trackingNumber, @Param("at") LocalDateTime at,
+                      @Param("label") String label);
+
+    /** 추적상 브랜드 도착 — 처음 감지한 시각만 적는다. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderClaimCollection k SET k.arrivedAt = :at "
+            + "WHERE k.id = :id AND k.arrivedAt IS NULL AND k.carrier = :carrier AND k.trackingNumber = :trackingNumber")
+    int markArrived(@Param("id") Long id, @Param("carrier") showroomz.domain.order.type.DeliveryCarrier carrier,
+                    @Param("trackingNumber") String trackingNumber, @Param("at") LocalDateTime at);
 
     /** 그 소비자가 그 하위주문에 남긴 결제 대기 초안 — 내용을 고쳐 다시 요청하면 먼저 지운다(묶인 수량·재고를 푼다). */
     @Query("SELECT DISTINCT k.id FROM OrderClaimCollection k WHERE k.userId = :userId "

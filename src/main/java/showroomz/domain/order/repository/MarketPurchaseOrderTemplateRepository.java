@@ -7,5 +7,6 @@ import java.util.Optional;
 
 public interface MarketPurchaseOrderTemplateRepository extends JpaRepository<MarketPurchaseOrderTemplate, Long> {
 
-    Optional<MarketPurchaseOrderTemplate> findByMarket_Id(Long marketId);
+    /** 마켓당 종류별 1행 — 발주서와 재발송 목록이 한 테이블을 쓴다. */
+    Optional<MarketPurchaseOrderTemplate> findByMarket_IdAndTemplateType(Long marketId, String templateType);
 }

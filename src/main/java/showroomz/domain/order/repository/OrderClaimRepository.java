@@ -226,6 +226,49 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
                                 @Param("trackingNumber") String trackingNumber, @Param("result") ClaimResult result,
                                 @Param("deliveredAt") LocalDateTime deliveredAt, @Param("now") LocalDateTime now);
 
+    /** 재발송 송장 수정 — 재발송 중만. 등록 시각은 유지하고 추적 값만 리셋한다(새 송장의 이력이 0건부터 다시 쌓인다). */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderClaim c SET c.reshipCarrier = :carrier, c.reshipTrackingNumber = :trackingNumber, "
+            + "c.reshipLastTrackingAt = NULL "
+            + "WHERE c.id = :id AND c.marketId = :marketId "
+            + "AND c.status = showroomz.domain.order.type.ClaimStatus.RESHIPPING")
+    int updateReshipment(@Param("id") Long id, @Param("marketId") Long marketId,
+                         @Param("carrier") DeliveryCarrier carrier, @Param("trackingNumber") String trackingNumber);
+
+    /** 재발송 추적 갱신 — 폴링 당시 송장이 그대로일 때만. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderClaim c SET c.reshipLastTrackingAt = :at "
+            + "WHERE c.id = :id AND c.status = showroomz.domain.order.type.ClaimStatus.RESHIPPING "
+            + "AND c.reshipCarrier = :carrier AND c.reshipTrackingNumber = :trackingNumber")
+    int touchReshipTracking(@Param("id") Long id, @Param("carrier") DeliveryCarrier carrier,
+                            @Param("trackingNumber") String trackingNumber, @Param("at") LocalDateTime at);
+
+    /** 전역 송장 중복 검사 — 재발송 중인 클레임의 재발송 송장. 종결 건은 겹쳐도 된다(택배사가 번호를 재사용한다). */
+    @Query("SELECT c FROM OrderClaim c WHERE c.reshipCarrier = :carrier "
+            + "AND c.reshipTrackingNumber = :trackingNumber "
+            + "AND c.status = showroomz.domain.order.type.ClaimStatus.RESHIPPING")
+    List<OrderClaim> findReshippingByInvoice(@Param("carrier") DeliveryCarrier carrier,
+                                             @Param("trackingNumber") String trackingNumber);
+
+    /** 재발송 추적 대상 — id 커서로 이어 읽는다. */
+    @Query("SELECT c FROM OrderClaim c WHERE c.status = showroomz.domain.order.type.ClaimStatus.RESHIPPING "
+            + "AND c.reshipCarrier IS NOT NULL AND c.reshipTrackingNumber IS NOT NULL AND c.id > :afterId "
+            + "ORDER BY c.id ASC")
+    List<OrderClaim> findReshipTrackingTargets(@Param("afterId") Long afterId,
+                                               org.springframework.data.domain.Pageable pageable);
+
+    /** 재발송 목록 · 업로드 매칭 — 내 마켓의 클레임을 요청 · 하위주문 · 주문 · 주문 항목과 함께. */
+    @Query("SELECT c FROM OrderClaim c JOIN FETCH c.collection JOIN FETCH c.deliveryGroup g JOIN FETCH g.order "
+            + "JOIN FETCH c.orderProduct WHERE c.marketId = :marketId AND c.id IN :ids ORDER BY c.id ASC")
+    List<OrderClaim> findOwnedByIds(@Param("marketId") Long marketId, @Param("ids") Collection<Long> ids);
+
+    /** 재발송 목록의 「선택 없이 열면 전체」 — 내 마켓의 재발송 대기 전부. */
+    @Query("SELECT c FROM OrderClaim c JOIN FETCH c.collection JOIN FETCH c.deliveryGroup g JOIN FETCH g.order "
+            + "JOIN FETCH c.orderProduct WHERE c.marketId = :marketId "
+            + "AND c.status = showroomz.domain.order.type.ClaimStatus.RESHIP_READY ORDER BY c.stageEnteredAt ASC, c.id ASC")
+    List<OrderClaim> findReshipReady(@Param("marketId") Long marketId,
+                                     org.springframework.data.domain.Pageable pageable);
+
     /** #11 운영자 직권 — 추적이 놓친 건의 출구(0-7). */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderClaim c SET c.status = " + COMPLETED + ", c.result = :result, c.completedAt = :now, "

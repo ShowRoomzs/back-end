@@ -261,6 +261,15 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
     int confirmPurchase(@Param("id") Long id, @Param("now") LocalDateTime now,
                         @Param("threshold") LocalDateTime threshold);
 
+    /**
+     * 교환 재발송 도착 — 구매확정 N일을 그 시각부터 다시 센다(35 설계서 3-4 · §35-7). 최초 배송완료 시각은 덮지 않는다.
+     * 같은 하위주문에 교환이 여럿이면 가장 늦은 도착이 기준이다.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderDeliveryGroup g SET g.confirmRestartAt = :at "
+            + "WHERE g.id = :id AND (g.confirmRestartAt IS NULL OR g.confirmRestartAt < :at)")
+    int restartConfirmTimer(@Param("id") Long id, @Param("at") LocalDateTime at);
+
     // ------------------------------------------------------------------ 배치 대상
 
     /** 추적 대상 — id 커서({@code afterId} 초과)로 이어 읽는다. 첫 페이지는 0. */

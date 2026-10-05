@@ -219,7 +219,8 @@ public class SellerOrderCommandService {
     @Transactional(readOnly = true)
     public PurchaseOrderTemplateDto.Response getTemplate(String sellerEmail) {
         SellerScope scope = accessGuard.resolve(sellerEmail);
-        List<PurchaseOrderColumn> columns = templateRepository.findByMarket_Id(scope.market().getId())
+        List<PurchaseOrderColumn> columns = templateRepository.findByMarket_IdAndTemplateType(
+                        scope.market().getId(), MarketPurchaseOrderTemplate.TYPE_PURCHASE_ORDER)
                 .map(MarketPurchaseOrderTemplate::columnList)
                 .orElseGet(() -> Arrays.stream(PurchaseOrderColumn.values())
                         .filter(PurchaseOrderColumn::isBasic).toList());
@@ -499,7 +500,8 @@ public class SellerOrderCommandService {
     }
 
     private void upsertTemplate(SellerScope scope, List<PurchaseOrderColumn> columns) {
-        templateRepository.findByMarket_Id(scope.market().getId())
+        templateRepository.findByMarket_IdAndTemplateType(scope.market().getId(),
+                        MarketPurchaseOrderTemplate.TYPE_PURCHASE_ORDER)
                 .ifPresentOrElse(
                         template -> template.update(columns, scope.sellerId()),
                         () -> templateRepository.save(

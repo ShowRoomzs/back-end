@@ -144,7 +144,7 @@ class UserClaimIntegrationTest extends SellerOrderTestSupport {
     }
 
     @Test
-    @DisplayName("송장을 같이 내면 회수중으로 시작한다 — 할 일이 없고 철회 버튼이 사라진다(#1)")
+    @DisplayName("송장을 같이 내면 회수중으로 시작한다 — 할 일이 없고 철회 버튼이 사라지고 회수 조회가 열린다(#1)")
     void requestWithInvoice() throws Exception {
         OrderDeliveryGroup group = deliveredGroup(1);
         Long claimId = created(create(body(group, "CHANGE_OF_MIND", null, invoice("CJ", "6849-2201-3378"), 0))
@@ -156,7 +156,7 @@ class UserClaimIntegrationTest extends SellerOrderTestSupport {
                 .andExpect(jsonPath("$.items[0].statusLabel").value("회수중"))
                 .andExpect(jsonPath("$.items[0].statusSub").value("CJ대한통운 684922013378"))
                 .andExpect(jsonPath("$.items[0].statusSubTone").value("MUTED"))
-                .andExpect(jsonPath("$.items[0].actions", empty()))
+                .andExpect(jsonPath("$.items[0].actions[*].type", contains("TRACK_COLLECTION")))
                 .andExpect(jsonPath("$.info.collectionInvoice.trackingNumber").value("684922013378"))
                 .andExpect(jsonPath("$.info.invoiceDueDate").value(nullValue()));
     }

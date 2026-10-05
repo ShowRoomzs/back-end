@@ -68,9 +68,10 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class UserClaimQueryService {
 
-    /** 지금 서버에 받는 API 가 있는 버튼만 내린다 — 회수 조회 · 재발송 배송 조회는 그 API 가 생기는 단계에서 켠다. */
+    /** 지금 서버에 받는 API 가 있는 버튼만 내린다. */
     static final Set<ActionType> ENABLED_ACTIONS = EnumSet.of(ActionType.WITHDRAW,
-            ActionType.REGISTER_COLLECTION_INVOICE, ActionType.INQUIRY);
+            ActionType.REGISTER_COLLECTION_INVOICE, ActionType.TRACK_COLLECTION, ActionType.TRACK_RESHIP,
+            ActionType.INQUIRY);
 
     /** 아직 검수 판정을 받지 않은 단계 — 교환받을 배송지를 바꿀 수 있는 구간이다. */
     private static final Set<ClaimStatus> AWAITING_JUDGEMENT = EnumSet.of(ClaimStatus.REQUESTED,
@@ -441,6 +442,9 @@ public class UserClaimQueryService {
                 .amount(rejectCharge.getAmount())
                 .dueDate(state == ReshipFeeState.PAYABLE ? dueDate : null)
                 .settledAt(rejectCharge.getSettledAt())
+                .methodLabel(state != ReshipFeeState.PAID || rejectCharge.getPaidPaymentId() == null ? null
+                        : claimPaymentRepository.findById(rejectCharge.getPaidPaymentId())
+                        .map(OrderClaimPayment::methodLabel).orElse(null))
                 .storage(!overdue ? null : new UserClaimDto.Storage(rejected.getNoticeCount(),
                         storagePolicy.storageDueAt(rejected.getNoticeCount(), rejected.getLastNoticeAt()),
                         storagePolicy.phase(rejected.getNoticeCount(), rejected.getLastNoticeAt(), now)))

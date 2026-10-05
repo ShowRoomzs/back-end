@@ -20,7 +20,8 @@ import java.util.stream.Collectors;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "market_purchase_order_template",
-        uniqueConstraints = @UniqueConstraint(name = "uk_market_purchase_order_template", columnNames = {"market_id"}))
+        uniqueConstraints = @UniqueConstraint(name = "uk_market_purchase_order_template_type",
+                columnNames = {"market_id", "template_type"}))
 public class MarketPurchaseOrderTemplate extends BaseTimeEntity {
 
     @Id
@@ -32,16 +33,39 @@ public class MarketPurchaseOrderTemplate extends BaseTimeEntity {
     @JoinColumn(name = "market_id", nullable = false)
     private Market market;
 
-    /** 컬럼 코드 CSV. */
+    /**
+     * 템플릿 종류 — 발주서({@link #TYPE_PURCHASE_ORDER}) · 재발송 목록({@link #TYPE_CLAIM_RESHIP} · 35 설계서 1-10).
+     * 「컬럼 구성을 기본값으로 저장」이라는 같은 개념이라 한 테이블을 쓴다. 마켓당 종류별 1행.
+     */
+    @Column(name = "template_type", nullable = false, length = 20)
+    private String templateType = TYPE_PURCHASE_ORDER;
+
+    /** 컬럼 코드 CSV — 코드의 enum 은 종류마다 다르다. */
     @Column(name = "columns", nullable = false, length = 500)
     private String columns;
 
     @Column(name = "updated_by")
     private Long updatedBy;
 
+    public static final String TYPE_PURCHASE_ORDER = "PURCHASE_ORDER";
+    public static final String TYPE_CLAIM_RESHIP = "CLAIM_RESHIP";
+
     private MarketPurchaseOrderTemplate(Market market, String columns, Long updatedBy) {
         this.market = market;
         this.columns = columns;
+        this.updatedBy = updatedBy;
+    }
+
+    /** 재발송 목록 등 발주서가 아닌 종류 — 컬럼 코드는 호출자가 CSV 로 넘긴다. */
+    public static MarketPurchaseOrderTemplate ofType(Market market, String templateType, String columnCsv,
+                                                     Long updatedBy) {
+        MarketPurchaseOrderTemplate template = new MarketPurchaseOrderTemplate(market, columnCsv, updatedBy);
+        template.templateType = templateType;
+        return template;
+    }
+
+    public void updateCsv(String columnCsv, Long updatedBy) {
+        this.columns = columnCsv;
         this.updatedBy = updatedBy;
     }
 

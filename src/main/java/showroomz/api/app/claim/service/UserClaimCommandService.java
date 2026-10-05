@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import showroomz.api.app.claim.dto.UserClaimDto;
 import showroomz.api.app.order.dto.OrderDto;
 import showroomz.domain.order.entity.OrderClaim;
+import showroomz.domain.order.entity.OrderClaimCharge;
+import showroomz.domain.order.repository.OrderClaimChargeRepository;
 import showroomz.domain.order.repository.OrderClaimCollectionRepository;
 import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.service.OrderClaimService;
@@ -13,6 +15,7 @@ import showroomz.domain.order.service.OrderClaimService.Item;
 import showroomz.domain.order.service.OrderClaimService.RequestCommand;
 import showroomz.domain.order.service.OrderClaimService.RequestResult;
 import showroomz.domain.order.service.OrderClaimService.ReshipAddress;
+import showroomz.domain.order.type.ClaimChargeType;
 import showroomz.domain.order.type.ClaimFeeBearer;
 import showroomz.domain.order.type.ClaimReason;
 import showroomz.domain.order.type.ClaimResult;
@@ -40,6 +43,7 @@ public class UserClaimCommandService {
     private final UserClaimQueryService queryService;
     private final OrderClaimRepository claimRepository;
     private final OrderClaimCollectionRepository collectionRepository;
+    private final OrderClaimChargeRepository chargeRepository;
     private final OrderProperties orderProperties;
 
     /**
@@ -127,6 +131,29 @@ public class UserClaimCommandService {
     /** 결제창 복귀 — 포트원 조회 결과로 확정한다. 멱등이다. */
     public UserClaimDto.PaymentCompleteResponse completePayment(Long userId, String paymentId) {
         return claimPaymentService.complete(userId, paymentId);
+    }
+
+    /**
+     * 반려 상품 재발송 배송비 결제(3-7) — 결제 시도를 만들고 결제창 파라미터를 돌려준다. 결제 뒤는 교환 선결제와 같은
+     * 확정 길이다. <b>결제 기한이 지나도 받는다</b> — 폐기 기록 전이면 결제가 곧 반환 요청이다.
+     */
+    public OrderDto.PaymentWindow payReshipFee(Long userId, Long claimId,
+                                               UserClaimDto.ReshipFeePaymentRequest request) {
+        OrderClaim claim = requireOwned(userId, claimId);
+        // 판정이 다 끝나 결제 기한이 발급된 청구만 — 그 전이거나 이미 정산됐으면 낼 것이 없다.
+        OrderClaimCharge charge = chargeRepository.findByCollectionId(claim.getCollection().getId()).stream()
+                .filter(found -> found.getType() == ClaimChargeType.REJECT_RESHIP)
+                .filter(found -> found.isPending() && found.getDueAt() != null)
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_PAYMENT_NOT_REQUIRED));
+        if (request.getExpectedAmount() != null && !request.getExpectedAmount().equals(charge.getAmount())) {
+            throw new BusinessException(ErrorCode.CLAIM_AMOUNT_CHANGED);
+        }
+        return claimPaymentService.open(userId, charge.getId(), OrderDto.PaymentSelection.builder()
+                .method(request.getMethod())
+                .cardIssuer(request.getCardIssuer())
+                .easyPayProvider(request.getEasyPayProvider())
+                .build());
     }
 
     /** 교환받을 배송지 변경 — 내 배송지의 값을 요청에 복사한다. 검수 판정 전까지만. */

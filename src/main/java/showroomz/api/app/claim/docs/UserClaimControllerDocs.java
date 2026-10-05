@@ -16,9 +16,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.claim.dto.UserClaimDto;
+import showroomz.api.app.order.dto.OrderDto;
+import showroomz.api.app.order.dto.UserOrderDto;
 import showroomz.domain.order.type.ClaimType;
 
-@Tag(name = "User - Claim", description = "반품 · 교환 요청 · 상세 · 회수 송장 · 철회 (C10-3 · C10-5)")
+@Tag(name = "User - Claim", description = "반품 · 교환 요청 · 상세 · 회수 송장 · 철회 · 회수 조회 · 재발송 배송 조회 "
+        + "(C10-2 · C10-3 · C10-4 · C10-5)")
 public interface UserClaimControllerDocs {
 
     @Operation(
@@ -241,4 +244,87 @@ public interface UserClaimControllerDocs {
             @AuthenticationPrincipal UserPrincipal principal,
             @Parameter(description = "클레임 ID", example = "3021") @PathVariable("claimId") Long claimId,
             @Valid @RequestBody UserClaimDto.ReshipAddressRequest request);
+
+    @Operation(
+            summary = "반려 상품 재발송 배송비 결제 (C10-5 [결제하고 다시 받기])",
+            description = """
+                    검수에서 반려된 상품을 돌려받기 위한 재발송 배송비의 결제를 시작한다. 응답은 결제창 파라미터다 —
+                    결제창을 띄우고, 돌아오면 `POST /v1/user/claims/payments/{paymentId}/complete` 를 부른다.
+
+                    - 상세의 `reshipFee.state = PAYABLE` 일 때만 된다. 함께 보낸 상품의 검수가 아직 안 끝났거나(`WAITING`),
+                      환불액에서 차감됐거나(`DEDUCTED`), 요청 때 낸 배송비로 충당됐거나(`COVERED`), 이미 결제됐으면 409
+                    - **결제 기한(`reshipFee.dueDate`)이 지나도 결제할 수 있다** — 보관 중인 상품이 폐기되기 전까지
+                    - 결제가 확정되면 그 요청의 반려 상품이 「발송 준비 중」으로 넘어간다
+                    - 결제 수단은 주문서의 수단 목록과 같다. 수단을 바꿔 다시 부르면 새 결제가 만들어진다
+                    - `expectedAmount` — 화면에 보인 금액. 서버 금액과 다르면 409 (상세를 다시 불러 그린다)
+
+                    **권한:** USER (본인 요청만)
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "결제창 파라미터"),
+            @ApiResponse(responseCode = "400", description = "INVALID_INPUT — 결제수단 · 카드사 · 간편결제 누락 / "
+                    + "PAYMENT_METHOD_UNAVAILABLE — 지금 쓸 수 없는 수단",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "CLAIM_NOT_FOUND",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "CLAIM_PAYMENT_NOT_REQUIRED — 낼 배송비가 없음 / "
+                    + "CLAIM_AMOUNT_CHANGED — 금액이 화면과 다름",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "502", description = "PAYMENT_GATEWAY_ERROR — 결제 준비 실패. 다시 부른다",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<OrderDto.PaymentWindow> payReshipFee(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "클레임 ID — 반려된 항목", example = "3021") @PathVariable("claimId") Long claimId,
+            @Valid @RequestBody UserClaimDto.ReshipFeePaymentRequest request);
+
+    @Operation(
+            summary = "회수 조회 (C10-4)",
+            description = """
+                    보낸 상품이 브랜드에 도착해 검수가 끝날 때까지의 진행. 상세의 `TRACK_COLLECTION` 버튼이 연다.
+
+                    - `stageIndex` — 5칸 바(`stages`)의 현재 칸: 0 접수 · 1 이동 중 · 2 도착 · 3 검수 · 4 환불/새 상품.
+                      **-1** 이면 송장은 등록됐지만 택배사에 아직 잡히지 않았다(`trackable = false` — 「아직 조회되지 않아요」 화면)
+                    - 검수에서 **반려**되면 3 에서 멈추고 `headline` 이 반려를 알린다 — 사유는 상세에서 본다
+                    - `events[]` — 최신순. `source = COURIER` 는 택배 스캔, `BRAND` 는 브랜드의 입고 · 검수 처리다
+                    - 요청에 상품이 여럿이어도 `item` 은 진입한 클레임 하나다 — 택배 구간은 박스 공통, 검수 구간은 그 상품의 것
+                    - `invoiceEditable` 이면 [송장 수정]을 그린다 — `PUT /{claimId}/collection-invoice`
+                    - 택배 이력은 서버가 주기적으로 받아 둔 값이다(실시간이 아니다)
+
+                    **권한:** USER (본인 요청만)
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "CLAIM_NOT_FOUND",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<UserClaimDto.CollectionTrackingResponse> trackCollection(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "클레임 ID", example = "3021") @PathVariable("claimId") Long claimId);
+
+    @Operation(
+            summary = "재발송 배송 조회 (C10-2)",
+            description = """
+                    브랜드가 다시 보낸 상품의 배송 조회 — 교환한 새 상품, 또는 검수에서 반려되어 돌려보낸 상품.
+                    응답 모양은 주문 배송 조회(`GET /v1/user/orders/{orderId}/items/{orderProductId}/tracking`)와 같다.
+
+                    - `context` — `EXCHANGE_RESHIP`(교환 상품 발송) · `REJECT_RESHIP`(반려 상품 재발송).
+                      `contextLabel` · `contextNote` 를 화면 상단에 그대로 그린다
+                    - `item` 은 **실제로 오는 물건**이다 — 교환이면 새 옵션, 반려면 원래 옵션
+                    - `state = NOT_SHIPPED` — 브랜드가 아직 송장을 등록하지 않았다(발송 준비 중)
+                    - `shipDueAt` · `groupBuyEndAt` 은 내리지 않는다(주문 출고 전용)
+
+                    **권한:** USER (본인 요청만)
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "CLAIM_NOT_FOUND",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "CLAIM_STATE_CHANGED — 재발송 단계가 아닌 요청"
+                    + "(검수 전 · 환불로 끝난 반품 · 보관 기간이 끝난 반려)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<UserOrderDto.TrackingResponse> trackReship(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "클레임 ID", example = "3021") @PathVariable("claimId") Long claimId);
 }

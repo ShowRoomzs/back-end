@@ -19,6 +19,9 @@ import showroomz.api.app.claim.docs.UserClaimControllerDocs;
 import showroomz.api.app.claim.dto.UserClaimDto;
 import showroomz.api.app.claim.service.UserClaimCommandService;
 import showroomz.api.app.claim.service.UserClaimQueryService;
+import showroomz.api.app.claim.service.UserClaimTrackingService;
+import showroomz.api.app.order.dto.OrderDto;
+import showroomz.api.app.order.dto.UserOrderDto;
 import showroomz.domain.order.type.ClaimType;
 
 @RestController
@@ -28,6 +31,7 @@ public class UserClaimController implements UserClaimControllerDocs {
 
     private final UserClaimQueryService queryService;
     private final UserClaimCommandService commandService;
+    private final UserClaimTrackingService trackingService;
 
     @Override
     @GetMapping("/form")
@@ -75,6 +79,29 @@ public class UserClaimController implements UserClaimControllerDocs {
             @Valid @RequestBody UserClaimDto.ReshipAddressRequest request) {
         return ResponseEntity.ok(
                 commandService.changeReshipAddress(principal.getUserId(), claimId, request.getAddressId()));
+    }
+
+    @Override
+    @PostMapping("/{claimId}/reship-fee/payments")
+    public ResponseEntity<OrderDto.PaymentWindow> payReshipFee(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable("claimId") Long claimId,
+            @Valid @RequestBody UserClaimDto.ReshipFeePaymentRequest request) {
+        return ResponseEntity.ok(commandService.payReshipFee(principal.getUserId(), claimId, request));
+    }
+
+    @Override
+    @GetMapping("/{claimId}/collection-tracking")
+    public ResponseEntity<UserClaimDto.CollectionTrackingResponse> trackCollection(
+            @AuthenticationPrincipal UserPrincipal principal, @PathVariable("claimId") Long claimId) {
+        return ResponseEntity.ok(trackingService.trackCollection(principal.getUserId(), claimId));
+    }
+
+    @Override
+    @GetMapping("/{claimId}/reship-tracking")
+    public ResponseEntity<UserOrderDto.TrackingResponse> trackReship(
+            @AuthenticationPrincipal UserPrincipal principal, @PathVariable("claimId") Long claimId) {
+        return ResponseEntity.ok(trackingService.trackReship(principal.getUserId(), claimId));
     }
 
     @Override

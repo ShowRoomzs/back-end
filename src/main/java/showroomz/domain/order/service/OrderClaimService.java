@@ -11,6 +11,7 @@ import showroomz.domain.order.entity.OrderClaimAttachment;
 import showroomz.domain.order.entity.OrderClaimCharge;
 import showroomz.domain.order.entity.OrderClaimCollection;
 import showroomz.domain.order.entity.OrderClaimHistory;
+import showroomz.domain.order.entity.OrderClaimNotice;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.entity.OrderProduct;
 import showroomz.domain.order.entity.OrderRefundTask;
@@ -19,6 +20,7 @@ import showroomz.domain.order.repository.OrderClaimAttachmentRepository;
 import showroomz.domain.order.repository.OrderClaimChargeRepository;
 import showroomz.domain.order.repository.OrderClaimCollectionRepository;
 import showroomz.domain.order.repository.OrderClaimHistoryRepository;
+import showroomz.domain.order.repository.OrderClaimNoticeRepository;
 import showroomz.domain.order.repository.OrderClaimPaymentRepository;
 import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
@@ -41,9 +43,12 @@ import showroomz.domain.order.type.FulfillmentActorType;
 import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.domain.order.type.RefundTaskSource;
+import showroomz.domain.order.type.StoragePhase;
 import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.global.config.properties.OrderProperties;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort;
+import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackEvent;
+import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackSnapshot;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.ValidationResult;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -64,8 +69,8 @@ import java.util.stream.Collectors;
  * 반품·교환 클레임의 도메인 진입점(35 설계서 3-7) — 앱 · 파트너센터 · 어드민 · 배치가 여기를 부른다. 전이는 전부
  * {@link OrderClaimRepository}의 조건부 UPDATE 이고, 이력은 전이와 같은 트랜잭션에서 남긴다.
  *
- * <p>지금 있는 것은 신청(반품) · 회수 송장 · 철회 · 자동 취소 · 직권 종결 · 입고 확인 · 검수 판정 · 판정 종료(환불 큐) ·
- * 환불 집행 기록 · 재발송비 결제 반영이다. 교환 신청 · 재발송 송장은 구현 계획서의 뒤 단계가 더한다.
+ * <p>흐름 — 신청 → 회수 송장 → (추적) 도착 → 입고 확인 → 검수 판정 → 판정 종료(환불 큐 · 재발송비 정산) →
+ * 환불 집행 / 재발송 송장 → (추적) 도착 → 종결. 거절 보류는 미결제 고지 → 보관 → 폐기 기록으로 닫힌다.
  */
 @Service
 @RequiredArgsConstructor
@@ -84,6 +89,9 @@ public class OrderClaimService {
     private final OrderClaimPaymentRepository claimPaymentRepository;
     private final ProductVariantRepository productVariantRepository;
     private final ClaimExchangeOptionReader exchangeOptionReader;
+    private final OrderClaimNoticeRepository noticeRepository;
+    private final DeliveryTrackingEventRecorder trackingEventRecorder;
+    private final ClaimStoragePolicy storagePolicy;
     private final OrderDeliveryGroupRepository deliveryGroupRepository;
     private final OrderProductRepository orderProductRepository;
     private final DeliveryTrackingEventRepository trackingEventRepository;
@@ -679,6 +687,254 @@ public class OrderClaimService {
                         settlement, now);
             }
         }
+    }
+
+    // ------------------------------------------------------------------ 재발송(3-4 · 전이 #9 · #11)
+
+    /**
+     * 재발송 송장 처리 결과 — 다건 등록이 행 단위 부분 성공이라 예외가 아니라 값으로 돌려준다.
+     *
+     * @param code    실패 사유 — 성공이면 null
+     * @param message 결과 배너에 그대로 쓰는 문구 — 중복이면 내 마켓 건일 때만 겹치는 번호를 지목한다
+     */
+    public record ReshipResult(ErrorCode code, String message) {
+        public static final ReshipResult OK = new ReshipResult(null, null);
+
+        static ReshipResult fail(ErrorCode code) {
+            return new ReshipResult(code, code.getMessage());
+        }
+
+        public boolean success() {
+            return code == null;
+        }
+    }
+
+    /**
+     * 재발송 송장 등록 — 교환 새 상품이든 반려 상품 반송이든 같은 길이다. <b>등록해도 완료가 아니다</b> — 재발송 중으로
+     * 가고 결과는 도착 때 확정된다. 형식 검증 → 전역 중복(종결 전 주문 송장 + 재발송 중인 클레임 송장) → 전이.
+     */
+    @Transactional
+    public ReshipResult registerReshipment(Long claimId, Long marketId, Long sellerId, DeliveryCarrier carrier,
+                                           String rawTrackingNumber, LocalDateTime now) {
+        String trackingNumber = rawTrackingNumber == null ? "" : rawTrackingNumber.replaceAll("[^0-9]", "");
+        if (carrier == null || trackingNumber.isEmpty()
+                || tracker.validateInvoice(carrier, trackingNumber) == ValidationResult.INVALID) {
+            return ReshipResult.fail(ErrorCode.INVOICE_FORMAT_INVALID);
+        }
+        String duplicate = duplicateInvoiceMessage(carrier, trackingNumber, claimId, marketId);
+        if (duplicate != null) {
+            return new ReshipResult(ErrorCode.INVOICE_DUPLICATE, duplicate);
+        }
+        if (claimRepository.registerReshipment(claimId, marketId, carrier, trackingNumber, sellerId, now) != 1) {
+            return ReshipResult.fail(ErrorCode.CLAIM_STATE_CHANGED);
+        }
+        appendHistory(claimId, ClaimEventType.RESHIP_INVOICE_REGISTERED, FulfillmentActorType.SELLER, sellerId,
+                carrier.getLabel() + " " + trackingNumber, now);
+        return ReshipResult.OK;
+    }
+
+    /** 재발송 송장 수정 — 재발송 중만. 등록 시각은 유지하고 추적 값만 리셋한다. 이력에 구 → 신을 남긴다. */
+    @Transactional
+    public void updateReshipment(Long claimId, Long marketId, Long sellerId, DeliveryCarrier carrier,
+                                 String rawTrackingNumber, LocalDateTime now) {
+        OrderClaim claim = claimRepository.findOwned(claimId, marketId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        String trackingNumber = rawTrackingNumber == null ? "" : rawTrackingNumber.replaceAll("[^0-9]", "");
+        if (carrier == null || trackingNumber.isEmpty()
+                || tracker.validateInvoice(carrier, trackingNumber) == ValidationResult.INVALID) {
+            throw new BusinessException(ErrorCode.INVOICE_FORMAT_INVALID);
+        }
+        String duplicate = duplicateInvoiceMessage(carrier, trackingNumber, claimId, marketId);
+        if (duplicate != null) {
+            throw new BusinessException(ErrorCode.INVOICE_DUPLICATE, duplicate);
+        }
+        String before = claim.getReshipCarrier() == null ? ""
+                : claim.getReshipCarrier().getLabel() + " " + claim.getReshipTrackingNumber();
+        if (claimRepository.updateReshipment(claimId, marketId, carrier, trackingNumber) != 1) {
+            throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED);
+        }
+        appendHistory(claimId, ClaimEventType.RESHIP_INVOICE_UPDATED, FulfillmentActorType.SELLER, sellerId,
+                before + " → " + carrier.getLabel() + " " + trackingNumber, now);
+    }
+
+    /** 업로드 파싱이 같은 중복 판정을 미리 본다 — 확정(등록)이 다시 본다. */
+    @Transactional(readOnly = true)
+    public String findReshipInvoiceDuplicate(DeliveryCarrier carrier, String trackingNumber, Long selfClaimId,
+                                             Long marketId) {
+        return duplicateInvoiceMessage(carrier, trackingNumber, selfClaimId, marketId);
+    }
+
+    /**
+     * 전역 송장 중복 — 종결 전 하위주문의 송장과 재발송 중인 클레임의 재발송 송장 양쪽을 본다.
+     *
+     * @return 겹치면 안내 문구(내 마켓 건이면 겹치는 번호를 지목 · 남의 건이면 숨긴다), 아니면 null
+     */
+    private String duplicateInvoiceMessage(DeliveryCarrier carrier, String trackingNumber, Long selfClaimId,
+                                           Long marketId) {
+        for (OrderDeliveryGroup group : deliveryGroupRepository.findActiveByInvoice(carrier, trackingNumber,
+                FulfillmentStatus.INVOICE_ACTIVE)) {
+            return marketId.equals(group.getMarketId())
+                    ? group.getOrder().getOrderNumber() + "에 이미 등록된 번호입니다."
+                    : "다른 주문에 이미 등록된 번호입니다.";
+        }
+        for (OrderClaim other : claimRepository.findReshippingByInvoice(carrier, trackingNumber)) {
+            if (!other.getId().equals(selfClaimId)) {
+                return marketId.equals(other.getMarketId())
+                        ? other.claimNumber() + "에 이미 등록된 번호입니다."
+                        : "다른 주문에 이미 등록된 번호입니다.";
+            }
+        }
+        return null;
+    }
+
+    /** 재발송 도착 — 운영자 직권. 추적이 놓친 건의 출구다(0-7). */
+    @Transactional
+    public void completeReshipByAdmin(Long claimId, Long adminId, LocalDateTime now) {
+        OrderClaim claim = claimRepository.findById(claimId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        boolean rejected = claim.getRejectedAt() != null;
+        Long deliveryGroupId = claim.getDeliveryGroup().getId();
+        if (claimRepository.completeReshipByAdmin(claimId,
+                rejected ? ClaimResult.REJECTED : ClaimResult.EXCHANGED, now) != 1) {
+            throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED);
+        }
+        afterReshipDelivered(claimId, deliveryGroupId, rejected, now, FulfillmentActorType.ADMIN, adminId, now);
+    }
+
+    /**
+     * 재발송이 도착한 뒤 — 교환 완료면 구매확정 N일을 도착 시각부터 다시 센다(정산 금액은 불변). 거절 반송이면 할 일이
+     * 없다 — 구매확정 보류는 거절 시점에 이미 풀렸고 환불도 없다.
+     */
+    private void afterReshipDelivered(Long claimId, Long deliveryGroupId, boolean rejected, LocalDateTime deliveredAt,
+                                      FulfillmentActorType actorType, Long actorId, LocalDateTime now) {
+        if (!rejected) {
+            deliveryGroupRepository.restartConfirmTimer(deliveryGroupId, deliveredAt);
+        }
+        appendHistory(claimId, ClaimEventType.RESHIP_DELIVERED, actorType, actorId,
+                rejected ? "반송 완료 · 원래 상품 도착" : "재발송 도착 · 구매확정 카운트 재시작", now);
+    }
+
+    // ------------------------------------------------------------------ 추적 반영(3-5 · 전이 #3 · #11)
+
+    @Transactional(readOnly = true)
+    public List<OrderClaimCollection> findCollectionTrackingTargets(long afterId, int limit) {
+        return collectionRepository.findCollectionTrackingTargets(afterId, PageRequest.of(0, limit));
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderClaim> findReshipTrackingTargets(long afterId, int limit) {
+        return claimRepository.findReshipTrackingTargets(afterId, PageRequest.of(0, limit));
+    }
+
+    /**
+     * 회수 송장 추적 1건 반영 — 포트 호출은 트랜잭션 밖(호출자)이다. {@code carrier} · {@code trackingNumber}는 폴링
+     * 당시의 송장이다 — 그사이 소비자가 송장을 정정했으면 구 송장의 결과가 덮이지 않는다. 스캔 이력을 저장하고(앱의 회수
+     * 조회가 읽는다), 도착이 확인되면 묶음 전체를 「입고 확인 전」으로 옮긴다.
+     */
+    @Transactional
+    public void applyCollectionTracking(Long collectionId, DeliveryCarrier carrier, String trackingNumber,
+                                        TrackSnapshot snapshot, LocalDateTime now) {
+        if (snapshot == null || snapshot.lastEventAt() == null) {
+            return; // 집화 전에는 데이터가 없는 게 정상이다.
+        }
+        List<TrackEvent> events = snapshot.events();
+        String label = events.isEmpty() ? null : events.get(events.size() - 1).description();
+        if (collectionRepository.touchTracking(collectionId, carrier, trackingNumber, snapshot.lastEventAt(), label)
+                != 1) {
+            return;
+        }
+        trackingEventRecorder.record(carrier, trackingNumber, events);
+        if (snapshot.deliveredAt() == null) {
+            return;
+        }
+        collectionRepository.markArrived(collectionId, carrier, trackingNumber, snapshot.deliveredAt());
+        List<Long> collectingIds = claimRepository.findByCollectionId(collectionId).stream()
+                .filter(claim -> claim.getStatus() == ClaimStatus.COLLECTING).map(OrderClaim::getId).toList();
+        if (claimRepository.markArrived(collectionId, carrier, trackingNumber, now) > 0) {
+            for (Long claimId : collectingIds) {
+                appendHistory(claimId, ClaimEventType.ARRIVED, FulfillmentActorType.TRACKER, null, null, now);
+            }
+        }
+    }
+
+    /** 재발송 송장 추적 1건 반영 — 도착이 확인되면 종결한다(교환 완료 / 거절 종결). 배송 이상·반송은 감지하지 않는다. */
+    @Transactional
+    public void applyReshipTracking(Long claimId, DeliveryCarrier carrier, String trackingNumber,
+                                    TrackSnapshot snapshot, LocalDateTime now) {
+        if (snapshot == null || snapshot.lastEventAt() == null) {
+            return;
+        }
+        OrderClaim claim = claimRepository.findById(claimId).orElse(null);
+        if (claim == null) {
+            return;
+        }
+        boolean rejected = claim.getRejectedAt() != null;
+        Long deliveryGroupId = claim.getDeliveryGroup().getId();
+        if (claimRepository.touchReshipTracking(claimId, carrier, trackingNumber, snapshot.lastEventAt()) != 1) {
+            return;
+        }
+        trackingEventRecorder.record(carrier, trackingNumber, snapshot.events());
+        if (snapshot.deliveredAt() != null && claimRepository.completeReshipByTracker(claimId, carrier,
+                trackingNumber, rejected ? ClaimResult.REJECTED : ClaimResult.EXCHANGED, snapshot.deliveredAt(), now)
+                == 1) {
+            afterReshipDelivered(claimId, deliveryGroupId, rejected, snapshot.deliveredAt(),
+                    FulfillmentActorType.TRACKER, null, now);
+        }
+    }
+
+    // ------------------------------------------------------------------ 거절 보류 — 고지 · 폐기(1-9 · 전이 #12)
+
+    /**
+     * 미결제 고지 기록 — <b>발송 자체는 알림 모듈</b>이고 여기는 발송 성공 뒤의 기록이다. 거절 보류인 동안만 받는다.
+     * 고지가 2회 쌓이면 보관 기한(최종 고지일 + 3개월)이 생긴다 — 기한은 저장하지 않는 계산값이다.
+     *
+     * @return 기록한 회차
+     */
+    @Transactional
+    public int recordStorageNotice(Long claimId, String channel, FulfillmentActorType actorType, Long actorId,
+                                   LocalDateTime now) {
+        OrderClaim claim = claimRepository.findById(claimId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        int seq = claim.getNoticeCount() + 1;
+        // 읽은 횟수에서 정확히 1 올린다 — 같은 회차를 두 호출이 동시에 기록하면 하나만 통과한다.
+        if (claimRepository.recordNotice(claimId, claim.getNoticeCount(), now) != 1) {
+            throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED);
+        }
+        noticeRepository.save(OrderClaimNotice.builder()
+                .claim(claimRepository.getReferenceById(claimId)).seq(seq).notifiedAt(now).channel(channel)
+                .actorType(actorType).actorId(actorId).build());
+        appendHistory(claimId, ClaimEventType.STORAGE_NOTICE_SENT, actorType, actorId, seq + "회차", now);
+        return seq;
+    }
+
+    /**
+     * 보관 기간 만료 후 폐기 기록(어드민) — 가드는 <b>고지 2회 이상 · 보관 기한 경과</b>다. 기한이 지나면 「폐기할 수
+     * 있다」이지 「폐기된다」가 아니라, 배치가 기계적으로 닫지 않고 이 기록이 종결을 만든다(대상이 소비자 소유물이다).
+     * 가드를 계산한 뒤 고지가 더해져 기한이 밀렸으면 받지 않는다.
+     */
+    @Transactional
+    public void disposeAfterStorage(Long claimId, Long adminId, LocalDateTime now) {
+        OrderClaim claim = claimRepository.findById(claimId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        Long collectionId = claim.getCollection().getId();
+        int noticeCount = claim.getNoticeCount();
+        if (claim.getStatus() != ClaimStatus.REJECT_HOLD
+                || storagePolicy.phase(noticeCount, claim.getLastNoticeAt(), now) != StoragePhase.EXPIRED) {
+            throw new BusinessException(ErrorCode.CLAIM_STORAGE_NOT_EXPIRED);
+        }
+        collectionRepository.findForUpdate(collectionId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        // 그 박스의 반려 상품이 전부 폐기로 끝나면 재발송비 청구도 소멸한다 — 다른 건이 아직 보류 중이면 남긴다.
+        boolean othersOnHold = claimRepository.findByCollectionId(collectionId).stream()
+                .anyMatch(other -> !other.getId().equals(claimId) && other.getStatus() == ClaimStatus.REJECT_HOLD);
+        OrderClaimCharge charge = othersOnHold ? null : pendingRejectCharge(collectionId);
+        if (charge != null) {
+            charge.settle(ClaimChargeStatus.VOID, null, now);
+        }
+        if (claimRepository.dispose(claimId, noticeCount, now) != 1) {
+            throw new BusinessException(ErrorCode.CLAIM_STORAGE_NOT_EXPIRED);
+        }
+        appendHistory(claimId, ClaimEventType.DISPOSED, FulfillmentActorType.ADMIN, adminId, null, now);
     }
 
     // ------------------------------------------------------------------ 환불 집행 · 재발송비 결제(3-7 · 전이 #8 · #10)

@@ -22,6 +22,9 @@ import showroomz.domain.order.type.DeliveryCarrier;
 import showroomz.domain.order.type.StoragePhase;
 import showroomz.domain.order.type.UserClaimPhase;
 import showroomz.domain.order.type.UserOrderTone;
+import showroomz.domain.payment.type.CardIssuer;
+import showroomz.domain.payment.type.EasyPayProvider;
+import showroomz.domain.payment.type.PaymentMethod;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -501,8 +504,95 @@ public class UserClaimDto {
         private LocalDate dueDate;
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = OrderDto.TIME_PATTERN)
         private LocalDateTime settledAt;
+        @Schema(description = "결제 수단 — PAID 일 때만. 「카카오페이」", example = "카카오페이", nullable = true)
+        private String methodLabel;
         @Schema(description = "결제 기한이 지난 PAYABLE 에서만 — 미결제 고지와 보관 기한", nullable = true)
         private Storage storage;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "반려 상품 재발송 배송비 결제")
+    public static class ReshipFeePaymentRequest {
+        @NotNull(message = "결제수단은 필수입니다.")
+        @Schema(description = "결제수단", example = "EASY_PAY")
+        private PaymentMethod method;
+        @Schema(description = "카드사 — method=CARD 일 때 필수", example = "SHINHAN", nullable = true)
+        private CardIssuer cardIssuer;
+        @Schema(description = "간편결제 — method=EASY_PAY 일 때 필수", example = "KAKAOPAY", nullable = true)
+        private EasyPayProvider easyPayProvider;
+        @Schema(description = "화면에 보인 금액(상세의 reshipFee.amount) — 서버 금액과 다르면 409", example = "3000", nullable = true)
+        private Integer expectedAmount;
+    }
+
+    /** 회수 조회 이력의 출처 — 택배사 스캔인가 브랜드의 처리인가. */
+    public enum TrackingEventSource {
+        COURIER, BRAND
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "회수 조회의 상품 — 진입한 클레임 하나")
+    public static class CollectionItem {
+        private String brandName;
+        private String productName;
+        @Schema(description = "옵션 — 교환이면 「받은 옵션 → 바꿀 옵션」", example = "30ml + 리필 2개 → 30ml + 리필 1개")
+        private String optionLabel;
+        private String thumbnailUrl;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "회수 이력 한 줄")
+    public static class CollectionEvent {
+        @Schema(description = "COURIER = 택배 스캔 · BRAND = 브랜드 처리(입고 · 검수)")
+        private TrackingEventSource source;
+        @Schema(description = "위치 — 택배 스캔만", example = "강남집배점", nullable = true)
+        private String location;
+        @Schema(example = "입고 · 검수 시작")
+        private String description;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = OrderDto.TIME_PATTERN)
+        private LocalDateTime occurredAt;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "C10-4 회수 조회")
+    public static class CollectionTrackingResponse {
+        private ClaimType type;
+        @Schema(description = "false 면 「아직 조회되지 않아요」 화면 — 송장은 등록됐는데 택배 이력이 없다")
+        private Boolean trackable;
+        @Schema(description = "5칸 바의 현재 칸 — -1 은 전부 빈 칸. 검수 반려는 3 에서 멈춘다", example = "1")
+        private Integer stageIndex;
+        @Schema(description = "칸 이름 5개 — 마지막은 반품 「환불」 · 교환 「새 상품」",
+                example = "[\"접수\", \"이동 중\", \"도착\", \"검수\", \"환불\"]")
+        private List<String> stages;
+        private UserOrderDto.TrackingHeadline headline;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = OrderDto.TIME_PATTERN)
+        private LocalDateTime requestedAt;
+        private Long claimId;
+        private CollectionItem item;
+        @Schema(description = "회수 송장이 없으면 null", nullable = true)
+        private UserOrderDto.TrackingCarrier carrier;
+        @Schema(nullable = true)
+        private String trackingNumber;
+        @Schema(description = "송장 등록 일시", nullable = true)
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = OrderDto.TIME_PATTERN)
+        private LocalDateTime invoiceRegisteredAt;
+        @Schema(description = "보낸 사람 — 이름(가림)과 시·구까지", example = "김*진 · 서울 강남구")
+        private String sender;
+        @Schema(description = "받는 곳", example = "아로마티카 반품센터")
+        private String receiver;
+        @Schema(description = "이력 — 최신순. 택배 스캔과 브랜드 처리를 시각순으로 섞는다")
+        private List<CollectionEvent> events;
+        @Schema(description = "[송장 수정] 가능 여부 — 회수 중 · 택배 이력 없음 · 등록 기한 전")
+        private Boolean invoiceEditable;
     }
 
     @Getter

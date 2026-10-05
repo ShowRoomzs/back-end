@@ -14,12 +14,15 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.seller.claim.dto.SellerClaimBatchResponse;
 import showroomz.api.seller.claim.dto.SellerClaimDetailResponse;
 import showroomz.api.seller.claim.dto.SellerClaimListItem;
 import showroomz.api.seller.claim.dto.SellerClaimReceiveRequest;
 import showroomz.api.seller.claim.dto.SellerClaimRejectRequest;
+import showroomz.api.seller.claim.dto.SellerClaimReshipDto;
 import showroomz.api.seller.claim.dto.SellerClaimSummaryResponse;
 import showroomz.domain.order.type.ClaimReason;
 import showroomz.domain.order.type.ClaimTab;
@@ -204,4 +207,123 @@ public interface SellerClaimControllerDocs {
     ResponseEntity<SellerClaimDetailResponse> rejectInspection(
             @Parameter(description = "클레임 id", example = "3021") @PathVariable Long claimId,
             @RequestBody SellerClaimRejectRequest request);
+
+    @Operation(
+            summary = "재발송 송장 등록 (다건)",
+            description = """
+                    「재발송 대기」 건에 송장을 등록한다. 교환 새 상품이든 거절된 상품의 반송이든 같은 API 다
+                    (`reshipReason` 으로 구분되고, 보낼 물건은 목록의 `shipLabel` 이다).
+
+                    **권한:** SELLER
+
+                    - **등록하면 완료가 아니라 「재발송 중」으로 넘어간다.** 도착이 확인되면 완료된다(교환 완료 / 거절 종결)
+                    - 다건 · **행 단위 부분 성공** — 처리되지 않은 행만 `skipped` 에 사유와 함께 돌려준다
+                    - 송장번호가 빈 행은 조용히 건너뛴다. 숫자 외 문자는 서버가 지운다
+                    - **전역 중복 검사** — 배송 중인 주문의 송장, 재발송 중인 다른 건의 송장과 겹치면 그 행만 제외한다.
+                      내 마켓 건이면 겹치는 번호(주문번호 / 접수번호)를 알려 주고, 남의 건이면 번호를 숨긴다
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "처리 결과 — 전부 제외돼도 200. 제외 사유: "
+                    + "INVOICE_FORMAT_INVALID · INVOICE_DUPLICATE · CLAIM_STATE_CHANGED(재발송 대기가 아님 · 내 마켓 것이 아님)"),
+            @ApiResponse(responseCode = "400", description = "INVALID_INPUT — `items` 비었음 · 500건 초과",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<SellerClaimBatchResponse> registerReshipments(
+            @Valid @RequestBody SellerClaimReshipDto.RegisterRequest request);
+
+    @Operation(
+            summary = "재발송 송장 수정",
+            description = """
+                    「재발송 중」 건의 송장을 고친다. 응답은 갱신된 상세다.
+
+                    **권한:** SELLER
+
+                    - 등록 시각은 유지되고 추적 값만 초기화된다. 처리 이력에 「구 → 신」이 남는다
+                    - 형식 · 전역 중복 검사는 등록과 같다
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "수정 성공 — 갱신된 상세"),
+            @ApiResponse(responseCode = "400", description = "INVOICE_FORMAT_INVALID · INVALID_INPUT",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "CLAIM_NOT_FOUND",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "INVOICE_DUPLICATE — 다른 건에 이미 등록된 번호 / "
+                    + "CLAIM_STATE_CHANGED — 재발송 중이 아님",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<SellerClaimDetailResponse> updateReshipment(
+            @Parameter(description = "클레임 id", example = "3021") @PathVariable Long claimId,
+            @Valid @RequestBody SellerClaimReshipDto.UpdateRequest request);
+
+    @Operation(
+            summary = "재발송 목록 다운로드 (xlsx)",
+            description = """
+                    「재발송 대기」 건의 수취 정보를 엑셀로 내려받는다. **재발송 수취인의 연락처·주소가 나가는 유일한 경로**이고
+                    다운로드는 반출 이력으로 기록된다.
+
+                    **권한:** SELLER
+
+                    - `claimIds` 를 보내면 선택 건(재발송 대기가 아닌 건은 조용히 빠진다), 비우면 내 마켓의 재발송 대기 전체
+                    - `columns` 선택 순서 = 엑셀 좌→우 열 순서. **선택한 열 뒤에 빈 「택배사」 「송장번호」 2열이 항상 붙는다** —
+                      이 파일을 채워 업로드(`/reshipments/parse`)에 그대로 쓴다
+                    - 「상품명」 「옵션」은 **보낼 물건**이다 — 교환 재발송은 새 옵션, 거절 반송은 원래 옵션
+                    - 수취지는 재발송 수취지다. 교환은 소비자가 검수 전까지 바꿀 수 있지만 재발송 대기부터는 잠긴다 —
+                      이 목록에 오른 주소는 바뀌지 않는다
+                    - `saveAsDefault` — 이 컬럼 구성을 기본값으로 저장
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "xlsx 바이너리(Content-Disposition attachment)",
+                    content = @Content(mediaType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            schema = @Schema(type = "string", format = "binary"))),
+            @ApiResponse(responseCode = "400", description = "CLAIM_EXPORT_EMPTY — 내려받을 재발송 대기 건 없음 · "
+                    + "INVALID_INPUT — `columns` 비었음",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<byte[]> exportReshipments(@Valid @RequestBody SellerClaimReshipDto.ExportRequest request);
+
+    @Operation(summary = "재발송 목록 컬럼 기본값 조회",
+            description = "저장한 구성이 없으면 기본 7종(접수번호 · 수취인 · 연락처 · 우편번호 · 주소 · 상품명 · 옵션)을 내린다. "
+                    + "`available` 은 고를 수 있는 컬럼 전체다.\n\n**권한:** SELLER")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    ResponseEntity<SellerClaimReshipDto.TemplateResponse> getReshipTemplate();
+
+    @Operation(summary = "재발송 목록 컬럼 기본값 저장",
+            description = "컬럼 구성과 순서를 저장한다. 중복은 첫 위치만 남는다.\n\n**권한:** SELLER")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "저장 성공"),
+            @ApiResponse(responseCode = "400", description = "INVALID_INPUT — `columns` 비었음",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<SellerClaimReshipDto.TemplateResponse> updateReshipTemplate(
+            @Valid @RequestBody SellerClaimReshipDto.TemplateUpdateRequest request);
+
+    @Operation(
+            summary = "재발송 송장 일괄 업로드 검증 (xlsx)",
+            description = """
+                    채운 재발송 목록 파일을 올려 행별로 분류한다. **상태를 바꾸지 않는다** — 이 응답으로 화면의 셀만 채우고
+                    (「N건 목록에 채우기」), 확정은 `POST /reshipments` 다.
+
+                    **권한:** SELLER
+
+                    - 열은 **머리글로 찾는다** — 「접수번호」 「택배사」 「송장번호」. 순서·다른 열은 상관없다. 셋 중 하나라도 없으면 400
+                    - 택배사는 한글명 · 코드 모두 인식한다. 칸이 비었으면 `carrier = null` 로 내린다(화면에서 고른 뒤 확정)
+                    - 숫자 셀은 자릿수 그대로 읽는다(지수 표기로 깨지지 않는다)
+                    - 없는 접수번호와 **남의 마켓 접수번호는 같은 사유**(`CLAIM_NOT_FOUND`)다
+                    - 같은 접수번호가 반복되면 첫 행만 정상이다
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "분류 결과"),
+            @ApiResponse(responseCode = "400", description = "CLAIM_UPLOAD_HEADER_MISSING — 필수 열 없음 · "
+                    + "SHIPMENT_FILE_INVALID — xlsx 가 아니거나 손상 · SHIPMENT_FILE_TOO_MANY_ROWS — 1,000행 초과",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<SellerClaimReshipDto.ParseResponse> parseReshipments(
+            @Parameter(description = "xlsx 파일") @RequestPart("file") MultipartFile file);
 }
