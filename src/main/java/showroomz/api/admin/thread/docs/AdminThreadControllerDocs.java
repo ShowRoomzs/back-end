@@ -31,10 +31,7 @@ import showroomz.global.dto.PagingRequest;
 import java.util.List;
 
 @Tag(name = "Admin - Thread", description = """
-        관리자 소통 스레드 API — 운영팀 1:1 채널(브랜드 · 인플루언서 탭).
-        모든 브랜드 · 인플루언서와 채널이 하나씩 미리 있어 「새 대화」가 없고 검색으로 찾는다.
-        실시간이 아니다 — 스레드 진입 · 탭 전환 시 재조회하고 배지는 `summary`를 30~60초 간격으로 폴링한다.
-        이슈 스레드 탭은 추후 기획 예정이라 이 API에 없다.""")
+        관리자 소통 스레드 API""")
 public interface AdminThreadControllerDocs {
 
     @Operation(summary = "운영팀 채널 목록", description = """
