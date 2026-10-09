@@ -43,7 +43,7 @@ public class OrderClaimHistory {
     @Column(name = "actor_id")
     private Long actorId;
 
-    @Column(name = "detail", length = 500)
+    @Column(name = "detail", length = 1000)
     private String detail;
 
     @Column(name = "occurred_at", nullable = false)

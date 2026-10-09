@@ -83,10 +83,11 @@ public class AdminOrderQueryService {
                 .collect(Collectors.toMap(Order::getId, order -> order));
         List<AdminOrderDto.ListItem> rows = orderIds.stream().map(id -> {
             Order order = orders.get(id);
-            List<AdminOrderDto.GroupSummary> groups = groupsByOrder.getOrDefault(id, List.of()).stream()
+            List<OrderDeliveryGroup> entities = groupsByOrder.getOrDefault(id, List.of());
+            List<AdminOrderDto.GroupSummary> groups = entities.stream()
                     .map(group -> summary(group, pendingGroupIds.contains(group.getId()), now)).toList();
-            int attention = (int) groups.stream().filter(g -> g.trackingAlert() != null || g.shipOverdue()
-                    || g.cancelRequested() || g.status() == FulfillmentStatus.RETURNING).count();
+            int attention = (int) entities.stream()
+                    .filter(group -> needsAttention(group, pendingGroupIds.contains(group.getId()), now)).count();
             return new AdminOrderDto.ListItem(order.getId(), order.getOrderNumber(), order.getPaidAt(),
                     order.getRecipientName(), order.getTotalAmount(), groups, attention);
         }).toList();
@@ -189,10 +190,20 @@ public class AdminOrderQueryService {
                         task.getExecutedAt(), task.getCreatedAt())).toList(),
                 activeClaims.stream().map(claim -> new AdminOrderDto.ActiveClaim(claim.getId(), claim.claimNumber(),
                         claim.getType(), claim.getStatus(), claim.getStatus().getLabel())).toList(),
-                historyRepository.findByDeliveryGroupId(group.getId()).stream()
+                // 06a ⑤ 이력은 오래된순(37 설계서 2-5) — 공용 조회는 파트너용 최신순이라 뒤집는다.
+                historyRepository.findByDeliveryGroupId(group.getId()).reversed().stream()
                         .map(h -> new AdminOrderDto.History(h.getEventType().name(), h.getEventType().getLabel(),
                                 h.getActorType().name(), h.getDetail(), h.getOccurredAt())).toList(),
                 actions(group, pendingRequest != null, now));
+    }
+
+    /**
+     * 운영자가 볼 것이 있는 하위주문 — 배송 이상 탭(배지 ∨ 반송 완료 전 반송중)과 같은 식 + 발송 기한 경과 + 검토 중 취소 요청.
+     * 반송 완료는 PG 자동 환불로 넘어간 건이라 세지 않는다(탭에서 빠진 건이 주의 건수에 남지 않게).
+     */
+    private static boolean needsAttention(OrderDeliveryGroup group, boolean cancelRequested, LocalDateTime now) {
+        boolean returning = group.getFulfillmentStatus() == FulfillmentStatus.RETURNING && group.getReturnCompletedAt() == null;
+        return group.getTrackingAlert() != null || returning || cancelRequested || ActOnBehalfPolicy.isShipOverdue(group, now);
     }
 
     AdminOrderDto.Actions actions(OrderDeliveryGroup group, boolean cancelRequested, LocalDateTime now) {

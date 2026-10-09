@@ -1,6 +1,7 @@
 package showroomz.api.admin.transaction.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -276,7 +277,7 @@ public final class AdminOrderDto {
 
     @Schema(name = "AdminDefectClaimRequest", description = "B6 — 구매확정 후 하자 · 반품 대신 열기")
     public record DefectClaimRequest(
-            @NotEmpty List<DefectItem> items,
+            @NotEmpty List<@Valid DefectItem> items,
             @NotNull @Schema(description = "DAMAGED_OR_DEFECTIVE · WRONG_OR_LATE_DELIVERY 만", example = "DAMAGED_OR_DEFECTIVE")
             ClaimReason reasonCode,
             @NotBlank @Size(max = 1000) @Schema(description = "하자 내용 — 1:1 문의 요약") String detail,

@@ -57,6 +57,12 @@ public class RefundTransitions {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Claim claim(Long taskId) {
+        return claim(taskId, null);
+    }
+
+    /** @param operatorId 운영자 집행 · 재시도면 그 운영자 — 선점 단계 실패 이력의 주체가 된다. 자동이면 null */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Claim claim(Long taskId, Long operatorId) {
         OrderRefundTask task = refundTaskRepository.findForUpdate(taskId).orElse(null);
         if (task == null || !task.isExecutable()) {
             return null;
@@ -79,7 +85,7 @@ public class RefundTransitions {
             // 전액 취소 수렴 중(CANCEL_REQUESTED)이면 기다린다. 그 밖의 상태는 사람이 봐야 한다.
             if (payment.getStatus() != PaymentStatus.CANCEL_REQUESTED) {
                 task.markFailed("결제 상태가 " + payment.getStatus().name() + " 라 부분 취소할 수 없습니다.");
-                appendHistory(task, FulfillmentEventType.REFUND_FAILED, task.getLastError());
+                appendHistory(task, FulfillmentEventType.REFUND_FAILED, task.getLastError(), operatorId);
                 return Claim.failedAt(taskId);
             }
             return null;
@@ -89,7 +95,7 @@ public class RefundTransitions {
         }
         if (task.getRefundAmount() > payment.cancellableAmount()) {
             task.markFailed("환불액(" + task.getRefundAmount() + ")이 취소 가능 잔액(" + payment.cancellableAmount() + ")보다 큽니다.");
-            appendHistory(task, FulfillmentEventType.REFUND_FAILED, task.getLastError());
+            appendHistory(task, FulfillmentEventType.REFUND_FAILED, task.getLastError(), operatorId);
             return Claim.failedAt(taskId);
         }
         task.startExecution();
@@ -193,22 +199,31 @@ public class RefundTransitions {
     /** PG 가 명시적으로 거절했다 — FAILED. 자동 재시도 상한 뒤에는 운영자 [재시도]다. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void fail(Long taskId, String error) {
-        failWithCode(taskId, error, null);
+        failWithCode(taskId, error, null, null);
     }
 
     /** 실패 + PG 응답 코드(재시도 다이얼로그 · 39 설계서 0-12). 코드는 상세에만 보인다. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void fail(Long taskId, String error, String errorCode) {
-        failWithCode(taskId, error, errorCode);
+        failWithCode(taskId, error, errorCode, null);
     }
 
-    private void failWithCode(Long taskId, String error, String errorCode) {
+    /**
+     * 실패 + 코드 + 주체 — 운영자 재시도의 PG 거절은 이력 주체가 운영자다. 재시도 다이얼로그(M2)가 이 주체로 「자동 재시도」와
+     * 「운영자 재시도」를 가른다.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void fail(Long taskId, String error, String errorCode, Long operatorId) {
+        failWithCode(taskId, error, errorCode, operatorId);
+    }
+
+    private void failWithCode(Long taskId, String error, String errorCode, Long operatorId) {
         OrderRefundTask task = refundTaskRepository.findForUpdate(taskId).orElse(null);
         if (task == null || task.getStatus() != RefundTaskStatus.EXECUTING) {
             return;
         }
         task.markFailed(error, errorCode);
-        appendHistory(task, FulfillmentEventType.REFUND_FAILED, task.getLastError());
+        appendHistory(task, FulfillmentEventType.REFUND_FAILED, task.getLastError(), operatorId);
     }
 
     /**
@@ -236,9 +251,10 @@ public class RefundTransitions {
         return refundTaskRepository.findById(taskId).map(OrderRefundTask::getPaymentId).orElse(null);
     }
 
-    private void appendHistory(OrderRefundTask task, FulfillmentEventType eventType, String detail) {
+    private void appendHistory(OrderRefundTask task, FulfillmentEventType eventType, String detail, Long operatorId) {
         // 환불번호 접두 — 어드민 환불 상세가 이 큐 행의 이력만 고르는 키다(39 설계서 7-2 #5 · 컬럼 추가 없음).
-        fulfillmentService.appendHistory(task.getDeliveryGroup().getId(), eventType, FulfillmentActorType.SYSTEM, null,
+        fulfillmentService.appendHistory(task.getDeliveryGroup().getId(), eventType,
+                operatorId == null ? FulfillmentActorType.SYSTEM : FulfillmentActorType.ADMIN, operatorId,
                 task.refundNo() + " · " + detail, LocalDateTime.now());
     }
 
