@@ -129,7 +129,7 @@ public class AdminRefundAssembler {
                 : chargeRepository.findByCollectionId(collectionId).stream()
                 .map(charge -> additionalPayment(charge, task, disputeDetail)).toList();
         AdminTransactionDto.RefundFailure failure = task.getStatus() != RefundTaskStatus.FAILED ? null
-                : new AdminTransactionDto.RefundFailure(task.getLastError(), null, task.getModifiedAt(),
+                : new AdminTransactionDto.RefundFailure(task.getLastError(), task.getLastErrorCode(), task.getModifiedAt(),
                 groupHistory.stream().filter(h -> h.getEventType() == FulfillmentEventType.REFUND_FAILED)
                         .map(h -> new AdminTransactionDto.RefundFailureAttempt(h.getOccurredAt(), h.getActorType().name(),
                                 stripRefundNo(h.getDetail(), task))).toList());
@@ -290,15 +290,14 @@ public class AdminRefundAssembler {
                 note, charge.getPaidPaymentId(), claimPaymentStatus);
     }
 
+    /** 결제 종류 — 적재 때 정한 값(V177). */
     private static String paymentKind(OrderRefundTask task) {
-        return task.getSource() == RefundTaskSource.CLAIM_PAYMENT_CANCELLED ? ADDITIONAL : ORIGINAL;
+        return task.getPaymentKind() == null ? ORIGINAL : task.getPaymentKind().name();
     }
 
-    /** 원래 결제의 부분 취소인가 — 결제완료 소비자 취소(결제 전액 취소의 하위주문 분할 기록)는 부분이 아니다. */
+    /** 원래 결제의 부분 취소인가 — 적재 때 정한 값(V177). 결제 전액 취소의 하위주문 분할 기록은 거짓이다. */
     private static boolean partial(OrderRefundTask task, Payment payment) {
-        return payment != null && ORIGINAL.equals(paymentKind(task))
-                && task.getSource() != RefundTaskSource.USER_CANCEL_BEFORE_PREPARE
-                && task.getRefundAmount() < payment.getAmount();
+        return task.isPartialCancel();
     }
 
     private static String paymentLabel(Payment payment, String paymentKind, boolean partial) {

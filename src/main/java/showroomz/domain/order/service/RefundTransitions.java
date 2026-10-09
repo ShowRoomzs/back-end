@@ -134,11 +134,21 @@ public class RefundTransitions {
     /** PG 가 명시적으로 거절했다 — FAILED. 자동 재시도 상한 뒤에는 운영자 [재시도]다. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void fail(Long taskId, String error) {
+        failWithCode(taskId, error, null);
+    }
+
+    /** 실패 + PG 응답 코드(재시도 다이얼로그 · 39 설계서 0-12). 코드는 상세에만 보인다. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void fail(Long taskId, String error, String errorCode) {
+        failWithCode(taskId, error, errorCode);
+    }
+
+    private void failWithCode(Long taskId, String error, String errorCode) {
         OrderRefundTask task = refundTaskRepository.findForUpdate(taskId).orElse(null);
         if (task == null || task.getStatus() != RefundTaskStatus.EXECUTING) {
             return;
         }
-        task.markFailed(error);
+        task.markFailed(error, errorCode);
         appendHistory(task, FulfillmentEventType.REFUND_FAILED, task.getLastError());
     }
 

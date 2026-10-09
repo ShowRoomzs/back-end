@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import showroomz.domain.common.BaseTimeEntity;
 import showroomz.domain.order.type.OperatorRefundReason;
+import showroomz.domain.order.type.RefundPaymentKind;
 import showroomz.domain.order.type.RefundTaskOrigin;
 import showroomz.domain.order.type.RefundTaskSource;
 import showroomz.domain.order.type.RefundTaskStatus;
@@ -65,6 +66,15 @@ public class OrderRefundTask extends BaseTimeEntity {
     @Column(name = "payment_id", length = 64)
     private String paymentId;
 
+    /** 원래 결제 / 추가 결제(교환 · 반려 재발송비) — 어드민 06c 결제 열(V177). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_kind", nullable = false, length = 12)
+    private RefundPaymentKind paymentKind;
+
+    /** 원래 결제의 부분 취소인가 — 적재 시 {@code 환불액 < 결제액}. 결제 전액 취소의 기록 행은 거짓(V177). */
+    @Column(name = "partial_cancel", nullable = false)
+    private boolean partialCancel;
+
     /** 운영자 사유 환불의 사유 — PG 자동은 null. */
     @Enumerated(EnumType.STRING)
     @Column(name = "reason_code", length = 30)
@@ -85,6 +95,10 @@ public class OrderRefundTask extends BaseTimeEntity {
     @Column(name = "last_error", length = 500)
     private String lastError;
 
+    /** PG 응답 코드 — 재시도 다이얼로그(상세)에만. 게이트웨이가 코드를 주지 않으면 null(V177). */
+    @Column(name = "last_error_code", length = 50)
+    private String lastErrorCode;
+
     /** 집행 결과({@code payment_cancel} 행). */
     @Column(name = "payment_cancel_id")
     private Long paymentCancelId;
@@ -99,6 +113,7 @@ public class OrderRefundTask extends BaseTimeEntity {
     @Builder
     public OrderRefundTask(OrderDeliveryGroup deliveryGroup, Order order, RefundTaskSource source, Long sourceId,
                            Integer refundAmount, RefundTaskOrigin origin, String paymentId,
+                           RefundPaymentKind paymentKind, boolean partialCancel,
                            OperatorRefundReason reasonCode, String reasonDetail, Long requestedBy) {
         this.deliveryGroup = deliveryGroup;
         this.order = order;
@@ -108,10 +123,37 @@ public class OrderRefundTask extends BaseTimeEntity {
         this.status = RefundTaskStatus.PENDING;
         this.origin = origin != null ? origin : RefundTaskOrigin.PG_AUTO;
         this.paymentId = paymentId;
+        this.paymentKind = paymentKind != null ? paymentKind : RefundPaymentKind.ORIGINAL;
+        this.partialCancel = partialCancel;
         this.reasonCode = reasonCode;
         this.reasonDetail = reasonDetail;
         this.requestedBy = requestedBy;
         this.attempt = 0;
+    }
+
+    /**
+     * <b>기록 전용</b> 행 — 큐를 거치지 않은 PG 환불(결제완료 소비자 취소 · 재발송비 결제 취소)을 취소가 확인된 그 자리에서 완료로
+     * 적는다(39 설계서 0-4). 집행기는 대기 · 실패만 집으므로 돈이 두 번 나갈 길이 없다. 적재 이벤트도 내지 않는다.
+     */
+    public static OrderRefundTask recorded(OrderDeliveryGroup deliveryGroup, Order order, RefundTaskSource source,
+                                           Long sourceId, int amount, String paymentId, RefundPaymentKind paymentKind,
+                                           Long paymentCancelId, LocalDateTime now) {
+        OrderRefundTask task = OrderRefundTask.builder()
+                .deliveryGroup(deliveryGroup)
+                .order(order)
+                .source(source)
+                .sourceId(sourceId)
+                .refundAmount(amount)
+                .origin(RefundTaskOrigin.PG_AUTO)
+                .paymentId(paymentId)
+                .paymentKind(paymentKind)
+                .partialCancel(false)
+                .build();
+        task.status = RefundTaskStatus.DONE;
+        task.attempt = 1;
+        task.paymentCancelId = paymentCancelId;
+        task.executedAt = now;
+        return task;
     }
 
     /** 환불번호 {@code RFD-918} — 저장하지 않고 id 를 포맷한다(39 설계서 1-4). 이력 detail 의 접두로 큐 행과 이력을 잇는다. */
@@ -141,11 +183,18 @@ public class OrderRefundTask extends BaseTimeEntity {
         this.executedBy = executedBy;
         this.executedAt = now;
         this.lastError = null;
+        this.lastErrorCode = null;
     }
 
     public void markFailed(String error) {
+        markFailed(error, null);
+    }
+
+    /** 실패 — 운영자 문장과 PG 응답 코드(있으면). */
+    public void markFailed(String error, String errorCode) {
         this.status = RefundTaskStatus.FAILED;
         this.lastError = error != null && error.length() > 500 ? error.substring(0, 500) : error;
+        this.lastErrorCode = errorCode != null && errorCode.length() > 50 ? errorCode.substring(0, 50) : errorCode;
     }
 
     /** PG 를 부르지 않고 집행 완료로 기록 — 결제 밖에서 환불된 건(운영자 수동 기록). */

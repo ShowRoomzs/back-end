@@ -74,14 +74,14 @@ public class RefundExecutor {
                 return complete(taskId, result.pgCancellationId(), result.rawJson(), operatorId, now);
             }
             if (result.outcome() == PortOneCancelResult.Outcome.ALREADY_CANCELLED) {
-                transitions.fail(taskId, "이미 전액 취소된 결제입니다 — 결제 상태를 확인해 주세요.");
+                transitions.fail(taskId, "이미 전액 취소된 결제입니다 — 결제 상태를 확인해 주세요.", "ALREADY_CANCELLED");
                 return Outcome.FAILED;
             }
             log.info("환불 PG 접수 대기 - refundTaskId: {}", taskId);
             return Outcome.UNKNOWN;
         } catch (PaymentGatewayRejectedException e) {
             log.warn("환불 PG 거절 - refundTaskId: {} - {}", taskId, e.getMessage());
-            transitions.fail(taskId, "PG 거절 · " + e.getMessage());
+            transitions.fail(taskId, "PG 거절 · " + e.getMessage(), e.getType());
             return Outcome.FAILED;
         } catch (PaymentGatewayException e) {
             // 결과 모름 — 실패로 굳히지 않는다. 돌려줬는데 FAILED 로 두면 재시도가 이중 환불을 시도한다(PG 가 막지만 기록이 틀린다).

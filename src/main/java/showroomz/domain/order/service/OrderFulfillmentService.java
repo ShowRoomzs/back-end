@@ -59,6 +59,7 @@ public class OrderFulfillmentService {
     private final OrderProperties orderProperties;
     private final ShipDuePolicy shipDuePolicy;
     private final ApplicationEventPublisher eventPublisher;
+    private final showroomz.domain.payment.repository.PaymentRepository paymentRepository;
 
     // ------------------------------------------------------------------ 이력
 
@@ -185,6 +186,7 @@ public class OrderFulfillmentService {
                 .refundAmount(refundAmount)
                 .origin(RefundTaskOrigin.PG_AUTO)
                 .paymentId(group.getOrder().getPaidPaymentId())
+                .partialCancel(isPartial(group.getOrder().getPaidPaymentId(), refundAmount))
                 .build());
     }
 
@@ -204,6 +206,7 @@ public class OrderFulfillmentService {
                 .refundAmount(refundAmount)
                 .origin(RefundTaskOrigin.OPERATOR)
                 .paymentId(group.getOrder().getPaidPaymentId())
+                .partialCancel(isPartial(group.getOrder().getPaidPaymentId(), refundAmount))
                 .reasonCode(reason)
                 .reasonDetail(detail)
                 .requestedBy(operatorId)
@@ -211,6 +214,12 @@ public class OrderFulfillmentService {
         appendHistory(group.getId(), FulfillmentEventType.REFUND_ENQUEUED_BY_OPERATOR, FulfillmentActorType.ADMIN,
                 operatorId, String.format("%s · %s · %,d원", task.refundNo(), reason.getLabel(), refundAmount), now);
         return task;
+    }
+
+    /** 원래 결제의 부분 취소인가 — 어드민 06c 결제 열 「부분」. 결제가 없는 주문은 거짓. */
+    private boolean isPartial(String paymentId, int refundAmount) {
+        return paymentId != null && paymentRepository.findById(paymentId)
+                .map(payment -> payment.getAmount() != null && refundAmount < payment.getAmount()).orElse(false);
     }
 
     private OrderRefundTask enqueue(OrderRefundTask task) {

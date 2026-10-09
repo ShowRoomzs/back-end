@@ -194,6 +194,8 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
         adminPost(ADMIN_REFUNDS + "/" + taskId + "/execute", Map.of()).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("REFUND_TASK_NOT_EXECUTABLE"));
         assertThat(fake.partialCancelCalls()).hasSize(1);
+        assertThat(jdbc.queryForMap("SELECT payment_kind, partial_cancel FROM order_refund_task WHERE refund_task_id = ?",
+                taskId)).containsEntry("payment_kind", "ORIGINAL").containsEntry("partial_cancel", true);
     }
 
     @Test
@@ -229,6 +231,12 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
         JsonNode detail = json(adminGet(ADMIN_REFUNDS + "/" + taskId));
         assertThat(detail.at("/failure/message").asText()).contains("PG 거절");
         assertThat(detail.at("/failure/attempts")).isNotEmpty();
+        // PG 응답 코드는 상세에만(V177 · 39 설계서 0-12) — 목록 행에는 없다.
+        assertThat(detail.at("/failure/code").asText()).isEqualTo("PG_PROVIDER");
+        assertThat(row.has("lastErrorCode")).isFalse();
+        // 직권 취소 환불 = 하위주문 전액(항목 + 배송비) = 결제 전액 — 부분 취소가 아니다.
+        assertThat(row.get("partial").asBoolean()).isFalse();
+        assertThat(row.get("paymentLabel").asText()).isEqualTo("카드 · 원래");
 
         String paymentId = jdbc.queryForObject("SELECT payment_id FROM order_refund_task WHERE refund_task_id = ?",
                 String.class, taskId);
@@ -236,6 +244,8 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
         adminPost(ADMIN_REFUNDS + "/" + taskId + "/execute", Map.of()).andExpect(jsonPath("$.outcome").value("DONE"));
         assertThat(jdbc.queryForObject("SELECT attempt FROM order_refund_task WHERE refund_task_id = ?", Integer.class,
                 taskId)).isGreaterThanOrEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT last_error_code FROM order_refund_task WHERE refund_task_id = ?",
+                String.class, taskId)).isNull();
         adminGet(ADMIN_REFUNDS + "/summary").andExpect(jsonPath("$.tabs.FAILED.count").value(0));
     }
 
