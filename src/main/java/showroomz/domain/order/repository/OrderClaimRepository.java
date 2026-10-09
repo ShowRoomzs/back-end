@@ -1,5 +1,6 @@
 package showroomz.domain.order.repository;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -181,18 +182,22 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
     @Query("SELECT c FROM OrderClaim c JOIN FETCH c.deliveryGroup g JOIN FETCH g.order WHERE "
             + "c.status = showroomz.domain.order.type.ClaimStatus.RECEIVED AND c.inspectDueAt < :now "
             + "ORDER BY c.inspectDueAt ASC")
-    List<OrderClaim> findInspectOverdue(@Param("now") LocalDateTime now);
+    List<OrderClaim> findInspectOverdue(@Param("now") LocalDateTime now, Pageable limit);
 
-    /** 어드민 예외 관리 — 재발송 대기 중인 건(06d 재발송 지연 판정은 서비스가 영업일로). */
+    /**
+     * 어드민 예외 관리 — 재발송 대기 중인 건(06d 재발송 지연). N영업일은 달력일로 최소 N일이므로 {@code before}(지금 − N일)로 먼저
+     * 거르고, 영업일 판정은 서비스가 한다(40 설계서 5절 #3).
+     */
     @Query("SELECT c FROM OrderClaim c JOIN FETCH c.deliveryGroup g JOIN FETCH g.order WHERE "
-            + "c.status = showroomz.domain.order.type.ClaimStatus.RESHIP_READY ORDER BY c.stageEnteredAt ASC")
-    List<OrderClaim> findReshipReady();
+            + "c.status = showroomz.domain.order.type.ClaimStatus.RESHIP_READY AND c.stageEnteredAt < :before "
+            + "ORDER BY c.stageEnteredAt ASC")
+    List<OrderClaim> findReshipReadyBefore(@Param("before") LocalDateTime before, Pageable limit);
 
     /** 어드민 예외 관리 — 회수 송장을 넣었는데 24시간 동안 한 번도 조회되지 않은 건(06d 배송 예외). */
     @Query("SELECT c FROM OrderClaim c JOIN FETCH c.collection k JOIN FETCH c.deliveryGroup g JOIN FETCH g.order WHERE "
             + "c.status = showroomz.domain.order.type.ClaimStatus.COLLECTING AND k.invoiceRegisteredAt < :before "
             + "AND k.lastTrackingAt IS NULL ORDER BY k.invoiceRegisteredAt ASC")
-    List<OrderClaim> findCollectionUnscanned(@Param("before") LocalDateTime before);
+    List<OrderClaim> findCollectionUnscanned(@Param("before") LocalDateTime before, Pageable limit);
 
     /** 운영자 직권 종결 — 미발송 방치 등. 검수 전(REQUESTED · COLLECTING)만. 결과는 거절이 아니라 요청 취소다. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)

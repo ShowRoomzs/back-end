@@ -137,7 +137,7 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
             + "    showroomz.domain.order.type.FulfillmentStatus.PREPARING) "
             + "AND NOT EXISTS (SELECT r FROM OrderCancelRequest r WHERE r.deliveryGroup = g "
             + "    AND r.status = showroomz.domain.order.type.CancelRequestStatus.PENDING) ORDER BY g.shipDueAt ASC")
-    List<OrderDeliveryGroup> findShipOverdueForAdmin(@Param("now") LocalDateTime now);
+    List<OrderDeliveryGroup> findShipOverdueForAdmin(@Param("now") LocalDateTime now, Pageable limit);
 
     /**
      * 어드민 예외 관리 — 배송 이상(집화 확인 필요 · 추적 정지 · 반송 중 · 06d 배송 예외). 반송은 완료 감지 뒤에도 상태가
@@ -147,7 +147,7 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
             + "(g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING AND g.trackingAlert IS NOT NULL) "
             + "OR (g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.RETURNING "
             + "AND g.returnCompletedAt IS NULL) ORDER BY g.id ASC")
-    List<OrderDeliveryGroup> findDeliveryExceptionsForAdmin();
+    List<OrderDeliveryGroup> findDeliveryExceptionsForAdmin(Pageable limit);
 
     /** 구매확정 기산점 직접 설정 — 배송완료일 정정이 기산점을 같은 만큼 옮길 때(어드민 06a B3). */
     @Modifying(flushAutomatically = true, clearAutomatically = true)

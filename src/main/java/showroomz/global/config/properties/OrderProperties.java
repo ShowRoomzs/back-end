@@ -108,6 +108,28 @@ public class OrderProperties {
     /** 자동 알림 N회 무응답이면 어드민 대행(송장 대행 · 직권 취소)이 열린다 — 근거 대기(시안 3회). */
     private int actOnBehalfNoticeThreshold = 3;
 
+    // ------------------------------------------------------------------ 어드민 예외 관리(06d · 40 설계서 1-4)
+
+    private ExceptionMonitor exception = new ExceptionMonitor();
+
+    /** {@code order.exception.*} — 근거 대기 값이라 전부 설정값이다. 확정되면 yml 한 줄이다. */
+    @Getter
+    @Setter
+    public static class ExceptionMonitor {
+
+        /** 재발송 지연 — 검수 통과 · 재발송비 결제 + N영업일(§40-4 A-4 · 근거 대기). 자동 알림은 없다. */
+        private int reshipDueBusinessDays = 2;
+
+        /** 회수 송장 미조회 — 소비자 입력 송장도 집화 확인과 같은 N시간. */
+        private int collectionUnscannedHours = 24;
+
+        /** 사이드바 배지 범위 — ALL(처리 지연 + 배송 예외 · 시안 7) · DELAY(처리 지연만). §40-4 B-5 확정 대기. */
+        private String badgeScope = "ALL";
+
+        /** 원천 조회 상한(유형별) — 예외는 작은 집합이다. 닿으면 배치 장애 신호라 경고 로그를 남긴다(40 설계서 0-3). */
+        private int fetchLimit = 1000;
+    }
+
     // ------------------------------------------------------------------ 반품·교환(35 설계서 · 앱 클레임 설계서)
 
     private Claim claim = new Claim();

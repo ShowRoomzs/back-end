@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** 어드민 거래 관리 — 반품·교환(06b) · 환불 관리(06c) · 예외 관리(06d)(1009 기획 수정본 8-2 ~ 8-4). */
+/** 어드민 거래 관리 — 반품·교환(06b) · 환불 관리(06c)(1009 기획 수정본 8-2 · 8-3). 예외 관리(06d)는 {@link AdminOrderExceptionDto}. */
 public final class AdminTransactionDto {
 
     private AdminTransactionDto() {
@@ -339,60 +339,6 @@ public final class AdminTransactionDto {
             @Schema(example = "ADMIN") String actor,
             @Schema(nullable = true) String actorName,
             @Schema(nullable = true) String detail
-    ) {
-    }
-
-    // ------------------------------------------------------------------ 06d 예외 관리
-
-    public enum ExceptionTab {
-        /** 처리 지연 — 당사자가 기한을 넘긴 건. 운영자가 개입할 수 있는 유일한 탭(기본 진입). */
-        DELAY,
-        /** 배송 예외 — 택배 · 추적 이상. 플랫폼 미개입(처리 주체 열이 CS 답변 문장). */
-        DELIVERY
-    }
-
-    public enum ExceptionKind {
-        SHIP_OVERDUE("발송 기한 경과"),
-        INSPECT_OVERDUE("검수 지연"),
-        RESHIP_DELAYED("재발송 지연"),
-        PICKUP_UNCONFIRMED("집화 확인 필요"),
-        TRACKING_STALLED("추적 정지"),
-        RETURNING("반송 중"),
-        COLLECTION_UNSCANNED("회수 송장 미조회");
-
-        private final String label;
-
-        ExceptionKind(String label) {
-            this.label = label;
-        }
-
-        public String getLabel() {
-            return label;
-        }
-    }
-
-    @Schema(name = "AdminOrderExceptionItem")
-    public record ExceptionItem(
-            ExceptionKind kind,
-            @Schema(example = "발송 기한 경과") String kindLabel,
-            Long orderId,
-            String orderNumber,
-            Long deliveryGroupId,
-            @Schema(description = "클레임 건이면 그 id — [열기]는 06b 상세", nullable = true) Long claimId,
-            String brandName,
-            @Schema(description = "기준 시각 — 기한 · 송장 등록 · 마지막 갱신 · 반송 감지", nullable = true) LocalDateTime basisAt,
-            @Schema(description = "경과(시간) — 기준 시각부터", example = "30") long elapsedHours,
-            @Schema(description = "시스템 자동 알림 횟수 — 처리 지연만", nullable = true) Integer noticeCount,
-            @Schema(description = "대행 가능 조건 충족(알림 N회 무응답 · 근거 대기) — 상태가 아니라 조건이라 배지가 아니다")
-            boolean actOnBehalfAvailable,
-            @Schema(description = "처리 주체 — CS 답변 문장", example = "브랜드가 발송해야 합니다 · 자동 알림 중") String handlerLabel
-    ) {
-    }
-
-    @Schema(name = "AdminOrderExceptionSummary")
-    public record ExceptionSummary(
-            @Schema(example = "{\"DELAY\": 3, \"DELIVERY\": 4}") Map<String, Long> tabCounts,
-            @Schema(description = "사이드바 배지 — 처리 지연 + 배송 예외", example = "7") long badge
     ) {
     }
 }
