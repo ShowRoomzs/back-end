@@ -10,6 +10,8 @@ import showroomz.api.seller.claim.dto.SellerClaimDetailResponse;
 import showroomz.api.seller.claim.dto.SellerClaimListItem;
 import showroomz.api.seller.claim.dto.SellerClaimSummaryResponse;
 import showroomz.api.seller.claim.service.SellerClaimQueryService;
+import showroomz.domain.inquiry.entity.OneToOneInquiry;
+import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
 import showroomz.domain.order.entity.OrderClaim;
 import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.service.OrderClaimService;
@@ -27,6 +29,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -42,6 +45,7 @@ public class AdminClaimService {
     private final SellerClaimQueryService claimQueryService;
     private final OrderClaimRepository claimRepository;
     private final OrderClaimService claimService;
+    private final OneToOneInquiryRepository inquiryRepository;
 
     @Transactional(readOnly = true)
     public PageResponse<AdminTransactionDto.ClaimListItem> getClaims(Long marketId, ClaimTab tab, Set<ClaimType> types,
@@ -52,11 +56,16 @@ public class AdminClaimService {
         Map<Long, OrderClaim> claims = claimRepository.findAllById(page.getContent().stream()
                         .map(SellerClaimListItem::claimId).toList()).stream()
                 .collect(Collectors.toMap(OrderClaim::getId, Function.identity()));
+        Map<Long, OneToOneInquiry> disputes = inquiryRepository.findAllById(claims.values().stream()
+                        .map(OrderClaim::getDisputeInquiryId).filter(Objects::nonNull).toList()).stream()
+                .collect(Collectors.toMap(OneToOneInquiry::getId, Function.identity()));
         List<AdminTransactionDto.ClaimListItem> rows = page.getContent().stream().map(row -> {
             OrderClaim claim = claims.get(row.claimId());
             return new AdminTransactionDto.ClaimListItem(row, claim == null ? null : claim.getDeliveryGroup().getMarketName(),
                     claim == null ? null : claim.getFeeBearer(), claim == null ? null : feeBearerLabel(claim.getFeeBearer()),
-                    claim != null && claim.isFaultChangedToSeller());
+                    claim != null && claim.isFaultChangedToSeller(),
+                    claim != null && isDisputeOpen(claim, disputes.get(claim.getDisputeInquiryId())),
+                    claim == null ? null : claim.getDisputedAt());
         }).toList();
         // 같은 쪽수 정보로 다시 싼다 — 행만 어드민 열을 더한 것으로 바꾼다.
         return new PageResponse<>(rows, new PageImpl<>(rows, PageRequest.of(Math.max(page.getPageInfo().getCurrentPage() - 1, 0),
@@ -64,8 +73,9 @@ public class AdminClaimService {
     }
 
     @Transactional(readOnly = true)
-    public SellerClaimSummaryResponse getSummary(Long marketId) {
-        return claimQueryService.summarize(marketId);
+    public AdminTransactionDto.ClaimSummary getSummary(Long marketId) {
+        SellerClaimSummaryResponse base = claimQueryService.summarize(marketId);
+        return AdminTransactionDto.ClaimSummary.of(base, claimRepository.countOpenDisputes(marketId));
     }
 
     @Transactional(readOnly = true)
@@ -73,9 +83,22 @@ public class AdminClaimService {
         SellerClaimDetailResponse detail = claimQueryService.getClaimForAdmin(claimId);
         OrderClaim claim = claimRepository.findById(claimId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        AdminTransactionDto.Dispute dispute = claim.getDisputeInquiryId() == null ? null
+                : inquiryRepository.findById(claim.getDisputeInquiryId()).map(AdminClaimService::toDispute).orElse(null);
         return new AdminTransactionDto.ClaimDetail(detail, claim.getDeliveryGroup().getMarketName(), claim.getFeeBearer(),
                 feeBearerLabel(claim.getFeeBearer()),
-                claim.getType() == ClaimType.RETURN && claim.getStatus() == ClaimStatus.REJECT_HOLD);
+                claim.getType() == ClaimType.RETURN && claim.getStatus() == ClaimStatus.REJECT_HOLD, dispute);
+    }
+
+    /** 미처리 이의 — 반려 보류 중이고 걸린 문의가 답변 전. 요약 {@code countOpenDisputes}와 같은 식이다. */
+    private static boolean isDisputeOpen(OrderClaim claim, OneToOneInquiry inquiry) {
+        return claim.getStatus() == ClaimStatus.REJECT_HOLD && inquiry != null && !inquiry.isAnswered();
+    }
+
+    private static AdminTransactionDto.Dispute toDispute(OneToOneInquiry inquiry) {
+        // 지연 로딩 컬렉션이라 트랜잭션 안에서 복사한다.
+        return new AdminTransactionDto.Dispute(inquiry.getId(), inquiry.getContent(), List.copyOf(inquiry.getImageUrls()),
+                inquiry.getCreatedAt(), inquiry.isAnswered(), inquiry.getAnsweredAt());
     }
 
     /** B2 반려 이의 인용 — 운영자 사유 환불로 편입하고 반려를 환불로 닫는다(재발송 없음). 돈은 환불 관리에서 나간다. */

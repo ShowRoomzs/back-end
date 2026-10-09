@@ -17,7 +17,6 @@ import showroomz.api.admin.transaction.docs.AdminClaimControllerDocs;
 import showroomz.api.admin.transaction.dto.AdminTransactionDto;
 import showroomz.api.admin.transaction.service.AdminClaimService;
 import showroomz.api.app.auth.entity.UserPrincipal;
-import showroomz.api.seller.claim.dto.SellerClaimSummaryResponse;
 import showroomz.domain.order.type.ClaimReason;
 import showroomz.domain.order.type.ClaimTab;
 import showroomz.domain.order.type.ClaimType;
@@ -50,7 +49,7 @@ public class AdminClaimController implements AdminClaimControllerDocs {
 
     @Override
     @GetMapping("/summary")
-    public ResponseEntity<SellerClaimSummaryResponse> getSummary(
+    public ResponseEntity<AdminTransactionDto.ClaimSummary> getSummary(
             @RequestParam(value = "marketId", required = false) Long marketId) {
         return ResponseEntity.ok(claimService.getSummary(marketId));
     }

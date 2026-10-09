@@ -98,6 +98,7 @@ public class AdminInquiryService {
                 .userId(user.getId())
                 .userName(writerName(user))
                 .orderId(inquiry.getOrderId())
+                .claimId(inquiry.getClaimId())
                 .createdAt(inquiry.getCreatedAt())
                 .answeredAt(inquiry.getAnsweredAt())
                 .elapsedText(elapsedText(inquiry, now))

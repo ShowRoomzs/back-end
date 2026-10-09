@@ -209,6 +209,14 @@ public class OrderClaim {
     @Column(name = "opened_by_admin_id")
     private Long openedByAdminId;
 
+    /** 반려 이의 — 앱 「이의 제기」로 쓴 가장 최근 1:1 문의(V176 · 기획 §38-8 B-12 자동 연결). 이의가 없으면 null. */
+    @Column(name = "dispute_inquiry_id")
+    private Long disputeInquiryId;
+
+    /** 가장 최근 이의 접수 시각. */
+    @Column(name = "disputed_at")
+    private LocalDateTime disputedAt;
+
     @Builder
     public OrderClaim(OrderClaimCollection collection, Long orderId, OrderDeliveryGroup deliveryGroup,
                       OrderProduct orderProduct, Long marketId, Long userId, ClaimType type, Integer quantity,
@@ -240,6 +248,20 @@ public class OrderClaim {
         this.openedBy = ClaimOpenedBy.OPERATOR;
         this.openedByAdminId = adminId;
         this.openReason = reason;
+    }
+
+    /** 반려 이의 접수 — 소비자가 반려 보류 중에 「이의 제기」 문의를 썼다. 다시 쓰면 최근 문의로 바뀐다. */
+    public void markDisputed(Long inquiryId, LocalDateTime now) {
+        this.disputeInquiryId = inquiryId;
+        this.disputedAt = now;
+    }
+
+    /** 이의 문의가 지워졌을 때 — 그 문의가 지금 걸린 이의일 때만 푼다. */
+    public void clearDispute(Long inquiryId) {
+        if (inquiryId != null && inquiryId.equals(this.disputeInquiryId)) {
+            this.disputeInquiryId = null;
+            this.disputedAt = null;
+        }
     }
 
     /**

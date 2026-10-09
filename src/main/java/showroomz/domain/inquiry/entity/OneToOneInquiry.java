@@ -57,6 +57,13 @@ public class OneToOneInquiry extends BaseTimeEntity {
     @Column(name = "ORDER_ID")
     private Long orderId;
 
+    /**
+     * 반려 이의 대상 클레임 — 앱 반려 안내(C10-5)의 「이의 제기」로 쓴 문의만 값이 있다(V176 · 기획 §38-8 B-12 자동 연결).
+     * 작성 때 정해지고 수정으로 바뀌지 않는다. 어드민 반품·교환(06b)이 이 값으로 「소비자 이의」를 보인다.
+     */
+    @Column(name = "CLAIM_ID")
+    private Long claimId;
+
     // 답변 관련 필드
     @Column(name = "ANSWER_CONTENT", columnDefinition = "TEXT")
     private String answerContent;
@@ -73,7 +80,8 @@ public class OneToOneInquiry extends BaseTimeEntity {
     private InquiryStatus status;
 
     @Builder
-    public OneToOneInquiry(Users user, CsCategory type, String content, List<String> imageUrls, Long orderId) {
+    public OneToOneInquiry(Users user, CsCategory type, String content, List<String> imageUrls, Long orderId,
+                           Long claimId) {
         this.user = user;
         this.type = type;
         this.content = content;
@@ -81,6 +89,7 @@ public class OneToOneInquiry extends BaseTimeEntity {
             this.imageUrls = imageUrls;
         }
         this.orderId = orderId;
+        this.claimId = claimId;
         this.status = InquiryStatus.WAITING;
     }
 

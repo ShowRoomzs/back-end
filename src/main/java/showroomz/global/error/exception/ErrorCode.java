@@ -421,7 +421,8 @@ public enum ErrorCode {
     CLAIM_STORAGE_NOT_EXPIRED(HttpStatus.CONFLICT, "CLAIM_STORAGE_NOT_EXPIRED", "보관 기한이 지나지 않아 폐기 처리할 수 없습니다."),
     CLAIM_EXPORT_EMPTY(HttpStatus.BAD_REQUEST, "CLAIM_EXPORT_EMPTY", "내려받을 재발송 대기 건이 없습니다."),
     CLAIM_EXPORT_COLUMNS_REQUIRED(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "컬럼을 1개 이상 선택해 주세요."),
-    CLAIM_UPLOAD_HEADER_MISSING(HttpStatus.BAD_REQUEST, "CLAIM_UPLOAD_HEADER_MISSING", "파일에 접수번호 · 택배사 · 송장번호 열이 있어야 합니다.");
+    CLAIM_UPLOAD_HEADER_MISSING(HttpStatus.BAD_REQUEST, "CLAIM_UPLOAD_HEADER_MISSING", "파일에 접수번호 · 택배사 · 송장번호 열이 있어야 합니다."),
+    CLAIM_DISPUTE_ALREADY_EXISTS(HttpStatus.CONFLICT, "CLAIM_DISPUTE_ALREADY_EXISTS", "이미 접수된 이의가 있습니다. 답변 전에는 기존 문의를 수정해 주세요.");
 
     private final HttpStatus status;
     private final String code;

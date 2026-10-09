@@ -7,12 +7,14 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import showroomz.api.seller.claim.dto.SellerClaimDetailResponse;
 import showroomz.api.seller.claim.dto.SellerClaimListItem;
+import showroomz.api.seller.claim.dto.SellerClaimSummaryResponse;
 import showroomz.domain.order.type.ClaimFeeBearer;
 import showroomz.domain.order.type.RefundTaskOrigin;
 import showroomz.domain.order.type.RefundTaskSource;
 import showroomz.domain.order.type.RefundTaskStatus;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 /** 어드민 거래 관리 — 반품·교환(06b) · 환불 관리(06c) · 예외 관리(06d)(1009 기획 수정본 8-2 ~ 8-4). */
@@ -29,8 +31,24 @@ public final class AdminTransactionDto {
             @Schema(example = "○○ 브랜드") String brandName,
             @Schema(description = "귀책 — 항목 단위(일부 반려에서 갈린다)", example = "CONSUMER") ClaimFeeBearer feeBearer,
             @Schema(example = "소비자 귀책") String feeBearerLabel,
-            @Schema(description = "검수에서 브랜드 귀책으로 인정됐다") boolean faultChangedToSeller
+            @Schema(description = "검수에서 브랜드 귀책으로 인정됐다") boolean faultChangedToSeller,
+            @Schema(description = "목록 보조줄 「소비자 이의 접수」 — 반려 보류 중이고 걸린 이의 문의가 답변 전") boolean disputeOpen,
+            @Schema(description = "가장 최근 이의 접수 시각 — 이의가 없었으면 null", nullable = true) LocalDateTime disputedAt
     ) {
+    }
+
+    @Schema(name = "AdminClaimSummaryResponse", description = "파트너 11 요약(KPI · 탭 · 유형) + 어드민 「반려 이의 N건」")
+    public record ClaimSummary(
+            SellerClaimSummaryResponse.Kpi kpi,
+            @Schema(example = "{\"ALL\": 12, \"COLLECT_WAIT\": 3, \"COLLECTING\": 2, \"INSPECTION\": 2, \"RESHIP\": 1, \"REJECT_HOLD\": 1, \"DONE\": 3}")
+            Map<String, Long> tabCounts,
+            @Schema(example = "{\"RETURN\": 7, \"EXCHANGE\": 5}") Map<String, Long> typeCounts,
+            @Schema(description = "반려 이의 미처리 — 반려 보류 중이고 이의 문의가 답변 전. 사이드바 「반품·교환」 배지 후보(기획 §38-8 B-11)",
+                    example = "1") long disputeCount
+    ) {
+        public static ClaimSummary of(SellerClaimSummaryResponse base, long disputeCount) {
+            return new ClaimSummary(base.kpi(), base.tabCounts(), base.typeCounts(), disputeCount);
+        }
     }
 
     @Schema(name = "AdminClaimDetailResponse")
@@ -39,7 +57,20 @@ public final class AdminTransactionDto {
             String brandName,
             ClaimFeeBearer feeBearer,
             String feeBearerLabel,
-            @Schema(description = "B2 반려 이의 인용 — 반려 보류 중인 반품") boolean canAcceptDispute
+            @Schema(description = "B2 반려 이의 인용 — 반려 보류 중인 반품") boolean canAcceptDispute,
+            @Schema(description = "④ 소비자 이의 — 앱 「이의 제기」로 걸린 가장 최근 문의. 이의가 없으면 null", nullable = true)
+            Dispute dispute
+    ) {
+    }
+
+    @Schema(name = "AdminClaimDispute", description = "소비자 이의 — 1:1 문의 원문 · 사진 · 접수 시각. 기각은 그 문의의 답변이다")
+    public record Dispute(
+            @Schema(description = "1:1 문의 ID — 문의 상세 링크", example = "4527") Long inquiryId,
+            String content,
+            List<String> imageUrls,
+            LocalDateTime createdAt,
+            @Schema(description = "문의 답변 등록 여부 — 기각 · 안내가 끝났다") boolean answered,
+            @Schema(nullable = true) LocalDateTime answeredAt
     ) {
     }
 

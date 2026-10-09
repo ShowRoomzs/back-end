@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import showroomz.api.admin.transaction.dto.AdminTransactionDto;
 import showroomz.api.app.auth.entity.UserPrincipal;
-import showroomz.api.seller.claim.dto.SellerClaimSummaryResponse;
 import showroomz.domain.order.type.ClaimReason;
 import showroomz.domain.order.type.ClaimTab;
 import showroomz.domain.order.type.ClaimType;
@@ -26,6 +25,7 @@ public interface AdminClaimControllerDocs {
                     파트너 11 과 **같은 탭 · 같은 건수 · 같은 행**(`claim`)에 어드민 전용 열 둘 — `brandName` · `feeBearer`(귀책 · 항목 단위)를 더한다.
                     반품·교환은 탭이 아니라 `types` 로 거른다. 조건은 파트너 목록과 같다(`tab` · `types` · `reason` · `from` · `to` · `keyword`).
                     `marketId` 를 주면 그 브랜드만.
+                    `disputeOpen` 이 참이면 보조줄 「소비자 이의 접수」(`disputedAt`) — 앱 「이의 제기」 문의가 답변 전인 반려 보류 건.
 
                     **권한:** ADMIN
                     """)
@@ -35,13 +35,15 @@ public interface AdminClaimControllerDocs {
                                                                               LocalDate from, LocalDate to,
                                                                               String keyword, PagingRequest pagingRequest);
 
-    @Operation(summary = "반품·교환 요약", description = "파트너 11 과 같은 KPI · 탭 · 유형 건수 — 전 브랜드(또는 `marketId`).\n\n**권한:** ADMIN")
-    ResponseEntity<SellerClaimSummaryResponse> getSummary(Long marketId);
+    @Operation(summary = "반품·교환 요약", description = "파트너 11 과 같은 KPI · 탭 · 유형 건수 — 전 브랜드(또는 `marketId`).\n\n"
+            + "`disputeCount` — 반려 이의 미처리(반려 보류 중 · 이의 문의 답변 전). 인용하면 반려 보류를 벗어나고, 기각은 문의 답변으로 빠진다.\n\n**권한:** ADMIN")
+    ResponseEntity<AdminTransactionDto.ClaimSummary> getSummary(Long marketId);
 
     @Operation(summary = "반품·교환 상세 (06b B1)",
             description = """
                     파트너 상세와 같은 값(`claim` — 반려 6항목 · 구매확정 타이머 「정지 · 남은 N일」 · 운영자 개설 표시 포함)에 브랜드 · 귀책을 더한다.
                     `canAcceptDispute` — 반려 보류 중인 반품이면 B2 반려 이의 인용을 할 수 있다.
+                    `dispute` — ④ 소비자 이의. 앱 「이의 제기」로 걸린 가장 최근 1:1 문의의 원문 · 사진 · 접수 시각 · 답변 여부(없으면 null).
 
                     **권한:** ADMIN
                     """)

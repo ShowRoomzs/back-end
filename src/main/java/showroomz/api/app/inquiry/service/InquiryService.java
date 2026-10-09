@@ -22,8 +22,12 @@ import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.domain.cs.type.CsCategory;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.order.entity.Order;
+import showroomz.domain.order.entity.OrderClaim;
+import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.repository.OrderRepository;
+import showroomz.domain.order.type.ClaimStatus;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -45,23 +49,31 @@ public class InquiryService {
     private final ProductInquiryRepository productInquiryRepository;
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
+    private final OrderClaimRepository claimRepository;
 
     // 1:1 문의 등록 — 답변은 어드민(운영자)만 등록한다
     @Transactional
     public InquiryRegisterResponse registerInquiry(Long userId, InquiryRegisterRequest request) {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        requireOwnOrder(userId, request.getOrderId());
+        OrderClaim disputed = request.getClaimId() == null ? null
+                : requireDisputableClaim(userId, request.getClaimId(), request.getType(), request.getOrderId());
+        Long orderId = disputed == null ? request.getOrderId() : disputed.getOrderId();
+        requireOwnOrder(userId, orderId);
 
         OneToOneInquiry inquiry = OneToOneInquiry.builder()
                 .user(user)
                 .type(request.getType())
                 .content(request.getContent())
                 .imageUrls(request.getImageUrls())
-                .orderId(request.getOrderId())
+                .orderId(orderId)
+                .claimId(disputed == null ? null : disputed.getId())
                 .build();
 
         inquiryRepository.save(inquiry);
+        if (disputed != null) {
+            disputed.markDisputed(inquiry.getId(), LocalDateTime.now());
+        }
         return InquiryRegisterResponse.builder()
                 .inquiryId(inquiry.getId())
                 .build();
@@ -119,14 +131,52 @@ public class InquiryService {
         if (inquiry.isAnswered()) {
             throw new BusinessException(ErrorCode.INQUIRY_ALREADY_ANSWERED);
         }
-        requireOwnOrder(userId, request.getOrderId());
+        Long orderId = request.getOrderId();
+        if (inquiry.getClaimId() != null) {
+            // 이의 문의는 대상 클레임 · 주문 · 유형이 고정이다 — 내용 · 사진만 고친다.
+            requireDisputeShape(request.getType(), orderId, inquiry.getOrderId());
+            orderId = inquiry.getOrderId();
+        }
+        requireOwnOrder(userId, orderId);
 
         inquiry.update(
                 request.getType(),
                 request.getContent(),
                 request.getImageUrls(),
-                request.getOrderId()
+                orderId
         );
+    }
+
+    /**
+     * 반려 이의로 걸 수 있는 클레임인가(기획 §38-8 B-12 · 앱 자동 연결) — 본인 것 · 반려 보류 중 · 답변 전인 이의가 아직 없음.
+     * 교환 반려도 받는다(이의 기록 · 운영자 답변은 같다). 인용은 반품만 된다(어드민 06b).
+     */
+    private OrderClaim requireDisputableClaim(Long userId, Long claimId, CsCategory type, Long orderId) {
+        // 남의 클레임은 없는 것과 같다 — 앱 클레임 API 와 같은 규칙(존재를 드러내지 않는다).
+        OrderClaim claim = claimRepository.findById(claimId)
+                .filter(found -> found.getUserId().equals(userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        if (claim.getStatus() != ClaimStatus.REJECT_HOLD) {
+            throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED, "반려 보류 중인 요청에만 이의를 제기할 수 있습니다.");
+        }
+        requireDisputeShape(type, orderId, claim.getOrderId());
+        boolean waitingDispute = claim.getDisputeInquiryId() != null && inquiryRepository.findById(claim.getDisputeInquiryId())
+                .filter(previous -> !previous.isAnswered())
+                .isPresent();
+        if (waitingDispute) {
+            throw new BusinessException(ErrorCode.CLAIM_DISPUTE_ALREADY_EXISTS);
+        }
+        return claim;
+    }
+
+    /** 이의 문의의 모양 — 유형은 취소/교환/반품, 주문은 비우거나 클레임의 주문. */
+    private static void requireDisputeShape(CsCategory type, Long orderId, Long claimOrderId) {
+        if (type != CsCategory.CANCEL_EXCHANGE_RETURN) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "이의 제기 문의의 유형은 취소/교환/반품이어야 합니다.");
+        }
+        if (orderId != null && !orderId.equals(claimOrderId)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "이의 대상 요청의 주문과 다른 주문입니다.");
+        }
     }
 
     /**
@@ -154,6 +204,9 @@ public class InquiryService {
             throw new BusinessException(ErrorCode.INQUIRY_ALREADY_ANSWERED);
         }
 
+        if (inquiry.getClaimId() != null) {
+            claimRepository.findById(inquiry.getClaimId()).ifPresent(claim -> claim.clearDispute(inquiryId));
+        }
         inquiryRepository.delete(inquiry);
     }
 

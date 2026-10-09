@@ -357,4 +357,14 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
             + "AND c.noticeCount = :expectedCount")
     int recordNotice(@Param("id") Long id, @Param("expectedCount") int expectedCount,
                      @Param("now") LocalDateTime now);
+
+    /**
+     * 반려 이의 미처리 건수(어드민 06b 요약 「반려 이의 N건」) — 반려 보류 중이고 걸린 이의 문의가 아직 답변 전인 클레임.
+     * 운영자가 인용하면 반려 보류를 벗어나고, 기각하면 문의 답변이 등록돼 빠진다.
+     */
+    @Query("SELECT COUNT(c) FROM OrderClaim c, showroomz.domain.inquiry.entity.OneToOneInquiry i "
+            + "WHERE i.id = c.disputeInquiryId AND c.status = showroomz.domain.order.type.ClaimStatus.REJECT_HOLD "
+            + "AND i.status = showroomz.domain.inquiry.type.InquiryStatus.WAITING "
+            + "AND (:marketId IS NULL OR c.marketId = :marketId)")
+    long countOpenDisputes(@Param("marketId") Long marketId);
 }
