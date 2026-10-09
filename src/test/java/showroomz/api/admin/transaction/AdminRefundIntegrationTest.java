@@ -4,14 +4,23 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
+import showroomz.api.admin.transaction.dto.AdminTransactionDto;
+import showroomz.api.admin.transaction.service.AdminRefundService;
 import showroomz.api.seller.claim.ClaimTestSupport;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
+import showroomz.domain.order.service.RefundExecutor;
 import showroomz.global.payment.portone.FakePaymentGateway;
 import showroomz.global.payment.portone.PortOneCancelResult;
+import showroomz.global.payment.portone.PortOnePayment;
+import showroomz.global.payment.portone.PortOneStatus;
 import showroomz.support.IntegrationTest;
 
 import java.time.LocalDateTime;
@@ -37,6 +46,9 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
     private static final Map<String, Object> CARD = Map.of("method", "CARD", "cardIssuer", "SHINHAN");
     private static final int DELIVERY_FEE = 3_000;
 
+    @Autowired private AdminRefundService refundService;
+    @Autowired private RefundExecutor refundExecutor;
+
     private String admin;
     private Seller operator;
 
@@ -49,7 +61,7 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
     // ------------------------------------------------------------------ 탭
 
     @Test
-    @DisplayName("[R-01] 탭 — 집행 대기는 운영자 사유만 · 완료 탭 기간은 집행 시각 · 소멸은 어느 탭에도 없다")
+    @DisplayName("[R-01] 탭 — 집행 대기는 운영자 사유만 · 완료 탭 기간은 집행 시각(요약도 같은 days) · 소멸은 어느 탭에도 없다")
     void tabs() throws Exception {
         long pending = operatorRefund(deliveredGroup(creamVariant, 1), 5_000);
         Long passedClaim = passed(returnClaim(deliveredGroup(creamVariant, 1)));
@@ -67,6 +79,11 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
                 LocalDateTime.now().minusDays(40), pgAuto);
         assertThat(ids(adminGet(ADMIN_REFUNDS + "?tab=DONE"))).isEmpty();
         assertThat(ids(adminGet(ADMIN_REFUNDS + "?tab=DONE&days=60"))).containsExactly(pgAuto);
+        // 요약도 같은 기간을 받는다 — 탭 숫자 = 목록 건수.
+        adminGet(ADMIN_REFUNDS + "/summary").andExpect(jsonPath("$.tabs.DONE.count").value(0))
+                .andExpect(jsonPath("$.tabs.DONE.days").value(30));
+        adminGet(ADMIN_REFUNDS + "/summary?days=60").andExpect(jsonPath("$.tabs.DONE.count").value(1))
+                .andExpect(jsonPath("$.tabs.DONE.days").value(60));
 
         jdbc.update("UPDATE order_refund_task SET status = 'VOID' WHERE refund_task_id = ?", pending);
         for (String tab : List.of("PENDING", "FAILED", "DONE")) {
@@ -390,6 +407,207 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
         assertThat(ids(adminGet(ADMIN_REFUNDS + "?tab=DONE"))).contains(taskId);
         adminPost(ADMIN_REFUNDS + "/" + taskId + "/manual-complete", Map.of("note", "다시")).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("REFUND_TASK_NOT_EXECUTABLE"));
+    }
+
+    // ------------------------------------------------------------------ 집행 결과 · 동시성 · 정리 배치
+
+    @Test
+    @DisplayName("[R-15] 결과 미확인 — 타임아웃 · PG 접수 대기는 UNKNOWN · 처리 중 유지 · 재집행 · 철회 · 수동 완료 409 · 정리 배치가 포트원 누적 취소액으로 닫는다")
+    void unknownOutcomeResolvedByBatch() throws Exception {
+        OrderDeliveryGroup settled = deliveredGroup(creamVariant, 1);
+        long settledTask = operatorRefund(settled, 5_000);
+        String settledPayment = paymentIdOf(settled);
+        fake.willFailCancel(settledPayment, FakePaymentGateway.Failure.TIMEOUT);
+
+        execute(settledTask).andExpect(status().isOk()).andExpect(jsonPath("$.outcome").value("UNKNOWN"))
+                .andExpect(jsonPath("$.refund.status").value("EXECUTING"))
+                .andExpect(jsonPath("$.refund.executable").value(false));
+        execute(settledTask).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("REFUND_TASK_NOT_EXECUTABLE"));
+        adminPost(ADMIN_REFUNDS + "/" + settledTask + "/void", Map.of("reason", "오편입")).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("REFUND_TASK_NOT_VOIDABLE"));
+        adminPost(ADMIN_REFUNDS + "/" + settledTask + "/manual-complete", Map.of("note", "콘솔 처리"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("REFUND_TASK_NOT_EXECUTABLE"));
+        assertThat(ids(adminGet(ADMIN_REFUNDS))).contains(settledTask);
+
+        // 포트원에는 취소가 나갔다 — 정리 배치가 PG 를 다시 부르지 않고 완료로 닫는다.
+        int calls = fake.partialCancelCalls().size();
+        fake.willReturn(settledPayment, PortOnePayment.of(settledPayment, PortOneStatus.PAID, FakePaymentGateway.STORE_ID,
+                paymentAmountOf(settledPayment)).withCancelled(PortOneStatus.PARTIAL_CANCELLED, 5_000));
+        assertThat(refundExecutor.resolveStale(settledTask)).isEqualTo(RefundExecutor.Outcome.DONE);
+        assertThat(taskStatus(settledTask)).isEqualTo("DONE");
+        assertThat(jdbc.queryForObject("SELECT cancelled_amount FROM payment WHERE payment_id = ?", Integer.class,
+                settledPayment)).isEqualTo(5_000);
+        assertThat(fake.partialCancelCalls()).hasSize(calls);
+
+        // PG 접수 대기도 결과 미확인이다 — 포트원에 취소가 없으면 실패(재시도 대기)로 굳히고, 운영자 재시도로 끝낸다.
+        OrderDeliveryGroup pending = deliveredGroup(creamVariant, 1);
+        long pendingTask = operatorRefund(pending, 4_000);
+        String pendingPayment = paymentIdOf(pending);
+        fake.willAnswerCancel(pendingPayment, PortOneCancelResult.Outcome.PENDING);
+        execute(pendingTask).andExpect(jsonPath("$.outcome").value("UNKNOWN"));
+        fake.willReturnPaid(pendingPayment, paymentAmountOf(pendingPayment));
+        assertThat(refundExecutor.resolveStale(pendingTask)).isEqualTo(RefundExecutor.Outcome.FAILED);
+        assertThat(jdbc.queryForObject("SELECT last_error FROM order_refund_task WHERE refund_task_id = ?", String.class,
+                pendingTask)).contains("결과 미확인");
+        fake.willAnswerCancel(pendingPayment, PortOneCancelResult.Outcome.SUCCEEDED);
+        execute(pendingTask).andExpect(jsonPath("$.outcome").value("DONE"));
+    }
+
+    @Test
+    @DisplayName("[R-16] 집행 결과 — 이미 전액 취소는 FAILED(코드) · 같은 결제의 다른 환불 처리 중 · 전액 취소 수렴 중은 SKIPPED(대기 유지 · PG 0회) · 잔액 부족은 PG 없이 FAILED")
+    void executeOutcomes() throws Exception {
+        OrderDeliveryGroup already = deliveredGroup(creamVariant, 1);
+        long alreadyTask = operatorRefund(already, 5_000);
+        fake.willAnswerCancel(paymentIdOf(already), PortOneCancelResult.Outcome.ALREADY_CANCELLED);
+        execute(alreadyTask).andExpect(jsonPath("$.outcome").value("FAILED"))
+                .andExpect(jsonPath("$.refund.status").value("FAILED"));
+        assertThat(jdbc.queryForMap("SELECT last_error, last_error_code FROM order_refund_task WHERE refund_task_id = ?",
+                alreadyTask)).containsEntry("last_error_code", "ALREADY_CANCELLED")
+                .hasEntrySatisfying("last_error", error -> assertThat(error.toString()).contains("이미 전액 취소"));
+
+        int calls = fake.partialCancelCalls().size();
+        OrderDeliveryGroup busy = deliveredGroup(creamVariant, 1);
+        long first = operatorRefund(busy, 3_000);
+        long second = operatorRefund(busy, 2_000);
+        jdbc.update("UPDATE order_refund_task SET status = 'EXECUTING' WHERE refund_task_id = ?", first);
+        execute(second).andExpect(jsonPath("$.outcome").value("SKIPPED"))
+                .andExpect(jsonPath("$.refund.status").value("PENDING"));
+
+        OrderDeliveryGroup converging = deliveredGroup(creamVariant, 1);
+        long convergingTask = operatorRefund(converging, 3_000);
+        jdbc.update("UPDATE payment SET status = 'CANCEL_REQUESTED' WHERE payment_id = ?", paymentIdOf(converging));
+        execute(convergingTask).andExpect(jsonPath("$.outcome").value("SKIPPED"))
+                .andExpect(jsonPath("$.refund.status").value("PENDING"));
+        assertThat(fake.partialCancelCalls()).hasSize(calls);
+
+        // 편입 뒤 다른 환불이 먼저 나가 잔액이 모자란다 — PG 를 부르지 않고 실패(「잠시 후 다시」가 아니다).
+        OrderDeliveryGroup lowBalance = deliveredGroup(creamVariant, 1);
+        long lowTask = operatorRefund(lowBalance, 5_000);
+        jdbc.update("UPDATE payment SET cancelled_amount = amount - 1000 WHERE payment_id = ?", paymentIdOf(lowBalance));
+        execute(lowTask).andExpect(jsonPath("$.outcome").value("FAILED"))
+                .andExpect(jsonPath("$.refund.status").value("FAILED"));
+        assertThat(jdbc.queryForObject("SELECT last_error FROM order_refund_task WHERE refund_task_id = ?", String.class,
+                lowTask)).contains("취소 가능 잔액");
+        assertThat(fake.partialCancelCalls()).hasSize(calls);
+        assertThat(jdbc.queryForList("SELECT event_type FROM order_fulfillment_history WHERE delivery_group_id = ?",
+                String.class, lowBalance.getId())).contains("REFUND_FAILED");
+    }
+
+    @Test
+    @DisplayName("[R-17] 동시 집행 — 같은 건을 두 운영자가 동시에 눌러도 PG 호출 1회 · 취소 기록 1행 · 하나는 DONE, 다른 하나는 SKIPPED 또는 409")
+    void concurrentExecute() throws Exception {
+        long taskId = operatorRefund(deliveredGroup(creamVariant, 1), 5_000);
+
+        List<String> results = ConcurrentCalls.race(
+                () -> refundService.execute(operator.getId(), taskId).outcome(),
+                () -> refundService.execute(operator.getId(), taskId).outcome());
+
+        assertThat(results).containsOnlyOnce("DONE");
+        assertThat(results).filteredOn(result -> !result.equals("DONE")).singleElement()
+                .isIn("SKIPPED", "REFUND_TASK_NOT_EXECUTABLE");
+        assertThat(fake.partialCancelCalls()).hasSize(1);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM payment_cancel WHERE refund_task_id = ?", Integer.class,
+                taskId)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM order_fulfillment_history WHERE event_type = 'REFUND_EXECUTED' "
+                + "AND detail LIKE ?", Integer.class, "RFD-" + taskId + " %")).isEqualTo(1);
+        assertThat(taskStatus(taskId)).isEqualTo("DONE");
+    }
+
+    @Test
+    @DisplayName("[R-18] 철회 · 집행 경합 — 둘 중 하나만 이긴다. 철회가 이기면 PG 0회 · 집행이 이기면 철회 409")
+    void voidRacingExecute() throws Exception {
+        long taskId = operatorRefund(deliveredGroup(creamVariant, 1), 5_000);
+
+        List<String> results = ConcurrentCalls.race(
+                () -> refundService.execute(operator.getId(), taskId).outcome(),
+                () -> {
+                    refundService.voidRefund(operator.getId(), taskId, new AdminTransactionDto.RefundVoidRequest("오편입"));
+                    return "VOIDED";
+                });
+
+        String executed = results.get(0);
+        String voided = results.get(1);
+        if (taskStatus(taskId).equals("VOID")) {
+            assertThat(voided).isEqualTo("VOIDED");
+            assertThat(executed).isIn("SKIPPED", "REFUND_TASK_NOT_EXECUTABLE");
+            assertThat(fake.partialCancelCalls()).isEmpty();
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM payment_cancel WHERE refund_task_id = ?", Integer.class,
+                    taskId)).isZero();
+        } else {
+            assertThat(taskStatus(taskId)).isEqualTo("DONE");
+            assertThat(executed).isEqualTo("DONE");
+            assertThat(voided).isEqualTo("REFUND_TASK_NOT_VOIDABLE");
+            assertThat(fake.partialCancelCalls()).hasSize(1);
+        }
+    }
+
+    @Test
+    @DisplayName("[R-19] 수동 완료 기록 — 집행 대기 · 취소번호 생략 · 결제 없는 주문도 기록 · 같은 결제 처리 중 · 잔액 부족은 409 · 입력 한도 400 · PG 0회")
+    void manualCompleteVariants() throws Exception {
+        int calls = fake.partialCancelCalls().size();
+        long pendingTask = operatorRefund(deliveredGroup(creamVariant, 1), 5_000);
+        adminPost(ADMIN_REFUNDS + "/" + pendingTask + "/manual-complete", Map.of("note", "포트원 콘솔 처리"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("DONE"));
+        assertThat(jdbc.queryForMap("SELECT status, pg_cancellation_id FROM payment_cancel WHERE refund_task_id = ?",
+                pendingTask)).containsEntry("status", "SUCCEEDED").containsEntry("pg_cancellation_id", null);
+
+        long noPaymentTask = operatorRefund(deliveredGroup(creamVariant, 1), 5_000);
+        jdbc.update("UPDATE order_refund_task SET payment_id = NULL WHERE refund_task_id = ?", noPaymentTask);
+        adminPost(ADMIN_REFUNDS + "/" + noPaymentTask + "/manual-complete", Map.of("note", "계좌 송금으로 환불"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("DONE"));
+        assertThat(jdbc.queryForMap("SELECT status, payment_cancel_id FROM order_refund_task WHERE refund_task_id = ?",
+                noPaymentTask)).containsEntry("status", "DONE").containsEntry("payment_cancel_id", null);
+
+        OrderDeliveryGroup busy = deliveredGroup(creamVariant, 1);
+        long first = operatorRefund(busy, 3_000);
+        long second = operatorRefund(busy, 2_000);
+        jdbc.update("UPDATE order_refund_task SET status = 'EXECUTING' WHERE refund_task_id = ?", first);
+        adminPost(ADMIN_REFUNDS + "/" + second + "/manual-complete", Map.of("note", "콘솔 처리"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("REFUND_TASK_NOT_EXECUTABLE"));
+
+        OrderDeliveryGroup lowBalance = deliveredGroup(creamVariant, 1);
+        long lowTask = operatorRefund(lowBalance, 5_000);
+        jdbc.update("UPDATE payment SET cancelled_amount = amount - 1000 WHERE payment_id = ?", paymentIdOf(lowBalance));
+        adminPost(ADMIN_REFUNDS + "/" + lowTask + "/manual-complete", Map.of("note", "콘솔 처리"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("REFUND_TASK_NOT_EXECUTABLE"));
+        adminPost(ADMIN_REFUNDS + "/" + lowTask + "/manual-complete", Map.of("note", "가".repeat(501)))
+                .andExpect(status().isBadRequest());
+        adminPost(ADMIN_REFUNDS + "/" + lowTask + "/manual-complete",
+                Map.of("pgCancellationId", "c".repeat(101), "note", "콘솔 처리")).andExpect(status().isBadRequest());
+        assertThat(taskStatus(second)).isEqualTo("PENDING");
+        assertThat(taskStatus(lowTask)).isEqualTo("PENDING");
+        assertThat(fake.partialCancelCalls()).hasSize(calls);
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    @DisplayName("[R-20] 결제완료 소비자 취소 — 하위주문 합이 결제액과 다르면 기록 행을 남기지 않고 경고한다(취소 자체는 정상)")
+    void consumerCancelSumMismatch(CapturedOutput output) throws Exception {
+        OrderDeliveryGroup group = paidTwoItemGroup();
+        Long orderId = group.getOrder().getId();
+        jdbc.update("UPDATE order_delivery_group SET delivery_fee = COALESCE(delivery_fee, 0) + 100 WHERE delivery_group_id = ?",
+                group.getId());
+
+        cancel(orderId).andExpect(status().is2xxSuccessful());
+
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM order_refund_task WHERE order_id = ?", Integer.class, orderId))
+                .isZero();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM payment_cancel WHERE payment_id = ?", Integer.class,
+                paymentIdOf(group))).isPositive();
+        assertThat(output).contains("결제완료 소비자 취소 기록 생략");
+    }
+
+    private ResultActions execute(long taskId) throws Exception {
+        return adminPost(ADMIN_REFUNDS + "/" + taskId + "/execute", Map.of());
+    }
+
+    private String taskStatus(long taskId) {
+        return jdbc.queryForObject("SELECT status FROM order_refund_task WHERE refund_task_id = ?", String.class, taskId);
+    }
+
+    private int paymentAmountOf(String paymentId) {
+        return jdbc.queryForObject("SELECT amount FROM payment WHERE payment_id = ?", Integer.class, paymentId);
     }
 
     private List<Long> refundTaskRepositoryPending(Long orderId) {

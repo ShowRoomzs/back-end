@@ -4,13 +4,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
+import showroomz.api.admin.transaction.dto.AdminTransactionDto;
+import showroomz.api.admin.transaction.service.AdminClaimService;
 import showroomz.api.seller.claim.ClaimTestSupport;
+import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.type.ClaimReason;
 import showroomz.domain.order.type.ClaimType;
+import showroomz.global.payment.portone.FakePaymentGateway;
+import showroomz.global.payment.portone.PortOneCancelResult;
 import showroomz.support.IntegrationTest;
 
 import java.time.LocalDateTime;
@@ -36,11 +42,15 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
     private static final String ADMIN_REFUNDS = "/v1/admin/refunds";
     private static final Map<String, Object> CARD = Map.of("method", "CARD", "cardIssuer", "SHINHAN");
 
+    @Autowired private AdminClaimService adminClaimService;
+
     private String admin;
+    private Seller operator;
 
     @BeforeEach
     void setUpAdmin() {
-        admin = adminToken(fixture.createAdmin("claims-ops@showroomz.test", "운영자"));
+        operator = fixture.createAdmin("claims-ops@showroomz.test", "운영자");
+        admin = adminToken(operator);
     }
 
     // ------------------------------------------------------------------ 조회
@@ -199,7 +209,7 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
     // ------------------------------------------------------------------ 검수 무응답 운영자 환불(41 보고 4번)
 
     @Test
-    @DisplayName("[AC-15] 검수 무응답 — 알림 3회 전 409 · 3회면 상세에 금액 · 편입하면 클레임 종결 · 반품 수량 · 큐 PENDING · 통과분은 따로 정산")
+    @DisplayName("[AC-15] 검수 무응답 — 알림 3회 전 409 · 3회면 상세에 금액 · 편입하면 클레임 종결 · 반품 수량 · 큐 PENDING · 통과분은 따로 정산 · 철회 409")
     void refundUnansweredInspection() throws Exception {
         OrderDeliveryGroup group = deliveredGroup(creamVariant, 2);
         List<Long> claimIds = requestClaim(group, ClaimType.RETURN, ClaimReason.CHANGE_OF_MIND, allItems(group),
@@ -233,6 +243,11 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
         adminPost(ADMIN_CLAIMS + "/" + claimId + "/refund-tasks", Map.of("detail", "다시")).andExpect(status().isConflict());
         JsonNode pending = json(adminGet(ADMIN_REFUNDS + "?tab=PENDING")).get("content");
         assertThat(pending).anySatisfy(row -> assertThat(row.get("reasonLabel").asText()).isEqualTo("검수 무응답"));
+        // 클레임이 이미 환불로 닫혔으므로 철회하지 않는다 — 철회하면 종결된 클레임에 돈만 안 나간다.
+        adminPost(ADMIN_REFUNDS + "/" + taskId + "/void", Map.of("reason", "오편입")).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("REFUND_TASK_NOT_VOIDABLE"));
+        assertThat(jdbc.queryForObject("SELECT status FROM order_refund_task WHERE refund_task_id = ?", String.class, taskId))
+                .isEqualTo("PENDING");
     }
 
     @Test
@@ -426,6 +441,57 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
 
         adminPost(ADMIN_CLAIMS + "/" + claimId + "/dispute-acceptance", Map.of("amount", 1, "detail", "근거"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.amount").value(CREAM_PRICE));
+    }
+
+    // ------------------------------------------------------------------ 동시성 · 커밋 뒤 결제 취소
+
+    @Test
+    @DisplayName("[AC-16] 인용 동시 2회 — 하나만 편입되고 다른 하나는 409 · 환불 큐 · 클레임 이력 · 재발송비 청구 처리가 한 번")
+    void concurrentAcceptance() throws Exception {
+        Long claimId = rejectedClaim(returnClaim(deliveredGroup(creamVariant, 1)));
+        AdminTransactionDto.DisputeAcceptRequest request = new AdminTransactionDto.DisputeAcceptRequest("동시 인용");
+
+        List<String> results = ConcurrentCalls.race(
+                () -> "RFD-" + adminClaimService.acceptDispute(operator.getId(), claimId, request).refundTaskId(),
+                () -> "RFD-" + adminClaimService.acceptDispute(operator.getId(), claimId, request).refundTaskId());
+
+        assertThat(results).filteredOn(result -> result.startsWith("RFD-")).hasSize(1);
+        assertThat(results).filteredOn(result -> !result.startsWith("RFD-")).singleElement()
+                .isEqualTo("CLAIM_STATE_CHANGED");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM order_refund_task WHERE source = 'OPERATOR_REASON' "
+                + "AND source_id = ?", Integer.class, claimId)).isEqualTo(1);
+        assertThat(events(claimId)).filteredOn("DISPUTE_ACCEPTED"::equals).hasSize(1);
+        assertThat(claimRow(claimId)).containsEntry("result", "REFUNDED").containsEntry("refunded_amount", CREAM_PRICE);
+        assertThat(chargeStatusOf(claimId)).isEqualTo("VOID");
+    }
+
+    @Test
+    @DisplayName("[AC-17] 결제된 재발송비 인용 · 포트원 취소 결과 미상 — 인용은 확정 · 결제는 취소 선점으로 남고 정리 배치가 다시 취소해 닫는다")
+    void acceptThenCancelRetriedByReconcile() throws Exception {
+        Long claimId = rejectedClaim(returnClaim(deliveredGroup(creamVariant, 1)));
+        String paymentId = json(userPost(USER_CLAIMS + "/" + claimId + "/reship-fee/payments", CARD)
+                .andExpect(status().isOk())).get("paymentId").asText();
+        completeClaimPayment(paymentId).andExpect(jsonPath("$.paymentStatus").value("PAID"));
+        fake.willFailCancel(paymentId, FakePaymentGateway.Failure.TIMEOUT);
+
+        accept(claimId).andExpect(status().isOk());
+
+        assertThat(claimRow(claimId)).containsEntry("status", "COMPLETED").containsEntry("result", "REFUNDED");
+        assertThat(chargeStatusOf(claimId)).isEqualTo("REFUNDED");
+        assertThat(claimPaymentStatus(paymentId)).isEqualTo("CANCEL_REQUESTED");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM order_refund_task WHERE source = 'CLAIM_PAYMENT_CANCELLED'",
+                Integer.class)).isZero();
+
+        fake.willAnswerCancel(paymentId, PortOneCancelResult.Outcome.SUCCEEDED);
+        claimPaymentService.reconcile(LocalDateTime.now());
+
+        assertThat(claimPaymentStatus(paymentId)).isEqualTo("CANCELLED");
+        assertThat(fake.cancelCalls()).containsExactly(paymentId, paymentId);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM order_refund_task WHERE source = 'CLAIM_PAYMENT_CANCELLED' "
+                + "AND payment_id = ?", Integer.class, paymentId)).isEqualTo(1);
+        // 한 번 더 돌아도 다시 취소하지 않는다.
+        claimPaymentService.reconcile(LocalDateTime.now());
+        assertThat(fake.cancelCalls()).hasSize(2);
     }
 
     // ------------------------------------------------------------------ 도우미

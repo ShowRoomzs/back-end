@@ -64,6 +64,9 @@ public class RefundExecutor {
         if (claim == null) {
             return Outcome.SKIPPED;
         }
+        if (claim.failed()) {
+            return Outcome.FAILED;
+        }
         if (claim.zeroAmount()) {
             return complete(taskId, null, null, operatorId, now);
         }

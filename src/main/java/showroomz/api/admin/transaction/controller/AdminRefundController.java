@@ -40,8 +40,9 @@ public class AdminRefundController implements AdminRefundControllerDocs {
 
     @Override
     @GetMapping("/summary")
-    public ResponseEntity<AdminTransactionDto.RefundSummary> getSummary() {
-        return ResponseEntity.ok(refundService.getSummary());
+    public ResponseEntity<AdminTransactionDto.RefundSummary> getSummary(
+            @RequestParam(value = "days", required = false) Integer days) {
+        return ResponseEntity.ok(refundService.getSummary(days));
     }
 
     @Override

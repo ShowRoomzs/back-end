@@ -5,7 +5,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.ResultActions;
 import showroomz.api.seller.claim.ClaimTestSupport;
@@ -21,7 +24,10 @@ import java.util.Map;
 import java.util.stream.StreamSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -43,18 +49,21 @@ class AdminOrderExceptionIntegrationTest extends ClaimTestSupport {
     private String admin;
     private boolean trackerEnabled;
     private String badgeScope;
+    private int fetchLimit;
 
     @BeforeEach
     void setUpAdmin() {
         admin = adminToken(fixture.createAdmin("exceptions-ops@showroomz.test", "운영자"));
         trackerEnabled = trackerProperties.isEnabled();
         badgeScope = orderProperties.getException().getBadgeScope();
+        fetchLimit = orderProperties.getException().getFetchLimit();
     }
 
     @AfterEach
     void restoreProperties() {
         trackerProperties.setEnabled(trackerEnabled);
         orderProperties.getException().setBadgeScope(badgeScope);
+        orderProperties.getException().setFetchLimit(fetchLimit);
     }
 
     // ------------------------------------------------------------------ 처리 지연
@@ -294,6 +303,33 @@ class AdminOrderExceptionIntegrationTest extends ClaimTestSupport {
     void auth() throws Exception {
         mockMvc.perform(get(EXCEPTIONS).header(HttpHeaders.AUTHORIZATION, brandToken)).andExpect(status().isForbidden());
         mockMvc.perform(get(EXCEPTIONS)).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("[AE-13] 쓰기 없음 — 목록 · 요약에 POST · PATCH · DELETE 는 405 · 행을 닫는 길은 조건 소멸뿐")
+    void noWriteEndpoints() throws Exception {
+        for (String url : List.of(EXCEPTIONS, EXCEPTIONS + "/summary")) {
+            mockMvc.perform(post(url).header(HttpHeaders.AUTHORIZATION, admin)).andExpect(status().isMethodNotAllowed());
+            mockMvc.perform(patch(url).header(HttpHeaders.AUTHORIZATION, admin)).andExpect(status().isMethodNotAllowed());
+            mockMvc.perform(delete(url).header(HttpHeaders.AUTHORIZATION, admin)).andExpect(status().isMethodNotAllowed());
+        }
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    @DisplayName("[AE-14] 원천 조회 상한 — 유형별 fetch-limit 에서 잘리고 경고 로그(배치 장애 신호) · 상한 아래면 로그 없음")
+    void fetchLimitCapsAndWarns(CapturedOutput output) throws Exception {
+        LocalDateTime due = LocalDateTime.now().minusDays(6).withHour(23).withMinute(59).withSecond(59).withNano(0);
+        backdateShipDueAt(prepared(paidGroup()), due);
+        backdateShipDueAt(prepared(paidGroup()), due.minusDays(1));
+
+        adminGet(EXCEPTIONS + "?tab=DELAY").andExpect(jsonPath("$.page.pageInfo.totalResults").value(2));
+        assertThat(output).doesNotContain("예외 관리 원천 조회 상한 도달");
+
+        orderProperties.getException().setFetchLimit(1);
+        adminGet(EXCEPTIONS + "?tab=DELAY").andExpect(jsonPath("$.page.pageInfo.totalResults").value(1));
+        adminGet(EXCEPTIONS + "/summary").andExpect(jsonPath("$.tabCounts.DELAY").value(1));
+        assertThat(output).contains("예외 관리 원천 조회 상한 도달").contains("kind: SHIP_OVERDUE");
     }
 
     // ------------------------------------------------------------------ 도우미

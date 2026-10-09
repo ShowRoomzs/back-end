@@ -202,10 +202,13 @@ public class OrderRefundTask extends BaseTimeEntity {
         this.status = RefundTaskStatus.VOID;
     }
 
-    /** 철회할 수 있는가 — 대기 ∧ 운영자 사유 ∧ 반려 이의 인용이 아님(인용은 편입 때 재발송비 청구를 이미 정리해 되돌릴 수 없다). */
+    /**
+     * 철회할 수 있는가 — 대기 ∧ 운영자 사유 ∧ 클레임을 닫는 사유가 아님(반려 이의 인용 · 검수 무응답은 편입 때 클레임을 환불로
+     * 종결해 되돌릴 수 없다 — {@link OperatorRefundReason#isClaimBound()}).
+     */
     public boolean isVoidable() {
         return status == RefundTaskStatus.PENDING && origin == RefundTaskOrigin.OPERATOR
-                && reasonCode != OperatorRefundReason.DISPUTE_ACCEPTED;
+                && (reasonCode == null || !reasonCode.isClaimBound());
     }
 
     /** PG 를 부르지 않고 집행 완료로 기록 — 결제 밖에서 환불된 건(운영자 수동 기록). */

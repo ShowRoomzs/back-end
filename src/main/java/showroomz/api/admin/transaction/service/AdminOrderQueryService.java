@@ -204,8 +204,9 @@ public class AdminOrderQueryService {
                 status == FulfillmentStatus.DELIVERED,
                 status == FulfillmentStatus.PREPARING && actOnBehalf && !cancelRequested,
                 FulfillmentStatus.WORKABLE.contains(status) && !cancelRequested,
+                // 반송중은 제외 — 반송 완료 감지가 PG 자동 환불로 닫는다(B2 레일 조치 없음).
                 status == FulfillmentStatus.SHIPPING || status == FulfillmentStatus.DELIVERED
-                        || status == FulfillmentStatus.CONFIRMED || status == FulfillmentStatus.RETURNING,
+                        || status == FulfillmentStatus.CONFIRMED,
                 (status == FulfillmentStatus.CONFIRMED || status == FulfillmentStatus.DELIVERED)
                         && deliveredWithin3Months,
                 stalledPolicy.isResolvable(group, now),

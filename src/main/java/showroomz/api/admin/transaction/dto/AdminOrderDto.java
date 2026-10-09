@@ -221,7 +221,7 @@ public final class AdminOrderDto {
             @Schema(description = "B4 대행 송장 등록 — 상품준비중 ∧ 발송 기한 경과 ∧ 자동 알림 N회 무응답(근거 대기 · 시안 3회)")
             boolean canRegisterShipment,
             @Schema(description = "B4 · B5 대행 직권 취소 — 신규 · 상품준비중 ∧ (대행 조건 충족 ∨ 위해성 리콜)") boolean canCancel,
-            @Schema(description = "B5 운영자 사유 환불 편입 — 발송 이후") boolean canEnqueueRefund,
+            @Schema(description = "B5 운영자 사유 환불 편입 — 배송중 · 배송완료 · 구매확정(반송 중은 자동 환불이라 제외)") boolean canEnqueueRefund,
             @Schema(description = "B6 구매확정 후 하자 반품 대신 열기 — 구매확정(또는 배송완료) ∧ 배송완료 3개월 안") boolean canOpenDefectClaim,
             @Schema(description = "분실 처리 — 배송중 ∧ 추적 정지 ∧ 마지막 추적 + N일(기본 28) 경과(41 보고 3번)") boolean canMarkLost,
             @Schema(description = "배송완료 처리 — 분실 처리와 같은 조건 · 운영자가 둘 중 하나를 고른다") boolean canMarkDelivered
@@ -267,7 +267,8 @@ public final class AdminOrderDto {
 
     @Schema(name = "AdminOperatorRefundRequest", description = "B5 — 운영자 사유 환불 편입(집행은 환불 관리에서)")
     public record OperatorRefundRequest(
-            @NotNull OperatorRefundReason reason,
+            @NotNull @Schema(description = "RECALL · POST_CONFIRM_DEFECT 만 — 반려 이의 인용 · 검수 무응답은 06b", example = "RECALL")
+            OperatorRefundReason reason,
             @NotNull @Min(1) @Schema(example = "24900") Integer amount,
             @NotBlank @Size(max = 500) @Schema(description = "근거 — 이력 · 환불 관리에 남는다") String detail
     ) {

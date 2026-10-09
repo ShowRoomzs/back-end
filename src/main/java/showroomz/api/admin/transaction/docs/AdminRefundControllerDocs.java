@@ -45,12 +45,13 @@ public interface AdminRefundControllerDocs {
             description = """
                     탭별 건수 · 합계(`tabs.PENDING` · `FAILED` · `DONE`)와 사이드바 배지(`badge` = 집행 대기 + 실패).
                     - `FAILED.oldestWaitingDays` — 실패 건 중 가장 오래 기다린 소비자의 대기 일수(환불이 생긴 시각 기준)
-                    - `DONE` — 최근 30일(집행 시각) · `byOrigin` 출처별 건수
+                    - `DONE` — 최근 `days`일(집행 시각 · 기본 30) · `byOrigin` 출처별 건수. 목록과 같은 `days`를 보내야 탭 숫자 = 목록 건수
                     폴링 대상이다(30~60초).
 
                     **권한:** ADMIN
                     """)
-    ResponseEntity<AdminTransactionDto.RefundSummary> getSummary();
+    ResponseEntity<AdminTransactionDto.RefundSummary> getSummary(
+            @Parameter(description = "완료 탭 조회 기간(일) — 목록 `days`와 같은 값 · 기본 30 · 1 미만은 1") Integer days);
 
     @Operation(summary = "환불 상세 (06c M1 · M2)",
             description = """
@@ -70,14 +71,15 @@ public interface AdminRefundControllerDocs {
             description = """
                     집행 전 운영자 사유 환불(`PENDING · OPERATOR`)을 철회한다 — 오편입 · 금액 재산정. 돈은 나가지 않았으므로 되돌릴 것이 없고,
                     큐 행은 `VOID`(어느 탭에도 없음 · 상세 · 주문 상세에서만)가 된다. 사유는 이력 「운영자 사유 환불 편입 철회」에 남는다.
-                    **반려 이의 인용 건은 철회할 수 없다** — 편입 때 재발송비 청구를 이미 소멸 · 취소해 되살릴 수 없다(§39-6 A-1 후단).
+                    **반려 이의 인용 · 검수 무응답 건은 철회할 수 없다** — 편입 때 클레임을 환불로 종결하고 반품 수량 · 재발송비 청구 ·
+                    교환 재고를 이미 정리해 되살릴 수 없다(§39-6 A-1 후단).
 
                     **권한:** ADMIN
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "철회 후 행"),
             @ApiResponse(responseCode = "404", description = "REFUND_TASK_NOT_FOUND"),
-            @ApiResponse(responseCode = "409", description = "REFUND_TASK_NOT_VOIDABLE — 집행 전 운영자 사유가 아니거나 반려 이의 인용")
+            @ApiResponse(responseCode = "409", description = "REFUND_TASK_NOT_VOIDABLE — 집행 전 운영자 사유가 아니거나 반려 이의 인용 · 검수 무응답")
     })
     ResponseEntity<AdminTransactionDto.RefundItem> voidRefund(@Parameter(hidden = true) UserPrincipal principal,
                                                              Long refundTaskId, AdminTransactionDto.RefundVoidRequest request);

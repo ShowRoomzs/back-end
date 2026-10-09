@@ -4,11 +4,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
+import showroomz.api.admin.transaction.dto.AdminOrderDto;
+import showroomz.api.admin.transaction.service.AdminOrderCommandService;
 import showroomz.api.scenario.OrderFlowTestSupport;
+import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
+import showroomz.domain.order.type.DeliveryCarrier;
 import showroomz.support.IntegrationTest;
 
 import java.sql.Timestamp;
@@ -37,11 +45,15 @@ class AdminOrderIntegrationTest extends OrderFlowTestSupport {
     private static final String ADMIN_EXCEPTIONS = "/v1/admin/order-exceptions";
     private static final int DELIVERY_FEE = 3_000;
 
+    @Autowired private AdminOrderCommandService commandService;
+
     private String admin;
+    private Seller operator;
 
     @BeforeEach
     void setUpAdmin() {
-        admin = adminToken(fixture.createAdmin("orders-ops@showroomz.test", "운영자"));
+        operator = fixture.createAdmin("orders-ops@showroomz.test", "운영자");
+        admin = adminToken(operator);
     }
 
     // ------------------------------------------------------------------ T1 배송완료일 정정
@@ -181,6 +193,100 @@ class AdminOrderIntegrationTest extends OrderFlowTestSupport {
         adminGet(ADMIN_ORDERS + "/summary").andExpect(jsonPath("$.tabCounts.DELIVERY_ISSUE").value(1))
                 .andExpect(jsonPath("$.tabCounts.CANCEL").value(1))
                 .andExpect(jsonPath("$.tabCounts.ALL").value(4));
+    }
+
+    // ------------------------------------------------------------------ T10 사유 환불 편입 가드
+
+    @Test
+    @DisplayName("[T10] 사유 환불 편입 — 반송 중은 버튼 없음 · 409(반송 완료 시 자동 환불) · 06b 전용 사유(반려 이의 인용 · 검수 무응답)는 400")
+    void operatorRefundGuards() throws Exception {
+        OrderDeliveryGroup returning = returningGroup("400060010001");
+        adminGet(ADMIN_ORDERS + "/" + orderOf(returning))
+                .andExpect(jsonPath("$.groups[0].actions.canEnqueueRefund").value(false));
+        operatorRefund(returning, "RECALL").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ORDER_STATE_CHANGED"));
+        jdbc.update("UPDATE order_delivery_group SET return_completed_at = ? WHERE delivery_group_id = ?",
+                LocalDateTime.now(), returning.getId());
+        adminGet(ADMIN_ORDERS + "/" + orderOf(returning))
+                .andExpect(jsonPath("$.groups[0].actions.canEnqueueRefund").value(false));
+
+        OrderDeliveryGroup delivered = deliveredGroup("400060010002", LocalDateTime.now().minusDays(1));
+        adminGet(ADMIN_ORDERS + "/" + orderOf(delivered))
+                .andExpect(jsonPath("$.groups[0].actions.canEnqueueRefund").value(true));
+        for (String reason : List.of("DISPUTE_ACCEPTED", "INSPECTION_UNANSWERED")) {
+            operatorRefund(delivered, reason).andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        }
+        assertThat(refundTasks(returning)).isEmpty();
+        assertThat(refundTasks(delivered)).isEmpty();
+        operatorRefund(delivered, "POST_CONFIRM_DEFECT").andExpect(status().isOk())
+                .andExpect(jsonPath("$.groups[0].refunds[0].origin").value("OPERATOR"));
+    }
+
+    // ------------------------------------------------------------------ T11 상세 404 · 열람 기록
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    @DisplayName("[T11] 상세 — 열 때마다 열람 로그(운영자 · 주문) · 결제 전 주문과 없는 주문은 404 ORDER_NOT_FOUND")
+    void detailAccessLogAndNotFound(CapturedOutput output) throws Exception {
+        OrderDeliveryGroup group = paidGroup();
+        Long orderId = orderOf(group);
+        adminGet(ADMIN_ORDERS + "/" + orderId).andExpect(status().isOk());
+        assertThat(output).contains("어드민 주문 상세 열람 - operatorId: " + operator.getId() + ", orderId: " + orderId);
+
+        jdbc.update("UPDATE orders SET paid_at = NULL WHERE order_id = ?", orderId);
+        adminGet(ADMIN_ORDERS + "/" + orderId).andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ORDER_NOT_FOUND"));
+        assertThat(orderIds(adminGet(ADMIN_ORDERS))).doesNotContain(orderId);
+        adminGet(ADMIN_ORDERS + "/999999").andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ORDER_NOT_FOUND"));
+    }
+
+    // ------------------------------------------------------------------ T12 동시 조치
+
+    @Test
+    @DisplayName("[T12] 동시 조치 — 분실 · 배송완료 처리가 겹치면 하나만 · 대행 송장 두 건이 겹치면 하나만(나머지 409 · 환불 · 이력 중복 없음)")
+    void concurrentOperatorActions() throws Exception {
+        OrderDeliveryGroup stalledGroup = shippingGroup("400060012001");
+        stalled(stalledGroup, 29);
+        List<String> resolved = ConcurrentCalls.race(
+                () -> {
+                    commandService.markLost(operator.getId(), stalledGroup.getId(),
+                            new AdminOrderDto.MarkLostRequest("택배사 분실 확인"));
+                    return "LOST";
+                },
+                () -> {
+                    commandService.markDelivered(operator.getId(), stalledGroup.getId(),
+                            new AdminOrderDto.MarkDeliveredRequest(LocalDateTime.now().minusHours(1).withNano(0), "소비자 수령 확인"));
+                    return "DELIVERED";
+                });
+        assertThat(resolved).filteredOn(result -> result.equals("ORDER_STATE_CHANGED")).hasSize(1);
+        String status = (String) groupRow(stalledGroup).get("fulfillment_status");
+        if (resolved.contains("LOST")) {
+            assertThat(status).isEqualTo("CANCELLED");
+            assertThat(refundTasks(stalledGroup)).hasSize(1);
+        } else {
+            assertThat(status).isEqualTo("DELIVERED");
+            assertThat(refundTasks(stalledGroup)).isEmpty();
+        }
+
+        OrderDeliveryGroup overdueGroup = preparingGroup();
+        overdue(overdueGroup, 3);
+        List<String> shipped = ConcurrentCalls.race(
+                () -> {
+                    commandService.registerShipment(operator.getId(), overdueGroup.getId(),
+                            new AdminOrderDto.ShipmentRequest(DeliveryCarrier.CJ, "400060012002", "무응답 대행 A"));
+                    return "SHIPPED";
+                },
+                () -> {
+                    commandService.registerShipment(operator.getId(), overdueGroup.getId(),
+                            new AdminOrderDto.ShipmentRequest(DeliveryCarrier.CJ, "400060012003", "무응답 대행 B"));
+                    return "SHIPPED";
+                });
+        assertThat(shipped).containsExactlyInAnyOrder("SHIPPED", "ORDER_STATE_CHANGED");
+        assertThat(groupRow(overdueGroup)).containsEntry("fulfillment_status", "SHIPPING");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM order_fulfillment_history WHERE delivery_group_id = ? "
+                + "AND event_type = 'INVOICE_REGISTERED'", Integer.class, overdueGroup.getId())).isEqualTo(1);
     }
 
     // ------------------------------------------------------------------ T6 검색
@@ -372,6 +478,11 @@ class AdminOrderIntegrationTest extends OrderFlowTestSupport {
     private ResultActions cancel(OrderDeliveryGroup group, String reasonCode) throws Exception {
         return adminPost(ADMIN_ORDERS + "/groups/" + group.getId() + "/cancel",
                 Map.of("reasonCode", reasonCode, "consumerMessage", "판매자 사정으로 주문이 취소되었습니다."));
+    }
+
+    private ResultActions operatorRefund(OrderDeliveryGroup group, String reason) throws Exception {
+        return adminPost(ADMIN_ORDERS + "/groups/" + group.getId() + "/refund-tasks",
+                Map.of("reason", reason, "amount", 1_000, "detail", "운영자 사유 환불 근거"));
     }
 
     private ResultActions defect(OrderDeliveryGroup group, Long orderProductId, String reasonCode, List<String> evidence)

@@ -149,15 +149,17 @@ public interface AdminOrderControllerDocs {
 
     @Operation(summary = "B5 운영자 사유 환불 편입",
             description = """
-                    발송 이후 하위주문의 운영자 사유 환불(위해성 리콜 · 구매확정 후 하자 · 반려 이의 인용)을 **편입만** 한다 — 돈은 환불 관리(06c)의
+                    발송 이후 하위주문의 운영자 사유 환불(위해성 리콜 · 구매확정 후 하자)을 **편입만** 한다 — 돈은 환불 관리(06c)의
                     재확인 다이얼로그에서만 나간다(편입과 집행을 나눈다). 결제의 취소 가능 잔액(아직 나가지 않은 환불 포함)을 넘지 못한다.
-                    발송 전 주문은 직권 취소로 환불한다.
+                    발송 전 주문은 직권 취소로 환불한다. 반송 중 주문은 반송 완료 시 PG 자동 환불되므로 받지 않는다.
+                    반려 이의 인용(`DISPUTE_ACCEPTED`) · 검수 무응답(`INSPECTION_UNANSWERED`)은 반품·교환 상세(06b)에서 서버 계산 금액으로 편입한다 — 400.
 
                     **권한:** ADMIN
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "편입 후 상세 — refunds[] 에 OPERATOR · PENDING 행"),
-            @ApiResponse(responseCode = "409", description = "REFUND_AMOUNT_EXCEEDED · ORDER_STATE_CHANGED")
+            @ApiResponse(responseCode = "400", description = "INVALID_INPUT — 06b 전용 사유(반려 이의 인용 · 검수 무응답)"),
+            @ApiResponse(responseCode = "409", description = "REFUND_AMOUNT_EXCEEDED · ORDER_STATE_CHANGED(발송 전 · 반송 중)")
     })
     ResponseEntity<AdminOrderDto.DetailResponse> enqueueRefund(@Parameter(hidden = true) UserPrincipal principal,
                                                                Long deliveryGroupId,

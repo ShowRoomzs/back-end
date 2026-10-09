@@ -41,14 +41,19 @@ public class RefundTransitions {
 
     /**
      * @param zeroAmount 환불액 0 — PG 를 부르지 않고 바로 완료로 닫는다(차감이 상품 금액을 다 덮은 경우)
+     * @param failed     선점 단계에서 FAILED 로 굳혔다 — PG 를 부르지 않는다(집행 결과는 「실패」지 「잠시 후 다시」가 아니다)
      */
     public record Claim(Long taskId, String paymentId, int amount, int cancellableAmount, String reason,
-                        boolean zeroAmount) {
+                        boolean zeroAmount, boolean failed) {
+
+        static Claim failedAt(Long taskId) {
+            return new Claim(taskId, null, 0, 0, null, false, true);
+        }
     }
 
     /**
      * 집행 선점 — 집행할 수 없으면 null(대기 그대로 · 다음 회차). 실패로 굳혀야 하는 경우(결제 없음이 아닌 결제 상태 이상 ·
-     * 잔액 부족)는 FAILED 로 닫고 null 을 돌려준다.
+     * 잔액 부족)는 FAILED 로 닫고 {@link Claim#failed()} 를 돌려준다.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Claim claim(Long taskId) {
@@ -58,7 +63,7 @@ public class RefundTransitions {
         }
         if (task.getRefundAmount() <= 0) {
             task.startExecution();
-            return new Claim(taskId, task.getPaymentId(), 0, 0, null, true);
+            return new Claim(taskId, task.getPaymentId(), 0, 0, null, true, false);
         }
         if (task.getPaymentId() == null) {
             // 결제가 없는 주문(시드 · 결제 밖 주문) — PG 로 돌려줄 길이 없다. 대기로 두고 운영자가 수동 기록한다.
@@ -75,6 +80,7 @@ public class RefundTransitions {
             if (payment.getStatus() != PaymentStatus.CANCEL_REQUESTED) {
                 task.markFailed("결제 상태가 " + payment.getStatus().name() + " 라 부분 취소할 수 없습니다.");
                 appendHistory(task, FulfillmentEventType.REFUND_FAILED, task.getLastError());
+                return Claim.failedAt(taskId);
             }
             return null;
         }
@@ -84,11 +90,11 @@ public class RefundTransitions {
         if (task.getRefundAmount() > payment.cancellableAmount()) {
             task.markFailed("환불액(" + task.getRefundAmount() + ")이 취소 가능 잔액(" + payment.cancellableAmount() + ")보다 큽니다.");
             appendHistory(task, FulfillmentEventType.REFUND_FAILED, task.getLastError());
-            return null;
+            return Claim.failedAt(taskId);
         }
         task.startExecution();
         return new Claim(taskId, task.getPaymentId(), task.getRefundAmount(), payment.cancellableAmount(),
-                reasonOf(task), false);
+                reasonOf(task), false, false);
     }
 
     /**

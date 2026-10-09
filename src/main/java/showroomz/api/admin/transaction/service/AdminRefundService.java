@@ -77,8 +77,9 @@ public class AdminRefundService {
 
     /** 탭 숫자 · 합계 · 소비자 대기 · 배지 — 폴링 대상이라 GROUP BY 한 번 + 실패 최고령 한 번. */
     @Transactional(readOnly = true)
-    public AdminTransactionDto.RefundSummary getSummary() {
+    public AdminTransactionDto.RefundSummary getSummary(Integer days) {
         LocalDateTime now = LocalDateTime.now();
+        int doneDays = doneDays(days);
         long[] pending = new long[2];
         long[] failed = new long[2];
         long[] done = new long[2];
@@ -86,7 +87,7 @@ public class AdminRefundService {
         for (RefundTaskOrigin origin : RefundTaskOrigin.values()) {
             byOrigin.put(origin.name(), 0L);
         }
-        for (Stat stat : refundTaskRepository.summarizeForAdmin(now.minusDays(DEFAULT_DONE_DAYS))) {
+        for (Stat stat : refundTaskRepository.summarizeForAdmin(now.minusDays(doneDays))) {
             switch (stat.status()) {
                 case PENDING, EXECUTING -> {
                     if (stat.origin() == RefundTaskOrigin.OPERATOR) {
@@ -108,7 +109,7 @@ public class AdminRefundService {
         Map<String, AdminTransactionDto.RefundTabStat> tabs = new LinkedHashMap<>();
         tabs.put(RefundTab.PENDING.name(), new AdminTransactionDto.RefundTabStat(pending[0], pending[1], null, null, null));
         tabs.put(RefundTab.FAILED.name(), new AdminTransactionDto.RefundTabStat(failed[0], failed[1], waitingDays, null, null));
-        tabs.put(RefundTab.DONE.name(), new AdminTransactionDto.RefundTabStat(done[0], done[1], null, DEFAULT_DONE_DAYS,
+        tabs.put(RefundTab.DONE.name(), new AdminTransactionDto.RefundTabStat(done[0], done[1], null, doneDays,
                 byOrigin));
         return new AdminTransactionDto.RefundSummary(tabs, pending[0] + failed[0]);
     }
@@ -176,8 +177,7 @@ public class AdminRefundService {
         };
         // 집행 대기는 운영자 사유만 — PG 자동 대기는 커밋 직후 집행돼 머물지 않는다(39 설계서 0-3).
         RefundTaskOrigin origin = tab == RefundTab.PENDING ? RefundTaskOrigin.OPERATOR : null;
-        LocalDateTime executedFrom = tab == RefundTab.DONE
-                ? now.minusDays(days == null ? DEFAULT_DONE_DAYS : Math.max(1, days)) : null;
+        LocalDateTime executedFrom = tab == RefundTab.DONE ? now.minusDays(doneDays(days)) : null;
         DateColumn column = switch (tab) {
             case PENDING -> DateColumn.CREATED;
             case FAILED -> DateColumn.MODIFIED;
@@ -189,6 +189,11 @@ public class AdminRefundService {
         return new AdminRefundSearchCondition(statuses, origin, executedFrom,
                 route == null ? null : route.getSources(), refundTaskId, prefixed ? null : text,
                 prefixed && refundTaskId == null, column, sort == AdminTransactionDto.RefundSort.AMOUNT_DESC);
+    }
+
+    /** 완료 탭 기간(일) — 목록과 요약이 같은 값을 써야 탭 숫자 = 목록 건수다. 기본 30 · 1 미만은 1. */
+    static int doneDays(Integer days) {
+        return days == null ? DEFAULT_DONE_DAYS : Math.max(1, days);
     }
 
     private static void add(long[] bucket, Stat stat) {

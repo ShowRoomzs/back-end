@@ -148,6 +148,11 @@ public class AdminOrderCommandService {
     @Transactional
     public AdminOrderDto.DetailResponse enqueueRefund(Long adminId, Long deliveryGroupId,
                                                       AdminOrderDto.OperatorRefundRequest request) {
+        if (request.reason().isClaimBound()) {
+            // 클레임을 닫는 사유는 서버가 금액을 계산하는 06b 경로로만 — 운영자 입력 금액으로 받지 않는다(41 보고 1번).
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                    "반려 이의 인용 · 검수 무응답 환불은 반품·교환 상세에서 편입합니다.");
+        }
         LocalDateTime now = LocalDateTime.now();
         OrderDeliveryGroup group = deliveryGroupRepository.findForUpdate(deliveryGroupId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_GROUP_NOT_FOUND));
@@ -155,6 +160,10 @@ public class AdminOrderCommandService {
         if (status == FulfillmentStatus.PENDING || status == FulfillmentStatus.NEW
                 || status == FulfillmentStatus.PREPARING || status == FulfillmentStatus.CANCELLED) {
             throw new BusinessException(ErrorCode.ORDER_STATE_CHANGED, "발송 전 주문은 직권 취소로 환불합니다.");
+        }
+        if (status == FulfillmentStatus.RETURNING) {
+            // 반송은 완료 감지 때 PG 자동 환불로 끝난다 — 운영자 편입이 끼면 같은 돈이 두 길로 나간다.
+            throw new BusinessException(ErrorCode.ORDER_STATE_CHANGED, "반송 중인 주문은 반송 완료 시 자동 환불됩니다.");
         }
         checkRefundable(group, request.amount());
         Long orderId = group.getOrder().getId();
