@@ -221,6 +221,48 @@ class AdminOrderIntegrationTest extends OrderFlowTestSupport {
         assertThat(row.get("actOnBehalfAvailable").asBoolean()).isEqualTo(expected);
     }
 
+    // ------------------------------------------------------------------ T8 조회 확장(37 설계서 8절 #1 · #2)
+
+    @Test
+    @DisplayName("[T8] 상세 조건 · 검색 대상 · 정렬 — 공구 · 인플루언서 · 결제수단 · 이상 유형 · PG 거래번호 · 금액순 · 이상 지속 오래된순")
+    void extendedSearchAndSort() throws Exception {
+        OrderDeliveryGroup cheap = shippingGroup("400060008001");
+        OrderDeliveryGroup pricey = preparing(paidGroupWithTwoItems());
+        Long groupBuyId = jdbc.queryForObject("SELECT group_buy_id FROM order_delivery_group WHERE delivery_group_id = ?",
+                Long.class, cheap.getId());
+
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?groupBuyId=" + groupBuyId))).hasSize(2);
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?groupBuyId=" + (groupBuyId + 999)))).isEmpty();
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?creatorId=" + creator.getId()))).hasSize(2);
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?creatorId=" + (creator.getId() + 999)))).isEmpty();
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?paymentMethod=CARD"))).hasSize(2);
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?paymentMethod=EASY_PAY"))).isEmpty();
+        adminGet(ADMIN_ORDERS + "/summary?paymentMethod=EASY_PAY").andExpect(jsonPath("$.tabCounts.ALL").value(0));
+
+        String paymentId = jdbc.queryForObject("SELECT o.paid_payment_id FROM orders o WHERE o.order_id = ?", String.class,
+                orderOf(cheap));
+        jdbc.update("UPDATE payment SET pg_tx_id = 'tosspay_t8' WHERE payment_id = ?", paymentId);
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?searchType=PG_TX_ID&keyword=tosspay_t8"))).containsExactly(orderOf(cheap));
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?searchType=PG_TX_ID&keyword=" + paymentId))).containsExactly(orderOf(cheap));
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?searchType=TRACKING_NUMBER&keyword=400060008001"))).containsExactly(orderOf(cheap));
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?searchType=RECIPIENT&keyword=400060008001"))).isEmpty();
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?searchType=BRAND&keyword=" + cheap.getMarketName()))).hasSize(2);
+
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?sort=AMOUNT_DESC"))).containsExactly(orderOf(pricey), orderOf(cheap));
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?sort=PAID_ASC"))).containsExactly(orderOf(cheap), orderOf(pricey));
+
+        OrderDeliveryGroup stalledOld = shippingGroup("400060008002");
+        OrderDeliveryGroup stalledNew = shippingGroup("400060008003");
+        jdbc.update("UPDATE order_delivery_group SET tracking_alert = 'STALLED', last_tracking_at = ? WHERE delivery_group_id = ?",
+                LocalDateTime.now().minusDays(10), stalledOld.getId());
+        jdbc.update("UPDATE order_delivery_group SET tracking_alert = 'PICKUP_UNCONFIRMED', last_tracking_at = ? WHERE delivery_group_id = ?",
+                LocalDateTime.now().minusDays(2), stalledNew.getId());
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?tab=DELIVERY_ISSUE&trackingAlert=STALLED")))
+                .containsExactly(orderOf(stalledOld));
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?tab=DELIVERY_ISSUE&sort=ISSUE_OLDEST")))
+                .containsExactly(orderOf(stalledOld), orderOf(stalledNew));
+    }
+
     // ------------------------------------------------------------------ 도우미
 
     /** 발송 기한을 어제로 소급하고 자동 알림 횟수를 맞춘다(시각 · 횟수만 — 상태는 건드리지 않는다). */

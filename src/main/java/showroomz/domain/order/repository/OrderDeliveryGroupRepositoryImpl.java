@@ -4,7 +4,9 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.DateTimeExpression;
 import com.querydsl.core.types.dsl.DateTimePath;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +20,10 @@ import showroomz.domain.order.entity.QOrderCancelRequest;
 import showroomz.domain.order.entity.QOrderDeliveryGroup;
 import showroomz.domain.order.entity.QOrderProduct;
 import showroomz.domain.order.type.CancelRequestStatus;
+import showroomz.domain.order.type.AdminOrderSearchType;
+import showroomz.domain.order.type.AdminOrderSort;
 import showroomz.domain.order.type.FulfillmentStatus;
+import showroomz.domain.payment.entity.QPayment;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -76,12 +81,27 @@ public class OrderDeliveryGroupRepositoryImpl implements OrderDeliveryGroupRepos
                 .from(g)
                 .join(g.order, o)
                 .where(where)
-                .groupBy(o.id, o.paidAt)
-                .orderBy(o.paidAt.desc(), o.id.desc())
+                .groupBy(o.id, o.paidAt, o.totalAmount)
+                .orderBy(adminOrder(condition, g, o))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
         return new PageImpl<>(ids, pageable, countOrdersForAdmin(condition));
+    }
+
+    /** 정렬(37 설계서 8절 #2) — 기본은 결제일시 최신순. 이상 지속은 주문 안 하위주문 중 가장 오래된 추적 · 반송 감지 시각. */
+    private static OrderSpecifier<?>[] adminOrder(AdminOrderSearchCondition condition, QOrderDeliveryGroup g, QOrder o) {
+        AdminOrderSort sort = condition.sort() == null ? AdminOrderSort.PAID_DESC : condition.sort();
+        return switch (sort) {
+            case PAID_DESC -> new OrderSpecifier<?>[]{o.paidAt.desc(), o.id.desc()};
+            case PAID_ASC -> new OrderSpecifier<?>[]{o.paidAt.asc(), o.id.asc()};
+            case AMOUNT_DESC -> new OrderSpecifier<?>[]{o.totalAmount.desc(), o.paidAt.desc(), o.id.desc()};
+            case ISSUE_OLDEST -> {
+                DateTimeExpression<LocalDateTime> issueAt = Expressions.dateTimeTemplate(LocalDateTime.class,
+                        "coalesce({0}, {1})", g.lastTrackingAt, g.returnDetectedAt);
+                yield new OrderSpecifier<?>[]{issueAt.min().asc().nullsLast(), o.paidAt.desc(), o.id.desc()};
+            }
+        };
     }
 
     @Override
@@ -98,6 +118,20 @@ public class OrderDeliveryGroupRepositoryImpl implements OrderDeliveryGroupRepos
         BooleanBuilder where = new BooleanBuilder().and(o.paidAt.isNotNull());
         if (condition.marketId() != null) {
             where.and(g.market.id.eq(condition.marketId()));
+        }
+        if (condition.groupBuyId() != null) {
+            where.and(g.groupBuy.id.eq(condition.groupBuyId()));
+        }
+        if (condition.creatorId() != null) {
+            where.and(g.groupBuy.creator.id.eq(condition.creatorId()));
+        }
+        if (condition.paymentMethod() != null) {
+            QPayment p = QPayment.payment;
+            where.and(JPAExpressions.selectOne().from(p)
+                    .where(p.paymentId.eq(o.paidPaymentId).and(p.method.eq(condition.paymentMethod()))).exists());
+        }
+        if (condition.trackingAlert() != null) {
+            where.and(g.trackingAlert.eq(condition.trackingAlert()));
         }
         if (condition.status() != null) {
             where.and(g.fulfillmentStatus.eq(condition.status()));
@@ -119,17 +153,36 @@ public class OrderDeliveryGroupRepositoryImpl implements OrderDeliveryGroupRepos
         }
         String keyword = condition.keyword() == null ? null : condition.keyword().trim();
         if (keyword != null && !keyword.isEmpty()) {
-            String digits = keyword.replaceAll("[^0-9]", "");
-            BooleanExpression match = o.orderNumber.contains(keyword)
-                    .or(g.subOrderNumber.contains(keyword))
-                    .or(o.recipientName.contains(keyword))
-                    .or(g.marketName.contains(keyword));
-            if (!digits.isEmpty()) {
-                match = match.or(g.trackingNumber.contains(digits));
-            }
-            where.and(match);
+            where.and(adminKeyword(condition.searchType(), keyword, g, o));
         }
         return where;
+    }
+
+    /** 검색 대상(37 설계서 8절 #1) — 전체는 OR 매치, 송장은 숫자만, PG 거래번호는 정확 일치. */
+    private static BooleanExpression adminKeyword(AdminOrderSearchType type, String keyword, QOrderDeliveryGroup g,
+                                                  QOrder o) {
+        String digits = keyword.replaceAll("[^0-9]", "");
+        AdminOrderSearchType resolved = type == null ? AdminOrderSearchType.ALL : type;
+        return switch (resolved) {
+            case ORDER_NUMBER -> o.orderNumber.contains(keyword);
+            case SUB_ORDER_NUMBER -> g.subOrderNumber.contains(keyword);
+            case RECIPIENT -> o.recipientName.contains(keyword);
+            case BRAND -> g.marketName.contains(keyword);
+            case TRACKING_NUMBER -> digits.isEmpty() ? Expressions.FALSE.isTrue() : g.trackingNumber.contains(digits);
+            case PG_TX_ID -> {
+                QPayment p = QPayment.payment;
+                yield JPAExpressions.selectOne().from(p)
+                        .where(p.paymentId.eq(o.paidPaymentId).and(p.pgTxId.eq(keyword).or(p.paymentId.eq(keyword))))
+                        .exists();
+            }
+            case ALL -> {
+                BooleanExpression match = o.orderNumber.contains(keyword)
+                        .or(g.subOrderNumber.contains(keyword))
+                        .or(o.recipientName.contains(keyword))
+                        .or(g.marketName.contains(keyword));
+                yield digits.isEmpty() ? match : match.or(g.trackingNumber.contains(digits));
+            }
+        };
     }
 
     private void applyPendingCancelFilter(BooleanBuilder where, SellerOrderSearchCondition condition,

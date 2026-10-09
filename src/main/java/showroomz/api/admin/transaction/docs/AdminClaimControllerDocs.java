@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import showroomz.api.admin.transaction.dto.AdminTransactionDto;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.domain.order.type.ClaimReason;
+import showroomz.domain.order.type.ClaimSort;
 import showroomz.domain.order.type.ClaimTab;
 import showroomz.domain.order.type.ClaimType;
 import showroomz.global.dto.PageResponse;
@@ -25,6 +26,8 @@ public interface AdminClaimControllerDocs {
                     파트너 11 과 **같은 탭 · 같은 건수 · 같은 행**(`claim`)에 어드민 전용 열 둘 — `brandName` · `feeBearer`(귀책 · 항목 단위)를 더한다.
                     반품·교환은 탭이 아니라 `types` 로 거른다. 조건은 파트너 목록과 같다(`tab` · `types` · `reason` · `from` · `to` · `keyword`).
                     `marketId` 를 주면 그 브랜드만.
+                    어드민 전용 조건 — `marketName`(브랜드명 부분 일치) · `consumerName`(소비자명 부분 일치) · `sort`(REQUESTED_DESC · ELAPSED_ASC — 없으면 탭 기본 정렬).
+                    전체 탭은 **검수 지연(입고 · 기한 경과)을 상단에 고정**한다(페이지를 넘어서도).
                     `disputeOpen` 이 참이면 보조줄 「소비자 이의 접수」(`disputedAt`) — 앱 「이의 제기」 문의가 답변 전인 반려 보류 건.
 
                     **권한:** ADMIN
@@ -33,7 +36,9 @@ public interface AdminClaimControllerDocs {
     ResponseEntity<PageResponse<AdminTransactionDto.ClaimListItem>> getClaims(Long marketId, ClaimTab tab,
                                                                               Set<ClaimType> types, ClaimReason reason,
                                                                               LocalDate from, LocalDate to,
-                                                                              String keyword, PagingRequest pagingRequest);
+                                                                              String keyword, String marketName,
+                                                                              String consumerName, ClaimSort sort,
+                                                                              PagingRequest pagingRequest);
 
     @Operation(summary = "반품·교환 요약", description = "파트너 11 과 같은 KPI · 탭 · 유형 건수 — 전 브랜드(또는 `marketId`).\n\n"
             + "`disputeCount` — 반려 이의 미처리(반려 보류 중 · 이의 문의 답변 전). 인용하면 반려 보류를 벗어나고, 기각은 문의 답변으로 빠진다.\n\n**권한:** ADMIN")

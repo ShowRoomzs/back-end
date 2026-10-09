@@ -2,6 +2,7 @@ package showroomz.domain.order.repository;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -13,6 +14,9 @@ import showroomz.domain.order.entity.QOrderClaim;
 import showroomz.domain.order.entity.QOrderClaimCollection;
 import showroomz.domain.order.entity.QOrderDeliveryGroup;
 import showroomz.domain.order.entity.QOrderProduct;
+import showroomz.domain.order.type.ClaimStatus;
+
+import java.util.ArrayList;
 
 import java.util.List;
 
@@ -52,6 +56,12 @@ public class OrderClaimRepositoryImpl implements OrderClaimRepositoryCustom {
         if (condition.orderNumber() != null) {
             where.and(o.orderNumber.eq(condition.orderNumber()));
         }
+        if (condition.marketName() != null && !condition.marketName().isBlank()) {
+            where.and(g.marketName.contains(condition.marketName().trim()));
+        }
+        if (condition.consumerName() != null && !condition.consumerName().isBlank()) {
+            where.and(o.recipientName.contains(condition.consumerName().trim()));
+        }
 
         List<OrderClaim> content = queryFactory.selectFrom(c)
                 .join(c.collection, k).fetchJoin()
@@ -59,7 +69,7 @@ public class OrderClaimRepositoryImpl implements OrderClaimRepositoryCustom {
                 .join(g.order, o).fetchJoin()
                 .join(c.orderProduct, p).fetchJoin()
                 .where(where)
-                .orderBy(primaryOrder(condition, c, k), k.id.asc(), c.id.asc())
+                .orderBy(orderSpecifiers(condition, c, k))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -68,6 +78,28 @@ public class OrderClaimRepositoryImpl implements OrderClaimRepositoryCustom {
                 .join(c.deliveryGroup, g).join(g.order, o)
                 .where(where).fetchOne();
         return new PageImpl<>(content, pageable, total == null ? 0L : total);
+    }
+
+    /** 검수 지연 상단 고정(선택) → 정렬 셀렉트 또는 탭 기본 정렬 → 같은 묶음 인접(요청 id · 클레임 id). */
+    private OrderSpecifier<?>[] orderSpecifiers(SellerClaimSearchCondition condition, QOrderClaim c,
+                                                QOrderClaimCollection k) {
+        List<OrderSpecifier<?>> specifiers = new ArrayList<>();
+        if (condition.overdueFirst()) {
+            specifiers.add(new CaseBuilder()
+                    .when(c.status.eq(ClaimStatus.RECEIVED).and(c.inspectDueAt.lt(condition.now()))).then(0)
+                    .otherwise(1).asc());
+        }
+        if (condition.sort() == null) {
+            specifiers.add(primaryOrder(condition, c, k));
+        } else {
+            specifiers.add(switch (condition.sort()) {
+                case REQUESTED_DESC -> c.requestedAt.desc();
+                case ELAPSED_ASC -> c.stageEnteredAt.asc();
+            });
+        }
+        specifiers.add(k.id.asc());
+        specifiers.add(c.id.asc());
+        return specifiers.toArray(new OrderSpecifier<?>[0]);
     }
 
     /** 탭의 기본 정렬 — 작업 탭은 오래된 것부터, 조회 탭은 최신부터. */

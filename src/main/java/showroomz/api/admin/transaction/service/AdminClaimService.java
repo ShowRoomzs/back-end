@@ -19,6 +19,7 @@ import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.service.OrderClaimService;
 import showroomz.domain.order.type.ClaimFeeBearer;
 import showroomz.domain.order.type.ClaimReason;
+import showroomz.domain.order.type.ClaimSort;
 import showroomz.domain.order.type.ClaimStatus;
 import showroomz.domain.order.type.ClaimTab;
 import showroomz.domain.order.type.ClaimType;
@@ -55,9 +56,11 @@ public class AdminClaimService {
     @Transactional(readOnly = true)
     public PageResponse<AdminTransactionDto.ClaimListItem> getClaims(Long marketId, ClaimTab tab, Set<ClaimType> types,
                                                                      ClaimReason reason, LocalDate from, LocalDate to,
-                                                                     String keyword, PagingRequest paging) {
+                                                                     String keyword, String marketName,
+                                                                     String consumerName, ClaimSort sort,
+                                                                     PagingRequest paging) {
         PageResponse<SellerClaimListItem> page = claimQueryService.searchClaims(marketId, tab, types, reason, from, to,
-                keyword, paging);
+                keyword, marketName, consumerName, sort, paging);
         Map<Long, OrderClaim> claims = claimRepository.findAllById(page.getContent().stream()
                         .map(SellerClaimListItem::claimId).toList()).stream()
                 .collect(Collectors.toMap(OrderClaim::getId, Function.identity()));

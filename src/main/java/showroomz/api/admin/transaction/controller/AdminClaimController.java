@@ -18,6 +18,7 @@ import showroomz.api.admin.transaction.dto.AdminTransactionDto;
 import showroomz.api.admin.transaction.service.AdminClaimService;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.domain.order.type.ClaimReason;
+import showroomz.domain.order.type.ClaimSort;
 import showroomz.domain.order.type.ClaimTab;
 import showroomz.domain.order.type.ClaimType;
 import showroomz.global.dto.PageResponse;
@@ -43,8 +44,12 @@ public class AdminClaimController implements AdminClaimControllerDocs {
             @RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "marketName", required = false) String marketName,
+            @RequestParam(value = "consumerName", required = false) String consumerName,
+            @RequestParam(value = "sort", required = false) ClaimSort sort,
             @ModelAttribute PagingRequest pagingRequest) {
-        return ResponseEntity.ok(claimService.getClaims(marketId, tab, types, reason, from, to, keyword, pagingRequest));
+        return ResponseEntity.ok(claimService.getClaims(marketId, tab, types, reason, from, to, keyword, marketName,
+                consumerName, sort, pagingRequest));
     }
 
     @Override

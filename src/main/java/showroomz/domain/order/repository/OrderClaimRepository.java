@@ -70,6 +70,12 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
             + "GROUP BY c.deliveryGroup.id")
     List<Object[]> countOpenByDeliveryGroupIds(@Param("deliveryGroupIds") Collection<Long> deliveryGroupIds);
 
+    /** 어드민 주문 상세 — 하위주문들의 진행 중 클레임(종결 · 결제 대기 제외). 06b 상세 링크용(37 설계서 8절 #5). */
+    @Query("SELECT c FROM OrderClaim c JOIN FETCH c.deliveryGroup g WHERE g.id IN :deliveryGroupIds "
+            + "AND c.status NOT IN (" + COMPLETED + ", showroomz.domain.order.type.ClaimStatus.PAYMENT_PENDING) "
+            + "ORDER BY c.id ASC")
+    List<OrderClaim> findOpenByDeliveryGroupIds(@Param("deliveryGroupIds") Collection<Long> deliveryGroupIds);
+
     /** 진행 중 — 종결 전 전부(거절 보류·거절 반송 포함). */
     @Query("SELECT COUNT(c) > 0 FROM OrderClaim c WHERE c.deliveryGroup.id = :deliveryGroupId "
             + "AND c.status <> " + COMPLETED)

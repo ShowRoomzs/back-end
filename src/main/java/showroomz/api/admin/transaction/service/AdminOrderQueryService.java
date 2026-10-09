@@ -14,9 +14,12 @@ import showroomz.domain.order.entity.OrderCancelRequest;
 import showroomz.domain.order.entity.OrderCancelRequestItem;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.entity.OrderProduct;
+import showroomz.domain.order.entity.OrderClaim;
 import showroomz.domain.order.entity.OrderRefundTask;
+import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
 import showroomz.domain.order.repository.AdminOrderSearchCondition;
 import showroomz.domain.order.repository.OrderCancelRequestRepository;
+import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.domain.order.repository.OrderFulfillmentHistoryRepository;
 import showroomz.domain.order.repository.OrderProductRepository;
@@ -56,6 +59,8 @@ public class AdminOrderQueryService {
     private final OrderRefundTaskRepository refundTaskRepository;
     private final OrderFulfillmentHistoryRepository historyRepository;
     private final PaymentRepository paymentRepository;
+    private final OrderClaimRepository claimRepository;
+    private final OneToOneInquiryRepository inquiryRepository;
     private final OrderProperties orderProperties;
     private final ActOnBehalfPolicy actOnBehalfPolicy;
 
@@ -91,9 +96,7 @@ public class AdminOrderQueryService {
     public AdminOrderDto.SummaryResponse getSummary(AdminOrderDto.SearchParams params, LocalDate from, LocalDate to) {
         Map<String, Long> counts = new LinkedHashMap<>();
         for (AdminOrderTab tab : AdminOrderTab.values()) {
-            AdminOrderDto.SearchParams byTab = new AdminOrderDto.SearchParams(tab, null, params.marketId(),
-                    params.keyword());
-            counts.put(tab.name(), deliveryGroupRepository.countOrdersForAdmin(condition(byTab, from, to)));
+            counts.put(tab.name(), deliveryGroupRepository.countOrdersForAdmin(condition(params.forTab(tab), from, to)));
         }
         return new AdminOrderDto.SummaryResponse(counts);
     }
@@ -112,6 +115,9 @@ public class AdminOrderQueryService {
                         groups.stream().map(OrderDeliveryGroup::getId).toList()).stream()
                 .collect(Collectors.toMap(request -> request.getDeliveryGroup().getId(), request -> request,
                         (a, b) -> a));
+        Map<Long, List<OrderClaim>> activeClaims = groups.isEmpty() ? Map.of()
+                : claimRepository.findOpenByDeliveryGroupIds(groups.stream().map(OrderDeliveryGroup::getId).toList())
+                .stream().collect(Collectors.groupingBy(claim -> claim.getDeliveryGroup().getId()));
         Users user = order.getUser();
         AdminOrderDto.Payment payment = order.getPaidPaymentId() == null ? null
                 : paymentRepository.findById(order.getPaidPaymentId()).map(p -> new AdminOrderDto.Payment(
@@ -125,8 +131,9 @@ public class AdminOrderQueryService {
                 new AdminOrderDto.Recipient(order.getRecipientName(), order.getRecipientPhone(), order.getZipCode(),
                         order.getAddress(), order.getDetailAddress(), order.getDeliveryMemo()),
                 payment,
+                inquiryRepository.countByOrderId(orderId),
                 groups.stream().map(group -> detail(group, itemsByGroup.getOrDefault(group.getId(), List.of()),
-                        pending.get(group.getId()), now)).toList());
+                        pending.get(group.getId()), activeClaims.getOrDefault(group.getId(), List.of()), now)).toList());
     }
 
     // ------------------------------------------------------------------ 조립
@@ -140,7 +147,8 @@ public class AdminOrderQueryService {
     }
 
     private AdminOrderDto.GroupDetail detail(OrderDeliveryGroup group, List<OrderProduct> items,
-                                             OrderCancelRequest pendingRequest, LocalDateTime now) {
+                                             OrderCancelRequest pendingRequest, List<OrderClaim> activeClaims,
+                                             LocalDateTime now) {
         FulfillmentStatus status = group.getFulfillmentStatus();
         int confirmDays = orderProperties.getPurchaseConfirmDays();
         boolean paused = group.getConfirmPausedAt() != null;
@@ -178,6 +186,8 @@ public class AdminOrderQueryService {
                 refunds.stream().map(task -> new AdminOrderDto.Refund(task.getId(), task.refundNo(), task.getSource(), task.getOrigin(),
                         task.getOrigin().getLabel(), task.getRefundAmount(), task.getStatus(), task.getLastError(),
                         task.getExecutedAt(), task.getCreatedAt())).toList(),
+                activeClaims.stream().map(claim -> new AdminOrderDto.ActiveClaim(claim.getId(), claim.claimNumber(),
+                        claim.getType(), claim.getStatus(), claim.getStatus().getLabel())).toList(),
                 historyRepository.findByDeliveryGroupId(group.getId()).stream()
                         .map(h -> new AdminOrderDto.History(h.getEventType().name(), h.getEventType().getLabel(),
                                 h.getActorType().name(), h.getDetail(), h.getOccurredAt())).toList(),
@@ -210,7 +220,8 @@ public class AdminOrderQueryService {
     private static AdminOrderSearchCondition condition(AdminOrderDto.SearchParams params, LocalDate from,
                                                        LocalDate to) {
         return new AdminOrderSearchCondition(params.tab() == null ? AdminOrderTab.ALL : params.tab(), params.status(),
-                params.marketId(), params.keyword(), from == null ? null : from.atStartOfDay(),
-                to == null ? null : to.atTime(23, 59, 59));
+                params.marketId(), params.groupBuyId(), params.creatorId(), params.paymentMethod(),
+                params.trackingAlert(), params.searchType(), params.keyword(), params.sort(),
+                from == null ? null : from.atStartOfDay(), to == null ? null : to.atTime(23, 59, 59));
     }
 }

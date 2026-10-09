@@ -6,7 +6,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import showroomz.domain.order.type.AdminOrderSearchType;
+import showroomz.domain.order.type.AdminOrderSort;
 import showroomz.domain.order.type.AdminOrderTab;
+import showroomz.domain.order.type.ClaimStatus;
+import showroomz.domain.order.type.ClaimType;
 import showroomz.domain.order.type.ClaimReason;
 import showroomz.domain.order.type.DeliveryCarrier;
 import showroomz.domain.order.type.FulfillmentStatus;
@@ -17,6 +21,7 @@ import showroomz.domain.order.type.RefundTaskSource;
 import showroomz.domain.order.type.RefundTaskStatus;
 import showroomz.domain.order.type.SellerCancelReason;
 import showroomz.domain.order.type.TrackingAlert;
+import showroomz.domain.payment.type.PaymentMethod;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -66,7 +71,20 @@ public final class AdminOrderDto {
     ) {
     }
 
-    public record SearchParams(AdminOrderTab tab, FulfillmentStatus status, Long marketId, String keyword) {
+    /** 목록 · 요약 조건(37 설계서 2-1 · 8절 #1 · #2). 요약은 탭 · 상태 · 정렬을 무시한다. */
+    public record SearchParams(AdminOrderTab tab, FulfillmentStatus status, Long marketId, Long groupBuyId,
+                               Long creatorId, PaymentMethod paymentMethod, TrackingAlert trackingAlert,
+                               AdminOrderSearchType searchType, String keyword, AdminOrderSort sort) {
+
+        public SearchParams(AdminOrderTab tab, FulfillmentStatus status, Long marketId, String keyword) {
+            this(tab, status, marketId, null, null, null, null, null, keyword, null);
+        }
+
+        /** 요약용 — 탭만 바꾼 같은 조건(상태 · 정렬은 뺀다). */
+        public SearchParams forTab(AdminOrderTab tab) {
+            return new SearchParams(tab, null, marketId, groupBuyId, creatorId, paymentMethod, trackingAlert,
+                    searchType, keyword, null);
+        }
     }
 
     // ------------------------------------------------------------------ 상세
@@ -80,6 +98,7 @@ public final class AdminOrderDto {
             Consumer consumer,
             Recipient recipient,
             @Schema(nullable = true) Payment payment,
+            @Schema(description = "모달 헤더 「문의 N건」 — 이 주문을 가리키는 1:1 문의 수(37 설계서 8절 #11)", example = "1") long inquiryCount,
             List<GroupDetail> groups
     ) {
     }
@@ -91,6 +110,11 @@ public final class AdminOrderDto {
     @Schema(name = "AdminOrderRecipient")
     public record Recipient(String name, String phone, String zipCode, String address, String detailAddress,
                             @Schema(nullable = true) String memo) {
+    }
+
+    @Schema(name = "AdminOrderActiveClaim", description = "진행 중 반품·교환 — 06b 상세(`GET /v1/admin/claims/{claimId}`)로 간다")
+    public record ActiveClaim(Long claimId, @Schema(example = "CLM-3015") String claimNumber, ClaimType type,
+                              ClaimStatus status, @Schema(example = "재발송 대기") String statusLabel) {
     }
 
     @Schema(name = "AdminOrderPayment")
@@ -120,6 +144,7 @@ public final class AdminOrderDto {
             @Schema(description = "검토 중 취소 요청(B7) — 응답 마감 · 자동 승인 예정", nullable = true) CancelRequest cancelRequest,
             List<Item> items,
             @Schema(description = "환불 — 이 하위주문의 환불 큐 전부(출처 · 상태)") List<Refund> refunds,
+            @Schema(description = "진행 중 클레임(B8 교환 진행 중 등) — 06b 상세 링크용. 종결 · 결제 대기는 없다") List<ActiveClaim> activeClaims,
             @Schema(description = "처리 이력 — 오래된순. 준비 시작 사유(발주서 다운로드 / 개별 / 일괄) · 자동 알림 · 운영자 조치가 남는다")
             List<History> history,
             Actions actions

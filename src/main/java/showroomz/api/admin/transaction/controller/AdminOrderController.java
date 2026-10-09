@@ -19,7 +19,11 @@ import showroomz.api.admin.transaction.dto.AdminOrderDto;
 import showroomz.api.admin.transaction.service.AdminOrderCommandService;
 import showroomz.api.admin.transaction.service.AdminOrderQueryService;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.domain.order.type.AdminOrderSearchType;
+import showroomz.domain.order.type.AdminOrderSort;
 import showroomz.domain.order.type.AdminOrderTab;
+import showroomz.domain.order.type.TrackingAlert;
+import showroomz.domain.payment.type.PaymentMethod;
 import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
@@ -42,22 +46,33 @@ public class AdminOrderController implements AdminOrderControllerDocs {
             @RequestParam(value = "tab", required = false) AdminOrderTab tab,
             @RequestParam(value = "status", required = false) FulfillmentStatus status,
             @RequestParam(value = "marketId", required = false) Long marketId,
+            @RequestParam(value = "groupBuyId", required = false) Long groupBuyId,
+            @RequestParam(value = "creatorId", required = false) Long creatorId,
+            @RequestParam(value = "paymentMethod", required = false) PaymentMethod paymentMethod,
+            @RequestParam(value = "trackingAlert", required = false) TrackingAlert trackingAlert,
+            @RequestParam(value = "searchType", required = false) AdminOrderSearchType searchType,
             @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "sort", required = false) AdminOrderSort sort,
             @RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @ModelAttribute PagingRequest pagingRequest) {
-        return ResponseEntity.ok(queryService.getOrders(new AdminOrderDto.SearchParams(tab, status, marketId, keyword),
-                from, to, pagingRequest));
+        return ResponseEntity.ok(queryService.getOrders(new AdminOrderDto.SearchParams(tab, status, marketId, groupBuyId,
+                creatorId, paymentMethod, trackingAlert, searchType, keyword, sort), from, to, pagingRequest));
     }
 
     @Override
     @GetMapping("/summary")
     public ResponseEntity<AdminOrderDto.SummaryResponse> getSummary(
             @RequestParam(value = "marketId", required = false) Long marketId,
+            @RequestParam(value = "groupBuyId", required = false) Long groupBuyId,
+            @RequestParam(value = "creatorId", required = false) Long creatorId,
+            @RequestParam(value = "paymentMethod", required = false) PaymentMethod paymentMethod,
+            @RequestParam(value = "searchType", required = false) AdminOrderSearchType searchType,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return ResponseEntity.ok(queryService.getSummary(new AdminOrderDto.SearchParams(null, null, marketId, keyword),
+        return ResponseEntity.ok(queryService.getSummary(new AdminOrderDto.SearchParams(null, null, marketId, groupBuyId,
+                creatorId, paymentMethod, null, searchType, keyword, null),
                 from, to));
     }
 

@@ -8,7 +8,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import showroomz.api.admin.transaction.dto.AdminOrderDto;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.domain.order.type.AdminOrderSearchType;
+import showroomz.domain.order.type.AdminOrderSort;
 import showroomz.domain.order.type.AdminOrderTab;
+import showroomz.domain.order.type.TrackingAlert;
+import showroomz.domain.payment.type.PaymentMethod;
 import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
@@ -24,8 +28,11 @@ public interface AdminOrderControllerDocs {
 
                     - `tab` — `ALL`(전체 · 기본) · `DELIVERY_ISSUE`(배송 이상 — 집화 확인 필요 · 추적 정지 · 반송 중. 반송 완료가 감지된 건은 빠진다) · `CANCEL`(취소 · 검토 중 취소 요청)
                     - `status` — 상태 셀렉트(NEW · PREPARING · SHIPPING · RETURNING · DELIVERED · CONFIRMED · CANCELLED). 하위주문 하나라도 맞으면 나온다
-                    - `marketId` — 브랜드 상세의 「이 브랜드 진행 주문 보기」
-                    - `keyword` — 주문번호 · 하위주문번호 · 수취인 · 브랜드명 · 송장번호
+                    - `marketId` — 브랜드 상세의 「이 브랜드 진행 주문 보기」 · `groupBuyId` · `creatorId`(공구를 연 인플루언서) · `paymentMethod`(CARD · EASY_PAY) — 상세 조건
+                    - `trackingAlert` — 배송 이상 탭의 「이상 유형」(PICKUP_UNCONFIRMED · STALLED)
+                    - `searchType` — 검색 대상(ALL 기본 · ORDER_NUMBER · SUB_ORDER_NUMBER · RECIPIENT · BRAND · TRACKING_NUMBER · PG_TX_ID). 전체는 OR 매치, 송장은 숫자만, PG 거래번호는 정확 일치
+                    - `keyword` — 검색어
+                    - `sort` — PAID_DESC(기본) · PAID_ASC · AMOUNT_DESC · ISSUE_OLDEST(이상 지속 오래된순 — 마지막 추적 · 반송 감지 시각)
                     - `from` · `to` — 결제일 기준
                     - 행의 `attentionCount` — 배송 이상 · 발송 기한 경과 · 검토 중 취소 요청이 걸린 하위주문 수
 
@@ -33,12 +40,16 @@ public interface AdminOrderControllerDocs {
                     """)
     @ApiResponses(@ApiResponse(responseCode = "200", description = "조회 성공"))
     ResponseEntity<PageResponse<AdminOrderDto.ListItem>> getOrders(AdminOrderTab tab, FulfillmentStatus status,
-                                                                   Long marketId, String keyword,
-                                                                   LocalDate from, LocalDate to,
+                                                                   Long marketId, Long groupBuyId, Long creatorId,
+                                                                   PaymentMethod paymentMethod, TrackingAlert trackingAlert,
+                                                                   AdminOrderSearchType searchType, String keyword,
+                                                                   AdminOrderSort sort, LocalDate from, LocalDate to,
                                                                    PagingRequest pagingRequest);
 
-    @Operation(summary = "주문 탭 건수", description = "같은 브랜드 · 기간 · 검색 조건에서 탭별 주문 수. 상태 셀렉트는 무시한다.\n\n**권한:** ADMIN")
-    ResponseEntity<AdminOrderDto.SummaryResponse> getSummary(Long marketId, String keyword, LocalDate from, LocalDate to);
+    @Operation(summary = "주문 탭 건수", description = "같은 브랜드 · 공구 · 인플루언서 · 결제수단 · 기간 · 검색 조건에서 탭별 주문 수. 상태 셀렉트 · 정렬은 무시한다.\n\n**권한:** ADMIN")
+    ResponseEntity<AdminOrderDto.SummaryResponse> getSummary(Long marketId, Long groupBuyId, Long creatorId,
+                                                             PaymentMethod paymentMethod, AdminOrderSearchType searchType,
+                                                             String keyword, LocalDate from, LocalDate to);
 
     @Operation(summary = "주문 상세 (06a B1 ~ B8)",
             description = """
@@ -50,6 +61,8 @@ public interface AdminOrderControllerDocs {
                     - `refunds[]` — 출처(`PG_AUTO` · `OPERATOR`)와 상태(`PENDING` · `EXECUTING` · `DONE` · `FAILED`)
                     - `history[]` — 준비 시작 사유(발주서 다운로드 · 개별 · 일괄) · 자동 승인 · 대행 · 정정이 남는다
                     - `actions` — 우 레일 조치 버튼(B3 정정 · B4 대행 송장 · 대행 직권 취소 · B5 사유 환불 편입 · B6 하자 반품 열기)
+                    - `inquiryCount` — 모달 헤더 「문의 N건」(이 주문을 가리키는 1:1 문의)
+                    - `groups[].activeClaims[]` — 진행 중 반품·교환(B8) · 06b 상세 링크
 
                     **권한:** ADMIN
                     """)

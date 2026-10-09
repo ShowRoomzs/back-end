@@ -144,6 +144,58 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
         adminGet(ADMIN_CLAIMS + "/" + draftId).andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("[AC-13] 어드민 전용 검색 · 정렬 — 브랜드명 · 소비자명 · 정렬 셀렉트 · 전체 탭 검수 지연 상단 고정")
+    void adminSearchAndSort() throws Exception {
+        Long older = returnClaim(deliveredGroup(creamVariant, 1));
+        Long newer = returnClaim(deliveredGroup(creamVariant, 1));
+        Long overdue = received(returnClaim(deliveredGroup(creamVariant, 1)));
+        jdbc.update("UPDATE order_claim SET inspect_due_at = ? WHERE claim_id = ?", LocalDateTime.now().minusDays(3), overdue);
+        jdbc.update("UPDATE order_claim SET requested_at = ?, stage_entered_at = ? WHERE claim_id = ?",
+                LocalDateTime.now().minusDays(5), LocalDateTime.now().minusDays(5), older);
+        Long other = otherBrandReshipReadyClaim();
+        String myBrand = jdbc.queryForObject("SELECT market_name FROM order_delivery_group WHERE delivery_group_id = "
+                + "(SELECT delivery_group_id FROM order_claim WHERE claim_id = ?)", String.class, older);
+        String recipient = jdbc.queryForObject("SELECT recipient_name FROM orders WHERE order_id = "
+                + "(SELECT order_id FROM order_claim WHERE claim_id = ?)", String.class, older);
+
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?marketName=" + myBrand))).containsExactlyInAnyOrder(older, newer, overdue);
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?marketName=타브랜드"))).containsExactly(other);
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?consumerName=" + recipient))).contains(older, newer, overdue);
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?consumerName=없는이름"))).isEmpty();
+
+        // 전체 탭 — 검수 지연이 맨 위, 그 뒤는 신청 최신순(탭 기본).
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?marketName=" + myBrand))).startsWith(overdue);
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?marketName=" + myBrand + "&sort=ELAPSED_ASC"))).startsWith(overdue, older);
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?tab=COLLECTING&marketName=" + myBrand + "&sort=REQUESTED_DESC")))
+                .containsExactly(newer, older);
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?tab=COLLECTING&marketName=" + myBrand + "&sort=ELAPSED_ASC")))
+                .containsExactly(older, newer);
+    }
+
+    @Test
+    @DisplayName("[AC-14] 06a 주문 상세 — 진행 중 클레임 링크 · 1:1 문의 건수")
+    void orderDetailLinksClaimAndInquiries() throws Exception {
+        OrderDeliveryGroup group = deliveredGroup(creamVariant, 1);
+        Long claimId = returnClaim(group);
+        Long orderId = jdbc.queryForObject("SELECT order_id FROM order_claim WHERE claim_id = ?", Long.class, claimId);
+        java.util.Map<String, Object> inquiry = new java.util.HashMap<>();
+        inquiry.put("type", "DELIVERY");
+        inquiry.put("content", "배송이 늦어요.");
+        inquiry.put("imageUrls", java.util.List.of());
+        inquiry.put("orderId", orderId);
+        userPost("/v1/user/inquiries", inquiry).andExpect(status().isCreated());
+
+        adminGet("/v1/admin/orders/" + orderId).andExpect(status().isOk())
+                .andExpect(jsonPath("$.inquiryCount").value(1))
+                .andExpect(jsonPath("$.groups[0].activeClaims[0].claimId").value(claimId))
+                .andExpect(jsonPath("$.groups[0].activeClaims[0].claimNumber").value("CLM-" + claimId))
+                .andExpect(jsonPath("$.groups[0].activeClaims[0].status").value("COLLECTING"));
+
+        sellerPost(SELLER_CLAIMS + "/" + received(claimId) + "/inspection/pass", Map.of()).andExpect(status().isOk());
+        adminGet("/v1/admin/orders/" + orderId).andExpect(jsonPath("$.groups[0].activeClaims").isEmpty());
+    }
+
     // ------------------------------------------------------------------ 인용
 
     @Test
