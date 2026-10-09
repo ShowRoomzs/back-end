@@ -34,6 +34,7 @@ public class AdminOrderExceptionAssembler {
     private final ActOnBehalfPolicy actOnBehalfPolicy;
     private final OrderProperties orderProperties;
     private final DeliveryTrackerProperties trackerProperties;
+    private final StalledPolicy stalledPolicy;
 
     /**
      * 원천 한 건 — 하위주문 또는 클레임. 조회 · 건수는 이 값으로 하고 문장은 목록에서만 만든다(요약은 문장을 건너뛴다).
@@ -106,14 +107,16 @@ public class AdminOrderExceptionAssembler {
         };
         String handlerLabel = switch (kind) {
             case PICKUP_UNCONFIRMED -> "브랜드 확인 · 시스템 알림";
-            case TRACKING_STALLED -> "소비자·브랜드가 택배사 조회";
+            case TRACKING_STALLED -> row.actOnBehalf()
+                    ? "소비자·브랜드가 택배사 조회 · " + stalledPolicy.days() + "일 경과 — 운영자 판정(분실 · 배송완료) 주문 상세"
+                    : "소비자·브랜드가 택배사 조회";
             case RETURNING -> "완료 감지 시 PG 자동 환불";
             default -> "소비자가 회수 송장을 확인 · 수정";
         };
         return new AdminOrderExceptionDto.ExceptionItem(kind.tab(), kind, kind.getLabel(), row.targetNumber(),
                 group.getSubOrderNumber(), group.getOrder().getId(), group.getId(), claim == null ? null : claim.getId(),
                 group.getMarketId(), group.getMarketName(), null, null, row.basisAt(), basisLabel, elapsedHours, null,
-                elapsedLabel, true, null, null, null, false, null, null, invoice, handlerLabel, link);
+                elapsedLabel, true, null, null, null, row.actOnBehalf(), null, null, invoice, handlerLabel, link);
     }
 
     /** 기한 보조 문장 — 기한의 출처(40 설계서 1-1). */
@@ -139,7 +142,7 @@ public class AdminOrderExceptionAssembler {
         if (noticeCount != null && noticeCount >= threshold) {
             return kind == ExceptionKind.SHIP_OVERDUE
                     ? "자동 알림 " + threshold + "회 무응답 · 대행 가능"
-                    : "자동 알림 " + threshold + "회 무응답 · 대행 범위 미정";
+                    : "자동 알림 " + threshold + "회 무응답 · 운영자 환불 가능";
         }
         int next = (noticeCount == null ? 0 : noticeCount) + 1;
         return "자동 알림 대기 · " + next + "회차" + (nextNoticeAt == null ? "" : " " + nextNoticeAt.format(MONTH_DAY));
@@ -153,7 +156,7 @@ public class AdminOrderExceptionAssembler {
             return null;
         }
         return kind == ExceptionKind.SHIP_OVERDUE ? "송장 대행 · 직권 취소 — 주문 상세"
-                : "운영자는 검수를 대신하지 않습니다 — 대표 확정 대기";
+                : "운영자 사유 환불 편입 — 클레임 상세(검수는 대신하지 않는다)";
     }
 
     /**

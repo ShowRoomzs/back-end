@@ -263,6 +263,75 @@ class AdminOrderIntegrationTest extends OrderFlowTestSupport {
                 .containsExactly(orderOf(stalledOld), orderOf(stalledNew));
     }
 
+    // ------------------------------------------------------------------ T9 추적 정지 종결(41 보고 3번 · 권고 3)
+
+    @Test
+    @DisplayName("[T9] 추적 정지 종결 — 27일은 조건 미충족 · 28일이면 분실(취소 · 재고 그대로 · PG 자동 환불) 또는 배송완료(출처 · 타이머) · 06d 표시")
+    void resolveStalled() throws Exception {
+        OrderDeliveryGroup lost = shippingGroup("400060009001");
+        Long variantId = itemsOf(lost).get(0).getVariantId();
+        int stockBefore = stock(variantId);
+        stalled(lost, 27);
+        adminGet(ADMIN_ORDERS + "/" + orderOf(lost)).andExpect(jsonPath("$.groups[0].actions.canMarkLost").value(false))
+                .andExpect(jsonPath("$.groups[0].actions.canMarkDelivered").value(false));
+        adminPost(ADMIN_ORDERS + "/groups/" + lost.getId() + "/lost", Map.of("reason", "택배사 분실 확인"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("ORDER_STATE_CHANGED"));
+
+        stalled(lost, 29);
+        adminGet(ADMIN_ORDERS + "/" + orderOf(lost)).andExpect(jsonPath("$.groups[0].actions.canMarkLost").value(true))
+                .andExpect(jsonPath("$.groups[0].actions.canMarkDelivered").value(true));
+        adminPost(ADMIN_ORDERS + "/groups/" + lost.getId() + "/lost", Map.of("reason", "택배사 분실 확인"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.groups[0].status").value("CANCELLED"))
+                .andExpect(jsonPath("$.groups[0].refunds[0].source").value("LOST_IN_TRANSIT"))
+                .andExpect(jsonPath("$.groups[0].refunds[0].origin").value("PG_AUTO"));
+        assertThat(refundTasks(lost)).singleElement().satisfies(task -> {
+            assertThat(task.source()).isEqualTo("LOST_IN_TRANSIT");
+            assertThat(task.amount()).isEqualTo(CREAM_PRICE + DELIVERY_FEE);
+            assertThat(task.status()).isEqualTo("DONE");
+        });
+        assertThat(stock(variantId)).isEqualTo(stockBefore);
+        assertThat(groupRow(lost)).containsEntry("cancel_type", "LOST").containsEntry("status_at_cancel", "SHIPPING");
+        assertThat(jdbc.queryForMap("SELECT status, cancel_type FROM order_product WHERE delivery_group_id = ?", lost.getId()))
+                .containsEntry("status", "CANCELLED").containsEntry("cancel_type", "LOST");
+        assertThat(fulfillmentEvents(lost)).contains("LOST_RESOLVED");
+        adminPost(ADMIN_ORDERS + "/groups/" + lost.getId() + "/lost", Map.of("reason", "다시")).andExpect(status().isConflict());
+
+        OrderDeliveryGroup arrived = shippingGroup("400060009002");
+        stalled(arrived, 29);
+        adminPost(ADMIN_ORDERS + "/groups/" + arrived.getId() + "/delivered",
+                Map.of("deliveredAt", LocalDateTime.now().plusHours(1).toString(), "reason", "x")).andExpect(status().isBadRequest());
+        adminPost(ADMIN_ORDERS + "/groups/" + arrived.getId() + "/delivered",
+                Map.of("deliveredAt", LocalDateTime.now().minusHours(2).withNano(0).toString(), "reason", "소비자 수령 확인"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.groups[0].status").value("DELIVERED"))
+                .andExpect(jsonPath("$.groups[0].shipping.deliveredSourceLabel").value("운영자 처리 · 추적 정지"))
+                .andExpect(jsonPath("$.groups[0].purchaseConfirm.dueAt").exists())
+                .andExpect(jsonPath("$.groups[0].actions.canCorrectDeliveredAt").value(true));
+        assertThat(groupRow(arrived)).containsEntry("delivered_source", "ADMIN_STALLED").containsEntry("tracking_alert", null);
+        assertThat(jdbc.queryForObject("SELECT actor_type FROM order_fulfillment_history WHERE delivery_group_id = ? "
+                + "AND event_type = 'DELIVERED'", String.class, arrived.getId())).isEqualTo("ADMIN");
+
+        OrderDeliveryGroup watching = shippingGroup("400060009003");
+        stalled(watching, 30);
+        JsonNode rows = json(adminGet(ADMIN_EXCEPTIONS + "?tab=DELIVERY&kind=TRACKING_STALLED")).at("/page/content");
+        JsonNode row = StreamSupport.stream(rows.spliterator(), false)
+                .filter(item -> item.get("deliveryGroupId").asLong() == watching.getId()).findFirst().orElseThrow();
+        assertThat(row.get("actOnBehalfAvailable").asBoolean()).isTrue();
+        assertThat(row.get("handlerLabel").asText()).contains("운영자 판정");
+    }
+
+    private void stalled(OrderDeliveryGroup group, int daysAgo) {
+        // 발송은 마지막 추적보다 앞서야 한다 — 수령 시각 검사(발송 이후)의 기준.
+        jdbc.update("UPDATE order_delivery_group SET tracking_alert = 'STALLED', last_tracking_at = ?, shipped_at = ? "
+                + "WHERE delivery_group_id = ?", LocalDateTime.now().minusDays(daysAgo),
+                LocalDateTime.now().minusDays(daysAgo + 1), group.getId());
+    }
+
+    private int stock(Long variantId) {
+        return jdbc.queryForObject("SELECT stock FROM product_variant WHERE variant_id = ?", Integer.class, variantId);
+    }
+
     // ------------------------------------------------------------------ 도우미
 
     /** 발송 기한을 어제로 소급하고 자동 알림 횟수를 맞춘다(시각 · 횟수만 — 상태는 건드리지 않는다). */

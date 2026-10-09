@@ -63,6 +63,7 @@ public class AdminOrderQueryService {
     private final OneToOneInquiryRepository inquiryRepository;
     private final OrderProperties orderProperties;
     private final ActOnBehalfPolicy actOnBehalfPolicy;
+    private final StalledPolicy stalledPolicy;
 
     public PageResponse<AdminOrderDto.ListItem> getOrders(AdminOrderDto.SearchParams params, LocalDate from,
                                                           LocalDate to, PagingRequest paging) {
@@ -206,7 +207,9 @@ public class AdminOrderQueryService {
                 status == FulfillmentStatus.SHIPPING || status == FulfillmentStatus.DELIVERED
                         || status == FulfillmentStatus.CONFIRMED || status == FulfillmentStatus.RETURNING,
                 (status == FulfillmentStatus.CONFIRMED || status == FulfillmentStatus.DELIVERED)
-                        && deliveredWithin3Months);
+                        && deliveredWithin3Months,
+                stalledPolicy.isResolvable(group, now),
+                stalledPolicy.isResolvable(group, now));
     }
 
     private Set<Long> pendingCancelGroupIds(List<OrderDeliveryGroup> groups) {

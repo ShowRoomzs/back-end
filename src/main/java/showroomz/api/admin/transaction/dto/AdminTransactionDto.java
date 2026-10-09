@@ -65,6 +65,8 @@ public final class AdminTransactionDto {
             @Schema(description = "B2 반려 이의 인용 — 반품 ∧ 반려됨 ∧ 반송 전(반려 보류 · 재발송 대기)") boolean canAcceptDispute,
             @Schema(description = "B2 인용 환불액 — 서버 계산(단가 × 수량 + 차감된 재발송비 환원분) · 수정 불가. "
                     + "인용할 수 없으면 null", example = "27200", nullable = true) Integer disputeRefundAmount,
+            @Schema(description = "검수 무응답 운영자 환불(41 보고 4번) — 입고 · 검수 대기 ∧ 기한 경과 ∧ 자동 알림 N회") boolean canRefundUnanswered,
+            @Schema(description = "검수 무응답 환불액 — 단가 × 수량 · 수정 불가. 열 수 없으면 null", nullable = true) Integer unansweredRefundAmount,
             @Schema(description = "④ 소비자 이의 — 앱 「이의 제기」로 걸린 가장 최근 문의. 이의가 없으면 null", nullable = true)
             Dispute dispute,
             @Schema(description = "B1 레일 「자동 알림 N회」 — 검수 기한 경과 자동 알림(영업일 10 · 15시 · 하루 1회)")
@@ -99,6 +101,12 @@ public final class AdminTransactionDto {
     ) {
     }
 
+    @Schema(name = "AdminClaimRefundRequest", description = "검수 무응답 운영자 환불 편입 — 환불액은 서버 계산")
+    public record ClaimRefundRequest(
+            @NotBlank @Size(max = 500) @Schema(description = "근거 — 이력 · 환불 관리에 남는다") String detail
+    ) {
+    }
+
     @Schema(name = "AdminDisputeAcceptResponse")
     public record DisputeAcceptResponse(
             @Schema(description = "편입된 환불 큐 id", example = "918") Long refundTaskId,
@@ -121,7 +129,7 @@ public final class AdminTransactionDto {
     /** 경로 셀렉트(39 설계서 3-1) — 서버가 발생 경로 집합으로 바꾼다. 교환은 §39-7 #4 「속할 곳이 없다」의 해소다. */
     public enum RefundRoute {
         CANCEL("취소", EnumSet.of(RefundTaskSource.CANCEL_REQUEST_APPROVED, RefundTaskSource.SELLER_DIRECT_CANCEL,
-                RefundTaskSource.USER_CANCEL_BEFORE_PREPARE)),
+                RefundTaskSource.USER_CANCEL_BEFORE_PREPARE, RefundTaskSource.LOST_IN_TRANSIT)),
         RETURN("반품", EnumSet.of(RefundTaskSource.CLAIM_RETURN_PASSED)),
         RETURN_SHIPMENT("반송", EnumSet.of(RefundTaskSource.RETURN_COMPLETED)),
         EXCHANGE("교환", EnumSet.of(RefundTaskSource.CLAIM_PAYMENT_CANCELLED)),
@@ -191,7 +199,9 @@ public final class AdminTransactionDto {
             @Schema(description = "「일시」 열 — 집행 대기 = 편입 · 실패 = 마지막 실패 · 완료 = 집행", nullable = true) LocalDateTime displayAt,
             LocalDateTime createdAt,
             @Schema(nullable = true) LocalDateTime executedAt,
-            @Schema(description = "[집행] · [재시도] 가능 — 대기 · 실패이고 결제가 있다") boolean executable
+            @Schema(description = "[집행] · [재시도] 가능 — 대기 · 실패이고 결제가 있다") boolean executable,
+            @Schema(description = "[철회] 가능 — 집행 전 운영자 사유 환불(반려 이의 인용 제외)") boolean voidable,
+            @Schema(description = "[수동 완료 기록] 가능 — 대기 · 실패") boolean manuallyCompletable
     ) {
     }
 
@@ -220,6 +230,20 @@ public final class AdminTransactionDto {
     ) {
     }
 
+    @Schema(name = "AdminRefundVoidRequest", description = "편입 철회 — 집행 전 운영자 사유 환불만(반려 이의 인용 제외)")
+    public record RefundVoidRequest(
+            @NotBlank @Size(max = 300) @Schema(description = "철회 사유 — 이력에 남는다", example = "오편입 · 금액 재산정") String reason
+    ) {
+    }
+
+    @Schema(name = "AdminRefundManualCompleteRequest", description = "수동 완료 기록 — PG 콘솔 등 밖에서 이미 돌려준 환불(PG 호출 없음)")
+    public record RefundManualCompleteRequest(
+            @Size(max = 100) @Schema(description = "PG 취소 거래번호 — 있으면 적는다", example = "tosspay_cancel_7f3a", nullable = true)
+            String pgCancellationId,
+            @NotBlank @Size(max = 500) @Schema(description = "근거 — 어디서 어떻게 돌려줬는지", example = "포트원 콘솔에서 10.09 14:20 부분 취소") String note
+    ) {
+    }
+
     @Schema(name = "AdminRefundDetail", description = "06c 상세 — M1 집행 재확인 · M2 재시도 다이얼로그가 보는 값 전부")
     public record RefundDetail(
             Long refundTaskId,
@@ -239,6 +263,8 @@ public final class AdminTransactionDto {
             @Schema(description = "실패 — 실패 상태일 때만", nullable = true) RefundFailure failure,
             @Schema(description = "집행 결과 — 완료일 때만", nullable = true) RefundExecution execution,
             boolean executable,
+            @Schema(description = "[철회] 가능 — 집행 전 운영자 사유 환불(반려 이의 인용 제외)") boolean voidable,
+            @Schema(description = "[수동 완료 기록] 가능 — 대기 · 실패") boolean manuallyCompletable,
             @Schema(description = "이 환불 건의 이력 — 오래된순") List<RefundHistory> history
     ) {
     }

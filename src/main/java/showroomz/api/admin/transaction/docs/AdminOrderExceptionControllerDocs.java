@@ -19,7 +19,7 @@ public interface AdminOrderExceptionControllerDocs {
                     - `tab=DELAY`(기본 · 처리 지연) — `SHIP_OVERDUE` 발송 기한 경과(공구 마감 + 주문 시점 N영업일) ·
                       `INSPECT_OVERDUE` 검수 지연(입고 + 2영업일) · `RESHIP_DELAYED` 재발송 지연(검수 통과 · 재발송비 결제 + 2영업일 · 알림 없음).
                       취소 요청 미응답은 1영업일 자동 승인이라 오지 않는다. 준비 시작(신규 → 상품준비중)으로는 빠지지 않는다
-                    - `tab=DELIVERY`(배송 예외 · 플랫폼 미개입) — `PICKUP_UNCONFIRMED` 집화 확인 필요(24시간) · `TRACKING_STALLED` 추적 정지(7일) ·
+                    - `tab=DELIVERY`(배송 예외 · 플랫폼 미개입) — `PICKUP_UNCONFIRMED` 집화 확인 필요(24시간) · `TRACKING_STALLED` 추적 정지(7일 · 마지막 추적 + N일(기본 28)이 지나면 `actOnBehalfAvailable` — 운영자가 주문 상세에서 분실 · 배송완료 판정) ·
                       `RETURNING` 반송 중(완료 감지 시 PG 자동 환불 · 완료가 감지된 건은 빠진다) · `COLLECTION_UNSCANNED` 회수 송장 미조회(24시간 ·
                       추적 연동이 꺼져 있으면 비어 있다)
                     - `kind` — 유형 셀렉트. 탭에 속하지 않는 유형이면 400
@@ -28,7 +28,7 @@ public interface AdminOrderExceptionControllerDocs {
                     - 기한 · 경과 · 다음 단계 · 처리 주체는 **서버 문장**(`dueBasisLabel` · `elapsedLabel` · `nextStepLabel` · `handlerLabel`)과
                       숫자(`dueAt` · `elapsedHours` · `elapsedBusinessDays` · `noticeCount` · `nextNoticeAt`)를 함께 내린다
                     - `actOnBehalfAvailable` — 알림 N회(기본 3) 무응답 = 대행 가능 **조건**. 06a 상세 `actions.canRegisterShipment` 와 같은 판정이다.
-                      검수 지연은 조건만 보이고 대행 행동은 없다(대표 확정 대기)
+                      검수 지연은 조건 충족 시 운영자 사유 환불 편입으로 닫는다(클레임 상세 · 검수는 대신하지 않는다)
                     - 집화 확인 필요의 「시스템 알림」은 아직 연결되지 않았다(알림 모듈)
                     - 송장번호는 가리지 않는다(CS 가 택배사에 조회할 번호)
                     - 응답은 `{ asOf, page }` — `asOf` 가 경과 · 다음 회차 계산의 서버 기준 시각

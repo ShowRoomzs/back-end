@@ -31,7 +31,13 @@ public enum FulfillmentEventType {
     /** 운영자 사유 환불 편입(어드민 06a B5 · 06b B2) — 집행은 환불 관리에서 따로. */
     REFUND_ENQUEUED_BY_OPERATOR("운영자 사유 환불 편입"),
     /** 소비자 수령일 이의 — 운영자가 배송완료일을 정정한다(어드민 06a B3). 구매확정 예정도 다시 센다. */
-    DELIVERED_AT_CORRECTED("배송완료일 정정");
+    DELIVERED_AT_CORRECTED("배송완료일 정정"),
+    /** 운영자 사유 환불 편입 철회(어드민 06c · 41 보고 2번) — 집행 전 운영자 사유 환불만. */
+    REFUND_VOIDED("운영자 사유 환불 편입 철회"),
+    /** PG 콘솔 등 밖에서 돌려준 환불의 수동 완료 기록(어드민 06c · 41 보고 2번) — PG 를 부르지 않는다. */
+    REFUND_RECORDED_MANUALLY("환불 수동 완료 기록"),
+    /** 추적 정지 N일 뒤 운영자 분실 판정(어드민 06a · 41 보고 3번) — 하위주문 취소 · PG 자동 환불. */
+    LOST_RESOLVED("배송 분실 처리 · PG 자동 환불");
 
     private final String label;
 }

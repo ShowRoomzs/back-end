@@ -35,6 +35,7 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
     private static final String ADMIN_REFUNDS = "/v1/admin/refunds";
     private static final String ADMIN_ORDERS = "/v1/admin/orders";
     private static final Map<String, Object> CARD = Map.of("method", "CARD", "cardIssuer", "SHINHAN");
+    private static final int DELIVERY_FEE = 3_000;
 
     private String admin;
     private Seller operator;
@@ -320,6 +321,75 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
         claimPaymentService.cancelRequested();
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM order_refund_task WHERE source = 'CLAIM_PAYMENT_CANCELLED'",
                 Integer.class)).isEqualTo(1);
+    }
+
+    // ------------------------------------------------------------------ 편입 철회 · 수동 완료 기록(41 보고 2번)
+
+    @Test
+    @DisplayName("[R-13] 편입 철회 — 집행 전 운영자 사유만 VOID · 이력 · 어느 탭에도 없다 · 반려 이의 인용 · PG 자동 · 완료 건은 409")
+    void voidRefund() throws Exception {
+        OrderDeliveryGroup group = deliveredGroup(creamVariant, 1);
+        long taskId = operatorRefund(group, 5_000);
+        assertThat(json(adminGet(ADMIN_REFUNDS)).at("/content/0/voidable").asBoolean()).isTrue();
+
+        adminPost(ADMIN_REFUNDS + "/" + taskId + "/void", Map.of("reason", "오편입 · 금액 재산정")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("VOID")).andExpect(jsonPath("$.statusNote").value("편입 철회"));
+        assertThat(jdbc.queryForObject("SELECT status FROM order_refund_task WHERE refund_task_id = ?", String.class, taskId))
+                .isEqualTo("VOID");
+        assertThat(jdbc.queryForList("SELECT detail FROM order_fulfillment_history WHERE delivery_group_id = ? "
+                + "AND event_type = 'REFUND_VOIDED'", String.class, group.getId())).singleElement().asString()
+                .contains("RFD-" + taskId).contains("오편입");
+        for (String tab : List.of("PENDING", "FAILED", "DONE")) {
+            assertThat(ids(adminGet(ADMIN_REFUNDS + "?tab=" + tab))).doesNotContain(taskId);
+        }
+        adminGet(ADMIN_REFUNDS + "/summary").andExpect(jsonPath("$.badge").value(0));
+        adminPost(ADMIN_REFUNDS + "/" + taskId + "/void", Map.of("reason", "다시")).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("REFUND_TASK_NOT_VOIDABLE"));
+        adminPost(ADMIN_REFUNDS + "/" + taskId + "/execute", Map.of()).andExpect(status().isConflict());
+        assertThat(fake.partialCancelCalls()).isEmpty();
+
+        // 반려 이의 인용 건 — 편입 때 재발송비 청구가 정리돼 철회하지 않는다.
+        Long claimId = rejectedClaim(returnClaim(deliveredGroup(creamVariant, 1)));
+        long dispute = json(adminPost("/v1/admin/claims/" + claimId + "/dispute-acceptance", Map.of("detail", "오염")))
+                .get("refundTaskId").asLong();
+        assertThat(json(adminGet(ADMIN_REFUNDS + "/" + dispute)).get("voidable").asBoolean()).isFalse();
+        adminPost(ADMIN_REFUNDS + "/" + dispute + "/void", Map.of("reason", "x")).andExpect(status().isConflict());
+        // PG 자동(실패) 건도 철회 대상이 아니다.
+        adminPost(ADMIN_REFUNDS + "/" + failedRefund() + "/void", Map.of("reason", "x")).andExpect(status().isConflict());
+        adminPost(ADMIN_REFUNDS + "/" + taskId + "/void", Map.of("reason", " ")).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("[R-14] 수동 완료 기록 — 실패 건을 PG 호출 없이 완료 · 누적 취소액 · 취소 기록(ADMIN) · 이력 · 완료 탭 · 두 번째 409")
+    void manualComplete() throws Exception {
+        long taskId = failedRefund();
+        String paymentId = jdbc.queryForObject("SELECT payment_id FROM order_refund_task WHERE refund_task_id = ?",
+                String.class, taskId);
+        int before = fake.partialCancelCalls().size();
+        assertThat(json(adminGet(ADMIN_REFUNDS + "?tab=FAILED")).at("/content/0/manuallyCompletable").asBoolean()).isTrue();
+
+        adminPost(ADMIN_REFUNDS + "/" + taskId + "/manual-complete",
+                Map.of("pgCancellationId", "console-7f3a", "note", "포트원 콘솔에서 10.09 14:20 부분 취소"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("DONE"))
+                .andExpect(jsonPath("$.statusNote").value("집행 김운영 · 재확인"));
+
+        assertThat(fake.partialCancelCalls()).hasSize(before);
+        Map<String, Object> task = jdbc.queryForMap("SELECT * FROM order_refund_task WHERE refund_task_id = ?", taskId);
+        assertThat(task).containsEntry("status", "DONE").containsEntry("executed_by", operator.getId());
+        assertThat(task.get("payment_cancel_id")).isNotNull();
+        assertThat(jdbc.queryForMap("SELECT requested_by, pg_cancellation_id, status FROM payment_cancel WHERE refund_task_id = ?",
+                taskId)).containsEntry("requested_by", "ADMIN").containsEntry("pg_cancellation_id", "console-7f3a")
+                .containsEntry("status", "SUCCEEDED");
+        assertThat(jdbc.queryForObject("SELECT cancelled_amount FROM payment WHERE payment_id = ?", Integer.class, paymentId))
+                .isEqualTo(CREAM_PRICE + DELIVERY_FEE);
+        assertThat(jdbc.queryForObject("SELECT status FROM payment WHERE payment_id = ?", String.class, paymentId))
+                .isEqualTo("CANCELLED");
+        JsonNode detail = json(adminGet(ADMIN_REFUNDS + "/" + taskId));
+        assertThat(detail.at("/execution/pgCancellationId").asText()).isEqualTo("console-7f3a");
+        assertThat(detail.get("history")).extracting(h -> h.get("type").asText()).contains("REFUND_RECORDED_MANUALLY");
+        assertThat(ids(adminGet(ADMIN_REFUNDS + "?tab=DONE"))).contains(taskId);
+        adminPost(ADMIN_REFUNDS + "/" + taskId + "/manual-complete", Map.of("note", "다시")).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("REFUND_TASK_NOT_EXECUTABLE"));
     }
 
     private List<Long> refundTaskRepositoryPending(Long orderId) {

@@ -137,6 +137,35 @@ public class AdminRefundService {
         return new AdminTransactionDto.RefundExecuteResponse(outcome.name(), after);
     }
 
+    /** 편입 철회(41 보고 2번) — 집행 전 운영자 사유 환불만. 반려 이의 인용 건은 거부한다(편입 때 재발송비 청구가 이미 정리됐다). */
+    public AdminTransactionDto.RefundItem voidRefund(Long adminId, Long refundTaskId,
+                                                     AdminTransactionDto.RefundVoidRequest request) {
+        OrderRefundTask task = refundTaskRepository.findById(refundTaskId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REFUND_TASK_NOT_FOUND));
+        if (!task.isVoidable()) {
+            throw new BusinessException(ErrorCode.REFUND_TASK_NOT_VOIDABLE);
+        }
+        if (!refundExecutor.voidTask(refundTaskId, request.reason(), adminId, LocalDateTime.now())) {
+            throw new BusinessException(ErrorCode.REFUND_TASK_NOT_VOIDABLE);
+        }
+        return readOnlyTransaction.execute(tx -> assembler.item(refundTaskRepository.findWithOrder(refundTaskId).orElseThrow()));
+    }
+
+    /** 수동 완료 기록(41 보고 2번) — PG 콘솔 등 밖에서 돌려준 환불. PG 를 부르지 않고 집행 완료와 같은 후속을 적는다. */
+    public AdminTransactionDto.RefundItem recordManual(Long adminId, Long refundTaskId,
+                                                       AdminTransactionDto.RefundManualCompleteRequest request) {
+        OrderRefundTask task = refundTaskRepository.findById(refundTaskId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REFUND_TASK_NOT_FOUND));
+        if (!task.isExecutable()) {
+            throw new BusinessException(ErrorCode.REFUND_TASK_NOT_EXECUTABLE);
+        }
+        if (!refundExecutor.recordManual(refundTaskId, request.pgCancellationId(), request.note(), adminId,
+                LocalDateTime.now())) {
+            throw new BusinessException(ErrorCode.REFUND_TASK_NOT_EXECUTABLE);
+        }
+        return readOnlyTransaction.execute(tx -> assembler.item(refundTaskRepository.findWithOrder(refundTaskId).orElseThrow()));
+    }
+
     /** 탭 → 상태 · 출처 · 기간 · 「일시」 열, 검색어 → 환불번호 · 주문번호 · PG 거래번호(39 설계서 0-5 · 1-2 · 3-1). */
     static AdminRefundSearchCondition condition(RefundTab tab, AdminTransactionDto.RefundRoute route, String keyword,
                                                 AdminTransactionDto.RefundSort sort, Integer days, LocalDateTime now) {

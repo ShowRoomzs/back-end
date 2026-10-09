@@ -116,6 +116,16 @@ public class RefundExecutor {
         return Outcome.FAILED;
     }
 
+    /** 편입 철회 — 전이만(PG 없음). */
+    public boolean voidTask(Long taskId, String reason, Long operatorId, LocalDateTime now) {
+        return transitions.voidTask(taskId, reason, operatorId, now);
+    }
+
+    /** 수동 완료 기록 — PG 없이 완료 후속만. 기록 실패는 예외로 올린다(돈이 나간 것이 아니라 기록이므로 되돌려도 된다). */
+    public boolean recordManual(Long taskId, String pgCancellationId, String note, Long operatorId, LocalDateTime now) {
+        return transitions.recordManual(taskId, pgCancellationId, note, operatorId, now);
+    }
+
     private Outcome complete(Long taskId, String pgCancellationId, String raw, Long operatorId, LocalDateTime now) {
         try {
             return transitions.complete(taskId, pgCancellationId, raw, operatorId, now) ? Outcome.DONE : Outcome.SKIPPED;

@@ -184,6 +184,17 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
             + "showroomz.domain.order.type.ClaimStatus.RESHIP_READY)")
     int closeRejectedByDispute(@Param("id") Long id, @Param("amount") int amount, @Param("now") LocalDateTime now);
 
+    /**
+     * 검수 무응답 운영자 환불(어드민 06b · 41 보고 4번) — 입고 · 검수 대기인 건을 환불로 닫는다. 귀책은 바꾸지 않는다(브랜드가 판정하지
+     * 않았을 뿐이다). 환불액은 운영자 사유 환불 집행으로 나가고 여기서는 예정액을 적는다.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderClaim c SET c.status = " + COMPLETED + ", "
+            + "c.result = showroomz.domain.order.type.ClaimResult.REFUNDED, c.refundedAmount = :amount, "
+            + "c.completedAt = :now, c.stageEnteredAt = :now "
+            + "WHERE c.id = :id AND c.status = showroomz.domain.order.type.ClaimStatus.RECEIVED")
+    int closeUnansweredByOperator(@Param("id") Long id, @Param("amount") int amount, @Param("now") LocalDateTime now);
+
     /** 어드민 예외 관리 — 검수 기한이 지난 입고 건(06d 처리 지연). */
     @Query("SELECT c FROM OrderClaim c JOIN FETCH c.deliveryGroup g JOIN FETCH g.order WHERE "
             + "c.status = showroomz.domain.order.type.ClaimStatus.RECEIVED AND c.inspectDueAt < :now "

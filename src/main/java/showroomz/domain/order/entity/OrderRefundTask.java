@@ -197,6 +197,17 @@ public class OrderRefundTask extends BaseTimeEntity {
         this.lastErrorCode = errorCode != null && errorCode.length() > 50 ? errorCode.substring(0, 50) : errorCode;
     }
 
+    /** 편입 철회(어드민 06c) — 집행 전 운영자 사유 환불만. 어느 탭에도 보이지 않고 상세 · 주문 상세에서만 남는다. */
+    public void markVoid() {
+        this.status = RefundTaskStatus.VOID;
+    }
+
+    /** 철회할 수 있는가 — 대기 ∧ 운영자 사유 ∧ 반려 이의 인용이 아님(인용은 편입 때 재발송비 청구를 이미 정리해 되돌릴 수 없다). */
+    public boolean isVoidable() {
+        return status == RefundTaskStatus.PENDING && origin == RefundTaskOrigin.OPERATOR
+                && reasonCode != OperatorRefundReason.DISPUTE_ACCEPTED;
+    }
+
     /** PG 를 부르지 않고 집행 완료로 기록 — 결제 밖에서 환불된 건(운영자 수동 기록). */
     public void markExecuted(int executedAmount, Long executedBy, LocalDateTime now) {
         this.refundAmount = executedAmount;

@@ -70,7 +70,39 @@ public interface AdminOrderControllerDocs {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "404", description = "ORDER_NOT_FOUND — 없거나 결제 전 주문")
     })
-    ResponseEntity<AdminOrderDto.DetailResponse> getOrder(Long orderId);
+    ResponseEntity<AdminOrderDto.DetailResponse> getOrder(@Parameter(hidden = true) UserPrincipal principal, Long orderId);
+
+    @Operation(summary = "추적 정지 종결 — 분실 처리",
+            description = """
+                    배송중 ∧ 추적 정지 ∧ 마지막 추적(없으면 발송) + N일(기본 28 · `order.exception.stalled-resolve-days`) 경과한 건을 운영자가
+                    **분실로 판정**한다(41 보고 3번 · 권고 3 — 자동 처리 없음 · 플랫폼이 단정하지 않는다). 하위주문은 취소(`cancelType = LOST`)로
+                    닫히고 **재고는 돌아오지 않는다**. 환불은 항목 + 배송비 전액 · PG 자동(반송 완료와 같은 길). 분실 보상은 택배사와 브랜드의 일이다.
+                    상세 `actions.canMarkLost` 가 참일 때만. 법무 확정 대기 — 그 전엔 운영 지침으로 근거를 적는다.
+
+                    **권한:** ADMIN
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "처리 후 상세"),
+            @ApiResponse(responseCode = "409", description = "ORDER_STATE_CHANGED — 조건 미충족 · 상태 변경")
+    })
+    ResponseEntity<AdminOrderDto.DetailResponse> markLost(@Parameter(hidden = true) UserPrincipal principal,
+                                                          Long deliveryGroupId, AdminOrderDto.MarkLostRequest request);
+
+    @Operation(summary = "추적 정지 종결 — 배송완료 처리",
+            description = """
+                    분실 처리와 같은 조건에서 운영자가 **배송완료로 판정**한다(소비자가 받았다고 확인한 경우). 출처 「운영자 처리 · 추적 정지」 ·
+                    수령 시각부터 구매확정 타이머가 간다. 추적이 끊긴 송장에만 열리는 유일한 직권 배송완료다(그 밖의 「직권 배송완료」는 없다).
+
+                    **권한:** ADMIN
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "처리 후 상세"),
+            @ApiResponse(responseCode = "400", description = "INVALID_INPUT_VALUE — 발송 전 · 미래 시각"),
+            @ApiResponse(responseCode = "409", description = "ORDER_STATE_CHANGED — 조건 미충족 · 상태 변경")
+    })
+    ResponseEntity<AdminOrderDto.DetailResponse> markDelivered(@Parameter(hidden = true) UserPrincipal principal,
+                                                               Long deliveryGroupId,
+                                                               AdminOrderDto.MarkDeliveredRequest request);
 
     @Operation(summary = "B3 배송완료일 정정",
             description = "소비자 수령일 이의 — 배송완료 상태에서만. 「직권 배송완료」는 없다. 구매확정 예정도 같은 만큼 옮긴다. 이력에 구 → 신과 사유가 남는다.\n\n**권한:** ADMIN")

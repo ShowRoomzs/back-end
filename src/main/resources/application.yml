@@ -151,6 +151,7 @@ order:
     collection-unscanned-hours: 24                  # 회수 송장 미조회 — 등록 후 N시간 추적 0건
     badge-scope: ALL                                # 사이드바 배지 — ALL(처리 지연 + 배송 예외) · DELAY(처리 지연만)
     fetch-limit: 1000                               # 유형별 원천 조회 상한 — 닿으면 경고 로그
+    stalled-resolve-days: 28                        # 추적 정지 종결 — 마지막 추적 + N일이면 운영자가 분실 · 배송완료 판정(41 보고 3번)
   claim:                                            # 반품·교환(35 설계서 · 앱 클레임 설계서) — 기한·횟수는 미결이 많아 전부 설정값
     collect-due-business-days: 2                    # 기한 ① 회수 대기 방치 — 신청 + N영업일(「지연」 표시)
     inspect-due-business-days: 2                    # 기한 ② 검수 완료 — 입고 확인 + N영업일

@@ -66,6 +66,14 @@ public class AdminClaimController implements AdminClaimControllerDocs {
     }
 
     @Override
+    @PostMapping("/{claimId}/refund-tasks")
+    public ResponseEntity<AdminTransactionDto.DisputeAcceptResponse> refundUnanswered(
+            @AuthenticationPrincipal UserPrincipal principal, @PathVariable Long claimId,
+            @Valid @RequestBody AdminTransactionDto.ClaimRefundRequest request) {
+        return ResponseEntity.ok(claimService.refundUnanswered(AdminOrderController.operatorId(principal), claimId, request));
+    }
+
+    @Override
     @PostMapping("/{claimId}/dispute-acceptance")
     public ResponseEntity<AdminTransactionDto.DisputeAcceptResponse> acceptDispute(
             @AuthenticationPrincipal UserPrincipal principal, @PathVariable Long claimId,

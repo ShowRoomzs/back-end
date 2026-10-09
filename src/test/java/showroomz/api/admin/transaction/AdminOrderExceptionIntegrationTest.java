@@ -125,7 +125,7 @@ class AdminOrderExceptionIntegrationTest extends ClaimTestSupport {
     }
 
     @Test
-    @DisplayName("[AE-05] 검수 지연 — 접수번호 · 「입고 + 2영업일」 · 열기는 클레임 · 3회면 조건만(대행 범위 미정) · 판정하면 빠진다")
+    @DisplayName("[AE-05] 검수 지연 — 접수번호 · 「입고 + 2영업일」 · 열기는 클레임 · 3회면 운영자 환불 가능 · 판정하면 빠진다")
     void inspectOverdue() throws Exception {
         Long claimId = received(returnClaim(deliveredGroup(creamVariant, 1)));
         jdbc.update("UPDATE order_claim SET inspect_due_at = ? WHERE claim_id = ?",
@@ -141,7 +141,8 @@ class AdminOrderExceptionIntegrationTest extends ClaimTestSupport {
         jdbc.update("UPDATE order_claim SET inspect_notice_count = 3 WHERE claim_id = ?", claimId);
         row = only(rows("?tab=DELAY"));
         assertThat(row.get("actOnBehalfAvailable").asBoolean()).isTrue();
-        assertThat(row.get("nextStepLabel").asText()).isEqualTo("자동 알림 3회 무응답 · 대행 범위 미정");
+        assertThat(row.get("nextStepLabel").asText()).isEqualTo("자동 알림 3회 무응답 · 운영자 환불 가능");
+        assertThat(row.get("nextStepNote").asText()).startsWith("운영자 사유 환불 편입 — 클레임 상세");
 
         sellerPost(SELLER_CLAIMS + "/" + claimId + "/inspection/pass", Map.of()).andExpect(status().isOk());
         assertThat(rows("?tab=DELAY")).isEmpty();

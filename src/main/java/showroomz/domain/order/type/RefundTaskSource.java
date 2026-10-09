@@ -16,5 +16,7 @@ public enum RefundTaskSource {
      */
     USER_CANCEL_BEFORE_PREPARE,
     /** <b>기록 전용</b> — 교환 · 반려 재발송비(추가 결제)의 결제 취소. {@code source_id}는 클레임 요청(collection) id. */
-    CLAIM_PAYMENT_CANCELLED
+    CLAIM_PAYMENT_CANCELLED,
+    /** 추적 정지 N일 뒤 운영자 분실 판정(어드민 06a · 41 보고 3번) — 항목 + 배송비 전액 · PG 자동. */
+    LOST_IN_TRANSIT
 }

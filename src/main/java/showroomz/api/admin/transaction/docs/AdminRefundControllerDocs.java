@@ -66,6 +66,40 @@ public interface AdminRefundControllerDocs {
     })
     ResponseEntity<AdminTransactionDto.RefundDetail> getRefund(Long refundTaskId);
 
+    @Operation(summary = "편입 철회",
+            description = """
+                    집행 전 운영자 사유 환불(`PENDING · OPERATOR`)을 철회한다 — 오편입 · 금액 재산정. 돈은 나가지 않았으므로 되돌릴 것이 없고,
+                    큐 행은 `VOID`(어느 탭에도 없음 · 상세 · 주문 상세에서만)가 된다. 사유는 이력 「운영자 사유 환불 편입 철회」에 남는다.
+                    **반려 이의 인용 건은 철회할 수 없다** — 편입 때 재발송비 청구를 이미 소멸 · 취소해 되살릴 수 없다(§39-6 A-1 후단).
+
+                    **권한:** ADMIN
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "철회 후 행"),
+            @ApiResponse(responseCode = "404", description = "REFUND_TASK_NOT_FOUND"),
+            @ApiResponse(responseCode = "409", description = "REFUND_TASK_NOT_VOIDABLE — 집행 전 운영자 사유가 아니거나 반려 이의 인용")
+    })
+    ResponseEntity<AdminTransactionDto.RefundItem> voidRefund(@Parameter(hidden = true) UserPrincipal principal,
+                                                             Long refundTaskId, AdminTransactionDto.RefundVoidRequest request);
+
+    @Operation(summary = "수동 완료 기록",
+            description = """
+                    PG 콘솔 등 **밖에서 이미 돌려준** 환불을 완료로 적는다 — PG 를 부르지 않는다. 반복 실패 건을 사람이 PG 콘솔에서 처리한 뒤
+                    큐가 `FAILED` 로 남아 소비자 앱이 「환불 처리 중」으로 보이는 것을 닫는 경로다(41 보고 2번).
+                    결제의 누적 취소액 · 부분 취소 기록 · 반품 종결 등 후속은 PG 집행과 같고, 이력은 「환불 수동 완료 기록」(운영자 · 취소번호 · 근거)이다.
+                    대기 · 실패 건만. 같은 결제의 다른 환불이 PG 를 기다리는 중이거나 환불액이 취소 가능 잔액보다 크면 409.
+
+                    **권한:** ADMIN
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "기록 후 행"),
+            @ApiResponse(responseCode = "404", description = "REFUND_TASK_NOT_FOUND"),
+            @ApiResponse(responseCode = "409", description = "REFUND_TASK_NOT_EXECUTABLE")
+    })
+    ResponseEntity<AdminTransactionDto.RefundItem> recordManual(@Parameter(hidden = true) UserPrincipal principal,
+                                                               Long refundTaskId,
+                                                               AdminTransactionDto.RefundManualCompleteRequest request);
+
     @Operation(summary = "환불 집행 · 재시도 (06c M1 · M2)",
             description = """
                     운영자 사유 환불의 [집행]과 실패 건의 [재시도]가 같은 호출이다(`/retry` 는 없다) — **돈이 나가는 순간은 이 호출 하나**다(재확인 다이얼로그 1회 ·

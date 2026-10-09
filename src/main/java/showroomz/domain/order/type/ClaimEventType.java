@@ -27,7 +27,9 @@ public enum ClaimEventType {
     STORAGE_NOTICE_SENT("미결제 고지"),
     DISPOSED("보관 기간 만료 · 폐기"),
     /** 반려에 대한 소비자 이의를 운영자가 인용 — 운영자 사유 환불로 종결(어드민 06b B2 · 1009 기획 수정본 8-3). */
-    DISPUTE_ACCEPTED("반려 이의 인용 · 운영자 사유 환불");
+    DISPUTE_ACCEPTED("반려 이의 인용 · 운영자 사유 환불"),
+    /** 검수 지연 자동 알림 N회 무응답 — 운영자가 운영자 사유 환불로 종결(41 보고 4번 · 어드민 06b). */
+    INSPECTION_UNANSWERED("검수 무응답 · 운영자 사유 환불");
 
     private final String label;
 }

@@ -825,7 +825,9 @@ public class OrderClaimService {
         // 철회·취소로 사라진 것과 아직 접수 전인 것은 빼고 센다.
         List<OrderClaim> claims = claimRepository.findByCollectionId(collectionId).stream()
                 .filter(claim -> claim.getResult() != ClaimResult.CANCELLED
-                        && claim.getStatus() != ClaimStatus.PAYMENT_PENDING)
+                        && claim.getStatus() != ClaimStatus.PAYMENT_PENDING
+                        // 운영자가 먼저 닫은 건(검수 무응답 환불) — 통과분으로 다시 세면 이중 환불이다.
+                        && claim.getStatus() != ClaimStatus.COMPLETED)
                 .toList();
         if (claims.isEmpty() || claims.stream().anyMatch(claim -> AWAITING_JUDGEMENT.contains(claim.getStatus()))) {
             return;
@@ -1150,6 +1152,61 @@ public class OrderClaimService {
     public static boolean isDisputeAcceptable(OrderClaim claim) {
         return claim.getType() == ClaimType.RETURN && claim.getRejectedAt() != null
                 && RESHIP_TARGET.contains(claim.getStatus());
+    }
+
+    /** 검수 무응답 운영자 환불을 열 수 있는가 — 입고 · 검수 대기 ∧ 기한 경과 ∧ 자동 알림이 대행 조건 횟수에 닿았다. */
+    public boolean isInspectionUnanswered(OrderClaim claim, LocalDateTime now) {
+        return claim.getStatus() == ClaimStatus.RECEIVED && claim.getInspectDueAt() != null
+                && claim.getInspectDueAt().isBefore(now)
+                && claim.getInspectNoticeCount() >= orderProperties.getActOnBehalfNoticeThreshold();
+    }
+
+    /** 검수 무응답 환불액 — 단가 × 수량(차감 없음 · 브랜드가 판정하지 않았다). 열 수 없으면 null. */
+    @Transactional(readOnly = true)
+    public Integer previewUnansweredRefund(Long claimId, LocalDateTime now) {
+        return claimRepository.findById(claimId).filter(claim -> isInspectionUnanswered(claim, now))
+                .map(claim -> Math.toIntExact((long) claim.getOrderProduct().getPrice() * claim.getQuantity()))
+                .orElse(null);
+    }
+
+    /**
+     * 검수 무응답 운영자 환불(어드민 06b · 41 보고 4번 권고 1) — 브랜드가 입고 뒤 검수를 끝내 하지 않아 자동 알림이 대행 조건 횟수에
+     * 닿았다. 상품은 브랜드 창고에 있으므로 반품 수량으로 올리고, 돈은 <b>운영자 사유 환불로 편입</b>한다(집행은 환불 관리). 교환이면
+     * 잡아 둔 새 옵션 재고를 되돌린다. 같은 박스의 다른 건이 이미 통과했으면 판정 종료를 이어서 돌린다(이 건은 통과분에서 빠진다).
+     */
+    @Transactional
+    public DisputeAcceptance refundUnansweredInspection(Long claimId, Long adminId, String detail, LocalDateTime now) {
+        OrderClaim found = claimRepository.findById(claimId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        Long collectionId = found.getCollection().getId();
+        collectionRepository.findForUpdate(collectionId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        OrderClaim claim = claimRepository.findById(claimId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        if (!isInspectionUnanswered(claim, now)) {
+            throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED,
+                    "검수 대기 중이고 자동 알림이 대행 조건 횟수에 닿은 건만 운영자 환불로 닫을 수 있습니다.");
+        }
+        int amount = Math.toIntExact((long) claim.getOrderProduct().getPrice() * claim.getQuantity());
+        Long orderProductId = claim.getOrderProduct().getId();
+        int quantity = claim.getQuantity();
+        Long exchangeVariantId = claim.getExchangeVariantId();
+        OrderDeliveryGroup group = claim.getDeliveryGroup();
+        OrderRefundTask task = fulfillmentService.enqueueOperatorRefund(group, claimId, amount,
+                showroomz.domain.order.type.OperatorRefundReason.INSPECTION_UNANSWERED, detail, adminId, now);
+        if (claimRepository.closeUnansweredByOperator(claimId, amount, now) != 1) {
+            throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED);
+        }
+        orderProductRepository.addReturnedQuantity(orderProductId, quantity);
+        orderProductRepository.markReturnedIfFull(orderProductId);
+        if (exchangeVariantId != null) {
+            productVariantRepository.restoreStock(exchangeVariantId, quantity);
+        }
+        appendHistory(claimId, ClaimEventType.INSPECTION_UNANSWERED, FulfillmentActorType.ADMIN, adminId,
+                String.format("%,d원 · 자동 알림 %d회 무응답 · %s", amount, claim.getInspectNoticeCount(), detail), now);
+        finalizeCollection(collectionId, now);
+        fulfillmentService.resumeConfirmTimerIfIdle(group.getId(), now);
+        return new DisputeAcceptance(task.getId(), amount);
     }
 
     /** 인용 환불액 미리 보기 — 어드민 상세의 수정 불가 금액. 인용할 수 없으면 null. */

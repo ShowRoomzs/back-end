@@ -304,6 +304,28 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
             + "AND g.deliveredSource = showroomz.domain.order.type.DeliveredSource.TRACKER")
     List<Object[]> findTransitSamples(@Param("since") LocalDateTime since);
 
+    /** 운영자 분실 판정(어드민 06a · 41 보고 3번) — 추적 정지 배지가 있는 배송중 하위주문만. 재고 원복 없음(상품이 없다). */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderDeliveryGroup g SET g.statusAtCancel = g.fulfillmentStatus, "
+            + "g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.CANCELLED, "
+            + "g.cancelledAt = :now, g.cancelType = showroomz.domain.order.type.OrderCancelType.LOST, "
+            + "g.cancelReasonDetail = :reason, g.trackingAlert = NULL "
+            + "WHERE g.id = :id AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING "
+            + "AND g.trackingAlert = showroomz.domain.order.type.TrackingAlert.STALLED "
+            + "AND NOT EXISTS (SELECT p FROM Payment p WHERE p.order = g.order "
+            + "    AND p.status = showroomz.domain.payment.type.PaymentStatus.CANCEL_REQUESTED)")
+    int markLostByAdmin(@Param("id") Long id, @Param("reason") String reason, @Param("now") LocalDateTime now);
+
+    /** 운영자 배송완료 판정(어드민 06a · 41 보고 3번) — 추적 정지 배지가 있는 배송중 하위주문만. 구매확정 타이머가 여기서 시작한다. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderDeliveryGroup g SET g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.DELIVERED, "
+            + "g.deliveredAt = :deliveredAt, g.deliveredSource = showroomz.domain.order.type.DeliveredSource.ADMIN_STALLED, "
+            + "g.deliveredBy = :adminId, g.trackingAlert = NULL "
+            + "WHERE g.id = :id AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING "
+            + "AND g.trackingAlert = showroomz.domain.order.type.TrackingAlert.STALLED")
+    int markDeliveredByAdmin(@Param("id") Long id, @Param("deliveredAt") LocalDateTime deliveredAt,
+                             @Param("adminId") Long adminId);
+
     /** #5 SHIPPING → DELIVERED — 자동 확인. 운영자 직권은 어드민 모듈이 별도 메서드로 간다(범위 밖). */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderDeliveryGroup g SET g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.DELIVERED, "

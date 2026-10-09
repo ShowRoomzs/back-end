@@ -61,6 +61,24 @@ public interface AdminClaimControllerDocs {
     })
     ResponseEntity<AdminTransactionDto.ClaimDetail> getClaim(Long claimId);
 
+    @Operation(summary = "검수 무응답 · 운영자 사유 환불 편입",
+            description = """
+                    브랜드가 입고 뒤 검수를 끝내 하지 않아 **자동 알림이 대행 조건 횟수(기본 3회)에 닿은** 건의 출구(41 보고 4번 · 권고 1).
+                    운영자는 검수를 대신하지 않는다 — 대신 소비자에게 돈을 돌려준다. 상품은 브랜드 창고에 있으므로 반품 수량에 반영하고,
+                    **환불액은 서버 계산**(단가 × 수량 · 차감 없음)으로 운영자 사유 환불에 편입한다. 집행은 환불 관리(06c)에서.
+                    교환이면 잡아 둔 새 옵션 재고를 되돌린다. 귀책은 바꾸지 않는다. 상세 `canRefundUnanswered` · `unansweredRefundAmount`.
+
+                    **권한:** ADMIN
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "편입 — 환불 큐 id · 환불번호 · 서버 계산 금액"),
+            @ApiResponse(responseCode = "404", description = "CLAIM_NOT_FOUND"),
+            @ApiResponse(responseCode = "409", description = "CLAIM_STATE_CHANGED — 검수 대기가 아니거나 알림 횟수 미달")
+    })
+    ResponseEntity<AdminTransactionDto.DisputeAcceptResponse> refundUnanswered(
+            @Parameter(hidden = true) UserPrincipal principal, Long claimId,
+            AdminTransactionDto.ClaimRefundRequest request);
+
     @Operation(summary = "B2 반려 이의 인용",
             description = """
                     검수 반려에 대한 소비자 이의(1:1 문의)를 받아들인다 — **운영자가 실행하는 유일한 일**이다.

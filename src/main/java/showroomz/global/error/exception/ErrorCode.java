@@ -393,6 +393,7 @@ public enum ErrorCode {
     REFUND_AMOUNT_EXCEEDED(HttpStatus.CONFLICT, "REFUND_AMOUNT_EXCEEDED", "환불액이 취소 가능 잔액보다 큽니다."),
     REFUND_TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "REFUND_TASK_NOT_FOUND", "환불 건을 찾을 수 없습니다."),
     REFUND_TASK_NOT_EXECUTABLE(HttpStatus.CONFLICT, "REFUND_TASK_NOT_EXECUTABLE", "집행할 수 없는 환불 건입니다. 새로고침 후 다시 확인해 주세요."),
+    REFUND_TASK_NOT_VOIDABLE(HttpStatus.CONFLICT, "REFUND_TASK_NOT_VOIDABLE", "철회할 수 없는 환불 건입니다. 집행 전 운영자 사유 환불만 철회할 수 있습니다."),
     SELLER_CANCEL_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER_CANCEL_REASON_REQUIRED", "기타 사유를 선택하면 설명을 입력해야 합니다."),
     PURCHASE_ORDER_COLUMNS_REQUIRED(HttpStatus.BAD_REQUEST, "PURCHASE_ORDER_COLUMNS_REQUIRED", "발주서 컬럼을 1개 이상 선택해 주세요."),
     PURCHASE_ORDER_EMPTY(HttpStatus.BAD_REQUEST, "PURCHASE_ORDER_EMPTY", "발주서로 내려받을 주문이 없습니다."),

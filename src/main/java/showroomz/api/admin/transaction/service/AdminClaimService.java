@@ -52,6 +52,7 @@ public class AdminClaimService {
     private final OneToOneInquiryRepository inquiryRepository;
     private final ClaimPaymentService claimPaymentService;
     private final BusinessCalendar businessCalendar;
+    private final ActOnBehalfPolicy actOnBehalfPolicy;
 
     @Transactional(readOnly = true)
     public PageResponse<AdminTransactionDto.ClaimListItem> getClaims(Long marketId, ClaimTab tab, Set<ClaimType> types,
@@ -98,9 +99,11 @@ public class AdminClaimService {
         Integer inspectOverdue = claim.getStatus() == ClaimStatus.RECEIVED && claim.getInspectDueAt() != null
                 && claim.getInspectDueAt().isBefore(now)
                 ? businessCalendar.businessDaysBetween(claim.getInspectDueAt().toLocalDate(), now.toLocalDate()) : null;
+        boolean unanswered = claimService.isInspectionUnanswered(claim, now);
         return new AdminTransactionDto.ClaimDetail(detail, claim.getDeliveryGroup().getMarketName(), claim.getFeeBearer(),
                 feeBearerLabel(claim.getFeeBearer()), acceptable,
-                acceptable ? claimService.previewDisputeRefund(claimId) : null, dispute,
+                acceptable ? claimService.previewDisputeRefund(claimId) : null,
+                unanswered, unanswered ? claimService.previewUnansweredRefund(claimId, now) : null, dispute,
                 new AdminTransactionDto.InspectNotice(claim.getInspectNoticeCount(), claim.getLastInspectNoticeAt()),
                 inspectOverdue);
     }
@@ -125,6 +128,16 @@ public class AdminClaimService {
         OrderClaimService.DisputeAcceptance accepted = claimService.acceptRejectionDispute(claimId, adminId,
                 request.detail(), LocalDateTime.now());
         claimPaymentService.cancelRequested();
+        return new AdminTransactionDto.DisputeAcceptResponse(accepted.refundTaskId(),
+                AdminRefundNumber.format(accepted.refundTaskId()), accepted.amount());
+    }
+
+    /** 검수 무응답 운영자 환불 편입(41 보고 4번) — 06a B5 와 같은 편입 경로 · 집행은 환불 관리. */
+    @Transactional
+    public AdminTransactionDto.DisputeAcceptResponse refundUnanswered(Long adminId, Long claimId,
+                                                                      AdminTransactionDto.ClaimRefundRequest request) {
+        OrderClaimService.DisputeAcceptance accepted = claimService.refundUnansweredInspection(claimId, adminId,
+                request.detail(), LocalDateTime.now());
         return new AdminTransactionDto.DisputeAcceptResponse(accepted.refundTaskId(),
                 AdminRefundNumber.format(accepted.refundTaskId()), accepted.amount());
     }

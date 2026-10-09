@@ -47,6 +47,7 @@ public class AdminOrderCommandService {
     private final OrderClaimService claimService;
     private final AdminOrderQueryService queryService;
     private final ActOnBehalfPolicy actOnBehalfPolicy;
+    private final StalledPolicy stalledPolicy;
     private final DeliveryTrackerPort tracker;
 
     /** B3 배송완료일 정정 — 소비자 수령일 이의. 「직권 배송완료」는 없다. 구매확정 기산점도 같은 만큼 옮긴다. */
@@ -171,6 +172,57 @@ public class AdminOrderCommandService {
                         .map(item -> new OrderClaimService.Item(item.orderProductId(), item.quantity())).toList(),
                 request.reasonCode(), request.detail(), request.evidenceImageUrls(), LocalDateTime.now());
         return new AdminOrderDto.DefectClaimResponse(result.collectionId(), result.claimIds());
+    }
+
+    /**
+     * 추적 정지 종결 — 분실 판정(41 보고 3번 · 권고 3). 하위주문을 취소로 닫되 <b>재고는 돌리지 않는다</b>(상품이 없다). 환불은 항목 + 배송비
+     * 전액 · PG 자동(반송 완료와 같은 길). 분실 보상은 택배사와 브랜드 사이의 일이라 여기 없다.
+     */
+    @Transactional
+    public AdminOrderDto.DetailResponse markLost(Long adminId, Long deliveryGroupId, AdminOrderDto.MarkLostRequest request) {
+        LocalDateTime now = LocalDateTime.now();
+        OrderDeliveryGroup group = loadGroup(deliveryGroupId);
+        if (!stalledPolicy.isResolvable(group, now)) {
+            throw new BusinessException(ErrorCode.ORDER_STATE_CHANGED,
+                    "추적 정지 " + stalledPolicy.days() + "일이 지난 배송중 건만 분실로 판정할 수 있습니다.");
+        }
+        Long orderId = group.getOrder().getId();
+        List<OrderProduct> paidItems = orderProductRepository.findByDeliveryGroupIds(List.of(deliveryGroupId)).stream()
+                .filter(item -> item.getStatus() == OrderProductStatus.PAID).toList();
+        if (deliveryGroupRepository.markLostByAdmin(deliveryGroupId, request.reason(), now) != 1) {
+            throw new BusinessException(ErrorCode.ORDER_STATE_CHANGED);
+        }
+        int cancelled = orderProductRepository.cancelItemsByGroup(deliveryGroupId, OrderCancelType.LOST, now);
+        OrderDeliveryGroup reloaded = loadGroup(deliveryGroupId);
+        int refundAmount = paidItems.stream().mapToInt(item -> item.getPrice() * item.getQuantity()).sum()
+                + reloaded.getDeliveryFee();
+        fulfillmentService.enqueueRefund(reloaded, RefundTaskSource.LOST_IN_TRANSIT, null, refundAmount);
+        fulfillmentService.appendHistory(deliveryGroupId, FulfillmentEventType.LOST_RESOLVED, FulfillmentActorType.ADMIN,
+                adminId, "추적 정지 " + stalledPolicy.days() + "일 경과 · 항목 " + cancelled + "건 · " + request.reason(), now);
+        return queryService.getOrder(orderId);
+    }
+
+    /** 추적 정지 종결 — 배송완료 판정(41 보고 3번 · 권고 3). 출처 「운영자 처리 · 추적 정지」 · 구매확정 타이머가 수령 시각부터 간다. */
+    @Transactional
+    public AdminOrderDto.DetailResponse markDelivered(Long adminId, Long deliveryGroupId,
+                                                      AdminOrderDto.MarkDeliveredRequest request) {
+        LocalDateTime now = LocalDateTime.now();
+        OrderDeliveryGroup group = loadGroup(deliveryGroupId);
+        if (!stalledPolicy.isResolvable(group, now)) {
+            throw new BusinessException(ErrorCode.ORDER_STATE_CHANGED,
+                    "추적 정지 " + stalledPolicy.days() + "일이 지난 배송중 건만 배송완료로 판정할 수 있습니다.");
+        }
+        if (request.deliveredAt().isAfter(now) || (group.getShippedAt() != null
+                && request.deliveredAt().isBefore(group.getShippedAt()))) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "수령일은 발송 이후 · 지금 이전이어야 합니다.");
+        }
+        Long orderId = group.getOrder().getId();
+        if (deliveryGroupRepository.markDeliveredByAdmin(deliveryGroupId, request.deliveredAt(), adminId) != 1) {
+            throw new BusinessException(ErrorCode.ORDER_STATE_CHANGED);
+        }
+        fulfillmentService.appendHistory(deliveryGroupId, FulfillmentEventType.DELIVERED, FulfillmentActorType.ADMIN,
+                adminId, "운영자 처리 · 추적 정지 " + stalledPolicy.days() + "일 경과 · " + request.reason(), now);
+        return queryService.getOrder(orderId);
     }
 
     /** 운영자 사유 환불의 상한 — 결제의 취소 가능 잔액 − 아직 나가지 않은 환불. */

@@ -59,7 +59,8 @@ public class AdminRefundAssembler {
     private static final DateTimeFormatter NOTE_TIME = DateTimeFormatter.ofPattern("MM.dd HH:mm");
     private static final Set<FulfillmentEventType> REFUND_EVENTS = EnumSet.of(
             FulfillmentEventType.REFUND_ENQUEUED_BY_OPERATOR, FulfillmentEventType.REFUND_EXECUTED,
-            FulfillmentEventType.REFUND_FAILED);
+            FulfillmentEventType.REFUND_FAILED, FulfillmentEventType.REFUND_VOIDED,
+            FulfillmentEventType.REFUND_RECORDED_MANUALLY);
     private static final Set<ClaimEventType> CLAIM_REFUND_EVENTS = EnumSet.of(ClaimEventType.DISPUTE_ACCEPTED,
             ClaimEventType.REFUND_EXECUTED);
     private static final String ORIGINAL = "ORIGINAL";
@@ -159,7 +160,8 @@ public class AdminRefundAssembler {
                 task.getOrigin(), task.getOrigin().getLabel(), reason, target, additional,
                 new AdminTransactionDto.RefundSettlement("BEFORE_SETTLEMENT", "정산 전 · 클로백 없음", null),
                 task.getStatus(), statusLabel(task.getStatus()), task.getAttempt(),
-                orderProperties.getRefundAutoMaxAttempts(), failure, execution, executable(task), history);
+                orderProperties.getRefundAutoMaxAttempts(), failure, execution, executable(task), task.isVoidable(),
+                task.isExecutable(), history);
     }
 
     // ------------------------------------------------------------------ 행
@@ -176,7 +178,8 @@ public class AdminRefundAssembler {
                 task.getReasonDetail(), paymentKind, partial, payment == null ? null : payment.methodLabel(),
                 paymentLabel(task, payment, paymentKind, partial), task.getRefundAmount(), task.getStatus(),
                 statusLabel(task.getStatus()), statusNote(task, context.names()), task.getAttempt(), task.getLastError(),
-                displayAt(task), task.getCreatedAt(), task.getExecutedAt(), executable(task));
+                displayAt(task), task.getCreatedAt(), task.getExecutedAt(), executable(task), task.isVoidable(),
+                task.isExecutable());
     }
 
     private Context context(List<OrderRefundTask> tasks) {
@@ -222,6 +225,7 @@ public class AdminRefundAssembler {
             case SELLER_DIRECT_CANCEL -> context.adminCancelledGroups().contains(task.getDeliveryGroup().getId())
                     ? "운영자 대행 직권 취소" : "브랜드 직권 취소";
             case USER_CANCEL_BEFORE_PREPARE -> "결제완료 소비자 취소";
+            case LOST_IN_TRANSIT -> "배송 분실 처리";
             case RETURN_COMPLETED -> "반송 완료";
             case CLAIM_RETURN_PASSED -> claimsOf(task, context).stream().anyMatch(c -> c.getRejectedAt() != null)
                     ? "반품 · 일부 반려" : "반품 검수 통과";
@@ -338,7 +342,7 @@ public class AdminRefundAssembler {
             }
             case DONE -> task.getExecutedBy() == null ? null
                     : "집행 " + names.getOrDefault(task.getExecutedBy(), "운영자") + " · 재확인";
-            case VOID -> null;
+            case VOID -> "편입 철회";
         };
     }
 

@@ -196,6 +196,77 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
         adminGet("/v1/admin/orders/" + orderId).andExpect(jsonPath("$.groups[0].activeClaims").isEmpty());
     }
 
+    // ------------------------------------------------------------------ 검수 무응답 운영자 환불(41 보고 4번)
+
+    @Test
+    @DisplayName("[AC-15] 검수 무응답 — 알림 3회 전 409 · 3회면 상세에 금액 · 편입하면 클레임 종결 · 반품 수량 · 큐 PENDING · 통과분은 따로 정산")
+    void refundUnansweredInspection() throws Exception {
+        OrderDeliveryGroup group = deliveredGroup(creamVariant, 2);
+        List<Long> claimIds = requestClaim(group, ClaimType.RETURN, ClaimReason.CHANGE_OF_MIND, allItems(group),
+                newInvoice()).claimIds();
+        assertThat(claimIds).hasSize(1);
+        Long claimId = received(claimIds.get(0));
+        adminPost(ADMIN_CLAIMS + "/" + claimId + "/refund-tasks", Map.of("detail", "브랜드 연락 두절")).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CLAIM_STATE_CHANGED"));
+        jdbc.update("UPDATE order_claim SET inspect_due_at = ?, inspect_notice_count = 3 WHERE claim_id = ?",
+                LocalDateTime.now().minusDays(4), claimId);
+
+        adminGet(ADMIN_CLAIMS + "/" + claimId).andExpect(jsonPath("$.canRefundUnanswered").value(true))
+                .andExpect(jsonPath("$.unansweredRefundAmount").value(CREAM_PRICE * 2))
+                .andExpect(jsonPath("$.canAcceptDispute").value(false));
+        JsonNode accepted = json(adminPost(ADMIN_CLAIMS + "/" + claimId + "/refund-tasks",
+                Map.of("detail", "자동 알림 3회 무응답 · 소비자 문의 2건")).andExpect(status().isOk()));
+
+        long taskId = accepted.get("refundTaskId").asLong();
+        assertThat(accepted.get("amount").asInt()).isEqualTo(CREAM_PRICE * 2);
+        assertThat(claimRow(claimId)).containsEntry("status", "COMPLETED").containsEntry("result", "REFUNDED")
+                .containsEntry("refunded_amount", CREAM_PRICE * 2).containsEntry("fault_changed_to_seller", false);
+        assertThat(jdbc.queryForMap("SELECT reason_code, status, origin FROM order_refund_task WHERE refund_task_id = ?", taskId))
+                .containsEntry("reason_code", "INSPECTION_UNANSWERED").containsEntry("status", "PENDING")
+                .containsEntry("origin", "OPERATOR");
+        assertThat(jdbc.queryForObject("SELECT returned_quantity FROM order_product WHERE order_product_id = ?", Integer.class,
+                items(group).get(0).getId())).isEqualTo(2);
+        assertThat(events(claimId)).last().isEqualTo("INSPECTION_UNANSWERED");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM order_refund_task WHERE source = 'CLAIM_RETURN_PASSED'",
+                Integer.class)).isZero();
+        assertThat(fake.partialCancelCalls()).isEmpty();
+        adminPost(ADMIN_CLAIMS + "/" + claimId + "/refund-tasks", Map.of("detail", "다시")).andExpect(status().isConflict());
+        JsonNode pending = json(adminGet(ADMIN_REFUNDS + "?tab=PENDING")).get("content");
+        assertThat(pending).anySatisfy(row -> assertThat(row.get("reasonLabel").asText()).isEqualTo("검수 무응답"));
+    }
+
+    @Test
+    @DisplayName("[AC-15b] 같은 박스의 한 건은 통과 · 한 건은 무응답 — 운영자 환불 뒤 통과분의 PG 자동 환불이 따로 간다(이중 환불 없음)")
+    void refundUnansweredThenFinalizeOthers() throws Exception {
+        OrderDeliveryGroup group = deliveredTwoItemGroup();
+        List<Long> claimIds = requestClaim(group, ClaimType.RETURN, ClaimReason.DAMAGED_OR_DEFECTIVE, allItems(group),
+                newInvoice()).claimIds();
+        assertThat(claimIds).hasSize(2);
+        Long passedId = passed(claimIds.get(0));
+        Long stuck = received(claimIds.get(1));
+        assertThat(claimStatus(passedId)).isEqualTo("REFUND_PENDING");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM order_refund_task", Integer.class)).isZero();
+        jdbc.update("UPDATE order_claim SET inspect_due_at = ?, inspect_notice_count = 3 WHERE claim_id = ?",
+                LocalDateTime.now().minusDays(4), stuck);
+        int stuckGoods = jdbc.queryForObject("SELECT p.price * c.quantity FROM order_claim c JOIN order_product p "
+                + "ON p.order_product_id = c.order_product_id WHERE c.claim_id = ?", Integer.class, stuck);
+        int passedGoods = jdbc.queryForObject("SELECT p.price * c.quantity FROM order_claim c JOIN order_product p "
+                + "ON p.order_product_id = c.order_product_id WHERE c.claim_id = ?", Integer.class, passedId);
+
+        adminPost(ADMIN_CLAIMS + "/" + stuck + "/refund-tasks", Map.of("detail", "무응답")).andExpect(status().isOk());
+
+        // 판정이 다 끝나 통과분이 정산된다 — 무응답 건은 통과분에 섞이지 않는다.
+        assertThat(claimStatus(passedId)).isEqualTo("COMPLETED");
+        List<Map<String, Object>> tasks = jdbc.queryForList("SELECT source, refund_amount, status FROM order_refund_task "
+                + "WHERE delivery_group_id = ? ORDER BY refund_task_id", group.getId());
+        assertThat(tasks).hasSize(2);
+        assertThat(tasks.get(0)).containsEntry("source", "OPERATOR_REASON").containsEntry("refund_amount", stuckGoods)
+                .containsEntry("status", "PENDING");
+        assertThat(tasks.get(1)).containsEntry("source", "CLAIM_RETURN_PASSED").containsEntry("refund_amount", passedGoods)
+                .containsEntry("status", "DONE");
+        assertThat(fake.partialCancelCalls()).hasSize(1);
+    }
+
     // ------------------------------------------------------------------ 인용
 
     @Test

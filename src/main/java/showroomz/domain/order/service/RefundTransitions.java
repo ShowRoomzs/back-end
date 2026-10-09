@@ -103,6 +103,58 @@ public class RefundTransitions {
         if (task == null || task.getStatus() != RefundTaskStatus.EXECUTING) {
             return false;
         }
+        completeLocked(task, pgCancellationId, raw, operatorId, null, now);
+        return true;
+    }
+
+    /**
+     * 수동 완료 기록(어드민 06c · 41 보고 2번) — PG 콘솔 등 밖에서 이미 돌려준 환불을 PG 호출 없이 완료로 적는다. 결제의 누적 취소액 ·
+     * 부분 취소 기록 · 경로별 후속(반품이면 클레임 종결)은 PG 집행과 같다. 대기 · 실패 건만, 같은 결제의 다른 환불이 PG 를 기다리는
+     * 중이면 받지 않는다. 운영자가 PG 취소번호와 근거를 적고 이력이 「수동 기록」으로 남는다.
+     *
+     * @return 기록했으면 true · 상태가 맞지 않으면 false
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean recordManual(Long taskId, String pgCancellationId, String note, Long operatorId, LocalDateTime now) {
+        OrderRefundTask task = refundTaskRepository.findForUpdate(taskId).orElse(null);
+        if (task == null || !task.isExecutable()) {
+            return false;
+        }
+        String paymentId = task.getPaymentId();
+        if (paymentId != null) {
+            Payment payment = paymentRepository.findForUpdate(paymentId).orElse(null);
+            if (payment == null || refundTaskRepository.existsByPaymentIdAndStatus(paymentId, RefundTaskStatus.EXECUTING)
+                    || task.getRefundAmount() > payment.cancellableAmount()) {
+                return false;
+            }
+        }
+        task.startExecution();
+        completeLocked(task, pgCancellationId, null, operatorId,
+                "수동 완료 기록 · " + (pgCancellationId == null ? "" : pgCancellationId + " · ") + note, now);
+        return true;
+    }
+
+    /**
+     * 편입 철회(어드민 06c · 41 보고 2번) — 집행 전 운영자 사유 환불을 VOID 로. 반려 이의 인용 건은 편입 때 재발송비 청구를 이미
+     * 소멸 · 취소했으므로 철회하지 않는다(되살릴 수 없다).
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean voidTask(Long taskId, String reason, Long operatorId, LocalDateTime now) {
+        OrderRefundTask task = refundTaskRepository.findForUpdate(taskId).orElse(null);
+        if (task == null || !task.isVoidable()) {
+            return false;
+        }
+        task.markVoid();
+        fulfillmentService.appendHistory(task.getDeliveryGroup().getId(), FulfillmentEventType.REFUND_VOIDED,
+                FulfillmentActorType.ADMIN, operatorId,
+                String.format("%s · %,d원 · %s", task.refundNo(), task.getRefundAmount(), reason), now);
+        return true;
+    }
+
+    /** 집행 완료의 공통 몸체 — 잠근 EXECUTING 행에만. {@code manualNote}가 있으면 수동 기록이다. */
+    private void completeLocked(OrderRefundTask task, String pgCancellationId, String raw, Long operatorId,
+                                String manualNote, LocalDateTime now) {
+        Long taskId = task.getId();
         int amount = task.getRefundAmount();
         Long paymentCancelId = null;
         String paymentId = task.getPaymentId();
@@ -118,8 +170,10 @@ public class RefundTransitions {
         RefundTaskSource source = task.getSource();
         Long sourceId = task.getSourceId();
         FulfillmentActorType actor = operatorId == null ? FulfillmentActorType.SYSTEM : FulfillmentActorType.ADMIN;
-        fulfillmentService.appendHistory(deliveryGroupId, FulfillmentEventType.REFUND_EXECUTED, actor, operatorId,
-                String.format("%s · %,d원 · %s", task.refundNo(), amount, task.getOrigin().getLabel()), now);
+        fulfillmentService.appendHistory(deliveryGroupId,
+                manualNote == null ? FulfillmentEventType.REFUND_EXECUTED : FulfillmentEventType.REFUND_RECORDED_MANUALLY,
+                actor, operatorId, String.format("%s · %,d원 · %s", task.refundNo(), amount,
+                        manualNote == null ? task.getOrigin().getLabel() : manualNote), now);
         // 아래 조건부 UPDATE 가 영속성 컨텍스트를 비운다 — 엔티티 변경을 다 적은 뒤에 부른다.
         if (amount > 0 && paymentId != null) {
             paymentRepository.addCancelledAmount(paymentId, amount);
@@ -128,7 +182,6 @@ public class RefundTransitions {
         if (source == RefundTaskSource.CLAIM_RETURN_PASSED && sourceId != null) {
             claimService.applyRefundExecuted(sourceId, amount, actor, operatorId, now);
         }
-        return true;
     }
 
     /** PG 가 명시적으로 거절했다 — FAILED. 자동 재시도 상한 뒤에는 운영자 [재시도]다. */
@@ -194,6 +247,7 @@ public class RefundTransitions {
             case CLAIM_RETURN_PASSED -> "반품 검수 통과";
             case OPERATOR_REASON -> "운영자 사유 환불";
             case USER_CANCEL_BEFORE_PREPARE -> "결제완료 소비자 취소";
+            case LOST_IN_TRANSIT -> "배송 분실 처리";
             case CLAIM_PAYMENT_CANCELLED -> "교환 재발송비 환불";
         };
     }

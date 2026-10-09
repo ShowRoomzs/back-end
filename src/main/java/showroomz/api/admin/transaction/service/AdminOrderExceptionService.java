@@ -56,6 +56,7 @@ public class AdminOrderExceptionService {
     private final AdminOrderExceptionAssembler assembler;
     private final OrderProperties orderProperties;
     private final DeliveryTrackerProperties trackerProperties;
+    private final StalledPolicy stalledPolicy;
 
     public AdminOrderExceptionDto.ExceptionPage getExceptions(ExceptionTab tab, ExceptionKind kind, String keyword,
                                                               PagingRequest paging) {
@@ -148,8 +149,10 @@ public class AdminOrderExceptionService {
             } else if (group.getTrackingAlert() == TrackingAlert.PICKUP_UNCONFIRMED) {
                 rows.add(new Row(ExceptionKind.PICKUP_UNCONFIRMED, group, null, null, group.getShippedAt(), false));
             } else if (group.getTrackingAlert() == TrackingAlert.STALLED) {
+                // 종결 조건(41 보고 3번) — N일 경과면 운영자가 분실 · 배송완료를 판정할 수 있다(조건 표시만 · 06a 레일에서 고른다).
                 rows.add(new Row(ExceptionKind.TRACKING_STALLED, group, null, null,
-                        group.getLastTrackingAt() != null ? group.getLastTrackingAt() : group.getShippedAt(), false));
+                        group.getLastTrackingAt() != null ? group.getLastTrackingAt() : group.getShippedAt(),
+                        stalledPolicy.isResolvable(group, now)));
             }
         }
         // 추적 스텁(Noop)이면 회수 송장은 한 번도 조회되지 않는다 — 전부 24시간 뒤 오경보가 되므로 유형을 비운다(40 설계서 7-2 #2).

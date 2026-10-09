@@ -222,7 +222,22 @@ public final class AdminOrderDto {
             boolean canRegisterShipment,
             @Schema(description = "B4 · B5 대행 직권 취소 — 신규 · 상품준비중 ∧ (대행 조건 충족 ∨ 위해성 리콜)") boolean canCancel,
             @Schema(description = "B5 운영자 사유 환불 편입 — 발송 이후") boolean canEnqueueRefund,
-            @Schema(description = "B6 구매확정 후 하자 반품 대신 열기 — 구매확정(또는 배송완료) ∧ 배송완료 3개월 안") boolean canOpenDefectClaim
+            @Schema(description = "B6 구매확정 후 하자 반품 대신 열기 — 구매확정(또는 배송완료) ∧ 배송완료 3개월 안") boolean canOpenDefectClaim,
+            @Schema(description = "분실 처리 — 배송중 ∧ 추적 정지 ∧ 마지막 추적 + N일(기본 28) 경과(41 보고 3번)") boolean canMarkLost,
+            @Schema(description = "배송완료 처리 — 분실 처리와 같은 조건 · 운영자가 둘 중 하나를 고른다") boolean canMarkDelivered
+    ) {
+    }
+
+    @Schema(name = "AdminMarkLostRequest", description = "추적 정지 종결 — 분실 판정(하위주문 취소 · 재고 원복 없음 · PG 자동 환불)")
+    public record MarkLostRequest(
+            @NotBlank @Size(max = 300) @Schema(description = "판정 근거 — 택배사 조회 결과 등 · 이력에 남는다") String reason
+    ) {
+    }
+
+    @Schema(name = "AdminMarkDeliveredRequest", description = "추적 정지 종결 — 배송완료 판정(구매확정 타이머 시작)")
+    public record MarkDeliveredRequest(
+            @NotNull @Schema(description = "수령 시각 — 발송 이후 · 지금 이전", example = "2026-09-18T15:00:00") LocalDateTime deliveredAt,
+            @NotBlank @Size(max = 300) @Schema(description = "판정 근거 — 소비자 확인 등 · 이력에 남는다") String reason
     ) {
     }
 
