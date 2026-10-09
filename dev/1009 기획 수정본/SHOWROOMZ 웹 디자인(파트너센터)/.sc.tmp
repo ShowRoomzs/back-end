@@ -1,0 +1,12 @@
+      <div class="card">
+        <div class="card-h">계약 이행 확인<span class="ch-n">양측이 서로의 이행을 확인해야 정산이 시작됩니다</span></div>
+        <div class="card-b">
+          <div class="notice warn"><div><b>브랜드가 계약을 이행했는지 확인해 주세요.</b> 내 이행 여부는 브랜드가 같은 방식으로 확인합니다. 판단은 <b>항목별이 아니라 계약 전체에 대해 한 번</b>입니다. <b>양측이 모두 «이행»으로 확인하면 정산이 시작</b>되고, 한쪽이라도 «미이행»을 선택하면 <b>연결·소통에 3자 스레드</b>가 열려 브랜드 · 운영자와 함께 합의하게 됩니다.</div></div>
+          <div class="duty" style="margin-top:var(--sp-4)">
+            <div class="duty-r"><span class="dl">내가 확인할 대상<span class="dw">○○ 브랜드의 의무 — 주문 배송 완료 · 고정 지급비 지급</span></span><span class="ds">확인 전</span></div>
+            <div class="duty-r ro"><span class="dl">브랜드가 확인할 대상<span class="dw">내 의무 — 쇼룸 공구 게시물 · 인스타그램 피드 1 · 릴스 1 · 스토리 3</span></span><span class="ds">확인 전</span></div>
+          </div>
+          <div class="notice neutral" style="margin-top:var(--sp-3)"><div>확인 기한은 <b>2026.09.03</b>입니다. 기한까지 답하지 않으면 <b>이행으로 처리</b>되어 정산이 자동으로 진행됩니다 — 문제가 있다면 기한 전에 «미이행»을 선택해 주세요.</div></div>
+          <div class="btn-row" style="margin-top:var(--sp-4);display:flex;justify-content:flex-end"><button class="btn btn-primary">계약 이행 확인</button></div>
+        </div>
+      </div>

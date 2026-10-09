@@ -56,11 +56,14 @@ public class SellerClaimCommandService {
         return queryService.getClaim(sellerEmail, claimId);
     }
 
-    /** 검수 거절 — 단건 · 제출 = 즉시 확정. */
+    /** 검수 반려 — 단건 · 제출 = 즉시 확정 · 6항목(1009 기획 수정본 5-b). */
     public SellerClaimDetailResponse reject(String sellerEmail, Long claimId, SellerClaimRejectRequest request) {
         SellerScope scope = accessGuard.resolve(sellerEmail);
-        claimService.rejectInspection(claimId, scope.market().getId(), scope.sellerId(), request.reasonCode(),
-                request.detail(), request.evidenceImageUrls(), LocalDateTime.now());
+        claimService.rejectInspection(claimId, scope.market().getId(), scope.sellerId(),
+                new OrderClaimService.RejectCommand(request.reasonCode(), request.detail(), request.legalBasis(),
+                        request.rejectedQuantity(), Boolean.TRUE.equals(request.faultChangedToSeller()),
+                        request.consumerMessage(), request.evidenceImageUrls()),
+                LocalDateTime.now());
         return queryService.getClaim(sellerEmail, claimId);
     }
 }

@@ -1,5 +1,6 @@
 package showroomz.api.creator.groupbuy;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -158,6 +159,7 @@ class CreatorGroupBuyPortIntegrationTest extends CreatorGroupBuyTestSupport {
     }
 
     @Test
+    @Disabled("[기획 제외] 계약 이행 확인 폐기(2026-10-06 · 1009 기획 수정본 6절) — 기획 복귀 시 되살린다")
     @DisplayName("C6→B12: 스레드 생성과 미이행 기록은 한 거래이고 양측 동의 뒤에만 정산 보류를 풀 수 있다")
     void unfulfilledCreatesThreadAndRequiresAgreementToReleaseHold() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);
@@ -195,13 +197,9 @@ class CreatorGroupBuyPortIntegrationTest extends CreatorGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("판매 포트가 미종결 주문을 모르면 양측 이행 확인 뒤에도 정산 게이트는 열리지 않는다")
+    @DisplayName("판매 포트가 미종결 주문을 모르면 정산 게이트는 열리지 않는다 — 이행 확인은 게이트가 아니다(2026-10-06 폐기)")
     void unknownClosureCannotStartSettlement() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);
-        studioAction(groupBuy.getId(), "fulfillment-check", Map.of("result", "FULFILLED"))
-                .andExpect(status().isOk());
-        action(groupBuy.getId(), "fulfillment-check", Map.of("result", "FULFILLED"))
-                .andExpect(status().isOk());
 
         when(salesReader.readClosure(groupBuy.getId())).thenReturn(Optional.empty());
         assertThat(groupBuyCommandService.isSettlementReady(groupBuy.getId())).isFalse();

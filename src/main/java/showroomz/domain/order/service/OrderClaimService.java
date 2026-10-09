@@ -28,6 +28,7 @@ import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.domain.order.repository.OrderProductRepository;
 import showroomz.domain.order.repository.OrderRefundTaskRepository;
+import showroomz.domain.order.type.ClaimRejectLegalBasis;
 import showroomz.domain.order.type.ClaimAttachmentOwner;
 import showroomz.domain.order.type.ClaimCancelReason;
 import showroomz.domain.order.type.ClaimChargeStatus;
@@ -281,7 +282,127 @@ public class OrderClaimService {
                 appendAccepted(claim, command.userId(), invoice, now);
             }
         }
+        // 접수 = 구매확정 타이머 정지(요청 시점부터 · 1009 기획 수정본 4-2). 결제 대기는 결제 확정 때 멈춘다.
+        if (!paymentRequired) {
+            fulfillmentService.pauseConfirmTimer(group.getId(), now);
+        }
         return new RequestResult(collection.getId(), claimIds, true, initial, pendingChargeId);
+    }
+
+    /** 구매확정 후 하자 — 법정 기간(공급일 기준 3개월 · 전자상거래법 제17조③). 안 날부터 30일은 운영자가 문의 내용으로 판단한다. */
+    private static final int DEFECT_CLAIM_MONTHS = 3;
+
+    /**
+     * 운영자가 대신 여는 하자 반품(1009 기획 수정본 8-1 B6 · 거래 관리 결정 2) — 구매확정 뒤 하자는 소비자가 직접 신청하지 못하고
+     * 1:1 문의 → 운영자가 연다. 브랜드 귀책 사유(파손·불량 · 오배송)만 · 증빙 필수 · 단순 변심 불가 · 배송완료 3개월 안.
+     * 연 뒤에는 일반 반품과 같은 흐름이다(회수 송장은 소비자 · 검수는 브랜드 · 통과 시 PG 자동 환불).
+     */
+    @Transactional
+    public RequestResult openDefectClaimByOperator(Long adminId, Long deliveryGroupId, List<Item> items,
+                                                   ClaimReason reason, String detail, List<String> evidenceUrls,
+                                                   LocalDateTime now) {
+        if (items == null || items.isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "반품할 상품을 선택해 주세요.");
+        }
+        if (reason == null || reason.getFeeBearer() != ClaimFeeBearer.SELLER) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "구매확정 후 하자는 파손·불량 · 오배송만 열 수 있습니다.");
+        }
+        String reasonDetail = blankToNull(detail);
+        List<String> evidences = evidenceUrls == null ? List.of()
+                : evidenceUrls.stream().filter(url -> url != null && !url.isBlank()).toList();
+        if (reasonDetail == null || evidences.isEmpty()) {
+            throw new BusinessException(ErrorCode.CLAIM_REASON_DETAIL_REQUIRED, "하자 내용과 증빙을 모두 입력해 주세요.");
+        }
+        OrderDeliveryGroup group = deliveryGroupRepository.findForUpdate(deliveryGroupId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_GROUP_NOT_FOUND));
+        if (group.getFulfillmentStatus() != FulfillmentStatus.CONFIRMED
+                && group.getFulfillmentStatus() != FulfillmentStatus.DELIVERED) {
+            throw new BusinessException(ErrorCode.CLAIM_NOT_ELIGIBLE);
+        }
+        if (group.getDeliveredAt() == null || group.getDeliveredAt().plusMonths(DEFECT_CLAIM_MONTHS).isBefore(now)) {
+            throw new BusinessException(ErrorCode.CLAIM_NOT_ELIGIBLE, "배송완료 후 3개월이 지나 열 수 없습니다.");
+        }
+        Set<Long> ids = new HashSet<>();
+        for (Item item : items) {
+            if (item.orderProductId() == null || !ids.add(item.orderProductId())) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "같은 상품을 두 번 선택할 수 없습니다.");
+            }
+        }
+        Map<Long, OrderProduct> products = orderProductRepository.findAllByIdForUpdate(ids).stream()
+                .collect(Collectors.toMap(OrderProduct::getId, Function.identity()));
+        for (Item item : items) {
+            OrderProduct product = products.get(item.orderProductId());
+            if (product == null || product.getDeliveryGroup() == null
+                    || !product.getDeliveryGroup().getId().equals(deliveryGroupId)) {
+                throw new BusinessException(ErrorCode.ORDER_PRODUCT_NOT_FOUND);
+            }
+            if (product.getStatus() != OrderProductStatus.PURCHASE_CONFIRMED
+                    && product.getStatus() != OrderProductStatus.PAID) {
+                throw new BusinessException(ErrorCode.CLAIM_NOT_ELIGIBLE);
+            }
+            long remaining = product.getQuantity() - product.getReturnedQuantity()
+                    - claimRepository.sumOccupiedQuantity(product.getId());
+            if (item.quantity() < 1 || item.quantity() > remaining) {
+                throw new BusinessException(ErrorCode.CLAIM_QUANTITY_EXCEEDED);
+            }
+        }
+        Order order = group.getOrder();
+        Market market = group.getMarket();
+        OrderProperties.Claim config = orderProperties.getClaim();
+        OrderClaimCollection collection = collectionRepository.save(OrderClaimCollection.builder()
+                .orderId(order.getId())
+                .deliveryGroup(group)
+                .marketId(group.getMarketId())
+                .userId(order.getUser().getId())
+                .type(ClaimType.RETURN)
+                .reasonCode(reason)
+                .reasonDetail(reasonDetail)
+                .feeBearer(ClaimFeeBearer.SELLER)
+                .invoiceDueAt(BusinessDayCalculator.endOfDayAfter(now, config.getInvoiceDueDays()))
+                .returnRecipient(market.getShippingRecipientName())
+                .returnContact(market.getShippingContact())
+                .returnAddress(market.getShippingAddress())
+                .returnDetailAddress(market.getShippingDetailAddress())
+                .returnDeduction(0)
+                .reshipRecipient(order.getRecipientName())
+                .reshipPhone(order.getRecipientPhone())
+                .reshipZipCode(order.getZipCode())
+                .reshipAddress(order.getAddress())
+                .reshipDetailAddress(order.getDetailAddress())
+                .reshipMemo(order.getDeliveryMemo())
+                .createdAt(now)
+                .build());
+        LocalDateTime collectDueAt = businessDayCalculator.dueAt(now, config.getCollectDueBusinessDays());
+        List<Long> claimIds = new ArrayList<>();
+        for (Item item : items) {
+            OrderClaim claim = OrderClaim.builder()
+                    .collection(collection)
+                    .orderId(order.getId())
+                    .deliveryGroup(group)
+                    .orderProduct(products.get(item.orderProductId()))
+                    .marketId(group.getMarketId())
+                    .userId(order.getUser().getId())
+                    .type(ClaimType.RETURN)
+                    .quantity(item.quantity())
+                    .reasonCode(reason)
+                    .reasonDetail(reasonDetail)
+                    .feeBearer(ClaimFeeBearer.SELLER)
+                    .status(ClaimStatus.REQUESTED)
+                    .requestedAt(now)
+                    .collectDueAt(collectDueAt)
+                    .build();
+            claim.markOpenedByOperator(adminId, "구매확정 후 하자");
+            claimRepository.save(claim);
+            claimIds.add(claim.getId());
+            for (int i = 0; i < evidences.size(); i++) {
+                attachmentRepository.save(OrderClaimAttachment.builder()
+                        .claim(claim).owner(ClaimAttachmentOwner.CONSUMER).imageUrl(evidences.get(i)).sortOrder(i)
+                        .build());
+            }
+            appendHistory(claim, ClaimEventType.REQUESTED, FulfillmentActorType.ADMIN, adminId,
+                    "운영자 개설 · 구매확정 후 하자 · 증빙 " + evidences.size() + "장", now);
+        }
+        return new RequestResult(collection.getId(), claimIds, true, ClaimStatus.REQUESTED, null);
     }
 
     /**
@@ -351,6 +472,7 @@ public class OrderClaimService {
         for (Long claimId : draftIds) {
             appendAccepted(claimRepository.getReferenceById(claimId), userId, invoice, now);
         }
+        fulfillmentService.pauseConfirmTimer(collection.getDeliveryGroup().getId(), now);
     }
 
     /** 결제 없이 남은 오래된 초안 — 삭제 배치의 대상(결제창이 아직 열려 있을 수 있는 것은 빠진다). */
@@ -467,7 +589,7 @@ public class OrderClaimService {
         }
         appendHistory(claimId, ClaimEventType.WITHDRAWN, FulfillmentActorType.CONSUMER, userId, null, now);
         releaseAfterCancel(collectionId, List.of(claimId), now);
-        fulfillmentService.confirmIfDue(deliveryGroupId, now);
+        fulfillmentService.resumeConfirmTimerIfIdle(deliveryGroupId, now);
     }
 
     /** 자동 취소 배치의 대상 — 회수 송장 등록 기한이 지났는데 아직 회수 대기인 요청. */
@@ -501,7 +623,7 @@ public class OrderClaimService {
             }
         }
         releaseAfterCancel(collectionId, expiredIds, now);
-        fulfillmentService.confirmIfDue(deliveryGroupId, now);
+        fulfillmentService.resumeConfirmTimerIfIdle(deliveryGroupId, now);
         return closed;
     }
 
@@ -520,7 +642,7 @@ public class OrderClaimService {
         }
         appendHistory(claimId, ClaimEventType.CLOSED_BY_ADMIN, FulfillmentActorType.ADMIN, adminId, reason, now);
         releaseAfterCancel(collectionId, List.of(claimId), now);
-        fulfillmentService.confirmIfDue(deliveryGroupId, now);
+        fulfillmentService.resumeConfirmTimerIfIdle(deliveryGroupId, now);
     }
 
     // ------------------------------------------------------------------ 입고 확인 · 검수 판정(3-3 · 전이 #4 ~ #7)
@@ -555,14 +677,21 @@ public class OrderClaimService {
     /**
      * 검수 통과 — 반품이면 환불 대기로 가고 <b>판매가 무효가 된 시점이 여기</b>라 항목의 반품 수량을 지금 올린다(전량이면
      * 항목이 RETURNED). 돌아온 물건의 재고는 원복하지 않는다 — 다시 팔 수 있는지는 브랜드의 판단이다. 교환이면 재발송
-     * 대기로 간다. 환불 큐는 여기가 아니라 요청의 판정이 다 끝난 순간에 선다({@link #finalizeCollection}).
+     * 대기로 간다. 환불 큐는 여기가 아니라 요청의 판정이 다 끝난 순간에 선다({@link #finalizeCollection}) — 그 순간 PG 가
+     * 즉시 자동 환불한다(1009 기획 수정본 2절 · 되돌릴 수 없다).
      */
     @Transactional
     public void passInspection(Long claimId, Long marketId, Long sellerId, LocalDateTime now) {
         OrderClaim claim = claimRepository.findOwned(claimId, marketId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
-        ClaimType type = claim.getType();
         Long collectionId = claim.getCollection().getId();
+        passInternal(claim, marketId, sellerId, now);
+        finalizeCollection(collectionId, now);
+    }
+
+    private void passInternal(OrderClaim claim, Long marketId, Long sellerId, LocalDateTime now) {
+        Long claimId = claim.getId();
+        ClaimType type = claim.getType();
         Long orderProductId = claim.getOrderProduct().getId();
         int quantity = claim.getQuantity();
         ClaimStatus to = type == ClaimType.RETURN ? ClaimStatus.REFUND_PENDING : ClaimStatus.RESHIP_READY;
@@ -577,55 +706,103 @@ public class OrderClaimService {
             orderProductRepository.markReturnedIfFull(orderProductId);
         }
         appendHistory(claimId, ClaimEventType.INSPECTION_PASSED, FulfillmentActorType.SELLER, sellerId, null, now);
-        finalizeCollection(collectionId, now);
     }
 
     /**
-     * 검수 거절 — 제출 = 즉시 확정이고 되돌리지 않는다. 사유 · 설명 · 증빙이 전부 있어야 한다. 반려 상품을 다시 받는
-     * 배송비 청구가 선다(같은 박스에 미정산 건이 있으면 합류 — 반송도 한 박스다). <b>거절은 구매확정 보류를 푼다</b> —
-     * 기준 시각 + N일이 이미 지났으면 그 자리에서 확정된다.
+     * 검수 반려 입력 6항목(1009 기획 수정본 5-b · 파트너 11 B1r · 소비자 C10-5와 1:1).
+     *
+     * @param rejectedQuantity 반려 수량 — null 이거나 신청 수량과 같으면 전체 반려, 작으면 일부 반려(나머지는 통과)
+     * @param faultToSeller    귀책 변경 — 브랜드 귀책으로 인정(반품 배송비 차감 환원 · 반려 재발송비 브랜드 부담)
+     * @param consumerMessage  소비자에게 보낼 메시지 — 필수
+     */
+    public record RejectCommand(ClaimRejectReason reasonCode, String detail, ClaimRejectLegalBasis legalBasis,
+                                Integer rejectedQuantity, boolean faultToSeller, String consumerMessage,
+                                List<String> evidenceImageUrls) {
+    }
+
+    /**
+     * 검수 반려 — 제출 = 즉시 확정이고 되돌리지 않는다. 사유 · 상세 · 법적 근거 · 소비자 메시지 · 증빙이 전부 있어야 한다.
+     * 반려 상품을 다시 받는 배송비 청구가 선다(같은 박스에 미정산 건이 있으면 합류 — 반송도 한 박스다 · 브랜드 귀책 인정이면
+     * 0원). <b>반려는 구매확정 정지를 푼다</b> — 진행 중 클레임이 남지 않으면 남은 일수부터 다시 센다.
+     *
+     * <p>일부 반려 — 원래 행을 통과 수량으로 줄여 통과시키고, 반려 수량은 같은 요청의 새 행으로 갈라 반려한다. 판정 종료가 한
+     * 번에 「통과분 환불 − 재발송비」를 계산한다(앱 클레임 설계서 1-4 일부 반려 분기).
      */
     @Transactional
-    public void rejectInspection(Long claimId, Long marketId, Long sellerId, ClaimRejectReason reasonCode,
-                                 String detail, List<String> evidenceImageUrls, LocalDateTime now) {
-        String rejectDetail = blankToNull(detail);
+    public void rejectInspection(Long claimId, Long marketId, Long sellerId, RejectCommand command, LocalDateTime now) {
+        String rejectDetail = blankToNull(command.detail());
+        String consumerMessage = blankToNull(command.consumerMessage());
+        List<String> evidenceImageUrls = command.evidenceImageUrls();
         int evidenceCount = evidenceImageUrls == null ? 0 : evidenceImageUrls.size();
-        if (reasonCode == null || rejectDetail == null || evidenceCount < 1
+        if (command.reasonCode() == null || rejectDetail == null || command.legalBasis() == null
+                || consumerMessage == null || evidenceCount < 1
                 || evidenceCount > orderProperties.getClaim().getEvidenceMax()
                 || evidenceImageUrls.stream().anyMatch(url -> url == null || url.isBlank())) {
             throw new BusinessException(ErrorCode.CLAIM_REJECT_INCOMPLETE);
         }
         OrderClaim claim = claimRepository.findOwned(claimId, marketId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
-        Long collectionId = claim.getCollection().getId();
-        Long deliveryGroupId = claim.getDeliveryGroup().getId();
-        Long exchangeVariantId = claim.getExchangeVariantId();
-        int quantity = claim.getQuantity();
-        int reshipFee = feePolicy.rejectReshipFee(claim.getDeliveryGroup());
-        if (claimRepository.rejectInspection(claimId, marketId, reasonCode, rejectDetail, sellerId, now) != 1) {
+        if (claim.getStatus() != ClaimStatus.RECEIVED) {
             throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED);
         }
-        OrderClaim rejected = claimRepository.getReferenceById(claimId);
-        for (int i = 0; i < evidenceCount; i++) {
-            attachmentRepository.save(OrderClaimAttachment.builder()
-                    .claim(rejected).owner(ClaimAttachmentOwner.SELLER).imageUrl(evidenceImageUrls.get(i))
-                    .sortOrder(i).build());
+        int quantity = claim.getQuantity();
+        Integer requested = command.rejectedQuantity();
+        if (requested != null && (requested < 1 || requested > quantity)) {
+            throw new BusinessException(ErrorCode.CLAIM_QUANTITY_EXCEEDED);
         }
+        Long collectionId = claim.getCollection().getId();
+        Long deliveryGroupId = claim.getDeliveryGroup().getId();
         OrderClaimCollection collection = collectionRepository.findForUpdate(collectionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        // 귀책 변경 — 판정 종료 전에 요청 값을 바꿔 둔다(환불액 · 재발송비가 종료 때 이 값으로 계산된다).
+        if (command.faultToSeller()) {
+            collection.acceptSellerFault();
+        }
+        int reshipFee = command.faultToSeller() ? 0 : feePolicy.rejectReshipFee(claim.getDeliveryGroup());
         if (pendingRejectCharge(collectionId) == null) {
             chargeRepository.save(OrderClaimCharge.builder()
                     .collection(collection).type(ClaimChargeType.REJECT_RESHIP).amount(reshipFee)
                     .status(ClaimChargeStatus.PENDING).createdAt(now).build());
         }
+
+        Long rejectTargetId = claimId;
+        if (requested != null && requested < quantity) {
+            // 일부 반려 — 반려 수량을 새 행으로 가르고 원래 행(통과 수량)은 통과시킨다.
+            OrderClaim split = claimRepository.save(OrderClaim.splitOf(claim, requested, now));
+            rejectTargetId = split.getId();
+            appendHistory(split, ClaimEventType.RECEIVED, FulfillmentActorType.SELLER, sellerId,
+                    "일부 반려 · " + claim.claimNumber() + "에서 " + requested + "개 분리", now);
+            if (claimRepository.shrinkForPartialReject(claimId, marketId, quantity - requested) != 1) {
+                throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED);
+            }
+            passInternal(claimRepository.findById(claimId).orElseThrow(), marketId, sellerId, now);
+        }
+        OrderClaim target = claimRepository.findById(rejectTargetId).orElseThrow();
+        Long exchangeVariantId = target.getExchangeVariantId();
+        int rejectedQuantity = target.getQuantity();
+        if (claimRepository.rejectInspection(rejectTargetId, marketId, command.reasonCode(), rejectDetail,
+                command.legalBasis(), consumerMessage, command.faultToSeller(), sellerId, now) != 1) {
+            throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED);
+        }
+        if (command.faultToSeller()) {
+            claimRepository.acceptSellerFault(collectionId);
+        }
+        OrderClaim rejected = claimRepository.getReferenceById(rejectTargetId);
+        for (int i = 0; i < evidenceCount; i++) {
+            attachmentRepository.save(OrderClaimAttachment.builder()
+                    .claim(rejected).owner(ClaimAttachmentOwner.SELLER).imageUrl(evidenceImageUrls.get(i))
+                    .sortOrder(i).build());
+        }
         appendHistory(rejected, ClaimEventType.INSPECTION_REJECTED, FulfillmentActorType.SELLER, sellerId,
-                reasonCode.getLabel(), now);
-        // 교환은 무효다 — 받은 상품을 그대로 돌려보내므로 잡아 둔 새 옵션의 재고를 되돌린다.
+                command.reasonCode().getLabel()
+                        + (rejectedQuantity < quantity ? " · 일부 반려 " + rejectedQuantity + "개" : "")
+                        + (command.faultToSeller() ? " · 브랜드 귀책 인정" : ""), now);
+        // 교환은 무효다 — 받은 상품을 그대로 돌려보내므로 잡아 둔 새 옵션의 재고를 반려 수량만큼 되돌린다.
         if (exchangeVariantId != null) {
-            productVariantRepository.restoreStock(exchangeVariantId, quantity);
+            productVariantRepository.restoreStock(exchangeVariantId, rejectedQuantity);
         }
         finalizeCollection(collectionId, now);
-        fulfillmentService.confirmIfDue(deliveryGroupId, now);
+        fulfillmentService.resumeConfirmTimerIfIdle(deliveryGroupId, now);
     }
 
     /**
@@ -676,6 +853,11 @@ public class OrderClaimService {
             rejectCharge.settle(ClaimChargeStatus.COVERED, null, now);
             settlement = "교환 결제분 충당";
         }
+        // 브랜드 귀책 인정(재발송비 0원) — 소비자가 결제할 것이 없다. 반려 상품은 바로 재발송 대기로 간다.
+        if (rejectCharge != null && rejectCharge.isPending() && rejectCharge.getAmount() == 0) {
+            rejectCharge.settle(ClaimChargeStatus.WAIVED, null, now);
+            settlement = "브랜드 귀책 · 재발송비 브랜드 부담";
+        }
         if (rejectCharge != null && rejectCharge.isPending()) {
             // 전체 반려이거나 환불액이 재발송비보다 작다 — 소비자가 결제해야 한다. 이 날이 지나면 미결제 고지가 시작된다.
             rejectCharge.openForPayment(BusinessDayCalculator.endOfDayAfter(now,
@@ -720,7 +902,7 @@ public class OrderClaimService {
     public ReshipResult registerReshipment(Long claimId, Long marketId, Long sellerId, DeliveryCarrier carrier,
                                            String rawTrackingNumber, LocalDateTime now) {
         String trackingNumber = rawTrackingNumber == null ? "" : rawTrackingNumber.replaceAll("[^0-9]", "");
-        if (carrier == null || trackingNumber.isEmpty()
+        if (carrier == null || !carrier.isSelectable() || trackingNumber.isEmpty()
                 || tracker.validateInvoice(carrier, trackingNumber) == ValidationResult.INVALID) {
             return ReshipResult.fail(ErrorCode.INVOICE_FORMAT_INVALID);
         }
@@ -743,7 +925,7 @@ public class OrderClaimService {
         OrderClaim claim = claimRepository.findOwned(claimId, marketId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
         String trackingNumber = rawTrackingNumber == null ? "" : rawTrackingNumber.replaceAll("[^0-9]", "");
-        if (carrier == null || trackingNumber.isEmpty()
+        if (carrier == null || !carrier.isSelectable() || trackingNumber.isEmpty()
                 || tracker.validateInvoice(carrier, trackingNumber) == ValidationResult.INVALID) {
             throw new BusinessException(ErrorCode.INVOICE_FORMAT_INVALID);
         }
@@ -811,7 +993,9 @@ public class OrderClaimService {
     private void afterReshipDelivered(Long claimId, Long deliveryGroupId, boolean rejected, LocalDateTime deliveredAt,
                                       FulfillmentActorType actorType, Long actorId, LocalDateTime now) {
         if (!rejected) {
-            deliveryGroupRepository.restartConfirmTimer(deliveryGroupId, deliveredAt);
+            fulfillmentService.restartConfirmTimer(deliveryGroupId, deliveredAt, now);
+        } else {
+            fulfillmentService.resumeConfirmTimerIfIdle(deliveryGroupId, now);
         }
         appendHistory(claimId, ClaimEventType.RESHIP_DELIVERED, actorType, actorId,
                 rejected ? "반송 완료 · 원래 상품 도착" : "재발송 도착 · 구매확정 카운트 재시작", now);
@@ -940,31 +1124,88 @@ public class OrderClaimService {
         appendHistory(claimId, ClaimEventType.DISPOSED, FulfillmentActorType.ADMIN, adminId, null, now);
     }
 
+    /**
+     * 반려 이의 인용(어드민 06b B2 · 1009 기획 수정본 8-3) — 검수 반려에 대한 소비자 이의를 운영자가 받아들였다. 반려 보류(아직 반송
+     * 전)인 반품만. 상품은 브랜드에 있으므로 반품 수량으로 올리고, 돈은 <b>운영자 사유 환불로 편입</b>한다(집행은 환불 관리의
+     * 재확인에서만). 같은 박스에 반려 보류가 더 없으면 반려 재발송비 청구는 소멸한다. 기각은 버튼이 아니라 스레드 답변이다.
+     *
+     * @return 편입한 환불 큐 id
+     */
+    @Transactional
+    public Long acceptRejectionDispute(Long claimId, Long adminId, int amount, String detail, LocalDateTime now) {
+        OrderClaim claim = claimRepository.findById(claimId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        if (claim.getType() != ClaimType.RETURN || claim.getStatus() != ClaimStatus.REJECT_HOLD) {
+            throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED, "반려 보류 중인 반품만 이의를 인용할 수 있습니다.");
+        }
+        Long collectionId = claim.getCollection().getId();
+        Long orderProductId = claim.getOrderProduct().getId();
+        int quantity = claim.getQuantity();
+        OrderDeliveryGroup group = claim.getDeliveryGroup();
+        collectionRepository.findForUpdate(collectionId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        boolean othersOnHold = claimRepository.findByCollectionId(collectionId).stream()
+                .anyMatch(other -> !other.getId().equals(claimId) && other.getStatus() == ClaimStatus.REJECT_HOLD);
+        OrderClaimCharge charge = othersOnHold ? null : pendingRejectCharge(collectionId);
+        if (charge != null) {
+            charge.settle(ClaimChargeStatus.VOID, null, now);
+        }
+        OrderRefundTask task = fulfillmentService.enqueueOperatorRefund(group, claimId, amount,
+                showroomz.domain.order.type.OperatorRefundReason.DISPUTE_ACCEPTED, detail, adminId, now);
+        if (claimRepository.closeRejectedByDispute(claimId, amount, now) != 1) {
+            throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED);
+        }
+        orderProductRepository.addReturnedQuantity(orderProductId, quantity);
+        orderProductRepository.markReturnedIfFull(orderProductId);
+        appendHistory(claimId, ClaimEventType.DISPUTE_ACCEPTED, FulfillmentActorType.ADMIN, adminId,
+                String.format("%,d원 · %s", amount, detail), now);
+        return task.getId();
+    }
+
     // ------------------------------------------------------------------ 환불 집행 · 재발송비 결제(3-7 · 전이 #8 · #10)
 
     /**
-     * 환불 집행 기록(어드민) — 환불 큐가 요청 단위라 그 요청의 환불 대기 클레임을 <b>한꺼번에</b> 닫는다. 집행액은 예정액과
-     * 다를 수 있다. 항목별 확정액은 상품 금액에서 차감분을 앞 항목부터 빼서 나눠 적는다(합이 집행액과 같다).
+     * 환불 수동 기록(어드민) — PG 를 거치지 않고 집행 완료로 적는다(결제 밖에서 돌려준 건 · 결제가 없는 주문). PG 자동 환불은
+     * {@code RefundTransitions.complete}가 같은 후속({@link #applyRefundExecuted})을 부른다(1009 기획 수정본 2-4).
      */
     @Transactional
     public void completeRefund(Long refundTaskId, int amount, Long adminId, LocalDateTime now) {
         OrderRefundTask task = refundTaskRepository.findForUpdate(refundTaskId)
                 .filter(found -> found.getSource() == RefundTaskSource.CLAIM_RETURN_PASSED)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
-        if (!task.isPending() || amount < 0) {
+        if (!task.isExecutable() || amount < 0) {
             throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED);
         }
         Long collectionId = task.getSourceId();
-        OrderClaimCollection collection = collectionRepository.findForUpdate(collectionId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        task.markExecuted(amount, adminId, now);
+        if (!applyRefundExecuted(collectionId, amount, FulfillmentActorType.ADMIN, adminId, now)) {
+            throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED);
+        }
+    }
+
+    /**
+     * 환불 집행 뒤의 클레임 종결 — 환불 큐가 요청 단위라 그 요청의 환불 대기 클레임을 <b>한꺼번에</b> 닫는다. 집행액은 예정액과
+     * 다를 수 있다. 항목별 확정액은 상품 금액에서 차감분을 앞 항목부터 빼서 나눠 적는다(합이 집행액과 같다).
+     *
+     * <p>PG 자동 환불의 완료 트랜잭션 안에서도 불린다 — 돈은 이미 나갔으므로 닫을 클레임이 없어도 예외를 던지지 않는다
+     * (던지면 완료 기록까지 롤백된다).
+     *
+     * @return 닫은 클레임이 있으면 true
+     */
+    @Transactional
+    public boolean applyRefundExecuted(Long collectionId, int amount, FulfillmentActorType actorType, Long actorId,
+                                       LocalDateTime now) {
+        OrderClaimCollection collection = collectionRepository.findForUpdate(collectionId).orElse(null);
+        if (collection == null) {
+            return false;
+        }
         List<OrderClaim> pending = claimRepository.findByCollectionId(collectionId).stream()
                 .filter(claim -> claim.getStatus() == ClaimStatus.REFUND_PENDING).toList();
         Map<Long, Long> goodsByClaim = pending.stream().collect(Collectors.toMap(OrderClaim::getId,
                 claim -> (long) claim.getOrderProduct().getPrice() * claim.getQuantity()));
-        task.markExecuted(amount, adminId, now);
         collection.confirmRefund(amount);
         if (claimRepository.completeRefundByCollection(collectionId, now) == 0) {
-            throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED);
+            return false;
         }
         long shortfall = Math.max(0, goodsByClaim.values().stream().mapToLong(Long::longValue).sum() - amount);
         for (OrderClaim claim : pending) {
@@ -972,9 +1213,12 @@ public class OrderClaimService {
             long deducted = Math.min(goods, shortfall);
             shortfall -= deducted;
             claimRepository.setRefundedAmount(claim.getId(), (int) (goods - deducted));
-            appendHistory(claim.getId(), ClaimEventType.REFUND_EXECUTED, FulfillmentActorType.ADMIN, adminId,
+            appendHistory(claim.getId(), ClaimEventType.REFUND_EXECUTED, actorType, actorId,
                     String.format("%,d원", amount), now);
         }
+        // 반품이 환불로 끝났다 — 남은 항목의 구매확정 타이머를 재개한다.
+        fulfillmentService.resumeConfirmTimerIfIdle(collection.getDeliveryGroup().getId(), now);
+        return true;
     }
 
     /**
@@ -1119,7 +1363,7 @@ public class OrderClaimService {
             return null;
         }
         String trackingNumber = raw.trackingNumber() == null ? "" : raw.trackingNumber().replaceAll("[^0-9]", "");
-        if (raw.carrier() == null || trackingNumber.isEmpty()
+        if (raw.carrier() == null || !raw.carrier().isSelectable() || trackingNumber.isEmpty()
                 || tracker.validateInvoice(raw.carrier(), trackingNumber) == ValidationResult.INVALID) {
             throw new BusinessException(ErrorCode.INVOICE_FORMAT_INVALID);
         }

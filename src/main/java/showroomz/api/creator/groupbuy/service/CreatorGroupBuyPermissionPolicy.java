@@ -68,8 +68,16 @@ public class CreatorGroupBuyPermissionPolicy {
                 && !facts.isPostHidden();
     }
 
-    /** ENDED ∧ 내(CREATOR) 확인 없음. 기한이 지나도 받는다 — 자동 이행 스위치가 꺼진 동안 기한은 표시값이다. */
+    /**
+     * 항상 false — 계약 이행 확인은 2026-10-06 기획에서 폐기됐다(1009 기획 수정본 6절). 종료 후 금액 이견은 정산 관리의 조정 요청으로 낸다.
+     * 판정식은 기획 복귀에 대비해 {@link #wouldCheckFulfillment}로 남긴다.
+     */
     public boolean canCheckFulfillment(GroupBuyFacts facts) {
+        return false;
+    }
+
+    /** [기획 제외] 폐기 전 판정식 — ENDED ∧ 내(CREATOR) 확인 없음. */
+    boolean wouldCheckFulfillment(GroupBuyFacts facts) {
         return facts.groupBuy().getStatus() == GroupBuyStatus.ENDED
                 && facts.fulfillmentCheck(FulfillmentSide.CREATOR).isEmpty();
     }

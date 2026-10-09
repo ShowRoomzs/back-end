@@ -134,7 +134,9 @@ public abstract class ClaimTestSupport extends SellerOrderTestSupport {
     }
 
     protected static Map<String, Object> rejectBody() {
+        // 반려 6항목(1009 기획 수정본 5-b) — 법적 근거 · 소비자 메시지가 필수가 됐다.
         return Map.of("reasonCode", "USED", "detail", "용기 입구에 사용 흔적이 있습니다.",
+                "legalBasis", "ART17_2_2", "consumerMessage", "용기 입구에 사용 흔적이 있습니다.",
                 "evidenceImageUrls", List.of("https://img.test/e1.jpg"));
     }
 

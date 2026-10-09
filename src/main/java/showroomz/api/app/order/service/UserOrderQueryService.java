@@ -105,7 +105,7 @@ public class UserOrderQueryService {
         return orderIds.isEmpty() ? List.of() : cancelRequestRepository.findOpenOrRejectedByOrderIds(orderIds);
     }
 
-    /** 운영자 환불 큐를 타는 취소(브랜드 승인·직권)가 있는 주문만 — 소비자 취소는 PG 자동이라 큐가 없다. */
+    /** 환불 큐(PG 자동 부분 취소)를 타는 취소(브랜드 승인·직권)가 있는 주문만 — 소비자 취소는 PG 자동이라 큐가 없다. */
     private Set<Long> loadRefundPendingGroupIds(List<OrderProduct> products) {
         Set<Long> orderIds = products.stream()
                 .filter(p -> p.getStatus() == OrderProductStatus.CANCELLED

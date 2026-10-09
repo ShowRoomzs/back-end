@@ -90,7 +90,11 @@ public record AdminGroupBuyDetailResponse(
                              @Schema(description = "쇼룸 계정 — URL은 FE가 만든다", example = "minjae") String accountId) {
     }
 
-    public record ContractRef(Long contractId, String contractNumber, @Schema(nullable = true) LocalDateTime concludedAt) {
+    public record ContractRef(Long contractId, String contractNumber, @Schema(nullable = true) LocalDateTime concludedAt,
+                              @Schema(description = "체결 서명자 — 양측 중 나중에 서명한 쪽의 표시명(인플루언서는 쇼룸명, 브랜드는 "
+                                      + "브랜드명). 이력 맨 아래 「계약 체결완료 · concludedAt · 서명자」 줄은 FE 가 그린다. "
+                                      + "서명 시각이 없으면 null", example = "뷰티_소연", nullable = true)
+                              String concludedSignerName) {
     }
 
     public record Item(
@@ -312,7 +316,7 @@ public record AdminGroupBuyDetailResponse(
     }
 
     public record AfterEnd(
-            @Schema(description = "종료·정산완료만", nullable = true) Fulfillment fulfillment,
+            @Schema(description = "**폐기(2026-10-06) — 항상 null.** 계약 이행 확인이 없어졌다. 종료 후 화면은 orderClosure 로 그린다", nullable = true, deprecated = true) Fulfillment fulfillment,
             @Schema(description = "종료·정산완료만", nullable = true) Settlement settlement,
             @Schema(description = "판매 포트가 비면 null", nullable = true) OrderClosure orderClosure,
             @Schema(nullable = true) OpenIssue openIssue

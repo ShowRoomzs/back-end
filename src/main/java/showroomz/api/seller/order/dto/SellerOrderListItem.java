@@ -28,11 +28,17 @@ public record SellerOrderListItem(
         @Schema(description = "상태 배지 색 — NEUTRAL · INFO · WARNING · SUCCESS · DANGER", example = "INFO") OrderBadgeTone statusTone,
         Overlays overlays,
         @Schema(description = "주문일시 = 결제완료 시각", example = "2026-10-01T14:22:05Z") LocalDateTime orderedAt,
-        @Schema(description = "발송기한 — 발송된 건은 FE 가 「—」로 그린다", example = "2026-10-04T23:59:59Z", nullable = true)
+        @Schema(description = "발송기한 = 공구 마감 + N영업일. 발송된 건은 FE 가 「—」로 그린다. **공구 진행 중이면 null**(마감 전에는 "
+                + "기한이 없다 — FE 는 「마감 후 N영업일」로 그린다)", example = "2026-10-04T23:59:59Z", nullable = true)
         LocalDateTime shipDueAt,
+        @Schema(description = "이 주문에 적용된 발송 기한 N(영업일) — 주문 시점 값. 브랜드가 설정을 바꿔도 그대로다", example = "3")
+        int shipDueBusinessDays,
         @Schema(description = "택배사 — 송장 등록 전이면 null", example = "CJ", nullable = true) DeliveryCarrier carrier,
         @Schema(description = "택배사 표시명", example = "CJ대한통운", nullable = true) String carrierLabel,
         @Schema(description = "송장번호 — 송장 등록 전이면 null", example = "640012345678", nullable = true) String trackingNumber,
+        @Schema(description = "발송 처리(송장 등록 확정) 시각 — 송장 수정으로 바뀌지 않는다. 추적 기록이 아직 없는 「집화 확인 필요」 행은 "
+                + "`lastTrackingAt`이 null 이라 이 값을 최종 갱신 칸에 쓴다", example = "2026-10-03T11:20:00Z", nullable = true)
+        LocalDateTime shippedAt,
         @Schema(description = "배송중 열은 최종 위치 대신 최종 갱신 — 갱신이 멈춘 것이 문제 신호다",
                 example = "2026-10-03T09:41:00Z", nullable = true) LocalDateTime lastTrackingAt,
         @Schema(description = "배송완료 시각", example = "2026-10-05T16:10:00Z", nullable = true) LocalDateTime deliveredAt,
@@ -70,7 +76,9 @@ public record SellerOrderListItem(
             @Schema(description = "소비자가 고른 사유", example = "단순 변심") String reasonLabel,
             @Schema(description = "소비자 상세 사유 — 미입력이면 null", example = "색상을 잘못 골랐어요", nullable = true) String reasonDetail,
             @Schema(description = "요청 시각", example = "2026-10-02T08:30:00Z") LocalDateTime requestedAt,
-            @Schema(description = "경과 열 — 요청 후 경과 시간(시간 단위 내림)", example = "5") long elapsedHours,
+            @Schema(description = "경과 — 요청 후 경과 시간(시간 단위 내림)", example = "5") long elapsedHours,
+            @Schema(description = "응답 기한 열 — 요청 + 1영업일의 끝. 지나면 자동 승인되고 PG 가 즉시 환불한다. 남은 시간은 FE 가 계산한다",
+                    example = "2026-10-05T23:59:59Z") LocalDateTime respondDueAt,
             @Schema(description = "「3건 중 1건 요청 · 남은 2건 발송 대기」", example = "2건 중 1건 요청 · 남은 1건 발송 대기") String summary
     ) {
     }

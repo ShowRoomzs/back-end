@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>wf-partner-07 · 문의 관리 (목록·답변) · 1440×1024</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,"Malgun Gothic","맑은 고딕",sans-serif; background:#e6e6e6; color:#222; }
+  .doc-head { padding:24px 40px 4px; }
+  .doc-head h1 { font-size:18px; font-weight:700; }
+  .doc-head h1 span { font-weight:400; color:#888; font-size:13px; }
+  .doc-head .sub { font-size:12px; color:#777; margin-top:4px; line-height:1.6; }
+  .doc-head .spec { display:inline-block; margin-top:8px; font-size:11px; color:#555; background:#fff; border:1px solid #ccc; border-radius:4px; padding:4px 8px; }
+  .stack { padding:16px 40px 60px; }
+  .ftitle { font-size:13px; font-weight:700; color:#333; margin:22px 0 8px; }
+  .ftitle span { font-weight:400; color:#888; font-size:12px; }
+  .ftitle .pill { font-weight:400; font-size:11px; color:#555; background:#fff; border:1px solid #bbb; border-radius:10px; padding:1px 8px; margin-left:6px; }
+
+  .frame { width:1440px; background:#fff; border:1px solid #b5b5b5; border-radius:8px; box-shadow:0 1px 5px rgba(0,0,0,.1); overflow:hidden; position:relative; }
+  .chrome { height:32px; background:#e2e2e2; border-bottom:1px solid #c8c8c8; display:flex; align-items:center; padding:0 12px; gap:6px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#c0c0c0; }
+  .urlbar { flex:1; height:18px; background:#fff; border:1px solid #d0d0d0; border-radius:9px; font-size:11px; color:#888; display:flex; align-items:center; padding:0 10px; margin-left:8px; }
+  .app { display:flex; min-height:992px; }
+  .gnb { width:224px; flex-shrink:0; background:#3f3f3f; color:#cfcfcf; padding:0 0 20px; }
+  .gnb .brand { padding:22px 20px 18px; border-bottom:1px solid #565656; }
+  .gnb .brand .m { font-size:15px; font-weight:800; color:#fff; letter-spacing:.5px; }
+  .gnb .brand .s { font-size:10px; color:#a5a5a5; margin-top:3px; }
+  .gnb-item { display:flex; align-items:center; gap:8px; padding:12px 20px; font-size:13px; color:#c2c2c2; border-left:3px solid transparent; }
+  .gnb-item .n { font-size:11px; color:#8f8f8f; width:14px; }
+  .gnb-item.on { background:#2a2a2a; color:#fff; font-weight:700; border-left-color:#fff; }
+  .gnb-item.on .n { color:#ddd; }
+  .main { flex:1; background:#f7f7f7; min-width:0; position:relative; }
+  .topbar { height:56px; background:#fff; border-bottom:1px solid #e2e2e2; display:flex; align-items:center; justify-content:space-between; padding:0 24px; }
+  .crumb { font-size:14px; font-weight:700; color:#222; }
+  .crumb .sub { font-weight:400; color:#999; font-size:12px; }
+  .brand-chip { display:flex; align-items:center; gap:8px; font-size:12px; color:#555; }
+  .brand-chip .st { border:1px solid #999; border-radius:12px; padding:2px 10px; background:#f2f2f2; }
+  .content { padding:24px; }
+
+  .summary-row { display:flex; gap:12px; margin-bottom:18px; }
+  .stat { flex:1; border:1px solid #e6e6e6; border-radius:8px; padding:14px; background:#fff; text-align:center; }
+  .stat.warn { border-color:#c99; background:#fff8f8; }
+  .stat .num { font-size:19px; font-weight:800; color:#333; }
+  .stat.warn .num { color:#a33; }
+  .stat .lb { font-size:11px; color:#888; margin-top:4px; }
+
+  .toolbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .search { width:280px; height:38px; border:1px solid #bbb; border-radius:6px; background:#fff; display:flex; align-items:center; padding:0 12px; font-size:13px; color:#a3a3a3; }
+  .selbox { height:38px; border:1px solid #bbb; border-radius:6px; background:#fff; display:flex; align-items:center; padding:0 14px; font-size:13px; color:#666; gap:24px; }
+  .selbox::after { content:"▾"; color:#999; }
+  .spacer { flex:1; }
+  .segf { display:flex; border:1px solid #bbb; border-radius:6px; overflow:hidden; }
+  .segf div { padding:8px 14px; font-size:12.5px; color:#666; background:#fff; }
+  .segf div.on { background:#333; color:#fff; font-weight:700; }
+
+  table.grid { width:100%; border-collapse:collapse; font-size:13px; background:#fff; }
+  table.grid th { text-align:left; padding:11px 12px; background:#f4f4f4; border-bottom:1px solid #e2e2e2; color:#555; font-weight:700; font-size:12px; }
+  table.grid td { padding:12px; border-bottom:1px solid #eee; color:#444; }
+  .card { background:#fff; border:1px solid #e2e2e2; border-radius:8px; overflow:hidden; }
+  .link { color:#666; text-decoration:underline; font-size:12px; }
+  .badge { border:1px solid #999; border-radius:10px; padding:2px 9px; font-size:11px; color:#444; background:#f6f6f6; white-space:nowrap; }
+  .badge.on2 { background:#e3e3e3; } .badge.done { background:#333; color:#fff; border-color:#333; }
+  .badge.warn { border-style:dashed; color:#777; }
+  .lockicon { color:#999; font-size:11px; margin-right:4px; }
+
+  .cols { display:flex; gap:18px; align-items:flex-start; }
+  .col-l { flex:1; min-width:0; } .col-r { width:440px; flex-shrink:0; }
+  .panel { border:1px solid #e2e2e2; border-radius:8px; background:#fff; }
+  .panel-h { padding:14px 16px; border-bottom:1px solid #eee; font-size:14px; font-weight:700; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .panel-b { padding:16px; }
+
+  .prodref { display:flex; gap:10px; align-items:center; border:1px solid #eee; border-radius:8px; padding:10px; background:#fafafa; margin-bottom:14px; }
+  .prodref .pimg { width:44px; height:44px; border-radius:6px; background:#f0f0f0; border:1px solid #ddd; display:flex; align-items:center; justify-content:center; font-size:9px; color:#aaa; }
+  .prodref .pn { font-size:12.5px; font-weight:700; color:#333; }
+
+  .qa-item { border-bottom:1px solid #f0f0f0; padding:12px 0; }
+  .qa-item:last-child { border-bottom:none; }
+  .qa-top { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .qa-nick { font-size:12.5px; font-weight:700; color:#333; }
+  .qa-time { font-size:10.5px; color:#aaa; margin-left:auto; }
+  .qa-body { font-size:13px; color:#444; line-height:1.6; }
+  .ans-box { margin-top:10px; margin-left:16px; border-left:2px solid #ddd; padding-left:12px; }
+  .ans-lbl { font-size:11px; color:#888; margin-bottom:4px; }
+  .ans-txt { font-size:12.5px; color:#555; line-height:1.6; }
+
+  .inp { width:100%; height:80px; border:1px solid #bbb; border-radius:6px; background:#fff; padding:10px 12px; font-size:13px; color:#a3a3a3; }
+  .btn { height:36px; border-radius:6px; background:#333; color:#fff; font-size:12.5px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; padding:0 16px; margin-top:8px; }
+
+  .foldline { position:absolute; left:0; right:0; top:1024px; border-top:1.5px dashed #c4553f; z-index:5; }
+  .foldline::after { content:"↑ 1440×1024 뷰포트 경계 · 이하 스크롤"; position:absolute; right:14px; top:-9px; background:#f7f7f7; padding:0 8px; font-size:10px; color:#c4553f; }
+  .note { margin:14px 0 0; border:1.5px dashed #999; border-radius:6px; background:#fafafa; padding:9px 12px; font-size:11.5px; color:#555; line-height:1.6; }
+  .note.inbody { margin:14px 0 0; }
+  .note b { color:#333; } .note .tag { font-weight:700; margin-right:4px; }
+  .note.legal { border:2px dashed #333; background:#f3f3f3; color:#222; }
+  .down { text-align:center; padding:12px 0 2px; } .down .a { font-size:24px; color:#888; } .down .l { font-size:11px; color:#777; }
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>④ 파트너센터 · 8. 문의 관리 — 상품 문의 답변 <span>wf-partner-07 · 데스크톱 1440×1024</span></h1>
+  <div class="sub">그레이스케일 lo-fi · <b>상품 문의만 브랜드 담당</b>(주문·배송·환불·기타 = 운영자 단일 창구, 파트너센터에 없음) · 근거: ② §12 CS 문의 · ③ §12 · 소비자 C7 QnA 탭과 짝</div>
+  <div class="spec">프레임 1440×1024 · 공개 QnA(닉네임 마스킹) · 비공개 옵션 · 운영자 숨김 권한</div>
+</div>
+
+<div class="stack">
+
+<!-- ============ F1. 문의 목록 ============ -->
+<div class="ftitle">1. 문의 목록 <span>— 미답변 대시보드 + 공개/비공개 필터</span><span class="pill">GNB #8</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">partner.showroomz.com/inquiries</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">브랜드 파트너센터</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">3</span> 연결·소통</div>
+      <div class="gnb-item"><span class="n">4</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 판매 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리</div>
+      <div class="gnb-item on"><span class="n">8</span> 문의 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">문의 관리</div><div class="brand-chip">○○ 브랜드 <span class="st">활성</span></div></div>
+      <div class="content">
+        <div class="summary-row">
+          <div class="stat warn"><div class="num">3</div><div class="lb">미답변</div></div>
+          <div class="stat"><div class="num">12</div><div class="lb">답변완료</div></div>
+          <div class="stat"><div class="num">2</div><div class="lb">비공개 문의</div></div>
+          <div class="stat"><div class="num">15</div><div class="lb">전체 문의</div></div>
+        </div>
+        <div class="toolbar">
+          <div class="search">상품명·작성자 검색</div>
+          <div class="segf"><div class="on">전체</div><div>공개</div><div>비공개</div></div>
+          <div class="selbox">상태 전체</div>
+          <div class="spacer"></div>
+        </div>
+        <div class="card">
+          <table class="grid">
+            <thead><tr><th style="width:90px">공개여부</th><th>상품</th><th style="width:120px">작성자</th><th>문의 내용(요약)</th><th style="width:100px">상태</th><th style="width:110px">등록일</th><th style="width:70px">관리</th></tr></thead>
+            <tbody>
+              <tr style="background:#fff8f8"><td><span class="badge">공개</span></td><td>○○ 세럼 30ml</td><td>구****</td><td class="prodline">유통기한이 어떻게 되나요?</td><td><span class="badge warn">미답변</span></td><td>2026.00.00</td><td><span class="link">답변</span></td></tr>
+              <tr style="background:#fff8f8"><td><span class="badge">공개</span></td><td>○○ 크림 50ml</td><td>이****</td><td class="prodline">민감성 피부도 사용 가능한가요?</td><td><span class="badge warn">미답변</span></td><td>2026.00.00</td><td><span class="link">답변</span></td></tr>
+              <tr style="background:#fff8f8"><td><span class="lockicon">🔒</span><span class="badge">비공개</span></td><td>○○ 세럼 30ml</td><td>박****</td><td class="prodline">주문번호 관련 문의드려요</td><td><span class="badge warn">미답변</span></td><td>2026.00.00</td><td><span class="link">답변</span></td></tr>
+              <tr><td><span class="badge">공개</span></td><td>○○ 클렌저 200ml</td><td>정****</td><td class="prodline">향이 강한 편인가요?</td><td><span class="badge done">답변완료</span></td><td>2026.00.00</td><td><span class="link">보기</span></td></tr>
+              <tr><td><span class="lockicon">🔒</span><span class="badge">비공개</span></td><td>○○ 크림 50ml</td><td>최****</td><td class="prodline">배송 관련 요청사항</td><td><span class="badge done">답변완료</span></td><td>2026.00.00</td><td><span class="link">보기</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note" style="margin-left:0;margin-right:0"><span class="tag">[규칙]</span> <b>상품 문의만 브랜드 담당</b>(상품 상세 진입) · 주문·배송·환불·기타 문의 = <b>운영자 단일 창구</b>(파트너센터에 없음) · 공개 문의 = 상품 상세 QnA 탭에 <b>닉네임 마스킹</b> 노출(답변도 공개) · 비공개는 작성자·브랜드·운영자만 열람 · 부적절 문의·답변 <b>숨김 = 운영자 전용</b>(사유·감사기록·통지)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">[답변]</div></div>
+
+<!-- ============ F2. 문의 답변 ============ -->
+<div class="ftitle">2. 문의 답변 <span>— 게시판형 · 상품 참조 · 공개 고지</span><span class="pill">GNB #8</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">partner.showroomz.com/inquiries/9012</span></div>
+  <div class="app">
+    <div class="foldline"></div>
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">브랜드 파트너센터</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">3</span> 연결·소통</div>
+      <div class="gnb-item"><span class="n">4</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 판매 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리</div>
+      <div class="gnb-item on"><span class="n">8</span> 문의 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">문의 관리 <span class="sub">› 문의 답변</span></div><div class="brand-chip">○○ 브랜드 <span class="st">활성</span></div></div>
+      <div class="content">
+        <div class="cols">
+          <div class="col-l">
+            <div class="panel">
+              <div class="panel-h">문의 상세 <span class="badge">공개</span><span class="badge warn">미답변</span></div>
+              <div class="panel-b">
+                <div class="prodref"><div class="pimg">1:1</div><div><div class="pn">○○ 세럼 30ml</div><div style="font-size:11px;color:#999">상품 상세 › 문의 탭에서 작성됨</div></div></div>
+                <div class="qa-item">
+                  <div class="qa-top"><span class="qa-nick">구****</span><span class="badge" style="font-size:10px">공개</span><span class="qa-time">2026.00.00 00:00</span></div>
+                  <div class="qa-body">이 제품 유통기한이 어떻게 되나요? 개봉 후에는 얼마나 사용 가능한지도 궁금해요.</div>
+                </div>
+                <div class="ans-box">
+                  <div class="ans-lbl">답변 작성</div>
+                  <textarea class="inp" placeholder="답변을 입력하세요"></textarea>
+                  <div class="btn">답변 등록 (→ 공개 노출)</div>
+                </div>
+                <div class="note legal" style="margin-top:16px"><span class="tag">[공개 고지]</span> 답변 등록 시 <b>공개 콘텐츠</b>로 전환 — 상품 상세 QnA 탭에 질문·답변 함께 노출(작성자는 닉네임 마스킹 유지) · 등록 후 수정 이력 있을 수 있음(운영정책)</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-r">
+            <div class="panel">
+              <div class="panel-h">참고 · 비공개 문의 예시</div>
+              <div class="panel-b">
+                <div class="qa-item">
+                  <div class="qa-top"><span class="lockicon">🔒</span><span class="qa-nick">박****</span><span class="badge" style="font-size:10px">비공개</span><span class="qa-time">2026.00.00</span></div>
+                  <div class="qa-body">주문번호 ORD-24103 관련해서 옵션 변경이 가능할까요?</div>
+                </div>
+                <div class="ans-box">
+                  <div class="ans-lbl">답변 (비공개 — 작성자·브랜드·운영자만 열람)</div>
+                  <div class="ans-txt">답변 내용 예시…</div>
+                </div>
+                <div class="note" style="margin-top:14px"><span class="tag">[비공개]</span> 상품 상세 QnA 탭에 <b>"비공개 문의" 잠금 표시만</b> 노출, 내용·답변은 비공개 유지 · 답변해도 공개 전환되지 않음</div>
+              </div>
+            </div>
+            <div class="panel" style="margin-top:16px">
+              <div class="panel-h">운영자 숨김 안내</div>
+              <div class="panel-b">
+                <div class="note" style="margin-top:0"><span class="tag">[숨김 권한]</span> 비방·개인정보·광고 등 부적절 문의·답변은 <b>운영자만</b> 숨김 처리(사유 입력·감사 기록·당사자 통지) · 브랜드에게 숨김 권한 없음 — 부적절 문의 발견 시 신고만 가능 <span style="font-size:11px;color:#999">[확장 가능]</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

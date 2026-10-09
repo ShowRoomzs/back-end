@@ -86,6 +86,11 @@ public class PaymentReconciliationService {
                 continue; // 여유 구간의 우리 결제는 포트원 목록에 없는 게 정상이다
             }
             PortOnePayment portone = remote.get(mine.getPaymentId());
+            // 부분 환불된 결제는 포트원에서 PARTIAL_CANCELLED 로 보인다 — 누적 취소액이 같으면 정상이다(1009 기획 수정본 2-3).
+            if (portone != null && portone.status() == PortOneStatus.PARTIAL_CANCELLED && mine.getCancelledAmount() > 0
+                    && (portone.cancelledAmount() == null || portone.cancelledAmount() == mine.getCancelledAmount())) {
+                continue;
+            }
             if (portone == null || portone.status() != PortOneStatus.PAID) {
                 record(ReconciliationIssueKind.OURS_PAID_NOT_PORTONE, portone, mine, now, counts);
             }

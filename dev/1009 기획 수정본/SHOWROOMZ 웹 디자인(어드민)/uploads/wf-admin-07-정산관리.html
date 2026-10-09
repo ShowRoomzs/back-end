@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>wf-admin-07 · 정산 관리 · 1440×1024</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,"Malgun Gothic","맑은 고딕",sans-serif; background:#e6e6e6; color:#222; }
+  .doc-head { padding:24px 40px 4px; }
+  .doc-head h1 { font-size:18px; font-weight:700; }
+  .doc-head h1 span { font-weight:400; color:#888; font-size:13px; }
+  .doc-head .sub { font-size:12px; color:#777; margin-top:4px; line-height:1.6; }
+  .doc-head .spec { display:inline-block; margin-top:8px; font-size:11px; color:#555; background:#fff; border:1px solid #ccc; border-radius:4px; padding:4px 8px; }
+  .stack { padding:16px 40px 60px; }
+  .ftitle { font-size:13px; font-weight:700; color:#333; margin:22px 0 8px; }
+  .ftitle span { font-weight:400; color:#888; font-size:12px; }
+  .ftitle .pill { font-weight:400; font-size:11px; color:#555; background:#fff; border:1px solid #bbb; border-radius:10px; padding:1px 8px; margin-left:6px; }
+
+  .frame { width:1440px; background:#fff; border:1px solid #b5b5b5; border-radius:8px; box-shadow:0 1px 5px rgba(0,0,0,.1); overflow:hidden; position:relative; }
+  .chrome { height:32px; background:#e2e2e2; border-bottom:1px solid #c8c8c8; display:flex; align-items:center; padding:0 12px; gap:6px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#c0c0c0; }
+  .urlbar { flex:1; height:18px; background:#fff; border:1px solid #d0d0d0; border-radius:9px; font-size:11px; color:#888; display:flex; align-items:center; padding:0 10px; margin-left:8px; }
+  .app { display:flex; min-height:992px; }
+  .gnb { width:224px; flex-shrink:0; background:#3f3f3f; color:#cfcfcf; padding:0 0 20px; }
+  .gnb .brand { padding:22px 20px 18px; border-bottom:1px solid #565656; }
+  .gnb .brand .m { font-size:15px; font-weight:800; color:#fff; letter-spacing:.5px; }
+  .gnb .brand .s { font-size:10px; color:#a5a5a5; margin-top:3px; }
+  .gnb-item { display:flex; align-items:center; gap:8px; padding:11px 20px; font-size:12.5px; color:#c2c2c2; border-left:3px solid transparent; }
+  .gnb-item .n { font-size:11px; color:#8f8f8f; width:14px; }
+  .gnb-item .cnt { margin-left:auto; background:#5a5a5a; color:#fff; border-radius:9px; font-size:10px; min-width:17px; height:17px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; }
+  .gnb-item.hot .cnt { background:#a33; }
+  .gnb-item.on { background:#2a2a2a; color:#fff; font-weight:700; border-left-color:#fff; }
+  .gnb-item.on .n { color:#ddd; }
+  .gnb-right { margin-left:auto; display:flex; align-items:center; gap:5px; }
+  .gnb-right .cnt { margin-left:0; }
+  .chev { font-size:9px; color:#8f8f8f; }
+  .gnb-item.on .chev { color:#ddd; }
+  .gnb-sub { padding:9px 20px 9px 44px; font-size:12px; color:#999; display:flex; align-items:center; }
+  .gnb-sub .cnt { margin-left:auto; background:#5a5a5a; color:#fff; border-radius:9px; font-size:10px; min-width:17px; height:17px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; }
+  .gnb-sub.on .cnt { background:#555; }
+  .gnb-sub.on { background:#333; color:#fff; border-left:2px solid #888; padding-left:42px; }
+  .main { flex:1; background:#f7f7f7; min-width:0; position:relative; }
+  .topbar { height:56px; background:#fff; border-bottom:1px solid #e2e2e2; display:flex; align-items:center; justify-content:space-between; padding:0 24px; }
+  .crumb { font-size:14px; font-weight:700; color:#222; }
+  .crumb .sub2 { font-weight:400; color:#999; font-size:12px; margin-left:6px; }
+  .op-chip { display:flex; align-items:center; gap:8px; font-size:12px; color:#555; }
+  .op-chip .st { border:1px solid #999; border-radius:12px; padding:2px 10px; background:#f2f2f2; }
+  .content { padding:24px; }
+
+  /* 목록 */
+  .filter-row { display:flex; gap:8px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
+  .fchip { border:1px solid #ccc; border-radius:14px; padding:5px 14px; font-size:12px; color:#555; background:#fff; }
+  .fchip.on { background:#333; color:#fff; border-color:#333; }
+  .fchip.hot { border-color:#c9a24a; color:#8a5a00; }
+  .search-box { margin-left:auto; border:1px solid #ccc; border-radius:6px; padding:6px 12px; font-size:12px; color:#999; background:#fff; width:230px; }
+  .list-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:12px; color:#888; }
+  .list-toolbar b { color:#333; }
+
+  table.list { width:100%; border-collapse:collapse; font-size:12.5px; background:#fff; border:1px solid #e2e2e2; border-radius:8px; overflow:hidden; }
+  table.list th { text-align:left; padding:11px 14px; background:#f6f6f6; color:#666; font-size:11.5px; border-bottom:1px solid #eee; font-weight:700; }
+  table.list td { padding:12px 14px; border-bottom:1px solid #f2f2f2; color:#444; vertical-align:middle; }
+  table.list tr:last-child td { border-bottom:none; }
+  table.list tr.row-link td:first-child { text-decoration:underline; color:#333; font-weight:600; }
+  .p-sub { font-size:10.5px; color:#aaa; margin-top:2px; }
+  .badge { border:1px solid #999; border-radius:10px; padding:1px 9px; font-size:10.5px; color:#444; background:#f6f6f6; white-space:nowrap; }
+  .badge.wait { background:#96771f; color:#fff; border-color:#96771f; }
+  .badge.confirm { background:#3378b5; color:#fff; border-color:#3378b5; }
+  .badge.done { background:#eee; color:#888; }
+  .badge.warn { background:#fff; color:#a33; border-color:#a33; }
+  .mini-btn { border:1px solid #ccc; border-radius:4px; padding:5px 10px; font-size:11px; color:#555; background:#fff; white-space:nowrap; }
+  .pager { display:flex; justify-content:center; gap:6px; margin-top:16px; font-size:12px; color:#888; }
+  .pager span { width:24px; height:24px; display:flex; align-items:center; justify-content:center; border:1px solid #ddd; border-radius:4px; }
+  .pager span.on { background:#333; color:#fff; border-color:#333; }
+
+  /* 상세 */
+  .detail-grid { display:flex; gap:18px; align-items:flex-start; }
+  .det-l { flex:1; min-width:0; } .det-r { width:340px; flex-shrink:0; }
+  .card { background:#fff; border:1px solid #e2e2e2; border-radius:10px; margin-bottom:16px; }
+  .card-h { padding:13px 18px; border-bottom:1px solid #eee; font-size:13.5px; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
+  .card-b { padding:16px 18px; }
+  .form-row { display:flex; border-bottom:1px solid #f2f2f2; padding:10px 0; font-size:12.5px; }
+  .form-row:last-child { border-bottom:none; }
+  .form-label { width:170px; flex-shrink:0; color:#888; }
+  .form-val { color:#333; flex:1; }
+
+  table.calc { width:100%; border-collapse:collapse; font-size:12px; }
+  table.calc th { text-align:left; padding:8px 10px; background:#f6f6f6; color:#777; font-size:10.5px; font-weight:700; border-bottom:1px solid #eee; }
+  table.calc td { padding:9px 10px; border-bottom:1px solid #f2f2f2; color:#444; }
+  table.calc tr:last-child td { border-bottom:none; }
+  table.calc td.num { text-align:right; }
+  .calc-sum { display:flex; justify-content:space-between; padding:9px 14px; font-size:12.5px; border-top:1px solid #eee; }
+  .calc-sum.total { font-weight:700; color:#222; background:#fafafa; }
+  .calc-sum .neg { color:#a33; }
+
+  .status-box { text-align:center; padding:18px 0 6px; }
+  .status-box .lb { font-size:11px; color:#999; margin-bottom:8px; }
+  .status-box .cur { font-size:15px; font-weight:800; color:#333; margin-bottom:2px; }
+  .act-row { display:flex; gap:8px; padding:0 18px 18px; }
+  .abtn { flex:1; padding:11px 0; text-align:center; border-radius:6px; font-size:13px; font-weight:700; border:1px solid #333; }
+  .abtn.appr { background:#333; color:#fff; }
+  .abtn.rej { background:#fff; color:#a33; border-color:#a33; }
+
+  .hist { padding:14px 18px; }
+  .hitem { display:flex; gap:10px; padding:9px 0; border-bottom:1px solid #f2f2f2; font-size:12px; }
+  .hitem:last-child { border-bottom:none; }
+  .hitem .hd { color:#333; } .hitem .ht { color:#aaa; font-size:10.5px; margin-top:2px; }
+
+  /* 모달 */
+  .modal-overlay { position:absolute; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:20; }
+  .modal { width:480px; background:#fff; border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,.2); overflow:hidden; }
+  .modal-h { padding:18px 20px; font-size:15px; font-weight:800; border-bottom:1px solid #eee; }
+  .modal-b { padding:18px 20px; font-size:13px; color:#555; line-height:1.7; }
+  .modal-b .sel { width:100%; border:1px solid #ccc; border-radius:6px; padding:9px 10px; font-size:12.5px; color:#666; margin:10px 0 8px; }
+  .modal-b .ta { width:100%; border:1px solid #ccc; border-radius:6px; padding:9px 10px; font-size:12.5px; color:#888; min-height:70px; }
+  .modal-f { display:flex; gap:8px; padding:14px 20px; border-top:1px solid #eee; }
+  .modal-btn { flex:1; padding:11px 0; text-align:center; border-radius:6px; font-size:13px; font-weight:700; border:1px solid #ccc; background:#fff; color:#555; }
+  .modal-btn.do { background:#a33; color:#fff; border-color:#a33; }
+  .modal-btn.doa { background:#333; color:#fff; border-color:#333; }
+
+  .foldline { position:absolute; left:0; right:0; top:1024px; border-top:1.5px dashed #c4553f; z-index:5; }
+  .foldline::after { content:"↑ 1440×1024 뷰포트 경계 · 이하 스크롤"; position:absolute; right:14px; top:-9px; background:#f7f7f7; padding:0 8px; font-size:10px; color:#c4553f; }
+  .note { margin:6px 0 0; border:1.5px dashed #999; border-radius:6px; background:#fafafa; padding:9px 12px; font-size:11.5px; color:#555; line-height:1.6; }
+  .note b { color:#333; } .note .tag { font-weight:700; margin-right:4px; }
+  .note.rule .tag { color:#555; }
+  .note.legal .tag { color:#8a5a00; }
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>⑤ 어드민 · 7. 정산 관리 <span>wf-admin-07 · 데스크톱 1440×1024</span></h1>
+  <div class="sub">그레이스케일 lo-fi · <b>공구 정산</b>(매출연동, ② draft36 §11)과 <b>고정 지급비 정산</b>(콘텐츠 대가, §11-1)은 재원·트리거·상태가 달라 별도 목록으로 분리 · 정산 목록·확인·이체·보류 · <b>2026.07 신규</b>: <b>특이사항 조정</b> 라인 추가 — 계약 이행 이슈(메시지 센터)가 종결된 건에 한해 운영자가 사유와 함께 지급액을 가감 조정 가능(원본 자동 계산값은 보존, 별도 라인으로만 반영)</div>
+  <div class="spec">프레임 1440×1024 · 나가는 돈은 전부 운영자 확인 후 이체 · 금액은 시스템 자동 계산, 운영자는 검토·승인·이체 실행만</div>
+</div>
+
+<div class="stack">
+
+<!-- ============ F1. 공구 정산 목록 ============ -->
+<div class="ftitle">1. 공구 정산 목록 <span>— 매출연동, 공구 1건 단위 · 플랫폼 2% + 상품별 리워드율</span><span class="pill">GNB #7 · F1</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/settlements/campaigns</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item hot on"><span class="n">7</span> 정산 관리 <span class="gnb-right"><span class="cnt">3</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub on">공구 정산</div>
+      <div class="gnb-sub">고정 지급비 정산</div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">정산 관리 <span class="sub2">/ 공구 정산</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="filter-row">
+          <span class="fchip on">전체 6</span>
+          <span class="fchip hot">정산대기 1</span>
+          <span class="fchip hot">운영자확인 1</span>
+          <span class="fchip hot">보류 1</span>
+          <span class="fchip">이체완료 3</span>
+          <div class="search-box">공구명 · 브랜드 · 인플루언서 검색</div>
+        </div>
+        <div class="list-toolbar"><span>총 <b>6</b>건</span><span>정산기한 임박순 ▾</span></div>
+        <table class="list">
+          <thead><tr>
+            <th>공구명</th>
+            <th style="width:110px">브랜드</th>
+            <th style="width:130px">인플루언서</th>
+            <th style="width:100px">정산대상금액</th>
+            <th style="width:100px">인플루언서 지급</th>
+            <th style="width:100px">브랜드 지급</th>
+            <th style="width:100px">상태</th>
+            <th style="width:90px">정산기한</th>
+            <th style="width:70px">관리</th>
+          </tr></thead>
+          <tbody>
+            <tr class="row-link"><td>글로우 크림 앵콜 공구</td><td>글로우랩</td><td>글로우_지민</td><td>4,820,000원</td><td>1,228,320원</td><td>3,579,280원</td><td><span class="badge wait">정산대기</span></td><td style="color:#a33;font-weight:700">D-0</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>여름 비타C 루틴 공동구매</td><td>스킨랩코리아</td><td>글로우랩 with 지수</td><td>9,890,000원</td><td>1,076,412원</td><td>8,619,988원</td><td><span class="badge confirm">운영자확인</span></td><td>D-1</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>라이스 모공 케어 공동구매</td><td>무드코스메틱</td><td>무드코스메틱 with 유리</td><td>1,980,000원</td><td>388,080원</td><td>1,507,920원</td><td><span class="badge warn">보류</span><div class="p-sub">소비자 이의(CS)</div></td><td>기한 연장</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>데일리 클렌징 오일 공구</td><td>클렌즈하우스</td><td>클렌즈_민경</td><td>5,040,000원</td><td>987,840원</td><td>3,973,160원</td><td><span class="badge done">이체완료</span></td><td>—</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>여드름 진정 라인 공구</td><td>스킨랩코리아</td><td>스킨랩_하늘</td><td>2,150,000원</td><td>421,400원</td><td>1,644,600원</td><td><span class="badge done">이체완료</span></td><td>—</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>히알루론 토너 특가 공구</td><td>글로우랩</td><td>글로우_지민</td><td>280,000원</td><td>54,880원</td><td>225,120원</td><td><span class="badge done">이체완료</span><div class="p-sub">공구 취소분 반영</div></td><td>—</td><td><span class="mini-btn">상세</span></td></tr>
+          </tbody>
+        </table>
+        <div class="pager"><span>‹</span><span class="on">1</span><span>›</span></div>
+        <div class="note rule"><span class="tag">[규칙]</span> 정산 단위 = <b>공구 1건</b> · 트리거 = 공구 종료 + 마지막 구매확정 완료 → <b>영업일 5일 이내</b> 이체(클로백 대비 지급 유예). 보류 시 기한 연장.</div>
+        <div class="note rule"><span class="tag">[규칙]</span> 금액은 <b>시스템 자동 계산</b>(정산대상금액 × 2% 플랫폼 수수료 → 98% 분배재원 → 상품 항목별 리워드율 적용) — 운영자는 검토·승인·이체 실행만, 계산값을 직접 수정하지 않음.</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F2. 고정 지급비 정산 목록 ============ -->
+<div class="ftitle">2. 고정 지급비 정산 목록 <span>— 매출 무관, 게시물 노출중 최초 전환이 트리거</span><span class="pill">GNB #7 · F2</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/settlements/fixed-fees</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item hot on"><span class="n">7</span> 정산 관리 <span class="gnb-right"><span class="cnt">3</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub">공구 정산</div>
+      <div class="gnb-sub on">고정 지급비 정산</div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">정산 관리 <span class="sub2">/ 고정 지급비 정산</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="filter-row">
+          <span class="fchip on">전체 4</span>
+          <span class="fchip">정산대기 1</span>
+          <span class="fchip hot">보류(출금실패) 1</span>
+          <span class="fchip">이체완료 2</span>
+          <div class="search-box">계약ID · 공구명 · 브랜드 검색</div>
+        </div>
+        <div class="list-toolbar"><span>총 <b>4</b>건</span><span>트리거일순 ▾</span></div>
+        <table class="list">
+          <thead><tr>
+            <th style="width:150px">계약 ID</th>
+            <th>공구명</th>
+            <th style="width:110px">브랜드</th>
+            <th style="width:130px">인플루언서</th>
+            <th style="width:90px">지급액</th>
+            <th style="width:90px">실지급액</th>
+            <th style="width:110px">상태</th>
+            <th style="width:90px">트리거일</th>
+            <th style="width:70px">관리</th>
+          </tr></thead>
+          <tbody>
+            <tr class="row-link"><td>CTR-20260620-011</td><td>여름 비타C 루틴 공동구매</td><td>스킨랩코리아</td><td>글로우랩 with 지수</td><td>700,000원</td><td>676,900원</td><td><span class="badge done">이체완료</span></td><td>2026.06.25</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>CTR-20260620-009</td><td>라이스 모공 케어 공동구매</td><td>무드코스메틱</td><td>무드코스메틱 with 유리</td><td>450,000원</td><td>435,150원</td><td><span class="badge wait">정산대기</span></td><td>2026.06.20</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>CTR-20260601-006</td><td>여드름 진정 라인 공구</td><td>스킨랩코리아</td><td>스킨랩_하늘</td><td>350,000원</td><td>338,550원</td><td><span class="badge warn">보류</span><div class="p-sub">브랜드 출금 실패</div></td><td>2026.04.10</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>CTR-20260310-002</td><td>히알루론 토너 특가 공구</td><td>글로우랩</td><td>글로우_지민</td><td>300,000원</td><td>290,100원</td><td><span class="badge done">이체완료</span><div class="p-sub">이후 공구 취소됨</div></td><td>2026.03.15</td><td><span class="mini-btn">상세</span></td></tr>
+          </tbody>
+        </table>
+        <div class="pager"><span>‹</span><span class="on">1</span><span>›</span></div>
+        <div class="note rule"><span class="tag">[규칙]</span> 트리거 = <b>공구 게시물이 "노출중"으로 최초 전환되는 시점</b> — 판매 0건이어도 지급, 공구 종료·구매확정을 기다리지 않음. <b>공구가 이후 취소돼도 이미 트리거된 지급비는 회수하지 않음</b>(마지막 행 예시).</div>
+        <div class="note rule"><span class="tag">[규칙]</span> 재원 = <b>브랜드가 사전 등록한 결제수단에서 별도 출금</b>(구매 건과 무관한 단건 이체) · 플랫폼 수수료 미적용(0%) · 원천징수는 §11 리워드와 동일 원칙(비사업자 3.3%).</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F3. 공구 정산 상세 — 정산대기 상태 ============ -->
+<div class="ftitle">3. 공구 정산 상세 — 정산대기 상태 <span>— 계산 브레이크다운 + 검토·승인/보류</span><span class="pill">GNB #7 · F3</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/settlements/campaigns/STL-CMP-0190</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item hot on"><span class="n">7</span> 정산 관리 <span class="gnb-right"><span class="cnt">3</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub on">공구 정산</div>
+      <div class="gnb-sub">고정 지급비 정산</div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">정산 관리 <span class="sub2">/ 글로우 크림 앵콜 공구</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="detail-grid">
+          <div class="det-l">
+            <div class="card">
+              <div class="card-h">기본 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">공구명</div><div class="form-val">글로우 크림 앵콜 공구 <span style="color:#666;text-decoration:underline">공구 상세 보기</span></div></div>
+                <div class="form-row"><div class="form-label">브랜드 · 인플루언서</div><div class="form-val">글로우랩 · 글로우_지민</div></div>
+                <div class="form-row"><div class="form-label">마지막 구매확정일</div><div class="form-val">2026.07.10 09:00</div></div>
+                <div class="form-row"><div class="form-label">정산 기한</div><div class="form-val" style="color:#a33;font-weight:700">2026.07.17 (영업일 5일 이내 · D-0)</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">계산 내역 <span style="font-size:11px;color:#999;font-weight:400">시스템 자동 계산</span></div>
+              <div class="card-b" style="padding:0">
+                <table class="calc">
+                  <thead><tr><th style="padding-left:18px">상품</th><th class="num">구매확정 매출</th><th class="num">리워드율</th><th class="num">인플루언서 지급</th></tr></thead>
+                  <tbody>
+                    <tr><td style="padding-left:18px">글로우 크림 50ml</td><td class="num">3,200,000원</td><td class="num">30%</td><td class="num">940,800원</td></tr>
+                    <tr><td style="padding-left:18px">글로우 토너 150ml</td><td class="num">1,620,000원</td><td class="num">20%</td><td class="num">317,520원</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="calc-sum"><span>정산대상금액 S (배송비 제외)</span><span>4,820,000원</span></div>
+              <div class="calc-sum"><span>플랫폼 수수료 (2%)</span><span class="neg">− 96,400원</span></div>
+              <div class="calc-sum"><span>분배 재원 (98%)</span><span>4,723,600원</span></div>
+              <div class="calc-sum"><span>인플루언서 지급 (항목 합산)</span><span>1,258,320원</span></div>
+              <div class="calc-sum"><span>유상 샘플비 차감 <span style="color:#aaa">(계약상 30,000원, 리워드 한도 내)</span></span><span class="neg">− 30,000원</span></div>
+              <div class="calc-sum" style="background:#fff8ec"><span><b>특이사항 조정</b> <span style="color:#8a5a00">— 계약 이행 이슈 CTR-20260620-011 반영: 콘텐츠 의무 일부 미이행(스토리 1건 누락)</span></span><span class="neg">− 50,000원</span></div>
+              <div class="calc-sum total"><span>인플루언서 실지급액</span><span>1,178,320원</span></div>
+              <div class="calc-sum"><span>+ 배송비 합계 <span style="color:#aaa">(하위주문 결제분, 취소·환불분 제외 · 브랜드 100% 귀속)</span></span><span>+ 84,000원</span></div>
+              <div class="calc-sum" style="background:#fff8ec"><span><b>특이사항 조정</b> <span style="color:#8a5a00">— 계약 이행 이슈 CTR-20260620-011 반영: 상품 정보 불일치 확인</span></span><span class="neg">− 20,000원</span></div>
+              <div class="calc-sum total"><span>브랜드 지급액</span><span>3,559,280원</span></div>
+              <div style="padding:12px 18px;border-top:1px solid #eee"><span class="mini-btn">특이사항 조정 추가</span> <span style="font-size:11px;color:#999;margin-left:6px">— 인플루언서·브랜드 지급액 중 선택해서 조정(F3-1)</span></div>
+            </div>
+          </div>
+          <div class="det-r">
+            <div class="card">
+              <div class="card-h">정산 상태 관리</div>
+              <div class="status-box">
+                <div class="lb">현재 상태</div>
+                <div class="cur">정산대기</div>
+              </div>
+              <div class="act-row">
+                <div class="abtn appr">검토·승인 (운영자확인)</div>
+              </div>
+              <div class="act-row" style="padding-top:0">
+                <div class="abtn rej">보류</div>
+              </div>
+              <div style="padding:0 18px 16px;font-size:11px;color:#999;line-height:1.6">승인 시 "운영자확인" 상태로 전환 후 이체 실행 가능 · 보류 시 정산 기한 연장</div>
+            </div>
+            <div class="card">
+              <div class="card-h">처리 이력</div>
+              <div class="hist">
+                <div class="hitem"><div>⚪</div><div><div class="hd">공구 종료</div><div class="ht">2026.07.10 00:00 · 시스템</div></div></div>
+                <div class="hitem"><div>⚪</div><div><div class="hd">마지막 구매확정 완료</div><div class="ht">2026.07.10 09:00 · 시스템</div></div></div>
+                <div class="hitem"><div>⚪</div><div><div class="hd">집계·지급액 계산 완료 → 정산대기</div><div class="ht">2026.07.10 09:00 · 시스템</div></div></div>
+                <div class="hitem"><div>🟡</div><div><div class="hd">특이사항 조정 반영 — 인플루언서 (−50,000원)</div><div class="ht">2026.07.15 11:20 · 김운영 운영자</div></div></div>
+                <div class="hitem"><div>🟡</div><div><div class="hd">특이사항 조정 반영 — 브랜드 (−20,000원)</div><div class="ht">2026.07.15 11:24 · 김운영 운영자</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note rule" style="margin-top:14px"><span class="tag">[규칙]</span> 유상 샘플비 차감은 <b>리워드 잔액 한도까지만</b>(부족분은 정산에서 처리하지 않고 비고·수기) · 원천징수(3.3% 등)는 리워드 총액 선산정 후 샘플비 차감 순서 <span style="color:#8a5a00">[세무 확정 대기]</span>.</div>
+        <div class="note legal" style="margin-left:0;margin-right:0"><span class="tag">[2026.07 신규]</span> <b>"특이사항 조정" 라인</b> — 시스템 자동 계산 원칙(위 규칙)의 유일한 예외. <b>메시지 센터의 계약 이행 이슈가 종결된 건에 한해서만</b> 추가 가능(사유 = 이슈 스레드 참조 필수, 금액 직접 입력) · <b>인플루언서 지급액·브랜드 지급액 중 귀책 당사자 쪽에 선택 적용</b>(F3-1 모달에서 대상 선택) · 운영자가 임의로 계산값을 바꾸는 게 아니라 <b>이슈 종결 결과를 반영하는 별도 조정 항목</b>으로 처리 — 원본 자동 계산값은 그대로 보존되고 조정 라인만 가감(감사 추적 가능).</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F3-1. 특이사항 조정 추가 모달 ============ -->
+<div class="ftitle">3-1. 특이사항 조정 추가 모달 <span>— 계약 이행 이슈 종결 건에 한해 조정 가능, 사유 필수</span><span class="pill">GNB #7 · F3-1 · 2026.07 신규</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/settlements/campaigns/STL-CMP-0190</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item hot on"><span class="n">7</span> 정산 관리 <span class="gnb-right"><span class="cnt">3</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub on">공구 정산</div>
+      <div class="gnb-sub">고정 지급비 정산</div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">정산 관리 <span class="sub2">/ 글로우 크림 앵콜 공구</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="detail-grid" style="opacity:.4">
+          <div class="det-l"><div class="card"><div class="card-h">계산 내역</div><div class="card-b"><div class="form-row"><div class="form-label">인플루언서 실지급액</div><div class="form-val">1,228,320원</div></div></div></div></div>
+          <div class="det-r"></div>
+        </div>
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-h">특이사항 조정 추가</div>
+            <div class="modal-b">
+              <b>글로우 크림 앵콜 공구</b>의 자동 계산액에 조정 항목을 추가합니다. 원본 계산값은 그대로 유지되고, 이 조정만 별도 라인으로 가감됩니다.
+              <select class="sel"><option>연결할 계약 이행 이슈 선택 (필수)</option><option>CTR-20260620-011 — 콘텐츠 의무 일부 미이행(종결됨)</option><option>CTR-20260620-011 — 상품 정보 불일치(종결됨)</option></select>
+              <div style="font-size:11px;color:#999;margin:-4px 0 8px">종결되지 않은 이슈는 선택 목록에 뜨지 않음 — 메시지 센터에서 먼저 이슈를 종결 처리해야 함</div>
+              <div style="margin-bottom:8px">
+                <div style="font-size:12px;color:#666;margin-bottom:5px">조정 대상 <span style="color:#c4553f">*</span></div>
+                <div style="display:inline-flex;border:1px solid #bbb;border-radius:6px;overflow:hidden">
+                  <div style="padding:7px 16px;font-size:11.5px;background:#333;color:#fff">인플루언서 지급액</div>
+                  <div style="padding:7px 16px;font-size:11.5px;color:#666">브랜드 지급액</div>
+                </div>
+                <div style="font-size:11px;color:#999;margin-top:4px">이슈가 누구의 귀책인지에 따라 선택 — 인플루언서 콘텐츠 의무 미이행이면 인플루언서 쪽, 브랜드의 상품·지급 문제면 브랜드 쪽</div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+                <span style="font-size:12px;color:#666">조정 방향</span>
+                <div style="display:inline-flex;border:1px solid #bbb;border-radius:6px;overflow:hidden">
+                  <div style="padding:6px 14px;font-size:11.5px;background:#333;color:#fff">차감</div>
+                  <div style="padding:6px 14px;font-size:11.5px;color:#666">가산</div>
+                </div>
+                <input class="sel" style="width:120px;margin:0;text-align:right" value="50,000">
+                <span style="font-size:12px;color:#666">원</span>
+              </div>
+              <textarea class="ta" placeholder="조정 상세 사유 (대상자에게 정산 내역에 그대로 노출됨)">스토리 1건 미게시 확인(계약 이행 이슈 참조) — 해당 콘텐츠 의무 미이행분 차감</textarea>
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">취소</div>
+              <div class="modal-btn doa">조정 반영</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============ F4. 정산 보류 모달 ============ -->
+<div class="ftitle">4. 정산 보류 모달 <span>— 사유 입력 필수, 정산 기한 연장</span><span class="pill">GNB #7 · F4</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/settlements/campaigns/STL-CMP-0233</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item hot on"><span class="n">7</span> 정산 관리 <span class="gnb-right"><span class="cnt">3</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub on">공구 정산</div>
+      <div class="gnb-sub">고정 지급비 정산</div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">정산 관리 <span class="sub2">/ 라이스 모공 케어 공동구매</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="detail-grid" style="opacity:.4">
+          <div class="det-l"><div class="card"><div class="card-h">계산 내역</div><div class="card-b"><div class="form-row"><div class="form-label">정산대상금액</div><div class="form-val">1,980,000원</div></div></div></div></div>
+          <div class="det-r"></div>
+        </div>
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-h">정산 보류</div>
+            <div class="modal-b">
+              <b>라이스 모공 케어 공동구매</b> 정산을 보류합니다. 보류 중에는 이체가 실행되지 않으며, 정산 기한이 연장됩니다.
+              <select class="sel"><option>보류 사유 선택 (필수)</option><option>소비자 CS 이의 제기(반품·품질 분쟁)</option><option>거래 데이터 불일치 확인 필요</option><option>브랜드 정산계좌 확인 필요</option><option>기타(직접 입력)</option></select>
+              <textarea class="ta" placeholder="상세 사유 입력 (처리 이력에 기록됨)"></textarea>
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">취소</div>
+              <div class="modal-btn do">보류</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F5. 이체 실행 모달 ============ -->
+<div class="ftitle">5. 이체 실행 모달 <span>— 운영자확인 상태에서 브랜드·인플루언서 이체 실행</span><span class="pill">GNB #7 · F5</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/settlements/campaigns/STL-CMP-0102</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item hot on"><span class="n">7</span> 정산 관리 <span class="gnb-right"><span class="cnt">3</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub on">공구 정산</div>
+      <div class="gnb-sub">고정 지급비 정산</div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">정산 관리 <span class="sub2">/ 여름 비타C 루틴 공동구매</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="detail-grid" style="opacity:.4">
+          <div class="det-l"><div class="card"><div class="card-h">계산 내역</div><div class="card-b"><div class="form-row"><div class="form-label">정산대상금액</div><div class="form-val">9,890,000원</div></div></div></div></div>
+          <div class="det-r"></div>
+        </div>
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-h">이체 실행</div>
+            <div class="modal-b">
+              <b>여름 비타C 루틴 공동구매</b> 정산 내역을 확인했습니다. 이체를 실행하면 외부 뱅킹으로 실제 송금을 진행하고 상태가 "이체완료"로 전환됩니다.
+              <div class="form-row" style="border:none;padding-top:12px"><div class="form-label">인플루언서 지급</div><div class="form-val" style="font-weight:700">1,076,412원 → 글로우랩 with 지수</div></div>
+              <div class="form-row" style="border:none"><div class="form-label">브랜드 지급</div><div class="form-val" style="font-weight:700">8,619,988원 → 스킨랩코리아</div></div>
+              <div style="font-size:11px;color:#999;margin-top:8px">실제 송금은 외부 뱅킹에서 운영자가 집행(자동 이체 연동은 확장 가능) — 이 화면은 이체 완료 처리·기록용</div>
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">취소</div>
+              <div class="modal-btn doa">이체 실행 · 완료 처리</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F6. 고정 지급비 정산 상세 — 보류(출금 실패) 상태 ============ -->
+<div class="ftitle">6. 고정 지급비 정산 상세 — 보류 상태 <span>— 브랜드 출금 실패, 게시물은 그대로 노출 유지</span><span class="pill">GNB #7 · F6</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/settlements/fixed-fees/STL-FEE-006</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item hot on"><span class="n">7</span> 정산 관리 <span class="gnb-right"><span class="cnt">3</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub">공구 정산</div>
+      <div class="gnb-sub on">고정 지급비 정산</div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">정산 관리 <span class="sub2">/ 여드름 진정 라인 공구 (고정 지급비)</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="detail-grid">
+          <div class="det-l">
+            <div class="card">
+              <div class="card-h">기본 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">계약 ID</div><div class="form-val">CTR-20260601-006</div></div>
+                <div class="form-row"><div class="form-label">공구명</div><div class="form-val">여드름 진정 라인 공구</div></div>
+                <div class="form-row"><div class="form-label">브랜드 · 인플루언서</div><div class="form-val">스킨랩코리아 · 스킨랩_하늘</div></div>
+                <div class="form-row"><div class="form-label">트리거 시점</div><div class="form-val">2026.04.10 08:30 (게시물 노출중 최초 전환)</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">지급 내역</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">지급액 (정액)</div><div class="form-val">350,000원</div></div>
+                <div class="form-row"><div class="form-label">원천징수 (3.3%)</div><div class="form-val" style="color:#a33">− 11,450원 <span style="color:#aaa">(비사업자 인플루언서)</span></div></div>
+                <div class="form-row"><div class="form-label">실지급액</div><div class="form-val" style="font-weight:700">338,550원</div></div>
+                <div class="form-row"><div class="form-label">플랫폼 수수료</div><div class="form-val">미적용 (0%) — 매출 무관</div></div>
+              </div>
+              <div style="padding:10px 18px;border-top:1px solid #eee"><span class="mini-btn">특이사항 조정 추가</span> <span style="font-size:11px;color:#999;margin-left:6px">— 공구 정산과 동일 방식(F3-1), 계약 이행 이슈 종결 건에 한함</span></div>
+            </div>
+            <div class="card">
+              <div class="card-h">출금 실패 내역 <span style="font-size:11px;color:#a33;font-weight:400">브랜드 결제수단</span></div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">실패 사유</div><div class="form-val" style="color:#a33">카드 한도 초과</div></div>
+                <div class="form-row"><div class="form-label">시도 일시</div><div class="form-val">2026.04.10 08:31</div></div>
+                <div class="form-row"><div class="form-label">브랜드 알림</div><div class="form-val">재결제 요청 알림 발송됨 · 2026.04.10 08:31</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="det-r">
+            <div class="card">
+              <div class="card-h">정산 상태 관리</div>
+              <div class="status-box">
+                <div class="lb">현재 상태</div>
+                <div class="cur" style="color:#a33">보류</div>
+              </div>
+              <div class="act-row">
+                <div class="abtn appr">재결제 요청 알림 재발송</div>
+              </div>
+              <div style="padding:0 18px 16px;font-size:11px;color:#999;line-height:1.6">브랜드가 결제수단을 갱신하고 재결제에 성공하면 시스템이 자동으로 "정산대기"로 전환 후 즉시 이체 — 운영자의 별도 승인 절차는 없음(§11-1)</div>
+            </div>
+            <div class="card">
+              <div class="card-h">처리 이력</div>
+              <div class="hist">
+                <div class="hitem"><div>⚪</div><div><div class="hd">게시물 노출중 전환 → 정산대기</div><div class="ht">2026.04.10 08:30 · 시스템</div></div></div>
+                <div class="hitem"><div>🔴</div><div><div class="hd">브랜드 출금 실패(카드 한도 초과) → 보류</div><div class="ht">2026.04.10 08:31 · 시스템(PG)</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note rule" style="margin-top:14px"><span class="tag">[규칙]</span> 출금 실패 시에도 <b>공구 게시물은 그대로 노출 유지</b> — 인플루언서 콘텐츠 노출 유지가 우선이라 정산만 보류되고 게시물을 강제로 숨기지 않음.</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F7. 재결제 요청 알림 재발송 확인 모달 ============ -->
+<div class="ftitle">7. 재결제 요청 알림 재발송 모달 <span>— 확인만, 이체는 브랜드 재결제 성공 시 시스템 자동</span><span class="pill">GNB #7 · F7</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/settlements/fixed-fees/STL-FEE-006</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item hot on"><span class="n">7</span> 정산 관리 <span class="gnb-right"><span class="cnt">3</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub">공구 정산</div>
+      <div class="gnb-sub on">고정 지급비 정산</div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">정산 관리 <span class="sub2">/ 여드름 진정 라인 공구 (고정 지급비)</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="detail-grid" style="opacity:.4">
+          <div class="det-l"><div class="card"><div class="card-h">출금 실패 내역</div><div class="card-b"><div class="form-row"><div class="form-label">실패 사유</div><div class="form-val">카드 한도 초과</div></div></div></div></div>
+          <div class="det-r"></div>
+        </div>
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-h">재결제 요청 알림 재발송</div>
+            <div class="modal-b">
+              <b>스킨랩코리아</b>에 결제수단 갱신·재결제 요청 알림을 다시 보냅니다. 브랜드가 재결제에 성공하면 자동으로 인플루언서에게 <b>338,550원</b>이 이체되고 "이체완료"로 전환됩니다.
+              <div style="font-size:11px;color:#999;margin-top:8px">운영자가 수동으로 이체를 실행하는 절차는 없음 — 재결제 성공 여부는 PG 웹훅으로 자동 갱신 <span style="color:#8a5a00">[PG 상담 대기 · 문항 8]</span></div>
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">취소</div>
+              <div class="modal-btn doa">알림 재발송</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<div class="note rule" style="margin:20px 40px 0"><span class="tag">[규칙]</span> 공구 정산 = 검토·승인(운영자확인) → <b>이체 실행도 운영자 수동</b>(외부 뱅킹 집행) / 고정 지급비 정산 = 브랜드 결제수단에서 <b>시스템 자동 출금</b>, 운영자는 실패 시 재결제 알림만 재발송 — 이체 실행 자체를 누르는 절차가 없음(§11-1).</div>
+<div class="note legal" style="margin:10px 40px 0"><span class="tag">[세무 확정 대기]</span> 원천징수 3.3% 계산 순서(리워드 총액 선산정 → 샘플비 차감)·사업자 인플루언서 세금계산서 발행 흐름은 세무사 상담 브리핑(Q1~Q8) 확정 대기.</div>
+<div class="note legal" style="margin:10px 40px 0"><span class="tag">[PG 상담 대기]</span> 브랜드 출금용 결제수단(카드 자동결제 vs 계좌 자동이체·CMS) 지원 여부·출금 실패 웹훅 통지 지원 여부 — PG사 확인문의 문항 8 결과로 확정.</div>
+
+</div>
+</body>
+</html>

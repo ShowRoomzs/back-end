@@ -183,6 +183,15 @@ public class OrderClaimCollection {
     }
 
     /** 판정 종료 — 그 요청의 클레임이 전부 검수 판정을 받았다. 환불할 것이 없으면(전체 반려 · 교환) 환불액은 null. */
+    /**
+     * 검수에서 브랜드 귀책으로 인정(1009 기획 수정본 5-b 귀책 변경) — 반품 배송비 차감을 돌려주고 반려 재발송비를 브랜드가 진다.
+     * 판정 종료 전에만 의미가 있다(환불액은 종료 때 이 값으로 계산한다).
+     */
+    public void acceptSellerFault() {
+        this.feeBearer = ClaimFeeBearer.SELLER;
+        this.returnDeduction = 0;
+    }
+
     public void finalizeWith(Integer refundAmount, LocalDateTime now) {
         this.refundAmount = refundAmount;
         this.finalizedAt = now;

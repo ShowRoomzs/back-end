@@ -3,6 +3,7 @@ package showroomz.api.app.order.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import showroomz.api.app.order.dto.UserOrderDto;
+import showroomz.domain.order.service.ShipDuePolicy;
 import showroomz.domain.order.entity.OrderCancelRequest;
 import showroomz.domain.order.entity.OrderClaim;
 import showroomz.domain.order.entity.OrderCancelRequestItem;
@@ -45,10 +46,14 @@ import java.util.Set;
 @Component
 public class UserOrderItemAssembler {
 
-    /** 지금 서버에 API 가 있는 액션만(0-5) — 후속 설계(취소 요청)가 자기 액션을 켠다. */
+    /** 지금 서버에 API 가 있는 액션만(0-5) — 취소 요청 · 취소 상세는 1009 기획 수정본 3-1 에서 켰다. */
     static final Set<UserOrderAction> ENABLED_ACTIONS = EnumSet.of(UserOrderAction.CANCEL,
+            UserOrderAction.CANCEL_REQUEST, UserOrderAction.CANCEL_DETAIL,
             UserOrderAction.TRACK_DELIVERY, UserOrderAction.RETURN_EXCHANGE, UserOrderAction.RETURN_REQUEST,
             UserOrderAction.EXCHANGE_REQUEST, UserOrderAction.CLAIM_DETAIL);
+
+    /** 요청이 걸린 하위주문의 나머지 항목 — 하위주문 전체가 발송 보류된다(결정 13 · C10-1 1b). */
+    static final String SHIPMENT_HOLD_SUB = "취소 요청이 처리될 때까지 이 주문의 상품은 발송되지 않아요";
 
     /** 취소 반려 줄의 노출 구간(1-4) — 구매확정에서 사라진다(반품 창이 닫힌다). */
     private static final Set<UserOrderItemStatus> REJECTION_VISIBLE = EnumSet.of(UserOrderItemStatus.PAID,
@@ -97,6 +102,7 @@ public class UserOrderItemAssembler {
      * @param exchangeUnavailableProductIds 교환할 수 있는 옵션의 재고가 하나도 없는 항목 — 상세에서만 판정한다
      */
     public record Context(Map<Long, Long> pendingRequestIdByProduct,
+                          Set<Long> pendingRequestGroupIds,
                           Map<Long, OrderCancelRequest> latestRejectedByProduct,
                           Set<Long> refundPendingGroupIds,
                           Set<Long> cancellableOrderIds,
@@ -105,12 +111,14 @@ public class UserOrderItemAssembler {
                           Set<Long> exchangeUnavailableProductIds) {
 
         public Context withClaims(UserOrderClaimContext claims) {
-            return new Context(pendingRequestIdByProduct, latestRejectedByProduct, refundPendingGroupIds,
+            return new Context(pendingRequestIdByProduct, pendingRequestGroupIds, latestRejectedByProduct,
+                    refundPendingGroupIds,
                     cancellableOrderIds, today, claims, exchangeUnavailableProductIds);
         }
 
         public Context withExchangeUnavailable(Set<Long> exchangeUnavailableProductIds) {
-            return new Context(pendingRequestIdByProduct, latestRejectedByProduct, refundPendingGroupIds,
+            return new Context(pendingRequestIdByProduct, pendingRequestGroupIds, latestRejectedByProduct,
+                    refundPendingGroupIds,
                     cancellableOrderIds, today, claims, exchangeUnavailableProductIds);
         }
 
@@ -123,18 +131,22 @@ public class UserOrderItemAssembler {
         public static Context of(Collection<OrderCancelRequest> requests, Set<Long> refundPendingGroupIds,
                                  Set<Long> cancellableOrderIds, LocalDate today) {
             Map<Long, Long> pending = new HashMap<>();
+            Set<Long> pendingGroups = new java.util.HashSet<>();
             Map<Long, OrderCancelRequest> rejected = new HashMap<>();
             for (OrderCancelRequest request : requests) {
                 for (OrderCancelRequestItem item : request.getItems()) {
                     Long productId = item.getOrderProduct().getId();
                     if (request.getStatus() == CancelRequestStatus.PENDING) {
                         pending.put(productId, request.getId());
+                        if (item.getOrderProduct().getDeliveryGroup() != null) {
+                            pendingGroups.add(item.getOrderProduct().getDeliveryGroup().getId());
+                        }
                     } else if (request.getStatus() == CancelRequestStatus.REJECTED) {
                         rejected.merge(productId, request, (a, b) -> a.getId() > b.getId() ? a : b);
                     }
                 }
             }
-            return new Context(pending, rejected, refundPendingGroupIds, cancellableOrderIds, today,
+            return new Context(pending, pendingGroups, rejected, refundPendingGroupIds, cancellableOrderIds, today,
                     UserOrderClaimContext.EMPTY, Set.of());
         }
     }
@@ -145,6 +157,10 @@ public class UserOrderItemAssembler {
         UserOrderClaimContext claims = context.claims();
         OrderClaim openClaim = claims.displayedOpenClaim(product.getId());
         UserOrderItemStatus status = deriveStatus(product, group, pendingRequestId != null, openClaim);
+        // 같은 하위주문의 다른 항목에 검토 중 취소 요청이 걸렸다 — 이 항목도 발송 보류다(버튼 없음 · 안내 한 줄).
+        boolean shipmentHeld = pendingRequestId == null && group != null
+                && context.pendingRequestGroupIds().contains(group.getId())
+                && (status == UserOrderItemStatus.PAID || status == UserOrderItemStatus.PREPARING);
         UserClaimPresenter.View claimView = openClaim == null ? null
                 : UserClaimPresenter.present(openClaim, claims.rejectChargeOf(openClaim), context.today());
         // RETURNED 는 검수 통과 순간이고 클레임은 환불 집행 전까지 진행 중이다 — 그때도 [반품 상세]의 대상이 있어야 한다.
@@ -170,7 +186,7 @@ public class UserOrderItemAssembler {
                 .status(status)
                 .statusLabel(status.getLabel())
                 .statusTone(status.getTone())
-                .statusSub(claimView != null ? claimView.listSub()
+                .statusSub(claimView != null ? claimView.listSub() : shipmentHeld ? SHIPMENT_HOLD_SUB
                         : statusSub(status, product, group, context, view, confirmDueAt, arrivalDueDate))
                 // 검수 반려 단계는 탈색하지 않는다 — 반려된 상품은 고객에게 돌아오는 물건이라 끝난 주문이 아니다.
                 .dimmed(status.isDimmed() && !(claimView != null && claimView.phase().isRejectedStage()))
@@ -202,7 +218,7 @@ public class UserOrderItemAssembler {
                         .confirmedAt(group != null ? group.getConfirmedAt() : null)
                         .cancelledAt(product.getCancelledAt())
                         .build())
-                .actions(actions(status, product, group, context, view, shownClaim))
+                .actions(shipmentHeld ? List.of() : actions(status, product, group, context, view, shownClaim))
                 .build();
     }
 
@@ -270,7 +286,10 @@ public class UserOrderItemAssembler {
     private String statusSub(UserOrderItemStatus status, OrderProduct product, OrderDeliveryGroup group,
                              Context context, View view, LocalDateTime confirmDueAt, LocalDate arrivalDueDate) {
         return switch (status) {
-            case PAID, PREPARING -> group == null ? null : day(group.getShipDueAt(), " 발송 예정");
+            // 공구 진행 중이면 기한이 아직 없다 — 약정 문구(마감 후 N영업일)를 보여 준다(1009 기획 1-3).
+            case PAID, PREPARING -> group == null ? null : group.getShipDueAt() == null
+                    ? ShipDuePolicy.noticeText(group.getShipDueBusinessDays())
+                    : day(group.getShipDueAt(), " 발송 예정");
             case SHIPPING -> arrivalDueDate == null ? null : arrivalDueDate.format(DAY) + " 도착 예정";
             case RETURNING -> "반송 처리 중";
             case DELIVERED -> view == View.LIST
@@ -287,7 +306,7 @@ public class UserOrderItemAssembler {
 
     /**
      * 소비자 취소(PG 자동)는 항목이 CANCELLED 로 내려간 시점이 곧 PG 취소 확인 뒤라 항상 완료다. 브랜드 승인·직권 취소는
-     * 운영자 환불 큐를 탄다. 취소 유형이 없는 항목(결제 전 취소·만료)은 환불할 것이 없어 문구도 없다.
+     * 환불 큐(PG 자동 부분 취소)를 탄다. 취소 유형이 없는 항목(결제 전 취소·만료)은 환불할 것이 없어 문구도 없다.
      */
     private String cancelledSub(OrderProduct product, OrderDeliveryGroup group, Context context) {
         OrderCancelType cancelType = product.getCancelType();
@@ -422,8 +441,10 @@ public class UserOrderItemAssembler {
         List<UserOrderAction> target = switch (status) {
             // CANCEL 의 게이트는 취소 API 와 같아야 한다 — 주문 전체 · 전 그룹 NEW. 준비 시작된 그룹이 섞인 주문의
             // NEW 항목은 「결제완료」로 보이되 버튼이 없다(앱이 그리고 서버가 409 를 내는 것보다 낫다).
-            case PAID -> group != null && context.cancellableOrderIds().contains(product.getOrder().getId())
-                    ? List.of(UserOrderAction.CANCEL) : List.<UserOrderAction>of();
+            // 다른 하위주문이 준비 시작돼 전액 취소가 막힌 주문의 결제완료 항목은 요청으로 취소한다(1009 기획 3-1).
+            case PAID -> group == null ? List.<UserOrderAction>of()
+                    : context.cancellableOrderIds().contains(product.getOrder().getId())
+                    ? List.of(UserOrderAction.CANCEL) : List.of(UserOrderAction.CANCEL_REQUEST);
             case PREPARING -> List.of(UserOrderAction.CANCEL_REQUEST);
             case SHIPPING, CONFIRMED -> group != null
                     ? List.of(UserOrderAction.TRACK_DELIVERY) : List.<UserOrderAction>of();

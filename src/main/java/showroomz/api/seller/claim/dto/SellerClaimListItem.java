@@ -1,6 +1,7 @@
 package showroomz.api.seller.claim.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import showroomz.domain.order.type.ClaimChargeStatus;
 import showroomz.domain.order.type.ClaimReason;
 import showroomz.domain.order.type.ClaimStatus;
 import showroomz.domain.order.type.ClaimTab;
@@ -26,12 +27,15 @@ public record SellerClaimListItem(
         @Schema(example = "50ml", nullable = true) String optionName,
         @Schema(description = "교환받을 옵션 — 교환만", example = "리필", nullable = true) String exchangeOptionName,
         @Schema(description = "「상품 옵션 → 교환 옵션」", example = "데일리 선크림 50ml → 리필") String productLabel,
-        @Schema(description = "재발송·거절 보류 탭의 「보낼 상품·옵션」/「보관 중인 상품」 — 교환 재발송은 새 옵션, 거절은 원래 옵션. "
+        @Schema(description = "재발송·반려 보류 탭의 「보낼 상품·옵션」/「보관 중인 상품」 — 교환 재발송은 새 옵션, 거절은 원래 옵션. "
                 + "그 밖의 단계는 null", example = "데일리 선크림 리필", nullable = true) String shipLabel,
         @Schema(description = "신청 수량", example = "1") int quantity,
         ClaimReason reasonCode,
         @Schema(example = "단순 변심") String reasonLabel,
         @Schema(description = "소비자 첨부 사진 수 — 「증빙 N장」", example = "2") int consumerAttachmentCount,
+        @Schema(description = "운영자가 대신 연 클레임 — 「운영자 개설 · 구매확정 후 하자 · 증빙 N장」(1009 기획 수정본 8-1 B6)",
+                example = "false") boolean openedByOperator,
+        @Schema(description = "운영자 개설 사유", example = "구매확정 후 하자", nullable = true) String openReason,
         ClaimStatus status,
         @Schema(example = "검수 대기") String statusLabel,
         @Schema(description = "그 상태가 속한 탭", example = "INSPECTION") ClaimTab stage,
@@ -44,18 +48,20 @@ public record SellerClaimListItem(
         Collection collection,
         @Schema(description = "입고 확인 시각", nullable = true) LocalDateTime receivedAt,
         @Schema(description = "검수 기한 — 입고 확인 때 발급", nullable = true) LocalDateTime inspectDueAt,
-        @Schema(description = "재발송 사유 — EXCHANGE 교환 재발송 · REJECT_RETURN 거절 반송. 재발송 단계가 아니면 null",
+        @Schema(description = "재발송 사유 — EXCHANGE 교환 재발송 · REJECT_RETURN 반려 반송. 재발송 단계가 아니면 null",
                 example = "EXCHANGE", nullable = true) String reshipReason,
         @Schema(example = "교환 재발송", nullable = true) String reshipReasonLabel,
         @Schema(nullable = true) DeliveryCarrier reshipCarrier,
         @Schema(example = "CJ대한통운", nullable = true) String reshipCarrierLabel,
         @Schema(nullable = true) String reshipTrackingNumber,
-        @Schema(description = "거절 사유", example = "개봉·사용 흔적", nullable = true) String rejectReasonLabel,
-        @Schema(description = "브랜드 거절 증빙 수", example = "0") int sellerEvidenceCount,
+        @Schema(description = "재발송비(결정 14) — 반려 건은 반려 재발송 배송비, 교환은 고객 귀책 교환의 선결제분. "
+                + "청구가 없으면 null(브랜드 귀책 교환 · 반려 판정 전)", nullable = true) ReshipFee reshipFee,
+        @Schema(description = "반려 사유", example = "개봉·사용 흔적", nullable = true) String rejectReasonLabel,
+        @Schema(description = "브랜드 반려 증빙 수", example = "0") int sellerEvidenceCount,
         @Schema(nullable = true) LocalDateTime rejectedAt,
-        @Schema(description = "고지 · 보관 기한 — 거절 보류만, 그 외 null", nullable = true) Storage storage,
+        @Schema(description = "고지 · 보관 기한 — 반려 보류만, 그 외 null", nullable = true) Storage storage,
         @Schema(description = "완료 탭의 결과 — 그 밖의 탭은 null", nullable = true) Outcome outcome,
-        @Schema(description = "완료 탭 「금액」 — 환불 확정액, 환불 대기면 그 항목의 상품 금액. 교환·거절은 null",
+        @Schema(description = "완료 탭 「금액」 — 환불 확정액, 환불 대기면 그 항목의 상품 금액. 교환·반려는 null",
                 example = "27200", nullable = true) Long amount,
         @Schema(description = "종결일시", nullable = true) LocalDateTime completedAt,
         Actions actions,
@@ -75,6 +81,16 @@ public record SellerClaimListItem(
             @Schema(description = "「최근 추적」 문구", example = "간선하차", nullable = true) String lastTrackingLabel,
             @Schema(nullable = true) LocalDateTime lastTrackingAt,
             @Schema(description = "추적상 브랜드 도착 시각", nullable = true) LocalDateTime arrivedAt
+    ) {
+    }
+
+    /** 재발송비 — 브랜드 수취액에 더해지고 리워드 기준 판매금액에는 들어가지 않는다(결정 14). */
+    @Schema(name = "SellerClaimReshipFee")
+    public record ReshipFee(
+            @Schema(description = "금액(원)", example = "6000") int amount,
+            @Schema(description = "PENDING 결제 대기 · PAID 결제됨 · DEDUCTED 환불액에서 차감 · COVERED 교환 결제분으로 충당 · "
+                    + "VOID 소멸 · REFUNDED 결제 취소", example = "PAID") ClaimChargeStatus status,
+            @Schema(example = "결제됨") String statusLabel
     ) {
     }
 
@@ -102,7 +118,7 @@ public record SellerClaimListItem(
     @Schema(name = "SellerClaimListActions")
     public record Actions(
             @Schema(description = "입고 확인") boolean canConfirmReceipt,
-            @Schema(description = "검수 통과 / 거절") boolean canInspect,
+            @Schema(description = "검수 통과 / 반려") boolean canInspect,
             @Schema(description = "재발송 송장 등록") boolean canRegisterReshipment
     ) {
     }

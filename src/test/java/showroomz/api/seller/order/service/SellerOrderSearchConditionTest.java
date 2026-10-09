@@ -25,7 +25,7 @@ class SellerOrderSearchConditionTest {
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 3, 15, 30);
 
     private final SellerOrderQueryService service = new SellerOrderQueryService(
-            null, null, null, null, null, null, null, null, new OrderProperties());
+            null, null, null, null, null, null, null, null, new OrderProperties(), null);
 
     @Test
     @DisplayName("모두 생략하면 전체 탭 · 결제일 기준 · 최근 30일(자정~23:59:59.999) · 최신순")
@@ -112,7 +112,7 @@ class SellerOrderSearchConditionTest {
     void rangeLimitFromProperties() {
         OrderProperties properties = new OrderProperties();
         properties.setSearchRangeMaxDays(30);
-        SellerOrderQueryService narrow = new SellerOrderQueryService(null, null, null, null, null, null, null, null, properties);
+        SellerOrderQueryService narrow = new SellerOrderQueryService(null, null, null, null, null, null, null, null, properties, null);
 
         assertThatThrownBy(() -> narrow.buildCondition(MARKET_ID, OrderTab.ALL, null, LocalDate.of(2026, 9, 1),
                 LocalDate.of(2026, 10, 3), null, null, null, NOW))

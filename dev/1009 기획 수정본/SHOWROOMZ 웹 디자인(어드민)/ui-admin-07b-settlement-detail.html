@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-admin-07b-settlement-detail — 어드민 정산 관리 · 공구 정산 상세 rev.1</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+
+/* ══════════════════════════════════════════════════════════════════
+   SHOWROOMZ 웹 디자인시스템 v1.2 — 어드민
+   이 <style> 블록 전체가 소스오브트루스다.
+   신규 ui-admin-*.html 은 이 블록을 통째로 복사한 뒤 화면 전용 CSS만 덧붙인다.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── ① 토큰 ───────────────────────────────────────────────────── */
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --adm-sidebar-w:240px; --adm-topbar-h:56px; --adm-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+
+/* ── ② 문서 골격 (시안 파일 공통) ─────────────────────────────── */
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;line-height:1.8;}
+.doc-head .rule{margin-top:12px;}
+.rule b{color:var(--n-900);} .rule .new{color:var(--accent-600);font-weight:600;}
+.rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+
+/* ── ③ 어드민 셸 · 사이드바 ───────────────────────────────────── */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--adm-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--adm-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;overflow-y:auto;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:7px 10px;border-radius:var(--r-sm);margin-bottom:2px;cursor:pointer;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--danger-text);color:#fff;
+  border-radius:8px;padding:0 5px;min-width:16px;text-align:center;}
+.gnb-item .chev{width:14px;height:14px;color:var(--n-500);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:transform .15s;}
+.gnb-item .chev svg{width:11px;height:11px;display:block;}
+.gnb-item.open .chev{transform:rotate(180deg);color:var(--n-700);}
+.gnb-group{overflow:hidden;}
+.gnb-group.closed{display:none;}
+.gnb-item:hover:not(.active){background:var(--n-200);}
+.gnb-item.open{color:var(--n-900);font-weight:500;}
+.gnb-sub{display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-micro);
+  color:var(--n-500);padding:5px 10px 5px 33px;border-radius:var(--r-sm);margin-bottom:1px;cursor:pointer;}
+.gnb-sub:hover:not(.active){background:var(--n-200);}
+.gnb-sub.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-sub.active .scnt{color:#fff;}
+.scnt{font-size:10px;color:var(--n-500);}
+
+/* ── ④ 어드민 셸 · 탑바 / 본문 ────────────────────────────────── */
+.top{position:absolute;left:var(--adm-sidebar-w);right:0;top:0;height:var(--adm-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--adm-pad);}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.crumb .c-sub{font-size:var(--fs-caption);color:var(--n-500);font-weight:400;margin-left:6px;}
+.op{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);}
+.op-av{width:24px;height:24px;border-radius:50%;background:var(--n-200);color:var(--n-600);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-micro);font-weight:600;}
+.main{position:absolute;left:var(--adm-sidebar-w);right:0;top:var(--adm-topbar-h);bottom:0;
+  overflow-y:auto;padding:var(--adm-pad);}
+.navgrp{display:flex;align-items:center;gap:6px;}
+.nav-btn{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-caption);font-weight:500;
+  color:var(--n-700);cursor:pointer;padding:0 12px;height:32px;background:#fff;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);white-space:nowrap;}
+.nav-btn:hover{background:var(--n-100);color:var(--n-900);border-color:var(--n-400);}
+.nav-sep{width:1px;height:18px;background:var(--n-300);margin:0 2px;}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:var(--sp-4);}
+.page-t{font-size:var(--fs-h1);font-weight:600;display:flex;align-items:center;gap:10px;}
+.t-link{font-size:var(--fs-micro);font-weight:500;color:var(--n-600);background:var(--n-100);
+  border:1px solid var(--n-200);border-radius:var(--r-pill);padding:2px 10px;cursor:pointer;
+  white-space:nowrap;line-height:1.7;}
+.t-link:hover{background:var(--accent-50);color:var(--accent-600);border-color:var(--accent-100);}
+.page-d{font-size:var(--fs-caption);color:var(--n-600);margin-top:2px;}
+
+/* ── ⑤ 필터 · 폼 컨트롤 ───────────────────────────────────────── */
+.filter{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);
+  padding:var(--sp-3) var(--sp-4);margin-bottom:var(--sp-4);display:flex;align-items:center;
+  justify-content:space-between;gap:var(--sp-4);}
+.tabs{display:flex;gap:0;}
+.tab{font-size:var(--fs-caption);color:var(--n-500);padding:6px 2px;margin-right:20px;cursor:pointer;
+  border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;}
+.tab.active{color:var(--accent-500);border-bottom-color:var(--accent-500);font-weight:500;}
+.tab .tn{font-size:10px;background:var(--n-100);color:var(--n-600);border-radius:8px;padding:0 5px;}
+.tab.active .tn{background:var(--accent-50);color:var(--accent-600);}
+.search{display:flex;gap:6px;}
+.inp{font-family:inherit;font-size:var(--fs-body);padding:6px 10px;border-radius:var(--r-sm);
+  border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:32px;width:180px;}
+.inp::placeholder{color:var(--n-400);}
+.inp:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:7px 14px;cursor:pointer;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
+.btn-primary{background:var(--accent-500);color:#fff;border:none;}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-danger{background:var(--danger-text);color:#fff;border:none;}
+.btn:disabled{background:var(--n-100);color:var(--n-400);border:1px solid var(--n-200);cursor:not-allowed;}
+.sel-sm{font-family:inherit;font-size:var(--fs-caption);height:28px;padding:0 26px 0 10px;cursor:pointer;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-700);
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;}
+.sel-sm:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+
+/* ── ⑥ 테이블 ─────────────────────────────────────────────────── */
+.tcard{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+.tbar{display:flex;align-items:center;justify-content:space-between;padding:10px var(--sp-4);
+  border-bottom:1px solid var(--n-200);}
+.tbar-l{font-size:var(--fs-caption);color:var(--n-600);} .tbar-l b{color:var(--n-900);}
+.tbar-r{display:flex;align-items:center;gap:8px;}
+table{width:100%;border-collapse:collapse;}
+thead td{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);font-weight:500;
+  padding:10px 16px;white-space:nowrap;border-bottom:1px solid var(--n-200);}
+tbody td{padding:13px 16px;font-size:var(--fs-caption);border-top:1px solid var(--n-100);
+  vertical-align:middle;white-space:nowrap;}
+tbody tr:first-child td{border-top:none;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:var(--accent-50);}
+tbody tr:hover .t-main{color:var(--accent-600);}
+.t-main{font-size:var(--fs-body);font-weight:500;color:var(--n-900);}
+.tcard table{table-layout:fixed;}
+.tnum{font-variant-numeric:tabular-nums;letter-spacing:-.1px;}
+.t-sub{color:var(--n-500);font-size:var(--fs-micro);}
+.t-c{text-align:center;}
+.t-r{text-align:right;}
+.over{color:var(--warning-text);font-weight:600;}
+
+/* ── ⑦ 배지 ───────────────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-warning{background:var(--warning-bg);color:var(--warning-text);}
+.b-danger{background:var(--danger-bg);color:var(--danger-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+
+/* ── ⑧ 페이지네이션 · 빈 상태 ─────────────────────────────────── */
+.pager{display:flex;align-items:center;justify-content:center;gap:4px;padding:12px;border-top:1px solid var(--n-200);}
+.page-item{min-width:26px;height:26px;padding:0 6px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-600);cursor:pointer;}
+.page-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.empty{padding:72px 24px;text-align:center;}
+.empty-ic{font-size:28px;color:var(--n-300);margin-bottom:10px;}
+.empty-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);margin-bottom:4px;}
+.empty-d{font-size:var(--fs-caption);color:var(--n-500);}
+
+/* ── ⑨ 상세 · 카드 ────────────────────────────────────────────── */
+.detail{display:grid;grid-template-columns:1fr 320px;gap:var(--sp-4);align-items:start;}
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);margin-bottom:var(--sp-4);}
+.card:last-child{margin-bottom:0;}
+.card-h{font-size:var(--fs-h3);font-weight:600;padding:11px var(--sp-4);border-bottom:1px solid var(--n-200);
+  background:var(--n-50);border-radius:var(--r-md) var(--r-md) 0 0;display:flex;align-items:center;
+  justify-content:space-between;}
+.card-h .ch-n{font-size:var(--fs-micro);color:var(--n-500);font-weight:400;}
+.card-b{padding:var(--sp-4);}
+.rsn{margin:0;font-size:var(--fs-caption);color:var(--n-700);line-height:1.75;}
+
+/* 상세 필드 행 — 라벨 140px · 행 패딩 9px (어드민 공통 규격) */
+.frow{display:flex;gap:var(--sp-3);padding:9px 0;border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.frow:last-child{border-bottom:none;}
+.frow:first-child{padding-top:0;}
+.fk{width:140px;flex-shrink:0;color:var(--n-500);}
+.fv{flex:1;color:var(--n-900);min-width:0;}
+.fv .fsub{color:var(--n-500);font-size:var(--fs-micro);margin-top:2px;}
+.flink{color:var(--n-600);text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
+.flink:hover{color:var(--accent-600);}
+
+/* ── ⑩ 변경 대조 표 ───────────────────────────────────────────── */
+table.diff{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+table.diff thead td{width:auto;} table.diff thead td:first-child{width:180px;}
+table.diff tbody td{white-space:normal;cursor:default;padding:11px 16px;}
+table.diff tbody tr{cursor:default;} table.diff tbody tr:hover{background:transparent;}
+table.diff tbody tr.chg{background:var(--accent-50);}
+table.diff tbody tr.chg:hover{background:var(--accent-50);}
+.dk{color:var(--n-500);font-size:var(--fs-micro);}
+.dv{color:var(--n-900);}
+.dold{color:var(--n-500);text-decoration:line-through;text-decoration-color:var(--n-400);}
+.dnew{color:var(--accent-600);font-weight:600;}
+.dsame{color:var(--n-400);font-size:var(--fs-micro);}
+.dlock{color:var(--n-500);font-size:var(--fs-micro);font-weight:500;}
+
+/* ── ⑪ 인라인 안내 박스 ───────────────────────────────────────── */
+.chk-note{display:flex;gap:9px;background:var(--warning-bg);border-radius:var(--r-sm);padding:11px 13px;
+  font-size:var(--fs-micro);color:var(--n-700);line-height:1.65;margin-bottom:var(--sp-4);}
+.chk-note.danger{background:var(--danger-bg);}
+.chk-note .ci{width:16px;height:16px;border-radius:50%;background:var(--warning-text);color:#fff;font-size:10px;
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;margin-top:1px;}
+.chk-note.danger .ci{background:var(--danger-text);}
+
+/* ── ⑫ 첨부 ───────────────────────────────────────────────────── */
+.files{display:flex;flex-direction:column;gap:8px;}
+.file{display:flex;align-items:center;gap:10px;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:9px 12px;}
+.file-ic{width:28px;height:28px;border-radius:var(--r-sm);background:var(--accent-50);color:var(--accent-600);
+  display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+.file-n{flex:1;font-size:var(--fs-caption);}
+.file-s{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ── ⑬ 우측 액션 카드 · 이력 ──────────────────────────────────── */
+.detail > div:last-child{position:sticky;top:0;align-self:start;}
+.side-card{}
+.st-now{padding:var(--sp-4);}
+.st-line{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding-bottom:var(--sp-3);border-bottom:1px solid var(--n-100);}
+.st-meta{padding-top:var(--sp-2);}
+.mrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);}
+.mrow:last-child{border-bottom:none;}
+.mk{color:var(--n-500);} .mv{color:var(--n-900);font-weight:500;text-align:right;}
+.st-lbl{font-size:var(--fs-caption);color:var(--n-500);flex-shrink:0;}
+.act-in{border-top:1px solid var(--n-100);margin:var(--sp-2) 0 0;padding-top:var(--sp-2);}
+.act-in .st-meta{padding-top:0;}
+.act-in .st-hint{margin-top:6px;}
+.st-acts{display:flex;gap:8px;margin-top:var(--sp-4);}
+.st-acts .btn{flex:1;}
+.st-hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;line-height:1.55;}
+.st-rsn{padding:9px 0 0;border-top:1px solid var(--n-100);margin-top:var(--sp-2);}
+.st-rsn .rk{font-size:var(--fs-micro);color:var(--n-500);display:block;margin-bottom:3px;}
+.st-rsn .rv{font-size:var(--fs-caption);color:var(--n-900);line-height:1.6;}
+.st-rsn + .st-rsn{margin-top:9px;}
+.hist{padding:var(--sp-2) var(--sp-4) var(--sp-3);}
+.hitem{display:flex;gap:10px;padding:9px 0;}
+.hdot{width:7px;height:7px;border-radius:50%;background:var(--n-300);margin-top:6px;flex-shrink:0;}
+.hdot.on{background:var(--accent-500);}
+.hdot.h-info{background:var(--info-text);}
+.hdot.h-success{background:var(--success-text);}
+.hdot.h-warning{background:var(--warning-text);}
+.hdot.h-danger{background:var(--danger-text);}
+.hdot.h-neutral{background:var(--n-400);}
+.hmore{font-size:var(--fs-micro);color:var(--accent-600);padding:8px 0 2px;border-top:1px solid var(--n-100);margin-top:4px;cursor:pointer;}
+.htxt{font-size:var(--fs-caption);}
+.hmeta{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ── ⑭ 모달 ───────────────────────────────────────────────────── */
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;justify-content:center;}
+.modal{width:520px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);overflow:hidden;}
+.modal.sm{width:400px;}
+.modal-h{font-size:var(--fs-h3);font-weight:600;padding:14px var(--sp-5);border-bottom:1px solid var(--n-200);
+  display:flex;align-items:center;justify-content:space-between;}
+.modal-x{color:var(--n-400);cursor:pointer;font-size:var(--fs-body);}
+.modal-b{padding:var(--sp-5);font-size:var(--fs-caption);color:var(--n-700);line-height:1.7;}
+.modal-f{padding:12px var(--sp-5);border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.mlabel{display:block;font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;}
+.modal-b > .mlabel:first-child{margin-top:0;}
+.mlabel .req{color:var(--danger-text);margin-left:2px;}
+.mlabel .opt{color:var(--n-400);margin-left:4px;font-weight:400;}
+.msel,.mta{width:100%;font-family:inherit;font-size:var(--fs-body);border:1px solid var(--n-300);
+  border-radius:var(--r-sm);background:#fff;color:var(--n-900);padding:6px 10px;}
+.msel:focus,.mta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.msel{height:32px;appearance:none;-webkit-appearance:none;-moz-appearance:none;padding-right:32px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;}
+.mta{min-height:88px;resize:vertical;line-height:1.6;height:auto;padding-top:7px;}
+.mta.is-error{border-color:var(--danger-text);}
+.merr{font-size:var(--fs-micro);color:var(--danger-text);margin:6px 0 0;}
+.mwarn{display:flex;gap:8px;background:var(--danger-bg);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--danger-text);line-height:1.6;margin-top:var(--sp-4);font-weight:500;}
+.mwarn.info{background:var(--info-bg);color:var(--info-text);}
+.mhint{font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;}
+
+/* ── ⑮ 미리보기 라이트박스 ────────────────────────────────────── */
+.modal.pv{width:1080px;}
+.pv-body{display:grid;grid-template-columns:1fr 340px;height:620px;}
+.pv-view{background:var(--n-900);display:flex;flex-direction:column;}
+.pv-canvas{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:20px;}
+.pv-img{width:440px;height:310px;background:#fff;border-radius:2px;
+  box-shadow:0 4px 18px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;
+  color:var(--n-400);font-size:var(--fs-caption);}
+.pv-bar{height:48px;background:rgba(255,255,255,.06);border-top:1px solid rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px;}
+.pv-nav{display:flex;align-items:center;gap:6px;}
+.pv-b{height:28px;padding:0 10px;border-radius:var(--r-sm);background:rgba(255,255,255,.1);
+  color:rgba(255,255,255,.85);font-size:var(--fs-micro);font-weight:500;cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;border:none;font-family:inherit;}
+.pv-b:hover{background:rgba(255,255,255,.2);color:#fff;}
+.pv-zoom{font-size:var(--fs-micro);color:rgba(255,255,255,.6);padding:0 6px;}
+.pv-side{background:#fff;border-left:1px solid var(--n-200);padding:var(--sp-4);overflow-y:auto;}
+.pv-t{font-size:var(--fs-h3);font-weight:600;margin-bottom:2px;}
+.pv-d{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:var(--sp-4);}
+.pv-sec{font-size:var(--fs-micro);color:var(--n-500);font-weight:600;padding-bottom:6px;
+  border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-2);}
+.pv-row{display:flex;gap:9px;padding:11px 0;border-bottom:1px solid var(--n-100);align-items:flex-start;}
+.pv-row:last-of-type{border-bottom:none;}
+.pv-k{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:3px;}
+.pv-old{font-size:var(--fs-micro);color:var(--n-500);text-decoration:line-through;
+  text-decoration-color:var(--n-400);margin-bottom:1px;}
+.pv-new{font-size:var(--fs-body);font-weight:600;color:var(--accent-600);line-height:1.45;}
+.pv-new.plain{color:var(--n-900);}
+.pv-note{display:flex;gap:7px;background:var(--n-100);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--n-600);line-height:1.55;margin-top:var(--sp-4);}
+.pv-note.warn{background:var(--danger-bg);color:var(--danger-text);}
+
+/* ── ⑯ 토스트 ─────────────────────────────────────────────────── */
+.toast-wrap{position:absolute;top:72px;right:24px;display:flex;flex-direction:column;gap:8px;}
+.toast{min-width:260px;background:#fff;border:1px solid var(--n-200);border-left:3px solid var(--success-text);
+  border-radius:7px;box-shadow:0 4px 16px rgba(26,27,31,.1);padding:11px 14px;font-size:var(--fs-caption);
+  font-weight:500;display:flex;align-items:center;gap:8px;}
+
+/* ══ 화면 전용 (ui-admin-06) ══ */
+/* 어드민 공통 규격 정합: 테이블 본문 셀 14px 16px · 행높이 50px */
+tbody td{padding:14px 16px;height:50px;}
+
+.tb-inq thead td:nth-child(1),.tb-inq tbody td:nth-child(1){width:8%;padding-left:20px;}
+.tb-inq thead td:nth-child(3),.tb-inq tbody td:nth-child(3){width:10%;}
+.tb-inq thead td:nth-child(4),.tb-inq tbody td:nth-child(4){width:14%;}
+.tb-inq thead td:nth-child(5),.tb-inq tbody td:nth-child(5){width:14%;}
+.tb-inq thead td:nth-child(6),.tb-inq tbody td:nth-child(6){width:10%;}
+.tb-inq thead td:nth-child(7),.tb-inq tbody td:nth-child(7){width:11%;padding-right:20px;}
+
+.tb-qna thead td:nth-child(1),.tb-qna tbody td:nth-child(1){width:10%;padding-left:20px;}
+.tb-qna thead td:nth-child(2),.tb-qna tbody td:nth-child(2){width:32%;}
+.tb-qna thead td:nth-child(3),.tb-qna tbody td:nth-child(3){width:18%;}
+.tb-qna thead td:nth-child(4),.tb-qna tbody td:nth-child(4){width:12%;}
+.tb-qna thead td:nth-child(5),.tb-qna tbody td:nth-child(5){width:10%;}
+.tb-qna thead td:nth-child(6),.tb-qna tbody td:nth-child(6){width:10%;}
+.tb-qna thead td:nth-child(7),.tb-qna tbody td:nth-child(7){width:12%;padding-right:20px;}
+.tb-qna tbody td{vertical-align:top;}
+
+.tb-faq thead td:nth-child(1),.tb-faq tbody td:nth-child(1){width:40px;padding-left:16px;padding-right:0;}
+.tb-faq thead td:nth-child(2),.tb-faq tbody td:nth-child(2){width:13%;}
+.tb-faq thead td:nth-child(3),.tb-faq tbody td:nth-child(3){white-space:normal;}
+.tb-faq thead td:nth-child(4),.tb-faq tbody td:nth-child(4){width:10%;}
+.tb-faq thead td:nth-child(5),.tb-faq tbody td:nth-child(5){width:10%;}
+.tb-faq thead td:nth-child(6),.tb-faq tbody td:nth-child(6){width:13%;padding-right:20px;}
+.tb-faq tbody td{vertical-align:top;}
+
+.tb-not thead td:nth-child(1),.tb-not tbody td:nth-child(1){width:56px;padding-left:20px;}
+.tb-not thead td:nth-child(2),.tb-not tbody td:nth-child(2){white-space:normal;}
+.tb-not thead td:nth-child(3),.tb-not tbody td:nth-child(3){width:10%;}
+.tb-not thead td:nth-child(4),.tb-not tbody td:nth-child(4){width:10%;}
+.tb-not thead td:nth-child(5),.tb-not tbody td:nth-child(5){width:9%;}
+.tb-not thead td:nth-child(6),.tb-not tbody td:nth-child(6){width:13%;padding-right:20px;}
+.tb-not tbody td{vertical-align:top;}
+
+.qa-q{font-size:var(--fs-body);font-weight:500;color:var(--n-900);line-height:1.5;}
+.qa-a{font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;line-height:1.6;max-width:660px;}
+.drag{color:var(--n-300);text-align:center;cursor:grab;font-size:13px;}
+
+.racts{display:flex;gap:6px;}
+.rbtn{display:inline-flex;align-items:center;justify-content:center;height:26px;padding:0 10px;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;font-size:var(--fs-micro);
+  font-weight:500;color:var(--n-700);cursor:pointer;font-family:inherit;white-space:nowrap;}
+.rbtn:hover{background:var(--n-100);border-color:var(--n-400);}
+.rbtn.del{color:var(--danger-text);border-color:#E9C9C9;}
+.rbtn.del:hover{background:var(--danger-bg);}
+
+.thread{display:flex;flex-direction:column;gap:10px;}
+.tmsg{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:12px 14px;
+  font-size:var(--fs-caption);line-height:1.75;color:var(--n-700);}
+.tmsg.me{background:var(--accent-50);border-color:var(--accent-100);}
+.tmsg .who{font-size:var(--fs-micro);font-weight:600;color:var(--n-700);margin-bottom:5px;
+  display:flex;align-items:center;gap:6px;}
+.tmsg .who .wt{font-weight:400;color:var(--n-500);}
+.ta-label{font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;display:block;}
+
+.term{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fff;
+  border:1px solid var(--n-200);border-radius:var(--r-md);padding:14px var(--sp-4);margin-bottom:10px;cursor:pointer;}
+.term:hover{border-color:var(--n-300);}
+.term.on{border-color:var(--accent-500);background:var(--accent-50);}
+.term .tn{font-size:var(--fs-h3);font-weight:600;}
+.term .tv{font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;}
+
+.cbrow{display:flex;gap:9px;align-items:flex-start;padding:9px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);color:var(--n-700);}
+.cbrow:last-child{border-bottom:none;}
+.cbx{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--n-300);background:#fff;
+  flex-shrink:0;margin-top:2px;}
+.cbx.on{background:var(--accent-500);border-color:var(--accent-500);color:#fff;font-size:10px;
+  display:flex;align-items:center;justify-content:center;}
+.rdo{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--n-300);background:#fff;
+  flex-shrink:0;display:inline-block;}
+.rdo.on{border-color:var(--accent-500);border-width:5px;}
+.optrow{display:flex;gap:20px;align-items:center;margin-top:var(--sp-4);font-size:var(--fs-caption);color:var(--n-700);}
+.optrow label{display:flex;align-items:center;gap:7px;cursor:pointer;}
+.w-full{width:100%;}
+.tb-inq tbody td:nth-child(2),.tb-qna tbody td:nth-child(2),.tb-qna tbody td:nth-child(3){overflow:hidden;}
+.tb-inq .t-main,.tb-qna .qa-q{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tatt{display:flex;gap:8px;margin-top:10px;}
+.tthumb{width:72px;height:72px;border-radius:var(--r-sm);border:1px solid var(--n-200);
+  background:var(--n-100);color:var(--n-400);font-size:var(--fs-micro);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.tthumb:hover{border-color:var(--accent-500);color:var(--accent-600);}
+.tatt-n{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;}
+
+
+/* ── ⑰ 화면 전용 · 공구 정산 상세 ─────────────────────────────── */
+.rail{position:sticky;top:0;display:flex;flex-direction:column;}
+.kpi4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--n-200);
+  border-radius:var(--r-sm);overflow:hidden;}
+.kpi4 > div{background:#fff;padding:14px 16px;}
+.kpi4-k{font-size:var(--fs-micro);color:var(--n-600);}
+.kpi4-v{font-size:var(--fs-h2);font-weight:600;margin-top:4px;letter-spacing:-.01em;}
+.kpi4-s{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.kpi4-v.warn{color:var(--warning-text);}
+.elink{display:inline-flex;align-items:center;gap:4px;color:var(--accent-600);cursor:pointer;}
+.elink:hover{text-decoration:underline;}
+.tb-inf thead td:nth-child(1),.tb-inf tbody td:nth-child(1){padding-left:var(--sp-4);white-space:normal;}
+.tb-inf thead td:nth-child(2),.tb-inf tbody td:nth-child(2){width:120px;text-align:center;}
+.tb-inf thead td:nth-child(3),.tb-inf tbody td:nth-child(3){width:120px;text-align:center;}
+.tb-inf thead td:nth-child(4),.tb-inf tbody td:nth-child(4){width:110px;text-align:center;padding-right:var(--sp-4);}
+.tb-inf tbody td{vertical-align:middle;}
+.card-b.two{display:grid;grid-template-columns:1fr 1fr;column-gap:24px;}
+.card-b.two .frow{padding:7px 0;align-items:flex-start;}
+.card-b.two .fv{white-space:normal;word-break:keep-all;overflow-wrap:anywhere;line-height:1.5;}
+.card-b.two > .frow:nth-child(1),.card-b.two > .frow:nth-child(2){padding-top:0;}
+.card-b.two > .prof + .frow,.card-b.two > .prof + .frow + .frow{padding-top:0;}
+.card-b.two > .frow:nth-last-child(2):nth-child(odd){border-bottom:none;}
+.card-b.two > .prof ~ .frow:nth-last-child(2):nth-child(even){border-bottom:none;}
+.gone{color:var(--n-500);}
+.card-h .btn{height:26px;padding:0 10px;font-size:var(--fs-micro);margin-left:12px;}
+.card-h .ch-n{margin-left:auto;}
+.memo-help{font-size:var(--fs-micro);color:var(--n-600);background:var(--n-50);border-radius:var(--r-sm);
+  padding:7px 9px;line-height:1.6;margin-bottom:8px;}
+.memo{font-family:inherit;font-size:var(--fs-caption);width:100%;min-height:56px;resize:vertical;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);padding:8px 10px;color:var(--n-900);background:#fff;}
+.memo:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.memo-f{display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
+.memo-c{font-size:var(--fs-micro);color:var(--n-500);}
+.memo-l{border-top:1px solid var(--n-200);margin-top:var(--sp-3);padding-top:var(--sp-1);}
+.memo-i{padding:10px 0;border-bottom:1px solid var(--n-100);}
+.memo-i:last-child{border-bottom:none;padding-bottom:0;}
+.memo-h{display:flex;align-items:baseline;gap:6px;font-size:var(--fs-micro);color:var(--n-500);}
+.memo-w{font-weight:600;color:var(--n-700);}
+.memo-t{font-size:var(--fs-caption);line-height:1.7;color:var(--n-900);margin-top:3px;}
+.memo-a{display:flex;gap:8px;margin-top:5px;}
+.memo-b{font-size:var(--fs-micro);color:var(--n-600);cursor:pointer;}
+.memo-b:hover{color:var(--n-900);text-decoration:underline;}
+.memo-lock{font-size:var(--fs-micro);color:var(--n-400);margin-top:5px;}
+.btn-danger-o{background:#fff;color:var(--danger-text);border:1px solid var(--n-300);}
+.btn-danger-o:hover{background:var(--danger-bg);border-color:var(--n-400);}
+.upl{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px dashed var(--n-300);border-radius:var(--r-sm);padding:10px 12px;background:var(--n-50);}
+.upl-n{font-size:var(--fs-caption);}
+.wait{background:var(--warning-bg);border-radius:var(--r-sm);padding:10px 12px;font-size:var(--fs-micro);
+  color:var(--warning-text);line-height:1.7;margin-bottom:var(--sp-3);}
+/* 금액 분해 표 — DS에 없어 확장(열 정렬로 금액을 견주는 것이 표의 일) */
+.mcols{display:grid;grid-template-columns:1fr 1fr;align-items:start;}
+.mcols>div:first-child{border-right:1px solid var(--n-200);}
+.mtab{width:100%;border-collapse:collapse;font-size:var(--fs-caption);}
+.mtab td{padding:6px 14px;height:auto;}
+.mtab tbody tr td:last-child{text-align:right;font-variant-numeric:tabular-nums;}
+.mtab tr.sub td{color:var(--n-600);}
+.mtab tr.sub td:last-child{color:var(--n-700);}
+.mtab tr.mid td{border-top:1px solid var(--n-300);font-weight:600;background:var(--n-50);}
+.mtab tr.tot td{border-top:1.5px solid var(--n-400);background:var(--n-50);font-size:var(--fs-h3);font-weight:600;color:var(--n-900);}
+.mtab tr.plan td{color:var(--n-400);}
+.mnote{display:block;font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;font-variant-numeric:normal;font-weight:400;}
+.pb{display:inline-block;font-size:10px;padding:1px 5px;border-radius:3px;background:var(--n-100);color:var(--n-500);margin-left:5px;vertical-align:middle;}
+.ltab{width:100%;border-collapse:collapse;font-size:var(--fs-caption);}
+.ltab thead td{background:var(--n-50);color:var(--n-600);font-size:var(--fs-micro);font-weight:600;
+  padding:7px 14px;height:auto;border-bottom:1px solid var(--n-200);white-space:nowrap;}
+.ltab tbody td{padding:7px 14px;height:auto;border-top:1px solid var(--n-100);}
+.ltab tbody tr:first-child td{border-top:none;}
+.ltab .num{text-align:right;font-variant-numeric:tabular-nums;}
+.ltab tfoot td{padding:7px 14px;height:auto;border-top:1px solid var(--n-300);background:var(--n-50);font-weight:600;}
+/* 인라인 요약 바 — 한 줄짜리 표를 표로 두지 않는다(스튜디오 규칙 승계) */
+.ibar{display:flex;align-items:center;background:var(--n-50);border:1px solid var(--n-200);
+  border-radius:var(--r-sm);padding:0 var(--sp-3);flex-wrap:wrap;}
+.ib{display:flex;align-items:baseline;gap:6px;padding:8px 14px 8px 0;margin-right:14px;
+  border-right:1px solid var(--n-200);font-size:var(--fs-micro);color:var(--n-500);}
+.ib:last-of-type{border-right:none;margin-right:0;}
+.ib b{font-size:var(--fs-caption);color:var(--n-900);font-variant-numeric:tabular-nums;font-weight:600;}
+.ib-a{margin-left:auto;display:flex;gap:6px;}
+.axis{display:flex;align-items:baseline;gap:8px;padding:8px var(--sp-4);background:var(--n-50);
+  border-bottom:1px solid var(--n-200);}
+.axis-t{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);}
+.axis-s{font-size:var(--fs-micro);color:var(--n-500);}
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>⑤ 어드민 · 7. 정산 관리 — 공구 정산 상세 <span style="font-weight:400;color:var(--n-600);font-size:var(--fs-caption)">ui-admin-07b-settlement-detail · rev.1</span></h1>
+  <p class="meta">공구 1건의 금액 분해·3자 분배·증빙 조회와 확정·보류·재분배 조치 · 근거: <code>SHOWROOMZ_웹_디자인시스템_v1_2.html</code> · 목록은 <code>ui-admin-07a-settlements.html</code> · 상류: <code>ui-partner-13-settlement</code>(브랜드 시점) · <code>ui-studio-12-settlement</code>(인플루언서 시점)</p>
+  <div class="rule">
+    <b class="new">[증빙 MVP = 외부 발행 서비스 없음 · 2026.10.07]</b> ① <b>원천징수영수증</b>(비사업자) — 지급 완료 시 시스템이 PDF로 생성 · 주민번호 미등록이면 <b>지급 보류</b> ② <b>인플루언서 → 플랫폼 세금계산서</b>(사업자 · 정발행) — 인플루언서가 홈택스에서 발행 후 스튜디오에 승인번호 입력 → 운영자 <b>대조 확인 / 반려</b>(M4) · 확인 전 <b>지급 보류</b> · 실지급 = 리워드 + 부가세(플랫폼 부가세 0) ③ <b>플랫폼 → 브랜드 세금계산서</b> — 운영자가 홈택스에서 발행 후 <b>발행본 등록</b>(M5 · PDF · 승인번호 · 발행일) · 공급일 다음 달 10일 기한 · <b>지급을 막지 않는다</b>. 지급 보류 조건은 레일에 목록으로 적는다(D7). 위수탁 · 역발행 서술은 폐기 — 외부 서비스를 붙이면 M4 · M5가 「자동 처리됨」으로 바뀌고 구조는 같다([확장 가능]).<br>
+    <b class="new">[리워드 지급자 = 플랫폼 · 부가세 별도 · 2026.10.07]</b> 리워드는 <b>플랫폼이 인플루언서에게 지급</b>하는 구조로 확정했다(PG 3자 분배는 그대로 · 리워드 몫이 플랫폼 명의로 지급대행). 그래서 ① 비사업자 3.3%는 <b>플랫폼이 원천징수 의무자</b> — 영수증 자동 발행 · 스튜디오에서 다운로드 ② 사업자 인플루언서는 <b>플랫폼 앞으로 역발행</b>(승인 전 지급 보류) ③ 브랜드는 리워드를 플랫폼에서 산 마케팅 서비스로 보고 <b>플랫폼이 세금계산서 1장</b>(공급가 = 리워드 · <b>부가세 10% 별도</b>)을 발행 — 금액 분해에 <b>리워드 부가세</b> 줄이 생기고 그만큼 브랜드 수취액이 줄어든다(일반과세 브랜드는 매입세액으로 공제). 인플루언서 리워드는 계약서 숫자 그대로다. 차감(클로백)은 플랫폼이 브랜드에 <b>마이너스 수정세금계산서</b>, 인플루언서는 <b>다음 지급분 차감 후 금액으로 원천징수</b>. 세율(3.3%)은 백엔드 변수 — 플랫폼 종사자 세율 개정 가능성 때문에 문구에 고정하지 않는다. 원천징수 의무자 [자문대기-세무]는 해소, 구조 점검만 세무사 확인.<br>
+    <b>[좌우 분업]</b> 좌측은 <b>돈의 사실</b>(개요·분해·3자 분배·증빙·고정 지급비·명세), 우측 sticky 레일은 <b>상태와 조치</b>(현재 상태 + 액션 · 처리 이력)다 — 회원·브랜드 상세와 같은 골격이며 셸·카드·필드행·모달을 <code>ui-admin-15-brand-detail.html</code>에서 그대로 가져왔다. 좌측 카드가 많아 <b>상단·하단 2장</b>으로 낸다.<br>
+    <b class="new">[두 축을 한 표에 쌓는다]</b> 파트너센터는 <b>브랜드 수취액</b>까지, 쇼룸 스튜디오는 <b>내 실지급액</b>까지만 분해한다. 어드민은 <b>브랜드 축</b>(확정 거래액 − PG − 플랫폼 − 리워드)과 <b>인플루언서 축</b>(리워드 − 원천징수)을 <b>위아래로</b> 쌓았다 — 두 축이 만나는 지점이 <b>판매 리워드</b>이고, 표를 나누면 그 연결이 끊겨 검산이 안 된다. 스튜디오가 “플랫폼·PG 수수료 행을 넣지 않은” 이유(내 리워드에서 차감되지 않는데 차감되는 것처럼 읽힌다)는 어드민에서 성립하지 않는다 — 운영자는 <b>전체 흐름</b>을 봐야 한다.<br>
+    <b>[3자 분배 — 플랫폼이 나눠주는 게 아니다]</b> 소비자 결제금은 PG에서 브랜드·인플루언서·플랫폼에게 <b>각각 직접</b> 지급된다. 합계가 <b>확정 거래액 − 원천징수</b>와 맞는지 tfoot에서 확인되고, 차액은 <b>플랫폼이 납세 대리로 보유</b>하는 원천징수분이다. 이 블록이 있어야 “돈이 안 들어왔다”는 문의에 <b>누구에게 물어야 하는지</b>를 답할 수 있다.<br>
+    <b class="new">[분배 실패 = 어드민 전용 · 유일한 위험색]</b> 3자 분배라 한쪽 계좌가 막히면 <b>그 몫만 반환</b>되고 나머지는 정상 지급된다(D5에서 브랜드=지급 완료 / 인플루언서=분배 실패로 갈린다). 수취자 화면에는 「지급 완료」로 보이는데 돈이 없으므로 <b>운영자가 먼저 알아야 한다</b>. 보류와의 차이 — 보류는 <b>금액이 바뀔 수 있는</b> 상태(경고), 실패는 <b>금액은 맞고 전달만 실패</b>한 상태(위험)다. 조치는 <b>재분배</b>이고 <b>금액을 재계산하지 않는다</b>.<br>
+    <b class="new">[정산은 주문 종결 후 생긴다 · 2026.10.06]</b> 정산이 생기는 시점에 금액은 이미 <b>확정 거래액</b>이라 회색·예정 표시를 없앴다(D2). 상단 <b>단계 줄</b>(주문 종결 › 정산 확인 3영업일 › 조정 협의 › 자동 확정 › 지급)이 위치를 보여주고, 조정 요청이 없던 회차는 「조정 협의」에 취소선을 긋는다. 명세 다운로드만 확정 전 비활성이다.<br>
+    <b>[돈은 이 화면에서도 나가지 않는다]</b> 지급은 예정일에 PG가 자동 실행하고, 확정도 확인 기간 경과 시 자동이다. 운영자 액션은 <b>재분배 하나</b>다(분배 실패 · M3). 확정 · 보류 · 보류 해제 버튼과 구 M1 확정 모달 · 구 M2 보류 해제 모달은 모두 삭제했다. 지급일을 앞당기는 버튼도 없다.<br>
+    <b>[상태별 액션]</b> 정산 확인 중 · 조정 협의 · 지급 예정 · 지급 완료 → 조치 없음 · 분배 실패 → 재분배. <b>직권 보류는 두지 않는다</b> — 확정 후 환불(리콜 · 확정 후 하자)은 다음 정산에서 <b>차감</b>한다(D3 차감 반영 블록 · 07a 차감 탭).<br>
+    <b class="new">[보류 해제는 자동 · 2026.10.06]</b> 한쪽이 정산 확인 기간에 <b>정산 조정 요청</b>을 내면 정산이 <b>전액 보류</b>되고 이슈 스레드가 열린다. 양측이 <b>금액에 합의</b>하면 시스템이 금액을 바꾸고 · 보류를 풀고 · 이슈를 닫는다. 합의 기한(개설 + 10영업일)이 지나면 <b>원래 금액</b>으로 확정한다. 운영자는 조정안을 내지 않고 승인하지도 않는다 — 그래서 구 M2 보류 해제 모달을 <b>삭제</b>했다. 보류 중에는 <b>브랜드 몫도 함께 정지</b>한다(합의 금액이 브랜드 수취액도 옮기므로 · 차액 선지급 없음).<br>
+    <b>[고정 지급비 = 계약 조건만]</b> 모델 B — 브랜드가 인플루언서에게 직접 지급해 플랫폼을 지나지 않는다. 지급 여부 · 원천징수 · 실지급을 표시하지 않고 계약 금액 · 지급 시점만 읽기 전용으로 둔다. 「공구 총 수령액」 합산도 없앴다.<br>
+    <b class="new">[같은 값을 두 곳에 쓰지 않는다]</b> 정산 확정일·지급(예정)일은 <b>우측 레일의 상태 메타</b>에 있으므로 좌측 개요에서 뺐고, 분해 표의 <b>행별 주석</b>(“PG사가 먼저 차감한다”·“인플루언서 몫으로 분배”)은 <b>축 헤더가 이미 말하는 문장</b>이라 걷어냈다 — 중복은 읽는 시간만 늘리지 않고 <b>프레임 하나에 6블록이 들어가지 못하게</b> 만든다(1440×1024 고정 아트보드에서 세로는 예산이다).<br>
+    <b>[한 줄짜리 표는 표로 두지 않는다]</b> 증빙·고정 지급비는 공구당 한 건이라 헤더 + 1행짜리 표가 되어 전폭에 빈 칸만 늘어선다 — 비교할 다른 행이 없으면 <b>표의 일(열 정렬로 행을 견주기)이 없다</b>. <b>인라인 요약 바</b>로 바꿨고 관리 버튼은 바 우측 끝에 둔다(쇼룸 스튜디오 규칙 승계).<br>
+    <b>[원천징수는 사업자 여부로 갈린다]</b> 비사업자는 리워드에서 <b>3.3%</b>(소득세 3% + 지방세 0.3%) 차감 + <b>원천징수영수증</b>(D1), 사업자는 차감 없이 전액 + <b>세금계산서 수취</b>(D6). 발행 주체는 <b>인플루언서</b>이고 플랫폼이 대행하지 않는다 — 쇼룸 스튜디오에서 “내 조치”였던 항목이고 어드민은 <b>방치 건을 보는 쪽</b>이다.<br>
+    <b>[상태 색 매핑]</b> 정산 확인 중=정보 · 조정 협의=경고(진행이 멈춤 · 원칙 ①) · 지급 예정=중립 · 지급 완료=성공 · 분배 실패=위험(유일).<br>
+    <b>[필수 미입력 = 버튼 비활성만]</b> 에러 문구는 형식 오류·중복에만 뜬다. 비활성 버튼에 <b>인라인 opacity를 덧씌우지 않는다</b>.<br>
+    <b>[DS에 없어 확장한 것 — 3개]</b> <code>.mtab</code>(금액 분해 표 — 열 정렬로 금액을 견주는 것이 표의 일이라 <code>.frow</code>로 대체할 수 없다) · <code>.ltab</code>(3자 분배·명세) · <code>.ibar/.axis</code>(인라인 요약 바 + 축 헤더). 모두 상류 파트너센터 파일에서 가져왔고 나머지는 어드민 DS 컴포넌트를 그대로 쓴다.<br>
+    <b>[금칙어]</b> 크리에이터 → <b>인플루언서</b> · 마켓·판매자 → <b>브랜드</b> · 구매자 → <b>소비자</b> · 크리에이터 스튜디오 → <b>쇼룸 스튜디오</b>.<br>
+    <b>[더미 수치 정합]</b> 상류 값 승계 — D1 글로우 크림 6,020,000 − 160,000 − 350,000 − 30,000 = <b>5,480,000</b> / − PG 164,400 − 리워드 548,000 = <b>브랜드 4,767,600</b> / 548,000 × 3.3% = 18,084 → <b>인플루언서 529,916</b>(파트너 D1 = 스튜디오 D1) · D6 클렌징 밤 4,120,000 → 3,584,400 / <b>412,000</b>(원천징수 없음 · 파트너 D3) · D2 하이드라 앰플 6,300,000 → 5,481,000(파트너 D2) · D4 여름 수분 세럼 150,528 → <b>145,561</b>(스튜디오 D4 · 이슈 스레드 T1과 동일) · D5 글로우 세럼 2,240,000 → 1,904,000 / 259,930. 3자 분배 합계는 모든 상태에서 <b>확정 거래액 − 원천징수</b>와 일치하고, <code>ui-admin-07a-settlements.html</code> 목록의 같은 회차 행과 값이 같다.<br>
+    <b class="new">[확인 필요]</b> ⓐ <b>정산 확정이 자동인지 운영자 확인인지</b> — 시안은 운영자 확인이다(자동이면 D2의 확정 버튼과 M1이 사라진다) ⓑ 보류 해제 <b>감액의 범위</b>(비율 상한·최소 지급액) ⓒ <b>PG 재시도 한도</b> — 시안은 “2회 더 실패 시 수동 이체”이며 임의값이다 ⓓ 지급 완료 후 <b>오지급·과지급의 별건 조정</b> 절차와 화면 ⓔ 멀티브랜드 주문의 정산이 <b>하위주문 단위로 갈리는지</b> — 거래 관리에서 결제 1건에 브랜드가 둘일 수 있다 ⓕ 지급일이 <b>공휴일·주말</b>일 때의 처리 ⓖ 정산 명세 <b>엑셀 컬럼 구성</b>(상류 두 파일 공통 미정).<br>
+    <b>[⚠ 자문 대기]</b> <b>원천징수 의무자</b>(브랜드 / 플랫폼) <b class="new">[자문대기-세무]</b> — 플랫폼이면 월별 신고 자료 화면이 필요하고, 브랜드면 조회 표기로 끝난다. 시안은 <b>금액만 표시</b>하고 의무자를 쓰지 않았다 · PG 결제 수수료 요율(3% 잠정) <b class="new">[자문대기-PG]</b> · 반송 왕복 배송비 부담 주체 <b class="new">[보류-정산구조]</b>.<br>
+    <b>[규격 정합]</b> 사이드바 240 · 탑바 56 · 본문 패딩 24 · 레일 320 · 상세 필드행 9px · 라벨 140px · 분해 표 셀 7px 14px · 금액 우측 정렬 + <code>.tnum</code> · 소계 <code>.mid</code> / 총계 <code>.tot</code>(1.5px 보더 + <code>--n-50</code>) · 액센트 인디고 <code>#3B5BDB</code> 단일 · 밀도 Compact. 설계 근거는 이 박스와 <code>.state-spec</code>에만 둔다.
+  </div>
+</div>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">D1</span><span class="state-label">상세 — 지급 완료 · 비사업자 (상단)</span><span class="state-spec">좌측은 <b>돈의 사실</b>, 우측은 <b>상태와 조치</b>다 · 파트너센터는 브랜드 수취액까지, 쇼룸 스튜디오는 내 실지급액까지만 분해하지만 어드민은 <b>두 축을 한 카드 안에 위아래로</b> 쌓는다 — <b>브랜드 축</b>(확정 거래액 − PG − 플랫폼 − 리워드)과 <b>인플루언서 축</b>(리워드 − 원천징수)이며, 두 축이 만나는 지점이 <b>판매 리워드</b>라 같은 표에서 이어져야 검산이 된다 · <b>3자 분배</b>는 “플랫폼이 정산해 준다”는 오해를 막는 블록이다(PG가 각자에게 직접 지급 · 합계가 확정 거래액 − 원천징수와 맞는다) · 지급 완료 상태라 <b>레일에 조치 버튼이 없다</b> — 끝난 돈은 되돌리지 않는다 · <b>확정일·지급일을 개요에서 뺐다</b>: 우측 레일이 같은 값을 이미 보여 주고, 같은 날짜를 두 곳에 쓰면 프레임 하나에 6블록이 들어가지 않는다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">13</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub"><span>환불 집행</span><span class="scnt">6</span></div><div class="gnb-sub"><span>배송 예외</span><span class="scnt">4</span></div><div class="gnb-sub"><span>처리 지연</span><span class="scnt">3</span></div></div>
+<div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">정산 관리<span class="c-sub">/ 공구 정산 / 글로우 크림 앵콜 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">글로우 크림 앵콜 공구</div><div class="page-d tnum">STL-2608-021 <span class="t-sub">· 상단</span></div></div>
+<div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">정산 개요<span class="ch-n" style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap"><span style="color:var(--n-700)">✓ 주문 종결</span><span style="color:var(--n-300)">›</span><span style="color:var(--n-700)">✓ 정산 확인 3영업일</span><span style="color:var(--n-300)">›</span><span style="color:var(--n-400);text-decoration:line-through">조정 협의</span><span style="color:var(--n-300)">›</span><span style="color:var(--n-700)">✓ 자동 확정</span><span style="color:var(--n-300)">›</span><span style="color:var(--n-700)">✓ 지급</span></span></div><div class="card-b two"><div class="frow"><div class="fk">공구</div><div class="fv"><b>글로우 크림 앵콜 공구</b></div></div><div class="frow"><div class="fk">브랜드</div><div class="fv">글로우랩</div></div><div class="frow"><div class="fk">인플루언서</div><div class="fv">글로우_지민 <span class="t-sub">· 비사업자</span></div></div><div class="frow"><div class="fk">정산 대상 기간</div><div class="fv"><span class="tnum">2026.08.01 ~ 08.25</span></div></div><div class="frow"><div class="fk">마지막 구매확정</div><div class="fv"><span class="tnum">2026.08.25</span></div></div></div></div><div class="card"><div class="card-h">금액 분해<span class="ch-n">확정 거래액 − PG − 플랫폼 − 리워드 − 리워드 부가세 = 브랜드 수취액</span></div><div class="mcols"><div><div class="axis"><span class="axis-t">브랜드 축</span><span class="axis-s">확정 거래액 기준 — 총 결제에서 반품·교환·배송비 차감</span></div><table class="mtab"><tbody><tr><td>총 결제금액</td><td><span class="tnum">6,020,000</span></td></tr><tr class="sub"><td>반품 차감</td><td><span class="tnum">− 160,000</span></td></tr><tr class="sub"><td>교환 차감</td><td><span class="tnum">− 350,000</span></td></tr><tr class="sub"><td>배송비 차감</td><td><span class="tnum">− 30,000</span></td></tr><tr class="mid"><td>확정 거래액</td><td><span class="tnum">5,480,000</span></td></tr><tr class="sub"><td>PG 결제 수수료 <span class="pb">3.0% 잠정</span></td><td><span class="tnum">− 164,400</span></td></tr><tr class="sub"><td>플랫폼 수수료 <span class="pb">베타 0% · 정상 2%</span></td><td><span class="tnum">− 0</span></td></tr><tr class="sub"><td>판매 리워드 <span class="pb">10%</span></td><td><span class="tnum">− 548,000</span></td></tr><tr class="sub"><td>리워드 부가세 <span class="pb">10% · 별도 · 매입세액 공제</span></td><td><span class="tnum">− 54,800</span></td></tr><tr class="tot"><td><b>브랜드 수취액</b></td><td><b class="tnum">4,712,800</b></td></tr></tbody></table></div><div><div class="axis"><span class="axis-t">인플루언서 축</span><span class="axis-s">비사업자 — 리워드에서 3.3% 원천징수</span></div><table class="mtab"><tbody><tr><td>판매 리워드</td><td><span class="tnum">548,000</span></td></tr><tr class="sub"><td>원천징수 <span class="pb">3.3%</span></td><td><span class="tnum">− 18,084</span></td></tr><tr class="tot"><td><b>인플루언서 실지급액</b></td><td><b class="tnum">529,916</b></td></tr></tbody></table></div></div></div><div class="card"><div class="card-h">3자 분배<span class="ch-n">PG에서 각 수취자에게 <b>직접</b> 지급 — 플랫폼이 대금을 보관하지 않는다</span></div><table class="ltab"><thead><tr><td>수취자</td><td class="num" style="width:118px">지급 금액</td><td style="width:196px">지급 계좌</td><td style="width:172px">지급 상태</td></tr></thead><tbody>
+<tr><td>글로우랩 <span class="t-sub">브랜드</span></td><td class="num">4,712,800</td><td class="t-sub tnum">신한 110-***-**4821</td><td><span class="badge b-success nodot">지급 완료</span></td></tr><tr><td>글로우_지민 <span class="t-sub">인플루언서</span></td><td class="num">529,916</td><td class="t-sub tnum">카카오뱅크 3333-**-**8842</td><td><span class="badge b-success nodot">지급 완료</span></td></tr><tr><td>SHOWROOMZ <span class="t-sub">플랫폼</span></td><td class="num">0</td><td class="t-sub tnum">—</td><td><span class="badge b-neutral nodot">해당 없음 · 베타 0%</span></td></tr><tr><td>PG사 <span class="t-sub">결제 수수료</span></td><td class="num">164,400</td><td class="t-sub tnum">결제금 선차감</td><td><span class="t-sub">자동 차감</span></td></tr>
+</tbody><tfoot><tr><td>지급 합계</td><td class="num">5,461,916</td><td class="t-sub" colspan="2">확정 거래액 5,480,000 − 원천징수 18,084 <span class="t-dim">(플랫폼이 납세 대리로 보유)</span></td></tr></tfoot></table></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">정산</span><span class="badge b-success">지급 완료</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">확정 거래액</span><span class="mv tnum">5,480,000원</span></div><div class="mrow"><span class="mk">브랜드 수취액</span><span class="mv tnum">4,712,800원</span></div><div class="mrow"><span class="mk">인플루언서 실지급</span><span class="mv tnum">529,916원</span></div><div class="mrow"><span class="mk">정산 확정일</span><span class="mv tnum">2026.08.28</span></div><div class="mrow"><span class="mk">지급(예정)일</span><span class="mv tnum">2026.08.31</span></div></div>
+<p class="st-hint">지급이 끝난 회차는 <b>금액을 수정할 수 없습니다</b>. 오지급·과지급이 확인되면 <b>별건 조정</b>으로 처리합니다.</p><div class="act-in"><div class="st-acts"><button class="btn btn-secondary w-full">정산 명세 다운로드</button></div></div></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-success"></div><div><div class="htxt">지급 완료 — 3자 분배 정상</div><div class="hmeta">2026.08.31 09:02 · PG 자동</div></div></div><div class="hitem"><div class="hdot h-neutral"></div><div><div class="htxt">원천징수영수증 발급</div><div class="hmeta">2026.08.31 09:05 · 시스템</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">정산 확정</div><div class="hmeta">2026.08.28 10:14 · 김운영 · 반품·교환 반영 확인</div></div></div><div class="hitem"><div class="hdot h-neutral"></div><div><div class="htxt">마지막 구매확정</div><div class="hmeta">2026.08.25 18:40 · 소비자</div></div></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">D1-b</span><span class="state-label">상세 — 지급 완료 · 비사업자 (하단)</span><span class="state-spec">D1을 아래로 스크롤한 상태 — <b>증빙 · 고정 지급비 · 정산 명세</b>다 · 증빙과 고정 지급비는 <b>공구당 한 건</b>이라 표로 두면 헤더 + 1행에 빈 칸만 늘어서므로 <b>인라인 요약 바</b>로 썼다(쇼룸 스튜디오 규칙 승계 — 비교할 다른 행이 없으면 표의 일이 없다) · <b>고정 지급비</b>는 모델 B(브랜드 직접 지급)라 지급 여부 · 원천징수 · 실지급을 표시하지 않고 <b>계약 조건만</b> 읽기 전용으로 둔다 — 「공구 총 수령액」 합산도 없앴다 ·  명세는 <b>반품 건의 정산 반영액을 0</b>으로 눌러 차감 근거가 행 단위로 보이게 한다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">13</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub"><span>환불 집행</span><span class="scnt">6</span></div><div class="gnb-sub"><span>배송 예외</span><span class="scnt">4</span></div><div class="gnb-sub"><span>처리 지연</span><span class="scnt">3</span></div></div>
+<div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">정산 관리<span class="c-sub">/ 공구 정산 / 글로우 크림 앵콜 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">글로우 크림 앵콜 공구</div><div class="page-d tnum">STL-2608-021 <span class="t-sub">· 하단</span></div></div>
+<div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">증빙<span class="ch-n">플랫폼이 리워드 지급자 · 증빙 2건 자동 발행</span></div><div class="card-b"><div class="ibar" style="margin-top:8px"><span class="ib"><b>원천징수영수증</b></span><span class="ib">시스템 생성 → 글로우_지민</span><span class="ib">지급액 <b>548,000원</b> · 원천징수 <b>18,084원</b></span><span class="ib"><span class="badge b-success nodot">발행 완료</span></span><span class="ib-a"><button class="btn btn-secondary">보기</button></span></div><div class="ibar" style="margin-top:8px"><span class="ib"><b>세금계산서</b></span><span class="ib">발행 <b>플랫폼</b> → 글로우랩</span><span class="ib">공급가 <b>548,000원</b> · 부가세 <b>54,800원</b></span><span class="ib"><span class="badge b-success nodot">발행 완료</span> <span class="tnum t-sub">09.05 · 김운영 등록</span></span><span class="ib-a"><button class="btn btn-secondary">보기</button></span></div><p class="st-hint" style="margin-top:12px">리워드는 <b>플랫폼이 지급</b>합니다 — 3.3%는 플랫폼이 다음 달 10일까지 신고·납부합니다. 원천징수영수증은 지급 완료 시 <b>시스템이 PDF로 생성</b>하고, 브랜드 세금계산서는 운영팀이 <b>홈택스에서 발행해 등록</b>했습니다(MVP · 외부 발행 서비스 없음).</p></div></div><div class="card"><div class="card-h">고정 지급비<span class="ch-n">플랫폼을 지나지 않는 돈 · 계약에서 상속 · 읽기 전용</span></div><div class="card-b"><div class="ibar"><span class="ib">계약 금액 <b>400,000원</b></span><span class="ib">지급 시점 <b>공구 게시물 등록 후</b></span><span class="ib">브랜드 직접 지급</span><span class="ib-a"><span class="flink">계약 상세 보기 ↗</span></span></div><p class="st-hint" style="margin-top:12px">고정 지급비는 브랜드가 인플루언서에게 <b>직접</b> 지급하므로 플랫폼은 지급 여부를 알 수 없고 <b>정산 분해에도 넣지 않습니다</b>. 지급 기록은 계약 관리의 브랜드 자기 신고뿐입니다.</p></div></div><div class="card"><div class="card-h">정산 명세<span class="ch-n">주문 단위 · 전체 <b>212</b>건 중 최근 5건 · 반품 건은 정산 반영액 0</span><button class="btn btn-secondary">명세 다운로드</button></div><table class="ltab"><thead><tr><td>주문번호</td><td>소비자</td><td>상품 · 옵션</td><td class="num">수량</td><td class="num">결제금액</td><td>상태</td><td class="num">정산 반영액</td><td class="num">리워드</td></tr></thead><tbody>
+<tr><td class="tnum">ORD-24118</td><td>김**</td><td>글로우 크림 50ml · 2개</td><td class="num">2</td><td class="num">54,400</td><td><span class="badge b-success nodot">구매확정</span></td><td class="num">54,400</td><td class="num">5,440</td></tr><tr><td class="tnum">ORD-24101</td><td>서**</td><td>글로우 크림 50ml · 1개</td><td class="num">1</td><td class="num">27,200</td><td><span class="badge b-success nodot">구매확정</span></td><td class="num">27,200</td><td class="num">2,720</td></tr><tr><td class="tnum">ORD-24072</td><td>노**</td><td>글로우 크림 50ml · 1개</td><td class="num">1</td><td class="num">27,200</td><td><span class="badge b-neutral nodot">반품 완료</span></td><td class="num t-dim">0</td><td class="num t-dim">0</td></tr><tr><td class="tnum">ORD-24066</td><td>윤**</td><td>글로우 크림 50ml · 3개</td><td class="num">3</td><td class="num">81,600</td><td><span class="badge b-success nodot">구매확정</span></td><td class="num">81,600</td><td class="num">8,160</td></tr><tr><td class="tnum">ORD-24051</td><td>한**</td><td>글로우 크림 50ml · 1개</td><td class="num">1</td><td class="num">27,200</td><td><span class="badge b-neutral nodot">교환 완료</span></td><td class="num">27,200</td><td class="num">2,720</td></tr>
+</tbody><tfoot><tr><td colspan="4">전체 212건 합계</td><td class="num">6,020,000</td><td class="t-sub">반품 6 · 교환 12</td><td class="num">5,480,000</td><td class="num">548,000</td></tr></tfoot></table></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">정산</span><span class="badge b-success">지급 완료</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">확정 거래액</span><span class="mv tnum">5,480,000원</span></div><div class="mrow"><span class="mk">브랜드 수취액</span><span class="mv tnum">4,767,600원</span></div><div class="mrow"><span class="mk">인플루언서 실지급</span><span class="mv tnum">529,916원</span></div><div class="mrow"><span class="mk">정산 확정일</span><span class="mv tnum">2026.08.28</span></div><div class="mrow"><span class="mk">지급(예정)일</span><span class="mv tnum">2026.08.31</span></div></div>
+<div class="act-in"><div class="st-acts"><button class="btn btn-secondary w-full">정산 명세 다운로드</button></div></div></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-success"></div><div><div class="htxt">지급 완료 — 3자 분배 정상</div><div class="hmeta">2026.08.31 09:02 · PG 자동</div></div></div><div class="hitem"><div class="hdot h-neutral"></div><div><div class="htxt">원천징수영수증 발급</div><div class="hmeta">2026.08.31 09:05 · 시스템</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">정산 확정</div><div class="hmeta">2026.08.28 10:14 · 김운영 · 반품·교환 반영 확인</div></div></div><div class="hitem"><div class="hdot h-neutral"></div><div><div class="htxt">마지막 구매확정</div><div class="hmeta">2026.08.25 18:40 · 소비자</div></div></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">D2</span><span class="state-label">상세 — 정산 확인 중 (확인 기간 · 조정 요청 가능)</span><span class="state-spec"><b>2026.10.06 개편</b> — 정산은 주문이 <b>모두 종결된 뒤</b> 생기므로 금액은 이미 <b>확정 거래액</b>이다(회색 · 예정 표시 폐기) · 양측에게 같은 금액이 공개되고 <b>정산 확인 기간 3영업일</b> 동안 한쪽이 <b>정산 조정 요청</b>을 낼 수 있다 — 요청이 없으면 마감 다음 날 <b>자동 확정</b> · 운영자 [정산 확정] 버튼을 없앴다(구 M1 삭제) — 금액 판단이 당사자에게 넘어가 운영자 확인이 형식이 된다 · 명세 다운로드는 확정 전이라 비활성 · 상단 단계 줄이 지금 위치를 보여준다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">13</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub"><span>환불 집행</span><span class="scnt">6</span></div><div class="gnb-sub"><span>배송 예외</span><span class="scnt">4</span></div><div class="gnb-sub"><span>처리 지연</span><span class="scnt">3</span></div></div>
+<div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">정산 관리<span class="c-sub">/ 공구 정산 / 하이드라 앰플 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">하이드라 앰플 공구</div><div class="page-d tnum">STL-2609-017</div></div>
+<div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">정산 개요<span class="ch-n" style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap"><span style="color:var(--n-700)">✓ 주문 종결</span><span style="color:var(--n-300)">›</span><span style="color:var(--accent-600);font-weight:600">정산 확인 3영업일</span><span style="color:var(--n-300)">›</span><span style="">조정 협의</span><span style="color:var(--n-300)">›</span><span style="">자동 확정</span><span style="color:var(--n-300)">›</span><span style="">지급</span></span></div><div class="card-b two"><div class="frow"><div class="fk">공구</div><div class="fv"><b>하이드라 앰플 공구</b></div></div><div class="frow"><div class="fk">브랜드</div><div class="fv">퓨어네이처</div></div><div class="frow"><div class="fk">인플루언서</div><div class="fv">하린_뷰티랩 <span class="t-sub">· 비사업자</span></div></div><div class="frow"><div class="fk">정산 대상 기간</div><div class="fv"><span class="tnum">2026.08.28 ~ 09.14</span></div></div><div class="frow"><div class="fk">주문 종결</div><div class="fv"><span class="tnum">2026.09.18 00:00</span> <span class="t-sub">· 전부 종결 · 정산 생성</span></div></div></div></div><div class="card"><div class="card-h">금액 분해<span class="ch-n">주문 종결 기준 확정 거래액 · 조정이 합의되면 리워드·브랜드 수취액만 바뀐다</span></div><div class="mcols"><div><div class="axis"><span class="axis-t">브랜드 축</span><span class="axis-s">확정 거래액 기준 — 총 결제에서 반품·교환·배송비 차감</span></div><table class="mtab"><tbody><tr><td>총 결제금액</td><td><span class="tnum">6,840,000</span></td></tr><tr class="sub"><td>반품 차감</td><td><span class="tnum">− 140,000</span></td></tr><tr class="sub"><td>교환 차감</td><td><span class="tnum">− 380,000</span></td></tr><tr class="sub"><td>배송비 차감</td><td><span class="tnum">− 20,000</span></td></tr><tr class="mid"><td>확정 거래액</td><td><span class="tnum">6,300,000</span></td></tr><tr class="sub"><td>PG 결제 수수료 <span class="pb">3.0% 잠정</span></td><td><span class="tnum">− 189,000</span></td></tr><tr class="sub"><td>플랫폼 수수료 <span class="pb">베타 0% · 정상 2%</span></td><td><span class="tnum">− 0</span></td></tr><tr class="sub"><td>판매 리워드 <span class="pb">10%</span></td><td><span class="tnum">− 630,000</span></td></tr><tr class="sub"><td>리워드 부가세 <span class="pb">10% · 별도 · 매입세액 공제</span></td><td><span class="tnum">− 63,000</span></td></tr><tr class="tot"><td><b>브랜드 수취액</b></td><td><b class="tnum">5,418,000</b></td></tr></tbody></table></div><div><div class="axis"><span class="axis-t">인플루언서 축</span><span class="axis-s">비사업자 — 리워드에서 3.3% 원천징수</span></div><table class="mtab"><tbody><tr><td>판매 리워드</td><td><span class="tnum">630,000</span></td></tr><tr class="sub"><td>원천징수 <span class="pb">3.3%</span></td><td><span class="tnum">− 20,790</span></td></tr><tr class="tot"><td><b>인플루언서 실지급액</b></td><td><b class="tnum">609,210</b></td></tr></tbody></table></div></div></div><div class="card"><div class="card-h">3자 분배<span class="ch-n">PG에서 각 수취자에게 <b>직접</b> 지급 — 플랫폼이 대금을 보관하지 않는다</span></div><table class="ltab"><thead><tr><td>수취자</td><td class="num" style="width:118px">지급 금액</td><td style="width:196px">지급 계좌</td><td style="width:172px">지급 상태</td></tr></thead><tbody>
+<tr><td colspan="4" style="padding:30px 14px;text-align:center;color:var(--n-500)">자동 확정 후 표시 <span class="t-sub">— 확인 기간이 끝나야 지급 일정과 계좌가 정해집니다</span></td></tr>
+</tbody></table></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">정산</span><span class="badge b-info">정산 확인 중</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">확정 거래액</span><span class="mv tnum">6,300,000원</span></div><div class="mrow"><span class="mk">브랜드 수취액</span><span class="mv tnum">5,418,000원</span></div><div class="mrow"><span class="mk">인플루언서 실지급</span><span class="mv tnum">609,210원</span></div><div class="mrow"><span class="mk">확인 마감</span><span class="mv tnum">2026.09.24 23:59</span></div><div class="mrow"><span class="mk">지급(예정)일</span><span class="mv tnum">확정 후 계산</span></div></div>
+<div class="wait"><b>정산 확인 기간</b>입니다 — <b class="tnum">09.24</b>까지 양측이 금액을 보고 <b>정산 조정</b>을 요청할 수 있습니다. 요청이 없으면 다음 날 <b>자동 확정</b>됩니다.</div><div class="act-in"><div class="st-acts"><button class="btn btn-secondary w-full" disabled>정산 명세 다운로드</button></div></div></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">정산 회차 생성</div><div class="hmeta">2026.08.28 00:05 · 시스템 · 공구 종료</div></div></div><div class="hitem"><div class="hdot h-neutral"></div><div><div class="htxt">공구 종료</div><div class="hmeta">2026.08.27 23:55 · 시스템</div></div></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">D3</span><span class="state-label">상세 — 지급 예정 (자동 확정)</span><span class="state-spec"><b>상단</b> — 정산 개요 · 금액 분해까지. 차감 반영 · 3자 분배는 <a href="#">D3-b</a> · 정산 확인 기간(09.11 마감)에 <b>조정 요청이 없어</b> 다음 날 <b>자동 확정</b>된 상태 — 처리 이력에 확정 주체가 <b>시스템</b>으로 남는다 · <b>차감 반영</b> 블록이 이번 회차에 빠진 클로백을 보여준다(이전 정산 뒤 리콜 환불 1건) — 브랜드가 “왜 수취액이 줄었나”를 물으면 여기서 답한다 · 운영자 [정산 보류] 버튼을 없앴다 — 직권 보류는 두지 않고, 확정 후 환불은 다음 정산 차감으로 처리한다 · 지급은 예정일에 PG가 자동 분배한다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">13</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub"><span>환불 집행</span><span class="scnt">6</span></div><div class="gnb-sub"><span>배송 예외</span><span class="scnt">4</span></div><div class="gnb-sub"><span>처리 지연</span><span class="scnt">3</span></div></div>
+<div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">정산 관리<span class="c-sub">/ 공구 정산 / 데일리 선크림 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">데일리 선크림 공구</div><div class="page-d tnum">STL-2609-011</div></div>
+<div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">정산 개요<span class="ch-n" style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap"><span style="color:var(--n-700)">✓ 주문 종결</span><span style="color:var(--n-300)">›</span><span style="color:var(--n-700)">✓ 정산 확인 3영업일</span><span style="color:var(--n-300)">›</span><span style="color:var(--n-400);text-decoration:line-through">조정 협의</span><span style="color:var(--n-300)">›</span><span style="color:var(--n-700)">✓ 자동 확정</span><span style="color:var(--n-300)">›</span><span style="color:var(--accent-600);font-weight:600">지급</span></span></div><div class="card-b two"><div class="frow"><div class="fk">공구</div><div class="fv"><b>데일리 선크림 공구</b></div></div><div class="frow"><div class="fk">브랜드</div><div class="fv">데일리랩</div></div><div class="frow"><div class="fk">인플루언서</div><div class="fv">하린_뷰티랩 <span class="t-sub">· 비사업자</span></div></div><div class="frow"><div class="fk">정산 대상 기간</div><div class="fv"><span class="tnum">2026.08.14 ~ 08.31</span></div></div><div class="frow"><div class="fk">마지막 구매확정</div><div class="fv"><span class="tnum">2026.09.09</span></div></div></div></div><div class="card"><div class="card-h">금액 분해<span class="ch-n">확정 거래액 − PG − 플랫폼 − 리워드 − 리워드 부가세 = 브랜드 수취액</span></div><div class="mcols"><div><div class="axis"><span class="axis-t">브랜드 축</span><span class="axis-s">확정 거래액 기준 — 총 결제에서 반품·교환·배송비 차감</span></div><table class="mtab"><tbody><tr><td>총 결제금액</td><td><span class="tnum">6,180,000</span></td></tr><tr class="sub"><td>반품 차감</td><td><span class="tnum">− 280,000</span></td></tr><tr class="sub"><td>교환 차감</td><td><span class="tnum">− 210,000</span></td></tr><tr class="sub"><td>배송비 차감</td><td><span class="tnum">− 20,000</span></td></tr><tr class="mid"><td>확정 거래액</td><td><span class="tnum">5,670,000</span></td></tr><tr class="sub"><td>PG 결제 수수료 <span class="pb">3.0% 잠정</span></td><td><span class="tnum">− 170,100</span></td></tr><tr class="sub"><td>플랫폼 수수료 <span class="pb">베타 0% · 정상 2%</span></td><td><span class="tnum">− 0</span></td></tr><tr class="sub"><td>판매 리워드 <span class="pb">10%</span></td><td><span class="tnum">− 567,000</span></td></tr><tr class="sub"><td>리워드 부가세 <span class="pb">10% · 별도 · 매입세액 공제</span></td><td><span class="tnum">− 56,700</span></td></tr><tr class="tot"><td><b>브랜드 수취액</b></td><td><b class="tnum">4,876,200</b></td></tr></tbody></table></div><div><div class="axis"><span class="axis-t">인플루언서 축</span><span class="axis-s">비사업자 — 리워드에서 3.3% 원천징수</span></div><table class="mtab"><tbody><tr><td>판매 리워드</td><td><span class="tnum">567,000</span></td></tr><tr class="sub"><td>원천징수 <span class="pb">3.3%</span></td><td><span class="tnum">− 18,711</span></td></tr><tr class="tot"><td><b>인플루언서 실지급액</b></td><td><b class="tnum">548,289</b></td></tr></tbody></table></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">정산</span><span class="badge b-neutral">지급 예정</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">확정 거래액</span><span class="mv tnum">5,670,000원</span></div><div class="mrow"><span class="mk">브랜드 수취액</span><span class="mv tnum">4,876,200원</span></div><div class="mrow"><span class="mk">인플루언서 실지급</span><span class="mv tnum">548,289원</span></div><div class="mrow"><span class="mk">자동 확정일</span><span class="mv tnum">2026.09.12</span></div><div class="mrow"><span class="mk">지급(예정)일</span><span class="mv tnum">2026.09.18 (예정)</span></div></div>
+<p class="st-hint">확인 기간에 조정 요청이 없어 <b>자동 확정</b>됐습니다. 지급은 예정일에 <b>PG가 자동 분배</b>합니다.</p><div class="act-in"><div class="st-acts"><button class="btn btn-secondary w-full">정산 명세 다운로드</button></div></div></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">자동 확정</div><div class="hmeta">2026.09.12 00:00 · 시스템 · 확인 기간 경과 · 조정 요청 없음</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">정산 확인 기간 시작 · 금액 공개</div><div class="hmeta">2026.09.08 00:00 · 시스템 · 차감 CLW-0006 반영</div></div></div><div class="hitem"><div class="hdot h-neutral"></div><div><div class="htxt">마지막 구매확정</div><div class="hmeta">2026.09.09 14:02 · 소비자</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">정산 회차 생성</div><div class="hmeta">2026.09.01 00:05 · 시스템</div></div></div></div></div></div></div></div></div></div></section>
+<section class="state">
+<div class="state-bar"><span class="state-id">D3-b</span><span class="state-label">상세 — 지급 예정 (자동 확정) — 스크롤 하단</span><span class="state-spec">D3을 아래로 스크롤한 상태 — <b>차감 반영</b>(이전 정산 뒤 리콜 환불 1건이 이번 회차에서 빠졌다)과 <b>3자 분배</b> · 브랜드가 “왜 수취액이 줄었나”를 물으면 차감 반영 블록에서 답한다 · 레일은 sticky로 그대로 따라온다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">13</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub"><span>환불 집행</span><span class="scnt">6</span></div><div class="gnb-sub"><span>배송 예외</span><span class="scnt">4</span></div><div class="gnb-sub"><span>처리 지연</span><span class="scnt">3</span></div></div>
+<div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">정산 관리<span class="c-sub">/ 공구 정산 / 데일리 선크림 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">데일리 선크림 공구</div><div class="page-d tnum">STL-2609-011 <span class="t-sub">· 스크롤 하단</span></div></div>
+<div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card"><div class="card-h">차감 반영<span class="ch-n">이전 정산 뒤 환불된 건 · 이번 회차에서 자동 차감</span></div><div class="card-b"><div class="frow"><div class="fk">CLW-0006</div><div class="fv">데일리 선크림 · <span class="tnum">ORD-23987</span> · 위해성 리콜 환불 <span class="t-sub">· 원 정산 STL-2608-012</span></div></div><div class="frow"><div class="fk">차감액</div><div class="fv">브랜드 수취액 <b class="tnum">− 13,920</b>원 · 리워드 <b class="tnum">− 1,600</b>원 <span class="t-sub">· 위 금액 분해에 이미 반영</span></div></div></div></div><div class="card-h">3자 분배<span class="ch-n">PG에서 각 수취자에게 <b>직접</b> 지급 — 플랫폼이 대금을 보관하지 않는다</span></div><table class="ltab"><thead><tr><td>수취자</td><td class="num" style="width:118px">지급 금액</td><td style="width:196px">지급 계좌</td><td style="width:172px">지급 상태</td></tr></thead><tbody>
+<tr><td>데일리랩 <span class="t-sub">브랜드</span></td><td class="num">4,932,900</td><td class="t-sub tnum">신한 110-***-**4821</td><td><span class="badge b-success nodot">지급 완료</span></td></tr><tr><td>하린_뷰티랩 <span class="t-sub">인플루언서</span></td><td class="num">548,289</td><td class="t-sub tnum">카카오뱅크 3333-**-**8842</td><td><span class="badge b-success nodot">지급 완료</span></td></tr><tr><td>SHOWROOMZ <span class="t-sub">플랫폼</span></td><td class="num">0</td><td class="t-sub tnum">—</td><td><span class="badge b-neutral nodot">해당 없음 · 베타 0%</span></td></tr><tr><td>PG사 <span class="t-sub">결제 수수료</span></td><td class="num">170,100</td><td class="t-sub tnum">결제금 선차감</td><td><span class="t-sub">자동 차감</span></td></tr>
+</tbody><tfoot><tr><td>지급 합계</td><td class="num">5,651,289</td><td class="t-sub" colspan="2">확정 거래액 5,670,000 − 원천징수 18,711 <span class="t-dim">(플랫폼이 납세 대리로 보유)</span></td></tr></tfoot></table></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">정산</span><span class="badge b-neutral">지급 예정</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">확정 거래액</span><span class="mv tnum">5,670,000원</span></div><div class="mrow"><span class="mk">브랜드 수취액</span><span class="mv tnum">4,932,900원</span></div><div class="mrow"><span class="mk">인플루언서 실지급</span><span class="mv tnum">548,289원</span></div><div class="mrow"><span class="mk">자동 확정일</span><span class="mv tnum">2026.09.12</span></div><div class="mrow"><span class="mk">지급(예정)일</span><span class="mv tnum">2026.09.18 (예정)</span></div></div>
+<p class="st-hint">확인 기간에 조정 요청이 없어 <b>자동 확정</b>됐습니다. 지급은 예정일에 <b>PG가 자동 분배</b>합니다.</p><div class="act-in"><div class="st-acts"><button class="btn btn-secondary w-full">정산 명세 다운로드</button></div></div></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">자동 확정</div><div class="hmeta">2026.09.12 00:00 · 시스템 · 확인 기간 경과 · 조정 요청 없음</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">정산 확인 기간 시작 · 금액 공개</div><div class="hmeta">2026.09.08 00:00 · 시스템 · 차감 CLW-0006 반영</div></div></div><div class="hitem"><div class="hdot h-neutral"></div><div><div class="htxt">마지막 구매확정</div><div class="hmeta">2026.09.09 14:02 · 소비자</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">정산 회차 생성</div><div class="hmeta">2026.09.01 00:05 · 시스템</div></div></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">D4</span><span class="state-label">상세 — 정산 보류 (정산 조정 협의 중)</span><span class="state-spec"><b>상단</b> — 정산 개요 · 금액 분해까지. 조정 내역 · 3자 분배는 <a href="#">D4-b</a> · <b>조정 내역</b> 블록이 원래 금액 → 요청 → 다른 금액 제안 → 진행을 한 카드에 모은다 — 대화는 이슈 스레드에, 금액의 흐름은 정산 상세에 남긴다 · 보류는 <b>금액이 확정된 뒤 지급만 멈춘</b> 상태다 — 분해는 실값이고 3자 분배의 <b>브랜드·인플루언서 두 행이 모두 “보류 — 지급 정지”</b>다(2026.10.06 변경) — 양측이 합의하는 조정 금액이 <b>리워드와 브랜드 수취액을 함께</b> 옮기므로, 브랜드 몫을 먼저 내보내면 조정할 돈이 없다 · <b>보류 해제 버튼이 없다</b> — 양측이 이슈 스레드에서 <b>금액에 합의</b>하는 순간 시스템이 <b>금액을 바꾸고 보류를 풀고 이슈를 닫는다</b>. 이 화면은 결과를 조회하고 스레드로 보낼 뿐이다 · 경고색이고 위험색을 쓰지 않는다(진행이 멈춘 상태) · 고정 지급비는 플랫폼을 지나지 않는 돈이라 이 분해와 무관하다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">13</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub"><span>환불 집행</span><span class="scnt">6</span></div><div class="gnb-sub"><span>배송 예외</span><span class="scnt">4</span></div><div class="gnb-sub"><span>처리 지연</span><span class="scnt">3</span></div></div>
+<div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">정산 관리<span class="c-sub">/ 공구 정산 / 여름 수분 세럼 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">여름 수분 세럼 공구</div><div class="page-d tnum">STL-2609-006</div></div>
+<div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">정산 개요<span class="ch-n" style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap"><span style="color:var(--n-700)">✓ 주문 종결</span><span style="color:var(--n-300)">›</span><span style="color:var(--n-700)">✓ 정산 확인 3영업일</span><span style="color:var(--n-300)">›</span><span style="color:var(--accent-600);font-weight:600">조정 협의</span><span style="color:var(--n-300)">›</span><span style="">자동 확정</span><span style="color:var(--n-300)">›</span><span style="">지급</span></span></div><div class="card-b two"><div class="frow"><div class="fk">공구</div><div class="fv"><b>여름 수분 세럼 공구</b></div></div><div class="frow"><div class="fk">브랜드</div><div class="fv">벨라코스</div></div><div class="frow"><div class="fk">인플루언서</div><div class="fv">소연_쇼룸 <span class="t-sub">· 비사업자</span></div></div><div class="frow"><div class="fk">정산 대상 기간</div><div class="fv"><span class="tnum">2026.08.05 ~ 08.22</span></div></div><div class="frow"><div class="fk">마지막 구매확정</div><div class="fv"><span class="tnum">2026.08.31</span></div></div></div></div><div class="card"><div class="card-h">금액 분해<span class="ch-n">확정 거래액 − PG − 플랫폼 − 리워드 − 리워드 부가세 = 브랜드 수취액</span></div><div class="mcols"><div><div class="axis"><span class="axis-t">브랜드 축</span><span class="axis-s">확정 거래액 기준 — 총 결제에서 반품·교환·배송비 차감</span></div><table class="mtab"><tbody><tr><td>총 결제금액</td><td><span class="tnum">1,024,000</span></td></tr><tr class="sub"><td>반품 차감</td><td><span class="tnum">− 0</span></td></tr><tr class="sub"><td>교환 차감</td><td><span class="tnum">− 20,480</span></td></tr><tr class="sub"><td>배송비 차감</td><td><span class="tnum">− 0</span></td></tr><tr class="mid"><td>확정 거래액</td><td><span class="tnum">1,003,520</span></td></tr><tr class="sub"><td>PG 결제 수수료 <span class="pb">3.0% 잠정</span></td><td><span class="tnum">− 30,106</span></td></tr><tr class="sub"><td>플랫폼 수수료 <span class="pb">베타 0% · 정상 2%</span></td><td><span class="tnum">− 0</span></td></tr><tr class="sub"><td>판매 리워드 <span class="pb">15%</span></td><td><span class="tnum">− 150,528</span></td></tr><tr class="sub"><td>리워드 부가세 <span class="pb">10% · 별도 · 매입세액 공제</span></td><td><span class="tnum">− 15,053</span></td></tr><tr class="tot"><td><b>브랜드 수취액</b></td><td><b class="tnum">807,833</b></td></tr></tbody></table></div><div><div class="axis"><span class="axis-t">인플루언서 축</span><span class="axis-s">비사업자 — 리워드에서 3.3% 원천징수</span></div><table class="mtab"><tbody><tr><td>판매 리워드</td><td><span class="tnum">150,528</span></td></tr><tr class="sub"><td>원천징수 <span class="pb">3.3%</span></td><td><span class="tnum">− 4,967</span></td></tr><tr class="tot"><td><b>인플루언서 실지급액</b></td><td><b class="tnum">145,561</b></td></tr></tbody></table></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">정산</span><span class="badge b-warning">조정 협의</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">확정 거래액</span><span class="mv tnum">1,003,520원</span></div><div class="mrow"><span class="mk">브랜드 수취액</span><span class="mv tnum">807,833원</span></div><div class="mrow"><span class="mk">인플루언서 실지급</span><span class="mv tnum">145,561원</span></div><div class="mrow"><span class="mk">정산 확정일</span><span class="mv tnum">2026.09.03</span></div><div class="mrow"><span class="mk">지급(예정)일</span><span class="mv tnum">—</span></div></div>
+<div class="wait"><b>정산 조정 요청</b> — 소연_쇼룸 · 2026.09.03 · 리워드 150,528 → <b>180,528원</b><br>보류 <b>전액</b> · 합의 기한 <b class="tnum">09.17</b> · 협의는 <b>이슈 스레드</b>에서 양측이 합니다.</div><p class="st-hint">양측이 이슈 스레드에서 <b>금액에 합의</b>하면 합의 금액으로 바뀌고 <b>보류가 자동 해제</b>됩니다. 합의 기한(<b class="tnum">09.17</b>)까지 합의가 없으면 <b>원래 금액</b>으로 확정됩니다 — 이 화면에서 해제하지 않습니다.</p><div class="act-in"><div class="st-acts"><button class="btn btn-secondary w-full">이슈 스레드 열기 ↗</button></div></div></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-warning"></div><div><div class="htxt">정산 조정 요청 · 이슈 스레드 개설 · 전액 보류</div><div class="hmeta">2026.09.03 14:10 · 시스템 · 소연_쇼룸 요청 · 리워드 150,528 → 180,528원</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">정산 확정</div><div class="hmeta">2026.09.03 10:10 · 김운영</div></div></div><div class="hitem"><div class="hdot h-neutral"></div><div><div class="htxt">마지막 구매확정</div><div class="hmeta">2026.08.31 20:15 · 소비자</div></div></div></div></div></div></div></div></div></div></section>
+<section class="state">
+<div class="state-bar"><span class="state-id">D4-b</span><span class="state-label">상세 — 정산 보류 (정산 조정 협의 중) — 스크롤 하단</span><span class="state-spec">D4를 아래로 스크롤한 상태 — <b>조정 내역</b>(원래 금액 → 요청 → 다른 금액 제안 → 진행)과 <b>3자 분배</b>(브랜드 · 인플루언서 두 몫 모두 <b>보류 — 지급 정지</b>) · 대화는 이슈 스레드에, 금액의 흐름은 이 블록에 남긴다 · 레일은 sticky</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">13</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub"><span>환불 집행</span><span class="scnt">6</span></div><div class="gnb-sub"><span>배송 예외</span><span class="scnt">4</span></div><div class="gnb-sub"><span>처리 지연</span><span class="scnt">3</span></div></div>
+<div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">정산 관리<span class="c-sub">/ 공구 정산 / 여름 수분 세럼 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">여름 수분 세럼 공구</div><div class="page-d tnum">STL-2609-006 <span class="t-sub">· 스크롤 하단</span></div></div>
+<div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card"><div class="card-h">조정 내역<span class="ch-n">양측 합의로만 바뀜 · 운영자는 금액을 정하지 않음</span><span class="flink" style="margin-left:auto">이슈 스레드 열기 ↗</span></div><div class="card-b"><div class="frow"><div class="fk">원래 금액</div><div class="fv">리워드 <span class="tnum">150,528</span>원 <span class="t-sub">· 실지급 145,561 · 브랜드 수취액 822,886</span></div></div><div class="frow"><div class="fk">조정 요청</div><div class="fv">소연_쇼룸 · <span class="tnum">09.03</span> → 리워드 <b class="tnum">180,528</b>원 <span class="t-sub">· 사전 제공 샘플 12개 미도착(반송) · 직접 구매</span></div></div><div class="frow"><div class="fk">다른 금액 제안</div><div class="fv">벨라코스 · <span class="tnum">09.07</span> → 리워드 <b class="tnum">165,528</b>원 <span class="t-sub">· 12개 중 6개 재발송 도착 · 절반 보전</span></div></div><div class="frow"><div class="fk">진행</div><div class="fv"><span class="badge b-info nodot">소연_쇼룸 응답 대기</span> <span class="t-sub">· 합의 기한 <span class="tnum">09.17 23:59</span> · 지나면 원래 금액으로 확정</span></div></div></div></div><div class="card-h">3자 분배<span class="ch-n">PG에서 각 수취자에게 <b>직접</b> 지급 — 플랫폼이 대금을 보관하지 않는다</span></div><table class="ltab"><thead><tr><td>수취자</td><td class="num" style="width:118px">지급 금액</td><td style="width:196px">지급 계좌</td><td style="width:172px">지급 상태</td></tr></thead><tbody>
+<tr><td>벨라코스 <span class="t-sub">브랜드</span></td><td class="num">822,886</td><td class="t-sub tnum">신한 110-***-**4821</td><td><span class="badge b-warning nodot">보류 — 지급 정지</span></td></tr><tr><td>소연_쇼룸 <span class="t-sub">인플루언서</span></td><td class="num">145,561</td><td class="t-sub tnum">카카오뱅크 3333-**-**8842</td><td><span class="badge b-warning nodot">보류 — 지급 정지</span></td></tr><tr><td>SHOWROOMZ <span class="t-sub">플랫폼</span></td><td class="num">0</td><td class="t-sub tnum">—</td><td><span class="badge b-neutral nodot">해당 없음 · 베타 0%</span></td></tr><tr><td>PG사 <span class="t-sub">결제 수수료</span></td><td class="num">30,106</td><td class="t-sub tnum">결제금 선차감</td><td><span class="t-sub">자동 차감</span></td></tr>
+</tbody><tfoot><tr><td>지급 합계</td><td class="num">998,553</td><td class="t-sub" colspan="2">확정 거래액 1,003,520 − 원천징수 4,967 <span class="t-dim">(플랫폼이 납세 대리로 보유)</span></td></tr></tfoot></table></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">정산</span><span class="badge b-warning">조정 협의</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">확정 거래액</span><span class="mv tnum">1,003,520원</span></div><div class="mrow"><span class="mk">브랜드 수취액</span><span class="mv tnum">822,886원</span></div><div class="mrow"><span class="mk">인플루언서 실지급</span><span class="mv tnum">145,561원</span></div><div class="mrow"><span class="mk">정산 확정일</span><span class="mv tnum">2026.09.03</span></div><div class="mrow"><span class="mk">지급(예정)일</span><span class="mv tnum">—</span></div></div>
+<div class="wait"><b>정산 조정 요청</b> — 소연_쇼룸 · 2026.09.03 · 리워드 150,528 → <b>180,528원</b><br>보류 <b>전액</b> · 합의 기한 <b class="tnum">09.17</b> · 협의는 <b>이슈 스레드</b>에서 양측이 합니다.</div><p class="st-hint">양측이 이슈 스레드에서 <b>금액에 합의</b>하면 합의 금액으로 바뀌고 <b>보류가 자동 해제</b>됩니다. 합의 기한(<b class="tnum">09.17</b>)까지 합의가 없으면 <b>원래 금액</b>으로 확정됩니다 — 이 화면에서 해제하지 않습니다.</p><div class="act-in"><div class="st-acts"><button class="btn btn-secondary w-full">이슈 스레드 열기 ↗</button></div></div></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-warning"></div><div><div class="htxt">정산 조정 요청 · 이슈 스레드 개설 · 전액 보류</div><div class="hmeta">2026.09.03 14:10 · 시스템 · 소연_쇼룸 요청 · 리워드 150,528 → 180,528원</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">정산 확정</div><div class="hmeta">2026.09.03 10:10 · 김운영</div></div></div><div class="hitem"><div class="hdot h-neutral"></div><div><div class="htxt">마지막 구매확정</div><div class="hmeta">2026.08.31 20:15 · 소비자</div></div></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">D5</span><span class="state-label">상세 — 분배 실패 (어드민 전용)</span><span class="state-spec">상류 두 파일에 <b>없는 상태</b>다 — 3자 분배라 한쪽 계좌가 막히면 <b>그 몫만 반환</b>되고 나머지는 정상 지급된다. 3자 분배 표에서 <b>브랜드는 지급 완료 · 인플루언서는 분배 실패</b>로 갈리는 것이 이 화면의 핵심이다 · 수취자 화면에는 「지급 완료」로 보이는데 돈이 없는 상황이라 <b>운영자가 먼저 알아야 한다</b> · 보류와 달리 <b>금액은 맞고 전달만 실패</b>했으므로 위험색이고, 조치는 <b>재분배</b>다 — 계좌 정보를 갱신한 뒤 PG에 재지시한다 · <b>금액을 다시 계산하지 않는다</b>: 확정 금액은 그대로다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">13</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub"><span>환불 집행</span><span class="scnt">6</span></div><div class="gnb-sub"><span>배송 예외</span><span class="scnt">4</span></div><div class="gnb-sub"><span>처리 지연</span><span class="scnt">3</span></div></div>
+<div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">정산 관리<span class="c-sub">/ 공구 정산 / 글로우 세럼 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">글로우 세럼 공구</div><div class="page-d tnum">STL-2609-009</div></div>
+<div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">정산 개요<span class="ch-n" style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap"><span style="color:var(--n-700)">✓ 주문 종결</span><span style="color:var(--n-300)">›</span><span style="color:var(--n-700)">✓ 정산 확인 3영업일</span><span style="color:var(--n-300)">›</span><span style="color:var(--n-400);text-decoration:line-through">조정 협의</span><span style="color:var(--n-300)">›</span><span style="color:var(--n-700)">✓ 자동 확정</span><span style="color:var(--n-300)">›</span><span style="color:var(--danger-text);font-weight:600">지급 · 분배 실패</span></span></div><div class="card-b two"><div class="frow"><div class="fk">공구</div><div class="fv"><b>글로우 세럼 공구</b></div></div><div class="frow"><div class="fk">브랜드</div><div class="fv">글로우랩</div></div><div class="frow"><div class="fk">인플루언서</div><div class="fv">하린_뷰티랩 <span class="t-sub">· 비사업자</span></div></div><div class="frow"><div class="fk">정산 대상 기간</div><div class="fv"><span class="tnum">2026.08.10 ~ 08.28</span></div></div><div class="frow"><div class="fk">마지막 구매확정</div><div class="fv"><span class="tnum">2026.09.06</span></div></div></div></div><div class="card"><div class="card-h">금액 분해<span class="ch-n">확정 거래액 − PG − 플랫폼 − 리워드 − 리워드 부가세 = 브랜드 수취액</span></div><div class="mcols"><div><div class="axis"><span class="axis-t">브랜드 축</span><span class="axis-s">확정 거래액 기준 — 총 결제에서 반품·교환·배송비 차감</span></div><table class="mtab"><tbody><tr><td>총 결제금액</td><td><span class="tnum">2,380,000</span></td></tr><tr class="sub"><td>반품 차감</td><td><span class="tnum">− 90,000</span></td></tr><tr class="sub"><td>교환 차감</td><td><span class="tnum">− 40,000</span></td></tr><tr class="sub"><td>배송비 차감</td><td><span class="tnum">− 10,000</span></td></tr><tr class="mid"><td>확정 거래액</td><td><span class="tnum">2,240,000</span></td></tr><tr class="sub"><td>PG 결제 수수료 <span class="pb">3.0% 잠정</span></td><td><span class="tnum">− 67,200</span></td></tr><tr class="sub"><td>플랫폼 수수료 <span class="pb">베타 0% · 정상 2%</span></td><td><span class="tnum">− 0</span></td></tr><tr class="sub"><td>판매 리워드 <span class="pb">12%</span></td><td><span class="tnum">− 268,800</span></td></tr><tr class="sub"><td>리워드 부가세 <span class="pb">10% · 별도 · 매입세액 공제</span></td><td><span class="tnum">− 26,880</span></td></tr><tr class="tot"><td><b>브랜드 수취액</b></td><td><b class="tnum">1,877,120</b></td></tr></tbody></table></div><div><div class="axis"><span class="axis-t">인플루언서 축</span><span class="axis-s">비사업자 — 리워드에서 3.3% 원천징수</span></div><table class="mtab"><tbody><tr><td>판매 리워드</td><td><span class="tnum">268,800</span></td></tr><tr class="sub"><td>원천징수 <span class="pb">3.3%</span></td><td><span class="tnum">− 8,870</span></td></tr><tr class="tot"><td><b>인플루언서 실지급액</b></td><td><b class="tnum">259,930</b></td></tr></tbody></table></div></div></div><div class="card"><div class="card-h">3자 분배<span class="ch-n">PG에서 각 수취자에게 <b>직접</b> 지급 — 플랫폼이 대금을 보관하지 않는다</span></div><table class="ltab"><thead><tr><td>수취자</td><td class="num" style="width:118px">지급 금액</td><td style="width:196px">지급 계좌</td><td style="width:172px">지급 상태</td></tr></thead><tbody>
+<tr><td>글로우랩 <span class="t-sub">브랜드</span></td><td class="num">1,877,120</td><td class="t-sub tnum">신한 110-***-**4821</td><td><span class="badge b-success nodot">지급 완료</span></td></tr><tr><td>하린_뷰티랩 <span class="t-sub">인플루언서</span></td><td class="num">259,930</td><td class="t-sub tnum">카카오뱅크 3333-**-**8842</td><td><span class="badge b-danger nodot">분배 실패</span></td></tr><tr><td>SHOWROOMZ <span class="t-sub">플랫폼</span></td><td class="num">0</td><td class="t-sub tnum">—</td><td><span class="badge b-neutral nodot">해당 없음 · 베타 0%</span></td></tr><tr><td>PG사 <span class="t-sub">결제 수수료</span></td><td class="num">67,200</td><td class="t-sub tnum">결제금 선차감</td><td><span class="t-sub">자동 차감</span></td></tr>
+</tbody><tfoot><tr><td>지급 합계</td><td class="num">2,231,130</td><td class="t-sub" colspan="2">확정 거래액 2,240,000 − 원천징수 8,870 <span class="t-dim">(플랫폼이 납세 대리로 보유)</span></td></tr></tfoot></table></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">정산</span><span class="badge b-danger">분배 실패</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">확정 거래액</span><span class="mv tnum">2,240,000원</span></div><div class="mrow"><span class="mk">브랜드 수취액</span><span class="mv tnum">1,877,120원</span></div><div class="mrow"><span class="mk">인플루언서 실지급</span><span class="mv tnum">259,930원</span></div><div class="mrow"><span class="mk">정산 확정일</span><span class="mv tnum">2026.09.09</span></div><div class="mrow"><span class="mk">지급(예정)일</span><span class="mv tnum">2026.09.12</span></div></div>
+<div class="wait" style="background:var(--danger-bg);color:var(--danger-text)"><b>인플루언서 몫 259,930원 미전달</b> — PG 반환 사유 <b>계좌 정보 불일치</b> · 2026.09.12 · <b>6일 경과</b><br>브랜드·플랫폼 몫은 <b>정상 지급</b>됐습니다.</div><p class="st-hint">재분배는 <b>확정 금액을 그대로</b> 다시 보냅니다 — 금액 재계산이 아닙니다.</p><div class="act-in"><div class="st-acts"><button class="btn btn-primary w-full">재분배</button><button class="btn btn-secondary w-full">계좌 확인 요청</button></div></div></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-danger"></div><div><div class="htxt">분배 실패 — 인플루언서 몫 반환</div><div class="hmeta">2026.09.12 09:04 · PG · 계좌 정보 불일치</div></div></div><div class="hitem"><div class="hdot h-success"></div><div><div class="htxt">지급 완료 — 브랜드·플랫폼 몫</div><div class="hmeta">2026.09.12 09:02 · PG 자동</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">정산 확정</div><div class="hmeta">2026.09.09 10:40 · 김운영</div></div></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">D6</span><span class="state-label">상세 — 지급 완료 · 사업자 (세금계산서)</span><span class="state-spec">인플루언서가 <b>사업자</b>면 원천징수가 없고 <b>플랫폼 앞으로 세금계산서(리워드 + 부가세 10%)</b>를 직접 발행한다 — 실지급액 <b>453,200원 = 리워드 412,000 + 부가세 41,200</b>(브랜드에게 받은 부가세를 그대로 넘기므로 플랫폼 부가세는 0) · 증빙 2건 — ① 인플루언서 → 플랫폼 <b>정발행</b>: 인플루언서가 홈택스에서 발행하고 스튜디오에 <b>승인번호</b>를 입력, 운영자가 대조 확인(M4) ② 플랫폼 → 브랜드: 운영자가 홈택스에서 발행하고 <b>발행본 등록</b>(M5) · 두 건 모두 「등록 · 운영자」로 처리 이력에 남는다 · 고정 지급비는 원천징수 해당 없음</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">13</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub"><span>환불 집행</span><span class="scnt">6</span></div><div class="gnb-sub"><span>배송 예외</span><span class="scnt">4</span></div><div class="gnb-sub"><span>처리 지연</span><span class="scnt">3</span></div></div>
+<div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">정산 관리<span class="c-sub">/ 공구 정산 / 클렌징 밤 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">클렌징 밤 공구</div><div class="page-d tnum">STL-2608-015 <span class="t-sub">· 사업자 · 증빙 중심</span></div></div>
+<div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">증빙<span class="ch-n">MVP — 외부 발행 서비스 없음 · 홈택스 수동</span></div><div class="card-b"><div class="ibar" style="margin-top:8px"><span class="ib"><b>세금계산서 (정발행)</b></span><span class="ib">민재_셀렉트 → 플랫폼</span><span class="ib">공급가 <b>412,000원</b> · 부가세 <b>41,200원</b></span><span class="badge b-success nodot">대조 확인</span><span class="ib tnum t-sub">08.16 · 김운영</span><span class="ib-a"><button class="btn btn-secondary">보기</button></span></div><div class="ibar" style="margin-top:8px"><span class="ib"><b>세금계산서</b></span><span class="ib">플랫폼 → 퓨어랩</span><span class="ib">공급가 <b>412,000원</b> · 부가세 <b>41,200원</b></span><span class="badge b-success nodot">발행 완료</span><span class="ib tnum t-sub">08.20 · 김운영 등록</span><span class="ib-a"><button class="btn btn-secondary">보기</button></span></div><p class="st-hint" style="margin-top:12px">두 건 모두 <b>홈택스에서 수동 발행</b>된 것을 운영팀이 확인·등록했습니다 — 인플루언서 건은 승인번호 대조, 브랜드 건은 발행본 등록. 등록 후 스튜디오 · 파트너센터의 [다운로드]가 열립니다.</p></div></div><div class="card"><div class="card-h">고정 지급비<span class="ch-n">플랫폼을 지나지 않는 돈 · 계약에서 상속 · 읽기 전용</span></div><div class="card-b"><div class="ibar"><span class="ib">계약 금액 <b>350,000원</b></span><span class="ib">지급 시점 <b>공구 게시물 등록 후</b></span><span class="ib">브랜드 직접 지급</span><span class="ib-a"><span class="flink">계약 상세 보기 ↗</span></span></div><p class="st-hint" style="margin-top:12px">고정 지급비는 브랜드가 인플루언서에게 <b>직접</b> 지급하므로 플랫폼은 지급 여부를 알 수 없고 <b>정산 분해에도 넣지 않습니다</b>. 지급 기록은 계약 관리의 브랜드 자기 신고뿐입니다.</p></div></div><div class="card"><div class="card-h">금액 분해<span class="ch-n">확정 거래액 − PG − 플랫폼 − 리워드 − 리워드 부가세 = 브랜드 수취액</span></div><div class="mcols"><div><div class="axis"><span class="axis-t">브랜드 축</span><span class="axis-s">확정 거래액 기준 — 총 결제에서 반품·교환·배송비 차감</span></div><table class="mtab"><tbody><tr><td>총 결제금액</td><td><span class="tnum">4,530,000</span></td></tr><tr class="sub"><td>반품 차감</td><td><span class="tnum">− 120,000</span></td></tr><tr class="sub"><td>교환 차감</td><td><span class="tnum">− 270,000</span></td></tr><tr class="sub"><td>배송비 차감</td><td><span class="tnum">− 20,000</span></td></tr><tr class="mid"><td>확정 거래액</td><td><span class="tnum">4,120,000</span></td></tr><tr class="sub"><td>PG 결제 수수료 <span class="pb">3.0% 잠정</span></td><td><span class="tnum">− 123,600</span></td></tr><tr class="sub"><td>플랫폼 수수료 <span class="pb">베타 0% · 정상 2%</span></td><td><span class="tnum">− 0</span></td></tr><tr class="sub"><td>판매 리워드 <span class="pb">10%</span></td><td><span class="tnum">− 412,000</span></td></tr><tr class="sub"><td>리워드 부가세 <span class="pb">10% · 별도 · 매입세액 공제</span></td><td><span class="tnum">− 41,200</span></td></tr><tr class="tot"><td><b>브랜드 수취액</b></td><td><b class="tnum">3,543,200</b></td></tr></tbody></table></div><div><div class="axis"><span class="axis-t">인플루언서 축</span><span class="axis-s">사업자 — 원천징수 없이 리워드 + 부가세</span></div><table class="mtab"><tbody><tr><td>판매 리워드</td><td><span class="tnum">412,000</span></td></tr><tr class="sub"><td>부가세 <span class="pb">10% · 세금계산서</span></td><td><span class="tnum">+ 41,200</span></td></tr><tr class="sub"><td>원천징수</td><td><span class="t-dim">해당 없음 — 사업자</span></td></tr><tr class="tot"><td><b>인플루언서 실지급액</b></td><td><b class="tnum">453,200</b></td></tr></tbody></table></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">정산</span><span class="badge b-success">지급 완료</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">확정 거래액</span><span class="mv tnum">4,120,000원</span></div><div class="mrow"><span class="mk">브랜드 수취액</span><span class="mv tnum">3,543,200원</span></div><div class="mrow"><span class="mk">인플루언서 실지급</span><span class="mv tnum">453,200원</span></div><div class="mrow"><span class="mk">정산 확정일</span><span class="mv tnum">2026.08.15</span></div><div class="mrow"><span class="mk">지급(예정)일</span><span class="mv tnum">2026.08.18</span></div></div>
+<p class="st-hint">사업자 건은 <b>원천징수영수증이 없습니다</b> — 증빙은 인플루언서가 <b>플랫폼 앞으로</b> 발행한 세금계산서(대조 확인 08.16)와 플랫폼이 브랜드에게 발행한 세금계산서입니다.</p><div class="act-in"><div class="st-acts"><button class="btn btn-secondary w-full">정산 명세 다운로드</button></div></div></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-success"></div><div><div class="htxt">지급 완료 — 3자 분배 정상</div><div class="hmeta">2026.08.18 09:02 · PG 자동</div></div></div><div class="hitem"><div class="hdot h-success"></div><div><div class="htxt">세금계산서 수취</div><div class="hmeta">2026.08.17 14:22 · 인플루언서 민재_셀렉트 발행</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">정산 확정</div><div class="hmeta">2026.08.15 10:08 · 김운영</div></div></div></div></div></div></div></div></div></div></section>
+<section class="state">
+<div class="state-bar"><span class="state-id">D7</span><span class="state-label">상세 — 지급 예정 · 증빙 처리 필요 (사업자 · 운영자 조치)</span><span class="state-spec"><b>MVP 증빙 처리의 운영자 자리</b> — 자동 확정 후 두 가지가 남았다: ① 인플루언서가 스튜디오에 입력한 <b>승인번호 대조</b>(홈택스 수취 내역과 공급가 · 부가세 · 공급받는자를 맞춰 보고 확인 또는 반려 · M4) ② 브랜드에게 줄 <b>세금계산서 발행본 등록</b>(운영자가 홈택스에서 발행한 뒤 PDF · 승인번호 · 발행일 · M5) · 레일에 <b>지급 보류 조건</b>을 목록으로 적는다 — 세금계산서 미확인(사업자) · 주민번호 미등록(비사업자)은 지급을 막고, 브랜드 발행 대기는 <b>지급을 막지 않는다</b>(다음 달 10일 기한 · 정산 금액과 무관) · 대조가 끝나야 인플루언서 지급 예정일이 계산된다 · 독촉 버튼 없음(자동 알림)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">13</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub"><span>환불 집행</span><span class="scnt">6</span></div><div class="gnb-sub"><span>배송 예외</span><span class="scnt">4</span></div><div class="gnb-sub"><span>처리 지연</span><span class="scnt">3</span></div></div>
+<div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">정산 관리<span class="c-sub">/ 공구 정산 / 클렌징 밤 앵콜 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">클렌징 밤 앵콜 공구</div><div class="page-d tnum">STL-2609-012 <span class="t-sub">· 사업자 · 증빙 중심</span></div></div>
+<div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">증빙<span class="ch-n">MVP — 외부 발행 서비스 없음 · 홈택스 수동</span></div><div class="card-b"><div class="ibar" style="margin-top:8px"><span class="ib"><b>세금계산서 (정발행)</b></span><span class="ib">민재_셀렉트 → 플랫폼</span><span class="ib">공급가 <b>412,000원</b> · 부가세 <b>41,200원</b></span><span class="badge b-info nodot">대조 대기</span><span class="ib tnum t-sub">승인번호 20261009-4100···-8817 · 10.09 입력</span><span class="ib-a"><button class="btn btn-primary">대조</button></span></div><div class="ibar" style="margin-top:8px"><span class="ib"><b>세금계산서</b></span><span class="ib">플랫폼 → 퓨어랩</span><span class="ib">공급가 <b>412,000원</b> · 부가세 <b>41,200원</b></span><span class="badge b-neutral nodot">발행 대기</span><span class="ib tnum t-sub">기한 11.10</span><span class="ib-a"><button class="btn btn-secondary">발행본 등록</button></span></div><p class="st-hint" style="margin-top:12px">인플루언서 건은 <b>대조 확인 전 지급 보류</b>입니다. 브랜드 건은 지급과 무관하며 <b>공급일 다음 달 10일</b>까지 발행합니다 — 등록하면 파트너센터 [다운로드]가 열립니다.</p></div></div><div class="card"><div class="card-h">고정 지급비<span class="ch-n">플랫폼을 지나지 않는 돈 · 계약에서 상속 · 읽기 전용</span></div><div class="card-b"><div class="ibar"><span class="ib">계약 금액 <b>350,000원</b></span><span class="ib">지급 시점 <b>공구 게시물 등록 후</b></span><span class="ib">브랜드 직접 지급</span><span class="ib-a"><span class="flink">계약 상세 보기 ↗</span></span></div><p class="st-hint" style="margin-top:12px">고정 지급비는 브랜드가 인플루언서에게 <b>직접</b> 지급하므로 플랫폼은 지급 여부를 알 수 없고 <b>정산 분해에도 넣지 않습니다</b>. 지급 기록은 계약 관리의 브랜드 자기 신고뿐입니다.</p></div></div><div class="card"><div class="card-h">금액 분해<span class="ch-n">확정 거래액 − PG − 플랫폼 − 리워드 − 리워드 부가세 = 브랜드 수취액</span></div><div class="mcols"><div><div class="axis"><span class="axis-t">브랜드 축</span><span class="axis-s">확정 거래액 기준 — 총 결제에서 반품·교환·배송비 차감</span></div><table class="mtab"><tbody><tr><td>총 결제금액</td><td><span class="tnum">4,530,000</span></td></tr><tr class="sub"><td>반품 차감</td><td><span class="tnum">− 120,000</span></td></tr><tr class="sub"><td>교환 차감</td><td><span class="tnum">− 270,000</span></td></tr><tr class="sub"><td>배송비 차감</td><td><span class="tnum">− 20,000</span></td></tr><tr class="mid"><td>확정 거래액</td><td><span class="tnum">4,120,000</span></td></tr><tr class="sub"><td>PG 결제 수수료 <span class="pb">3.0% 잠정</span></td><td><span class="tnum">− 123,600</span></td></tr><tr class="sub"><td>플랫폼 수수료 <span class="pb">베타 0% · 정상 2%</span></td><td><span class="tnum">− 0</span></td></tr><tr class="sub"><td>판매 리워드 <span class="pb">10%</span></td><td><span class="tnum">− 412,000</span></td></tr><tr class="sub"><td>리워드 부가세 <span class="pb">10% · 별도 · 매입세액 공제</span></td><td><span class="tnum">− 41,200</span></td></tr><tr class="tot"><td><b>브랜드 수취액</b></td><td><b class="tnum">3,543,200</b></td></tr></tbody></table></div><div><div class="axis"><span class="axis-t">인플루언서 축</span><span class="axis-s">사업자 — 원천징수 없이 리워드 + 부가세</span></div><table class="mtab"><tbody><tr><td>판매 리워드</td><td><span class="tnum">412,000</span></td></tr><tr class="sub"><td>부가세 <span class="pb">10% · 세금계산서</span></td><td><span class="tnum">+ 41,200</span></td></tr><tr class="sub"><td>원천징수</td><td><span class="t-dim">해당 없음 — 사업자</span></td></tr><tr class="tot"><td><b>인플루언서 실지급액</b></td><td><b class="tnum">453,200</b></td></tr></tbody></table></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">정산</span><span class="badge b-neutral">지급 예정</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">확정 거래액</span><span class="mv tnum">4,120,000원</span></div><div class="mrow"><span class="mk">브랜드 수취액</span><span class="mv tnum">3,543,200원</span></div><div class="mrow"><span class="mk">인플루언서 실지급</span><span class="mv tnum">453,200원</span></div><div class="mrow"><span class="mk">자동 확정일</span><span class="mv tnum">2026.10.07</span></div><div class="mrow"><span class="mk">지급(예정)일</span><span class="mv">브랜드 <span class="tnum">10.13</span> · 인플루언서 대조 후</span></div></div>
+<div class="wait"><b>지급 보류 조건</b><br>✕ 세금계산서 대조 대기 — 인플루언서 지급 보류<br><span class="t-dim">✓ 주민번호 — 해당 없음(사업자)</span><br><span class="t-dim">○ 브랜드 세금계산서 발행 대기 — 지급과 무관 · 기한 11.10</span></div><div class="act-in"><div class="st-acts"><button class="btn btn-primary w-full">승인번호 대조</button><button class="btn btn-secondary w-full">브랜드 세금계산서 등록</button></div></div></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">세금계산서 승인번호 입력</div><div class="hmeta">2026.10.09 15:40 · 민재_셀렉트(쇼룸 스튜디오)</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">자동 확정 · 세금계산서 발행 요청</div><div class="hmeta">2026.10.07 00:00 · 시스템 · 확인 기간 경과 · 조정 요청 없음</div></div></div><div class="hitem"><div class="hdot h-success"></div><div><div class="htxt">지급 완료 — 3자 분배 정상</div><div class="hmeta">2026.08.18 09:02 · PG 자동</div></div></div><div class="hitem"><div class="hdot h-success"></div><div><div class="htxt">세금계산서 수취</div><div class="hmeta">2026.08.17 14:22 · 인플루언서 민재_셀렉트 발행</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">정산 확정</div><div class="hmeta">2026.08.15 10:08 · 김운영</div></div></div></div></div></div></div></div></div></div></section>
+
+
+
+<section class="state">
+<div class="state-bar"><span class="state-id">M3</span><span class="state-label">재분배 모달</span><span class="state-spec"><b>금액을 재계산하지 않는다</b> — 확정 금액을 그대로 다시 보내는 것이고, 모달에서 “재계산 없이 그대로 지급”을 못박는다 · <b>운영자가 계좌를 입력하지 않는다</b>: 계좌 변경은 인플루언서가 회원 정보에서 하고 운영자는 <b>갱신된 계좌를 선택</b>할 뿐이다(남의 계좌를 운영자가 타이핑하면 오지급 책임이 플랫폼으로 넘어온다) · PG 재시도라 <b>즉시 입금이 아니고</b>, 반복 실패 시 <b>수동 이체 절차</b>로 넘어간다 — 재시도 한도는 <b class="new">[확인 필요]</b></span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">13</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub"><span>환불 집행</span><span class="scnt">6</span></div><div class="gnb-sub"><span>배송 예외</span><span class="scnt">4</span></div><div class="gnb-sub"><span>처리 지연</span><span class="scnt">3</span></div></div>
+<div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">정산 관리<span class="c-sub">/ 공구 정산 / 글로우 세럼 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">글로우 세럼 공구</div><div class="page-d tnum">STL-2609-009</div></div>
+<div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">정산 개요<span class="ch-n"><span class="tnum">STL-2609-009</span> · 확정일·지급일은 우측 레일</span></div><div class="card-b two"><div class="frow"><div class="fk">공구</div><div class="fv"><b>글로우 세럼 공구</b></div></div><div class="frow"><div class="fk">브랜드</div><div class="fv">글로우랩</div></div><div class="frow"><div class="fk">인플루언서</div><div class="fv">하린_뷰티랩 <span class="t-sub">· 비사업자</span></div></div><div class="frow"><div class="fk">정산 대상 기간</div><div class="fv"><span class="tnum">2026.08.10 ~ 08.28</span></div></div><div class="frow"><div class="fk">마지막 구매확정</div><div class="fv"><span class="tnum">2026.09.06</span></div></div></div></div><div class="card"><div class="card-h">금액 분해<span class="ch-n">확정 거래액 − PG − 플랫폼 − 리워드 − 리워드 부가세 = 브랜드 수취액</span></div><div class="mcols"><div><div class="axis"><span class="axis-t">브랜드 축</span><span class="axis-s">확정 거래액 기준 — 총 결제에서 반품·교환·배송비 차감</span></div><table class="mtab"><tbody><tr><td>총 결제금액</td><td><span class="tnum">2,380,000</span></td></tr><tr class="sub"><td>반품 차감</td><td><span class="tnum">− 90,000</span></td></tr><tr class="sub"><td>교환 차감</td><td><span class="tnum">− 40,000</span></td></tr><tr class="sub"><td>배송비 차감</td><td><span class="tnum">− 10,000</span></td></tr><tr class="mid"><td>확정 거래액</td><td><span class="tnum">2,240,000</span></td></tr><tr class="sub"><td>PG 결제 수수료 <span class="pb">3.0% 잠정</span></td><td><span class="tnum">− 67,200</span></td></tr><tr class="sub"><td>플랫폼 수수료 <span class="pb">베타 0% · 정상 2%</span></td><td><span class="tnum">− 0</span></td></tr><tr class="sub"><td>판매 리워드 <span class="pb">12%</span></td><td><span class="tnum">− 268,800</span></td></tr><tr class="sub"><td>리워드 부가세 <span class="pb">10% · 별도 · 매입세액 공제</span></td><td><span class="tnum">− 26,880</span></td></tr><tr class="tot"><td><b>브랜드 수취액</b></td><td><b class="tnum">1,877,120</b></td></tr></tbody></table></div><div><div class="axis"><span class="axis-t">인플루언서 축</span><span class="axis-s">비사업자 — 리워드에서 3.3% 원천징수</span></div><table class="mtab"><tbody><tr><td>판매 리워드</td><td><span class="tnum">268,800</span></td></tr><tr class="sub"><td>원천징수 <span class="pb">3.3%</span></td><td><span class="tnum">− 8,870</span></td></tr><tr class="tot"><td><b>인플루언서 실지급액</b></td><td><b class="tnum">259,930</b></td></tr></tbody></table></div></div></div><div class="card"><div class="card-h">3자 분배<span class="ch-n">PG에서 각 수취자에게 <b>직접</b> 지급 — 플랫폼이 대금을 보관하지 않는다</span></div><table class="ltab"><thead><tr><td>수취자</td><td class="num" style="width:118px">지급 금액</td><td style="width:196px">지급 계좌</td><td style="width:172px">지급 상태</td></tr></thead><tbody>
+<tr><td>글로우랩 <span class="t-sub">브랜드</span></td><td class="num">1,877,120</td><td class="t-sub tnum">신한 110-***-**4821</td><td><span class="badge b-success nodot">지급 완료</span></td></tr><tr><td>하린_뷰티랩 <span class="t-sub">인플루언서</span></td><td class="num">259,930</td><td class="t-sub tnum">카카오뱅크 3333-**-**8842</td><td><span class="badge b-danger nodot">분배 실패</span></td></tr><tr><td>SHOWROOMZ <span class="t-sub">플랫폼</span></td><td class="num">0</td><td class="t-sub tnum">—</td><td><span class="badge b-neutral nodot">해당 없음 · 베타 0%</span></td></tr><tr><td>PG사 <span class="t-sub">결제 수수료</span></td><td class="num">67,200</td><td class="t-sub tnum">결제금 선차감</td><td><span class="t-sub">자동 차감</span></td></tr>
+</tbody><tfoot><tr><td>지급 합계</td><td class="num">2,231,130</td><td class="t-sub" colspan="2">확정 거래액 2,240,000 − 원천징수 8,870 <span class="t-dim">(플랫폼이 납세 대리로 보유)</span></td></tr></tfoot></table></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">정산</span><span class="badge b-danger">분배 실패</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">확정 거래액</span><span class="mv tnum">2,240,000원</span></div><div class="mrow"><span class="mk">브랜드 수취액</span><span class="mv tnum">1,877,120원</span></div><div class="mrow"><span class="mk">인플루언서 실지급</span><span class="mv tnum">259,930원</span></div><div class="mrow"><span class="mk">정산 확정일</span><span class="mv tnum">2026.09.09</span></div><div class="mrow"><span class="mk">지급(예정)일</span><span class="mv tnum">2026.09.12</span></div></div>
+<div class="act-in"><div class="st-acts"><button class="btn btn-primary w-full">재분배</button></div></div></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-danger"></div><div><div class="htxt">분배 실패 — 인플루언서 몫 반환</div><div class="hmeta">2026.09.12 09:04 · PG · 계좌 정보 불일치</div></div></div><div class="hitem"><div class="hdot h-success"></div><div><div class="htxt">지급 완료 — 브랜드·플랫폼 몫</div><div class="hmeta">2026.09.12 09:02 · PG 자동</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">정산 확정</div><div class="hmeta">2026.09.09 10:40 · 김운영</div></div></div></div></div></div></div></div></div><div class="overlay"><div class="modal"><div class="modal-h">재분배<span class="modal-x">✕</span></div><div class="modal-b"><b>하린_뷰티랩</b> 인플루언서 몫 <b class="tnum">259,930원</b>을 다시 지급합니다.
+<div style="background:var(--n-50);border-radius:var(--r-sm);padding:10px 12px;margin-top:10px;font-size:var(--fs-micro);color:var(--n-700);line-height:1.8">반환 사유 <b>계좌 정보 불일치</b> · PG 반환 2026.09.12 09:04 · <b>6일 경과</b><br>
+기존 계좌 <span class="tnum">카카오뱅크 3333-**-**8842</span><br>
+확정 금액 <b class="tnum">259,930원</b> <span class="t-dim">— 재계산 없이 그대로 지급</span></div>
+<label class="mlabel">지급 계좌<span class="req">*</span></label>
+<select class="msel"><option>회원 정보의 갱신된 계좌 사용 — 국민 604***-**-4471</option><option>기존 계좌로 재시도</option></select>
+<p class="mhint">계좌 변경은 <b>인플루언서가 회원 정보에서</b> 합니다 — 운영자가 계좌를 입력하지 않습니다.</p>
+<div class="mwarn"><span>!</span><span>재분배는 <b>PG에 재지시</b>하는 것이며 플랫폼이 대금을 보관하지 않으므로 <b>즉시 입금되지 않습니다</b>(영업일 기준 1~2일). 같은 사유로 <b>2회 더 실패</b>하면 PG 재시도가 차단되고 <b>수동 이체 절차</b>로 넘어갑니다.</span></div></div><div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary">재분배</button></div></div></div></div></section>
+<section class="state">
+<div class="state-bar"><span class="state-id">M4</span><span class="state-label">승인번호 대조 모달</span><span class="state-spec">D7 레일 [승인번호 대조] 또는 증빙 [대조]에서 진입 · 운영자는 승인번호를 <b>입력하지 않고 대조만</b> 한다(입력은 인플루언서) · 결과는 <b>일치 / 반려 사유 3종</b> — 반려 사유가 스튜디오 D5b에 그대로 뜬다 · 확인 = 지급 보류 해제 · 인플루언서 지급일 = 확인일 + 3영업일</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">13</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub"><span>환불 집행</span><span class="scnt">6</span></div><div class="gnb-sub"><span>배송 예외</span><span class="scnt">4</span></div><div class="gnb-sub"><span>처리 지연</span><span class="scnt">3</span></div></div>
+<div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">정산 관리<span class="c-sub">/ 공구 정산 / 클렌징 밤 앵콜 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">클렌징 밤 앵콜 공구</div><div class="page-d tnum">STL-2609-012 <span class="t-sub">· 사업자 · 증빙 중심</span></div></div>
+<div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">증빙<span class="ch-n">MVP — 외부 발행 서비스 없음 · 홈택스 수동</span></div><div class="card-b"><div class="ibar" style="margin-top:8px"><span class="ib"><b>세금계산서 (정발행)</b></span><span class="ib">민재_셀렉트 → 플랫폼</span><span class="ib">공급가 <b>412,000원</b> · 부가세 <b>41,200원</b></span><span class="badge b-info nodot">대조 대기</span><span class="ib tnum t-sub">승인번호 20261009-4100···-8817 · 10.09 입력</span><span class="ib-a"><button class="btn btn-primary">대조</button></span></div><div class="ibar" style="margin-top:8px"><span class="ib"><b>세금계산서</b></span><span class="ib">플랫폼 → 퓨어랩</span><span class="ib">공급가 <b>412,000원</b> · 부가세 <b>41,200원</b></span><span class="badge b-neutral nodot">발행 대기</span><span class="ib tnum t-sub">기한 11.10</span><span class="ib-a"><button class="btn btn-secondary">발행본 등록</button></span></div><p class="st-hint" style="margin-top:12px">인플루언서 건은 <b>대조 확인 전 지급 보류</b>입니다. 브랜드 건은 지급과 무관하며 <b>공급일 다음 달 10일</b>까지 발행합니다 — 등록하면 파트너센터 [다운로드]가 열립니다.</p></div></div><div class="card"><div class="card-h">고정 지급비<span class="ch-n">플랫폼을 지나지 않는 돈 · 계약에서 상속 · 읽기 전용</span></div><div class="card-b"><div class="ibar"><span class="ib">계약 금액 <b>350,000원</b></span><span class="ib">지급 시점 <b>공구 게시물 등록 후</b></span><span class="ib">브랜드 직접 지급</span><span class="ib-a"><span class="flink">계약 상세 보기 ↗</span></span></div><p class="st-hint" style="margin-top:12px">고정 지급비는 브랜드가 인플루언서에게 <b>직접</b> 지급하므로 플랫폼은 지급 여부를 알 수 없고 <b>정산 분해에도 넣지 않습니다</b>. 지급 기록은 계약 관리의 브랜드 자기 신고뿐입니다.</p></div></div><div class="card"><div class="card-h">금액 분해<span class="ch-n">확정 거래액 − PG − 플랫폼 − 리워드 − 리워드 부가세 = 브랜드 수취액</span></div><div class="mcols"><div><div class="axis"><span class="axis-t">브랜드 축</span><span class="axis-s">확정 거래액 기준 — 총 결제에서 반품·교환·배송비 차감</span></div><table class="mtab"><tbody><tr><td>총 결제금액</td><td><span class="tnum">4,530,000</span></td></tr><tr class="sub"><td>반품 차감</td><td><span class="tnum">− 120,000</span></td></tr><tr class="sub"><td>교환 차감</td><td><span class="tnum">− 270,000</span></td></tr><tr class="sub"><td>배송비 차감</td><td><span class="tnum">− 20,000</span></td></tr><tr class="mid"><td>확정 거래액</td><td><span class="tnum">4,120,000</span></td></tr><tr class="sub"><td>PG 결제 수수료 <span class="pb">3.0% 잠정</span></td><td><span class="tnum">− 123,600</span></td></tr><tr class="sub"><td>플랫폼 수수료 <span class="pb">베타 0% · 정상 2%</span></td><td><span class="tnum">− 0</span></td></tr><tr class="sub"><td>판매 리워드 <span class="pb">10%</span></td><td><span class="tnum">− 412,000</span></td></tr><tr class="sub"><td>리워드 부가세 <span class="pb">10% · 별도 · 매입세액 공제</span></td><td><span class="tnum">− 41,200</span></td></tr><tr class="tot"><td><b>브랜드 수취액</b></td><td><b class="tnum">3,543,200</b></td></tr></tbody></table></div><div><div class="axis"><span class="axis-t">인플루언서 축</span><span class="axis-s">사업자 — 원천징수 없이 리워드 + 부가세</span></div><table class="mtab"><tbody><tr><td>판매 리워드</td><td><span class="tnum">412,000</span></td></tr><tr class="sub"><td>부가세 <span class="pb">10% · 세금계산서</span></td><td><span class="tnum">+ 41,200</span></td></tr><tr class="sub"><td>원천징수</td><td><span class="t-dim">해당 없음 — 사업자</span></td></tr><tr class="tot"><td><b>인플루언서 실지급액</b></td><td><b class="tnum">453,200</b></td></tr></tbody></table></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">정산</span><span class="badge b-neutral">지급 예정</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">확정 거래액</span><span class="mv tnum">4,120,000원</span></div><div class="mrow"><span class="mk">브랜드 수취액</span><span class="mv tnum">3,543,200원</span></div><div class="mrow"><span class="mk">인플루언서 실지급</span><span class="mv tnum">453,200원</span></div><div class="mrow"><span class="mk">자동 확정일</span><span class="mv tnum">2026.10.07</span></div><div class="mrow"><span class="mk">지급(예정)일</span><span class="mv">브랜드 <span class="tnum">10.13</span> · 인플루언서 대조 후</span></div></div>
+<div class="wait"><b>지급 보류 조건</b><br>✕ 세금계산서 대조 대기 — 인플루언서 지급 보류<br><span class="t-dim">✓ 주민번호 — 해당 없음(사업자)</span><br><span class="t-dim">○ 브랜드 세금계산서 발행 대기 — 지급과 무관 · 기한 11.10</span></div><div class="act-in"><div class="st-acts"><button class="btn btn-primary w-full">승인번호 대조</button><button class="btn btn-secondary w-full">브랜드 세금계산서 등록</button></div></div></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">세금계산서 승인번호 입력</div><div class="hmeta">2026.10.09 15:40 · 민재_셀렉트(쇼룸 스튜디오)</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">자동 확정 · 세금계산서 발행 요청</div><div class="hmeta">2026.10.07 00:00 · 시스템 · 확인 기간 경과 · 조정 요청 없음</div></div></div><div class="hitem"><div class="hdot h-success"></div><div><div class="htxt">지급 완료 — 3자 분배 정상</div><div class="hmeta">2026.08.18 09:02 · PG 자동</div></div></div><div class="hitem"><div class="hdot h-success"></div><div><div class="htxt">세금계산서 수취</div><div class="hmeta">2026.08.17 14:22 · 인플루언서 민재_셀렉트 발행</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">정산 확정</div><div class="hmeta">2026.08.15 10:08 · 김운영</div></div></div></div></div></div></div></div></div><div class="overlay"><div class="modal"><div class="modal-h">승인번호 대조 — 민재_셀렉트<span class="modal-x">✕</span></div><div class="modal-b">인플루언서가 발행한 세금계산서를 <b>홈택스 매입 내역</b>과 대조합니다.<div style="background:var(--n-50);border-radius:var(--r-sm);padding:10px 12px;margin-top:10px;font-size:var(--fs-micro);color:var(--n-700);line-height:1.8">입력 승인번호 <b class="tnum">20261009-41000000-0000-8817</b> · 10.09 입력<br>기대값 공급가 <b class="tnum">412,000</b> · 부가세 <b class="tnum">41,200</b> · 합계 <b class="tnum">453,200원</b><br>공급받는자 SHOWROOMZ(주) · <span class="tnum">000-00-00000</span></div><label class="mlabel">대조 결과<span class="req">*</span></label><select class="msel"><option>일치 — 확인</option><option>금액 불일치 — 반려</option><option>공급받는자 오기 — 반려</option><option>승인번호 조회 불가 — 반려</option></select><p class="mhint">반려를 고르면 사유가 <b>쇼룸 스튜디오</b>에 그대로 표시되고 인플루언서가 재입력합니다.</p><div class="mwarn info"><span>i</span><span>확인하면 <b>지급 보류가 풀리고</b> 인플루언서 지급 예정일이 <b>확인일 + 3영업일</b>로 정해집니다. 첨부 PDF가 있으면 스튜디오 [다운로드]도 열립니다.</span></div></div><div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary">확인</button></div></div></div></div></section>
+<section class="state">
+<div class="state-bar"><span class="state-id">M5</span><span class="state-label">브랜드 세금계산서 발행본 등록 모달</span><span class="state-spec">D7 레일 [브랜드 세금계산서 등록]에서 진입 · 외부 발행 서비스가 없어 운영자가 <b>홈택스에서 발행 → 여기에 등록</b>한다 · 필수 3개(PDF · 승인번호 24자리 · 발행일) — 빈 값은 버튼 비활성만, 승인번호 형식 · 파일 형식/용량만 에러 문구 · 정상 등록 후에는 버튼을 <b>숨긴다</b>(비활성 아님 · 덮어쓰기 방지)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">13</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub"><span>환불 집행</span><span class="scnt">6</span></div><div class="gnb-sub"><span>배송 예외</span><span class="scnt">4</span></div><div class="gnb-sub"><span>처리 지연</span><span class="scnt">3</span></div></div>
+<div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">정산 관리<span class="c-sub">/ 공구 정산 / 클렌징 밤 앵콜 공구</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">클렌징 밤 앵콜 공구</div><div class="page-d tnum">STL-2609-012 <span class="t-sub">· 사업자 · 증빙 중심</span></div></div>
+<div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">증빙<span class="ch-n">MVP — 외부 발행 서비스 없음 · 홈택스 수동</span></div><div class="card-b"><div class="ibar" style="margin-top:8px"><span class="ib"><b>세금계산서 (정발행)</b></span><span class="ib">민재_셀렉트 → 플랫폼</span><span class="ib">공급가 <b>412,000원</b> · 부가세 <b>41,200원</b></span><span class="badge b-info nodot">대조 대기</span><span class="ib tnum t-sub">승인번호 20261009-4100···-8817 · 10.09 입력</span><span class="ib-a"><button class="btn btn-primary">대조</button></span></div><div class="ibar" style="margin-top:8px"><span class="ib"><b>세금계산서</b></span><span class="ib">플랫폼 → 퓨어랩</span><span class="ib">공급가 <b>412,000원</b> · 부가세 <b>41,200원</b></span><span class="badge b-neutral nodot">발행 대기</span><span class="ib tnum t-sub">기한 11.10</span><span class="ib-a"><button class="btn btn-secondary">발행본 등록</button></span></div><p class="st-hint" style="margin-top:12px">인플루언서 건은 <b>대조 확인 전 지급 보류</b>입니다. 브랜드 건은 지급과 무관하며 <b>공급일 다음 달 10일</b>까지 발행합니다 — 등록하면 파트너센터 [다운로드]가 열립니다.</p></div></div><div class="card"><div class="card-h">고정 지급비<span class="ch-n">플랫폼을 지나지 않는 돈 · 계약에서 상속 · 읽기 전용</span></div><div class="card-b"><div class="ibar"><span class="ib">계약 금액 <b>350,000원</b></span><span class="ib">지급 시점 <b>공구 게시물 등록 후</b></span><span class="ib">브랜드 직접 지급</span><span class="ib-a"><span class="flink">계약 상세 보기 ↗</span></span></div><p class="st-hint" style="margin-top:12px">고정 지급비는 브랜드가 인플루언서에게 <b>직접</b> 지급하므로 플랫폼은 지급 여부를 알 수 없고 <b>정산 분해에도 넣지 않습니다</b>. 지급 기록은 계약 관리의 브랜드 자기 신고뿐입니다.</p></div></div><div class="card"><div class="card-h">금액 분해<span class="ch-n">확정 거래액 − PG − 플랫폼 − 리워드 − 리워드 부가세 = 브랜드 수취액</span></div><div class="mcols"><div><div class="axis"><span class="axis-t">브랜드 축</span><span class="axis-s">확정 거래액 기준 — 총 결제에서 반품·교환·배송비 차감</span></div><table class="mtab"><tbody><tr><td>총 결제금액</td><td><span class="tnum">4,530,000</span></td></tr><tr class="sub"><td>반품 차감</td><td><span class="tnum">− 120,000</span></td></tr><tr class="sub"><td>교환 차감</td><td><span class="tnum">− 270,000</span></td></tr><tr class="sub"><td>배송비 차감</td><td><span class="tnum">− 20,000</span></td></tr><tr class="mid"><td>확정 거래액</td><td><span class="tnum">4,120,000</span></td></tr><tr class="sub"><td>PG 결제 수수료 <span class="pb">3.0% 잠정</span></td><td><span class="tnum">− 123,600</span></td></tr><tr class="sub"><td>플랫폼 수수료 <span class="pb">베타 0% · 정상 2%</span></td><td><span class="tnum">− 0</span></td></tr><tr class="sub"><td>판매 리워드 <span class="pb">10%</span></td><td><span class="tnum">− 412,000</span></td></tr><tr class="sub"><td>리워드 부가세 <span class="pb">10% · 별도 · 매입세액 공제</span></td><td><span class="tnum">− 41,200</span></td></tr><tr class="tot"><td><b>브랜드 수취액</b></td><td><b class="tnum">3,543,200</b></td></tr></tbody></table></div><div><div class="axis"><span class="axis-t">인플루언서 축</span><span class="axis-s">사업자 — 원천징수 없이 리워드 + 부가세</span></div><table class="mtab"><tbody><tr><td>판매 리워드</td><td><span class="tnum">412,000</span></td></tr><tr class="sub"><td>부가세 <span class="pb">10% · 세금계산서</span></td><td><span class="tnum">+ 41,200</span></td></tr><tr class="sub"><td>원천징수</td><td><span class="t-dim">해당 없음 — 사업자</span></td></tr><tr class="tot"><td><b>인플루언서 실지급액</b></td><td><b class="tnum">453,200</b></td></tr></tbody></table></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">정산</span><span class="badge b-neutral">지급 예정</span></div>
+<div class="st-meta"><div class="mrow"><span class="mk">확정 거래액</span><span class="mv tnum">4,120,000원</span></div><div class="mrow"><span class="mk">브랜드 수취액</span><span class="mv tnum">3,543,200원</span></div><div class="mrow"><span class="mk">인플루언서 실지급</span><span class="mv tnum">453,200원</span></div><div class="mrow"><span class="mk">자동 확정일</span><span class="mv tnum">2026.10.07</span></div><div class="mrow"><span class="mk">지급(예정)일</span><span class="mv">브랜드 <span class="tnum">10.13</span> · 인플루언서 대조 후</span></div></div>
+<div class="wait"><b>지급 보류 조건</b><br>✕ 세금계산서 대조 대기 — 인플루언서 지급 보류<br><span class="t-dim">✓ 주민번호 — 해당 없음(사업자)</span><br><span class="t-dim">○ 브랜드 세금계산서 발행 대기 — 지급과 무관 · 기한 11.10</span></div><div class="act-in"><div class="st-acts"><button class="btn btn-primary w-full">승인번호 대조</button><button class="btn btn-secondary w-full">브랜드 세금계산서 등록</button></div></div></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">세금계산서 승인번호 입력</div><div class="hmeta">2026.10.09 15:40 · 민재_셀렉트(쇼룸 스튜디오)</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">자동 확정 · 세금계산서 발행 요청</div><div class="hmeta">2026.10.07 00:00 · 시스템 · 확인 기간 경과 · 조정 요청 없음</div></div></div><div class="hitem"><div class="hdot h-success"></div><div><div class="htxt">지급 완료 — 3자 분배 정상</div><div class="hmeta">2026.08.18 09:02 · PG 자동</div></div></div><div class="hitem"><div class="hdot h-success"></div><div><div class="htxt">세금계산서 수취</div><div class="hmeta">2026.08.17 14:22 · 인플루언서 민재_셀렉트 발행</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">정산 확정</div><div class="hmeta">2026.08.15 10:08 · 김운영</div></div></div></div></div></div></div></div></div><div class="overlay"><div class="modal"><div class="modal-h">브랜드 세금계산서 발행본 등록 — 퓨어랩<span class="modal-x">✕</span></div><div class="modal-b">운영팀이 <b>홈택스에서 발행한</b> 세금계산서를 등록합니다.<div style="background:var(--n-50);border-radius:var(--r-sm);padding:10px 12px;margin-top:10px;font-size:var(--fs-micro);color:var(--n-700);line-height:1.8">공급받는자 <b>퓨어랩</b> · <span class="tnum">214-81-·····</span> · 수신 이메일 tax@purelab.kr<br>공급가 <b class="tnum">412,000</b> · 부가세 <b class="tnum">41,200</b> · 발행 기한 <b class="tnum">2026.11.10</b></div><label class="mlabel">발행본 PDF<span class="req">*</span></label><div class="upl"><span class="upl-n t-sub">PDF를 끌어다 놓거나 선택하세요 · 10MB 이하</span><button class="btn btn-secondary">파일 선택</button></div><label class="mlabel">국세청 승인번호<span class="req">*</span></label><input class="inp" style="width:100%" placeholder="24자리 · 숫자와 하이픈"><label class="mlabel">발행일<span class="req">*</span></label><input class="inp tnum" style="width:160px" value="2026.10.10"><div class="mwarn info"><span>i</span><span>등록하면 파트너센터 [다운로드]가 열리고 처리 이력에 <b>「발행본 등록 · 운영자」</b>로 남습니다. 정상 등록된 건에는 이 버튼이 다시 보이지 않습니다(덮어쓰기 방지 · 정정은 수정세금계산서로).</span></div></div><div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary" disabled>등록</button></div></div></div></div></section>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="sz-wm" viewBox="0 0 1863.4 200"><text x="0" y="160" font-family="Fredoka, sans-serif" font-size="180" font-weight="700" letter-spacing="0">SHOWROOMZ</text></symbol>
+  </defs>
+</svg>
+
+</body>
+</html>
+</body>
+</html>

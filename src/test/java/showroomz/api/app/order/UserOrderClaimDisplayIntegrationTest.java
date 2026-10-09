@@ -198,6 +198,8 @@ class UserOrderClaimDisplayIntegrationTest extends SellerOrderTestSupport {
         OrderDeliveryGroup group = deliveredGroup(1, LocalDateTime.now().minusDays(8));
         Long claimId = requestReturn(group, items(group).get(0), 1);
         setClaim(claimId, "status = 'REJECT_HOLD', rejected_at = CURRENT_TIMESTAMP");
+        // 지금은 진행 중 클레임이 구매확정을 멈춘다(1009 기획 수정본 2-4) — 그 전에 확정된 옛 데이터를 재현한다.
+        jdbc.update("UPDATE order_delivery_group SET confirm_paused_at = NULL WHERE delivery_group_id = ?", group.getId());
         fulfillmentService.confirmIfDue(group.getId(), LocalDateTime.now());
 
         firstItem().andExpect(jsonPath("$.status").value("RETURN_IN_PROGRESS"))

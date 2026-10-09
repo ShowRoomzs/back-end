@@ -18,6 +18,7 @@ import showroomz.domain.order.entity.QOrderCancelRequest;
 import showroomz.domain.order.entity.QOrderDeliveryGroup;
 import showroomz.domain.order.entity.QOrderProduct;
 import showroomz.domain.order.type.CancelRequestStatus;
+import showroomz.domain.order.type.FulfillmentStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -63,6 +64,71 @@ public class OrderDeliveryGroupRepositoryImpl implements OrderDeliveryGroupRepos
 
         Long total = queryFactory.select(g.count()).from(g).join(g.order, o).where(where).fetchOne();
         return new PageImpl<>(content, pageable, total == null ? 0L : total);
+    }
+
+    @Override
+    public Page<Long> searchOrderIdsForAdmin(AdminOrderSearchCondition condition, Pageable pageable) {
+        QOrderDeliveryGroup g = QOrderDeliveryGroup.orderDeliveryGroup;
+        QOrder o = QOrder.order;
+        BooleanBuilder where = adminWhere(condition, g, o);
+        List<Long> ids = queryFactory
+                .select(o.id)
+                .from(g)
+                .join(g.order, o)
+                .where(where)
+                .groupBy(o.id, o.paidAt)
+                .orderBy(o.paidAt.desc(), o.id.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+        return new PageImpl<>(ids, pageable, countOrdersForAdmin(condition));
+    }
+
+    @Override
+    public long countOrdersForAdmin(AdminOrderSearchCondition condition) {
+        QOrderDeliveryGroup g = QOrderDeliveryGroup.orderDeliveryGroup;
+        QOrder o = QOrder.order;
+        Long total = queryFactory.select(o.id.countDistinct()).from(g).join(g.order, o)
+                .where(adminWhere(condition, g, o)).fetchOne();
+        return total == null ? 0L : total;
+    }
+
+    private BooleanBuilder adminWhere(AdminOrderSearchCondition condition, QOrderDeliveryGroup g, QOrder o) {
+        QOrderCancelRequest r = QOrderCancelRequest.orderCancelRequest;
+        BooleanBuilder where = new BooleanBuilder().and(o.paidAt.isNotNull());
+        if (condition.marketId() != null) {
+            where.and(g.market.id.eq(condition.marketId()));
+        }
+        if (condition.status() != null) {
+            where.and(g.fulfillmentStatus.eq(condition.status()));
+        }
+        if (condition.from() != null) {
+            where.and(o.paidAt.goe(condition.from()));
+        }
+        if (condition.to() != null) {
+            where.and(o.paidAt.loe(condition.to()));
+        }
+        switch (condition.tab()) {
+            case DELIVERY_ISSUE -> where.and(g.trackingAlert.isNotNull()
+                    .or(g.fulfillmentStatus.eq(FulfillmentStatus.RETURNING)));
+            case CANCEL -> where.and(g.fulfillmentStatus.eq(FulfillmentStatus.CANCELLED)
+                    .or(JPAExpressions.selectOne().from(r)
+                            .where(r.deliveryGroup.eq(g).and(r.status.eq(CancelRequestStatus.PENDING))).exists()));
+            case ALL -> { /* 조건 없음 */ }
+        }
+        String keyword = condition.keyword() == null ? null : condition.keyword().trim();
+        if (keyword != null && !keyword.isEmpty()) {
+            String digits = keyword.replaceAll("[^0-9]", "");
+            BooleanExpression match = o.orderNumber.contains(keyword)
+                    .or(g.subOrderNumber.contains(keyword))
+                    .or(o.recipientName.contains(keyword))
+                    .or(g.marketName.contains(keyword));
+            if (!digits.isEmpty()) {
+                match = match.or(g.trackingNumber.contains(digits));
+            }
+            where.and(match);
+        }
+        return where;
     }
 
     private void applyPendingCancelFilter(BooleanBuilder where, SellerOrderSearchCondition condition,

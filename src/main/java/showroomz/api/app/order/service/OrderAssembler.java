@@ -1,5 +1,6 @@
 package showroomz.api.app.order.service;
 
+import showroomz.domain.order.service.ShipDuePolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import showroomz.api.app.order.dto.OrderDto;
@@ -56,6 +57,7 @@ public class OrderAssembler {
     private final ClaimExchangeOptionReader exchangeOptionReader;
     private final PortOnePaymentGateway gateway;
     private final OrderProperties orderProperties;
+    private final ShipDuePolicy shipDuePolicy;
 
     public OrderDto.CreateOrderResponse toCreateResponse(Order order, Payment payment) {
         Users user = order.getUser();
@@ -110,6 +112,10 @@ public class OrderAssembler {
                             .freeShippingThreshold(group.getMarket() != null ? group.getMarket().getFreeShippingThreshold() : null)
                             .isFreeShipping(group.isFreeShippingApplied())
                             .build())
+                    // 확정 기한이 있으면 그 날, 공구 진행 중이면 마감 예정 기준 예상일 — 문구는 주문 시점 N 그대로.
+                    .expectedShipDueDate(group.getShipDueAt() != null ? group.getShipDueAt().toLocalDate()
+                            : expectedShipDueDate(group))
+                    .shipDueText(ShipDuePolicy.noticeText(group.getShipDueBusinessDays()))
                     .build());
         }
         // 그룹이 없는 옛 행(백필 전)도 상품은 보여 준다.
@@ -278,5 +284,12 @@ public class OrderAssembler {
 
     public static String ctaLabel(long totalAmount) {
         return NumberFormat.getNumberInstance(Locale.KOREA).format(totalAmount) + "원 결제하기";
+    }
+
+    private java.time.LocalDate expectedShipDueDate(OrderDeliveryGroup group) {
+        if (group.getGroupBuy() == null || group.getGroupBuy().getEndAt() == null) {
+            return null;
+        }
+        return shipDuePolicy.dueAt(group.getGroupBuy().getEndAt(), group.getShipDueBusinessDays()).toLocalDate();
     }
 }

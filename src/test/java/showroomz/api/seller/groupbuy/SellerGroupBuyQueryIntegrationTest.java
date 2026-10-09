@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -165,7 +166,7 @@ class SellerGroupBuyQueryIntegrationTest extends GroupBuyTestSupport {
     // ── A3 GNB 배지 ────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("GNB 배지는 브랜드가 끌 수 있는 것만 — 물량 확인 대기 · 소명 가능 · 이행 확인 대기")
+    @DisplayName("GNB 배지는 브랜드가 끌 수 있는 것만 — 물량 확인 대기 · 소명 가능(이행 확인 대기는 2026-10-06 폐기)")
     void actionRequiredCountsOnlyBrandTurns() throws Exception {
         seedPreparing();                                                         // ① 물량 확인 대기
         GroupBuy confirmed = seedPreparing();
@@ -175,11 +176,11 @@ class SellerGroupBuyQueryIntegrationTest extends GroupBuyTestSupport {
         seedPost(rejectedPost.getId(), GroupBuyPostReviewStatus.REJECTED, false); // 반려는 인플루언서 몫 — 제외
         GroupBuy noticed = seedIn(GroupBuyStatus.IN_PROGRESS);
         seedNotice(noticed.getId(), LocalDateTime.now().plusDays(2).withNano(0)); // ② 소명 가능
-        seedIn(GroupBuyStatus.ENDED);                                            // ③ 이행 확인 대기
+        seedIn(GroupBuyStatus.ENDED);                                            // 종료 — 이행 확인 폐기로 제외
         GroupBuy waiting = seedIn(GroupBuyStatus.IN_PROGRESS);
         seedPendingRequest(waiting.getId(), ChangeRequestType.EARLY_CLOSE, GroupBuyActorType.SELLER, "STOCK_OUT"); // 대기 — 제외
 
-        summary().andExpect(jsonPath("$.actionRequiredCount").value(3));
+        summary().andExpect(jsonPath("$.actionRequiredCount").value(2));
     }
 
     // ── B1 상세 ────────────────────────────────────────────────────────────
@@ -248,7 +249,8 @@ class SellerGroupBuyQueryIntegrationTest extends GroupBuyTestSupport {
         seedNotice(noticed.getId(), LocalDateTime.now().plusDays(2).withNano(0));
         assertPermissions(noticed.getId(), "canSubmitAppeal", "canOpenPairThread");
 
-        assertPermissions(seedIn(GroupBuyStatus.ENDED).getId(), "canOpenIssue", "canCheckFulfillment", "canOpenPairThread");
+        // 종료 — 이행 확인은 2026-10-06 폐기돼 이슈 · 스레드만 남는다.
+        assertPermissions(seedIn(GroupBuyStatus.ENDED).getId(), "canOpenIssue", "canOpenPairThread");
         assertPermissions(seedIn(GroupBuyStatus.SETTLED).getId(), "canOpenPairThread");
     }
 
@@ -290,7 +292,7 @@ class SellerGroupBuyQueryIntegrationTest extends GroupBuyTestSupport {
                 .andExpect(jsonPath("$.orderClosure.totalCount").value(0))
                 .andExpect(jsonPath("$.orderClosure.purchaseConfirmedCount").value(0))
                 .andExpect(jsonPath("$.orderClosure.refundedCount").value(0))
-                .andExpect(jsonPath("$.afterEnd.fulfillment.autoConfirmOnTimeout").value(false));
+                .andExpect(jsonPath("$.afterEnd.fulfillment").value(nullValue()));
     }
 
     @Test
@@ -318,7 +320,7 @@ class SellerGroupBuyQueryIntegrationTest extends GroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("종료 상세 — 종결 정보 · 이행 확인 블록 · 정산 감시 기준 · 게시물 종료")
+    @DisplayName("종료 상세 — 종결 정보 · 정산 감시 기준 · 게시물 종료 · 이행 확인 블록 없음(2026-10-06 폐기)")
     void endedDetail() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);
 
@@ -328,10 +330,7 @@ class SellerGroupBuyQueryIntegrationTest extends GroupBuyTestSupport {
                 .andExpect(jsonPath("$.post.status").value("NOT_WRITTEN"))
                 .andExpect(jsonPath("$.closure.closeType").value("COMPLETED"))
                 .andExpect(jsonPath("$.closure.source").doesNotExist())
-                .andExpect(jsonPath("$.afterEnd.fulfillment.mine").doesNotExist())
-                .andExpect(jsonPath("$.afterEnd.fulfillment.dueAt").exists())
-                .andExpect(jsonPath("$.afterEnd.fulfillment.onHold").value(false))
-                .andExpect(jsonPath("$.afterEnd.fulfillment.autoConfirmOnTimeout").value(false))
+                .andExpect(jsonPath("$.afterEnd.fulfillment").value(nullValue()))
                 .andExpect(jsonPath("$.afterEnd.settlementWatchAt").exists())
                 // 종료 화면에 KPI를 두지 않는다 — 잠정치가 지급액으로 오해된다(§30-4).
                 .andExpect(jsonPath("$.sales").doesNotExist());

@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-partner-06-basic-info — 파트너센터 기본정보 관리 rev.8</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --pt-sidebar-w:240px; --pt-topbar-h:56px; --pt-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;margin-top:12px;line-height:1.8;}
+.rule b{color:var(--n-900);} .rule code{background:var(--n-100);border-radius:3px;padding:1px 4px;font-size:10px;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;min-height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+
+/* ══ 사이드바(GNB) ══ */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--pt-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--pt-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:9px 10px;border-radius:var(--r-sm);margin-bottom:2px;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-item.active .gn{color:rgba(255,255,255,.8);}
+
+/* ══ 탑바 ══ */
+.top{position:absolute;left:var(--pt-sidebar-w);right:0;top:0;height:var(--pt-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--pt-pad);}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.brand-chip{display:flex;align-items:center;gap:7px;font-size:var(--fs-caption);color:var(--n-600);}
+.brand-chip .st{font-size:var(--fs-micro);font-weight:500;padding:2px 9px;border-radius:var(--r-pill);
+  background:var(--success-bg);color:var(--success-text);}
+
+/* ══ 본문 ══ */
+.main{position:absolute;left:var(--pt-sidebar-w);right:0;top:var(--pt-topbar-h);bottom:0;
+  overflow-y:auto;padding:var(--pt-pad);}
+.page-h{margin-bottom:var(--sp-4);}
+.page-t{font-size:var(--fs-h1);font-weight:600;}
+.page-d{font-size:var(--fs-caption);color:var(--n-600);margin-top:2px;}
+.content{display:flex;gap:22px;align-items:flex-start;}
+
+/* ══ 서브탭 ══ */
+.subnav{width:180px;flex-shrink:0;}
+.subnav-item{display:flex;align-items:center;justify-content:space-between;gap:6px;
+  padding:10px 14px;font-size:var(--fs-caption);color:var(--n-600);border-radius:var(--r-sm);margin-bottom:2px;}
+.subnav-item.on{background:#fff;color:var(--n-900);font-weight:600;border:1px solid var(--n-300);}
+.subnav-item.disabled{color:var(--n-400);}
+.subnav-tag{font-size:10px;font-weight:500;color:var(--n-500);background:var(--n-200);
+  border-radius:8px;padding:1px 7px;white-space:nowrap;}
+.subbody{flex:1;min-width:0;}
+
+/* ══ 버튼 ══ */
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:0 14px;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:none;cursor:pointer;white-space:nowrap;}
+.btn-primary{background:var(--accent-500);color:#fff;}
+.btn-primary:disabled{background:var(--n-200);color:var(--n-400);cursor:not-allowed;}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-secondary:disabled{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+.btn-row{display:flex;gap:10px;justify-content:flex-end;padding:var(--sp-5);align-items:center;}
+
+/* ══ 입력 (가입·온보딩 컴포넌트 재사용) ══ */
+.inp,.sel,.ta{font-family:inherit;font-size:var(--fs-body);padding:6px 10px;
+  border-radius:var(--r-sm);border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:32px;width:100%;}
+.inp:focus,.sel:focus,.ta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.inp:disabled,.sel:disabled,.ta:disabled{background:var(--n-100);color:var(--n-500);cursor:not-allowed;}
+.inp::placeholder,.ta::placeholder{color:var(--n-400);}
+select.inp{appearance:none;-webkit-appearance:none;-moz-appearance:none;padding-right:32px;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;cursor:pointer;}
+.ta{height:auto;min-height:88px;resize:vertical;line-height:1.6;padding-top:7px;}
+.ta.sm{min-height:60px;}
+.inp-wrap{position:relative;display:flex;align-items:center;}
+.inp-wrap.is-error .inp,.inp-wrap.is-error .ta{border-color:var(--danger-text);}
+.inp-wrap.is-error .inp:focus,.inp-wrap.is-error .ta:focus{border-color:var(--danger-text);box-shadow:0 0 0 3px var(--danger-bg);}
+.err-msg{font-size:var(--fs-caption);color:var(--danger-text);margin:6px 0 0;}
+.help{font-size:var(--fs-micro);color:var(--n-500);margin:6px 0 0;}
+.eye{position:absolute;right:6px;height:26px;padding:0 8px;border:none;background:transparent;
+  color:var(--n-500);font-size:var(--fs-micro);cursor:pointer;}
+.inp-search{display:flex;gap:8px;} .inp-search .inp{flex:1;}
+.inp-search.is-error .inp{border-color:var(--danger-text);}
+.btn-search{height:32px;padding:0 14px;border:1px solid var(--n-300);border-radius:var(--r-sm);
+  background:#fff;color:var(--n-700);font-size:var(--fs-caption);font-weight:500;cursor:pointer;white-space:nowrap;}
+.btn-search:hover{background:var(--n-100);}
+.btn-search:disabled{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+
+/* ══ 카드 · 폼 로우 ══ */
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);max-width:820px;margin-bottom:16px;}
+.card-h{font-size:var(--fs-h2);font-weight:600;padding:16px var(--sp-5);border-bottom:1px solid var(--n-200);}
+.sec{padding:var(--sp-5);border-bottom:1px solid var(--n-100);} .sec:last-of-type{border-bottom:none;}
+.sec-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-900);margin-bottom:var(--sp-4);}
+.frow{display:flex;gap:var(--sp-3);align-items:flex-start;margin-bottom:var(--sp-3);}
+.frow:last-child{margin-bottom:0;}
+.flab{width:150px;flex-shrink:0;font-size:var(--fs-caption);color:var(--n-600);padding-top:7px;}
+.flab .req{color:var(--danger-text);margin-left:2px;}
+.fctrl{flex:1;min-width:0;}
+.fctrl .inp.sm{max-width:240px;}
+.hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;line-height:1.55;}
+
+/* ══ 배지 ══ */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;margin-right:6px;}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+
+/* ══ 검토 중 배너 (정보색 — §9 상태색 원칙 1: 브랜드 조치 불필요한 정상 대기) ══ */
+.banner{display:flex;align-items:flex-start;gap:10px;margin:var(--sp-5) var(--sp-5) 0;
+  background:var(--info-bg);border-radius:var(--r-sm);padding:12px 14px;}
+.banner .bi{width:16px;height:16px;border-radius:50%;background:var(--info-text);color:#fff;font-size:10px;
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;margin-top:2px;}
+.banner .bt{font-size:var(--fs-caption);font-weight:600;color:var(--info-text);}
+.banner .bd{font-size:var(--fs-micro);color:var(--n-600);margin-top:2px;line-height:1.6;}
+.banner > div{flex:1;}
+.banner.b-ok{background:var(--success-bg);}
+.banner.b-ok .bi{background:var(--success-text);}
+.banner.b-ok .bt{color:var(--success-text);}
+.banner.b-no{background:var(--danger-bg);}
+.banner.b-no .bi{background:var(--danger-text);}
+.banner.b-no .bt{color:var(--danger-text);}
+.rej-box{background:#fff;border:1px solid var(--danger-bg);border-radius:var(--r-sm);
+  padding:9px 11px;margin-top:8px;font-size:var(--fs-micro);color:var(--n-700);line-height:1.65;}
+.rej-box .rl{display:block;color:var(--danger-text);font-weight:600;margin-bottom:2px;}
+.rej-box .rv{display:block;color:var(--n-900);font-weight:500;}
+.rej-sub{border-top:1px dashed var(--n-200);margin-top:8px;padding-top:8px;}
+.rej-sub .rl{color:var(--n-600);font-weight:600;}
+
+/* ══ 안내 박스 (온보딩 .notice 재사용) ══ */
+.notice{display:flex;gap:8px;background:var(--info-bg);border-radius:var(--r-sm);padding:12px 14px;
+  font-size:var(--fs-micro);color:var(--n-700);line-height:1.65;margin-bottom:var(--sp-4);}
+.ni{width:16px;height:16px;border-radius:50%;background:var(--info-text);color:#fff;font-size:10px;
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;margin-top:1px;}
+
+/* ══ 모달 ══ */
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;justify-content:center;}
+.modal{background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);overflow:hidden;}
+.modal-h{font-size:var(--fs-h3);font-weight:600;padding:16px 22px;border-bottom:1px solid var(--n-200);
+  display:flex;align-items:center;justify-content:space-between;}
+.modal-x{color:var(--n-400);cursor:pointer;font-size:var(--fs-body);}
+.modal-b{padding:22px;max-height:820px;overflow-y:auto;}
+.modal-f{padding:14px 22px;border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.field{margin-bottom:var(--sp-4);} .field:last-child{margin-bottom:0;}
+.lb{display:block;font-size:var(--fs-caption);color:var(--n-600);font-weight:500;margin-bottom:4px;}
+.lb .req{color:var(--danger-text);margin-left:2px;}
+.lb .opt{color:var(--n-400);margin-left:4px;font-weight:400;}
+.divider{height:1px;background:var(--n-200);margin:var(--sp-4) 0;}
+.chk-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:12px 14px;}
+.chk-grid.is-error{border-color:var(--danger-text);}
+.chk{display:flex;align-items:center;gap:7px;font-size:var(--fs-caption);color:var(--n-700);cursor:pointer;}
+.chk input{width:15px;height:15px;accent-color:var(--accent-500);cursor:pointer;margin:0;}
+.chg-box{border:1px solid var(--n-300);border-radius:var(--r-sm);padding:14px;background:var(--n-50);}
+.chg-row{margin-bottom:14px;} .chg-row:last-child{margin-bottom:0;}
+.chg-k{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);margin-bottom:2px;}
+.chg-cur{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:6px;}
+.chg-box .inp{background:#fff;}
+
+/* ══ 파일 업로드 (가입 화면 .upload 재사용) ══ */
+.upload{border:1px dashed var(--n-300);border-radius:var(--r-sm);padding:14px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--n-50);}
+.upload.is-error{border-color:var(--danger-text);background:var(--danger-bg);}
+.upload.done{border-style:solid;border-color:var(--success-text);background:var(--success-bg);}
+.upload.done .up-name::before{content:"\2713 ";color:var(--success-text);font-weight:700;}
+.upload.done .up-hint{color:var(--success-text);font-weight:500;}
+.up-l{display:flex;flex-direction:column;gap:2px;}
+.up-name{font-size:var(--fs-caption);color:var(--n-700);font-weight:500;}
+.up-hint{font-size:var(--fs-micro);color:var(--n-500);}
+.btn-upload{height:32px;padding:0 14px;border:1px solid var(--n-300);border-radius:var(--r-sm);
+  display:inline-flex;align-items:center;justify-content:center;
+  background:#fff;color:var(--n-700);font-size:var(--fs-micro);font-weight:500;cursor:pointer;white-space:nowrap;}
+.btn-upload:hover{background:var(--n-100);}
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>④ 파트너센터 · 9. 기본정보 관리 <span style="font-weight:400;color:var(--n-600);font-size:var(--fs-caption)">ui-partner-06-basic-info · rev.8</span></h1>
+  <p class="meta">근거: wf-partner-08-기본정보관리 · 디자인시스템 v1.2 · 컴포넌트 출처 ui-partner-02-signup(폼 검증·업로드·비밀번호) / ui-partner-03-onboarding(반품 수취 주소·notice) / ui-partner-04(카드·frow) / ui-partner-05(모달 셸)</p>
+  <div class="rule">
+    <b>[범위 확정 · 2026.08]</b> 서브탭 6개 중 <b>4개만 대상</b>: 사업자 정보 · 정산 계좌 · 담당자·CS · 계정(탈퇴 섹션 제외). <b>배송·반품 정책 / 택배 연동</b>은 법률 검토 이후 제작 — 서브탭 위치만 확보하고 "준비중" 비활성 표기. <b>브랜드 탈퇴</b>는 카드 자체를 넣지 않음(법률 검토 후 별도 화면 신설).<br>
+    <b>[rev.2 · 유효성 검사 신설]</b> 수정 가능한 필드 전부에 검증·오류 문구 추가. <b>플레이스홀더·검증 규칙·오류 문구는 가입(ui-partner-02-signup) / 온보딩(ui-partner-03-onboarding)과 문자 단위로 동일</b>하게 맞췄다. 검사 시점도 동일하게 <b>blur 이후 → 이후 입력 변경 시 즉시 재검사</b>. 조회 전용(<code>disabled</code>) 필드는 검증 대상이 아니다.<br>
+    <b>[rev.2 · 구조 변경 — 반품 수취 주소]</b> rev.1의 단일 텍스트 입력 1개 → <b>온보딩과 동일한 4필드</b>(수취인 이름 · 수취인 연락처 · 주소(우편번호 검색) · 상세 주소)로 확장. 주소는 검색 팝업 전용 <code>readonly</code>이며, 검색 완료 전까지 상세 주소는 비활성이다.<br>
+    <b>[rev.2 · 신규 — 비밀번호 재입력]</b> 계정 탭 비밀번호 변경을 2필드 → <b>3필드</b>(현재·새·재입력)로 확장. 가입 화면 Step1과 동일 구조.<br>
+    <b>[rev.2 · 신규 — 변경 요청 모달 3종]</b> M1 사업자 정보 변경 요청 · M2 정산 계좌 변경 요청 · M3 접수 완료(공통). 요청 접수 후에는 해당 카드에 <b>검토 중 배너</b>가 뜨고 재요청 버튼이 비활성된다(중복 요청 방지).<br>
+    <b>[rev.6 · 변경 요청 결과 UI]</b> 요청 상태를 <b>검토 중 / 승인 / 반려</b> 3단계로 배너에 표시한다. 색은 §9 상태색 원칙에 따라 <b>검토 중=정보색</b>(브랜드 조치 불필요한 정상 대기), <b>승인=성공색</b>, <b>반려=위험색</b>(브랜드가 서류를 고쳐 다시 요청해야 하는 상태 — 조치 필요). 반려 시에는 <b>반려 사유를 브랜드에게 노출</b>한다(인플루언서 입점 반려 사유가 내부 전용인 것과 다르다 — 변경 요청은 이미 심사를 통과한 브랜드이고, 사유를 알아야 재요청이 가능하기 때문). <b>반려 사유는 운영자가 드롭다운에서 정형 사유를 선택</b>하고, <b>상세 사유는 선택 입력</b>이다. 브랜드 화면에는 정형 사유가 항상 노출되고, <b>상세 사유는 입력된 경우에만 행이 추가</b>된다(미입력 시 행 자체 비노출 — 2-F 참고). 승인·반려 배너 모두 <b>[확인]</b> 버튼으로 소멸하는 1회성 알림이며, 재요청은 배너를 닫은 뒤 <b>[변경 요청]</b> 버튼으로 한다(별도 [다시 요청] 버튼 없음). 재요청에 <b>대기기간은 없다</b>(브랜드 재등록 즉시 허용 규칙과 동일).<br><b>[신규제안 · 확인 필요] 반려 사유 드롭다운 항목</b> — 사업자 정보: ①증빙 서류 미첨부 ②증빙 서류와 요청 값이 일치하지 않음 ③서류 판독 불가(흐림·잘림) ④서류 유효기간 경과 ⑤변경 사유 불충분 ⑥기타. 정산 계좌: ①통장 사본 미첨부 ②예금주와 사업자 명의 불일치 ③계좌번호 오류·미개설 계좌 ④통장 사본 판독 불가 ⑤기타. <b>⑥/⑤ "기타" 선택 시에만 상세 사유 필수</b>, 나머지는 선택.<br><b>[rev.4 · 로그인 이메일 변경 방식 확정]</b> rev.2의 "변경 불가 · 운영자 문의"를 폐기하고 계정 탭에서 직접 변경한다(담당자 퇴사·도메인 변경 시 계정 통제권 상실 방지). 방식은 <b>현재 비밀번호 확인 → 즉시 변경 확정</b>이며, <b>인증 링크 방식은 rev.3에서 검토했으나 폐기</b>했다. 대신 <b>월 1회 변경 제한</b>을 둔다. 변경 완료 시 구 이메일에 통지 발송(백엔드, UI 없음).<br><b>[rev.4 · 반품 수취 주소 = 카카오 주소 API]</b> 주소 입력창을 클릭하면 카카오 주소 검색창이 열린다. 입력창은 <code>readonly</code>로 <b>직접 입력 불가</b>. <b>상세 주소는 주소 검색 여부와 무관하게 항상 입력 가능</b>하다(rev.2~3의 "주소 검색 완료 전 상세 주소 비활성" 규칙 <b>폐기</b>).<br><b>[rev.4 · 버튼 문구]</b> 변경 요청 버튼의 <code>(운영자 검토)</code> 병기를 제거하고 <b>[변경 요청]</b>으로 통일.<br><b>[rev.3 · 검토 후 유지 확정 — 재논의 금지]</b> ① <b>tax 확인용 이메일·브랜드 사이트 링크는 사업자 정보 탭에 그대로 둔다</b>(정산 계좌 탭 이동안 검토했으나 폐기 — 두 값 모두 가입 Step2에서 사업자 정보와 함께 수집되므로 위치 정합이 맞다). ② <b>tax 확인용 이메일 수정에 비밀번호 확인을 붙이지 않는다</b>(기존 즉시 저장 방식 유지). ③ <b>가입 화면(ui-partner-02-signup) 라벨·필드 이동은 하지 않는다</b> — 이메일 2종의 라벨 정리안(로그인 이메일 / 세금계산서 수신 이메일)은 미채택.<br><b>[rev.8 · 디자인시스템 폼 규격 정합]</b> 입력·셀렉트·텍스트영역을 <code>SHOWROOMZ_웹_디자인시스템_v1.2</code> 폼 규격에 맞췄다 — 높이 <b>36 → 32px</b>, 패딩 <b>8px 12px → 6px 10px</b>, 라벨 하단 여백 <b>6 → 4px</b>. 연동 조정: 행 라벨 baseline <code>padding-top 9 → 7px</code>, 비밀번호 표시 토글 <code>28 → 26px</code>, 주소 검색 버튼 <code>36 → 32px</code>(입력 높이와 일치). 셀렉트 화살표는 기존부터 DS 셰브론을 써 변경 없음.<br><b>[rev.7 · M1 구조 변경 — 새 값 입력형]</b> 기존 M1은 <b>변경 항목 + 사유</b>만 받아 운영자가 대조할 "요청 값"이 없었다(어드민 대조표의 데이터 소스 부재). 이제 <b>체크한 항목마다 현재 값이 표시되고 바로 아래에 바꿀 값을 입력</b>한다 — M2(정산 계좌)와 동일 구조로 통일. 백엔드 <code>brand_change_request</code>는 두 유형 모두 <code>{항목, 현재값, 요청값}</code> 배열 하나로 담긴다. 브랜드가 요청한 값이 레코드에 남으므로 분쟁 시 책임 소재가 명확해진다.<br><b>[rev.7 · 사업자등록번호 제외 — 재논의 금지]</b> 변경 항목 체크박스에서 <b>사업자등록번호를 뺀다</b>(7종 → 6종). 번호가 바뀌면 법적으로 다른 사업자이므로 정보 변경이 아니라 <b>신규 입점 신청</b> 대상이다. 목록에 두면 브랜드가 체크할 수 있고 운영자는 매번 반려해야 한다.<br><b>[rev.7 · 증빙 첨부 필수]</b> M1 증빙 파일을 <b>선택 → 필수</b>로 변경(M2 통장 사본과 동일). 증빙 없는 신원정보 변경은 승인 근거가 없다.<br><b>[신규제안 · 확인 필요]</b> ⓒ <b>검토 중 재요청 차단</b> — 동일 항목 중복 요청 방지.
+  </div>
+</div>
+
+<!-- ═════════ 1-A ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">1-A</span><span class="state-label">사업자 정보 · 조회</span>
+  <span class="state-spec">법정 신원정보 8개는 조회 전용 · tax 확인용 이메일·브랜드 사이트 링크 2개만 직접 수정 가능</span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item on">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">사업자 정보</div>
+            <div class="sec">
+              <div class="frow"><div class="flab">사업자 유형</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="일반과세자" disabled></div></div></div>
+              <div class="frow"><div class="flab">브랜드명</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="○○ 브랜드" disabled></div></div></div>
+              <div class="frow"><div class="flab">대표자명</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="홍길동" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업자등록증 상호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="주식회사 ○○" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업자등록번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="000-00-00000" disabled></div></div></div>
+              <div class="frow"><div class="flab">업태</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="도소매업" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업장 주소</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="서울특별시 강남구 테헤란로 123, 4층 401호" disabled></div></div></div>
+              <div class="frow"><div class="flab">통신판매업 신고번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="제0000-서울○○-00000호" disabled></div></div></div>
+              <div class="frow"><div class="flab">tax 확인용 이메일<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="email" value="tax@brand.com" placeholder="brand@example.com"></div><div class="hint">세금계산서 등 세무 확인용 · 로그인 이메일과 별개 · 즉시 수정 가능</div></div></div>
+              <div class="frow"><div class="flab">브랜드 사이트 링크</div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="text" value="https://ohh-cosmetic.com" placeholder="https:// 포함 전체 주소"></div><div class="hint">소비자 상품 상세페이지 "사이트에서 보기" 버튼에 사용(선택 입력, 미입력 시 버튼 비노출) · 신원정보 아님 — 즉시 수정 가능</div></div></div>
+              <div class="frow"><div class="flab">심사 첨부 파일</div><div class="fctrl" style="padding-top:8px"><span class="badge b-neutral">사업자등록증.jpg</span><span class="badge b-neutral">통신판매업신고증.jpg</span><span class="badge b-neutral">통장사본.jpg</span></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-secondary">변경 요청</button><button class="btn btn-primary">저장</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[조회 중심]</b> 사업자등록번호·상호 등 법정 신원정보는 가입 심사 시 확정 — 변경은 <b>[변경 요청]</b>으로 운영자 검토를 거친다 · tax 확인용 이메일·브랜드 사이트 링크는 브랜드가 직접 수정 후 <b>[저장]</b>. 검사 시점은 <b>blur 이후</b>(가입 화면과 동일 원칙)</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═════════ 1-B ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">1-B</span><span class="state-label">사업자 정보 · 유효성 에러</span>
+  <span class="state-spec">수정 가능한 2필드의 형식 오류 · blur 이후 검사 · 오류 존재 시 <b>[저장] 비활성</b></span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item on">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">사업자 정보</div>
+            <div class="sec">
+              <div class="frow"><div class="flab">사업자 유형</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="일반과세자" disabled></div></div></div>
+              <div class="frow"><div class="flab">브랜드명</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="○○ 브랜드" disabled></div></div></div>
+              <div class="frow"><div class="flab">대표자명</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="홍길동" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업자등록증 상호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="주식회사 ○○" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업자등록번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="000-00-00000" disabled></div></div></div>
+              <div class="frow"><div class="flab">업태</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="도소매업" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업장 주소</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="서울특별시 강남구 테헤란로 123, 4층 401호" disabled></div></div></div>
+              <div class="frow"><div class="flab">통신판매업 신고번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="제0000-서울○○-00000호" disabled></div></div></div>
+              <div class="frow"><div class="flab">tax 확인용 이메일<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap is-error"><input class="inp" type="text" value="tax@brand" aria-invalid="true" aria-describedby="e-tax"></div><p class="err-msg" id="e-tax" role="alert">올바른 이메일 형식이 아닙니다. (예: example@domain.com)</p><div class="hint">세금계산서 등 세무 확인용 · 로그인 이메일과 별개 · 즉시 수정 가능</div></div></div>
+              <div class="frow"><div class="flab">브랜드 사이트 링크</div><div class="fctrl"><div class="inp-wrap is-error"><input class="inp" type="text" value="ohh-cosmetic" aria-invalid="true" aria-describedby="e-site"></div><p class="err-msg" id="e-site" role="alert">올바른 주소 형식이 아닙니다. (예: https://example.com)</p><div class="hint">소비자 상품 상세페이지 "사이트에서 보기" 버튼에 사용(선택 입력, 미입력 시 버튼 비노출) · 신원정보 아님 — 즉시 수정 가능</div></div></div>
+              <div class="frow"><div class="flab">심사 첨부 파일</div><div class="fctrl" style="padding-top:8px"><span class="badge b-neutral">사업자등록증.jpg</span><span class="badge b-neutral">통신판매업신고증.jpg</span><span class="badge b-neutral">통장사본.jpg</span></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-secondary">변경 요청</button><button class="btn btn-primary" disabled>저장</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[조회 중심]</b> 사업자등록번호·상호 등 법정 신원정보는 가입 심사 시 확정 — 변경은 <b>[변경 요청]</b>으로 운영자 검토를 거친다 · tax 확인용 이메일·브랜드 사이트 링크는 브랜드가 직접 수정 후 <b>[저장]</b>. 검사 시점은 <b>blur 이후</b>(가입 화면과 동일 원칙)</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═════════ 1-C ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">1-C</span><span class="state-label">사업자 정보 · 변경 요청 모달 (M1)</span>
+  <span class="state-spec">체크한 항목마다 <b>현재 값 + 바꿀 값 입력칸</b> 생성 · 사유(필수) · <b>증빙 첨부 필수</b></span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item on">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">사업자 정보</div>
+            <div class="sec">
+              <div class="frow"><div class="flab">사업자 유형</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="일반과세자" disabled></div></div></div>
+              <div class="frow"><div class="flab">브랜드명</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="○○ 브랜드" disabled></div></div></div>
+              <div class="frow"><div class="flab">대표자명</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="홍길동" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업자등록증 상호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="주식회사 ○○" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업자등록번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="000-00-00000" disabled></div></div></div>
+              <div class="frow"><div class="flab">업태</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="도소매업" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업장 주소</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="서울특별시 강남구 테헤란로 123, 4층 401호" disabled></div></div></div>
+              <div class="frow"><div class="flab">통신판매업 신고번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="제0000-서울○○-00000호" disabled></div></div></div>
+              <div class="frow"><div class="flab">tax 확인용 이메일<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="email" value="tax@brand.com" placeholder="brand@example.com"></div><div class="hint">세금계산서 등 세무 확인용 · 로그인 이메일과 별개 · 즉시 수정 가능</div></div></div>
+              <div class="frow"><div class="flab">브랜드 사이트 링크</div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="text" value="https://ohh-cosmetic.com" placeholder="https:// 포함 전체 주소"></div><div class="hint">소비자 상품 상세페이지 "사이트에서 보기" 버튼에 사용(선택 입력, 미입력 시 버튼 비노출) · 신원정보 아님 — 즉시 수정 가능</div></div></div>
+              <div class="frow"><div class="flab">심사 첨부 파일</div><div class="fctrl" style="padding-top:8px"><span class="badge b-neutral">사업자등록증.jpg</span><span class="badge b-neutral">통신판매업신고증.jpg</span><span class="badge b-neutral">통장사본.jpg</span></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-secondary">변경 요청</button><button class="btn btn-primary">저장</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[조회 중심]</b> 사업자등록번호·상호 등 법정 신원정보는 가입 심사 시 확정 — 변경은 <b>[변경 요청]</b>으로 운영자 검토를 거친다 · tax 확인용 이메일·브랜드 사이트 링크는 브랜드가 직접 수정 후 <b>[저장]</b>. 검사 시점은 <b>blur 이후</b>(가입 화면과 동일 원칙)</div>
+        </div>
+      </div>
+    </div>
+    <div class="overlay">
+      <div class="modal" style="width:560px">
+        <div class="modal-h">사업자 정보 변경 요청<span class="modal-x">✕</span></div>
+        <div class="modal-b">
+          <div class="notice"><span class="ni">i</span><span>법정 신원정보는 브랜드가 직접 수정할 수 없어요. 변경할 항목을 고르고 <b>바꿀 값</b>과 <b>증빙 서류</b>를 함께 남기면 운영자가 서류와 대조해 반영해요. 결과는 이메일로 안내드려요.</span></div>
+          <div class="field"><label class="lb">변경 항목<span class="req">*</span></label><div class="chk-grid"><label class="chk"><input type="checkbox"><span>브랜드명</span></label><label class="chk"><input type="checkbox" checked><span>대표자명</span></label><label class="chk"><input type="checkbox"><span>사업자등록증 상호</span></label><label class="chk"><input type="checkbox"><span>업태</span></label><label class="chk"><input type="checkbox" checked><span>사업장 주소</span></label><label class="chk"><input type="checkbox"><span>통신판매업 신고번호</span></label></div>
+            <p class="help">사업자등록번호는 변경 대상이 아닙니다(번호가 바뀌면 신규 입점 신청).</p></div>
+          <div class="field"><label class="lb">변경할 값<span class="req">*</span></label>
+            <div class="chg-box"><div class="chg-row"><div class="chg-k">대표자명</div><div class="chg-cur">현재 · 홍길동</div><div class="inp-wrap"><input class="inp" type="text" value="김철수" placeholder="변경할 값을 입력하세요"></div></div><div class="chg-row"><div class="chg-k">사업장 주소</div><div class="chg-cur">현재 · 서울특별시 강남구 테헤란로 123, 4층 401호</div><div class="inp-wrap"><input class="inp" type="text" value="서울특별시 성동구 성수이로 22, 3층" placeholder="변경할 값을 입력하세요"></div></div></div>
+            <p class="help">증빙 서류에 적힌 것과 <b>똑같이</b> 입력해 주세요 — 다르면 반려됩니다.</p></div>
+          <div class="field"><label class="lb" for="m1-rsn">변경 사유<span class="req">*</span></label><div class="inp-wrap"><textarea class="ta sm" id="m1-rsn" maxlength="500" placeholder="변경이 필요한 사유를 입력해 주세요. (최대 500자)">법인 소재지 이전으로 사업장 주소가 변경되었고, 대표자도 함께 변경되었습니다.</textarea></div></div>
+          <div class="field"><label class="lb">변경 증빙 파일<span class="req">*</span></label><div class="upload done"><div class="up-l"><div class="up-name">사업자등록증_변경.jpg</div><div class="up-hint">업로드 완료</div></div><button type="button" class="btn-upload">다시 선택</button></div>
+            <p class="help">변경 사실을 확인할 수 있는 서류(사업자등록증 등).</p></div>
+        </div>
+        <div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary">변경 요청</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 1-D ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">1-D</span><span class="state-label">사업자 정보 · 변경 요청 모달 · 유효성 에러</span>
+  <span class="state-spec">변경할 값 미입력 · 사유 미입력 · 증빙 미첨부 · <b>[변경 요청] 비활성</b></span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item on">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">사업자 정보</div>
+            <div class="sec">
+              <div class="frow"><div class="flab">사업자 유형</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="일반과세자" disabled></div></div></div>
+              <div class="frow"><div class="flab">브랜드명</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="○○ 브랜드" disabled></div></div></div>
+              <div class="frow"><div class="flab">대표자명</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="홍길동" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업자등록증 상호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="주식회사 ○○" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업자등록번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="000-00-00000" disabled></div></div></div>
+              <div class="frow"><div class="flab">업태</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="도소매업" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업장 주소</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="서울특별시 강남구 테헤란로 123, 4층 401호" disabled></div></div></div>
+              <div class="frow"><div class="flab">통신판매업 신고번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="제0000-서울○○-00000호" disabled></div></div></div>
+              <div class="frow"><div class="flab">tax 확인용 이메일<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="email" value="tax@brand.com" placeholder="brand@example.com"></div><div class="hint">세금계산서 등 세무 확인용 · 로그인 이메일과 별개 · 즉시 수정 가능</div></div></div>
+              <div class="frow"><div class="flab">브랜드 사이트 링크</div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="text" value="https://ohh-cosmetic.com" placeholder="https:// 포함 전체 주소"></div><div class="hint">소비자 상품 상세페이지 "사이트에서 보기" 버튼에 사용(선택 입력, 미입력 시 버튼 비노출) · 신원정보 아님 — 즉시 수정 가능</div></div></div>
+              <div class="frow"><div class="flab">심사 첨부 파일</div><div class="fctrl" style="padding-top:8px"><span class="badge b-neutral">사업자등록증.jpg</span><span class="badge b-neutral">통신판매업신고증.jpg</span><span class="badge b-neutral">통장사본.jpg</span></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-secondary">변경 요청</button><button class="btn btn-primary">저장</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[조회 중심]</b> 사업자등록번호·상호 등 법정 신원정보는 가입 심사 시 확정 — 변경은 <b>[변경 요청]</b>으로 운영자 검토를 거친다 · tax 확인용 이메일·브랜드 사이트 링크는 브랜드가 직접 수정 후 <b>[저장]</b>. 검사 시점은 <b>blur 이후</b>(가입 화면과 동일 원칙)</div>
+        </div>
+      </div>
+    </div>
+    <div class="overlay">
+      <div class="modal" style="width:560px">
+        <div class="modal-h">사업자 정보 변경 요청<span class="modal-x">✕</span></div>
+        <div class="modal-b">
+          <div class="notice"><span class="ni">i</span><span>법정 신원정보는 브랜드가 직접 수정할 수 없어요. 변경할 항목을 고르고 <b>바꿀 값</b>과 <b>증빙 서류</b>를 함께 남기면 운영자가 서류와 대조해 반영해요. 결과는 이메일로 안내드려요.</span></div>
+          <div class="field"><label class="lb">변경 항목<span class="req">*</span></label><div class="chk-grid"><label class="chk"><input type="checkbox"><span>브랜드명</span></label><label class="chk"><input type="checkbox" checked><span>대표자명</span></label><label class="chk"><input type="checkbox"><span>사업자등록증 상호</span></label><label class="chk"><input type="checkbox"><span>업태</span></label><label class="chk"><input type="checkbox" checked><span>사업장 주소</span></label><label class="chk"><input type="checkbox"><span>통신판매업 신고번호</span></label></div>
+            <p class="help">사업자등록번호는 변경 대상이 아닙니다(번호가 바뀌면 신규 입점 신청).</p></div>
+          <div class="field"><label class="lb">변경할 값<span class="req">*</span></label>
+            <div class="chg-box"><div class="chg-row"><div class="chg-k">대표자명</div><div class="chg-cur">현재 · 홍길동</div><div class="inp-wrap"><input class="inp" type="text" value="김철수" placeholder="변경할 값을 입력하세요"></div></div><div class="chg-row"><div class="chg-k">사업장 주소</div><div class="chg-cur">현재 · 서울특별시 강남구 테헤란로 123, 4층 401호</div><div class="inp-wrap is-error"><input class="inp" type="text" value="" placeholder="변경할 값을 입력하세요" aria-invalid="true"></div><p class="err-msg" role="alert">사업장 주소를 입력해 주세요.</p></div></div>
+            <p class="help">증빙 서류에 적힌 것과 <b>똑같이</b> 입력해 주세요 — 다르면 반려됩니다.</p></div>
+          <div class="field"><label class="lb" for="m1-rsn">변경 사유<span class="req">*</span></label><div class="inp-wrap is-error"><textarea class="ta sm" id="m1-rsn" maxlength="500" placeholder="변경이 필요한 사유를 입력해 주세요. (최대 500자)"></textarea></div><p class="err-msg" role="alert">변경 사유를 입력해 주세요.</p></div>
+          <div class="field"><label class="lb">변경 증빙 파일<span class="req">*</span></label><div class="upload is-error"><div class="up-l"><div class="up-name">📎 변경 증빙 파일</div><div class="up-hint">최대 5MB · jpg, jpeg, png</div></div><button type="button" class="btn-upload">파일 선택</button></div><p class="err-msg" role="alert">변경 증빙 파일을 첨부해 주세요.</p>
+            <p class="help">변경 사실을 확인할 수 있는 서류(사업자등록증 등).</p></div>
+        </div>
+        <div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary" disabled>변경 요청</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 1-E ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">1-E</span><span class="state-label">사업자 정보 · 변경 요청 검토 중</span>
+  <span class="state-spec">요청 접수 후 상태 · 정보색 배너 + <b>재요청 버튼 비활성</b> · 요청 취소 가능</span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item on">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">사업자 정보</div>
+            <div class="banner"><span class="bi">i</span><div><div class="bt">사업자 정보 변경 요청 검토 중</div><div class="bd">2026.08.06 14:20 요청 · 대표자명, 사업장 주소 · 운영자 검토 후 결과를 이메일로 안내드려요. 검토가 끝날 때까지 추가 변경 요청은 할 수 없어요.</div></div><button class="btn btn-secondary" style="flex-shrink:0">요청 취소</button></div><div class="sec">
+              <div class="frow"><div class="flab">사업자 유형</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="일반과세자" disabled></div></div></div>
+              <div class="frow"><div class="flab">브랜드명</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="○○ 브랜드" disabled></div></div></div>
+              <div class="frow"><div class="flab">대표자명</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="홍길동" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업자등록증 상호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="주식회사 ○○" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업자등록번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="000-00-00000" disabled></div></div></div>
+              <div class="frow"><div class="flab">업태</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="도소매업" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업장 주소</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="서울특별시 강남구 테헤란로 123, 4층 401호" disabled></div></div></div>
+              <div class="frow"><div class="flab">통신판매업 신고번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="제0000-서울○○-00000호" disabled></div></div></div>
+              <div class="frow"><div class="flab">tax 확인용 이메일<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="email" value="tax@brand.com" placeholder="brand@example.com"></div><div class="hint">세금계산서 등 세무 확인용 · 로그인 이메일과 별개 · 즉시 수정 가능</div></div></div>
+              <div class="frow"><div class="flab">브랜드 사이트 링크</div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="text" value="https://ohh-cosmetic.com" placeholder="https:// 포함 전체 주소"></div><div class="hint">소비자 상품 상세페이지 "사이트에서 보기" 버튼에 사용(선택 입력, 미입력 시 버튼 비노출) · 신원정보 아님 — 즉시 수정 가능</div></div></div>
+              <div class="frow"><div class="flab">심사 첨부 파일</div><div class="fctrl" style="padding-top:8px"><span class="badge b-neutral">사업자등록증.jpg</span><span class="badge b-neutral">통신판매업신고증.jpg</span><span class="badge b-neutral">통장사본.jpg</span></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-secondary" disabled>변경 요청</button><button class="btn btn-primary">저장</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[조회 중심]</b> 사업자등록번호·상호 등 법정 신원정보는 가입 심사 시 확정 — 변경은 <b>[변경 요청]</b>으로 운영자 검토를 거친다 · tax 확인용 이메일·브랜드 사이트 링크는 브랜드가 직접 수정 후 <b>[저장]</b>. 검사 시점은 <b>blur 이후</b>(가입 화면과 동일 원칙)</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═════════ 1-F ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">1-F</span><span class="state-label">사업자 정보 · 변경 요청 승인</span>
+  <span class="state-spec">성공색 배너 · 값이 이미 반영된 상태 · <b>[확인] 누르면 배너 소멸</b>(1회성 알림)</span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item on">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">사업자 정보</div>
+            <div class="banner b-ok"><span class="bi">✓</span><div><div class="bt">변경 요청이 승인되었습니다</div><div class="bd">2026.08.07 11:05 승인 · 대표자명, 사업장 주소가 아래 정보에 반영되었어요.</div></div><button class="btn btn-secondary" style="flex-shrink:0">확인</button></div><div class="sec">
+              <div class="frow"><div class="flab">사업자 유형</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="일반과세자" disabled></div></div></div>
+              <div class="frow"><div class="flab">브랜드명</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="○○ 브랜드" disabled></div></div></div>
+              <div class="frow"><div class="flab">대표자명</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="홍길동" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업자등록증 상호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="주식회사 ○○" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업자등록번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="000-00-00000" disabled></div></div></div>
+              <div class="frow"><div class="flab">업태</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="도소매업" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업장 주소</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="서울특별시 강남구 테헤란로 123, 4층 401호" disabled></div></div></div>
+              <div class="frow"><div class="flab">통신판매업 신고번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="제0000-서울○○-00000호" disabled></div></div></div>
+              <div class="frow"><div class="flab">tax 확인용 이메일<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="email" value="tax@brand.com" placeholder="brand@example.com"></div><div class="hint">세금계산서 등 세무 확인용 · 로그인 이메일과 별개 · 즉시 수정 가능</div></div></div>
+              <div class="frow"><div class="flab">브랜드 사이트 링크</div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="text" value="https://ohh-cosmetic.com" placeholder="https:// 포함 전체 주소"></div><div class="hint">소비자 상품 상세페이지 "사이트에서 보기" 버튼에 사용(선택 입력, 미입력 시 버튼 비노출) · 신원정보 아님 — 즉시 수정 가능</div></div></div>
+              <div class="frow"><div class="flab">심사 첨부 파일</div><div class="fctrl" style="padding-top:8px"><span class="badge b-neutral">사업자등록증.jpg</span><span class="badge b-neutral">통신판매업신고증.jpg</span><span class="badge b-neutral">통장사본.jpg</span></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-secondary">변경 요청</button><button class="btn btn-primary">저장</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[조회 중심]</b> 사업자등록번호·상호 등 법정 신원정보는 가입 심사 시 확정 — 변경은 <b>[변경 요청]</b>으로 운영자 검토를 거친다 · tax 확인용 이메일·브랜드 사이트 링크는 브랜드가 직접 수정 후 <b>[저장]</b>. 검사 시점은 <b>blur 이후</b>(가입 화면과 동일 원칙)</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═════════ 1-G ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">1-G</span><span class="state-label">사업자 정보 · 변경 요청 반려</span>
+  <span class="state-spec">위험색 배너 · 반려 사유(정형 선택값) + <b>상세 사유 있는 케이스</b> · [확인]으로 배너 소멸</span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item on">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">사업자 정보</div>
+            <div class="banner b-no"><span class="bi">!</span><div><div class="bt">변경 요청이 반려되었습니다</div><div class="bd">2026.08.07 10:32 반려 · 대표자명, 사업장 주소<div class="rej-box"><span class="rl">반려 사유</span><span class="rv">증빙 서류와 요청 값이 일치하지 않음</span><div class="rej-sub"><span class="rl">상세 사유</span>첨부하신 사업자등록증의 대표자명이 요청하신 값과 다릅니다. 변경이 반영된 최신 사업자등록증을 첨부해 주세요.</div></div></div></div><button class="btn btn-secondary" style="flex-shrink:0">확인</button></div><div class="sec">
+              <div class="frow"><div class="flab">사업자 유형</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="일반과세자" disabled></div></div></div>
+              <div class="frow"><div class="flab">브랜드명</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="○○ 브랜드" disabled></div></div></div>
+              <div class="frow"><div class="flab">대표자명</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="홍길동" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업자등록증 상호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="주식회사 ○○" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업자등록번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="000-00-00000" disabled></div></div></div>
+              <div class="frow"><div class="flab">업태</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="도소매업" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업장 주소</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="서울특별시 강남구 테헤란로 123, 4층 401호" disabled></div></div></div>
+              <div class="frow"><div class="flab">통신판매업 신고번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="제0000-서울○○-00000호" disabled></div></div></div>
+              <div class="frow"><div class="flab">tax 확인용 이메일<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="email" value="tax@brand.com" placeholder="brand@example.com"></div><div class="hint">세금계산서 등 세무 확인용 · 로그인 이메일과 별개 · 즉시 수정 가능</div></div></div>
+              <div class="frow"><div class="flab">브랜드 사이트 링크</div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="text" value="https://ohh-cosmetic.com" placeholder="https:// 포함 전체 주소"></div><div class="hint">소비자 상품 상세페이지 "사이트에서 보기" 버튼에 사용(선택 입력, 미입력 시 버튼 비노출) · 신원정보 아님 — 즉시 수정 가능</div></div></div>
+              <div class="frow"><div class="flab">심사 첨부 파일</div><div class="fctrl" style="padding-top:8px"><span class="badge b-neutral">사업자등록증.jpg</span><span class="badge b-neutral">통신판매업신고증.jpg</span><span class="badge b-neutral">통장사본.jpg</span></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-secondary">변경 요청</button><button class="btn btn-primary">저장</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[조회 중심]</b> 사업자등록번호·상호 등 법정 신원정보는 가입 심사 시 확정 — 변경은 <b>[변경 요청]</b>으로 운영자 검토를 거친다 · tax 확인용 이메일·브랜드 사이트 링크는 브랜드가 직접 수정 후 <b>[저장]</b>. 검사 시점은 <b>blur 이후</b>(가입 화면과 동일 원칙)</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═════════ 2-A ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">2-A</span><span class="state-label">정산 계좌 · 조회</span>
+  <span class="state-spec">전 필드 조회 전용 · 셀프 변경 없음(민감정보) · 계좌번호 뒤 6자리만 표시</span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item on">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">정산 수취 계좌</div>
+            <div class="sec">
+              <div class="frow"><div class="flab">은행</div><div class="fctrl"><div class="inp-wrap"><input class="inp sm" value="국민은행" disabled></div></div></div>
+              <div class="frow"><div class="flab">계좌번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp sm" value="******789012" disabled></div><div class="hint">보안을 위해 뒤 6자리만 표시합니다.</div></div></div>
+              <div class="frow"><div class="flab">예금주</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="주식회사 ○○" disabled></div></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-secondary">변경 요청</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[조회 전용]</b> 정산 계좌는 가입 시 기입 · <b>셀프 변경 없음</b>(민감정보) · 변경은 통장 사본 대조 후 운영자 수동 처리·감사 기록 남음</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═════════ 2-B ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">2-B</span><span class="state-label">정산 계좌 · 변경 요청 모달 (M2)</span>
+  <span class="state-spec">은행·계좌번호·예금주 + <b>통장 사본 첨부 필수</b> · 계좌번호는 하이픈 없이 숫자만 10~16자리(포트원 계좌실명조회 요건)</span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item on">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">정산 수취 계좌</div>
+            <div class="sec">
+              <div class="frow"><div class="flab">은행</div><div class="fctrl"><div class="inp-wrap"><input class="inp sm" value="국민은행" disabled></div></div></div>
+              <div class="frow"><div class="flab">계좌번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp sm" value="******789012" disabled></div><div class="hint">보안을 위해 뒤 6자리만 표시합니다.</div></div></div>
+              <div class="frow"><div class="flab">예금주</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="주식회사 ○○" disabled></div></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-secondary">변경 요청</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[조회 전용]</b> 정산 계좌는 가입 시 기입 · <b>셀프 변경 없음</b>(민감정보) · 변경은 통장 사본 대조 후 운영자 수동 처리·감사 기록 남음</div>
+        </div>
+      </div>
+    </div>
+    <div class="overlay">
+      <div class="modal" style="width:540px">
+        <div class="modal-h">정산 계좌 변경 요청<span class="modal-x">✕</span></div>
+        <div class="modal-b">
+          <div class="notice"><span class="ni">i</span><span>정산 계좌는 <b>통장 사본 대조 후 운영자가 직접 반영</b>해요. 정산 예정 금액이 있으면 반영 완료 이후 회차부터 새 계좌로 지급됩니다.</span></div>
+          <div class="field"><label class="lb">현재 계좌</label><div class="inp-wrap"><input class="inp" value="국민은행 ******789012 · 주식회사 ○○" disabled></div></div>
+          <div class="divider"></div>
+          <div class="field"><label class="lb">변경할 은행<span class="req">*</span></label><div class="inp-wrap"><select class="inp"><option>은행 선택</option><option>국민은행</option><option selected>신한은행</option><option>우리은행</option><option>하나은행</option><option>농협은행</option><option>기업은행</option><option>카카오뱅크</option><option>토스뱅크</option><option>케이뱅크</option><option>SC제일은행</option><option>씨티은행</option><option>부산은행</option><option>대구은행</option><option>경남은행</option><option>광주은행</option><option>전북은행</option><option>제주은행</option><option>새마을금고</option><option>신협</option><option>우체국</option></select></div></div>
+          <div class="field"><label class="lb">변경할 계좌번호<span class="req">*</span></label><div class="inp-wrap"><input class="inp acct-only" type="text" inputmode="numeric" maxlength="16" value="110234567890" placeholder="- 없이 숫자만 입력"></div></div>
+          <div class="field"><label class="lb">예금주명<span class="req">*</span></label><div class="inp-wrap"><input class="inp" type="text" value="주식회사 ○○" placeholder="법인은 법인 명의 계좌만"></div></div>
+          <div class="field"><label class="lb">통장 사본<span class="req">*</span></label><div class="upload done"><div class="up-l"><div class="up-name">통장_사본.jpg</div><div class="up-hint">업로드 완료</div></div><button type="button" class="btn-upload">다시 선택</button></div></div>
+        </div>
+        <div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary">변경 요청</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 2-C ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">2-C</span><span class="state-label">정산 계좌 · 변경 요청 모달 · 유효성 에러</span>
+  <span class="state-spec">은행 미선택 · 계좌번호 자릿수 미달 · 예금주 미입력 · 통장 사본 미첨부</span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item on">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">정산 수취 계좌</div>
+            <div class="sec">
+              <div class="frow"><div class="flab">은행</div><div class="fctrl"><div class="inp-wrap"><input class="inp sm" value="국민은행" disabled></div></div></div>
+              <div class="frow"><div class="flab">계좌번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp sm" value="******789012" disabled></div><div class="hint">보안을 위해 뒤 6자리만 표시합니다.</div></div></div>
+              <div class="frow"><div class="flab">예금주</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="주식회사 ○○" disabled></div></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-secondary">변경 요청</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[조회 전용]</b> 정산 계좌는 가입 시 기입 · <b>셀프 변경 없음</b>(민감정보) · 변경은 통장 사본 대조 후 운영자 수동 처리·감사 기록 남음</div>
+        </div>
+      </div>
+    </div>
+    <div class="overlay">
+      <div class="modal" style="width:540px">
+        <div class="modal-h">정산 계좌 변경 요청<span class="modal-x">✕</span></div>
+        <div class="modal-b">
+          <div class="notice"><span class="ni">i</span><span>정산 계좌는 <b>통장 사본 대조 후 운영자가 직접 반영</b>해요. 정산 예정 금액이 있으면 반영 완료 이후 회차부터 새 계좌로 지급됩니다.</span></div>
+          <div class="field"><label class="lb">현재 계좌</label><div class="inp-wrap"><input class="inp" value="국민은행 ******789012 · 주식회사 ○○" disabled></div></div>
+          <div class="divider"></div>
+          <div class="field"><label class="lb">변경할 은행<span class="req">*</span></label><div class="inp-wrap is-error"><select class="inp"><option>은행 선택</option><option>국민은행</option><option>신한은행</option><option>우리은행</option><option>하나은행</option><option>농협은행</option><option>기업은행</option><option>카카오뱅크</option><option>토스뱅크</option><option>케이뱅크</option><option>SC제일은행</option><option>씨티은행</option><option>부산은행</option><option>대구은행</option><option>경남은행</option><option>광주은행</option><option>전북은행</option><option>제주은행</option><option>새마을금고</option><option>신협</option><option>우체국</option></select></div><p class="err-msg" role="alert">은행명을 선택해 주세요.</p></div>
+          <div class="field"><label class="lb">변경할 계좌번호<span class="req">*</span></label><div class="inp-wrap is-error"><input class="inp acct-only" type="text" inputmode="numeric" maxlength="16" value="110123" aria-invalid="true"></div><p class="err-msg" role="alert">계좌번호는 10~16자리 숫자로 입력해 주세요.</p></div>
+          <div class="field"><label class="lb">예금주명<span class="req">*</span></label><div class="inp-wrap is-error"><input class="inp" type="text" value="" placeholder="법인은 법인 명의 계좌만" aria-invalid="true"></div><p class="err-msg" role="alert">예금주명을 입력해 주세요.</p></div>
+          <div class="field"><label class="lb">통장 사본<span class="req">*</span></label><div class="upload is-error"><div class="up-l"><div class="up-name">📎 통장 사본</div><div class="up-hint">최대 5MB · jpg, jpeg, png</div></div><button type="button" class="btn-upload">파일 선택</button></div><p class="err-msg" role="alert">통장 사본을 첨부해 주세요.</p></div>
+        </div>
+        <div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary" disabled>변경 요청</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 2-D ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">2-D</span><span class="state-label">정산 계좌 · 변경 요청 검토 중</span>
+  <span class="state-spec">통장 사본 대조 대기 · 재요청 버튼 비활성</span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item on">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">정산 수취 계좌</div>
+            <div class="banner"><span class="bi">i</span><div><div class="bt">정산 계좌 변경 요청 검토 중</div><div class="bd">2026.08.06 15:02 요청 · 신한은행 ******567890 · 운영자가 통장 사본을 대조한 뒤 반영해요. 검토가 끝날 때까지 추가 변경 요청은 할 수 없어요.</div></div><button class="btn btn-secondary" style="flex-shrink:0">요청 취소</button></div><div class="sec">
+              <div class="frow"><div class="flab">은행</div><div class="fctrl"><div class="inp-wrap"><input class="inp sm" value="국민은행" disabled></div></div></div>
+              <div class="frow"><div class="flab">계좌번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp sm" value="******789012" disabled></div><div class="hint">보안을 위해 뒤 6자리만 표시합니다.</div></div></div>
+              <div class="frow"><div class="flab">예금주</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="주식회사 ○○" disabled></div></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-secondary" disabled>변경 요청</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[조회 전용]</b> 정산 계좌는 가입 시 기입 · <b>셀프 변경 없음</b>(민감정보) · 변경은 통장 사본 대조 후 운영자 수동 처리·감사 기록 남음</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═════════ 2-E ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">2-E</span><span class="state-label">정산 계좌 · 변경 요청 승인</span>
+  <span class="state-spec">성공색 배너 · <b>확정 회차는 기존 계좌 지급</b> 안내 포함</span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item on">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">정산 수취 계좌</div>
+            <div class="banner b-ok"><span class="bi">✓</span><div><div class="bt">변경 요청이 승인되었습니다</div><div class="bd">2026.08.07 11:40 승인 · 새 계좌가 반영되었어요. <b>이미 확정된 정산 회차는 기존 계좌로 지급</b>되며, 다음 회차부터 새 계좌로 지급됩니다.</div></div><button class="btn btn-secondary" style="flex-shrink:0">확인</button></div><div class="sec">
+              <div class="frow"><div class="flab">은행</div><div class="fctrl"><div class="inp-wrap"><input class="inp sm" value="국민은행" disabled></div></div></div>
+              <div class="frow"><div class="flab">계좌번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp sm" value="******789012" disabled></div><div class="hint">보안을 위해 뒤 6자리만 표시합니다.</div></div></div>
+              <div class="frow"><div class="flab">예금주</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="주식회사 ○○" disabled></div></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-secondary">변경 요청</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[조회 전용]</b> 정산 계좌는 가입 시 기입 · <b>셀프 변경 없음</b>(민감정보) · 변경은 통장 사본 대조 후 운영자 수동 처리·감사 기록 남음</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═════════ 2-F ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">2-F</span><span class="state-label">정산 계좌 · 변경 요청 반려</span>
+  <span class="state-spec">위험색 배너 · <b>상세 사유 없는 케이스</b> — 정형 사유만 노출되고 상세 사유 행 자체가 비노출</span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item on">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">정산 수취 계좌</div>
+            <div class="banner b-no"><span class="bi">!</span><div><div class="bt">변경 요청이 반려되었습니다</div><div class="bd">2026.08.07 09:18 반려 · 신한은행 ******567890<div class="rej-box"><span class="rl">반려 사유</span><span class="rv">예금주와 사업자 명의 불일치</span></div></div></div><button class="btn btn-secondary" style="flex-shrink:0">확인</button></div><div class="sec">
+              <div class="frow"><div class="flab">은행</div><div class="fctrl"><div class="inp-wrap"><input class="inp sm" value="국민은행" disabled></div></div></div>
+              <div class="frow"><div class="flab">계좌번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp sm" value="******789012" disabled></div><div class="hint">보안을 위해 뒤 6자리만 표시합니다.</div></div></div>
+              <div class="frow"><div class="flab">예금주</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="주식회사 ○○" disabled></div></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-secondary">변경 요청</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[조회 전용]</b> 정산 계좌는 가입 시 기입 · <b>셀프 변경 없음</b>(민감정보) · 변경은 통장 사본 대조 후 운영자 수동 처리·감사 기록 남음</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═════════ 3-A ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">3-A</span><span class="state-label">담당자·CS · 초기</span>
+  <span class="state-spec">담당자·CS 3필드 + 반품 수취 주소 4필드(온보딩 동일 컴포넌트)</span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item on">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">담당자·CS 정보</div>
+            <div class="sec">
+              <div class="frow"><div class="flab">판매 담당자 이름<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="text" value="김담당" placeholder="담당자 이름"></div></div></div>
+              <div class="frow"><div class="flab">판매 담당자 연락처<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp sm" type="tel" value="010-1234-5678" placeholder="010-0000-0000"></div></div></div>
+              <div class="frow"><div class="flab">고객센터 전화번호<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp sm" type="tel" value="02-1234-5678" placeholder="'-' 포함 8~12자리 숫자"></div><p class="help">소비자 앱 상품 상세에 노출됩니다. 존재하지 않는 번호 입력 시 서비스 이용이 제한될 수 있습니다.</p></div></div>
+            </div>
+            <div class="sec">
+              <div class="sec-t">반품 수취 주소</div>
+              <div class="frow"><div class="flab">수취인 이름<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp name-only" type="text" value="김담당" placeholder="담당자 이름"></div></div></div>
+              <div class="frow"><div class="flab">수취인 연락처<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp tel-only sm" type="tel" value="010-1234-5678" placeholder="'-' 포함 10~11자리 숫자"></div></div></div>
+              <div class="frow"><div class="flab">주소<span class="req">*</span></div><div class="fctrl"><div class="inp-search"><input class="inp addr-trigger" type="text" value="서울특별시 강남구 테헤란로 123" placeholder="클릭하면 주소 검색창이 열립니다" readonly><button type="button" class="btn-search">주소 검색</button></div><p class="help">입력창을 클릭하면 카카오 주소 검색창이 열립니다. 직접 입력은 할 수 없습니다.</p></div></div>
+              <div class="frow"><div class="flab">상세 주소<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="text" value="4층 401호" placeholder="상세 주소 입력"></div></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-secondary">취소</button><button class="btn btn-primary">저장</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[온보딩 동일 규칙]</b> 반품 수취 주소 4필드(수취인 이름·연락처·주소·상세 주소)는 <code>ui-partner-03-onboarding.html</code>의 컴포넌트·플레이스홀더·오류 문구를 그대로 재사용한다. <b>수취인 연락처</b>는 <code>'-' 포함 10~11자리</code>(구 통신사 번호 허용)로, <b>판매 담당자 연락처</b>의 <code>010 11자리 고정</code>과 <b>의도적으로 다른 규칙</b>이다 — 전자는 택배기사 등 외부 노출용, 후자는 내부 관리용</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═════════ 3-B ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">3-B</span><span class="state-label">담당자·CS · 유효성 에러</span>
+  <span class="state-spec">필수 미입력·형식 오류 전 케이스 · <b>상세 주소는 주소 검색 여부와 무관하게 항상 입력 가능</b> · <b>[저장] 비활성</b></span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item on">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">담당자·CS 정보</div>
+            <div class="sec">
+              <div class="frow"><div class="flab">판매 담당자 이름<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap is-error"><input class="inp" type="text" value="" placeholder="담당자 이름" aria-invalid="true" aria-describedby="e-mgr"></div><p class="err-msg" id="e-mgr" role="alert">판매 담당자 이름을 입력해 주세요.</p></div></div>
+              <div class="frow"><div class="flab">판매 담당자 연락처<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap is-error"><input class="inp sm" type="tel" value="010" aria-invalid="true" aria-describedby="e-tel"></div><p class="err-msg" id="e-tel" role="alert">올바른 핸드폰 번호 형식으로 입력해 주세요. (예: 010-0000-0000)</p></div></div>
+              <div class="frow"><div class="flab">고객센터 전화번호<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap is-error"><input class="inp sm" type="tel" value="122131" aria-invalid="true" aria-describedby="e-cs"></div><p class="err-msg" id="e-cs" role="alert">올바른 전화번호 형식으로 입력해 주세요. (예: 02-1234-5678)</p></div></div>
+            </div>
+            <div class="sec">
+              <div class="sec-t">반품 수취 주소</div>
+              <div class="frow"><div class="flab">수취인 이름<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp name-only" type="text" value="김담당"></div></div></div>
+              <div class="frow"><div class="flab">수취인 연락처<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap is-error"><input class="inp tel-only sm" type="tel" value="010-12" aria-invalid="true" aria-describedby="e-rtel"></div><p class="err-msg" id="e-rtel" role="alert">올바른 휴대폰 번호 형식으로 입력해 주세요. (예: 010-1234-5678)</p></div></div>
+              <div class="frow"><div class="flab">주소<span class="req">*</span></div><div class="fctrl"><div class="inp-search is-error"><input class="inp addr-trigger" type="text" value="" placeholder="클릭하면 주소 검색창이 열립니다" readonly><button type="button" class="btn-search">주소 검색</button></div><p class="err-msg" role="alert">주소를 검색해 입력해 주세요.</p></div></div>
+              <div class="frow"><div class="flab">상세 주소<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap is-error"><input class="inp" type="text" value="" placeholder="상세 주소 입력" aria-invalid="true"></div><p class="err-msg" role="alert">상세 주소를 입력해 주세요.</p></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-secondary">취소</button><button class="btn btn-primary" disabled>저장</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[온보딩 동일 규칙]</b> 반품 수취 주소 4필드(수취인 이름·연락처·주소·상세 주소)는 <code>ui-partner-03-onboarding.html</code>의 컴포넌트·플레이스홀더·오류 문구를 그대로 재사용한다. <b>수취인 연락처</b>는 <code>'-' 포함 10~11자리</code>(구 통신사 번호 허용)로, <b>판매 담당자 연락처</b>의 <code>010 11자리 고정</code>과 <b>의도적으로 다른 규칙</b>이다 — 전자는 택배기사 등 외부 노출용, 후자는 내부 관리용</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═════════ 4-A ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">4-A</span><span class="state-label">계정 · 초기</span>
+  <span class="state-spec">로그인 이메일 조회 전용 · 비밀번호 3필드 미입력 상태 · <b>[변경 저장] 비활성</b>(blur 전이라 에러 없음)</span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item on">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">계정</div>
+            <div class="sec">
+<div class="frow"><div class="flab">로그인 이메일</div><div class="fctrl"><div class="inp-search"><input class="inp" value="brand@example.com" disabled><button type="button" class="btn-search">변경</button></div><div class="hint">현재 비밀번호 확인 후 즉시 변경됩니다. <b>월 1회</b>만 변경할 수 있어요.</div></div></div>
+            </div>
+            <div class="sec">
+              <div class="sec-t">비밀번호 변경</div>
+              <div class="frow"><div class="flab">현재 비밀번호<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="password" value="" placeholder="현재 비밀번호"><button type="button" class="eye">표시</button></div></div></div>
+              <div class="frow"><div class="flab">새 비밀번호<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="password" value="" placeholder="8~16자 영문·숫자·특수문자 조합"><button type="button" class="eye">표시</button></div></div></div>
+              <div class="frow"><div class="flab">새 비밀번호 재입력<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="password" value="" placeholder="비밀번호를 다시 입력하세요"><button type="button" class="eye">표시</button></div></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-primary" disabled>변경 저장</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[가입 화면 동일 규칙]</b> 비밀번호 규칙·플레이스홀더·오류 문구·표시 토글(<code>.eye</code>)은 <code>ui-partner-02-signup.html</code> Step1과 동일. <b>재입력 필드는 rev.2 신규</b>(가입과 구조 통일 — 오타 시 로그인 불가 방지). <b>[rev.4] 로그인 이메일 변경 신설</b> — 기존 "변경 불가·운영자 문의"를 폐기. <b>현재 비밀번호 확인만으로 즉시 변경</b>되며 인증 링크는 없다. 대신 <b>월 1회 제한</b>. <b>브랜드 탈퇴 카드는 이번 범위 제외</b>(법률 검토 후 별도 신설)</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═════════ 4-B ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">4-B</span><span class="state-label">계정 · 유효성 에러</span>
+  <span class="state-spec">현재 비밀번호 불일치 · 새 비밀번호 형식 오류 · 재입력 불일치</span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item on">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">계정</div>
+            <div class="sec">
+<div class="frow"><div class="flab">로그인 이메일</div><div class="fctrl"><div class="inp-search"><input class="inp" value="brand@example.com" disabled><button type="button" class="btn-search">변경</button></div><div class="hint">현재 비밀번호 확인 후 즉시 변경됩니다. <b>월 1회</b>만 변경할 수 있어요.</div></div></div>
+            </div>
+            <div class="sec">
+              <div class="sec-t">비밀번호 변경</div>
+              <div class="frow"><div class="flab">현재 비밀번호<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap is-error"><input class="inp" type="password" value="pw" aria-invalid="true" aria-describedby="e-pw0"><button type="button" class="eye">표시</button></div><p class="err-msg" id="e-pw0" role="alert">현재 비밀번호가 일치하지 않습니다.</p></div></div>
+              <div class="frow"><div class="flab">새 비밀번호<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap is-error"><input class="inp" type="password" value="abc" placeholder="8~16자 영문·숫자·특수문자 조합" aria-invalid="true" aria-describedby="e-pw1"><button type="button" class="eye">표시</button></div><p class="err-msg" id="e-pw1" role="alert">8~16자 영문·숫자·특수문자 조합으로 입력해 주세요.</p></div></div>
+              <div class="frow"><div class="flab">새 비밀번호 재입력<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap is-error"><input class="inp" type="password" value="a" aria-invalid="true" aria-describedby="e-pw2"><button type="button" class="eye">표시</button></div><p class="err-msg" id="e-pw2" role="alert">비밀번호가 일치하지 않습니다.</p></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-primary" disabled>변경 저장</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[가입 화면 동일 규칙]</b> 비밀번호 규칙·플레이스홀더·오류 문구·표시 토글(<code>.eye</code>)은 <code>ui-partner-02-signup.html</code> Step1과 동일. <b>재입력 필드는 rev.2 신규</b>(가입과 구조 통일 — 오타 시 로그인 불가 방지). <b>[rev.4] 로그인 이메일 변경 신설</b> — 기존 "변경 불가·운영자 문의"를 폐기. <b>현재 비밀번호 확인만으로 즉시 변경</b>되며 인증 링크는 없다. 대신 <b>월 1회 제한</b>. <b>브랜드 탈퇴 카드는 이번 범위 제외</b>(법률 검토 후 별도 신설)</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═════════ 4-C ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">4-C</span><span class="state-label">계정 · 로그인 이메일 변경 모달 (M4)</span>
+  <span class="state-spec">현재 비밀번호 + 새 이메일 · <b>확인 즉시 변경 확정</b>(인증 링크 없음)</span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item on">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">계정</div>
+            <div class="sec">
+<div class="frow"><div class="flab">로그인 이메일</div><div class="fctrl"><div class="inp-search"><input class="inp" value="brand@example.com" disabled><button type="button" class="btn-search">변경</button></div><div class="hint">현재 비밀번호 확인 후 즉시 변경됩니다. <b>월 1회</b>만 변경할 수 있어요.</div></div></div>
+            </div>
+            <div class="sec">
+              <div class="sec-t">비밀번호 변경</div>
+              <div class="frow"><div class="flab">현재 비밀번호<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="password" value="" placeholder="현재 비밀번호"><button type="button" class="eye">표시</button></div></div></div>
+              <div class="frow"><div class="flab">새 비밀번호<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="password" value="" placeholder="8~16자 영문·숫자·특수문자 조합"><button type="button" class="eye">표시</button></div></div></div>
+              <div class="frow"><div class="flab">새 비밀번호 재입력<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="password" value="" placeholder="비밀번호를 다시 입력하세요"><button type="button" class="eye">표시</button></div></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-primary" disabled>변경 저장</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[가입 화면 동일 규칙]</b> 비밀번호 규칙·플레이스홀더·오류 문구·표시 토글(<code>.eye</code>)은 <code>ui-partner-02-signup.html</code> Step1과 동일. <b>재입력 필드는 rev.2 신규</b>(가입과 구조 통일 — 오타 시 로그인 불가 방지). <b>[rev.4] 로그인 이메일 변경 신설</b> — 기존 "변경 불가·운영자 문의"를 폐기. <b>현재 비밀번호 확인만으로 즉시 변경</b>되며 인증 링크는 없다. 대신 <b>월 1회 제한</b>. <b>브랜드 탈퇴 카드는 이번 범위 제외</b>(법률 검토 후 별도 신설)</div>
+        </div>
+      </div>
+    </div>
+    <div class="overlay">
+      <div class="modal" style="width:460px">
+        <div class="modal-h">로그인 이메일 변경<span class="modal-x">✕</span></div>
+        <div class="modal-b">
+          <div class="notice"><span class="ni">i</span><span>변경 즉시 <b>새 이메일이 로그인 계정</b>이 됩니다. 로그인 이메일은 <b>월 1회</b>만 변경할 수 있으니 정확히 입력했는지 확인해 주세요. 변경 사실은 기존 이메일에도 알려드려요.</span></div>
+          <div class="field"><label class="lb">현재 이메일</label><div class="inp-wrap"><input class="inp" value="brand@example.com" disabled></div></div>
+          <div class="field"><label class="lb">현재 비밀번호<span class="req">*</span></label><div class="inp-wrap"><input class="inp" type="password" value="" placeholder="현재 비밀번호"><button type="button" class="eye">표시</button></div></div>
+          <div class="field"><label class="lb">새 이메일<span class="req">*</span></label><div class="inp-wrap"><input class="inp" type="email" value="" placeholder="brand@example.com"></div>
+            <p class="help">이미 가입된 이메일은 사용할 수 없습니다. (활성·심사대기 계정 기준, 반려 건 제외 — 가입 화면 §2-4 규칙과 동일)</p></div>
+        </div>
+        <div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary">변경</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 4-D ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">4-D</span><span class="state-label">계정 · 로그인 이메일 변경 모달 · 유효성 에러</span>
+  <span class="state-spec">비밀번호 불일치 · 이메일 중복 · <b>[변경] 비활성</b></span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item on">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">계정</div>
+            <div class="sec">
+<div class="frow"><div class="flab">로그인 이메일</div><div class="fctrl"><div class="inp-search"><input class="inp" value="brand@example.com" disabled><button type="button" class="btn-search">변경</button></div><div class="hint">현재 비밀번호 확인 후 즉시 변경됩니다. <b>월 1회</b>만 변경할 수 있어요.</div></div></div>
+            </div>
+            <div class="sec">
+              <div class="sec-t">비밀번호 변경</div>
+              <div class="frow"><div class="flab">현재 비밀번호<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="password" value="" placeholder="현재 비밀번호"><button type="button" class="eye">표시</button></div></div></div>
+              <div class="frow"><div class="flab">새 비밀번호<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="password" value="" placeholder="8~16자 영문·숫자·특수문자 조합"><button type="button" class="eye">표시</button></div></div></div>
+              <div class="frow"><div class="flab">새 비밀번호 재입력<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="password" value="" placeholder="비밀번호를 다시 입력하세요"><button type="button" class="eye">표시</button></div></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-primary" disabled>변경 저장</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[가입 화면 동일 규칙]</b> 비밀번호 규칙·플레이스홀더·오류 문구·표시 토글(<code>.eye</code>)은 <code>ui-partner-02-signup.html</code> Step1과 동일. <b>재입력 필드는 rev.2 신규</b>(가입과 구조 통일 — 오타 시 로그인 불가 방지). <b>[rev.4] 로그인 이메일 변경 신설</b> — 기존 "변경 불가·운영자 문의"를 폐기. <b>현재 비밀번호 확인만으로 즉시 변경</b>되며 인증 링크는 없다. 대신 <b>월 1회 제한</b>. <b>브랜드 탈퇴 카드는 이번 범위 제외</b>(법률 검토 후 별도 신설)</div>
+        </div>
+      </div>
+    </div>
+    <div class="overlay">
+      <div class="modal" style="width:460px">
+        <div class="modal-h">로그인 이메일 변경<span class="modal-x">✕</span></div>
+        <div class="modal-b">
+          <div class="notice"><span class="ni">i</span><span>변경 즉시 <b>새 이메일이 로그인 계정</b>이 됩니다. 로그인 이메일은 <b>월 1회</b>만 변경할 수 있으니 정확히 입력했는지 확인해 주세요. 변경 사실은 기존 이메일에도 알려드려요.</span></div>
+          <div class="field"><label class="lb">현재 이메일</label><div class="inp-wrap"><input class="inp" value="brand@example.com" disabled></div></div>
+          <div class="field"><label class="lb">현재 비밀번호<span class="req">*</span></label><div class="inp-wrap is-error"><input class="inp" type="password" value="pw" placeholder="현재 비밀번호" aria-invalid="true"><button type="button" class="eye">표시</button></div><p class="err-msg" role="alert">현재 비밀번호가 일치하지 않습니다.</p></div>
+          <div class="field"><label class="lb">새 이메일<span class="req">*</span></label><div class="inp-wrap is-error"><input class="inp" type="text" value="newbrand@example.com" aria-invalid="true"></div><p class="err-msg" role="alert">이미 사용 중인 이메일입니다.</p>
+            <p class="help">이미 가입된 이메일은 사용할 수 없습니다. (활성·심사대기 계정 기준, 반려 건 제외 — 가입 화면 §2-4 규칙과 동일)</p></div>
+        </div>
+        <div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary" disabled>변경</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 4-E ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">4-E</span><span class="state-label">계정 · 이메일 변경 제한 (월 1회 소진)</span>
+  <span class="state-spec">이번 달 변경 완료 상태 · <b>[변경] 버튼 비활성</b> + 다음 변경 가능일 안내</span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item on">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">계정</div>
+            <div class="banner"><span class="bi">i</span><div><div class="bt">이번 달 이메일 변경 완료</div><div class="bd">2026.08.03 09:41 변경 · 로그인 이메일은 <b>월 1회</b>만 변경할 수 있어요. 다음 변경 가능일은 <b>2026.09.03</b>입니다.</div></div></div><div class="sec">
+<div class="frow"><div class="flab">로그인 이메일</div><div class="fctrl"><div class="inp-search"><input class="inp" value="newbrand@example.com" disabled><button type="button" class="btn-search" disabled>변경</button></div><div class="hint">2026.09.03부터 다시 변경할 수 있어요.</div></div></div>
+            </div>
+            <div class="sec">
+              <div class="sec-t">비밀번호 변경</div>
+              <div class="frow"><div class="flab">현재 비밀번호<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="password" value="" placeholder="현재 비밀번호"><button type="button" class="eye">표시</button></div></div></div>
+              <div class="frow"><div class="flab">새 비밀번호<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="password" value="" placeholder="8~16자 영문·숫자·특수문자 조합"><button type="button" class="eye">표시</button></div></div></div>
+              <div class="frow"><div class="flab">새 비밀번호 재입력<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="password" value="" placeholder="비밀번호를 다시 입력하세요"><button type="button" class="eye">표시</button></div></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-primary" disabled>변경 저장</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[월 1회 제한]</b> 로그인 이메일 변경은 <b>월 1회</b>로 제한한다(무단 변경 반복·계정 추적 회피 방지). 소진 시 <b>[변경] 버튼 비활성</b> + 다음 변경 가능일 안내. 변경 완료 시 <b>구 이메일에도 변경 통지</b>가 발송된다(탈취 시 원 소유자가 인지할 수 있도록 — 백엔드 처리, UI 없음)</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═════════ M3 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">M3</span><span class="state-label">변경 요청 접수 완료 모달 (공통)</span>
+  <span class="state-spec">M1·M2 제출 후 공통 노출 · 확인 시 검토 중 배너 상태(1-E / 2-D)로 전환</span></div>
+  <div class="stage">
+    <div class="side">
+      <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+      <div class="side-nav">
+        <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+        <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+        <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+        <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+        <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+        <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+        <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+        <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+        <div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+      </div>
+    </div>
+    <div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div class="page-t">기본정보 관리</div><div class="page-d">사업자 정보, 정산 계좌 등 브랜드 계정 정보를 확인하고 관리합니다.</div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item on">사업자 정보</div>
+          <div class="subnav-item disabled">배송·반품 정책<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">사업자 정보</div>
+            <div class="sec">
+              <div class="frow"><div class="flab">사업자 유형</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="일반과세자" disabled></div></div></div>
+              <div class="frow"><div class="flab">브랜드명</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="○○ 브랜드" disabled></div></div></div>
+              <div class="frow"><div class="flab">대표자명</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="홍길동" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업자등록증 상호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="주식회사 ○○" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업자등록번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="000-00-00000" disabled></div></div></div>
+              <div class="frow"><div class="flab">업태</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="도소매업" disabled></div></div></div>
+              <div class="frow"><div class="flab">사업장 주소</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="서울특별시 강남구 테헤란로 123, 4층 401호" disabled></div></div></div>
+              <div class="frow"><div class="flab">통신판매업 신고번호</div><div class="fctrl"><div class="inp-wrap"><input class="inp" value="제0000-서울○○-00000호" disabled></div></div></div>
+              <div class="frow"><div class="flab">tax 확인용 이메일<span class="req">*</span></div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="email" value="tax@brand.com" placeholder="brand@example.com"></div><div class="hint">세금계산서 등 세무 확인용 · 로그인 이메일과 별개 · 즉시 수정 가능</div></div></div>
+              <div class="frow"><div class="flab">브랜드 사이트 링크</div><div class="fctrl"><div class="inp-wrap"><input class="inp" type="text" value="https://ohh-cosmetic.com" placeholder="https:// 포함 전체 주소"></div><div class="hint">소비자 상품 상세페이지 "사이트에서 보기" 버튼에 사용(선택 입력, 미입력 시 버튼 비노출) · 신원정보 아님 — 즉시 수정 가능</div></div></div>
+              <div class="frow"><div class="flab">심사 첨부 파일</div><div class="fctrl" style="padding-top:8px"><span class="badge b-neutral">사업자등록증.jpg</span><span class="badge b-neutral">통신판매업신고증.jpg</span><span class="badge b-neutral">통장사본.jpg</span></div></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-secondary">변경 요청</button><button class="btn btn-primary">저장</button></div>
+          </div>
+          <div class="rule" style="max-width:820px"><b>[조회 중심]</b> 사업자등록번호·상호 등 법정 신원정보는 가입 심사 시 확정 — 변경은 <b>[변경 요청]</b>으로 운영자 검토를 거친다 · tax 확인용 이메일·브랜드 사이트 링크는 브랜드가 직접 수정 후 <b>[저장]</b>. 검사 시점은 <b>blur 이후</b>(가입 화면과 동일 원칙)</div>
+        </div>
+      </div>
+    </div>
+    <div class="overlay">
+      <div class="modal" style="width:420px">
+        <div class="modal-h">변경 요청 접수 완료<span class="modal-x">✕</span></div>
+        <div class="modal-b">
+          <p style="margin:0 0 10px;font-size:var(--fs-body);">변경 요청이 접수되었습니다.</p>
+          <p style="margin:0;font-size:var(--fs-caption);color:var(--n-600);line-height:1.7;">운영자 검토 후 결과를 <b>brand@example.com</b>으로 안내드려요. 검토가 끝날 때까지 같은 항목의 추가 변경 요청은 할 수 없어요.</p>
+        </div>
+        <div class="modal-f"><button class="btn btn-primary">확인</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="sz-wm" viewBox="0 0 1863.4 200"><text x="0" y="160" font-family="Fredoka, sans-serif" font-size="180" font-weight="700" letter-spacing="0">SHOWROOMZ</text></symbol>
+  </defs>
+</svg>
+
+</body>
+</html>

@@ -41,6 +41,29 @@ public interface SellerBasicInfoControllerDocs {
     })
     ResponseEntity<Void> updateManagerInfo(@Valid @RequestBody SellerBasicInfoDto.UpdateManagerInfoRequest request);
 
+    @Operation(summary = "배송·반품 정책 조회",
+            description = """
+                    발송 기한 N(공구 마감 후 N영업일 · 주말·공휴일 제외) · 기본 배송비 · 무료배송 기준금액 · 도서산간 추가비.
+                    `shipDueText` 는 소비자 상품 상세에 그대로 나가는 문구다. 반품 수취 주소는 담당자·CS 탭에 있다.
+                    반품비 · 교환비는 따로 없다 — 반품 배송비 차감과 교환 재발송비는 기본 배송비 기준이다.
+
+                    **권한:** SELLER
+                    """)
+    ResponseEntity<SellerBasicInfoDto.DeliveryPolicyResponse> getDeliveryPolicy();
+
+    @Operation(summary = "배송·반품 정책 저장",
+            description = """
+                    네 값을 한 번에 저장한다. **이후 접수되는 주문에만 적용**된다 — 이미 접수된 주문은 주문 시점의 발송 기한 N ·
+                    배송비를 그대로 쓴다. 발송 기한은 1~7영업일(전자상거래법 제15조① 공급 시기 약정 · 상한 7은 운영정책).
+
+                    **권한:** SELLER
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "저장 성공"),
+            @ApiResponse(responseCode = "400", description = "발송 기한 범위(1~7) · 금액 음수")
+    })
+    ResponseEntity<Void> updateDeliveryPolicy(@Valid @RequestBody SellerBasicInfoDto.UpdateDeliveryPolicyRequest request);
+
     @Operation(summary = "계정 정보 조회", description = "로그인 이메일과 다음 변경 가능일을 내려준다.\n\n**권한:** SELLER")
     ResponseEntity<SellerBasicInfoDto.AccountInfoResponse> getAccountInfo();
 

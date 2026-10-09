@@ -74,7 +74,13 @@ public class GroupBuyPermissionPolicy {
         return (status == GroupBuyStatus.ENDED || suspendedNotByBrand) && facts.openIssue() == null;
     }
 
+    /** 항상 false — 계약 이행 확인은 2026-10-06 기획에서 폐기됐다(1009 기획 수정본 6절). 판정식은 {@link #wouldCheckFulfillment}로 남긴다. */
     public boolean canCheckFulfillment(GroupBuyFacts facts) {
+        return false;
+    }
+
+    /** [기획 제외] 폐기 전 판정식 — ENDED ∧ 내(SELLER) 확인 없음. */
+    boolean wouldCheckFulfillment(GroupBuyFacts facts) {
         return facts.groupBuy().getStatus() == GroupBuyStatus.ENDED
                 && facts.fulfillmentCheck(FulfillmentSide.SELLER).isEmpty();
     }

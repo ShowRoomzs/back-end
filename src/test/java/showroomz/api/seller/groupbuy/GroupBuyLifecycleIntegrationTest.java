@@ -1,5 +1,6 @@
 package showroomz.api.seller.groupbuy;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -103,7 +104,8 @@ class GroupBuyLifecycleIntegrationTest extends GroupBuyTestSupport {
         assertThat(ended.getStatus()).isEqualTo(GroupBuyStatus.ENDED);
         assertThat(ended.getCloseType()).isEqualTo(GroupBuyCloseType.COMPLETED);
         assertThat(ended.getEndedAt()).isEqualTo(endAt);
-        assertThat(ended.getFulfillmentDueAt()).isEqualTo(endAt.plusDays(3));
+        // 계약 이행 확인은 2026-10-06 폐기 — 이행 기한을 만들지 않는다(1009 기획 수정본 6절).
+        assertThat(ended.getFulfillmentDueAt()).isNull();
 
         GroupBuyExtensionRequest extension = extensionRequestRepository.findByGroupBuyId(groupBuy.getId()).orElseThrow();
         assertThat(extension.getStatus()).isEqualTo(ExtensionRequestStatus.EXPIRED);
@@ -118,7 +120,8 @@ class GroupBuyLifecycleIntegrationTest extends GroupBuyTestSupport {
                 .andExpect(jsonPath("$.extension.status").value("EXPIRED"))
                 .andExpect(jsonPath("$.extension.responseActorType").value("SYSTEM"))
                 .andExpect(jsonPath("$.activeRequest").doesNotExist())
-                .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(true));
+                // 계약 이행 확인은 2026-10-06 폐기 — 버튼이 없다.
+                .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(false));
         // 끝난 공구는 상품을 붙들지 않는다.
         assertThat(productStatus(cream)).isEqualTo(ProductGroupBuyStatus.NOT_CONNECTED);
     }
@@ -153,6 +156,7 @@ class GroupBuyLifecycleIntegrationTest extends GroupBuyTestSupport {
     }
 
     @Test
+    @Disabled("[기획 제외] 계약 이행 확인 폐기(2026-10-06 · 1009 기획 수정본 6절) — 기획 복귀 시 되살린다")
     @DisplayName("무응답 자동 이행 이력은 답하지 않은 측을 라벨로 적는다 — 행위자는 SYSTEM · enum 원문을 남기지 않는다")
     void autoConfirmHistoryNamesSilentSideByLabel() throws Exception {
         GroupBuy ended = seedIn(GroupBuyStatus.ENDED);

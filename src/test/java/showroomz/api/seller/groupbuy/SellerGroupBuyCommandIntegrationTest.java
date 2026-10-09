@@ -1,5 +1,6 @@
 package showroomz.api.seller.groupbuy;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -346,6 +347,7 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
     // ── B5 · C5~C7 종료 후 ────────────────────────────────────────────────
 
     @Test
+    @Disabled("[기획 제외] 계약 이행 확인 폐기(2026-10-06 · 1009 기획 수정본 6절) — 기획 복귀 시 되살린다")
     @DisplayName("이행 확인 — 이행은 1회 · 불가역 · 미이행은 사유 필수")
     void fulfillmentCheck() throws Exception {
         GroupBuy ended = seedIn(GroupBuyStatus.ENDED);
@@ -371,6 +373,7 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
     }
 
     @Test
+    @Disabled("[기획 제외] 계약 이행 확인 폐기(2026-10-06 · 1009 기획 수정본 6절) — 기획 복귀 시 되살린다")
     @DisplayName("미이행 — 같은 쌍에 3자 스레드를 열고 사유가 첫 글이 된다 · 연결 스레드는 그대로 하나다")
     void unfulfilledOpensDisputeThread() throws Exception {
         GroupBuy ended = seedIn(GroupBuyStatus.ENDED);
@@ -407,6 +410,7 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
     }
 
     @Test
+    @Disabled("[기획 제외] 계약 이행 확인 폐기(2026-10-06 · 1009 기획 수정본 6절) — 기획 복귀 시 되살린다")
     @DisplayName("미이행 — 쌍의 연결이 끊겼으면 스레드를 붙일 곳이 없어 503 · 확인도 남지 않는다")
     void unfulfilledWithoutConnectionIsUnavailable() throws Exception {
         GroupBuy ended = seedIn(GroupBuyStatus.ENDED);

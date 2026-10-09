@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-studio-03-onboarding — 쇼룸 스튜디오 온보딩 (디자인 시안 rev.2)</title>
+<style>
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --logo-dark:#1A1B1F;
+  --auth-action:#1A1B1F; --auth-action-hover:#3A3D45;
+  --auth-control-h:40px; --signup-card-w:480px;
+}
+*{box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;
+  margin:0; padding:32px; background:var(--n-200); color:var(--n-900); font-size:var(--fs-body); line-height:1.6;}
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;margin-top:12px;line-height:1.8;}
+.rule b{color:var(--n-900);} .rule .warn{color:var(--danger-text);font-weight:600;}
+.rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.rule table{border-collapse:collapse;margin:8px 0;width:100%;}
+.rule th,.rule td{border:1px solid var(--n-200);padding:5px 8px;text-align:left;font-size:var(--fs-micro);vertical-align:top;}
+.rule th{background:var(--n-50);font-weight:600;color:var(--n-900);white-space:nowrap;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;height:1024px;background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-md);overflow:hidden;overflow-y:auto;}
+.stage-inner{position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:center;padding:0;}
+.auth-card{width:var(--signup-card-w);background:transparent;padding:56px 0;}
+.auth-head{text-align:center;margin-bottom:var(--sp-4);}
+.wordmark{display:block;margin:0 auto;}
+.auth-sub{font-size:var(--fs-caption);color:var(--n-500);margin-top:8px;}
+.intro{text-align:center;margin-bottom:var(--sp-6);}
+.intro-t{font-size:var(--fs-h2);font-weight:600;margin-bottom:6px;}
+.intro-d{font-size:var(--fs-caption);color:var(--n-600);}
+.sec{margin-bottom:var(--sp-5);}
+.sec-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-900);margin-bottom:2px;
+  padding-bottom:8px;border-bottom:1px solid var(--n-200);}
+.field{margin-bottom:var(--sp-4);}
+.lb{display:block;font-size:var(--fs-caption);color:var(--n-600);font-weight:500;margin-bottom:6px;}
+.lb .opt{color:var(--n-400);font-weight:400;}
+.lb .req{color:var(--danger-text);margin-left:2px;}
+.inp-wrap{position:relative;display:flex;align-items:center;}
+.inp{width:100%;height:var(--auth-control-h);border:1px solid var(--n-300);border-radius:var(--r-sm);
+  background:#fff;padding:0 12px;font-family:inherit;font-size:var(--fs-body);color:var(--n-900);outline:none;
+  transition:border-color .12s, box-shadow .12s;}
+.inp::placeholder{color:var(--n-400);}
+.inp.ro{background:var(--n-100);color:var(--n-700);display:flex;align-items:center;justify-content:space-between;padding:0 12px;}
+.lock-badge{font-size:var(--fs-micro);color:var(--n-500);display:flex;align-items:center;gap:3px;white-space:nowrap;}
+select.inp{appearance:none;-webkit-appearance:none;padding-right:32px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0L5 6L10 0Z' fill='%237B7F89'/></svg>");
+  background-repeat:no-repeat;background-position:right 12px center;}
+.inp:hover:not(:disabled){border-color:var(--n-400);}
+.inp:focus:not(:disabled){border-color:var(--n-900);box-shadow:0 0 0 3px var(--n-200);}
+.inp-wrap.is-error .inp{border-color:var(--danger-text);}
+.inp-wrap.is-error .inp:focus{border-color:var(--danger-text);box-shadow:0 0 0 3px var(--danger-bg);}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+input[type=number]{-moz-appearance:textfield;}
+.err-msg{font-size:var(--fs-caption);color:var(--danger-text);margin:6px 0 0;}
+.help{font-size:var(--fs-micro);color:var(--n-500);margin:6px 0 0;}
+.char-count{position:absolute;right:12px;font-size:var(--fs-micro);color:var(--n-400);pointer-events:none;}
+.char-count.warn{color:var(--danger-text);}
+.has-count .inp{padding-right:52px;}
+.divider{height:1px;background:var(--n-200);margin:var(--sp-5) 0;}
+
+.upload{border:1px dashed var(--n-300);border-radius:var(--r-sm);padding:14px;margin-bottom:var(--sp-4);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--n-50);}
+.upload.is-error{border-color:var(--danger-text);background:var(--danger-bg);}
+.upload.done{border-style:solid;border-color:var(--success-text);background:var(--success-bg);}
+.upload.done .up-name::before{content:"✓ ";color:var(--success-text);font-weight:700;}
+.upload.done .up-hint{color:var(--success-text);font-weight:500;}
+.upload + .err-msg{margin:-10px 0 var(--sp-4);}
+.up-l{display:flex;flex-direction:column;gap:2px;}
+.up-name{font-size:var(--fs-caption);color:var(--n-700);font-weight:500;}
+.up-hint{font-size:var(--fs-micro);color:var(--n-500);}
+.btn-upload{height:32px;padding:0 14px;border:1px solid var(--n-300);border-radius:var(--r-sm);
+  display:inline-flex;align-items:center;justify-content:center;
+  background:#fff;color:var(--n-700);font-size:var(--fs-micro);font-weight:500;cursor:pointer;white-space:nowrap;}
+.btn-upload:hover{background:var(--n-100);}
+
+.radio-row{display:flex;gap:8px;margin-bottom:6px;}
+.rad{flex:1;display:flex;align-items:center;gap:8px;height:var(--auth-control-h);border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:0 14px;cursor:pointer;font-size:var(--fs-body);color:var(--n-700);}
+.rad.on{border-color:var(--n-900);background:var(--n-50);color:var(--n-900);font-weight:500;}
+.rc{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--n-300);flex-shrink:0;position:relative;}
+.rad.on .rc{border-color:var(--n-900);}
+.rad.on .rc::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--n-900);}
+
+.notice{display:flex;gap:8px;background:var(--info-bg);border-radius:var(--r-sm);padding:12px 14px;
+  font-size:var(--fs-caption);color:var(--n-700);text-align:left;margin-bottom:var(--sp-5);line-height:1.6;}
+.ni{width:16px;height:16px;border-radius:50%;background:var(--info-text);color:#fff;font-size:10px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;margin-top:1px;}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:var(--auth-control-h);
+  border-radius:var(--r-sm);font-family:inherit;font-size:var(--fs-body);font-weight:500;cursor:pointer;transition:background .12s;}
+.btn-primary{width:100%;background:var(--auth-action);color:#fff;border:1px solid var(--auth-action);}
+.btn-primary:hover:not(:disabled){background:var(--auth-action-hover);border-color:var(--auth-action-hover);}
+.btn-primary:disabled{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 640.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+
+<div class="doc-head">
+  <h1>쇼룸 스튜디오 온보딩 <span style="color:var(--n-400);font-weight:400;">ui-studio-03-onboarding · rev.3</span></h1>
+  <p class="meta">근거: wf-studio-01-가입온보딩 F5 · 토큰: SHOWROOMZ_웹_디자인시스템_v1.1 · 1440×1024 · 상태 4종</p>
+  <div class="rule">
+    <b>[rev.3 · 법인 제외]</b> 사업자 선택지를 <b>「개인사업자 · 법인」 → 「개인사업자」</b>로 줄였다 — 쇼룸 스튜디오는 법인 사업자를 받지 않는다(기본정보 관리 · 정산 정보와 동일).<br>
+    <b>[rev.3 · 2026.10.07 리워드 지급 구조]</b> 리워드 지급자가 <b>SHOWROOMZ</b>로 확정되어 원천징수 신고(지급명세서 제출)에 주민등록번호가 필요해졌다. ①<b>비사업자(A · D)</b>에 <b>주민등록번호 필드</b>(앞 6자리 + 뒤 7자리 마스킹 · 숫자만 입력 · 필수)와 수집 근거 고지를 사업자 여부 바로 아래 넣었다 — 사업자 구분과 함께 보여야 「왜 이 번호가 필요한가」가 읽힌다. 미입력은 <b>버튼 비활성만</b>(에러 문구 없음). ②<b>사업자(B · C)</b>는 주민번호 대신 「세금계산서는 SHOWROOMZ 앞으로 발행해요(리워드 + 부가세 10%)」 안내 1회. ③사업자 여부 도움말을 「리워드는 SHOWROOMZ가 지급 · 비사업자는 3.3% 원천징수 후 입금」으로 고쳤다. 기존 회원이 없으므로 <b>온보딩이 유일한 수집 지점</b>이다 — 미등록 상태 · 사후 등록 화면을 두지 않는다. <b>[약관수정필요]</b> 개인정보처리방침에 주민등록번호 수집 · 이용 목적 · 보관 기간 추가.<br>
+    <b>[rev.2] 파트너센터 참고해 재작성</b> — rev.1은 이 화면만의 스타일(폭 520px, 자체 파일 컴포넌트)로 독자 제작했으나, 파트너센터 가입·온보딩 파일에 이미 있는 컴포넌트를 그대로 재사용하는 것으로 변경.
+    <table>
+      <tr><th>항목</th><th>rev.1</th><th>rev.2 (파트너센터 참고)</th></tr>
+      <tr><td>카드 폭 / 컨트롤 높이</td><td>520px / 44px</td><td><b>480px / 40px</b> — ui-partner-03-onboarding과 동일</td></tr>
+      <tr><td>클래스 네이밍</td><td>form-card·brand 자체 명명</td><td><b>auth-card·auth-head</b> — 파트너센터 온보딩과 동일 클래스</td></tr>
+      <tr><td>파일 업로드</td><td>자체 제작(file-row)</td><td><b>파트너센터 가입 파일의 upload 컴포넌트</b> 그대로 재사용(점선 보더 + 아이콘명 + 힌트 + 우측 버튼)</td></tr>
+    </table>
+    <b>이 화면의 위치</b> — 승인 완료 후 <b>첫 로그인 시 강제 진입</b>하는 활성화 게이트. 완료 전까지 다른 화면 접근 불가. 완료 시 <b>정보입력대기 → 활성</b> 전환(파트너센터 온보딩과 동일 패턴).
+    <table>
+      <tr><th>항목</th><th>내용</th><th>근거</th></tr>
+      <tr><td>쇼룸명 위치</td><td>신청서(Step2)가 아니라 <b>이 화면에서 입력</b></td><td>심사 통과 전 쇼룸명 선점 방지</td></tr>
+      <tr><td>쇼룸 주소</td><td>쇼룸명 기준 <b>자동 생성 · 읽기전용</b>, 중복 시 후행 번호 부여 · <b>MVP는 수정 불가</b></td><td>쇼룸 관리에서 쇼룸명만 추후 변경 가능</td></tr>
+      <tr><td>사업자 여부</td><td>기본값 <b>개인(비사업자)</b> 선택 · 사업자 선택 시에만 사업자등록번호·사업자등록증 필드 노출</td><td>대다수 신규 인플루언서는 비사업자로 시작. 라디오는 파트너센터에 선례가 없어 이 화면에서 신규 제작(톤은 기존 컨트롤과 통일)</td></tr>
+      <tr><td>예금주</td><td><b>읽기전용</b>, 본인인증 실명값 자동 채움(예: 소*서)</td><td>본인 인증한 실명과 반드시 일치해야 함 — 사업자는 대표자명 또는 상호</td></tr>
+      <tr><td>계좌번호 입력</td><td><b>숫자만</b>(하이픈 제외), 스피너 제거 + 음수 키 차단</td><td>파트너센터 온보딩(§6)과 동일 원칙</td></tr>
+      <tr><td class="warn">[세무 확정 대기]</td><td>비사업자 리워드 지급 시 원천징수 3.3% 공제, 유상 샘플비 차감 순서(총액 선산정 후 차감)</td><td>세무사 상담 후 확정 — 화면 자체엔 영향 없음</td></tr>
+      <tr><td>쇼룸명 형식 규칙</td><td>2~20자, <b>한글·영문·숫자·공백만</b> 허용(이모지·특수문자 실시간 차단). 규칙은 플레이스홀더로 표기, <b>입력창 우측에 실시간 글자 수 카운터</b>(0/20) 추가</td><td>[신규제안 반영] 중복 검사와 별개로 형식 자체를 제한해야 표기·검색에서 문제가 없음. 글자 수 제한이 있으니 입력 중 남은 자리 확인 필요</td></tr>
+      <tr><td class="warn">[정정] 쇼룸 주소 생성 기준</td><td>도움말 "쇼룸명 기준 자동 생성" → <b>"계정 아이디(인스타그램 핸들) 기준"</b>으로 정정</td><td>쇼룸명은 한글이라 URL 슬러그로 쓰면 인코딩·공유 문제가 생기고, 쇼룸명이 나중에 바뀌면 주소도 바뀌어야 해 "MVP 수정 불가" 원칙과 충돌. 계정 아이디는 이미 영문 고정값이라 재사용이 안전 — 실제 예시 값(<code>@beauty_soyeon</code>)은 처음부터 계정 아이디 기준이었는데 도움말 문구만 안 맞았던 것을 정정</td></tr>
+      <tr><td>계좌번호 유효성</td><td><b>10~16자리 숫자</b> — 자릿수 부족·초과 시 에러. <b>붙여넣기 시 하이픈 자동 제거</b>(차단이 아니라 정제)</td><td>[신규제안 반영] 파트너센터는 하이픈 포함 입력이지만, 정산 API(포트원 계좌실명조회)가 숫자만 요구해 서버 파싱 단계가 없는 <b>숫자만 방식이 더 효율적</b>이라 판단 — 파트너센터 쪽 통일 여부는 별도 미결. 자릿수는 카카오뱅크 등 16자리 계좌 포함하도록 10~14→10~16으로 확대</td></tr>
+      <tr><td>업로드 파일 형식 제한</td><td><code>accept</code> 속성으로 OS 파일 선택창에서 jpg/png/pdf 외 파일 <b>선택 자체를 1차 차단</b></td><td>[신규제안 반영] 단, 드래그앤드롭·일부 브라우저의 "모든 파일" 옵션으로 우회 가능 — <b>형식·용량 에러 문구는 방어선(2차 검증)으로 유지</b>. 실제 file input 연결 + 선택 즉시 형식·용량 검사 로직 포함</td></tr>
+      <tr><td>업로드 완료 표시</td><td>대시 보더 → <b>실선 + 연한 그린 배경 + 체크(✓)</b>로 시각적 구분</td><td>[신규제안 반영] 파트너센터 가입 파일은 텍스트("업로드 완료")만으로 구분했는데, 미완료 상태와 색으로도 구분되도록 개선. 파트너센터 쪽도 동일 개선을 검토할 만함(별건)</td></tr>
+      <tr><td>첨부 오류 문구</td><td>"~을 첨부해 주세요"(미첨부) → <b>파일 용량 초과·지원하지 않는 형식</b> 에러로 교체</td><td>[신규제안 반영] 필수 첨부 미완료는 다른 화면과 동일하게 <b>버튼 비활성만으로 표현</b>(에러 문구 없음) — 미첨부 에러 문구는 그 원칙과 모순되어 실제로 뜰 일이 없음. 형식·용량 오류만 실제 발생 가능한 에러</td></tr>
+    </table>
+  </div>
+</div>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">A</span><span class="state-label">초기 (개인·비사업자 기본값)</span>
+  <span class="state-spec">사업자 여부 기본 선택 = 개인(비사업자) · 사업자 필드 미노출 · <b>비사업자는 주민등록번호(앞 6 + 뒤 7 마스킹) 필수</b> · 예금주는 본인인증값 자동 채움 · 시작하기 버튼 비활성</span></div>
+  <div class="stage"><div class="stage-inner"><div class="auth-card">
+    <div class="auth-head">
+      <svg class="wordmark" viewBox="0 0 1863.4 200" width="150" height="16" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg>
+      <div class="auth-sub">쇼룸 스튜디오 · 필수 정보 입력</div>
+    </div>
+    <div class="intro">
+      <div class="intro-t">승인이 완료되었습니다</div>
+      <div class="intro-d">활동 시작 전 아래 정보를 입력해 주세요. 입력을 완료해야 스튜디오를 이용할 수 있어요.</div>
+    </div>
+
+    <div class="sec"><div class="sec-t">쇼룸 정보</div></div>
+    <div class="field">
+      <label class="lb" for="a-shopname">쇼룸명<span class="req">*</span></label>
+      <div class="inp-wrap has-count"><input class="inp shopname-only" id="a-shopname" type="text" maxlength="20" placeholder="한글·영문·숫자·공백 2~20자"><span class="char-count" id="a-shopname-count">0/20</span></div>
+      <p class="help">중복 불가 · 소비자에게 노출되는 이름 · 쇼룸 관리에서 변경 가능</p>
+    </div>
+    <div class="field">
+      <label class="lb">쇼룸 주소</label>
+      <div class="inp ro">showroomz.com/@ <span style="color:var(--n-400)">자동 생성</span><span class="lock-badge">🔒 자동</span></div>
+      <p class="help">계정 아이디(인스타그램 핸들) 기준 자동 생성 · MVP는 수정 불가</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sec"><div class="sec-t">사업자 여부</div></div>
+    <div class="field">
+      <div class="radio-row">
+        <div class="rad on" data-biz="0"><span class="rc"></span>개인 (비사업자)</div>
+        <div class="rad" data-biz="1"><span class="rc"></span>개인사업자</div>
+      </div>
+      <p class="help">리워드는 SHOWROOMZ가 지급하며, 비사업자는 3.3%(소득세 · 지방소득세)를 원천징수한 뒤 입금돼요.</p>
+    </div>
+
+    <div class="field">
+      <label class="lb" for="a-rrn1">주민등록번호<span class="req">*</span> <span class="opt">(비사업자)</span></label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="inp-wrap" style="flex:1"><input class="inp no-neg rrn-only" id="a-rrn1" type="text" inputmode="numeric" maxlength="6" placeholder="앞 6자리"></div>
+        <span style="color:var(--n-400)">–</span>
+        <div class="inp-wrap" style="flex:1"><input class="inp no-neg rrn-only" id="a-rrn2" type="password" inputmode="numeric" maxlength="7" placeholder="뒤 7자리"></div>
+      </div>
+      <p class="help">원천징수 신고(지급명세서 제출)를 위해 소득세법에 따라 수집하며 암호화해 보관합니다.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sec"><div class="sec-t">정산 계좌</div></div>
+    <div class="field">
+      <label class="lb" for="a-bank">은행<span class="req">*</span></label>
+      <div class="inp-wrap"><select class="inp" id="a-bank"><option>은행 선택</option><option>국민은행</option><option>신한은행</option><option>우리은행</option><option>하나은행</option><option>농협은행</option><option>기업은행</option><option>카카오뱅크</option><option>토스뱅크</option><option>케이뱅크</option><option>SC제일은행</option><option>씨티은행</option><option>부산은행</option><option>대구은행</option><option>경남은행</option><option>광주은행</option><option>전북은행</option><option>제주은행</option><option>새마을금고</option><option>신협</option><option>우체국</option></select></div>
+    </div>
+    <div class="field">
+      <label class="lb" for="a-acct">계좌번호<span class="req">*</span></label>
+      <div class="inp-wrap"><input class="inp no-neg acct-only" id="a-acct" type="text" inputmode="numeric" maxlength="16" placeholder="- 없이 숫자만 입력"></div>
+      <p class="help">10~16자리 숫자로 입력해 주세요. (붙여넣기 시 하이픈은 자동으로 제거됩니다)</p>
+    </div>
+    <div class="field">
+      <label class="lb">예금주<span class="req">*</span></label>
+      <div class="inp ro">소*서<span class="lock-badge">🔒 본인 인증값</span></div>
+      <p class="help">본인 인증한 실명과 일치해야 합니다. 사업자는 대표자명 또는 상호.</p>
+    </div>
+    <div class="field">
+      <label class="lb">통장 사본<span class="req">*</span></label>
+      <div class="upload"><div class="up-l"><div class="up-name">📎 통장 사본</div><div class="up-hint">최대 10MB · jpg, png, pdf</div></div><label class="btn-upload">파일 선택<input type="file" class="file-input" id="up-0" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" hidden></label></div>
+    </div>
+
+    <button type="button" class="btn btn-primary" disabled>입력 완료하고 시작하기</button>
+  </div></div></div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">B</span><span class="state-label">개인사업자 선택</span>
+  <span class="state-spec">사업자등록번호·사업자등록증 필드 추가 노출 · 두 필드 모두 사업자 선택 시에만 필수</span></div>
+  <div class="stage"><div class="stage-inner"><div class="auth-card">
+    <div class="auth-head">
+      <svg class="wordmark" viewBox="0 0 1863.4 200" width="150" height="16" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg>
+      <div class="auth-sub">쇼룸 스튜디오 · 필수 정보 입력</div>
+    </div>
+    <div class="intro">
+      <div class="intro-t">승인이 완료되었습니다</div>
+      <div class="intro-d">활동 시작 전 아래 정보를 입력해 주세요. 입력을 완료해야 스튜디오를 이용할 수 있어요.</div>
+    </div>
+
+    <div class="sec"><div class="sec-t">쇼룸 정보</div></div>
+    <div class="field">
+      <label class="lb" for="b-shopname">쇼룸명<span class="req">*</span></label>
+      <div class="inp-wrap has-count"><input class="inp shopname-only" id="b-shopname" type="text" maxlength="20" value="소연의 뷰티로그"><span class="char-count" id="b-shopname-count">7/20</span></div>
+      <p class="help">중복 불가 · 소비자에게 노출되는 이름 · 쇼룸 관리에서 변경 가능</p>
+    </div>
+    <div class="field">
+      <label class="lb">쇼룸 주소</label>
+      <div class="inp ro">showroomz.com/@beauty_soyeon<span class="lock-badge">🔒 자동</span></div>
+      <p class="help">계정 아이디(인스타그램 핸들) 기준 자동 생성 · MVP는 수정 불가</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sec"><div class="sec-t">사업자 여부</div></div>
+    <div class="field">
+      <div class="radio-row">
+        <div class="rad" data-biz="0"><span class="rc"></span>개인 (비사업자)</div>
+        <div class="rad on" data-biz="1"><span class="rc"></span>개인사업자</div>
+      </div>
+    </div>
+    <div class="field">
+      <label class="lb" for="b-bno">사업자등록번호<span class="req">*</span> <span class="opt">(사업자 선택 시)</span></label>
+      <div class="inp-wrap"><input class="inp" id="b-bno" type="text" placeholder="000-00-00000"></div>
+    </div>
+    <div class="field">
+      <label class="lb">사업자등록증<span class="req">*</span> <span class="opt">(사업자 선택 시)</span></label>
+      <div class="upload"><div class="up-l"><div class="up-name">📎 사업자등록증 사본</div><div class="up-hint">최대 10MB · jpg, png, pdf</div></div><label class="btn-upload">파일 선택<input type="file" class="file-input" id="up-1" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" hidden></label></div>
+    </div>
+
+    <div class="notice"><span class="ni">i</span><div>세금계산서는 <b>SHOWROOMZ 앞으로 발행</b>해요(리워드 + 부가세 10%). 정산이 확정되면 홈택스에서 발행하고 승인번호를 입력하면 확인 후 지급돼요.</div></div>
+
+    <div class="divider"></div>
+
+    <div class="sec"><div class="sec-t">정산 계좌</div></div>
+    <div class="field">
+      <label class="lb" for="b-bank">은행<span class="req">*</span></label>
+      <div class="inp-wrap"><select class="inp" id="b-bank"><option>은행 선택</option><option selected>국민은행</option><option>신한은행</option><option>우리은행</option><option>하나은행</option><option>농협은행</option><option>기업은행</option><option>카카오뱅크</option><option>토스뱅크</option><option>케이뱅크</option><option>SC제일은행</option><option>씨티은행</option><option>부산은행</option><option>대구은행</option><option>경남은행</option><option>광주은행</option><option>전북은행</option><option>제주은행</option><option>새마을금고</option><option>신협</option><option>우체국</option></select></div>
+    </div>
+    <div class="field">
+      <label class="lb" for="b-acct">계좌번호<span class="req">*</span></label>
+      <div class="inp-wrap"><input class="inp no-neg acct-only" id="b-acct" type="text" inputmode="numeric" maxlength="16" value="110123456789"></div>
+    </div>
+    <div class="field">
+      <label class="lb">예금주<span class="req">*</span></label>
+      <div class="inp ro">소*서<span class="lock-badge">🔒 본인 인증값</span></div>
+      <p class="help">사업자는 대표자명 또는 상호로 등록된 예금주여야 합니다.</p>
+    </div>
+    <div class="field">
+      <label class="lb">통장 사본<span class="req">*</span></label>
+      <div class="upload done"><div class="up-l"><div class="up-name">통장사본_국민은행.jpg</div><div class="up-hint">업로드 완료</div></div><label class="btn-upload">다시 선택<input type="file" class="file-input" id="up-2" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" hidden></label></div>
+    </div>
+
+    <button type="button" class="btn btn-primary" disabled>입력 완료하고 시작하기</button>
+  </div></div></div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">C</span><span class="state-label">유효성 에러</span>
+  <span class="state-spec">사업자등록번호 형식 오류 · 사업자등록증·통장 사본 미첨부</span></div>
+  <div class="stage"><div class="stage-inner"><div class="auth-card">
+    <div class="auth-head">
+      <svg class="wordmark" viewBox="0 0 1863.4 200" width="150" height="16" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg>
+      <div class="auth-sub">쇼룸 스튜디오 · 필수 정보 입력</div>
+    </div>
+    <div class="intro">
+      <div class="intro-t">승인이 완료되었습니다</div>
+      <div class="intro-d">활동 시작 전 아래 정보를 입력해 주세요. 입력을 완료해야 스튜디오를 이용할 수 있어요.</div>
+    </div>
+
+    <div class="sec"><div class="sec-t">쇼룸 정보</div></div>
+    <div class="field">
+      <label class="lb" for="c-shopname">쇼룸명<span class="req">*</span></label>
+      <div class="inp-wrap is-error has-count"><input class="inp shopname-only" id="c-shopname" type="text" maxlength="20" value="글로우랩"><span class="char-count" id="c-shopname-count">4/20</span></div>
+      <p class="err-msg" role="alert">이미 사용 중인 쇼룸명입니다. 다른 이름을 입력해 주세요.</p>
+    </div>
+    <div class="field">
+      <label class="lb">쇼룸 주소</label>
+      <div class="inp ro">showroomz.com/@beauty_soyeon<span style="color:var(--n-400)"></span><span class="lock-badge">🔒 자동</span></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sec"><div class="sec-t">사업자 여부</div></div>
+    <div class="field">
+      <div class="radio-row">
+        <div class="rad" data-biz="0"><span class="rc"></span>개인 (비사업자)</div>
+        <div class="rad on" data-biz="1"><span class="rc"></span>개인사업자</div>
+      </div>
+    </div>
+    <div class="field">
+      <label class="lb" for="c-bno">사업자등록번호<span class="req">*</span> <span class="opt">(사업자 선택 시)</span></label>
+      <div class="inp-wrap is-error"><input class="inp" id="c-bno" type="text" value="123456789"></div>
+      <p class="err-msg" role="alert">올바른 사업자등록번호 형식으로 입력해 주세요. (예: 000-00-00000)</p>
+    </div>
+    <div class="field">
+      <label class="lb">사업자등록증<span class="req">*</span> <span class="opt">(사업자 선택 시)</span></label>
+      <div class="upload is-error"><div class="up-l"><div class="up-name">사업자등록증_사본.png</div><div class="up-hint">선택한 파일 14.8MB</div></div><label class="btn-upload">파일 선택<input type="file" class="file-input" id="up-3" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" hidden></label></div>
+      <p class="err-msg" role="alert">파일 크기가 10MB를 초과했습니다. 10MB 이하의 파일을 선택해 주세요.</p>
+    </div>
+
+    <div class="notice"><span class="ni">i</span><div>세금계산서는 <b>SHOWROOMZ 앞으로 발행</b>해요(리워드 + 부가세 10%). 정산이 확정되면 홈택스에서 발행하고 승인번호를 입력하면 확인 후 지급돼요.</div></div>
+
+    <div class="divider"></div>
+
+    <div class="sec"><div class="sec-t">정산 계좌</div></div>
+    <div class="field">
+      <label class="lb" for="c-bank">은행<span class="req">*</span></label>
+      <div class="inp-wrap"><select class="inp" id="c-bank"><option>은행 선택</option><option selected>국민은행</option><option>신한은행</option><option>우리은행</option><option>하나은행</option><option>농협은행</option><option>기업은행</option><option>카카오뱅크</option><option>토스뱅크</option><option>케이뱅크</option><option>SC제일은행</option><option>씨티은행</option><option>부산은행</option><option>대구은행</option><option>경남은행</option><option>광주은행</option><option>전북은행</option><option>제주은행</option><option>새마을금고</option><option>신협</option><option>우체국</option></select></div>
+    </div>
+    <div class="field">
+      <label class="lb" for="c-acct">계좌번호<span class="req">*</span></label>
+      <div class="inp-wrap is-error"><input class="inp no-neg acct-only" id="c-acct" type="text" inputmode="numeric" maxlength="16" value="110123"></div>
+      <p class="err-msg" role="alert">계좌번호는 10~16자리 숫자로 입력해 주세요.</p>
+    </div>
+    <div class="field">
+      <label class="lb">예금주<span class="req">*</span></label>
+      <div class="inp ro">소*서<span class="lock-badge">🔒 본인 인증값</span></div>
+    </div>
+    <div class="field">
+      <label class="lb">통장 사본<span class="req">*</span></label>
+      <div class="upload is-error"><div class="up-l"><div class="up-name">통장사본.hwp</div><div class="up-hint">지원하지 않는 형식</div></div><label class="btn-upload">파일 선택<input type="file" class="file-input" id="up-4" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" hidden></label></div>
+      <p class="err-msg" role="alert">jpg, png, pdf 파일만 업로드할 수 있습니다.</p>
+    </div>
+
+    <button type="button" class="btn btn-primary" disabled>입력 완료하고 시작하기</button>
+  </div></div></div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">D</span><span class="state-label">활성화 (필수 전체 입력 완료)</span>
+  <span class="state-spec">필수 항목 전부 유효값(비사업자 주민등록번호 13자리 포함) · 시작하기 버튼 활성화(클릭 가능)</span></div>
+  <div class="stage"><div class="stage-inner"><div class="auth-card">
+    <div class="auth-head">
+      <svg class="wordmark" viewBox="0 0 1863.4 200" width="150" height="16" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg>
+      <div class="auth-sub">쇼룸 스튜디오 · 필수 정보 입력</div>
+    </div>
+    <div class="intro">
+      <div class="intro-t">승인이 완료되었습니다</div>
+      <div class="intro-d">활동 시작 전 아래 정보를 입력해 주세요. 입력을 완료해야 스튜디오를 이용할 수 있어요.</div>
+    </div>
+
+    <div class="sec"><div class="sec-t">쇼룸 정보</div></div>
+    <div class="field">
+      <label class="lb" for="d-shopname">쇼룸명<span class="req">*</span></label>
+      <div class="inp-wrap has-count"><input class="inp shopname-only" id="d-shopname" type="text" maxlength="20" value="소연의 뷰티로그"><span class="char-count" id="d-shopname-count">7/20</span></div>
+      <p class="help">중복 불가 · 소비자에게 노출되는 이름 · 쇼룸 관리에서 변경 가능</p>
+    </div>
+    <div class="field">
+      <label class="lb">쇼룸 주소</label>
+      <div class="inp ro">showroomz.com/@beauty_soyeon<span class="lock-badge">🔒 자동</span></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sec"><div class="sec-t">사업자 여부</div></div>
+    <div class="field">
+      <div class="radio-row">
+        <div class="rad on" data-biz="0"><span class="rc"></span>개인 (비사업자)</div>
+        <div class="rad" data-biz="1"><span class="rc"></span>개인사업자</div>
+      </div>
+      <p class="help">리워드는 SHOWROOMZ가 지급하며, 비사업자는 3.3%(소득세 · 지방소득세)를 원천징수한 뒤 입금돼요.</p>
+    </div>
+      
+    <div class="field">
+      <label class="lb" for="d-rrn1">주민등록번호<span class="req">*</span> <span class="opt">(비사업자)</span></label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="inp-wrap" style="flex:1"><input class="inp no-neg rrn-only" id="d-rrn1" type="text" inputmode="numeric" maxlength="6" placeholder="앞 6자리" value="900101"></div>
+        <span style="color:var(--n-400)">–</span>
+        <div class="inp-wrap" style="flex:1"><input class="inp no-neg rrn-only" id="d-rrn2" type="password" inputmode="numeric" maxlength="7" placeholder="뒤 7자리" value="2345678"></div>
+      </div>
+      <p class="help">원천징수 신고(지급명세서 제출)를 위해 소득세법에 따라 수집하며 암호화해 보관합니다.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sec"><div class="sec-t">정산 계좌</div></div>
+    <div class="field">
+      <label class="lb" for="d-bank">은행<span class="req">*</span></label>
+      <div class="inp-wrap"><select class="inp" id="d-bank"><option>은행 선택</option><option selected>국민은행</option><option>신한은행</option><option>우리은행</option><option>하나은행</option><option>농협은행</option><option>기업은행</option><option>카카오뱅크</option><option>토스뱅크</option><option>케이뱅크</option><option>SC제일은행</option><option>씨티은행</option><option>부산은행</option><option>대구은행</option><option>경남은행</option><option>광주은행</option><option>전북은행</option><option>제주은행</option><option>새마을금고</option><option>신협</option><option>우체국</option></select></div>
+    </div>
+    <div class="field">
+      <label class="lb" for="d-acct">계좌번호<span class="req">*</span></label>
+      <div class="inp-wrap"><input class="inp no-neg acct-only" id="d-acct" type="text" inputmode="numeric" maxlength="16" value="110123456789"></div>
+    </div>
+    <div class="field">
+      <label class="lb">예금주<span class="req">*</span></label>
+      <div class="inp ro">소*서<span class="lock-badge">🔒 본인 인증값</span></div>
+    </div>
+    <div class="field">
+      <label class="lb">통장 사본<span class="req">*</span></label>
+      <div class="upload done"><div class="up-l"><div class="up-name">통장사본_국민은행.jpg</div><div class="up-hint">업로드 완료</div></div><label class="btn-upload">다시 선택<input type="file" class="file-input" id="up-5" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" hidden></label></div>
+    </div>
+
+    <div class="notice"><span class="ni">i</span><span>사업자 여부·정산 계좌는 입력 후에도 <b>쇼룸 관리</b>에서 계속 수정할 수 있어요.</span></div>
+
+    <button type="button" class="btn btn-primary">입력 완료하고 시작하기</button>
+  </div></div></div>
+</section>
+
+<script>
+document.querySelectorAll('.no-neg').forEach(function (el) {
+  el.addEventListener('keydown', function (e) {
+    if (['-', '+', 'e', 'E'].indexOf(e.key) > -1) e.preventDefault();
+  });
+  el.addEventListener('paste', function (e) {
+    if (el.classList.contains('acct-only')) return; // 계좌번호는 별도 핸들러가 처리
+    var text = (e.clipboardData || window.clipboardData).getData('text');
+    if (/[^0-9]/.test(text)) e.preventDefault();
+  });
+});
+document.querySelectorAll('.acct-only').forEach(function (el) {
+  el.addEventListener('paste', function (e) {
+    e.preventDefault();
+    var text = (e.clipboardData || window.clipboardData).getData('text');
+    var digits = text.replace(/[^0-9]/g, '').slice(0, 16);
+    el.value = digits;
+  });
+});
+document.querySelectorAll('.radio-row').forEach(function (row) {
+  row.addEventListener('click', function (e) {
+    var rad = e.target.closest('.rad');
+    if (!rad) return;
+    row.querySelectorAll('.rad').forEach(function (r) { r.classList.remove('on'); });
+    rad.classList.add('on');
+  });
+});
+document.querySelectorAll('.rrn-only').forEach(function (el) {
+  el.addEventListener('input', function () { this.value = this.value.replace(/[^0-9]/g, ''); });
+});
+document.querySelectorAll('.shopname-only').forEach(function (el) {
+  el.addEventListener('input', function () {
+    this.value = this.value.replace(/[^가-힣a-zA-Z0-9\s]/g, '');
+    var counter = document.getElementById(this.id + '-count');
+    if (counter) {
+      var len = this.value.length;
+      counter.textContent = len + '/20';
+      counter.classList.toggle('warn', len >= 20);
+    }
+  });
+});
+document.querySelectorAll('.file-input').forEach(function (input) {
+  input.addEventListener('change', function () {
+    var box = input.closest('.upload');
+    var nameEl = box.querySelector('.up-name');
+    var hintEl = box.querySelector('.up-hint');
+    var file = input.files[0];
+    if (!file) return;
+    var okType = ['image/jpeg', 'image/png', 'application/pdf'].indexOf(file.type) > -1;
+    var okSize = file.size <= 10 * 1024 * 1024;
+    box.classList.remove('is-error', 'done');
+    var errMsg = box.parentElement.querySelector('.err-msg');
+    if (!okType) {
+      box.classList.add('is-error');
+      nameEl.textContent = file.name;
+      hintEl.textContent = '지원하지 않는 형식';
+      if (errMsg) errMsg.textContent = 'jpg, png, pdf 파일만 업로드할 수 있습니다.';
+    } else if (!okSize) {
+      box.classList.add('is-error');
+      nameEl.textContent = file.name;
+      hintEl.textContent = '선택한 파일 ' + (file.size / 1024 / 1024).toFixed(1) + 'MB';
+      if (errMsg) errMsg.textContent = '파일 크기가 10MB를 초과했습니다. 10MB 이하의 파일을 선택해 주세요.';
+    } else {
+      box.classList.add('done');
+      nameEl.textContent = file.name;
+      hintEl.textContent = '업로드 완료';
+      if (errMsg) errMsg.textContent = '';
+    }
+  });
+});
+</script>
+
+</body>
+</html>

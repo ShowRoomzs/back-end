@@ -252,8 +252,12 @@ public class ProductDto {
     @Builder
     @Schema(description = "배송 · 교환 · 반품 정보")
     public static class DeliveryInfo {
-        @Schema(description = "발송까지 걸리는 영업일 수 — 화면의 \"N일 이내 출발 예정\"", example = "2")
+        @Schema(description = "발송 기한 N — 공구 마감 후 N영업일(주말·공휴일 제외 · 1~7 · 기본 3)", example = "3")
         private Integer shippingLeadDays;
+
+        @Schema(description = "발송 예정 고지 문구 — 서버가 만든 문장 그대로 그린다(전자상거래법 제15조① 공급 시기 약정)",
+                example = "공구 마감 후 3영업일 이내 발송 (주말·공휴일 제외)")
+        private String shipDueText;
 
         @Schema(description = "기본 배송비", example = "3000")
         private Integer deliveryFee;

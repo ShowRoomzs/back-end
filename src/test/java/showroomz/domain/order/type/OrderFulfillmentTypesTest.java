@@ -59,17 +59,21 @@ class OrderFulfillmentTypesTest {
     @Test
     @DisplayName("택배사 11종 — 한글명·코드명(대소문자 무시)·앞뒤 공백 허용 · 그 밖은 null(자유 입력 없음)")
     void carrierFromLabel() {
-        assertThat(DeliveryCarrier.values()).hasSize(11);
+        // 일양로지스 · GS25 편의점택배 추가(1009 기획 수정본 4절) — 쿠팡택배는 기존 행을 읽으려고 enum 에만 남는다.
+        assertThat(DeliveryCarrier.values()).hasSize(13);
+        assertThat(DeliveryCarrier.selectable()).hasSize(12).doesNotContain(DeliveryCarrier.COUPANG);
         assertThat(DeliveryCarrier.fromLabel("CJ대한통운")).isEqualTo(DeliveryCarrier.CJ);
         assertThat(DeliveryCarrier.fromLabel(" 우체국택배 ")).isEqualTo(DeliveryCarrier.EPOST);
         assertThat(DeliveryCarrier.fromLabel("hanjin")).isEqualTo(DeliveryCarrier.HANJIN);
         assertThat(DeliveryCarrier.fromLabel("CU편의점택배")).isEqualTo(DeliveryCarrier.CU);
+        assertThat(DeliveryCarrier.fromLabel("GS25 편의점택배")).isEqualTo(DeliveryCarrier.GS25);
+        assertThat(DeliveryCarrier.fromLabel("일양로지스")).isEqualTo(DeliveryCarrier.ILYANG);
         assertThat(DeliveryCarrier.fromLabel("페덱스")).isNull();
         assertThat(DeliveryCarrier.fromLabel("")).isNull();
         assertThat(DeliveryCarrier.fromLabel(null)).isNull();
         // 스마트택배 택배사 코드 — 채워진 것끼리 겹치면 다른 택배사의 송장을 조회한다. 쿠팡택배는 스마트택배 미지원.
         assertThat(DeliveryCarrier.values()).extracting(DeliveryCarrier::getTrackerCode)
-                .filteredOn(code -> code != null).doesNotHaveDuplicates().hasSize(10);
+                .filteredOn(code -> code != null).doesNotHaveDuplicates().hasSize(12);
         assertThat(DeliveryCarrier.COUPANG.getTrackerCode()).isNull();
     }
 

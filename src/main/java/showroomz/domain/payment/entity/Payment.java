@@ -89,6 +89,18 @@ public class Payment extends BaseTimeEntity implements Persistable<String> {
     @Column(name = "amount", nullable = false)
     private Integer amount;
 
+    /**
+     * 부분 취소 누적액(1009 기획 수정본 2-3) — 환불 큐 집행이 올린다. 상태는 PAID 그대로이고, 누적이 결제액에 닿으면
+     * CANCELLED 로 닫는다(주문 전체 취소의 연쇄 없이). 전액 취소 경로(소비자 취소 · 자동 취소)는 이 값을 쓰지 않는다.
+     */
+    @Column(name = "cancelled_amount", nullable = false)
+    private int cancelledAmount;
+
+    /** 지금 PG 에서 취소할 수 있는 잔액. */
+    public int cancellableAmount() {
+        return amount - cancelledAmount;
+    }
+
     /** {@code CHAR(3)} — 마이그레이션(V145)과 같은 타입이어야 {@code ddl-auto: validate}가 통과한다. */
     @Column(name = "currency", nullable = false, columnDefinition = "char(3)")
     private String currency;

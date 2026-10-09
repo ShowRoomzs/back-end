@@ -19,13 +19,38 @@ public record SellerClaimDetailResponse(
         Boolean exchangeFeeCharged,
         @Schema(description = "환불 예정 — 반품만", nullable = true) Refund refund,
         @Schema(description = "소비자 첨부 사진") List<String> consumerAttachments,
-        @Schema(description = "브랜드 거절 증빙") List<String> sellerEvidences,
-        @Schema(description = "거절 상세 설명 — 소비자에게 그대로 전달된다", nullable = true) String rejectDetail,
+        @Schema(description = "브랜드 반려 증빙") List<String> sellerEvidences,
+        @Schema(description = "반려 상세 설명 — 브랜드 · 어드민 기록용(소비자에게는 consumerMessage 가 간다)", nullable = true) String rejectDetail,
+        @Schema(description = "검수 반려 6항목 — 반려됐을 때만(소비자 C10-5와 같은 값)", nullable = true) Rejection rejection,
+        @Schema(description = "구매확정 타이머 — 「정지 · 남은 4일」. 반품·교환 요청 시점부터 정지 · 철회되면 남은 일수부터 재개 · "
+                + "교환 완료 시 7일 새로 시작. 배송완료 전이면 null", nullable = true) PurchaseConfirm purchaseConfirm,
         @Schema(description = "처리 결과 — 완료 탭 단계만", nullable = true) Result result,
-        @Schema(description = "미결제 고지 회차 — 거절 보류만") List<Notice> notices,
+        @Schema(description = "미결제 고지 회차 — 반려 보류만") List<Notice> notices,
         @Schema(description = "처리 이력 — 최신순") List<HistoryItem> history,
         Actions actions
 ) {
+
+    @Schema(name = "SellerClaimRejection")
+    public record Rejection(
+            @Schema(description = "법적 근거 코드", example = "ART17_2_2", nullable = true)
+            showroomz.domain.order.type.ClaimRejectLegalBasis legalBasis,
+            @Schema(description = "법적 근거 문구", example = "전자상거래법 제17조②2호 · 사용·소비로 가치 현저히 감소", nullable = true)
+            String legalBasisLabel,
+            @Schema(description = "소비자에게 보낸 메시지", nullable = true) String consumerMessage,
+            @Schema(description = "브랜드 귀책으로 인정했다 — 반품 배송비 차감 환원 · 반려 재발송비 브랜드 부담", example = "false")
+            boolean faultChangedToSeller,
+            @Schema(description = "일부 반려로 갈라져 나온 행이면 원래 접수번호 — 원래 행은 통과 수량만 남았다", example = "CLM-3021",
+                    nullable = true) String splitFromClaimNumber
+    ) {
+    }
+
+    @Schema(name = "SellerClaimPurchaseConfirm")
+    public record PurchaseConfirm(
+            @Schema(description = "정지 중 — 진행 중 반품·교환이 있다", example = "true") boolean paused,
+            @Schema(description = "남은 일수(올림) — 정지 중이면 정지 시점 기준으로 멈춘 값", example = "4") Long remainingDays,
+            @Schema(description = "확정 예정 시각 — 정지 중이면 null(재개 때 다시 정해진다)", nullable = true) LocalDateTime dueAt
+    ) {
+    }
 
     /** 환불 예정액은 요청(박스) 단위다 — 배송비 차감이 요청당 한 번이라 항목마다 반복해 보이면 안 된다. */
     @Schema(name = "SellerClaimRefund")
@@ -41,7 +66,7 @@ public record SellerClaimDetailResponse(
     public record Result(
             @Schema(description = "재발송 도착 시각 — 교환 완료 · 반송 완료", nullable = true) LocalDateTime reshipDeliveredAt,
             @Schema(description = "구매확정 재시작 예정 — 교환 완료만", nullable = true) LocalDateTime confirmDueAt,
-            @Schema(description = "거절 종결의 방식 — RETURNED 반송 완료 · DISPOSED 보관 기간 만료 후 폐기", example = "RETURNED",
+            @Schema(description = "반려 종결의 방식 — RETURNED 반송 완료 · DISPOSED 보관 기간 만료 후 폐기", example = "RETURNED",
                     nullable = true) String rejectionEnd,
             @Schema(description = "폐기 기록 시각", nullable = true) LocalDateTime disposedAt
     ) {

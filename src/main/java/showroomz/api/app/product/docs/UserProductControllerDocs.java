@@ -214,7 +214,8 @@ public interface UserProductControllerDocs {
                                                     "    \"isOutOfStockForced\": false\n" +
                                                     "  },\n" +
                                                     "  \"delivery\": {\n" +
-                                                    "    \"shippingLeadDays\": 2,\n" +
+                                                    "    \"shippingLeadDays\": 3,\n" +
+                                                    "    \"shipDueText\": \"공구 마감 후 3영업일 이내 발송 (주말·공휴일 제외)\",\n" +
                                                     "    \"deliveryFee\": 3000,\n" +
                                                     "    \"freeShippingThreshold\": 30000,\n" +
                                                     "    \"remoteAreaSurcharge\": 5000,\n" +

@@ -80,7 +80,10 @@ public interface SellerClaimControllerDocs {
                       `elapsedDays`(「경과」 열 · 단계 진입부터의 달력일)와 섞지 않는다
                     - `shipLabel` 은 재발송 대기 · 재발송 중 · 거절 보류 단계에서 **실제로 보낼(보관 중인) 물건**이다 —
                       교환 재발송은 새 옵션, 거절은 원래 옵션. 그 밖의 단계는 `null`
-                    - `reshipReason` — `EXCHANGE` 교환 재발송 · `REJECT_RETURN` 거절 반송. 재발송 단계가 아니면 `null`
+                    - `reshipReason` — `EXCHANGE` 교환 재발송 · `REJECT_RETURN` 반려 반송. 재발송 단계가 아니면 `null`
+                    - `reshipFee` — 「재발송비」 열(결정 14). 반려 건은 반려 재발송 배송비, 교환은 고객 귀책 교환의 선결제분.
+                      `status` = `PENDING` 결제 대기 · `PAID` 결제됨 · `DEDUCTED` 환불액에서 차감 · `COVERED` 교환 결제분으로 충당 ·
+                      `VOID` 소멸 · `REFUNDED` 결제 취소. 청구가 없으면 `null`(브랜드 귀책 교환 · 반려 판정 전)
                     - `storage` 는 거절 보류만. `storageDueAt` 은 미결제 고지가 2회 쌓여야 생긴다(최종 고지일 + 3개월) ·
                       `phase` = `NOTICE_PENDING` 고지 부족 · `STORING` 보관 중 · `EXPIRED` 기한 경과
                     - `outcome` 은 완료 탭만 — `REFUND_PENDING` · `RESHIPPING`(`finalized: false`) ·
@@ -293,7 +296,7 @@ public interface SellerClaimControllerDocs {
 
                     - **반품** → `REFUND_PENDING` 환불 대기. 그 항목의 반품 수량이 이 순간 반영된다(전량이면 항목이 반품으로 종결).
                       돌아온 상품의 재고는 자동으로 원복하지 않는다 — 다시 팔지는 브랜드가 정한다.
-                      **환불은 브랜드가 실행하지 않는다** — 같은 박스의 판정이 전부 끝나면 환불 큐에 **요청당 1건** 오르고 운영자가 집행한다
+                      **환불은 브랜드가 실행하지 않는다** — 같은 박스의 판정이 전부 끝나면 환불 큐에 **요청당 1건** 오르고 **PG 가 즉시 자동 환불**한다(되돌릴 수 없다)
                     - **교환** → `RESHIP_READY` 재발송 대기. 재발송 송장을 등록하면 된다
                     - 환불 예정액은 **요청(박스) 단위**라 같은 박스에 판정이 남은 건이 있으면 아직 확정되지 않는다
                       (상세 `refund.requestExpectedAmount` 는 그때까지 예정액)
@@ -319,38 +322,52 @@ public interface SellerClaimControllerDocs {
             @Parameter(description = "클레임 id", example = "3021") @PathVariable Long claimId);
 
     @Operation(
-            summary = "검수 거절 (단건)",
+            summary = "검수 반려 (단건)",
             description = """
-                    「검수 대기」(`RECEIVED`) 건을 거절한다. **제출 = 즉시 확정이고 되돌릴 수 없다.** 응답은 갱신된 상세다.
+                    「검수 대기」(`RECEIVED`) 건을 반려한다. **제출 = 즉시 확정이고 되돌릴 수 없다.** 응답은 갱신된 상세다.
+                    입력 6항목은 소비자 반품·교환 상세(C10-5)에 노출되는 값과 1:1 이다(1009 기획 수정본 5-b).
 
                     **권한:** SELLER · **버튼 노출:** `actions.canReject`
 
-                    **입력** — 셋 다 필수, 하나라도 빠지면 400 `CLAIM_REJECT_INCOMPLETE`(무엇이 빠졌든 같은 코드)
+                    **필수** — 하나라도 빠지면 400 `CLAIM_REJECT_INCOMPLETE`(무엇이 빠졌든 같은 코드)
                     - `reasonCode` — `USED` 개봉·사용 흔적 · `PACKAGE_DAMAGED` 포장 훼손 · `PRODUCT_MISMATCH` 상품 불일치 ·
                       `PERIOD_EXPIRED` 기간 경과 · `ETC` 기타
-                    - `detail` — 상세 설명(공백만은 누락으로 본다). **소비자에게 그대로 전달된다**
-                    - `evidenceImageUrls` — 증빙 사진 **1~5장**. 이미지 업로드 API 가 준 URL. 빈 문자열이 섞이면 누락으로 본다.
-                      소비자에게 그대로 보인다
+                    - `detail` — 상세 설명(공백만은 누락). 브랜드 · 어드민 기록용
+                    - `legalBasis` — 법적 근거(전자상거래법 제17조②): `ART17_2_1` 소비자 책임 멸실·훼손 · `ART17_2_2` 사용·소비로 가치
+                      감소 · `ART17_2_3` 시간 경과로 재판매 곤란 · `ART17_2_5` 복제 가능 상품 포장 훼손. 소비자에게 보인다
+                    - `consumerMessage` — 소비자에게 보낼 메시지. **그대로 전달된다**
+                    - `evidenceImageUrls` — 증빙 사진 **1~5장**. 빈 문자열이 섞이면 누락. 소비자에게 그대로 보인다
 
-                    **검사 순서:** 입력 누락(400) → 클레임 소유(404) → 상태(409)
+                    **선택**
+                    - `rejectedQuantity` — 반려 범위. 생략하거나 신청 수량과 같으면 **전체 반려**, 작으면 **일부 반려** — 나머지 수량은
+                      검수 통과로 처리되고(반품이면 PG 자동 환불), 반려 수량은 같은 요청의 새 접수번호로 갈라진다(상세
+                      `rejection.splitFromClaimNumber`). 1 미만 · 신청 수량 초과는 400 `CLAIM_QUANTITY_EXCEEDED`
+                    - `faultChangedToSeller` — `true` 면 **브랜드 귀책으로 인정**: 반품 배송비 차감이 환불에 돌아오고, 반려 재발송비는
+                      브랜드가 진다(0원 — 반려 상품이 바로 「재발송 대기」로 간다). 기본 `false`(변경 없음 · 소비자 귀책)
 
-                    **거절 뒤 흐름** — 거절된 상품은 소비자에게 돌려보낸다. 그 재발송 배송비는 소비자 부담이다
+                    **검사 순서:** 입력 누락(400) → 클레임 소유(404) → 상태(409) → 반려 수량(400)
+
+                    **반려 뒤 흐름** — 반려된 상품은 소비자에게 돌려보낸다. 재발송 배송비는 소비자 부담이다(브랜드 귀책 인정이면 0원)
                     - 같은 박스에 통과된 반품이 있으면 그 환불액에서 빼고 → 바로 「재발송 대기」
                     - 교환 요청 때 낸 배송비가 있으면 그것으로 충당하고 → 바로 「재발송 대기」
-                    - 둘 다 아니면 소비자 결제를 기다린다 → 「거절 보류」(결제 기한 14일 · 이후 운영자 미결제 고지)
-                    - 같은 박스에 판정이 남은 건이 있으면 위 정산은 그 판정이 끝날 때 정해진다(그때까지 「거절 보류」)
-                    - 교환 거절이면 잡아 둔 새 옵션 재고가 원복된다
-                    - **거절은 구매확정 보류를 푼다** — 배송완료 후 7일이 이미 지났으면 이 순간 구매확정된다
+                    - 둘 다 아니면 소비자 결제를 기다린다 → 「반려 보류」(결제 기한 14일 · 이후 미결제 고지 · 약관 반영 전 폐기 없음)
+                    - 같은 박스에 판정이 남은 건이 있으면 위 정산은 그 판정이 끝날 때 정해진다(그때까지 「반려 보류」)
+                    - 교환 반려면 잡아 둔 새 옵션 재고가 반려 수량만큼 원복된다
+                    - **반려는 구매확정 정지를 푼다** — 진행 중 클레임이 남지 않으면 남은 일수부터 다시 센다
                     """)
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             required = true,
             content = @Content(
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                     schema = @Schema(implementation = SellerClaimRejectRequest.class),
-                    examples = @ExampleObject(name = "사용 흔적", value = """
+                    examples = @ExampleObject(name = "사용 흔적 · 일부 반려", value = """
                             {
                               "reasonCode": "USED",
                               "detail": "용기 입구에 사용 흔적이 있고 내용물이 약 30% 줄어 있습니다.",
+                              "legalBasis": "ART17_2_2",
+                              "rejectedQuantity": 1,
+                              "faultChangedToSeller": false,
+                              "consumerMessage": "개봉 후 사용 흔적이 있어 1개는 반품이 어렵습니다. 나머지 1개는 환불됩니다.",
                               "evidenceImageUrls": [
                                 "https://cdn.showroomz.co.kr/claim/3021/evidence-1.jpg",
                                 "https://cdn.showroomz.co.kr/claim/3021/evidence-2.jpg"
@@ -358,15 +375,15 @@ public interface SellerClaimControllerDocs {
                             }
                             """)))
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "거절 — 갱신된 상세"),
-            @ApiResponse(responseCode = "400", description = "CLAIM_REJECT_INCOMPLETE — 사유 · 설명 · 증빙(1~5장) 중 누락 · "
-                    + "증빙 5장 초과 · 빈 URL",
+            @ApiResponse(responseCode = "200", description = "반려 — 갱신된 상세"),
+            @ApiResponse(responseCode = "400", description = "CLAIM_REJECT_INCOMPLETE — 사유 · 상세 · 법적 근거 · 소비자 메시지 · "
+                    + "증빙(1~5장) 중 누락 · 증빙 5장 초과 · 빈 URL / CLAIM_QUANTITY_EXCEEDED — 반려 수량 범위 밖",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(name = "증빙 누락", value = """
                                     {
                                       "code": "CLAIM_REJECT_INCOMPLETE",
-                                      "message": "거절 사유 · 상세 설명 · 증빙 사진을 모두 입력해 주세요."
+                                      "message": "반려 사유 · 상세 설명 · 법적 근거 · 소비자 메시지 · 증빙 사진을 모두 입력해 주세요."
                                     }
                                     """))),
             @ApiResponse(responseCode = "404", description = "CLAIM_NOT_FOUND — 없는 클레임이거나 내 브랜드 것이 아님",
@@ -395,8 +412,9 @@ public interface SellerClaimControllerDocs {
                     - 다건 · **행 단위 부분 성공** — 처리되지 않은 행만 `skipped` 에 사유와 함께 돌려준다. 전부 제외돼도 200
                     - 송장번호는 숫자만 남기고 판정한다(`6400-1234-5678` → `640012345678`). 빈 값 행은 에러 없이 조용히 건너뛴다
                       (`succeeded` · `skipped` 어디에도 세지 않는다)
-                    - 택배사는 주문 송장과 같은 11종 — `CJ` · `LOTTE` · `HANJIN` · `EPOST` · `KYUNGDONG` · `DAESIN` · `LOGEN` ·
-                      `HAPDONG` · `COUPANG` · `WOORI` · `CU`. 업로드에서 택배사 칸이 비어 `null` 로 남은 행은 형식 오류로 제외된다
+                    - 택배사는 주문 송장과 같은 추적 연동 12종(`GET /v1/common/delivery-carriers`) — `CJ` · `EPOST` · `HANJIN` ·
+                      `LOTTE` · `LOGEN` · `KYUNGDONG` · `DAESIN` · `ILYANG` · `CU` · `GS25` · `HAPDONG` · `WOORI`. `COUPANG` 은 형식 오류로
+                      제외된다. 업로드에서 택배사 칸이 비어 `null` 로 남은 행도 형식 오류로 제외된다
 
                     **행별 검사 순서:** 형식 → 전역 중복 → 상태
 
@@ -509,7 +527,7 @@ public interface SellerClaimControllerDocs {
                     **열 구성**
                     - `columns` 선택 순서 = 엑셀 좌→우 열 순서 · 중복은 첫 위치만 남는다
                     - **선택한 열 뒤에 빈 「택배사」 「송장번호」 2열이 항상 붙는다** — 이 파일을 채워 업로드(`/reshipments/parse`)에 그대로 쓴다
-                    - 「상품명」 「옵션」은 **보낼 물건**이다 — 교환 재발송은 새 옵션, 거절 반송은 원래 옵션
+                    - 「상품명」 「옵션」은 **보낼 물건**이다 — 교환 재발송은 새 옵션, 반려 반송은 원래 옵션
                     - 수취지는 재발송 수취지다. 교환은 소비자가 검수 전까지 바꿀 수 있지만 재발송 대기부터는 잠긴다 —
                       이 목록에 오른 주소는 바뀌지 않는다
                     - `saveAsDefault: true` — 이 컬럼 구성을 기본값으로 저장(`PUT /reshipments/export/template` 과 같은 저장소)
@@ -524,7 +542,7 @@ public interface SellerClaimControllerDocs {
                     | `PRODUCT_NAME` | 상품명 | ✔ |
                     | `OPTION` | 옵션(보낼 옵션) | ✔ |
                     | `QUANTITY` | 수량 | |
-                    | `RESHIP_REASON` | 재발송 사유(교환 재발송 / 거절 반송) | |
+                    | `RESHIP_REASON` | 재발송 사유(교환 재발송 / 반려 반송) | |
                     | `REQUESTED_AT` | 신청일시(`yyyy-MM-dd HH:mm`) | |
                     | `ORDER_NUMBER` | 주문번호 | |
                     | `GROUP_BUY_NAME` | 공구명 | |

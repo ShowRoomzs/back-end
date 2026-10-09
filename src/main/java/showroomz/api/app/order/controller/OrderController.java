@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.api.app.order.dto.UserCancelDto;
+import showroomz.api.app.order.service.UserCancelService;
 import showroomz.api.app.order.docs.OrderControllerDocs;
 import showroomz.api.app.order.dto.OrderDto;
 import showroomz.api.app.order.dto.UserOrderDto;
@@ -35,6 +37,7 @@ public class OrderController implements OrderControllerDocs {
     private final OrderCommandService orderCommandService;
     private final UserOrderQueryService userOrderQueryService;
     private final UserDeliveryTrackingService userDeliveryTrackingService;
+    private final UserCancelService userCancelService;
 
     @Override
     @GetMapping
@@ -109,5 +112,22 @@ public class OrderController implements OrderControllerDocs {
                 .message(result.pending() ? "취소 처리 중입니다. 잠시 후 주문 상태를 확인해 주세요." : "주문이 취소되었습니다.")
                 .build();
         return ResponseEntity.status(result.pending() ? HttpStatus.ACCEPTED : HttpStatus.OK).body(body);
+    }
+
+    @Override
+    @PostMapping("/{orderId}/cancel-requests")
+    public ResponseEntity<UserCancelDto.DetailResponse> requestCancel(@AuthenticationPrincipal UserPrincipal principal,
+                                                                     @PathVariable("orderId") Long orderId,
+                                                                     @Valid @RequestBody UserCancelDto.CreateRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(userCancelService.request(principal.getUserId(), orderId, request));
+    }
+
+    @Override
+    @GetMapping("/{orderId}/items/{orderProductId}/cancel")
+    public ResponseEntity<UserCancelDto.DetailResponse> getCancelDetail(@AuthenticationPrincipal UserPrincipal principal,
+                                                                       @PathVariable("orderId") Long orderId,
+                                                                       @PathVariable("orderProductId") Long orderProductId) {
+        return ResponseEntity.ok(userCancelService.getDetail(principal.getUserId(), orderId, orderProductId));
     }
 }

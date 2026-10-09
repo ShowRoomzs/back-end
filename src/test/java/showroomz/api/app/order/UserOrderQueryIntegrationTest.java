@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.ResultActions;
+import showroomz.global.payment.portone.FakePaymentGateway;
 import showroomz.api.app.order.dto.UserOrderDto;
 import showroomz.api.app.order.service.UserOrderQueryService;
 import showroomz.api.seller.order.SellerOrderTestSupport;
@@ -32,6 +33,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
+import static org.hamcrest.Matchers.contains;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
@@ -141,8 +143,9 @@ class UserOrderQueryIntegrationTest extends SellerOrderTestSupport {
                     .andExpect(jsonPath("$.content[0].items[0].status").value("PAID"))
                     .andExpect(jsonPath("$.content[0].items[0].statusLabel").value("결제완료"))
                     .andExpect(jsonPath("$.content[0].items[0].statusTone").value("ACTIVE"))
+                    // 공구 진행 중 — 발송 기한 대신 약정 문구(1009 기획 수정본 1-3)
                     .andExpect(jsonPath("$.content[0].items[0].statusSub")
-                            .value(group.getShipDueAt().format(DAY) + " 발송 예정"))
+                            .value("공구 마감 후 2영업일 이내 발송 (주말·공휴일 제외)"))
                     .andExpect(jsonPath("$.content[0].items[0].brandName").value(group.getMarketName()))
                     .andExpect(jsonPath("$.content[0].items[0].amount").value(CREAM_PRICE))
                     .andExpect(jsonPath("$.content[0].items[0].amountLabel").value("27,200원"))
@@ -170,13 +173,14 @@ class UserOrderQueryIntegrationTest extends SellerOrderTestSupport {
                     .andExpect(jsonPath("$.content[0].items[0].dimmed").value(true))
                     .andExpect(jsonPath("$.content[0].items[0].statusSub").value("완료"))
                     .andExpect(jsonPath("$.content[0].items[0].amountLabel").value("환불 27,200원"))
-                    .andExpect(jsonPath("$.content[0].items[0].actions", empty()))
+                    // [취소 상세] — 취소 상세 API 가 생겼다(1009 기획 수정본 3-1)
+                    .andExpect(jsonPath("$.content[0].items[0].actions[*].type", contains("CANCEL_DETAIL")))
                     .andExpect(jsonPath("$.content[0].items[1].status").value("CANCELLED"))
                     .andExpect(jsonPath("$.content[0].items[1].amountLabel").value("환불 24,000원"));
         }
 
         @Test
-        @DisplayName("한 주문 · 두 브랜드 — 항목마다 상태가 갈리고, 준비 시작된 그룹이 섞이면 NEW 항목에 취소 버튼이 없다(#3 · #9)")
+        @DisplayName("한 주문 · 두 브랜드 — 항목마다 상태가 갈리고, 준비 시작된 그룹이 섞이면 NEW 항목은 전액 취소 대신 취소 요청이다(#3 · #9)")
         void statusSplitsByGroup() throws Exception {
             BrandFixture.Brand other = otherBrand();
             ProductVariant otherVariant = openOtherBrandGroupBuy(other);
@@ -209,10 +213,10 @@ class UserOrderQueryIntegrationTest extends SellerOrderTestSupport {
                     .andExpect(jsonPath("$.content[0].items[0].dates.arrivalDueDate").value(nullValue()))
                     .andExpect(jsonPath("$.content[0].items[1].status").value("PAID"))
                     .andExpect(jsonPath("$.content[0].items[1].brandName").value("타브랜드"))
-                    .andExpect(jsonPath("$.content[0].items[1].actions", empty()));
+                    .andExpect(jsonPath("$.content[0].items[1].actions[*].type", contains("CANCEL_REQUEST")));
             detail(created.orderId()).andExpect(status().isOk())
                     .andExpect(jsonPath("$.cancellable").value(false))
-                    .andExpect(jsonPath("$.items[1].actions", empty()));
+                    .andExpect(jsonPath("$.items[1].actions[*].type", contains("CANCEL_REQUEST")));
         }
 
         @Test
@@ -313,9 +317,11 @@ class UserOrderQueryIntegrationTest extends SellerOrderTestSupport {
         }
 
         @Test
-        @DisplayName("요청 승인 — 환불 큐가 남아 있으면 「환불 처리 중」, 집행되면 「완료」(#8)")
+        @DisplayName("요청 승인 — 환불 큐가 남아 있으면(PG 거절 등) 「환불 처리 중」, 집행되면 「완료」(#8)")
         void refundPendingThenDone() throws Exception {
             OrderDeliveryGroup group = preparingGroup();
+            // PG 자동 환불이 거절되면 큐가 FAILED 로 남는다 — 아직 돈이 나가지 않았다.
+            fake.willFailCancel(group.getOrder().getPaidPaymentId(), FakePaymentGateway.Failure.REJECTED);
             approve(seedCancelRequest(group).getId()).andExpect(status().isOk());
 
             orderList().andExpect(status().isOk())

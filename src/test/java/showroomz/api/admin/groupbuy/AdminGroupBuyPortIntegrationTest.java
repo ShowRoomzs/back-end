@@ -9,15 +9,12 @@ import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.entity.GroupBuyAdminSuspension;
 import showroomz.domain.groupbuy.entity.GroupBuyAppealAttachment;
 import showroomz.domain.groupbuy.entity.GroupBuyChangeRequest;
-import showroomz.domain.groupbuy.entity.GroupBuyFulfillmentCheck;
 import showroomz.domain.groupbuy.repository.GroupBuyAppealAttachmentRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyIssueRepository;
 import showroomz.domain.groupbuy.service.port.GroupBuySalesReader;
 import showroomz.domain.groupbuy.service.port.GroupBuySettlementGateway;
 import showroomz.domain.groupbuy.service.port.GroupBuyThreadGateway;
 import showroomz.domain.groupbuy.type.ChangeRequestType;
-import showroomz.domain.groupbuy.type.FulfillmentResult;
-import showroomz.domain.groupbuy.type.FulfillmentSide;
 import showroomz.domain.groupbuy.type.GroupBuyActorType;
 import showroomz.domain.groupbuy.type.GroupBuyIssueStatus;
 import showroomz.domain.groupbuy.type.GroupBuyIssueType;
@@ -29,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -96,17 +94,17 @@ class AdminGroupBuyPortIntegrationTest extends AdminGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("미종결 주문이 있거나 이행 확인이 없으면 막고, 모두 끝나면 정산 포트에만 확인을 위임한다")
+    @DisplayName("미종결 주문이 있으면 막고, 모두 끝나면 정산 포트에만 확인을 위임한다 — 이행 확인은 게이트가 아니다(2026-10-06 폐기)")
     void settlementConfirmationRequiresAllFactsAndDelegates() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);
         when(settlementGateway.readStage(groupBuy.getId()))
                 .thenReturn(Optional.of(GroupBuySettlementGateway.SettlementStage.WAITING));
         when(salesReader.readClosure(groupBuy.getId())).thenReturn(Optional.of(
                 new GroupBuySalesReader.GroupBuyOrderClosure(10, 9, 1, 0, 1, List.of(), null, null)));
-        adminDetail(groupBuy.getId()).andExpect(jsonPath("$.afterEnd.settlement.blockers[0]").value("UNCLOSED_ORDERS"))
-                .andExpect(jsonPath("$.afterEnd.settlement.blockers[1]").value("FULFILLMENT_PENDING"))
+        adminDetail(groupBuy.getId()).andExpect(jsonPath("$.afterEnd.settlement.blockers.length()").value(1))
+                .andExpect(jsonPath("$.afterEnd.settlement.blockers[0]").value("UNCLOSED_ORDERS"))
+                .andExpect(jsonPath("$.afterEnd.fulfillment").value(nullValue()))
                 .andExpect(jsonPath("$.permissions.canConfirmSettlement").value(false));
-        addFulfilledChecks(groupBuy);
 
         adminDetail(groupBuy.getId()).andExpect(jsonPath("$.afterEnd.settlement.stageSource").value("PORT"))
                 .andExpect(jsonPath("$.afterEnd.settlement.blockers[0]").value("UNCLOSED_ORDERS"))
@@ -171,16 +169,6 @@ class AdminGroupBuyPortIntegrationTest extends AdminGroupBuyTestSupport {
         adminGet(another.getId(), "admin-suspension/attachments/" + uploaded.getId())
                 .andExpect(status().isNotFound());
         verify(appealStorage).presignDownload("appeal/evidence.pdf", "evidence.pdf");
-    }
-
-    private void addFulfilledChecks(GroupBuy groupBuy) {
-        transactionTemplate.executeWithoutResult(tx -> {
-            GroupBuy reference = groupBuyRepository.findById(groupBuy.getId()).orElseThrow();
-            fulfillmentCheckRepository.save(GroupBuyFulfillmentCheck.manual(reference, FulfillmentSide.SELLER,
-                    FulfillmentResult.FULFILLED, null, brand.seller().getId(), null, LocalDateTime.now()));
-            fulfillmentCheckRepository.save(GroupBuyFulfillmentCheck.manual(reference, FulfillmentSide.CREATOR,
-                    FulfillmentResult.FULFILLED, null, creator.getId(), null, LocalDateTime.now()));
-        });
     }
 
     private GroupBuyAppealAttachment addAttachment(GroupBuyAdminSuspension notice, boolean uploaded,

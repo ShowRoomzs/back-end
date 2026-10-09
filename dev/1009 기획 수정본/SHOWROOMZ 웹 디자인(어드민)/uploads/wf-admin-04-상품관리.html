@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>wf-admin-04 · 상품 관리 · 1440×1024</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,"Malgun Gothic","맑은 고딕",sans-serif; background:#e6e6e6; color:#222; }
+  .doc-head { padding:24px 40px 4px; }
+  .doc-head h1 { font-size:18px; font-weight:700; }
+  .doc-head h1 span { font-weight:400; color:#888; font-size:13px; }
+  .doc-head .sub { font-size:12px; color:#777; margin-top:4px; line-height:1.6; }
+  .doc-head .spec { display:inline-block; margin-top:8px; font-size:11px; color:#555; background:#fff; border:1px solid #ccc; border-radius:4px; padding:4px 8px; }
+  .stack { padding:16px 40px 60px; }
+  .ftitle { font-size:13px; font-weight:700; color:#333; margin:22px 0 8px; }
+  .ftitle span { font-weight:400; color:#888; font-size:12px; }
+  .ftitle .pill { font-weight:400; font-size:11px; color:#555; background:#fff; border:1px solid #bbb; border-radius:10px; padding:1px 8px; margin-left:6px; }
+
+  .frame { width:1440px; background:#fff; border:1px solid #b5b5b5; border-radius:8px; box-shadow:0 1px 5px rgba(0,0,0,.1); overflow:hidden; position:relative; }
+  .chrome { height:32px; background:#e2e2e2; border-bottom:1px solid #c8c8c8; display:flex; align-items:center; padding:0 12px; gap:6px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#c0c0c0; }
+  .urlbar { flex:1; height:18px; background:#fff; border:1px solid #d0d0d0; border-radius:9px; font-size:11px; color:#888; display:flex; align-items:center; padding:0 10px; margin-left:8px; }
+  .app { display:flex; min-height:992px; }
+  .gnb { width:224px; flex-shrink:0; background:#3f3f3f; color:#cfcfcf; padding:0 0 20px; }
+  .gnb .brand { padding:22px 20px 18px; border-bottom:1px solid #565656; }
+  .gnb .brand .m { font-size:15px; font-weight:800; color:#fff; letter-spacing:.5px; }
+  .gnb .brand .s { font-size:10px; color:#a5a5a5; margin-top:3px; }
+  .gnb-item { display:flex; align-items:center; gap:8px; padding:11px 20px; font-size:12.5px; color:#c2c2c2; border-left:3px solid transparent; }
+  .gnb-item .n { font-size:11px; color:#8f8f8f; width:14px; }
+  .gnb-item .cnt { margin-left:auto; background:#5a5a5a; color:#fff; border-radius:9px; font-size:10px; min-width:17px; height:17px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; }
+  .gnb-item.hot .cnt { background:#a33; }
+  .gnb-item.on { background:#2a2a2a; color:#fff; font-weight:700; border-left-color:#fff; }
+  .gnb-item.on .n { color:#ddd; }
+  .gnb-right { margin-left:auto; display:flex; align-items:center; gap:5px; }
+  .gnb-right .cnt { margin-left:0; }
+  .chev { font-size:9px; color:#8f8f8f; }
+  .gnb-item.on .chev { color:#ddd; }
+  .gnb-sub { padding:9px 20px 9px 44px; font-size:12px; color:#999; display:flex; align-items:center; }
+  .gnb-sub .cnt { margin-left:auto; background:#5a5a5a; color:#fff; border-radius:9px; font-size:10px; min-width:17px; height:17px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; }
+  .gnb-sub.on .cnt { background:#555; }
+  .gnb-sub.on { background:#333; color:#fff; border-left:2px solid #888; padding-left:42px; }
+  .main { flex:1; background:#f7f7f7; min-width:0; position:relative; }
+  .topbar { height:56px; background:#fff; border-bottom:1px solid #e2e2e2; display:flex; align-items:center; justify-content:space-between; padding:0 24px; }
+  .crumb { font-size:14px; font-weight:700; color:#222; }
+  .crumb .sub2 { font-weight:400; color:#999; font-size:12px; margin-left:6px; }
+  .op-chip { display:flex; align-items:center; gap:8px; font-size:12px; color:#555; }
+  .op-chip .st { border:1px solid #999; border-radius:12px; padding:2px 10px; background:#f2f2f2; }
+  .content { padding:24px; }
+
+  /* 목록 화면 */
+  .filter-row { display:flex; gap:8px; margin-bottom:14px; align-items:center; }
+  .fchip { border:1px solid #ccc; border-radius:14px; padding:5px 14px; font-size:12px; color:#555; background:#fff; }
+  .fchip.on { background:#333; color:#fff; border-color:#333; }
+  .search-box { margin-left:auto; border:1px solid #ccc; border-radius:6px; padding:6px 12px; font-size:12px; color:#999; background:#fff; width:240px; }
+  .list-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:12px; color:#888; }
+  .list-toolbar b { color:#333; }
+
+  table.list { width:100%; border-collapse:collapse; font-size:12.5px; background:#fff; border:1px solid #e2e2e2; border-radius:8px; overflow:hidden; }
+  table.list th { text-align:left; padding:11px 14px; background:#f6f6f6; color:#666; font-size:11.5px; border-bottom:1px solid #eee; font-weight:700; }
+  table.list td { padding:12px 14px; border-bottom:1px solid #f2f2f2; color:#444; vertical-align:middle; }
+  table.list tr:last-child td { border-bottom:none; }
+  table.list tr.row-link td:first-child { text-decoration:underline; color:#333; font-weight:600; }
+  .thumb { width:40px; height:48px; background:#e6e6e6; border:1px solid #ddd; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:14px; color:#aaa; }
+  .imgrow { display:flex; gap:10px; }
+  .imgprev { width:88px; height:88px; border:1px solid #ddd; border-radius:8px; background:#f0f0f0; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:12px; color:#999; gap:4px; }
+  .imgprev .r { font-size:10px; color:#aaa; }
+  .p-name { font-weight:600; color:#333; }
+  .p-code { font-size:10.5px; color:#aaa; margin-top:2px; }
+  .badge { border:1px solid #999; border-radius:10px; padding:1px 9px; font-size:10.5px; color:#444; background:#f6f6f6; white-space:nowrap; }
+  .badge.on { background:#3a3a3a; color:#fff; border-color:#3a3a3a; }
+  .badge.off { background:#eee; color:#888; }
+  .badge.campaign { background:#fff; color:#8a5a00; border-color:#c9a24a; }
+  .badge.soldout { background:#fff; color:#a33; border-color:#a33; }
+  .badge.review { background:#fff; color:#8a5a00; border-color:#c9a24a; }
+  .mini-btn { border:1px solid #ccc; border-radius:4px; padding:5px 10px; font-size:11px; color:#555; background:#fff; white-space:nowrap; }
+  .mini-btn.danger { color:#a33; border-color:#e0b3b3; }
+  .mini-btn.disabled { color:#bbb; border-color:#e2e2e2; background:#fafafa; }
+
+  .pager { display:flex; justify-content:center; gap:6px; margin-top:16px; font-size:12px; color:#888; }
+  .pager span { width:24px; height:24px; display:flex; align-items:center; justify-content:center; border:1px solid #ddd; border-radius:4px; }
+  .pager span.on { background:#333; color:#fff; border-color:#333; }
+
+  /* 상세 화면 */
+  .detail-grid { display:flex; gap:18px; align-items:flex-start; }
+  .det-l { flex:1; min-width:0; } .det-r { width:340px; flex-shrink:0; }
+  .card { background:#fff; border:1px solid #e2e2e2; border-radius:10px; margin-bottom:16px; }
+  .card-h { padding:13px 18px; border-bottom:1px solid #eee; font-size:13.5px; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
+  .card-b { padding:16px 18px; }
+  .form-row { display:flex; border-bottom:1px solid #f2f2f2; padding:10px 0; font-size:12.5px; }
+  .form-row:last-child { border-bottom:none; }
+  .form-label { width:150px; flex-shrink:0; color:#888; }
+  .form-val { color:#333; flex:1; }
+
+  table.sku { width:100%; border-collapse:collapse; font-size:12px; }
+  table.sku th { text-align:left; padding:8px 10px; background:#f6f6f6; color:#777; font-size:10.5px; font-weight:700; border-bottom:1px solid #eee; }
+  table.sku td { padding:9px 10px; border-bottom:1px solid #f2f2f2; color:#444; }
+  table.sku tr:last-child td { border-bottom:none; }
+
+  .status-box { text-align:center; padding:18px 0 6px; }
+  .status-box .lb { font-size:11px; color:#999; margin-bottom:8px; }
+  .status-box .cur { font-size:15px; font-weight:800; color:#333; margin-bottom:2px; }
+  .act-row { display:flex; gap:8px; padding:0 18px 18px; }
+  .abtn { flex:1; padding:11px 0; text-align:center; border-radius:6px; font-size:13px; font-weight:700; border:1px solid #333; }
+  .abtn.appr { background:#333; color:#fff; }
+  .abtn.rej { background:#fff; color:#a33; border-color:#a33; }
+  .abtn.disabled { background:#f2f2f2; color:#bbb; border-color:#ddd; }
+
+  .hist { padding:14px 18px; }
+  .hitem { display:flex; gap:10px; padding:9px 0; border-bottom:1px solid #f2f2f2; font-size:12px; }
+  .hitem:last-child { border-bottom:none; }
+  .hitem .hd { color:#333; } .hitem .ht { color:#aaa; font-size:10.5px; margin-top:2px; }
+
+  /* 모달 */
+  .modal-overlay { position:absolute; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:20; }
+  .modal { width:460px; background:#fff; border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,.2); overflow:hidden; }
+  .modal-h { padding:18px 20px; font-size:15px; font-weight:800; border-bottom:1px solid #eee; }
+  .modal-b { padding:18px 20px; font-size:13px; color:#555; line-height:1.7; }
+  .modal-b .sel { width:100%; border:1px solid #ccc; border-radius:6px; padding:9px 10px; font-size:12.5px; color:#666; margin:10px 0 8px; }
+  .modal-b .ta { width:100%; border:1px solid #ccc; border-radius:6px; padding:9px 10px; font-size:12.5px; color:#888; min-height:70px; }
+  .modal-f { display:flex; gap:8px; padding:14px 20px; border-top:1px solid #eee; }
+  .modal-btn { flex:1; padding:11px 0; text-align:center; border-radius:6px; font-size:13px; font-weight:700; border:1px solid #ccc; background:#fff; color:#555; }
+  .modal-btn.do { background:#a33; color:#fff; border-color:#a33; }
+  .modal-btn.doa { background:#333; color:#fff; border-color:#333; }
+
+  .foldline { position:absolute; left:0; right:0; top:1024px; border-top:1.5px dashed #c4553f; z-index:5; }
+  .foldline::after { content:"↑ 1440×1024 뷰포트 경계 · 이하 스크롤"; position:absolute; right:14px; top:-9px; background:#f7f7f7; padding:0 8px; font-size:10px; color:#c4553f; }
+  .note { margin:6px 0 0; border:1.5px dashed #999; border-radius:6px; background:#fafafa; padding:9px 12px; font-size:11.5px; color:#555; line-height:1.6; }
+  .note b { color:#333; } .note .tag { font-weight:700; margin-right:4px; }
+  .note.rule .tag { color:#555; }
+  .note.legal .tag { color:#8a5a00; }
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>⑤ 어드민 · 4. 상품 관리 <span>wf-admin-04 · 데스크톱 1440×1024</span></h1>
+  <div class="sub">그레이스케일 lo-fi · 전체 상품 조회(브랜드 등록 상품, 조회 전용) · <b>진열/미진열 처리 = 전 상품·상시 운영자 전용 권한</b>(브랜드는 진열 제어 불가, 공구 연결 여부 무관 — ③ draft47 §6-1 개정 · ② draft36) · 뷰티 전용(카테고리 선택 없음, 할인가 없음 — 목업 대비 draft35 정리 반영) · <b>2026.07 보강</b>: 상품 정보 제공 고시 11개 필드 전체 표시, 목록 등록/수정일(최신순·시분 표시)로 통합, 목록 미진열 퀵버튼 제거(상세 경유), 재검토 대기 플로우 신설</div>
+  <div class="spec">프레임 1440×1024 · 집행 액션(미진열 처리) = 사유 입력 모달 → 감사 기록 연동 · 다시 진열 = 확인만(사유 없음)</div>
+</div>
+
+<div class="stack">
+
+<!-- ============ F1. 상품 목록 ============ -->
+<div class="ftitle">1. 전체 상품 목록 <span>— 브랜드 등록 상품 전수 조회</span><span class="pill">GNB #4 · F1</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/products</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item hot on"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">상품 관리</div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="filter-row">
+          <span class="fchip on">전체 128</span>
+          <span class="fchip">진열 119</span>
+          <span class="fchip">미진열 9</span>
+          <span class="fchip">재검토 대기 2</span>
+          <span class="fchip">진행중 공구 상품 14</span>
+          <span class="fchip">품절 6</span>
+          <div class="search-box">상품명 · 상품번호 · 브랜드명 검색</div>
+        </div>
+        <div class="list-toolbar"><span>총 <b>128</b>건</span><span>등록일순 ▾</span></div>
+        <table class="list">
+          <thead><tr>
+            <th style="width:64px">이미지</th>
+            <th>상품명</th>
+            <th style="width:130px">브랜드</th>
+            <th style="width:90px">정가</th>
+            <th style="width:90px">재고(SKU)</th>
+            <th style="width:150px">진열 상태</th>
+            <th style="width:110px">공구 연결</th>
+            <th style="width:140px">등록/수정일</th>
+            <th style="width:90px">관리</th>
+          </tr></thead>
+          <tbody>
+            <tr class="row-link">
+              <td><div class="thumb">IMG</div></td>
+              <td><div class="p-name">글로우 세럼 앰플 30ml</div><div class="p-code">판매자상품코드 GL-SR-30</div></td>
+              <td>글로우랩</td>
+              <td>38,000원</td>
+              <td>120</td>
+              <td><span class="badge on">진열</span></td>
+              <td>—</td>
+              <td>2026.06.02 10:14 <span style="color:#aaa;font-size:10px">등록</span></td>
+              <td><span class="mini-btn">상세</span></td>
+            </tr>
+            <tr class="row-link">
+              <td><div class="thumb">IMG</div></td>
+              <td><div class="p-name">비타민C 브라이트닝 크림</div><div class="p-code">판매자상품코드 SK-VC-CR</div></td>
+              <td>스킨랩코리아</td>
+              <td>29,000원</td>
+              <td>63</td>
+              <td><span class="badge on">진열</span></td>
+              <td><span class="badge campaign">공구 진행중</span></td>
+              <td>2026.06.20 09:31 <span style="color:#aaa;font-size:10px">수정</span></td>
+              <td><span class="mini-btn">상세</span></td>
+            </tr>
+            <tr class="row-link">
+              <td><div class="thumb">IMG</div></td>
+              <td><div class="p-name">히알루론산 토너 200ml</div><div class="p-code">판매자상품코드 GL-TN-20</div></td>
+              <td>글로우랩</td>
+              <td>22,000원</td>
+              <td>67</td>
+              <td><span class="badge on">진열</span></td>
+              <td>—</td>
+              <td>2026.05.20 16:47 <span style="color:#aaa;font-size:10px">등록</span></td>
+              <td><span class="mini-btn">상세</span></td>
+            </tr>
+            <tr class="row-link">
+              <td><div class="thumb">IMG</div></td>
+              <td><div class="p-name">콜라겐 립 에센스</div><div class="p-code">판매자상품코드 SK-LP-01</div></td>
+              <td>스킨랩코리아</td>
+              <td>19,000원</td>
+              <td><span class="badge soldout">품절</span></td>
+              <td><span class="badge on">진열</span></td>
+              <td>—</td>
+              <td>2026.05.14 11:02 <span style="color:#aaa;font-size:10px">등록</span></td>
+              <td><span class="mini-btn">상세</span></td>
+            </tr>
+            <tr class="row-link">
+              <td><div class="thumb">IMG</div></td>
+              <td><div class="p-name">라이스 브라이트닝 크림 50ml</div><div class="p-code">판매자상품코드 —</div></td>
+              <td>무드코스메틱</td>
+              <td>26,000원</td>
+              <td>0(전체 미진열)</td>
+              <td><span class="badge off">미진열</span><br><span class="badge review" style="margin-top:4px;display:inline-block">재검토 대기</span></td>
+              <td><span class="badge campaign">공구 진행중</span></td>
+              <td>2026.07.15 09:12 <span style="color:#aaa;font-size:10px">수정</span></td>
+              <td><span class="mini-btn">상세</span></td>
+            </tr>
+            <tr class="row-link">
+              <td><div class="thumb">IMG</div></td>
+              <td><div class="p-name">시카 진정 앰플 40ml</div><div class="p-code">판매자상품코드 GL-CC-40</div></td>
+              <td>글로우랩</td>
+              <td>32,000원</td>
+              <td>91</td>
+              <td><span class="badge on">진열</span></td>
+              <td>—</td>
+              <td>2026.04.22 13:55 <span style="color:#aaa;font-size:10px">등록</span></td>
+              <td><span class="mini-btn">상세</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="pager"><span>‹</span><span class="on">1</span><span>2</span><span>3</span><span>›</span></div>
+        <div class="note rule"><span class="tag">[규칙 · 2026.07 개정]</span> <b>진열/미진열 처리는 공구 연결 여부와 무관하게 항상 운영자 전용</b>(브랜드는 파트너센터에서 진열 토글 자체가 없음 — wf-partner-02 개정) · "공구 연결" 뱃지는 <b>진행중 공구</b>에 걸린 상품만 표시하며, 해당 상품은 정가·핵심 정보 수정도 추가로 잠금(재고 보충만 허용, ③ draft47)</div>
+        <div class="note legal"><span class="tag">[상태 구분]</span> <b>"미진열"과 "재검토 대기"는 서로 다른 상태입니다</b> — 미진열은 <b>진열 상태값</b>(진열/미진열 중 하나), 재검토 대기는 미진열 상품 중 <b>브랜드가 수정해서 운영자 확인이 필요하다는 추가 플래그</b>. 그래서 "재검토 대기 2"는 "미진열 9"에 <b>포함된 부분집합</b>이지 별도로 더해지는 숫자가 아닙니다(9건 중 2건이 재검토 대기). 목록 칩과 배지도 이 둘을 항상 별개로 표시(병합 배지 사용 안 함).</div>
+        <div class="note rule"><span class="tag">[규칙]</span> <b>카테고리 컬럼·할인 판매가 컬럼 없음</b> — 뷰티 전용 MVP라 카테고리 선택 자체가 없고(화장품 고정), 할인가 필드는 목업 대비 제거(③ draft47 draft35 정리). 기존 컬러 목업의 "마켓명"은 전부 <b>"브랜드"</b>로 교체.</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F2. 상품 상세 ============ -->
+<div class="ftitle">2. 상품 상세 — 진열중 상태 <span>— 조회 전용 + 진열 상태 관리</span><span class="pill">GNB #4 · F2</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/products/PRD-20260528-0002</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item hot on"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">상품 관리 <span class="sub2">/ 비타민C 브라이트닝 크림</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="detail-grid">
+          <div class="det-l">
+            <div class="card">
+              <div class="card-h">기본 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">상품명</div><div class="form-val">비타민C 브라이트닝 크림</div></div>
+                <div class="form-row"><div class="form-label">브랜드</div><div class="form-val">스킨랩코리아</div></div>
+                <div class="form-row"><div class="form-label">정가</div><div class="form-val">29,000원 <span style="color:#aaa">(진행중 공구로 수정 잠금 — 재고 보충만 가능)</span></div></div>
+                <div class="form-row"><div class="form-label">판매자상품코드</div><div class="form-val">SK-VC-CR <span style="color:#aaa">(브랜드 내부 관리용 · 소비자 비노출)</span></div></div>
+                <div class="form-row"><div class="form-label">등록일</div><div class="form-val">2026.05.28</div></div>
+                <div class="form-row"><div class="form-label">수정일</div><div class="form-val">2026.06.20</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">상품 이미지</div>
+              <div class="card-b">
+                <div class="imgrow">
+                  <div class="imgprev">대표<br><span class="r">1:1</span></div>
+                  <div class="imgprev">2<br><span class="r">1:1</span></div>
+                  <div class="imgprev">3<br><span class="r">1:1</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">옵션 조합(SKU) <span style="font-size:11px;color:#999;font-weight:400">그룹 2(용량×타입) · 총 재고 63</span></div>
+              <div class="card-b" style="padding:0">
+                <table class="sku">
+                  <thead><tr><th style="padding-left:18px">용량</th><th>타입</th><th>재고 수량</th><th>조합 진열</th></tr></thead>
+                  <tbody>
+                    <tr><td style="padding-left:18px">30ml</td><td>데일리</td><td>25</td><td><span class="badge on">진열</span></td></tr>
+                    <tr><td style="padding-left:18px">30ml</td><td>저자극</td><td>20</td><td><span class="badge on">진열</span></td></tr>
+                    <tr><td style="padding-left:18px">50ml</td><td>데일리</td><td>18</td><td><span class="badge on">진열</span></td></tr>
+                    <tr><td style="padding-left:18px">50ml</td><td>저자극</td><td><span class="badge soldout">품절 0</span></td><td><span class="badge off">미진열</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="card-b" style="padding-top:0"><div style="font-size:11px;color:#999">열 = 옵션 그룹(용량·타입) · 행 = 조합(SKU) · 재고 0 조합은 품절 파생 + 해당 SKU만 미진열(상품 전체 진열과 별개, ③ §6-4)</div></div>
+            </div>
+            <div class="card">
+              <div class="card-h">상품 설명</div>
+              <div class="card-b">
+                <div style="font-size:12.5px;color:#666;line-height:1.7;background:#fafafa;border:1px solid #eee;border-radius:6px;padding:14px;min-height:60px">상품 상세 설명 본문 (리치 텍스트) — 소비자 C7 상품 상세와 동일 내용 미리보기</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">배송 · 반품 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">기본 배송비</div><div class="form-val">3,000원 / 하위주문 단위</div></div>
+                <div class="form-row"><div class="form-label">무료배송 기준금액</div><div class="form-val">30,000원 이상</div></div>
+                <div class="form-row"><div class="form-label">도서산간 추가비</div><div class="form-val">제주 3,000원 · 그 외 5,000원</div></div>
+                <div class="form-row"><div class="form-label">배송 방법</div><div class="form-val">택배</div></div>
+                <div class="form-row"><div class="form-label">출고 소요일</div><div class="form-val">영업일 2일 이내</div></div>
+                <div class="form-row"><div class="form-label">반품비(회수비)</div><div class="form-val">3,000원 · 단순변심 기준</div></div>
+                <div class="form-row"><div class="form-label">교환비(회수+배송)</div><div class="form-val">6,000원 · 단순변심 기준</div></div>
+              </div>
+              <div class="card-b" style="padding-top:0"><div style="font-size:11px;color:#8a5a00">[법률 대기 · 쟁점 B] 단순변심/불량·오배송 부담 주체·공제 방식 — 변호사 검토 후 문구 확정(② 정책과 짝)</div></div>
+            </div>
+            <div class="card">
+              <div class="card-h">상품 정보 제공 고시 <span style="font-size:11px;color:#999;font-weight:400">(화장품 — 카테고리 고정)</span></div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">용량·중량</div><div class="form-val">30ml / 50ml</div></div>
+                <div class="form-row"><div class="form-label">제품 주요 사양</div><div class="form-val">미백·주름개선 이중기능성 크림</div></div>
+                <div class="form-row"><div class="form-label">사용기한·개봉 후 사용기간</div><div class="form-val">제조일로부터 30개월 · 개봉 후 12개월</div></div>
+                <div class="form-row"><div class="form-label">사용방법</div><div class="form-val">세안 후 적당량을 얼굴에 고르게 펴 발라줍니다.</div></div>
+                <div class="form-row"><div class="form-label">화장품제조업자·책임판매업자</div><div class="form-val">스킨랩코리아</div></div>
+                <div class="form-row"><div class="form-label">제조국</div><div class="form-val">대한민국</div></div>
+                <div class="form-row"><div class="form-label">전성분</div><div class="form-val">정제수, 글리세린, 나이아신아마이드 외 32종</div></div>
+                <div class="form-row"><div class="form-label">기능성 화장품 여부</div><div class="form-val">이중기능성(미백+주름개선)</div></div>
+                <div class="form-row"><div class="form-label">사용 시 주의사항</div><div class="form-val">상처가 있는 부위에는 사용을 자제 · 눈 주위 사용 시 접촉 주의</div></div>
+                <div class="form-row"><div class="form-label">품질보증기준</div><div class="form-val">공정거래위원회 고시 소비자분쟁해결기준에 따름</div></div>
+                <div class="form-row"><div class="form-label">소비자상담 전화번호</div><div class="form-val">1544-0000</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">진행중 공구 연결</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">공구명</div><div class="form-val">여름 비타C 루틴 공동구매</div></div>
+                <div class="form-row"><div class="form-label">공구 상태</div><div class="form-val">노출중</div></div>
+                <div class="form-row"><div class="form-label">인플루언서</div><div class="form-val">글로우랩 with 지수</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="det-r">
+            <div class="card">
+              <div class="card-h">진열 상태 관리</div>
+              <div class="status-box">
+                <div class="lb">현재 진열 상태</div>
+                <div class="cur">진열중</div>
+              </div>
+              <div class="act-row">
+                <div class="abtn rej">미진열 처리</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">처리 이력</div>
+              <div class="hist">
+                <div class="hitem"><div>🟢</div><div><div class="hd">등록 즉시 진열 (검수 없음)</div><div class="ht">2026.05.28 14:02 · 시스템</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note rule" style="margin-top:14px"><span class="tag">[규칙]</span> 상품 상세는 <b>조회 전용</b> — 상품명·정가·옵션·이미지·배송정책·고시 등 전 항목은 브랜드(파트너센터)만 편집 가능(wf-partner-02 등록 폼 기준). 운영자 권한은 <b>진열 상태 전환</b>과 조회에 한정.</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F3. 상품 상세 — 미진열 상태 ============ -->
+<div class="ftitle">3. 상품 상세 — 미진열 상태 <span>— 운영자가 미진열 처리한 상품(공구 연결 여부 무관, 브랜드는 되돌릴 수 없음)</span><span class="pill">GNB #4 · F3</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/products/PRD-20260430-0005</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item hot on"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">상품 관리 <span class="sub2">/ 라이스 브라이트닝 크림 50ml</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="detail-grid">
+          <div class="det-l">
+            <div class="card">
+              <div class="card-h">기본 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">상품명</div><div class="form-val">라이스 브라이트닝 크림 50ml</div></div>
+                <div class="form-row"><div class="form-label">브랜드</div><div class="form-val">무드코스메틱</div></div>
+                <div class="form-row"><div class="form-label">정가</div><div class="form-val">26,000원 <span style="color:#aaa">(진행중 공구로 수정 잠금 — 재고 보충만 가능)</span></div></div>
+                <div class="form-row"><div class="form-label">판매자상품코드</div><div class="form-val">— <span style="color:#aaa">(미입력)</span></div></div>
+                <div class="form-row"><div class="form-label">등록일</div><div class="form-val">2026.04.30</div></div>
+                <div class="form-row"><div class="form-label">수정일</div><div class="form-val">2026.07.10</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">상품 이미지</div>
+              <div class="card-b">
+                <div class="imgrow">
+                  <div class="imgprev">대표<br><span class="r">1:1</span></div>
+                  <div class="imgprev">2<br><span class="r">1:1</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">옵션 조합(SKU) <span style="font-size:11px;color:#999;font-weight:400">그룹 1(단일) · 상품 전체 미진열</span></div>
+              <div class="card-b" style="padding:0">
+                <table class="sku">
+                  <thead><tr><th style="padding-left:18px">조합명</th><th>재고 수량</th><th>조합 진열</th></tr></thead>
+                  <tbody>
+                    <tr><td style="padding-left:18px">기본(단일 옵션)</td><td>45</td><td><span class="badge off">미진열</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="card-b" style="padding-top:0"><div style="font-size:11px;color:#999">재고는 남아있으나(45) <b>상품 단위 미진열</b>이라 조합 진열도 함께 숨김 — 상품 미진열 &gt; 조합 진열(상위 규칙 우선, ③ §6-4)</div></div>
+            </div>
+            <div class="card">
+              <div class="card-h">상품 설명</div>
+              <div class="card-b">
+                <div style="font-size:12.5px;color:#666;line-height:1.7;background:#fafafa;border:1px solid #eee;border-radius:6px;padding:14px;min-height:60px">상품 상세 설명 본문 (리치 텍스트) — 소비자 C7 상품 상세와 동일 내용 미리보기</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">배송 · 반품 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">기본 배송비</div><div class="form-val">3,000원 / 하위주문 단위</div></div>
+                <div class="form-row"><div class="form-label">무료배송 기준금액</div><div class="form-val">미설정</div></div>
+                <div class="form-row"><div class="form-label">도서산간 추가비</div><div class="form-val">제주 3,000원 · 그 외 5,000원</div></div>
+                <div class="form-row"><div class="form-label">배송 방법</div><div class="form-val">택배</div></div>
+                <div class="form-row"><div class="form-label">출고 소요일</div><div class="form-val">영업일 3일 이내</div></div>
+                <div class="form-row"><div class="form-label">반품비(회수비)</div><div class="form-val">3,000원 · 단순변심 기준</div></div>
+                <div class="form-row"><div class="form-label">교환비(회수+배송)</div><div class="form-val">6,000원 · 단순변심 기준</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">상품 정보 제공 고시 <span style="font-size:11px;color:#999;font-weight:400">(화장품 — 카테고리 고정)</span></div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">용량·중량</div><div class="form-val">50ml</div></div>
+                <div class="form-row"><div class="form-label">제품 주요 사양</div><div class="form-val">라이스 추출물 함유 브라이트닝 크림</div></div>
+                <div class="form-row"><div class="form-label">사용기한·개봉 후 사용기간</div><div class="form-val">제조일로부터 24개월 · 개봉 후 12개월</div></div>
+                <div class="form-row"><div class="form-label">사용방법</div><div class="form-val">세안 후 적당량을 얼굴에 고르게 펴 발라줍니다.</div></div>
+                <div class="form-row"><div class="form-label">화장품제조업자·책임판매업자</div><div class="form-val">무드코스메틱</div></div>
+                <div class="form-row"><div class="form-label">제조국</div><div class="form-val">대한민국</div></div>
+                <div class="form-row"><div class="form-label">전성분</div><div class="form-val">정제수, 나이아신아마이드, 쌀추출물 외 28종</div></div>
+                <div class="form-row"><div class="form-label">기능성 화장품 여부</div><div class="form-val">해당 없음</div></div>
+                <div class="form-row"><div class="form-label">사용 시 주의사항</div><div class="form-val">상처가 있는 부위에는 사용을 자제</div></div>
+                <div class="form-row"><div class="form-label">품질보증기준</div><div class="form-val">공정거래위원회 고시 소비자분쟁해결기준에 따름</div></div>
+                <div class="form-row"><div class="form-label">소비자상담 전화번호</div><div class="form-val">1544-1111</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">진행중 공구 연결</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">공구명</div><div class="form-val">라이스 모공 케어 공동구매</div></div>
+                <div class="form-row"><div class="form-label">공구 상태</div><div class="form-val">노출중</div></div>
+                <div class="form-row"><div class="form-label">인플루언서</div><div class="form-val">무드코스메틱 with 유리</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="det-r">
+            <div class="card">
+              <div class="card-h">진열 상태 관리</div>
+              <div class="status-box">
+                <div class="lb">현재 진열 상태</div>
+                <div class="cur" style="color:#a33">미진열중</div>
+              </div>
+              <div style="margin:0 18px 14px;padding:10px 12px;background:#fff8ec;border:1px solid #e8c987;border-radius:6px;font-size:11.5px;color:#8a5a00;line-height:1.6">⚠ <b>재검토 대기</b> — 브랜드가 2026.07.15 09:12에 상품 정보를 수정했습니다(미진열 사유였던 항목 포함 여부 확인 필요). 문제가 해결됐는지 검토 후 다시 진열하세요.</div>
+              <div class="act-row">
+                <div class="abtn appr">다시 진열</div>
+              </div>
+              <div style="padding:0 18px 16px;font-size:11px;color:#999;line-height:1.6">공구 연결 여부와 무관하게 <b>운영자만</b> 다시 진열 가능(브랜드 화면엔 진열 토글 자체가 없음)</div>
+            </div>
+            <div class="card">
+              <div class="card-h">처리 이력</div>
+              <div class="hist">
+                <div class="hitem"><div>🟡</div><div><div class="hd">브랜드가 상품 정보 수정 (재검토 대기로 전환)</div><div class="ht">2026.07.15 09:12 · 무드코스메틱</div></div></div>
+                <div class="hitem"><div>🔴</div><div><div class="hd">미진열 처리 — 사유: 상품 정보 제공 고시 오류</div><div class="ht">2026.07.10 11:20 · 김운영 운영자</div></div></div>
+                <div class="hitem"><div>🟢</div><div><div class="hd">등록 즉시 진열 (검수 없음)</div><div class="ht">2026.04.30 10:04 · 시스템</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note rule" style="margin-top:14px"><span class="tag">[규칙]</span> 진행중 공구 상품이 미진열 상태가 되어도 <b>공구 게시물·계약 자체는 유지</b> — 소비자 화면 노출만 중단. 공구 취소는 별도 액션(⑤ 공구 관리, 어드민 §5).</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F4. 미진열 처리 모달 ============ -->
+<div class="ftitle">4. 미진열 처리 모달 <span>— 사유 필수, 진열 처리는 전 상품 운영자 전용 권한 안내</span><span class="pill">GNB #4 · F4</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/products/PRD-20260528-0002</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item hot on"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">상품 관리 <span class="sub2">/ 비타민C 브라이트닝 크림</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="detail-grid" style="opacity:.4">
+          <div class="det-l"><div class="card"><div class="card-h">기본 정보</div><div class="card-b"><div class="form-row"><div class="form-label">상품명</div><div class="form-val">비타민C 브라이트닝 크림</div></div></div></div></div>
+          <div class="det-r"></div>
+        </div>
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-h">상품 미진열 처리</div>
+            <div class="modal-b">
+              <b>비타민C 브라이트닝 크림</b>을 미진열 처리하시겠습니까?<br>진열/미진열 처리는 <b>항상 운영자 전용 권한</b>이며 브랜드는 스스로 되돌릴 수 없습니다(공구 연결 여부 무관). 처리 즉시 소비자 화면에서 노출이 중단됩니다.
+              <select class="sel"><option>미진열 사유 선택 (필수)</option><option>상품 정보 제공 고시 오류</option><option>표시·광고 위반 의심</option><option>브랜드 요청(운영자 경유)</option><option>기타(직접 입력)</option></select>
+              <textarea class="ta" placeholder="상세 사유 입력 (처리 이력에 기록됨)"></textarea>
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">취소</div>
+              <div class="modal-btn do">미진열 처리</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F5. 다시 진열 확인 모달 ============ -->
+<div class="ftitle">5. 다시 진열 확인 모달 <span>— 사유 입력 없음</span><span class="pill">GNB #4 · F5</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/products/PRD-20260430-0005</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item hot on"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">상품 관리 <span class="sub2">/ 라이스 브라이트닝 크림 50ml</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="detail-grid" style="opacity:.4">
+          <div class="det-l"><div class="card"><div class="card-h">기본 정보</div><div class="card-b"><div class="form-row"><div class="form-label">상품명</div><div class="form-val">라이스 브라이트닝 크림 50ml</div></div></div></div></div>
+          <div class="det-r"></div>
+        </div>
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-h">상품 다시 진열</div>
+            <div class="modal-b">
+              <b>라이스 브라이트닝 크림 50ml</b>을 다시 진열하시겠습니까?<br>처리 즉시 소비자 화면에 다시 노출됩니다.
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">취소</div>
+              <div class="modal-btn doa">다시 진열</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<div class="note rule" style="margin:20px 40px 0"><span class="tag">[규칙 · 2026.07 개정]</span> 미진열=사유 선택+상세 입력 필수 · 다시 진열=확인만(사유 없음) → 처리 즉시 <b>감사 기록</b> 생성(처리자·시각·사유) + 상품 상세 처리 이력에 누적 표시(③ draft47 §공통 감사 기록). <b>브랜드에게 인앱 알림 발송</b>(사유 요약 포함, wf-partner-09 홈 "최근 알림" 참고 · 이메일/문자는 아님) · 소비자에게는 별도 통지 없음(공구 게시물 자체 상태 변경으로 갈음, ② draft36).</div>
+<div class="note legal" style="margin:10px 40px 0"><span class="tag">[집계 대기]</span> 목록 상단 카운트(전체·진열·미진열·재검토 대기·진행중 공구·품절)는 실제 쿼리 기준 값으로 김화창 API 확정 후 교체.</div>
+<div class="note legal" style="margin:10px 40px 0"><span class="tag">[2026.07 신규 · 재검토 플로우]</span> <b>미진열 → 브랜드 수정 → 재검토 대기 → (운영자 확인) → 다시 진열</b>. 브랜드가 미진열 상품을 <b>저장(수정)하면 시스템이 자동으로 "재검토 대기"로 전환</b>(진열 상태는 여전히 미진열 유지, 자동 재진열 아님) — 운영자가 문제 해결 여부를 확인한 뒤 수동으로 "다시 진열"을 눌러야 함(전면 개정된 "운영자 상시 전용" 원칙과 충돌 없음). 처리 이력에 브랜드 수정 이벤트가 자동 기록됨.</div>
+<div class="note legal" style="margin:10px 40px 0"><span class="tag">[2026.07 확정 · 잠금 예외]</span> 진행중 공구 상품은 <b>정가·상품명·옵션 구성만 계속 잠금</b> — <b>미진열 상태인 동안은 공구 진행 여부와 무관하게 상품 설명·이미지·정보 제공 고시 수정을 허용</b>(브랜드가 미진열 사유를 직접 해소할 수 있도록). 이 수정은 앞선 "재검토 대기" 플로우로 이어짐(② draft48 §6 패치 참조).</div>
+
+</div>
+</body>
+</html>

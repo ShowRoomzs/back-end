@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import showroomz.domain.common.BaseTimeEntity;
 import showroomz.domain.contract.entity.Contract;
+import showroomz.domain.contract.type.ContractActorType;
 import showroomz.domain.groupbuy.type.GroupBuyCloseType;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.market.entity.Market;
@@ -211,6 +212,19 @@ public class GroupBuy extends BaseTimeEntity {
 
     public boolean isOwnedByCreator(Long creatorId) {
         return creator != null && creator.getId().equals(creatorId);
+    }
+
+    /**
+     * 계약 체결을 완성한 서명자의 표시명 — 3서피스 공구 이력 맨 아래 「계약 체결완료 · 일시 · 서명자」(일시는 계약의
+     * {@code concludedAt}). 체결은 계약 도메인의 사건이라 공구 이력에 쌓지 않고, 이 값과 일시로 FE 가 그 줄을 그린다.
+     * 서명 시각이 비면 null.
+     */
+    public String concludedSignerName() {
+        ContractActorType signer = contract.lastSigner();
+        if (signer == null) {
+            return null;
+        }
+        return signer == ContractActorType.SELLER ? market.getMarketName() : creator.getShowroomName();
     }
 
     public void applySettled(LocalDateTime transferredAt) {

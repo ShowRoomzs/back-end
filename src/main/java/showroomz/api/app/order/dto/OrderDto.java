@@ -234,6 +234,12 @@ public class OrderDto {
         private String groupBuyNumber;
         private List<Item> items;
         private Shipping shipping;
+        @Schema(description = "발송 예정일 — 주문서는 공구 마감 예정 기준의 예상값, 주문 뒤에는 확정 기한(마감 전이면 예상값)",
+                example = "2026-09-29", nullable = true)
+        private java.time.LocalDate expectedShipDueDate;
+        @Schema(description = "발송 예정 고지 문구 — C9 「발송 예정일 09.29 · 공구 마감 후 3영업일 이내 발송 (주말·공휴일 제외)」의 뒷부분",
+                example = "공구 마감 후 3영업일 이내 발송 (주말·공휴일 제외)")
+        private String shipDueText;
     }
 
     @Getter

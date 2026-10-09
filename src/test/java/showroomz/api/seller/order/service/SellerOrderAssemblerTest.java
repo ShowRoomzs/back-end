@@ -5,6 +5,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 import showroomz.api.seller.order.dto.SellerOrderDetailResponse;
 import showroomz.api.seller.order.dto.SellerOrderListItem;
+import showroomz.domain.groupbuy.entity.GroupBuy;
+import showroomz.domain.groupbuy.type.GroupBuyStatus;
+import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.order.entity.DeliveryTrackingEvent;
 import showroomz.domain.order.entity.Order;
 import showroomz.domain.order.entity.OrderCancelRequest;
 import showroomz.domain.order.entity.OrderCancelRequestItem;
@@ -12,6 +16,7 @@ import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.entity.OrderProduct;
 import showroomz.domain.order.type.CancelRequestReason;
 import showroomz.domain.order.type.DeliveredSource;
+import showroomz.domain.order.type.DeliveryCarrier;
 import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.domain.order.type.OrderBadgeTone;
 import showroomz.domain.order.type.OrderProductStatus;
@@ -201,6 +206,62 @@ class SellerOrderAssemblerTest {
     }
 
     @Test
+    @DisplayName("목록 행 — 송장 등록 시각을 내린다. 추적 기록 전(집화 확인 필요)에는 최종 갱신이 비어 이 값으로 대신 그린다")
+    void listShippedAt() {
+        OrderDeliveryGroup shipping = group(FulfillmentStatus.SHIPPING);
+        ReflectionTestUtils.setField(shipping, "shippedAt", NOW.minusDays(1));
+
+        SellerOrderListItem row = listItem(shipping, items(), null);
+
+        assertThat(row.shippedAt()).isEqualTo(NOW.minusDays(1));
+        assertThat(row.lastTrackingAt()).isNull();
+        assertThat(listItem(group(FulfillmentStatus.PREPARING), items(), null).shippedAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("취소 요청 블록 — 요청자(실명, 없으면 닉네임) · 수취인과 같은지 · 공구 상태(백필 주문은 null)")
+    void cancelRequestBlockRequesterAndGroupBuy() {
+        OrderProduct cream = item(1L, "크림", 1, 27_200, OrderProductStatus.PAID);
+
+        OrderDeliveryGroup sameName = group(FulfillmentStatus.PREPARING);
+        ReflectionTestUtils.setField(sameName.getOrder(), "user", user("김수민", "수민이"));
+        ReflectionTestUtils.setField(sameName, "groupBuy", GroupBuy.builder().status(GroupBuyStatus.IN_PROGRESS).build());
+        SellerOrderDetailResponse.CancelRequestBlock same =
+                detail(sameName, List.of(cream), request(NOW.minusHours(1), cream)).cancelRequest();
+        assertThat(same.requesterName()).isEqualTo("김수민");
+        assertThat(same.requesterIsRecipient()).isTrue();
+        assertThat(same.groupBuyStatus()).isEqualTo(GroupBuyStatus.IN_PROGRESS);
+        assertThat(same.groupBuyStatusLabel()).isEqualTo("진행중");
+
+        OrderDeliveryGroup nicknameOnly = group(FulfillmentStatus.PREPARING);
+        ReflectionTestUtils.setField(nicknameOnly.getOrder(), "user", user(" ", "수민이"));
+        SellerOrderDetailResponse.CancelRequestBlock other =
+                detail(nicknameOnly, List.of(cream), request(NOW.minusHours(1), cream)).cancelRequest();
+        assertThat(other.requesterName()).isEqualTo("수민이");
+        assertThat(other.requesterIsRecipient()).isFalse();
+        assertThat(other.groupBuyStatus()).isNull();
+        assertThat(other.groupBuyStatusLabel()).isNull();
+    }
+
+    @Test
+    @DisplayName("우 레일 마지막 스캔 — 위치·문구는 택배사 원문 그대로 · 스캔이 없으면 null")
+    void lastTrackingScan() {
+        OrderDeliveryGroup shipping = group(FulfillmentStatus.SHIPPING);
+        DeliveryTrackingEvent scan = DeliveryTrackingEvent.builder()
+                .carrier(DeliveryCarrier.CJ).trackingNumber("640012345678").seq(3)
+                .occurredAt(NOW.minusHours(2)).location("대전 허브").description("출발").level(3).build();
+
+        SellerOrderDetailResponse.Timeline timeline = assembler.toDetail(shipping, null, null, items(), null,
+                List.of(), NOW, CONFIRM_DAYS, SellerOrderAssembler.ClaimOverlay.NONE, scan).timeline();
+        assertThat(timeline.lastTrackingLocation()).isEqualTo("대전 허브");
+        assertThat(timeline.lastTrackingDescription()).isEqualTo("출발");
+
+        SellerOrderDetailResponse.Timeline none = detail(shipping, items(), null).timeline();
+        assertThat(none.lastTrackingLocation()).isNull();
+        assertThat(none.lastTrackingDescription()).isNull();
+    }
+
+    @Test
     @DisplayName("구매확정 예정 = 배송완료 + 설정 일수 — 약관 개정은 설정값으로 따라간다")
     void confirmDueAtFollowsConfig() {
         OrderDeliveryGroup delivered = group(FulfillmentStatus.DELIVERED);
@@ -262,6 +323,13 @@ class SellerOrderAssemblerTest {
         ReflectionTestUtils.setField(group, "fulfillmentStatus", status);
         ReflectionTestUtils.setField(group, "subOrderNumber", "20261003-000001-01");
         return group;
+    }
+
+    private static Users user(String name, String nickname) {
+        Users user = new Users();
+        user.setName(name);
+        user.setNickname(nickname);
+        return user;
     }
 
     private static List<OrderProduct> items() {

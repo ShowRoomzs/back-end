@@ -136,7 +136,7 @@ final class CreatorGroupBuyDocsExamples {
 
     private static final String REFS = """
               "brand": {"marketId": 7, "name": "글로우랩", "pairThreadId": 305},
-              "contract": {"contractId": 12, "contractNumber": "CTR-20260728-012", "concludedAt": "2026-08-03T15:30:00", "contentDueDate": "2026-08-18"},
+              "contract": {"contractId": 12, "contractNumber": "CTR-20260728-012", "concludedAt": "2026-08-03T15:30:00", "contentDueDate": "2026-08-18", "concludedSignerName": "민지의 쇼룸"},
               "items": [
                 {"productId": 101, "productName": "글로우 수분 세럼 50ml", "groupBuyPrice": 28000, "myRewardRate": 15.0, "unitReward": 4200,
                   "options": [{"variantId": 301, "variantName": "단품", "salePrice": 28000},

@@ -9,6 +9,8 @@ import showroomz.domain.cart.repository.CartRepository;
 import showroomz.domain.order.entity.Order;
 import showroomz.domain.order.entity.OrderProduct;
 import showroomz.domain.order.repository.OrderProductRepository;
+import showroomz.domain.order.repository.OrderRefundTaskRepository;
+import showroomz.domain.order.type.RefundTaskStatus;
 import showroomz.domain.order.repository.OrderRepository;
 import showroomz.domain.order.service.OrderFulfillmentService;
 import showroomz.domain.order.type.OrderProductStatus;
@@ -48,6 +50,7 @@ public class PaymentTransitions {
     private final ApplicationEventPublisher eventPublisher;
     private final OrderProperties orderProperties;
     private final PaymentAlerts alerts;
+    private final OrderRefundTaskRepository refundTaskRepository;
 
     public enum PaidOutcome { PAID_NOW, ALREADY_MINE, NOT_MINE_ORDER_CLOSED, NOT_MINE_OTHER_PAYMENT }
 
@@ -134,6 +137,13 @@ public class PaymentTransitions {
     public CancelCompletion completeCancel(String paymentId, String pgCancellationId, String raw, LocalDateTime now) {
         Payment payment = paymentRepository.findById(paymentId).orElse(null);
         if (payment == null) {
+            return CancelCompletion.NOOP;
+        }
+        // 부분 환불(환불 큐 집행)이 있었던 결제 — 포트원 CANCELLED 는 부분 취소 누적이 결제액에 닿은 것이다. 주문 전체 취소로
+        // 수렴시키면 이미 각 경로가 닫은 항목의 재고가 한 번 더 돌아간다. 환불 큐 쪽이 결제를 닫는다(1009 기획 수정본 2-3).
+        if (payment.getStatus() == PaymentStatus.PAID && (payment.getCancelledAmount() > 0
+                || refundTaskRepository.existsByPaymentIdAndStatus(paymentId, RefundTaskStatus.EXECUTING))) {
+            paymentRepository.closeIfFullyRefunded(paymentId);
             return CancelCompletion.NOOP;
         }
         EnumSet<PaymentStatus> from = EnumSet.of(PaymentStatus.PAID, PaymentStatus.CANCEL_REQUESTED);

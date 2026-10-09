@@ -256,7 +256,10 @@ public interface CreatorAuthControllerDocs {
                     "**요청 헤더:** `Authorization: Bearer {registerToken}`\n\n" +
                     "**필수 필드:**\n" +
                     "- `showroomName`: 쇼룸명 (2~20자, 한글·영문·숫자·공백만, 중복 불가, 사전 확인: `GET /v1/creator/auth/check-showroom-name`)\n" +
-                    "- `businessType`: `INDIVIDUAL`(개인/비사업자, 기본값) 또는 `BUSINESS`(개인사업자/법인)\n" +
+                    "- `businessType`: `INDIVIDUAL`(개인/비사업자, 기본값) 또는 `BUSINESS`(개인사업자 — 법인은 받지 않는다)\n" +
+                    "- `residentRegistrationNumber`: **비사업자 필수** 주민등록번호 13자리(하이픈 허용). 리워드를 SHOWROOMZ 가 지급하고 " +
+                    "3.3% 원천징수를 신고하는 데 쓴다. 암호화 저장 · 어떤 응답에도 원문을 내리지 않는다(내 쇼룸은 `maskedResidentNumber`). " +
+                    "형식이 틀리거나 없으면 400 `INVALID_INPUT_VALUE`. 사업자는 보내지 않는다(보내도 무시)\n" +
                     "- `bankCode`: 은행 표준 코드 (`GET /v1/common/banks` 조회)\n" +
                     "- `accountNumber`: 계좌번호 (하이픈 없이 숫자 10~16자리)\n" +
                     "- `bankBookImageUrl`: 통장 사본 URL\n\n" +
@@ -334,6 +337,7 @@ public interface CreatorAuthControllerDocs {
                                     value = "{\n" +
                                             "  \"showroomName\": \"마이 쇼룸\",\n" +
                                             "  \"businessType\": \"INDIVIDUAL\",\n" +
+                                            "  \"residentRegistrationNumber\": \"9001011234567\",\n" +
                                             "  \"bankCode\": \"004\",\n" +
                                             "  \"accountNumber\": \"12345678901234\",\n" +
                                             "  \"bankBookImageUrl\": \"https://s3.../bankbook.jpg\"\n" +

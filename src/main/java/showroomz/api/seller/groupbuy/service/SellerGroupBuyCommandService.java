@@ -404,6 +404,7 @@ public class SellerGroupBuyCommandService {
         SellerScope scope = accessGuard.resolve(sellerEmail);
         GroupBuy groupBuy = accessGuard.loadOwnedForUpdate(groupBuyId, scope.market());
         GroupBuyFacts facts = factsLoader.load(groupBuy);
+        // [기획 제외] 이행 확인 폐기(2026-10-06) — 권한 판정이 항상 false 라 아래에서 409 로 끝난다.
         if (facts.fulfillmentCheck(FulfillmentSide.SELLER).isPresent()) {
             throw new BusinessException(ErrorCode.GROUP_BUY_FULFILLMENT_ALREADY_CHECKED);
         }

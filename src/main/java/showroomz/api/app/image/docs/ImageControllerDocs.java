@@ -26,7 +26,8 @@ public interface ImageControllerDocs {
                     "**이미지 타입별 제약사항:**\n" +
                     "- `PROFILE`: 프로필 이미지 (최대 20MB)\n" +
                     "- `REVIEW`: 리뷰 이미지 (최대 20MB)\n" +
-                    "- `INQUIRY`: 1:1 문의 첨부 이미지 (최대 20MB)\n\n" +
+                    "- `INQUIRY`: 1:1 문의 첨부 이미지 (최대 20MB)\n" +
+                    "- `CLAIM`: 반품·교환 요청 사진 (최대 20MB) — 브랜드가 검수에서 함께 본다\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -58,7 +59,7 @@ public interface ImageControllerDocs {
                                             name = "유효하지 않은 이미지 타입",
                                             value = "{\n" +
                                                     "  \"code\": \"INVALID_INPUT\",\n" +
-                                                    "  \"message\": \"유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, INQUIRY)\"\n" +
+                                                    "  \"message\": \"유효하지 않은 이미지 타입입니다. (PROFILE, REVIEW, INQUIRY, CLAIM)\"\n" +
                                                     "}"
                                     ),
                                     @ExampleObject(
@@ -167,7 +168,8 @@ public interface ImageControllerDocs {
                     description = "업로드할 이미지의 용도 (필수)\n" +
                             "- `PROFILE`: 프로필 이미지\n" +
                             "- `REVIEW`: 리뷰 이미지\n" +
-                            "- `INQUIRY`: 1:1 문의 첨부 이미지",
+                            "- `INQUIRY`: 1:1 문의 첨부 이미지\n" +
+                            "- `CLAIM`: 반품·교환 요청 사진",
                     required = true,
                     example = "PROFILE"
             )

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+.dv-sw{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:-2px 0 2px}
+.dv-swl{font:600 10px/1 Pretendard,sans-serif;color:rgba(0,0,0,.38);letter-spacing:.02em;margin-right:2px}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C18 문서 뷰어 · 신고 사유</span></div>
+<p class="dv-tsub">여러 화면이 공유하는 두 공용 화면입니다 — <b>문서 뷰어</b>(약관·개인정보·운영정책, 로그인·마이·쇼룸 푸터·공지에서 진입)와 <b>게시물 신고 사유 선택</b>(⋯ → 신고). 문서 종류는 우측 Tweaks의 <b>doc</b>로 전환합니다.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>문서 뷰어</div>
+<div class="dv-sw">
+<span class="dv-swl">문서</span>
+<sc-for list="{{ swDoc }}" as="o" hint-placeholder-count="4">
+<div onClick="{{ o.pick }}" style="padding:6px 10px;border-radius:6px;cursor:pointer;font:{{ o.font }};background:{{ o.bg }};color:{{ o.color }};border:1px solid {{ o.border }}">{{ o.label }}</div>
+</sc-for>
+</div>
+<div class="dv-card">
+<div data-screen-label="C18 문서 뷰어" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="flex:1;min-width:0;font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ docTitle }}</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+<div style="padding:18px 20px 14px;border-bottom:.5px solid #F0F0F0">
+<div style="font:400 12px/1.6 Pretendard,sans-serif;color:#737373">시행일 {{ docDate }} · 버전 {{ docVer }}</div>
+</div>
+<div style="padding:20px 20px 40px">
+<sc-for list="{{ blocks }}" as="b" hint-placeholder-count="4">
+<div style="margin-bottom:20px">
+<div style="font:600 14.5px/1.5 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">{{ b.h }}</div>
+<div style="margin-top:8px;font:400 13px/1.85 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">{{ b.p }}</div>
+</div>
+</sc-for>
+<div style="margin-top:10px;padding:14px;border-radius:8px;background:#F7F7F8;font:400 11.5px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">전체 조항과 확정 문구는 법무 검토 후 이 자리에 게시됩니다. 개정 시 <b style="font-weight:600;color:#3C3C3C">시행일 전 공지</b>하고 이전 버전도 열람할 수 있게 보관합니다.</div>
+</div>
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>문서 뷰어</b> — 약관·개인정보 처리방침·운영정책을 <b>하나의 화면</b>으로 렌더합니다(Tweaks의 doc로 전환). 진입 지점이 많아서(로그인 약관 링크·마이 도움말·쇼룸/상품 푸터·공지 개정 안내) 화면을 여러 개 두면 문구가 갈라지므로 <b>단일 뷰어 + 문서 데이터</b> 구조로 통일합니다. 상단에 <b>시행일·버전을 고정</b>해 어느 시점 문서인지 분명히 하고, 본문은 §05 <b>문서 본문</b> 규격(제목 14.5/600 + 문단 13/1.85 · 좌우 20)을 씁니다 — 다른 화면보다 행간과 여백이 넓은 <b>읽기 우선 타이포</b>입니다. 문서는 <b>4종</b>(이용약관 · 개인정보 처리방침 · 운영정책 · 오픈소스 라이선스)이며 마이 탭 도움말의 모든 항목이 이 뷰어로 들어옵니다. 개정 이력·이전 버전 보관은 고지 의무와 연결됩니다.<br><br><b>남은 결정</b> — ① 목차(앵커) 필요 여부 ② 이전 버전 열람 UI ③ 문서 데이터 관리 주체(어드민) ④ 오픈소스 목록 자동 생성 파이프라인.</p>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>게시물 신고 사유</div>
+<div class="dv-card">
+<div data-screen-label="C18 신고 사유" style="width:390px;height:844px;display:flex;flex-direction:column;background:rgba(0,0,0,.45);font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:8px 8px 0 0;padding:8px 0 20px">
+<div style="width:36px;height:4px;border-radius:100px;background:#DEDEE0;margin:0 auto 14px"></div>
+<div style="padding:0 20px 4px;font:600 15.5px/1.4 Pretendard,sans-serif">이 게시물을 신고하는 이유</div>
+<div style="padding:4px 20px 12px;font:400 12.5px/1.6 Pretendard,sans-serif;color:#737373;text-wrap:pretty">신고 내용은 운영팀이 확인하며, 상대에게 알리지 않아요.</div>
+<sc-for list="{{ reasons }}" as="r" hint-placeholder-count="6">
+<div onClick="{{ r.pick }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 20px;border-top:{{ r.divider }};cursor:pointer;background:{{ r.bg }}" style-active="background:#F7F7F8">
+<span style="font:{{ r.font }};color:{{ r.color }}">{{ r.label }}</span>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F2456E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none;opacity:{{ r.checked }}"><path d="M4.5 12.5l5 5 10-11"></path></svg>
+</div>
+</sc-for>
+<sc-if value="{{ isEtc }}" hint-placeholder-val="{{ false }}">
+<div style="padding:14px 20px 0;border-top:.5px solid #F0F0F0">
+<div style="display:flex;align-items:baseline;justify-content:space-between">
+<span style="font:600 12.5px/1 Pretendard,sans-serif;color:#3C3C3C">어떤 점이 문제인가요?</span>
+<span style="font:400 11.5px/1 Pretendard,sans-serif;color:#737373">0/200</span>
+</div>
+<div style="margin-top:9px;min-height:88px;border:1px solid #E3E3E5;border-radius:8px;padding:12px;font:400 13.5px/1.65 Pretendard,sans-serif;color:#B5B5B5;text-wrap:pretty">신고하려는 내용을 구체적으로 적어주세요</div>
+</div>
+</sc-if>
+<div style="padding:16px 20px 0">
+<div style="height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:{{ submitBg }};color:{{ submitColor }};font:600 15.5px/1 Pretendard,sans-serif;cursor:{{ submitCursor }}" style-active="opacity:{{ submitPress }}">신고 접수</div>
+</div>
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>신고 사유</b> — 게시물 ⋯ 시트에서 [신고]를 누르면 이어지는 <b>사유 선택 바텀 시트</b>입니다. 사유는 <b>단일 선택</b>(복수 신고는 분석을 흐림) · 로즈 체크로 표시, 하나 고르기 전 [신고 접수]는 비활성입니다(우측 항목을 눌러 확인). "상대에게 알리지 않는다"를 <b>미리 고지</b>해 신고 심리 장벽을 낮췄고, <b>[기타]</b>를 고르면 그 아래 자유 입력 필드가 펼쳐집니다(200자 · 목록 아래에 붙어 시트 높이만 늘어남 — 화면 전환 없이 한 시트에서 끝냅니다). 접수 후에는 §07 <b>토스트</b>("신고가 접수되었어요")로 알리고 시트를 닫습니다 — 별도 완료 화면을 만들지 않습니다.<br><br><b>남은 결정</b> — ① 신고 사유 항목 확정(대가관계 미표시 등 커머스 특화 사유 포함 여부) ② 동일 게시물 중복 신고 처리 ③ 허위 신고 누적 제재.</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;doc&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;이용약관&quot;,&quot;개인정보 처리방침&quot;,&quot;운영정책&quot;,&quot;오픈소스 라이선스&quot;],&quot;default&quot;:&quot;이용약관&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;문서&quot;}}">
+class Component extends DCLogic {
+  state = { reason: null };
+
+  renderVals(){
+    const DOCS = {
+      '이용약관': { title:'서비스 이용약관', date:'2026.08.01', ver:'1.2', blocks:[
+        { h:'제1조 (목적)', p:'이 약관은 쇼룸즈(이하 "회사")가 제공하는 공동구매 중개 서비스의 이용 조건과 절차, 회사와 이용자의 권리·의무를 정하는 것을 목적으로 합니다.' },
+        { h:'제2조 (중개자의 지위)', p:'회사는 통신판매중개자로서 거래 당사자가 아니며, 상품의 판매·배송·환불 책임은 각 판매자에게 있습니다. 회사는 안전한 거래 환경을 제공하기 위해 노력합니다.' },
+        { h:'제3조 (계정)', p:'이용자는 본인인증을 거쳐 하나의 계정을 생성하며, 계정 정보를 최신으로 유지할 책임이 있습니다.' }
+      ]},
+      '개인정보 처리방침': { title:'개인정보 처리방침', date:'2026.08.01', ver:'2.0', blocks:[
+        { h:'1. 수집하는 항목', p:'본인인증 정보(이름·생년월일·성별·휴대폰번호·CI/DI), 소셜 계정 식별자, 주문·결제 및 배송 정보, 서비스 이용 기록을 수집합니다.' },
+        { h:'2. 이용 목적', p:'회원 식별과 본인확인, 주문·배송 처리, 고객 문의 응대, 법령상 의무 이행을 위해 이용합니다.' },
+        { h:'3. 보유 기간', p:'회원 탈퇴 시 지체 없이 파기하되, 전자상거래법 등 관계 법령이 정한 거래 기록은 해당 기간 동안 분리 보관 후 파기합니다.' }
+      ]},
+      '오픈소스 라이선스': { title:'오픈소스 라이선스', date:'2026.08.01', ver:'1.0', blocks:[
+        { h:'Pretendard', p:'SIL Open Font License 1.1 · Copyright (c) 2021 Kil Hyung-jin. 폰트 파일을 자유롭게 사용·재배포할 수 있으며 저작권 표시를 유지합니다.' },
+        { h:'React', p:'MIT License · Copyright (c) Meta Platforms, Inc. and affiliates.' },
+        { h:'전체 목록', p:'이 앱이 사용하는 오픈소스 구성요소와 각 라이선스 전문은 아래 순서로 표기합니다. 실제 목록은 빌드 시 자동 생성해 이 자리에 게시합니다.' }
+      ]},
+      '운영정책': { title:'운영정책', date:'2026.08.01', ver:'1.0', blocks:[
+        { h:'1. 게시물 원칙', p:'쇼룸의 게시물은 사실에 기반해야 하며, 광고성 게시물에는 대가관계를 표시해야 합니다.' },
+        { h:'2. 금지 행위', p:'허위·과장 광고, 타인 사칭, 욕설·혐오 표현, 개인정보 노출은 제재 대상입니다.' },
+        { h:'3. 신고와 조치', p:'신고된 게시물은 운영팀이 검토하며, 위반 정도에 따라 게시물 삭제·이용 제한 등의 조치를 취합니다.' }
+      ]}
+    };
+    const key = this.state.doc ?? this.props.doc ?? '이용약관';
+    const swDoc = ['이용약관', '개인정보 처리방침', '운영정책', '오픈소스 라이선스'].map(label => ({
+      label,
+      pick: () => this.setState({ doc: label }),
+      bg: label === key ? '#1a1a1a' : '#fff',
+      color: label === key ? '#fff' : 'rgba(0,0,0,.62)',
+      border: label === key ? '#1a1a1a' : 'rgba(0,0,0,.14)',
+      font: (label === key ? '600' : '400') + ' 11px/1 Pretendard,sans-serif'
+    }));
+    const d = DOCS[key] || DOCS['이용약관'];
+
+    const RS = ['음란물 · 성적인 내용', '욕설 · 혐오 표현', '허위 · 과장 정보', '사기 · 사칭이 의심돼요', '스팸 · 반복 게시', '기타'];
+    const reasons = RS.map((label, i) => {
+      const on = this.state.reason === label;
+      return {
+        label,
+        checked: on ? 1 : 0,
+        bg: on ? '#FEF4F6' : '#fff',
+        divider: i === 0 ? '.5px solid #F0F0F0' : '.5px solid #F0F0F0',
+        font: (on ? '600' : '400') + ' 14.5px/1.4 Pretendard,sans-serif',
+        color: on ? '#0F0F0F' : '#3C3C3C',
+        pick: () => this.setState({ reason: label })
+      };
+    });
+    const isEtc = this.state.reason === '기타';
+    const ready = !!this.state.reason;
+
+    return {
+      swDoc,
+      docTitle: d.title, docDate: d.date, docVer: d.ver, blocks: d.blocks,
+      reasons,
+      isEtc,
+      submitBg: ready ? '#F2456E' : '#F4F4F5',
+      submitColor: ready ? '#fff' : '#B5B5B5',
+      submitCursor: ready ? 'pointer' : 'default',
+      submitPress: ready ? '.75' : '1'
+    };
+  }
+}
+</script>
+</body>
+</html>

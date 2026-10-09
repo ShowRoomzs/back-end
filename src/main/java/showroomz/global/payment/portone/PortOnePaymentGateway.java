@@ -27,6 +27,12 @@ public interface PortOnePaymentGateway {
     /** 전액 취소. 「이미 취소됨」은 {@link PortOneCancelResult.Outcome#ALREADY_CANCELLED}로 돌려준다. */
     PortOneCancelResult cancel(String paymentId, long amount, String reason);
 
+    /**
+     * 부분 취소 — 환불 집행(1009 기획 수정본 2절)이 쓴다. {@code currentCancellableAmount}(지금 취소 가능한 잔액)가 PG 의 값과
+     * 다르면 거절된다 — 결과를 모르는 재시도가 이중 환불이 되지 않는다.
+     */
+    PortOneCancelResult cancelPartial(String paymentId, long amount, long currentCancellableAmount, String reason);
+
     /** 일일 대사용 결제 목록 — 구간의 결제 전량(페이지네이션은 구현이 한다). */
     List<PortOnePayment> listPayments(LocalDateTime from, LocalDateTime until, List<PortOneStatus> statuses);
 

@@ -121,7 +121,7 @@ class ClaimReshipExcelEdgeIntegrationTest extends ClaimTestSupport {
         assertThat(sheet).hasSize(2);
         // 받은 옵션(픽스처의 기본 옵션은 옵션명이 없어 빈 칸) — 교환하려던 「리필」이 아니다.
         assertThat(sheet.get(1).subList(0, 3)).containsExactly("CLM-" + claimId,
-                java.util.Objects.toString(product.getOptionName(), ""), "거절 반송");
+                java.util.Objects.toString(product.getOptionName(), ""), "반려 반송");
     }
 
     @Test

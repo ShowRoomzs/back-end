@@ -1,0 +1,2583 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-partner-10c-orders-shipping — 파트너센터 판매 관리 · 배송중~구매확정 rev.5</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --pt-sidebar-w:240px; --pt-topbar-h:56px; --pt-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;margin-top:12px;line-height:1.8;}
+.rule b{color:var(--n-900);} .rule .new{color:var(--accent-600);font-weight:600;}
+.rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.rule .wait{color:var(--danger-text);font-weight:600;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage.tall{height:auto;min-height:1024px;}
+.stage.tall .main{position:static;margin:var(--pt-topbar-h) 0 0 var(--pt-sidebar-w);overflow:visible;}
+.stage{position:relative;width:1440px;min-height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+
+/* ══ 사이드바 ══ */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--pt-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--pt-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:9px 10px;border-radius:var(--r-sm);margin-bottom:2px;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--n-200);color:var(--n-700);
+  border-radius:9px;min-width:18px;height:18px;padding:0 5px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gnb-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-item.active .gn{color:rgba(255,255,255,.8);}
+.gnb-item.active .gcnt{background:rgba(255,255,255,.24);color:#fff;}
+
+/* ══ 탑바 ══ */
+.top{position:absolute;left:var(--pt-sidebar-w);right:0;top:0;height:var(--pt-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--pt-pad);}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.crumb .c-sub{font-size:var(--fs-caption);color:var(--n-500);font-weight:400;margin-left:6px;}
+.brand-chip{display:flex;align-items:center;gap:7px;font-size:var(--fs-caption);color:var(--n-600);}
+.brand-chip .st{font-size:var(--fs-micro);font-weight:500;padding:2px 9px;border-radius:var(--r-pill);
+  background:var(--success-bg);color:var(--success-text);}
+
+/* ══ 본문 ══ */
+.main{position:absolute;left:var(--pt-sidebar-w);right:0;top:var(--pt-topbar-h);bottom:0;
+  overflow-y:auto;padding:var(--pt-pad);}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:var(--sp-4);}
+.page-t{font-size:var(--fs-h1);font-weight:600;}
+.page-d{font-size:var(--fs-caption);color:var(--n-600);margin-top:2px;}
+.navgrp{display:flex;align-items:center;gap:6px;}
+.nav-btn{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-caption);font-weight:500;
+  color:var(--n-700);padding:0 12px;height:32px;background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);white-space:nowrap;cursor:pointer;}
+.nav-btn:hover{background:var(--n-100);color:var(--n-900);border-color:var(--n-400);}
+.nav-sep{width:1px;height:18px;background:var(--n-300);margin:0 2px;}
+
+/* ══ 버튼 ══ */
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:0 14px;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:none;cursor:pointer;white-space:nowrap;}
+.btn-primary{background:var(--accent-500);color:#fff;}
+.btn-primary:disabled{background:var(--n-200);color:var(--n-400);cursor:not-allowed;}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-secondary:disabled{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+.btn-ghost{background:transparent;color:var(--n-600);}
+.btn-danger{background:#fff;color:var(--danger-text);border:1px solid #E9C9C9;}
+.btn-danger:hover{background:var(--danger-bg);}
+.btn-danger:disabled{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+.btn-lg{height:38px;padding:0 20px;font-size:var(--fs-body);}
+
+/* ══ 입력 ══ */
+.inp,.sel,.ta{font-family:inherit;font-size:var(--fs-body);padding:8px 12px;
+  border-radius:var(--r-sm);border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:36px;}
+.inp:focus,.sel:focus,.ta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.inp:disabled,.sel:disabled,.ta:disabled{background:var(--n-100);color:var(--n-500);cursor:not-allowed;}
+.inp::placeholder,.ta::placeholder{color:var(--n-400);}
+.inp.is-error{border-color:var(--danger-text);}
+.ta{height:auto;min-height:76px;resize:vertical;line-height:1.65;padding-top:9px;width:100%;}
+.sel{appearance:none;-webkit-appearance:none;padding-right:30px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;}
+.err{font-size:var(--fs-micro);color:var(--danger-text);margin-top:5px;}
+.hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:5px;line-height:1.55;}
+.hint b{color:var(--n-700);}
+
+/* 세그먼트 · 칩 */
+.seg{display:inline-flex;border:1px solid var(--n-300);border-radius:var(--r-sm);overflow:hidden;background:#fff;}
+.seg .sg{padding:0 15px;height:34px;display:flex;align-items:center;font-size:var(--fs-caption);
+  color:var(--n-600);cursor:pointer;border-right:1px solid var(--n-200);}
+.seg .sg:last-child{border-right:none;}
+.seg .sg.on{background:var(--accent-500);color:#fff;font-weight:500;}
+.seg.dis .sg{background:var(--n-100);color:var(--n-400);cursor:not-allowed;}
+.chips{display:inline-flex;gap:6px;}
+.chip{border:1px solid var(--n-300);border-radius:16px;padding:5px 13px;font-size:var(--fs-caption);
+  color:var(--n-600);background:#fff;cursor:pointer;}
+.chip.on{background:var(--accent-50);border-color:var(--accent-500);color:var(--accent-600);font-weight:500;}
+.numinp{width:62px;text-align:center;padding-left:6px;padding-right:6px;}
+.unit{font-size:var(--fs-caption);color:var(--n-600);}
+
+/* ══ 배지 ══ */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-danger{background:var(--danger-bg);color:var(--danger-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-warning{background:var(--warning-bg);color:var(--warning-text);}
+
+/* ══ 상태 탭 ══ */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-4);}
+.tab{font-size:var(--fs-caption);color:var(--n-500);padding:9px 2px;margin-right:22px;cursor:pointer;
+  border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;}
+.tab:hover:not(.active){color:var(--n-700);}
+.tab.active{color:var(--accent-500);border-bottom-color:var(--accent-500);font-weight:500;}
+.tab .tn{font-size:10px;background:var(--n-100);color:var(--n-600);border-radius:8px;padding:0 5px;}
+.tab.active .tn{background:var(--accent-50);color:var(--accent-600);}
+
+/* ══ 툴바 ══ */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:var(--sp-4);flex-wrap:wrap;}
+.toolbar .spacer{flex:1;}
+.tl-lbl{font-size:var(--fs-micro);color:var(--n-500);font-weight:600;}
+
+/* ══ 목록 ══ */
+.tbar{display:flex;align-items:center;justify-content:space-between;padding:10px var(--sp-4);border-bottom:1px solid var(--n-200);}
+.tbar-l{font-size:var(--fs-caption);color:var(--n-600);} .tbar-l b{color:var(--n-900);}
+.tbar-r{display:flex;align-items:center;gap:8px;}
+.sel-sm{font-family:inherit;font-size:var(--fs-caption);height:28px;padding:0 22px 0 8px;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-700);
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='9' height='5'><path d='M0 0L4.5 5L9 0Z' fill='%237B7F89'/></svg>");
+  background-repeat:no-repeat;background-position:right 8px center;cursor:pointer;}
+.tcard{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+table{width:100%;border-collapse:collapse;table-layout:fixed;}
+thead td{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);font-weight:600;
+  padding:11px 16px;white-space:nowrap;border-bottom:1px solid var(--n-200);letter-spacing:.2px;}
+tbody td{padding:13px 16px;font-size:var(--fs-caption);border-top:1px solid var(--n-100);vertical-align:middle;}
+tbody tr:first-child td{border-top:none;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:var(--accent-50);}
+tbody tr:hover .t-nm{color:var(--accent-600);}
+.t-prod{color:var(--n-700);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.t-c{text-align:center;}
+.tnum{font-variant-numeric:tabular-nums;}
+.duty{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.duty-r{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.duty-r:last-child{border-bottom:none;}
+.duty-r.wait{background:#FDFAF4;}
+.duty-r .dl{flex:1;}
+.duty-r .dw{display:block;font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.duty-r .ds{font-size:var(--fs-micro);color:var(--n-500);flex-shrink:0;font-variant-numeric:tabular-nums;}
+.duty-r.ro .dl{color:var(--n-600);}
+.duty-r.ro .dw{color:var(--n-400);}
+.duty-r .ds.ok{color:var(--success-text);font-weight:600;}
+.duty-r .ds.bad{color:var(--danger-text);font-weight:600;}
+.jrow{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:8px;}
+.jrow:last-of-type{margin-bottom:0;}
+.jrow .jt{font-size:var(--fs-caption);color:var(--n-900);font-weight:500;}
+.jrow .jd{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;line-height:1.6;}
+.jpick{display:flex;gap:7px;margin-top:9px;}
+.jopt{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;height:32px;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:500;color:var(--n-600);background:#fff;cursor:pointer;}
+.jopt.on{border-color:var(--accent-500);background:var(--accent-50);color:var(--accent-600);}
+.jopt.on.bad{border-color:var(--danger-text);background:var(--danger-bg);color:var(--danger-text);}
+.modal.wide{width:560px;}
+.t-note{font-size:var(--fs-micro);color:var(--n-600);}
+.t-note.em{color:var(--danger-text);font-weight:500;}
+.t-nm{font-weight:500;color:var(--n-900);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.t-sub{color:var(--n-500);font-size:var(--fs-micro);display:block;margin-top:2px;}
+.t-dim{color:var(--n-400);}
+.t-date{color:var(--n-500);white-space:nowrap;}
+.pager{display:flex;align-items:center;justify-content:center;gap:4px;padding:12px;border-top:1px solid var(--n-200);}
+.page-item{min-width:26px;height:26px;padding:0 6px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-600);cursor:pointer;}
+.page-item:hover:not(.active){background:var(--n-100);}
+.page-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.empty{padding:72px 24px;text-align:center;}
+.empty-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);margin-bottom:4px;}
+.empty-d{font-size:var(--fs-caption);color:var(--n-500);}
+.empty .btn{margin-top:var(--sp-4);}
+
+/* ══ 카드 ══ */
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);margin-bottom:var(--sp-4);}
+.card:last-child{margin-bottom:0;}
+.card-h{font-size:var(--fs-h3);font-weight:600;padding:11px var(--sp-4);border-bottom:1px solid var(--n-200);
+  background:var(--n-50);border-radius:var(--r-md) var(--r-md) 0 0;display:flex;align-items:center;
+  justify-content:space-between;gap:8px;}
+.card-h .ch-n{font-size:var(--fs-micro);color:var(--n-500);font-weight:400;}
+.card-b{padding:var(--sp-4);}
+.detail{display:grid;grid-template-columns:1fr 320px;gap:var(--sp-4);align-items:start;}
+
+/* 폼 행 — 라벨 140px */
+.frow{display:flex;gap:var(--sp-3);padding:9px 0;border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.frow:last-child{border-bottom:none;}
+.frow:first-child{padding-top:0;}
+.fk{width:140px;flex-shrink:0;color:var(--n-500);padding-top:8px;}
+.frow.ro .fk{padding-top:0;}
+.fk .req{color:var(--danger-text);margin-left:2px;}
+.fv{flex:1;color:var(--n-900);min-width:0;}
+.fv .fsub{color:var(--n-500);font-size:var(--fs-micro);margin-top:2px;}
+.fline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.tk .flink{color:var(--n-900);}
+.tk .flink:hover{color:var(--accent-600);}
+.flink{color:var(--n-600);text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
+.flink:hover{color:var(--accent-600);}
+
+/* 계약 상품 항목 */
+.items{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.it-h{display:flex;gap:56px;padding:8px 28px 8px 12px;background:var(--n-50);border-bottom:1px solid var(--n-200);
+  font-size:var(--fs-micro);color:var(--n-500);font-weight:600;}
+.it-r{display:flex;gap:56px;padding:10px 28px 10px 12px;border-bottom:1px solid var(--n-100);align-items:flex-start;}
+.it-r:last-child{border-bottom:none;}
+.c-prod{width:300px;flex-shrink:0;min-width:0;} .c-price{width:96px;flex-shrink:0;} .c-rw{width:62px;flex-shrink:0;}
+.c-del{width:26px;flex-shrink:0;text-align:center;color:var(--n-400);cursor:pointer;padding-top:8px;}
+.c-del:hover{color:var(--danger-text);}
+.c-prod .inp,.c-prod .sel,.c-price .inp,.c-rw .inp,.c-qty .inp{width:100%;}
+.it-r .pmeta{font-size:var(--fs-micro);color:var(--n-500);margin-top:4px;}
+.addrow{border:1px dashed var(--n-300);border-radius:var(--r-sm);text-align:center;padding:9px;
+  font-size:var(--fs-caption);color:var(--n-600);margin-top:8px;cursor:pointer;background:#fff;}
+.addrow:hover{border-color:var(--accent-500);color:var(--accent-600);background:var(--accent-50);}
+
+/* 조항 박스(읽기 전용 표준 조항) */
+.terms{border:1px solid var(--n-200);border-radius:var(--r-sm);background:var(--n-50);padding:2px 14px;}
+.trow{display:flex;gap:14px;padding:9px 0;border-bottom:1px solid var(--n-200);font-size:var(--fs-caption);}
+.trow:last-child{border-bottom:none;}
+.tk{width:118px;flex-shrink:0;color:var(--n-500);}
+.tv{color:var(--n-700);line-height:1.6;flex:1;}
+.tv b{color:var(--n-900);}
+.wtag{display:inline-block;border:1px dashed var(--n-400);border-radius:4px;padding:0 5px;
+  font-size:10px;color:var(--n-500);margin-left:4px;white-space:nowrap;}
+
+/* 진행 단계 */
+.steps{display:flex;align-items:center;gap:3px;flex-wrap:wrap;}
+.stp{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:6px 10px;font-size:var(--fs-micro);
+  color:var(--n-400);background:#fff;line-height:1.35;}
+.stp .who{display:block;font-size:10px;color:var(--n-400);margin-top:1px;}
+.stp.done{background:var(--n-100);color:var(--n-600);border-color:var(--n-200);}
+.stp.done .who{color:var(--n-500);}
+.stp.cur{border-color:var(--accent-500);color:var(--accent-600);font-weight:600;background:var(--accent-50);}
+.stp.cur .who{color:var(--accent-600);}
+.stp.stop{border-color:#E9C9C9;color:var(--danger-text);font-weight:600;background:var(--danger-bg);}
+.stp.stop .who{color:var(--danger-text);}
+.stp.halt{border-color:var(--n-300);color:var(--n-600);font-weight:600;background:var(--n-100);}
+.stp.halt .who{color:var(--n-500);}
+.stp-ar{color:var(--n-300);font-size:var(--fs-micro);}
+
+/* 서명 박스 */
+.signs{display:flex;gap:12px;}
+.sbox{flex:1;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:14px;background:var(--n-50);}
+.sbox.mine{background:var(--accent-50);border-color:var(--accent-100);}
+.s-who{font-size:var(--fs-micro);color:var(--n-500);}
+.s-name{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);margin:4px 0 10px;}
+.s-done{font-size:var(--fs-micro);color:var(--success-text);font-weight:500;}
+.s-wait{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* 안내 배너 */
+.notice{display:flex;gap:8px;border-radius:var(--r-sm);padding:11px 13px;font-size:var(--fs-micro);line-height:1.6;}
+.notice.info{background:var(--info-bg);color:var(--info-text);}
+.notice.warn{background:var(--warning-bg);color:var(--warning-text);}
+.notice.danger{background:var(--danger-bg);color:var(--danger-text);}
+.notice.neutral{background:var(--n-100);color:var(--n-600);}
+.notice.consent{background:var(--n-50);border:1px solid var(--n-200);color:var(--n-700);}
+.notice.consent b{color:var(--n-900);}
+.notice b{font-weight:600;}
+
+/* 우측 카드 */
+.st-now{padding:var(--sp-4);}
+.st-line{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding-bottom:var(--sp-3);border-bottom:1px solid var(--n-100);}
+.st-lbl{font-size:var(--fs-caption);color:var(--n-500);flex-shrink:0;}
+.st-meta{padding-top:var(--sp-2);}
+.mrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);}
+.mrow:last-child{border-bottom:none;}
+.mk{color:var(--n-500);} .mv{color:var(--n-900);font-weight:500;text-align:right;}
+.st-acts{display:flex;flex-direction:column;gap:8px;margin-top:var(--sp-4);}
+.st-hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;line-height:1.55;}
+.hist{padding:var(--sp-2) var(--sp-4) var(--sp-3);}
+.hitem{display:flex;gap:10px;padding:9px 0;}
+.hdot{width:7px;height:7px;border-radius:50%;background:var(--n-300);margin-top:6px;flex-shrink:0;}
+.hdot.h-info{background:var(--info-text);}
+.hdot.h-success{background:var(--success-text);}
+.hdot.h-warning{background:var(--warning-text);}
+.hdot.h-danger{background:var(--danger-text);}
+.htxt{font-size:var(--fs-caption);}
+.hmeta{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* 폼 하단 액션바 */
+.formbar{display:flex;justify-content:flex-end;gap:8px;padding:var(--sp-4) 0 0;}
+
+
+/* 접미사 붙은 입력(%· 원) */
+.iw{position:relative;display:inline-flex;align-items:center;}
+.iw .inp{padding-right:26px;width:100%;}
+.iw .sfx-u{position:absolute;right:9px;font-size:var(--fs-caption);color:var(--n-500);pointer-events:none;}
+.iw.w-full{display:flex;}
+
+/* 공구 기간 트리거(달력 모달 호출) */
+.dtrig{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;background:#fff;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);font-size:var(--fs-body);color:var(--n-900);
+  cursor:pointer;min-width:340px;}
+.dtrig:hover{border-color:var(--accent-500);}
+.dtrig.ph{color:var(--n-400);}
+.dtrig.dis{background:var(--n-100);border-color:var(--n-200);color:var(--n-400);cursor:not-allowed;}
+.dtrig.dis:hover{border-color:var(--n-200);}
+.dtrig{min-width:260px;}
+.dtrig .cal{width:14px;height:14px;color:var(--n-500);flex-shrink:0;}
+.dtrig .dur{margin-left:auto;font-size:var(--fs-micro);color:var(--n-500);}
+
+/* 달력 */
+.modal.cal{width:392px;}
+.cal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;}
+.cal-mh{font-size:var(--fs-h3);font-weight:600;color:var(--n-900);font-variant-numeric:tabular-nums;}
+.cal-nav{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--r-sm);
+  color:var(--n-600);cursor:pointer;font-size:15px;line-height:1;border:1px solid var(--n-200);background:#fff;}
+.cal-nav:hover{background:var(--n-100);color:var(--n-900);border-color:var(--n-300);}
+.cal-nav.dis{color:var(--n-300);border-color:var(--n-100);cursor:not-allowed;}
+.cal-nav.dis:hover{background:#fff;color:var(--n-300);border-color:var(--n-100);}
+.cal-note{font-size:var(--fs-micro);color:var(--n-500);line-height:1.6;margin:8px 0 12px;}
+.cal-note b{color:var(--n-700);font-weight:600;}
+.cal-g{display:grid;grid-template-columns:repeat(7,1fr);row-gap:2px;}
+.cal-wd{font-size:10px;color:var(--n-400);text-align:center;padding:0 0 8px;font-weight:600;letter-spacing:.4px;}
+.cal-d{height:38px;display:flex;align-items:center;justify-content:center;font-size:var(--fs-caption);
+  color:var(--n-700);cursor:pointer;border-radius:var(--r-sm);font-variant-numeric:tabular-nums;
+  position:relative;transition:background .1s;}
+.cal-d:hover:not(.off):not(.on):not(.mid):not(.blank){background:var(--n-100);}
+.cal-d.off{color:var(--n-300);cursor:not-allowed;}
+.cal-d.blank{cursor:default;}
+.cal-d.mid{background:var(--accent-50);border-radius:0;color:var(--accent-600);}
+.cal-d.on{background:var(--accent-500);color:#fff;font-weight:600;}
+.cal-d.on.s{border-radius:var(--r-sm) 0 0 var(--r-sm);}
+.cal-d.on.e{border-radius:0 var(--r-sm) var(--r-sm) 0;}
+/* 줄바꿈 지점의 구간 끝은 둥글게 — 행 끝에서 잘린 것처럼 보이지 않게 */
+.cal-g .cal-d.mid:nth-child(7n+1){border-radius:var(--r-sm) 0 0 var(--r-sm);}
+.cal-g .cal-d.mid:nth-child(7n){border-radius:0 var(--r-sm) var(--r-sm) 0;}
+.cal-g .cal-d.on.s:nth-child(7n){border-radius:var(--r-sm);}
+.cal-g .cal-d.on.e:nth-child(7n+1){border-radius:var(--r-sm);}
+.cal-d.today::after{content:"";position:absolute;bottom:5px;left:50%;margin-left:-2px;
+  width:4px;height:4px;border-radius:50%;background:var(--n-400);}
+.cal-d.on.today::after{background:rgba(255,255,255,.9);}
+.cal-time{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin-top:16px;padding-top:14px;border-top:1px solid var(--n-100);}
+.cal-tl{font-size:var(--fs-caption);color:var(--n-600);font-weight:500;}
+.tsel{display:flex;align-items:center;gap:5px;}
+.tsel .sel{width:70px;padding-right:24px;height:34px;}
+.tsep{font-size:var(--fs-caption);color:var(--n-500);}
+.cal-anchor{display:flex;align-items:center;gap:8px;background:var(--n-50);border:1px solid var(--n-200);
+  border-radius:var(--r-sm);padding:9px 12px;font-size:var(--fs-caption);color:var(--n-900);margin-bottom:14px;}
+.cal-anchor .ak{color:var(--n-500);}
+.cal-anchor .flink{margin-left:auto;}
+.cal-sum{margin-right:auto;align-self:center;font-size:var(--fs-caption);color:var(--n-700);
+  font-variant-numeric:tabular-nums;}
+.cal-sum .d{color:var(--accent-600);font-weight:600;}
+/* 체크박스(고지 확인) */
+.chk{display:inline-flex;align-items:center;gap:7px;font-size:var(--fs-micro);color:inherit;cursor:pointer;font-weight:500;}
+.cbox{width:15px;height:15px;border:1.5px solid var(--n-400);border-radius:4px;background:#fff;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;}
+.cbox svg{width:10px;height:10px;}
+.chk.on .cbox{background:var(--accent-500);border-color:var(--accent-500);}
+.chk .req{color:var(--danger-text);}
+
+/* 잠긴 세그먼트 값 */
+.seg .sg.locked{color:var(--n-400);background:var(--n-100);cursor:not-allowed;}
+
+/* 상품 항목 컬럼(정가·예상 리워드 추가) */
+.c-list{width:78px;flex-shrink:0;}
+.c-est{width:82px;flex-shrink:0;}
+.c-qty{width:80px;flex-shrink:0;}
+.ro-cell{font-size:var(--fs-caption);color:var(--n-600);padding-top:9px;font-variant-numeric:tabular-nums;}
+.c-del.dis{color:var(--n-300);cursor:not-allowed;}
+.c-del.dis:hover{color:var(--n-300);}
+
+
+/* 비고 글자수 */
+.ta-count{text-align:right;font-size:var(--fs-micro);color:var(--n-400);margin-top:6px;}
+
+/* 모달 */
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;justify-content:center;}
+.modal{width:480px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);overflow:hidden;}
+.modal-h{font-size:var(--fs-h3);font-weight:600;padding:14px var(--sp-5);border-bottom:1px solid var(--n-200);
+  display:flex;align-items:center;justify-content:space-between;}
+.modal-x{color:var(--n-400);cursor:pointer;}
+.modal-b{padding:var(--sp-5);font-size:var(--fs-caption);color:var(--n-700);line-height:1.7;}
+.modal-f{padding:12px var(--sp-5);border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.msum{border:1px solid var(--n-200);border-radius:var(--r-sm);background:var(--n-50);padding:2px 12px;margin-bottom:var(--sp-4);}
+.msum .trow{padding:8px 0;} .msum .tk{width:96px;}
+.mlabel{display:block;font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;}
+.modal-b > .mlabel:first-child{margin-top:0;}
+.mlabel .req{color:var(--danger-text);margin-left:2px;}
+.mlabel .opt{color:var(--n-400);margin-left:4px;font-weight:400;}
+.msel,.mta{width:100%;font-family:inherit;font-size:var(--fs-body);border:1px solid var(--n-300);
+  border-radius:var(--r-sm);background:#fff;color:var(--n-900);padding:6px 10px;}
+.msel:focus,.mta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.msel{height:34px;appearance:none;-webkit-appearance:none;padding-right:32px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;}
+.mta{min-height:76px;resize:vertical;line-height:1.6;height:auto;padding-top:8px;}
+.mhint{font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;}
+.mwarn{display:flex;gap:8px;background:var(--n-50);border:1px solid var(--n-200);border-radius:var(--r-sm);
+  padding:11px 13px;font-size:var(--fs-micro);color:var(--n-700);line-height:1.7;margin-top:var(--sp-4);}
+.mwarn b{color:var(--n-900);font-weight:600;}
+
+.doc-toc{max-width:1440px;margin:0 auto 24px;background:#fff;border:1px solid var(--n-300);border-radius:var(--r-sm);padding:14px 16px;}
+.toc-h{font-size:var(--fs-h3);font-weight:600;color:var(--n-900);margin-bottom:10px;}
+.toc-h span{font-size:var(--fs-micro);font-weight:400;color:var(--n-500);margin-left:6px;}
+.toc-g{display:grid;grid-template-columns:repeat(4,1fr);gap:2px 14px;}
+.toc-i{display:flex;align-items:center;gap:7px;font-size:var(--fs-micro);color:var(--n-600);
+  text-decoration:none;padding:4px 6px;border-radius:var(--r-sm);}
+.toc-i:hover{background:var(--accent-50);color:var(--accent-600);}
+.toc-i .ti{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:17px;
+  background:var(--n-100);color:var(--n-700);border-radius:4px;font-size:10px;font-weight:600;flex-shrink:0;}
+.toc-i:hover .ti{background:var(--accent-500);color:#fff;}
+a{color:var(--accent-600);}
+a:hover{color:var(--accent-500);}
+
+/* ── 준비 조건 체크리스트 ── */
+.ck{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.ck-i{display:flex;align-items:center;gap:10px;padding:12px 13px;font-size:var(--fs-caption);
+  color:var(--n-900);border-bottom:1px solid var(--n-100);}
+.ck-i:last-child{border-bottom:none;}
+.ck-i .cm{width:18px;height:18px;border-radius:50%;background:var(--success-bg);color:var(--success-text);
+  display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;font-weight:700;}
+.ck-i .cl{flex:1;}
+.ck-i .cw{display:block;font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.ck-i .cs{font-size:var(--fs-micro);color:var(--n-500);font-variant-numeric:tabular-nums;flex-shrink:0;}
+.ck-i .fp-item{flex-shrink:0;}
+.ck-i .fp-item svg{width:9px;height:9px;}
+.ck-i.wait{background:#FDFAF4;}
+.ck-i.wait .cm{background:var(--warning-bg);color:var(--warning-text);}
+.ck-i.wait .cl{font-weight:600;}
+.ck-i.todo .cm{background:var(--n-100);color:var(--n-400);}
+.ck-i.todo{color:var(--n-500);}
+
+/* ── 실적 KPI ── */
+.kpi{display:flex;gap:12px;}
+.kpi .k{flex:1;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:12px 14px;}
+.kpi .kn{font-size:19px;font-weight:600;color:var(--n-900);font-variant-numeric:tabular-nums;}
+.kpi .kl{font-size:var(--fs-micro);color:var(--n-600);margin-top:3px;}
+.kpi .ks{font-size:10px;color:var(--n-400);margin-top:2px;font-variant-numeric:tabular-nums;}
+
+/* ── 진행 마대 ── */
+.pbar{height:5px;border-radius:3px;background:var(--n-200);overflow:hidden;}
+.pbar i{display:block;height:100%;border-radius:3px;background:var(--accent-500);}
+.pbar.done i{background:var(--success-text);}
+
+/* ── 게시물 열람 ── */
+.post{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:14px 16px;}
+.post .pb{min-width:0;}
+.post .pitems{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.post .pchip{font-size:var(--fs-micro);color:var(--n-700);background:var(--n-100);
+  border-radius:var(--r-sm);padding:4px 9px;}
+.post .ptt{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);margin-bottom:3px;}
+.post .pd2{font-size:var(--fs-micro);color:var(--n-600);line-height:1.65;}
+.post .pm2{font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;font-variant-numeric:tabular-nums;}
+
+.act-btn{height:26px;padding:0 11px;font-size:var(--fs-micro);font-weight:500;border:1px solid var(--n-300);
+  background:#fff;border-radius:var(--r-sm);color:var(--n-700);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;}
+.act-btn:hover{background:var(--n-100);border-color:var(--n-400);}
+.act-btn.primary{background:var(--accent-500);border-color:var(--accent-500);color:#fff;}
+.act-btn.primary:hover{background:var(--accent-600);border-color:var(--accent-600);}
+.stage.tall.xl{min-height:1400px;}
+.stage.tall.xl2{min-height:1500px;}
+.stage.tall.xxl{min-height:1950px;}
+/* ── 조회 조건 블록 ── */
+.qform{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);padding:14px 16px;margin-bottom:var(--sp-3);}
+.qrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.qrow+.qrow{margin-top:10px;padding-top:10px;border-top:1px solid var(--n-100);}
+.qlab{font-size:var(--fs-micro);color:var(--n-500);font-weight:600;width:62px;flex-shrink:0;}
+.preset{display:flex;gap:0;border:1px solid var(--n-300);border-radius:var(--r-sm);overflow:hidden;}
+.pbtn{padding:0 13px;height:32px;font-size:var(--fs-caption);color:var(--n-600);background:#fff;
+  border-right:1px solid var(--n-200);display:inline-flex;align-items:center;cursor:pointer;white-space:nowrap;}
+.pbtn:last-child{border-right:none;}
+.pbtn:hover:not(.on){background:var(--n-50);color:var(--n-900);}
+.pbtn.on{background:var(--accent-500);color:#fff;font-weight:500;}
+.qsub{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ── 일괄 액션 바(테이블 위 상시) ── */
+.abar{display:flex;align-items:center;gap:8px;padding:10px var(--sp-4);border-bottom:1px solid var(--n-200);
+  background:var(--n-50);flex-wrap:wrap;}
+.abar .asel{font-size:var(--fs-caption);color:var(--n-600);margin-left:4px;}
+.abar .asel b{color:var(--accent-600);}
+.abar .ar{margin-left:auto;display:flex;gap:8px;}
+
+/* ── 행 확장 ── */
+.xt{width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;
+  color:var(--n-400);font-size:9px;cursor:pointer;border-radius:3px;}
+.xt:hover{background:var(--n-100);color:var(--n-700);}
+.xt.on{color:var(--accent-600);}
+tr.xrow td{background:var(--n-50);padding:0 16px 12px 68px;border-top:none;}
+tr.xrow .xtab{width:100%;border-collapse:collapse;font-size:var(--fs-micro);background:#fff;
+  border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+tr.xrow .xtab td{background:#fff;padding:8px 12px;border-top:1px solid var(--n-100);}
+tr.xrow .xtab tr:first-child td{border-top:none;}
+tr.xrow .xtab thead td{background:var(--n-100);color:var(--n-600);font-weight:600;border-top:none;}
+.sort{color:var(--n-400);font-size:8px;margin-left:3px;}
+.sort.on{color:var(--accent-600);}
+.qbar{display:flex;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;margin-bottom:var(--sp-4);}
+.qb{flex:1;padding:12px 16px;border-right:1px solid var(--n-100);cursor:pointer;}
+.qb:last-child{border-right:none;}
+.qb:hover{background:var(--n-50);}
+.qb .qn{font-size:20px;font-weight:600;color:var(--n-400);font-variant-numeric:tabular-nums;line-height:1.2;}
+.qb .ql{font-size:var(--fs-micro);color:var(--n-600);margin-top:3px;}
+.qb.on{background:var(--accent-50);}
+.qb.on .qn{color:var(--accent-600);}
+.qb.on .ql{color:var(--accent-600);font-weight:500;}
+.tabs1{display:flex;gap:2px;border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-4);}
+.tab1{padding:9px 18px;font-size:var(--fs-body);color:var(--n-500);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.tab1.on{color:var(--accent-600);font-weight:600;border-bottom-color:var(--accent-500);}
+.tab1 .t1n{font-size:var(--fs-micro);color:var(--n-400);margin-left:5px;font-variant-numeric:tabular-nums;}
+.tab1.on .t1n{color:var(--accent-500);}
+.cb{width:15px;height:15px;border:1.5px solid var(--n-300);border-radius:4px;background:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;vertical-align:middle;}
+.cb svg{width:9px;height:9px;display:none;}
+.cb.on{background:var(--accent-500);border-color:var(--accent-500);}
+.cb.on svg{display:block;}
+tbody tr.sel{background:var(--accent-50);}
+.bulk{position:absolute;left:calc(var(--pt-sidebar-w) + var(--pt-pad));right:var(--pt-pad);bottom:var(--pt-pad);background:var(--n-900);border-radius:var(--r-md);padding:12px 16px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow-popover);}
+.bulk .bn{font-size:var(--fs-caption);color:#fff;font-weight:500;}
+.bulk .bs{font-size:var(--fs-micro);color:rgba(255,255,255,.6);}
+.bulk .ba{margin-left:auto;display:flex;gap:8px;}
+.bulk .btn-ghost{color:rgba(255,255,255,.8);}
+.otab{width:100%;border-collapse:collapse;font-size:var(--fs-caption);table-layout:fixed;}
+.otab thead td{background:var(--n-50);color:var(--n-600);font-size:var(--fs-micro);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--n-200);}
+.otab tbody td{padding:11px 12px;border-top:1px solid var(--n-100);vertical-align:middle;}
+.otab tbody tr:first-child td{border-top:none;}
+.otab tbody tr.void td{color:var(--n-400);}
+.otab .oname{color:var(--n-900);display:block;}
+.otab .oopt{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.otab tbody tr.void .oname{color:var(--n-400);text-decoration:line-through;}
+.sum{border-top:1px solid var(--n-200);margin-top:var(--sp-3);padding-top:var(--sp-3);}
+.sumrow{display:flex;justify-content:space-between;font-size:var(--fs-caption);padding:5px 0;}
+.sumrow .sk{color:var(--n-600);} .sumrow .sv{color:var(--n-900);font-variant-numeric:tabular-nums;}
+.sumrow.minus .sv{color:var(--danger-text);}
+.sumrow.total{border-top:1px solid var(--n-200);margin-top:6px;padding-top:10px;font-weight:600;}
+.sumrow.total .sk,.sumrow.total .sv{font-size:var(--fs-h2);color:var(--n-900);}
+.ship{padding:var(--sp-4);}
+.shiprow{display:flex;justify-content:space-between;gap:10px;font-size:var(--fs-caption);padding:6px 0;}
+.shiprow .sk{color:var(--n-500);flex-shrink:0;}
+.shiprow .sv{color:var(--n-900);text-align:right;}
+.track{background:var(--n-50);border:1px solid var(--n-200);border-radius:var(--r-sm);padding:10px 12px;margin-top:var(--sp-2);}
+.track .tl{font-size:var(--fs-caption);color:var(--n-900);font-weight:500;}
+.track .tm{font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;font-variant-numeric:tabular-nums;}
+.dcount{display:inline-flex;align-items:baseline;gap:6px;}
+.dcount .dn{font-size:19px;font-weight:600;color:var(--accent-600);font-variant-numeric:tabular-nums;}
+.dcount .dl{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ══ rev.2 ══ */
+.modal.wide{width:1040px;display:flex;flex-direction:column;}
+.modal.wide .modal-h{flex-shrink:0;}
+.mh-l{display:flex;align-items:center;gap:10px;}
+.mh-r{display:flex;align-items:center;gap:6px;margin-left:auto;}
+.modal.wide .mbody{padding:var(--sp-4) var(--sp-5) var(--sp-5);display:grid;grid-template-columns:1fr 300px;gap:var(--sp-4);align-items:start;}
+.modal.wide .mcol{min-width:0;display:flex;flex-direction:column;gap:var(--sp-3);}
+.mbox{border:1px solid var(--n-200);border-radius:var(--r-md);background:#fff;}
+.mbox-h{font-size:var(--fs-h3);font-weight:600;padding:11px var(--sp-4);border-bottom:1px solid var(--n-200);background:var(--n-50);border-radius:var(--r-md) var(--r-md) 0 0;display:flex;align-items:center;gap:8px;}
+.mbox-h .bn2{font-size:var(--fs-micro);color:var(--n-500);font-weight:400;}
+.mbox-b{padding:var(--sp-4);}
+.mbox-b.tight{padding:var(--sp-3) var(--sp-4);}
+
+/* 인라인 입력(우 레일) */
+.inl{border:1px solid var(--accent-100);background:var(--accent-50);border-radius:var(--r-sm);padding:var(--sp-3);margin-top:var(--sp-3);}
+.inl-t{font-size:var(--fs-caption);font-weight:600;color:var(--accent-600);margin-bottom:var(--sp-2);}
+.inl label{display:block;font-size:var(--fs-micro);color:var(--n-600);margin:8px 0 3px;}
+.inl label:first-of-type{margin-top:0;}
+.inl .fi{width:100%;font-family:inherit;font-size:var(--fs-caption);height:30px;padding:0 9px;border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-900);}
+.inl .fi.err{border-color:var(--danger-text);}
+.inl .fi.wn{border-color:var(--warning-text);}
+.inl select.fi{appearance:none;-webkit-appearance:none;padding-right:26px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;}
+.inl .ie{font-size:10px;color:var(--danger-text);margin-top:4px;line-height:1.5;}
+.inl .iw2{font-size:10px;color:var(--warning-text);margin-top:4px;line-height:1.5;}
+.inl .ih{font-size:10px;color:var(--n-500);margin-top:4px;line-height:1.5;}
+.inl-a{display:flex;gap:6px;margin-top:var(--sp-3);}
+.inl-a .btn{flex:1;height:28px;font-size:var(--fs-micro);}
+
+/* 메모 아이콘 */
+.memo{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:var(--warning-bg);color:var(--warning-text);cursor:help;}
+.memo svg{width:11px;height:11px;}
+.memo-none{color:var(--n-300);font-size:var(--fs-micro);}
+
+/* 드롭존 */
+.drop{border:1.5px dashed var(--n-300);border-radius:var(--r-md);background:var(--n-50);padding:32px 20px;text-align:center;}
+.drop-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);margin-bottom:5px;}
+.drop-d{font-size:var(--fs-caption);color:var(--n-500);line-height:1.7;}
+.drop-b{margin-top:var(--sp-4);display:flex;gap:8px;justify-content:center;}
+
+/* 검증 결과 */
+.vres{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.vrow{display:flex;align-items:center;gap:9px;padding:11px 13px;font-size:var(--fs-caption);border-bottom:1px solid var(--n-100);}
+.vrow:last-child{border-bottom:none;}
+.vrow .vi{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.vrow.ok .vi{background:var(--success-bg);color:var(--success-text);}
+.vrow.sub{background:#fff;color:var(--n-600);font-size:var(--fs-micro);padding-left:34px;}
+.vrow.sub .vn{color:var(--n-500);}
+.vrow.bad{background:#FEF7F7;}
+.vrow.bad .vi{background:var(--danger-bg);color:var(--danger-text);}
+.vrow .vt{flex:1;} .vrow .vt b{color:var(--n-900);}
+.vrow .vn{font-size:var(--fs-micro);color:var(--n-500);font-variant-numeric:tabular-nums;}
+.verr{background:#FEF7F7;border:1px solid #F0DADA;border-radius:var(--r-sm);padding:var(--sp-3);margin-top:var(--sp-2);}
+.verr-i{display:flex;gap:8px;font-size:var(--fs-micro);color:var(--n-700);padding:4px 0;line-height:1.6;}
+.verr-i .vl{color:var(--n-500);flex-shrink:0;font-variant-numeric:tabular-nums;width:78px;}
+.verr-a{margin-top:var(--sp-2);}
+
+/* 컬럼 양식 안내표 */
+.grow{display:flex;align-items:center;gap:9px;background:var(--n-50);border:1px solid var(--n-200);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:var(--sp-3);flex-wrap:wrap;}
+.glab{font-size:var(--fs-micro);color:var(--n-600);font-weight:600;}
+.gsub{font-size:var(--fs-micro);color:var(--n-500);}
+.gtab{width:100%;border-collapse:collapse;font-size:var(--fs-caption);table-layout:fixed;border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.gtab thead td{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);font-weight:600;padding:9px 12px;}
+.gtab tbody td{padding:8px 12px;border-top:1px solid var(--n-100);vertical-align:top;}
+tbody tr.filled{background:var(--accent-50);}
+tbody tr.filled.err{background:#FDF6F6;}
+.act-btn:disabled{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+.act-btn:disabled:hover{background:var(--n-100);border-color:var(--n-200);}
+.gtab tbody tr.err{background:#FDF6F6;}
+.gsel{width:100%;height:30px;font-family:inherit;font-size:var(--fs-caption);border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-900);padding:0 24px 0 8px;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
+.ginp{width:100%;height:30px;font-family:inherit;font-size:var(--fs-caption);border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-900);padding:0 9px;}
+.ginp.bad{border-color:var(--danger-text);}
+.gerr{display:block;font-size:var(--fs-micro);color:var(--danger-text);margin-top:4px;line-height:1.5;}
+.chkrow{display:flex;gap:9px;align-items:flex-start;background:var(--n-50);border:1px solid var(--n-200);
+  border-radius:var(--r-sm);padding:11px 13px;}
+.chkt{font-size:var(--fs-caption);color:var(--n-900);line-height:1.55;}
+.chks{display:block;font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;}
+.cols{display:flex;flex-wrap:wrap;gap:5px;}
+.cols span{font-size:var(--fs-micro);color:var(--n-700);background:var(--n-100);border-radius:4px;padding:4px 8px;}
+</style>
+
+
+
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 640.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+<div class="doc-toc" style="margin-bottom:12px">
+  <div class="toc-h">주문 관리 파일 <span>5개 · 탭별 분할</span></div>
+  <div class="toc-g" style="grid-template-columns:repeat(5,1fr)">
+    <a class="toc-i" href="ui-partner-10a-orders-new.html"><span class="ti">↗</span>신규(준비 대기)</a>
+    <a class="toc-i" href="ui-partner-10b-orders-prep.html"><span class="ti">↗</span>상품준비중</a>
+    <span class="toc-i" style="background:var(--accent-500);color:#fff"><span class="ti" style="background:rgba(255,255,255,.24);color:#fff">현재</span>배송중~구매확정</span>
+    <a class="toc-i" href="ui-partner-10d-orders-cancel.html"><span class="ti">↗</span>취소 요청·취소</a>
+    <a class="toc-i" href="ui-partner-10e-orders-all.html"><span class="ti">↗</span>전체(조회)</a>
+  </div>
+</div>
+<div class="doc-head">
+  <h1>ui-partner-10c-orders-shipping <span style="font-weight:400;color:var(--n-500)">— 파트너센터 주문 관리 · 배송중~구매확정 · rev.5</span></h1>
+  <p class="meta">배송중부터 구매확정까지 — <b>브랜드가 손대지 않고 지켜보는</b> 구간. 배송 이상 2단 감시가 핵심이다. GNB #6 판매 관리 · 반품·교환은 <b>별 파일(11-claims)로 분리 예정</b> <span style="color:var(--danger-text)">[미제작]</span> · 셸·토큰 출처 <a href="ui-partner-09-groupbuys.html">ui-partner-09-groupbuys</a>(rev.2)</p>
+  <div class="rule">
+    <b class="new">[rev.5→6 · 감시 2단 확정 · 분실 신고 폐기]</b> ① <b>배송 이상 감시를 2단으로 확정</b>해 서술을 통일했다(집화 확인 필요 + 추적 정지) — 3단 서술은 <b>변경 이력 블록에만</b> 남는다. ② <b>반송 완료(브랜드 입고)도 연동 코드로 자동 감지</b>돼 브랜드가 도착을 알리는 액션을 <b>없앴다</b>: 도착 시 <b>운영자 큐에 자동 편입</b>된다. 반송 건은 <b>목록·상세 어디서도 송장 수정 불가</b> — 번호가 맞아도 물건이 돌아오는 중이라 수정이 무의미하다. ③ <b>추적 정지의 [분실 신고]를 폐기했다</b>(rev.6) — <b>플랫폼은 분실·누락 판정에 관여하지 않는다</b>. 택배사 조회는 소비자나 브랜드가 직접 하고, <b>누락</b>이면 택배사가 배송완료로 처리, <b>분실</b>이면 브랜드가 재발송한다. <b>분실 보상은 택배사와 브랜드 사이</b>에서 끝나므로 플랫폼이 할 일은 <b>재발송 송장을 받는 것</b>뿐이고 액션은 <b>[송장 수정] 하나</b>다 — 사고 접수번호·증빙 폼(C7b2)은 삭제했다. ④ <b>설계 원리를 명문화</b>했다(아래).<br>
+    <b class="new">[rev.6 · 반송 사유는 화면에 쓰지 않는다]</b> 추적 API가 주는 것은 <b>반송 상태 코드와 시각</b>뿐이고 「주소 불명」·「수취인 부재」 같은 <b>사유는 표준 코드로 오지 않는다</b>(대리점 메모로만 남는다). 확인되지 않은 사유를 단정하면 <b>틀린 정보를 브랜드에게 확정처럼 보여주게</b> 되므로, 화면에는 <b>반송 처리 사실 · 감지 시각 · 타이머 정지</b>만 쓰고 사유는 <b>택배사 직접 조회</b>로 안내한다.<br>
+    <b class="new">[설계 원리]</b> <b>돈의 시점</b>(구매확정 D+7 · 정산)에 영향을 주는 상태 전환은 <b>이해당사자가 만지지 않는다</b> — 자동 아니면 운영자다. 배송완료 처리 · 반송 후속 · 환불 집행이 전부 이 원칙을 따른다.<br>
+    <b>[파일 분할 · 참조 규약]</b> 주문 관리는 <b>탭별 5개 파일</b>(10a 신규 · 10b 상품준비중 · 10c 배송중~구매확정 · 10d 취소 요청·취소 · 10e 전체)로 나뉘고 <b>이 규칙 박스는 다섯 파일에 동일하게</b> 실린다. 상태 참조에서 <b>파일 접두가 붙은 것</b>(예: <code>10c C7b</code>)은 <b>다른 파일에 있는 상태</b>이고, 접두 없는 것은 <b>이 파일 안</b>에 있다. 반품·교환은 이 5개 파일에 포함되지 않는다.<br>
+    &nbsp;&nbsp;→ <b>rev.4에서 형식 오류 사전 차단이 확정</b>되며 1·2단을 <b>「집화 확인 필요」 하나로 통합, 최종 2단</b>이 되었다.<br>
+    <b class="new">[rev.4 · 배송 추적 연동 확정 — 미정 4건 해소]</b> 연동 업체 조사로 앞서 <code>[미정]</code>이던 항목이 정해져 규칙 4곳이 바뀌었다.<br>
+    &nbsp;&nbsp;· <b>송장번호 자릿수·체크디지트는 하드 차단</b>(경고 → 차단). 우리가 택배사별 자릿수 표를 하드코딩하지 않고 <b>연동 업체가 최신 규칙으로 판정</b>하며(무과금), 송장번호는 마지막 자리가 앞자리로 계산되는 <b>체크디지트</b>라 <b>숫자 하나만 틀려도 잡힌다</b> — 오타를 통과시킬 이유가 없다. 문구는 <b>「송장번호 형식이 올바르지 않습니다. 다시 확인해 주세요.」</b> 하나이고 <b>자릿수인지 체크디지트인지 구분하지 않는다</b>(브랜드에게는 똑같이 "번호가 틀렸다"는 뜻이다).<br>
+    &nbsp;&nbsp;· <b>배송 이상은 3단 → 2단</b>. 형식 오류가 <b>등록 시점에 이미 차단</b>되므로 24시간 미조회는 번호 문제가 아니라 <b>픽업이 안 된 것</b>이다 — 그래서 「송장 확인 필요」와 「집화 지연」을 <b>「집화 확인 필요」 하나로 합쳤다</b>(원인이 같아졌으니 단계를 나눌 이유가 없다). 송장 수정은 <b>유지</b>한다: 형식은 맞지만 <b>다른 주문의 송장을 붙여넣은</b> 경우가 남아 있다. 2단은 <b>추적 정지</b>(집화 후 7일 갱신 없음 · 위험 · <b>[송장 수정]</b>만).<br>
+    &nbsp;&nbsp;· <b class="new">「반송 중」 신설</b>(위험색) — 물건이 <b>브랜드에게 돌아오는 중</b>인데 화면에 계속 「배송중」으로 남으면 <b>자동 구매확정 타이머가 돌아 못 받은 물건이 정산된다</b>. 연동 업체가 반송을 코드로 구분해 주므로 <b>자동 감지</b>하고 <b>타이머를 취소</b>한다(화면에 「구매확정되지 않습니다」 표시) — <b>환불로 종결</b>된다 — 이 주문으로 재발송하는 경로는 없다. <b>반송 완료(브랜드 입고)도 연동 코드로 자동 감지</b>되어 브랜드가 누를 버튼이 없고 <b>환불은 PG가 자동으로 처리합니다 — 반송 물건을 브랜드가 임의 재발송하면 소비자 의사와 어긋날 수 있다. 요약 바 <b>「배송 이상」에 합산</b>한다.<br>
+    &nbsp;&nbsp;· <b>택배사 목록 확정</b> — <b>추적 연동 업체 목록 하나를 출고·회수 공통</b>으로 쓰며 자유 입력·수기 송장은 없다 — CJ대한통운 · 롯데택배 · 한진택배 · 우체국택배 · 경동택배 · 대신택배 · 로젠택배 · 합동택배 · 쿠팡택배 · 우리택배 · CU편의점택배(사용 빈도순). <b>목록에서만 선택</b>하고 자유 입력·「미지원 택배사」 옵션은 없다 — 연동이 지원하는 택배사만 노출되므로 <b>추적 안 되는 송장이 애초에 등록되지 않는다</b>. 발주서 다운로드 모달도 같은 목록이다.<br>
+    <b>[버전 표기]</b> 제목의 <b>rev.N</b>은 <b>파일 리비전</b>(현재 rev.5)이고, 아래 <code>[rev.N · …]</code> 블록은 <b>그 규칙이 도입·변경된 리비전</b>을 가리키는 변경 이력이다 — 두 축이 다르므로 블록 번호가 제목보다 클 수 있다(한 리비전 안에서 여러 결정이 순차로 들어온 경우).<br>
+    <b>[이 화면의 성격 — 조회용 대시보드가 아니라 매일 여는 작업 큐다]</b> 브랜드가 가장 먼저 알아야 할 것은 <b>「지금 내가 처리해야 할 게 몇 건인가」</b>다. ① 상단 <b>처리 대기 요약 바</b> 고정 ② 기본 진입 탭 <b>신규(준비 대기)</b> ③ 정렬 기본값 <b>오래된 순</b> ④ <b>목록 관리 열에서 바로 처리</b> ⑤ 다건 선택 <b>일괄 처리</b>.<br>
+    <b>[단위가 3층이다]</b> <code>주문(결제 1건) → 하위주문(공구·브랜드별 · 배송 단위) → 주문 항목(SKU · 취소·반품·교환 단위)</code>. 브랜드가 보는 기본 단위는 <b>하위주문</b>이고 <b>타 브랜드 몫은 보이지 않는다</b>. 하위주문 1건 안에서 <b>일부 항목만</b> 반품·교환될 수 있어 목록이 둘로 갈린다 — 배송은 하위주문(이 파일), 반품·교환은 <b>항목 단위</b>(10b).<br>
+    <b class="new">[rev.2 · 상세를 전체 페이지에서 모달로 바꿨다]</b> 목록의 <b>스크롤 위치·필터·체크박스 선택을 잃지 않기 위해서</b>다. 헤더의 <b>[‹ 이전][다음 ›]</b>으로 5건을 연속 처리할 때 목록으로 나갈 필요가 없다. 폭 1040px에 <b>좌 본문 + 우 레일 2단</b>이고, 뒤에 목록이 깔린다.<br>
+    &nbsp;&nbsp;· <b>모달 안에서 또 모달을 띄우지 않는다</b> — 송장 등록·수정은 필드가 2개뿐이라 <b>우 레일 인라인 입력</b>으로 펼친다(10b C2 · 10b C3 · 10b C4). 반면 <b>준비 시작 확인·배송완료 요청</b>는 경고 한 줄이라 작은 다이얼로그로 겹쳐도 된다(E8).<br>
+    <b class="new">[rev.2 · 택배사 API는 「배송 추적」만 연동한다]</b> 목적별로 나뉘는 API 중 이번 버전에 들어오는 것은 <b>추적 하나</b>다 — <b>송장 자동 발번 없음</b>(브랜드가 자기 택배사에서 발급) · <b>배송 추적 있음</b>(상태·위치 자동 조회 + <b>배송완료 자동 전환</b>) · 반품 회수 접수 없음. 정리하면 <b>송장은 사람이 넣고, 그 다음부터는 시스템이 따라간다</b>. <code>ui-partner-06</code>의 「택배 연동 준비중」과 어긋나지 않는다 — 그 항목은 <b>발번·회수</b> 연동이고 여기서 들어오는 건 조회뿐이다.<br>
+    <b class="new">[rev.2 · 엑셀 왕복이 이번 버전의 핵심 기능이다]</b> 브랜드의 실제 작업은 <code>발주서 엑셀 다운로드 → 택배사 시스템 업로드 → 송장 발급·스티커 출력 → 출고 → 송장 채운 엑셀 일괄 업로드 → 이후 자동</code>이다. 이 왕복이 없으면 브랜드가 <b>주소를 손으로 타이핑</b>하게 되고 그게 <b>오배송의 가장 흔한 원인</b>이다. 그래서 발주서는 <b>택배사별 양식</b>으로 내려주고(E1), 업로드는 <b>부분 성공을 허용</b>한다(E3) — 50건 중 1건 틀렸다고 전부 막히면 브랜드는 처음부터 다시 한다.<br>
+    <b class="new">[rev.2 · 배송완료는 자동이 주 경로, 요청이 폴백]</b> 추적 데이터가 배송완료로 바뀌면 시스템이 전환하고 구매확정 카운트를 시작한다 — <b>브랜드가 누를 버튼이 없다</b>(C8). 다만 지원하지 않는 택배사·해외 배송·자체 배송처럼 <b>추적이 원래 안 잡히는 경우</b>가 있어 <b>수기 처리를 남긴다</b>(C7·rev.3 삭제) — 이 버튼은 <b>추적이 없는 건에만 나타나고</b> 정상 추적 건에는 없다.<br>
+    &nbsp;&nbsp;· <b>배송완료일시는 구매확정 D+7의 기산점이자 정산 시점의 기준</b>이라 <b>출처를 항상 병기</b>한다 — <code>(자동 확인)</code> 또는 <code>(운영자 처리)</code>. 상세·이력 양쪽에 남기고, 요청 처리 건에는 <b>소비자 이의 가능성</b>까지 적는다(C9).<br>
+    <b class="new">[rev.2 · 송장 검증은 강도가 다르다]</b> <b>중복은 하드 차단</b>(실무에서 가장 흔한 복붙 사고 · 어느 주문과 겹치는지 지목 — C3) / <b>숫자 외 문자는 하드 차단</b>(공백·하이픈은 자동 제거 후 검사) / <b>택배사별 기대 자릿수 불일치는 경고만</b>(택배사가 번호 체계를 바꿀 수 있어 차단하면 정상 송장이 막힌다 — C4) / <b>빈 값은 에러 없이 버튼 비활성</b>.<br>
+    <b class="new">[rev.2 · 집화 확인 필요 — 24시간 뒤에 경고한다]</b> <b>집화 스캔 전에는 추적 데이터가 없는 게 정상</b>이라 등록 직후에 경고하면 전부 경고가 된다. 등록 후 <b>24시간</b>이 지나도 조회되지 않으면 오등록 가능성이 높아 그때 알린다 — 목록 행 배지 + 요약 바 건수 + 상세 배너(C6)에서 <b>[송장 수정]을 주 액션으로 승격</b>. <b>송장 수정은 배송완료 전까지만</b> 가능하고 이력에 남는다.<br>
+    <b class="new">[rev.2 · 취소 처리 경로 신설]</b> rev.1의 「취소」 탭은 <b>이미 자동 취소된 건의 조회용</b>일 뿐이어서, 준비 시작 이후 품절이 나거나 소비자가 마음을 바꾸면 브랜드가 할 수 있는 게 없었다. 두 경로를 넣었다 — <b>① 직권 취소</b>(브랜드가 품절·하자로 스스로 · 상품준비중에서만 · 사유가 소비자에게 그대로 전달되고 <b>취소율에 반영</b>) <b>② 소비자 취소 요청 → 브랜드 승인·거부</b>(<b>「취소 요청」 탭 신설</b> · 소비자 요청이라 취소율에 반영되지 않는다).<br>
+    &nbsp;&nbsp;· <b>[주문 취소]는 위험색이 아니라 중립 텍스트 버튼</b>이다 — 파괴적이지만 품절 대응은 <b>정상 업무</b>이고, 위험색을 쓰면 매일 누르는 버튼이 매일 경고가 된다.<br>
+    &nbsp;&nbsp;· <b>준비 시작 되돌리기는 두지 않는다</b>(확정). 상태는 앞으로만 진행하고, 문제가 생기면 <b>직권 취소</b>로 처리한다 — 되돌림을 열어두면 소비자 취소권이 열렸다 닫혔다 하는 상태가 생긴다.<br>
+    &nbsp;&nbsp;· <b>환불은 브랜드가 절대 실행하지 않는다</b> — 취소·반품 어느 경로든 <b>운영자가 집행</b>한다. 세 모달(E5·E6·E7) 모두 같은 문구로 적었다.<br>
+    <b class="new">[rev.5 · 송장은 목록에서 직접 입력한다 — 모달을 하나 없앴다]</b> 상품준비중 탭의 <b>택배사·송장번호를 편집 가능한 열</b>로 만들었다(A2a~A2c). 모달을 열지 않고 <b>보면서 입력</b>하는 게 이 작업의 본래 형태다 — 발주서·택배사 화면과 이 목록을 번갈아 보며 옮겨 적는 일이라, 모달이 목록을 가리면 대조가 끊긴다. 그리드 모달(rev.4의 E2b)은 <b>폐기</b>했다: 같은 일을 하는 화면이 둘이면 어느 쪽이 정본인지 흐려진다.<br>
+    &nbsp;&nbsp;· <b>입력과 확정을 분리한다</b> — 셀에 쳐도 즉시 저장되지 않고 <b>[N건 송장 등록]</b>을 눌러야 배송중으로 넘어간다. 입력 중 실수를 되돌릴 구간이 필요하고, 배송중 전환은 <b>소비자에게 송장이 전달되는</b> 되돌리기 힘든 사건이다.<br>
+    &nbsp;&nbsp;· <b>입력된 행은 배경 톤으로 구분</b>하고 버튼에 <b>건수를 박아</b> 몇 건이 확정될지 누르기 전에 보인다. 검증 오류는 <b>해당 셀에 인라인</b>으로 띄우고 <b>그 행만 제외</b>하고 나머지는 등록한다(엑셀 업로드와 같은 원칙).<br>
+    &nbsp;&nbsp;· <b>택배사 일괄 적용</b>을 헤더에 둔다 — 한 번에 보내는 건들은 택배사가 거의 같아서, 행마다 고르게 하면 순수한 반복 노동이 된다.<br>
+    <b class="new">[rev.5 · 엑셀 업로드도 같은 확인 단계를 거친다]</b> E3 검증 후 [목록에 채우기]는 <b>상태를 바꾸지 않고 목록 셀을 채운다</b>. 브랜드가 눈으로 확인한 뒤 <b>[송장 등록]으로 확정</b>한다 — 잘못 올린 파일을 <b>되돌릴 수 있는 구간</b>이 생기고, 수기 입력과 엑셀 업로드가 <b>같은 확정 지점</b>을 공유한다(10b A2b).<br>
+    <b class="new">[rev.8→4 · 배송 지연 감시를 3단으로 쪼갰다 → 최종 2단]</b> 24시간 「집화 확인 필요」 하나로 묶으면 <b>멈춘 지점이 다른 세 상황</b>이 같은 배지를 달게 된다 — 원인도 조치도 다르다.<br>
+    &nbsp;&nbsp;· <b>1단 · 등록 후 24시간 미조회 → 「집화 확인 필요」(경고)</b> — 집화 전 · <b>번호 오류 의심</b> · 송장 셀 편집 + [수정]<br>
+    &nbsp;&nbsp;· <b>2단 · 등록 후 24시간 미조회 → 「집화 확인 필요」(경고)</b> — 집화 전 · <b>물리적으로 픽업이 안 된 것</b> · 수정은 가능하되 안내 초점은 <b>택배사 집화 확인</b>(C7)<br>
+    &nbsp;&nbsp;· <b>집화 후 7일 갱신 없음 → 「추적 정지」(위험)</b> — 배송완료 직전 · <b>송장 수정으로 해결되지 않는다</b>(번호는 맞고 스캔 누락) · <b>[송장 수정]만</b>(rev.6 · C7b)<br>
+    &nbsp;&nbsp;· <b>「배송 지연」이라 부르지 않는다</b> — <b>발송기한(브랜드 의무)과 혼동</b>된다. 최종 2단(추적 정지)은 브랜드 귀책이 아니라 <b>택배사 추적 데이터가 멈춘 상태</b>다.<br>
+    &nbsp;&nbsp;· 상단 요약 바는 세 단계를 합산해 <b>「배송 이상 N건」</b> 하나로 보여준다 — 요약은 <b>손댈 일이 있는지</b>만 알리고 구분은 목록이 한다.<br>
+    <b class="new">[rev.8 · 배송완료에 브랜드가 관여하지 않는다]</b> <b>[배송완료 처리 요청]·[배송완료 수기 처리] 버튼과 요청 모달(rev.3 삭제)을 전부 삭제</b>했다. 정상 경로는 <b>추적 API 자동 전환</b>(C8), 예외는 <b>운영자 직권 처리</b>(C9)뿐이다 — 요청 창구조차 두지 않은 이유는, 브랜드가 날짜를 제안할 수 있으면 <b>협상 여지가 생기고</b> 그 날짜가 <b>구매확정 D+7과 정산 시점</b>을 움직이기 때문이다. 「추적 정지」에는 <b>[송장 수정]만</b> 둔다(rev.6) — 분실·누락 판정에 플랫폼은 관여하지 않는다.<br>
+    <b class="new">[rev.8 · 택배사는 목록에서만 고른다]</b><b>전부 제거</b>했다 — 자유 입력을 허용하면 <b>추적이 불가능한 송장</b>이 등록되고, 그건 「추적 정지」와 구분되지 않는다. <b>추적 연동 업체가 지원하는 택배사만</b> 목록에 노출된다. <span class="wait">[미정]</span> 연동 업체 미확정이라 <b>목록 자체가 잠정</b>이다.<br>
+    <b class="new">[rev.8 · 발송기한 판정 기준]</b> <b class="new">[rev.9 · 기산점 = 공구 마감 시각]</b> 발송기한 = <b>공구 마감 시각 + 브랜드가 정한 N영업일</b>(기본 3 · 최대 7 · 기본정보 관리의 「발송 기한」)이다 — 공구 진행 중 결제 건은 <b>마감 전까지 기한이 생기지 않는다</b>(아래 「결제완료 시각」 기산 서술은 rev.8 이력). 기산점은 <b>결제완료 시각</b>(브랜드가 준비 시작을 누르지 않아도 기한은 흘러간다), 판정은 <b>송장 등록 시각</b>(집화 아님 — 택배사 사정을 브랜드 귀책으로 돌리지 않는다). 열 헤더 툴팁에 이 두 문장을 넣었다. <b>「발송기한 경과」(위험 · 브랜드 귀책)</b>와 <b>「집화 확인 필요」(경고 · 택배사)</b>은 <b>별 배지</b>이고 <b>같은 행에 둘 다 뜰 수 있다</b> — 늦게 보낸 데다 픽업까지 안 된 건이 실제로 있다. <span class="wait">[미정]</span> 마감 시각·공휴일·영업일 기준.<br>
+    <b class="new">[rev.7 · 탭마다 쓸 수 있는 액션만 남긴다]</b> 모든 탭에 세 버튼을 다 띄우면 <b>그 탭에서 쓸 수 없는 버튼을 눌러보고 실패</b>한다. 액션도 탭별로 분기했다 — <b>전체</b>는 액션 없음(조회 전용 · 체크박스·일괄 바 제거 · 관리 열은 [보기]), <b>신규</b>는 [준비 시작]·[판매 취소] + 발주서, <b>상품준비중</b>은 [N건 송장 등록]·[판매 취소] + 발주서·송장 업로드, <b>취소 요청</b>은 [N건 처리]만(엑셀 없음), <b>배송중·배송완료·구매확정·취소</b>는 체크박스·액션 바 자체를 없앴다.<br>
+    &nbsp;&nbsp;· <b>[판매 취소]는 신규와 상품준비중 양쪽에 둔다</b> — 품절은 <b>발주서를 뽑기 전에</b> 발견되는 경우가 더 많다. 신규에 없으면 취소하려고 <b>준비 시작을 먼저 눌러야 하는</b> 이상한 순서가 된다.<br>
+    &nbsp;&nbsp;· <b>전체 탭은 없애지 않는다</b> — 주문번호·수취인명 검색은 <b>상태를 모르는 상태에서 하는 행동</b>이라 착지할 목록이 하나는 필요하고, 그래서 이 탭만 <b>상태 열을 유지</b>한다.<br>
+    <b class="new">[rev.7 · 취소 요청도 목록에서 처리한다]</b> 송장 입력과 <b>같은 패턴</b>이다(10d A2f) — <b>처리 드롭다운</b>(승인/거부)과 <b>거부 사유</b>를 열로 두고 <b>[N건 처리]</b>를 눌러야 확정된다. <b>거부는 사유가 필수</b>이고(비면 그 행은 제외 · 승인이면 사유 칸 비활성) 헤더의 <b>처리 일괄 적용</b>으로 대량 승인을 한 번에 한다. 엑셀 버튼은 두지 않았다 — 취소 승인은 <b>파일로 주고받을 일이 아니다</b>.<br>
+    <b class="new">[rev.6 · 조회 기간은 탭 성격에 따라 다르다]</b> 프리셋을 <b>오늘 · 7일 · 1개월 · 3개월 · 직접 입력</b>으로 바꾸고(3일 제거 · 최대 1년) <b>탭별 기본값을 분기</b>했다 — <b>작업 큐 탭</b>(신규·상품준비중·취소 요청)은 <b>7일</b>, <b>조회 탭</b>(전체·배송중·배송완료·구매확정·취소)은 <b>1개월</b>. 처리할 일은 최근 것이지만 <b>찾는 일은 과거를 뒤지는 행동</b>이라 기본 창이 좁으면 매번 늘려야 한다.<br>
+    <b class="new">[rev.6 · 상태 열도 탭별로 분기한다]</b> 한 탭의 전 행이 같은 상태면 그 열은 <b>정보가 0</b>이다 — 신규·상품준비중·배송중·배송완료·구매확정·취소 요청 탭에서 <b>상태 열을 뺐다</b>. 대신 <b>전체 탭은 유지</b>한다: 주문번호·수취인명 검색은 <b>상태를 모르는 상태에서 하는 행동</b>이라 상태를 알려주는 목록이 하나는 있어야 한다. <b>취소 탭은 상태 열 자리에 「취소 사유」</b>를 둔다(10d A2e) — 알아야 할 건 취소됐다는 사실이 아니라 <b>누가 왜 끊었는지</b>이고, 소비자 취소 / 취소 요청 승인 / 브랜드 직권 취소는 책임과 후속이 다르다.<br>
+    <b class="new">[rev.6 · 경고 배지가 곧 편집 권한이다]</b> 배송중 탭에서 <b>배송 상태 상세 텍스트</b>(최종 위치)를 뺐다 — <b>브랜드가 그 정보로 행동하지 않는다</b>. 대신 <b>「최종 갱신」</b>을 넣었다: 위치가 어디인지보다 <b>갱신이 멈춘 것이 문제 신호</b>다. 송장 셀은 기본 읽기 전용이고 <b>「집화 확인 필요」 배지가 있는 행만 편집 가능</b>하다 — 실수로 건드리는 건 막으면서, 정작 고쳐야 할 행에서는 상세로 들어가지 않아도 되게 했다.<br>
+    <b class="new">[rev.6 · 배송완료는 브랜드 처리에서 운영자 처리로 바꿨다]</b> 브랜드가 배송완료일을 직접 넣으면 <b>구매확정 D+7이 앞당겨져 청약철회 기간을 침해</b>하고 <b>정산도 앞당겨져 브랜드에게 직접 이익</b>이 된다 — 자기 이익이 걸린 날짜를 자기가 정하는 구조를 베타에서 열 수 없다. 그래서 <b>[배송완료 처리]</b>으로 바꾸고 실제 처리는 <b>운영자</b>가 한다(<b>요청 모달은 rev.3에서 삭제</b> — 브랜드에게 요청 창구조차 두지 않는다). 요청 뒤에는 액션이 사라지고 요청 내역만 남는다(C7b). 구매확정 출처 표기도 <b>「(운영자 처리)」</b>로 고쳤다.<br>
+    <b class="new">[rev.5 · 탭마다 컬럼이 다르다]</b> 한 표에 모든 상태를 담으면 열이 넘치고, 정작 그 탭에서 필요한 정보가 밀려난다. <b>상품준비중</b>은 송장 입력이 전부라 공구명·주문일시를 빼고 <b>택배사·송장번호</b> 입력 폭을 확보했다. <b>배송중</b>은 발송기한이 의미 없어 빼고 <b>배송상태</b>를 넣었으며, 송장 셀은 <b>읽기 전용</b>이다 — 목록에서 실수로 건드리는 건 막고, 고칠 일이 있으면 <b>상세 모달의 [송장 수정]</b>으로만 들어가게 한다(의도적 진입 · 배송완료 전까지). <b>신규</b>는 현행 유지.<br>
+    <b class="new">[rev.5 · 발주서 다운로드 = 준비 시작 · 선택 없음]</b> 발주서를 내려받으면 그 주문은 <b>무조건 상품준비중으로 넘어간다</b>(E1 · 체크박스 폐기). <b>결제완료 상태에서는 소비자가 배송지를 바꿀 수 있어</b>, 다운로드만 하고 상태를 그대로 두면 <b>발주서의 주소와 실제 주소가 갈린다</b> — 다운로드 시점에 준비 시작으로 넘겨 <b>배송지 변경과 단순 취소를 함께 닫는다</b>. 예전의 「해제하면 다운로드만」 경로는 이 구멍을 만들어 없앴다. 신규 탭의 주 액션은 <b>[발주서 다운로드]</b>이고 <b>[준비 시작]은 개별·예외 처리용</b>이다.<br>
+    <b class="new">[rev.4 · 송장이 있으면 준비 시작을 묻지 않는다]</b> 업로드 검증 결과(E3)에서 <b>신규 상태 건도 함께 배송중으로 전환</b>한다 — 송장이 있다는 건 <b>이미 출고했다는 뜻</b>이라 준비 시작을 따로 누르게 하는 건 형식일 뿐이다. 성공 블록에 <b>「그중 신규 주문 N건」</b> 하위 행으로 몇 건이 그 경로를 타는지 밝힌다.<br>
+    <b class="new">[rev.3 · 메모 열을 빼고 발송기한 열을 넣었다]</b> 컬럼 상한(9개 · 가로 스크롤 금지) 안에서 <b>발송기한</b>을 넣으려면 하나를 빼야 했고, <b>메모</b>를 뺐다 — 배송 요청사항은 <b>발주서와 상세 모달에 이미 있고</b> 목록에서는 아이콘만 떠 실제로 읽으려면 어차피 열어야 했다. 반면 <b>발송기한은 작업 큐의 우선순위 축</b>이다: 무엇을 먼저 보낼지가 이 값으로 정해지므로 <b>정렬 아이콘</b>을 함께 뒀다(주문일시와 2개). <b>기한이 지난 건</b>(현재 시각 기준 초과)은 경고색으로 표시하고, 이미 발송된 건은 기한이 의미 없어 <b>—</b>로 비운다.<br>
+    <b class="new">[rev.3 · 목록 구조를 조회 화면 표준으로]</b> 커머스 관리자 목록의 통용 구조에 맞췄다 — <b>조회 조건 블록 → 상태 탭 → 일괄 액션 바 → 표</b>. 위에서 아래로 <b>범위를 좁히고(조회) · 분류를 고르고(탭) · 골라 실행한다(일괄)</b>는 순서다.<br>
+    &nbsp;&nbsp;· <b>조회 기준을 고르게 한다</b> — 같은 기간이라도 <b>결제일 / 발주확인일 / 발송처리일 / 배송완료일 / 구매확정일</b> 중 무엇을 기준으로 잡느냐에 따라 결과가 완전히 달라진다. 기본은 <b>결제일 + 7일</b>이고 프리셋으로 한 번에 바꾼다(10a A1b). 셀렉트 항목은 <b>「발주확인일 / 발송처리일」이라는 업계 표준 날짜 필드명을 유지</b>한다 — 버튼 라벨([준비 시작]·[송장 등록])과 다른 이유는, 버튼은 <b>지금 할 행동</b>이고 이쪽은 <b>이미 기록된 시각의 이름</b>이라 성격이 다르며, 정산·CS에서 쓰는 명칭과도 맞아야 한다.<br>
+    &nbsp;&nbsp;· <b>검색은 타입을 먼저 고른다</b> — 주문번호·수취인명·송장번호·상품명. 한 입력창에 전부 던지면 송장번호와 주문번호가 섞여 오조회가 난다.<br>
+    &nbsp;&nbsp;· <b>일괄 액션 바를 표 위에 상시 노출</b>한다(하단 플로팅 바 폐기) — 선택 0건에도 자리를 지키고 <b>비활성</b>으로 보여줘 처음 온 사람도 <b>무엇을 일괄 처리할 수 있는지</b> 알게 한다. 좌측은 <b>그 탭에서 쓸 수 있는 액션만</b>(<b>rev.7에서 탭별 분기</b> — 세 버튼이 동시에 뜨는 탭은 없다) — <b>행 관리 열·상세 모달과 같은 라벨</b>을 쓴다(같은 동작에 이름이 둘이면 다른 기능으로 오해한다), 우측은 선택과 무관한 <b>항상 활성</b>([발주서 다운로드]·[송장 일괄 업로드]). 선택 건수는 버튼 옆에 붙여 대상이 몇 건인지 액션 바로 옆에서 읽게 한다.<br>
+    &nbsp;&nbsp;· <b>행 확장으로 항목을 미리 본다</b>(10a A1c) — 목록은 하위주문 단위지만 발주 준비는 <b>항목 단위</b>다. 모달을 열지 않고 ▸ 하나로 확인할 수 있어야 하루 수십 건이 돌아간다.<br>
+    &nbsp;&nbsp;· <b>조회 결과 요약에 기간을 함께 적는다</b> — 건수만 있으면 <b>무엇에 대한 86건인지</b> 알 수 없다.<br>
+    <b class="new">[rev.2→6 · 컬럼 정리 · 소비자명 전체 표기]</b> 목록에서 <b>결제금액을 빼고 수량·발송기한</b>을 넣었다 — 발송 작업에 쓰이는 정보만 남기고 금액은 상세·정산에서 본다. <b>소비자명은 마스킹하지 않고 전체를 표기</b>한다(rev.6) — 브랜드는 발주서·송장에 <b>수취인 실명을 그대로 써야</b> 하고, 목록에서 가려두면 CS 응대 때 매번 상세를 열어야 한다. 연락처·주소는 <b>상세와 발주서에만</b> 둔다.<br>
+    <b>[상태색]</b> 신규·취소 요청·집화 확인 필요=<b>경고</b>(브랜드가 손대야 넘어간다) · 상품준비중·배송중=<b>정보</b> · 배송완료·구매확정=<b>성공</b> · 취소=<b>중립</b>. 위험색은 상태 배지에 쓰지 않고 <b>파괴적 버튼</b>에만 쓴다.<br>
+    <b>[구매확정 ≠ 정산 완료]</b> 확정 후 하자 클레임은 <b>소비자가 직접 열지 않는다</b> — 1:1 문의를 받은 <b>운영자가 반품 클레임을 대신 개설</b>하고(공급일 3개월·안 날 30일 · 증빙 필수 · 단순 변심 불가), 이후는 일반 반품과 같다: <b>브랜드는 검수만</b> 하고 환불은 PG가 자동 처리한다. 정산 완료 건은 다음 정산에서 차감된다. 정산은 그 공구의 <b>모든 주문 항목이 종결된 뒤 한 번에</b> 실행된다. 그래서 구매확정 후 클레임이라도 <b>정산 전일 수 있고</b>, 정산 전 건까지 경고색으로 칠하면 위험 신호가 무의미해진다 — 10b의 「구매확정 후」 배지는 <b>중립</b>이고 경고는 금액 영역에서 조건부로만 쓴다.<br>
+    <b class="new">[확정 · 소비자 이의 제기 경로]</b> 배송완료·구매확정 시점에 소비자가 <b>실제 수령일과 다르다</b>고 이의를 제기하는 경로는 <b>연결·소통 스레드</b>다 — 운영자가 참여해 중재하고, 필요하면 배송완료일을 직권으로 정정한다. 브랜드가 목록·상세에서 날짜를 고칠 경로는 없다.<br>
+    <b>[에러 문구 vs 비활성]</b> 필수 미입력은 <b>에러 없이 버튼 비활성</b>, <b>형식·중복 오류에만</b> 문구를 쓴다. 전역 규칙 그대로다.<br>
+    <span class="wait">[미정]</span> ① 취소율 제재 기준(몇 % 이상 · 어떤 제재) ② 택배사별 엑셀 양식 실제 컬럼 구성 ③ 반품비·교환비 금액 산정 ④ 구매확정 이후 하자 클레임의 접수 기한.
+  </div>
+
+</div>
+<div class="doc-toc">
+  <div class="toc-h">이 파일의 상태 <span>12장</span></div>
+  <div class="toc-g">
+    <a class="toc-i" href="#A2d"><span class="ti">A2d</span>배송중(읽기 전용)</a>
+    <a class="toc-i" href="#A2j"><span class="ti">A2j</span>배송중(반송 건 포함)</a>
+    <a class="toc-i" href="#A2h"><span class="ti">A2h</span>배송완료(구매확정 대기)</a>
+    <a class="toc-i" href="#A2i"><span class="ti">A2i</span>구매확정(정산 대상)</a>
+    <a class="toc-i" href="#C5"><span class="ti">C5</span>상세 · 배송중(추적 정상)</a>
+    <a class="toc-i" href="#C7c"><span class="ti">C7c</span>상세 · 반송중</a>
+    <a class="toc-i" href="#C6"><span class="ti">C6</span>상세 · 배송중(집화 확인 필요)</a>
+    <a class="toc-i" href="#C7b"><span class="ti">C7b</span>상세 · 배송중(추적 정지)</a>
+        <a class="toc-i" href="#C8"><span class="ti">C8</span>상세 · 배송완료(자동 확인)</a>
+    <a class="toc-i" href="#C9"><span class="ti">C9</span>상세 · 배송완료(운영자 처리)</a>
+    <a class="toc-i" href="#C10"><span class="ti">C10</span>상세 · 구매확정</a>
+  </div>
+</div>
+<!-- ═════════ A2d · 주문 목록 · 배송중(읽기 전용) ═════════ -->
+<section class="state" id="A2d">
+  <div class="state-bar"><span class="state-id">A2d</span><span class="state-label">주문 목록 · 배송중(읽기 전용)</span>
+  <span class="state-spec">송장 셀은 <b>기본 읽기 전용</b>이고 <b>「집화 확인 필요」 배지가 있는 행만 편집 가능</b>하다 — <b>경고 배지가 곧 편집 권한</b>이다 · 배송 상태 상세 텍스트(최종 위치)는 <b>브랜드가 행동하지 않는 정보</b>라 상세 모달로 내리고, 대신 <b>「최종 갱신」</b>을 넣었다 — <b>갱신이 멈춘 것이 문제 신호</b>다 · <b>발송기한 열이 없는 탭</b>이라 「발송기한 경과」는 표시하지 않는다 — 송장이 이미 등록된 구간이고, 기한 초과 여부는 상품준비중 탭(10b)에서 판정한다 · 배지는 <b>2단 그대로</b> 뜬다 — <b>「집화 확인 필요」 행만 편집 가능</b>하고 <b>「추적 정지」는 목록에서 편집·액션이 없다</b>(고칠 번호가 아니라 스캔 문제 — 상세에서 <b>[송장 수정]</b>만 가능)</span></div>
+  <div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">판매 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">판매 관리</div><div class="page-d">공구 주문의 배송과 반품·교환을 처리합니다.</div></div></div>
+  <div class="qbar">
+    <div class="qb on"><div class="qn">5</div><div class="ql">준비 시작</div></div>
+    <div class="qb on"><div class="qn">8</div><div class="ql">송장 등록</div></div>
+    <div class="qb on"><div class="qn">4</div><div class="ql">배송 이상</div></div>
+    <div class="qb on"><div class="qn">2</div><div class="ql">입고 확인</div></div>
+    <div class="qb on"><div class="qn">1</div><div class="ql">재발송 · 교환</div></div>
+  </div>
+  <div class="tabs1">
+    <div class="tab1 on">주문 관리<span class="t1n">86</span></div>
+    <div class="tab1">반품 · 교환 관리<span class="t1n">9</span></div>
+  </div>
+  <div class="tabs">
+    <div class="tab">전체 <span class="tn">86</span></div>
+    <div class="tab">신규(준비 대기) <span class="tn">5</span></div>
+    <div class="tab">취소 요청 <span class="tn">2</span></div>
+    <div class="tab">상품준비중 <span class="tn">8</span></div>
+    <div class="tab active">배송중 <span class="tn">12</span></div>
+    <div class="tab">반송중 <span class="tn">1</span></div>
+    <div class="tab">배송완료 <span class="tn">42</span></div>
+    <div class="tab">구매확정 <span class="tn">16</span></div>
+    <div class="tab">취소 <span class="tn">2</span></div>
+  </div>
+  <div class="qform">
+    <div class="qrow">
+      <span class="qlab">조회 기준</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>결제일</option><option>발주확인일</option><option>발송처리일</option><option>배송완료일</option><option>구매확정일</option></select>
+      <div class="preset">
+        <span class="pbtn">오늘</span>
+        <span class="pbtn">7일</span>
+        <span class="pbtn on">1개월</span>
+        <span class="pbtn">3개월</span>
+        <span class="pbtn">직접 입력</span>
+      </div>
+      <span class="qsub tnum">2026.07.20 ~ 2026.08.19</span>
+    </div>
+    <div class="qrow">
+      <span class="qlab">검색</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>주문번호</option><option>수취인명</option><option>송장번호</option><option>상품명</option></select>
+      <input class="inp" placeholder="검색어 입력" style="width:260px;height:32px">
+      <button class="btn btn-primary">검색</button>
+      <button class="btn btn-secondary">초기화</button>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="tbar">
+      <div class="tbar-l">총 <b>12</b>건 <span style="color:var(--n-500)">· 4건 표시</span> · <span style="color:var(--n-500)">조회기간 2026.07.20~08.19</span></div>
+      <div class="tbar-r"><select class="sel-sm"><option>최신순</option><option>주문일시 오래된순</option></select><select class="sel-sm"><option>20건씩</option></select></div>
+    </div>
+    <table>
+      <thead><tr>
+        <td style="width:26px"></td>
+        <td style="width:114px">주문번호</td><td style="width:70px">소비자</td>
+        <td>상품</td>
+        <td style="width:124px">택배사</td><td style="width:150px">송장번호</td>
+        <td class="t-c" style="width:132px">최종 갱신<span class="sort">▼</span></td><td class="t-c" style="width:96px">관리</td>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24108</td><td>조현우</td>
+          <td><span class="t-nm">글로우 크림 50ml</span></td>
+          <td>CJ대한통운</td>
+          <td class="tnum">6412 3389 4571</td>
+          <td class="t-c t-date tnum">2026.08.19 04:12</td>
+          <td class="t-c"><span style="color:var(--n-300)">—</span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24106</td><td>남유진</td>
+          <td><span class="t-nm">데일리 선크림 50ml</span></td>
+          <td>CJ대한통운</td>
+          <td class="tnum">6412 3301 8842</td>
+          <td class="t-c t-date tnum">2026.08.19 07:40</td>
+          <td class="t-c"><span style="color:var(--n-300)">—</span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24104</td><td>문서준</td>
+          <td><span class="t-nm">글로우 세럼 30ml</span></td>
+          <td>한진택배</td>
+          <td><input class="ginp" value="5520 7781 0034"><span style="display:block;margin-top:5px"><span class="badge b-warning">집화 확인 필요</span></span></td>
+          <td class="t-c t-date tnum" style="color:var(--warning-text);font-weight:500">2026.08.17 21:05<span style="display:block;margin-top:4px"><span class="badge b-warning">집화 확인 필요</span></span></td>
+          <td class="t-c"><button class="act-btn primary">수정</button></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24096</td><td>백지훈</td>
+          <td><span class="t-nm">글로우 크림 50ml</span></td>
+          <td>CJ대한통운</td>
+          <td class="tnum">6412 3277 5510</td>
+          <td class="t-c t-date tnum" style="color:var(--danger-text);font-weight:500">2026.08.12 09:40<span style="display:block;margin-top:4px"><span class="badge b-danger">추적 정지</span></span></td>
+          <td class="t-c"><span style="color:var(--n-300)">—</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pager"><span class="page-item">‹</span><span class="page-item active">1</span><span class="page-item">›</span></div>
+  </div>
+</div>
+  </div>
+</section>
+<!-- ═════════ A2j · 주문 목록 · 배송중(반송 건 포함) ═════════ -->
+<section class="state" id="A2j">
+  <div class="state-bar"><span class="state-id">A2j</span><span class="state-label">주문 목록 · 반송중</span>
+  <span class="state-spec">배송중에서 분리한 <b>별 탭</b>이다 — 반송은 <b>추적 API가 코드로 알려주므로</b> 자동 감지되고, 배송중에 섞여 있으면 <b>정상 배송과 구분되지 않는다</b> · <b>구매확정 자체가 불가</b>하다(소비자가 받지 못했다) — 타이머는 정지가 아니라 <b>취소</b>되고 정산 대상에서 빠진다 · 브랜드 조치는 없다 — 도착도 <b>자동 감지</b>되고 <b>환불은 PG가 자동으로 처리</b>합니다 — 이 주문으로 재발송하지 않고 소비자가 원하면 <b>새로 주문</b>한다 · <b>송장 수정 불가</b>(번호가 맞아도 물건이 돌아오는 중이다)</span></div>
+  <div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">판매 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">판매 관리</div><div class="page-d">공구 주문의 배송과 반품·교환을 처리합니다.</div></div></div>
+  <div class="qbar">
+    <div class="qb on"><div class="qn">5</div><div class="ql">준비 시작</div></div>
+    <div class="qb on"><div class="qn">8</div><div class="ql">송장 등록</div></div>
+    <div class="qb on"><div class="qn">4</div><div class="ql">배송 이상</div></div>
+    <div class="qb on"><div class="qn">2</div><div class="ql">입고 확인</div></div>
+    <div class="qb on"><div class="qn">1</div><div class="ql">재발송 · 교환</div></div>
+  </div>
+  <div class="tabs1">
+    <div class="tab1 on">주문 관리<span class="t1n">86</span></div>
+    <div class="tab1">반품 · 교환 관리<span class="t1n">9</span></div>
+  </div>
+  <div class="tabs">
+    <div class="tab">전체 <span class="tn">86</span></div>
+    <div class="tab">신규(준비 대기) <span class="tn">5</span></div>
+    <div class="tab">취소 요청 <span class="tn">2</span></div>
+    <div class="tab">상품준비중 <span class="tn">8</span></div>
+    <div class="tab">배송중 <span class="tn">12</span></div>
+    <div class="tab active">반송중 <span class="tn">1</span></div>
+    <div class="tab">배송완료 <span class="tn">42</span></div>
+    <div class="tab">구매확정 <span class="tn">16</span></div>
+    <div class="tab">취소 <span class="tn">2</span></div>
+  </div>
+  <div class="qform">
+    <div class="qrow">
+      <span class="qlab">조회 기준</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>결제일</option><option>발주확인일</option><option>발송처리일</option><option>배송완료일</option><option>구매확정일</option></select>
+      <div class="preset">
+        <span class="pbtn">오늘</span>
+        <span class="pbtn">7일</span>
+        <span class="pbtn on">1개월</span>
+        <span class="pbtn">3개월</span>
+        <span class="pbtn">직접 입력</span>
+      </div>
+      <span class="qsub tnum">2026.07.20 ~ 2026.08.19</span>
+    </div>
+    <div class="qrow">
+      <span class="qlab">검색</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>주문번호</option><option>수취인명</option><option>송장번호</option><option>상품명</option></select>
+      <input class="inp" placeholder="검색어 입력" style="width:260px;height:32px">
+      <button class="btn btn-primary">검색</button>
+      <button class="btn btn-secondary">초기화</button>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="tbar">
+      <div class="tbar-l">총 <b>1</b>건 <span style="color:var(--n-500)">· 1건 표시</span> · <span style="color:var(--n-500)">조회기간 2026.07.20~08.19</span></div>
+      <div class="tbar-r"><select class="sel-sm"><option>최신순</option><option>주문일시 오래된순</option></select><select class="sel-sm"><option>20건씩</option></select></div>
+    </div>
+    <table>
+      <thead><tr>
+        <td style="width:26px"></td>
+        <td style="width:114px">주문번호</td><td style="width:70px">소비자</td>
+        <td>상품</td>
+        <td style="width:124px">택배사</td><td style="width:150px">송장번호</td>
+        <td class="t-c" style="width:132px">최종 갱신<span class="sort">▼</span></td><td class="t-c" style="width:96px">관리</td>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24093</td><td>구민재</td>
+          <td><span class="t-nm">글로우 크림 50ml</span></td>
+          <td>CJ대한통운</td>
+          <td class="tnum">6412 3290 7715</td>
+          <td class="t-c t-date tnum" style="color:var(--danger-text);font-weight:500">2026.08.19 08:14<span style="display:block;margin-top:4px"><span class="badge b-danger">반송 중</span></span></td>
+          <td class="t-c"><button class="act-btn" disabled>수정</button></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pager"><span class="page-item">‹</span><span class="page-item active">1</span><span class="page-item">›</span></div>
+  </div>
+</div>
+  </div>
+</section>
+<!-- ═════════ A2h · 배송완료(구매확정 대기) ═════════ -->
+<section class="state" id="A2h">
+  <div class="state-bar"><span class="state-id">A2h</span><span class="state-label">주문 목록 · 배송완료(구매확정 대기)</span>
+  <span class="state-spec">배송이 끝나고 <b>구매확정을 기다리는</b> 구간 — 이 탭의 주인공은 <b>구매확정 예정(D-N)</b>이다: 정산까지 남은 시간이면서 반품·교환이 들어올 수 있는 창이다 · 발송기한·배송 이상 배지는 <b>의미가 없어 빼고</b>(배송이 이미 끝났다) 배송완료 시각과 D-N을 넣었다 · <b>액션 없음</b> — 7일 무사고면 시스템이 자동 확정한다</span></div>
+  <div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">판매 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">판매 관리</div><div class="page-d">공구 주문의 배송과 반품·교환을 처리합니다.</div></div></div>
+  <div class="qbar">
+    <div class="qb on"><div class="qn">5</div><div class="ql">준비 시작</div></div>
+    <div class="qb on"><div class="qn">8</div><div class="ql">송장 등록</div></div>
+    <div class="qb on"><div class="qn">4</div><div class="ql">배송 이상</div></div>
+    <div class="qb on"><div class="qn">2</div><div class="ql">입고 확인</div></div>
+    <div class="qb on"><div class="qn">1</div><div class="ql">재발송 · 교환</div></div>
+  </div>
+  <div class="tabs1">
+    <div class="tab1 on">주문 관리<span class="t1n">86</span></div>
+    <div class="tab1">반품 · 교환 관리<span class="t1n">9</span></div>
+  </div>
+  <div class="tabs">
+    <div class="tab">전체 <span class="tn">86</span></div>
+    <div class="tab">신규(준비 대기) <span class="tn">5</span></div>
+    <div class="tab">취소 요청 <span class="tn">2</span></div>
+    <div class="tab">상품준비중 <span class="tn">8</span></div>
+    <div class="tab">배송중 <span class="tn">12</span></div>
+    <div class="tab">반송중 <span class="tn">1</span></div>
+    <div class="tab active">배송완료 <span class="tn">42</span></div>
+    <div class="tab">구매확정 <span class="tn">16</span></div>
+    <div class="tab">취소 <span class="tn">2</span></div>
+  </div>
+  <div class="qform">
+    <div class="qrow">
+      <span class="qlab">조회 기준</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>결제일</option><option>발주확인일</option><option>발송처리일</option><option>배송완료일</option><option>구매확정일</option></select>
+      <div class="preset">
+        <span class="pbtn">오늘</span>
+        <span class="pbtn">7일</span>
+        <span class="pbtn on">1개월</span>
+        <span class="pbtn">3개월</span>
+        <span class="pbtn">직접 입력</span>
+      </div>
+      <span class="qsub tnum">2026.07.20 ~ 2026.08.19</span>
+    </div>
+    <div class="qrow">
+      <span class="qlab">검색</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>주문번호</option><option>수취인명</option><option>송장번호</option><option>상품명</option></select>
+      <input class="inp" placeholder="검색어 입력" style="width:260px;height:32px">
+      <button class="btn btn-primary">검색</button>
+      <button class="btn btn-secondary">초기화</button>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="tbar">
+      <div class="tbar-l">총 <b>42</b>건 <span style="color:var(--n-500)">· 4건 표시</span> · <span style="color:var(--n-500)">조회기간 2026.07.20~08.19</span></div>
+      <div class="tbar-r"><select class="sel-sm"><option>최신순</option><option>주문일시 오래된순</option></select><select class="sel-sm"><option>20건씩</option></select></div>
+    </div>
+    <table>
+      <thead><tr>
+        <td style="width:26px"></td>
+        <td style="width:114px">주문번호</td><td style="width:70px">소비자</td>
+        <td>상품</td>
+        <td style="width:120px">택배사</td><td style="width:144px">송장번호</td>
+        <td class="t-c" style="width:134px">배송완료<span class="sort on">▼</span></td>
+        <td class="t-c" style="width:118px">구매확정 예정</td>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24101</td><td>서다은</td>
+          <td><span class="t-nm">글로우 크림 50ml 외 1건</span></td>
+          <td>CJ대한통운</td><td class="tnum">6412 3301 8842</td>
+          <td class="t-c t-date tnum">2026.08.18 14:30</td>
+          <td class="t-c"><span class="dcount"><span class="dn" style="font-size:15px">D-6</span></span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24098</td><td>권나윤</td>
+          <td><span class="t-nm">데일리 선크림 50ml</span></td>
+          <td>CJ대한통운</td><td class="tnum">6412 3298 1120</td>
+          <td class="t-c t-date tnum">2026.08.17 11:05</td>
+          <td class="t-c"><span class="dcount"><span class="dn" style="font-size:15px">D-5</span></span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24094</td><td>유선호</td>
+          <td><span class="t-nm">글로우 세럼 30ml</span></td>
+          <td>한진택배</td><td class="tnum">5520 7745 3391</td>
+          <td class="t-c t-date tnum">2026.08.16 16:42</td>
+          <td class="t-c"><span class="dcount"><span class="dn" style="font-size:15px">D-4</span></span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24090</td><td>류하은</td>
+          <td><span class="t-nm">글로우 크림 50ml</span></td>
+          <td>CJ대한통운</td><td class="tnum">6412 3280 6604</td>
+          <td class="t-c t-date tnum">2026.08.15 09:18</td>
+          <td class="t-c"><span class="dcount"><span class="dn" style="font-size:15px">D-2</span></span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pager"><span class="page-item">‹</span><span class="page-item active">1</span><span class="page-item">2</span><span class="page-item">3</span><span class="page-item">›</span></div>
+  </div>
+</div>
+  </div>
+</section>
+<!-- ═════════ A2i · 구매확정(정산 대상) ═════════ -->
+<section class="state" id="A2i">
+  <div class="state-bar"><span class="state-id">A2i</span><span class="state-label">주문 목록 · 구매확정(정산 대상)</span>
+  <span class="state-spec">구매확정된 건 — <b>정산 대상 편입</b>이 이 탭의 결론이라 마지막 열이 <b>정산 상태</b>다 · 구매확정은 <b>최종 종결이 아니다</b>: 하자·오배송 사유로 클레임이 들어올 수 있어 그 건은 <b>중립 배지</b>로 표시한다(경고색을 쓰지 않는 이유는 구매확정 ≠ 정산 완료이고, 정산은 공구의 전 항목 종결 후 일괄 실행되므로 <b>정산 전일 수 있다</b>) · <b>액션 없음</b></span></div>
+  <div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">판매 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">판매 관리</div><div class="page-d">공구 주문의 배송과 반품·교환을 처리합니다.</div></div></div>
+  <div class="qbar">
+    <div class="qb on"><div class="qn">5</div><div class="ql">준비 시작</div></div>
+    <div class="qb on"><div class="qn">8</div><div class="ql">송장 등록</div></div>
+    <div class="qb on"><div class="qn">4</div><div class="ql">배송 이상</div></div>
+    <div class="qb on"><div class="qn">2</div><div class="ql">입고 확인</div></div>
+    <div class="qb on"><div class="qn">1</div><div class="ql">재발송 · 교환</div></div>
+  </div>
+  <div class="tabs1">
+    <div class="tab1 on">주문 관리<span class="t1n">86</span></div>
+    <div class="tab1">반품 · 교환 관리<span class="t1n">9</span></div>
+  </div>
+  <div class="tabs">
+    <div class="tab">전체 <span class="tn">86</span></div>
+    <div class="tab">신규(준비 대기) <span class="tn">5</span></div>
+    <div class="tab">취소 요청 <span class="tn">2</span></div>
+    <div class="tab">상품준비중 <span class="tn">8</span></div>
+    <div class="tab">배송중 <span class="tn">12</span></div>
+    <div class="tab">반송중 <span class="tn">1</span></div>
+    <div class="tab">배송완료 <span class="tn">42</span></div>
+    <div class="tab active">구매확정 <span class="tn">16</span></div>
+    <div class="tab">취소 <span class="tn">2</span></div>
+  </div>
+  <div class="qform">
+    <div class="qrow">
+      <span class="qlab">조회 기준</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>결제일</option><option>발주확인일</option><option>발송처리일</option><option>배송완료일</option><option>구매확정일</option></select>
+      <div class="preset">
+        <span class="pbtn">오늘</span>
+        <span class="pbtn">7일</span>
+        <span class="pbtn on">1개월</span>
+        <span class="pbtn">3개월</span>
+        <span class="pbtn">직접 입력</span>
+      </div>
+      <span class="qsub tnum">2026.07.20 ~ 2026.08.19</span>
+    </div>
+    <div class="qrow">
+      <span class="qlab">검색</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>주문번호</option><option>수취인명</option><option>송장번호</option><option>상품명</option></select>
+      <input class="inp" placeholder="검색어 입력" style="width:260px;height:32px">
+      <button class="btn btn-primary">검색</button>
+      <button class="btn btn-secondary">초기화</button>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="tbar">
+      <div class="tbar-l">총 <b>16</b>건 <span style="color:var(--n-500)">· 4건 표시</span> · <span style="color:var(--n-500)">조회기간 2026.07.20~08.19</span></div>
+      <div class="tbar-r"><select class="sel-sm"><option>최신순</option><option>주문일시 오래된순</option></select><select class="sel-sm"><option>20건씩</option></select></div>
+    </div>
+    <table>
+      <thead><tr>
+        <td style="width:26px"></td>
+        <td style="width:114px">주문번호</td><td style="width:70px">소비자</td>
+        <td>상품</td>
+        <td class="t-c" style="width:104px">결제금액</td>
+        <td class="t-c" style="width:134px">구매확정<span class="sort on">▼</span></td>
+        <td style="width:168px">정산</td>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24088</td><td>강서윤</td>
+          <td><span class="t-nm">데일리 선크림 50ml</span></td>
+          <td class="t-c tnum">19,800</td>
+          <td class="t-c t-date tnum">2026.08.22 10:20</td>
+          <td>정산 대상<span class="t-note" style="display:block;margin-top:3px">공구 종결 후 일괄</span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24081</td><td>배소민</td>
+          <td><span class="t-nm">글로우 크림 50ml</span></td>
+          <td class="t-c tnum">30,200</td>
+          <td class="t-c t-date tnum">2026.08.21 14:00</td>
+          <td>정산 대상<span class="t-note" style="display:block;margin-top:3px">공구 종결 후 일괄</span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24072</td><td>노지완</td>
+          <td><span class="t-nm">글로우 크림 50ml</span></td>
+          <td class="t-c tnum">27,200</td>
+          <td class="t-c t-date tnum">2026.08.20 13:20</td>
+          <td><span class="badge b-neutral">구매확정 후 클레임</span><span class="t-note" style="display:block;margin-top:3px">클레임 종결 후 재산정</span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24065</td><td>심예린</td>
+          <td><span class="t-nm">글로우 세럼 30ml 외 1건</span></td>
+          <td class="t-c tnum">48,200</td>
+          <td class="t-c t-date tnum">2026.08.18 09:40</td>
+          <td><span class="badge b-success">정산 완료</span><span class="t-note" style="display:block;margin-top:3px">2026.08.25 이체</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pager"><span class="page-item">‹</span><span class="page-item active">1</span><span class="page-item">›</span></div>
+  </div>
+</div>
+  </div>
+</section>
+<!-- ═════════ C5 · 주문 상세 모달 · 배송중(추적 정상) ═════════ -->
+<section class="state" id="C5">
+  <div class="state-bar"><span class="state-id">C5</span><span class="state-label">주문 상세 모달 · 배송중(추적 정상)</span>
+  <span class="state-spec"><b>주 경로</b> — 송장을 넣은 뒤부터는 시스템이 따라간다 · <b>배송완료 버튼이 없다</b>(추적 데이터가 배송완료로 바뀌면 자동 전환) · 우 레일 액션은 <b>[송장 수정]</b> 하나이고 <b>배송완료 전까지만</b> 가능하다 · 수정도 인라인이라 이중 레이어가 없다</span></div>
+  <div class="stage tall xl">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">판매 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">판매 관리</div><div class="page-d">공구 주문의 배송과 반품·교환을 처리합니다.</div></div></div>
+  <div class="qbar">
+    <div class="qb on"><div class="qn">5</div><div class="ql">준비 시작</div></div>
+    <div class="qb on"><div class="qn">8</div><div class="ql">송장 등록</div></div>
+    <div class="qb on"><div class="qn">4</div><div class="ql">배송 이상</div></div>
+    <div class="qb on"><div class="qn">2</div><div class="ql">입고 확인</div></div>
+    <div class="qb on"><div class="qn">1</div><div class="ql">재발송 · 교환</div></div>
+  </div>
+  <div class="tabs1">
+    <div class="tab1 on">주문 관리<span class="t1n">86</span></div>
+    <div class="tab1">반품 · 교환 관리<span class="t1n">9</span></div>
+  </div>
+  <div class="tabs">
+    <div class="tab">전체 <span class="tn">86</span></div>
+    <div class="tab">신규(준비 대기) <span class="tn">5</span></div>
+    <div class="tab">취소 요청 <span class="tn">2</span></div>
+    <div class="tab">상품준비중 <span class="tn">8</span></div>
+    <div class="tab active">배송중 <span class="tn">12</span></div>
+    <div class="tab">반송중 <span class="tn">1</span></div>
+    <div class="tab">배송완료 <span class="tn">42</span></div>
+    <div class="tab">구매확정 <span class="tn">16</span></div>
+    <div class="tab">취소 <span class="tn">2</span></div>
+  </div>
+  <div class="qform">
+    <div class="qrow">
+      <span class="qlab">조회 기준</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>결제일</option><option>발주확인일</option><option>발송처리일</option><option>배송완료일</option><option>구매확정일</option></select>
+      <div class="preset">
+        <span class="pbtn">오늘</span>
+        <span class="pbtn">7일</span>
+        <span class="pbtn on">1개월</span>
+        <span class="pbtn">3개월</span>
+        <span class="pbtn">직접 입력</span>
+      </div>
+      <span class="qsub tnum">2026.07.20 ~ 2026.08.19</span>
+    </div>
+    <div class="qrow">
+      <span class="qlab">검색</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>주문번호</option><option>수취인명</option><option>송장번호</option><option>상품명</option></select>
+      <input class="inp" placeholder="검색어 입력" style="width:260px;height:32px">
+      <button class="btn btn-primary">검색</button>
+      <button class="btn btn-secondary">초기화</button>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="tbar">
+      <div class="tbar-l">총 <b>12</b>건 <span style="color:var(--n-500)">· 4건 표시</span> · <span style="color:var(--n-500)">조회기간 2026.07.20~08.19</span></div>
+      <div class="tbar-r"><select class="sel-sm"><option>최신순</option><option>주문일시 오래된순</option></select><select class="sel-sm"><option>20건씩</option></select></div>
+    </div>
+    <table>
+      <thead><tr>
+        <td style="width:26px"></td>
+        <td style="width:114px">주문번호</td><td style="width:70px">소비자</td>
+        <td>상품</td>
+        <td style="width:124px">택배사</td><td style="width:150px">송장번호</td>
+        <td class="t-c" style="width:132px">최종 갱신<span class="sort">▼</span></td><td class="t-c" style="width:96px">관리</td>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24108</td><td>조현우</td>
+          <td><span class="t-nm">글로우 크림 50ml</span></td>
+          <td>CJ대한통운</td>
+          <td class="tnum">6412 3389 4571</td>
+          <td class="t-c t-date tnum">2026.08.19 04:12</td>
+          <td class="t-c"><span style="color:var(--n-300)">—</span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24106</td><td>남유진</td>
+          <td><span class="t-nm">데일리 선크림 50ml</span></td>
+          <td>CJ대한통운</td>
+          <td class="tnum">6412 3301 8842</td>
+          <td class="t-c t-date tnum">2026.08.19 07:40</td>
+          <td class="t-c"><span style="color:var(--n-300)">—</span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24104</td><td>문서준</td>
+          <td><span class="t-nm">글로우 세럼 30ml</span></td>
+          <td>한진택배</td>
+          <td><input class="ginp" value="5520 7781 0034"><span style="display:block;margin-top:5px"><span class="badge b-warning">집화 확인 필요</span></span></td>
+          <td class="t-c t-date tnum" style="color:var(--warning-text);font-weight:500">2026.08.17 21:05<span style="display:block;margin-top:4px"><span class="badge b-warning">집화 확인 필요</span></span></td>
+          <td class="t-c"><button class="act-btn primary">수정</button></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24096</td><td>백지훈</td>
+          <td><span class="t-nm">글로우 크림 50ml</span></td>
+          <td>CJ대한통운</td>
+          <td class="tnum">6412 3277 5510</td>
+          <td class="t-c t-date tnum" style="color:var(--danger-text);font-weight:500">2026.08.12 09:40<span style="display:block;margin-top:4px"><span class="badge b-danger">추적 정지</span></span></td>
+          <td class="t-c"><span style="color:var(--n-300)">—</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pager"><span class="page-item">‹</span><span class="page-item active">1</span><span class="page-item">›</span></div>
+  </div>
+  <div class="overlay">
+    <div class="modal wide">
+      <div class="modal-h">
+        <span class="mh-l">ORD-24108 <span class="badge b-info">배송중</span></span>
+        <span class="mh-r"><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span><span class="modal-x" style="margin-left:6px">✕</span></span>
+      </div>
+      <div class="mbody">
+        <div class="mcol">
+          <div class="mbox">
+            <div class="mbox-h">주문 정보</div>
+            <div class="mbox-b">
+              <div class="frow ro"><div class="fk">주문번호</div><div class="fv"><span class="tnum">ORD-24108</span><div class="fsub">하위주문 SUB-24108-01 · <b>이 공구 몫만</b> 표시됩니다</div></div></div>
+              <div class="frow ro"><div class="fk">주문일시</div><div class="fv"><span class="tnum">2026.08.17 19:33</span></div></div>
+              <div class="frow ro"><div class="fk">공구명</div><div class="fv">글로우 크림 앵콜 공구 <span class="flink">공구 상세</span></div></div>
+              <div class="frow ro"><div class="fk">결제수단</div><div class="fv">신용카드 (신한 ****1234)</div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">배송지<span class="bn2">소비자 입력 · <b>실명·연락처 전체 표기</b> · 브랜드는 수정 불가</span></div>
+            <div class="mbox-b">
+              <div class="frow ro"><div class="fk">수취인</div><div class="fv">조현우</div></div>
+              <div class="frow ro"><div class="fk">연락처</div><div class="fv"><span class="tnum">010-5520-7781</span></div></div>
+              <div class="frow ro"><div class="fk">주소</div><div class="fv">(06236) 서울특별시 강남구 테헤란로 123, 4층 402호</div></div>
+              <div class="frow ro"><div class="fk">배송 요청사항</div><div class="fv"><b style="color:var(--warning-text)">부재 시 문 앞에 놓아주세요</b></div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">주문 항목<span class="bn2">1건 · 취소·반품·교환은 <b>항목 단위</b></span></div>
+            <div class="mbox-b tight">
+              <table class="otab">
+                <thead><tr><td>상품 · 옵션</td><td class="t-c" style="width:50px">수량</td><td class="t-c" style="width:88px">공구가</td><td class="t-c" style="width:90px">금액</td><td class="t-c" style="width:88px">상태</td></tr></thead>
+                <tbody>
+                  <tr><td><span class="oname">글로우 크림 50ml</span><div class="oopt">옵션: 단품</div></td><td class="t-c tnum">1</td><td class="t-c tnum">27,200</td><td class="t-c tnum">27,200</td><td class="t-c"><span class="badge b-info">배송중</span></td></tr>
+                </tbody>
+              </table>
+              <div class="sum">
+                <div class="sumrow"><span class="sk">상품 금액</span><span class="sv">27,200원</span></div>
+                <div class="sumrow"><span class="sk">배송비</span><span class="sv">3,000원</span></div>
+                <div class="sumrow total"><span class="sk">총 결제금액</span><span class="sv">30,200원</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mcol">
+          <div class="mbox">
+            <div class="mbox-h">상태</div>
+            <div class="mbox-b tight">
+              <div class="st-line" style="padding-bottom:var(--sp-3)"><span class="st-lbl">현재 상태</span><span class="badge b-info">배송중</span></div>
+              <div class="st-meta">
+                <div class="mrow"><span class="mk">송장 등록</span><span class="mv">2026.08.18 11:20</span></div>
+                <div class="mrow"><span class="mk">추적 갱신</span><span class="mv">2026.08.19 04:12</span></div>
+                <div class="mrow"><span class="mk">배송완료</span><span class="mv">자동 전환 대기</span></div>
+              </div>
+              <div class="st-acts" style="flex-direction:column"><button class="btn btn-secondary" style="width:100%">송장 수정</button></div>
+              <div class="st-hint">배송 추적이 정상 연동돼 <b>배송완료도 자동으로 전환</b>됩니다 — 브랜드가 누를 버튼이 없습니다. 송장을 잘못 등록했다면 <b>배송완료 전까지</b> 수정할 수 있습니다.</div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">배송 정보<span class="bn2">배송 추적 자동 연동</span></div>
+            <div class="mbox-b tight">
+              <div class="shiprow"><span class="sk">택배사</span><span class="sv">CJ대한통운</span></div>
+              <div class="shiprow"><span class="sk">송장번호</span><span class="sv"><span class="tnum">6412 3389 4571</span></span></div>
+              <div class="shiprow"><span class="sk">조회</span><span class="sv"><span class="flink">택배사에서 조회 ↗</span></span></div>
+              <div class="track"><div class="tl">배송중 · 대전 허브 출발</div><div class="tm">2026.08.19 04:12 갱신</div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">처리 이력</div>
+            <div class="mbox-b tight">
+              <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">송장 등록 · 배송중 전환</div><div class="hmeta">2026.08.18 11:20 · ○○ 브랜드</div></div></div>
+              <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">준비 시작 · 소비자 취소권 종료</div><div class="hmeta">2026.08.17 21:05 · ○○ 브랜드</div></div></div>
+              <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">결제 완료 · 주문 접수</div><div class="hmeta">2026.08.17 19:33 · 시스템</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+<!-- ═════════ C7c · 주문 상세 모달 · 배송중(반송 중) ═════════ -->
+<section class="state" id="C7c">
+  <div class="state-bar"><span class="state-id">C7c</span><span class="state-label">주문 상세 모달 · 반송중</span>
+  <span class="state-spec">주소 오류·수취인 부재로 물건이 <b>브랜드에게 돌아오는 중</b> — 연동 업체가 반송 코드로 구분해 <b>자동 감지</b>한다 · <b>위험색</b>(소비자가 물건을 받지 못한 확정 상태) · 핵심은 <b>자동 구매확정 타이머가 정지</b>된다는 것이다: 그대로 두면 <b>못 받은 물건이 정산된다</b> · <b>반송 완료도 자동 감지</b>되어 브랜드가 누를 버튼이 없고 환불은 <b>PG가 자동으로 처리하며 재발송은 브랜드가 처리</b>한다 — 반송 물건을 브랜드가 임의 재발송하면 소비자 의사와 어긋날 수 있다</span></div>
+  <div class="stage tall xl">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">판매 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">판매 관리</div><div class="page-d">공구 주문의 배송과 반품·교환을 처리합니다.</div></div></div>
+  <div class="qbar">
+    <div class="qb on"><div class="qn">5</div><div class="ql">준비 시작</div></div>
+    <div class="qb on"><div class="qn">8</div><div class="ql">송장 등록</div></div>
+    <div class="qb on"><div class="qn">4</div><div class="ql">배송 이상</div></div>
+    <div class="qb on"><div class="qn">2</div><div class="ql">입고 확인</div></div>
+    <div class="qb on"><div class="qn">1</div><div class="ql">재발송 · 교환</div></div>
+  </div>
+  <div class="tabs1">
+    <div class="tab1 on">주문 관리<span class="t1n">86</span></div>
+    <div class="tab1">반품 · 교환 관리<span class="t1n">9</span></div>
+  </div>
+  <div class="tabs">
+    <div class="tab">전체 <span class="tn">86</span></div>
+    <div class="tab">신규(준비 대기) <span class="tn">5</span></div>
+    <div class="tab">취소 요청 <span class="tn">2</span></div>
+    <div class="tab">상품준비중 <span class="tn">8</span></div>
+    <div class="tab">배송중 <span class="tn">12</span></div>
+    <div class="tab active">반송중 <span class="tn">1</span></div>
+    <div class="tab">배송완료 <span class="tn">42</span></div>
+    <div class="tab">구매확정 <span class="tn">16</span></div>
+    <div class="tab">취소 <span class="tn">2</span></div>
+  </div>
+  <div class="qform">
+    <div class="qrow">
+      <span class="qlab">조회 기준</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>결제일</option><option>발주확인일</option><option>발송처리일</option><option>배송완료일</option><option>구매확정일</option></select>
+      <div class="preset">
+        <span class="pbtn">오늘</span>
+        <span class="pbtn">7일</span>
+        <span class="pbtn on">1개월</span>
+        <span class="pbtn">3개월</span>
+        <span class="pbtn">직접 입력</span>
+      </div>
+      <span class="qsub tnum">2026.07.20 ~ 2026.08.19</span>
+    </div>
+    <div class="qrow">
+      <span class="qlab">검색</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>주문번호</option><option>수취인명</option><option>송장번호</option><option>상품명</option></select>
+      <input class="inp" placeholder="검색어 입력" style="width:260px;height:32px">
+      <button class="btn btn-primary">검색</button>
+      <button class="btn btn-secondary">초기화</button>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="tbar">
+      <div class="tbar-l">총 <b>1</b>건 <span style="color:var(--n-500)">· 1건 표시</span> · <span style="color:var(--n-500)">조회기간 2026.07.20~08.19</span></div>
+      <div class="tbar-r"><select class="sel-sm"><option>최신순</option><option>주문일시 오래된순</option></select><select class="sel-sm"><option>20건씩</option></select></div>
+    </div>
+    <table>
+      <thead><tr>
+        <td style="width:26px"></td>
+        <td style="width:114px">주문번호</td><td style="width:70px">소비자</td>
+        <td>상품</td>
+        <td style="width:124px">택배사</td><td style="width:150px">송장번호</td>
+        <td class="t-c" style="width:132px">최종 갱신<span class="sort">▼</span></td><td class="t-c" style="width:96px">관리</td>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24093</td><td>구민재</td>
+          <td><span class="t-nm">글로우 크림 50ml</span></td>
+          <td>CJ대한통운</td>
+          <td class="tnum">6412 3290 7715</td>
+          <td class="t-c t-date tnum" style="color:var(--danger-text);font-weight:500">2026.08.19 08:14<span style="display:block;margin-top:4px"><span class="badge b-danger">반송 중</span></span></td>
+          <td class="t-c"><button class="act-btn" disabled>수정</button></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pager"><span class="page-item">‹</span><span class="page-item active">1</span><span class="page-item">›</span></div>
+  </div>
+  <div class="overlay">
+    <div class="modal wide">
+      <div class="modal-h">
+        <span class="mh-l">ORD-24093 <span class="badge b-danger">반송 중</span></span>
+        <span class="mh-r"><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span><span class="modal-x" style="margin-left:6px">✕</span></span>
+      </div>
+      <div class="mbody">
+        <div class="mcol">
+          <div class="mbox">
+            <div class="mbox-h">주문 정보</div>
+            <div class="mbox-b">
+              <div class="frow ro"><div class="fk">주문번호</div><div class="fv"><span class="tnum">ORD-24093</span><div class="fsub">하위주문 SUB-24093-01 · <b>이 공구 몫만</b> 표시됩니다</div></div></div>
+              <div class="frow ro"><div class="fk">주문일시</div><div class="fv"><span class="tnum">2026.08.17 19:33</span></div></div>
+              <div class="frow ro"><div class="fk">공구명</div><div class="fv">글로우 크림 앵콜 공구 <span class="flink">공구 상세</span></div></div>
+              <div class="frow ro"><div class="fk">결제수단</div><div class="fv">신용카드 (신한 ****1234)</div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">배송지<span class="bn2">소비자 입력 · <b>실명·연락처 전체 표기</b> · 브랜드는 수정 불가</span></div>
+            <div class="mbox-b">
+              <div class="frow ro"><div class="fk">수취인</div><div class="fv">구민재</div></div>
+              <div class="frow ro"><div class="fk">연락처</div><div class="fv"><span class="tnum">010-5520-7781</span></div></div>
+              <div class="frow ro"><div class="fk">주소</div><div class="fv">(06236) 서울특별시 강남구 테헤란로 123, 4층 402호</div></div>
+              <div class="frow ro"><div class="fk">배송 요청사항</div><div class="fv"><b style="color:var(--warning-text)">부재 시 문 앞에 놓아주세요</b></div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">주문 항목<span class="bn2">1건 · 취소·반품·교환은 <b>항목 단위</b></span></div>
+            <div class="mbox-b tight">
+              <table class="otab">
+                <thead><tr><td>상품 · 옵션</td><td class="t-c" style="width:50px">수량</td><td class="t-c" style="width:88px">공구가</td><td class="t-c" style="width:90px">금액</td><td class="t-c" style="width:88px">상태</td></tr></thead>
+                <tbody>
+                  <tr><td><span class="oname">글로우 크림 50ml</span><div class="oopt">옵션: 단품</div></td><td class="t-c tnum">1</td><td class="t-c tnum">27,200</td><td class="t-c tnum">27,200</td><td class="t-c"><span class="badge b-danger">반송 중</span></td></tr>
+                </tbody>
+              </table>
+              <div class="sum">
+                <div class="sumrow"><span class="sk">상품 금액</span><span class="sv">27,200원</span></div>
+                <div class="sumrow"><span class="sk">배송비</span><span class="sv">3,000원</span></div>
+                <div class="sumrow total"><span class="sk">총 결제금액</span><span class="sv">30,200원</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mcol">
+          <div class="mbox">
+            <div class="mbox-h">상태</div>
+            <div class="mbox-b tight">
+              <div class="notice warn" style="margin-bottom:var(--sp-3)"><div><b>이 주문은 구매확정되지 않습니다.</b> 소비자가 물건을 받지 못했으므로 구매확정 타이머가 <b>취소</b>되고 정산 대상에서 빠집니다. <b>환불로 종결</b>되며, 소비자가 다시 받길 원하면 <b>새로 주문</b>해야 합니다.</div></div>
+              <div class="st-line" style="padding-bottom:var(--sp-3)"><span class="st-lbl">현재 상태</span><span class="badge b-danger">반송 중</span></div>
+              <div class="st-meta">
+                <div class="mrow"><span class="mk">송장 등록</span><span class="mv">2026.08.18 11:20</span></div>
+                <div class="mrow"><span class="mk">추적 갱신</span><span class="mv">2026.08.19 04:12</span></div>
+                <div class="mrow"><span class="mk">구매확정</span><span class="mv" style="color:var(--danger-text)">불가 (반송)</span></div>
+              </div>
+                            <div class="st-hint"><b>반송 건은 송장 수정이 의미가 없어 수정할 수 없습니다.</b> <b>환불은 PG가 자동으로 처리</b>합니다 — 이 주문으로는 재발송하지 않습니다.</div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">배송 정보<span class="bn2">배송 추적 자동 연동</span></div>
+            <div class="mbox-b tight">
+              <div class="shiprow"><span class="sk">택배사</span><span class="sv">CJ대한통운</span></div>
+              <div class="shiprow"><span class="sk">송장번호</span><span class="sv"><span class="tnum">6412 3389 4571</span></span></div>
+              <div class="shiprow"><span class="sk">조회</span><span class="sv"><span class="flink">택배사에서 조회 ↗</span></span></div>
+              <div class="track" style="border-color:#E9C9C9;background:var(--danger-bg)"><div class="tl" style="color:var(--danger-text)">반송 처리</div><div class="tm" style="color:var(--danger-text)">2026.08.19 08:14 갱신 · 반송 배송중</div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">처리 이력</div>
+            <div class="mbox-b tight">
+              <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">송장 등록 · 배송중 전환</div><div class="hmeta">2026.08.18 11:20 · ○○ 브랜드</div></div></div>
+              <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">준비 시작 · 소비자 취소권 종료</div><div class="hmeta">2026.08.17 21:05 · ○○ 브랜드</div></div></div>
+              <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">결제 완료 · 주문 접수</div><div class="hmeta">2026.08.17 19:33 · 시스템</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+<!-- ═════════ C6 · 주문 상세 모달 · 배송중(집화 확인 필요) ═════════ -->
+<section class="state" id="C6">
+  <div class="state-bar"><span class="state-id">C6</span><span class="state-label">주문 상세 모달 · 배송중(집화 확인 필요)</span>
+  <span class="state-spec">등록 후 <b>24시간이 지나도 추적이 안 잡히면</b> 오등록 가능성이 높다 — <b>집화 스캔 전에는 데이터가 없는 게 정상</b>이라 등록 직후가 아니라 24시간 뒤에 경고한다 · 경고 배너 + <b>[송장 수정]을 주 액션으로 승격</b> · 목록에도 같은 경고 배지가 뜨고 요약 바에 건수가 잡힌다</span></div>
+  <div class="stage tall xl">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">판매 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">판매 관리</div><div class="page-d">공구 주문의 배송과 반품·교환을 처리합니다.</div></div></div>
+  <div class="qbar">
+    <div class="qb on"><div class="qn">5</div><div class="ql">준비 시작</div></div>
+    <div class="qb on"><div class="qn">8</div><div class="ql">송장 등록</div></div>
+    <div class="qb on"><div class="qn">4</div><div class="ql">배송 이상</div></div>
+    <div class="qb on"><div class="qn">2</div><div class="ql">입고 확인</div></div>
+    <div class="qb on"><div class="qn">1</div><div class="ql">재발송 · 교환</div></div>
+  </div>
+  <div class="tabs1">
+    <div class="tab1 on">주문 관리<span class="t1n">86</span></div>
+    <div class="tab1">반품 · 교환 관리<span class="t1n">9</span></div>
+  </div>
+  <div class="tabs">
+    <div class="tab">전체 <span class="tn">86</span></div>
+    <div class="tab">신규(준비 대기) <span class="tn">5</span></div>
+    <div class="tab">취소 요청 <span class="tn">2</span></div>
+    <div class="tab">상품준비중 <span class="tn">8</span></div>
+    <div class="tab active">배송중 <span class="tn">12</span></div>
+    <div class="tab">반송중 <span class="tn">1</span></div>
+    <div class="tab">배송완료 <span class="tn">42</span></div>
+    <div class="tab">구매확정 <span class="tn">16</span></div>
+    <div class="tab">취소 <span class="tn">2</span></div>
+  </div>
+  <div class="qform">
+    <div class="qrow">
+      <span class="qlab">조회 기준</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>결제일</option><option>발주확인일</option><option>발송처리일</option><option>배송완료일</option><option>구매확정일</option></select>
+      <div class="preset">
+        <span class="pbtn">오늘</span>
+        <span class="pbtn">7일</span>
+        <span class="pbtn on">1개월</span>
+        <span class="pbtn">3개월</span>
+        <span class="pbtn">직접 입력</span>
+      </div>
+      <span class="qsub tnum">2026.07.20 ~ 2026.08.19</span>
+    </div>
+    <div class="qrow">
+      <span class="qlab">검색</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>주문번호</option><option>수취인명</option><option>송장번호</option><option>상품명</option></select>
+      <input class="inp" placeholder="검색어 입력" style="width:260px;height:32px">
+      <button class="btn btn-primary">검색</button>
+      <button class="btn btn-secondary">초기화</button>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="tbar">
+      <div class="tbar-l">총 <b>12</b>건 <span style="color:var(--n-500)">· 4건 표시</span> · <span style="color:var(--n-500)">조회기간 2026.07.20~08.19</span></div>
+      <div class="tbar-r"><select class="sel-sm"><option>최신순</option><option>주문일시 오래된순</option></select><select class="sel-sm"><option>20건씩</option></select></div>
+    </div>
+    <table>
+      <thead><tr>
+        <td style="width:26px"></td>
+        <td style="width:114px">주문번호</td><td style="width:70px">소비자</td>
+        <td>상품</td>
+        <td style="width:124px">택배사</td><td style="width:150px">송장번호</td>
+        <td class="t-c" style="width:132px">최종 갱신<span class="sort">▼</span></td><td class="t-c" style="width:96px">관리</td>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24108</td><td>조현우</td>
+          <td><span class="t-nm">글로우 크림 50ml</span></td>
+          <td>CJ대한통운</td>
+          <td class="tnum">6412 3389 4571</td>
+          <td class="t-c t-date tnum">2026.08.19 04:12</td>
+          <td class="t-c"><span style="color:var(--n-300)">—</span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24106</td><td>남유진</td>
+          <td><span class="t-nm">데일리 선크림 50ml</span></td>
+          <td>CJ대한통운</td>
+          <td class="tnum">6412 3301 8842</td>
+          <td class="t-c t-date tnum">2026.08.19 07:40</td>
+          <td class="t-c"><span style="color:var(--n-300)">—</span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24104</td><td>문서준</td>
+          <td><span class="t-nm">글로우 세럼 30ml</span></td>
+          <td>한진택배</td>
+          <td><input class="ginp" value="5520 7781 0034"><span style="display:block;margin-top:5px"><span class="badge b-warning">집화 확인 필요</span></span></td>
+          <td class="t-c t-date tnum" style="color:var(--warning-text);font-weight:500">2026.08.17 21:05<span style="display:block;margin-top:4px"><span class="badge b-warning">집화 확인 필요</span></span></td>
+          <td class="t-c"><button class="act-btn primary">수정</button></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24096</td><td>백지훈</td>
+          <td><span class="t-nm">글로우 크림 50ml</span></td>
+          <td>CJ대한통운</td>
+          <td class="tnum">6412 3277 5510</td>
+          <td class="t-c t-date tnum" style="color:var(--danger-text);font-weight:500">2026.08.12 09:40<span style="display:block;margin-top:4px"><span class="badge b-danger">추적 정지</span></span></td>
+          <td class="t-c"><span style="color:var(--n-300)">—</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pager"><span class="page-item">‹</span><span class="page-item active">1</span><span class="page-item">›</span></div>
+  </div>
+  <div class="overlay">
+    <div class="modal wide">
+      <div class="modal-h">
+        <span class="mh-l">ORD-24106 <span class="badge b-info">배송중</span> <span class="badge b-warning">집화 확인 필요</span></span>
+        <span class="mh-r"><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span><span class="modal-x" style="margin-left:6px">✕</span></span>
+      </div>
+      <div class="mbody">
+        <div class="mcol">
+          <div class="mbox">
+            <div class="mbox-h">주문 정보</div>
+            <div class="mbox-b">
+              <div class="frow ro"><div class="fk">주문번호</div><div class="fv"><span class="tnum">ORD-24106</span><div class="fsub">하위주문 SUB-24106-01 · <b>이 공구 몫만</b> 표시됩니다</div></div></div>
+              <div class="frow ro"><div class="fk">주문일시</div><div class="fv"><span class="tnum">2026.08.17 15:02</span></div></div>
+              <div class="frow ro"><div class="fk">공구명</div><div class="fv">글로우 크림 앵콜 공구 <span class="flink">공구 상세</span></div></div>
+              <div class="frow ro"><div class="fk">결제수단</div><div class="fv">신용카드 (신한 ****1234)</div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">배송지<span class="bn2">소비자 입력 · <b>실명·연락처 전체 표기</b> · 브랜드는 수정 불가</span></div>
+            <div class="mbox-b">
+              <div class="frow ro"><div class="fk">수취인</div><div class="fv">배수민</div></div>
+              <div class="frow ro"><div class="fk">연락처</div><div class="fv"><span class="tnum">010-6640-3312</span></div></div>
+              <div class="frow ro"><div class="fk">주소</div><div class="fv">(06236) 서울특별시 강남구 테헤란로 123, 4층 402호</div></div>
+              <div class="frow ro"><div class="fk">배송 요청사항</div><div class="fv"><b style="color:var(--warning-text)">부재 시 문 앞에 놓아주세요</b></div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">주문 항목<span class="bn2">1건 · 취소·반품·교환은 <b>항목 단위</b></span></div>
+            <div class="mbox-b tight">
+              <table class="otab">
+                <thead><tr><td>상품 · 옵션</td><td class="t-c" style="width:50px">수량</td><td class="t-c" style="width:88px">공구가</td><td class="t-c" style="width:90px">금액</td><td class="t-c" style="width:88px">상태</td></tr></thead>
+                <tbody>
+                  <tr><td><span class="oname">글로우 크림 50ml</span><div class="oopt">옵션: 단품</div></td><td class="t-c tnum">1</td><td class="t-c tnum">27,200</td><td class="t-c tnum">27,200</td><td class="t-c"><span class="badge b-info">배송중</span></td></tr>
+                </tbody>
+              </table>
+              <div class="sum">
+                <div class="sumrow"><span class="sk">상품 금액</span><span class="sv">27,200원</span></div>
+                <div class="sumrow"><span class="sk">배송비</span><span class="sv">3,000원</span></div>
+                <div class="sumrow total"><span class="sk">총 결제금액</span><span class="sv">30,200원</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mcol">
+          <div class="mbox">
+            <div class="mbox-h">상태</div>
+            <div class="mbox-b tight">
+              <div class="st-line" style="padding-bottom:var(--sp-3)"><span class="st-lbl">현재 상태</span><span class="badge b-warning">집화 확인 필요</span></div>
+              <div class="st-meta">
+                <div class="mrow"><span class="mk">송장 등록</span><span class="mv">2026.08.17 17:40</span></div>
+                <div class="mrow"><span class="mk">경과</span><span class="mv warn">38시간</span></div>
+                <div class="mrow"><span class="mk">추적 데이터</span><span class="mv warn">없음</span></div>
+              </div>
+              <div class="st-acts" style="flex-direction:column"><button class="btn btn-primary" style="width:100%">송장 수정</button></div>
+              <div class="st-hint">번호가 맞다면 택배사 집화가 늦어진 것일 수 있습니다 — 그 경우 <b>기다리면 자동으로 갱신</b>됩니다. 번호가 틀렸다면 지금 수정해야 소비자가 배송을 조회할 수 있습니다.</div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">배송 정보<span class="bn2">배송 추적 자동 연동</span></div>
+            <div class="mbox-b tight">
+              <div class="shiprow"><span class="sk">택배사</span><span class="sv">CJ대한통운</span></div>
+              <div class="shiprow"><span class="sk">송장번호</span><span class="sv"><span class="tnum">6412 3389 0000</span></span></div>
+              <div class="shiprow"><span class="sk">조회</span><span class="sv"><span class="flink">택배사에서 조회 ↗</span></span></div>
+              <div class="notice warn" style="margin-top:var(--sp-3)"><div><b>등록 후 24시간이 지났지만 택배사 조회가 되지 않습니다.</b> 송장번호를 확인해 주세요.</div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">처리 이력</div>
+            <div class="mbox-b tight">
+              <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">송장 등록 · 배송중 전환</div><div class="hmeta">2026.08.17 17:40 · ○○ 브랜드</div></div></div>
+              <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">준비 시작 · 소비자 취소권 종료</div><div class="hmeta">2026.08.17 16:20 · ○○ 브랜드</div></div></div>
+              <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">결제 완료 · 주문 접수</div><div class="hmeta">2026.08.17 15:02 · 시스템</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+<!-- ═════════ C7b · 주문 상세 모달 · 배송중(추적 정지) ═════════ -->
+<section class="state" id="C7b">
+  <div class="state-bar"><span class="state-id">C7b</span><span class="state-label">주문 상세 모달 · 배송중(추적 정지)</span>
+  <span class="state-spec"><b>2단 — 집화 후 7일 갱신 없음</b> · <b>플랫폼은 분실·누락 판정에 관여하지 않는다</b> — 소비자나 브랜드가 <b>택배사에 직접 조회</b>하고, <b>누락</b>이면 택배사가 배송완료로 처리, <b>분실</b>이면 브랜드가 <b>재발송 + [송장 수정]</b>한다 · <b>분실 보상도 택배사 소관</b>이다 · 그래서 이 화면의 액션은 <b>[송장 수정] 하나</b>이고 사고 접수·증빙 폼은 두지 않는다</span></div>
+  <div class="stage tall xl2">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">판매 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">판매 관리</div><div class="page-d">공구 주문의 배송과 반품·교환을 처리합니다.</div></div></div>
+  <div class="qbar">
+    <div class="qb on"><div class="qn">5</div><div class="ql">준비 시작</div></div>
+    <div class="qb on"><div class="qn">8</div><div class="ql">송장 등록</div></div>
+    <div class="qb on"><div class="qn">4</div><div class="ql">배송 이상</div></div>
+    <div class="qb on"><div class="qn">2</div><div class="ql">입고 확인</div></div>
+    <div class="qb on"><div class="qn">1</div><div class="ql">재발송 · 교환</div></div>
+  </div>
+  <div class="tabs1">
+    <div class="tab1 on">주문 관리<span class="t1n">86</span></div>
+    <div class="tab1">반품 · 교환 관리<span class="t1n">9</span></div>
+  </div>
+  <div class="tabs">
+    <div class="tab">전체 <span class="tn">86</span></div>
+    <div class="tab">신규(준비 대기) <span class="tn">5</span></div>
+    <div class="tab">취소 요청 <span class="tn">2</span></div>
+    <div class="tab">상품준비중 <span class="tn">8</span></div>
+    <div class="tab active">배송중 <span class="tn">12</span></div>
+    <div class="tab">반송중 <span class="tn">1</span></div>
+    <div class="tab">배송완료 <span class="tn">42</span></div>
+    <div class="tab">구매확정 <span class="tn">16</span></div>
+    <div class="tab">취소 <span class="tn">2</span></div>
+  </div>
+  <div class="qform">
+    <div class="qrow">
+      <span class="qlab">조회 기준</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>결제일</option><option>발주확인일</option><option>발송처리일</option><option>배송완료일</option><option>구매확정일</option></select>
+      <div class="preset">
+        <span class="pbtn">오늘</span>
+        <span class="pbtn">7일</span>
+        <span class="pbtn on">1개월</span>
+        <span class="pbtn">3개월</span>
+        <span class="pbtn">직접 입력</span>
+      </div>
+      <span class="qsub tnum">2026.07.20 ~ 2026.08.19</span>
+    </div>
+    <div class="qrow">
+      <span class="qlab">검색</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>주문번호</option><option>수취인명</option><option>송장번호</option><option>상품명</option></select>
+      <input class="inp" placeholder="검색어 입력" style="width:260px;height:32px">
+      <button class="btn btn-primary">검색</button>
+      <button class="btn btn-secondary">초기화</button>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="tbar">
+      <div class="tbar-l">총 <b>12</b>건 <span style="color:var(--n-500)">· 4건 표시</span> · <span style="color:var(--n-500)">조회기간 2026.07.20~08.19</span></div>
+      <div class="tbar-r"><select class="sel-sm"><option>최신순</option><option>주문일시 오래된순</option></select><select class="sel-sm"><option>20건씩</option></select></div>
+    </div>
+    <table>
+      <thead><tr>
+        <td style="width:26px"></td>
+        <td style="width:114px">주문번호</td><td style="width:70px">소비자</td>
+        <td>상품</td>
+        <td style="width:124px">택배사</td><td style="width:150px">송장번호</td>
+        <td class="t-c" style="width:132px">최종 갱신<span class="sort">▼</span></td><td class="t-c" style="width:96px">관리</td>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24108</td><td>조현우</td>
+          <td><span class="t-nm">글로우 크림 50ml</span></td>
+          <td>CJ대한통운</td>
+          <td class="tnum">6412 3389 4571</td>
+          <td class="t-c t-date tnum">2026.08.19 04:12</td>
+          <td class="t-c"><span style="color:var(--n-300)">—</span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24106</td><td>남유진</td>
+          <td><span class="t-nm">데일리 선크림 50ml</span></td>
+          <td>CJ대한통운</td>
+          <td class="tnum">6412 3301 8842</td>
+          <td class="t-c t-date tnum">2026.08.19 07:40</td>
+          <td class="t-c"><span style="color:var(--n-300)">—</span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24104</td><td>문서준</td>
+          <td><span class="t-nm">글로우 세럼 30ml</span></td>
+          <td>한진택배</td>
+          <td><input class="ginp" value="5520 7781 0034"><span style="display:block;margin-top:5px"><span class="badge b-warning">집화 확인 필요</span></span></td>
+          <td class="t-c t-date tnum" style="color:var(--warning-text);font-weight:500">2026.08.17 21:05<span style="display:block;margin-top:4px"><span class="badge b-warning">집화 확인 필요</span></span></td>
+          <td class="t-c"><button class="act-btn primary">수정</button></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24096</td><td>백지훈</td>
+          <td><span class="t-nm">글로우 크림 50ml</span></td>
+          <td>CJ대한통운</td>
+          <td class="tnum">6412 3277 5510</td>
+          <td class="t-c t-date tnum" style="color:var(--danger-text);font-weight:500">2026.08.12 09:40<span style="display:block;margin-top:4px"><span class="badge b-danger">추적 정지</span></span></td>
+          <td class="t-c"><span style="color:var(--n-300)">—</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pager"><span class="page-item">‹</span><span class="page-item active">1</span><span class="page-item">›</span></div>
+  </div>
+  <div class="overlay">
+    <div class="modal wide">
+      <div class="modal-h">
+        <span class="mh-l">ORD-24096 <span class="badge b-info">배송중</span></span>
+        <span class="mh-r"><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span><span class="modal-x" style="margin-left:6px">✕</span></span>
+      </div>
+      <div class="mbody">
+        <div class="mcol">
+          <div class="mbox">
+            <div class="mbox-h">주문 정보</div>
+            <div class="mbox-b">
+              <div class="frow ro"><div class="fk">주문번호</div><div class="fv"><span class="tnum">ORD-24096</span><div class="fsub">하위주문 SUB-24096-01 · <b>이 공구 몫만</b> 표시됩니다</div></div></div>
+              <div class="frow ro"><div class="fk">주문일시</div><div class="fv"><span class="tnum">2026.08.16 11:08</span></div></div>
+              <div class="frow ro"><div class="fk">공구명</div><div class="fv">글로우 크림 앵콜 공구 <span class="flink">공구 상세</span></div></div>
+              <div class="frow ro"><div class="fk">결제수단</div><div class="fv">신용카드 (신한 ****1234)</div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">배송지<span class="bn2">소비자 입력 · <b>실명·연락처 전체 표기</b> · 브랜드는 수정 불가</span></div>
+            <div class="mbox-b">
+              <div class="frow ro"><div class="fk">수취인</div><div class="fv">백지훈</div></div>
+              <div class="frow ro"><div class="fk">연락처</div><div class="fv"><span class="tnum">010-3390-4412</span></div></div>
+              <div class="frow ro"><div class="fk">주소</div><div class="fv">(06236) 서울특별시 강남구 테헤란로 123, 4층 402호</div></div>
+              <div class="frow ro"><div class="fk">배송 요청사항</div><div class="fv"><b style="color:var(--warning-text)">부재 시 문 앞에 놓아주세요</b></div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">주문 항목<span class="bn2">2건 · 취소·반품·교환은 <b>항목 단위</b></span></div>
+            <div class="mbox-b tight">
+              <table class="otab">
+                <thead><tr><td>상품 · 옵션</td><td class="t-c" style="width:50px">수량</td><td class="t-c" style="width:88px">공구가</td><td class="t-c" style="width:90px">금액</td><td class="t-c" style="width:88px">상태</td></tr></thead>
+                <tbody>
+                  <tr><td><span class="oname">글로우 크림 50ml</span><div class="oopt">옵션: 단품</div></td><td class="t-c tnum">2</td><td class="t-c tnum">27,200</td><td class="t-c tnum">54,400</td><td class="t-c"><span class="badge b-info">배송중</span></td></tr>
+                  <tr><td><span class="oname">글로우 세럼 30ml</span><div class="oopt">옵션: 단품</div></td><td class="t-c tnum">1</td><td class="t-c tnum">22,600</td><td class="t-c tnum">22,600</td><td class="t-c"><span class="badge b-info">배송중</span></td></tr>
+                </tbody>
+              </table>
+              <div class="sum">
+                <div class="sumrow"><span class="sk">상품 금액</span><span class="sv">77,000원</span></div>
+                <div class="sumrow"><span class="sk">배송비</span><span class="sv">3,000원</span></div>
+                <div class="sumrow total"><span class="sk">총 결제금액</span><span class="sv">80,000원</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mcol">
+          <div class="mbox">
+            <div class="mbox-h">상태</div>
+            <div class="mbox-b tight">
+              <div class="st-line" style="padding-bottom:var(--sp-3)"><span class="st-lbl">현재 상태</span><span class="badge b-info">배송중</span></div>
+              <div class="st-meta">
+                <div class="mrow"><span class="mk">송장 등록</span><span class="mv">2026.08.16 16:40</span></div>
+                <div class="mrow"><span class="mk">마지막 갱신</span><span class="mv">2026.08.17 21:05</span></div>
+                <div class="mrow"><span class="mk">경과</span><span class="mv" style="color:var(--danger-text)">7일</span></div>
+              </div>
+              <div class="st-acts" style="flex-direction:column"><button class="btn btn-secondary" style="width:100%">송장 수정</button></div>
+                          </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">추적 정지</div>
+            <div class="mbox-b">
+              <div class="frow ro"><div class="fk">마지막 갱신</div><div class="fv"><span class="tnum">2026.08.12 09:40</span><div class="fsub">이후 <b></b></div></div></div>
+              <div class="frow ro"><div class="fk">마지막 위치</div><div class="fv">대전 허브</div></div>
+              <div class="notice warn" style="margin-bottom:var(--sp-3)"><div><b>7일째 추적 갱신이 없습니다.</b> 소비자나 브랜드가 <b>택배사에 직접 조회</b>해 결과에 따라 처리합니다 — <b>누락</b>(소비자가 이미 수령)이면 택배사가 <b>배송완료로 처리</b>하고, <b>분실</b>이면 브랜드가 <b>재발송한 뒤 [송장 수정]</b>으로 새 번호를 넣습니다. <b>분실 보상은 택배사가 따로 처리</b>합니다.</div></div>
+              <div class="frow ro"><div class="fk">처리 상태</div><div class="fv" style="text-align:right"><span class="badge b-danger">추적 정지</span></div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">배송 정보<span class="bn2">배송 추적 · 갱신 정지</span></div>
+            <div class="mbox-b tight">
+              <div class="shiprow"><span class="sk">택배사</span><span class="sv">CJ대한통운</span></div>
+              <div class="shiprow"><span class="sk">송장번호</span><span class="sv"><span class="tnum">6412 3301 8842</span></span></div>
+              <div class="shiprow"><span class="sk">마지막 갱신</span><span class="sv"><span class="tnum">2026.08.17 21:05</span></span></div>
+              <div class="track" style="border-color:#E9C9C9;background:var(--danger-bg)"><div class="tl" style="color:var(--danger-text)">대전 허브</div><div class="tm" style="color:var(--danger-text)">2026.08.17 21:05 이후 갱신 없음</div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">처리 이력</div>
+            <div class="mbox-b tight">
+              <div class="hitem"><span class="hdot h-danger"></span><div><div class="htxt">추적 정지 감지 · 7일 무갱신</div><div class="hmeta">2026.08.24 09:00 · 배송 추적</div></div></div>
+              <div class="hitem"><span class="hdot"></span><div><div class="htxt">마지막 추적 갱신 · 대전 허브</div><div class="hmeta">2026.08.17 21:05 · 배송 추적</div></div></div>
+              <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">송장 등록 · 배송중 전환</div><div class="hmeta">2026.08.16 16:40 · ○○ 브랜드</div></div></div>
+              <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">결제 완료 · 주문 접수</div><div class="hmeta">2026.08.16 11:08 · 시스템</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+<!-- ═════════ C8 · 주문 상세 모달 · 배송완료(자동 확인) ═════════ -->
+<section class="state" id="C8">
+  <div class="state-bar"><span class="state-id">C8</span><span class="state-label">주문 상세 모달 · 배송완료(자동 확인)</span>
+  <span class="state-spec"><b>구매확정 D-N</b>이 주인공 · 배송완료일시 옆에 <b>(자동 확인)</b>을 병기한다 — 이 값이 구매확정과 정산의 기준이라 <b>출처가 자동인지 요청 처리인지</b>가 늘 보여야 한다(C9와 대비) · 액션 없음이고 <b>[송장 수정]도 사라진다</b>(배송완료 전까지만 가능)</span></div>
+  <div class="stage tall xl">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">판매 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">판매 관리</div><div class="page-d">공구 주문의 배송과 반품·교환을 처리합니다.</div></div></div>
+  <div class="qbar">
+    <div class="qb on"><div class="qn">5</div><div class="ql">준비 시작</div></div>
+    <div class="qb on"><div class="qn">8</div><div class="ql">송장 등록</div></div>
+    <div class="qb on"><div class="qn">4</div><div class="ql">배송 이상</div></div>
+    <div class="qb on"><div class="qn">2</div><div class="ql">입고 확인</div></div>
+    <div class="qb on"><div class="qn">1</div><div class="ql">재발송 · 교환</div></div>
+  </div>
+  <div class="tabs1">
+    <div class="tab1 on">주문 관리<span class="t1n">86</span></div>
+    <div class="tab1">반품 · 교환 관리<span class="t1n">9</span></div>
+  </div>
+  <div class="tabs">
+    <div class="tab">전체 <span class="tn">86</span></div>
+    <div class="tab">신규(준비 대기) <span class="tn">5</span></div>
+    <div class="tab">취소 요청 <span class="tn">2</span></div>
+    <div class="tab">상품준비중 <span class="tn">8</span></div>
+    <div class="tab">배송중 <span class="tn">12</span></div>
+    <div class="tab">반송중 <span class="tn">1</span></div>
+    <div class="tab active">배송완료 <span class="tn">42</span></div>
+    <div class="tab">구매확정 <span class="tn">16</span></div>
+    <div class="tab">취소 <span class="tn">2</span></div>
+  </div>
+  <div class="qform">
+    <div class="qrow">
+      <span class="qlab">조회 기준</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>결제일</option><option>발주확인일</option><option>발송처리일</option><option>배송완료일</option><option>구매확정일</option></select>
+      <div class="preset">
+        <span class="pbtn">오늘</span>
+        <span class="pbtn">7일</span>
+        <span class="pbtn on">1개월</span>
+        <span class="pbtn">3개월</span>
+        <span class="pbtn">직접 입력</span>
+      </div>
+      <span class="qsub tnum">2026.07.20 ~ 2026.08.19</span>
+    </div>
+    <div class="qrow">
+      <span class="qlab">검색</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>주문번호</option><option>수취인명</option><option>송장번호</option><option>상품명</option></select>
+      <input class="inp" placeholder="검색어 입력" style="width:260px;height:32px">
+      <button class="btn btn-primary">검색</button>
+      <button class="btn btn-secondary">초기화</button>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="tbar">
+      <div class="tbar-l">총 <b>42</b>건 <span style="color:var(--n-500)">· 4건 표시</span> · <span style="color:var(--n-500)">조회기간 2026.07.20~08.19</span></div>
+      <div class="tbar-r"><select class="sel-sm"><option>최신순</option><option>주문일시 오래된순</option></select><select class="sel-sm"><option>20건씩</option></select></div>
+    </div>
+    <table>
+      <thead><tr>
+        <td style="width:26px"></td>
+        <td style="width:114px">주문번호</td><td style="width:70px">소비자</td>
+        <td>상품</td>
+        <td style="width:120px">택배사</td><td style="width:144px">송장번호</td>
+        <td class="t-c" style="width:134px">배송완료<span class="sort on">▼</span></td>
+        <td class="t-c" style="width:118px">구매확정 예정</td>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24101</td><td>서다은</td>
+          <td><span class="t-nm">글로우 크림 50ml 외 1건</span></td>
+          <td>CJ대한통운</td><td class="tnum">6412 3301 8842</td>
+          <td class="t-c t-date tnum">2026.08.18 14:30</td>
+          <td class="t-c"><span class="dcount"><span class="dn" style="font-size:15px">D-6</span></span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24098</td><td>권나윤</td>
+          <td><span class="t-nm">데일리 선크림 50ml</span></td>
+          <td>CJ대한통운</td><td class="tnum">6412 3298 1120</td>
+          <td class="t-c t-date tnum">2026.08.17 11:05</td>
+          <td class="t-c"><span class="dcount"><span class="dn" style="font-size:15px">D-5</span></span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24094</td><td>유선호</td>
+          <td><span class="t-nm">글로우 세럼 30ml</span></td>
+          <td>한진택배</td><td class="tnum">5520 7745 3391</td>
+          <td class="t-c t-date tnum">2026.08.16 16:42</td>
+          <td class="t-c"><span class="dcount"><span class="dn" style="font-size:15px">D-4</span></span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24090</td><td>류하은</td>
+          <td><span class="t-nm">글로우 크림 50ml</span></td>
+          <td>CJ대한통운</td><td class="tnum">6412 3280 6604</td>
+          <td class="t-c t-date tnum">2026.08.15 09:18</td>
+          <td class="t-c"><span class="dcount"><span class="dn" style="font-size:15px">D-2</span></span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pager"><span class="page-item">‹</span><span class="page-item active">1</span><span class="page-item">2</span><span class="page-item">3</span><span class="page-item">›</span></div>
+  </div>
+  <div class="overlay">
+    <div class="modal wide">
+      <div class="modal-h">
+        <span class="mh-l">ORD-24101 <span class="badge b-success">배송완료</span></span>
+        <span class="mh-r"><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span><span class="modal-x" style="margin-left:6px">✕</span></span>
+      </div>
+      <div class="mbody">
+        <div class="mcol">
+          <div class="mbox">
+            <div class="mbox-h">주문 정보</div>
+            <div class="mbox-b">
+              <div class="frow ro"><div class="fk">주문번호</div><div class="fv"><span class="tnum">ORD-24101</span><div class="fsub">하위주문 SUB-24101-01 · <b>이 공구 몫만</b> 표시됩니다</div></div></div>
+              <div class="frow ro"><div class="fk">주문일시</div><div class="fv"><span class="tnum">2026.08.16 11:08</span></div></div>
+              <div class="frow ro"><div class="fk">공구명</div><div class="fv">글로우 크림 앵콜 공구 <span class="flink">공구 상세</span></div></div>
+              <div class="frow ro"><div class="fk">결제수단</div><div class="fv">신용카드 (신한 ****1234)</div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">배송지<span class="bn2">소비자 입력 · <b>실명·연락처 전체 표기</b> · 브랜드는 수정 불가</span></div>
+            <div class="mbox-b">
+              <div class="frow ro"><div class="fk">수취인</div><div class="fv">서다은</div></div>
+              <div class="frow ro"><div class="fk">연락처</div><div class="fv"><span class="tnum">010-3390-4412</span></div></div>
+              <div class="frow ro"><div class="fk">주소</div><div class="fv">(06236) 서울특별시 강남구 테헤란로 123, 4층 402호</div></div>
+              <div class="frow ro"><div class="fk">배송 요청사항</div><div class="fv"><b style="color:var(--warning-text)">부재 시 문 앞에 놓아주세요</b></div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">주문 항목<span class="bn2">2건 · 취소·반품·교환은 <b>항목 단위</b></span></div>
+            <div class="mbox-b tight">
+              <table class="otab">
+                <thead><tr><td>상품 · 옵션</td><td class="t-c" style="width:50px">수량</td><td class="t-c" style="width:88px">공구가</td><td class="t-c" style="width:90px">금액</td><td class="t-c" style="width:88px">상태</td></tr></thead>
+                <tbody>
+                  <tr><td><span class="oname">글로우 크림 50ml</span><div class="oopt">옵션: 단품</div></td><td class="t-c tnum">2</td><td class="t-c tnum">27,200</td><td class="t-c tnum">54,400</td><td class="t-c"><span class="badge b-success">배송완료</span></td></tr>
+                  <tr><td><span class="oname">글로우 세럼 30ml</span><div class="oopt">옵션: 단품</div></td><td class="t-c tnum">1</td><td class="t-c tnum">22,600</td><td class="t-c tnum">22,600</td><td class="t-c"><span class="badge b-success">배송완료</span></td></tr>
+                </tbody>
+              </table>
+              <div class="sum">
+                <div class="sumrow"><span class="sk">상품 금액</span><span class="sv">77,000원</span></div>
+                <div class="sumrow"><span class="sk">배송비</span><span class="sv">3,000원</span></div>
+                <div class="sumrow total"><span class="sk">총 결제금액</span><span class="sv">80,000원</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mcol">
+          <div class="mbox">
+            <div class="mbox-h">상태</div>
+            <div class="mbox-b tight">
+              <div class="st-line" style="padding-bottom:var(--sp-3)"><span class="st-lbl">현재 상태</span><span class="badge b-success">배송완료</span></div>
+              <div class="st-meta">
+                <div class="mrow"><span class="mk">배송완료</span><span class="mv">2026.08.20 14:32</span></div>
+                <div class="mrow"><span class="mk">확인 방식</span><span class="mv"><b>자동 확인</b></span></div>
+                <div class="mrow"><span class="mk">구매확정 예정</span><span class="mv">2026.08.27 14:32</span></div>
+              </div>
+              <div style="padding-top:var(--sp-3);border-top:1px solid var(--n-100);margin-top:var(--sp-2)">
+                <div class="dcount"><span class="dn">D-5</span><span class="dl">구매확정까지</span></div>
+              </div>
+                          </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">배송 정보<span class="bn2">배송 추적 자동 연동</span></div>
+            <div class="mbox-b tight">
+              <div class="shiprow"><span class="sk">택배사</span><span class="sv">CJ대한통운</span></div>
+              <div class="shiprow"><span class="sk">송장번호</span><span class="sv"><span class="tnum">6412 3301 8842</span></span></div>
+              <div class="shiprow"><span class="sk">배송완료</span><span class="sv"><span class="tnum">2026.08.20 14:32</span> <span style="color:var(--n-500);font-size:var(--fs-micro)">(자동 확인)</span></span></div>
+              <div class="track"><div class="tl">배송완료</div><div class="tm">2026.08.20 14:32 갱신</div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">처리 이력</div>
+            <div class="mbox-b tight">
+              <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">배송완료 <b>(자동 확인)</b> · 구매확정 카운트 시작</div><div class="hmeta">2026.08.20 14:32 · 배송 추적</div></div></div>
+              <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">송장 등록 · 배송중 전환</div><div class="hmeta">2026.08.16 16:40 · ○○ 브랜드</div></div></div>
+              <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">결제 완료 · 주문 접수</div><div class="hmeta">2026.08.16 11:08 · 시스템</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+<!-- ═════════ C9 · 주문 상세 모달 · 배송완료(운영자 처리) ═════════ -->
+<section class="state" id="C9">
+  <div class="state-bar"><span class="state-id">C9</span><span class="state-label">주문 상세 모달 · 배송완료(운영자 처리)</span>
+  <span class="state-spec">C8과 <b>같은 상태·다른 출처</b> — 배송완료일시에 <b>(운영자 처리)</b>가 붙고 처리자가 남는다 · 요청 처리 건은 <b>소비자가 실제 수령일로 이의를 제기할 수 있다</b>는 점을 명시한다(정산 시점이 달라지므로) · <b>같은 배지, 다른 신뢰도</b>를 화면이 구분해야 한다</span></div>
+  <div class="stage tall xl">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">판매 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">판매 관리</div><div class="page-d">공구 주문의 배송과 반품·교환을 처리합니다.</div></div></div>
+  <div class="qbar">
+    <div class="qb on"><div class="qn">5</div><div class="ql">준비 시작</div></div>
+    <div class="qb on"><div class="qn">8</div><div class="ql">송장 등록</div></div>
+    <div class="qb on"><div class="qn">4</div><div class="ql">배송 이상</div></div>
+    <div class="qb on"><div class="qn">2</div><div class="ql">입고 확인</div></div>
+    <div class="qb on"><div class="qn">1</div><div class="ql">재발송 · 교환</div></div>
+  </div>
+  <div class="tabs1">
+    <div class="tab1 on">주문 관리<span class="t1n">86</span></div>
+    <div class="tab1">반품 · 교환 관리<span class="t1n">9</span></div>
+  </div>
+  <div class="tabs">
+    <div class="tab">전체 <span class="tn">86</span></div>
+    <div class="tab">신규(준비 대기) <span class="tn">5</span></div>
+    <div class="tab">취소 요청 <span class="tn">2</span></div>
+    <div class="tab">상품준비중 <span class="tn">8</span></div>
+    <div class="tab">배송중 <span class="tn">12</span></div>
+    <div class="tab">반송중 <span class="tn">1</span></div>
+    <div class="tab active">배송완료 <span class="tn">42</span></div>
+    <div class="tab">구매확정 <span class="tn">16</span></div>
+    <div class="tab">취소 <span class="tn">2</span></div>
+  </div>
+  <div class="qform">
+    <div class="qrow">
+      <span class="qlab">조회 기준</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>결제일</option><option>발주확인일</option><option>발송처리일</option><option>배송완료일</option><option>구매확정일</option></select>
+      <div class="preset">
+        <span class="pbtn">오늘</span>
+        <span class="pbtn">7일</span>
+        <span class="pbtn on">1개월</span>
+        <span class="pbtn">3개월</span>
+        <span class="pbtn">직접 입력</span>
+      </div>
+      <span class="qsub tnum">2026.07.20 ~ 2026.08.19</span>
+    </div>
+    <div class="qrow">
+      <span class="qlab">검색</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>주문번호</option><option>수취인명</option><option>송장번호</option><option>상품명</option></select>
+      <input class="inp" placeholder="검색어 입력" style="width:260px;height:32px">
+      <button class="btn btn-primary">검색</button>
+      <button class="btn btn-secondary">초기화</button>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="tbar">
+      <div class="tbar-l">총 <b>42</b>건 <span style="color:var(--n-500)">· 4건 표시</span> · <span style="color:var(--n-500)">조회기간 2026.07.20~08.19</span></div>
+      <div class="tbar-r"><select class="sel-sm"><option>최신순</option><option>주문일시 오래된순</option></select><select class="sel-sm"><option>20건씩</option></select></div>
+    </div>
+    <table>
+      <thead><tr>
+        <td style="width:26px"></td>
+        <td style="width:114px">주문번호</td><td style="width:70px">소비자</td>
+        <td>상품</td>
+        <td style="width:120px">택배사</td><td style="width:144px">송장번호</td>
+        <td class="t-c" style="width:134px">배송완료<span class="sort on">▼</span></td>
+        <td class="t-c" style="width:118px">구매확정 예정</td>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24101</td><td>서다은</td>
+          <td><span class="t-nm">글로우 크림 50ml 외 1건</span></td>
+          <td>CJ대한통운</td><td class="tnum">6412 3301 8842</td>
+          <td class="t-c t-date tnum">2026.08.18 14:30</td>
+          <td class="t-c"><span class="dcount"><span class="dn" style="font-size:15px">D-6</span></span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24098</td><td>권나윤</td>
+          <td><span class="t-nm">데일리 선크림 50ml</span></td>
+          <td>CJ대한통운</td><td class="tnum">6412 3298 1120</td>
+          <td class="t-c t-date tnum">2026.08.17 11:05</td>
+          <td class="t-c"><span class="dcount"><span class="dn" style="font-size:15px">D-5</span></span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24094</td><td>유선호</td>
+          <td><span class="t-nm">글로우 세럼 30ml</span></td>
+          <td>한진택배</td><td class="tnum">5520 7745 3391</td>
+          <td class="t-c t-date tnum">2026.08.16 16:42</td>
+          <td class="t-c"><span class="dcount"><span class="dn" style="font-size:15px">D-4</span></span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24090</td><td>류하은</td>
+          <td><span class="t-nm">글로우 크림 50ml</span></td>
+          <td>CJ대한통운</td><td class="tnum">6412 3280 6604</td>
+          <td class="t-c t-date tnum">2026.08.15 09:18</td>
+          <td class="t-c"><span class="dcount"><span class="dn" style="font-size:15px">D-2</span></span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pager"><span class="page-item">‹</span><span class="page-item active">1</span><span class="page-item">2</span><span class="page-item">3</span><span class="page-item">›</span></div>
+  </div>
+  <div class="overlay">
+    <div class="modal wide">
+      <div class="modal-h">
+        <span class="mh-l">ORD-24099 <span class="badge b-success">배송완료</span></span>
+        <span class="mh-r"><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span><span class="modal-x" style="margin-left:6px">✕</span></span>
+      </div>
+      <div class="mbody">
+        <div class="mcol">
+          <div class="mbox">
+            <div class="mbox-h">주문 정보</div>
+            <div class="mbox-b">
+              <div class="frow ro"><div class="fk">주문번호</div><div class="fv"><span class="tnum">ORD-24099</span><div class="fsub">하위주문 SUB-24099-01 · <b>이 공구 몫만</b> 표시됩니다</div></div></div>
+              <div class="frow ro"><div class="fk">주문일시</div><div class="fv"><span class="tnum">2026.08.16 09:14</span></div></div>
+              <div class="frow ro"><div class="fk">공구명</div><div class="fv">데일리 선크림 공구 <span class="flink">공구 상세</span></div></div>
+              <div class="frow ro"><div class="fk">결제수단</div><div class="fv">신용카드 (신한 ****1234)</div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">배송지<span class="bn2">소비자 입력 · <b>실명·연락처 전체 표기</b> · 브랜드는 수정 불가</span></div>
+            <div class="mbox-b">
+              <div class="frow ro"><div class="fk">수취인</div><div class="fv">임하준</div></div>
+              <div class="frow ro"><div class="fk">연락처</div><div class="fv"><span class="tnum">010-3315-8890</span></div></div>
+              <div class="frow ro"><div class="fk">주소</div><div class="fv">(06236) 서울특별시 강남구 테헤란로 123, 4층 402호</div></div>
+              <div class="frow ro"><div class="fk">배송 요청사항</div><div class="fv"><b style="color:var(--warning-text)">부재 시 문 앞에 놓아주세요</b></div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">주문 항목<span class="bn2">1건 · 취소·반품·교환은 <b>항목 단위</b></span></div>
+            <div class="mbox-b tight">
+              <table class="otab">
+                <thead><tr><td>상품 · 옵션</td><td class="t-c" style="width:50px">수량</td><td class="t-c" style="width:88px">공구가</td><td class="t-c" style="width:90px">금액</td><td class="t-c" style="width:88px">상태</td></tr></thead>
+                <tbody>
+                  <tr><td><span class="oname">데일리 선크림 50ml</span><div class="oopt">옵션: 단품</div></td><td class="t-c tnum">1</td><td class="t-c tnum">19,800</td><td class="t-c tnum">19,800</td><td class="t-c"><span class="badge b-success">배송완료</span></td></tr>
+                </tbody>
+              </table>
+              <div class="sum">
+                <div class="sumrow"><span class="sk">상품 금액</span><span class="sv">19,800원</span></div>
+                <div class="sumrow"><span class="sk">배송비</span><span class="sv">0원 <span style="color:var(--n-500);font-size:var(--fs-micro)">무료배송</span></span></div>
+                <div class="sumrow total"><span class="sk">총 결제금액</span><span class="sv">19,800원</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mcol">
+          <div class="mbox">
+            <div class="mbox-h">상태</div>
+            <div class="mbox-b tight">
+              <div class="st-line" style="padding-bottom:var(--sp-3)"><span class="st-lbl">현재 상태</span><span class="badge b-success">배송완료</span></div>
+              <div class="st-meta">
+                <div class="mrow"><span class="mk">배송완료</span><span class="mv">2026.08.19 18:00</span></div>
+                <div class="mrow"><span class="mk">확인 방식</span><span class="mv warn"><b>운영자 처리</b></span></div>
+                <div class="mrow"><span class="mk">처리자</span><span class="mv">운영자</span></div>
+                <div class="mrow"><span class="mk">구매확정 예정</span><span class="mv">2026.08.26 18:00</span></div>
+              </div>
+              <div style="padding-top:var(--sp-3);border-top:1px solid var(--n-100);margin-top:var(--sp-2)">
+                <div class="dcount"><span class="dn">D-4</span><span class="dl">구매확정까지</span></div>
+              </div>
+              <div class="st-hint"><b>운영자가 처리한 건입니다.</b> 소비자가 실제 수령일과 다르다고 이의를 제기하면 <b>구매확정일과 정산 시점이 조정될 수 있습니다</b>.</div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">배송 정보<span class="bn2">배송 추적 자동 연동</span></div>
+            <div class="mbox-b tight">
+              <div class="shiprow"><span class="sk">택배사</span><span class="sv">경동택배</span></div>
+              <div class="shiprow"><span class="sk">배송완료</span><span class="sv"><span class="tnum">2026.08.19 18:00</span> <span style="color:var(--warning-text);font-size:var(--fs-micro)">(운영자 처리)</span></span></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">처리 이력</div>
+            <div class="mbox-b tight">
+              <div class="hitem"><span class="hdot h-warning"></span><div><div class="htxt">배송완료 <b>(운영자 처리)</b> · 구매확정 카운트 시작</div><div class="hmeta">2026.08.21 09:30 입력 · 운영자</div></div></div>
+              <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">송장 등록 · 배송중 전환</div><div class="hmeta">2026.08.16 14:05 · ○○ 브랜드</div></div></div>
+              <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">결제 완료 · 주문 접수</div><div class="hmeta">2026.08.16 09:14 · 시스템</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+<!-- ═════════ C10 · 주문 상세 모달 · 구매확정 ═════════ -->
+<section class="state" id="C10">
+  <div class="state-bar"><span class="state-id">C10</span><span class="state-label">주문 상세 모달 · 구매확정</span>
+  <span class="state-spec"><b>정산 대상 편입</b>이 결론 · 액션 없음 · <b>구매확정 ≠ 정산 완료</b>다 — 정산은 그 공구의 모든 주문 항목이 종결된 뒤 한 번에 실행되므로 확정 후에도 <b>하자 클레임</b>이 들어올 수 있다(증빙 필수 · 단순변심 불가)</span></div>
+  <div class="stage tall xl">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">판매 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">판매 관리</div><div class="page-d">공구 주문의 배송과 반품·교환을 처리합니다.</div></div></div>
+  <div class="qbar">
+    <div class="qb on"><div class="qn">5</div><div class="ql">준비 시작</div></div>
+    <div class="qb on"><div class="qn">8</div><div class="ql">송장 등록</div></div>
+    <div class="qb on"><div class="qn">4</div><div class="ql">배송 이상</div></div>
+    <div class="qb on"><div class="qn">2</div><div class="ql">입고 확인</div></div>
+    <div class="qb on"><div class="qn">1</div><div class="ql">재발송 · 교환</div></div>
+  </div>
+  <div class="tabs1">
+    <div class="tab1 on">주문 관리<span class="t1n">86</span></div>
+    <div class="tab1">반품 · 교환 관리<span class="t1n">9</span></div>
+  </div>
+  <div class="tabs">
+    <div class="tab">전체 <span class="tn">86</span></div>
+    <div class="tab">신규(준비 대기) <span class="tn">5</span></div>
+    <div class="tab">취소 요청 <span class="tn">2</span></div>
+    <div class="tab">상품준비중 <span class="tn">8</span></div>
+    <div class="tab">배송중 <span class="tn">12</span></div>
+    <div class="tab">반송중 <span class="tn">1</span></div>
+    <div class="tab">배송완료 <span class="tn">42</span></div>
+    <div class="tab active">구매확정 <span class="tn">16</span></div>
+    <div class="tab">취소 <span class="tn">2</span></div>
+  </div>
+  <div class="qform">
+    <div class="qrow">
+      <span class="qlab">조회 기준</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>결제일</option><option>발주확인일</option><option>발송처리일</option><option>배송완료일</option><option>구매확정일</option></select>
+      <div class="preset">
+        <span class="pbtn">오늘</span>
+        <span class="pbtn">7일</span>
+        <span class="pbtn on">1개월</span>
+        <span class="pbtn">3개월</span>
+        <span class="pbtn">직접 입력</span>
+      </div>
+      <span class="qsub tnum">2026.07.20 ~ 2026.08.19</span>
+    </div>
+    <div class="qrow">
+      <span class="qlab">검색</span>
+      <select class="sel-sm" style="height:32px;padding-right:26px"><option selected>주문번호</option><option>수취인명</option><option>송장번호</option><option>상품명</option></select>
+      <input class="inp" placeholder="검색어 입력" style="width:260px;height:32px">
+      <button class="btn btn-primary">검색</button>
+      <button class="btn btn-secondary">초기화</button>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="tbar">
+      <div class="tbar-l">총 <b>16</b>건 <span style="color:var(--n-500)">· 4건 표시</span> · <span style="color:var(--n-500)">조회기간 2026.07.20~08.19</span></div>
+      <div class="tbar-r"><select class="sel-sm"><option>최신순</option><option>주문일시 오래된순</option></select><select class="sel-sm"><option>20건씩</option></select></div>
+    </div>
+    <table>
+      <thead><tr>
+        <td style="width:26px"></td>
+        <td style="width:114px">주문번호</td><td style="width:70px">소비자</td>
+        <td>상품</td>
+        <td class="t-c" style="width:104px">결제금액</td>
+        <td class="t-c" style="width:134px">구매확정<span class="sort on">▼</span></td>
+        <td style="width:168px">정산</td>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24088</td><td>강서윤</td>
+          <td><span class="t-nm">데일리 선크림 50ml</span></td>
+          <td class="t-c tnum">19,800</td>
+          <td class="t-c t-date tnum">2026.08.22 10:20</td>
+          <td>정산 대상<span class="t-note" style="display:block;margin-top:3px">공구 종결 후 일괄</span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24081</td><td>배소민</td>
+          <td><span class="t-nm">글로우 크림 50ml</span></td>
+          <td class="t-c tnum">30,200</td>
+          <td class="t-c t-date tnum">2026.08.21 14:00</td>
+          <td>정산 대상<span class="t-note" style="display:block;margin-top:3px">공구 종결 후 일괄</span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24072</td><td>노지완</td>
+          <td><span class="t-nm">글로우 크림 50ml</span></td>
+          <td class="t-c tnum">27,200</td>
+          <td class="t-c t-date tnum">2026.08.20 13:20</td>
+          <td><span class="badge b-neutral">구매확정 후 클레임</span><span class="t-note" style="display:block;margin-top:3px">클레임 종결 후 재산정</span></td>
+        </tr>
+        <tr>
+          <td class="t-c"><span class="xt">▶</span></td>
+          <td class="tnum">ORD-24065</td><td>심예린</td>
+          <td><span class="t-nm">글로우 세럼 30ml 외 1건</span></td>
+          <td class="t-c tnum">48,200</td>
+          <td class="t-c t-date tnum">2026.08.18 09:40</td>
+          <td><span class="badge b-success">정산 완료</span><span class="t-note" style="display:block;margin-top:3px">2026.08.25 이체</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pager"><span class="page-item">‹</span><span class="page-item active">1</span><span class="page-item">›</span></div>
+  </div>
+  <div class="overlay">
+    <div class="modal wide">
+      <div class="modal-h">
+        <span class="mh-l">ORD-24088 <span class="badge b-success">구매확정</span></span>
+        <span class="mh-r"><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span><span class="modal-x" style="margin-left:6px">✕</span></span>
+      </div>
+      <div class="mbody">
+        <div class="mcol">
+          <div class="mbox">
+            <div class="mbox-h">주문 정보</div>
+            <div class="mbox-b">
+              <div class="frow ro"><div class="fk">주문번호</div><div class="fv"><span class="tnum">ORD-24088</span><div class="fsub">하위주문 SUB-24088-01 · <b>이 공구 몫만</b> 표시됩니다</div></div></div>
+              <div class="frow ro"><div class="fk">주문일시</div><div class="fv"><span class="tnum">2026.08.14 09:55</span></div></div>
+              <div class="frow ro"><div class="fk">공구명</div><div class="fv">데일리 선크림 공구 <span class="flink">공구 상세</span></div></div>
+              <div class="frow ro"><div class="fk">결제수단</div><div class="fv">신용카드 (신한 ****1234)</div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">배송지<span class="bn2">소비자 입력 · <b>실명·연락처 전체 표기</b> · 브랜드는 수정 불가</span></div>
+            <div class="mbox-b">
+              <div class="frow ro"><div class="fk">수취인</div><div class="fv">강서윤</div></div>
+              <div class="frow ro"><div class="fk">연락처</div><div class="fv"><span class="tnum">010-7742-1180</span></div></div>
+              <div class="frow ro"><div class="fk">주소</div><div class="fv">(06236) 서울특별시 강남구 테헤란로 123, 4층 402호</div></div>
+              <div class="frow ro"><div class="fk">배송 요청사항</div><div class="fv"><b style="color:var(--warning-text)">빠른 배송 부탁드립니다</b></div></div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">주문 항목<span class="bn2">1건 · 취소·반품·교환은 <b>항목 단위</b></span></div>
+            <div class="mbox-b tight">
+              <table class="otab">
+                <thead><tr><td>상품 · 옵션</td><td class="t-c" style="width:50px">수량</td><td class="t-c" style="width:88px">공구가</td><td class="t-c" style="width:90px">금액</td><td class="t-c" style="width:88px">상태</td></tr></thead>
+                <tbody>
+                  <tr><td><span class="oname">데일리 선크림 50ml</span><div class="oopt">옵션: 단품</div></td><td class="t-c tnum">1</td><td class="t-c tnum">19,800</td><td class="t-c tnum">19,800</td><td class="t-c"><span class="badge b-success">구매확정</span></td></tr>
+                </tbody>
+              </table>
+              <div class="sum">
+                <div class="sumrow"><span class="sk">상품 금액</span><span class="sv">19,800원</span></div>
+                <div class="sumrow"><span class="sk">배송비</span><span class="sv">0원 <span style="color:var(--n-500);font-size:var(--fs-micro)">무료배송</span></span></div>
+                <div class="sumrow total"><span class="sk">총 결제금액</span><span class="sv">19,800원</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mcol">
+          <div class="mbox">
+            <div class="mbox-h">상태</div>
+            <div class="mbox-b tight">
+              <div class="st-line" style="padding-bottom:var(--sp-3)"><span class="st-lbl">현재 상태</span><span class="badge b-success">구매확정</span></div>
+              <div class="st-meta">
+                <div class="mrow"><span class="mk">배송완료</span><span class="mv">2026.08.15 10:20 <span style="color:var(--n-500);font-size:var(--fs-micro)">(자동)</span></span></div>
+                <div class="mrow"><span class="mk">구매확정</span><span class="mv">2026.08.22 10:20</span></div>
+                <div class="mrow"><span class="mk">정산</span><span class="mv"><span class="flink">정산 관리 ↗</span></span></div>
+              </div>
+              <div class="st-hint"><b>정산 대상에 편입되었습니다</b> — 정산은 이 공구의 <b>모든 주문이 종결된 뒤</b> 한 번에 실행됩니다. 확정 후에도 <b>하자·오배송·광고와 다름</b> 사유로는 반품·교환이 들어올 수 있습니다.</div>
+            </div>
+          </div>
+          <div class="mbox">
+            <div class="mbox-h">처리 이력</div>
+            <div class="mbox-b tight">
+              <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">구매확정 · 정산 대상 편입</div><div class="hmeta">2026.08.22 10:20 · 시스템</div></div></div>
+              <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">배송완료 <b>(자동 확인)</b></div><div class="hmeta">2026.08.15 10:20 · 배송 추적</div></div></div>
+              <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">결제 완료 · 주문 접수</div><div class="hmeta">2026.08.14 09:55 · 시스템</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+</body>
+</html>

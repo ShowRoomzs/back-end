@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>WF · 소비자 앱 03 — 피드·팔로우 (C1→C6→C2→C3→C14)</title>
+<style>
+/* ===== 와이어프레임 킷 v1 (그레이스케일 전용 · 01·02 파일과 동일 규격) ===== */
+body{margin:0;padding:32px;background:#e9e9e9;font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#333}
+.kit-header{max-width:2400px;margin:0 auto 24px;font-size:13px;color:#666}
+.kit-header h1{font-size:16px;color:#222;margin:0 0 4px}
+.flow{display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding-bottom:24px}
+.frame-wrap{flex:0 0 auto;width:390px}
+.frame-title{font-size:12px;font-weight:700;color:#222;margin:0 0 6px}
+.frame-title span{font-weight:400;color:#888}
+.frame{position:relative;width:390px;min-height:844px;background:#fff;border:2px solid #999;box-sizing:border-box}
+.fold{position:absolute;left:0;right:0;top:844px;border-top:2px dashed #bbb;z-index:5}
+.fold::after{content:"▲ 1st 뷰포트 (844px)";position:absolute;right:4px;top:2px;font-size:9px;color:#aaa}
+.arrow{flex:0 0 auto;width:90px;padding-top:380px;text-align:center}
+.arrow .line{font-size:26px;color:#666}
+.arrow .lbl{font-size:10px;color:#555;background:#fff;border:1px solid #ccc;border-radius:3px;padding:3px 4px;display:inline-block;line-height:1.4}
+.hd{display:flex;align-items:center;gap:8px;padding:12px;border-bottom:1px solid #ddd;font-size:13px;font-weight:700}
+.hd .ic{margin-left:auto;display:flex;gap:10px}
+.ic i{width:22px;height:22px;border:1px solid #999;border-radius:4px;display:inline-block;font-style:normal;font-size:10px;text-align:center;line-height:22px;color:#777}
+.sec{padding:12px;border-bottom:1px solid #eee}
+.box{background:#ddd;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;color:#888;font-size:11px}
+.row{display:flex;gap:10px;align-items:center}
+.t1{font-size:14px;font-weight:700;color:#222}
+.t2{font-size:12px;color:#444}
+.t3{font-size:11px;color:#888}
+.price-old{font-size:12px;color:#999;text-decoration:line-through}
+.price{font-size:16px;font-weight:800;color:#111}
+.btn{display:block;text-align:center;background:#444;color:#fff;font-size:13px;font-weight:700;padding:13px;border-radius:6px}
+.btn-o{display:block;text-align:center;background:#fff;color:#444;border:1.5px solid #999;font-size:12px;font-weight:700;padding:9px;border-radius:6px}
+.btn-dis{display:block;text-align:center;background:#eee;color:#aaa;font-size:13px;font-weight:700;padding:13px;border-radius:6px}
+.badge{display:inline-block;font-size:10px;font-weight:700;border:1px solid #666;color:#555;border-radius:3px;padding:2px 6px}
+.badge-fill{display:inline-block;font-size:10px;font-weight:700;background:#666;color:#fff;border-radius:3px;padding:3px 6px}
+.input{background:#fafafa;border:1px solid #ccc;border-radius:5px;padding:10px;font-size:12px;color:#999}
+.tabbar{display:flex;border-top:1px solid #ddd;position:absolute;bottom:0;left:0;right:0;background:#fff}
+.tabbar div{flex:1;text-align:center;padding:10px 0 12px;font-size:10px;color:#888}
+.tabbar div.on{color:#222;font-weight:700}
+.tabbar div::before{content:"";display:block;width:20px;height:20px;border:1px solid #bbb;border-radius:4px;margin:0 auto 3px}
+.cta-fix{position:absolute;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;padding:10px 12px 14px;box-sizing:border-box;display:flex;gap:8px}
+.cta-fix .btn{flex:1;margin:0}
+.tabs{display:flex;border-bottom:1px solid #eee}
+.tabs .tab{flex:1;text-align:center;padding:12px 0;font-size:12.5px;color:#999}
+.tabs .tab.on{color:#222;font-weight:700;border-bottom:2px solid #222}
+.note{margin:8px 12px;border:1.5px dashed #999;background:#f4f4f4;border-radius:4px;padding:7px 9px;font-size:10.5px;line-height:1.55;color:#555}
+.note b{color:#333}
+.note.legal{border-color:#777;background:#ececec}
+.qty{display:inline-flex;border:1px solid #ccc;border-radius:4px;font-size:12px}
+.qty span{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-left:1px solid #ccc}
+.qty span:first-child{border-left:0}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#444;padding:6px 0}
+.check::before{content:"";flex:0 0 16px;height:16px;border:1.5px solid #999;border-radius:3px;margin-top:1px}
+hr.dv{border:0;border-top:8px solid #f1f1f1;margin:0}
+/* 게시물 카드 (공통 구조 · 무테 + 두꺼운 구분선) */
+.post{padding:12px;border-bottom:8px solid #f1f1f1}
+.post-ctx{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.post-ctx .avt{width:34px;height:34px;border-radius:50%;background:#ddd;border:1px solid #ccc;flex:0 0 auto}
+.post-badges{margin-bottom:6px}
+.post-title{font-size:14px;font-weight:800;color:#1a1a1a;line-height:1.4;margin-bottom:6px}
+.post-body{font-size:12.5px;color:#444;line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.post-body.full{display:block;-webkit-line-clamp:none}
+.prodstack{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.prodcard{display:flex;gap:8px;align-items:center;border:1px solid #e2e2e2;border-radius:8px;padding:8px}
+.prodcard .thumb{width:52px;height:52px;background:#ddd;border:1px solid #ccc;flex:0 0 auto}
+.prodcard .pname{font-size:12px;font-weight:700;color:#333;line-height:1.3}
+.more-prod{display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #ccc;border-radius:8px;padding:10px;font-size:12px;font-weight:700;color:#555;background:#fafafa;margin-top:8px}
+.post-act{display:flex;align-items:center;gap:6px;margin-top:10px}
+.post-act.tight{margin-top:8px;margin-bottom:6px}
+.heart{width:22px;height:22px;border:1.5px solid #999;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#777;flex:0 0 auto}
+.heart.on{background:#666;color:#fff;border-color:#666}
+.cap{font-size:12.5px;color:#444;line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cap b{color:#222;font-weight:700}
+.count-tag{font-size:10.5px;color:#666;font-weight:700;margin-top:8px}
+.media-full{position:relative;margin:8px -12px 0}
+.media-full .box{width:100%;border-left:0;border-right:0;aspect-ratio:4/5;height:auto}
+.dots{display:flex;gap:5px;justify-content:center;padding:8px 0 2px}
+.dots i{width:6px;height:6px;border-radius:50%;background:#ccc;display:inline-block}
+.dots i.on{background:#444}
+.showroom-row{display:flex;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid #eee}
+.showroom-row .avt{width:44px;height:44px;border-radius:50%;background:#ddd;border:1px solid #ccc;flex:0 0 auto}
+</style>
+</head>
+<body>
+
+<div class="kit-header">
+  <h1>소비자 앱 · 피드·팔로우 와이어프레임 (WF-C-03)</h1>
+  C1 홈(팔로잉 피드) → C6 일반 게시물 상세 → C2 팔로잉 목록 → C3 좋아요 → C14 쇼룸 검색 · 390×844 · lo-fi · 근거: ④ draft15 §3 / ② draft30 §8 / ③ draft31 §15·15-1 · 2026.07
+</div>
+
+<div class="flow">
+
+<!-- ============ C1 홈 (팔로잉 피드) ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C1 홈 <span>— 팔로잉 피드 (공구+일반 게시물 시간순)</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">
+      <div class="input" style="flex:1">쇼룸 이름을 검색해 보세요</div>
+      <span class="ic"><i>장바구니</i><i>알림</i></span>
+    </div>
+
+    <!-- 공구 게시물 카드 (제목O · 상품 여러 개 → 대표 1 + 더보기) -->
+    <div class="post">
+      <div class="post-ctx">
+        <div class="avt"></div>
+        <div style="flex:1"><span class="t2" style="font-weight:700">쇼룸 이름</span> <span class="t3">· 2시간 전</span></div>
+      </div>
+      <div class="post-badges"><span class="badge-fill">공동구매 · D-3</span> <span class="badge">대가관계 표시</span></div>
+      <div class="post-title">공구 게시물 제목 — 소구 헤드라인</div>
+      <div class="post-body">공구 게시물 본문 미리보기 2줄 말줄임. 공구 조건·후기 텍스트 …더보기</div>
+      <div class="prodstack">
+        <div class="prodcard">
+          <div class="thumb"></div>
+          <div style="flex:1"><div class="t3">브랜드명</div><div class="pname">상품명</div>
+            <div class="row" style="gap:6px;margin-top:2px"><span class="price-old">33,000</span><span class="price" style="font-size:14px">공구가 24,000</span></div></div>
+          <span class="t3">›</span>
+        </div>
+      </div>
+      <div class="more-prod">상품 2개 더보기 &nbsp;⌄</div>
+      <div class="post-act"><div class="heart">♡</div><span class="t3">24</span></div>
+    </div>
+
+    <!-- 일반 게시물 카드 (제목X · 인스타형: 미디어 → ♡ → 캡션) -->
+    <div class="post">
+      <div class="post-ctx">
+        <div class="avt"></div>
+        <div style="flex:1"><span class="t2" style="font-weight:700">쇼룸 이름 B</span> <span class="t3">· 어제</span></div>
+      </div>
+      <div class="media-full">
+        <div class="box">이미지·영상 캐러셀</div>
+        <div class="dots" style="position:absolute;left:0;right:0;bottom:8px;padding:0"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="post-act tight"><div class="heart on">♥</div><span class="t3">124</span></div>
+      <div class="cap"><b>쇼룸 이름 B</b> 일반 게시물 캡션이 미디어 아래로. 제목 없이. 2줄 넘으면 …더보기</div>
+    </div>
+
+    <div class="note">※ 카드 구조 — <b>공구</b>: [헤더]·배지·<b>제목</b>·본문·상품카드·♡ (상품 2개+ = 대표 1개 + <b>"상품 N개 더보기"</b> 인라인 확장, 대표=계약 순서 첫 상품) / <b>일반</b>: [헤더]·<b>미디어</b>·♡·<b>캡션</b>(제목 없음, 인스타형). 컨텍스트 헤더(아바타·쇼룸명)는 혼합 피드에만 부착. 카드 탭 → 상세(공구=C5 / 일반=C6), 상품 카드 탭 → C7</div>
+    <div class="note">※ <b>종료된 공구 게시물 = 피드 미노출</b>(C4 피드 미노출 결정 준용 — 직접 링크 진입 시엔 열람 가능+종료 배지, ④ Flow 보강). 좋아요 ♥ = 게시물 단위, 알림 없음(③ §15-1). 비로그인 = 열람 가능, ♥·팔로우는 로그인 전환</div>
+    <div class="note legal">⚠ <b>[법률 확정 대기 · 쟁점 A]</b> 대가관계 표시 배지 — 시스템 자동 삽입·제거 불가(② §7). 위치(게시물 단위 vs 프로필 일괄)·최종 문구는 변호사 검토 후</div>
+
+    <div class="tabbar">
+      <div class="on">홈</div><div>팔로잉</div><div>좋아요</div><div>마이</div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">일반 게시물<br>카드 탭</div></div>
+
+<!-- ============ C6 일반 게시물 상세 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C6 일반 게시물 상세 <span>— 콘텐츠 전용 (판매 없음)</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹ &nbsp; 게시물
+      <span class="ic"><i>장바구니</i></span>
+    </div>
+    <div class="post-ctx" style="padding:12px;margin:0;border-bottom:1px solid #eee">
+      <div class="avt"></div>
+      <div style="flex:1"><span class="t2" style="font-weight:700">쇼룸 이름 B</span> <span class="t3">· 어제</span></div>
+    </div>
+    <div class="post" style="border-bottom:0">
+      <div class="media-full" style="margin-top:0">
+        <div class="box">이미지·영상 (좌우 스와이프)</div>
+        <div class="dots" style="position:absolute;left:0;right:0;bottom:8px;padding:0"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="post-act tight"><div class="heart on">♥</div><span class="t3">좋아요 124</span></div>
+      <div class="cap" style="display:block;-webkit-line-clamp:none"><b>쇼룸 이름 B</b> 일반 게시물 본문 전문. 글·이미지·영상 자유(첨부 최대 20개 — ② §8). 제목 없이 캡션이 미디어 아래로, 접기 없이 전체 노출.</div>
+    </div>
+    <div class="note">※ <b>판매 기능 없음</b> — 상품 카드·구매 CTA 없음. 공구 진행 중 상품의 판매 리스팅 불가(② §8, 공구 게시물 C5로만). 이미지 탭 → 전체화면 모달</div>
+    <div class="note">※ <b>헤더 = 프로필·쇼룸명·시간(팔로우 버튼 없음)</b> — 헤더 탭 → C4 쇼룸. 비로그인 ♥ = 로그인 전환 후 액션 이어서 실행(④ Flow 보강)</div>
+    <div class="note">※ C5(공구 게시물 상세)와의 차이: <b>제목 없음</b> · 대가관계 배지 없음 · 상품 카드 없음 · <b>미디어 먼저 → ♡ → 캡션</b>(인스타형, 공구는 텍스트 먼저) · 인플루언서 직접 숨김 가능(소비자 화면엔 비노출 처리만)</div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">‹ 뒤로<br>탭바 [팔로잉]</div></div>
+
+<!-- ============ C2 팔로잉 목록 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C2 팔로잉 <span>— 팔로우한 쇼룸 목록 → 쇼룸 직행</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">팔로잉
+      <span class="ic"><i>검색</i><i>장바구니</i></span>
+    </div>
+    <div class="sec" style="border-bottom:0">
+      <div class="t3" style="margin-bottom:4px">팔로잉 쇼룸 4</div>
+
+      <div class="showroom-row">
+        <div class="avt"></div>
+        <div style="flex:1">
+          <div class="t2" style="font-weight:700">쇼룸 이름</div>
+          <div class="t3">진행 중 공구 1</div>
+        </div>
+        <span class="btn-o" style="display:inline-block;padding:6px 12px;font-size:11px">팔로잉</span>
+      </div>
+
+      <div class="showroom-row">
+        <div class="avt"></div>
+        <div style="flex:1">
+          <div class="t2" style="font-weight:700">쇼룸 이름 B</div>
+          <div class="t3">진행 중 공구 0</div>
+        </div>
+        <span class="btn-o" style="display:inline-block;padding:6px 12px;font-size:11px">팔로잉</span>
+      </div>
+
+      <div class="showroom-row">
+        <div class="avt"></div>
+        <div style="flex:1">
+          <div class="t2" style="font-weight:700">쇼룸 이름 C</div>
+          <div class="t3">진행 중 공구 2</div>
+        </div>
+        <span class="btn-o" style="display:inline-block;padding:6px 12px;font-size:11px">팔로잉</span>
+      </div>
+
+      <div class="showroom-row" style="border-bottom:0">
+        <div class="avt"></div>
+        <div style="flex:1">
+          <div class="t2" style="font-weight:700">쇼룸 이름 D</div>
+          <div class="t3">진행 중 공구 0</div>
+        </div>
+        <span class="btn-o" style="display:inline-block;padding:6px 12px;font-size:11px">팔로잉</span>
+      </div>
+    </div>
+
+    <div class="note">※ 행 탭 → C4 쇼룸 직행(④ 바텀 탭 2). [팔로잉] 버튼 탭 = 즉시 언팔로우(레코드 삭제 — ③ §15) → 행 유지·버튼 [팔로우]로 전환(재팔로우 가능, 화면 이탈 시 목록에서 제거)</div>
+    <div class="note">※ 각 행 = 쇼룸 이름 + <b>진행 중 공구 수</b>(진행 중 공구가 없어도 "진행 중 공구 0" 표시 — 재방문 유도). 한 줄 소개는 목록에서 생략(C4 쇼룸에서 노출). 정렬 = 최근 팔로우순 [제안 — O/X]. 빈 상태 = "아직 팔로우한 쇼룸이 없어요" + [쇼룸 검색] 버튼(C14)</div>
+
+    <div class="tabbar">
+      <div>홈</div><div class="on">팔로잉</div><div>좋아요</div><div>마이</div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">탭바<br>[좋아요]</div></div>
+
+<!-- ============ C3 좋아요 모아보기 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C3 좋아요 <span>— 좋아요한 게시물 모아보기</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">좋아요
+      <span class="ic"><i>검색</i><i>장바구니</i></span>
+    </div>
+    <div class="sec" style="border-bottom:0;padding-bottom:0">
+      <div class="t3">좋아요한 게시물 12</div>
+    </div>
+
+    <!-- 공구 게시물 (제목O · 대표 1 + 더보기) -->
+    <div class="post">
+      <div class="post-ctx">
+        <div class="avt"></div>
+        <div style="flex:1"><span class="t2" style="font-weight:700">쇼룸 이름</span> <span class="t3">· 3일 전</span></div>
+      </div>
+      <div class="post-badges"><span class="badge-fill">공동구매 · D-3</span> <span class="badge">진행 중</span></div>
+      <div class="post-title">공구 게시물 제목</div>
+      <div class="post-body">공구 게시물 본문 미리보기 …더보기</div>
+      <div class="prodstack">
+        <div class="prodcard">
+          <div class="thumb"></div>
+          <div style="flex:1"><div class="t3">브랜드명</div><div class="pname">상품명</div>
+            <div class="price" style="font-size:14px;margin-top:2px">공구가 24,000</div></div>
+          <span class="t3">›</span>
+        </div>
+      </div>
+      <div class="post-act"><div class="heart on">♥</div><span class="t3">24</span></div>
+    </div>
+
+    <!-- 종료된 공구 게시물 (딤) -->
+    <div class="post" style="opacity:.55">
+      <div class="post-ctx">
+        <div class="avt"></div>
+        <div style="flex:1"><span class="t2" style="font-weight:700">쇼룸 이름 C</span> <span class="t3">· 2주 전</span></div>
+      </div>
+      <div class="post-badges"><span class="badge">공구 종료</span></div>
+      <div class="post-title">종료된 공구 게시물 제목</div>
+      <div class="post-body">종료된 공구 게시물 …더보기</div>
+      <div class="post-act"><div class="heart on">♥</div><span class="t3">8</span></div>
+    </div>
+
+    <!-- 일반 게시물 (제목X · 인스타형) -->
+    <div class="post">
+      <div class="post-ctx">
+        <div class="avt"></div>
+        <div style="flex:1"><span class="t2" style="font-weight:700">쇼룸 이름 B</span> <span class="t3">· 1주 전</span></div>
+      </div>
+      <div class="media-full">
+        <div class="box">미디어</div>
+        <div class="dots" style="position:absolute;left:0;right:0;bottom:8px;padding:0"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="post-act tight"><div class="heart on">♥</div><span class="t3">42</span></div>
+      <div class="cap"><b>쇼룸 이름 B</b> 일반 게시물 캡션 …더보기</div>
+    </div>
+
+    <div class="note">※ <b>좋아요 = 게시물 단위만</b>(공구+일반 혼합, ③ §15-1) — 구 화면 디스크립션의 상품/콘텐츠 탭·상품 좋아요 구조는 폐기. 정렬 = 좋아요한 순(최신 위). ♥ 해제 = 레코드 삭제 → 목록에서 제거</div>
+    <div class="note">※ 종료 공구 게시물 = 목록 유지 + <b>[공구 종료] 배지·딤 처리</b>, 탭 시 열람 가능(구매 비활성·팔로우 유도 — ④ Flow 보강, 찜한 공구 재방문 목적). 빈 상태 = "♥를 누르면 여기 모여요"(④ ⓐ)</div>
+
+    <div class="tabbar">
+      <div>홈</div><div>팔로잉</div><div class="on">좋아요</div><div>마이</div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow"><div class="line">→</div><div class="lbl">상단<br>[검색] 아이콘</div></div>
+
+<!-- ============ C14 쇼룸 검색 ============ -->
+<div class="frame-wrap">
+  <p class="frame-title">C14 쇼룸 검색 <span>— 쇼룸 이름 검색만</span></p>
+  <div class="frame">
+    <div class="fold"></div>
+    <div class="hd">‹
+      <div class="input" style="flex:1;margin-left:4px">쇼룸 이름을 검색해 보세요</div>
+    </div>
+
+    <div class="sec">
+      <div class="t3" style="font-weight:700;margin-bottom:4px">검색 결과 · "브라이"</div>
+      <div class="showroom-row">
+        <div class="avt"></div>
+        <div style="flex:1">
+          <div class="t2" style="font-weight:700">브라이튼 룸</div>
+          <div class="t3">한 줄 소개 · 팔로워 1.2천</div>
+        </div>
+        <span class="btn-o" style="display:inline-block;padding:6px 12px;font-size:11px">팔로우</span>
+      </div>
+      <div class="showroom-row" style="border-bottom:0">
+        <div class="avt"></div>
+        <div style="flex:1">
+          <div class="t2" style="font-weight:700">브라이트 뷰티</div>
+          <div class="t3">한 줄 소개 · 팔로워 340</div>
+        </div>
+        <span class="btn-o" style="display:inline-block;padding:6px 12px;font-size:11px">팔로잉</span>
+      </div>
+    </div>
+
+    <hr class="dv">
+
+    <div class="sec" style="border-bottom:0">
+      <div class="t3" style="font-weight:700;margin-bottom:4px">지금 활동 중인 쇼룸 (입력 전 기본 화면)</div>
+      <div class="showroom-row">
+        <div class="avt"></div>
+        <div style="flex:1"><div class="t2" style="font-weight:700">쇼룸 이름</div><div class="t3">진행 중 공구 1</div></div>
+        <span class="t3">›</span>
+      </div>
+      <div class="showroom-row" style="border-bottom:0">
+        <div class="avt"></div>
+        <div style="flex:1"><div class="t2" style="font-weight:700">쇼룸 이름 C</div><div class="t3">진행 중 공구 2</div></div>
+        <span class="t3">›</span>
+      </div>
+    </div>
+
+    <div class="note">※ 검색 대상 = <b>쇼룸 이름만</b>(④ §3 — 일반 상품 검색·카테고리 탐색은 Out §3-E). 매칭 = 부분 일치·유사 포함, 결과 행 탭 → C4. 결과 없음 = "일치하는 쇼룸이 없어요"</div>
+    <div class="note">※ 입력 전·결과 없음 하단 = <b>활성 쇼룸 표시</b>(베타 10개 수준 — 탐색 시스템 아님, ④ Flow 보강 ⓐ). 이 프레임은 두 상태(검색 결과 / 입력 전 기본)를 한 화면에 병기 — 실제로는 상태별 단독 표시</div>
+    <div class="note">※ 홈 빈 상태 분기(④ ⓐ): 팔로우 0 + 최근 본 쇼룸 <b>있으면</b> C1에서 팔로우 유도+바로가기 / <b>없으면</b> C14 검색 유도 → 여기가 신규 가입자의 첫 탐색 지점</div>
+  </div>
+</div>
+
+</div>
+
+</body>
+</html>

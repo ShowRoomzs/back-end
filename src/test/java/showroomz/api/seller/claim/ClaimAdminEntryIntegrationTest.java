@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.service.OrderClaimService.RequestResult;
 import showroomz.domain.order.type.ClaimReason;
+import showroomz.global.payment.portone.FakePaymentGateway;
 import showroomz.domain.order.type.ClaimType;
 import showroomz.domain.order.type.FulfillmentActorType;
 import showroomz.global.error.exception.BusinessException;
@@ -60,7 +61,10 @@ class ClaimAdminEntryIntegrationTest extends ClaimTestSupport {
         claimService.completeReshipByAdmin(claimId, 1L, LocalDateTime.now());
 
         assertThat(claimRow(claimId)).containsEntry("status", "COMPLETED").containsEntry("result", "REJECTED");
-        assertThat(reload(group).getConfirmRestartAt()).isNull();
+        // 반려로 정지가 풀렸다 — 정지한 시간만큼만 기산점이 밀리고(1009 기획 수정본 4절) 반송 도착은 타이머를 새로 세우지 않는다.
+        OrderDeliveryGroup timer = reload(group);
+        assertThat(timer.getConfirmPausedAt()).isNull();
+        assertThat(timer.getConfirmRestartAt()).isBetween(timer.getDeliveredAt(), timer.getDeliveredAt().plusMinutes(5));
         assertStateChanged(() -> claimService.completeReshipByAdmin(claimId, 1L, LocalDateTime.now()));
         assertStateChanged(() -> claimService.completeReshipByAdmin(ready, 1L, LocalDateTime.now()));
     }
@@ -68,9 +72,11 @@ class ClaimAdminEntryIntegrationTest extends ClaimTestSupport {
     // ------------------------------------------------------------------ 환불 집행
 
     @Test
-    @DisplayName("[AD-03] 환불 집행액이 예정액과 달라도 — 항목별 확정액의 합이 집행액이고, 같은 큐 행은 두 번 집행되지 않는다")
+    @DisplayName("[AD-03] PG 가 거절해 결제 밖에서 돌려주고 수동 기록 — 기록액이 예정액과 달라도 항목별 확정액의 합이 기록액이고, 같은 큐 행은 두 번 기록되지 않는다")
     void refundWithDifferentAmount() throws Exception {
         OrderDeliveryGroup group = deliveredTwoItemGroup();
+        // PG 자동 환불이 거절되면 큐는 FAILED 로 남는다 — 운영자가 결제 밖에서 돌려준 뒤 수동으로 기록하는 경로다.
+        fake.willFailCancel(group.getOrder().getPaidPaymentId(), FakePaymentGateway.Failure.REJECTED);
         RequestResult request = requestClaim(group, ClaimType.RETURN, ClaimReason.CHANGE_OF_MIND, allItems(group),
                 newInvoice());
         request.claimIds().forEach(this::passQuietly);
@@ -98,10 +104,11 @@ class ClaimAdminEntryIntegrationTest extends ClaimTestSupport {
         rejectedClaim(rejected);
         passed(approved);
         long expected = goodsAmount(approved) - DELIVERY_FEE;
-        assertThat(refundTasks(group)).singleElement().satisfies(task ->
-                assertThat(((Number) task.get("refund_amount")).longValue()).isEqualTo(expected));
-
-        claimService.completeRefund(refundTaskIds(group).get(0), (int) expected, 1L, LocalDateTime.now());
+        // 판정이 다 끝난 순간 PG 즉시 자동 환불 — 집행 단계가 없다(1009 기획 수정본 2절).
+        assertThat(refundTasks(group)).singleElement().satisfies(task -> {
+            assertThat(((Number) task.get("refund_amount")).longValue()).isEqualTo(expected);
+            assertThat(task.get("status")).isEqualTo("DONE");
+        });
 
         assertThat(claimRow(approved)).containsEntry("status", "COMPLETED").containsEntry("result", "REFUNDED");
         assertThat(claimStatus(rejected)).isEqualTo("RESHIP_READY");

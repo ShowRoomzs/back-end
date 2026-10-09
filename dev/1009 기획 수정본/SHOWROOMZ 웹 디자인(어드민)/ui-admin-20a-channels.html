@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-admin-20a-channels — 어드민 소통 스레드 · 운영팀 1:1 채널 rev.1</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+
+/* ══════════════════════════════════════════════════════════════════
+   SHOWROOMZ 웹 디자인시스템 v1.2 — 어드민
+   이 <style> 블록 전체가 소스오브트루스다.
+   신규 ui-admin-*.html 은 이 블록을 통째로 복사한 뒤 화면 전용 CSS만 덧붙인다.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── ① 토큰 ───────────────────────────────────────────────────── */
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --adm-sidebar-w:240px; --adm-topbar-h:56px; --adm-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+
+/* ── ② 문서 골격 (시안 파일 공통) ─────────────────────────────── */
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;line-height:1.8;}
+.doc-head .rule{margin-top:12px;}
+.rule b{color:var(--n-900);} .rule .new{color:var(--accent-600);font-weight:600;}
+.rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+
+/* ── ③ 어드민 셸 · 사이드바 ───────────────────────────────────── */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--adm-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--adm-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;overflow-y:auto;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:7px 10px;border-radius:var(--r-sm);margin-bottom:2px;cursor:pointer;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--danger-text);color:#fff;
+  border-radius:8px;padding:0 5px;min-width:16px;text-align:center;}
+.gnb-item .chev{width:14px;height:14px;color:var(--n-500);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:transform .15s;}
+.gnb-item .chev svg{width:11px;height:11px;display:block;}
+.gnb-item.open .chev{transform:rotate(180deg);color:var(--n-700);}
+.gnb-group{overflow:hidden;}
+.gnb-group.closed{display:none;}
+.gnb-item:hover:not(.active){background:var(--n-200);}
+.gnb-item.open{color:var(--n-900);font-weight:500;}
+.gnb-sub{display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-micro);
+  color:var(--n-500);padding:5px 10px 5px 33px;border-radius:var(--r-sm);margin-bottom:1px;cursor:pointer;}
+.gnb-sub:hover:not(.active){background:var(--n-200);}
+.gnb-sub.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-sub.active .scnt{color:#fff;}
+.scnt{font-size:10px;color:var(--n-500);}
+
+/* ── ④ 어드민 셸 · 탑바 / 본문 ────────────────────────────────── */
+.top{position:absolute;left:var(--adm-sidebar-w);right:0;top:0;height:var(--adm-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--adm-pad);}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.crumb .c-sub{font-size:var(--fs-caption);color:var(--n-500);font-weight:400;margin-left:6px;}
+.op{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);}
+.op-av{width:24px;height:24px;border-radius:50%;background:var(--n-200);color:var(--n-600);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-micro);font-weight:600;}
+.main{position:absolute;left:var(--adm-sidebar-w);right:0;top:var(--adm-topbar-h);bottom:0;
+  overflow-y:auto;padding:var(--adm-pad);}
+.navgrp{display:flex;align-items:center;gap:6px;}
+.nav-btn{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-caption);font-weight:500;
+  color:var(--n-700);cursor:pointer;padding:0 12px;height:32px;background:#fff;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);white-space:nowrap;}
+.nav-btn:hover{background:var(--n-100);color:var(--n-900);border-color:var(--n-400);}
+.nav-sep{width:1px;height:18px;background:var(--n-300);margin:0 2px;}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:var(--sp-4);}
+.page-t{font-size:var(--fs-h1);font-weight:600;display:flex;align-items:center;gap:10px;}
+.t-link{font-size:var(--fs-micro);font-weight:500;color:var(--n-600);background:var(--n-100);
+  border:1px solid var(--n-200);border-radius:var(--r-pill);padding:2px 10px;cursor:pointer;
+  white-space:nowrap;line-height:1.7;}
+.t-link:hover{background:var(--accent-50);color:var(--accent-600);border-color:var(--accent-100);}
+.page-d{font-size:var(--fs-caption);color:var(--n-600);margin-top:2px;}
+
+/* ── ⑤ 필터 · 폼 컨트롤 ───────────────────────────────────────── */
+.filter{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);
+  padding:var(--sp-3) var(--sp-4);margin-bottom:var(--sp-4);display:flex;align-items:center;
+  justify-content:space-between;gap:var(--sp-4);}
+.tabs{display:flex;gap:0;}
+.tab{font-size:var(--fs-caption);color:var(--n-500);padding:6px 2px;margin-right:20px;cursor:pointer;
+  border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;}
+.tab.active{color:var(--accent-500);border-bottom-color:var(--accent-500);font-weight:500;}
+.tab .tn{font-size:10px;background:var(--n-100);color:var(--n-600);border-radius:8px;padding:0 5px;}
+.tab.active .tn{background:var(--accent-50);color:var(--accent-600);}
+.search{display:flex;gap:6px;}
+.inp{font-family:inherit;font-size:var(--fs-body);padding:6px 10px;border-radius:var(--r-sm);
+  border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:32px;width:180px;}
+.inp::placeholder{color:var(--n-400);}
+.inp:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:7px 14px;cursor:pointer;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
+.btn-primary{background:var(--accent-500);color:#fff;border:none;}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-danger{background:var(--danger-text);color:#fff;border:none;}
+.btn-danger-o{background:#fff;color:var(--danger-text);border:1px solid var(--n-300);}
+.btn-danger-o:hover{background:var(--danger-bg);border-color:var(--n-400);}
+.btn:disabled{background:var(--n-100);color:var(--n-400);border:1px solid var(--n-200);cursor:not-allowed;}
+.sel-sm{font-family:inherit;font-size:var(--fs-caption);height:28px;padding:0 26px 0 10px;cursor:pointer;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-700);
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;}
+.sel-sm:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+
+/* ── ⑥ 테이블 ─────────────────────────────────────────────────── */
+.tcard{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+.tbar{display:flex;align-items:center;justify-content:space-between;padding:10px var(--sp-4);
+  border-bottom:1px solid var(--n-200);}
+.tbar-l{font-size:var(--fs-caption);color:var(--n-600);} .tbar-l b{color:var(--n-900);}
+.tbar-r{display:flex;align-items:center;gap:8px;}
+table{width:100%;border-collapse:collapse;}
+thead td{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);font-weight:500;
+  padding:10px 16px;white-space:nowrap;border-bottom:1px solid var(--n-200);}
+tbody td{padding:13px 16px;font-size:var(--fs-caption);border-top:1px solid var(--n-100);
+  vertical-align:middle;white-space:nowrap;}
+tbody tr:first-child td{border-top:none;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:var(--accent-50);}
+tbody tr:hover .t-main{color:var(--accent-600);}
+.t-main{font-size:var(--fs-body);font-weight:500;color:var(--n-900);}
+.tcard table{table-layout:fixed;}
+.tnum{font-variant-numeric:tabular-nums;letter-spacing:-.1px;}
+.t-sub{color:var(--n-500);font-size:var(--fs-micro);}
+.t-c{text-align:center;}
+.t-r{text-align:right;}
+.over{color:var(--warning-text);font-weight:600;}
+
+/* ── ⑦ 배지 ───────────────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-warning{background:var(--warning-bg);color:var(--warning-text);}
+.b-danger{background:var(--danger-bg);color:var(--danger-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+
+/* ── ⑧ 페이지네이션 · 빈 상태 ─────────────────────────────────── */
+.pager{display:flex;align-items:center;justify-content:center;gap:4px;padding:12px;border-top:1px solid var(--n-200);}
+.page-item{min-width:26px;height:26px;padding:0 6px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-600);cursor:pointer;}
+.page-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.empty{padding:72px 24px;text-align:center;}
+.empty-ic{font-size:28px;color:var(--n-300);margin-bottom:10px;}
+.empty-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);margin-bottom:4px;}
+.empty-d{font-size:var(--fs-caption);color:var(--n-500);}
+
+/* ── ⑨ 상세 · 카드 ────────────────────────────────────────────── */
+.detail{display:grid;grid-template-columns:1fr 320px;gap:var(--sp-4);align-items:start;}
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);margin-bottom:var(--sp-4);}
+.card:last-child{margin-bottom:0;}
+.card-h{font-size:var(--fs-h3);font-weight:600;padding:11px var(--sp-4);border-bottom:1px solid var(--n-200);
+  background:var(--n-50);border-radius:var(--r-md) var(--r-md) 0 0;display:flex;align-items:center;
+  justify-content:space-between;}
+.card-h .ch-n{font-size:var(--fs-micro);color:var(--n-500);font-weight:400;}
+.card-b{padding:var(--sp-4);}
+.rsn{margin:0;font-size:var(--fs-caption);color:var(--n-700);line-height:1.75;}
+
+/* 상세 필드 행 — 라벨 140px · 행 패딩 9px (어드민 공통 규격) */
+.frow{display:flex;gap:var(--sp-3);padding:9px 0;border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.frow:last-child{border-bottom:none;}
+.frow:first-child{padding-top:0;}
+.fk{width:140px;flex-shrink:0;color:var(--n-500);}
+.fv{flex:1;color:var(--n-900);min-width:0;}
+.fv .fsub{color:var(--n-500);font-size:var(--fs-micro);margin-top:2px;}
+.flink{color:var(--n-600);text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
+.flink:hover{color:var(--accent-600);}
+
+/* ── ⑩ 변경 대조 표 ───────────────────────────────────────────── */
+table.diff{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+table.diff thead td{width:auto;} table.diff thead td:first-child{width:180px;}
+table.diff tbody td{white-space:normal;cursor:default;padding:11px 16px;}
+table.diff tbody tr{cursor:default;} table.diff tbody tr:hover{background:transparent;}
+table.diff tbody tr.chg{background:var(--accent-50);}
+table.diff tbody tr.chg:hover{background:var(--accent-50);}
+.dk{color:var(--n-500);font-size:var(--fs-micro);}
+.dv{color:var(--n-900);}
+.dold{color:var(--n-500);text-decoration:line-through;text-decoration-color:var(--n-400);}
+.dnew{color:var(--accent-600);font-weight:600;}
+.dsame{color:var(--n-400);font-size:var(--fs-micro);}
+.dlock{color:var(--n-500);font-size:var(--fs-micro);font-weight:500;}
+
+/* ── ⑪ 인라인 안내 박스 ───────────────────────────────────────── */
+.chk-note{display:flex;gap:9px;background:var(--warning-bg);border-radius:var(--r-sm);padding:11px 13px;
+  font-size:var(--fs-micro);color:var(--n-700);line-height:1.65;margin-bottom:var(--sp-4);}
+.chk-note.danger{background:var(--danger-bg);}
+.chk-note .ci{width:16px;height:16px;border-radius:50%;background:var(--warning-text);color:#fff;font-size:10px;
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;margin-top:1px;}
+.chk-note.danger .ci{background:var(--danger-text);}
+
+/* ── ⑫ 첨부 ───────────────────────────────────────────────────── */
+.files{display:flex;flex-direction:column;gap:8px;}
+.file{display:flex;align-items:center;gap:10px;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:9px 12px;}
+.file-ic{width:28px;height:28px;border-radius:var(--r-sm);background:var(--accent-50);color:var(--accent-600);
+  display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+.file-n{flex:1;font-size:var(--fs-caption);}
+.file-s{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ── ⑬ 우측 액션 카드 · 이력 ──────────────────────────────────── */
+.detail > div:last-child{position:sticky;top:0;align-self:start;}
+.side-card{}
+.st-now{padding:var(--sp-4);}
+.st-line{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding-bottom:var(--sp-3);border-bottom:1px solid var(--n-100);}
+.st-meta{padding-top:var(--sp-2);}
+.mrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);}
+.mrow:last-child{border-bottom:none;}
+.mk{color:var(--n-500);} .mv{color:var(--n-900);font-weight:500;text-align:right;}
+.st-lbl{font-size:var(--fs-caption);color:var(--n-500);flex-shrink:0;}
+.st-acts{display:flex;gap:8px;margin-top:var(--sp-4);}
+.st-acts .btn{flex:1;}
+.st-hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;line-height:1.55;}
+.st-rsn{padding:9px 0 0;border-top:1px solid var(--n-100);margin-top:var(--sp-2);}
+.st-rsn .rk{font-size:var(--fs-micro);color:var(--n-500);display:block;margin-bottom:3px;}
+.st-rsn .rv{font-size:var(--fs-caption);color:var(--n-900);line-height:1.6;}
+.st-rsn + .st-rsn{margin-top:9px;}
+.hist{padding:var(--sp-2) var(--sp-4) var(--sp-3);}
+.hitem{display:flex;gap:10px;padding:9px 0;}
+.hdot{width:7px;height:7px;border-radius:50%;background:var(--n-300);margin-top:6px;flex-shrink:0;}
+.hdot.on{background:var(--accent-500);}
+.hdot.h-info{background:var(--info-text);}
+.hdot.h-success{background:var(--success-text);}
+.hdot.h-warning{background:var(--warning-text);}
+.hdot.h-danger{background:var(--danger-text);}
+.hdot.h-neutral{background:var(--n-400);}
+.htxt{font-size:var(--fs-caption);}
+.hmeta{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ── ⑭ 모달 ───────────────────────────────────────────────────── */
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;justify-content:center;}
+.modal{width:520px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);overflow:hidden;}
+.modal.sm{width:400px;}
+.modal-h{font-size:var(--fs-h3);font-weight:600;padding:14px var(--sp-5);border-bottom:1px solid var(--n-200);
+  display:flex;align-items:center;justify-content:space-between;}
+.modal-x{color:var(--n-400);cursor:pointer;font-size:var(--fs-body);}
+.modal-b{padding:var(--sp-5);font-size:var(--fs-caption);color:var(--n-700);line-height:1.7;}
+.modal-f{padding:12px var(--sp-5);border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.mlabel{display:block;font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;}
+.modal-b > .mlabel:first-child{margin-top:0;}
+.mlabel .req{color:var(--danger-text);margin-left:2px;}
+.mlabel .opt{color:var(--n-400);margin-left:4px;font-weight:400;}
+.msel,.mta{width:100%;font-family:inherit;font-size:var(--fs-body);border:1px solid var(--n-300);
+  border-radius:var(--r-sm);background:#fff;color:var(--n-900);padding:6px 10px;}
+.msel:focus,.mta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.msel{height:32px;appearance:none;-webkit-appearance:none;-moz-appearance:none;padding-right:32px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;}
+.mta{min-height:88px;resize:vertical;line-height:1.6;height:auto;padding-top:7px;}
+.mta.is-error{border-color:var(--danger-text);}
+.merr{font-size:var(--fs-micro);color:var(--danger-text);margin:6px 0 0;}
+.mwarn{display:flex;gap:8px;background:var(--danger-bg);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--danger-text);line-height:1.6;margin-top:var(--sp-4);font-weight:500;}
+.mwarn.info{background:var(--info-bg);color:var(--info-text);}
+.mhint{font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;}
+
+/* ── ⑮ 미리보기 라이트박스 ────────────────────────────────────── */
+.modal.pv{width:1080px;}
+.pv-body{display:grid;grid-template-columns:1fr 340px;height:620px;}
+.pv-view{background:var(--n-900);display:flex;flex-direction:column;}
+.pv-canvas{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:20px;}
+.pv-img{width:440px;height:310px;background:#fff;border-radius:2px;
+  box-shadow:0 4px 18px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;
+  color:var(--n-400);font-size:var(--fs-caption);}
+.pv-bar{height:48px;background:rgba(255,255,255,.06);border-top:1px solid rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px;}
+.pv-nav{display:flex;align-items:center;gap:6px;}
+.pv-b{height:28px;padding:0 10px;border-radius:var(--r-sm);background:rgba(255,255,255,.1);
+  color:rgba(255,255,255,.85);font-size:var(--fs-micro);font-weight:500;cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;border:none;font-family:inherit;}
+.pv-b:hover{background:rgba(255,255,255,.2);color:#fff;}
+.pv-zoom{font-size:var(--fs-micro);color:rgba(255,255,255,.6);padding:0 6px;}
+.pv-side{background:#fff;border-left:1px solid var(--n-200);padding:var(--sp-4);overflow-y:auto;}
+.pv-t{font-size:var(--fs-h3);font-weight:600;margin-bottom:2px;}
+.pv-d{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:var(--sp-4);}
+.pv-sec{font-size:var(--fs-micro);color:var(--n-500);font-weight:600;padding-bottom:6px;
+  border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-2);}
+.pv-row{display:flex;gap:9px;padding:11px 0;border-bottom:1px solid var(--n-100);align-items:flex-start;}
+.pv-row:last-of-type{border-bottom:none;}
+.pv-k{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:3px;}
+.pv-old{font-size:var(--fs-micro);color:var(--n-500);text-decoration:line-through;
+  text-decoration-color:var(--n-400);margin-bottom:1px;}
+.pv-new{font-size:var(--fs-body);font-weight:600;color:var(--accent-600);line-height:1.45;}
+.pv-new.plain{color:var(--n-900);}
+.pv-note{display:flex;gap:7px;background:var(--n-100);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--n-600);line-height:1.55;margin-top:var(--sp-4);}
+.pv-note.warn{background:var(--danger-bg);color:var(--danger-text);}
+
+/* ── ⑯ 토스트 ─────────────────────────────────────────────────── */
+.toast-wrap{position:absolute;top:72px;right:24px;display:flex;flex-direction:column;gap:8px;}
+.toast{min-width:260px;background:#fff;border:1px solid var(--n-200);border-left:3px solid var(--success-text);
+  border-radius:7px;box-shadow:0 4px 16px rgba(26,27,31,.1);padding:11px 14px;font-size:var(--fs-caption);
+  font-weight:500;display:flex;align-items:center;gap:8px;}
+
+/* ══ 화면 전용 (ui-admin-06) ══ */
+/* 어드민 공통 규격 정합: 테이블 본문 셀 14px 16px · 행높이 50px */
+tbody td{padding:14px 16px;height:50px;}
+
+.tb-inq thead td:nth-child(1),.tb-inq tbody td:nth-child(1){width:8%;padding-left:20px;}
+.tb-inq thead td:nth-child(3),.tb-inq tbody td:nth-child(3){width:10%;}
+.tb-inq thead td:nth-child(4),.tb-inq tbody td:nth-child(4){width:14%;}
+.tb-inq thead td:nth-child(5),.tb-inq tbody td:nth-child(5){width:14%;}
+.tb-inq thead td:nth-child(6),.tb-inq tbody td:nth-child(6){width:10%;}
+.tb-inq thead td:nth-child(7),.tb-inq tbody td:nth-child(7){width:11%;padding-right:20px;}
+
+.tb-qna thead td:nth-child(1),.tb-qna tbody td:nth-child(1){width:10%;padding-left:20px;}
+.tb-qna thead td:nth-child(2),.tb-qna tbody td:nth-child(2){width:32%;}
+.tb-qna thead td:nth-child(3),.tb-qna tbody td:nth-child(3){width:18%;}
+.tb-qna thead td:nth-child(4),.tb-qna tbody td:nth-child(4){width:12%;}
+.tb-qna thead td:nth-child(5),.tb-qna tbody td:nth-child(5){width:10%;}
+.tb-qna thead td:nth-child(6),.tb-qna tbody td:nth-child(6){width:10%;}
+.tb-qna thead td:nth-child(7),.tb-qna tbody td:nth-child(7){width:12%;padding-right:20px;}
+.tb-qna tbody td{vertical-align:top;}
+
+.tb-faq thead td:nth-child(1),.tb-faq tbody td:nth-child(1){width:40px;padding-left:16px;padding-right:0;}
+.tb-faq thead td:nth-child(2),.tb-faq tbody td:nth-child(2){width:13%;}
+.tb-faq thead td:nth-child(3),.tb-faq tbody td:nth-child(3){white-space:normal;}
+.tb-faq thead td:nth-child(4),.tb-faq tbody td:nth-child(4){width:10%;}
+.tb-faq thead td:nth-child(5),.tb-faq tbody td:nth-child(5){width:10%;}
+.tb-faq thead td:nth-child(6),.tb-faq tbody td:nth-child(6){width:13%;padding-right:20px;}
+.tb-faq tbody td{vertical-align:top;}
+
+.tb-not thead td:nth-child(1),.tb-not tbody td:nth-child(1){width:56px;padding-left:20px;}
+.tb-not thead td:nth-child(2),.tb-not tbody td:nth-child(2){white-space:normal;}
+.tb-not thead td:nth-child(3),.tb-not tbody td:nth-child(3){width:10%;}
+.tb-not thead td:nth-child(4),.tb-not tbody td:nth-child(4){width:10%;}
+.tb-not thead td:nth-child(5),.tb-not tbody td:nth-child(5){width:9%;}
+.tb-not thead td:nth-child(6),.tb-not tbody td:nth-child(6){width:13%;padding-right:20px;}
+.tb-not tbody td{vertical-align:top;}
+
+.qa-q{font-size:var(--fs-body);font-weight:500;color:var(--n-900);line-height:1.5;}
+.qa-a{font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;line-height:1.6;max-width:660px;}
+.drag{color:var(--n-300);text-align:center;cursor:grab;font-size:13px;}
+
+.racts{display:flex;gap:6px;}
+.rbtn{display:inline-flex;align-items:center;justify-content:center;height:26px;padding:0 10px;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;font-size:var(--fs-micro);
+  font-weight:500;color:var(--n-700);cursor:pointer;font-family:inherit;white-space:nowrap;}
+.rbtn:hover{background:var(--n-100);border-color:var(--n-400);}
+.rbtn.del{color:var(--danger-text);border-color:#E9C9C9;}
+.rbtn.del:hover{background:var(--danger-bg);}
+
+.thread{display:flex;flex-direction:column;gap:10px;}
+.tmsg{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:12px 14px;
+  font-size:var(--fs-caption);line-height:1.75;color:var(--n-700);}
+.tmsg.me{background:var(--accent-50);border-color:var(--accent-100);}
+.tmsg .who{font-size:var(--fs-micro);font-weight:600;color:var(--n-700);margin-bottom:5px;
+  display:flex;align-items:center;gap:6px;}
+.tmsg .who .wt{font-weight:400;color:var(--n-500);}
+.ta-label{font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;display:block;}
+
+.term{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fff;
+  border:1px solid var(--n-200);border-radius:var(--r-md);padding:14px var(--sp-4);margin-bottom:10px;cursor:pointer;}
+.term:hover{border-color:var(--n-300);}
+.term.on{border-color:var(--accent-500);background:var(--accent-50);}
+.term .tn{font-size:var(--fs-h3);font-weight:600;}
+.term .tv{font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;}
+
+.cbrow{display:flex;gap:9px;align-items:flex-start;padding:9px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);color:var(--n-700);}
+.cbrow:last-child{border-bottom:none;}
+.cbx{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--n-300);background:#fff;
+  flex-shrink:0;margin-top:2px;}
+.cbx.on{background:var(--accent-500);border-color:var(--accent-500);color:#fff;font-size:10px;
+  display:flex;align-items:center;justify-content:center;}
+.rdo{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--n-300);background:#fff;
+  flex-shrink:0;display:inline-block;}
+.rdo.on{border-color:var(--accent-500);border-width:5px;}
+.optrow{display:flex;gap:20px;align-items:center;margin-top:var(--sp-4);font-size:var(--fs-caption);color:var(--n-700);}
+.optrow label{display:flex;align-items:center;gap:7px;cursor:pointer;}
+.w-full{width:100%;}
+.tb-inq tbody td:nth-child(2),.tb-qna tbody td:nth-child(2),.tb-qna tbody td:nth-child(3){overflow:hidden;}
+.tb-inq .t-main,.tb-qna .qa-q{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tatt{display:flex;gap:8px;margin-top:10px;}
+.tthumb{width:72px;height:72px;border-radius:var(--r-sm);border:1px solid var(--n-200);
+  background:var(--n-100);color:var(--n-400);font-size:var(--fs-micro);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.tthumb:hover{border-color:var(--accent-500);color:var(--accent-600);}
+.tatt-n{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;}
+
+
+/* ── ⑰ 화면 전용 · 공구 관리 ───────────────────────────────────── */
+/* 디자인시스템 누락 보완 — 하위 없는 GNB 1단 항목의 활성 상태(.gnb-sub.active와 동일 규격) */
+.gnb-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-item.active .gn{color:rgba(255,255,255,.7);}
+.gnb-item.active .gcnt{background:#fff;color:var(--accent-600);}
+.tb-gb thead td:nth-child(1),.tb-gb tbody td:nth-child(1){padding-left:20px;white-space:normal;}
+.tb-gb thead td:nth-child(2),.tb-gb tbody td:nth-child(2){width:130px;}
+.tb-gb thead td:nth-child(3),.tb-gb tbody td:nth-child(3){width:120px;}
+.tb-gb thead td:nth-child(4),.tb-gb tbody td:nth-child(4){width:78px;}
+.tb-gb thead td:nth-child(5),.tb-gb tbody td:nth-child(5){width:166px;}
+.tb-gb thead td:nth-child(6),.tb-gb tbody td:nth-child(6){width:100px;}
+.tb-gb thead td:nth-child(7),.tb-gb tbody td:nth-child(7){width:100px;}
+.tb-gb thead td:nth-child(8),.tb-gb tbody td:nth-child(8){width:200px;padding-right:20px;}
+.tb-gb thead td:nth-child(n+4),.tb-gb tbody td:nth-child(n+4){text-align:center;}
+.tb-gb thead td:nth-child(8),.tb-gb tbody td:nth-child(8){text-align:left;}
+.tb-gb thead td:nth-child(n+2),.tb-gb tbody td:nth-child(n+2){padding-left:20px;padding-right:20px;}
+.tb-gb tbody td{vertical-align:middle;}
+.sub2{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.note-n{font-size:var(--fs-micro);color:var(--n-500);}
+.pin{background:var(--warning-bg);}
+.pin:hover{background:var(--warning-bg);}
+.gate{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--n-100);}
+.gate:last-child{border-bottom:none;}
+.gate:first-child{padding-top:0;}
+.gd{width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:700;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;margin-top:1px;}
+.gd-ok{background:var(--success-bg);color:var(--success-text);}
+.gd-wait{background:var(--warning-bg);color:var(--warning-text);}
+.gd-idle{background:var(--n-100);color:var(--n-400);}
+.gt-t{font-size:var(--fs-caption);font-weight:600;}
+.gt-s{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;line-height:1.6;}
+.gt-b{margin-left:auto;flex-shrink:0;display:flex;gap:8px;}
+.kpi4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--n-200);
+  border-radius:var(--r-sm);overflow:hidden;}
+.k{background:#fff;padding:13px 14px;}
+.kn{font-size:var(--fs-h2);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em;}
+.kl{font-size:var(--fs-micro);color:var(--n-600);margin-top:3px;}
+.ks{font-size:var(--fs-micro);color:var(--n-400);margin-top:2px;}
+.pitem{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--n-100);}
+.pitem:first-child{padding-top:0;}
+.pitem:last-child{border-bottom:none;padding-bottom:0;}
+.pi-n{font-size:var(--fs-caption);font-weight:600;color:var(--accent-600);cursor:pointer;}
+.pi-n:hover{text-decoration:underline;}
+.pi-g{color:var(--n-400);font-size:9px;margin-left:3px;}
+.pi-x{font-size:var(--fs-micro);color:var(--n-600);margin-top:3px;line-height:1.7;}
+.pi-x b{color:var(--n-900);font-weight:600;}
+.pv{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:14px 16px;background:var(--n-50);}
+.pv-t{font-size:var(--fs-body);font-weight:600;}
+.pv-x{font-size:var(--fs-caption);color:var(--n-700);line-height:1.8;margin-top:8px;}
+.pv-c{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+.unmask{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  color:var(--n-700);background:#fff;border:1px solid var(--n-300);border-radius:var(--r-sm);
+  height:24px;padding:0 9px;cursor:pointer;}
+.unmask:hover{border-color:var(--n-400);color:var(--n-900);}
+.unmask.off{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+.chip{font-size:var(--fs-micro);color:var(--n-700);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-pill);padding:2px 9px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;}
+.chip:hover{border-color:var(--accent-500);color:var(--accent-600);}
+.chip .cg{color:var(--n-400);font-size:9px;}
+.chip:hover .cg{color:var(--accent-500);}
+.pv-l{font-size:var(--fs-micro);color:var(--n-500);border-top:1px solid var(--n-200);
+  margin-top:12px;padding-top:9px;line-height:1.7;}
+.req-b{border:1px solid #F0DCC0;background:#FDF6EC;border-radius:var(--r-sm);padding:12px 14px;}
+.req-h{font-size:var(--fs-caption);font-weight:600;color:var(--warning-text);}
+.req-x{font-size:var(--fs-caption);color:var(--n-900);line-height:1.7;margin-top:6px;}
+.req-m{font-size:var(--fs-micro);color:var(--n-600);margin-top:8px;}
+.stm{display:flex;align-items:center;gap:0;margin-top:2px;}
+.stm-i{flex:1;text-align:center;font-size:var(--fs-micro);padding:7px 4px;border-radius:var(--r-sm);
+  background:var(--n-100);color:var(--n-500);}
+.stm-i.on{background:var(--accent-50);color:var(--accent-600);font-weight:600;}
+.stm-i.done{background:var(--success-bg);color:var(--success-text);}
+.stm-a{color:var(--n-300);padding:0 4px;font-size:10px;}
+.kpi{display:flex;align-items:baseline;justify-content:space-between;padding:8px 0;
+  border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.kpi:last-child{border-bottom:none;}
+.kpi-k{color:var(--n-600);}
+.kpi-v{font-weight:600;}
+.kpi-sub{font-size:var(--fs-micro);color:var(--n-500);font-weight:400;margin-left:4px;}
+.dstrip{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;}
+.dchip{font-size:var(--fs-micro);border:1px solid var(--n-300);border-radius:var(--r-sm);
+  padding:4px 9px;background:#fff;color:var(--n-700);cursor:pointer;}
+.dchip:hover:not(.lock):not(.on){border-color:var(--accent-500);color:var(--accent-600);}
+.dchip.on{background:var(--accent-500);border-color:var(--accent-500);color:#fff;font-weight:600;}
+.dchip.lock{background:var(--n-50);border-color:var(--n-200);color:var(--n-400);
+  text-decoration:line-through;text-decoration-color:var(--n-300);cursor:not-allowed;}
+
+/* ── ⑱ 화면 전용 · 소통 스레드 (파트너·스튜디오 채팅 컴포넌트 재사용) ── */
+.tshell{height:862px;display:flex;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+.cs-list{width:300px;flex-shrink:0;border-right:1px solid var(--n-200);background:#fff;display:flex;flex-direction:column;}
+.cs-lh{padding:12px 14px 10px;border-bottom:1px solid var(--n-100);flex-shrink:0;display:flex;flex-direction:column;gap:10px;}
+.cs-lh .tabs{border-bottom:1px solid var(--n-100);}
+.cs-lh .tab{flex:1;justify-content:center;margin-right:0;white-space:nowrap;gap:4px;}
+.seg2 span{white-space:nowrap;}
+.cs-lh .inp{width:100%;}
+.seg2{display:flex;gap:6px;}
+.seg2 span{font-size:var(--fs-micro);color:var(--n-600);border:1px solid var(--n-300);border-radius:var(--r-pill);padding:2px 10px;cursor:pointer;}
+.seg2 span.on{background:var(--accent-50);border-color:var(--accent-500);color:var(--accent-600);font-weight:600;}
+.cs-items{flex:1;overflow-y:auto;}
+.cs-item{display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--n-100);cursor:pointer;}
+.cs-item:hover{background:var(--n-50);}
+.cs-item.active{background:var(--accent-50);box-shadow:inset 3px 0 0 var(--accent-500);}
+.cs-avatar{width:36px;height:36px;border-radius:50%;background:var(--n-200);color:var(--n-500);
+  display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;flex-shrink:0;}
+.cs-avatar.is{border-radius:var(--r-sm);background:var(--warning-bg);color:var(--warning-text);font-size:10px;}
+.cs-avatar.is.done{background:var(--neutral-bg);color:var(--neutral-text);}
+.cs-meta{flex:1;min-width:0;}
+.cs-top{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.cs-name{font-size:var(--fs-body);font-weight:600;color:var(--n-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cs-time{font-size:var(--fs-micro);color:var(--n-400);flex-shrink:0;}
+.cs-sub{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cs-prev-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px;}
+.cs-prev{font-size:var(--fs-caption);color:var(--n-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+.cs-unread{background:var(--accent-500);color:#fff;border-radius:9px;min-width:18px;height:18px;
+  font-size:var(--fs-micro);font-weight:600;display:inline-flex;align-items:center;justify-content:center;padding:0 5px;flex-shrink:0;}
+.cs-lf{padding:12px 14px;border-top:1px solid var(--n-100);flex-shrink:0;}
+.cs-thread{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--n-50);}
+.th-head{height:60px;background:#fff;border-bottom:1px solid var(--n-200);display:flex;align-items:center;padding:0 var(--sp-4);gap:12px;flex-shrink:0;}
+.th-hmeta{flex:1;min-width:0;}
+.th-hname{font-size:var(--fs-h3);font-weight:600;display:flex;align-items:center;gap:8px;}
+.th-hstat{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.th-notice{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);text-align:center;padding:7px 16px;flex-shrink:0;}
+.th-info{border-bottom:1px solid var(--n-200);background:#fff;flex-shrink:0;}
+.thi-bar{display:flex;align-items:center;gap:12px;padding:9px var(--sp-5);font-size:var(--fs-caption);color:var(--n-700);cursor:pointer;}
+.thi-bar:hover{background:var(--n-50);}
+.thi-sum{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;}
+.thi-sum .sep{color:var(--n-300);}
+.thi-tg{margin-left:auto;display:flex;align-items:center;gap:4px;font-size:var(--fs-micro);color:var(--n-500);font-weight:500;flex-shrink:0;}
+.thi-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--n-100);}
+.thi-grid .ip-sec{border-bottom:none;border-right:1px solid var(--n-100);padding:12px 16px;}
+.thi-grid .ip-sec:last-child{border-right:none;}
+.th-body{flex:1;min-height:0;padding:var(--sp-4) var(--sp-5);display:flex;flex-direction:column;align-items:flex-start;gap:14px;overflow:hidden;justify-content:flex-end;}
+.daymark{flex-shrink:0;align-self:center;font-size:var(--fs-micro);color:var(--n-400);}
+.msg{max-width:74%;flex-shrink:0;}
+.msg .who{font-size:var(--fs-micro);color:var(--n-600);margin-bottom:4px;font-weight:500;}
+.rtag{font-size:10px;font-weight:600;border-radius:var(--r-sm);padding:0 5px;line-height:16px;}
+.rtag.b{background:var(--info-bg);color:var(--info-text);}
+.rtag.i{background:var(--success-bg);color:var(--success-text);}
+.rtag.o{background:var(--accent-50);color:var(--accent-600);}
+.msg-row{display:flex;align-items:flex-end;gap:6px;}
+.msg.me .msg-row{flex-direction:row-reverse;}
+.msg-body{min-width:0;}
+.bubble{display:inline-block;max-width:100%;border-radius:12px;padding:9px 13px;font-size:var(--fs-body);line-height:1.55;word-break:break-word;}
+.msg.them .bubble{background:#fff;color:var(--n-900);border:1px solid var(--n-200);border-top-left-radius:2px;}
+.msg.me{align-self:flex-end;}
+.msg.me .who{text-align:right;justify-content:flex-end;}
+.msg.me .bubble{background:var(--accent-500);color:#fff;border-top-right-radius:2px;}
+.tstamp{font-size:var(--fs-micro);color:var(--n-400);flex-shrink:0;white-space:nowrap;}
+.fchip{display:inline-flex;align-items:center;gap:8px;margin-top:6px;background:#fff;border:1px solid var(--n-200);
+  border-radius:var(--r-sm);padding:7px 10px;font-size:var(--fs-caption);color:var(--n-900);}
+.fchip .ext{font-size:9px;font-weight:700;color:#fff;background:var(--n-500);border-radius:3px;padding:2px 4px;}
+.fchip .sz{font-size:var(--fs-micro);color:var(--n-400);}
+.sysm{flex-shrink:0;align-self:center;max-width:86%;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);
+  padding:10px 14px;font-size:var(--fs-caption);color:var(--n-700);line-height:1.65;}
+.sysm .sh{font-size:var(--fs-micro);font-weight:600;color:var(--n-500);margin-bottom:4px;display:flex;align-items:center;gap:6px;}
+.sysm.warn{background:var(--warning-bg);border-color:transparent;}
+.sysm.warn .sh{color:var(--warning-text);}
+.adj{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;margin-bottom:6px;}
+.adj-r{display:grid;grid-template-columns:1fr 100px 18px 110px;align-items:center;gap:6px;padding:7px 12px;font-size:var(--fs-caption);border-bottom:1px solid var(--n-100);}
+.adj-r:last-child{border-bottom:none;}
+.adj-r.h{background:var(--n-50);font-size:var(--fs-micro);color:var(--n-500);font-weight:600;padding:6px 12px;}
+.adj-r .o{text-align:right;color:var(--n-500);}
+.adj-r .a{color:var(--n-400);text-align:center;}
+.adj-r .n{text-align:right;}
+.adj-r.chg .n{color:var(--accent-600);font-weight:600;}
+.adj-r .n .inp{width:100%;height:28px;text-align:right;}
+.sysm-act{margin-top:9px;display:flex;align-items:center;gap:8px;}
+.sysm-done{font-size:var(--fs-micro);color:var(--success-text);font-weight:600;}
+.autotag{font-size:10px;font-weight:600;color:var(--n-500);background:var(--n-100);border-radius:var(--r-sm);padding:0 5px;line-height:16px;}
+.sysm.line{background:transparent;border:none;padding:0;font-size:var(--fs-micro);color:var(--n-500);text-align:center;}
+.med{flex-shrink:0;align-self:stretch;background:#fff;border:1px solid var(--accent-500);border-radius:var(--r-md);overflow:hidden;}
+.med-h{background:var(--accent-50);padding:9px 14px;display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);font-weight:600;color:var(--accent-600);}
+.med-h .t-sub{margin-left:auto;font-weight:400;}
+.med-b{padding:4px 14px 6px;}
+.med-r{display:flex;gap:12px;padding:7px 0;border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);line-height:1.6;}
+.med-r:last-child{border-bottom:none;}
+.med-r .k{width:64px;flex-shrink:0;color:var(--n-500);}
+.med-r .v{flex:1;color:var(--n-900);}
+.med-f{border-top:1px solid var(--n-200);padding:9px 14px;display:flex;gap:14px;font-size:var(--fs-micro);color:var(--n-600);background:var(--n-50);}
+.rsp{display:inline-flex;align-items:center;gap:5px;}
+.th-input{border-top:1px solid var(--n-200);background:#fff;padding:11px 14px;flex-shrink:0;}
+.th-input-row{display:flex;align-items:center;gap:10px;}
+.th-attach{width:36px;height:36px;border:1px solid var(--n-300);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;color:var(--n-500);flex-shrink:0;cursor:pointer;}
+.th-attach svg{width:17px;height:17px;}
+.th-field{flex:1;height:38px;border:1px solid var(--n-300);border-radius:19px;display:flex;align-items:center;padding:0 16px;font-size:var(--fs-body);color:var(--n-400);}
+.th-send{width:38px;height:38px;border-radius:50%;flex-shrink:0;padding:0;}
+.th-send svg{width:17px;height:17px;display:block;}
+.th-closed{border-top:1px solid var(--n-200);background:var(--n-100);padding:14px;text-align:center;font-size:var(--fs-caption);color:var(--n-600);flex-shrink:0;}
+.ip{width:300px;flex-shrink:0;border-left:1px solid var(--n-200);background:#fff;display:flex;flex-direction:column;min-height:0;}
+.ip-scroll{flex:1;min-height:0;overflow-y:auto;}
+.ip-foot{flex-shrink:0;border-top:1px solid var(--n-200);padding:12px 16px 14px;background:#fff;}
+.ip-foot .ip-t{margin-bottom:8px;}
+.ip-sec{padding:14px 16px;border-bottom:1px solid var(--n-100);}
+.ip-t{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.ip .mrow{font-size:var(--fs-micro);padding:6px 0;}
+.ip .mrow .mk{color:var(--n-500);flex-shrink:0;}
+.ip .mrow .mv{text-align:right;color:var(--n-900);}
+.stp2{display:flex;flex-direction:column;gap:0;margin-top:2px;}
+.stp2 .s{display:flex;align-items:flex-start;gap:9px;padding:5px 0;font-size:var(--fs-micro);color:var(--n-400);}
+.stp2 .d{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--n-300);background:#fff;margin-top:3px;flex-shrink:0;}
+.stp2 .s.ok{color:var(--n-600);} .stp2 .s.ok .d{background:var(--n-400);border-color:var(--n-400);}
+.stp2 .s.cur{color:var(--n-900);font-weight:600;} .stp2 .s.cur .d{background:var(--accent-500);border-color:var(--accent-500);}
+.stp2 .s .x{display:block;font-weight:400;color:var(--n-500);margin-top:1px;}
+.ip-acts{display:flex;flex-direction:column;gap:8px;}
+.ip-links{display:flex;flex-direction:column;gap:7px;font-size:var(--fs-micro);}
+.qchip{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-micro);border:1px solid var(--n-300);border-radius:var(--r-sm);padding:3px 8px;background:#fff;color:var(--n-700);}
+.modal.w600{width:600px;}
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>⑤ 어드민 · 9. 게시물·소통 모니터링 — 소통 스레드 · 운영팀 1:1 채널 <span style="font-weight:400;color:var(--n-600);font-size:var(--fs-caption)">ui-admin-20a-channels · rev.1 초안</span></h1>
+  <p class="meta">전 브랜드·인플루언서와의 운영팀 1:1 채널 · 근거: <code>SHOWROOMZ_웹_디자인시스템_v1_2.html</code> · 상류: <code>ui-partner-05-connections</code> · <code>ui-studio-04-connections</code> · 연동: 계약 관리 rev.8 · 짝 파일: <code>ui-admin-20b-issues</code></p>
+  <div class="rule">
+    <b class="new">[파일 분할 · 2026.10.04]</b> 소통 스레드는 한 화면(좌측 목록 탭 <b>이슈 스레드 / 브랜드 / 인플루언서</b>)이지만 기획은 두 파일로 나눈다 — <code>ui-admin-20a-channels</code>(운영팀 1:1 채널) · <code>ui-admin-20b-issues</code>(3자 이슈 스레드). 셸·목록·말풍선·입력창은 두 파일이 같은 마크업이고, 이 파일은 <b>브랜드·인플루언서 탭</b>의 상태만 담는다.<br>
+    <b class="new">[1:1 채널 = 상단 접이식 정보 바]</b> 브랜드·인플루언서 1:1 채널은 우측 패널 대신 대화 상단에 <b>펼치기 바</b>를 둔다 — 요약 한 줄(상태 · 계약 · 공구 · 미정산) + [펼치기]로 브랜드/인플루언서 정보 · 진행 중 · 열린 이슈 3칸. 이슈 스레드는 중재 의견·정산 영향 같은 <b>판단 근거와 액션</b>이 있어 우측 패널을 유지한다.<br>
+    <b>[이 화면 = 운영자의 두 채널]</b> ① <b>1:1 운영팀 채널</b> — 파트너센터·쇼룸 스튜디오 목록 최상단에 고정된 <b>SHOWROOMZ 운영팀</b>의 반대편. 모든 브랜드·인플루언서와 <b>채널이 하나씩</b> 미리 있어 “새 대화”가 없고 검색으로 찾는다. ② <b>이슈 스레드</b> — 브랜드 · 인플루언서 · 운영팀 <b>3자 채널</b>. <b>정산액 조정이 필요한 경우에만</b> 열린다(2026.09.28 확정) — 계약 이행 확인에서 <b>미이행이 제출</b>돼 정산이 보류될 때 시스템이 자동으로 연다. 그 밖의 이견(게시물 문구·고정 지급비·일정 등)은 <b>양측이 1:1 스레드에서 직접 해결</b>하고 운영자는 개입하지 않는다. 그래서 <b>운영자가 이슈 스레드를 직접 여는 경로(구 M3)가 없다</b>. 좌측 목록 탭이 <b>이슈 스레드 / 브랜드 / 인플루언서</b>이고 기본 진입은 이슈 스레드다 — 운영자가 결론을 내야 끝나는 건이 여기 있다.<br>
+    <b>[시스템 카드와 말풍선을 나눈다]</b> 미이행 사유 · 답변 기한 · 중재 의견 · 동의/반대 · 계약 처리 결과 같은 <b>절차의 기록</b>은 시스템 카드로, 사람의 대화는 말풍선으로 둔다. 절차가 말풍선에 섞이면 이후 대화에 묻히고, 분쟁 때 “그 안내를 받았는가”가 흐려진다. 반대 사유도 말풍선이 아니라 <b>카드로 고정</b>된다.<br>
+    <b>[운영자 이름은 어드민에서만]</b> 운영자 말풍선은 어드민에 <b>운영팀 · 김운영</b>으로 보이고 양측에는 <b>SHOWROOMZ 운영팀</b>으로만 나간다 — 운영자 개인이 아니라 회사의 판단이라는 뜻이고, 담당이 바뀌어도 대화가 이어진다. 누가 썼는지는 내부 감사용으로 남긴다.<br>
+    <b>[다른 화면에서 들어오는 자동 카드]</b> 계약 관리의 <b>[서명 안내 다시 받기]</b>(요청 카드 → 카드 안 <b>[재발송 완료 알림 보내기]</b>로 정해진 문구 자동 전송 · 계약 관리에 처리 기록 없음) · 검토 통과 후 계약 <b>취소 요청</b>(대화로 받고 계약 관리 C6에서 처리 → 결과 카드) · 이행 확인 <b>미이행 제출</b>(이슈 자동 개설 — 이슈 스레드가 열리는 유일한 경로). 처리는 <b>각 화면에서</b> 하고 이 화면은 요청과 결과를 <b>한 대화에 잇는다</b> — 같은 조치를 두 화면에서 만들지 않는다.<br>
+    <b>[컴포넌트 재사용]</b> 목록 아이템 · 말풍선 · 첨부 칩 · 입력창은 <code>ui-partner-05-connections</code>와 같은 마크업이다. 첨부 규칙(20개 · 500MB · 종류별 클릭 동작)도 그대로 따르며 이 초안에서는 첨부 상태 화면을 다시 그리지 않았다.<br>
+    <b class="new">[확인 필요]</b> ⓑ 이의 기한 기본값(제시일 +3영업일)과 <b>기한 내 무응답의 효과</b> — 동의 간주인지 반대 간주인지 약관에 없다 ⓒ 1:1 채널의 <b>응답 SLA</b>와 미답 기준 ⓓ 운영자 여럿이 같은 이슈를 볼 때 <b>담당자 지정</b>이 필요한지 ⓔ 휴면 회원(탈퇴·정지)의 운영팀 채널 처리 — 파트너 규칙의 “휴면(열람만)”을 그대로 쓸지.<br>
+    <b>[금칙어]</b> 프로젝트 지침 §4 확정 용어 대조표를 따른다.<br>
+    <b>[규격 정합]</b> 사이드바 240 · 탑바 56 · 본문 패딩 24 · 좌 목록 300 · 우 패널 300 · 스레드 헤더 60 · 입력창 높이 60 · 액센트 인디고 <code>#3B5BDB</code> 단일 · 밀도 Compact · 설계 근거는 이 박스와 <code>.state-spec</code>에만 둔다.
+  </div>
+</div>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">A5</span><span class="state-label">브랜드 1:1 · 운영팀 채널 (계약 직권 취소 요청)</span><span class="state-spec"><b>1:1 채널은 우측 정보 패널이 없다</b> — 상대 정보가 대화 상단의 <b>접이식 바</b>로 올라간다(기본 접힘 · 이 프레임은 펼친 상태). 접혀 있어도 상태·계약·공구·미정산 요약 한 줄은 보이고, 펼치면 3칸이 가로로 펼쳐진다 — 1:1 대화는 이슈처럼 판단할 액션이 없어 300px 패널을 상시 차지할 이유가 없고, 그 폭을 대화에 돌려준다 · 파트너센터·스튜디오 목록 최상단에 고정된 <b>SHOWROOMZ 운영팀</b> 채널의 반대편이다 — 모든 브랜드·인플루언서와 <b>1:1 채널이 하나씩</b> 있어 목록에 “새 대화” 버튼이 없다(찾기는 검색) · 검토 통과 후 계약은 양측이 취소할 수 없어 <b>취소 요청이 이 채널로</b> 들어온다(계약 관리 rev.8) — 운영자는 대화에서 사정을 듣고 <b>계약 관리 C6</b>에서 처리하며, 처리 결과가 <b>시스템 카드로 되돌아온다</b> · 우측 패널은 <b>상대 요약</b>이다: 진행 중 계약·공구와 열린 이슈를 옆에 둬야 “어느 계약 얘기인지” 되묻지 않는다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item open" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub active"><span>소통 스레드</span><span class="scnt">3</span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">게시물·소통 모니터링<span class="c-sub">/ 소통 스레드</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">소통 스레드</div></div></div><div class="tshell"><div class="cs-list"><div class="cs-lh"><div class="tabs"><div class="tab">이슈 스레드<span class="tn">1</span></div><div class="tab active">브랜드<span class="tn">1</span></div><div class="tab">인플루언서<span class="tn">1</span></div></div><input class="inp" placeholder="브랜드명 · 회원번호 · 담당자 검색"></div><div class="cs-items"><div class="cs-item active"><div class="cs-avatar">IMG</div><div class="cs-meta"><div class="cs-top"><span class="cs-name">무드코스메틱</span><span class="cs-time">10:05</span></div><div class="cs-sub tnum">BRD-1017 · 담당 이현</div><div class="cs-prev-row"><div class="cs-prev">여름 수분 세럼 계약 취소 요청드립니다.</div><span class="cs-unread">1</span></div></div></div><div class="cs-item"><div class="cs-avatar">IMG</div><div class="cs-meta"><div class="cs-top"><span class="cs-name">글로우랩</span><span class="cs-time">어제</span></div><div class="cs-sub tnum">BRD-1042 · 담당 박서진</div><div class="cs-prev-row"><div class="cs-prev">운영팀: 9월 정산 일정 안내드립니다.</div></div></div></div><div class="cs-item"><div class="cs-avatar">IMG</div><div class="cs-meta"><div class="cs-top"><span class="cs-name">퓨어랩</span><span class="cs-time">09.24</span></div><div class="cs-sub tnum">BRD-1008 · 담당 정우</div><div class="cs-prev-row"><div class="cs-prev">입점 서류 재제출했습니다.</div></div></div></div><div class="cs-item"><div class="cs-avatar">IMG</div><div class="cs-meta"><div class="cs-top"><span class="cs-name">벨라코스</span><span class="cs-time">09.22</span></div><div class="cs-sub tnum">BRD-1033 · 담당 한예진</div><div class="cs-prev-row"><div class="cs-prev">운영팀: 확인했습니다. 감사합니다.</div></div></div></div><div class="cs-item"><div class="cs-avatar">IMG</div><div class="cs-meta"><div class="cs-top"><span class="cs-name">데일리랩</span><span class="cs-time">09.19</span></div><div class="cs-sub tnum">BRD-1051 · 담당 오세린</div><div class="cs-prev-row"><div class="cs-prev">운영팀: 상품 등록 반려 사유 안내드립니다.</div></div></div></div></div></div><div class="cs-thread"><div class="th-head"><div class="th-hmeta"><div class="th-hname">무드코스메틱</div><div class="th-hstat">브랜드 · BRD-1017 · 담당 이현 · 운영팀 채널</div></div></div><div class="th-info"><div class="thi-bar"><span class="thi-sum"><b>브랜드 정보</b><span class="sep">|</span><span class="badge b-success nodot">활성</span><span class="sep">|</span>계약 서명 진행중 1 · 체결 2<span class="sep">|</span>공구 진행중 1<span class="sep">|</span>미정산 1건</span><span class="thi-tg">접기 ▴</span></div><div class="thi-grid"><div class="ip-sec"><div class="ip-t">브랜드 정보<span class="flink" style="font-weight:400;font-size:var(--fs-micro)">회원 상세 ↗</span></div><div class="mrow"><span class="mk">회원번호</span><span class="mv"><span class="tnum">BRD-1017</span></span></div><div class="mrow"><span class="mk">상태</span><span class="mv"><span class="badge b-success nodot">활성</span></span></div><div class="mrow"><span class="mk">담당자</span><span class="mv">이현 · <span class="tnum">010-4827-2231</span></span></div><div class="mrow"><span class="mk">가입일</span><span class="mv"><span class="tnum">2026.03.04</span></span></div></div>
+<div class="ip-sec"><div class="ip-t">진행 중</div><div class="mrow"><span class="mk">계약</span><span class="mv">서명 진행중 1 · 체결 2</span></div><div class="mrow"><span class="mk">공구</span><span class="mv">진행중 1</span></div><div class="mrow"><span class="mk">미정산</span><span class="mv"><span class="tnum">1건</span></span></div></div>
+<div class="ip-sec"><div class="ip-t">열린 이슈 스레드</div><span class="t-sub">없음</span></div>
+</div></div>
+<div class="th-notice">SHOWROOMZ 운영팀 채널 — 상대에게는 <b>SHOWROOMZ 운영팀</b>으로만 표시되고 담당자 이름은 보이지 않습니다.</div>
+<div class="th-body">
+<div class="daymark">오늘 · 2026.08.14 (금)</div>
+<div class="msg them"><div class="who">무드코스메틱 <span class="rtag b">브랜드</span></div><div class="msg-row"><div class="msg-body"><div class="bubble">여름 수분 세럼 공구 계약(CTR-20260813-034) 취소 요청드립니다. 인플루언서와 공구 기간을 다시 협의해야 해서요. 브랜드 서명은 이미 했습니다.</div></div><div class="tstamp">10:05</div></div></div>
+<div class="msg me"><div class="who">운영팀 · 김운영</div><div class="msg-row"><div class="msg-body"><div class="bubble">확인했습니다. 인플루언서 측도 같은 의견인지 먼저 확인한 뒤 처리하겠습니다.</div></div><div class="tstamp">10:12</div></div></div><div class="msg them"><div class="who">무드코스메틱 <span class="rtag b">브랜드</span></div><div class="msg-row"><div class="msg-body"><div class="bubble">네, 소연 님과는 1:1 스레드에서 이미 얘기 나눴습니다.</div></div><div class="tstamp">10:20</div></div></div><div class="sysm "><div class="sh">계약 직권 취소 처리됨</div><span class="tnum">CTR-20260813-034</span> 여름 수분 세럼 공구 · 사유: 당사자 요청 — 조건 재협의 · <span class="tnum">10:40</span> 김운영 · 양측에 통지됐습니다. <span class="flink">계약 상세 ↗</span></div><div class="msg me"><div class="who">운영팀 · 김운영</div><div class="msg-row"><div class="msg-body"><div class="bubble">취소 처리했습니다. 조건 정리 후 새 계약으로 진행해 주세요.</div></div><div class="tstamp">10:41</div></div></div></div><div class="th-input"><div class="th-input-row"><div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div><div class="th-field">메시지 입력…</div><button class="btn btn-primary th-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7z"></path></svg></button></div></div></div></div></div></div></section>
+<section class="state">
+<div class="state-bar"><span class="state-id">A6-0</span><span class="state-label">인플루언서 1:1 · 서명 안내 재발송 요청 (자동 등록 · 처리 전)</span><span class="state-spec">계약 관리의 <b>[서명 안내 다시 받기]</b>가 이 채널에 <b>요청 카드로 자동 등록</b>된다(계약 관리 rev.8) — 운영자는 계약번호·요청 시각을 바로 읽는다 · 운영자가 모두싸인에서 재발송한 뒤 카드 안 <b>[재발송 완료 알림 보내기]</b>를 누르면 정해진 안내 문구가 <b>자동으로 전송</b>된다 — 매번 같은 문장을 손으로 쓰지 않고, 문구가 사람마다 달라지지 않는다 · 계약 관리에 처리 기록을 두지 않는다(2026.09.28 — 계약 상태를 바꾸지 않는 요청이다) · 버튼은 <b>보조 톤</b>(흰 배경) — 경고색 카드 위에 인디고를 얹으면 화면의 주 조치처럼 튄다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item open" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub active"><span>소통 스레드</span><span class="scnt">3</span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">게시물·소통 모니터링<span class="c-sub">/ 소통 스레드</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">소통 스레드</div></div></div><div class="tshell"><div class="cs-list"><div class="cs-lh"><div class="tabs"><div class="tab">이슈 스레드<span class="tn">1</span></div><div class="tab">브랜드<span class="tn">1</span></div><div class="tab active">인플루언서<span class="tn">1</span></div></div><input class="inp" placeholder="쇼룸명 · 회원번호 검색"></div><div class="cs-items"><div class="cs-item active"><div class="cs-avatar">IMG</div><div class="cs-meta"><div class="cs-top"><span class="cs-name">뷰티_소연</span><span class="cs-time">08:55</span></div><div class="cs-sub tnum">INF-3021 · 사업자</div><div class="cs-prev-row"><div class="cs-prev">요청 · 서명 안내 다시 받기</div><span class="cs-unread">1</span></div></div></div><div class="cs-item"><div class="cs-avatar">IMG</div><div class="cs-meta"><div class="cs-top"><span class="cs-name">하린의 뷰티랩</span><span class="cs-time">어제</span></div><div class="cs-sub tnum">INF-3014 · 개인</div><div class="cs-prev-row"><div class="cs-prev">정산 계좌 변경은 어디서 하나요?</div><span class="cs-unread">1</span></div></div></div><div class="cs-item"><div class="cs-avatar">IMG</div><div class="cs-meta"><div class="cs-top"><span class="cs-name">글로우_지민</span><span class="cs-time">09.25</span></div><div class="cs-sub tnum">INF-3009 · 사업자</div><div class="cs-prev-row"><div class="cs-prev">운영팀: 원천징수영수증 발급 안내드립니다.</div></div></div></div><div class="cs-item"><div class="cs-avatar">IMG</div><div class="cs-meta"><div class="cs-top"><span class="cs-name">민재 셀렉트</span><span class="cs-time">09.23</span></div><div class="cs-sub tnum">INF-3031 · 개인</div><div class="cs-prev-row"><div class="cs-prev">운영팀: 확인 부탁드립니다.</div></div></div></div><div class="cs-item"><div class="cs-avatar">IMG</div><div class="cs-meta"><div class="cs-top"><span class="cs-name">소연_쇼룸</span><span class="cs-time">09.20</span></div><div class="cs-sub tnum">INF-3018 · 개인</div><div class="cs-prev-row"><div class="cs-prev">운영팀: 이슈 스레드로 안내드렸습니다.</div></div></div></div></div></div><div class="cs-thread"><div class="th-head"><div class="th-hmeta"><div class="th-hname">뷰티_소연</div><div class="th-hstat">인플루언서 · INF-3021 · 사업자 · 운영팀 채널</div></div></div><div class="th-info"><div class="thi-bar"><span class="thi-sum"><b>인플루언서 정보</b><span class="sep">|</span><span class="badge b-success nodot">활성</span><span class="sep">|</span>계약 서명 진행중 1<span class="sep">|</span>진행 중 공구 없음</span><span class="thi-tg">펼치기 ▾</span></div></div><div class="th-notice">SHOWROOMZ 운영팀 채널 — 상대에게는 <b>SHOWROOMZ 운영팀</b>으로만 표시되고 담당자 이름은 보이지 않습니다.</div><div class="th-body"><div class="daymark">오늘 · 2026.08.14 (금)</div><div class="sysm warn"><div class="sh">요청 · 서명 안내 다시 받기</div><b>CTR-20260813-041</b> 겨울 리페어 크림 공구 · 뷰티_소연이 계약 관리에서 요청 · <span class="tnum">08:50</span> <span class="flink">계약 상세 ↗</span><div class="sysm-act"><button class="btn btn-secondary">재발송 완료 알림 보내기</button><span class="t-sub">모두싸인에서 재발송한 뒤 누르세요</span></div></div></div><div class="th-input"><div class="th-input-row"><div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div><div class="th-field">메시지 입력…</div><button class="btn btn-primary th-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7z"></path></svg></button></div></div></div></div></div></div></section>
+<section class="state">
+<div class="state-bar"><span class="state-id">A6</span><span class="state-label">인플루언서 1:1 · 재발송 완료 알림 전송 후</span><span class="state-spec"><b>인플루언서 채널의 펼친 정보 바</b> — 브랜드 채널(A5)과 같은 3칸 골격이고 칸 안의 항목만 인플루언서 축으로 바꾼다: 담당자 대신 <b>사업자 여부</b>(정산 원천징수가 갈린다)·<b>업무용 이메일</b>(실제 연락 창구 · 인플루언서 목록과 같은 기준), 미정산 대신 <b>연결 브랜드</b>, 그리고 <b>인스타 바로가기</b> · 인플루언서 쪽은 정산 몫이 브랜드 정산에 묶여 있어 미정산 행을 두지 않는다 · A6-0에서 <b>[재발송 완료 알림 보내기]</b>를 누른 직후 — 정해진 문구가 <b>운영자 말풍선으로 자동 전송</b>되고 <b>자동 안내</b> 태그가 붙는다(어드민에서만 보인다 · 상대에게는 일반 운영팀 메시지) · 요청 카드의 버튼 자리가 <b>전송됨 · 시각 · 처리자</b>로 굳어 <b>중복 전송을 막는다</b> · 이후 대화는 평소처럼 이어진다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">5</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item open" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub active"><span>소통 스레드</span><span class="scnt">3</span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">게시물·소통 모니터링<span class="c-sub">/ 소통 스레드</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">소통 스레드</div></div></div><div class="tshell"><div class="cs-list"><div class="cs-lh"><div class="tabs"><div class="tab">이슈 스레드<span class="tn">1</span></div><div class="tab">브랜드<span class="tn">1</span></div><div class="tab active">인플루언서<span class="tn">1</span></div></div><input class="inp" placeholder="쇼룸명 · 회원번호 검색"></div><div class="cs-items"><div class="cs-item active"><div class="cs-avatar">IMG</div><div class="cs-meta"><div class="cs-top"><span class="cs-name">뷰티_소연</span><span class="cs-time">08:55</span></div><div class="cs-sub tnum">INF-3021 · 사업자</div><div class="cs-prev-row"><div class="cs-prev">운영팀: 서명 안내를 다시 보내드렸습니다.</div></div></div></div><div class="cs-item"><div class="cs-avatar">IMG</div><div class="cs-meta"><div class="cs-top"><span class="cs-name">하린의 뷰티랩</span><span class="cs-time">어제</span></div><div class="cs-sub tnum">INF-3014 · 개인</div><div class="cs-prev-row"><div class="cs-prev">정산 계좌 변경은 어디서 하나요?</div><span class="cs-unread">1</span></div></div></div><div class="cs-item"><div class="cs-avatar">IMG</div><div class="cs-meta"><div class="cs-top"><span class="cs-name">글로우_지민</span><span class="cs-time">09.25</span></div><div class="cs-sub tnum">INF-3009 · 사업자</div><div class="cs-prev-row"><div class="cs-prev">운영팀: 원천징수영수증 발급 안내드립니다.</div></div></div></div><div class="cs-item"><div class="cs-avatar">IMG</div><div class="cs-meta"><div class="cs-top"><span class="cs-name">민재 셀렉트</span><span class="cs-time">09.23</span></div><div class="cs-sub tnum">INF-3031 · 개인</div><div class="cs-prev-row"><div class="cs-prev">운영팀: 확인 부탁드립니다.</div></div></div></div><div class="cs-item"><div class="cs-avatar">IMG</div><div class="cs-meta"><div class="cs-top"><span class="cs-name">소연_쇼룸</span><span class="cs-time">09.20</span></div><div class="cs-sub tnum">INF-3018 · 개인</div><div class="cs-prev-row"><div class="cs-prev">운영팀: 이슈 스레드로 안내드렸습니다.</div></div></div></div></div></div><div class="cs-thread"><div class="th-head"><div class="th-hmeta"><div class="th-hname">뷰티_소연</div><div class="th-hstat">인플루언서 · INF-3021 · 사업자 · 운영팀 채널</div></div></div><div class="th-info"><div class="thi-bar"><span class="thi-sum"><b>인플루언서 정보</b><span class="sep">|</span><span class="badge b-success nodot">활성</span><span class="sep">|</span>계약 서명 진행중 1<span class="sep">|</span>진행 중 공구 없음</span><span class="thi-tg">접기 ▴</span></div><div class="thi-grid">
+<div class="ip-sec"><div class="ip-t">인플루언서 정보<span class="flink" style="font-weight:400;font-size:var(--fs-micro)">회원 상세 ↗</span></div><div class="mrow"><span class="mk">회원번호</span><span class="mv"><span class="tnum">INF-3021</span></span></div><div class="mrow"><span class="mk">상태</span><span class="mv"><span class="badge b-success nodot">활성</span></span></div><div class="mrow"><span class="mk">사업자 여부</span><span class="mv">사업자 <span class="t-sub">· 일반과세자</span></span></div><div class="mrow"><span class="mk">업무용 이메일</span><span class="mv"><span class="tnum">sy.beauty@gmail.com</span></span></div><div class="mrow"><span class="mk">가입일</span><span class="mv"><span class="tnum">2026.02.14</span></span></div></div>
+<div class="ip-sec"><div class="ip-t">진행 중</div><div class="mrow"><span class="mk">계약</span><span class="mv">서명 진행중 1 · 체결 3</span></div><div class="mrow"><span class="mk">공구</span><span class="mv">진행중 0 · 종료 3</span></div><div class="mrow"><span class="mk">연결 브랜드</span><span class="mv"><span class="tnum">3</span>곳</span></div><div class="mrow"><span class="mk">인스타</span><span class="mv"><span class="flink">인스타 ↗</span></span></div></div>
+<div class="ip-sec"><div class="ip-t">열린 이슈 스레드</div><span class="t-sub">없음</span></div>
+</div></div><div class="th-notice">SHOWROOMZ 운영팀 채널 — 상대에게는 <b>SHOWROOMZ 운영팀</b>으로만 표시되고 담당자 이름은 보이지 않습니다.</div><div class="th-body"><div class="daymark">오늘 · 2026.08.14 (금)</div><div class="sysm warn"><div class="sh">요청 · 서명 안내 다시 받기</div><b>CTR-20260813-041</b> 겨울 리페어 크림 공구 · 뷰티_소연이 계약 관리에서 요청 · <span class="tnum">08:50</span> <span class="flink">계약 상세 ↗</span><div class="sysm-act"><span class="sysm-done">✓ 재발송 완료 알림 전송됨</span><span class="t-sub tnum">08:55 · 김운영</span></div></div><div class="msg me"><div class="who"><span class="autotag">자동 안내</span> 운영팀 · 김운영</div><div class="msg-row"><div class="msg-body"><div class="bubble">모두싸인에서 서명 안내를 다시 보내드렸습니다. 메일함(스팸함 포함)을 확인해 주세요.</div></div><div class="tstamp">08:55</div></div></div><div class="msg them"><div class="who">뷰티_소연 <span class="rtag i">인플루언서</span></div><div class="msg-row"><div class="msg-body"><div class="bubble">메일 받았어요! 스팸함에 있었네요. 감사합니다.</div></div><div class="tstamp">09:02</div></div></div><div class="msg me"><div class="who">운영팀 · 김운영</div><div class="msg-row"><div class="msg-body"><div class="bubble">다행입니다. 서명 기한은 08.21 23:55입니다.</div></div><div class="tstamp">09:04</div></div></div></div><div class="th-input"><div class="th-input-row"><div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div><div class="th-field">메시지 입력…</div><button class="btn btn-primary th-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7z"></path></svg></button></div></div></div></div></div></div></section>
+
+
+
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="sz-wm" viewBox="0 0 1863.4 200"><text x="0" y="160" font-family="Fredoka, sans-serif" font-size="180" font-weight="700" letter-spacing="0">SHOWROOMZ</text></symbol>
+  </defs>
+</svg>
+
+</body>
+</html>
+</body>
+</html>

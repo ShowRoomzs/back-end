@@ -179,4 +179,46 @@ public class SellerBasicInfoDto {
         @Email(message = "올바른 이메일 형식이 아닙니다.")
         private String newEmail;
     }
+
+    @Getter
+    @Builder
+    @Schema(description = "배송·반품 정책 탭 조회 — 발송 기한 · 배송비. 반품 수취 주소는 담당자·CS 탭에 있다")
+    public static class DeliveryPolicyResponse {
+        @Schema(description = "발송 기한 N — 공구 마감 후 N영업일(주말·공휴일 제외 · 1~7)", example = "3")
+        private Integer shippingLeadDays;
+        @Schema(description = "소비자 상품 상세에 자동 표시되는 문구", example = "공구 마감 후 3영업일 이내 발송 (주말·공휴일 제외)")
+        private String shipDueText;
+        @Schema(description = "기본 배송비 — 반품 배송비 차감 · 교환 재발송비도 이 값이다(별도 반품비·교환비 없음)", example = "3000")
+        private Integer defaultDeliveryFee;
+        @Schema(description = "무료배송 기준금액 — 없으면 null", example = "50000", nullable = true)
+        private Integer freeShippingThreshold;
+        @Schema(description = "도서산간 추가비", example = "3000")
+        private Integer remoteAreaSurcharge;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "배송·반품 정책 저장 — 바꾼 값은 이후 접수되는 주문에만 적용된다(이미 접수된 주문은 주문 시점 값)")
+    public static class UpdateDeliveryPolicyRequest {
+        @jakarta.validation.constraints.NotNull(message = "발송 기한을 입력해 주세요.")
+        @jakarta.validation.constraints.Min(value = 1, message = "발송 기한은 1~7영업일로 입력해 주세요.")
+        @jakarta.validation.constraints.Max(value = 7, message = "발송 기한은 1~7영업일로 입력해 주세요.")
+        @Schema(description = "발송 기한 N — 공구 마감 후 N영업일 · 1~7", example = "3")
+        private Integer shippingLeadDays;
+
+        @jakarta.validation.constraints.NotNull(message = "기본 배송비를 입력해 주세요.")
+        @jakarta.validation.constraints.Min(value = 0, message = "기본 배송비는 0 이상이어야 합니다.")
+        @Schema(description = "기본 배송비", example = "3000")
+        private Integer defaultDeliveryFee;
+
+        @jakarta.validation.constraints.Min(value = 0, message = "무료배송 기준금액은 0 이상이어야 합니다.")
+        @Schema(description = "무료배송 기준금액 — 비우면 무료배송 없음", example = "50000", nullable = true)
+        private Integer freeShippingThreshold;
+
+        @jakarta.validation.constraints.Min(value = 0, message = "도서산간 추가비는 0 이상이어야 합니다.")
+        @Schema(description = "도서산간 추가비 — 비우면 0", example = "3000", nullable = true)
+        private Integer remoteAreaSurcharge;
+    }
 }

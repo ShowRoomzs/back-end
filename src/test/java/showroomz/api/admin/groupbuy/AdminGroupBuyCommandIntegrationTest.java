@@ -368,7 +368,7 @@ class AdminGroupBuyCommandIntegrationTest extends AdminGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("조기 마감 승인 — 종료(EARLY_CLOSED) · 승인 시각이 종료 시각 · 이행 확인 기한이 생긴다 · closure에 요청자·승인자")
+    @DisplayName("조기 마감 승인 — 종료(EARLY_CLOSED) · 승인 시각이 종료 시각 · 이행 확인 기한은 없다(폐기) · closure에 요청자·승인자")
     void approveEarlyClose() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.IN_PROGRESS);
         GroupBuyChangeRequest request = seedSellerRequest(groupBuy, ChangeRequestType.EARLY_CLOSE);
@@ -382,7 +382,8 @@ class AdminGroupBuyCommandIntegrationTest extends AdminGroupBuyTestSupport {
         assertThat(ended.getCloseType()).isEqualTo(GroupBuyCloseType.EARLY_CLOSED);
         assertThat(ended.getClosingChangeRequestId()).isEqualTo(request.getId());
         assertThat(ended.getEndedAt()).isBefore(ended.getEndAt());
-        assertThat(ended.getFulfillmentDueAt()).isEqualTo(ended.getEndedAt().plusDays(3));
+        // 계약 이행 확인은 2026-10-06 폐기됐다 — 기한을 만들지 않는다(1009 기획 수정본 6절).
+        assertThat(ended.getFulfillmentDueAt()).isNull();
         adminDetail(groupBuy.getId())
                 .andExpect(jsonPath("$.closure.closeType").value("EARLY_CLOSED"))
                 .andExpect(jsonPath("$.closure.source").value("REQUEST"))

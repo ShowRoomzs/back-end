@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-studio-07-posts — 쇼룸 스튜디오 게시물 rev.1</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --pt-sidebar-w:240px; --pt-topbar-h:56px; --pt-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;margin-top:12px;line-height:1.8;}
+.rule b{color:var(--n-900);} .rule code{font-family:monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.rule.warn{border-color:var(--warning-text);background:#FFFDF8;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;display:inline-flex;align-items:center;gap:6px;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;min-height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+.stage.tall{height:auto;}
+
+/* ══ 셸(ui-studio-04 동일) ══ */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--pt-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--pt-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:9px 10px;border-radius:var(--r-sm);margin-bottom:2px;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--danger-text);color:#fff;border-radius:9px;
+  min-width:18px;height:18px;line-height:1;padding:1px 5px 0;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gnb-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-item.active .gn{color:rgba(255,255,255,.8);}
+.gcnt .bnum{display:inline-block;transform:translateY(-0.5px);}
+.top{position:absolute;left:var(--pt-sidebar-w);right:0;top:0;height:var(--pt-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;padding:0 var(--pt-pad);z-index:2;}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.crumb-s{font-weight:400;color:var(--n-400);font-size:var(--fs-caption);}
+.brand-chip{display:flex;align-items:center;gap:7px;font-size:var(--fs-caption);color:var(--n-600);}
+.brand-chip .st{font-size:var(--fs-micro);font-weight:500;padding:2px 9px;border-radius:var(--r-pill);
+  background:var(--success-bg);color:var(--success-text);}
+.main{position:absolute;left:var(--pt-sidebar-w);right:0;top:var(--pt-topbar-h);bottom:0;overflow:hidden;
+  display:flex;flex-direction:column;}
+.stage.tall .main{position:static;margin:var(--pt-topbar-h) 0 0 var(--pt-sidebar-w);overflow:visible;}
+.page-h{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:var(--pt-pad) var(--pt-pad) var(--sp-3);flex-shrink:0;}
+.page-t{font-size:var(--fs-h1);font-weight:600;}
+.page-body{flex:1;min-height:0;overflow-y:auto;padding:0 var(--pt-pad) var(--pt-pad);}
+
+/* ══ 버튼 ══ */
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:0 14px;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:none;cursor:pointer;white-space:nowrap;}
+.btn-primary{background:var(--accent-500);color:#fff;}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-ghost{background:transparent;color:var(--n-600);}
+.btn-danger{background:var(--danger-text);color:#fff;}
+.btn-quiet{background:#fff;color:var(--danger-text);border:1px solid var(--n-300);}
+.btn:disabled{background:var(--n-100);color:var(--n-400);border:1px solid var(--n-200);cursor:not-allowed;}
+.btn-sm{height:28px;padding:0 10px;font-size:var(--fs-micro);}
+.btn-block{width:100%;}
+
+/* ══ 탭(디자인시스템) ══ */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-4);}
+.tab{font-size:var(--fs-caption);color:var(--n-500);padding:9px 2px;margin-right:20px;cursor:pointer;
+  border-bottom:2px solid transparent;}
+.tab.active{color:var(--accent-500);border-bottom-color:var(--accent-500);font-weight:500;}
+
+/* ══ 2컬럼 · 카드 ══ */
+.cols{display:flex;gap:16px;align-items:flex-start;}
+.col-l{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px;}
+.col-r{width:400px;flex-shrink:0;display:flex;flex-direction:column;gap:16px;}
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);}
+.card-h{padding:13px 18px;border-bottom:1px solid var(--n-200);font-size:var(--fs-h3);font-weight:600;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.card-h .ch-s{font-size:var(--fs-micro);font-weight:400;color:var(--n-500);}
+.sec{padding:18px;border-bottom:1px solid var(--n-200);}
+.sec:last-child{border-bottom:none;}
+.btn-row{padding:14px 18px;border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+
+/* ══ 폼 ══ */
+.field{margin-bottom:14px;}
+.field:last-child{margin-bottom:0;}
+.flabel{display:block;font-size:var(--fs-caption);color:var(--n-600);margin-bottom:5px;font-weight:500;}
+.flabel .req{color:var(--danger-text);}
+.flabel .opt{color:var(--n-400);font-weight:400;}
+.inp{width:100%;height:36px;border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;
+  display:flex;align-items:center;padding:0 12px;font-size:var(--fs-body);color:var(--n-400);}
+.inp.filled{color:var(--n-900);}
+.inp.ro{background:var(--n-50);color:var(--n-600);border-color:var(--n-200);}
+.inp.area{height:70px;align-items:flex-start;padding-top:9px;line-height:1.6;}
+.inp.bad{border-color:var(--danger-text);}
+.lk{margin-left:auto;font-size:var(--fs-micro);color:var(--n-400);white-space:nowrap;}
+.hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:5px;line-height:1.7;}
+.err{font-size:var(--fs-micro);color:var(--danger-text);margin-top:5px;font-weight:500;}
+.cnt{text-align:right;font-size:var(--fs-micro);color:var(--n-400);margin-top:4px;}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-warning{background:var(--warning-bg);color:var(--warning-text);}
+.b-danger{background:var(--danger-bg);color:var(--danger-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+
+/* ══ 프로필 ══ */
+.prof-row{display:flex;gap:18px;align-items:center;}
+.av-big{width:84px;height:84px;border-radius:50%;background:var(--n-200);border:1px solid var(--n-300);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-micro);color:var(--n-500);flex-shrink:0;}
+.av-big.empty{border-style:dashed;background:var(--n-50);}
+.prof-acts{display:flex;gap:8px;}
+
+/* ══ 연결코드 ══ */
+.codebox{border:1px solid var(--accent-100);background:var(--accent-50);border-radius:var(--r-md);
+  padding:18px;text-align:center;}
+.code-val{font-size:26px;font-weight:600;letter-spacing:3px;color:var(--accent-600);
+  font-variant-numeric:tabular-nums;}
+.code-lb{font-size:var(--fs-micro);color:var(--n-500);margin:2px 0 14px;}
+.code-acts{display:flex;gap:8px;justify-content:center;}
+.linkbox{display:flex;gap:8px;align-items:center;}
+.linkbox .inp{flex:1;font-size:var(--fs-caption);}
+.note-i{font-size:var(--fs-micro);color:var(--n-600);background:var(--n-50);border:1px solid var(--n-200);
+  border-radius:var(--r-sm);padding:9px 12px;margin-top:var(--sp-3);line-height:1.7;}
+.note-i b{color:var(--n-900);}
+
+/* ══ 팔로워 ══ */
+.stats{display:flex;gap:10px;}
+.stat{flex:1;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:13px;background:var(--n-50);}
+.stat .num{font-size:19px;font-weight:600;}
+.stat .lb{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.chart{height:180px;border:1px solid var(--n-200);border-radius:var(--r-sm);background:var(--n-50);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-micro);color:var(--n-400);}
+.flist{border:1px solid var(--n-200);border-radius:var(--r-sm);background:#fff;padding:0 14px;}
+.frow{display:flex;gap:11px;align-items:center;padding:10px 0;border-bottom:1px solid var(--n-100);}
+.frow:last-child{border-bottom:none;}
+.av{width:30px;height:30px;border-radius:50%;background:var(--n-200);display:flex;align-items:center;
+  justify-content:center;font-size:9px;color:var(--n-500);flex-shrink:0;}
+.frow .fn{flex:1;font-size:var(--fs-caption);color:var(--n-900);}
+.frow .fd{font-size:var(--fs-micro);color:var(--n-400);}
+
+/* ══ 빈 상태 ══ */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  text-align:center;padding:48px 20px;}
+.empty .ic{font-size:30px;}
+.empty .t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);}
+.empty .d{font-size:var(--fs-caption);color:var(--n-500);max-width:340px;line-height:1.7;}
+
+.gcard.stopped .gc-img{background:var(--danger-bg);color:var(--danger-text);}
+.gcard.stopped .gc-cap{color:var(--n-400);}
+.alert{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--danger-text);background:#FFFAFA;
+  border-radius:var(--r-sm);padding:13px 14px;margin-bottom:16px;}
+.alert .ic{width:18px;height:18px;border-radius:50%;background:var(--danger-text);color:#fff;font-size:11px;
+  font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.alert .tx{flex:1;font-size:var(--fs-caption);color:var(--n-700);line-height:1.7;}
+.alert .tx b{color:var(--n-900);}
+.alert.info{border-color:var(--accent-100);background:var(--accent-50);}
+.alert.info .ic{background:var(--accent-500);}
+.alert .dl{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:var(--fs-micro);
+  font-weight:500;color:var(--danger-text);background:var(--danger-bg);border-radius:var(--r-pill);padding:3px 10px;}
+.alert.info .dl{color:var(--info-text);background:var(--info-bg);}
+.alert .rs{font-size:var(--fs-micro);color:var(--n-500);margin-top:5px;}
+.alert .rs em{font-style:normal;color:var(--danger-text);font-weight:500;}
+
+/* ══ 모달 ══ */
+.scrim{position:absolute;inset:0;background:rgba(26,27,31,.45);display:flex;align-items:center;justify-content:center;z-index:10;}
+.mdl{width:440px;background:#fff;border-radius:12px;box-shadow:var(--shadow-popover);overflow:hidden;}
+.mdl-h{padding:16px 20px;border-bottom:1px solid var(--n-200);font-size:var(--fs-h2);font-weight:600;
+  display:flex;align-items:center;justify-content:space-between;}
+.mdl-x{color:var(--n-400);font-size:14px;cursor:pointer;}
+.mdl-b{padding:20px;}
+.mdl-p{font-size:var(--fs-caption);color:var(--n-600);margin:0;line-height:1.7;}
+.mdl-f{padding:14px 20px;border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.mdl-box{background:var(--n-50);border:1px solid var(--n-200);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:14px;}
+.mdl-code{font-size:19px;font-weight:600;letter-spacing:2px;color:var(--n-900);text-align:center;}
+.chklist{margin:0;padding-left:18px;font-size:var(--fs-caption);color:var(--n-600);line-height:1.8;}
+
+/* ══ 툴바 ══ */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:var(--sp-4);}
+.filter{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;background:#fff;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-700);}
+.filter .fv{font-weight:500;}
+.tb-sp{flex:1;}
+.tb-cnt{font-size:var(--fs-micro);color:var(--n-500);}
+
+.tabbar{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-4);}
+.tabbar .tabs{margin-bottom:0;border-bottom:none;}
+.tabbar .btn{margin-bottom:9px;}
+.tab .tn{color:var(--n-400);font-variant-numeric:tabular-nums;margin-left:4px;}
+.tab.active .tn{color:var(--accent-500);}
+
+/* ══ 게시물 그리드 ══ */
+.glist{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+.gcard{border:1px solid var(--n-200);border-radius:var(--r-md);background:#fff;overflow:hidden;}
+.gcard.draft{border-style:dashed;border-color:var(--n-300);background:var(--n-50);}
+.gc-img{position:relative;aspect-ratio:4/5;background:var(--n-100);display:flex;align-items:center;
+  justify-content:center;font-size:var(--fs-micro);color:var(--n-400);border-bottom:1px solid var(--n-200);}
+.gcard.draft .gc-img{background:var(--n-50);}
+.navb{position:absolute;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;
+  background:rgba(255,255,255,.94);box-shadow:0 1px 4px rgba(26,27,31,.22);display:flex;align-items:center;
+  justify-content:center;opacity:0;transition:opacity .12s;z-index:2;}
+.navb.l{left:8px;} .navb.r{right:8px;}
+.gc-img:hover .navb,.pc-media:hover .navb{opacity:1;}
+.navb.show{opacity:1;}
+.gcard.stopped .gc-img::after{content:"";position:absolute;inset:0;background:rgba(26,27,31,.45);z-index:1;}
+.gcard.stopped .gc-img .gc-n{z-index:2;}
+.gc-n{position:absolute;right:8px;top:8px;background:rgba(26,27,31,.72);color:#fff;font-size:10px;
+  font-weight:500;padding:2px 7px;border-radius:var(--r-pill);}
+.gc-b{padding:11px 12px 12px;}
+.gc-cap{font-size:var(--fs-caption);color:var(--n-700);line-height:1.55;height:37px;overflow:hidden;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;text-wrap:pretty;}
+.gcard.draft .gc-cap{color:var(--n-400);}
+.gc-m{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:9px;}
+.gc-d{font-size:var(--fs-micro);color:var(--n-400);font-variant-numeric:tabular-nums;}
+
+/* 예시 게시물의 원본 비율 = 3:4 (허용 범위 1.91:1~4:5 안이므로 그대로 유지) — .mcell · .pc-media · 크롭 박스가 같은 값 */
+/* ══ 사진 편집 그리드 ══ */
+.mgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+.mcell{position:relative;aspect-ratio:3/4;border:1px solid var(--n-200);border-radius:var(--r-sm);
+  background:var(--n-100);display:flex;align-items:center;justify-content:center;
+  font-size:var(--fs-micro);color:var(--n-400);}
+.mcell .mx{position:absolute;right:4px;top:4px;width:17px;height:17px;border-radius:50%;
+  background:rgba(26,27,31,.68);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;}
+.mcell .rep{position:absolute;left:4px;bottom:4px;background:var(--accent-500);color:#fff;font-size:9px;
+  font-weight:500;padding:1px 6px;border-radius:var(--r-pill);}
+.mcell.add{border-style:dashed;border-color:var(--n-300);background:#fff;color:var(--n-500);font-size:17px;}
+.mcell.add.off{background:var(--n-100);color:var(--n-300);border-color:var(--n-200);}
+.mcell.bad{border:1.5px solid var(--danger-text);background:var(--danger-bg);flex-direction:column;gap:3px;padding:8px 6px;}
+.mcell.bad .fn{font-size:9px;color:var(--n-700);line-height:1.4;text-align:center;word-break:break-all;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.mcell.bad .why{font-size:9px;font-weight:600;color:var(--danger-text);text-align:center;line-height:1.4;}
+.mcell.bad .mx{background:var(--danger-text);}
+
+.rinfo{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);color:var(--n-600);
+  background:var(--n-100);border-radius:var(--r-pill);padding:2px 9px;font-variant-numeric:tabular-nums;}
+.rinfo b{color:var(--n-900);font-weight:600;}
+.mcell .mc{position:absolute;left:4px;top:4px;width:17px;height:17px;border-radius:var(--r-sm);
+  background:rgba(26,27,31,.68);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;}
+
+/* ══ 크롭 모달 ══ */
+.mdl.wide{width:560px;}
+.crop-stage{position:relative;background:var(--n-900);border-radius:var(--r-sm);height:300px;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;}
+.crop-src{width:198px;height:264px;background:var(--n-600);display:flex;align-items:center;justify-content:center;
+  font-size:var(--fs-micro);color:var(--n-300);}
+.crop-mask{position:absolute;inset:0;pointer-events:none;}
+.crop-mask .box{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:264px;aspect-ratio:3/4;
+  border:1.5px solid #fff;box-shadow:0 0 0 9999px rgba(26,27,31,.55);}
+.crop-mask .box i{position:absolute;background:rgba(255,255,255,.32);}
+.crop-mask .box i.v1{left:33.33%;top:0;bottom:0;width:1px;}
+.crop-mask .box i.v2{left:66.66%;top:0;bottom:0;width:1px;}
+.crop-mask .box i.h1{top:33.33%;left:0;right:0;height:1px;}
+.crop-mask .box i.h2{top:66.66%;left:0;right:0;height:1px;}
+.crop-ctl{display:flex;align-items:center;gap:12px;margin-top:14px;}
+.crop-ctl .lb{font-size:var(--fs-micro);color:var(--n-500);flex-shrink:0;}
+.slider{flex:1;height:3px;background:var(--n-200);border-radius:2px;position:relative;}
+.slider i{position:absolute;left:0;top:0;bottom:0;width:0%;background:var(--accent-500);border-radius:2px;}
+.slider b{position:absolute;left:0%;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;
+  border-radius:50%;background:#fff;border:1px solid var(--n-300);box-shadow:0 1px 3px rgba(26,27,31,.18);}
+.thumbs{display:flex;gap:6px;margin-top:14px;}
+.thumbs .t{width:38px;height:48px;border-radius:4px;background:var(--n-100);border:1px solid var(--n-200);
+  display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--n-400);}
+.thumbs .t.on{border-color:var(--accent-500);border-width:1.5px;color:var(--accent-600);}
+
+/* ══ 안내 박스(자동/제약) ══ */
+.autobox{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--n-200);background:var(--n-50);
+  border-radius:var(--r-sm);padding:11px 12px;font-size:var(--fs-micro);color:var(--n-600);line-height:1.7;}
+.autobox b{color:var(--n-900);}
+.autobox .ic{width:16px;height:16px;border-radius:50%;background:var(--n-300);color:#fff;font-size:10px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.autobox.lock .ic{background:var(--n-600);}
+
+/* ══ 섹션 소제목 ══ */
+.sec-t{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:var(--fs-caption);
+  font-weight:600;color:var(--n-900);margin-bottom:8px;}
+.sec-t .s{font-size:var(--fs-micro);font-weight:400;color:var(--n-500);}
+
+/* ══ 통계 ══ */
+.stats{display:flex;gap:10px;}
+.stat{flex:1;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:12px 14px;background:var(--n-50);}
+.stat .num{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.25;}
+.stat .lb{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.stat.key{background:var(--accent-50);border-color:var(--accent-100);}
+.stat.key .num{color:var(--accent-600);}
+.row{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.row:last-child{border-bottom:none;}
+.row .lab{width:88px;color:var(--n-500);flex-shrink:0;}
+.row .val{flex:1;color:var(--n-900);}
+
+.dist{display:flex;flex-direction:column;gap:10px;}
+.dist-g{font-size:var(--fs-micro);color:var(--n-600);font-weight:600;margin-bottom:9px;}
+.dist-2{display:grid;grid-template-columns:1fr 1fr;gap:28px;}
+.dist-2 .dist-grp{margin:0;padding:0;border:none;}
+.src-r{display:flex;flex-direction:column;gap:4px;}
+.sl{display:flex;justify-content:space-between;font-size:var(--fs-micro);color:var(--n-600);}
+.sl .sv b{color:var(--n-900);font-variant-numeric:tabular-nums;}
+.bar{height:5px;border-radius:3px;background:var(--n-100);overflow:hidden;}
+.bar i{display:block;height:100%;background:var(--accent-500);border-radius:3px;}
+
+/* ══ 소비자 미리보기 ══ */
+.pcard{border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;background:#fff;}
+.pc-head{display:flex;align-items:center;gap:9px;padding:11px 13px;}
+.pc-head .av{width:30px;height:30px;border-radius:50%;background:var(--n-200);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--n-500);}
+.pc-head .nm{font-size:var(--fs-caption);font-weight:600;}
+.pc-head .tm{font-size:var(--fs-micro);color:var(--n-400);}
+.pc-media{aspect-ratio:3/4;background:var(--n-100);border-top:1px solid var(--n-200);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-micro);color:var(--n-400);position:relative;}
+.pc-n{position:absolute;right:10px;top:10px;background:rgba(26,27,31,.72);color:#fff;font-size:10px;
+  font-weight:500;padding:2px 8px;border-radius:var(--r-pill);font-variant-numeric:tabular-nums;z-index:2;}
+.pc-act{padding:10px 13px 4px;font-size:var(--fs-caption);color:var(--n-600);}
+.pc-body{padding:0 13px 13px;font-size:var(--fs-caption);color:var(--n-700);line-height:1.65;text-wrap:pretty;}
+.pc-body .who{font-weight:600;color:var(--n-900);margin-right:5px;}
+
+/* ══ 빈 상태 ══ */
+.empty{text-align:center;padding:72px 20px;}
+.empty .ico{width:44px;height:44px;border-radius:50%;background:var(--n-100);margin:0 auto 14px;
+  display:flex;align-items:center;justify-content:center;}
+.empty .t{font-size:var(--fs-h3);font-weight:600;margin-bottom:6px;}
+.empty .d{font-size:var(--fs-caption);color:var(--n-500);line-height:1.75;margin-bottom:18px;}
+
+.gcard.stopped .gc-img{background:var(--danger-bg);color:var(--danger-text);}
+.gcard.stopped .gc-cap{color:var(--n-400);}
+.alert{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--danger-text);background:#FFFAFA;
+  border-radius:var(--r-sm);padding:13px 14px;margin-bottom:16px;}
+.alert .ic{width:18px;height:18px;border-radius:50%;background:var(--danger-text);color:#fff;font-size:11px;
+  font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.alert .tx{flex:1;font-size:var(--fs-caption);color:var(--n-700);line-height:1.7;}
+.alert .tx b{color:var(--n-900);}
+.alert.info{border-color:var(--accent-100);background:var(--accent-50);}
+.alert.info .ic{background:var(--accent-500);}
+.alert .dl{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:var(--fs-micro);
+  font-weight:500;color:var(--danger-text);background:var(--danger-bg);border-radius:var(--r-pill);padding:3px 10px;}
+.alert.info .dl{color:var(--info-text);background:var(--info-bg);}
+.alert .rs{font-size:var(--fs-micro);color:var(--n-500);margin-top:5px;}
+.alert .rs em{font-style:normal;color:var(--danger-text);font-weight:500;}
+
+/* ══ 모달 ══ */
+.scrim{position:absolute;inset:0;background:rgba(26,27,31,.42);display:flex;align-items:center;
+  justify-content:center;z-index:10;}
+.mdl{width:440px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);overflow:hidden;}
+.mdl-h{padding:15px 20px;border-bottom:1px solid var(--n-200);font-size:var(--fs-h3);font-weight:600;
+  display:flex;align-items:center;justify-content:space-between;}
+.mdl-x{color:var(--n-400);font-size:var(--fs-caption);}
+.mdl-b{padding:18px 20px;}
+.mdl-p{font-size:var(--fs-caption);color:var(--n-600);line-height:1.75;margin:0;}
+.mdl-p b{color:var(--n-900);}
+.mdl-prev{display:flex;gap:11px;align-items:center;border:1px solid var(--n-200);border-radius:var(--r-sm);
+  padding:10px;margin-bottom:14px;background:var(--n-50);}
+.mdl-prev .th{width:44px;height:55px;border-radius:4px;background:var(--n-200);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--n-500);}
+.mdl-prev .tx{font-size:var(--fs-micro);color:var(--n-600);line-height:1.6;}
+.mdl-f{padding:13px 20px;border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 640.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+<div class="doc-head">
+  <h1>ui-studio-07-posts <span style="font-weight:400;color:var(--n-500)">— 쇼룸 스튜디오 게시물(GNB #5)</span></h1>
+  <p class="meta">1440×1024 · 전역 Compact · 액센트 인디고 #3B5BDB 단일 · 셸은 ui-studio-04-connections 복사본 · 상태 11종(빈 상태 · 운영자 조치 · 이의 신청 · 크롭 모달 포함)</p>
+  <div class="rule">
+    <b>[스코프]</b> GNB #5 <b>게시물</b> = <b>일반 게시물</b>(자유 콘텐츠 · 판매 없음)만. 공구 게시물은 공구 1건당 1개로 묶여 있어 <b>공구 관리(#4)</b>에서 작성 · 열람한다. 두 게시물은 <b>작성 규칙 · 상태 전이 · 수정 가능 시점이 전부 다르므로</b> 한 목록에 섞지 않는다 — 대신 목록 하단에 어디로 가야 하는지 한 줄로 안내한다.<br>
+    <b>[상태 · 3종]</b> <b>작성중 → 게시중</b>, 그리고 운영자 조치인 <b>노출 중지</b>. 인플루언서가 스스로 내리는 <b>숨김(미게시)은 없다</b> — 본인이 내리는 유일한 방법은 <b>삭제(불가역)</b>. 상태색은 게시중 = <b>성공</b>, 작성중 = <b>정보</b>(내 손에 있는 대기), 노출 중지 = <b>위험</b>(운영자 조치 · 기한 내 대응하지 않으면 영구 삭제로 끝나는 상태) — 상태색 4원칙 ①③.<br>
+    <b>[운영자 조치 · 확정]</b> 신고 · 규정 위반 게시물은 즉시 <b>노출 중지</b>되고 <b>이의 신청 기간</b>이 함께 시작된다. 이 기간이 결과를 가른다 — <b>①기간 내 신청 → 승인 시 재게시(좋아요 · 인사이트 유지) ②반려 → 영구 삭제 ③기간 내 미신청 → 영구 삭제</b>. 조치 시 <b>사유 · 근거 규정 · 조치 시각 · 처리자 · 기한</b>을 화면에 남기고 알림을 보낸다 — 알리지 않고 사라지는 경우는 없다. 중지 기간에는 <b>사진 · 본문 수정 불가</b>(심사 대상이 도중에 바뀌면 안 되므로), 액션은 <b>[이의 신청] 하나</b>로 통일했다(기존 [소명하기] · [수정 후 재검토 요청] 2안은 폐기 — 반려 시 영구 삭제이므로 "고쳐서 다시"라는 경로가 성립하지 않는다). 신청은 게시물당 <b>1회</b>. S8 → S10(신청) → S11(심사 중) → 재게시 또는 영구 삭제.<br>
+    <b>[영구 삭제의 정의 · 확정]</b> "영구 삭제"는 <b>인플루언서 기준의 삭제</b>다 — 목록 · 쇼룸 · 인사이트에서 사라지고 본인도 복구할 수 없으며 별도 화면을 두지 않는다. 다만 <b>즉시 완전 삭제(hard delete)하지 않는다</b>: 서버는 누구에게도 노출되지 않는 <b>비공개 상태로 N개월 보관</b>한 뒤 파기하고, 그동안은 <b>운영자 콘솔에서만</b> 조회할 수 있다. 이유는 셋 — ①플랫폼이 내린 삭제 판단의 <b>정당성 입증 자료</b>가 남아야 하고 ②표시광고 · 명예훼손 · 저작권 건은 사후 <b>수사 · 행정기관 자료 요청</b>이 들어오며 ③공구와 이어진 게시물은 <b>전자상거래법상 기록 보존 대상</b>과 겹칠 수 있다.<br>
+    <b>[중지 중 본인 삭제]</b> S8에서는 <b>[삭제]를 남긴다</b> — 다투고 싶지 않은 인플루언서에게 출구가 필요하고, 7일을 기다려 자동 삭제되는 것을 보고만 있게 하면 자기 콘텐츠에 대한 통제권을 빼앗는 셈이다. "증거 인멸" 우려는 성립하지 않는다(삭제해도 서버 비공개 보관 + 알림 이력 영구 보존). 단 <b>①심사 중(S11)에는 삭제 불가</b> — 신청 후 도중에 지우면 처리 결과가 붕 뜬다 — <b>②확인 모달에 "삭제하면 이의를 신청할 수 없고 되돌릴 수 없습니다"를 명시</b>한다.<br>
+    <b>[삭제 이력 · 유예]</b> 삭제 사실 · 사유 · 심사 이력은 <b>알림 이력에 영구 보존</b>한다(이건 사라지면 안 된다). 반려 통지 후 곧바로 지우지 않고 <b>유예 기간</b>을 두어, 그동안은 내려간 상태로 남기고 <b>본인만 사진 원본을 내려받을 수 있게</b> 한다 — 인플루언서가 자기 콘텐츠 원본을 잃는 상황이 분쟁으로 이어지기 때문이다.<br>
+    <b>[⚠ 약관 반영 필요]</b> 위 보관은 <b>이용약관에 근거 조항이 있어야</b> 가능하다 — "위반으로 삭제된 게시물은 일정 기간 비공개로 보관될 수 있다"를 명시하지 않으면 보관 자체가 문제가 된다.<br>
+    <b>[⚠ 법률 자문 필요]</b> <b>이의 신청 기간(현재 시안 7일)</b> · <b>심사 소요(3영업일)</b> · <b>반려 후 유예 · 원본 내려받기 기간</b> · <b>삭제 게시물 비공개 보관 기간(N개월)</b> · 반복 위반 시 계정 단위 제재는 <b>전자상거래법 · 개인정보 보호법 · 표시광고법</b>과 맞물리므로 법률 자문으로 확정해야 한다. 현재 수치는 <b>모두 가정값</b>이다.<br>
+    <b>[확인 필요 · 운영자 조치]</b> ⓐ 이의 신청 기한 · 심사 소요일(위 법률 자문 항목) ⓑ 반복 위반 시 계정 단위 제재 유무 ⓒ 중지 기간 중 이미 쌓인 좋아요 · 인사이트 보존 여부(현재 시안은 <b>보존 · 재게시 시 복원</b>) ⓓ 공구 게시물의 기존 "운영자 수동 숨김"과 명칭 통일 여부 — 같은 성격의 조치이므로 <b>노출 중지</b>로 통일할 것을 제안한다.<br>
+    <b>[공구 게시물과의 차이 · 근거]</b> 공구 게시물은 제목 필수 · 본문 글만 · 노출중 수정 잠금 · 대가관계 자동 삽입. 일반 게시물은 <b>제목 없음 · 사진 최대 20개 · 상시 수정 가능 · 대가관계 표시 없음</b>(광고가 아니므로). 그래서 두 화면은 같은 카드 · 폼 컴포넌트를 쓰되 <b>필드 구성이 다르다</b>.<br>
+    <b>[파트너센터와 다른 이유]</b> 파트너센터에는 대응 화면이 없다 — 게시물은 인플루언서 소유 콘텐츠이고 브랜드는 열람만 한다. 따라서 이 화면은 스튜디오 단독이며, 공유 컴포넌트는 <b>카드 · 폼 · 모달 · 빈 상태</b> 수준에서만 재사용한다.<br>
+    <b>[허용 파일 · 확정]</b> <b>JPG · PNG 사진만</b> — 영상 첨부는 지원하지 않는다. 장당 20MB · 게시물당 최대 20장. 와이어의 "이미지 · 영상 20개"에서 영상을 제외한 결정이며, 화면 문구 · 오류 메시지 · 빈 상태를 모두 사진 기준으로 통일했다.<br>
+    <b>[사진 넘기기 · 인터랙션]</b> 목록 카드와 미리보기 모두 <b>마우스를 올렸을 때만</b> 좌우 화살표가 나타나고, 클릭하면 다음 · 이전 사진으로 넘어간다(평상시 숨김 — 격자에 화살표가 상시 떠 있으면 시선이 분산된다). 첫 장 · 마지막 장에서는 해당 방향 화살표를 숨긴다. 사진이 1장이면 화살표 없음. 목록 카드 · 미리보기 모두 우측 상단에 <b>현재 / 총 장수</b> 카운터를 둔다(점 인디케이터는 장수가 많을 때 셀 수 없어 폐기). S1의 첫 카드만 화살표를 <b>고정 노출</b>해 스냅샷 문서에서 확인할 수 있게 했다.<br>
+    <b>[사진 정렬 · 인터랙션]</b> 왼쪽부터 순서대로 표시되고 <b>첫 번째가 대표</b>(쇼룸 격자 썸네일 · 게시물 비율의 기준). 순서 변경은 <b>셀 드래그</b> — 화면에 문구로 안내하지 않고 커서 · 드래그 상태로만 드러낸다.<br>
+    <b>[사진 비율 · 확정]</b> 인스타와 동일한 <b>연속 범위 클램프</b> 방식 — 비율 프리셋을 사용자에게 고르게 하지 않는다. <b>허용 범위 1.91:1(가로) ~ 4:5(세로)</b> 안이면 <b>원본 비율 그대로</b>, 벗어나면 가장 가까운 경계값으로 자른다(3:2 → 3:2 유지, 16:9 → 1.91:1로 크롭, 9:16 → 4:5로 크롭). 게시물 단위 통일은 유지 — <b>첫 번째 사진의 비율이 나머지 전부에 적용</b>된다. 크롭 모달에는 <b>비율 선택 컨트롤을 두지 않는다</b> — 정사각 강제 옵션도 없다. 컨트롤은 <b>드래그 + 확대</b>뿐이고 비율 수치는 <b>표시만</b> 한다(S9).<br>
+    <b>[따라오는 영향]</b> 소비자 쇼룸 피드는 <b>게시물마다 높이가 달라진다</b>(1.91:1 ~ 4:5 사이의 임의 값) — 고정 높이 카드로 구현하면 안 되고, 서버가 각 게시물의 비율값을 함께 내려줘야 한다. 반대로 스튜디오 목록 격자와 쇼룸 격자는 <b>균일 4:5 센터 크롭</b>을 유지한다.<br>
+    <b>[목록 격자는 별도 크롭]</b> 스튜디오 목록(S1 · S2)과 쇼룸 격자는 <b>비율과 무관하게 균일한 4:5 썸네일</b>로 센터 크롭한다 — 관리 목록에서 카드 높이가 제각각이면 훑어보기 어렵다. 인스타도 피드와 프로필 격자를 다른 비율로 자른다.<br>
+    <b>[확인 필요 · 비율]</b> ⓔ 인스타가 2025년에 추가한 <b>3:4</b>는 4:5 범위 안이라 자동으로 지원되지만, 격자 크롭 기준을 4:5로 둘지 3:4로 둘지 ⓕ 영상 지원이 필요해지는 시점(현재는 <b>JPG · PNG만</b> 허용 — 릴스 · 영상 콘텐츠는 인스타에 직접 올리는 것이 계약상 콘텐츠 의무이므로 쇼룸은 사진만 받는다) ⓖ 이미 게시된 게시물의 비율 변경 허용 여부.<br>
+    <b>[인사이트 범위 · 확장]</b> 게시물 인사이트는 <b>①반응 ②조회 후 행동 ③본 사람</b> 3단으로 구성한다. ②는 게시물이 <b>쇼룸 방문 · 팔로우로 이어졌는지</b>를 보는 지표로, 게시물을 본 뒤 <b>24시간 이내</b> 행동만 귀속하고 복수 게시물을 본 경우 <b>마지막 조회 게시물</b>에 귀속한다(라스트 터치). ③은 쇼룸 관리(#8)의 팔로워 구성과 같은 규칙 — <b>집계값만</b> 표시하고 개인 식별 정보 · 개별 목록은 어떤 화면에도 두지 않는다. 매출 · 구매는 계속 판매 현황(#6) 소관이다.<br>
+    <b>[확인 필요 · 인사이트]</b> ⓗ 귀속 창(24시간)이 적정한지 — 짧으면 과소 집계, 길면 중복 귀속 ⓘ <b>비로그인 조회</b>는 연령 · 성별을 알 수 없어 미확인 비중이 커진다(앱 로그인 없이 쇼룸 링크로 들어오는 유입이 주력이면 ③의 표본이 얇아짐) ⓙ 노출이 일정 수 미만일 때 ③의 비율을 <b>비공개</b>로 둘 기준 인원.<br>
+    <b>[용어 통일]</b> 와이어의 "조회수"는 쇼룸 관리(#8)의 인기 콘텐츠 지표와 어긋나므로 <b>노출</b>로 통일했다. 좋아요율 = 좋아요 ÷ 노출.<br>
+    <b>[버튼 활성 조건 · 확정]</b> <b>[임시저장]</b> = 사진 1장 <b>또는</b> 본문 1자 이상 — 무엇이든 남길 게 있어야 저장이 성립한다. <b>[게시하기]</b> = <b>사진 최소 1장 필수</b>. 본문은 <b>선택</b>이다(사진만 있는 게시물 허용 — 인스타의 캡션 없는 게시물과 같다). 두 조건 모두 <b>에러 문구 없이 비활성만</b>으로 표현한다.<br>
+    <b>[업로드 실패 처리 · 확정]</b> 형식 · 용량에 걸린 파일은 <b>그리드에 그대로 칸으로 남긴다</b> — 파일명과 사유(용량 초과 · 미지원 형식)를 칸 안에 적어, 어떤 파일이 걸렸는지 눈으로 바로 찾을 수 있게 한다. 문구로만 알리면 여러 장을 한꺼번에 올렸을 때 무엇을 다시 골라야 하는지 알 수 없다. 실패 칸은 <b>장수에 포함하지 않으며</b> 저장 · 게시 대상도 아니다. 다만 문구를 못 보고 그대로 게시해 버리는 일을 막기 위해, 오류가 떠 있는 동안에는 <b>[+] · [임시저장] · [게시하기]를 모두 잠근다</b>. 잠금을 푸는 경로는 <b>실패 칸의 [✕]</b>로 그 파일을 제외하는 것 하나뿐이다 — 확인하지 않고 빠져나갈 길은 두지 않되, 어디를 눌러야 할지는 칸 위에 그대로 보인다.<br>
+    <b>[에러 문구 범위]</b> 사진 · 본문 미입력은 <b>버튼 비활성만</b>(S3). 에러 문구는 <b>파일 형식 · 용량 오류</b>에만 사용한다(S5).<br>
+    <b>[GNB 명칭]</b> 와이어의 "6. 성과 관리"는 확정 GNB의 <b>6. 판매 현황</b>으로 표기한다(확정 GNB 우선).<br>
+    <b>[확인 필요]</b> ① <b>임시저장 개수 상한</b> — 작성중 게시물을 몇 개까지 둘 수 있는지 미정(무제한이면 목록 상단이 초안으로 덮인다). ② <b>임시저장 보관 기간</b> — 자동 삭제 여부 미정. ③ <b>영상 용량 · 길이 상한</b> — 와이어에 이미지 10MB만 있고 영상 기준이 없어 <b>200MB</b>로 가정 표기했다. ④ <b>게시물 삭제 시 팔로워 알림</b> 처리 방식(이미 보낸 알림에서 진입하면 무엇을 보여줄지) 미정.<br>
+    <b>[스냅샷 높이]</b> 프레임은 1440×1024 기준이며, 세로로 잘리는 내용을 확인할 수 있도록 각 상태의 <code>.stage</code>는 콘텐츠 높이만큼 늘어난다.
+  </div>
+</div>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S1</span><span class="state-label">게시물 목록 · 기본</span>
+  <span class="state-spec">일반 게시물만 — 공구 게시물은 공구 관리(#4) 소관 · 상태 <b>작성중 / 게시중 / 노출 중지 3종</b>(인플루언서 스스로 내리는 숨김은 없음) · 상태 전환은 <b>드롭다운이 아니라 탭</b> — 개수가 함께 보여야 조치가 필요한 게시물을 바로 찾는다 · 작성중 카드는 <b>점선 · 회색조</b>, 노출 중지 카드는 <b>이미지 딤 처리</b>로 공개된 게시물과 구분 · 사진에 마우스를 올리면 <b>좌우 화살표</b>가 나타나 카드에서 바로 넘겨볼 수 있다(첫 카드만 고정 노출로 표시) · 카드 클릭 → 수정 화면</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">판매 현황</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">게시물</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">게시물</div></div><div class="page-body"><div class="tabbar"><div class="tabs"><div class="tab active">전체<span class="tn">8</span></div><div class="tab">게시중<span class="tn">6</span></div><div class="tab">노출 중지<span class="tn">1</span></div><div class="tab">작성중<span class="tn">1</span></div></div><button class="btn btn-primary">+ 게시물 작성</button></div><div class="glist"><div class="gcard draft"><div class="gc-img">사진 없음</div><div class="gc-b"><div class="gc-cap">(본문 미작성)</div><div class="gc-m"><span class="gc-d">임시저장 08.12</span><span class="badge b-info">작성중</span></div></div></div><div class="gcard"><div class="gc-img">사진 1 / 4<span class="gc-n">1 / 4</span><span class="navb l show"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="15 18 9 12 15 6"></polyline></svg></span><span class="navb r show"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="9 18 15 12 9 6"></polyline></svg></span></div><div class="gc-b"><div class="gc-cap">요즘 아침 루틴에 넣은 것들. 세안 후 바로 이 순서로 발라요. 두 번째가 제일 만족스러워요</div><div class="gc-m"><span class="gc-d">2026.08.10 · ♥ 84</span><span class="badge b-success">게시중</span></div></div></div><div class="gcard"><div class="gc-img">사진 1 / 12<span class="gc-n">1 / 12</span><span class="navb l"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="15 18 9 12 15 6"></polyline></svg></span><span class="navb r"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="9 18 15 12 9 6"></polyline></svg></span></div><div class="gc-b"><div class="gc-cap">이번 주말 촬영 비하인드! 다들 궁금해하셔서 올려봐요</div><div class="gc-m"><span class="gc-d">2026.08.07 · ♥ 156</span><span class="badge b-success">게시중</span></div></div></div><div class="gcard stopped"><div class="gc-img">사진 1 / 3<span class="gc-n">1 / 3</span><span class="navb l"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="15 18 9 12 15 6"></polyline></svg></span><span class="navb r"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="9 18 15 12 9 6"></polyline></svg></span></div><div class="gc-b"><div class="gc-cap">여름 대비 클렌징 팁 정리해봤어요. 저는 이 순서로 씁니다</div><div class="gc-m"><span class="gc-d">08.02 게시 · 08.12 중지</span><span class="badge b-danger">노출 중지</span></div></div></div><div class="gcard"><div class="gc-img">사진 1 / 6<span class="gc-n">1 / 6</span><span class="navb l"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="15 18 9 12 15 6"></polyline></svg></span><span class="navb r"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="9 18 15 12 9 6"></polyline></svg></span></div><div class="gc-b"><div class="gc-cap">지난 공구 때 많이 물어보신 사용법, 영상으로 찍어봤어요</div><div class="gc-m"><span class="gc-d">2026.07.28 · ♥ 98</span><span class="badge b-success">게시중</span></div></div></div><div class="gcard"><div class="gc-img">사진 1 / 2<span class="gc-n">1 / 2</span><span class="navb l"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="15 18 9 12 15 6"></polyline></svg></span><span class="navb r"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="9 18 15 12 9 6"></polyline></svg></span></div><div class="gc-b"><div class="gc-cap">제형 비교샷 — 왼쪽이 여름용, 오른쪽이 겨울용</div><div class="gc-m"><span class="gc-d">2026.07.21 · ♥ 61</span><span class="badge b-success">게시중</span></div></div></div><div class="gcard"><div class="gc-img">사진 1 / 8<span class="gc-n">1 / 8</span><span class="navb l"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="15 18 9 12 15 6"></polyline></svg></span><span class="navb r"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="9 18 15 12 9 6"></polyline></svg></span></div><div class="gc-b"><div class="gc-cap">파우치 털기 2026 여름 ver.</div><div class="gc-m"><span class="gc-d">2026.07.14 · ♥ 203</span><span class="badge b-success">게시중</span></div></div></div><div class="gcard"><div class="gc-img">사진 1 / 5<span class="gc-n">1 / 5</span><span class="navb l"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="15 18 9 12 15 6"></polyline></svg></span><span class="navb r"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="9 18 15 12 9 6"></polyline></svg></span></div><div class="gc-b"><div class="gc-cap">요즘 손이 자주 가는 것들만 모았어요</div><div class="gc-m"><span class="gc-d">2026.07.06 · ♥ 37</span><span class="badge b-success">게시중</span></div></div></div></div><div class="note-i" style="margin-top:16px">여기에는 <b>일반 게시물</b>만 표시됩니다. 공구 게시물은 공구별로 1개씩 묶여 있어 <b>공구 관리</b>에서 작성 · 확인합니다.</div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S2</span><span class="state-label">게시물 목록 · 빈 상태(신규)</span>
+  <span class="state-spec">신규 인플루언서 진입 · 상태 탭은 개수 0으로 그대로 두고 목록 자리만 빈 상태 · 주 CTA는 빈 상태의 [+ 첫 게시물 작성] 하나만 — 툴바 버튼은 <b>보조 버튼으로 강등</b></span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">판매 현황</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">게시물</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">게시물</div></div><div class="page-body"><div class="tabbar"><div class="tabs"><div class="tab active">전체<span class="tn">0</span></div><div class="tab">게시중<span class="tn">0</span></div><div class="tab">노출 중지<span class="tn">0</span></div><div class="tab">작성중<span class="tn">0</span></div></div><button class="btn btn-secondary">+ 게시물 작성</button></div><div class="card"><div class="empty"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-400)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="8.5" cy="9" r="1.6"></circle><path d="M21 15l-5-5L5 21"></path></svg></div><div class="t">아직 게시물이 없습니다</div><div class="d">사진과 글을 올리면 내 쇼룸에 바로 보이고,<br>팔로워에게 새 게시물 알림이 갑니다.</div><button class="btn btn-primary">+ 첫 게시물 작성</button></div></div><div class="note-i" style="margin-top:16px">여기에는 <b>일반 게시물</b>만 표시됩니다. 공구 게시물은 공구별로 1개씩 묶여 있어 <b>공구 관리</b>에서 작성 · 확인합니다.</div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S3</span><span class="state-label">게시물 작성 · 신규(미입력)</span>
+  <span class="state-spec">제목 없음 · 사진도 본문도 없는 상태 → <b>[임시저장] · [게시하기] 모두 비활성</b> · 에러 문구 없이 비활성만으로 표현 · 미리보기는 빈 상태 그대로 유지</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">판매 현황</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">게시물 <span class="crumb-s">› 새 게시물</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">새 게시물</div></div><div class="page-body"><div class="cols"><div class="col-l"><div class="card"><div class="card-h">게시물 작성<span class="badge b-info">작성중</span></div><div class="sec"><div class="sec-t">사진<div style="display:flex;align-items:center;gap:9px"><span class="rinfo">원본 맞춤</span><span class="s">0 / 20</span></div></div><div class="mgrid"><div class="mcell add">+</div></div><div class="hint"><b>JPG · PNG 최대 20장</b> · 장당 20MB<br>비율은 <b>첫 번째 사진의 원본 비율</b>을 따라갑니다 · 세로가 <b>4:5</b>보다 길거나 가로가 <b>1.91:1</b>보다 넓으면 잘립니다</div></div><div class="sec"><div class="sec-t">본문</div><div class="inp area" style="height:150px">사진과 함께 하고 싶은 이야기를 자유롭게 적어주세요.</div><div class="cnt">0 / 2,000</div></div><div class="btn-row"><button class="btn btn-secondary" disabled>임시저장</button><button class="btn btn-primary" disabled>게시하기</button></div></div></div><div class="col-r"><div class="card"><div class="card-h">미리보기<span class="ch-s">소비자 쇼룸 기준</span></div><div class="sec"><div class="pcard"><div class="pc-head"><div class="av">IMG</div><div><div class="nm">뷰티_소연</div><div class="tm">방금</div></div></div><div class="pc-media">사진을 추가하면 여기에 보입니다</div><div class="pc-act">♡ 좋아요</div><div class="pc-body" style="color:var(--n-400)">본문이 캡션으로 여기에 표시됩니다</div></div><div class="note-i">쇼룸 피드는 <b>노출중인 공구 게시물이 항상 위</b>에 오고, 일반 게시물은 그 아래에 최신순으로 쌓입니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S4</span><span class="state-label">게시물 작성 · 입력 완료</span>
+  <span class="state-spec">사진 4개 · 본문 입력 → [게시하기] 활성 · 첫 번째 사진에 <b>대표</b> 표시 · 미리보기는 입력값을 그대로 반영</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">판매 현황</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">게시물 <span class="crumb-s">› 새 게시물</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">새 게시물</div></div><div class="page-body"><div class="cols"><div class="col-l"><div class="card"><div class="card-h">게시물 작성<span class="badge b-info">작성중</span></div><div class="sec"><div class="sec-t">사진<div style="display:flex;align-items:center;gap:9px"><span class="rinfo">원본 맞춤</span><span class="s">4 / 20</span></div></div><div class="mgrid"><div class="mcell">IMG<span class="mc">⤢</span><span class="mx">✕</span><span class="rep">대표</span></div><div class="mcell">IMG<span class="mc">⤢</span><span class="mx">✕</span></div><div class="mcell">IMG<span class="mc">⤢</span><span class="mx">✕</span></div><div class="mcell">IMG<span class="mc">⤢</span><span class="mx">✕</span></div><div class="mcell add">+</div></div><div class="hint"><b>JPG · PNG 최대 20장</b> · 장당 20MB<br>비율은 <b>첫 번째 사진의 원본 비율</b>을 따라갑니다 · 세로가 <b>4:5</b>보다 길거나 가로가 <b>1.91:1</b>보다 넓으면 잘립니다</div></div><div class="sec"><div class="sec-t">본문</div><div class="inp area filled" style="height:150px">요즘 아침 루틴에 넣은 것들. 세안 후 바로 이 순서로 발라요. 특히 두 번째 제품이 요즘 제일 만족스러워서 자세히 찍어봤어요. 끈적임 없이 마무리되는 게 여름엔 진짜 중요하더라고요.</div><div class="cnt">112 / 2,000</div></div><div class="btn-row"><button class="btn btn-secondary">임시저장</button><button class="btn btn-primary">게시하기</button></div></div></div><div class="col-r"><div class="card"><div class="card-h">미리보기<span class="ch-s">소비자 쇼룸 기준</span></div><div class="sec"><div class="pcard"><div class="pc-head"><div class="av">IMG</div><div><div class="nm">뷰티_소연</div><div class="tm">방금</div></div></div><div class="pc-media">사진 1 / 4<span class="navb l"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="15 18 9 12 15 6"></polyline></svg></span><span class="navb r"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="9 18 15 12 9 6"></polyline></svg></span><span class="pc-n">1 / 4</span></div><div class="pc-act">♡ 좋아요</div><div class="pc-body"><span class="who">뷰티_소연</span>요즘 아침 루틴에 넣은 것들. 세안 후 바로 이 순서로 발라요. 특히 두 번째 제품이 요즘 제일 만족스러워서 자세히 찍어봤어요. 끈적임 없이 마무리되는 게 여름엔 진짜 중요하더라고요.</div></div><div class="note-i">쇼룸 피드는 <b>노출중인 공구 게시물이 항상 위</b>에 오고, 일반 게시물은 그 아래에 최신순으로 쌓입니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S5</span><span class="state-label">게시물 작성 · 파일 오류</span>
+  <span class="state-spec"><b>파일 형식 · 용량 오류만</b> 에러 문구 대상 · <b>실패한 파일도 그리드에 칸으로 남긴다</b> — 파일명 · 사유를 칸 안에 적어 어떤 파일이 걸렸는지 바로 찾게 한다 · 실패 칸이 남아 있는 동안 <b>[+] · [임시저장] · [게시하기] 잠금</b>, 칸의 <b>[✕]</b>로 제외하면 풀린다 · 실패 칸은 <b>장수(2 / 20)에 포함하지 않는다</b></span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">판매 현황</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">게시물 <span class="crumb-s">› 새 게시물</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">새 게시물</div></div><div class="page-body"><div class="cols"><div class="col-l"><div class="card"><div class="card-h">게시물 작성<span class="badge b-info">작성중</span></div><div class="sec"><div class="sec-t">사진<div style="display:flex;align-items:center;gap:9px"><span class="rinfo">원본 맞춤</span><span class="s">2 / 20</span></div></div><div class="mgrid"><div class="mcell">IMG<span class="mc">⤢</span><span class="mx">✕</span><span class="rep">대표</span></div><div class="mcell">IMG<span class="mc">⤢</span><span class="mx">✕</span></div><div class="mcell bad"><span class="fn">IMG_2894.jpg</span><span class="why">34.2MB · 20MB 초과</span><span class="mx">✕</span></div><div class="mcell bad"><span class="fn">아침루틴_영상.mp4</span><span class="why">지원하지 않는 형식</span><span class="mx">✕</span></div><div class="mcell add off">+</div></div><div class="err">2장이 추가되지 않았습니다. 위 <b>빨간 칸의 [✕]</b>를 눌러 제외해 주세요 — 20MB 이하 JPG · PNG만 올릴 수 있습니다.</div><div class="hint"><b>JPG · PNG 최대 20장</b> · 장당 20MB<br>비율은 <b>첫 번째 사진의 원본 비율</b>을 따라갑니다 · 세로가 <b>4:5</b>보다 길거나 가로가 <b>1.91:1</b>보다 넓으면 잘립니다</div></div><div class="sec"><div class="sec-t">본문</div><div class="inp area filled" style="height:150px">요즘 아침 루틴에 넣은 것들. 세안 후 바로 이 순서로 발라요. 특히 두 번째 제품이 요즘 제일 만족스러워서 자세히 찍어봤어요. 끈적임 없이 마무리되는 게 여름엔 진짜 중요하더라고요.</div><div class="cnt">112 / 2,000</div></div><div class="btn-row"><button class="btn btn-secondary" disabled>임시저장</button><button class="btn btn-primary" disabled>게시하기</button></div></div></div><div class="col-r"><div class="card"><div class="card-h">미리보기<span class="ch-s">소비자 쇼룸 기준</span></div><div class="sec"><div class="pcard"><div class="pc-head"><div class="av">IMG</div><div><div class="nm">뷰티_소연</div><div class="tm">방금</div></div></div><div class="pc-media">사진 1 / 2<span class="navb l"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="15 18 9 12 15 6"></polyline></svg></span><span class="navb r"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="9 18 15 12 9 6"></polyline></svg></span><span class="pc-n">1 / 2</span></div><div class="pc-act">♡ 좋아요</div><div class="pc-body"><span class="who">뷰티_소연</span>요즘 아침 루틴에 넣은 것들. 세안 후 바로 이 순서로 발라요. 특히 두 번째 제품이 요즘 제일 만족스러워서 자세히 찍어봤어요. 끈적임 없이 마무리되는 게 여름엔 진짜 중요하더라고요.</div></div><div class="note-i">쇼룸 피드는 <b>노출중인 공구 게시물이 항상 위</b>에 오고, 일반 게시물은 그 아래에 최신순으로 쌓입니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S6</span><span class="state-label">게시물 수정 · 게시중</span>
+  <span class="state-spec">게시중이어도 <b>수정 제한 없음</b>(공구 게시물의 노출중 잠금과 다름) · 수정해도 팔로워 재알림 없음 · 내리는 방법은 삭제뿐 · <b>공개 상태는 우측 최상단</b>(지금 소비자에게 어떻게 보이는지 먼저 알려야 함) · 인사이트는 편집 영역 아래 · 인사이트는 <b>반응(노출 · 좋아요 · 좋아요율) · 조회 후 행동(쇼룸 방문 · 팔로우) · 본 사람(연령대 · 성별)</b></span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">판매 현황</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">게시물 <span class="crumb-s">› 수정</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">게시물 수정</div></div><div class="page-body"><div class="cols"><div class="col-l"><div class="card"><div class="card-h">게시물 수정<span class="badge b-success">게시중</span></div><div class="sec"><div class="sec-t">사진<div style="display:flex;align-items:center;gap:9px"><span class="rinfo">원본 맞춤</span><span class="s">4 / 20</span></div></div><div class="mgrid"><div class="mcell">IMG<span class="mc">⤢</span><span class="mx">✕</span><span class="rep">대표</span></div><div class="mcell">IMG<span class="mc">⤢</span><span class="mx">✕</span></div><div class="mcell">IMG<span class="mc">⤢</span><span class="mx">✕</span></div><div class="mcell">IMG<span class="mc">⤢</span><span class="mx">✕</span></div><div class="mcell add">+</div></div><div class="hint"><b>JPG · PNG 최대 20장</b> · 장당 20MB<br>비율은 <b>첫 번째 사진의 원본 비율</b>을 따라갑니다 · 세로가 <b>4:5</b>보다 길거나 가로가 <b>1.91:1</b>보다 넓으면 잘립니다</div></div><div class="sec"><div class="sec-t">본문</div><div class="inp area filled" style="height:150px">요즘 아침 루틴에 넣은 것들. 세안 후 바로 이 순서로 발라요. 특히 두 번째 제품이 요즘 제일 만족스러워서 자세히 찍어봤어요. 끈적임 없이 마무리되는 게 여름엔 진짜 중요하더라고요.</div><div class="cnt">112 / 2,000</div></div><div class="btn-row"><button class="btn btn-quiet" style="margin-right:auto">삭제</button><button class="btn btn-secondary">취소</button><button class="btn btn-primary">수정 완료</button></div></div><div class="card"><div class="card-h">인사이트<span class="ch-s">최근 30일</span></div><div class="sec"><div class="sec-t">반응</div><div class="stats"><div class="stat"><div class="num">2,140</div><div class="lb">노출</div></div><div class="stat key"><div class="num">84</div><div class="lb">좋아요</div></div><div class="stat"><div class="num">3.9%</div><div class="lb">좋아요율</div></div></div></div><div class="sec"><div class="sec-t">이 게시물을 보고 한 행동<span class="s">노출 2,140 기준</span></div><div class="stats"><div class="stat"><div class="num">148</div><div class="lb">쇼룸 방문 · 6.9%</div></div><div class="stat key"><div class="num">26</div><div class="lb">팔로우 · 1.2%</div></div></div><div class="note-i">게시물을 본 뒤 <b>24시간 안에</b> 일어난 행동만 이 게시물의 몫으로 셉니다. 여러 게시물을 보고 팔로우한 경우 <b>마지막에 본 게시물</b>에 귀속됩니다.</div></div><div class="sec"><div class="sec-t">본 사람<span class="s">집계값만 · 개인 식별 정보 없음</span></div><div class="dist-2"><div class="dist-grp"><div class="dist-g">연령대</div><div class="dist"><div class="src-r"><div class="sl"><span>18–24세</span><span class="sv"><b>29%</b></span></div><div class="bar"><i style="width:29%"></i></div></div><div class="src-r"><div class="sl"><span>25–34세</span><span class="sv"><b>46%</b></span></div><div class="bar"><i style="width:46%"></i></div></div><div class="src-r"><div class="sl"><span>35–44세</span><span class="sv"><b>16%</b></span></div><div class="bar"><i style="width:16%"></i></div></div><div class="src-r"><div class="sl"><span>45세 이상</span><span class="sv"><b>5%</b></span></div><div class="bar"><i style="width:5%"></i></div></div><div class="src-r"><div class="sl"><span>미확인</span><span class="sv"><b>4%</b></span></div><div class="bar"><i style="width:4%"></i></div></div></div></div><div class="dist-grp"><div class="dist-g">성별</div><div class="dist"><div class="src-r"><div class="sl"><span>여성</span><span class="sv"><b>86%</b></span></div><div class="bar"><i style="width:86%"></i></div></div><div class="src-r"><div class="sl"><span>남성</span><span class="sv"><b>10%</b></span></div><div class="bar"><i style="width:10%"></i></div></div><div class="src-r"><div class="sl"><span>미확인</span><span class="sv"><b>4%</b></span></div><div class="bar"><i style="width:4%"></i></div></div></div></div></div><div class="note-i">소셜 로그인 시 <b>연령대 · 성별 제공에 동의한 소비자</b>만 집계됩니다. 동의하지 않았거나 비로그인 상태로 본 경우 미확인으로 분류됩니다.</div><div class="note-i">일반 게시물은 <b>노출 · 반응 · 조회 후 행동</b>까지만 봅니다 — 판매와 이어지지 않는 콘텐츠라 구매 · 매출은 집계하지 않습니다. 공구 게시물의 성과는 판매 현황(#6)에서 봅니다.</div></div></div></div><div class="col-r"><div class="card"><div class="card-h">공개 상태</div><div class="sec"><div class="row"><div class="lab">현재</div><div class="val"><span class="badge b-success">게시중</span></div></div><div class="row"><div class="lab">게시일</div><div class="val">2026.08.10 14:22</div></div><div class="autobox lock" style="margin-top:12px"><span class="ic">i</span><div>게시물은 <b>언제든 수정할 수 있습니다.</b> 수정해도 팔로워에게 알림이 다시 가지는 않습니다. 내리고 싶다면 <b>삭제</b>만 가능하며 되돌릴 수 없습니다.</div></div></div></div><div class="card"><div class="card-h">미리보기<span class="ch-s">소비자 쇼룸 기준</span></div><div class="sec"><div class="pcard"><div class="pc-head"><div class="av">IMG</div><div><div class="nm">뷰티_소연</div><div class="tm">3일 전</div></div></div><div class="pc-media">사진 1 / 4<span class="navb l"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="15 18 9 12 15 6"></polyline></svg></span><span class="navb r"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="9 18 15 12 9 6"></polyline></svg></span><span class="pc-n">1 / 4</span></div><div class="pc-act">♡ 좋아요</div><div class="pc-body"><span class="who">뷰티_소연</span>요즘 아침 루틴에 넣은 것들. 세안 후 바로 이 순서로 발라요. 특히 두 번째 제품이 요즘 제일 만족스러워서 자세히 찍어봤어요. 끈적임 없이 마무리되는 게 여름엔 진짜 중요하더라고요.</div></div><div class="note-i">쇼룸 피드는 <b>노출중인 공구 게시물이 항상 위</b>에 오고, 일반 게시물은 그 아래에 최신순으로 쌓입니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S7</span><span class="state-label">게시물 삭제 확인 모달</span>
+  <span class="state-spec">되돌릴 수 없는 액션 · 440px 모달 · 확정 버튼은 위험색 · 좋아요 수가 함께 사라진다는 사실을 고지</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">판매 현황</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">게시물 <span class="crumb-s">› 수정</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">게시물 수정</div></div><div class="page-body"><div class="cols"><div class="col-l"><div class="card"><div class="card-h">게시물 수정<span class="badge b-success">게시중</span></div><div class="sec"><div class="sec-t">사진<div style="display:flex;align-items:center;gap:9px"><span class="rinfo">원본 맞춤</span><span class="s">4 / 20</span></div></div><div class="mgrid"><div class="mcell">IMG<span class="mc">⤢</span><span class="mx">✕</span><span class="rep">대표</span></div><div class="mcell">IMG<span class="mc">⤢</span><span class="mx">✕</span></div><div class="mcell">IMG<span class="mc">⤢</span><span class="mx">✕</span></div><div class="mcell">IMG<span class="mc">⤢</span><span class="mx">✕</span></div><div class="mcell add">+</div></div><div class="hint"><b>JPG · PNG 최대 20장</b> · 장당 20MB<br>비율은 <b>첫 번째 사진의 원본 비율</b>을 따라갑니다 · 세로가 <b>4:5</b>보다 길거나 가로가 <b>1.91:1</b>보다 넓으면 잘립니다</div></div><div class="sec"><div class="sec-t">본문</div><div class="inp area filled" style="height:150px">요즘 아침 루틴에 넣은 것들. 세안 후 바로 이 순서로 발라요. 특히 두 번째 제품이 요즘 제일 만족스러워서 자세히 찍어봤어요. 끈적임 없이 마무리되는 게 여름엔 진짜 중요하더라고요.</div><div class="cnt">112 / 2,000</div></div><div class="btn-row"><button class="btn btn-quiet" style="margin-right:auto">삭제</button><button class="btn btn-secondary">취소</button><button class="btn btn-primary">수정 완료</button></div></div><div class="card"><div class="card-h">인사이트<span class="ch-s">최근 30일</span></div><div class="sec"><div class="sec-t">반응</div><div class="stats"><div class="stat"><div class="num">2,140</div><div class="lb">노출</div></div><div class="stat key"><div class="num">84</div><div class="lb">좋아요</div></div><div class="stat"><div class="num">3.9%</div><div class="lb">좋아요율</div></div></div></div><div class="sec"><div class="sec-t">이 게시물을 보고 한 행동<span class="s">노출 2,140 기준</span></div><div class="stats"><div class="stat"><div class="num">148</div><div class="lb">쇼룸 방문 · 6.9%</div></div><div class="stat key"><div class="num">26</div><div class="lb">팔로우 · 1.2%</div></div></div><div class="note-i">게시물을 본 뒤 <b>24시간 안에</b> 일어난 행동만 이 게시물의 몫으로 셉니다. 여러 게시물을 보고 팔로우한 경우 <b>마지막에 본 게시물</b>에 귀속됩니다.</div></div><div class="sec"><div class="sec-t">본 사람<span class="s">집계값만 · 개인 식별 정보 없음</span></div><div class="dist-2"><div class="dist-grp"><div class="dist-g">연령대</div><div class="dist"><div class="src-r"><div class="sl"><span>18–24세</span><span class="sv"><b>29%</b></span></div><div class="bar"><i style="width:29%"></i></div></div><div class="src-r"><div class="sl"><span>25–34세</span><span class="sv"><b>46%</b></span></div><div class="bar"><i style="width:46%"></i></div></div><div class="src-r"><div class="sl"><span>35–44세</span><span class="sv"><b>16%</b></span></div><div class="bar"><i style="width:16%"></i></div></div><div class="src-r"><div class="sl"><span>45세 이상</span><span class="sv"><b>5%</b></span></div><div class="bar"><i style="width:5%"></i></div></div><div class="src-r"><div class="sl"><span>미확인</span><span class="sv"><b>4%</b></span></div><div class="bar"><i style="width:4%"></i></div></div></div></div><div class="dist-grp"><div class="dist-g">성별</div><div class="dist"><div class="src-r"><div class="sl"><span>여성</span><span class="sv"><b>86%</b></span></div><div class="bar"><i style="width:86%"></i></div></div><div class="src-r"><div class="sl"><span>남성</span><span class="sv"><b>10%</b></span></div><div class="bar"><i style="width:10%"></i></div></div><div class="src-r"><div class="sl"><span>미확인</span><span class="sv"><b>4%</b></span></div><div class="bar"><i style="width:4%"></i></div></div></div></div></div><div class="note-i">소셜 로그인 시 <b>연령대 · 성별 제공에 동의한 소비자</b>만 집계됩니다. 동의하지 않았거나 비로그인 상태로 본 경우 미확인으로 분류됩니다.</div><div class="note-i">일반 게시물은 <b>노출 · 반응 · 조회 후 행동</b>까지만 봅니다 — 판매와 이어지지 않는 콘텐츠라 구매 · 매출은 집계하지 않습니다. 공구 게시물의 성과는 판매 현황(#6)에서 봅니다.</div></div></div></div><div class="col-r"><div class="card"><div class="card-h">공개 상태</div><div class="sec"><div class="row"><div class="lab">현재</div><div class="val"><span class="badge b-success">게시중</span></div></div><div class="row"><div class="lab">게시일</div><div class="val">2026.08.10 14:22</div></div><div class="autobox lock" style="margin-top:12px"><span class="ic">i</span><div>게시물은 <b>언제든 수정할 수 있습니다.</b> 수정해도 팔로워에게 알림이 다시 가지는 않습니다. 내리고 싶다면 <b>삭제</b>만 가능하며 되돌릴 수 없습니다.</div></div></div></div><div class="card"><div class="card-h">미리보기<span class="ch-s">소비자 쇼룸 기준</span></div><div class="sec"><div class="pcard"><div class="pc-head"><div class="av">IMG</div><div><div class="nm">뷰티_소연</div><div class="tm">3일 전</div></div></div><div class="pc-media">사진 1 / 4<span class="navb l"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="15 18 9 12 15 6"></polyline></svg></span><span class="navb r"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="9 18 15 12 9 6"></polyline></svg></span><span class="pc-n">1 / 4</span></div><div class="pc-act">♡ 좋아요</div><div class="pc-body"><span class="who">뷰티_소연</span>요즘 아침 루틴에 넣은 것들. 세안 후 바로 이 순서로 발라요. 특히 두 번째 제품이 요즘 제일 만족스러워서 자세히 찍어봤어요. 끈적임 없이 마무리되는 게 여름엔 진짜 중요하더라고요.</div></div><div class="note-i">쇼룸 피드는 <b>노출중인 공구 게시물이 항상 위</b>에 오고, 일반 게시물은 그 아래에 최신순으로 쌓입니다.</div></div></div></div></div></div>
+</div>
+<div class="scrim"><div class="mdl"><div class="mdl-h">게시물을 삭제할까요?<span class="mdl-x">✕</span></div><div class="mdl-b"><p class="mdl-p">삭제하면 쇼룸에서 즉시 사라지고 <b>되돌릴 수 없습니다.</b></p></div><div class="mdl-f"><button class="btn btn-ghost">취소</button><button class="btn btn-danger">삭제</button></div></div></div>
+</div>
+</section>
+
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S8</span><span class="state-label">게시물 · 노출 중지(운영자 조치)</span>
+  <span class="state-spec">운영자 조치 = <b>노출 중지 + 이의 신청 기간</b> · <b>사유 · 근거 · 조치 시각 · 기한을 화면에 남기고 알림을 보낸다</b>(조용히 사라지는 경우 없음) · 중지 중에는 <b>수정 불가</b>(심사 대상이 도중에 바뀌면 안 됨) · 액션은 <b>[이의 신청]</b>과 <b>[삭제]</b> — 다투지 않고 스스로 정리할 출구를 남긴다(삭제해도 서버 비공개 보관 · 조치 이력은 알림에 영구 보존되므로 증거는 남는다) · 심사 중(S11)에는 삭제 불가 · 상태색은 <b>위험</b>(원칙①)</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">판매 현황</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">게시물 <span class="crumb-s">› 노출 중지</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">게시물</div></div><div class="page-body"><div class="alert"><span class="ic">!</span><div class="tx"><b>이 게시물은 노출이 중지되었습니다.</b> 소비자 쇼룸에서 보이지 않습니다.
+<div class="rs">사유 <em>의료적 효능 표현(§ 광고 표시 규정 4조)</em> · 조치 2026.08.12 11:04 · 처리자 운영팀 · 알림 발송됨</div>
+<div class="dl">이의 신청 2026.08.19 23:59까지 · D-5</div>
+<div class="rs">기한 안에 신청하지 않거나 신청이 반려되면 <b>영구 삭제</b>됩니다. 신청이 받아들여지면 좋아요 · 인사이트를 유지한 채 다시 노출됩니다.</div></div>
+<button class="btn btn-primary" style="flex-shrink:0">이의 신청</button></div><div class="cols"><div class="col-l"><div class="card"><div class="card-h">게시물<span class="badge b-danger">노출 중지</span></div><div class="sec"><div class="sec-t">사진 <span class="s" style="font-weight:400">수정 불가</span><div style="display:flex;align-items:center;gap:9px"><span class="rinfo">원본 맞춤</span><span class="s">4 / 20</span></div></div><div class="mgrid"><div class="mcell">IMG<span class="rep">대표</span></div><div class="mcell">IMG</div><div class="mcell">IMG</div><div class="mcell">IMG</div></div></div><div class="sec"><div class="sec-t">본문</div><div class="inp area filled ro" style="height:150px">요즘 아침 루틴에 넣은 것들. 세안 후 바로 이 순서로 발라요. 특히 두 번째 제품이 요즘 제일 만족스러워서 자세히 찍어봤어요. 끈적임 없이 마무리되는 게 여름엔 진짜 중요하더라고요.</div><div class="cnt">112 / 2,000</div></div></div><div class="card"><div class="card-h">인사이트<span class="ch-s">중지 시점까지 누적</span></div><div class="sec"><div class="sec-t">반응</div><div class="stats"><div class="stat"><div class="num">2,140</div><div class="lb">노출</div></div><div class="stat key"><div class="num">84</div><div class="lb">좋아요</div></div><div class="stat"><div class="num">3.9%</div><div class="lb">좋아요율</div></div></div></div><div class="sec"><div class="sec-t">이 게시물을 보고 한 행동<span class="s">노출 2,140 기준</span></div><div class="stats"><div class="stat"><div class="num">148</div><div class="lb">쇼룸 방문 · 6.9%</div></div><div class="stat key"><div class="num">26</div><div class="lb">팔로우 · 1.2%</div></div></div><div class="note-i">게시물을 본 뒤 <b>24시간 안에</b> 일어난 행동만 이 게시물의 몫으로 셉니다. 여러 게시물을 보고 팔로우한 경우 <b>마지막에 본 게시물</b>에 귀속됩니다.</div></div><div class="sec"><div class="sec-t">본 사람<span class="s">집계값만 · 개인 식별 정보 없음</span></div><div class="dist-2"><div class="dist-grp"><div class="dist-g">연령대</div><div class="dist"><div class="src-r"><div class="sl"><span>18–24세</span><span class="sv"><b>29%</b></span></div><div class="bar"><i style="width:29%"></i></div></div><div class="src-r"><div class="sl"><span>25–34세</span><span class="sv"><b>46%</b></span></div><div class="bar"><i style="width:46%"></i></div></div><div class="src-r"><div class="sl"><span>35–44세</span><span class="sv"><b>16%</b></span></div><div class="bar"><i style="width:16%"></i></div></div><div class="src-r"><div class="sl"><span>45세 이상</span><span class="sv"><b>5%</b></span></div><div class="bar"><i style="width:5%"></i></div></div><div class="src-r"><div class="sl"><span>미확인</span><span class="sv"><b>4%</b></span></div><div class="bar"><i style="width:4%"></i></div></div></div></div><div class="dist-grp"><div class="dist-g">성별</div><div class="dist"><div class="src-r"><div class="sl"><span>여성</span><span class="sv"><b>86%</b></span></div><div class="bar"><i style="width:86%"></i></div></div><div class="src-r"><div class="sl"><span>남성</span><span class="sv"><b>10%</b></span></div><div class="bar"><i style="width:10%"></i></div></div><div class="src-r"><div class="sl"><span>미확인</span><span class="sv"><b>4%</b></span></div><div class="bar"><i style="width:4%"></i></div></div></div></div></div><div class="note-i">소셜 로그인 시 <b>연령대 · 성별 제공에 동의한 소비자</b>만 집계됩니다. 동의하지 않았거나 비로그인 상태로 본 경우 미확인으로 분류됩니다.</div><div class="note-i">일반 게시물은 <b>노출 · 반응 · 조회 후 행동</b>까지만 봅니다 — 판매와 이어지지 않는 콘텐츠라 구매 · 매출은 집계하지 않습니다. 공구 게시물의 성과는 판매 현황(#6)에서 봅니다.</div></div></div></div><div class="col-r"><div class="card"><div class="card-h">공개 상태</div><div class="sec"><div class="row"><div class="lab">현재</div><div class="val"><span class="badge b-danger">노출 중지</span></div></div><div class="row"><div class="lab">게시일</div><div class="val">2026.08.10 14:22</div></div><div class="autobox lock" style="margin-top:12px"><span class="ic">i</span><div>중지된 동안에는 <b>사진 · 본문을 수정할 수 없습니다.</b> 심사가 끝나야 다시 편집할 수 있습니다.</div></div></div><div class="btn-row"><button class="btn btn-quiet">삭제</button></div></div><div class="card"><div class="card-h">미리보기<span class="ch-s">소비자 쇼룸 기준</span></div><div class="sec"><div class="pcard"><div class="pc-head"><div class="av">IMG</div><div><div class="nm">뷰티_소연</div><div class="tm">노출되지 않음</div></div></div><div class="pc-media">사진 1 / 4<span class="navb l"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="15 18 9 12 15 6"></polyline></svg></span><span class="navb r"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="9 18 15 12 9 6"></polyline></svg></span><span class="pc-n">1 / 4</span></div><div class="pc-act">♡ 좋아요</div><div class="pc-body"><span class="who">뷰티_소연</span>요즘 아침 루틴에 넣은 것들. 세안 후 바로 이 순서로 발라요. 특히 두 번째 제품이 요즘 제일 만족스러워서 자세히 찍어봤어요. 끈적임 없이 마무리되는 게 여름엔 진짜 중요하더라고요.</div></div><div class="note-i">현재 이 게시물은 <b>소비자 쇼룸에 노출되지 않습니다.</b> 위 미리보기는 다시 노출됐을 때의 모습입니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S9</span><span class="state-label">사진 비율 · 크롭 조정 모달</span>
+  <span class="state-spec">사진 셀의 <b>⤢</b>를 누르면 열림 · 비율 선택 없음 — <b>첫 번째 사진의 원본 비율을 무조건 따른다</b> · <b>1.91:1 ~ 4:5 범위 안이면 원본 그대로</b>, 벗어나면 경계값으로 클램프 · 모달에서 하는 일은 <b>잘릴 영역 조정뿐</b> · 격자 3분할 가이드 + 드래그 + 확대 슬라이더로 잘릴 영역 지정 · 하단 썸네일로 사진을 옮겨가며 각각 조정 · <b>모달 폭 560px</b> — 확인용 액션 모달(440px)과 달리 조작이 들어가는 편집 모달이라 예외</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">판매 현황</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">게시물 <span class="crumb-s">› 새 게시물</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">새 게시물</div></div><div class="page-body"><div class="cols"><div class="col-l"><div class="card"><div class="card-h">게시물 작성<span class="badge b-info">작성중</span></div><div class="sec"><div class="sec-t">사진<div style="display:flex;align-items:center;gap:9px"><span class="rinfo">원본 맞춤</span><span class="s">4 / 20</span></div></div><div class="mgrid"><div class="mcell">IMG<span class="mc">⤢</span><span class="mx">✕</span><span class="rep">대표</span></div><div class="mcell">IMG<span class="mc">⤢</span><span class="mx">✕</span></div><div class="mcell">IMG<span class="mc">⤢</span><span class="mx">✕</span></div><div class="mcell">IMG<span class="mc">⤢</span><span class="mx">✕</span></div><div class="mcell add">+</div></div><div class="hint"><b>JPG · PNG 최대 20장</b> · 장당 20MB<br>비율은 <b>첫 번째 사진의 원본 비율</b>을 따라갑니다 · 세로가 <b>4:5</b>보다 길거나 가로가 <b>1.91:1</b>보다 넓으면 잘립니다</div></div><div class="sec"><div class="sec-t">본문</div><div class="inp area filled" style="height:150px">요즘 아침 루틴에 넣은 것들. 세안 후 바로 이 순서로 발라요. 특히 두 번째 제품이 요즘 제일 만족스러워서 자세히 찍어봤어요. 끈적임 없이 마무리되는 게 여름엔 진짜 중요하더라고요.</div><div class="cnt">112 / 2,000</div></div><div class="btn-row"><button class="btn btn-secondary">임시저장</button><button class="btn btn-primary">게시하기</button></div></div></div><div class="col-r"><div class="card"><div class="card-h">미리보기<span class="ch-s">소비자 쇼룸 기준</span></div><div class="sec"><div class="pcard"><div class="pc-head"><div class="av">IMG</div><div><div class="nm">뷰티_소연</div><div class="tm">방금</div></div></div><div class="pc-media">사진 1 / 4<span class="navb l"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="15 18 9 12 15 6"></polyline></svg></span><span class="navb r"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="9 18 15 12 9 6"></polyline></svg></span><span class="pc-n">1 / 4</span></div><div class="pc-act">♡ 좋아요</div><div class="pc-body"><span class="who">뷰티_소연</span>요즘 아침 루틴에 넣은 것들. 세안 후 바로 이 순서로 발라요. 특히 두 번째 제품이 요즘 제일 만족스러워서 자세히 찍어봤어요. 끈적임 없이 마무리되는 게 여름엔 진짜 중요하더라고요.</div></div><div class="note-i">쇼룸 피드는 <b>노출중인 공구 게시물이 항상 위</b>에 오고, 일반 게시물은 그 아래에 최신순으로 쌓입니다.</div></div></div></div></div></div>
+</div>
+
+<div class="scrim"><div class="mdl wide"><div class="mdl-h">비율 · 크롭 조정<span class="mdl-x">✕</span></div>
+<div class="mdl-b"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px">
+<span class="rinfo">원본 맞춤</span>
+<span style="font-size:var(--fs-micro);color:var(--n-500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">사진 1 / 4 · IMG_2841.jpg</span></div>
+<div class="crop-stage"><div class="crop-src">3024 × 4032</div>
+<div class="crop-mask"><div class="box" style="aspect-ratio:3/4"><i class="v1"></i><i class="v2"></i><i class="h1"></i><i class="h2"></i></div></div></div>
+<div class="crop-ctl"><span class="lb">확대</span><div class="slider"><i></i><b></b></div><span class="lb">100%</span></div>
+<div class="thumbs"><div class="t on">1</div><div class="t">2</div><div class="t">3</div><div class="t">▶</div></div>
+<div class="note-i">이 게시물의 비율은 <b>첫 번째 사진</b>가 정합니다. 첫 번째를 바꾸면 이미 조정한 영역이 다시 계산됩니다.</div></div>
+<div class="mdl-f"><button class="btn btn-ghost">취소</button><button class="btn btn-primary">적용</button></div></div></div>
+</div>
+</section>
+
+
+
+
+
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S10</span><span class="state-label">이의 신청 모달</span>
+  <span class="state-spec">440px 확인 모달 · 인플루언서가 <b>왜 위반이 아닌지</b>를 적는 칸 하나만 · 결과가 <b>재게시 또는 영구 삭제</b> 둘 중 하나임을 신청 전에 고지 · 신청은 게시물당 <b>1회</b></span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">판매 현황</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">게시물 <span class="crumb-s">› 노출 중지</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">게시물</div></div><div class="page-body"><div class="alert"><span class="ic">!</span><div class="tx"><b>이 게시물은 노출이 중지되었습니다.</b> 소비자 쇼룸에서 보이지 않습니다.
+<div class="rs">사유 <em>의료적 효능 표현(§ 광고 표시 규정 4조)</em> · 조치 2026.08.12 11:04 · 처리자 운영팀 · 알림 발송됨</div>
+<div class="dl">이의 신청 2026.08.19 23:59까지 · D-5</div>
+<div class="rs">기한 안에 신청하지 않거나 신청이 반려되면 <b>영구 삭제</b>됩니다. 신청이 받아들여지면 좋아요 · 인사이트를 유지한 채 다시 노출됩니다.</div></div>
+<button class="btn btn-primary" style="flex-shrink:0">이의 신청</button></div><div class="cols"><div class="col-l"><div class="card"><div class="card-h">게시물<span class="badge b-danger">노출 중지</span></div><div class="sec"><div class="sec-t">사진 <span class="s" style="font-weight:400">수정 불가</span><div style="display:flex;align-items:center;gap:9px"><span class="rinfo">원본 맞춤</span><span class="s">4 / 20</span></div></div><div class="mgrid"><div class="mcell">IMG<span class="rep">대표</span></div><div class="mcell">IMG</div><div class="mcell">IMG</div><div class="mcell">IMG</div></div></div><div class="sec"><div class="sec-t">본문</div><div class="inp area filled ro" style="height:150px">요즘 아침 루틴에 넣은 것들. 세안 후 바로 이 순서로 발라요. 특히 두 번째 제품이 요즘 제일 만족스러워서 자세히 찍어봤어요. 끈적임 없이 마무리되는 게 여름엔 진짜 중요하더라고요.</div><div class="cnt">112 / 2,000</div></div></div><div class="card"><div class="card-h">인사이트<span class="ch-s">중지 시점까지 누적</span></div><div class="sec"><div class="sec-t">반응</div><div class="stats"><div class="stat"><div class="num">2,140</div><div class="lb">노출</div></div><div class="stat key"><div class="num">84</div><div class="lb">좋아요</div></div><div class="stat"><div class="num">3.9%</div><div class="lb">좋아요율</div></div></div></div><div class="sec"><div class="sec-t">이 게시물을 보고 한 행동<span class="s">노출 2,140 기준</span></div><div class="stats"><div class="stat"><div class="num">148</div><div class="lb">쇼룸 방문 · 6.9%</div></div><div class="stat key"><div class="num">26</div><div class="lb">팔로우 · 1.2%</div></div></div><div class="note-i">게시물을 본 뒤 <b>24시간 안에</b> 일어난 행동만 이 게시물의 몫으로 셉니다. 여러 게시물을 보고 팔로우한 경우 <b>마지막에 본 게시물</b>에 귀속됩니다.</div></div><div class="sec"><div class="sec-t">본 사람<span class="s">집계값만 · 개인 식별 정보 없음</span></div><div class="dist-2"><div class="dist-grp"><div class="dist-g">연령대</div><div class="dist"><div class="src-r"><div class="sl"><span>18–24세</span><span class="sv"><b>29%</b></span></div><div class="bar"><i style="width:29%"></i></div></div><div class="src-r"><div class="sl"><span>25–34세</span><span class="sv"><b>46%</b></span></div><div class="bar"><i style="width:46%"></i></div></div><div class="src-r"><div class="sl"><span>35–44세</span><span class="sv"><b>16%</b></span></div><div class="bar"><i style="width:16%"></i></div></div><div class="src-r"><div class="sl"><span>45세 이상</span><span class="sv"><b>5%</b></span></div><div class="bar"><i style="width:5%"></i></div></div><div class="src-r"><div class="sl"><span>미확인</span><span class="sv"><b>4%</b></span></div><div class="bar"><i style="width:4%"></i></div></div></div></div><div class="dist-grp"><div class="dist-g">성별</div><div class="dist"><div class="src-r"><div class="sl"><span>여성</span><span class="sv"><b>86%</b></span></div><div class="bar"><i style="width:86%"></i></div></div><div class="src-r"><div class="sl"><span>남성</span><span class="sv"><b>10%</b></span></div><div class="bar"><i style="width:10%"></i></div></div><div class="src-r"><div class="sl"><span>미확인</span><span class="sv"><b>4%</b></span></div><div class="bar"><i style="width:4%"></i></div></div></div></div></div><div class="note-i">소셜 로그인 시 <b>연령대 · 성별 제공에 동의한 소비자</b>만 집계됩니다. 동의하지 않았거나 비로그인 상태로 본 경우 미확인으로 분류됩니다.</div><div class="note-i">일반 게시물은 <b>노출 · 반응 · 조회 후 행동</b>까지만 봅니다 — 판매와 이어지지 않는 콘텐츠라 구매 · 매출은 집계하지 않습니다. 공구 게시물의 성과는 판매 현황(#6)에서 봅니다.</div></div></div></div><div class="col-r"><div class="card"><div class="card-h">공개 상태</div><div class="sec"><div class="row"><div class="lab">현재</div><div class="val"><span class="badge b-danger">노출 중지</span></div></div><div class="row"><div class="lab">게시일</div><div class="val">2026.08.10 14:22</div></div><div class="autobox lock" style="margin-top:12px"><span class="ic">i</span><div>중지된 동안에는 <b>사진 · 본문을 수정할 수 없습니다.</b> 심사가 끝나야 다시 편집할 수 있습니다.</div></div></div></div><div class="card"><div class="card-h">미리보기<span class="ch-s">소비자 쇼룸 기준</span></div><div class="sec"><div class="pcard"><div class="pc-head"><div class="av">IMG</div><div><div class="nm">뷰티_소연</div><div class="tm">노출되지 않음</div></div></div><div class="pc-media">사진 1 / 4<span class="navb l"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="15 18 9 12 15 6"></polyline></svg></span><span class="navb r"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="9 18 15 12 9 6"></polyline></svg></span><span class="pc-n">1 / 4</span></div><div class="pc-act">♡ 좋아요</div><div class="pc-body"><span class="who">뷰티_소연</span>요즘 아침 루틴에 넣은 것들. 세안 후 바로 이 순서로 발라요. 특히 두 번째 제품이 요즘 제일 만족스러워서 자세히 찍어봤어요. 끈적임 없이 마무리되는 게 여름엔 진짜 중요하더라고요.</div></div><div class="note-i">현재 이 게시물은 <b>소비자 쇼룸에 노출되지 않습니다.</b> 위 미리보기는 다시 노출됐을 때의 모습입니다.</div></div></div></div></div></div>
+</div>
+
+<div class="scrim"><div class="mdl"><div class="mdl-h">이의를 신청할까요?<span class="mdl-x">✕</span></div>
+<div class="mdl-b"><p class="mdl-p" style="margin-bottom:12px">중지 사유 <b>의료적 효능 표현</b>에 동의하지 않는 이유를 적어주세요. 운영자가 다시 확인합니다.</p>
+<div class="inp area filled" style="height:96px">해당 문장은 제품 효능이 아니라 개인적인 사용 후기로, 치료 · 개선을 단정한 표현이 아닙니다.</div>
+<div class="cnt">51 / 500</div>
+<div class="note-i">신청은 게시물당 <b>한 번</b>만 가능합니다. 심사 결과에 따라 <b>다시 노출</b>되거나 <b>영구 삭제</b>됩니다.</div></div>
+<div class="mdl-f"><button class="btn btn-ghost">취소</button><button class="btn btn-primary">신청</button></div></div></div>
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S11</span><span class="state-label">이의 신청 · 심사 중</span>
+  <span class="state-spec">신청 접수 후 대기 — <b>대기는 정보색</b>(원칙①) · 카드 배지는 여전히 <b>노출 중지</b>(사실이 바뀐 게 아님) · 액션 없음, 상태와 예상 소요만 · 결과는 알림으로 통지</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item active"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">판매 현황</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">게시물 <span class="crumb-s">› 노출 중지</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">게시물</div></div><div class="page-body"><div class="alert info"><span class="ic">i</span><div class="tx"><b>이의 신청이 접수되었습니다.</b> 운영자가 다시 확인하는 동안 게시물은 계속 노출되지 않습니다.
+<div class="rs">신청 2026.08.14 09:12 · 사유 <em>의료적 효능 표현</em>에 대한 이의</div>
+<div class="dl">심사 중 · 보통 3영업일 이내 결과 통지</div>
+<div class="rs">받아들여지면 좋아요 · 인사이트를 유지한 채 다시 노출되고, 반려되면 <b>영구 삭제</b>됩니다.</div></div></div><div class="cols"><div class="col-l"><div class="card"><div class="card-h">게시물<span class="badge b-danger">노출 중지</span></div><div class="sec"><div class="sec-t">사진 <span class="s" style="font-weight:400">수정 불가</span><div style="display:flex;align-items:center;gap:9px"><span class="rinfo">원본 맞춤</span><span class="s">4 / 20</span></div></div><div class="mgrid"><div class="mcell">IMG<span class="rep">대표</span></div><div class="mcell">IMG</div><div class="mcell">IMG</div><div class="mcell">IMG</div></div></div><div class="sec"><div class="sec-t">본문</div><div class="inp area filled ro" style="height:150px">요즘 아침 루틴에 넣은 것들. 세안 후 바로 이 순서로 발라요. 특히 두 번째 제품이 요즘 제일 만족스러워서 자세히 찍어봤어요. 끈적임 없이 마무리되는 게 여름엔 진짜 중요하더라고요.</div><div class="cnt">112 / 2,000</div></div></div><div class="card"><div class="card-h">인사이트<span class="ch-s">중지 시점까지 누적</span></div><div class="sec"><div class="sec-t">반응</div><div class="stats"><div class="stat"><div class="num">2,140</div><div class="lb">노출</div></div><div class="stat key"><div class="num">84</div><div class="lb">좋아요</div></div><div class="stat"><div class="num">3.9%</div><div class="lb">좋아요율</div></div></div></div><div class="sec"><div class="sec-t">이 게시물을 보고 한 행동<span class="s">노출 2,140 기준</span></div><div class="stats"><div class="stat"><div class="num">148</div><div class="lb">쇼룸 방문 · 6.9%</div></div><div class="stat key"><div class="num">26</div><div class="lb">팔로우 · 1.2%</div></div></div><div class="note-i">게시물을 본 뒤 <b>24시간 안에</b> 일어난 행동만 이 게시물의 몫으로 셉니다. 여러 게시물을 보고 팔로우한 경우 <b>마지막에 본 게시물</b>에 귀속됩니다.</div></div><div class="sec"><div class="sec-t">본 사람<span class="s">집계값만 · 개인 식별 정보 없음</span></div><div class="dist-2"><div class="dist-grp"><div class="dist-g">연령대</div><div class="dist"><div class="src-r"><div class="sl"><span>18–24세</span><span class="sv"><b>29%</b></span></div><div class="bar"><i style="width:29%"></i></div></div><div class="src-r"><div class="sl"><span>25–34세</span><span class="sv"><b>46%</b></span></div><div class="bar"><i style="width:46%"></i></div></div><div class="src-r"><div class="sl"><span>35–44세</span><span class="sv"><b>16%</b></span></div><div class="bar"><i style="width:16%"></i></div></div><div class="src-r"><div class="sl"><span>45세 이상</span><span class="sv"><b>5%</b></span></div><div class="bar"><i style="width:5%"></i></div></div><div class="src-r"><div class="sl"><span>미확인</span><span class="sv"><b>4%</b></span></div><div class="bar"><i style="width:4%"></i></div></div></div></div><div class="dist-grp"><div class="dist-g">성별</div><div class="dist"><div class="src-r"><div class="sl"><span>여성</span><span class="sv"><b>86%</b></span></div><div class="bar"><i style="width:86%"></i></div></div><div class="src-r"><div class="sl"><span>남성</span><span class="sv"><b>10%</b></span></div><div class="bar"><i style="width:10%"></i></div></div><div class="src-r"><div class="sl"><span>미확인</span><span class="sv"><b>4%</b></span></div><div class="bar"><i style="width:4%"></i></div></div></div></div></div><div class="note-i">소셜 로그인 시 <b>연령대 · 성별 제공에 동의한 소비자</b>만 집계됩니다. 동의하지 않았거나 비로그인 상태로 본 경우 미확인으로 분류됩니다.</div><div class="note-i">일반 게시물은 <b>노출 · 반응 · 조회 후 행동</b>까지만 봅니다 — 판매와 이어지지 않는 콘텐츠라 구매 · 매출은 집계하지 않습니다. 공구 게시물의 성과는 판매 현황(#6)에서 봅니다.</div></div></div></div><div class="col-r"><div class="card"><div class="card-h">공개 상태</div><div class="sec"><div class="row"><div class="lab">현재</div><div class="val"><span class="badge b-danger">노출 중지</span></div></div><div class="row"><div class="lab">게시일</div><div class="val">2026.08.10 14:22</div></div><div class="autobox lock" style="margin-top:12px"><span class="ic">i</span><div>중지된 동안에는 <b>사진 · 본문을 수정할 수 없습니다.</b> 심사가 끝나야 다시 편집할 수 있습니다.</div></div></div></div><div class="card"><div class="card-h">미리보기<span class="ch-s">소비자 쇼룸 기준</span></div><div class="sec"><div class="pcard"><div class="pc-head"><div class="av">IMG</div><div><div class="nm">뷰티_소연</div><div class="tm">노출되지 않음</div></div></div><div class="pc-media">사진 1 / 4<span class="navb l"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="15 18 9 12 15 6"></polyline></svg></span><span class="navb r"><svg viewBox="0 0 24 24" fill="none" stroke="var(--n-700)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="9 18 15 12 9 6"></polyline></svg></span><span class="pc-n">1 / 4</span></div><div class="pc-act">♡ 좋아요</div><div class="pc-body"><span class="who">뷰티_소연</span>요즘 아침 루틴에 넣은 것들. 세안 후 바로 이 순서로 발라요. 특히 두 번째 제품이 요즘 제일 만족스러워서 자세히 찍어봤어요. 끈적임 없이 마무리되는 게 여름엔 진짜 중요하더라고요.</div></div><div class="note-i">현재 이 게시물은 <b>소비자 쇼룸에 노출되지 않습니다.</b> 위 미리보기는 다시 노출됐을 때의 모습입니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+</body>
+</html>

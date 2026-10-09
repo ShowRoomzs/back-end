@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.ResultActions;
+import showroomz.global.payment.portone.FakePaymentGateway;
 import showroomz.api.seller.order.SellerOrderTestSupport;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.entity.OrderProduct;
@@ -107,15 +108,16 @@ class SellerClaimInspectionIntegrationTest extends SellerOrderTestSupport {
     // ------------------------------------------------------------------ 검수 통과
 
     @Test
-    @DisplayName("수량 2 중 1개 반품 통과 → 남은 1개 반품 통과 — 수량만큼 반영되고 전량이면 항목이 반품으로 종결된다. 환불 큐는 요청마다 1행(#1 · #2)")
+    @DisplayName("수량 2 중 1개 반품 통과 → 남은 1개 반품 통과 — 수량만큼 반영되고 전량이면 항목이 반품으로 종결된다. 환불 큐는 요청마다 1행 · PG 즉시 자동 환불(#1 · #2)")
     void passPartialThenFull() throws Exception {
-        OrderDeliveryGroup group = deliveredGroup(2, LocalDateTime.now().minusDays(8));
+        // 배송완료 직후 — 통과 = 즉시 환불 종결이라 정지가 바로 풀린다. 확정 예정이 이미 지난 그룹이면 첫 통과에서 확정돼 버린다.
+        OrderDeliveryGroup group = deliveredGroup(2, LocalDateTime.now().minusHours(1));
         OrderProduct product = items(group).get(0);
 
         Long first = received(request(group, product, 1, ClaimReason.CHANGE_OF_MIND));
+        // 통과 = PG 즉시 자동 환불 — 응답 시점에 이미 환불로 종결돼 있다(1009 기획 수정본 2절).
         sellerPost(CLAIMS + "/" + first + "/inspection/pass", Map.of()).andExpect(status().isOk())
-                .andExpect(jsonPath("$.summary.status").value("REFUND_PENDING"))
-                .andExpect(jsonPath("$.summary.outcome.code").value("REFUND_PENDING"))
+                .andExpect(jsonPath("$.summary.status").value("COMPLETED"))
                 .andExpect(jsonPath("$.summary.amount").value(CREAM_PRICE))
                 .andExpect(jsonPath("$.refund.requestExpectedAmount").value(CREAM_PRICE));
 
@@ -124,7 +126,7 @@ class SellerClaimInspectionIntegrationTest extends SellerOrderTestSupport {
         assertThat(refundTasks(group)).singleElement().satisfies(task -> {
             assertThat(task.get("source")).isEqualTo("CLAIM_RETURN_PASSED");
             assertThat(((Number) task.get("refund_amount")).intValue()).isEqualTo(CREAM_PRICE);
-            assertThat(task.get("status")).isEqualTo("PENDING");
+            assertThat(task.get("status")).isEqualTo("DONE");
         });
 
         Long second = received(request(group, product, 1, ClaimReason.CHANGE_OF_MIND));
@@ -132,13 +134,11 @@ class SellerClaimInspectionIntegrationTest extends SellerOrderTestSupport {
 
         assertThat(items(group).get(0).getReturnedQuantity()).isEqualTo(2);
         assertThat(items(group).get(0).getStatus()).isEqualTo(OrderProductStatus.RETURNED);
-        assertThat(refundTasks(group)).hasSize(2);
-        // 환불 대기는 아직 진행 중이라 구매확정이 선다 — 집행으로 닫히면 확정되고, 반품된 항목은 구매확정으로 올라가지 않는다.
-        assertThat(fulfillmentService.confirmIfDue(group.getId(), LocalDateTime.now())).isFalse();
-        for (Long taskId : refundTaskIds(group)) {
-            claimService.completeRefund(taskId, CREAM_PRICE, 1L, LocalDateTime.now());
-        }
-        assertThat(fulfillmentService.confirmIfDue(group.getId(), LocalDateTime.now())).isTrue();
+        assertThat(refundTasks(group)).hasSize(2).allSatisfy(task -> assertThat(task.get("status")).isEqualTo("DONE"));
+        // 환불로 닫혀 구매확정 정지가 풀렸다 — 예정이 오면 확정되고, 반품된 항목은 구매확정으로 올라가지 않는다.
+        assertThat(reload(group).getConfirmPausedAt()).isNull();
+        assertThat(fulfillmentService.confirmIfDue(group.getId(), LocalDateTime.now().plusDays(8))).isTrue();
+        assertThat(reload(group).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.CONFIRMED);
         assertThat(items(group).get(0).getStatus()).isEqualTo(OrderProductStatus.RETURNED);
     }
 
@@ -166,11 +166,22 @@ class SellerClaimInspectionIntegrationTest extends SellerOrderTestSupport {
         List<String> photo = List.of("https://img.test/evidence.jpg");
         List<String> sixPhotos = List.of("a", "b", "c", "d", "e", "f");
 
+        // 반려 6항목(1009 기획 수정본 5-b) — 법적 근거 · 소비자 메시지도 빠지면 같은 오류다.
+        String legal = "ART17_2_2";
+        String message = "사용 흔적이 있습니다.";
         for (Map<String, Object> body : List.of(
-                Map.<String, Object>of("detail", "사용 흔적", "evidenceImageUrls", photo),
-                Map.<String, Object>of("reasonCode", "USED", "detail", " ", "evidenceImageUrls", photo),
-                Map.<String, Object>of("reasonCode", "USED", "detail", "사용 흔적", "evidenceImageUrls", List.of()),
-                Map.<String, Object>of("reasonCode", "USED", "detail", "사용 흔적", "evidenceImageUrls", sixPhotos))) {
+                Map.<String, Object>of("detail", "사용 흔적", "legalBasis", legal, "consumerMessage", message,
+                        "evidenceImageUrls", photo),
+                Map.<String, Object>of("reasonCode", "USED", "detail", " ", "legalBasis", legal, "consumerMessage", message,
+                        "evidenceImageUrls", photo),
+                Map.<String, Object>of("reasonCode", "USED", "detail", "사용 흔적", "legalBasis", legal,
+                        "consumerMessage", message, "evidenceImageUrls", List.of()),
+                Map.<String, Object>of("reasonCode", "USED", "detail", "사용 흔적", "legalBasis", legal,
+                        "consumerMessage", message, "evidenceImageUrls", sixPhotos),
+                Map.<String, Object>of("reasonCode", "USED", "detail", "사용 흔적", "consumerMessage", message,
+                        "evidenceImageUrls", photo),
+                Map.<String, Object>of("reasonCode", "USED", "detail", "사용 흔적", "legalBasis", legal,
+                        "evidenceImageUrls", photo))) {
             sellerPost(CLAIMS + "/" + claimId + "/inspection/reject", body).andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("CLAIM_REJECT_INCOMPLETE"));
         }
@@ -252,7 +263,8 @@ class SellerClaimInspectionIntegrationTest extends SellerOrderTestSupport {
 
         userGet(USER_CLAIMS + "/" + serum).andExpect(status().isOk())
                 .andExpect(jsonPath("$.items", hasSize(2)))
-                .andExpect(jsonPath("$.items[0].phase").value("APPROVED"))
+                // 통과분은 판정 종료와 함께 PG 자동 환불로 이미 끝났다(1009 기획 수정본 2절).
+                .andExpect(jsonPath("$.items[0].phase").value("DONE"))
                 .andExpect(jsonPath("$.items[1].phase").value("REJECTED_PREPARING"))
                 .andExpect(jsonPath("$.items[1].statusSub").value("환불액에서 재발송비 차감"))
                 .andExpect(jsonPath("$.refund.rejectedAmount").value(SERUM_PRICE))
@@ -320,10 +332,12 @@ class SellerClaimInspectionIntegrationTest extends SellerOrderTestSupport {
     // ------------------------------------------------------------------ 환불 집행 · 재발송비 결제
 
     @Test
-    @DisplayName("환불 집행 — 요청의 환불 대기 건을 한꺼번에 닫고 집행액을 항목에 나눠 적는다. 앱은 「환불 금액」으로 바뀐다")
+    @DisplayName("PG 거절 → 수동 기록 — 요청의 환불 대기 건을 한꺼번에 닫고 기록액을 항목에 나눠 적는다. 앱은 「환불 금액」으로 바뀐다")
     void completeRefund() throws Exception {
         setFreeShippingThreshold(50_000);
         OrderDeliveryGroup group = deliveredTwoItemGroup();
+        // PG 자동 환불이 거절되면 큐가 FAILED 로 남는다 — 결제 밖에서 돌려준 뒤 운영자가 기록하는 경로다.
+        fake.willFailCancel(group.getOrder().getPaidPaymentId(), FakePaymentGateway.Failure.REJECTED);
         RequestResult request = requestAll(group, ClaimReason.CHANGE_OF_MIND, true);
         for (Long claimId : request.claimIds()) {
             sellerPost(CLAIMS + "/" + received(claimId) + "/inspection/pass", Map.of()).andExpect(status().isOk());
@@ -431,6 +445,8 @@ class SellerClaimInspectionIntegrationTest extends SellerOrderTestSupport {
         Map<String, Object> body = new HashMap<>();
         body.put("reasonCode", "USED");
         body.put("detail", "용기 입구에 사용 흔적이 있습니다.");
+        body.put("legalBasis", "ART17_2_2");
+        body.put("consumerMessage", "용기 입구에 사용 흔적이 있습니다.");
         body.put("evidenceImageUrls", List.of("https://img.test/e1.jpg", "https://img.test/e2.jpg"));
         return body;
     }

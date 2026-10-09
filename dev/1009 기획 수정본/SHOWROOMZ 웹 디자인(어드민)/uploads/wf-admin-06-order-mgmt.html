@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>wf-admin-06 · 거래 관리 · 1440×1024</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,"Malgun Gothic","맑은 고딕",sans-serif; background:#e6e6e6; color:#222; }
+  .doc-head { padding:24px 40px 4px; }
+  .doc-head h1 { font-size:18px; font-weight:700; }
+  .doc-head h1 span { font-weight:400; color:#888; font-size:13px; }
+  .doc-head .sub { font-size:12px; color:#777; margin-top:4px; line-height:1.6; }
+  .doc-head .spec { display:inline-block; margin-top:8px; font-size:11px; color:#555; background:#fff; border:1px solid #ccc; border-radius:4px; padding:4px 8px; }
+  .stack { padding:16px 40px 60px; }
+  .ftitle { font-size:13px; font-weight:700; color:#333; margin:22px 0 8px; }
+  .ftitle span { font-weight:400; color:#888; font-size:12px; }
+  .ftitle .pill { font-weight:400; font-size:11px; color:#555; background:#fff; border:1px solid #bbb; border-radius:10px; padding:1px 8px; margin-left:6px; }
+
+  .frame { width:1440px; background:#fff; border:1px solid #b5b5b5; border-radius:8px; box-shadow:0 1px 5px rgba(0,0,0,.1); overflow:hidden; position:relative; }
+  .chrome { height:32px; background:#e2e2e2; border-bottom:1px solid #c8c8c8; display:flex; align-items:center; padding:0 12px; gap:6px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#c0c0c0; }
+  .urlbar { flex:1; height:18px; background:#fff; border:1px solid #d0d0d0; border-radius:9px; font-size:11px; color:#888; display:flex; align-items:center; padding:0 10px; margin-left:8px; }
+  .app { display:flex; min-height:992px; }
+  .gnb { width:224px; flex-shrink:0; background:#3f3f3f; color:#cfcfcf; padding:0 0 20px; }
+  .gnb .brand { padding:22px 20px 18px; border-bottom:1px solid #565656; }
+  .gnb .brand .m { font-size:15px; font-weight:800; color:#fff; letter-spacing:.5px; }
+  .gnb .brand .s { font-size:10px; color:#a5a5a5; margin-top:3px; }
+  .gnb-item { display:flex; align-items:center; gap:8px; padding:11px 20px; font-size:12.5px; color:#c2c2c2; border-left:3px solid transparent; }
+  .gnb-item .n { font-size:11px; color:#8f8f8f; width:14px; }
+  .gnb-item .cnt { margin-left:auto; background:#5a5a5a; color:#fff; border-radius:9px; font-size:10px; min-width:17px; height:17px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; }
+  .gnb-item.hot .cnt { background:#a33; }
+  .gnb-item.on { background:#2a2a2a; color:#fff; font-weight:700; border-left-color:#fff; }
+  .gnb-item.on .n { color:#ddd; }
+  .gnb-right { margin-left:auto; display:flex; align-items:center; gap:5px; }
+  .gnb-right .cnt { margin-left:0; }
+  .chev { font-size:9px; color:#8f8f8f; }
+  .gnb-item.on .chev { color:#ddd; }
+  .gnb-sub { padding:9px 20px 9px 44px; font-size:12px; color:#999; display:flex; align-items:center; }
+  .gnb-sub .cnt { margin-left:auto; background:#5a5a5a; color:#fff; border-radius:9px; font-size:10px; min-width:17px; height:17px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; }
+  .gnb-sub.on .cnt { background:#555; }
+  .gnb-sub.on { background:#333; color:#fff; border-left:2px solid #888; padding-left:42px; }
+  .main { flex:1; background:#f7f7f7; min-width:0; position:relative; }
+  .topbar { height:56px; background:#fff; border-bottom:1px solid #e2e2e2; display:flex; align-items:center; justify-content:space-between; padding:0 24px; }
+  .crumb { font-size:14px; font-weight:700; color:#222; }
+  .crumb .sub2 { font-weight:400; color:#999; font-size:12px; margin-left:6px; }
+  .op-chip { display:flex; align-items:center; gap:8px; font-size:12px; color:#555; }
+  .op-chip .st { border:1px solid #999; border-radius:12px; padding:2px 10px; background:#f2f2f2; }
+  .content { padding:24px; }
+
+  /* 목록 */
+  .filter-row { display:flex; gap:8px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
+  .fchip { border:1px solid #ccc; border-radius:14px; padding:5px 14px; font-size:12px; color:#555; background:#fff; }
+  .fchip.on { background:#333; color:#fff; border-color:#333; }
+  .fchip.hot { border-color:#c9a24a; color:#8a5a00; }
+  .search-box { margin-left:auto; border:1px solid #ccc; border-radius:6px; padding:6px 12px; font-size:12px; color:#999; background:#fff; width:230px; }
+  .list-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:12px; color:#888; }
+  .list-toolbar b { color:#333; }
+
+  table.list { width:100%; border-collapse:collapse; font-size:12.5px; background:#fff; border:1px solid #e2e2e2; border-radius:8px; overflow:hidden; }
+  table.list th { text-align:left; padding:11px 14px; background:#f6f6f6; color:#666; font-size:11.5px; border-bottom:1px solid #eee; font-weight:700; }
+  table.list td { padding:12px 14px; border-bottom:1px solid #f2f2f2; color:#444; vertical-align:middle; }
+  table.list tr:last-child td { border-bottom:none; }
+  table.list tr.row-link td:first-child { text-decoration:underline; color:#333; font-weight:600; }
+  .p-name { font-weight:600; color:#333; }
+  .p-sub { font-size:10.5px; color:#aaa; margin-top:2px; }
+  .badge { border:1px solid #999; border-radius:10px; padding:1px 9px; font-size:10.5px; color:#444; background:#f6f6f6; white-space:nowrap; }
+  .badge.ship { background:#3a3a3a; color:#fff; border-color:#3a3a3a; }
+  .badge.done { background:#eee; color:#888; }
+  .badge.wait { background:#96771f; color:#fff; border-color:#96771f; }
+  .badge.warn { background:#fff; color:#a33; border-color:#a33; }
+  .badge.ok { background:#f6f6f6; color:#3a7d3a; border-color:#3a7d3a; }
+  .badge.plain { background:#f6f6f6; color:#666; }
+  .row-actions { display:flex; gap:6px; }
+  .mini-btn { border:1px solid #ccc; border-radius:4px; padding:5px 10px; font-size:11px; color:#555; background:#fff; white-space:nowrap; }
+  .mini-btn.doa { color:#fff; background:#333; border-color:#333; }
+  .pager { display:flex; justify-content:center; gap:6px; margin-top:16px; font-size:12px; color:#888; }
+  .pager span { width:24px; height:24px; display:flex; align-items:center; justify-content:center; border:1px solid #ddd; border-radius:4px; }
+  .pager span.on { background:#333; color:#fff; border-color:#333; }
+
+  /* 상세 */
+  .detail-grid { display:flex; gap:18px; align-items:flex-start; }
+  .det-l { flex:1; min-width:0; } .det-r { width:340px; flex-shrink:0; }
+  .card { background:#fff; border:1px solid #e2e2e2; border-radius:10px; margin-bottom:16px; }
+  .card-h { padding:13px 18px; border-bottom:1px solid #eee; font-size:13.5px; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
+  .card-b { padding:16px 18px; }
+  .form-row { display:flex; border-bottom:1px solid #f2f2f2; padding:10px 0; font-size:12.5px; }
+  .form-row:last-child { border-bottom:none; }
+  .form-label { width:150px; flex-shrink:0; color:#888; }
+  .form-val { color:#333; flex:1; }
+
+  .status-box { text-align:center; padding:18px 0 6px; }
+  .status-box .lb { font-size:11px; color:#999; margin-bottom:8px; }
+  .status-box .cur { font-size:15px; font-weight:800; color:#333; margin-bottom:2px; }
+  .act-row { display:flex; gap:8px; padding:0 18px 18px; }
+  .abtn { flex:1; padding:11px 0; text-align:center; border-radius:6px; font-size:13px; font-weight:700; border:1px solid #333; }
+  .abtn.appr { background:#333; color:#fff; }
+  .abtn.rej { background:#fff; color:#a33; border-color:#a33; }
+
+  .hist { padding:14px 18px; }
+  .hitem { display:flex; gap:10px; padding:9px 0; border-bottom:1px solid #f2f2f2; font-size:12px; }
+  .hitem:last-child { border-bottom:none; }
+  .hitem .hd { color:#333; } .hitem .ht { color:#aaa; font-size:10.5px; margin-top:2px; }
+
+  /* 모달 */
+  .modal-overlay { position:absolute; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:20; }
+  .modal { width:480px; background:#fff; border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,.2); overflow:hidden; }
+  .modal-h { padding:18px 20px; font-size:15px; font-weight:800; border-bottom:1px solid #eee; }
+  .modal-b { padding:18px 20px; font-size:13px; color:#555; line-height:1.7; }
+  .modal-b .sel { width:100%; border:1px solid #ccc; border-radius:6px; padding:9px 10px; font-size:12.5px; color:#666; margin:10px 0 8px; }
+  .modal-b .ta { width:100%; border:1px solid #ccc; border-radius:6px; padding:9px 10px; font-size:12.5px; color:#888; min-height:70px; }
+  .modal-b .up { border:1.5px dashed #ccc; border-radius:6px; padding:14px; text-align:center; font-size:11.5px; color:#999; margin:8px 0; }
+  .submitted { background:#fafafa; border:1px solid #eee; border-radius:8px; padding:12px 14px; margin:8px 0 14px; }
+  .submitted .sf { display:flex; border-bottom:1px solid #efefef; padding:6px 0; font-size:12px; }
+  .submitted .sf:last-child { border-bottom:none; }
+  .submitted .sk { width:80px; flex-shrink:0; color:#999; }
+  .submitted .sv { color:#444; }
+  .chk-item { display:flex; gap:10px; align-items:flex-start; padding:9px 0; border-bottom:1px solid #f2f2f2; font-size:12px; }
+  .chk-item:last-child { border-bottom:none; }
+  .chk-box { width:17px; height:17px; border:1.5px solid #333; border-radius:4px; background:#333; color:#fff; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:11px; margin-top:1px; }
+  .modal-f { display:flex; gap:8px; padding:14px 20px; border-top:1px solid #eee; }
+  .modal-btn { flex:1; padding:11px 0; text-align:center; border-radius:6px; font-size:13px; font-weight:700; border:1px solid #ccc; background:#fff; color:#555; }
+  .modal-btn.do { background:#a33; color:#fff; border-color:#a33; }
+  .modal-btn.doa { background:#333; color:#fff; border-color:#333; }
+
+  .foldline { position:absolute; left:0; right:0; top:1024px; border-top:1.5px dashed #c4553f; z-index:5; }
+  .foldline::after { content:"↑ 1440×1024 뷰포트 경계 · 이하 스크롤"; position:absolute; right:14px; top:-9px; background:#f7f7f7; padding:0 8px; font-size:10px; color:#c4553f; }
+  .note { margin:6px 0 0; border:1.5px dashed #999; border-radius:6px; background:#fafafa; padding:9px 12px; font-size:11.5px; color:#555; line-height:1.6; }
+  .note b { color:#333; } .note .tag { font-weight:700; margin-right:4px; }
+  .note.rule .tag { color:#555; }
+  .note.legal .tag { color:#8a5a00; }
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>⑤ 어드민 · 6. 거래 관리 <span>wf-admin-06 · 데스크톱 1440×1024</span></h1>
+  <div class="sub">그레이스케일 lo-fi · 전체 주문 조회(하위주문·SKU 단위) · <b>반품·교환 승인/거절</b> · <b>반품 환불 실행(입고 후 PG 취소)</b> — 이행 상태 축(② draft36 §축2) · <b>2026.07 신규</b>: 반품·교환 등 이슈가 없는 <b>일반 상태 주문 상세(조회 전용)</b> 추가 — 이전엔 상세 화면이 전부 반품/교환 액션 중심이라 정상 주문은 볼 화면이 없었음</div>
+  <div class="spec">프레임 1440×1024 · 결제완료 단순 취소는 PG 자동 처리(운영자 불필요) · 물건이 나간 뒤(반품·교환)만 운영자 개입</div>
+</div>
+
+<div class="stack">
+
+<!-- ============ F1. 주문 목록 ============ -->
+<div class="ftitle">1. 주문 목록 <span>— 하위주문(브랜드) 단위, SKU별 개별 취소·환불 가능</span><span class="pill">GNB #6 · F1</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/orders</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item hot on"><span class="n">6</span> 거래 관리 <span class="gnb-right"><span class="cnt">4</span></span></div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">거래 관리</div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="filter-row">
+          <span class="fchip on">전체 13</span>
+          <span class="fchip">결제완료 1</span>
+          <span class="fchip">상품준비중 1</span>
+          <span class="fchip">배송중 1</span>
+          <span class="fchip">배송완료 1</span>
+          <span class="fchip">구매확정 1</span>
+          <span class="fchip hot">반품요청 1</span>
+          <span class="fchip">회수중 1</span>
+          <span class="fchip hot">반송완료(환불대기) 1</span>
+          <span class="fchip hot">거절보류(결제대기) 1</span>
+          <span class="fchip hot">교환요청 1</span>
+          <span class="fchip">교환회수중 1</span>
+          <span class="fchip">교환재발송 1</span>
+          <span class="fchip">취소·환불 1</span>
+          <div class="search-box">주문번호 · 소비자 · 브랜드 검색</div>
+        </div>
+        <div class="list-toolbar"><span>총 <b>13</b>건</span><span>결제일순 ▾</span></div>
+        <table class="list">
+          <thead><tr>
+            <th style="width:150px">주문번호</th>
+            <th style="width:90px">소비자</th>
+            <th style="width:110px">브랜드</th>
+            <th>상품(옵션)</th>
+            <th style="width:50px">수량</th>
+            <th style="width:90px">금액</th>
+            <th style="width:130px">이행 상태</th>
+            <th style="width:90px">결제일</th>
+            <th style="width:70px">관리</th>
+          </tr></thead>
+          <tbody>
+            <tr class="row-link"><td>ORD-20260712-0501</td><td>윤서아</td><td>글로우랩</td><td>시카 진정 앰플 40ml</td><td>1</td><td>32,000원</td><td><span class="badge plain">결제완료</span><div class="p-sub">브랜드 준비 시작 전</div></td><td>2026.07.12</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>ORD-20260711-0475</td><td>임도현</td><td>무드코스메틱</td><td>라이스 브라이트닝 크림 50ml</td><td>1</td><td>26,000원</td><td><span class="badge plain">상품준비중</span></td><td>2026.07.11</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>ORD-20260710-0456</td><td>김민서</td><td>글로우랩</td><td>글로우 세럼 앰플 30ml</td><td>1</td><td>34,000원</td><td><span class="badge warn">반품요청</span></td><td>2026.07.10</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>ORD-20260709-0421</td><td>서지훈</td><td>스킨랩코리아</td><td>비타민C 브라이트닝 크림(30ml)</td><td>1</td><td>29,000원</td><td><span class="badge done">배송완료</span><div class="p-sub">반품·교환 가능 기간</div></td><td>2026.07.09</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>ORD-20260708-0398</td><td>박도윤</td><td>스킨랩코리아</td><td>비타민C 브라이트닝 크림(30ml)</td><td>2</td><td>58,000원</td><td><span class="badge wait">회수중</span></td><td>2026.07.08</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>ORD-20260705-0311</td><td>이하은</td><td>글로우랩</td><td>히알루론산 토너 200ml</td><td>1</td><td>22,000원</td><td><span class="badge warn">반송완료</span><div class="p-sub">환불 실행 대기</div></td><td>2026.07.05</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>ORD-20260703-0287</td><td>최유진</td><td>무드코스메틱</td><td>라이스 브라이트닝 크림 50ml</td><td>1</td><td>26,000원</td><td><span class="badge wait">거절보류</span><div class="p-sub">배송비 결제 대기</div></td><td>2026.07.03</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>ORD-20260701-0233</td><td>정서준</td><td>스킨랩코리아</td><td>비타민C 브라이트닝 크림(50ml)</td><td>1</td><td>29,000원</td><td><span class="badge warn">교환요청</span></td><td>2026.07.01</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>ORD-20260628-0190</td><td>한지우</td><td>글로우랩</td><td>글로우 세럼 앰플 30ml</td><td>1</td><td>34,000원</td><td><span class="badge wait">교환회수중</span></td><td>2026.06.28</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>ORD-20260624-0155</td><td>조은우</td><td>클렌즈하우스</td><td>데일리 클렌징 오일 150ml</td><td>1</td><td>24,000원</td><td><span class="badge plain">교환재발송</span><div class="p-sub">브랜드 재발송 중</div></td><td>2026.06.24</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>ORD-20260620-0102</td><td>오세아</td><td>클렌즈하우스</td><td>데일리 클렌징 오일 150ml</td><td>1</td><td>24,000원</td><td><span class="badge ship">배송중</span></td><td>2026.06.20</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>ORD-20260610-0087</td><td>강태윤</td><td>스킨랩코리아</td><td>여드름 진정 세럼</td><td>1</td><td>27,000원</td><td><span class="badge ok">구매확정</span></td><td>2026.06.10</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>ORD-20260315-0044</td><td>백하람</td><td>글로우랩</td><td>히알루론 토너 특가 세트</td><td>1</td><td>23,000원</td><td><span class="badge done">취소·환불</span><div class="p-sub">공구 취소·운영자 사유</div></td><td>2026.03.15</td><td><span class="mini-btn">상세</span></td></tr>
+          </tbody>
+        </table>
+        <div class="pager"><span>‹</span><span class="on">1</span><span>›</span></div>
+        <div class="note rule"><span class="tag">[규칙]</span> <b>결제완료 단계 단순 취소(물건 안 나감)는 목록에 없음</b> — 소비자 취소 시 PG 자동 취소, 운영자 개입 없이 즉시 "취소·환불"로 종료. 이 화면은 <b>물건이 나간 뒤(반품·교환·환불 실행) 운영자 개입이 필요한 건 중심</b>으로 구성.</div>
+        <div class="note rule"><span class="tag">[규칙]</span> 주문은 <b>하위주문(브랜드) 단위</b>로 분리 표시, 다른 옵션(SKU)은 각각 독립 행 — 부분 취소·환불이 항목 단위로 가능(② draft36 §개별 취소·환불).</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F2. 주문 상세 — 반품요청 상태 ============ -->
+<div class="ftitle">2. 주문 상세 — 반품요청 상태 <span>— 승인/거절 게이트</span><span class="pill">GNB #6 · F2</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/orders/ORD-20260710-0456</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item hot on"><span class="n">6</span> 거래 관리 <span class="gnb-right"><span class="cnt">4</span></span></div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">거래 관리 <span class="sub2">/ ORD-20260710-0456</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="detail-grid">
+          <div class="det-l">
+            <div class="card">
+              <div class="card-h">주문 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">주문번호</div><div class="form-val">ORD-20260710-0456</div></div>
+                <div class="form-row"><div class="form-label">소비자</div><div class="form-val">김민서 · 010-1122-3344</div></div>
+                <div class="form-row"><div class="form-label">브랜드</div><div class="form-val">글로우랩</div></div>
+                <div class="form-row"><div class="form-label">공구</div><div class="form-val">여름 수분 세럼 공구 <span style="color:#666;text-decoration:underline">공구 상세 보기</span></div></div>
+                <div class="form-row"><div class="form-label">결제일</div><div class="form-val">2026.07.10 13:22</div></div>
+                <div class="form-row"><div class="form-label">결제수단</div><div class="form-val">카드(PG) · 승인번호 8834021</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">상품 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">상품</div><div class="form-val">글로우 세럼 앰플 30ml</div></div>
+                <div class="form-row"><div class="form-label">수량</div><div class="form-val">1개</div></div>
+                <div class="form-row"><div class="form-label">결제 금액</div><div class="form-val">34,000원</div></div>
+                <div class="form-row"><div class="form-label">예상 환불액</div><div class="form-val">34,000원 <span class="badge" style="color:#8a5a00;border-color:#c9a24a">[쟁점 B — 배송비 공제 여부]</span></div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">배송 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">택배사·송장번호</div><div class="form-val">CJ대한통운 123456789012 <span style="color:#666;text-decoration:underline">[택배사에서 상세 보기]</span></div></div>
+                <div class="form-row"><div class="form-label">배송 상태</div><div class="form-val">배송완료 · 2026.07.06 11:40</div></div>
+                <div class="form-row"><div class="form-label">배송지</div><div class="form-val">서울특별시 ○○구 ○○로 00 · 김민서</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">반품 요청 내용 <span style="font-size:11px;color:#999;font-weight:400">소비자 입력</span></div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">반품 사유</div><div class="form-val">단순변심</div></div>
+                <div class="form-row"><div class="form-label">회수 희망일</div><div class="form-val">2026.07.12</div></div>
+                <div class="form-row"><div class="form-label">수거지</div><div class="form-val">서울특별시 ○○구 ○○로 00 · 김민서 010-1122-3344</div></div>
+                <div class="form-row"><div class="form-label">요청일시</div><div class="form-val">2026.07.10 13:22</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="det-r">
+            <div class="card">
+              <div class="card-h">이행 상태 관리</div>
+              <div class="status-box">
+                <div class="lb">현재 이행 상태</div>
+                <div class="cur">반품요청 → 회수중 (자동 전환)</div>
+              </div>
+              <div style="padding:10px 18px;font-size:11px;color:#999;line-height:1.6">2026.08 변경: 반품 요청 즉시 <b>택배사 회수 API 자동 접수</b>(회수 송장 자동 발급) — 운영자 승인 클릭 불필요(무신사 등 업계 표준 채택, 기존 "사유 없는 형식적 승인" 단계 제거). 문제 있는 건은 아래 "거절"로 브랜드가 언제든 차단 가능.</div>
+              <div class="act-row" style="padding-top:0">
+                <div class="abtn rej">거절 (브랜드 제출 확인)</div>
+              </div>
+              <div style="padding:0 18px 16px;font-size:11px;color:#999;line-height:1.6">거절 = 브랜드가 파트너센터에서 사유·증빙 제출 시 이 자리에 즉시 반영(F4 참고, 운영자 사전 심사 없음)</div>
+            </div>
+            <div class="card">
+              <div class="card-h">처리 이력</div>
+              <div class="hist">
+                <div class="hitem"><div>⚪</div><div><div class="hd">결제완료</div><div class="ht">2026.07.10 13:22 · 시스템(PG)</div></div></div>
+                <div class="hitem"><div>⚪</div><div><div class="hd">배송완료</div><div class="ht">2026.07.06 11:40 · 택배사 연동</div></div></div>
+                <div class="hitem"><div>🟡</div><div><div class="hd">반품 요청</div><div class="ht">2026.07.10 13:22 · 소비자(김민서)</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note rule" style="margin-top:14px"><span class="tag">[규칙 · 2026.08 변경]</span> 반품 요청 단계(1차)에서 거절 가능, 입고 검수(2차)에서도 재판단 가능 — <b>거절 사유·증빙 제출(브랜드)과 동시에 즉시 확정</b>(운영자 사전 심사 폐지, F4 참고). 소비자 이의는 1:1 문의로 운영자 중재. 브랜드 남용은 상품 관리 미진열 처리로 사후 대응.</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F3. 반품 승인 모달 ============ -->
+<div class="ftitle">3. 반품 승인 모달 <span style="text-decoration:line-through;color:#aaa">확인만(사유 없음), 택배사 회수 API 접수</span> <span style="color:#c4553f">— 2026.08 폐기(자동화)</span><span class="pill">GNB #6 · F3</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/orders/ORD-20260710-0456</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item hot on"><span class="n">6</span> 거래 관리 <span class="gnb-right"><span class="cnt">4</span></span></div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">거래 관리 <span class="sub2">/ ORD-20260710-0456</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="detail-grid" style="opacity:.4">
+          <div class="det-l"><div class="card"><div class="card-h">반품 요청 내용</div><div class="card-b"><div class="form-row"><div class="form-label">반품 사유</div><div class="form-val">단순변심</div></div></div></div></div>
+          <div class="det-r"></div>
+        </div>
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-h" style="color:#c4553f">이 모달은 더 이상 사용하지 않습니다</div>
+            <div class="modal-b">
+              <b>ORD-20260710-0456</b> 반품 요청은 <b>운영자 승인 없이 즉시 택배사 회수 API가 자동 접수</b>됩니다(회수 송장 자동 발급). 무신사 등 업계 표준(사유 없는 형식적 승인 단계 제거)을 따라 2026.08 확정했습니다. 사유가 필요한 거절만 F4 화면으로 남습니다.
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">닫기</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F4. 반품 거절 처리 내역 (1차 · 요청 단계) ============ -->
+<div class="ftitle">4. 반품 거절 처리 내역 — 1차(요청 단계) <span>— 브랜드 제출 즉시 확정, 운영자는 조회만(2026.08 업계 표준 채택)</span><span class="pill">GNB #6 · F4</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/orders/ORD-20260710-0456</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item hot on"><span class="n">6</span> 거래 관리 <span class="gnb-right"><span class="cnt">4</span></span></div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">거래 관리 <span class="sub2">/ ORD-20260710-0456</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="detail-grid" style="opacity:.4">
+          <div class="det-l"><div class="card"><div class="card-h">반품 요청 내용</div><div class="card-b"><div class="form-row"><div class="form-label">반품 사유</div><div class="form-val">단순변심</div></div></div></div></div>
+          <div class="det-r"></div>
+        </div>
+        <div class="modal-overlay">
+          <div class="modal" style="width:520px">
+            <div class="modal-h">반품 거절 처리 완료 <span style="font-weight:400;font-size:12px;color:#999">브랜드 제출 즉시 확정</span></div>
+            <div class="modal-b">
+              <b>ORD-20260710-0456</b> — 브랜드(글로우랩)가 제출한 즉시 거절이 자동 확정되었습니다. 소비자 통지·재발송 배송비 결제 링크가 이미 발송되었습니다.
+              <div class="submitted">
+                <div class="sf"><div class="sk">거절 사유</div><div class="sv">화장품 개봉·사용 흔적</div></div>
+                <div class="sf"><div class="sk">상세 설명</div><div class="sv">본체 실링 제거·2회 이상 사용 흔적 확인</div></div>
+                <div class="sf"><div class="sk">증빙</div><div class="sv">사진 2장 첨부됨 <span style="color:#666;text-decoration:underline">확대 보기</span></div></div>
+                <div class="sf"><div class="sk">제출·확정</div><div class="sv">글로우랩 · 2026.07.11 10:15 (제출 = 확정)</div></div>
+              </div>
+              <div style="font-size:11px;color:#999;margin-top:10px">운영자 사전 심사 없음(2026.08 자체 확정 — 무신사·올리브영·11번가 등 업계 표준 채택). 브랜드의 거절 판단이 부적절하다고 보이면, 개별 건이 아니라 <b>상품 관리의 미진열 처리</b>로 해당 브랜드·상품을 사후 제재하세요.</div>
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn do" style="flex:1">확인</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F5. 주문 상세 — 반송완료 상태 (2차 검수) ============ -->
+<div class="ftitle">5. 주문 상세 — 반송완료 상태 <span>— 2차(입고 검수) 갈림길: 환불 실행 vs 거절 확정</span><span class="pill">GNB #6 · F5</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/orders/ORD-20260705-0311</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item hot on"><span class="n">6</span> 거래 관리 <span class="gnb-right"><span class="cnt">4</span></span></div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">거래 관리 <span class="sub2">/ ORD-20260705-0311</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="detail-grid">
+          <div class="det-l">
+            <div class="card">
+              <div class="card-h">상품 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">상품</div><div class="form-val">히알루론산 토너 200ml</div></div>
+                <div class="form-row"><div class="form-label">수량</div><div class="form-val">1개</div></div>
+                <div class="form-row"><div class="form-label">결제 금액</div><div class="form-val">22,000원</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">브랜드 입고 검수 결과 <span style="font-size:11px;color:#999;font-weight:400">브랜드 제출</span></div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">검수 결과</div><div class="form-val" style="color:#3a7d3a;font-weight:700">이상 없음 — 입고 확인 완료</div></div>
+                <div class="form-row"><div class="form-label">입고 확인일</div><div class="form-val">2026.07.09 16:40 · 글로우랩</div></div>
+              </div>
+              <div class="card-b" style="padding-top:0"><div style="font-size:11px;color:#999">브랜드가 "거절(사유·증빙)"을 대신 눌렀다면 이 카드가 거절 사유·증빙으로 바뀌고, 하단 액션도 제출과 동시에 확정된 "거절 처리 완료" 조회로 교체됩니다(F4와 동일 폼, 2026.08 변경).</div></div>
+            </div>
+          </div>
+          <div class="det-r">
+            <div class="card">
+              <div class="card-h">이행 상태 관리</div>
+              <div class="status-box">
+                <div class="lb">현재 이행 상태</div>
+                <div class="cur">반송완료</div>
+              </div>
+              <div class="act-row">
+                <div class="abtn appr">환불 실행</div>
+              </div>
+              <div style="padding:0 18px 16px;font-size:11px;color:#999;line-height:1.6">브랜드 검수 결과가 "이상 없음"이므로 <b>환불 실행</b>만 노출 — 브랜드가 거절을 제출했다면 이 자리가 제출 즉시 확정된 "거절 처리 완료" 조회(F4와 동일 화면, 2026.08 변경)로 바뀝니다(두 버튼이 동시에 있지 않음, wf-partner-05 버튼 교체 규칙과 동일).</div>
+            </div>
+            <div class="card">
+              <div class="card-h">처리 이력</div>
+              <div class="hist">
+                <div class="hitem"><div>⚪</div><div><div class="hd">자동 접수 → 회수중</div><div class="ht">2026.07.06 09:12 · 시스템(자동)</div></div></div>
+                <div class="hitem"><div>⚪</div><div><div class="hd">택배사 회수 완료</div><div class="ht">2026.07.09 11:05 · 택배사 연동</div></div></div>
+                <div class="hitem"><div>🟢</div><div><div class="hd">브랜드 입고 확인 (이상 없음)</div><div class="ht">2026.07.09 16:40 · 브랜드(글로우랩)</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note rule" style="margin-top:14px"><span class="tag">[규칙 · 2026.08 변경]</span> <b>2차 거절도 사유·증빙 제출(브랜드)과 동시에 즉시 확정</b>(요청 단계 1차와 동일 원칙, 운영자 사전 심사 폐지) — 운영자는 회수 승인·환불 실행과, 브랜드가 2차에서 거절을 제출한 경우 F4와 동일하게 <b>조회만</b> 수행.</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F6. 반품 환불 실행 모달 ============ -->
+<div class="ftitle">6. 반품 환불 실행 모달 <span>— 반송완료(입고 확인, 이상 없음) 상태에서 PG 취소 실행</span><span class="pill">GNB #6 · F6</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/orders/ORD-20260705-0311</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item hot on"><span class="n">6</span> 거래 관리 <span class="gnb-right"><span class="cnt">4</span></span></div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">거래 관리 <span class="sub2">/ ORD-20260705-0311</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="detail-grid" style="opacity:.4">
+          <div class="det-l">
+            <div class="card"><div class="card-h">이행 상태</div><div class="card-b"><div class="form-row"><div class="form-label">현재 상태</div><div class="form-val">반송완료 — 브랜드 입고 확인됨 · 환불 실행 대기</div></div></div></div>
+          </div>
+          <div class="det-r"></div>
+        </div>
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-h">반품 환불 실행</div>
+            <div class="modal-b">
+              <b>ORD-20260705-0311</b>(히알루론산 토너 200ml, 1개)이 브랜드에 입고 확인(이상 없음)되었습니다. 환불을 실행하면 <b>PG 취소가 즉시 처리</b>되고 재고가 원복됩니다.
+              <div class="form-row" style="border:none;padding-top:12px"><div class="form-label">환불액</div><div class="form-val" style="font-weight:700">22,000원</div></div>
+              <div class="form-row" style="border:none;padding-top:0"><div class="form-label">환불 수단</div><div class="form-val">원결제 카드로 환불</div></div>
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">취소</div>
+              <div class="modal-btn doa">환불 실행 (PG 취소)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F7. 교환 요청 처리 모달 (승인) ============ -->
+<div class="ftitle">7. 교환 요청 처리 모달 <span style="text-decoration:line-through;color:#aaa">승인 시 확인만</span><span style="color:#c4553f">— 2026.08 자동화, 거절만 F8로 분기</span><span class="pill">GNB #6 · F7</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/orders/ORD-20260701-0233</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item hot on"><span class="n">6</span> 거래 관리 <span class="gnb-right"><span class="cnt">4</span></span></div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">거래 관리 <span class="sub2">/ ORD-20260701-0233</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="detail-grid" style="opacity:.4">
+          <div class="det-l"><div class="card"><div class="card-h">교환 요청 내용</div><div class="card-b"><div class="form-row"><div class="form-label">요청 옵션</div><div class="form-val">비타민C 브라이트닝 크림 30ml → 50ml</div></div></div></div></div>
+          <div class="det-r"></div>
+        </div>
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-h" style="color:#c4553f">이 모달은 더 이상 사용하지 않습니다</div>
+            <div class="modal-b">
+              <b>ORD-20260701-0233</b> — 30ml → 50ml 교환 요청은 <b>운영자 승인 없이 즉시 택배사 회수 API가 자동 접수</b>되어 <b>교환회수중</b>으로 전환됩니다(2026.08 자동화, 반품과 동일 원칙). 입고 확인 후 브랜드가 50ml로 재발송(송장 등록)합니다.
+              <div style="font-size:11px;color:#999;margin-top:10px">거절만 여전히 사람이 개입합니다 — 반품과 동일하게 <b>브랜드가 사유·증빙을 제출하는 즉시 확정</b>됩니다(운영자 사전 심사 없음, F8 참고).</div>
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">닫기</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F8. 교환 거절 확정 모달 ============ -->
+<div class="ftitle">8. 교환 거절 처리 내역 <span>— 브랜드 제출 즉시 확정, 운영자는 조회만(2026.08 업계 표준 채택)</span><span class="pill">GNB #6 · F8</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/orders/ORD-20260628-0190</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item hot on"><span class="n">6</span> 거래 관리 <span class="gnb-right"><span class="cnt">4</span></span></div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">거래 관리 <span class="sub2">/ ORD-20260628-0190</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="detail-grid" style="opacity:.4">
+          <div class="det-l"><div class="card"><div class="card-h">교환 요청 내용</div><div class="card-b"><div class="form-row"><div class="form-label">요청 옵션</div><div class="form-val">글로우 세럼 앰플 30ml → 다른 옵션 없음(단일)</div></div></div></div></div>
+          <div class="det-r"></div>
+        </div>
+        <div class="modal-overlay">
+          <div class="modal" style="width:520px">
+            <div class="modal-h">교환 거절 처리 완료 <span style="font-weight:400;font-size:12px;color:#999">브랜드 제출 즉시 확정</span></div>
+            <div class="modal-b">
+              <b>ORD-20260628-0190</b> — 브랜드(글로우랩)가 입고 검수 후 제출한 교환 거절이 자동 확정되었습니다. <b>회수했던 원래 실물 그대로</b> 재발송됩니다(새 옵션 아님, 교환 무효화).
+              <div class="submitted">
+                <div class="sf"><div class="sk">거절 사유</div><div class="sv">포장 훼손</div></div>
+                <div class="sf"><div class="sk">상세 설명</div><div class="sv">외포장 심하게 찢어져 재판매 불가 상태로 회수됨</div></div>
+                <div class="sf"><div class="sk">증빙</div><div class="sv">사진 3장 첨부됨 <span style="color:#666;text-decoration:underline">확대 보기</span></div></div>
+                <div class="sf"><div class="sk">제출·확정</div><div class="sv">글로우랩 · 2026.07.02 14:20 (제출 = 확정)</div></div>
+              </div>
+              <div style="font-size:11px;color:#999;margin-top:10px">운영자 사전 심사 없음(2026.08 자체 확정 — 업계 표준 채택). 판단이 부적절하다고 보이면 상품 관리의 미진열 처리로 사후 제재하세요.</div>
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn do" style="flex:1">확인</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<div class="note rule" style="margin:20px 40px 0"><span class="tag">[규칙]</span> 교환 재발송(교환회수중 → 입고확인 → 교환 옵션 재발송)은 <b>브랜드가 파트너센터(판매 관리)에서 송장 등록</b>으로 직접 처리 — 운영자는 상세 화면에서 <b>조회·모니터링만</b>(별도 승인 액션 없음). 재발송 도착 시 배송완료로 복귀, 구매확정 7일 카운트 재시작(② draft36).</div>
+<div class="note rule" style="margin:10px 40px 0"><span class="tag">[규칙 · 2026.08 변경]</span> 승인=확인만(사유 없음) · <b>거절 사유·증빙 제출(브랜드)과 동시에 즉시 확정</b>(운영자 사전 심사 폐지, 업계 표준 채택) → 확정 즉시 <b>감사 기록</b> 생성(처리자=브랜드·시각·사유) + 소비자에게 사유 그대로 통지, 이의는 1:1 문의로 운영자 중재. <b>브랜드의 거절 남용에 대한 사후 대응은 상품 관리의 미진열 강제 처리로 대체</b>(구 "운영자 실질 심사·승인 전환" 규칙 폐기).</div>
+<div class="note legal" style="margin:10px 40px 0"><span class="tag">[법률 대기]</span> 예상 환불액의 <b>배송비 공제 여부</b>(쟁점 B) — <b>2026.08 자체 확정: 단순변심=소비자 왕복 부담/불량·오배송=브랜드 부담, 최초 배송비 공제 없음, 법률 검토 불필요</b> · 거절 보류 상태 <b>보관 기간·처분 근거·절차</b>(쟁점 C, 여전히 변호사 검토 필요) · ~~브랜드 거절 판단에 대한 운영자 실질 심사 의무 범위(쟁점 H)~~ — <b>2026.08 폐기: 운영자 심사 자체가 없어져 해당 쟁점 소멸</b>.</div>
+
+
+<!-- ============ F9. 주문 상세 — 일반 상태(반품·교환 아님) ============ -->
+<div class="ftitle">9. 주문 상세 — 일반 상태 <span>— 반품·교환·취소 등 이슈 없는 정상 주문(배송중 예시), 조회 전용</span><span class="pill">GNB #6 · F9 · 2026.07 신규</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/orders/ORD-20260620-0102</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item hot on"><span class="n">6</span> 거래 관리 <span class="gnb-right"><span class="cnt">4</span></span></div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">거래 관리 <span class="sub2">/ ORD-20260620-0102</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="detail-grid">
+          <div class="det-l">
+            <div class="card">
+              <div class="card-h">주문 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">주문번호</div><div class="form-val">ORD-20260620-0102</div></div>
+                <div class="form-row"><div class="form-label">소비자</div><div class="form-val">오세아 · 010-5566-7788</div></div>
+                <div class="form-row"><div class="form-label">브랜드</div><div class="form-val">클렌즈하우스</div></div>
+                <div class="form-row"><div class="form-label">공구</div><div class="form-val">데일리 클렌징 오일 공구 <span style="color:#666;text-decoration:underline">공구 상세 보기</span></div></div>
+                <div class="form-row"><div class="form-label">결제일</div><div class="form-val">2026.06.20 10:14</div></div>
+                <div class="form-row"><div class="form-label">결제수단</div><div class="form-val">카드(PG) · 승인번호 8802214</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">상품 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">상품</div><div class="form-val">데일리 클렌징 오일 150ml</div></div>
+                <div class="form-row"><div class="form-label">수량</div><div class="form-val">1개</div></div>
+                <div class="form-row"><div class="form-label">결제 금액</div><div class="form-val">24,000원</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">배송 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">택배사·송장번호</div><div class="form-val">CJ대한통운 123458812034 <span style="color:#666;text-decoration:underline">[택배사에서 상세 보기]</span></div></div>
+                <div class="form-row"><div class="form-label">배송 상태</div><div class="form-val">배송중 · 2026.06.21 발송</div></div>
+                <div class="form-row"><div class="form-label">배송지</div><div class="form-val">서울특별시 ○○구 ○○로 00 · 오세아</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="det-r">
+            <div class="card">
+              <div class="card-h">이행 상태 관리</div>
+              <div class="status-box">
+                <div class="lb">현재 이행 상태</div>
+                <div class="cur">배송중</div>
+              </div>
+              <div style="padding:0 18px 18px;font-size:11px;color:#999;line-height:1.6">반품·교환·취소 등 <b>운영자 개입이 필요한 이슈가 없는 정상 흐름</b>이라 액션 버튼이 없습니다 — 결제완료→상품준비중→배송중→배송완료→구매확정까지는 브랜드·택배사 연동으로 <b>자동 진행</b>됩니다. 문제가 생기면 그때 반품/교환 상세(F2·F7과 동일 레이아웃)로 전환됩니다.</div>
+            </div>
+            <div class="card">
+              <div class="card-h">처리 이력</div>
+              <div class="hist">
+                <div class="hitem"><div>⚪</div><div><div class="hd">결제완료</div><div class="ht">2026.06.20 10:14 · 시스템(PG)</div></div></div>
+                <div class="hitem"><div>⚪</div><div><div class="hd">상품준비중 전환</div><div class="ht">2026.06.20 15:40 · 브랜드(클렌즈하우스)</div></div></div>
+                <div class="hitem"><div>🟢</div><div><div class="hd">배송중 전환 (송장 등록)</div><div class="ht">2026.06.21 09:02 · 브랜드(클렌즈하우스)</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note rule" style="margin-top:14px"><span class="tag">[규칙 · 2026.08 변경]</span> 목록(F1)에서 "상세"를 눌렀을 때, <b>반품·교환·거절보류 등 이슈 상태가 아니면 이 화면(조회 전용)</b>이 뜹니다 — 결제완료·상품준비중·배송중·배송완료·구매확정·교환재발송 상태가 여기 해당(이 중 배송완료는 "반품·교환 가능 기간"이라는 부가 안내만 있고 액션은 여전히 없음). 반품요청·교환요청은 <b>운영자 승인 없이 자동으로 회수중 전환</b>(구 F2·F7 승인 모달 폐기). <b>거절보류 등 사람 개입이 필요한 상태일 때만</b> F4·F8처럼 조회 화면으로 분기됩니다.</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<div class="note rule" style="margin:24px 40px 0"><span class="tag">[메모 · 2026.08]</span> <b>거절 확정 후 소비자 이의제기 시 처리 방법</b> — 브랜드 거절이 이미 즉시 확정된 뒤(거절 보류 상태 포함) 소비자가 1:1 문의로 이의를 제기하고, 운영자 중재 결과 환불이 맞다고 판단되는 경우, 별도 화면을 새로 만들지 않고 <b>기존 "공구 취소·운영자 사유 환불"</b>(거래플로우_상태정의서 — 진행 단계 무관, 운영자 트리거 → PG 취소) 경로를 그대로 사용한다. 이미 인플루언서에게 리워드가 지급된 뒤라면 브리핑 §4-J(클로백 반환 청구)의 "운영자 사유 환불" 케이스와 동일 건으로 연결된다. 화면(버튼) 반영은 추후 필요 시 진행.</div>
+
+
+</div>
+</body>
+</html>

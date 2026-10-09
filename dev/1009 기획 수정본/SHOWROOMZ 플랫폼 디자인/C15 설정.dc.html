@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+.dv-sw{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:-2px 0 2px}
+.dv-swl{font:600 10px/1 Pretendard,sans-serif;color:rgba(0,0,0,.38);letter-spacing:.02em;margin-right:2px}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C15 설정 · C15-1 닉네임 변경 · C15-2 회원정보</span></div>
+<p class="dv-tsub">WF-C-04 구조 그대로 — 프로필(사진 변경) · 계정(닉네임·회원정보) · 알림 설정 · 로그아웃 / 회원 탈퇴. 토글·모달·선택 항목은 실제로 동작합니다. 진입은 마이 탭 헤더의 설정 아이콘입니다.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>C15 설정</div>
+<div class="dv-card">
+<div data-screen-label="C15 설정" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">설정</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:24px 14px 22px;display:flex;flex-direction:column;align-items:center">
+<div style="position:relative;cursor:pointer">
+<div style="width:76px;height:76px;border-radius:50%;background:linear-gradient(140deg,#EFE7DC,#DCCFBE)"></div>
+<div style="position:absolute;right:-2px;bottom:-2px;width:26px;height:26px;border-radius:100px;background:#fff;border:1px solid #E3E3E5;display:flex;align-items:center;justify-content:center">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3C3C3C" stroke-width="1.8" stroke-linejoin="miter" style="display:block"><path d="M4.5 8.5h3l1.6-2h5.8l1.6 2h3v10h-15z"></path><circle cx="12" cy="13" r="3"></circle></svg>
+</div>
+</div>
+<div style="margin-top:12px;font:700 17px/1.3 Pretendard,sans-serif;letter-spacing:-.3px">수민</div>
+<div style="margin-top:5px;font:400 12.5px/1 Pretendard,sans-serif;color:#737373">프로필 사진을 탭해 변경할 수 있어요</div>
+</div>
+
+<div style="height:5px;background:#F7F7F8"></div>
+
+<div style="padding:18px 14px 6px;font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">계정</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 14px;cursor:pointer" style-active="background:#F7F7F8">
+<span style="font: 500 15px/1 Pretendard,sans-serif; font-size: 14px">닉네임 변경</span>
+<span style="display:flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg></span>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 14px;cursor:pointer" style-active="background:#F7F7F8">
+<span style="font: 500 15px/1 Pretendard,sans-serif; font-size: 14px">회원정보</span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:10px"></div>
+
+<div style="padding:18px 14px 6px;font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">알림 설정</div>
+<sc-for list="{{ toggles }}" as="t" hint-placeholder-count="2">
+<div style="display:flex;align-items:center;gap:12px;padding:14px">
+<div style="flex:1;min-width:0">
+<div style="font:500 15px/1.4 Pretendard,sans-serif">{{ t.label }}</div>
+<div style="margin-top:4px;font:400 12.5px/1.6 Pretendard,sans-serif;color:#737373;text-wrap:pretty">{{ t.desc }}</div>
+</div>
+<div onClick="{{ t.toggle }}" style="flex:none;width:50px;height:30px;border-radius:100px;background:{{ t.trackBg }};display:flex;align-items:center;padding:2px;box-sizing:border-box;cursor:pointer;justify-content:{{ t.justify }}" style-active="opacity:.7">
+<div style="width:26px;height:26px;border-radius:100px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.18)"></div>
+</div>
+</div>
+</sc-for>
+<div style="padding:13px 14px 0;font:400 12px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">주문·배송·문의 답변 등 거래 알림은 끌 수 없어요</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:18px"></div>
+
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 14px;cursor:pointer" onClick="{{ openLogout }}" style-active="background:#F7F7F8">
+<span style="font: 500 15px/1 Pretendard,sans-serif; font-size: 14px">로그아웃</span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 14px;cursor:pointer" style-active="background:#F7F7F8">
+<span style="font:400 14px/1 Pretendard,sans-serif;color:#737373">회원 탈퇴</span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg>
+</div>
+
+
+
+</div>
+
+<sc-if value="{{ logoutOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeLogout }}" style="position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:10;display:flex;align-items:center;justify-content:center;padding:0 32px">
+<div style="width:100%;background:#fff;border-radius:8px;overflow:hidden">
+<div style="padding:26px 22px 20px;text-align:center">
+<div style="font:700 16.5px/1.5 Pretendard,sans-serif;letter-spacing:-.3px">로그아웃 하시겠어요?</div>
+<div style="margin-top:9px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">로그아웃해도 쇼룸과 게시물은 계속 볼 수 있어요</div>
+</div>
+<div style="display:flex;gap:8px;padding:0 18px 18px">
+<div onClick="{{ closeLogout }}" style="flex:1;height:48px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">로그아웃</div>
+<div onClick="{{ closeLogout }}" style="flex:1;height:48px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">취소</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+<p class="dv-note"><b>구조</b> — 프로필(사진 변경) → 계정 → 알림 설정 → 로그아웃/탈퇴를 8px 회색 밴드로 끊었습니다. <b>토글</b>은 50×30 · 노브 26 · 켜짐 로즈(#F2456E) / 꺼짐 #DEDEE0 — 시스템에 없던 컴포넌트라 등재가 필요합니다. <b>광고성 정보 수신 동의</b>를 여기 편입해 가입 시 [선택] 동의와 동기화하고, 철회 시 일시를 기록·통지합니다. 거래 알림이 꺼지지 않는다는 안내는 토글 아래 한 줄로.<br><br><b>위계</b> — [로그아웃]은 일반 액션(15/500), <b>회원 탈퇴는 14/400 회색</b>으로 낮춰 실수 진입을 줄였습니다. 로그아웃 모달은 [로그아웃](좌·외곽선) / [취소](우·로즈)로, 파괴적 액션을 강조하지 않는 규칙을 따릅니다.<br><br><b>법률 확정 대기</b> — 회원 탈퇴 시 개인정보 파기·비식별화와 거래기록 법정 기간 분리 보존 안내 문구, 광고 수신 동의·철회 문구는 법무 검토 후 확정입니다.</p>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>C15-1 닉네임 변경</div>
+<div class="dv-sw">
+<span class="dv-swl">닉네임</span>
+<sc-for list="{{ swNick }}" as="o" hint-placeholder-count="5">
+<div onClick="{{ o.pick }}" style="padding:6px 10px;border-radius:6px;cursor:pointer;font:{{ o.font }};background:{{ o.bg }};color:{{ o.color }};border:1px solid {{ o.border }}">{{ o.label }}</div>
+</sc-for>
+</div>
+<div class="dv-card">
+<div data-screen-label="C15-1 닉네임 변경" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">닉네임 변경</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+<div style="padding:22px 14px 4px">
+<div style="font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">닉네임</div>
+<div style="margin-top:9px;height:48px;border:1px solid {{ nickBorder }};border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 13px">
+<span style="flex:1;min-width:0;font:400 15px/1 Pretendard,sans-serif;color:{{ nickTextColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ nickValue }}</span>
+<span style="flex:none;font:400 12.5px/1 Pretendard,sans-serif;color:#737373">{{ nickCount }}</span>
+</div>
+<div style="margin-top:8px;font:400 11.5px/1.6 Pretendard,sans-serif;color:{{ nickMsgColor }};min-height:18px">{{ nickMsg }}</div>
+
+
+</div>
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:12px 14px 26px;background:#fff">
+<div style="height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:{{ saveBg }};color:{{ saveColor }};font:600 15.5px/1 Pretendard,sans-serif;cursor:{{ saveCursor }}" style-active="opacity:{{ savePress }}">저장</div>
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>검증</b> — 가입 화면(C0-1)과 동일한 규칙·문구·색을 씁니다: 통과는 그린 체크 + "사용할 수 있는 닉네임이에요", 중복·형식 오류·금지 단어는 로즈 테두리 + 로즈 경고 아이콘 + 해당 문구. 우측 Tweaks의 <b>nickname</b>으로 5가지 상태를 전환해 볼 수 있습니다. 상태 아이콘은 필드 안에 넣지 않고 <b>하단 메시지의 색</b>으로만 전달하며, 필드 우측에는 <b>글자 수 카운터를 고정</b>합니다(요소가 자리를 바꾸지 않아 입력 중 시선이 흔들리지 않습니다). 변경 전에는 플레이스홀더 "새 닉네임을 입력해 주세요"(#B5B5B5) + 0/10. 가입과 다른 점은 <b>카운터</b>와 <b>[저장] 버튼의 활성 조건</b> — 검증을 통과해야 로즈로 켜지고, 변경 전(현재 닉네임 그대로)이나 오류 상태에서는 회색 비활성입니다. 메시지 줄은 높이를 고정해 상태가 바뀌어도 아래 문구가 밀리지 않습니다. 저장하면 설정으로 복귀 + 토스트. <b>마스킹 안내</b>를 여기서 미리 알려 공개 QnA에서 실명처럼 노출될까 하는 우려를 없앱니다.</p>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>C15-2 회원정보 — 조회 · 재인증 갱신</div>
+<div class="dv-card">
+<div data-screen-label="C15-2 회원정보" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">회원정보</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:20px 14px 6px;font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">계정</div>
+<sc-for list="{{ account }}" as="r" hint-placeholder-count="4">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px">
+<span style="font:400 14.5px/1 Pretendard,sans-serif;color:#737373">{{ r.k }}</span>
+<span style="font:600 14.5px/1 Pretendard,sans-serif;text-align:right">{{ r.v }}</span>
+</div>
+</sc-for>
+
+<div style="height:5px;background:#F7F7F8;margin-top:10px"></div>
+
+<div style="padding:20px 14px 0">
+<div style="font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">회원정보 변경</div>
+<div style="margin-top:10px;font:400 12.5px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">이름·생년월일·휴대폰번호는 본인인증으로 확인된 정보라 직접 수정할 수 없어요. 번호가 바뀌었거나 정보가 다르면 다시 인증해 최신 정보로 업데이트할 수 있어요.</div>
+</div>
+
+<div style="height:20px"></div>
+
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:14px 14px 26px;background:#fff">
+<div onClick="{{ toggleConsent }}" style="display:flex;align-items:flex-start;gap:10px;padding:0 0 14px;cursor:pointer" style-active="opacity:.6">
+<span style="width:21px;height:21px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:{{ consentBg }};border:{{ consentBorder }};margin-top:1px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{ consentCheck }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg></span>
+<span style="flex:1;min-width:0;font:400 12.5px/1.6 Pretendard,sans-serif;color:#3C3C3C"><span style="font-weight:600;color:#CF3D61">[필수]</span> 본인확인을 위해 이름·생년월일·성별·휴대폰번호를 수집·이용하는 데 동의합니다</span>
+</div>
+<div onClick="{{ startReverify }}" style="height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:{{ verifyBg }};color:{{ verifyColor }};font:600 15.5px/1 Pretendard,sans-serif;cursor:{{ verifyCursor }}" style-active="opacity:{{ verifyPress }}">PASS로 다시 인증하기</div>
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>회원정보 변경</b> — 값 자체를 편집하는 폼이 아니라 <b>재인증으로 갱신</b>하는 구조입니다(통신사 원장 값이라 직접 입력은 오히려 신뢰를 떨어뜨립니다). 동의 체크박스와 버튼은 <b>하단 고정 영역</b>에 함께 두어(스크롤과 무관하게 항상 보임) 체크 → 실행이 한 시선에 들어옵니다. 체크해야 버튼이 로즈로 활성화되고(체크를 눌러 확인해 보세요), 누르면 PASS 인증창으로 넘어갑니다(자체 대기 모달은 제거 — 인증 사업자 SDK의 로딩 화면과 중복). 인증 완료 후 이름·생년월일·성별·휴대폰번호가 자동 업데이트되고 이 화면으로 복귀합니다.<br><br>동의를 매번 다시 받는 이유는 <b>가입 시 동의와 별개의 새 수집 행위</b>이기 때문입니다 — 동의 일시는 기록해 회원정보 이력에 남깁니다. <b>로그인 수단</b> 행은 제거했습니다(소셜 단일이라 정보 가치가 없고, 변경 수단도 없음).<br><br><b>남은 결정</b> — ① 재인증 결과가 기존 명의와 다를 때(타인 명의 확인) 처리 정책 ② 갱신 이력 보관 기간 ③ 동의 문구 법무 검토.<br><br><b>조회 전용</b> — 수정 가능한 값이 없으므로 셰브런을 붙이지 않았습니다(탭해도 아무 일 없는 행을 만들지 않기 위해). 라벨은 회색·값은 굵게 두어 <b>왼쪽에서 라벨, 오른쪽에서 값</b>을 훑을 수 있게 했습니다. 본인인증 정보(이름·생년월일·휴대폰번호)는 PASS 결과이므로 마스킹해 표기했습니다.</p>
+</div>
+
+<div class="dv-opt" id="1d">
+<div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>C15-3 회원 탈퇴 — 1단계 · 이유 선택</div>
+<div class="dv-sw">
+<span class="dv-swl">탈퇴 차단</span>
+<sc-for list="{{ swBlock }}" as="o" hint-placeholder-count="2">
+<div onClick="{{ o.pick }}" style="padding:6px 10px;border-radius:6px;cursor:pointer;font:{{ o.font }};background:{{ o.bg }};color:{{ o.color }};border:1px solid {{ o.border }}">{{ o.label }}</div>
+</sc-for>
+</div>
+<div class="dv-card">
+<div data-screen-label="C15-3 회원 탈퇴" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">회원 탈퇴</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:22px 14px 6px">
+<div style="font:700 18px/1.5 Pretendard,sans-serif;letter-spacing:-.5px;text-wrap:pretty">떠나시는 이유를<br>알려주실 수 있나요?</div>
+<div style="margin-top:9px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">서비스 개선에만 사용하고 계정 정보와 분리해 보관합니다 · 선택하지 않아도 탈퇴할 수 있어요</div>
+</div>
+
+<div style="padding:16px 14px 0;display:grid;gap:8px">
+<sc-for list="{{ reasons }}" as="r" hint-placeholder-count="6">
+<div onClick="{{ r.pick }}" style="display:flex;align-items:center;gap:10px;min-height:46px;padding:11px 13px;border-radius:8px;box-sizing:border-box;cursor:pointer;border:{{ r.border }};background:{{ r.bg }}" style-active="opacity:.6">
+<span style="width:19px;height:19px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:{{ r.dotBg }};border:{{ r.dotBorder }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="{{ r.dotCheck }}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg></span>
+<span style="flex:1;min-width:0;font:{{ r.font }};color:{{ r.color }}">{{ r.label }}</span>
+</div>
+</sc-for>
+</div>
+
+<sc-if value="{{ reasonEtc }}" hint-placeholder-val="{{ false }}">
+<div style="padding:12px 14px 0">
+<div style="min-height:88px;border:1px solid #E3E3E5;border-radius:8px;padding:13px;font:400 13.5px/1.6 Pretendard,sans-serif;color:#B5B5B5">어떤 점이 아쉬웠는지 알려주세요 (선택)</div>
+</div>
+</sc-if>
+
+<div style="height:24px"></div>
+
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:12px 14px 26px;background:#fff;display:flex;gap:8px">
+<div style="flex:1;height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;background:{{ nextBg }};color:{{ nextColor }};border:{{ nextBorder }};font:600 15.5px/1 Pretendard,sans-serif;cursor:{{ nextCursor }}" style-active="opacity:{{ nextPress }}">다음 단계로</div>
+<div style="flex:1;height:52px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 15.5px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">계속 사용하기</div>
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>1단계 · 탈퇴 이유</b> — 이유를 먼저 묻는 편이 낫습니다. 무거운 고지를 먼저 보면 읽지 않고 넘기고, 이유는 <b>결심이 굳기 전</b>에 물어야 솔직한 답이 나옵니다. 하단은 [다음 단계로](좌 · 중립 외곽선)와 <b>[계속 사용하기](우 · 로즈)</b>이며, <b>사유를 선택해야 [다음 단계로]가 활성화</b>됩니다. [기타]를 고르면 자유 입력이 펼쳐집니다.</p>
+</div>
+
+<div class="dv-opt" id="1e">
+<div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>C15-4 회원 탈퇴 — 2단계 · 확인</div>
+<div class="dv-card">
+<div data-screen-label="C15-4 탈퇴 확인" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">회원 탈퇴</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:24px 14px 20px">
+<div style="font:700 18px/1.5 Pretendard,sans-serif;letter-spacing:-.5px;text-wrap:pretty">탈퇴하기 전에<br>아래 내용을 확인해 주세요</div>
+</div>
+
+<sc-if value="{{ hasBlockers }}" hint-placeholder-val="{{ true }}">
+<div style="margin:0 14px 20px;border:1px solid #FBC0CE;border-radius:8px;overflow:hidden">
+<div style="padding:14px;background:#FEF4F6;display:flex;align-items:flex-start;gap:9px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CF3D61" stroke-width="2.2" stroke-linecap="round" style="display:block;flex:none;margin-top:1px"><circle cx="12" cy="12" r="8.5" stroke-width="1.6"></circle><path d="M12 7.6v5.2"></path><path d="M12 16.3v.2"></path></svg>
+<div style="flex:1;min-width:0">
+<div style="font:600 14px/1.45 Pretendard,sans-serif;color:#CF3D61">진행 중인 주문이 있어 지금은 탈퇴할 수 없어요</div>
+<div style="margin-top:5px;font:400 12.5px/1.6 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">배송과 교환·환불이 모두 끝난 뒤에 탈퇴할 수 있어요</div>
+</div>
+</div>
+<div style="padding:13px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;background:#fff" style-active="background:#F7F7F8">
+<span style="font:500 13.5px/1 Pretendard,sans-serif">진행 중 주문 2건 보기</span>
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M9 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</sc-if>
+
+<div style="padding:0 14px 6px;font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">탈퇴하면 이렇게 됩니다</div>
+<div style="padding:8px 14px 0;display:grid;gap:15px">
+<div style="display:flex;gap:11px;align-items:flex-start">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linejoin="miter" style="display:block;flex:none;margin-top:1px"><path d="M5.5 7.5h13l-1 12h-11z"></path><path d="M9.5 11v5"></path><path d="M14.5 11v5"></path><path d="M9 5h6"></path></svg>
+<div style="flex:1;min-width:0">
+<div style="font:600 14px/1.4 Pretendard,sans-serif">계정과 활동 기록이 삭제돼요</div>
+<div style="margin-top:4px;font:400 12.5px/1.6 Pretendard,sans-serif;color:#737373;text-wrap:pretty">닉네임·프로필 사진·팔로잉·좋아요·장바구니가 모두 사라지고 되돌릴 수 없어요</div>
+</div>
+</div>
+<div style="display:flex;gap:11px;align-items:flex-start">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linejoin="miter" style="display:block;flex:none;margin-top:1px"><path d="M6 4.5h9l3.5 3.5v11.5h-12.5z"></path><path d="M9 12.5h6"></path><path d="M9 16h4"></path></svg>
+<div style="flex:1;min-width:0">
+<div style="font:600 14px/1.4 Pretendard,sans-serif">주문·결제 기록은 일정 기간 보관돼요</div>
+<div style="margin-top:4px;font:400 12.5px/1.6 Pretendard,sans-serif;color:#737373;text-wrap:pretty">전자상거래법에 따라 거래 기록은 법정 기간 동안 분리 보관 후 파기합니다</div>
+</div>
+</div>
+<div style="display:flex;gap:11px;align-items:flex-start">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linejoin="miter" style="display:block;flex:none;margin-top:1px"><path d="M12 3.5l7.5 3v6c0 4.2-3 7-7.5 8-4.5-1-7.5-3.8-7.5-8v-6z"></path><path d="M12 9v4"></path><path d="M12 15.6v.2"></path></svg>
+<div style="flex:1;min-width:0">
+<div style="font:600 14px/1.4 Pretendard,sans-serif">같은 계정으로 다시 가입할 수 있어요</div>
+<div style="margin-top:4px;font:400 12.5px/1.6 Pretendard,sans-serif;color:#737373;text-wrap:pretty">다만 이전 활동 기록은 복구되지 않고 새 계정으로 시작해요</div>
+</div>
+</div>
+</div>
+
+
+
+
+<div style="padding:8px 14px 26px;display:flex;align-items:center;gap:9px">
+
+
+</div>
+
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:14px 14px 26px;background:#fff">
+<div onClick="{{ toggleWdConsent }}" style="display:flex;align-items:flex-start;gap:10px;padding:0 0 14px;cursor:pointer" style-active="opacity:.6">
+<span style="width:21px;height:21px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:{{ wdBg }};border:{{ wdBorder }};margin-top:1px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{ wdCheck }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg></span>
+<span style="flex:1;min-width:0;font:400 12.5px/1.6 Pretendard,sans-serif;color:#3C3C3C"><span style="font-weight:600;color:#CF3D61">[필수]</span> 위 내용을 모두 확인했고, 계정과 활동 기록이 삭제되는 데 동의합니다</span>
+</div>
+<div style="display:flex;gap:8px">
+<div onClick="{{ openWithdraw }}" style="flex:1;height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:{{ wdBtnBg }};color:{{ wdBtnColor }};border:{{ wdBtnBorder }};box-sizing:border-box;font:600 15.5px/1 Pretendard,sans-serif;cursor:{{ wdCursor }}" style-active="opacity:{{ wdPress }}">탈퇴하기</div>
+<div style="flex:1;height:52px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 15.5px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">계속 사용하기</div>
+</div>
+</div>
+
+<sc-if value="{{ withdrawOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeWithdraw }}" style="position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:10;display:flex;align-items:center;justify-content:center;padding:0 32px">
+<div style="width:100%;background:#fff;border-radius:8px;overflow:hidden">
+<div style="padding:26px 22px 20px;text-align:center">
+<div style="font:700 16.5px/1.5 Pretendard,sans-serif;letter-spacing:-.3px;text-wrap:pretty">정말 탈퇴하시겠어요?</div>
+<div style="margin-top:9px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">팔로잉 4곳과 좋아요 12개가<br>모두 삭제되고 되돌릴 수 없어요</div>
+</div>
+<div style="display:flex;gap:8px;padding:0 18px 18px">
+<div onClick="{{ confirmWithdraw }}" style="flex:1;height:48px;border:1px solid #DCDCDE;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">탈퇴하기</div>
+<div onClick="{{ closeWithdraw }}" style="flex:1;height:48px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">취소</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ doneOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:11;display:flex;align-items:center;justify-content:center;padding:0 32px">
+<div style="width:100%;background:#fff;border-radius:8px;overflow:hidden">
+<div style="padding:28px 22px 22px;text-align:center">
+<div style="width:46px;height:46px;border-radius:100px;background:#F4F4F5;display:flex;align-items:center;justify-content:center;margin:0 auto 15px">
+<svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#3C3C3C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg>
+</div>
+<div style="font:700 16.5px/1.5 Pretendard,sans-serif;letter-spacing:-.3px">탈퇴가 완료되었습니다</div>
+<div style="margin-top:9px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">그동안 쇼룸즈를 이용해 주셔서 감사했어요.<br></div>
+</div>
+<div style="padding:0 18px 18px">
+<div onClick="{{ closeDone }}" style="height:48px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">확인</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+<p class="dv-note"><b>2단계 · 확인</b> — 차단 사유(있을 때) → 결과 고지 3가지 → 1단계에서 고른 이유 확인 → 하단 고정 동의 + [탈퇴하기]. <b>진행 중 주문이 있으면 탈퇴를 막고</b> 이유와 확인 경로를 함께 보여줍니다(우측 Tweaks의 <b>blockers</b>로 두 상태 전환 — 차단 상태에서는 동의·버튼이 계속 비활성입니다).<br><br><b>고지</b> — 삭제되는 것과 <b>법정 기간 보관되는 것</b>을 나눠 적었습니다. 전자상거래법상 거래 기록은 즉시 파기할 수 없으므로 "모두 삭제된다"고만 쓰면 사실과 다릅니다. 재가입 가능 여부도 미리 알려 문의를 줄입니다.<br><br><b>파괴적 액션 처리</b> — 하단에 [탈퇴하기](좌 · <b>중립 외곽선 — 로즈를 쓰지 않습니다</b>)와 [계속 사용하기](우 · 로즈 채움)를 나란히 두어, 오른손 엄지가 닿는 쪽이 항상 <b>머무는 선택</b>이 되게 했습니다. [탈퇴하기] → 최종 확인 모달 → 확정 시 <b>완료 모달</b>(탈퇴가 완료되었습니다 + 법정 보관 안내) 순으로 이어지고, 확인을 누르면 비로그인 홈으로 나갑니다. 모달 문구에 <b>잃게 되는 것의 실제 개수</b>를 넣어 마지막으로 한 번 더 실감하게 했습니다.<br><br><b>남은 결정</b> — ① 법정 보관 항목·기간의 정확한 문구(법무) ② 재가입 제한 기간을 둘지(어뷰징 방지 목적의 30일 제한 등) ③ 탈퇴 이유 항목 확정 ④ 진행 중 주문의 정의(배송 완료 후 교환·환불 기간까지 포함할지).</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;nickname&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;변경 전&quot;,&quot;통과&quot;,&quot;중복&quot;,&quot;형식 오류&quot;,&quot;금지 단어&quot;],&quot;default&quot;:&quot;통과&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;닉네임 변경&quot;},&quot;blockers&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;진행 중 주문 있음&quot;,&quot;없음&quot;],&quot;default&quot;:&quot;진행 중 주문 있음&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;회원 탈퇴&quot;}}">
+class Component extends DCLogic {
+  state = { notif: { posts: true, ads: false }, logout: false };
+
+  renderVals(){
+    const N = this.state.notif;
+    const DEFS = [
+      { k:'posts', label:'팔로우 쇼룸 새 게시물 알림', desc:'팔로우한 쇼룸이 새 공구나 게시물을 올리면 알려드려요' },
+      { k:'ads', label:'광고성 정보 수신 동의', desc:'혜택·이벤트 소식을 받아요' }
+    ];
+    const toggles = DEFS.map((d, i) => ({
+      label: d.label,
+      desc: d.desc,
+      divider: i === DEFS.length - 1 ? 'none' : '.5px solid #F0F0F0',
+      trackBg: N[d.k] ? '#F2456E' : '#DEDEE0',
+      justify: N[d.k] ? 'flex-end' : 'flex-start',
+      toggle: () => this.setState(s => ({ notif: { ...s.notif, [d.k]: !s.notif[d.k] } }))
+    }));
+
+    const rows = (arr) => arr.map((r, i) => ({
+      k: r[0], v: r[1],
+      divider: i === arr.length - 1 ? 'none' : '.5px solid #F0F0F0'
+    }));
+
+    const CHECK = 'M4.5 12.5l5 5 10-11';
+    const BANG = 'M12 7.5v6M12 16.8v.2';
+    const NICKS = {
+      '변경 전': { value:'한글·영문·숫자 2~10자\n', count:'0/10', border:'#E3E3E5', msg:'', msgColor:'#737373', icon:CHECK, iconColor:'#737373', opacity:'0', ok:false, placeholder:true },
+      '통과': { value:'수민이네', count:'4/10', border:'#E3E3E5', msg:'사용할 수 있는 닉네임이에요', msgColor:'#0C9E4E', icon:CHECK, iconColor:'#0C9E4E', opacity:'1', ok:true },
+      '중복': { value:'제니의 뷰티룸', count:'7/10', border:'#F2456E', msg:'이미 사용 중인 닉네임이에요', msgColor:'#CF3D61', icon:BANG, iconColor:'#F2456E', opacity:'1', ok:false },
+      '형식 오류': { value:'수', count:'1/10', border:'#F2456E', msg:'2자 이상 입력해 주세요', msgColor:'#CF3D61', icon:BANG, iconColor:'#F2456E', opacity:'1', ok:false },
+      '금지 단어': { value:'쇼룸즈운영자', count:'7/10', border:'#F2456E', msg:'사용할 수 없는 단어가 포함되어 있어요', msgColor:'#CF3D61', icon:BANG, iconColor:'#F2456E', opacity:'1', ok:false }
+    };
+    const sw = (key, opts, def) => {
+      const cur = this.state[key] ?? this.props[key] ?? def;
+      return opts.map(label => ({
+        label,
+        pick: () => this.setState({ [key]: label }),
+        bg: label === cur ? '#1a1a1a' : '#fff',
+        color: label === cur ? '#fff' : 'rgba(0,0,0,.62)',
+        border: label === cur ? '#1a1a1a' : 'rgba(0,0,0,.14)',
+        font: (label === cur ? '600' : '400') + ' 11px/1 Pretendard,sans-serif'
+      }));
+    };
+    const nick = NICKS[this.state.nickname ?? this.props.nickname ?? '통과'] || NICKS['통과'];
+    const consent = !!this.state.consent;
+
+    const blocked = (this.state.blockers ?? this.props.blockers ?? '진행 중 주문 있음') === '진행 중 주문 있음';
+    const wd = !!this.state.wdConsent && !blocked;
+    const REASONS = ['원하는 공구가 없어요', '알림이 너무 많아요', '앱이 사용하기 불편해요', '개인정보가 걱정돼요', '다른 계정으로 다시 가입할 거예요', '기타'];
+    const reasons = REASONS.map(label => {
+      const sel = this.state.reason === label;
+      return {
+        label,
+        border: sel ? '1px solid #F2456E' : '1px solid #E3E3E5',
+        bg: sel ? '#FEF4F6' : '#fff',
+        color: sel ? '#CF3D61' : '#3C3C3C',
+        font: (sel ? '600' : '400') + ' 13.5px/1.45 Pretendard,sans-serif',
+        dotBg: sel ? '#F2456E' : '#fff',
+        dotBorder: sel ? '1.5px solid #F2456E' : '1.5px solid #DEDEE0',
+        dotCheck: sel ? '#fff' : '#DEDEE0',
+        pick: () => this.setState({ reason: sel ? null : label })
+      };
+    });
+
+    return {
+      swNick: sw('nickname', ['변경 전', '통과', '중복', '형식 오류', '금지 단어'], '통과'),
+      swBlock: sw('blockers', ['진행 중 주문 있음', '없음'], '진행 중 주문 있음'),
+      hasBlockers: blocked,
+      reasons,
+      reasonEtc: this.state.reason === '기타',
+      nextBg: this.state.reason ? '#fff' : '#F4F4F5',
+      nextColor: this.state.reason ? '#3C3C3C' : '#B5B5B5',
+      nextBorder: this.state.reason ? '1px solid #DCDCDE' : '1px solid transparent',
+      nextCursor: this.state.reason ? 'pointer' : 'default',
+      nextPress: this.state.reason ? '.6' : '1',
+      pickedReason: this.state.reason || '선택하지 않음',
+      wdBg: this.state.wdConsent ? '#F2456E' : '#fff',
+      wdBorder: this.state.wdConsent ? '1.5px solid #F2456E' : '1.5px solid #DEDEE0',
+      wdCheck: this.state.wdConsent ? '#fff' : '#DEDEE0',
+      toggleWdConsent: () => this.setState(s => ({ wdConsent: !s.wdConsent })),
+      wdBtnBg: wd ? '#fff' : '#F4F4F5',
+      wdBtnColor: wd ? '#3C3C3C' : '#B5B5B5',
+      wdBtnBorder: wd ? '1px solid #DCDCDE' : '1px solid transparent',
+      wdCursor: wd ? 'pointer' : 'default',
+      wdPress: wd ? '.6' : '1',
+      withdrawOpen: !!this.state.withdraw,
+      openWithdraw: () => { if (wd) this.setState({ withdraw: true }); },
+      closeWithdraw: () => this.setState({ withdraw: false }),
+      confirmWithdraw: () => this.setState({ withdraw: false, done: true }),
+      doneOpen: !!this.state.done,
+      closeDone: () => this.setState({ done: false }),
+      toggles,
+      consentBg: consent ? '#F2456E' : '#fff',
+      consentBorder: consent ? '1.5px solid #F2456E' : '1.5px solid #DEDEE0',
+      consentCheck: consent ? '#fff' : '#DEDEE0',
+      toggleConsent: () => this.setState(s => ({ consent: !s.consent })),
+      verifyBg: consent ? '#F2456E' : '#F4F4F5',
+      verifyColor: consent ? '#fff' : '#B5B5B5',
+      verifyCursor: consent ? 'pointer' : 'default',
+      verifyPress: consent ? '.75' : '1',
+      reverifyOpen: !!this.state.reverify,
+      startReverify: () => { if (this.state.consent) this.setState({ reverify: true }); },
+      closeReverify: () => this.setState({ reverify: false }),
+      nickValue: nick.value,
+      nickCount: nick.count,
+      nickTextColor: nick.placeholder ? '#B5B5B5' : '#0F0F0F',
+      nickBorder: nick.border,
+      nickMsg: nick.msg,
+      nickMsgColor: nick.msgColor,
+      nickIconPath: nick.icon,
+      nickIconColor: nick.iconColor,
+      nickIconOpacity: nick.opacity,
+      saveBg: nick.ok ? '#F2456E' : '#F4F4F5',
+      saveColor: nick.ok ? '#fff' : '#B5B5B5',
+      saveCursor: nick.ok ? 'pointer' : 'default',
+      savePress: nick.ok ? '.75' : '1',
+      logoutOpen: this.state.logout,
+      openLogout: () => this.setState({ logout: true }),
+      closeLogout: () => this.setState({ logout: false }),
+      account: rows([
+        ['이름', '김수*'],
+        ['생년월일', '1998.04.**'],
+        ['휴대폰번호', '010-****-1234']
+      ]),
+      terms: rows([
+        ['서비스 이용약관', '2026.07.01 동의 · v1.0'],
+        ['개인정보 수집·이용', '2026.07.01 동의 · v1.0'],
+        ['광고성 정보 수신', '2026.08.02 철회']
+      ])
+    };
+  }
+}
+</script>
+</body>
+</html>

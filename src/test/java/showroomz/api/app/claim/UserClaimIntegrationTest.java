@@ -64,14 +64,19 @@ class UserClaimIntegrationTest extends SellerOrderTestSupport {
                 .andExpect(jsonPath("$.items[1].orderProductId").value(entry))
                 .andExpect(jsonPath("$.items[1].preselected").value(true))
                 .andExpect(jsonPath("$.items[1].claimableQuantity").value(1))
+                // 「기타 (직접 입력)」은 반품에서만 — 소비자 귀책 · 상세 필수(1009 기획 수정본 결정 10).
                 .andExpect(jsonPath("$.reasons[*].code", contains("CHANGE_OF_MIND", "ORDER_MISTAKE",
-                        "DAMAGED_OR_DEFECTIVE", "WRONG_OR_LATE_DELIVERY")))
+                        "DAMAGED_OR_DEFECTIVE", "WRONG_OR_LATE_DELIVERY", "OTHER")))
+                .andExpect(jsonPath("$.reasons[4].feeBearer").value("CONSUMER"))
+                .andExpect(jsonPath("$.reasons[4].detailRequired").value(true))
                 .andExpect(jsonPath("$.reasons[0].hint").value("상품이 필요 없어짐"))
                 .andExpect(jsonPath("$.reasons[0].feeBearer").value("CONSUMER"))
                 .andExpect(jsonPath("$.reasons[0].photoAllowed").value(false))
                 .andExpect(jsonPath("$.reasons[2].detailRequired").value(true))
                 .andExpect(jsonPath("$.reasons[2].photoAllowed").value(true))
-                .andExpect(jsonPath("$.carriers[*].code", contains("CJ", "LOTTE", "HANJIN", "EPOST", "LOGEN", "CU")))
+                // 추적 연동 업체 목록 하나를 출고 · 회수 · 재발송이 같이 쓴다(1009 기획 수정본 4절).
+                .andExpect(jsonPath("$.carriers[*].code", contains("CJ", "EPOST", "HANJIN", "LOTTE", "LOGEN",
+                        "KYUNGDONG", "DAESIN", "ILYANG", "CU", "GS25", "HAPDONG", "WOORI")))
                 // 배송비를 내고 받은 주문 — 차감이 없다.
                 .andExpect(jsonPath("$.fees.consumerFault").value(0))
                 .andExpect(jsonPath("$.fees.sellerFault").value(0))

@@ -42,7 +42,8 @@ class SellerOrderScenarioIntegrationTest extends SellerOrderTestSupport {
         // 0-9 결제 확정 → 하위주문 활성화
         OrderDeliveryGroup group = paidGroup();
         assertThat(group.getFulfillmentStatus()).isEqualTo(FulfillmentStatus.NEW);
-        assertThat(group.getShipDueAt()).isEqualTo(group.getOrder().getPaidAt().plusDays(SHIPPING_LEAD_DAYS));
+        assertThat(group.getShipDueAt()).isNull(); // 공구 진행 중 — 마감 뒤에 확정된다
+        assertThat(group.getShipDueBusinessDays()).isEqualTo(SHIPPING_LEAD_DAYS);
         assertThat(salesReader.readClosure(groupBuy.getId()).orElseThrow().unclosedCount()).isEqualTo(1);
 
         // 0-10 신규 탭
@@ -191,9 +192,9 @@ class SellerOrderScenarioIntegrationTest extends SellerOrderTestSupport {
             String orderNumber = myGroup.getOrder().getOrderNumber();
             assertThat(List.of(myGroup.getSubOrderNumber(), theirGroup.getSubOrderNumber()))
                     .containsExactlyInAnyOrder(orderNumber + "-01", orderNumber + "-02");
-            // 발송기한은 마켓별 설정의 스냅샷이다.
-            assertThat(myGroup.getShipDueAt()).isEqualTo(myGroup.getOrder().getPaidAt().plusDays(SHIPPING_LEAD_DAYS));
-            assertThat(theirGroup.getShipDueAt()).isEqualTo(myGroup.getOrder().getPaidAt().plusDays(3));
+            // 발송기한 N 은 마켓별 설정의 스냅샷이다(기한 자체는 공구 마감 뒤에 확정된다).
+            assertThat(myGroup.getShipDueBusinessDays()).isEqualTo(SHIPPING_LEAD_DAYS);
+            assertThat(theirGroup.getShipDueBusinessDays()).isEqualTo(3);
 
             sellerGet(SELLER_ORDERS + "?tab=NEW")
                     .andExpect(jsonPath("$.content[*].deliveryGroupId", contains(myGroup.getId().intValue())))

@@ -1,5 +1,6 @@
 package showroomz.api.creator.groupbuy;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import showroomz.domain.groupbuy.entity.GroupBuy;
@@ -364,6 +365,7 @@ class CreatorGroupBuyCommandIntegrationTest extends CreatorGroupBuyTestSupport {
     // ── 5-4 이행 확인 ─────────────────────────────────────────────────────
 
     @Test
+    @Disabled("[기획 제외] 계약 이행 확인 폐기(2026-10-06 · 1009 기획 수정본 6절) — 기획 복귀 시 되살린다")
     @DisplayName("이행 확인 — CREATOR 측으로 저장 · 불가역 · 브랜드 화면에서는 theirs")
     void checkFulfillment() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);
@@ -386,6 +388,7 @@ class CreatorGroupBuyCommandIntegrationTest extends CreatorGroupBuyTestSupport {
     }
 
     @Test
+    @Disabled("[기획 제외] 계약 이행 확인 폐기(2026-10-06 · 1009 기획 수정본 6절) — 기획 복귀 시 되살린다")
     @DisplayName("미이행 — 사유 필수 · 3자 스레드의 첫 글이 되고, 양측 미이행은 한 스레드로 모인다")
     void unfulfilledOpensOneThreadForBothSides() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);

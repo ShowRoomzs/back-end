@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.domain.order.service.ShipDuePolicy;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshToken;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshTokenRepository;
 import showroomz.api.seller.auth.repository.SellerRepository;
@@ -115,6 +116,32 @@ public class SellerBasicInfoService {
         market.setShippingContact(request.getRecipientContact());
         market.setShippingAddress(request.getAddress());
         market.setShippingDetailAddress(request.getDetailAddress());
+    }
+
+    /** 배송·반품 정책(1009 기획 수정본 1-4 · ui-partner-06 rev.3) — 발송 기한 N 과 배송비. */
+    public SellerBasicInfoDto.DeliveryPolicyResponse getDeliveryPolicy(String sellerEmail) {
+        Market market = getMyMarket(sellerEmail);
+        int businessDays = ShipDuePolicy.businessDaysOf(market);
+        return SellerBasicInfoDto.DeliveryPolicyResponse.builder()
+                .shippingLeadDays(businessDays)
+                .shipDueText(ShipDuePolicy.noticeText(businessDays))
+                .defaultDeliveryFee(market.getDefaultDeliveryFee())
+                .freeShippingThreshold(market.getFreeShippingThreshold())
+                .remoteAreaSurcharge(market.getRemoteAreaSurcharge())
+                .build();
+    }
+
+    /**
+     * 배송·반품 정책 저장 — 이후 접수되는 주문에만 적용된다. 발송 기한 N 과 배송비는 주문 생성 때 하위주문에 스냅샷되므로
+     * (ship_due_business_days · base_delivery_fee) 이미 접수된 주문은 그대로다.
+     */
+    @Transactional
+    public void updateDeliveryPolicy(String sellerEmail, SellerBasicInfoDto.UpdateDeliveryPolicyRequest request) {
+        Market market = getMyMarket(sellerEmail);
+        market.setShippingLeadDays(request.getShippingLeadDays());
+        market.setDefaultDeliveryFee(request.getDefaultDeliveryFee());
+        market.setFreeShippingThreshold(request.getFreeShippingThreshold());
+        market.setRemoteAreaSurcharge(request.getRemoteAreaSurcharge() != null ? request.getRemoteAreaSurcharge() : 0);
     }
 
     public SellerBasicInfoDto.AccountInfoResponse getAccountInfo(String sellerEmail) {

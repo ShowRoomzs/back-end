@@ -53,6 +53,13 @@ public class MyShowroomResponse {
     @Schema(description = "사업자등록증 이미지 URL (사업자인 경우)")
     private final String businessLicenseImageUrl;
 
+    @Schema(description = "주민등록번호 등록 여부 — 비사업자 정산 정보의 「주민등록번호 · 등록 완료」 카드", example = "true")
+    private final boolean residentNumberRegistered;
+
+    @Schema(description = "주민등록번호 마스킹 값 — 원문은 어떤 API 도 내리지 않는다", example = "900101-1******",
+            nullable = true)
+    private final String maskedResidentNumber;
+
     @Schema(description = "은행명", example = "국민은행")
     private final String bankName;
 
@@ -83,6 +90,8 @@ public class MyShowroomResponse {
                 .businessType(creator.getBusinessType())
                 .businessRegistrationNumber(creator.getBusinessRegistrationNumber())
                 .businessLicenseImageUrl(creator.getBusinessLicenseImageUrl())
+                .residentNumberRegistered(creator.isResidentNumberRegistered())
+                .maskedResidentNumber(creator.getResidentRegistrationNumberMasked())
                 .bankName(creator.getBankName())
                 .maskedAccountNumber(maskAccountNumber(creator.getAccountNumber()))
                 .bankbookImageUrl(creator.getBankbookImageUrl())

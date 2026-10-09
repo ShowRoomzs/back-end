@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-admin-18-influencer-detail — 어드민 회원 관리 · 인플루언서 상세 rev.1</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+
+/* ══════════════════════════════════════════════════════════════════
+   SHOWROOMZ 웹 디자인시스템 v1.2 — 어드민
+   이 <style> 블록 전체가 소스오브트루스다.
+   신규 ui-admin-*.html 은 이 블록을 통째로 복사한 뒤 화면 전용 CSS만 덧붙인다.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── ① 토큰 ───────────────────────────────────────────────────── */
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --adm-sidebar-w:240px; --adm-topbar-h:56px; --adm-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+
+/* ── ② 문서 골격 (시안 파일 공통) ─────────────────────────────── */
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;line-height:1.8;}
+.doc-head .rule{margin-top:12px;}
+.rule b{color:var(--n-900);} .rule .new{color:var(--accent-600);font-weight:600;}
+.rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+
+/* ── ③ 어드민 셸 · 사이드바 ───────────────────────────────────── */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--adm-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--adm-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;overflow-y:auto;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:7px 10px;border-radius:var(--r-sm);margin-bottom:2px;cursor:pointer;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--danger-text);color:#fff;
+  border-radius:8px;padding:0 5px;min-width:16px;text-align:center;}
+.gnb-item .chev{width:14px;height:14px;color:var(--n-500);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:transform .15s;}
+.gnb-item .chev svg{width:11px;height:11px;display:block;}
+.gnb-item.open .chev{transform:rotate(180deg);color:var(--n-700);}
+.gnb-group{overflow:hidden;}
+.gnb-group.closed{display:none;}
+.gnb-item:hover:not(.active){background:var(--n-200);}
+.gnb-item.open{color:var(--n-900);font-weight:500;}
+.gnb-sub{display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-micro);
+  color:var(--n-500);padding:5px 10px 5px 33px;border-radius:var(--r-sm);margin-bottom:1px;cursor:pointer;}
+.gnb-sub:hover:not(.active){background:var(--n-200);}
+.gnb-sub.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-sub.active .scnt{color:#fff;}
+.scnt{font-size:10px;color:var(--n-500);}
+
+/* ── ④ 어드민 셸 · 탑바 / 본문 ────────────────────────────────── */
+.top{position:absolute;left:var(--adm-sidebar-w);right:0;top:0;height:var(--adm-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--adm-pad);}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.crumb .c-sub{font-size:var(--fs-caption);color:var(--n-500);font-weight:400;margin-left:6px;}
+.op{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);}
+.op-av{width:24px;height:24px;border-radius:50%;background:var(--n-200);color:var(--n-600);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-micro);font-weight:600;}
+.main{position:absolute;left:var(--adm-sidebar-w);right:0;top:var(--adm-topbar-h);bottom:0;
+  overflow-y:auto;padding:var(--adm-pad);}
+.navgrp{display:flex;align-items:center;gap:6px;}
+.nav-btn{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-caption);font-weight:500;
+  color:var(--n-700);cursor:pointer;padding:0 12px;height:32px;background:#fff;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);white-space:nowrap;}
+.nav-btn:hover{background:var(--n-100);color:var(--n-900);border-color:var(--n-400);}
+.nav-sep{width:1px;height:18px;background:var(--n-300);margin:0 2px;}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:var(--sp-4);}
+.page-t{font-size:var(--fs-h1);font-weight:600;display:flex;align-items:center;gap:10px;}
+.t-link{font-size:var(--fs-micro);font-weight:500;color:var(--n-600);background:var(--n-100);
+  border:1px solid var(--n-200);border-radius:var(--r-pill);padding:2px 10px;cursor:pointer;
+  white-space:nowrap;line-height:1.7;}
+.t-link:hover{background:var(--accent-50);color:var(--accent-600);border-color:var(--accent-100);}
+.page-d{font-size:var(--fs-caption);color:var(--n-600);margin-top:2px;}
+
+/* ── ⑤ 필터 · 폼 컨트롤 ───────────────────────────────────────── */
+.filter{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);
+  padding:var(--sp-3) var(--sp-4);margin-bottom:var(--sp-4);display:flex;align-items:center;
+  justify-content:space-between;gap:var(--sp-4);}
+.tabs{display:flex;gap:0;}
+.tab{font-size:var(--fs-caption);color:var(--n-500);padding:6px 2px;margin-right:20px;cursor:pointer;
+  border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;}
+.tab.active{color:var(--accent-500);border-bottom-color:var(--accent-500);font-weight:500;}
+.tab .tn{font-size:10px;background:var(--n-100);color:var(--n-600);border-radius:8px;padding:0 5px;}
+.tab.active .tn{background:var(--accent-50);color:var(--accent-600);}
+.search{display:flex;gap:6px;}
+.inp{font-family:inherit;font-size:var(--fs-body);padding:6px 10px;border-radius:var(--r-sm);
+  border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:32px;width:180px;}
+.inp::placeholder{color:var(--n-400);}
+.inp:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:7px 14px;cursor:pointer;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
+.btn-primary{background:var(--accent-500);color:#fff;border:none;}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-danger{background:var(--danger-text);color:#fff;border:none;}
+.btn:disabled{background:var(--n-100);color:var(--n-400);border:1px solid var(--n-200);cursor:not-allowed;}
+.sel-sm{font-family:inherit;font-size:var(--fs-caption);height:28px;padding:0 26px 0 10px;cursor:pointer;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-700);
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;}
+.sel-sm:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+
+/* ── ⑥ 테이블 ─────────────────────────────────────────────────── */
+.tcard{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+.tbar{display:flex;align-items:center;justify-content:space-between;padding:10px var(--sp-4);
+  border-bottom:1px solid var(--n-200);}
+.tbar-l{font-size:var(--fs-caption);color:var(--n-600);} .tbar-l b{color:var(--n-900);}
+.tbar-r{display:flex;align-items:center;gap:8px;}
+table{width:100%;border-collapse:collapse;}
+thead td{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);font-weight:500;
+  padding:10px 16px;white-space:nowrap;border-bottom:1px solid var(--n-200);}
+tbody td{padding:13px 16px;font-size:var(--fs-caption);border-top:1px solid var(--n-100);
+  vertical-align:middle;white-space:nowrap;}
+tbody tr:first-child td{border-top:none;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:var(--accent-50);}
+tbody tr:hover .t-main{color:var(--accent-600);}
+.t-main{font-size:var(--fs-body);font-weight:500;color:var(--n-900);}
+.tcard table{table-layout:fixed;}
+.tnum{font-variant-numeric:tabular-nums;letter-spacing:-.1px;}
+.t-sub{color:var(--n-500);font-size:var(--fs-micro);}
+.t-c{text-align:center;}
+.t-r{text-align:right;}
+.over{color:var(--warning-text);font-weight:600;}
+
+/* ── ⑦ 배지 ───────────────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-warning{background:var(--warning-bg);color:var(--warning-text);}
+.b-danger{background:var(--danger-bg);color:var(--danger-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+
+/* ── ⑧ 페이지네이션 · 빈 상태 ─────────────────────────────────── */
+.pager{display:flex;align-items:center;justify-content:center;gap:4px;padding:12px;border-top:1px solid var(--n-200);}
+.page-item{min-width:26px;height:26px;padding:0 6px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-600);cursor:pointer;}
+.page-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.empty{padding:72px 24px;text-align:center;}
+.empty-ic{font-size:28px;color:var(--n-300);margin-bottom:10px;}
+.empty-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);margin-bottom:4px;}
+.empty-d{font-size:var(--fs-caption);color:var(--n-500);}
+
+/* ── ⑨ 상세 · 카드 ────────────────────────────────────────────── */
+.detail{display:grid;grid-template-columns:1fr 320px;gap:var(--sp-4);align-items:start;}
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);margin-bottom:var(--sp-4);}
+.card:last-child{margin-bottom:0;}
+.card-h{font-size:var(--fs-h3);font-weight:600;padding:11px var(--sp-4);border-bottom:1px solid var(--n-200);
+  background:var(--n-50);border-radius:var(--r-md) var(--r-md) 0 0;display:flex;align-items:center;
+  justify-content:space-between;}
+.card-h .ch-n{font-size:var(--fs-micro);color:var(--n-500);font-weight:400;}
+.card-b{padding:var(--sp-4);}
+.rsn{margin:0;font-size:var(--fs-caption);color:var(--n-700);line-height:1.75;}
+
+/* 상세 필드 행 — 라벨 140px · 행 패딩 9px (어드민 공통 규격) */
+.frow{display:flex;gap:var(--sp-3);padding:9px 0;border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.frow:last-child{border-bottom:none;}
+.frow:first-child{padding-top:0;}
+.fk{width:140px;flex-shrink:0;color:var(--n-500);}
+.fv{flex:1;color:var(--n-900);min-width:0;}
+.fv .fsub{color:var(--n-500);font-size:var(--fs-micro);margin-top:2px;}
+.flink{color:var(--n-600);text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
+.flink:hover{color:var(--accent-600);}
+
+/* ── ⑩ 변경 대조 표 ───────────────────────────────────────────── */
+table.diff{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+table.diff thead td{width:auto;} table.diff thead td:first-child{width:180px;}
+table.diff tbody td{white-space:normal;cursor:default;padding:11px 16px;}
+table.diff tbody tr{cursor:default;} table.diff tbody tr:hover{background:transparent;}
+table.diff tbody tr.chg{background:var(--accent-50);}
+table.diff tbody tr.chg:hover{background:var(--accent-50);}
+.dk{color:var(--n-500);font-size:var(--fs-micro);}
+.dv{color:var(--n-900);}
+.dold{color:var(--n-500);text-decoration:line-through;text-decoration-color:var(--n-400);}
+.dnew{color:var(--accent-600);font-weight:600;}
+.dsame{color:var(--n-400);font-size:var(--fs-micro);}
+.dlock{color:var(--n-500);font-size:var(--fs-micro);font-weight:500;}
+
+/* ── ⑪ 인라인 안내 박스 ───────────────────────────────────────── */
+.chk-note{display:flex;gap:9px;background:var(--warning-bg);border-radius:var(--r-sm);padding:11px 13px;
+  font-size:var(--fs-micro);color:var(--n-700);line-height:1.65;margin-bottom:var(--sp-4);}
+.chk-note.danger{background:var(--danger-bg);}
+.chk-note .ci{width:16px;height:16px;border-radius:50%;background:var(--warning-text);color:#fff;font-size:10px;
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;margin-top:1px;}
+.chk-note.danger .ci{background:var(--danger-text);}
+
+/* ── ⑫ 첨부 ───────────────────────────────────────────────────── */
+.files{display:flex;flex-direction:column;gap:8px;}
+.file{display:flex;align-items:center;gap:10px;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:9px 12px;}
+.file-ic{width:28px;height:28px;border-radius:var(--r-sm);background:var(--accent-50);color:var(--accent-600);
+  display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+.file-n{flex:1;font-size:var(--fs-caption);}
+.file-s{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ── ⑬ 우측 액션 카드 · 이력 ──────────────────────────────────── */
+.detail > div:last-child{position:sticky;top:0;align-self:start;}
+.side-card{}
+.st-now{padding:var(--sp-4);}
+.st-line{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding-bottom:var(--sp-3);border-bottom:1px solid var(--n-100);}
+.st-meta{padding-top:var(--sp-2);}
+.mrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);}
+.mrow:last-child{border-bottom:none;}
+.mk{color:var(--n-500);} .mv{color:var(--n-900);font-weight:500;text-align:right;}
+.st-lbl{font-size:var(--fs-caption);color:var(--n-500);flex-shrink:0;}
+.act-in{border-top:1px solid var(--n-100);margin:var(--sp-2) 0 0;padding-top:var(--sp-2);}
+.act-in .st-meta{padding-top:0;}
+.act-in .st-hint{margin-top:6px;}
+.st-acts{display:flex;gap:8px;margin-top:var(--sp-4);}
+.st-acts .btn{flex:1;}
+.st-hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;line-height:1.55;}
+.st-rsn{padding:9px 0 0;border-top:1px solid var(--n-100);margin-top:var(--sp-2);}
+.st-rsn .rk{font-size:var(--fs-micro);color:var(--n-500);display:block;margin-bottom:3px;}
+.st-rsn .rv{font-size:var(--fs-caption);color:var(--n-900);line-height:1.6;}
+.st-rsn + .st-rsn{margin-top:9px;}
+.hist{padding:var(--sp-2) var(--sp-4) var(--sp-3);}
+.hitem{display:flex;gap:10px;padding:9px 0;}
+.hdot{width:7px;height:7px;border-radius:50%;background:var(--n-300);margin-top:6px;flex-shrink:0;}
+.hdot.on{background:var(--accent-500);}
+.hdot.h-info{background:var(--info-text);}
+.hdot.h-success{background:var(--success-text);}
+.hdot.h-warning{background:var(--warning-text);}
+.hdot.h-danger{background:var(--danger-text);}
+.hdot.h-neutral{background:var(--n-400);}
+.hmore{font-size:var(--fs-micro);color:var(--accent-600);padding:8px 0 2px;border-top:1px solid var(--n-100);margin-top:4px;cursor:pointer;}
+.htxt{font-size:var(--fs-caption);}
+.hmeta{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ── ⑭ 모달 ───────────────────────────────────────────────────── */
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;justify-content:center;}
+.modal{width:520px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);overflow:hidden;}
+.modal.sm{width:400px;}
+.modal-h{font-size:var(--fs-h3);font-weight:600;padding:14px var(--sp-5);border-bottom:1px solid var(--n-200);
+  display:flex;align-items:center;justify-content:space-between;}
+.modal-x{color:var(--n-400);cursor:pointer;font-size:var(--fs-body);}
+.modal-b{padding:var(--sp-5);font-size:var(--fs-caption);color:var(--n-700);line-height:1.7;}
+.modal-f{padding:12px var(--sp-5);border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.mlabel{display:block;font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;}
+.modal-b > .mlabel:first-child{margin-top:0;}
+.mlabel .req{color:var(--danger-text);margin-left:2px;}
+.mlabel .opt{color:var(--n-400);margin-left:4px;font-weight:400;}
+.msel,.mta{width:100%;font-family:inherit;font-size:var(--fs-body);border:1px solid var(--n-300);
+  border-radius:var(--r-sm);background:#fff;color:var(--n-900);padding:6px 10px;}
+.msel:focus,.mta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.msel{height:32px;appearance:none;-webkit-appearance:none;-moz-appearance:none;padding-right:32px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;}
+.mta{min-height:88px;resize:vertical;line-height:1.6;height:auto;padding-top:7px;}
+.mta.is-error{border-color:var(--danger-text);}
+.merr{font-size:var(--fs-micro);color:var(--danger-text);margin:6px 0 0;}
+.mwarn{display:flex;gap:8px;background:var(--danger-bg);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--danger-text);line-height:1.6;margin-top:var(--sp-4);font-weight:500;}
+.mwarn.info{background:var(--info-bg);color:var(--info-text);}
+.mhint{font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;}
+
+/* ── ⑮ 미리보기 라이트박스 ────────────────────────────────────── */
+.modal.pv{width:1080px;}
+.pv-body{display:grid;grid-template-columns:1fr 340px;height:620px;}
+.pv-view{background:var(--n-900);display:flex;flex-direction:column;}
+.pv-canvas{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:20px;}
+.pv-img{width:440px;height:310px;background:#fff;border-radius:2px;
+  box-shadow:0 4px 18px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;
+  color:var(--n-400);font-size:var(--fs-caption);}
+.pv-bar{height:48px;background:rgba(255,255,255,.06);border-top:1px solid rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px;}
+.pv-nav{display:flex;align-items:center;gap:6px;}
+.pv-b{height:28px;padding:0 10px;border-radius:var(--r-sm);background:rgba(255,255,255,.1);
+  color:rgba(255,255,255,.85);font-size:var(--fs-micro);font-weight:500;cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;border:none;font-family:inherit;}
+.pv-b:hover{background:rgba(255,255,255,.2);color:#fff;}
+.pv-zoom{font-size:var(--fs-micro);color:rgba(255,255,255,.6);padding:0 6px;}
+.pv-side{background:#fff;border-left:1px solid var(--n-200);padding:var(--sp-4);overflow-y:auto;}
+.pv-t{font-size:var(--fs-h3);font-weight:600;margin-bottom:2px;}
+.pv-d{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:var(--sp-4);}
+.pv-sec{font-size:var(--fs-micro);color:var(--n-500);font-weight:600;padding-bottom:6px;
+  border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-2);}
+.pv-row{display:flex;gap:9px;padding:11px 0;border-bottom:1px solid var(--n-100);align-items:flex-start;}
+.pv-row:last-of-type{border-bottom:none;}
+.pv-k{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:3px;}
+.pv-old{font-size:var(--fs-micro);color:var(--n-500);text-decoration:line-through;
+  text-decoration-color:var(--n-400);margin-bottom:1px;}
+.pv-new{font-size:var(--fs-body);font-weight:600;color:var(--accent-600);line-height:1.45;}
+.pv-new.plain{color:var(--n-900);}
+.pv-note{display:flex;gap:7px;background:var(--n-100);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--n-600);line-height:1.55;margin-top:var(--sp-4);}
+.pv-note.warn{background:var(--danger-bg);color:var(--danger-text);}
+
+/* ── ⑯ 토스트 ─────────────────────────────────────────────────── */
+.toast-wrap{position:absolute;top:72px;right:24px;display:flex;flex-direction:column;gap:8px;}
+.toast{min-width:260px;background:#fff;border:1px solid var(--n-200);border-left:3px solid var(--success-text);
+  border-radius:7px;box-shadow:0 4px 16px rgba(26,27,31,.1);padding:11px 14px;font-size:var(--fs-caption);
+  font-weight:500;display:flex;align-items:center;gap:8px;}
+
+/* ══ 화면 전용 (ui-admin-06) ══ */
+/* 어드민 공통 규격 정합: 테이블 본문 셀 14px 16px · 행높이 50px */
+tbody td{padding:14px 16px;height:50px;}
+
+.tb-inq thead td:nth-child(1),.tb-inq tbody td:nth-child(1){width:8%;padding-left:20px;}
+.tb-inq thead td:nth-child(3),.tb-inq tbody td:nth-child(3){width:10%;}
+.tb-inq thead td:nth-child(4),.tb-inq tbody td:nth-child(4){width:14%;}
+.tb-inq thead td:nth-child(5),.tb-inq tbody td:nth-child(5){width:14%;}
+.tb-inq thead td:nth-child(6),.tb-inq tbody td:nth-child(6){width:10%;}
+.tb-inq thead td:nth-child(7),.tb-inq tbody td:nth-child(7){width:11%;padding-right:20px;}
+
+.tb-qna thead td:nth-child(1),.tb-qna tbody td:nth-child(1){width:10%;padding-left:20px;}
+.tb-qna thead td:nth-child(2),.tb-qna tbody td:nth-child(2){width:32%;}
+.tb-qna thead td:nth-child(3),.tb-qna tbody td:nth-child(3){width:18%;}
+.tb-qna thead td:nth-child(4),.tb-qna tbody td:nth-child(4){width:12%;}
+.tb-qna thead td:nth-child(5),.tb-qna tbody td:nth-child(5){width:10%;}
+.tb-qna thead td:nth-child(6),.tb-qna tbody td:nth-child(6){width:10%;}
+.tb-qna thead td:nth-child(7),.tb-qna tbody td:nth-child(7){width:12%;padding-right:20px;}
+.tb-qna tbody td{vertical-align:top;}
+
+.tb-faq thead td:nth-child(1),.tb-faq tbody td:nth-child(1){width:40px;padding-left:16px;padding-right:0;}
+.tb-faq thead td:nth-child(2),.tb-faq tbody td:nth-child(2){width:13%;}
+.tb-faq thead td:nth-child(3),.tb-faq tbody td:nth-child(3){white-space:normal;}
+.tb-faq thead td:nth-child(4),.tb-faq tbody td:nth-child(4){width:10%;}
+.tb-faq thead td:nth-child(5),.tb-faq tbody td:nth-child(5){width:10%;}
+.tb-faq thead td:nth-child(6),.tb-faq tbody td:nth-child(6){width:13%;padding-right:20px;}
+.tb-faq tbody td{vertical-align:top;}
+
+.tb-not thead td:nth-child(1),.tb-not tbody td:nth-child(1){width:56px;padding-left:20px;}
+.tb-not thead td:nth-child(2),.tb-not tbody td:nth-child(2){white-space:normal;}
+.tb-not thead td:nth-child(3),.tb-not tbody td:nth-child(3){width:10%;}
+.tb-not thead td:nth-child(4),.tb-not tbody td:nth-child(4){width:10%;}
+.tb-not thead td:nth-child(5),.tb-not tbody td:nth-child(5){width:9%;}
+.tb-not thead td:nth-child(6),.tb-not tbody td:nth-child(6){width:13%;padding-right:20px;}
+.tb-not tbody td{vertical-align:top;}
+
+.qa-q{font-size:var(--fs-body);font-weight:500;color:var(--n-900);line-height:1.5;}
+.qa-a{font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;line-height:1.6;max-width:660px;}
+.drag{color:var(--n-300);text-align:center;cursor:grab;font-size:13px;}
+
+.racts{display:flex;gap:6px;}
+.rbtn{display:inline-flex;align-items:center;justify-content:center;height:26px;padding:0 10px;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;font-size:var(--fs-micro);
+  font-weight:500;color:var(--n-700);cursor:pointer;font-family:inherit;white-space:nowrap;}
+.rbtn:hover{background:var(--n-100);border-color:var(--n-400);}
+.rbtn.del{color:var(--danger-text);border-color:#E9C9C9;}
+.rbtn.del:hover{background:var(--danger-bg);}
+
+.thread{display:flex;flex-direction:column;gap:10px;}
+.tmsg{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:12px 14px;
+  font-size:var(--fs-caption);line-height:1.75;color:var(--n-700);}
+.tmsg.me{background:var(--accent-50);border-color:var(--accent-100);}
+.tmsg .who{font-size:var(--fs-micro);font-weight:600;color:var(--n-700);margin-bottom:5px;
+  display:flex;align-items:center;gap:6px;}
+.tmsg .who .wt{font-weight:400;color:var(--n-500);}
+.ta-label{font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;display:block;}
+
+.term{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fff;
+  border:1px solid var(--n-200);border-radius:var(--r-md);padding:14px var(--sp-4);margin-bottom:10px;cursor:pointer;}
+.term:hover{border-color:var(--n-300);}
+.term.on{border-color:var(--accent-500);background:var(--accent-50);}
+.term .tn{font-size:var(--fs-h3);font-weight:600;}
+.term .tv{font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;}
+
+.cbrow{display:flex;gap:9px;align-items:flex-start;padding:9px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);color:var(--n-700);}
+.cbrow:last-child{border-bottom:none;}
+.cbx{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--n-300);background:#fff;
+  flex-shrink:0;margin-top:2px;}
+.cbx.on{background:var(--accent-500);border-color:var(--accent-500);color:#fff;font-size:10px;
+  display:flex;align-items:center;justify-content:center;}
+.rdo{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--n-300);background:#fff;
+  flex-shrink:0;display:inline-block;}
+.rdo.on{border-color:var(--accent-500);border-width:5px;}
+.optrow{display:flex;gap:20px;align-items:center;margin-top:var(--sp-4);font-size:var(--fs-caption);color:var(--n-700);}
+.optrow label{display:flex;align-items:center;gap:7px;cursor:pointer;}
+.w-full{width:100%;}
+.tb-inq tbody td:nth-child(2),.tb-qna tbody td:nth-child(2),.tb-qna tbody td:nth-child(3){overflow:hidden;}
+.tb-inq .t-main,.tb-qna .qa-q{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tatt{display:flex;gap:8px;margin-top:10px;}
+.tthumb{width:72px;height:72px;border-radius:var(--r-sm);border:1px solid var(--n-200);
+  background:var(--n-100);color:var(--n-400);font-size:var(--fs-micro);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.tthumb:hover{border-color:var(--accent-500);color:var(--accent-600);}
+.tatt-n{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;}
+
+
+/* ── ⑰ 화면 전용 · 인플루언서 상세 ─────────────────────────────── */
+.rail{position:sticky;top:0;display:flex;flex-direction:column;}
+.kpi4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--n-200);
+  border-radius:var(--r-sm);overflow:hidden;}
+.kpi4 > div{background:#fff;padding:14px 16px;}
+.kpi4-k{font-size:var(--fs-micro);color:var(--n-600);}
+.kpi4-v{font-size:var(--fs-h2);font-weight:600;margin-top:4px;letter-spacing:-.01em;}
+.kpi4-s{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.kpi4-v.warn{color:var(--warning-text);}
+.elink{display:inline-flex;align-items:center;gap:4px;color:var(--accent-600);cursor:pointer;}
+.elink:hover{text-decoration:underline;}
+.tb-inf thead td:nth-child(1),.tb-inf tbody td:nth-child(1){padding-left:var(--sp-4);white-space:normal;}
+.tb-inf thead td:nth-child(2),.tb-inf tbody td:nth-child(2){width:120px;text-align:center;}
+.tb-inf thead td:nth-child(3),.tb-inf tbody td:nth-child(3){width:120px;text-align:center;}
+.tb-inf thead td:nth-child(4),.tb-inf tbody td:nth-child(4){width:110px;text-align:center;padding-right:var(--sp-4);}
+.tb-inf tbody td{vertical-align:middle;}
+.card-b.two{display:grid;grid-template-columns:1fr 1fr;column-gap:24px;}
+.card-b.two .frow{padding:7px 0;align-items:flex-start;}
+.card-b.two .fv{white-space:normal;word-break:keep-all;overflow-wrap:anywhere;line-height:1.5;}
+.card-b.two > .frow:nth-child(1),.card-b.two > .frow:nth-child(2){padding-top:0;}
+.card-b.two > .prof + .frow,.card-b.two > .prof + .frow + .frow{padding-top:0;}
+.card-b.two > .frow:nth-last-child(2):nth-child(odd){border-bottom:none;}
+.card-b.two > .prof ~ .frow:nth-last-child(2):nth-child(even){border-bottom:none;}
+.gone{color:var(--n-500);}
+.card-b.two .prof{grid-column:1/-1;}
+.prof{display:flex;align-items:center;gap:14px;padding-bottom:var(--sp-3);margin-bottom:var(--sp-1);
+  border-bottom:1px solid var(--n-100);}
+.prof-av{width:52px;height:52px;border-radius:50%;background:var(--n-200);color:var(--n-500);
+  font-size:var(--fs-micro);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.prof-n{font-size:var(--fs-h2);font-weight:600;}
+.prof-s{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.unmask{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  color:var(--n-700);background:#fff;border:1px solid var(--n-300);border-radius:var(--r-sm);
+  height:24px;padding:0 9px;cursor:pointer;}
+.unmask:hover{border-color:var(--n-400);color:var(--n-900);}
+.unmask.off{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+.unmask-on{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-micro);font-weight:500;
+  color:var(--warning-text);background:var(--warning-bg);border-radius:var(--r-pill);padding:3px 10px;}
+.ch-acts{display:flex;align-items:center;gap:8px;margin-left:auto;}
+.act-l{border-top:1px solid var(--n-100);margin-top:var(--sp-3);padding-top:var(--sp-1);}
+.page-d{white-space:nowrap;}
+.card-h .btn{height:26px;padding:0 10px;font-size:var(--fs-micro);margin-left:12px;}
+.card-h .ch-n{margin-left:auto;}
+.memo-help{font-size:var(--fs-micro);color:var(--n-600);background:var(--n-50);border-radius:var(--r-sm);
+  padding:7px 9px;line-height:1.6;margin-bottom:8px;}
+.memo{font-family:inherit;font-size:var(--fs-caption);width:100%;min-height:56px;resize:vertical;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);padding:8px 10px;color:var(--n-900);background:#fff;}
+.memo:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.memo-f{display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
+.memo-c{font-size:var(--fs-micro);color:var(--n-500);}
+.memo-l{border-top:1px solid var(--n-200);margin-top:var(--sp-3);padding-top:var(--sp-1);}
+.memo-i{padding:10px 0;border-bottom:1px solid var(--n-100);}
+.memo-i:last-child{border-bottom:none;padding-bottom:0;}
+.memo-h{display:flex;align-items:baseline;gap:6px;font-size:var(--fs-micro);color:var(--n-500);}
+.memo-w{font-weight:600;color:var(--n-700);}
+.memo-t{font-size:var(--fs-caption);line-height:1.7;color:var(--n-900);margin-top:3px;}
+.memo-a{display:flex;gap:8px;margin-top:5px;}
+.memo-b{font-size:var(--fs-micro);color:var(--n-600);cursor:pointer;}
+.memo-b:hover{color:var(--n-900);text-decoration:underline;}
+.memo-lock{font-size:var(--fs-micro);color:var(--n-400);margin-top:5px;}
+.btn-danger-o{background:#fff;color:var(--danger-text);border:1px solid var(--n-300);}
+.btn-danger-o:hover{background:var(--danger-bg);border-color:var(--n-400);}
+.wait{background:var(--warning-bg);border-radius:var(--r-sm);padding:10px 12px;font-size:var(--fs-micro);
+  color:var(--warning-text);line-height:1.7;margin-bottom:var(--sp-3);}
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>⑤ 어드민 · 3. 회원 관리 — 인플루언서 상세 <span style="font-weight:400;color:var(--n-600);font-size:var(--fs-caption)">ui-admin-18-influencer-detail · rev.1</span></h1>
+  <p class="meta">인플루언서 회원 상세 · 근거: <code>SHOWROOMZ_웹_디자인시스템_v1_2.html</code> · 목록은 <code>ui-admin-16-influencers.html</code> · 대칭 화면은 <code>ui-admin-15-brand-detail.html</code> · 마스킹 동선은 <code>ui-admin-13-consumer-detail.html</code></p>
+  <div class="rule">
+    <b>[브랜드 상세와 대칭]</b> 좌측은 <b>사실 조회</b>, 우측은 <b>판단과 조치</b>(sticky 레일)이며 좌측 카드가 많아 <b>모든 상태를 상단·하단 2장</b>으로 낸다 — 셸·카드·필드행·모달·배지는 <code>ui-admin-15-brand-detail.html</code>에서 그대로 가져왔다. 상단: 기본·본인확인·사업자·정산 / 하단: 운영 현황·연결 브랜드·쇼룸 활동·관리자 메모. <b>처리 이력은 레일 맨 아래</b>다 — 이력은 <b>지금 내리는 조치의 근거</b>라 정지 버튼과 같은 열에서 읽혀야 한다(상태 → 조치 → 과거에 무엇을 했는지). <b>관리자 메모만 좌측</b>에 남긴다 — 300자를 쓰고 읽는 카드라 320px 레일에서는 접힌다.<br>
+    <b class="new">[본인확인 카드를 브랜드가 아니라 소비자 쪽에서 가져왔다]</b> 인플루언서는 <b>개인이 계약 당사자</b>다 — 고정 지급비가 개인에게 지급되고 비사업자면 <b>3.3% 원천징수</b>가 걸린다. 그래서 브랜드 상세에 없는 <b>본인확인 정보 카드 + 마스킹 해제 동선</b>(소비자 상세 §13 패턴)을 그대로 이식했다: 기본 마스킹 · 정형 사유 4종 · 이 회원 1건·이 세션 한정 · <b>무조작 10분 자동 재잠금</b> · 처리 이력 즉시 기록 · <b>최고관리자 한정</b>. 사유 목록만 인플루언서 맥락으로 바꿨다(<b>정산·원천징수 확인 · 계약·분쟁 대응</b>).<br>
+    <b class="new">[사업자 여부가 카드 하나를 갈라놓는다]</b> 사업자면 상호·등록번호·주소가 있고, 비사업자면 그 자리가 전부 빈다. 빈 카드를 두거나 카드를 없애는 대신 <b>비사업자 + 3.3% 원천징수</b>를 그 자리에 쓴다(C1) — 목록의 <b>사업자 여부</b> 열을 둔 이유(정산 원천징수 방식이 갈리는 지점)와 같은 판단이다.<br>
+    <b class="new">[운영 현황 4-KPI는 브랜드와 거울]</b> 브랜드가 <b>연결 인플루언서 / 진행중 공구 / 누적 정산액 / 미정산액</b>이면 인플루언서는 <b>연결 브랜드 / 진행중 공구 / 누적 지급액 / 미지급액</b>이다 — 인플루언서에게 지급되는 것은 판매 정산이 아니라 <b>고정 지급비</b>라 이름을 바꿨다. <b>미지급액만 경고색</b>으로 올린다(유일하게 돈이 걸린 수치).<br>
+    <b class="new">[쇼룸 활동은 앱 내 지표만]</b> 공구 게시물·일반 게시물·<b>쇼룸 팔로워</b>·소통 스레드 — 모두 우리 데이터다. 목록에서 <b>외부 채널 팔로워를 뺀 이유</b>(갱신 시점이 제각각이라 판단 근거가 못 된다)는 상세에서도 같으므로, 여기 팔로워는 <b>인스타 팔로워가 아니라 앱 내 쇼룸 팔로우 수</b>이며 카드 헤더에 그렇게 못박았다. <b>게시물 신고 행은 그리지 않았다</b> — 신고 기능이 [자문대기-법률 · 쟁점J]라 없는 데이터를 UI에 올리지 않는다.<br>
+    <b>[탈퇴 = 승인 심사 · 조건 검증 블록 없음]</b> 인플루언서 탈퇴도 셀프서비스가 아니다. 다만 진행중 공구·미지급액이 0이어야 <b>인플루언서 화면에서 신청 버튼이 열리므로</b> 어드민에 체크리스트를 두지 않는다(늘 ✓만 뜨는 블록은 자리만 차지한다) — 대신 <b>승인 모달에서 0건·0원을 한 번 더</b> 보여 준다. 반려 사유는 조건과 같은 축으로 남긴다.<br>
+    <b class="new">[레일 처리 이력은 최신 3건 + 전체 N건 보기]</b> 320px 레일에 이력을 전부 쌓으면 카드가 화면 밖으로 잘린다 — 레일 이력은 <b>조치 직전에 최근 이력을 확인하는 자리</b>라 최신 몇 건으로 충분하고 나머지는 <b>전체 N건 보기</b>로 펼친다. 심사 카드가 붙는 B1-b는 <b>최신 2건</b>으로 더 줄였다.<br>
+    <b class="new">[상태와 제재를 한 카드로]</b> <b>계정 상태 관리 카드를 없애고</b> 정지·정지 해제를 <b>현재 상태 카드 맨 아래</b>(구분선 아래)로 넣었다 — 상태와 그것을 바꾸는 버튼이 떨어져 있으면 두 카드를 왕복해야 하고, 활성일 때 제재 카드는 버튼 하나만 든 빈 카드였다. 남은 축은 <b>현재 상태</b>(활성·정지·탈퇴 + 제재 버튼)와 <b>탈퇴 신청 심사</b>(승인 대기) 둘이다 — 신청은 상태가 아니라 <b>처리해야 할 건</b>이고, 승인 전까지 회원은 실제로 활성이다(쇼룸이 열려 있다). 심사 카드는 <b>신청이 있을 때만</b> 그려지므로 A1·C1·D1 레일에는 없다. 정지는 <b>회원 상태</b>에 그대로 올린다 — 목록의 상태 열과 어긋나면 안 된다.<br>
+    <b>[상태 색 매핑]</b> 활성=<b>성공</b> / 탈퇴 승인 대기=<b>경고</b>(원칙 ①) / 정지=<b>위험</b> / 탈퇴=<b>중립</b>(원칙 ②). <b>정지 버튼은 흰 배경 + 중립 테두리 + 위험색 글자</b>이며 꽉 찬 위험색은 모달의 최종 실행 버튼에만 쓴다.<br>
+    <b>[정지의 범위]</b> 공구 개설·게시물 등록·정산 신청은 막고 <b>진행 중 공구와 미배송 주문은 유지</b>한다 — 인플루언서 제재로 소비자·브랜드 피해를 만들지 않기 위함이다. 고정 지급비는 <b>보류</b>, 소명은 <b>1:1 문의로만</b> 받는다.<br>
+    <b>[계좌번호 마스킹]</b> 정산 정보의 계좌번호는 가운데를 가리고 전체 값은 <b>정산 관리에서만</b> 조회한다 — 본인확인 카드의 마스킹 해제 대상에 계좌는 포함하지 않는다(회원 관리의 목적은 신원 확인, 송금은 다른 화면의 일).<br>
+    <b>[메모 규칙]</b> 조치하지 않은 판단의 기록 · <b>누적 기입</b>(작성자·일시 표기) · 항목당 300자 · 작성자 본인 24시간 내 수정·삭제 — F4·F5 동일 적용 결정을 그대로 따랐고 <b>좌측 맨 아래</b>에 둔다(처리 이력은 레일).<br>
+    <b>[금칙어]</b> 크리에이터 → <b>인플루언서</b> · 앱 내 인플루언서 페이지 → <b>쇼룸</b> · 크리에이터 스튜디오 → <b>쇼룸 스튜디오</b>.<br>
+    <b class="new">[확인 필요]</b> ⓐ <b>연결 브랜드 “연결 종료” 행</b>을 상세에 남길 기간(브랜드 상세 ⓒ와 동일 쟁점) ⓑ 인스타를 운영하지 않는 인플루언서의 <b>인스타 행 표기</b>(빈칸 vs 미등록) ⓒ 비사업자 → 사업자 전환 시 <b>원천징수 방식 변경 이력</b>을 이 화면에서 볼지 ⓓ <b>쇼룸 팔로워</b>가 정지·탈퇴 판단에 실제로 쓰이는 수치인지(안 쓰이면 카드에서 뺀다) ⓔ 탈퇴 승인 시 <b>쇼룸 게시물의 처리</b>(비공개 vs 삭제) — 소비자가 구매한 공구 게시물이 사라지면 주문 상세의 참조가 끊긴다.<br>
+    <b>[⚠ 법률 자문 대기]</b> 탈퇴 시 보존·파기 범위는 <b>쟁점 G</b> 종속 — 시안에는 지급·정산 기록 보존 / 본인확인·사업자·정산 정보 파기로 그렸고 <b>CI/DI는 미확정</b> 표기다.<br>
+    <b>[규격 정합]</b> 상세 필드 행 <b>9px · 라벨 140px</b>, 테이블 본문 셀 <b>14px 16px · 행높이 50px</b>. 설계 근거는 이 박스와 <code>.state-spec</code>에만 둔다.
+  </div>
+</div>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">A1</span><span class="state-label">활성 인플루언서 · 상단</span><span class="state-spec">기본 진입 — 좌측 상단 4카드(기본·본인확인·사업자·정산)와 우측 sticky 레일 <b>현재 상태 1카드</b>(맨 아래에 정지 버튼) — <b>탈퇴 신청 심사 카드는 B1에만</b> 나타나고 계정 상태 관리 카드는 없다 · <b>본인확인 정보는 기본 마스킹</b>이며 카드 헤더의 <b>마스킹 해제</b>로만 열린다(소비자 상세와 동일 동선) · 사업자 회원이라 원천징수 방식이 <b>세금계산서</b>다 · 액션은 <b>정지 단독</b> · 하단 카드(운영 현황·연결 브랜드·쇼룸 활동·관리자 메모)와 레일의 <b>처리 이력</b>은 A1-b에서 본다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub active"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 인플루언서 / 소연 쇼룸</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">소연 쇼룸</div><div class="page-d tnum">INF-3018</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">기본 정보<span class="ch-n tnum">INF-3018</span></div><div class="card-b two"><div class="prof"><div class="prof-av">쇼룸<br>이미지</div><div><div class="prof-n">소연 쇼룸</div><div class="prof-s tnum">INF-3018 · showroomz.kr/soyeon_showroom</div></div></div><div class="frow"><div class="fk">쇼룸명</div><div class="fv"><b>소연 쇼룸</b></div></div><div class="frow"><div class="fk">쇼룸 주소</div><div class="fv"><span class="elink">showroomz.kr/soyeon_showroom <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">인스타</div><div class="fv"><span class="elink">instagram.com/soyeon_showroom <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">업무용 이메일</div><div class="fv"><span class="tnum">contact@soyeonshowroom.kr</span></div></div><div class="frow"><div class="fk">가입일</div><div class="fv"><span class="tnum">2026.03.11</span></div></div><div class="frow"><div class="fk">입점 승인일</div><div class="fv"><span class="tnum">2026.03.15</span></div></div><div class="frow"><div class="fk">최근 로그인</div><div class="fv"><span class="tnum">2026.09.08 09:24 <span class="t-sub">· iOS 앱</span></span></div></div></div></div><div class="card"><div class="card-h">본인확인 정보<span class="ch-acts"><span class="unmask">마스킹 해제</span></span></div><div class="card-b two"><div class="frow"><div class="fk">이름</div><div class="fv">김*연</div></div><div class="frow"><div class="fk">생년월일</div><div class="fv">1994.**.**</div></div><div class="frow"><div class="fk">휴대폰</div><div class="fv"><span class="tnum">010-****-8842</span></div></div><div class="frow"><div class="fk">통신사</div><div class="fv">KT</div></div><div class="frow"><div class="fk">최초 인증</div><div class="fv"><span class="tnum">2026.03.11 14:08</span></div></div><div class="frow"><div class="fk">최근 갱신</div><div class="fv"><span class="tnum">2026.03.11 14:08</span></div></div></div></div><div class="card"><div class="card-h">사업자 정보</div><div class="card-b two"><div class="frow"><div class="fk">사업자 여부</div><div class="fv"><span class="badge b-neutral nodot">사업자</span></div></div><div class="frow"><div class="fk">사업자 구분</div><div class="fv">간이과세자</div></div><div class="frow"><div class="fk">상호</div><div class="fv">소연스튜디오</div></div><div class="frow"><div class="fk">대표자명</div><div class="fv">김소연</div></div><div class="frow"><div class="fk">사업자등록번호</div><div class="fv"><span class="tnum">128-31-90447</span></div></div><div class="frow"><div class="fk">사업장 주소</div><div class="fv">서울특별시 성동구 연무장길 33, 2층</div></div></div></div><div class="card"><div class="card-h">정산 정보<span class="ch-n">계좌 전체 값은 정산 관리에서만 조회</span></div><div class="card-b two"><div class="frow"><div class="fk">은행</div><div class="fv">카카오뱅크</div></div><div class="frow"><div class="fk">예금주</div><div class="fv">김*연</div></div><div class="frow"><div class="fk">계좌번호</div><div class="fv"><span class="tnum">3333-**-**8842</span></div></div><div class="frow"><div class="fk">원천징수 방식</div><div class="fv">세금계산서 발행 <span class="t-sub">· 부가세 별도</span></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-success">활성</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.03.11</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.03.15</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.09.08 09:24</span></div></div><div class="act-in"><div class="st-acts"><button class="btn btn-danger-o w-full">정지</button></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">A1-u</span><span class="state-label">활성 · 마스킹 해제됨</span><span class="state-spec">M4에서 사유를 남긴 직후 — 이름·생년월일·휴대폰이 <b>실값</b>으로 열리고 헤더에 <b>해제됨 · 처리자 · 시각 + 잠금 예정 시각</b>이 붙는다 · 해제는 <b>이 인플루언서 1건 · 이 세션 한정</b>이며 무조작 10분이 지나면 자동 재잠금된다 · <b>지금 잠금</b>으로 즉시 되돌릴 수 있다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub active"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 인플루언서 / 소연 쇼룸</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">소연 쇼룸</div><div class="page-d tnum">INF-3018</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">기본 정보<span class="ch-n tnum">INF-3018</span></div><div class="card-b two"><div class="prof"><div class="prof-av">쇼룸<br>이미지</div><div><div class="prof-n">소연 쇼룸</div><div class="prof-s tnum">INF-3018 · showroomz.kr/soyeon_showroom</div></div></div><div class="frow"><div class="fk">쇼룸명</div><div class="fv"><b>소연 쇼룸</b></div></div><div class="frow"><div class="fk">쇼룸 주소</div><div class="fv"><span class="elink">showroomz.kr/soyeon_showroom <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">인스타</div><div class="fv"><span class="elink">instagram.com/soyeon_showroom <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">업무용 이메일</div><div class="fv"><span class="tnum">contact@soyeonshowroom.kr</span></div></div><div class="frow"><div class="fk">가입일</div><div class="fv"><span class="tnum">2026.03.11</span></div></div><div class="frow"><div class="fk">입점 승인일</div><div class="fv"><span class="tnum">2026.03.15</span></div></div><div class="frow"><div class="fk">최근 로그인</div><div class="fv"><span class="tnum">2026.09.08 09:24 <span class="t-sub">· iOS 앱</span></span></div></div></div></div><div class="card"><div class="card-h">본인확인 정보<span class="ch-acts"><span class="unmask-on">해제됨 · 김운영 · 14:22 <span class="tnum" style="opacity:.75">· 09:41 후 잠금</span></span><span class="unmask">지금 잠금</span></span></div><div class="card-b two"><div class="frow"><div class="fk">이름</div><div class="fv">김소연</div></div><div class="frow"><div class="fk">생년월일</div><div class="fv">1994.06.02 <span class="t-sub">(32세)</span></div></div><div class="frow"><div class="fk">휴대폰</div><div class="fv"><span class="tnum">010-3391-8842</span></div></div><div class="frow"><div class="fk">통신사</div><div class="fv">KT</div></div><div class="frow"><div class="fk">최초 인증</div><div class="fv"><span class="tnum">2026.03.11 14:08</span></div></div><div class="frow"><div class="fk">최근 갱신</div><div class="fv"><span class="tnum">2026.03.11 14:08</span></div></div></div></div><div class="card"><div class="card-h">사업자 정보</div><div class="card-b two"><div class="frow"><div class="fk">사업자 여부</div><div class="fv"><span class="badge b-neutral nodot">사업자</span></div></div><div class="frow"><div class="fk">사업자 구분</div><div class="fv">간이과세자</div></div><div class="frow"><div class="fk">상호</div><div class="fv">소연스튜디오</div></div><div class="frow"><div class="fk">대표자명</div><div class="fv">김소연</div></div><div class="frow"><div class="fk">사업자등록번호</div><div class="fv"><span class="tnum">128-31-90447</span></div></div><div class="frow"><div class="fk">사업장 주소</div><div class="fv">서울특별시 성동구 연무장길 33, 2층</div></div></div></div><div class="card"><div class="card-h">정산 정보<span class="ch-n">계좌 전체 값은 정산 관리에서만 조회</span></div><div class="card-b two"><div class="frow"><div class="fk">은행</div><div class="fv">카카오뱅크</div></div><div class="frow"><div class="fk">예금주</div><div class="fv">김*연</div></div><div class="frow"><div class="fk">계좌번호</div><div class="fv"><span class="tnum">3333-**-**8842</span></div></div><div class="frow"><div class="fk">원천징수 방식</div><div class="fv">세금계산서 발행 <span class="t-sub">· 부가세 별도</span></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-success">활성</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.03.11</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.03.15</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.09.08 09:24</span></div></div><div class="act-in"><div class="st-acts"><button class="btn btn-danger-o w-full">정지</button></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">A1-b</span><span class="state-label">활성 · 스크롤 하단</span><span class="state-spec">A1을 아래로 스크롤한 상태 — 좌측은 <b>운영 현황 · 연결 브랜드 · 쇼룸 활동 · 관리자 메모</b>, 레일은 <b>처리 이력</b>까지 3카드가 된다 · 4-KPI 중 <b>미지급액만 경고색</b>이며 고정 지급비 지급 대기 잔액이다 · 연결 브랜드는 <b>연결중 먼저, 연결 종료 아래</b>로 오고 행 클릭 시 브랜드 상세로 간다 · <b>sticky 레일은 그대로 따라온다</b> — 상태 · 제재 · 처리 이력이 한 열에 남는다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub active"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 인플루언서 / 소연 쇼룸</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">소연 쇼룸</div><div class="page-d tnum">INF-3018 <span class="t-sub">· 스크롤 하단</span></div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">운영 현황</div><div class="card-b"><div class="kpi4"><div><div class="kpi4-k">연결 브랜드</div><div class="kpi4-v tnum">3곳</div></div><div><div class="kpi4-k">진행중 공구</div><div class="kpi4-v tnum">2건</div></div><div><div class="kpi4-k">누적 지급액</div><div class="kpi4-v tnum">4,820,000원</div></div><div><div class="kpi4-k">미지급액</div><div class="kpi4-v tnum warn">300,000원</div></div></div></div></div><div class="card"><div class="card-h">연결 브랜드<span class="ch-n">전체 3곳 · 행 클릭 → 브랜드 상세</span></div><table class="tb-inf"><thead><tr><td>브랜드명</td><td>연결일</td><td>진행중 공구</td><td>연결 상태</td></tr></thead><tbody><tr><td class="t-main">글로우랩</td><td class="t-sub tnum">2026.08.05</td><td class="tnum">2건</td><td><span class="badge b-success">연결중</span></td></tr><tr><td class="t-main">무드코스메틱</td><td class="t-sub tnum">2026.07.18</td><td class="tnum t-sub">0건</td><td><span class="badge b-success">연결중</span></td></tr><tr><td class="t-main">퓨어랩</td><td class="t-sub tnum">2026.04.02</td><td class="tnum t-sub">0건</td><td><span class="badge b-neutral">연결 종료</span></td></tr></tbody></table></div><div class="card"><div class="card-h">쇼룸 활동<span class="ch-n">앱 내 지표 · 외부 채널 수치가 아님</span></div><div class="card-b two"><div class="frow"><div class="fk">공구 게시물</div><div class="fv"><span class="tnum">12건</span> <span class="t-sub">· 게시물·소통 모니터링에서 열람</span></div></div><div class="frow"><div class="fk">일반 게시물</div><div class="fv"><span class="tnum">34건</span></div></div><div class="frow"><div class="fk">쇼룸 팔로워</div><div class="fv"><span class="tnum">8,420명</span></div></div><div class="frow"><div class="fk">소통 스레드</div><div class="fv">6건 <span class="t-sub">· 진행 1건</span></div></div></div></div><div class="card"><div class="card-h">관리자 메모<span class="ch-n">최신 1건 · 전체 2건 · 인플루언서 비노출</span><button class="btn btn-secondary">메모 기입</button></div><div class="card-b"><div class="memo-l"><div class="memo-i"><div class="memo-h"><span class="memo-w">김운영</span><span class="tnum">2026.09.08 10:12</span></div><div class="memo-t">미지급액 30만 원은 9월 15일 고정 지급비 정산 회차에 포함됩니다. 별도 조치 없습니다.</div><div class="memo-a"><span class="memo-b">수정</span><span class="memo-b">삭제</span></div></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-success">활성</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.03.11</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.03.15</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.09.08 09:24</span></div></div><div class="act-in"><div class="st-acts"><button class="btn btn-danger-o w-full">정지</button></div></div></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순 · 전체 3건 · 처리자·시각·사유</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-neutral"></div><div><div class="htxt">관리자 메모 기입</div><div class="hmeta">2026.09.08 10:12 · 김운영</div></div></div><div class="hitem"><div class="hdot h-success"></div><div><div class="htxt">입점 승인</div><div class="hmeta">2026.03.15 11:02 · 김운영</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">가입 신청</div><div class="hmeta">2026.03.11 14:08 · 인플루언서 본인</div></div></div><div class="hmore">전체 3건 보기</div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">B1</span><span class="state-label">탈퇴 승인 대기 · 상단</span><span class="state-spec"><b>현재 상태는 활성 그대로</b>고, 탈퇴 심사는 바로 아래 <b>탈퇴 신청 심사</b> 카드에서 따로 관리한다 — 승인 전까지 이 인플루언서는 실제로 활성이며(쇼룸이 열려 있고 공구가 돈다), 신청일·경과·신청자·탈퇴 사유·<b>승인/반려</b>가 그 카드에 모인다 · <b>조건 검증 체크리스트는 두지 않는다</b>(진행중 공구·미지급액이 0이어야 인플루언서 화면에서 신청 버튼이 열리므로 늘 ✓만 뜬다) · 레일은 <b>현재 상태(+정지 버튼) → 탈퇴 신청 심사 → 처리 이력</b> 3카드이며, 심사 중에도 정책 위반 <b>정지</b>는 실행될 수 있다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub active"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 인플루언서 / 하린의 뷰티랩</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">하린의 뷰티랩</div><div class="page-d tnum">INF-3021</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">기본 정보<span class="ch-n tnum">INF-3021</span></div><div class="card-b two"><div class="prof"><div class="prof-av">쇼룸<br>이미지</div><div><div class="prof-n">하린의 뷰티랩</div><div class="prof-s tnum">INF-3021 · showroomz.kr/harin_beauty</div></div></div><div class="frow"><div class="fk">쇼룸명</div><div class="fv"><b>하린의 뷰티랩</b></div></div><div class="frow"><div class="fk">쇼룸 주소</div><div class="fv"><span class="elink">showroomz.kr/harin_beauty <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">인스타</div><div class="fv"><span class="elink">instagram.com/harin_beauty <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">업무용 이메일</div><div class="fv"><span class="tnum">harin.beauty@gmail.com</span></div></div><div class="frow"><div class="fk">가입일</div><div class="fv"><span class="tnum">2026.02.14</span></div></div><div class="frow"><div class="fk">입점 승인일</div><div class="fv"><span class="tnum">2026.02.19</span></div></div><div class="frow"><div class="fk">최근 로그인</div><div class="fv"><span class="tnum">2026.09.05 21:03 <span class="t-sub">· Android 앱</span></span></div></div></div></div><div class="card"><div class="card-h">본인확인 정보<span class="ch-acts"><span class="unmask">마스킹 해제</span></span></div><div class="card-b two"><div class="frow"><div class="fk">이름</div><div class="fv">박*린</div></div><div class="frow"><div class="fk">생년월일</div><div class="fv">1997.**.**</div></div><div class="frow"><div class="fk">휴대폰</div><div class="fv"><span class="tnum">010-****-3018</span></div></div><div class="frow"><div class="fk">통신사</div><div class="fv">SKT</div></div><div class="frow"><div class="fk">최초 인증</div><div class="fv"><span class="tnum">2026.02.14 10:41</span></div></div><div class="frow"><div class="fk">최근 갱신</div><div class="fv"><span class="tnum">2026.02.14 10:41</span></div></div></div></div><div class="card"><div class="card-h">사업자 정보</div><div class="card-b two"><div class="frow"><div class="fk">사업자 여부</div><div class="fv"><span class="badge b-neutral nodot">사업자</span></div></div><div class="frow"><div class="fk">사업자 구분</div><div class="fv">일반과세자</div></div><div class="frow"><div class="fk">상호</div><div class="fv">하린랩</div></div><div class="frow"><div class="fk">대표자명</div><div class="fv">박하린</div></div><div class="frow"><div class="fk">사업자등록번호</div><div class="fv"><span class="tnum">214-19-77302</span></div></div><div class="frow"><div class="fk">사업장 주소</div><div class="fv">서울특별시 마포구 어울마당로 5길 20, 4층</div></div></div></div><div class="card"><div class="card-h">정산 정보<span class="ch-n">계좌 전체 값은 정산 관리에서만 조회</span></div><div class="card-b two"><div class="frow"><div class="fk">은행</div><div class="fv">신한은행</div></div><div class="frow"><div class="fk">예금주</div><div class="fv">박*린</div></div><div class="frow"><div class="fk">계좌번호</div><div class="fv"><span class="tnum">110-***-**3018</span></div></div><div class="frow"><div class="fk">원천징수 방식</div><div class="fv">세금계산서 발행 <span class="t-sub">· 부가세 별도</span></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-success">활성</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.02.14</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.02.19</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.09.05 21:03</span></div></div><div class="act-in"><div class="st-acts"><button class="btn btn-danger-o w-full">정지</button></div></div></div></div><div class="card side-card"><div class="card-h">탈퇴 신청 심사<span class="ch-n">회원 상태와 별개 · 승인 시 해지</span></div><div class="st-now"><div class="st-line"><span class="st-lbl">심사</span><span class="badge b-warning">탈퇴 승인 대기</span></div><div class="st-meta"><div class="mrow"><span class="mk">신청일</span><span class="mv tnum">2026.09.05 21:10</span></div><div class="mrow"><span class="mk">경과</span><span class="mv tnum">4일</span></div></div><div class="wait"><b>탈퇴 사유</b> — 콘텐츠 활동을 중단하고 본업에 집중하려 합니다.</div><div class="st-acts"><button class="btn btn-primary w-full">승인</button><button class="btn btn-danger-o w-full">반려</button></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">B1-b</span><span class="state-label">탈퇴 승인 대기 · 스크롤 하단</span><span class="state-spec">승인 판단의 근거가 되는 하단 카드 — <b>진행중 공구 0건 · 미지급액 0원</b>이라 승인해도 소비자·브랜드에 남는 일이 없다(그래서 4-KPI에 경고색이 없다) · 연결 브랜드는 모두 <b>연결 종료</b>이며, 승인 시 남은 연결이 있으면 일괄 종료된다 · <b>레일의 처리 이력</b> 맨 위에 <b>탈퇴 신청 접수</b>가 경고색으로 남아 심사 카드의 승인·반려 버튼 아래에서 읽힌다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub active"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 인플루언서 / 하린의 뷰티랩</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">하린의 뷰티랩</div><div class="page-d tnum">INF-3021 <span class="t-sub">· 스크롤 하단</span></div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">운영 현황</div><div class="card-b"><div class="kpi4"><div><div class="kpi4-k">연결 브랜드</div><div class="kpi4-v tnum">2곳</div></div><div><div class="kpi4-k">진행중 공구</div><div class="kpi4-v tnum">0건</div></div><div><div class="kpi4-k">누적 지급액</div><div class="kpi4-v tnum">7,140,000원</div></div><div><div class="kpi4-k">미지급액</div><div class="kpi4-v tnum">0원</div></div></div></div></div><div class="card"><div class="card-h">연결 브랜드<span class="ch-n">전체 2곳 · 모두 연결 종료</span></div><table class="tb-inf"><thead><tr><td>브랜드명</td><td>연결일</td><td>진행중 공구</td><td>연결 상태</td></tr></thead><tbody><tr><td class="t-main">글로우랩</td><td class="t-sub tnum">2026.03.02</td><td class="tnum t-sub">0건</td><td><span class="badge b-neutral">연결 종료</span></td></tr><tr><td class="t-main">벨라코스</td><td class="t-sub tnum">2026.05.14</td><td class="tnum t-sub">0건</td><td><span class="badge b-neutral">연결 종료</span></td></tr></tbody></table></div><div class="card"><div class="card-h">쇼룸 활동<span class="ch-n">앱 내 지표 · 외부 채널 수치가 아님</span></div><div class="card-b two"><div class="frow"><div class="fk">공구 게시물</div><div class="fv"><span class="tnum">21건</span> <span class="t-sub">· 게시물·소통 모니터링에서 열람</span></div></div><div class="frow"><div class="fk">일반 게시물</div><div class="fv"><span class="tnum">58건</span></div></div><div class="frow"><div class="fk">쇼룸 팔로워</div><div class="fv"><span class="tnum">12,940명</span></div></div><div class="frow"><div class="fk">소통 스레드</div><div class="fv">9건 <span class="t-sub">· 진행 0건</span></div></div></div></div><div class="card"><div class="card-h">관리자 메모<span class="ch-n">최신 1건 · 전체 1건 · 인플루언서 비노출</span><button class="btn btn-secondary">메모 기입</button></div><div class="card-b"><div class="memo-l"><div class="memo-i"><div class="memo-h"><span class="memo-w">김운영</span><span class="tnum">2026.09.06 09:30</span></div><div class="memo-t">진행중 공구·미지급액 모두 0. 사유가 활동 중단이고 분쟁 이력이 없어 승인 예정입니다.</div><div class="memo-a"><span class="memo-b">수정</span><span class="memo-b">삭제</span></div></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-success">활성</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.02.14</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.02.19</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.09.05 21:03</span></div></div><div class="act-in"><div class="st-acts"><button class="btn btn-danger-o w-full">정지</button></div></div></div></div><div class="card side-card"><div class="card-h">탈퇴 신청 심사<span class="ch-n">회원 상태와 별개 · 승인 시 해지</span></div><div class="st-now"><div class="st-line"><span class="st-lbl">심사</span><span class="badge b-warning">탈퇴 승인 대기</span></div><div class="st-meta"><div class="mrow"><span class="mk">신청일</span><span class="mv tnum">2026.09.05 21:10</span></div><div class="mrow"><span class="mk">경과</span><span class="mv tnum">4일</span></div></div><div class="wait"><b>탈퇴 사유</b> — 콘텐츠 활동을 중단하고 본업에 집중하려 합니다.</div><div class="st-acts"><button class="btn btn-primary w-full">승인</button><button class="btn btn-danger-o w-full">반려</button></div></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순 · 전체 4건 · 처리자·시각·사유</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-warning"></div><div><div class="htxt">탈퇴 신청 접수</div><div class="hmeta">2026.09.05 21:10 · 인플루언서 본인</div></div></div><div class="hitem"><div class="hdot h-neutral"></div><div><div class="htxt">연결 종료 (벨라코스)</div><div class="hmeta">2026.08.28 14:30 · 인플루언서 본인</div></div></div><div class="hmore">전체 4건 보기</div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">C1</span><span class="state-label">정지 인플루언서 · 상단</span><span class="state-spec">현재 상태 배지가 <b>정지</b>가 되고 <b>같은 카드 안에</b> 사유·처리자·일시와 <b>정지 해제</b>가 붙는다 · <b>비사업자 회원</b>이라 사업자 정보 카드가 <b>비사업자 + 3.3% 원천징수</b>로 대체된다 — 빈 카드를 두지 않고 정산 방식이 갈리는 사실을 그 자리에 쓴다 · 좌측 카드는 정지 상태에서도 전부 조회된다 · 정지 이력은 <b>레일의 처리 이력</b>(하단 스냅샷)에 쌓인다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub active"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 인플루언서 / 민재 셀렉트</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">민재 셀렉트</div><div class="page-d tnum">INF-3009</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">기본 정보<span class="ch-n tnum">INF-3009</span></div><div class="card-b two"><div class="prof"><div class="prof-av">쇼룸<br>이미지</div><div><div class="prof-n">민재 셀렉트</div><div class="prof-s tnum">INF-3009 · showroomz.kr/minjae_select</div></div></div><div class="frow"><div class="fk">쇼룸명</div><div class="fv"><b>민재 셀렉트</b></div></div><div class="frow"><div class="fk">쇼룸 주소</div><div class="fv"><span class="elink">showroomz.kr/minjae_select <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">인스타</div><div class="fv"><span class="elink">instagram.com/minjae_select <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">업무용 이메일</div><div class="fv"><span class="tnum">minjae.select@kakao.com</span></div></div><div class="frow"><div class="fk">가입일</div><div class="fv"><span class="tnum">2026.01.08</span></div></div><div class="frow"><div class="fk">입점 승인일</div><div class="fv"><span class="tnum">2026.01.12</span></div></div><div class="frow"><div class="fk">최근 로그인</div><div class="fv"><span class="tnum">2026.08.30 18:55 <span class="t-sub">· iOS 앱</span></span></div></div></div></div><div class="card"><div class="card-h">본인확인 정보<span class="ch-acts"><span class="unmask">마스킹 해제</span></span></div><div class="card-b two"><div class="frow"><div class="fk">이름</div><div class="fv">이*재</div></div><div class="frow"><div class="fk">생년월일</div><div class="fv">1999.**.**</div></div><div class="frow"><div class="fk">휴대폰</div><div class="fv"><span class="tnum">010-****-4471</span></div></div><div class="frow"><div class="fk">통신사</div><div class="fv">LG U+</div></div><div class="frow"><div class="fk">최초 인증</div><div class="fv"><span class="tnum">2026.01.08 09:12</span></div></div><div class="frow"><div class="fk">최근 갱신</div><div class="fv"><span class="tnum">2026.01.08 09:12</span></div></div></div></div><div class="card"><div class="card-h">사업자 정보<span class="ch-n">비사업자 — 원천징수 대상</span></div><div class="card-b two"><div class="frow"><div class="fk">사업자 여부</div><div class="fv"><span class="badge b-neutral nodot">비사업자</span></div></div><div class="frow"><div class="fk">원천징수</div><div class="fv"><b>3.3%</b> <span class="t-sub">· 사업소득</span></div></div><div class="frow"><div class="fk">상호</div><div class="fv"><span class="gone">해당 없음</span></div></div><div class="frow"><div class="fk">사업자등록번호</div><div class="fv"><span class="gone">해당 없음</span></div></div></div></div><div class="card"><div class="card-h">정산 정보<span class="ch-n">계좌 전체 값은 정산 관리에서만 조회</span></div><div class="card-b two"><div class="frow"><div class="fk">은행</div><div class="fv">국민은행</div></div><div class="frow"><div class="fk">예금주</div><div class="fv">이*재</div></div><div class="frow"><div class="fk">계좌번호</div><div class="fv"><span class="tnum">604***-**-4471</span></div></div><div class="frow"><div class="fk">원천징수 방식</div><div class="fv"><b>3.3% 원천징수</b> <span class="t-sub">· 사업소득</span></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-danger">정지</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.01.08</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.01.12</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.08.30 18:55</span></div></div><div class="act-in"><div class="st-meta"><div class="mrow"><span class="mk">정지 사유</span><span class="mv">협찬 표기 누락 반복</span></div><div class="mrow"><span class="mk">처리자</span><span class="mv">김운영</span></div><div class="mrow"><span class="mk">정지 일시</span><span class="mv tnum">2026.08.30 19:20</span></div></div><p class="st-hint">공구 게시물 3건에서 유료 광고 표기가 누락되어 시정 요청 후에도 반복됐습니다. 소명은 <b>1:1 문의</b>로 접수됩니다.</p><div class="st-acts"><button class="btn btn-primary w-full">정지 해제</button></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">D1</span><span class="state-label">탈퇴 인플루언서 · 상단 (파기 표시)</span><span class="state-spec">승인이 끝난 상태 — <b>레이아웃은 그대로 두고 값만 “— 파기됨”</b>으로 바꾼다(§5-8 파기 표시 규격) · 본인확인·사업자·정산 정보는 파기, <b>지급·정산 기록은 법정 보존</b> · <b>CI/DI 파기 여부는 미확정</b>으로 표기했다(쟁점 G) · 레일은 조치가 없어 <b>현재 상태 1카드</b>만 남고 <b>정지 버튼도 없다</b>(처리 이력은 하단에서 두 번째 카드로 따라오며 <b>파기 대상이 아니다</b>) · 마스킹 해제 버튼도 사라진다(해제할 값이 없다) · <b>쇼룸은 비공개</b>이므로 쇼룸 주소·인스타도 링크가 아니다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub active"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 인플루언서 / 라온 뷰티노트</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">라온 뷰티노트</div><div class="page-d tnum">INF-3004</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">기본 정보<span class="ch-n tnum">INF-3004</span></div><div class="card-b two"><div class="prof"><div class="prof-av">쇼룸<br>이미지</div><div><div class="prof-n">라온 뷰티노트</div><div class="prof-s tnum">INF-3004 <span class="gone">· 쇼룸 비공개</span></div></div></div><div class="frow"><div class="fk">쇼룸명</div><div class="fv"><b>라온 뷰티노트</b></div></div><div class="frow"><div class="fk">쇼룸 주소</div><div class="fv"><span class="gone">showroomz.kr/raon_note · 비공개</span></div></div><div class="frow"><div class="fk">인스타</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">업무용 이메일</div><div class="fv"><span class="tnum">raon.note@gmail.com</span></div></div><div class="frow"><div class="fk">가입일</div><div class="fv"><span class="tnum">2025.11.20</span></div></div><div class="frow"><div class="fk">입점 승인일</div><div class="fv"><span class="tnum">2025.11.24</span></div></div><div class="frow"><div class="fk">최근 로그인</div><div class="fv"><span class="tnum">2026.07.02 13:31</span></div></div></div></div><div class="card"><div class="card-h">본인확인 정보<span class="ch-n">탈퇴 시 파기</span></div><div class="card-b two"><div class="frow"><div class="fk">이름</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">생년월일</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">휴대폰</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">통신사</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">최초 인증</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">CI/DI</div><div class="fv"><span class="gone">파기 여부 미확정</span> <span class="t-sub">(법률 자문 대기)</span></div></div></div></div><div class="card"><div class="card-h">사업자 정보<span class="ch-n">탈퇴 시 파기</span></div><div class="card-b two"><div class="frow"><div class="fk">사업자 여부</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">상호</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">대표자명</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">사업자등록번호</div><div class="fv"><span class="gone">— 파기됨</span></div></div></div></div><div class="card"><div class="card-h">정산 정보<span class="ch-n">탈퇴 시 파기 · 지급 기록은 보존</span></div><div class="card-b two"><div class="frow"><div class="fk">은행</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">예금주</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">계좌번호</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">원천징수 방식</div><div class="fv"><span class="gone">— 파기됨</span></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-neutral">탈퇴</span></div><div class="st-meta"><div class="mrow"><span class="mk">탈퇴일</span><span class="mv tnum">2026.07.05 10:02</span></div><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2025.11.20</span></div><div class="mrow"><span class="mk">처리자</span><span class="mv tnum">김운영</span></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">M1</span><span class="state-label">인플루언서 정지 모달</span><span class="state-spec">현재 상태 카드 맨 아래의 <b>정지</b>에서 진입 · 정지 사유는 <b>인플루언서 축</b>으로 다시 썼다(협찬 표기 누락·표시광고법 위반 문구·공구 진행 불이행) — 브랜드의 사유 목록을 그대로 쓰지 않는다 · 최종 실행 버튼만 <b>꽉 찬 위험색</b>이다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub active"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 인플루언서 / 민재 셀렉트</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">민재 셀렉트</div><div class="page-d tnum">INF-3009</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">기본 정보<span class="ch-n tnum">INF-3009</span></div><div class="card-b two"><div class="prof"><div class="prof-av">쇼룸<br>이미지</div><div><div class="prof-n">민재 셀렉트</div><div class="prof-s tnum">INF-3009 · showroomz.kr/minjae_select</div></div></div><div class="frow"><div class="fk">쇼룸명</div><div class="fv"><b>민재 셀렉트</b></div></div><div class="frow"><div class="fk">쇼룸 주소</div><div class="fv"><span class="elink">showroomz.kr/minjae_select <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">인스타</div><div class="fv"><span class="elink">instagram.com/minjae_select <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">업무용 이메일</div><div class="fv"><span class="tnum">minjae.select@kakao.com</span></div></div><div class="frow"><div class="fk">가입일</div><div class="fv"><span class="tnum">2026.01.08</span></div></div><div class="frow"><div class="fk">입점 승인일</div><div class="fv"><span class="tnum">2026.01.12</span></div></div><div class="frow"><div class="fk">최근 로그인</div><div class="fv"><span class="tnum">2026.08.30 18:55 <span class="t-sub">· iOS 앱</span></span></div></div></div></div><div class="card"><div class="card-h">본인확인 정보<span class="ch-acts"><span class="unmask">마스킹 해제</span></span></div><div class="card-b two"><div class="frow"><div class="fk">이름</div><div class="fv">이*재</div></div><div class="frow"><div class="fk">생년월일</div><div class="fv">1999.**.**</div></div><div class="frow"><div class="fk">휴대폰</div><div class="fv"><span class="tnum">010-****-4471</span></div></div><div class="frow"><div class="fk">통신사</div><div class="fv">LG U+</div></div><div class="frow"><div class="fk">최초 인증</div><div class="fv"><span class="tnum">2026.01.08 09:12</span></div></div><div class="frow"><div class="fk">최근 갱신</div><div class="fv"><span class="tnum">2026.01.08 09:12</span></div></div></div></div><div class="card"><div class="card-h">사업자 정보<span class="ch-n">비사업자 — 원천징수 대상</span></div><div class="card-b two"><div class="frow"><div class="fk">사업자 여부</div><div class="fv"><span class="badge b-neutral nodot">비사업자</span></div></div><div class="frow"><div class="fk">원천징수</div><div class="fv"><b>3.3%</b> <span class="t-sub">· 사업소득</span></div></div><div class="frow"><div class="fk">상호</div><div class="fv"><span class="gone">해당 없음</span></div></div><div class="frow"><div class="fk">사업자등록번호</div><div class="fv"><span class="gone">해당 없음</span></div></div></div></div><div class="card"><div class="card-h">정산 정보<span class="ch-n">계좌 전체 값은 정산 관리에서만 조회</span></div><div class="card-b two"><div class="frow"><div class="fk">은행</div><div class="fv">국민은행</div></div><div class="frow"><div class="fk">예금주</div><div class="fv">이*재</div></div><div class="frow"><div class="fk">계좌번호</div><div class="fv"><span class="tnum">604***-**-4471</span></div></div><div class="frow"><div class="fk">원천징수 방식</div><div class="fv"><b>3.3% 원천징수</b> <span class="t-sub">· 사업소득</span></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-danger">정지</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.01.08</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.01.12</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.08.30 18:55</span></div></div><div class="act-in"><div class="st-meta"><div class="mrow"><span class="mk">정지 사유</span><span class="mv">협찬 표기 누락 반복</span></div><div class="mrow"><span class="mk">처리자</span><span class="mv">김운영</span></div><div class="mrow"><span class="mk">정지 일시</span><span class="mv tnum">2026.08.30 19:20</span></div></div><p class="st-hint">공구 게시물 3건에서 유료 광고 표기가 누락되어 시정 요청 후에도 반복됐습니다. 소명은 <b>1:1 문의</b>로 접수됩니다.</p><div class="st-acts"><button class="btn btn-primary w-full">정지 해제</button></div></div></div></div></div></div></div><div class="overlay"><div class="modal"><div class="modal-h">인플루언서 정지<span class="modal-x">✕</span></div><div class="modal-b"><label class="mlabel" style="margin-top:0">정지 사유<span class="req">*</span></label><select class="msel"><option>협찬 표기 누락 반복</option><option>표시광고법 위반 문구 반복</option><option>공구 진행 불이행</option><option>소비자 응대 불이행</option><option>정산 정보 불일치</option><option>기타(직접 입력)</option></select><label class="mlabel">상세 사유<span class="opt">선택</span></label><textarea class="mta" style="min-height:64px">공구 게시물 3건에서 유료 광고 표기가 누락되어 시정 요청 후에도 반복됐습니다.</textarea><p class="mhint">“기타(직접 입력)”를 선택한 경우에만 상세 사유가 필수입니다.</p><div class="mwarn"><span>!</span><span>정지하면 인플루언서는 <b>공구 개설·게시물 등록·정산 신청이 차단</b>되고 사유가 알림으로 발송됩니다. <b>진행 중인 공구와 미배송 주문은 그대로 유지</b>되며(소비자·브랜드 피해를 만들지 않기 위해), <b>고정 지급비는 보류</b>됩니다. 소명은 <b>1:1 문의로만</b> 받으므로 문의 작성은 계속 허용됩니다.</span></div></div><div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-danger">정지</button></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">M2</span><span class="state-label">탈퇴 승인 확인 모달</span><span class="state-spec">현재 상태의 <b>승인</b>에서 진입 · 신청·경과와 <b>진행중 공구 0건 · 미지급액 0원</b>을 다시 보여 준다 — 조건 검증 블록을 상세에 두지 않은 대신 <b>실행 직전에 한 번</b> 확인한다 · 쇼룸 비공개·연결 일괄 종료·파기 범위를 경고에 명시</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub active"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 인플루언서 / 하린의 뷰티랩</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">하린의 뷰티랩</div><div class="page-d tnum">INF-3021</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">기본 정보<span class="ch-n tnum">INF-3021</span></div><div class="card-b two"><div class="prof"><div class="prof-av">쇼룸<br>이미지</div><div><div class="prof-n">하린의 뷰티랩</div><div class="prof-s tnum">INF-3021 · showroomz.kr/harin_beauty</div></div></div><div class="frow"><div class="fk">쇼룸명</div><div class="fv"><b>하린의 뷰티랩</b></div></div><div class="frow"><div class="fk">쇼룸 주소</div><div class="fv"><span class="elink">showroomz.kr/harin_beauty <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">인스타</div><div class="fv"><span class="elink">instagram.com/harin_beauty <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">업무용 이메일</div><div class="fv"><span class="tnum">harin.beauty@gmail.com</span></div></div><div class="frow"><div class="fk">가입일</div><div class="fv"><span class="tnum">2026.02.14</span></div></div><div class="frow"><div class="fk">입점 승인일</div><div class="fv"><span class="tnum">2026.02.19</span></div></div><div class="frow"><div class="fk">최근 로그인</div><div class="fv"><span class="tnum">2026.09.05 21:03 <span class="t-sub">· Android 앱</span></span></div></div></div></div><div class="card"><div class="card-h">본인확인 정보<span class="ch-acts"><span class="unmask">마스킹 해제</span></span></div><div class="card-b two"><div class="frow"><div class="fk">이름</div><div class="fv">박*린</div></div><div class="frow"><div class="fk">생년월일</div><div class="fv">1997.**.**</div></div><div class="frow"><div class="fk">휴대폰</div><div class="fv"><span class="tnum">010-****-3018</span></div></div><div class="frow"><div class="fk">통신사</div><div class="fv">SKT</div></div><div class="frow"><div class="fk">최초 인증</div><div class="fv"><span class="tnum">2026.02.14 10:41</span></div></div><div class="frow"><div class="fk">최근 갱신</div><div class="fv"><span class="tnum">2026.02.14 10:41</span></div></div></div></div><div class="card"><div class="card-h">사업자 정보</div><div class="card-b two"><div class="frow"><div class="fk">사업자 여부</div><div class="fv"><span class="badge b-neutral nodot">사업자</span></div></div><div class="frow"><div class="fk">사업자 구분</div><div class="fv">일반과세자</div></div><div class="frow"><div class="fk">상호</div><div class="fv">하린랩</div></div><div class="frow"><div class="fk">대표자명</div><div class="fv">박하린</div></div><div class="frow"><div class="fk">사업자등록번호</div><div class="fv"><span class="tnum">214-19-77302</span></div></div><div class="frow"><div class="fk">사업장 주소</div><div class="fv">서울특별시 마포구 어울마당로 5길 20, 4층</div></div></div></div><div class="card"><div class="card-h">정산 정보<span class="ch-n">계좌 전체 값은 정산 관리에서만 조회</span></div><div class="card-b two"><div class="frow"><div class="fk">은행</div><div class="fv">신한은행</div></div><div class="frow"><div class="fk">예금주</div><div class="fv">박*린</div></div><div class="frow"><div class="fk">계좌번호</div><div class="fv"><span class="tnum">110-***-**3018</span></div></div><div class="frow"><div class="fk">원천징수 방식</div><div class="fv">세금계산서 발행 <span class="t-sub">· 부가세 별도</span></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-success">활성</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.02.14</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.02.19</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.09.05 21:03</span></div></div><div class="act-in"><div class="st-acts"><button class="btn btn-danger-o w-full">정지</button></div></div></div></div><div class="card side-card"><div class="card-h">탈퇴 신청 심사<span class="ch-n">회원 상태와 별개 · 승인 시 해지</span></div><div class="st-now"><div class="st-line"><span class="st-lbl">심사</span><span class="badge b-warning">탈퇴 승인 대기</span></div><div class="st-meta"><div class="mrow"><span class="mk">신청일</span><span class="mv tnum">2026.09.05 21:10</span></div><div class="mrow"><span class="mk">경과</span><span class="mv tnum">4일</span></div></div><div class="wait"><b>탈퇴 사유</b> — 콘텐츠 활동을 중단하고 본업에 집중하려 합니다.</div><div class="st-acts"><button class="btn btn-primary w-full">승인</button><button class="btn btn-danger-o w-full">반려</button></div></div></div></div></div></div><div class="overlay"><div class="modal"><div class="modal-h">탈퇴 승인<span class="modal-x">✕</span></div><div class="modal-b"><b>하린의 뷰티랩</b>(INF-3021) 인플루언서의 탈퇴를 <b>승인</b>합니다.<div style="background:var(--n-50);border-radius:var(--r-sm);padding:10px 12px;margin-top:10px;font-size:var(--fs-micro);color:var(--n-700);line-height:1.8">신청 <span class="tnum">2026.09.05 21:10</span> · 경과 <span class="tnum">4일</span><br>진행중 공구 <b>0건</b> · 미지급액 <b>0원</b><br>탈퇴 사유 — 콘텐츠 활동을 중단하고 본업에 집중하려 합니다.</div><div class="mwarn"><span>!</span><span>승인하면 <b>쇼룸이 즉시 비공개</b>되고 남은 브랜드 연결이 <b>일괄 종료</b>됩니다. <b>본인확인·정산 정보는 파기</b>되고 <b>지급·정산 기록은 법정 보존 기간까지 유지</b>됩니다. 되돌릴 수 없습니다.</span></div></div><div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary">승인</button></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">M3</span><span class="state-label">탈퇴 반려 모달</span><span class="state-spec">현재 상태의 <b>반려</b>에서 진입 · 반려 사유는 <b>조건 4항목과 같은 축</b>으로 남긴다(신청 이후 상황이 바뀐 건을 되돌리기 위함) · 반려는 파괴적 조치가 아니라 <b>흰 배경 + 위험색 글자</b>다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub active"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 인플루언서 / 하린의 뷰티랩</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">하린의 뷰티랩</div><div class="page-d tnum">INF-3021</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">기본 정보<span class="ch-n tnum">INF-3021</span></div><div class="card-b two"><div class="prof"><div class="prof-av">쇼룸<br>이미지</div><div><div class="prof-n">하린의 뷰티랩</div><div class="prof-s tnum">INF-3021 · showroomz.kr/harin_beauty</div></div></div><div class="frow"><div class="fk">쇼룸명</div><div class="fv"><b>하린의 뷰티랩</b></div></div><div class="frow"><div class="fk">쇼룸 주소</div><div class="fv"><span class="elink">showroomz.kr/harin_beauty <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">인스타</div><div class="fv"><span class="elink">instagram.com/harin_beauty <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">업무용 이메일</div><div class="fv"><span class="tnum">harin.beauty@gmail.com</span></div></div><div class="frow"><div class="fk">가입일</div><div class="fv"><span class="tnum">2026.02.14</span></div></div><div class="frow"><div class="fk">입점 승인일</div><div class="fv"><span class="tnum">2026.02.19</span></div></div><div class="frow"><div class="fk">최근 로그인</div><div class="fv"><span class="tnum">2026.09.05 21:03 <span class="t-sub">· Android 앱</span></span></div></div></div></div><div class="card"><div class="card-h">본인확인 정보<span class="ch-acts"><span class="unmask">마스킹 해제</span></span></div><div class="card-b two"><div class="frow"><div class="fk">이름</div><div class="fv">박*린</div></div><div class="frow"><div class="fk">생년월일</div><div class="fv">1997.**.**</div></div><div class="frow"><div class="fk">휴대폰</div><div class="fv"><span class="tnum">010-****-3018</span></div></div><div class="frow"><div class="fk">통신사</div><div class="fv">SKT</div></div><div class="frow"><div class="fk">최초 인증</div><div class="fv"><span class="tnum">2026.02.14 10:41</span></div></div><div class="frow"><div class="fk">최근 갱신</div><div class="fv"><span class="tnum">2026.02.14 10:41</span></div></div></div></div><div class="card"><div class="card-h">사업자 정보</div><div class="card-b two"><div class="frow"><div class="fk">사업자 여부</div><div class="fv"><span class="badge b-neutral nodot">사업자</span></div></div><div class="frow"><div class="fk">사업자 구분</div><div class="fv">일반과세자</div></div><div class="frow"><div class="fk">상호</div><div class="fv">하린랩</div></div><div class="frow"><div class="fk">대표자명</div><div class="fv">박하린</div></div><div class="frow"><div class="fk">사업자등록번호</div><div class="fv"><span class="tnum">214-19-77302</span></div></div><div class="frow"><div class="fk">사업장 주소</div><div class="fv">서울특별시 마포구 어울마당로 5길 20, 4층</div></div></div></div><div class="card"><div class="card-h">정산 정보<span class="ch-n">계좌 전체 값은 정산 관리에서만 조회</span></div><div class="card-b two"><div class="frow"><div class="fk">은행</div><div class="fv">신한은행</div></div><div class="frow"><div class="fk">예금주</div><div class="fv">박*린</div></div><div class="frow"><div class="fk">계좌번호</div><div class="fv"><span class="tnum">110-***-**3018</span></div></div><div class="frow"><div class="fk">원천징수 방식</div><div class="fv">세금계산서 발행 <span class="t-sub">· 부가세 별도</span></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-success">활성</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.02.14</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.02.19</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.09.05 21:03</span></div></div><div class="act-in"><div class="st-acts"><button class="btn btn-danger-o w-full">정지</button></div></div></div></div><div class="card side-card"><div class="card-h">탈퇴 신청 심사<span class="ch-n">회원 상태와 별개 · 승인 시 해지</span></div><div class="st-now"><div class="st-line"><span class="st-lbl">심사</span><span class="badge b-warning">탈퇴 승인 대기</span></div><div class="st-meta"><div class="mrow"><span class="mk">신청일</span><span class="mv tnum">2026.09.05 21:10</span></div><div class="mrow"><span class="mk">경과</span><span class="mv tnum">4일</span></div></div><div class="wait"><b>탈퇴 사유</b> — 콘텐츠 활동을 중단하고 본업에 집중하려 합니다.</div><div class="st-acts"><button class="btn btn-primary w-full">승인</button><button class="btn btn-danger-o w-full">반려</button></div></div></div></div></div></div><div class="overlay"><div class="modal"><div class="modal-h">탈퇴 반려<span class="modal-x">✕</span></div><div class="modal-b"><b>하린의 뷰티랩</b>(INF-3021) 인플루언서의 탈퇴 신청을 <b>반려</b>합니다.<label class="mlabel">반려 사유<span class="req">*</span></label><select class="msel"><option>진행중 공구가 남아 있음</option><option>미지급액 정산 미완료</option><option>미배송 주문 처리 미완료</option><option>분쟁·신고 처리 중</option><option>기타(직접 입력)</option></select><label class="mlabel">인플루언서에게 전달할 안내<span class="opt">선택</span></label><textarea class="mta" style="min-height:64px">진행중 공구 1건이 신청 이후 재개되어 반려합니다. 공구 종료 후 다시 신청해 주세요.</textarea><div class="mwarn info"><span>i</span><span>반려하면 계정은 <b>활성으로 되돌아가고</b> 사유가 알림으로 발송됩니다. 신청 시점에는 조건이 충족됐더라도 <b>이후 상황이 바뀐 건</b>을 되돌리기 위한 액션입니다.</span></div></div><div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-danger-o">반려</button></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">M4</span><span class="state-label">마스킹 해제 사유 모달</span><span class="state-spec">본인확인 카드 헤더의 <b>마스킹 해제</b>에서 진입 · 정형 사유 <b>4종</b>이며 <b>상세 사유·기타는 두지 않는다</b>(소비자 상세와 동일하게 정리됨) · 사유는 인플루언서 맥락으로 바꿨다 — <b>정산·원천징수 확인 · 계약·분쟁 대응</b> · 운영자 역할이면 버튼이 비활성이다(최고관리자 한정)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub active"><span>인플루언서</span><span class="scnt">8</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 인플루언서 / 소연 쇼룸</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">소연 쇼룸</div><div class="page-d tnum">INF-3018</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">기본 정보<span class="ch-n tnum">INF-3018</span></div><div class="card-b two"><div class="prof"><div class="prof-av">쇼룸<br>이미지</div><div><div class="prof-n">소연 쇼룸</div><div class="prof-s tnum">INF-3018 · showroomz.kr/soyeon_showroom</div></div></div><div class="frow"><div class="fk">쇼룸명</div><div class="fv"><b>소연 쇼룸</b></div></div><div class="frow"><div class="fk">쇼룸 주소</div><div class="fv"><span class="elink">showroomz.kr/soyeon_showroom <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">인스타</div><div class="fv"><span class="elink">instagram.com/soyeon_showroom <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">업무용 이메일</div><div class="fv"><span class="tnum">contact@soyeonshowroom.kr</span></div></div><div class="frow"><div class="fk">가입일</div><div class="fv"><span class="tnum">2026.03.11</span></div></div><div class="frow"><div class="fk">입점 승인일</div><div class="fv"><span class="tnum">2026.03.15</span></div></div><div class="frow"><div class="fk">최근 로그인</div><div class="fv"><span class="tnum">2026.09.08 09:24 <span class="t-sub">· iOS 앱</span></span></div></div></div></div><div class="card"><div class="card-h">본인확인 정보<span class="ch-acts"><span class="unmask">마스킹 해제</span></span></div><div class="card-b two"><div class="frow"><div class="fk">이름</div><div class="fv">김*연</div></div><div class="frow"><div class="fk">생년월일</div><div class="fv">1994.**.**</div></div><div class="frow"><div class="fk">휴대폰</div><div class="fv"><span class="tnum">010-****-8842</span></div></div><div class="frow"><div class="fk">통신사</div><div class="fv">KT</div></div><div class="frow"><div class="fk">최초 인증</div><div class="fv"><span class="tnum">2026.03.11 14:08</span></div></div><div class="frow"><div class="fk">최근 갱신</div><div class="fv"><span class="tnum">2026.03.11 14:08</span></div></div></div></div><div class="card"><div class="card-h">사업자 정보</div><div class="card-b two"><div class="frow"><div class="fk">사업자 여부</div><div class="fv"><span class="badge b-neutral nodot">사업자</span></div></div><div class="frow"><div class="fk">사업자 구분</div><div class="fv">간이과세자</div></div><div class="frow"><div class="fk">상호</div><div class="fv">소연스튜디오</div></div><div class="frow"><div class="fk">대표자명</div><div class="fv">김소연</div></div><div class="frow"><div class="fk">사업자등록번호</div><div class="fv"><span class="tnum">128-31-90447</span></div></div><div class="frow"><div class="fk">사업장 주소</div><div class="fv">서울특별시 성동구 연무장길 33, 2층</div></div></div></div><div class="card"><div class="card-h">정산 정보<span class="ch-n">계좌 전체 값은 정산 관리에서만 조회</span></div><div class="card-b two"><div class="frow"><div class="fk">은행</div><div class="fv">카카오뱅크</div></div><div class="frow"><div class="fk">예금주</div><div class="fv">김*연</div></div><div class="frow"><div class="fk">계좌번호</div><div class="fv"><span class="tnum">3333-**-**8842</span></div></div><div class="frow"><div class="fk">원천징수 방식</div><div class="fv">세금계산서 발행 <span class="t-sub">· 부가세 별도</span></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-success">활성</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.03.11</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.03.15</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.09.08 09:24</span></div></div><div class="act-in"><div class="st-acts"><button class="btn btn-danger-o w-full">정지</button></div></div></div></div></div></div></div><div class="overlay"><div class="modal"><div class="modal-h">마스킹 해제<span class="modal-x">✕</span></div><div class="modal-b"><b>김*연</b> 인플루언서의 <b>이름 · 생년월일 · 휴대폰</b>을 해제합니다.<label class="mlabel">해제 사유<span class="req">*</span></label><select class="msel"><option>CS 응대</option><option>정산·원천징수 확인</option><option>계약·분쟁 대응</option><option>수사기관 협조</option></select><div class="mwarn info"><span>i</span><span>해제 범위는 <b>이 인플루언서 1건 · 이 세션 한정</b>입니다 — 다른 회원으로 이동하거나 <b>무조작 10분</b>이 지나면 다시 마스킹됩니다. 열람 사실은 사유와 함께 <b>처리 이력에 즉시 기록</b>되며 <b>CI/DI는 해제 대상이 아닙니다</b>. <b>최고관리자 한정</b> 기능입니다.</span></div></div><div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary">해제</button></div></div></div></div></section>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="sz-wm" viewBox="0 0 1863.4 200"><text x="0" y="160" font-family="Fredoka, sans-serif" font-size="180" font-weight="700" letter-spacing="0">SHOWROOMZ</text></symbol>
+  </defs>
+</svg>
+
+</body>
+</html>
+</body>
+</html>

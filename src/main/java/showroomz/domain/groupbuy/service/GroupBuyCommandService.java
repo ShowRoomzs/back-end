@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.entity.GroupBuyFulfillmentCheck;
-import showroomz.domain.groupbuy.repository.GroupBuyFulfillmentCheckRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyIssueRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyRepository;
 import showroomz.domain.groupbuy.service.port.GroupBuySalesReader;
@@ -31,7 +30,6 @@ import java.util.List;
 public class GroupBuyCommandService {
 
     private final GroupBuyRepository groupBuyRepository;
-    private final GroupBuyFulfillmentCheckRepository fulfillmentCheckRepository;
     private final GroupBuyIssueRepository issueRepository;
     private final GroupBuySalesReader salesReader;
     private final GroupBuyHistoryRecorder historyRecorder;
@@ -59,8 +57,10 @@ public class GroupBuyCommandService {
     }
 
     /**
-     * 공구 → 정산 · 정산 게이트. ENDED ∧ 미종결 0 ∧ 양측 이행 확인 ∧ 보류 아님.
+     * 공구 → 정산 · 정산 게이트. ENDED ∧ 미종결 0.
      * <b>판매 포트가 비어 있으면 false</b>다 — 모르는 미종결 건수를 0으로 읽으면 게이트가 거짓으로 열린다(설계서 0-6).
+     * 양측 이행 확인 · 미이행 보류는 계약 이행 확인 폐기(2026-10-06 · 1009 기획 수정본 6절)로 게이트에서 빠졌다 —
+     * 어드민 정산 차단 사유({@code AdminGroupBuyPermissionPolicy#settlementBlockers})와 같은 판정이다.
      */
     @Transactional(readOnly = true)
     public boolean isSettlementReady(Long groupBuyId) {
@@ -68,11 +68,9 @@ public class GroupBuyCommandService {
         if (groupBuy.getStatus() != GroupBuyStatus.ENDED) {
             return false;
         }
-        boolean allOrdersClosed = salesReader.readClosure(groupBuyId)
+        return salesReader.readClosure(groupBuyId)
                 .map(closure -> closure.unclosedCount() == 0)
                 .orElse(false);
-        List<GroupBuyFulfillmentCheck> checks = fulfillmentCheckRepository.findByGroupBuyId(groupBuyId);
-        return allOrdersClosed && checks.size() == 2 && !isSettlementOnHold(groupBuy, checks);
     }
 
     /** 정산 보류 = 파생값 — 미이행이 있고 양측 동의 종결이 아직이다(설계서 1-9). 별도 hold 컬럼을 두지 않는다. */

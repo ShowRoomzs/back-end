@@ -226,7 +226,9 @@ class FullFlowEndToEndIntegrationTest extends AdminContractTestSupport {
         assertThat(group.getOrder().getStatus().name()).isEqualTo("PAID");
         assertThat(group.getFulfillmentStatus()).isEqualTo(FulfillmentStatus.NEW);
         assertThat(group.getSubOrderNumber()).isEqualTo(group.getOrder().getOrderNumber() + "-01");
-        assertThat(group.getShipDueAt()).isEqualTo(group.getOrder().getPaidAt().plusDays(SHIPPING_LEAD_DAYS));
+        // 공구 진행 중 결제 — 발송기한은 공구가 끝날 때 마감 + N영업일로 확정된다(1009 기획 수정본 1-2).
+        assertThat(group.getShipDueAt()).isNull();
+        assertThat(group.getShipDueBusinessDays()).isEqualTo(SHIPPING_LEAD_DAYS);
         assertThat(fulfillmentEvents(group.getId())).containsExactly("PAID");
         long groupId = group.getId();
         // 공구 화면도 같은 주문을 실값으로 읽는다 — 판매 실적 · 미종결 1건.
@@ -242,7 +244,9 @@ class FullFlowEndToEndIntegrationTest extends AdminContractTestSupport {
                 .andExpect(jsonPath("$.content[0].deliveryGroupId").value(groupId))
                 .andExpect(jsonPath("$.content[0].recipientName").value("김수민"))
                 .andExpect(jsonPath("$.content[0].groupBuyName").value("겨울 리페어 크림 공구"))
-                .andExpect(jsonPath("$.content[0].shipDueAt").exists())
+                // 공구 진행 중 결제 — 발송 기한은 마감 뒤에 확정되고 지금은 N(영업일)만 있다(1009 기획 수정본 1절).
+                .andExpect(jsonPath("$.content[0].shipDueAt").doesNotExist())
+                .andExpect(jsonPath("$.content[0].shipDueBusinessDays").isNumber())
                 .andExpect(jsonPath("$.content[0].overlays.shipOverdue").value(false));
         sellerSend(get(SELLER_ORDERS + "/summary"), null)
                 .andExpect(jsonPath("$.actionBar.prepareStart").value(1))
@@ -306,11 +310,11 @@ class FullFlowEndToEndIntegrationTest extends AdminContractTestSupport {
         endByPeriod(groupBuyId);
         assertThat(productGroupBuyStatus(cream.getProductId())).isEqualTo(ProductGroupBuyStatus.NOT_CONNECTED);
 
-        // ── [0-16] 이행 확인 — 측별 1회 ─────────────────────────────────────────
+        // ── [0-16] 이행 확인 — 2026-10-06 폐기(1009 기획 수정본 6절). 엔드포인트는 남아 있지만 항상 409 다 ─────
         sellerSend(post(SELLER_GROUP_BUYS + "/" + groupBuyId + "/fulfillment-check"), Map.of("result", "FULFILLED"))
-                .andExpect(status().isOk());
+                .andExpect(status().isConflict());
         studioSend(post(STUDIO_GROUP_BUYS + "/" + groupBuyId + "/fulfillment-check"), Map.of("result", "FULFILLED"))
-                .andExpect(status().isOk());
+                .andExpect(status().isConflict());
 
         // ── [0-17 전] 정산 게이트 — 구매확정 전 미종결 1건이 정산을 막는다(이음새 ③) ─────────
         adminSend(get(ADMIN_GROUP_BUYS + "/" + groupBuyId), null).andExpect(status().isOk())

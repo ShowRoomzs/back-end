@@ -1,0 +1,1828 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-studio-08-contracts — 쇼룸 스튜디오 계약 관리 rev.2</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --pt-sidebar-w:240px; --pt-topbar-h:56px; --pt-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;margin-top:12px;line-height:1.8;}
+.rule b{color:var(--n-900);} .rule .new{color:var(--accent-600);font-weight:600;}
+.rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.rule .wait{color:var(--danger-text);font-weight:600;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;min-height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+.stage.tall{height:auto;}
+.stage.tall .main{position:static;margin:var(--pt-topbar-h) 0 0 var(--pt-sidebar-w);overflow:visible;}
+
+/* ══ 사이드바 ══ */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--pt-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--pt-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:9px 10px;border-radius:var(--r-sm);margin-bottom:2px;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--n-200);color:var(--n-700);
+  border-radius:9px;min-width:18px;height:18px;padding:0 5px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gnb-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-item.active .gn{color:rgba(255,255,255,.8);}
+.gnb-item.active .gcnt{background:rgba(255,255,255,.24);color:#fff;}
+
+/* ══ 탑바 ══ */
+.top{position:absolute;left:var(--pt-sidebar-w);right:0;top:0;height:var(--pt-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--pt-pad);}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.crumb .c-sub{font-size:var(--fs-caption);color:var(--n-500);font-weight:400;margin-left:6px;}
+.brand-chip{display:flex;align-items:center;gap:7px;font-size:var(--fs-caption);color:var(--n-600);}
+.brand-chip .st{font-size:var(--fs-micro);font-weight:500;padding:2px 9px;border-radius:var(--r-pill);
+  background:var(--success-bg);color:var(--success-text);}
+
+/* ══ 본문 ══ */
+.main{position:absolute;left:var(--pt-sidebar-w);right:0;top:var(--pt-topbar-h);bottom:0;
+  overflow-y:auto;padding:var(--pt-pad);}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:var(--sp-4);}
+.page-t{font-size:var(--fs-h1);font-weight:600;}
+.page-d{font-size:var(--fs-caption);color:var(--n-600);margin-top:2px;}
+.navgrp{display:flex;align-items:center;gap:6px;}
+.nav-btn{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-caption);font-weight:500;
+  color:var(--n-700);padding:0 12px;height:32px;background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);white-space:nowrap;cursor:pointer;}
+.nav-btn:hover{background:var(--n-100);color:var(--n-900);border-color:var(--n-400);}
+.nav-sep{width:1px;height:18px;background:var(--n-300);margin:0 2px;}
+
+/* ══ 버튼 ══ */
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:0 14px;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:none;cursor:pointer;white-space:nowrap;}
+.btn-primary{background:var(--accent-500);color:#fff;}
+.btn-primary:disabled{background:var(--n-200);color:var(--n-400);cursor:not-allowed;}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-secondary:disabled{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+.btn-ghost{background:transparent;color:var(--n-600);}
+.btn-danger{background:#fff;color:var(--danger-text);border:1px solid #E9C9C9;}
+.btn-danger:hover{background:var(--danger-bg);}
+.btn-danger:disabled{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+.btn-lg{height:38px;padding:0 20px;font-size:var(--fs-body);}
+
+/* ══ 입력 ══ */
+.inp,.sel,.ta{font-family:inherit;font-size:var(--fs-body);padding:8px 12px;
+  border-radius:var(--r-sm);border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:36px;}
+.inp:focus,.sel:focus,.ta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.inp:disabled,.sel:disabled,.ta:disabled{background:var(--n-100);color:var(--n-500);cursor:not-allowed;}
+.inp::placeholder,.ta::placeholder{color:var(--n-400);}
+.inp.is-error{border-color:var(--danger-text);}
+.ta{height:auto;min-height:76px;resize:vertical;line-height:1.65;padding-top:9px;width:100%;}
+.sel{appearance:none;-webkit-appearance:none;padding-right:30px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;}
+.err{font-size:var(--fs-micro);color:var(--danger-text);margin-top:5px;}
+.hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:5px;line-height:1.55;}
+.hint b{color:var(--n-700);}
+
+/* 세그먼트 · 칩 */
+.seg{display:inline-flex;border:1px solid var(--n-300);border-radius:var(--r-sm);overflow:hidden;background:#fff;}
+.seg .sg{padding:0 15px;height:34px;display:flex;align-items:center;font-size:var(--fs-caption);
+  color:var(--n-600);cursor:pointer;border-right:1px solid var(--n-200);}
+.seg .sg:last-child{border-right:none;}
+.seg .sg.on{background:var(--accent-500);color:#fff;font-weight:500;}
+.seg.dis .sg{background:var(--n-100);color:var(--n-400);cursor:not-allowed;}
+.chips{display:inline-flex;gap:6px;}
+.chip{border:1px solid var(--n-300);border-radius:16px;padding:5px 13px;font-size:var(--fs-caption);
+  color:var(--n-600);background:#fff;cursor:pointer;}
+.chip.on{background:var(--accent-50);border-color:var(--accent-500);color:var(--accent-600);font-weight:500;}
+.numinp{width:62px;text-align:center;padding-left:6px;padding-right:6px;}
+.unit{font-size:var(--fs-caption);color:var(--n-600);}
+
+/* ══ 배지 ══ */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-danger{background:var(--danger-bg);color:var(--danger-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-warning{background:var(--warning-bg);color:var(--warning-text);}
+
+/* ══ 상태 탭 ══ */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-4);}
+.tab{font-size:var(--fs-caption);color:var(--n-500);padding:9px 2px;margin-right:22px;cursor:pointer;
+  border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;}
+.tab:hover:not(.active){color:var(--n-700);}
+.tab.active{color:var(--accent-500);border-bottom-color:var(--accent-500);font-weight:500;}
+.tab .tn{font-size:10px;background:var(--n-100);color:var(--n-600);border-radius:8px;padding:0 5px;}
+.tab.active .tn{background:var(--accent-50);color:var(--accent-600);}
+
+/* ══ 툴바 ══ */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:var(--sp-4);flex-wrap:wrap;}
+.toolbar .spacer{flex:1;}
+.tl-lbl{font-size:var(--fs-micro);color:var(--n-500);font-weight:600;}
+
+/* ══ 목록 ══ */
+.tbar{display:flex;align-items:center;justify-content:space-between;padding:10px var(--sp-4);border-bottom:1px solid var(--n-200);}
+.tbar-l{font-size:var(--fs-caption);color:var(--n-600);} .tbar-l b{color:var(--n-900);}
+.tbar-r{display:flex;align-items:center;gap:8px;}
+.sel-sm{font-family:inherit;font-size:var(--fs-caption);height:28px;padding:0 22px 0 8px;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-700);
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='9' height='5'><path d='M0 0L4.5 5L9 0Z' fill='%237B7F89'/></svg>");
+  background-repeat:no-repeat;background-position:right 8px center;cursor:pointer;}
+.tcard{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+table{width:100%;border-collapse:collapse;table-layout:fixed;}
+thead td{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);font-weight:600;
+  padding:11px 16px;white-space:nowrap;border-bottom:1px solid var(--n-200);letter-spacing:.2px;}
+tbody td{padding:13px 16px;font-size:var(--fs-caption);border-top:1px solid var(--n-100);vertical-align:middle;}
+tbody tr:first-child td{border-top:none;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:var(--accent-50);}
+tbody tr:hover .t-nm{color:var(--accent-600);}
+.t-c{text-align:center;}
+.tnum{font-variant-numeric:tabular-nums;}
+.t-nm{font-weight:500;color:var(--n-900);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.t-sub{color:var(--n-500);font-size:var(--fs-micro);display:block;margin-top:2px;}
+.t-dim{color:var(--n-400);}
+.t-date{color:var(--n-500);white-space:nowrap;}
+.pager{display:flex;align-items:center;justify-content:center;gap:4px;padding:12px;border-top:1px solid var(--n-200);}
+.page-item{min-width:26px;height:26px;padding:0 6px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-600);cursor:pointer;}
+.page-item:hover:not(.active){background:var(--n-100);}
+.page-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.empty{padding:72px 24px;text-align:center;}
+.empty-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);margin-bottom:4px;}
+.empty-d{font-size:var(--fs-caption);color:var(--n-500);}
+.empty .btn{margin-top:var(--sp-4);}
+
+/* ══ 카드 ══ */
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);margin-bottom:var(--sp-4);}
+.card:last-child{margin-bottom:0;}
+.card-h{font-size:var(--fs-h3);font-weight:600;padding:11px var(--sp-4);border-bottom:1px solid var(--n-200);
+  background:var(--n-50);border-radius:var(--r-md) var(--r-md) 0 0;display:flex;align-items:center;
+  justify-content:space-between;gap:8px;}
+.card-h .ch-n{font-size:var(--fs-micro);color:var(--n-500);font-weight:400;}
+.card-b{padding:var(--sp-4);}
+.detail{display:grid;grid-template-columns:1fr 320px;gap:var(--sp-4);align-items:start;}
+
+/* 폼 행 — 라벨 140px */
+.frow{display:flex;gap:var(--sp-3);padding:9px 0;border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.frow:last-child{border-bottom:none;}
+.frow:first-child{padding-top:0;}
+.fk{width:140px;flex-shrink:0;color:var(--n-500);padding-top:8px;}
+.frow.ro .fk{padding-top:0;}
+.fk .req{color:var(--danger-text);margin-left:2px;}
+.fv{flex:1;color:var(--n-900);min-width:0;}
+.fv .fsub{color:var(--n-500);font-size:var(--fs-micro);margin-top:2px;}
+.fline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.flink{color:var(--n-600);text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
+.flink:hover{color:var(--accent-600);}
+
+/* 계약 상품 항목 */
+.items{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.it-h{display:flex;gap:56px;padding:8px 28px 8px 12px;background:var(--n-50);border-bottom:1px solid var(--n-200);
+  font-size:var(--fs-micro);color:var(--n-500);font-weight:600;}
+.it-r{display:flex;gap:56px;padding:10px 28px 10px 12px;border-bottom:1px solid var(--n-100);align-items:flex-start;}
+.it-r:last-child{border-bottom:none;}
+.c-prod{width:300px;flex-shrink:0;min-width:0;} .c-price{width:96px;flex-shrink:0;} .c-rw{width:62px;flex-shrink:0;}
+.c-del{width:26px;flex-shrink:0;text-align:center;color:var(--n-400);cursor:pointer;padding-top:8px;}
+.c-del:hover{color:var(--danger-text);}
+.c-prod .inp,.c-prod .sel,.c-price .inp,.c-rw .inp,.c-qty .inp{width:100%;}
+.it-r .pmeta{font-size:var(--fs-micro);color:var(--n-500);margin-top:4px;}
+.addrow{border:1px dashed var(--n-300);border-radius:var(--r-sm);text-align:center;padding:9px;
+  font-size:var(--fs-caption);color:var(--n-600);margin-top:8px;cursor:pointer;background:#fff;}
+.addrow:hover{border-color:var(--accent-500);color:var(--accent-600);background:var(--accent-50);}
+
+/* 조항 박스(읽기 전용 표준 조항) */
+.terms{border:1px solid var(--n-200);border-radius:var(--r-sm);background:var(--n-50);padding:2px 14px;}
+.trow{display:flex;gap:14px;padding:9px 0;border-bottom:1px solid var(--n-200);font-size:var(--fs-caption);}
+.trow:last-child{border-bottom:none;}
+.tk{width:118px;flex-shrink:0;color:var(--n-500);}
+.tv{color:var(--n-700);line-height:1.6;flex:1;}
+.tv b{color:var(--n-900);}
+.wtag{display:inline-block;border:1px dashed var(--n-400);border-radius:4px;padding:0 5px;
+  font-size:10px;color:var(--n-500);margin-left:4px;white-space:nowrap;}
+
+/* 진행 단계 */
+.steps{display:flex;align-items:center;gap:3px;flex-wrap:wrap;}
+.stp{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:6px 10px;font-size:var(--fs-micro);
+  color:var(--n-400);background:#fff;line-height:1.35;}
+.stp .who{display:block;font-size:10px;color:var(--n-400);margin-top:1px;}
+.stp.done{background:var(--n-100);color:var(--n-600);border-color:var(--n-200);}
+.stp.done .who{color:var(--n-500);}
+.stp.cur{border-color:var(--accent-500);color:var(--accent-600);font-weight:600;background:var(--accent-50);}
+.stp.cur .who{color:var(--accent-600);}
+.stp.stop{border-color:#E9C9C9;color:var(--danger-text);font-weight:600;background:var(--danger-bg);}
+.stp.stop .who{color:var(--danger-text);}
+.stp.halt{border-color:var(--n-300);color:var(--n-600);font-weight:600;background:var(--n-100);}
+.stp.halt .who{color:var(--n-500);}
+.stp-ar{color:var(--n-300);font-size:var(--fs-micro);}
+
+/* 서명 박스 */
+.signs{display:flex;gap:12px;}
+.sbox{flex:1;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:14px;background:var(--n-50);}
+.sbox.mine{background:var(--accent-50);border-color:var(--accent-100);}
+.s-who{font-size:var(--fs-micro);color:var(--n-500);}
+.s-name{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);margin:4px 0 10px;}
+.s-done{font-size:var(--fs-micro);color:var(--success-text);font-weight:500;}
+.s-wait{font-size:var(--fs-micro);color:var(--n-500);}
+.s-asof{font-size:10px;color:var(--n-400);margin-top:6px;padding-top:6px;border-top:1px solid var(--n-200);}
+
+/* 안내 배너 */
+.notice{display:flex;gap:8px;border-radius:var(--r-sm);padding:11px 13px;font-size:var(--fs-micro);line-height:1.6;}
+.notice.info{background:var(--info-bg);color:var(--info-text);}
+.notice.warn{background:var(--warning-bg);color:var(--warning-text);}
+.notice.danger{background:var(--danger-bg);color:var(--danger-text);}
+.notice.neutral{background:var(--n-100);color:var(--n-600);}
+.notice.consent{background:var(--n-50);border:1px solid var(--n-200);color:var(--n-700);}
+.notice.consent b{color:var(--n-900);}
+.notice b{font-weight:600;}
+
+/* 우측 카드 */
+.st-now{padding:var(--sp-4);}
+.st-line{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding-bottom:var(--sp-3);border-bottom:1px solid var(--n-100);}
+.st-lbl{font-size:var(--fs-caption);color:var(--n-500);flex-shrink:0;}
+.st-meta{padding-top:var(--sp-2);}
+.mrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);}
+.mrow:last-child{border-bottom:none;}
+.mk{color:var(--n-500);} .mv{color:var(--n-900);font-weight:500;text-align:right;}
+.st-acts{display:flex;flex-direction:column;gap:8px;margin-top:var(--sp-4);}
+.st-hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;line-height:1.55;}
+.hist{padding:var(--sp-2) var(--sp-4) var(--sp-3);}
+.hitem{display:flex;gap:10px;padding:9px 0;}
+.hdot{width:7px;height:7px;border-radius:50%;background:var(--n-300);margin-top:6px;flex-shrink:0;}
+.hdot.h-info{background:var(--info-text);}
+.hdot.h-success{background:var(--success-text);}
+.hdot.h-warning{background:var(--warning-text);}
+.hdot.h-danger{background:var(--danger-text);}
+.htxt{font-size:var(--fs-caption);}
+.hmeta{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* 폼 하단 액션바 */
+.formbar{display:flex;justify-content:flex-end;gap:8px;padding:var(--sp-4) 0 0;}
+
+
+/* 접미사 붙은 입력(%· 원) */
+.iw{position:relative;display:inline-flex;align-items:center;}
+.iw .inp{padding-right:26px;width:100%;}
+.iw .sfx-u{position:absolute;right:9px;font-size:var(--fs-caption);color:var(--n-500);pointer-events:none;}
+.iw.w-full{display:flex;}
+
+/* 공구 기간 트리거(달력 모달 호출) */
+.dtrig{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;background:#fff;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);font-size:var(--fs-body);color:var(--n-900);
+  cursor:pointer;min-width:340px;}
+.dtrig:hover{border-color:var(--accent-500);}
+.dtrig.ph{color:var(--n-400);}
+.dtrig.dis{background:var(--n-100);border-color:var(--n-200);color:var(--n-400);cursor:not-allowed;}
+.dtrig.dis:hover{border-color:var(--n-200);}
+.dtrig{min-width:260px;}
+.dtrig .cal{width:14px;height:14px;color:var(--n-500);flex-shrink:0;}
+.dtrig .dur{margin-left:auto;font-size:var(--fs-micro);color:var(--n-500);}
+
+/* 달력 */
+.modal.cal{width:392px;}
+.cal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;}
+.cal-mh{font-size:var(--fs-h3);font-weight:600;color:var(--n-900);font-variant-numeric:tabular-nums;}
+.cal-nav{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--r-sm);
+  color:var(--n-600);cursor:pointer;font-size:15px;line-height:1;border:1px solid var(--n-200);background:#fff;}
+.cal-nav:hover{background:var(--n-100);color:var(--n-900);border-color:var(--n-300);}
+.cal-nav.dis{color:var(--n-300);border-color:var(--n-100);cursor:not-allowed;}
+.cal-nav.dis:hover{background:#fff;color:var(--n-300);border-color:var(--n-100);}
+.cal-note{font-size:var(--fs-micro);color:var(--n-500);line-height:1.6;margin:8px 0 12px;}
+.cal-note b{color:var(--n-700);font-weight:600;}
+.cal-g{display:grid;grid-template-columns:repeat(7,1fr);row-gap:2px;}
+.cal-wd{font-size:10px;color:var(--n-400);text-align:center;padding:0 0 8px;font-weight:600;letter-spacing:.4px;}
+.cal-d{height:38px;display:flex;align-items:center;justify-content:center;font-size:var(--fs-caption);
+  color:var(--n-700);cursor:pointer;border-radius:var(--r-sm);font-variant-numeric:tabular-nums;
+  position:relative;transition:background .1s;}
+.cal-d:hover:not(.off):not(.on):not(.mid):not(.blank){background:var(--n-100);}
+.cal-d.off{color:var(--n-300);cursor:not-allowed;}
+.cal-d.blank{cursor:default;}
+.cal-d.mid{background:var(--accent-50);border-radius:0;color:var(--accent-600);}
+.cal-d.on{background:var(--accent-500);color:#fff;font-weight:600;}
+.cal-d.on.s{border-radius:var(--r-sm) 0 0 var(--r-sm);}
+.cal-d.on.e{border-radius:0 var(--r-sm) var(--r-sm) 0;}
+/* 줄바꿈 지점의 구간 끝은 둥글게 — 행 끝에서 잘린 것처럼 보이지 않게 */
+.cal-g .cal-d.mid:nth-child(7n+1){border-radius:var(--r-sm) 0 0 var(--r-sm);}
+.cal-g .cal-d.mid:nth-child(7n){border-radius:0 var(--r-sm) var(--r-sm) 0;}
+.cal-g .cal-d.on.s:nth-child(7n){border-radius:var(--r-sm);}
+.cal-g .cal-d.on.e:nth-child(7n+1){border-radius:var(--r-sm);}
+.cal-d.today::after{content:"";position:absolute;bottom:5px;left:50%;margin-left:-2px;
+  width:4px;height:4px;border-radius:50%;background:var(--n-400);}
+.cal-d.on.today::after{background:rgba(255,255,255,.9);}
+.cal-time{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin-top:16px;padding-top:14px;border-top:1px solid var(--n-100);}
+.cal-tl{font-size:var(--fs-caption);color:var(--n-600);font-weight:500;}
+.tsel{display:flex;align-items:center;gap:5px;}
+.tsel .sel{width:70px;padding-right:24px;height:34px;}
+.tsep{font-size:var(--fs-caption);color:var(--n-500);}
+.cal-anchor{display:flex;align-items:center;gap:8px;background:var(--n-50);border:1px solid var(--n-200);
+  border-radius:var(--r-sm);padding:9px 12px;font-size:var(--fs-caption);color:var(--n-900);margin-bottom:14px;}
+.cal-anchor .ak{color:var(--n-500);}
+.cal-anchor .flink{margin-left:auto;}
+.cal-sum{margin-right:auto;align-self:center;font-size:var(--fs-caption);color:var(--n-700);
+  font-variant-numeric:tabular-nums;}
+.cal-sum .d{color:var(--accent-600);font-weight:600;}
+/* 체크박스(고지 확인) */
+.chk{display:inline-flex;align-items:center;gap:7px;font-size:var(--fs-micro);color:inherit;cursor:pointer;font-weight:500;}
+.cbox{width:15px;height:15px;border:1.5px solid var(--n-400);border-radius:4px;background:#fff;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;}
+.cbox svg{width:10px;height:10px;}
+.chk.on .cbox{background:var(--accent-500);border-color:var(--accent-500);}
+.chk .req{color:var(--danger-text);}
+
+/* 잠긴 세그먼트 값 */
+.seg .sg.locked{color:var(--n-400);background:var(--n-100);cursor:not-allowed;}
+
+/* 상품 항목 컬럼(정가·예상 리워드 추가) */
+.c-list{width:78px;flex-shrink:0;}
+.c-est{width:82px;flex-shrink:0;}
+.c-qty{width:80px;flex-shrink:0;}
+.ro-cell{font-size:var(--fs-caption);color:var(--n-600);padding-top:9px;font-variant-numeric:tabular-nums;}
+.c-del.dis{color:var(--n-300);cursor:not-allowed;}
+.c-del.dis:hover{color:var(--n-300);}
+
+
+/* 비고 글자수 */
+.ta-count{text-align:right;font-size:var(--fs-micro);color:var(--n-400);margin-top:6px;}
+
+/* 모달 */
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;justify-content:center;}
+.modal{width:480px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);overflow:hidden;}
+.modal-h{font-size:var(--fs-h3);font-weight:600;padding:14px var(--sp-5);border-bottom:1px solid var(--n-200);
+  display:flex;align-items:center;justify-content:space-between;}
+.modal-x{color:var(--n-400);cursor:pointer;}
+.modal-b{padding:var(--sp-5);font-size:var(--fs-caption);color:var(--n-700);line-height:1.7;}
+.modal-f{padding:12px var(--sp-5);border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.msum{border:1px solid var(--n-200);border-radius:var(--r-sm);background:var(--n-50);padding:2px 12px;margin-bottom:var(--sp-4);}
+.msum .trow{padding:8px 0;} .msum .tk{width:96px;}
+.mlabel{display:block;font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;}
+.modal-b > .mlabel:first-child{margin-top:0;}
+.mlabel .req{color:var(--danger-text);margin-left:2px;}
+.mlabel .opt{color:var(--n-400);margin-left:4px;font-weight:400;}
+.msel,.mta{width:100%;font-family:inherit;font-size:var(--fs-body);border:1px solid var(--n-300);
+  border-radius:var(--r-sm);background:#fff;color:var(--n-900);padding:6px 10px;}
+.msel:focus,.mta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.msel{height:34px;appearance:none;-webkit-appearance:none;padding-right:32px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;}
+.mta{min-height:76px;resize:vertical;line-height:1.6;height:auto;padding-top:8px;}
+.mhint{font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;}
+.mwarn{display:flex;gap:8px;background:var(--n-50);border:1px solid var(--n-200);border-radius:var(--r-sm);
+  padding:11px 13px;font-size:var(--fs-micro);color:var(--n-700);line-height:1.7;margin-top:var(--sp-4);}
+.mwarn b{color:var(--n-900);font-weight:600;}
+
+
+/* ══ 결과 모달(08b 이식) ══ */
+.ck{display:flex;flex-direction:column;gap:0;border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.ck-i{display:flex;align-items:center;gap:9px;padding:11px 13px;font-size:var(--fs-caption);
+  color:var(--n-900);border-bottom:1px solid var(--n-100);}
+.ck-i:last-child{border-bottom:none;}
+.ck-i .cm{width:17px;height:17px;border-radius:50%;background:var(--success-bg);color:var(--success-text);
+  display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;font-weight:700;}
+.ck-i .cs{margin-left:auto;font-size:var(--fs-micro);color:var(--n-500);font-variant-numeric:tabular-nums;}
+.rico{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:17px;font-weight:700;margin:0 auto 12px;}
+.rico.ok{background:var(--success-bg);color:var(--success-text);}
+.rcenter{text-align:center;}
+.rcenter .rt{font-size:var(--fs-h3);font-weight:600;color:var(--n-900);margin-bottom:6px;}
+.rcenter .rd{font-size:var(--fs-caption);color:var(--n-600);line-height:1.75;}
+/* ══ 스튜디오 추가 ══ */
+.extbox{border:1px dashed var(--n-400);border-radius:var(--r-sm);background:var(--n-100);
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  font-size:var(--fs-caption);color:var(--n-500);line-height:1.7;padding:20px;}
+.extbox b{display:block;color:var(--n-700);font-weight:600;margin-bottom:3px;}
+
+/* 기한 칩 — 상태 배지가 아니라 남은 시간 표시(도트 없음·별개 요소) */
+.due{color:var(--warning-text);font-weight:600;}
+.dchip{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:600;
+  padding:2px 9px;border-radius:var(--r-pill);background:var(--warning-bg);color:var(--warning-text);
+  font-variant-numeric:tabular-nums;white-space:nowrap;}
+.dchip.neu{background:var(--n-100);color:var(--n-500);font-weight:500;}
+/* 내가 받는 금액 — 스튜디오 고유 카드 */
+.paysum{background:var(--accent-50);border:1px solid var(--accent-100);border-radius:var(--r-sm);
+  padding:14px 16px;margin-bottom:var(--sp-3);}
+.paysum .pk{font-size:var(--fs-micro);color:var(--n-600);}
+.paysum .amt{font-size:22px;font-weight:600;color:var(--accent-600);font-variant-numeric:tabular-nums;
+  line-height:1.3;margin-top:2px;}
+.paysum .psub{font-size:var(--fs-micro);color:var(--n-600);margin-top:4px;line-height:1.6;}
+.paysum .psub b{color:var(--n-900);}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 640.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+<div class="doc-head">
+  <h1>ui-studio-08-contracts <span style="font-weight:400;color:var(--n-500)">— 쇼룸 스튜디오 계약 관리(GNB #3) · rev.2</span></h1>
+  <p class="meta">1440×1024 · 전역 Compact · 액센트 인디고 #3B5BDB 단일 · 셸 출처 ui-studio-04-connections · 컴포넌트 · 토큰 원본 <b>ui-partner-08-contracts(rev.5 · rev.6 반영)</b> · 상태 12종(빈 상태 · 서명 3단계 · 체결 처리 대기 포함)</p>
+  <div class="rule">
+    <b>[스코프 · 역할]</b> GNB #3 <b>계약 관리</b> — 스튜디오는 <b>수신 측</b>이다. 브랜드가 작성 · 발송하고 인플루언서는 <b>확인 · 서명 · 거절</b>만 한다. 발송 · 작성 · 수정 액션은 이 화면에 존재하지 않는다.<br>
+    <code>브랜드 작성 → 운영자 검토 → <b>양측 동시 서명 요청</b> → 브랜드 · 나 각각 서명 → <b>운영자 체결 완료 처리</b> → 체결완료 · 공구 생성</code> (└ 내 거절 / 만료 / 브랜드 취소)<br>
+    <b>[상태값 · 파트너센터와 동일]</b> 상태 이름 · 색은 거래플로우 상태정의서와 파트너센터를 그대로 따른다 — 서명 진행중 · 체결 처리 대기=<b>정보</b> · 체결완료=<b>성공</b> · 거절=<b>위험</b> · 만료 · 취소=<b>중립</b>(원칙②). 같은 상태값에 서피스별로 다른 색을 쓰지 않는다(원칙③).<br>
+    <b class="new">[파트너센터와 다른 점 · 근거]</b> 컴포넌트(카드 · 폼 행 · 배지 · 스텝퍼 · 서명 박스 · 목록 · 모달 · 이력)는 <b>완전 동일 마크업</b>으로 재사용하고, 아래 5가지만 다르다.<br>
+    &nbsp;&nbsp;· <b>작성중 탭이 없다</b> — 브랜드가 작성 중인 계약은 발송 전이므로 인플루언서에게 도착하지 않는다. 탭은 <b>전체 · 서명 진행중 · 체결 처리 대기 · 체결완료 · 종료</b> 5종이고, 스튜디오가 볼 수 있는 최초 상태는 <b>서명 진행중</b>이다 — <b>작성중 · 검토 대기 · 검토 반려는 브랜드 전용</b>이라 인플루언서에게 도착하지 않는다(운영자 검토를 통과해야 서명 요청이 온다).<br>
+    &nbsp;&nbsp;· <b>주 CTA가 없다</b> — 파트너센터 목록의 [+ 계약 작성]과 빈 상태 CTA를 삭제했다. 인플루언서는 계약을 만들 수 없다. 빈 상태는 "브랜드가 보내면 도착한다"는 사실 + <b>연결·소통 · 연결코드</b> 안내로 대신한다.<br>
+    &nbsp;&nbsp;· <b>목록 열 교체</b> — 「생성일」 → <b>「내 서명 기한」</b>. 수신 측에서 유효한 날짜는 내가 조치해야 하는 기한 하나뿐이고, 생성일은 브랜드의 사정이다.<br>
+    &nbsp;&nbsp;· <b>「내가 받는 금액」 카드 신설</b> — 같은 값(고정 지급비 · 리워드율)이 파트너센터에서는 <b>내는 돈</b>, 스튜디오에서는 <b>받는 돈</b>이다. 관점이 반대라 라벨과 배치가 같을 수 없다. 이 카드와 「내가 해야 할 일」(콘텐츠 의무)을 <b>상품 항목보다 위</b>에 둔다 — 인플루언서가 서명 여부를 판단하는 근거가 그 둘이기 때문이다.<br>
+    &nbsp;&nbsp;· <b>[이 조건으로 새 계약 작성]이 없다</b> — 종결 3종의 파트너센터 액션이다. 스튜디오의 회복 경로는 <b>[스레드에서 협의하기]</b> 하나이며, 새 계약을 보내는 쪽은 항상 브랜드다.<br>
+    <b class="new">[서명 진행중이 「내 몫이 남은 것」인데 색을 바꾸지 않는 이유]</b> 파트너센터에서 서명 진행중은 "기다리는 중", 스튜디오에서는 "내 서명이 남았다"일 수 있다. 그러나 <b>상태값이 같으면 색도 같다</b>(원칙③)는 규칙이 우선하고, 원칙①의 경고 · 위험은 <b>운영자 조치</b>가 필요한 상태에 쓰는 색이다. 그래서 배지는 <b>정보색 그대로</b> 두고, 내 차례라는 사실은 색이 아니라 <b>①GNB 배지 숫자 ②목록의 「내 서명이 필요한 계약 1건」 ③기한 날짜의 경고색 ④서명 카드의 내 칸 강조(<code>.sbox.mine</code>) ⑤주 버튼</b>으로 표현한다.<br>
+    <b>[남은 기간 표기]</b> 기한이 임박한 건은 <b>날짜 텍스트 자체를 경고색</b>으로 칠한다 — 칩이나 "N일 남음" 같은 보조 요소를 덧붙이지 않는다(요소가 늘면 상태 배지와 경쟁하고 행 높이도 흔들린다). 칩 · 배지 형태를 쓰지 않는 이유는 같은 행의 <b>상태 배지와 형태가 겹쳐</b> 무엇이 상태값인지 흐려지기 때문이다 — 배지는 상태값 전용이고, 기한은 <b>텍스트</b>다. 색은 <b>경고</b>다 — 기한이 지나면 <b>만료(중립 종결)</b>이지 부정 결과 확정이 아니므로 위험색을 쓰지 않는다(원칙①③).<br>
+    <b>[수정 요청 경로]</b> 인플루언서는 조건을 <b>고칠 수 없다</b>. 조정이 필요하면 <b>①서명 전 스레드 협의</b> 또는 <b>②거절 + 사유 전달</b> 뿐이며, 두 경로 모두 결과적으로 브랜드의 재발송을 기다린다. 화면 어디에도 조건 입력 필드를 두지 않는다.<br>
+    <b class="new">[rev.5 · 서명 순서가 사라졌다 — 이 개정의 근간]</b> 파트너센터 rev.5에서 <b>전자서명 솔루션이 기안자 선서명을 지원하지 않는 것</b>이 확인돼, 「발송 = 브랜드 서명 완료 → 내가 2순위」 전제가 <b>폐기</b>됐다. 확정 절차는 <b>브랜드 작성 → 운영자 검토 → 양측 동시 서명 요청 → 각자 서명 → 운영자 체결 완료 처리</b>다. 그래서 이 파일에서 <b>「1순위 · 2순위」 표기를 전부 걷어냈다</b> — 서명은 순서가 아니라 <b>각자의 몫</b>이고, 계약서가 도착한 시점에 <b>브랜드도 아직 서명하지 않았을 수 있다</b>(S3).<br>
+    &nbsp;&nbsp;· <b>서명은 이 화면 밖에서 한다</b> — 검토를 통과하면 전자서명 솔루션이 양측에 <b>메일 · 문자</b>를 각각 발송하고 서명은 그 링크에서 이뤄진다. 그래서 업체 미확정을 전제로 그렸던 <b>임베드 서명 모달(구 S4)을 삭제</b>했다.<br>
+    &nbsp;&nbsp;· <b>「내가 서명하면 즉시 체결」도 폐기</b>했다 — 양측 서명만으로 계약이 성립하지 않고 <b>운영자가 체결 완료를 눌러야</b> 한다. 그 구간을 <b>체결 처리 대기(S3c)</b>로 세웠고, 이유는 파트너센터와 같다: <b>서명을 끝낸 사람이 「끝났다」고 보고 준비 일정을 당겨 잡는 것</b>을 막기 위해서다. 그래서 S3c와 서명 완료 모달(S11)에 <b>「아직 공구는 만들어지지 않았습니다」</b>를 명시하고, <b>PDF · 인증서도 체결 처리 시 발급</b>됨을 밝힌다.<br>
+    &nbsp;&nbsp;· <b>내가 먼저 서명하는 경우가 생겼다</b>(S3b) — 스튜디오에 없던 상태다. 이때는 <b>내 할 일이 없고 되돌릴 수도 없어</b>(서명 후 거절 불가) 액션을 [스레드에서 협의하기] 하나로 줄였다.<br>
+    &nbsp;&nbsp;· 파트너센터는 이를 <b>「어드민」</b>으로 쓰지만 스튜디오 화면 문구는 <b>「운영자」</b>로 통일한다 — 인플루언서가 보는 화면에 사내 용어를 쓰지 않는다.<br>
+    <b class="new">[MVP · 서명 현황은 수동 갱신이다 · 확정]</b> 모두싸인 <b>API 연동을 도입하지 않기로</b> 확정됐다(API 요금제 비용). 이 결정이 화면에 남기는 제약은 세 가지다 — ①<b>서명 링크를 우리가 갖지 못한다</b>(모두싸인이 메일 · 문자로 직접 보낸다) ②<b>서명 완료를 실시간으로 통지받지 못한다</b>(웹훅이 없다) ③<b>PDF · 인증서도 자동 수신되지 않는다</b>.<br>
+    &nbsp;&nbsp;· 그래서 <b>이 화면에 서명 버튼을 두지 않는다</b> — 누를 대상(링크)이 없다. 대신 <b>[서명 안내 다시 받기]</b>로 운영자에게 재발송을 요청한다. 있지도 않은 버튼을 그리면 "눌러도 아무 일이 없는" 화면이 된다.<br>
+    &nbsp;&nbsp;· 참여자별 서명 상태는 <b>운영자가 모두싸인에서 확인해 입력한 값</b>이다. 실시간이 아니므로 서명 카드에 <b>기준 시각("운영자 확인 · 08.14 12:00 기준")</b>을 박고, 방금 서명한 사람이 <b>"내 서명이 왜 반영 안 됐지"</b>로 오해하지 않게 한다. 이것이 <b>MVP에서 참여자별 상태를 그대로 유지한 이유</b>다 — 값이 늦을 뿐 틀리지는 않고, 늦는다는 사실을 화면이 밝히면 읽을 수 있는 정보가 된다.<br>
+    &nbsp;&nbsp;· <b>만료도 자동 판정이 아니다</b> — 기한이 지나도 시스템이 스스로 닫지 않고 <b>운영자가 확인해 만료 처리</b>한다. 그래서 종결 스텝의 주체를 「시스템」에서 <b>「운영자」</b>로 바꿨다.<br>
+    &nbsp;&nbsp;· <b>[다음 단계]</b> API 도입 시 이 화면은 그대로 두고 <b>기준 시각 문구와 [서명 안내 다시 받기]만 제거</b>하면 된다 — 상태 구조를 수동 운영에 맞춰 바꾸지 않은 것은 나중에 되돌리는 비용을 만들지 않기 위해서다.<br>
+    <b class="new">[rev.6 · 고정 지급비에서 선결제를 걷어냈다]</b> 파트너센터 rev.6에서 <b>플랫폼이 고정 지급비를 중개하지 않기로</b> 확정됐다 — 브랜드가 <b>직접 지급</b>하고 계약서에는 <b>금액과 지급 시점만</b> 기재되며, 지급 시점도 고정이 아니라 브랜드가 <b>공구 게시물 등록 후 / 공구 종료 후 / 정산 완료 후</b> 중에서 고른 값이다. 그래서 이 파일 전체의 「브랜드가 이미 선결제했습니다」를 삭제했다.<br>
+    &nbsp;&nbsp;· <b>받는 쪽에는 이 변화가 더 크다</b> — 선결제라면 「플랫폼에 돈이 있으니 받는다」지만, 직접 지급이면 <b>브랜드가 안 주면 못 받는다</b>. 그래서 「내가 받는 금액」 카드에 <b>플랫폼이 지급을 보증하지 않는다</b>는 사실과 <b>미지급 시 이슈 스레드 · 운영자 중재 · 계약서가 근거</b>라는 경로를 명시했다. 서명 전에 알아야 할 사실이라 서명 진행중 화면부터 나온다.<br>
+    &nbsp;&nbsp;· 체결완료 상태에서도 <b>지급 전</b>임을 상태 카드에 못박는다 — 체결을 입금으로 오해하면 분쟁이 된다. 종결 3종에서는 <b>지급 없음</b>으로만 표기하고, 브랜드 쪽 <b>환불 이력은 표시하지 않는다</b>(내 자금이 아니다).<br>
+    <b>[금액 표기]</b> 화면의 금액은 <b>공제 전</b> 기준이며 실지급액은 정산 관리(#7) 소관으로 넘긴다. <span class="wait">[근거 대기]</span> 비사업자 <b>원천징수 3.3%</b> 적용 방식이 세무 확정 전이라 이 화면에서 실지급액을 계산해 보여주지 않는다.<br>
+    <b>[서명 플로우]</b> 서명 진행중(S3 · S3a · S3b) → 내 서명 완료 모달(S11) → 체결 처리 대기(S3c) → 체결완료 상세(S6). 파트너센터 08b의 발송 시퀀스와 달리 <b>중간 실패 모달을 그리지 않는다</b> — 인플루언서 서명에는 결제 · 문서 생성이 얽혀 있지 않아, 서명을 마치지 않고 이탈하면 <b>아무 일도 일어나지 않고 서명 진행중이 유지</b>된다.<br>
+    <b>[진입 · 라우팅]</b> 목록은 <b>행 전체 클릭</b>으로 진입하고 관리 열을 두지 않는다. 상세는 상태가 바뀌어도 <b>같은 화면</b>에서 액션 영역과 종결 안내만 교체된다(파트너센터 rev.2와 동일).<br>
+    <b>[용어]</b> 목록 · 상세의 상대 라벨은 <b>브랜드</b>다. 공구명은 <b>브랜드 내부 관리용 이름</b>이며, 소비자에게 보이는 게시물 제목은 인플루언서가 공구 게시물에서 따로 쓴다.<br>
+    <b>[확인 필요]</b> ① <b>서명 기한 임박 알림</b> 발송 시점(D-3 · D-1 등)이 미정 — 만료는 인플루언서에게 기회 손실이므로 알림 규칙이 필요하다. ② <b>서명 위치</b> — 스튜디오 내부 임베드인지 전자계약 업체 외부 링크인지 미확정(S4는 placeholder). ③ <b>거절 사유 구분 값</b>은 이 시안의 제안이며 확정 목록이 필요하다. ④ <b>체결 후 해지 값이 없다</b>(파트너센터 rev.2의 미해결 지적 그대로) — 공구 진행 중 중단을 표현할 상태가 없다. ⑤ 사전 검수 <b>있음</b> 계약에서 초안 확인이 스레드 대화로만 남는데, 이행 판정의 조건이므로 별도 기록 구조가 필요한지 결정 필요.<br>
+    <b>[스냅샷 높이]</b> 프레임은 1440×1024 기준이며, 세로로 잘리는 내용을 확인할 수 있도록 <code>.stage</code>는 콘텐츠 높이만큼 늘어난다.
+  </div>
+</div>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S1</span><span class="state-label">목록 · 기본</span>
+  <span class="state-spec"><b>작성중 탭이 없다</b> — 브랜드의 작성중 계약은 인플루언서에게 도착하지 않는다 · <b>계약 작성 CTA 없음</b>(수신 측) · 「내 서명 기한」 열은 <b>날짜 자체에 경고색</b>을 입혀 조치할 건을 앞세운다(칩 · 보조 문구 없음 — 요소를 늘리지 않고 색만으로 구분) · 행 클릭 진입</span></div>
+  <div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">계약 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">계약 관리</div><div class="page-d">브랜드가 보낸 공구 계약을 확인하고 서명하거나 거절합니다.</div></div></div>
+  <div class="tabs">
+    <div class="tab active">전체 <span class="tn">8</span></div>
+    <div class="tab">서명 진행중 <span class="tn">2</span></div><div class="tab">체결 처리 대기 <span class="tn">1</span></div>
+    <div class="tab">체결완료 <span class="tn">2</span></div>
+    <div class="tab">종료 <span class="tn">3</span></div>
+  </div>
+  <div class="toolbar">
+    <input class="inp" placeholder="공구명 · 브랜드명 검색" style="width:280px">
+    <button class="btn btn-secondary">검색</button>
+    <span class="spacer"></span>
+  </div>
+  <div class="tcard">
+    <div class="tbar">
+      <div class="tbar-l">총 <b>8</b>건 · 내 서명이 필요한 계약 <b>1</b>건</div>
+      <div class="tbar-r"><select class="sel-sm"><option>받은 순</option><option>서명 기한순</option><option>공구 시작일순</option></select><select class="sel-sm"><option>20건씩</option><option>50건씩</option></select></div>
+    </div>
+    <table>
+      <thead><tr>
+        <td>공구명</td><td style="width:150px">브랜드</td><td class="t-c" style="width:82px">상품 수</td>
+        <td class="t-c" style="width:280px">공구 기간</td><td class="t-c" style="width:150px">내 서명 기한</td><td class="t-c" style="width:124px">상태</td>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="t-nm">여름 수분 세럼 공구</span></td>
+          <td>○○ 브랜드</td><td class="t-c tnum">2</td>
+          <td class="t-c t-date tnum">2026.08.24 10:00 ~ 2026.08.31 23:55</td>
+          <td class="t-c t-date tnum due">2026.08.21 23:55</td>
+          <td class="t-c"><span class="badge b-info">서명 진행중</span></td>
+        </tr>
+        <tr>
+          <td><span class="t-nm">가을 앰플 신제품 공구</span></td>
+          <td>△△ 코스메틱</td><td class="t-c tnum">1</td>
+          <td class="t-c t-date tnum">2026.09.01 10:00 ~ 2026.09.08 23:55</td>
+          <td class="t-c t-date t-dim">내 서명 완료</td>
+          <td class="t-c"><span class="badge b-info">서명 진행중</span></td>
+        </tr>
+        <tr>
+          <td><span class="t-nm">퓨어랩 립밤 재입고 공구</span></td>
+          <td>퓨어랩</td><td class="t-c tnum">2</td>
+          <td class="t-c t-date tnum">2026.08.28 10:00 ~ 2026.09.04 23:55</td>
+          <td class="t-c t-date t-dim">양측 서명 완료</td>
+          <td class="t-c"><span class="badge b-info">체결 처리 대기</span></td>
+        </tr>
+        <tr>
+          <td><span class="t-nm">글로우 크림 앵콜 공구</span></td>
+          <td>△△ 코스메틱</td><td class="t-c tnum">1</td>
+          <td class="t-c t-date tnum">2026.08.14 10:00 ~ 2026.08.21 23:55</td>
+          <td class="t-c t-date t-dim">서명 완료</td>
+          <td class="t-c"><span class="badge b-success">체결완료</span></td>
+        </tr>
+        <tr>
+          <td><span class="t-nm">여름 미스트 기획 공구</span></td>
+          <td>□□ 뷰티랩</td><td class="t-c tnum">1</td>
+          <td class="t-c t-date tnum">2026.08.05 10:00 ~ 2026.08.12 23:55</td>
+          <td class="t-c t-date t-dim">서명 완료</td>
+          <td class="t-c"><span class="badge b-success">체결완료</span></td>
+        </tr>
+        <tr>
+          <td><span class="t-nm">봄 클렌저 공구</span></td>
+          <td>□□ 뷰티랩</td><td class="t-c tnum">1</td>
+          <td class="t-c t-date tnum">2026.08.01 10:00 ~ 2026.08.08 23:55</td>
+          <td class="t-c t-date t-dim">—</td>
+          <td class="t-c"><span class="badge b-danger">거절</span></td>
+        </tr>
+        <tr>
+          <td><span class="t-nm">수분 토너 리뉴얼 공구</span></td>
+          <td>○○ 브랜드</td><td class="t-c tnum">1</td>
+          <td class="t-c t-date tnum">2026.07.25 10:00 ~ 2026.08.01 23:55</td>
+          <td class="t-c t-date t-dim">기한 경과</td>
+          <td class="t-c"><span class="badge b-neutral">만료</span></td>
+        </tr>
+        <tr>
+          <td><span class="t-nm">클렌징 오일 여름 공구</span></td>
+          <td>△△ 코스메틱</td><td class="t-c tnum">1</td>
+          <td class="t-c t-date tnum">2026.07.20 10:00 ~ 2026.07.27 23:55</td>
+          <td class="t-c t-date t-dim">—</td>
+          <td class="t-c"><span class="badge b-neutral">취소</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pager"><span class="page-item">‹</span><span class="page-item active">1</span><span class="page-item">›</span></div>
+  </div>
+
+</div>
+  </div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S2</span><span class="state-label">목록 · 빈 상태(받은 계약 없음)</span>
+  <span class="state-spec">신규 인플루언서 진입 · 계약을 만들 수 없으므로 <b>주 CTA를 두지 않고</b> 연결·소통으로 안내(파트너센터 A2와 반대) · 연결코드 위치를 함께 알려준다</span></div>
+  <div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">계약 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">계약 관리</div><div class="page-d">브랜드가 보낸 공구 계약을 확인하고 서명하거나 거절합니다.</div></div></div>
+  <div class="tabs">
+    <div class="tab active">전체 <span class="tn">0</span></div>
+    <div class="tab">서명 진행중 <span class="tn">0</span></div><div class="tab">체결 처리 대기 <span class="tn">0</span></div>
+    <div class="tab">체결완료 <span class="tn">0</span></div>
+    <div class="tab">종료 <span class="tn">0</span></div>
+  </div>
+  <div class="toolbar">
+    <input class="inp" placeholder="공구명 · 브랜드명 검색" style="width:280px">
+    <button class="btn btn-secondary">검색</button>
+    <span class="spacer"></span>
+  </div>
+  <div class="tcard">
+    <div class="empty">
+      <div class="empty-t">받은 계약이 없습니다</div>
+      <div class="empty-d">계약은 <b>브랜드가 작성해 보내면</b> 이곳에 도착합니다 — 인플루언서가 직접 만들 수는 없습니다.<br>브랜드와 연결되어 있어야 계약을 받을 수 있으니, 먼저 연결을 확인하세요.</div>
+      <button class="btn btn-secondary">연결·소통 열기</button>
+      <div class="st-hint" style="margin-top:14px">브랜드에게 <b>내 연결코드</b>를 전달하면 연결 요청이 정확히 내 쇼룸으로 도착합니다 — 연결코드는 <b>쇼룸 관리</b>에서 확인할 수 있습니다.</div>
+    </div>
+  </div>
+
+</div>
+  </div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S3</span><span class="state-label">상세 · 서명 진행중(양측 미서명)</span>
+  <span class="state-spec"><b>rev.5 확정 절차</b> — 운영자 검토를 통과하면 <b>브랜드와 나에게 서명 요청이 동시에</b> 발송된다. <b>브랜드가 먼저 서명하는 순서는 없다</b>(전자서명 솔루션이 기안자 선서명을 지원하지 않는다) · 서명은 <b>이 화면 밖</b> 메일 · 문자 링크에서 한다 — 링크는 전자서명 솔루션이 직접 보내므로 <b>이 화면에 서명 버튼을 둘 수 없다</b> · <b>4단 스텝퍼</b>로 운영자 체결 처리까지 남았음을 보여준다</span></div>
+<div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 계약서</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">여름 수분 세럼 공구</div><div class="page-d">CTR-20260813-034 · ○○ 브랜드 · 2026.08.13 16:40 받음</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">서명 진행<span class="ch-n">운영자 검토 → 양측 동시 서명 요청</span></div>
+        <div class="card-b">
+          <div class="steps">
+            <span class="stp done">운영자 검토 통과<span class="who">08.13 15:20</span></span><span class="stp-ar">›</span>
+            <span class="stp done">서명 요청 발송<span class="who">양측 메일·문자 · 08.13 16:40</span></span><span class="stp-ar">›</span>
+            <span class="stp cur">양측 서명<span class="who">브랜드 0 / 나 0</span></span><span class="stp-ar">›</span>
+            <span class="stp ">운영자 체결 완료 처리<span class="who">PDF + 감사추적인증서</span></span>
+          </div>
+          <div class="signs" style="margin-top:var(--sp-4)">
+            <div class="sbox">
+              <div class="s-who">브랜드</div>
+              <div class="s-name">○○ 브랜드</div>
+              <div class="s-wait">서명 대기 · 브랜드도 요청 메일·문자를 받았습니다</div>
+            </div>
+            <div class="sbox mine">
+              <div class="s-who">인플루언서(나)</div>
+              <div class="s-name">뷰티_소연</div>
+              <div class="s-wait" style="color:var(--accent-600);font-weight:600">서명 대기 · 기한 2026.08.21 23:55</div>
+              <div class="s-wait" style="margin-top:5px">메일 · 문자로 받은 <b>전자서명 링크</b>에서 서명합니다</div>
+            </div>
+          </div>
+          <div class="s-asof">서명 현황은 <b>운영자가 모두싸인에서 확인한 시점</b> 기준입니다 · 2026.08.13 17:00 기준</div>
+          <div class="notice info" style="margin-top:var(--sp-3)"><div><b>양측이 모두 서명해야 체결로 넘어갑니다.</b> 서명이 끝나면 운영자가 확인해 <b>체결 완료 처리</b>를 하고, 그때 서명 PDF·감사추적인증서가 발급되며 공구가 생성됩니다.<br><b>서명 현황은 운영자가 확인한 시점 기준</b>으로 표시됩니다 — 방금 서명했다면 아직 반영 전일 수 있습니다.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 조건<span class="ch-n">브랜드가 작성한 조건 · 이 화면에서 수정할 수 없습니다</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">브랜드</div><div class="fv">○○ 브랜드 <span class="flink">스레드 열기</span></div></div>
+          <div class="frow ro"><div class="fk">공구명</div><div class="fv">여름 수분 세럼 공구 <div class="fsub">브랜드 내부 관리용 이름 · 소비자에게 보이는 게시물 제목은 내가 따로 씁니다</div></div></div>
+          <div class="frow ro"><div class="fk">공구 기간</div><div class="fv tnum">2026.08.24 10:00 ~ 2026.08.31 23:55 <span style="color:var(--n-500)">(8일)</span></div></div>
+          <div class="frow ro"><div class="fk">고정 지급비</div><div class="fv tnum">1,200,000원<div class="fsub">브랜드가 <b>직접 지급</b>하는 금액입니다 · 지급 시점 <b>공구 게시물 등록 후</b>(브랜드가 계약서에 기재) · 플랫폼을 거치지 않습니다</div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">내가 받는 금액<span class="ch-n">공제 전 금액</span></div>
+        <div class="card-b">
+          <div class="paysum"><div class="pk">고정 지급비</div><div class="amt">1,200,000원</div>
+            <div class="psub"><b>지급 시점</b> — 계약서에 <b>공구 게시물 등록 후</b>로 기재되어 있습니다. <b>브랜드가 내 계좌로 직접 지급</b>하며 플랫폼을 거치지 않습니다.</div></div>
+          <div class="terms">
+            <div class="trow"><div class="tk">판매 리워드</div><div class="tv tnum">수분진정 세럼 <b>15%</b> · 수분진정 크림 <b>12%</b> — 판매액에 리워드율을 곱해 정산됩니다(상품별 차등)</div></div>
+            <div class="trow"><div class="tk">정산 시점</div><div class="tv">공구 종료 후 <b>정산 관리</b>에서 확인 · 지급됩니다</div></div>
+          </div>
+          <div class="notice consent" style="margin-top:var(--sp-3)"><div>표시된 금액은 <b>세금 등 공제 전</b> 기준입니다. 판매 리워드의 실제 입금액은 <b>정산 관리</b>에서 확인할 수 있습니다.<br><b>고정 지급비는 브랜드가 직접 지급하며 플랫폼이 지급을 보증하거나 대신 집행하지 않습니다.</b> 지급되지 않으면 <b>연결·소통</b>에서 이슈 스레드를 열어 운영자 중재를 받을 수 있고, 이 계약서가 근거가 됩니다.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">내가 해야 할 일<span class="ch-n">콘텐츠 의무 · 서명하면 이 내용에 동의하게 됩니다</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">게시 포맷·수량</div><div class="fv">피드 1 · 릴스 1 · 스토리 3</div></div>
+          <div class="frow ro"><div class="fk">게시 완료 기한</div><div class="fv tnum">2026.08.31 <div class="fsub">피드 1 · 릴스 1 · 스토리 3 전부를 이 날짜까지 게시</div></div></div>
+          <div class="frow ro"><div class="fk">2차 활용권</div><div class="fv">허용 <div class="fsub">브랜드가 내 콘텐츠를 자사 채널·광고에 사용할 수 있습니다 · 범위는 비고 참조</div></div></div>
+          <div class="frow ro"><div class="fk">2차 활용 기간</div><div class="fv">기간 지정 · 12개월</div></div>
+          <div class="frow ro"><div class="fk">사전 검수</div><div class="fv">있음 <div class="fsub">게시 전 초안을 스레드로 보내야 하며, <b>브랜드 확인 없이 올린 콘텐츠는 이행으로 보지 않습니다</b></div></div></div>
+          <div class="frow ro"><div class="fk">비고</div><div class="fv">2차 활용 범위: 자사 상세페이지·인스타 광고 소재로 게시 후 12개월간 사용. 스토리 3회는 공구 기간 중 균등 분배.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 상품 항목<span class="ch-n">2건 · 정산이 이 리워드율을 사용합니다</span></div>
+        <div class="card-b">
+          <div class="terms">
+            <div class="trow"><div class="tk" style="width:176px">수분진정 세럼 30ml</div><div class="tv tnum">정가 32,000원 · 공구가 <b>28,000원</b> · 내 리워드율 <b>15%</b> · 개당 리워드 4,200원 · 브랜드 준비 물량 300개</div></div>
+            <div class="trow"><div class="tk" style="width:176px">수분진정 크림 50ml</div><div class="tv tnum">정가 24,000원 · 공구가 <b>22,000원</b> · 내 리워드율 <b>12%</b> · 개당 리워드 2,640원 · 브랜드 준비 물량 150개</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">상태</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">서명 진행중</span></div>
+          <div class="st-meta">
+            <div class="mrow"><span class="mk">받은 일시</span><span class="mv tnum">2026.08.13 16:40</span></div>
+            <div class="mrow"><span class="mk">내 서명 기한</span><span class="mv tnum due">2026.08.21 23:55</span></div>
+            <div class="mrow"><span class="mk">고정 지급비</span><span class="mv tnum">1,200,000원</span></div>
+            <div class="mrow"><span class="mk">계약서</span><span class="mv"><span class="flink">받은 계약서 보기</span></span></div>
+          </div>
+          <div class="st-acts"><button class="btn btn-secondary">서명 안내 다시 받기</button><button class="btn btn-secondary">스레드에서 협의하기</button><button class="btn btn-danger">거절</button></div>
+          <div class="st-hint">기한까지 서명하지 않으면 이 계약은 <b>만료</b>됩니다. 조건을 바꾸고 싶다면 서명 전에 <b>스레드에서 협의</b>하세요 — 이 화면에서 조건을 고칠 수는 없고, 브랜드가 새 계약을 다시 보내야 합니다.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">이력</div>
+        <div class="hist">
+          <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">서명 요청 도착 · 운영자 검토 통과</div><div class="hmeta">2026.08.13 16:40 · ○○ 브랜드</div></div></div>
+          <div class="hitem"><span class="hdot"></span><div><div class="htxt">연결 성립</div><div class="hmeta">2026.07.30 11:20 · ○○ 브랜드</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+  </div>
+</section>
+
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S3a</span><span class="state-label">상세 · 서명 진행중(브랜드 서명 완료 · 내 서명 필요)</span>
+  <span class="state-spec">브랜드가 먼저 서명한 경우 — <b>내 차례가 아니라 내 몫이 남은 것</b>이다(순서가 아니라 각자 한다) · 기한을 넘기면 <b>만료</b>되어 공구가 생성되지 않는다는 사실을 <b>경고 배너</b>로 먼저 말한다(내 조치로만 풀리는 상태 · 원칙①) · 그래도 <b>상태 배지는 정보색</b>이다 — 배지는 계약의 상태값이고 경고는 내 할 일을 가리킨다</span></div>
+<div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 계약서</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">여름 수분 세럼 공구</div><div class="page-d">CTR-20260813-034 · ○○ 브랜드 · 2026.08.13 16:40 받음</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">서명 진행<span class="ch-n">운영자 검토 → 양측 동시 서명 요청</span></div>
+        <div class="card-b">
+          <div class="steps">
+            <span class="stp done">운영자 검토 통과<span class="who">08.13 15:20</span></span><span class="stp-ar">›</span>
+            <span class="stp done">서명 요청 발송<span class="who">양측 메일·문자 · 08.13 16:40</span></span><span class="stp-ar">›</span>
+            <span class="stp cur">양측 서명<span class="who">1 / 2 · 내 서명 대기</span></span><span class="stp-ar">›</span>
+            <span class="stp ">운영자 체결 완료 처리<span class="who">PDF + 감사추적인증서</span></span>
+          </div>
+          <div class="signs" style="margin-top:var(--sp-4)">
+            <div class="sbox">
+              <div class="s-who">브랜드</div>
+              <div class="s-name">○○ 브랜드</div>
+              <div class="s-done">✓ 서명 완료 — 2026.08.14 09:12</div>
+            </div>
+            <div class="sbox mine">
+              <div class="s-who">인플루언서(나)</div>
+              <div class="s-name">뷰티_소연</div>
+              <div class="s-wait" style="color:var(--accent-600);font-weight:600">서명 대기 · 기한 2026.08.21 23:55</div>
+              <div class="s-wait" style="margin-top:5px">메일 · 문자로 받은 <b>전자서명 링크</b>에서 서명합니다</div>
+            </div>
+          </div>
+          <div class="s-asof">서명 현황은 <b>운영자가 모두싸인에서 확인한 시점</b> 기준입니다 · 2026.08.14 12:00 기준</div>
+          <div class="notice warn" style="margin-top:var(--sp-3)"><div><b>브랜드가 서명을 완료했습니다. 내 서명만 남았습니다.</b> 기한(2026.08.21 23:55)까지 서명하지 않으면 계약이 <b>만료</b>되고 공구가 생성되지 않습니다 — 메일 · 문자로 받은 <b>전자서명 링크</b>에서 서명해 주세요 — 링크를 찾을 수 없으면 <b>[서명 안내 다시 받기]</b>로 재발송을 요청하세요.</div></div>
+          <div class="notice info" style="margin-top:var(--sp-3)"><div><b>양측이 모두 서명해야 체결로 넘어갑니다.</b> 서명이 끝나면 운영자가 확인해 <b>체결 완료 처리</b>를 하고, 그때 서명 PDF·감사추적인증서가 발급되며 공구가 생성됩니다.<br><b>서명 현황은 운영자가 확인한 시점 기준</b>으로 표시됩니다 — 방금 서명했다면 아직 반영 전일 수 있습니다.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 조건<span class="ch-n">브랜드가 작성한 조건 · 이 화면에서 수정할 수 없습니다</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">브랜드</div><div class="fv">○○ 브랜드 <span class="flink">스레드 열기</span></div></div>
+          <div class="frow ro"><div class="fk">공구명</div><div class="fv">여름 수분 세럼 공구 <div class="fsub">브랜드 내부 관리용 이름 · 소비자에게 보이는 게시물 제목은 내가 따로 씁니다</div></div></div>
+          <div class="frow ro"><div class="fk">공구 기간</div><div class="fv tnum">2026.08.24 10:00 ~ 2026.08.31 23:55 <span style="color:var(--n-500)">(8일)</span></div></div>
+          <div class="frow ro"><div class="fk">고정 지급비</div><div class="fv tnum">1,200,000원<div class="fsub">브랜드가 <b>직접 지급</b>하는 금액입니다 · 지급 시점 <b>공구 게시물 등록 후</b>(브랜드가 계약서에 기재) · 플랫폼을 거치지 않습니다</div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">내가 받는 금액<span class="ch-n">공제 전 금액</span></div>
+        <div class="card-b">
+          <div class="paysum"><div class="pk">고정 지급비</div><div class="amt">1,200,000원</div>
+            <div class="psub"><b>지급 시점</b> — 계약서에 <b>공구 게시물 등록 후</b>로 기재되어 있습니다. <b>브랜드가 내 계좌로 직접 지급</b>하며 플랫폼을 거치지 않습니다.</div></div>
+          <div class="terms">
+            <div class="trow"><div class="tk">판매 리워드</div><div class="tv tnum">수분진정 세럼 <b>15%</b> · 수분진정 크림 <b>12%</b> — 판매액에 리워드율을 곱해 정산됩니다(상품별 차등)</div></div>
+            <div class="trow"><div class="tk">정산 시점</div><div class="tv">공구 종료 후 <b>정산 관리</b>에서 확인 · 지급됩니다</div></div>
+          </div>
+          <div class="notice consent" style="margin-top:var(--sp-3)"><div>표시된 금액은 <b>세금 등 공제 전</b> 기준입니다. 판매 리워드의 실제 입금액은 <b>정산 관리</b>에서 확인할 수 있습니다.<br><b>고정 지급비는 브랜드가 직접 지급하며 플랫폼이 지급을 보증하거나 대신 집행하지 않습니다.</b> 지급되지 않으면 <b>연결·소통</b>에서 이슈 스레드를 열어 운영자 중재를 받을 수 있고, 이 계약서가 근거가 됩니다.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">내가 해야 할 일<span class="ch-n">콘텐츠 의무 · 서명하면 이 내용에 동의하게 됩니다</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">게시 포맷·수량</div><div class="fv">피드 1 · 릴스 1 · 스토리 3</div></div>
+          <div class="frow ro"><div class="fk">게시 완료 기한</div><div class="fv tnum">2026.08.31 <div class="fsub">피드 1 · 릴스 1 · 스토리 3 전부를 이 날짜까지 게시</div></div></div>
+          <div class="frow ro"><div class="fk">2차 활용권</div><div class="fv">허용 <div class="fsub">브랜드가 내 콘텐츠를 자사 채널·광고에 사용할 수 있습니다 · 범위는 비고 참조</div></div></div>
+          <div class="frow ro"><div class="fk">2차 활용 기간</div><div class="fv">기간 지정 · 12개월</div></div>
+          <div class="frow ro"><div class="fk">사전 검수</div><div class="fv">있음 <div class="fsub">게시 전 초안을 스레드로 보내야 하며, <b>브랜드 확인 없이 올린 콘텐츠는 이행으로 보지 않습니다</b></div></div></div>
+          <div class="frow ro"><div class="fk">비고</div><div class="fv">2차 활용 범위: 자사 상세페이지·인스타 광고 소재로 게시 후 12개월간 사용. 스토리 3회는 공구 기간 중 균등 분배.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 상품 항목<span class="ch-n">2건 · 정산이 이 리워드율을 사용합니다</span></div>
+        <div class="card-b">
+          <div class="terms">
+            <div class="trow"><div class="tk" style="width:176px">수분진정 세럼 30ml</div><div class="tv tnum">정가 32,000원 · 공구가 <b>28,000원</b> · 내 리워드율 <b>15%</b> · 개당 리워드 4,200원 · 브랜드 준비 물량 300개</div></div>
+            <div class="trow"><div class="tk" style="width:176px">수분진정 크림 50ml</div><div class="tv tnum">정가 24,000원 · 공구가 <b>22,000원</b> · 내 리워드율 <b>12%</b> · 개당 리워드 2,640원 · 브랜드 준비 물량 150개</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">상태</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">서명 진행중</span></div>
+          <div class="st-meta">
+            <div class="mrow"><span class="mk">받은 일시</span><span class="mv tnum">2026.08.13 16:40</span></div>
+            <div class="mrow"><span class="mk">내 서명 기한</span><span class="mv tnum due">2026.08.21 23:55</span></div>
+            <div class="mrow"><span class="mk">고정 지급비</span><span class="mv tnum">1,200,000원</span></div>
+            <div class="mrow"><span class="mk">계약서</span><span class="mv"><span class="flink">받은 계약서 보기</span></span></div>
+          </div>
+          <div class="st-acts"><button class="btn btn-secondary">서명 안내 다시 받기</button><button class="btn btn-secondary">스레드에서 협의하기</button><button class="btn btn-danger">거절</button></div>
+          <div class="st-hint">기한까지 서명하지 않으면 이 계약은 <b>만료</b>됩니다. 조건을 바꾸고 싶다면 서명 전에 <b>스레드에서 협의</b>하세요 — 이 화면에서 조건을 고칠 수는 없고, 브랜드가 새 계약을 다시 보내야 합니다.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">이력</div>
+        <div class="hist">
+          <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">브랜드 서명 완료</div><div class="hmeta">2026.08.14 09:12 · ○○ 브랜드</div></div></div>
+          <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">서명 요청 도착 · 운영자 검토 통과</div><div class="hmeta">2026.08.13 16:40 · ○○ 브랜드</div></div></div>
+          <div class="hitem"><span class="hdot"></span><div><div class="htxt">연결 성립</div><div class="hmeta">2026.07.30 11:20 · ○○ 브랜드</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+  </div>
+</section>
+
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S3b</span><span class="state-label">상세 · 서명 진행중(내 서명 완료 · 브랜드 대기)</span>
+  <span class="state-spec"><b>스튜디오에 새로 생기는 상태</b> — 내가 먼저 서명할 수 있게 되면서 <b>브랜드를 기다리는 구간</b>이 생겼다 · 내 할 일이 없으므로 <b>액션은 없고</b>(거절도 불가 — 이미 서명했다) 상태는 <b>정보색</b> · <b>서명했다고 체결이 아니다</b>는 사실을 명시한다 · 이 구간에서 브랜드가 미서명으로 기한을 넘기면 <b>만료</b>된다</span></div>
+<div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 계약서</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">여름 수분 세럼 공구</div><div class="page-d">CTR-20260813-034 · ○○ 브랜드 · 2026.08.13 16:40 받음</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">서명 진행<span class="ch-n">운영자 검토 → 양측 동시 서명 요청</span></div>
+        <div class="card-b">
+          <div class="steps">
+            <span class="stp done">운영자 검토 통과<span class="who">08.13 15:20</span></span><span class="stp-ar">›</span>
+            <span class="stp done">서명 요청 발송<span class="who">양측 메일·문자 · 08.13 16:40</span></span><span class="stp-ar">›</span>
+            <span class="stp cur">양측 서명<span class="who">1 / 2 · 브랜드 대기</span></span><span class="stp-ar">›</span>
+            <span class="stp ">운영자 체결 완료 처리<span class="who">PDF + 감사추적인증서</span></span>
+          </div>
+          <div class="signs" style="margin-top:var(--sp-4)">
+            <div class="sbox">
+              <div class="s-who">브랜드</div>
+              <div class="s-name">○○ 브랜드</div>
+              <div class="s-wait">서명 대기 · 브랜드도 요청 메일·문자를 받았습니다</div>
+            </div>
+            <div class="sbox mine">
+              <div class="s-who">인플루언서(나)</div>
+              <div class="s-name">뷰티_소연</div>
+              <div class="s-done">✓ 서명 완료 — 2026.08.14 11:40</div>
+            </div>
+          </div>
+          <div class="s-asof">서명 현황은 <b>운영자가 모두싸인에서 확인한 시점</b> 기준입니다 · 2026.08.14 12:00 기준</div>
+          <div class="notice info" style="margin-top:var(--sp-3)"><div><b>양측이 모두 서명해야 체결로 넘어갑니다.</b> 서명이 끝나면 운영자가 확인해 <b>체결 완료 처리</b>를 하고, 그때 서명 PDF·감사추적인증서가 발급되며 공구가 생성됩니다.<br><b>서명 현황은 운영자가 확인한 시점 기준</b>으로 표시됩니다 — 방금 서명했다면 아직 반영 전일 수 있습니다.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 조건<span class="ch-n">브랜드가 작성한 조건 · 이 화면에서 수정할 수 없습니다</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">브랜드</div><div class="fv">○○ 브랜드 <span class="flink">스레드 열기</span></div></div>
+          <div class="frow ro"><div class="fk">공구명</div><div class="fv">여름 수분 세럼 공구 <div class="fsub">브랜드 내부 관리용 이름 · 소비자에게 보이는 게시물 제목은 내가 따로 씁니다</div></div></div>
+          <div class="frow ro"><div class="fk">공구 기간</div><div class="fv tnum">2026.08.24 10:00 ~ 2026.08.31 23:55 <span style="color:var(--n-500)">(8일)</span></div></div>
+          <div class="frow ro"><div class="fk">고정 지급비</div><div class="fv tnum">1,200,000원<div class="fsub">브랜드가 <b>직접 지급</b>하는 금액입니다 · 지급 시점 <b>공구 게시물 등록 후</b>(브랜드가 계약서에 기재) · 플랫폼을 거치지 않습니다</div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">내가 받는 금액<span class="ch-n">공제 전 금액</span></div>
+        <div class="card-b">
+          <div class="paysum"><div class="pk">고정 지급비</div><div class="amt">1,200,000원</div>
+            <div class="psub"><b>지급 시점</b> — 계약서에 <b>공구 게시물 등록 후</b>로 기재되어 있습니다. <b>브랜드가 내 계좌로 직접 지급</b>하며 플랫폼을 거치지 않습니다.</div></div>
+          <div class="terms">
+            <div class="trow"><div class="tk">판매 리워드</div><div class="tv tnum">수분진정 세럼 <b>15%</b> · 수분진정 크림 <b>12%</b> — 판매액에 리워드율을 곱해 정산됩니다(상품별 차등)</div></div>
+            <div class="trow"><div class="tk">정산 시점</div><div class="tv">공구 종료 후 <b>정산 관리</b>에서 확인 · 지급됩니다</div></div>
+          </div>
+          <div class="notice consent" style="margin-top:var(--sp-3)"><div>표시된 금액은 <b>세금 등 공제 전</b> 기준입니다. 판매 리워드의 실제 입금액은 <b>정산 관리</b>에서 확인할 수 있습니다.<br><b>고정 지급비는 브랜드가 직접 지급하며 플랫폼이 지급을 보증하거나 대신 집행하지 않습니다.</b> 지급되지 않으면 <b>연결·소통</b>에서 이슈 스레드를 열어 운영자 중재를 받을 수 있고, 이 계약서가 근거가 됩니다.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">내가 해야 할 일<span class="ch-n">콘텐츠 의무 · 서명하면 이 내용에 동의하게 됩니다</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">게시 포맷·수량</div><div class="fv">피드 1 · 릴스 1 · 스토리 3</div></div>
+          <div class="frow ro"><div class="fk">게시 완료 기한</div><div class="fv tnum">2026.08.31 <div class="fsub">피드 1 · 릴스 1 · 스토리 3 전부를 이 날짜까지 게시</div></div></div>
+          <div class="frow ro"><div class="fk">2차 활용권</div><div class="fv">허용 <div class="fsub">브랜드가 내 콘텐츠를 자사 채널·광고에 사용할 수 있습니다 · 범위는 비고 참조</div></div></div>
+          <div class="frow ro"><div class="fk">2차 활용 기간</div><div class="fv">기간 지정 · 12개월</div></div>
+          <div class="frow ro"><div class="fk">사전 검수</div><div class="fv">있음 <div class="fsub">게시 전 초안을 스레드로 보내야 하며, <b>브랜드 확인 없이 올린 콘텐츠는 이행으로 보지 않습니다</b></div></div></div>
+          <div class="frow ro"><div class="fk">비고</div><div class="fv">2차 활용 범위: 자사 상세페이지·인스타 광고 소재로 게시 후 12개월간 사용. 스토리 3회는 공구 기간 중 균등 분배.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 상품 항목<span class="ch-n">2건 · 정산이 이 리워드율을 사용합니다</span></div>
+        <div class="card-b">
+          <div class="terms">
+            <div class="trow"><div class="tk" style="width:176px">수분진정 세럼 30ml</div><div class="tv tnum">정가 32,000원 · 공구가 <b>28,000원</b> · 내 리워드율 <b>15%</b> · 개당 리워드 4,200원 · 브랜드 준비 물량 300개</div></div>
+            <div class="trow"><div class="tk" style="width:176px">수분진정 크림 50ml</div><div class="tv tnum">정가 24,000원 · 공구가 <b>22,000원</b> · 내 리워드율 <b>12%</b> · 개당 리워드 2,640원 · 브랜드 준비 물량 150개</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">상태</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">서명 진행중</span></div>
+          <div class="st-meta">
+            <div class="mrow"><span class="mk">받은 일시</span><span class="mv tnum">2026.08.13 16:40</span></div>
+            <div class="mrow"><span class="mk">내 서명</span><span class="mv"><span style="color:var(--success-text);font-weight:600">완료 · 08.14 11:40</span></span></div>
+            <div class="mrow"><span class="mk">브랜드 서명 기한</span><span class="mv tnum">2026.08.21 23:55</span></div>
+            <div class="mrow"><span class="mk">고정 지급비</span><span class="mv tnum">1,200,000원</span></div>
+            <div class="mrow"><span class="mk">계약서</span><span class="mv"><span class="flink">받은 계약서 보기</span></span></div>
+          </div>
+          <div class="st-acts"><button class="btn btn-secondary">스레드에서 협의하기</button></div>
+          <div class="st-hint"><b>내 서명은 끝났고 브랜드 서명을 기다립니다.</b> 서명한 뒤에는 <b>거절하거나 되돌릴 수 없습니다</b>. 브랜드가 기한까지 서명하지 않으면 계약은 <b>만료</b>됩니다.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">이력</div>
+        <div class="hist">
+          <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">내 서명 완료</div><div class="hmeta">2026.08.14 11:40 · 뷰티_소연</div></div></div>
+          <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">서명 요청 도착 · 운영자 검토 통과</div><div class="hmeta">2026.08.13 16:40 · ○○ 브랜드</div></div></div>
+          <div class="hitem"><span class="hdot"></span><div><div class="htxt">연결 성립</div><div class="hmeta">2026.07.30 11:20 · ○○ 브랜드</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+  </div>
+</section>
+
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S3c</span><span class="state-label">상세 · 체결 처리 대기(운영자 확인 중)</span>
+  <span class="state-spec"><b>rev.5 신설 상태</b> — 양측 서명이 끝나도 <b>운영자가 체결 완료를 눌러야</b> 계약이 성립하고 그때 공구가 생성된다 · 이 구간을 세운 이유는 <b>서명을 끝낸 사람이 「끝났다」고 보고 게시물 준비 일정을 당겨 잡는 것</b>을 막기 위해서다 — 그래서 <b>아직 공구는 만들어지지 않았습니다</b>를 명시한다 · <b>PDF · 인증서는 아직 없다</b>(체결 처리 시 발급)</span></div>
+<div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 계약서</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">여름 수분 세럼 공구</div><div class="page-d">CTR-20260813-034 · ○○ 브랜드 · 2026.08.13 16:40 받음</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">서명 진행<span class="ch-n">운영자 검토 → 양측 동시 서명 요청</span></div>
+        <div class="card-b">
+          <div class="steps">
+            <span class="stp done">운영자 검토 통과<span class="who">08.13 15:20</span></span><span class="stp-ar">›</span>
+            <span class="stp done">서명 요청 발송<span class="who">08.13 16:40</span></span><span class="stp-ar">›</span>
+            <span class="stp done">양측 서명 완료<span class="who">브랜드 08.14 09:12 · 나 08.14 11:40</span></span><span class="stp-ar">›</span>
+            <span class="stp cur">운영자 체결 완료 처리<span class="who">확인 중</span></span>
+          </div>
+          <div class="signs" style="margin-top:var(--sp-4)">
+            <div class="sbox">
+              <div class="s-who">브랜드</div>
+              <div class="s-name">○○ 브랜드</div>
+              <div class="s-done">✓ 서명 완료 — 2026.08.14 09:12</div>
+            </div>
+            <div class="sbox mine">
+              <div class="s-who">인플루언서(나)</div>
+              <div class="s-name">뷰티_소연</div>
+              <div class="s-done">✓ 서명 완료 — 2026.08.14 11:40</div>
+            </div>
+          </div>
+          <div class="s-asof">서명 현황은 <b>운영자가 모두싸인에서 확인한 시점</b> 기준입니다 · 2026.08.14 12:00 기준</div>
+          <div class="notice info" style="margin-top:var(--sp-3)"><div><b>양측 서명이 완료되어 운영자 확인을 기다립니다.</b> 확인이 끝나면 체결완료로 바뀌고 <b>그때 공구가 생성</b>됩니다 — <b>아직 공구는 만들어지지 않았습니다</b>. 서명 PDF·감사추적인증서도 체결 처리 시 발급됩니다.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 조건<span class="ch-n">브랜드가 작성한 조건 · 이 화면에서 수정할 수 없습니다</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">브랜드</div><div class="fv">○○ 브랜드 <span class="flink">스레드 열기</span></div></div>
+          <div class="frow ro"><div class="fk">공구명</div><div class="fv">여름 수분 세럼 공구 <div class="fsub">브랜드 내부 관리용 이름 · 소비자에게 보이는 게시물 제목은 내가 따로 씁니다</div></div></div>
+          <div class="frow ro"><div class="fk">공구 기간</div><div class="fv tnum">2026.08.24 10:00 ~ 2026.08.31 23:55 <span style="color:var(--n-500)">(8일)</span></div></div>
+          <div class="frow ro"><div class="fk">고정 지급비</div><div class="fv tnum">1,200,000원<div class="fsub">브랜드가 <b>직접 지급</b>하는 금액입니다 · 지급 시점 <b>공구 게시물 등록 후</b>(브랜드가 계약서에 기재) · 플랫폼을 거치지 않습니다</div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">내가 받는 금액<span class="ch-n">공제 전 금액</span></div>
+        <div class="card-b">
+          <div class="paysum"><div class="pk">고정 지급비</div><div class="amt">1,200,000원</div>
+            <div class="psub"><b>지급 시점</b> — 계약서에 <b>공구 게시물 등록 후</b>로 기재되어 있습니다. <b>브랜드가 내 계좌로 직접 지급</b>하며 플랫폼을 거치지 않습니다.</div></div>
+          <div class="terms">
+            <div class="trow"><div class="tk">판매 리워드</div><div class="tv tnum">수분진정 세럼 <b>15%</b> · 수분진정 크림 <b>12%</b> — 판매액에 리워드율을 곱해 정산됩니다(상품별 차등)</div></div>
+            <div class="trow"><div class="tk">정산 시점</div><div class="tv">공구 종료 후 <b>정산 관리</b>에서 확인 · 지급됩니다</div></div>
+          </div>
+          <div class="notice consent" style="margin-top:var(--sp-3)"><div>표시된 금액은 <b>세금 등 공제 전</b> 기준입니다. 판매 리워드의 실제 입금액은 <b>정산 관리</b>에서 확인할 수 있습니다.<br><b>고정 지급비는 브랜드가 직접 지급하며 플랫폼이 지급을 보증하거나 대신 집행하지 않습니다.</b> 지급되지 않으면 <b>연결·소통</b>에서 이슈 스레드를 열어 운영자 중재를 받을 수 있고, 이 계약서가 근거가 됩니다.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">내가 해야 할 일<span class="ch-n">콘텐츠 의무 · 서명하면 이 내용에 동의하게 됩니다</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">게시 포맷·수량</div><div class="fv">피드 1 · 릴스 1 · 스토리 3</div></div>
+          <div class="frow ro"><div class="fk">게시 완료 기한</div><div class="fv tnum">2026.08.31 <div class="fsub">피드 1 · 릴스 1 · 스토리 3 전부를 이 날짜까지 게시</div></div></div>
+          <div class="frow ro"><div class="fk">2차 활용권</div><div class="fv">허용 <div class="fsub">브랜드가 내 콘텐츠를 자사 채널·광고에 사용할 수 있습니다 · 범위는 비고 참조</div></div></div>
+          <div class="frow ro"><div class="fk">2차 활용 기간</div><div class="fv">기간 지정 · 12개월</div></div>
+          <div class="frow ro"><div class="fk">사전 검수</div><div class="fv">있음 <div class="fsub">게시 전 초안을 스레드로 보내야 하며, <b>브랜드 확인 없이 올린 콘텐츠는 이행으로 보지 않습니다</b></div></div></div>
+          <div class="frow ro"><div class="fk">비고</div><div class="fv">2차 활용 범위: 자사 상세페이지·인스타 광고 소재로 게시 후 12개월간 사용. 스토리 3회는 공구 기간 중 균등 분배.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 상품 항목<span class="ch-n">2건 · 정산이 이 리워드율을 사용합니다</span></div>
+        <div class="card-b">
+          <div class="terms">
+            <div class="trow"><div class="tk" style="width:176px">수분진정 세럼 30ml</div><div class="tv tnum">정가 32,000원 · 공구가 <b>28,000원</b> · 내 리워드율 <b>15%</b> · 개당 리워드 4,200원 · 브랜드 준비 물량 300개</div></div>
+            <div class="trow"><div class="tk" style="width:176px">수분진정 크림 50ml</div><div class="tv tnum">정가 24,000원 · 공구가 <b>22,000원</b> · 내 리워드율 <b>12%</b> · 개당 리워드 2,640원 · 브랜드 준비 물량 150개</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">상태</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">체결 처리 대기</span></div>
+          <div class="st-meta">
+            <div class="mrow"><span class="mk">받은 일시</span><span class="mv tnum">2026.08.13 16:40</span></div>
+            <div class="mrow"><span class="mk">양측 서명</span><span class="mv"><span style="color:var(--success-text);font-weight:600">완료 · 08.14 11:40</span></span></div>
+            <div class="mrow"><span class="mk">고정 지급비</span><span class="mv tnum">1,200,000원</span></div>
+            <div class="mrow"><span class="mk">계약서</span><span class="mv" style="color:var(--n-500)">체결 처리 시 PDF 발급</span></div>
+          </div>
+          <div class="st-acts"><button class="btn btn-secondary">스레드에서 협의하기</button></div>
+          <div class="st-hint"><b>여기서 내가 할 일은 없습니다.</b> 운영자 확인은 보통 <b>영업일 1일</b> 안에 끝나며, 체결되면 알림을 받습니다. 공구 게시물 작성은 <b>공구가 생성된 뒤</b> 가능합니다.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">이력</div>
+        <div class="hist">
+          <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">양측 서명 완료 확인</div><div class="hmeta">2026.08.14 12:00 · 운영자</div></div></div>
+          <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">브랜드 서명 완료</div><div class="hmeta">2026.08.14 09:12 · ○○ 브랜드</div></div></div>
+          <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">서명 요청 도착 · 운영자 검토 통과</div><div class="hmeta">2026.08.13 16:40 · ○○ 브랜드</div></div></div>
+          <div class="hitem"><span class="hdot"></span><div><div class="htxt">연결 성립</div><div class="hmeta">2026.07.30 11:20 · ○○ 브랜드</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+  </div>
+</section>
+
+
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S5</span><span class="state-label">모달 · 거절 확인</span>
+  <span class="state-spec">되돌릴 수 없는 액션 · 요약 → 입력(사유 구분 필수 · 메모 선택) → 고지 구성은 파트너센터 취소 모달과 <b>완전 동일 마크업</b> · 사유는 브랜드에게 전달되므로 그 사실을 명시 · 확정 버튼 위험색</span></div>
+  <div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 계약서</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">여름 수분 세럼 공구</div><div class="page-d">CTR-20260813-034 · ○○ 브랜드 · 2026.08.13 16:40 받음</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">서명 진행<span class="ch-n">운영자 검토 → 양측 동시 서명 요청</span></div>
+        <div class="card-b">
+          <div class="steps">
+            <span class="stp done">운영자 검토 통과<span class="who">08.13 15:20</span></span><span class="stp-ar">›</span>
+            <span class="stp done">서명 요청 발송<span class="who">양측 메일·문자 · 08.13 16:40</span></span><span class="stp-ar">›</span>
+            <span class="stp cur">양측 서명<span class="who">1 / 2 · 내 서명 대기</span></span><span class="stp-ar">›</span>
+            <span class="stp">운영자 체결 완료 처리<span class="who">PDF + 감사추적인증서</span></span>
+          </div>
+          <div class="signs" style="margin-top:var(--sp-4)">
+            <div class="sbox">
+              <div class="s-who">브랜드</div>
+              <div class="s-name">○○ 브랜드</div>
+              <div class="s-done">✓ 서명 완료 — 2026.08.14 09:12</div>
+            </div>
+            <div class="sbox mine">
+              <div class="s-who">인플루언서(나)</div>
+              <div class="s-name">뷰티_소연</div>
+              <div class="s-wait" style="color:var(--accent-600);font-weight:600">서명 대기 · 기한 2026.08.21 23:55</div>
+              <div class="s-wait" style="margin-top:5px">메일 · 문자로 받은 <b>전자서명 링크</b>에서 서명합니다</div>
+            </div>
+          </div>
+          <div class="s-asof">서명 현황은 <b>운영자가 모두싸인에서 확인한 시점</b> 기준입니다 · 2026.08.14 12:00 기준</div>
+          <div class="notice info" style="margin-top:var(--sp-3)"><div><b>양측이 모두 서명해야 체결로 넘어갑니다.</b> 서명이 끝나면 운영자가 확인해 <b>체결 완료 처리</b>를 하고, 그때 서명 PDF·감사추적인증서가 발급되며 공구가 생성됩니다.<br><b>서명 현황은 운영자가 확인한 시점 기준</b>으로 표시됩니다 — 방금 서명했다면 아직 반영 전일 수 있습니다.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 조건<span class="ch-n">브랜드가 작성한 조건 · 이 화면에서 수정할 수 없습니다</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">브랜드</div><div class="fv">○○ 브랜드 <span class="flink">스레드 열기</span></div></div>
+          <div class="frow ro"><div class="fk">공구명</div><div class="fv">여름 수분 세럼 공구 <div class="fsub">브랜드 내부 관리용 이름 · 소비자에게 보이는 게시물 제목은 내가 따로 씁니다</div></div></div>
+          <div class="frow ro"><div class="fk">공구 기간</div><div class="fv tnum">2026.08.24 10:00 ~ 2026.08.31 23:55 <span style="color:var(--n-500)">(8일)</span></div></div>
+          <div class="frow ro"><div class="fk">고정 지급비</div><div class="fv tnum">1,200,000원<div class="fsub">브랜드가 <b>직접 지급</b>하는 금액입니다 · 지급 시점 <b>공구 게시물 등록 후</b>(브랜드가 계약서에 기재) · 플랫폼을 거치지 않습니다</div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">내가 받는 금액<span class="ch-n">공제 전 금액</span></div>
+        <div class="card-b">
+          <div class="paysum"><div class="pk">고정 지급비</div><div class="amt">1,200,000원</div>
+            <div class="psub"><b>지급 시점</b> — 계약서에 <b>공구 게시물 등록 후</b>로 기재되어 있습니다. <b>브랜드가 내 계좌로 직접 지급</b>하며 플랫폼을 거치지 않습니다.</div></div>
+          <div class="terms">
+            <div class="trow"><div class="tk">판매 리워드</div><div class="tv tnum">수분진정 세럼 <b>15%</b> · 수분진정 크림 <b>12%</b> — 판매액에 리워드율을 곱해 정산됩니다(상품별 차등)</div></div>
+            <div class="trow"><div class="tk">정산 시점</div><div class="tv">공구 종료 후 <b>정산 관리</b>에서 확인 · 지급됩니다</div></div>
+          </div>
+          <div class="notice consent" style="margin-top:var(--sp-3)"><div>표시된 금액은 <b>세금 등 공제 전</b> 기준입니다. 판매 리워드의 실제 입금액은 <b>정산 관리</b>에서 확인할 수 있습니다.<br><b>고정 지급비는 브랜드가 직접 지급하며 플랫폼이 지급을 보증하거나 대신 집행하지 않습니다.</b> 지급되지 않으면 <b>연결·소통</b>에서 이슈 스레드를 열어 운영자 중재를 받을 수 있고, 이 계약서가 근거가 됩니다.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">내가 해야 할 일<span class="ch-n">콘텐츠 의무 · 서명하면 이 내용에 동의하게 됩니다</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">게시 포맷·수량</div><div class="fv">피드 1 · 릴스 1 · 스토리 3</div></div>
+          <div class="frow ro"><div class="fk">게시 완료 기한</div><div class="fv tnum">2026.08.31 <div class="fsub">피드 1 · 릴스 1 · 스토리 3 전부를 이 날짜까지 게시</div></div></div>
+          <div class="frow ro"><div class="fk">2차 활용권</div><div class="fv">허용 <div class="fsub">브랜드가 내 콘텐츠를 자사 채널·광고에 사용할 수 있습니다 · 범위는 비고 참조</div></div></div>
+          <div class="frow ro"><div class="fk">2차 활용 기간</div><div class="fv">기간 지정 · 12개월</div></div>
+          <div class="frow ro"><div class="fk">사전 검수</div><div class="fv">있음 <div class="fsub">게시 전 초안을 스레드로 보내야 하며, <b>브랜드 확인 없이 올린 콘텐츠는 이행으로 보지 않습니다</b></div></div></div>
+          <div class="frow ro"><div class="fk">비고</div><div class="fv">2차 활용 범위: 자사 상세페이지·인스타 광고 소재로 게시 후 12개월간 사용. 스토리 3회는 공구 기간 중 균등 분배.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 상품 항목<span class="ch-n">2건 · 정산이 이 리워드율을 사용합니다</span></div>
+        <div class="card-b">
+          <div class="terms">
+            <div class="trow"><div class="tk" style="width:176px">수분진정 세럼 30ml</div><div class="tv tnum">정가 32,000원 · 공구가 <b>28,000원</b> · 내 리워드율 <b>15%</b> · 개당 리워드 4,200원 · 브랜드 준비 물량 300개</div></div>
+            <div class="trow"><div class="tk" style="width:176px">수분진정 크림 50ml</div><div class="tv tnum">정가 24,000원 · 공구가 <b>22,000원</b> · 내 리워드율 <b>12%</b> · 개당 리워드 2,640원 · 브랜드 준비 물량 150개</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">상태</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">서명 진행중</span></div>
+          <div class="st-meta">
+            <div class="mrow"><span class="mk">받은 일시</span><span class="mv tnum">2026.08.13 16:40</span></div>
+            <div class="mrow"><span class="mk">내 서명 기한</span><span class="mv tnum due">2026.08.21 23:55</span></div>
+            <div class="mrow"><span class="mk">고정 지급비</span><span class="mv tnum">1,200,000원</span></div>
+            <div class="mrow"><span class="mk">계약서</span><span class="mv"><span class="flink">받은 계약서 보기</span></span></div>
+          </div>
+          <div class="st-acts"><button class="btn btn-secondary">서명 안내 다시 받기</button><button class="btn btn-secondary">스레드에서 협의하기</button><button class="btn btn-danger">거절</button></div>
+          <div class="st-hint">기한까지 서명하지 않으면 이 계약은 <b>만료</b>됩니다. 조건을 바꾸고 싶다면 서명 전에 <b>스레드에서 협의</b>하세요 — 이 화면에서 조건을 고칠 수는 없고, 브랜드가 새 계약을 다시 보내야 합니다.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">이력</div>
+        <div class="hist">
+          <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">브랜드 서명 완료</div><div class="hmeta">2026.08.14 09:12 · ○○ 브랜드</div></div></div>
+          <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">서명 요청 도착 · 운영자 검토 통과</div><div class="hmeta">2026.08.13 16:40 · ○○ 브랜드</div></div></div>
+          <div class="hitem"><span class="hdot"></span><div><div class="htxt">연결 성립</div><div class="hmeta">2026.07.30 11:20 · ○○ 브랜드</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay">
+    <div class="modal">
+      <div class="modal-h">이 계약을 거절할까요?<span class="modal-x">✕</span></div>
+      <div class="modal-b">
+        <div class="msum">
+          <div class="trow"><div class="tk">공구명</div><div class="tv">여름 수분 세럼 공구</div></div>
+          <div class="trow"><div class="tk">브랜드</div><div class="tv">○○ 브랜드</div></div>
+          <div class="trow"><div class="tk">고정 지급비</div><div class="tv tnum">1,200,000원</div></div>
+        </div>
+        <label class="mlabel">사유 구분<span class="req">*</span></label>
+        <select class="msel"><option>조건 재협의 필요</option><option>일정이 맞지 않음</option><option>상품이 내 쇼룸과 맞지 않음</option><option>콘텐츠 의무가 과함</option><option>기타</option></select>
+        <label class="mlabel">브랜드에게 남길 메모<span class="opt">선택</span></label>
+        <textarea class="mta" placeholder="조정이 필요한 부분을 적으면 브랜드가 조건을 고쳐 다시 보낼 수 있습니다."></textarea>
+        <div class="mwarn"><div><b>거절하면 이 계약은 종결되고 되돌릴 수 없습니다.</b> 연결은 유지되므로 브랜드가 조건을 고쳐 새 계약을 다시 보낼 수 있습니다. 사유는 브랜드에게 그대로 전달됩니다.</div></div>
+      </div>
+      <div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-danger">거절</button></div>
+    </div>
+  </div>
+
+</div>
+  </div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S6</span><span class="state-label">상세 · 체결완료</span>
+  <span class="state-spec">읽기 전용 + PDF · 감사추적인증서 · 다음 행동은 <b>브랜드의 공구 생성 대기</b>라 주 버튼을 두지 않고 [공구 관리 열기]로 안내 · 고정 지급비가 <b>아직 지급 전</b>이고 트리거가 <b>내 게시물 등록</b>이라는 사실을 상태 카드에 못박는다</span></div>
+  <div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 계약서</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">여름 수분 세럼 공구</div><div class="page-d">CTR-20260813-034 · ○○ 브랜드 · 2026.08.14 09:30 체결</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">서명 진행<span class="ch-n">운영자 검토 → 양측 서명 → 운영자 체결 처리</span></div>
+        <div class="card-b">
+          <div class="steps">
+            <span class="stp done">운영자 검토 통과<span class="who">08.13 15:20</span></span><span class="stp-ar">›</span>
+            <span class="stp done">서명 요청 발송<span class="who">08.13 16:40</span></span><span class="stp-ar">›</span>
+            <span class="stp done">양측 서명 완료<span class="who">브랜드 08.14 09:12 · 나 08.14 11:40</span></span><span class="stp-ar">›</span>
+            <span class="stp cur">운영자 체결 완료 처리<span class="who">08.14 14:05 · PDF·인증서 발급됨</span></span>
+          </div>
+          <div class="signs" style="margin-top:var(--sp-4)">
+            <div class="sbox">
+              <div class="s-who">브랜드</div>
+              <div class="s-name">○○ 브랜드</div>
+              <div class="s-done">✓ 서명 완료 — 2026.08.14 09:12</div>
+            </div>
+            <div class="sbox mine">
+              <div class="s-who">인플루언서(나)</div>
+              <div class="s-name">뷰티_소연</div>
+              <div class="s-done">✓ 서명 완료 — 2026.08.14 11:40</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 조건<span class="ch-n">브랜드가 작성한 조건 · 이 화면에서 수정할 수 없습니다</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">브랜드</div><div class="fv">○○ 브랜드 <span class="flink">스레드 열기</span></div></div>
+          <div class="frow ro"><div class="fk">공구명</div><div class="fv">여름 수분 세럼 공구 <div class="fsub">브랜드 내부 관리용 이름 · 소비자에게 보이는 게시물 제목은 내가 따로 씁니다</div></div></div>
+          <div class="frow ro"><div class="fk">공구 기간</div><div class="fv tnum">2026.08.24 10:00 ~ 2026.08.31 23:55 <span style="color:var(--n-500)">(8일)</span></div></div>
+          <div class="frow ro"><div class="fk">고정 지급비</div><div class="fv tnum">1,200,000원<div class="fsub">브랜드가 <b>직접 지급</b> · 지급 시점 <b>공구 게시물 등록 후</b>(계약서 기재) · 플랫폼을 거치지 않습니다</div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">내가 받는 금액<span class="ch-n">공제 전 금액</span></div>
+        <div class="card-b">
+          <div class="paysum"><div class="pk">고정 지급비</div><div class="amt">1,200,000원</div>
+            <div class="psub"><b>아직 지급되지 않았습니다.</b> 계약서 기재 시점은 <b>공구 게시물 등록 후</b>이며 <b>브랜드가 직접 지급</b>합니다.</div></div>
+          <div class="terms">
+            <div class="trow"><div class="tk">판매 리워드</div><div class="tv tnum">수분진정 세럼 <b>15%</b> · 수분진정 크림 <b>12%</b> — 판매액에 리워드율을 곱해 정산됩니다(상품별 차등)</div></div>
+            <div class="trow"><div class="tk">정산 시점</div><div class="tv">공구 종료 후 <b>정산 관리</b>에서 확인 · 지급됩니다</div></div>
+          </div>
+          <div class="notice consent" style="margin-top:var(--sp-3)"><div>표시된 금액은 <b>세금 등 공제 전</b> 기준입니다. 판매 리워드의 실제 입금액은 <b>정산 관리</b>에서 확인할 수 있습니다.<br><b>고정 지급비는 브랜드가 직접 지급하며 플랫폼이 지급을 보증하거나 대신 집행하지 않습니다.</b> 지급되지 않으면 <b>연결·소통</b>에서 이슈 스레드를 열어 운영자 중재를 받을 수 있고, 이 계약서가 근거가 됩니다.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">내가 해야 할 일<span class="ch-n">콘텐츠 의무 · 체결로 확정된 약속</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">게시 포맷·수량</div><div class="fv">피드 1 · 릴스 1 · 스토리 3</div></div>
+          <div class="frow ro"><div class="fk">게시 완료 기한</div><div class="fv tnum">2026.08.31 <div class="fsub">피드 1 · 릴스 1 · 스토리 3 전부를 이 날짜까지 게시</div></div></div>
+          <div class="frow ro"><div class="fk">2차 활용권</div><div class="fv">허용 <div class="fsub">브랜드가 내 콘텐츠를 자사 채널·광고에 사용할 수 있습니다 · 범위는 비고 참조</div></div></div>
+          <div class="frow ro"><div class="fk">2차 활용 기간</div><div class="fv">기간 지정 · 12개월</div></div>
+          <div class="frow ro"><div class="fk">사전 검수</div><div class="fv">있음 <div class="fsub">게시 전 초안을 스레드로 보내야 하며, <b>브랜드 확인 없이 올린 콘텐츠는 이행으로 보지 않습니다</b></div></div></div>
+          <div class="frow ro"><div class="fk">비고</div><div class="fv">2차 활용 범위: 자사 상세페이지·인스타 광고 소재로 게시 후 12개월간 사용. 스토리 3회는 공구 기간 중 균등 분배.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 상품 항목<span class="ch-n">2건 · 정산이 이 리워드율을 사용합니다</span></div>
+        <div class="card-b">
+          <div class="terms">
+            <div class="trow"><div class="tk" style="width:176px">수분진정 세럼 30ml</div><div class="tv tnum">정가 32,000원 · 공구가 <b>28,000원</b> · 내 리워드율 <b>15%</b> · 개당 리워드 4,200원 · 브랜드 준비 물량 300개</div></div>
+            <div class="trow"><div class="tk" style="width:176px">수분진정 크림 50ml</div><div class="tv tnum">정가 24,000원 · 공구가 <b>22,000원</b> · 내 리워드율 <b>12%</b> · 개당 리워드 2,640원 · 브랜드 준비 물량 150개</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">상태</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-success">체결완료</span></div>
+          <div class="st-meta">
+            <div class="mrow"><span class="mk">체결일시</span><span class="mv tnum">2026.08.14 14:05</span></div>
+            <div class="mrow"><span class="mk">서명 PDF</span><span class="mv"><span class="flink">다운로드</span></span></div>
+            <div class="mrow"><span class="mk">감사추적인증서</span><span class="mv"><span class="flink">다운로드</span></span></div>
+            <div class="mrow"><span class="mk">고정 지급비</span><span class="mv">지급 전</span></div>
+            <div class="mrow"><span class="mk">연결된 공구</span><span class="mv">브랜드 생성 대기</span></div>
+          </div>
+          <div class="st-acts"><button class="btn btn-secondary">공구 관리 열기</button><button class="btn btn-secondary">스레드에서 협의하기</button></div>
+          <div class="st-hint">계약이 성립했습니다. <b>브랜드가 공구를 생성하면</b> 공구 관리에서 공구 게시물을 작성할 수 있고, 그 게시물을 쇼룸에 등록한 시점에 고정 지급비가 지급됩니다. 게시 완료 기한은 <b>2026.08.31</b>입니다.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">이력</div>
+        <div class="hist">
+          <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">체결완료 · PDF·인증서 발급</div><div class="hmeta">2026.08.14 14:05 · 운영자</div></div></div>
+          <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">양측 서명 완료 확인</div><div class="hmeta">2026.08.14 12:00 · 운영자</div></div></div>
+          <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">내 서명 완료</div><div class="hmeta">2026.08.14 11:40 · 뷰티_소연</div></div></div>
+          <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">브랜드 서명 완료</div><div class="hmeta">2026.08.14 09:12 · ○○ 브랜드</div></div></div>
+          <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">서명 요청 도착 · 운영자 검토 통과</div><div class="hmeta">2026.08.13 16:40 · ○○ 브랜드</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+  </div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S11</span><span class="state-label">모달 · 내 서명 완료(체결 아님)</span>
+  <span class="state-spec"><b>「즉시 체결」을 폐기한 자리</b> — 내가 서명해도 계약은 아직 성립하지 않는다(브랜드 서명 + 운영자 체결 처리가 남는다) · 그래서 제목이 <b>「체결되었습니다」가 아니라 「서명이 완료되었습니다」</b>이고, 체크리스트도 <b>발급 · 체결 항목을 담지 않는다</b> · <b>다음 단계</b>는 게시물 작성이 아니라 <b>남은 절차의 안내</b>다 — 여기서 일정을 당겨 잡으면 안 된다</span></div>
+<div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 계약서</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">여름 수분 세럼 공구</div><div class="page-d">CTR-20260813-034 · ○○ 브랜드 · 2026.08.13 16:40 받음</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">서명 진행<span class="ch-n">운영자 검토 → 양측 동시 서명 요청</span></div>
+        <div class="card-b">
+          <div class="steps">
+            <span class="stp done">운영자 검토 통과<span class="who">08.13 15:20</span></span><span class="stp-ar">›</span>
+            <span class="stp done">서명 요청 발송<span class="who">양측 메일·문자 · 08.13 16:40</span></span><span class="stp-ar">›</span>
+            <span class="stp cur">양측 서명<span class="who">1 / 2 · 브랜드 대기</span></span><span class="stp-ar">›</span>
+            <span class="stp ">운영자 체결 완료 처리<span class="who">PDF + 감사추적인증서</span></span>
+          </div>
+          <div class="signs" style="margin-top:var(--sp-4)">
+            <div class="sbox">
+              <div class="s-who">브랜드</div>
+              <div class="s-name">○○ 브랜드</div>
+              <div class="s-wait">서명 대기 · 브랜드도 요청 메일·문자를 받았습니다</div>
+            </div>
+            <div class="sbox mine">
+              <div class="s-who">인플루언서(나)</div>
+              <div class="s-name">뷰티_소연</div>
+              <div class="s-done">✓ 서명 완료 — 2026.08.14 11:40</div>
+            </div>
+          </div>
+          <div class="s-asof">서명 현황은 <b>운영자가 모두싸인에서 확인한 시점</b> 기준입니다 · 2026.08.14 12:00 기준</div>
+          <div class="notice info" style="margin-top:var(--sp-3)"><div><b>양측이 모두 서명해야 체결로 넘어갑니다.</b> 서명이 끝나면 운영자가 확인해 <b>체결 완료 처리</b>를 하고, 그때 서명 PDF·감사추적인증서가 발급되며 공구가 생성됩니다.<br><b>서명 현황은 운영자가 확인한 시점 기준</b>으로 표시됩니다 — 방금 서명했다면 아직 반영 전일 수 있습니다.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 조건<span class="ch-n">브랜드가 작성한 조건 · 이 화면에서 수정할 수 없습니다</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">브랜드</div><div class="fv">○○ 브랜드 <span class="flink">스레드 열기</span></div></div>
+          <div class="frow ro"><div class="fk">공구명</div><div class="fv">여름 수분 세럼 공구 <div class="fsub">브랜드 내부 관리용 이름 · 소비자에게 보이는 게시물 제목은 내가 따로 씁니다</div></div></div>
+          <div class="frow ro"><div class="fk">공구 기간</div><div class="fv tnum">2026.08.24 10:00 ~ 2026.08.31 23:55 <span style="color:var(--n-500)">(8일)</span></div></div>
+          <div class="frow ro"><div class="fk">고정 지급비</div><div class="fv tnum">1,200,000원<div class="fsub">브랜드가 <b>직접 지급</b>하는 금액입니다 · 지급 시점 <b>공구 게시물 등록 후</b>(브랜드가 계약서에 기재) · 플랫폼을 거치지 않습니다</div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">내가 받는 금액<span class="ch-n">공제 전 금액</span></div>
+        <div class="card-b">
+          <div class="paysum"><div class="pk">고정 지급비</div><div class="amt">1,200,000원</div>
+            <div class="psub"><b>지급 시점</b> — 계약서에 <b>공구 게시물 등록 후</b>로 기재되어 있습니다. <b>브랜드가 내 계좌로 직접 지급</b>하며 플랫폼을 거치지 않습니다.</div></div>
+          <div class="terms">
+            <div class="trow"><div class="tk">판매 리워드</div><div class="tv tnum">수분진정 세럼 <b>15%</b> · 수분진정 크림 <b>12%</b> — 판매액에 리워드율을 곱해 정산됩니다(상품별 차등)</div></div>
+            <div class="trow"><div class="tk">정산 시점</div><div class="tv">공구 종료 후 <b>정산 관리</b>에서 확인 · 지급됩니다</div></div>
+          </div>
+          <div class="notice consent" style="margin-top:var(--sp-3)"><div>표시된 금액은 <b>세금 등 공제 전</b> 기준입니다. 판매 리워드의 실제 입금액은 <b>정산 관리</b>에서 확인할 수 있습니다.<br><b>고정 지급비는 브랜드가 직접 지급하며 플랫폼이 지급을 보증하거나 대신 집행하지 않습니다.</b> 지급되지 않으면 <b>연결·소통</b>에서 이슈 스레드를 열어 운영자 중재를 받을 수 있고, 이 계약서가 근거가 됩니다.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">내가 해야 할 일<span class="ch-n">콘텐츠 의무 · 서명하면 이 내용에 동의하게 됩니다</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">게시 포맷·수량</div><div class="fv">피드 1 · 릴스 1 · 스토리 3</div></div>
+          <div class="frow ro"><div class="fk">게시 완료 기한</div><div class="fv tnum">2026.08.31 <div class="fsub">피드 1 · 릴스 1 · 스토리 3 전부를 이 날짜까지 게시</div></div></div>
+          <div class="frow ro"><div class="fk">2차 활용권</div><div class="fv">허용 <div class="fsub">브랜드가 내 콘텐츠를 자사 채널·광고에 사용할 수 있습니다 · 범위는 비고 참조</div></div></div>
+          <div class="frow ro"><div class="fk">2차 활용 기간</div><div class="fv">기간 지정 · 12개월</div></div>
+          <div class="frow ro"><div class="fk">사전 검수</div><div class="fv">있음 <div class="fsub">게시 전 초안을 스레드로 보내야 하며, <b>브랜드 확인 없이 올린 콘텐츠는 이행으로 보지 않습니다</b></div></div></div>
+          <div class="frow ro"><div class="fk">비고</div><div class="fv">2차 활용 범위: 자사 상세페이지·인스타 광고 소재로 게시 후 12개월간 사용. 스토리 3회는 공구 기간 중 균등 분배.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 상품 항목<span class="ch-n">2건 · 정산이 이 리워드율을 사용합니다</span></div>
+        <div class="card-b">
+          <div class="terms">
+            <div class="trow"><div class="tk" style="width:176px">수분진정 세럼 30ml</div><div class="tv tnum">정가 32,000원 · 공구가 <b>28,000원</b> · 내 리워드율 <b>15%</b> · 개당 리워드 4,200원 · 브랜드 준비 물량 300개</div></div>
+            <div class="trow"><div class="tk" style="width:176px">수분진정 크림 50ml</div><div class="tv tnum">정가 24,000원 · 공구가 <b>22,000원</b> · 내 리워드율 <b>12%</b> · 개당 리워드 2,640원 · 브랜드 준비 물량 150개</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">상태</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-info">서명 진행중</span></div>
+          <div class="st-meta">
+            <div class="mrow"><span class="mk">받은 일시</span><span class="mv tnum">2026.08.13 16:40</span></div>
+            <div class="mrow"><span class="mk">내 서명</span><span class="mv"><span style="color:var(--success-text);font-weight:600">완료 · 08.14 11:40</span></span></div>
+            <div class="mrow"><span class="mk">브랜드 서명 기한</span><span class="mv tnum">2026.08.21 23:55</span></div>
+            <div class="mrow"><span class="mk">고정 지급비</span><span class="mv tnum">1,200,000원</span></div>
+            <div class="mrow"><span class="mk">계약서</span><span class="mv"><span class="flink">받은 계약서 보기</span></span></div>
+          </div>
+          <div class="st-acts"><button class="btn btn-secondary">스레드에서 협의하기</button></div>
+          <div class="st-hint"><b>내 서명은 끝났고 브랜드 서명을 기다립니다.</b> 서명한 뒤에는 <b>거절하거나 되돌릴 수 없습니다</b>. 브랜드가 기한까지 서명하지 않으면 계약은 <b>만료</b>됩니다.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">이력</div>
+        <div class="hist">
+          <div class="hitem"><span class="hdot h-success"></span><div><div class="htxt">내 서명 완료</div><div class="hmeta">2026.08.14 11:40 · 뷰티_소연</div></div></div>
+          <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">서명 요청 도착 · 운영자 검토 통과</div><div class="hmeta">2026.08.13 16:40 · ○○ 브랜드</div></div></div>
+          <div class="hitem"><span class="hdot"></span><div><div class="htxt">연결 성립</div><div class="hmeta">2026.07.30 11:20 · ○○ 브랜드</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay">
+    <div class="modal">
+      <div class="modal-h">서명 완료<span class="modal-x">✕</span></div>
+      <div class="modal-b">
+        <div class="rcenter" style="padding:4px 0 var(--sp-4)">
+          <div class="rico ok">✓</div>
+          <div class="rt">서명이 완료되었습니다</div>
+          <div class="rd"><b>아직 계약이 체결된 것은 아닙니다.</b><br>브랜드 서명과 운영자 체결 처리가 끝나야 계약이 성립합니다.</div>
+        </div>
+        <div class="ck">
+          <div class="ck-i"><span class="cm">✓</span>내 서명 완료<span class="cs">2026.08.14 11:40</span></div>
+          <div class="ck-i"><span class="cm" style="background:var(--n-200);color:var(--n-500)">2</span>브랜드 서명<span class="cs" style="color:var(--n-500)">대기 · 기한 08.21</span></div>
+          <div class="ck-i"><span class="cm" style="background:var(--n-200);color:var(--n-500)">3</span>운영자 체결 완료 처리<span class="cs" style="color:var(--n-500)">서명 완료 후</span></div>
+          <div class="ck-i"><span class="cm" style="background:var(--n-200);color:var(--n-500)">4</span>PDF · 감사추적인증서 발급 · 공구 생성<span class="cs" style="color:var(--n-500)">체결 시</span></div>
+        </div>
+        <div class="mhint">서명한 뒤에는 <b>거절하거나 되돌릴 수 없습니다</b>. 위 3~4단계가 끝나면 알림을 받고, 그때부터 공구 게시물을 작성할 수 있습니다 — <b>지금 준비 일정을 확정하지 마세요</b>.</div>
+      </div>
+      <div class="modal-f"><button class="btn btn-primary">확인</button></div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S7</span><span class="state-label">상세 · 거절(종결 · 내가 거절)</span>
+  <span class="state-spec"><b>내가 끝낸 계약</b>이라 안내 문구가 상대 탓이 아니다 · 상태색은 파트너센터와 동일한 <b>위험</b>(같은 상태값) · 거절 사유는 <b>내가 입력한 값</b> · <b>[이 조건으로 새 계약 작성]은 없다</b> — 계약을 만드는 쪽은 브랜드다</span></div>
+  <div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 계약서</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">봄 클렌저 공구</div><div class="page-d">CTR-20260722-019 · □□ 뷰티랩 · 2026.07.24 10:15 거절</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">서명 진행<span class="ch-n">종결됨</span></div>
+        <div class="card-b">
+          <div class="notice danger" style="margin-bottom:var(--sp-4)"><div><b>내가 이 계약을 거절했습니다.</b> 이 계약은 종결되었고 되돌릴 수 없습니다. 연결은 그대로 유지되며, 브랜드가 조건을 고쳐 <b>새 계약을 다시 보낼 수 있습니다</b>.</div></div>
+          <div class="steps">
+            <span class="stp done">운영자 검토 통과<span class="who">07.22 11:10</span></span><span class="stp-ar">›</span>
+            <span class="stp done">서명 요청 발송<span class="who">양측 메일·문자 · 07.22 14:30</span></span><span class="stp-ar">›</span>
+            <span class="stp stp stop">내가 거절<span class="who">뷰티_소연 · 07.24 10:15</span></span><span class="stp-ar">›</span>
+            <span class="stp">운영자 체결 완료 처리<span class="who">진행되지 않음</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">거절 사유<span class="ch-n">내가 입력한 사유 · 2026.07.24 10:15</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">사유 구분</div><div class="fv">조건 재협의 필요</div></div>
+          <div class="frow ro"><div class="fk">브랜드에게 남긴 메모</div><div class="fv">리워드율 10%는 촬영 분량 대비 부담이 커서요. 릴스 수량을 줄이거나 리워드율 조정이 가능하면 다시 검토하고 싶습니다.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 조건<span class="ch-n">종결된 계약 · 읽기 전용</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">브랜드</div><div class="fv">□□ 뷰티랩 <span class="flink">스레드 열기</span></div></div>
+          <div class="frow ro"><div class="fk">공구명</div><div class="fv">봄 클렌저 공구</div></div>
+          <div class="frow ro"><div class="fk">공구 기간</div><div class="fv tnum">2026.08.01 10:00 ~ 2026.08.08 23:55 <span style="color:var(--n-500)">(8일)</span></div></div>
+          <div class="frow ro"><div class="fk">고정 지급비</div><div class="fv tnum">200,000원 <div class="fsub">계약이 성립하지 않아 <b>지급되지 않았습니다</b></div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 상품 항목<span class="ch-n">1건</span></div>
+        <div class="card-b">
+          <div class="terms">
+            <div class="trow"><div class="tk" style="width:176px">저자극 클렌징 오일 150ml</div><div class="tv tnum">정가 18,000원 · 공구가 <b>16,200원</b> · 내 리워드율 <b>10%</b> · 개당 리워드 1,620원 · 브랜드 준비 물량 200개</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">콘텐츠 의무<span class="ch-n">계약이 성립하지 않아 효력 없음</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">게시 포맷·수량</div><div class="fv">피드 1 · 릴스 2 · 스토리 3</div></div>
+          <div class="frow ro"><div class="fk">게시 완료 기한</div><div class="fv tnum">공구 종료일과 동일</div></div>
+          <div class="frow ro"><div class="fk">2차 활용권</div><div class="fv">허용 · 기간 지정 12개월</div></div>
+          <div class="frow ro"><div class="fk">사전 검수</div><div class="fv">있음</div></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">상태</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-danger">거절</span></div>
+          <div class="st-meta">
+            <div class="mrow"><span class="mk">받은 일시</span><span class="mv tnum">2026.07.22 15:30</span></div>
+            <div class="mrow"><span class="mk">거절 일시</span><span class="mv tnum">2026.07.24 10:15</span></div>
+            <div class="mrow"><span class="mk">고정 지급비</span><span class="mv">지급 없음</span></div>
+            <div class="mrow"><span class="mk">연결 상태</span><span class="mv">연결됨 유지</span></div>
+          </div>
+          <div class="st-acts"><button class="btn btn-secondary">스레드에서 협의하기</button></div>
+          <div class="st-hint">거절은 <b>이 계약만</b> 종결시킵니다 — 연결이 끊기지는 않습니다. 조건을 다시 맞추고 싶다면 스레드에서 협의하고, <b>새 계약은 브랜드가 보냅니다</b>.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">이력</div>
+        <div class="hist">
+          <div class="hitem"><span class="hdot h-danger"></span><div><div class="htxt">내가 거절 · 조건 재협의 필요</div><div class="hmeta">2026.07.24 10:15 · 뷰티_소연</div></div></div>
+          <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">서명 요청 도착 · 운영자 검토 통과</div><div class="hmeta">2026.07.22 15:30 · □□ 뷰티랩</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+  </div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S8</span><span class="state-label">상세 · 만료(종결)</span>
+  <span class="state-spec">기한까지 양측 서명이 완료되지 않아 종결 — <b>운영자가 확인해 만료 처리</b>한다(자동 판정이 아니다 · MVP) · <b>아무도 거절하지 않았으므로 중립색</b> · 재발송은 브랜드만 할 수 있어 <b>요청</b>으로 안내 · 고정 지급비는 지급 없음</span></div>
+  <div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 계약서</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">수분 토너 리뉴얼 공구</div><div class="page-d">CTR-20260725-021 · ○○ 브랜드 · 2026.08.02 00:00 만료</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">서명 진행<span class="ch-n">종결됨</span></div>
+        <div class="card-b">
+          <div class="notice neutral" style="margin-bottom:var(--sp-4)"><div><b>서명 기한이 지나 자동으로 종결되었습니다.</b> 누가 거절한 것은 아니며, 브랜드가 같은 조건으로 <b>다시 보낼 수 있습니다</b>.</div></div>
+          <div class="steps">
+            <span class="stp done">운영자 검토 통과<span class="who">07.25 09:40</span></span><span class="stp-ar">›</span>
+            <span class="stp done">서명 요청 발송<span class="who">양측 메일·문자 · 07.25 11:00</span></span><span class="stp-ar">›</span>
+            <span class="stp stp halt">기한 경과 · 만료<span class="who">양측 미서명 · 운영자 확인 08.02</span></span><span class="stp-ar">›</span>
+            <span class="stp">운영자 체결 완료 처리<span class="who">진행되지 않음</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 조건<span class="ch-n">종결된 계약 · 읽기 전용</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">브랜드</div><div class="fv">○○ 브랜드 <span class="flink">스레드 열기</span></div></div>
+          <div class="frow ro"><div class="fk">공구명</div><div class="fv">수분 토너 리뉴얼 공구</div></div>
+          <div class="frow ro"><div class="fk">공구 기간</div><div class="fv tnum">2026.07.25 10:00 ~ 2026.08.01 23:55 <span style="color:var(--n-500)">(8일)</span></div></div>
+          <div class="frow ro"><div class="fk">고정 지급비</div><div class="fv tnum">200,000원 <div class="fsub">계약이 성립하지 않아 <b>지급되지 않았습니다</b></div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 상품 항목<span class="ch-n">1건</span></div>
+        <div class="card-b">
+          <div class="terms">
+            <div class="trow"><div class="tk" style="width:176px">수분진정 토너 200ml</div><div class="tv tnum">정가 21,000원 · 공구가 <b>19,000원</b> · 내 리워드율 <b>12%</b> · 개당 리워드 2,280원 · 브랜드 준비 물량 250개</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">콘텐츠 의무<span class="ch-n">계약이 성립하지 않아 효력 없음</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">게시 포맷·수량</div><div class="fv">피드 1 · 릴스 2 · 스토리 3</div></div>
+          <div class="frow ro"><div class="fk">게시 완료 기한</div><div class="fv tnum">공구 종료일과 동일</div></div>
+          <div class="frow ro"><div class="fk">2차 활용권</div><div class="fv">허용 · 기간 지정 12개월</div></div>
+          <div class="frow ro"><div class="fk">사전 검수</div><div class="fv">있음</div></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">상태</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-neutral">만료</span></div>
+          <div class="st-meta">
+            <div class="mrow"><span class="mk">받은 일시</span><span class="mv tnum">2026.07.25 14:10</span></div>
+            <div class="mrow"><span class="mk">서명 기한</span><span class="mv tnum">2026.08.01 23:55</span></div>
+            <div class="mrow"><span class="mk">만료 처리</span><span class="mv tnum">2026.08.02 00:00</span></div>
+            <div class="mrow"><span class="mk">고정 지급비</span><span class="mv">지급 없음</span></div>
+          </div>
+          <div class="st-acts"><button class="btn btn-secondary">스레드에서 협의하기</button></div>
+          <div class="st-hint">기한까지 <b>양측 서명이 완료되지 않아</b> 종결된 건입니다. 계약이 여전히 필요하다면 <b>스레드에서 브랜드에게 재발송을 요청</b>하세요 — 계약을 만드는 쪽은 브랜드입니다.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">이력</div>
+        <div class="hist">
+          <div class="hitem"><span class="hdot"></span><div><div class="htxt">서명 기한 경과 · 만료 처리</div><div class="hmeta">2026.08.02 · 운영자</div></div></div>
+          <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">서명 요청 도착 · 운영자 검토 통과</div><div class="hmeta">2026.07.25 14:10 · ○○ 브랜드</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+  </div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S9</span><span class="state-label">상세 · 취소(종결 · 브랜드 철회)</span>
+  <span class="state-spec">브랜드가 발송을 철회한 건 — <b>내가 할 조치가 없다</b>는 사실을 안내에 명시 · 중립색 · 취소 사유는 <b>브랜드가 입력한 값</b>(파트너센터 B8과 주체가 반대)</span></div>
+  <div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">계약 관리<span class="c-sub">/ 계약서</span></div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">클렌징 오일 여름 공구</div><div class="page-d">CTR-20260720-017 · △△ 코스메틱 · 2026.07.21 09:40 취소</div></div>
+    <div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div>
+  <div class="detail">
+    <div>
+      <div class="card">
+        <div class="card-h">서명 진행<span class="ch-n">종결됨</span></div>
+        <div class="card-b">
+          <div class="notice neutral" style="margin-bottom:var(--sp-4)"><div><b>브랜드가 이 계약을 철회했습니다.</b> 내 서명 전에 종결되었으며 되돌릴 수 없습니다. 연결은 유지되므로 조건을 다시 협의할 수 있습니다.</div></div>
+          <div class="steps">
+            <span class="stp done">운영자 검토 통과<span class="who">07.20 10:20</span></span><span class="stp-ar">›</span>
+            <span class="stp done">서명 요청 발송<span class="who">양측 메일·문자 · 07.20 13:00</span></span><span class="stp-ar">›</span>
+            <span class="stp stp halt">브랜드 철회 · 취소<span class="who">△△ 코스메틱 · 07.21 09:40</span></span><span class="stp-ar">›</span>
+            <span class="stp">운영자 체결 완료 처리<span class="who">진행되지 않음</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">취소 사유<span class="ch-n">브랜드가 입력한 사유 · 2026.07.21 09:40</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">사유 구분</div><div class="fv">상품 준비 일정 변경</div></div>
+          <div class="frow ro"><div class="fk">브랜드 메모</div><div class="fv">생산 일정이 밀려 공구 기간을 다시 잡아야 합니다. 일정 확정 후 새 계약으로 다시 보내겠습니다.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 조건<span class="ch-n">종결된 계약 · 읽기 전용</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">브랜드</div><div class="fv">△△ 코스메틱 <span class="flink">스레드 열기</span></div></div>
+          <div class="frow ro"><div class="fk">공구명</div><div class="fv">클렌징 오일 여름 공구</div></div>
+          <div class="frow ro"><div class="fk">공구 기간</div><div class="fv tnum">2026.07.20 10:00 ~ 2026.07.27 23:55 <span style="color:var(--n-500)">(8일)</span></div></div>
+          <div class="frow ro"><div class="fk">고정 지급비</div><div class="fv tnum">200,000원 <div class="fsub">계약이 성립하지 않아 <b>지급되지 않았습니다</b></div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">계약 상품 항목<span class="ch-n">1건</span></div>
+        <div class="card-b">
+          <div class="terms">
+            <div class="trow"><div class="tk" style="width:176px">저자극 클렌징 오일 150ml</div><div class="tv tnum">정가 18,000원 · 공구가 <b>16,200원</b> · 내 리워드율 <b>10%</b> · 개당 리워드 1,620원 · 브랜드 준비 물량 200개</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">콘텐츠 의무<span class="ch-n">계약이 성립하지 않아 효력 없음</span></div>
+        <div class="card-b">
+          <div class="frow ro"><div class="fk">게시 포맷·수량</div><div class="fv">피드 1 · 릴스 2 · 스토리 3</div></div>
+          <div class="frow ro"><div class="fk">게시 완료 기한</div><div class="fv tnum">공구 종료일과 동일</div></div>
+          <div class="frow ro"><div class="fk">2차 활용권</div><div class="fv">허용 · 기간 지정 12개월</div></div>
+          <div class="frow ro"><div class="fk">사전 검수</div><div class="fv">있음</div></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">상태</div>
+        <div class="st-now">
+          <div class="st-line"><span class="st-lbl">현재 상태</span><span class="badge b-neutral">취소</span></div>
+          <div class="st-meta">
+            <div class="mrow"><span class="mk">받은 일시</span><span class="mv tnum">2026.07.20 11:00</span></div>
+            <div class="mrow"><span class="mk">취소 일시</span><span class="mv tnum">2026.07.21 09:40</span></div>
+            <div class="mrow"><span class="mk">고정 지급비</span><span class="mv">지급 없음</span></div>
+            <div class="mrow"><span class="mk">연결 상태</span><span class="mv">연결됨 유지</span></div>
+          </div>
+          <div class="st-acts"><button class="btn btn-secondary">스레드에서 협의하기</button></div>
+          <div class="st-hint">브랜드가 발송을 철회한 건이라 <b>내가 할 조치는 없습니다</b>. 새 계약을 기다리거나 스레드에서 일정을 협의하세요.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">이력</div>
+        <div class="hist">
+          <div class="hitem"><span class="hdot"></span><div><div class="htxt">브랜드 철회 · 취소</div><div class="hmeta">2026.07.21 09:40 · △△ 코스메틱</div></div></div>
+          <div class="hitem"><span class="hdot h-info"></span><div><div class="htxt">서명 요청 도착 · 운영자 검토 통과</div><div class="hmeta">2026.07.20 11:00 · △△ 코스메틱</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+  </div>
+</section>
+
+</body>
+</html>

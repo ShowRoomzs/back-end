@@ -146,12 +146,8 @@ public class AdminGroupBuyPermissionPolicy {
         } else if (closure.get().unclosedCount() > 0) {
             blockers.add(SettlementBlocker.UNCLOSED_ORDERS);
         }
-        if (facts.fulfillmentChecks().size() < 2) {
-            blockers.add(SettlementBlocker.FULFILLMENT_PENDING);
-        }
-        if (GroupBuyCommandService.isSettlementOnHold(groupBuy, facts.fulfillmentChecks())) {
-            blockers.add(SettlementBlocker.FULFILLMENT_DISPUTE);
-        }
+        // 이행 확인(FULFILLMENT_PENDING · FULFILLMENT_DISPUTE)은 2026-10-06 폐기됐다 — 정산 게이트는 주문 종결 하나다.
+        // enum 값은 FE 호환을 위해 남긴다.
         return blockers;
     }
 }

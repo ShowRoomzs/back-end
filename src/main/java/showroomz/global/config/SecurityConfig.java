@@ -24,9 +24,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
@@ -224,6 +226,8 @@ public class SecurityConfig {
         config.setAllowedHeaders(Arrays.asList(corsProperties.getAllowedHeaders().split(",")));
         config.setAllowedMethods(Arrays.asList(corsProperties.getAllowedMethods().split(",")));
         config.setAllowedOrigins(Arrays.asList(corsProperties.getAllowedOrigins().split(",")));
+        // 엑셀 다운로드(발주서·송장 양식·재발송목록)의 서버 파일명 — 노출하지 않으면 브라우저가 이 헤더를 읽지 못한다.
+        config.setExposedHeaders(List.of(HttpHeaders.CONTENT_DISPOSITION));
         config.setAllowCredentials(true);
         config.setMaxAge(corsProperties.getMaxAge());
 

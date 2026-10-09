@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-studio-02-signup — 쇼룸 스튜디오 신청 (Step1~3 + 완료) (디자인 시안 rev.1)</title>
+<style>
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-500:#3B5BDB;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --success-text:#1F7A54; --success-bg:#E4F1EA;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --auth-action:#1A1B1F; --auth-action-hover:#3A3D45;
+  --auth-control-h:44px; --form-card-w:520px;
+}
+*{box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;
+  margin:0; padding:32px; background:var(--n-200); color:var(--n-900); font-size:var(--fs-body); line-height:1.6;}
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;margin-top:12px;line-height:1.8;}
+.rule b{color:var(--n-900);} .rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.rule table{border-collapse:collapse;margin:8px 0;width:100%;}
+.rule th,.rule td{border:1px solid var(--n-200);padding:5px 8px;text-align:left;font-size:var(--fs-micro);vertical-align:top;}
+.rule th{background:var(--n-50);font-weight:600;color:var(--n-900);white-space:nowrap;}
+.rule .warn{color:var(--danger-text);font-weight:600;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;height:1024px;background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-md);overflow:hidden;overflow-y:auto;}
+.stage-inner{position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:center;}
+
+.form-card{width:var(--form-card-w);padding:56px 0;}
+.brand{text-align:center;margin-bottom:var(--sp-6);}
+.wordmark{display:block;margin:0 auto;}
+.brand-sub{font-size:var(--fs-caption);color:var(--n-500);margin-top:8px;}
+
+/* 스테퍼 */
+.stepper{display:flex;align-items:flex-start;margin-bottom:var(--sp-6);}
+.st{flex:1;text-align:center;position:relative;}
+.st::before{content:"";position:absolute;top:13px;left:-50%;width:100%;height:1px;background:var(--n-300);z-index:0;}
+.st:first-child::before{display:none;}
+.st.done::before, .st.active ~ .st::before{background:var(--n-300);}
+.st-c{width:26px;height:26px;border-radius:50%;background:var(--n-100);color:var(--n-500);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:var(--fs-caption);font-weight:600;
+  position:relative;z-index:1;border:1px solid var(--n-300);}
+.st.active .st-c{background:var(--n-900);color:#fff;border-color:var(--n-900);}
+.st.done .st-c{background:var(--success-text);color:#fff;border-color:var(--success-text);}
+.st.done::before{background:var(--success-text);}
+.st-l{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;}
+.st.active .st-l, .st.done .st-l{color:var(--n-900);}
+
+.sec{margin-bottom:var(--sp-5);}
+.sec-t{font-size:var(--fs-h2);font-weight:600;margin-bottom:6px;}
+.sec-d{font-size:var(--fs-caption);color:var(--n-600);margin-bottom:var(--sp-4);line-height:1.7;}
+
+.verify{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;margin-bottom:var(--sp-4);}
+.v-r{display:flex;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.v-r:last-child{border-bottom:none;}
+.v-l{color:var(--n-500);}
+.v-v{color:var(--n-900);font-weight:500;}
+.v-v.placeholder{color:var(--n-400);font-weight:400;}
+
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:var(--auth-control-h);
+  border-radius:var(--r-sm);font-family:inherit;font-size:var(--fs-body);font-weight:500;cursor:pointer;}
+.btn-full{width:100%;}
+.btn-primary{background:var(--auth-action);color:#fff;border:1px solid var(--auth-action);}
+.btn-primary:hover:not(:disabled){background:var(--auth-action-hover);border-color:var(--auth-action-hover);}
+.btn-primary:disabled{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+.btn-line{background:#fff;color:var(--n-700);border:1px solid var(--n-300);}
+.btn-line:hover{background:var(--n-100);}
+
+.field{margin-bottom:var(--sp-4);}
+.lb{display:block;font-size:var(--fs-caption);color:var(--n-600);font-weight:500;margin-bottom:6px;}
+.lb .req{color:var(--danger-text);margin-left:2px;}
+.inp-wrap{position:relative;display:flex;align-items:center;}
+.inp{width:100%;height:var(--auth-control-h);border:1px solid var(--n-300);border-radius:var(--r-sm);
+  background:#fff;padding:0 12px;font-family:inherit;font-size:var(--fs-body);color:var(--n-900);outline:none;}
+.inp::placeholder{color:var(--n-400);}
+.inp:hover:not(:disabled){border-color:var(--n-400);}
+.inp:focus:not(:disabled){border-color:var(--n-900);box-shadow:0 0 0 3px var(--n-200);}
+.inp.ro{background:var(--n-100);color:var(--n-700);display:flex;align-items:center;justify-content:space-between;padding:0 12px;}
+.lock-badge{font-size:var(--fs-micro);color:var(--n-500);display:flex;align-items:center;gap:3px;}
+.inp-wrap.is-error .inp{border-color:var(--danger-text);}
+.inp-wrap.is-error .inp:focus{border-color:var(--danger-text);box-shadow:0 0 0 3px var(--danger-bg);}
+.help{font-size:var(--fs-micro);color:var(--n-500);margin:6px 0 0;}
+
+.terms-box{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;margin-bottom:var(--sp-5);}
+.terms-all{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--n-50);font-weight:600;font-size:var(--fs-body);}
+.terms-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--n-100);}
+.terms-row:last-child{border-bottom:none;}
+.terms-notice{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--n-50);}
+.t-left{display:flex;align-items:center;gap:10px;}
+.t-lbl{font-size:var(--fs-body);color:var(--n-900);}
+.t-lbl .req{color:var(--danger-text);font-size:var(--fs-micro);margin-left:4px;}
+.t-lbl .opt{color:var(--n-400);font-size:var(--fs-micro);margin-left:4px;}
+.t-view{font-size:var(--fs-caption);color:var(--n-500);cursor:pointer;white-space:nowrap;}
+
+.notice{display:flex;gap:8px;background:var(--info-bg);border-radius:var(--r-sm);padding:12px 14px;
+  font-size:var(--fs-caption);color:var(--n-700);margin-bottom:var(--sp-5);line-height:1.6;text-align:left;}
+.ni{width:16px;height:16px;border-radius:50%;background:var(--info-text);color:#fff;font-size:10px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;margin-top:1px;}
+
+.cpl{text-align:center;}
+.cpl-ic{width:56px;height:56px;border-radius:50%;background:var(--success-bg);color:var(--success-text);font-size:26px;
+  display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
+.cpl-t{font-size:var(--fs-h2);font-weight:600;margin-bottom:10px;}
+.cpl-d{font-size:var(--fs-caption);color:var(--n-600);line-height:1.7;margin:0 0 var(--sp-5);}
+.cpl-d b{color:var(--n-900);}
+.info-box{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;margin-bottom:var(--sp-5);text-align:left;}
+.info-r{display:flex;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--n-100);}
+.info-r:last-child{border-bottom:none;}
+.info-l{font-size:var(--fs-caption);color:var(--n-500);}
+.info-v{font-size:var(--fs-caption);color:var(--n-900);font-weight:500;}
+
+.confirm-row{display:flex;align-items:center;gap:10px;border:1px solid var(--n-300);border-radius:var(--r-sm);
+  padding:12px 14px;margin-bottom:var(--sp-5);cursor:pointer;}
+.confirm-row.is-error{border-color:var(--danger-text);background:var(--danger-bg);}
+.cbox{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--n-300);flex-shrink:0;position:relative;background:#fff;}
+.cbox.on{background:var(--n-900);border-color:var(--n-900);}
+.cbox.on::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;}
+.confirm-lbl{font-size:var(--fs-caption);color:var(--n-800);font-weight:500;}
+.err-msg{font-size:var(--fs-caption);color:var(--danger-text);margin:6px 0 0;}
+
+.btn-row{display:flex;gap:10px;}
+.btn-row .btn-line{flex:0 0 120px;}
+.btn-row .btn-primary{flex:1;}
+
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;justify-content:center;}
+.modal-alert{width:360px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);
+  padding:var(--sp-6) var(--sp-5) var(--sp-5);text-align:center;}
+.mic{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
+.mic-danger{background:var(--danger-bg);color:var(--danger-text);}
+.mt{font-size:var(--fs-h2);font-weight:600;margin-bottom:8px;}
+.md{font-size:var(--fs-caption);color:var(--n-600);line-height:1.7;margin:0 0 var(--sp-5);}
+.md b{color:var(--n-900);}
+.mf{display:flex;justify-content:center;}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+input[type=number]{-moz-appearance:textfield;}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 640.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+
+<div class="doc-head">
+  <h1>쇼룸 스튜디오 신청 (Step1~3 + 완료) <span style="color:var(--n-400);font-weight:400;">ui-studio-02-signup · rev.1</span></h1>
+  <p class="meta">근거: wf-studio-01-가입온보딩 F1~F4 · 토큰: SHOWROOMZ_웹_디자인시스템_v1.1 · 1440×1024 · 상태 8종(Step1 3 · Step2 2 · Step3 2 · 완료 1)</p>
+  <div class="rule">
+    <b>Step1 · 본인 인증</b> — 목적: 정산 대상자 실명 확보(원천징수 3.3% 대상자 확정). 인증 후 이름·생년월일·휴대폰 번호는 <b>마스킹 표시</b>(소*서 · 010-****-6416).
+    <table>
+      <tr><th>항목</th><th>내용</th><th>근거</th></tr>
+      <tr><td>연령 제한</td><td><b>만 19세 이상</b>만 신청 가능</td><td>미달 시 모달 "신청 자격 조건 미충족" — [다시 인증하기]→Step1 초기 이동, [확인]→로그인 화면 이동, 진행 차단(state C)</td></tr>
+      <tr><td>다음 버튼 활성화</td><td>인증 완료 + <b>확인 체크박스</b> 체크 시에만 활성화 — <b>에러 문구 없이 버튼 비활성만으로 표현</b>, 체크박스는 <b>실제 클릭 가능</b>(JS 토글)</td><td>실시간 검증형 — Step3 약관 동의·파트너센터 가입 §4-5와 동일 원칙</td></tr>
+      <tr><td class="warn">[세무 확정 대기]</td><td>인증 정보와 원천징수 신고 대상자 정보 일치 요건, 사업자 인플루언서의 대표자명 일치 검증 필요 여부</td><td>세무사 상담 후 확정 — 화면 자체엔 영향 없음</td></tr>
+    </table>
+    <b>Step2 · 활동 채널</b>
+    <table>
+      <tr><th>항목</th><th>내용</th><th>근거</th></tr>
+      <tr><td>플랫폼 고정</td><td>원본 4종 선택(IG/YT/TikTok/X) 폐기 → <b>Instagram 고정(읽기전용)</b></td><td>콘텐츠 의무 B안 = 인스타 고정 확정 · 타 플랫폼은 계약 이행 검증 불가</td></tr>
+      <tr><td>계정 아이디 필드</td><td><b>신설</b> — 채널 주소에서 자동 추출, 수정 가능</td><td>계약 이행 검증·게시물 확인의 식별 키</td></tr>
+      <tr><td>팔로워 수</td><td><b>자기 신고</b> 값(자동 크롤링 없음)</td><td>운영자가 채널 주소로 수동 검증 후 승인/반려 — MVP 범위</td></tr>
+      <tr><td>쇼룸명</td><td>신청서에서 <b>제외</b> → 승인 후 온보딩(F5)으로 이관</td><td>심사 통과 전 쇼룸명 선점 방지</td></tr>
+      <tr><td>계정 아이디 유효성</td><td><b>인스타그램 아이디 작성 규칙과 동일</b> — 영문 소문자·숫자·마침표(.)·밑줄(_)만 허용, 최대 30자, 대문자는 자동 소문자 변환</td><td>[신규제안 반영] 실제 인스타그램 아이디 형식과 어긋나면 채널 검증 자체가 불가능</td></tr>
+      <tr><td>팔로워 수 입력</td><td>스피너(증감 화살표) 제거, <code>-/+/e</code> 키 입력·붙여넣기 <b>스크립트로 원천 차단</b></td><td>[신규제안 반영] 음수 팔로워 수는 무의미 — 온보딩 화면(§6)과 동일 원칙</td></tr>
+    </table>
+    <b>Step3 · 약관 동의</b> — 필수 3 + 선택 1. 개인정보처리방침은 동의 체크 항목이 아니라 <b>고지(보기) 문서</b>로 분리(체크박스 없음). 필수 약관 미동의 시 <b>에러 문구 없이 버튼 비활성만으로 표현</b>(파트너센터 가입 §4-5 확정 원칙과 동일).<br>
+    <b>완료</b> — <b class="warn">[결정 변경]</b> 파트너센터 가입완료(`ui-partner-02-signup.html` E) 구조를 그대로 참고해 재작성. 단계 안내 리스트(1·2·3)를 <b>정보 박스(info-box)</b>로 교체하고, 반려·재신청 관련 부정적 안내 문구는 <b>이 화면에서 전부 제거</b>했습니다 — 반려·14일 재신청 안내는 로그인 화면(`ui-studio-01-login`)의 반려 모달에서만 다룹니다. 이 화면은 접수 완료라는 긍정적 상태만 전달합니다.
+  </div>
+</div>
+
+<!-- A. 초기 (인증 전) -->
+<section class="state" id="step1-a">
+  <span class="state-spec">인증 결과 항목은 "인증 후 표시" placeholder · 다음 버튼 비활성</span></div>
+  <div class="stage"><div class="stage-inner"><div class="form-card">
+    <div class="brand">
+      <svg class="wordmark" viewBox="0 0 1863.4 200" width="150" height="16" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg>
+      <div class="brand-sub">쇼룸 스튜디오 신청</div>
+    </div>
+    <div class="stepper">
+      <div class="st active"><div class="st-c">1</div><div class="st-l">본인 인증</div></div>
+      <div class="st"><div class="st-c">2</div><div class="st-l">활동 채널</div></div>
+      <div class="st"><div class="st-c">3</div><div class="st-l">약관 동의</div></div>
+    </div>
+    <div class="sec">
+      <div class="sec-t">본인 인증</div>
+      <div class="sec-d">정산 처리를 위해 본인 인증이 필요합니다.<br>아래 항목이 인증을 통해 확인됩니다.</div>
+      <div class="verify">
+        <div class="v-r"><span class="v-l">이름</span><span class="v-v placeholder">인증 후 표시</span></div>
+        <div class="v-r"><span class="v-l">생년월일</span><span class="v-v placeholder">인증 후 표시</span></div>
+        <div class="v-r"><span class="v-l">휴대폰 번호</span><span class="v-v placeholder">인증 후 표시</span></div>
+      </div>
+      <button type="button" class="btn btn-primary btn-full">본인 인증하기</button>
+    </div>
+    <div class="btn-row"><button type="button" class="btn btn-line">이전</button><button type="button" class="btn btn-primary" disabled>다음</button></div>
+  </div></div></div>
+</section>
+
+<!-- B. 인증 완료 (확인 체크 필요) -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B</span><span class="state-label">Step1 · 인증 완료 · 확인 체크 필요</span>
+  <span class="state-spec">인증 결과(마스킹) 표시 · 에러 문구 없이 확인 체크 전까지 다음 버튼 비활성만으로 표현(Step3 약관 동의와 동일 원칙)</span></div>
+  <div class="stage"><div class="stage-inner"><div class="form-card">
+    <div class="brand">
+      <svg class="wordmark" viewBox="0 0 1863.4 200" width="150" height="16" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg>
+      <div class="brand-sub">쇼룸 스튜디오 신청</div>
+    </div>
+    <div class="stepper">
+      <div class="st active"><div class="st-c">1</div><div class="st-l">본인 인증</div></div>
+      <div class="st"><div class="st-c">2</div><div class="st-l">활동 채널</div></div>
+      <div class="st"><div class="st-c">3</div><div class="st-l">약관 동의</div></div>
+    </div>
+    <div class="sec">
+      <div class="sec-t">본인 인증</div>
+      <div class="sec-d" style="color:var(--success-text);font-weight:500;">✓ 본인 인증이 완료되었습니다.</div>
+      <div class="verify">
+        <div class="v-r"><span class="v-l">이름</span><span class="v-v">소*서</span></div>
+        <div class="v-r"><span class="v-l">생년월일</span><span class="v-v">2003.07.19</span></div>
+        <div class="v-r"><span class="v-l">휴대폰 번호</span><span class="v-v">010-****-6416</span></div>
+      </div>
+    </div>
+    <div class="confirm-row" id="b-confirm-row">
+      <span class="cbox" id="b-confirm-cbox"></span><span class="confirm-lbl">[필수] 본인의 인증정보가 맞습니다.</span>
+    </div>
+    <div class="btn-row"><button type="button" class="btn btn-line">이전</button><button type="button" class="btn btn-primary" id="b-next-btn" disabled>다음</button></div>
+  </div></div></div>
+</section>
+
+<!-- C. 연령 미충족 (모달) -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">C</span><span class="state-label">Step1 · 연령 미충족 (모달)</span>
+  <span class="state-spec">만 19세 미만 인증 시 진행 차단 · [다시 인증하기] → Step1 초기로 이동 · [확인] → 로그인 화면(ui-studio-01-login)으로 이동</span></div>
+  <div class="stage">
+    <div class="stage-inner"><div class="form-card">
+      <div class="brand">
+        <svg class="wordmark" viewBox="0 0 1863.4 200" width="150" height="16" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg>
+        <div class="brand-sub">쇼룸 스튜디오 신청</div>
+      </div>
+      <div class="stepper">
+        <div class="st active"><div class="st-c">1</div><div class="st-l">본인 인증</div></div>
+        <div class="st"><div class="st-c">2</div><div class="st-l">활동 채널</div></div>
+        <div class="st"><div class="st-c">3</div><div class="st-l">약관 동의</div></div>
+      </div>
+      <div class="sec">
+        <div class="sec-t">본인 인증</div>
+        <div class="sec-d">정산 처리를 위해 본인 인증이 필요합니다.<br>아래 항목이 인증을 통해 확인됩니다.</div>
+        <div class="verify">
+          <div class="v-r"><span class="v-l">이름</span><span class="v-v placeholder">인증 후 표시</span></div>
+          <div class="v-r"><span class="v-l">생년월일</span><span class="v-v placeholder">인증 후 표시</span></div>
+          <div class="v-r"><span class="v-l">휴대폰 번호</span><span class="v-v placeholder">인증 후 표시</span></div>
+        </div>
+        <button type="button" class="btn btn-primary btn-full">본인 인증하기</button>
+      </div>
+    </div></div>
+    <div class="overlay">
+      <div class="modal-alert">
+        <div class="mic mic-danger">!</div>
+        <div class="mt">신청 자격 조건 미충족</div>
+        <p class="md">쇼룸 스튜디오는 <b>만 19세 이상만</b><br>신청할 수 있습니다.</p>
+        <div class="mf" style="gap:8px;">
+          <a href="#step1-a" class="btn btn-line" style="flex:1;text-decoration:none;">다시 인증하기</a>
+          <a href="ui-studio-01-login.html" class="btn btn-primary" style="flex:1;text-decoration:none;">확인</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ D. Step2 초기 ============ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">D</span><span class="state-label">Step2 · 초기 (빈 폼)</span>
+  <span class="state-spec">플랫폼은 Instagram 고정(읽기전용) · 나머지 전부 미입력 · 다음 버튼 비활성</span></div>
+  <div class="stage"><div class="stage-inner"><div class="form-card">
+    <div class="brand">
+      <svg class="wordmark" viewBox="0 0 1863.4 200" width="150" height="16" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg>
+      <div class="brand-sub">쇼룸 스튜디오 신청</div>
+    </div>
+    <div class="stepper">
+      <div class="st done"><div class="st-c">✓</div><div class="st-l">본인 인증</div></div>
+      <div class="st active"><div class="st-c">2</div><div class="st-l">활동 채널</div></div>
+      <div class="st"><div class="st-c">3</div><div class="st-l">약관 동의</div></div>
+    </div>
+    <div class="sec">
+      <div class="sec-t">활동 채널</div>
+      <div class="field">
+        <label class="lb">플랫폼<span class="req">*</span></label>
+        <div class="inp ro">Instagram<span class="lock-badge">🔒 고정</span></div>
+      </div>
+      <div class="field">
+        <label class="lb" for="d-url">채널 주소<span class="req">*</span></label>
+        <div class="inp-wrap"><input class="inp" id="d-url" type="text" placeholder="https://www.instagram.com/"></div>
+        <p class="help">https://로 시작하는 올바른 URL을 입력해 주세요.</p>
+      </div>
+      <div class="field">
+        <label class="lb" for="d-handle">계정 아이디<span class="req">*</span></label>
+        <div class="inp-wrap"><input class="inp handle-only" id="d-handle" type="text" maxlength="30" placeholder="@ 아이디를 입력해 주세요"></div>
+        <p class="help">채널 주소에서 자동 추출 · 수정 가능 · 영문 소문자·숫자·마침표(.)·밑줄(_)만 가능, 최대 30자</p>
+      </div>
+      <div class="field">
+        <label class="lb" for="d-followers">팔로워 수<span class="req">*</span></label>
+        <div class="inp-wrap"><input class="inp no-neg" id="d-followers" type="number" min="0" placeholder="현재 팔로워 수를 직접 입력해 주세요"></div>
+        <p class="help">자기 신고 값 — 운영자가 채널 주소로 실제 확인 후 심사</p>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-t">업무 이메일</div>
+      <div class="field">
+        <label class="lb" for="d-email">이메일 (승인 여부 전달)<span class="req">*</span></label>
+        <div class="inp-wrap"><input class="inp" id="d-email" type="email" placeholder="example@email.com"></div>
+      </div>
+    </div>
+    <div class="btn-row"><button type="button" class="btn btn-line">이전</button><button type="button" class="btn btn-primary" disabled>다음</button></div>
+  </div></div></div>
+</section>
+
+<!-- ============ E. Step2 유효성 에러 ============ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">E</span><span class="state-label">Step2 · 유효성 에러</span>
+  <span class="state-spec">채널 주소 형식 오류 · 계정 아이디·팔로워 수 미입력 · 이메일 형식 오류</span></div>
+  <div class="stage"><div class="stage-inner"><div class="form-card">
+    <div class="brand">
+      <svg class="wordmark" viewBox="0 0 1863.4 200" width="150" height="16" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg>
+      <div class="brand-sub">쇼룸 스튜디오 신청</div>
+    </div>
+    <div class="stepper">
+      <div class="st done"><div class="st-c">✓</div><div class="st-l">본인 인증</div></div>
+      <div class="st active"><div class="st-c">2</div><div class="st-l">활동 채널</div></div>
+      <div class="st"><div class="st-c">3</div><div class="st-l">약관 동의</div></div>
+    </div>
+    <div class="sec">
+      <div class="sec-t">활동 채널</div>
+      <div class="field">
+        <label class="lb">플랫폼<span class="req">*</span></label>
+        <div class="inp ro">Instagram<span class="lock-badge">🔒 고정</span></div>
+      </div>
+      <div class="field">
+        <label class="lb" for="e-url">채널 주소<span class="req">*</span></label>
+        <div class="inp-wrap is-error"><input class="inp" id="e-url" type="text" value="instagram.com/showroomz"></div>
+        <p class="err-msg" role="alert">https://로 시작하는 올바른 URL을 입력해 주세요.</p>
+      </div>
+      <div class="field">
+        <label class="lb" for="e-handle">계정 아이디<span class="req">*</span></label>
+        <div class="inp-wrap is-error"><input class="inp handle-only" id="e-handle" type="text" maxlength="30" value="" placeholder="@ 아이디를 입력해 주세요"></div>
+        <p class="err-msg" role="alert">계정 아이디를 입력해 주세요.</p>
+      </div>
+      <div class="field">
+        <label class="lb" for="e-followers">팔로워 수<span class="req">*</span></label>
+        <div class="inp-wrap is-error"><input class="inp no-neg" id="e-followers" type="number" min="0" value=""></div>
+        <p class="err-msg" role="alert">팔로워 수를 입력해 주세요.</p>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-t">업무 이메일</div>
+      <div class="field">
+        <label class="lb" for="e-email">이메일 (승인 여부 전달)<span class="req">*</span></label>
+        <div class="inp-wrap is-error"><input class="inp" id="e-email" type="email" value="example@email"></div>
+        <p class="err-msg" role="alert">올바른 이메일 형식으로 입력해 주세요.</p>
+      </div>
+    </div>
+    <div class="btn-row"><button type="button" class="btn btn-line">이전</button><button type="button" class="btn btn-primary" disabled>다음</button></div>
+  </div></div></div>
+</section>
+
+<!-- ============ F. Step3 초기 ============ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">F</span><span class="state-label">Step3 · 초기 (전부 미동의)</span>
+  <span class="state-spec">신청하기 버튼 비활성 · 개인정보처리방침은 체크박스 없는 고지 행</span></div>
+  <div class="stage"><div class="stage-inner"><div class="form-card">
+    <div class="brand">
+      <svg class="wordmark" viewBox="0 0 1863.4 200" width="150" height="16" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg>
+      <div class="brand-sub">쇼룸 스튜디오 신청</div>
+    </div>
+    <div class="stepper">
+      <div class="st done"><div class="st-c">✓</div><div class="st-l">본인 인증</div></div>
+      <div class="st done"><div class="st-c">✓</div><div class="st-l">활동 채널</div></div>
+      <div class="st active"><div class="st-c">3</div><div class="st-l">약관 동의</div></div>
+    </div>
+    <div class="sec">
+      <div class="sec-t">약관 동의</div>
+      <div class="terms-box">
+        <div class="terms-all"><span class="cbox"></span><span>이용 약관에 모두 동의합니다.</span></div>
+        <div class="terms-row"><div class="t-left"><span class="cbox"></span><span class="t-lbl">서비스 이용약관<span class="req">(필수)</span></span></div><span class="t-view">보기 ›</span></div>
+        <div class="terms-row"><div class="t-left"><span class="cbox"></span><span class="t-lbl">서비스 운영정책<span class="req">(필수)</span></span></div><span class="t-view">보기 ›</span></div>
+        <div class="terms-row"><div class="t-left"><span class="cbox"></span><span class="t-lbl">개인정보 수집 및 이용 동의<span class="req">(필수)</span></span></div><span class="t-view">보기 ›</span></div>
+        <div class="terms-row"><div class="t-left"><span class="cbox"></span><span class="t-lbl">마케팅 목적의 개인정보 수집 및 이용 동의<span class="opt">(선택)</span></span></div><span class="t-view">보기 ›</span></div>
+        <div class="terms-notice"><span class="t-lbl">개인정보처리방침<span class="opt">(고지)</span></span><span class="t-view">보기 ›</span></div>
+      </div>
+    </div>
+    <div class="btn-row"><button type="button" class="btn btn-line">이전</button><button type="button" class="btn btn-primary" disabled>신청하기</button></div>
+  </div></div></div>
+</section>
+
+<!-- ============ G. Step3 부분 동의 (필수 미완료) ============ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">G</span><span class="state-label">Step3 · 부분 동의 (필수 미완료)</span>
+  <span class="state-spec">필수 3개 중 2개만 체크 · 에러 문구 없이 버튼 비활성만으로 표현(파트너센터 가입 §4-5 확정 원칙과 동일)</span></div>
+  <div class="stage"><div class="stage-inner"><div class="form-card">
+    <div class="brand">
+      <svg class="wordmark" viewBox="0 0 1863.4 200" width="150" height="16" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg>
+      <div class="brand-sub">쇼룸 스튜디오 신청</div>
+    </div>
+    <div class="stepper">
+      <div class="st done"><div class="st-c">✓</div><div class="st-l">본인 인증</div></div>
+      <div class="st done"><div class="st-c">✓</div><div class="st-l">활동 채널</div></div>
+      <div class="st active"><div class="st-c">3</div><div class="st-l">약관 동의</div></div>
+    </div>
+    <div class="sec">
+      <div class="sec-t">약관 동의</div>
+      <div class="terms-box">
+        <div class="terms-all"><span class="cbox"></span><span>이용 약관에 모두 동의합니다.</span></div>
+        <div class="terms-row"><div class="t-left"><span class="cbox on"></span><span class="t-lbl">서비스 이용약관<span class="req">(필수)</span></span></div><span class="t-view">보기 ›</span></div>
+        <div class="terms-row"><div class="t-left"><span class="cbox on"></span><span class="t-lbl">서비스 운영정책<span class="req">(필수)</span></span></div><span class="t-view">보기 ›</span></div>
+        <div class="terms-row"><div class="t-left"><span class="cbox"></span><span class="t-lbl">개인정보 수집 및 이용 동의<span class="req">(필수)</span></span></div><span class="t-view">보기 ›</span></div>
+        <div class="terms-row"><div class="t-left"><span class="cbox on"></span><span class="t-lbl">마케팅 목적의 개인정보 수집 및 이용 동의<span class="opt">(선택)</span></span></div><span class="t-view">보기 ›</span></div>
+        <div class="terms-notice"><span class="t-lbl">개인정보처리방침<span class="opt">(고지)</span></span><span class="t-view">보기 ›</span></div>
+      </div>
+    </div>
+    <div class="btn-row"><button type="button" class="btn btn-line">이전</button><button type="button" class="btn btn-primary" disabled>신청하기</button></div>
+  </div></div></div>
+</section>
+
+<!-- ============ H. 완료 ============ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">H</span><span class="state-label">완료 (접수·심사대기)</span>
+  <span class="state-spec">파트너센터 가입완료 구조 참고 — info-box + 긍정 톤 안내문구 · 반려·재신청 관련 안내는 이 화면에 두지 않음(로그인 화면 모달에서만 안내)</span></div>
+  <div class="stage"><div class="stage-inner"><div class="form-card">
+    <div class="brand">
+      <svg class="wordmark" viewBox="0 0 1863.4 200" width="150" height="16" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg>
+      <div class="brand-sub">쇼룸 스튜디오 신청</div>
+    </div>
+    <div class="stepper">
+      <div class="st done"><div class="st-c">✓</div><div class="st-l">본인 인증</div></div>
+      <div class="st done"><div class="st-c">✓</div><div class="st-l">활동 채널</div></div>
+      <div class="st done"><div class="st-c">✓</div><div class="st-l">약관 동의</div></div>
+    </div>
+    <div class="cpl">
+      <div class="cpl-ic">✓</div>
+      <div class="cpl-t">스튜디오 신청이 접수되었습니다</div>
+      <div class="cpl-d">신청서가 정상적으로 접수되었습니다.<br>검토 후 영업일 기준 3~7일 이내에 등록하신 업무 이메일로 결과를 안내해 드립니다.</div>
+      <div class="info-box">
+        <div class="info-r"><span class="info-l">계정 아이디</span><span class="info-v">@showroomz_official</span></div>
+        <div class="info-r"><span class="info-l">신청 일시</span><span class="info-v">2026.07.29 14:32</span></div>
+        <div class="info-r"><span class="info-l">결과 안내</span><span class="info-v">신청 시 등록한 업무 이메일</span></div>
+        <div class="info-r"><span class="info-l">처리 예정</span><span class="info-v">영업일 기준 3~7일 이내</span></div>
+      </div>
+      <div class="notice"><span class="ni">i</span><span>심사 결과는 <b>업무 이메일</b>로 안내합니다. 승인 완료 후 <b>쇼룸 스튜디오</b>에서 필수 정보 입력 후 쇼룸을 만들고 활동을 시작할 수 있습니다.</span></div>
+      <button type="button" class="btn btn-primary btn-full">홈으로 이동</button>
+    </div>
+  </div></div></div>
+</section>
+
+<script>
+// Step1 · 확인 체크박스 클릭 → 다음 버튼 활성화
+var cbox = document.getElementById('b-confirm-cbox');
+var nextBtn = document.getElementById('b-next-btn');
+if (cbox && nextBtn) {
+  document.getElementById('b-confirm-row').addEventListener('click', function () {
+    var checked = cbox.classList.toggle('on');
+    nextBtn.disabled = !checked;
+  });
+}
+
+// 계정 아이디 — 인스타그램 아이디 규칙(영문 소문자·숫자·마침표·밑줄만) 실시간 필터링
+document.querySelectorAll('.handle-only').forEach(function (el) {
+  el.addEventListener('input', function () {
+    this.value = this.value.toLowerCase().replace(/[^a-z0-9._]/g, '');
+  });
+});
+
+// 팔로워 수 등 숫자 필드 — 음수/지수 키 입력·붙여넣기 차단
+document.querySelectorAll('.no-neg').forEach(function (el) {
+  el.addEventListener('keydown', function (e) {
+    if (['-', '+', 'e', 'E'].indexOf(e.key) > -1) e.preventDefault();
+  });
+  el.addEventListener('paste', function (e) {
+    var text = (e.clipboardData || window.clipboardData).getData('text');
+    if (/[^0-9]/.test(text)) e.preventDefault();
+  });
+});
+</script>
+
+</body>
+
+</html>

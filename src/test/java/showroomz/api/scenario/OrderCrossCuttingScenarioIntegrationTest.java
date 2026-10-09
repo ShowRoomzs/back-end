@@ -96,9 +96,10 @@ class OrderCrossCuttingScenarioIntegrationTest extends OrderFlowTestSupport {
         String orderNumber = groupA.getOrder().getOrderNumber();
         assertThat(List.of(groupA.getSubOrderNumber(), groupB.getSubOrderNumber()))
                 .containsExactlyInAnyOrder(orderNumber + "-01", orderNumber + "-02");
-        LocalDateTime paidAt = groupA.getOrder().getPaidAt();
-        assertThat(groupA.getShipDueAt()).isEqualTo(paidAt.plusDays(SHIPPING_LEAD_DAYS));
-        assertThat(groupB.getShipDueAt()).isEqualTo(paidAt.plusDays(5));
+        // 발송기한 N 은 마켓별 주문 시점 스냅샷 — 기한 자체는 각 공구가 끝날 때 확정된다(1009 기획 수정본 1-2).
+        assertThat(groupA.getShipDueAt()).isNull();
+        assertThat(groupA.getShipDueBusinessDays()).isEqualTo(SHIPPING_LEAD_DAYS);
+        assertThat(groupB.getShipDueBusinessDays()).isEqualTo(5);
 
         sellerOrders("tab=NEW")
                 .andExpect(jsonPath("$.content.length()").value(1))

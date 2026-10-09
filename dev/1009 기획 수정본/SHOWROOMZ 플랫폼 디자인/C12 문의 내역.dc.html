@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+.dv-sw{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:-2px 0 2px}
+.dv-swl{font:600 10px/1 Pretendard,sans-serif;color:rgba(0,0,0,.38);letter-spacing:.02em;margin-right:2px}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C12 문의 내역 — 목록 · 상세</span></div>
+<p class="dv-tsub">마이 탭 &gt; 문의 그룹에서 진입합니다. 답변 대기 / 답변 완료 두 상태를 구분하고, 목록에서 문의 유형·작성일·상태를 먼저 읽을 수 있게 했습니다. <a class="dv-oid" href="#1b">1b</a>는 상세(대화형 스레드)입니다.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>문의 내역 목록</div>
+<div class="dv-card">
+<div data-screen-label="C12 문의 내역" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">문의 내역</span>
+</div>
+</div>
+
+<div style="flex:none;display:flex;border-bottom:.5px solid #EFEFEF">
+<sc-for list="{{ tabs }}" as="t" hint-placeholder-count="2">
+<div onClick="{{ t.pick }}" style="flex:1;height:46px;display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;border-bottom:{{ t.underline }}" style-active="opacity:.6">
+<span style="font:{{ t.font }};color:{{ t.color }}">{{ t.label }}</span>
+<span style="font:{{ t.font }};color:{{ t.countColor }}">{{ t.count }}</span>
+</div>
+</sc-for>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:14px 14px 10px;display:flex;align-items:center">
+<span style="font:500 12px/1 Pretendard,sans-serif;color:#8E8E8E">{{ scopeLabel }}</span>
+<div style="flex:1"></div>
+<div onClick="{{ toggleWaiting }}" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 0 8px 12px;margin:-8px 0" style-active="opacity:.5">
+<span style="width:18px;height:18px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:{{ filterBg }};border:{{ filterBorder }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="{{ filterCheck }}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg></span>
+<span style="font:600 12px/1 Pretendard,sans-serif;color:#3C3C3C">답변 대기만</span>
+</div>
+</div>
+
+<sc-for list="{{ items }}" as="q" hint-placeholder-count="4">
+<div style="border-top:{{ q.divider }}">
+<div onClick="{{ q.toggle }}" style="padding:15px 14px;cursor:pointer" style-active="background:#F7F7F8">
+<div style="display:flex;align-items:center;gap:7px">
+<span style="flex:none;padding:4px 8px;border-radius:8px;background:{{ q.statusBg }};color:{{ q.statusColor }};font:600 11px/1 Pretendard,sans-serif">{{ q.status }}</span>
+<span style="font:600 11.5px/1 Pretendard,sans-serif;color:#737373">{{ q.type }}</span>
+<div style="flex:1"></div>
+<span style="flex:none;font:400 11.5px/1 Pretendard,sans-serif;color:#737373">{{ q.date }}</span>
+</div>
+<sc-if value="{{ q.hasProduct }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:9px;display:flex;align-items:center;gap:6px">
+<span style="font:400 11.5px/1.3 Pretendard,sans-serif;color:#737373;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ q.product }}</span>
+</div>
+</sc-if>
+<div style="margin-top:9px;display:flex;align-items:flex-start;gap:8px">
+<span style="flex:1;min-width:0;font:500 14.5px/1.45 Pretendard,sans-serif;color:#0F0F0F;display:-webkit-box;-webkit-line-clamp:{{ q.clamp }};-webkit-box-orient:vertical;overflow:hidden;text-wrap:pretty">{{ q.body }}</span>
+<sc-if value="{{ q.isProductKind }}" hint-placeholder-val="{{ false }}">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none;margin-top:4px;transform:{{ q.chevron }}"><path d="M5 9l7 7 7-7"></path></svg>
+</sc-if>
+</div>
+<sc-if value="{{ q.hasOrder }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:10px;display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;background:#F7F7F8">
+<div style="width:34px;height:34px;border-radius:4px;background:{{ q.thumb }};flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 11px/1.3 Pretendard,sans-serif;color:#737373">{{ q.orderNo }}</div>
+<div style="margin-top:2px;font:400 12.5px/1.35 Pretendard,sans-serif;color:#3C3C3C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ q.orderName }}</div>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ q.showPreview }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:10px;display:flex;align-items:center;gap:6px">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#737373" stroke-width="1.8" stroke-linejoin="miter" style="display:block;flex:none"><path d="M4.5 5.5h15v11h-9l-4 3.5z"></path></svg>
+<span style="font:400 12.5px/1.4 Pretendard,sans-serif;color:#737373;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ q.answerPreview }}</span>
+</div>
+</sc-if>
+</div>
+<sc-if value="{{ q.showAnswer }}" hint-placeholder-val="{{ false }}">
+<div style="padding:0 14px 15px">
+<div style="padding:13px;border-radius:8px;background:#F7F7F8">
+<div style="display:flex;align-items:baseline;gap:6px">
+<span style="font:600 12px/1 Pretendard,sans-serif;color:#3C3C3C">{{ q.brand }}</span>
+
+<div style="flex:1"></div>
+<span style="flex:none;font:400 11px/1 Pretendard,sans-serif;color:#8E8E8E">{{ q.answerDate }}</span>
+</div>
+<div style="margin-top:8px;font:400 13.5px/1.7 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">{{ q.answerPreview }}</div>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ q.showWaiting }}" hint-placeholder-val="{{ false }}">
+<div style="padding:0 14px 15px">
+<div style="padding:13px;border-radius:8px;background:#F7F7F8;font:400 12.5px/1.6 Pretendard,sans-serif;color:#737373">아직 답변이 등록되지 않았어요. 답변이 등록되면 알림으로 알려드려요.</div>
+</div>
+</sc-if>
+</div>
+</sc-for>
+
+<sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+<div style="padding:100px 40px 0;display:flex;flex-direction:column;align-items:center">
+<svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#D8D8DA" stroke-width="1.2" stroke-linejoin="miter" style="display:block"><path d="M4.5 5.5h15v11h-9l-4 3.5z"></path></svg>
+<div style="margin-top:18px;font:600 15.5px/1.5 Pretendard,sans-serif;text-align:center">{{ emptyTitle }}</div>
+<div style="margin-top:7px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-align:center">{{ emptyDesc }}</div>
+</div>
+</sc-if>
+
+<div style="height:26px"></div>
+
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:12px 14px 26px;background:#fff">
+<div style="height:52px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;gap:7px;font:600 15.5px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">{{ ctaLabel }}</div>
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>1:1 / 상품 문의 분리</b> — 두 문의는 <b>답하는 주체와 공개 범위가 다릅니다</b>(1:1 = 운영팀 · 비공개 / 상품 = 판매자 · 상품 상세에 공개). 한 목록에 섞으면 "왜 이 답변은 늦지" 같은 오해가 생기므로 상단 탭으로 갈랐고, 탭마다 <b>건수</b>를 붙여 어느 쪽에 내역이 있는지 먼저 보이게 했습니다. 하단 CTA와 빈 상태 문구도 탭에 따라 바뀝니다(탭을 눌러 확인해 보세요). 활성 탭은 잉크 밑줄 — 로즈는 공구 신호 전용입니다.<br><br><b>행 구성</b> — 상태 배지 + 유형 + 작성일 한 줄 → (상품 문의는 상품명 한 줄) → 문의 본문 2줄 → (1:1은 연결된 주문 카드) → (답변 미리보기). 두 종류가 <b>같은 골격을 공유</b>하되 맥락 줄만 다릅니다.<br><br><b>펼치는 방식이 다른 이유</b> — <b>상품 문의는 아코디언</b>(탭하면 전문과 판매자 답변이 그 자리에서 펼쳐짐), <b>1:1 문의는 상세 화면으로 이동</b>합니다. 상품 문의는 질문 하나에 답변 하나로 끝나 목록 안에서 다 읽히지만, 1:1은 <b>주문 카드·첨부 사진·추가 문의가 이어지는 스레드</b>라 별도 화면이 필요합니다.<br><br><b>답변 대기는 펼치지 않습니다</b> — 셰브런도 그리지 않고 탭해도 열리지 않습니다. 펼칠 것이 없는데 화살표를 두면 눌러 보고 빈 안내만 확인하게 되고, "답변 대기"라는 상태 표기가 이미 같은 말을 하고 있습니다. 상태를 <b>맨 앞</b>에 둔 이유는 목록에서 가장 먼저 궁금한 것이 "답변이 왔는지"이기 때문입니다.<br><br><b>상태 색</b> — [답변 대기]는 로즈 채움, [답변 완료]는 중립 회색입니다. 로즈를 대기에 쓴 것은 <b>사용자가 기다리는 상태가 눈에 걸려야</b> 하기 때문이고, 완료는 이미 해결된 것이라 조용히 물러납니다.<br><br><b>필터</b> — [답변 대기만] 체크로 좁힙니다(눌러 보세요). 정렬 시트를 쓰지 않은 이유는 문의 내역은 <b>항상 최신순</b>이면 충분하고, 실제로 필요한 것은 "아직 답 안 온 것만 보기" 하나이기 때문입니다.<br><br><b>하단 CTA</b> — 고객센터와 같은 [1:1 문의하기]를 유지해, 내역을 확인하다 추가 문의로 바로 이어질 수 있게 했습니다.</p>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>문의 상세 — 답변 완료</div>
+<div class="dv-sw">
+<span class="dv-swl">주문 연결</span>
+<sc-for list="{{ swOrder }}" as="o" hint-placeholder-count="2">
+<div onClick="{{ o.pick }}" style="padding:6px 10px;border-radius:6px;cursor:pointer;font:{{ o.font }};background:{{ o.bg }};color:{{ o.color }};border:1px solid {{ o.border }}">{{ o.label }}</div>
+</sc-for>
+</div>
+<div class="dv-card">
+<div data-screen-label="C12 문의 상세" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">문의 상세</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:18px 14px 16px">
+<div style="display:flex;align-items:center;gap:7px">
+<span style="flex:none;padding:4px 8px;border-radius:8px;background:#F4F4F5;color:#737373;font:600 11px/1 Pretendard,sans-serif">답변 완료</span>
+<span style="font:600 11.5px/1 Pretendard,sans-serif;color:#737373">배송</span>
+<div style="flex:1"></div>
+<span style="font:400 11.5px/1 Pretendard,sans-serif;color:#737373">2026.08.09</span>
+</div>
+<sc-if value="{{ detailHasOrder }}" hint-placeholder-val="{{ true }}">
+<div style="margin-top:12px;display:flex;align-items:center;gap:9px;padding:11px 12px;border:1px solid #E3E3E5;border-radius:8px;cursor:pointer" style-active="background:#F7F7F8">
+<div style="width:44px;height:44px;border-radius:4px;background:linear-gradient(135deg,#EFEBE7,#D9D2CB);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 11px/1.3 Pretendard,sans-serif;color:#737373">20260803-1147 · 2026.08.03</div>
+<div style="margin-top:3px;font:400 13px/1.35 Pretendard,sans-serif;color:#2E2E2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">시카 리페어 앰플 30ml 리필 2개 세트</div>
+</div>
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none"><path d="M9 5l7 7-7 7"></path></svg>
+</div>
+</sc-if>
+</div>
+
+<div style="height:8px;background:#F7F7F8"></div>
+
+<div style="padding:18px 14px 0">
+<div style="display:flex;align-items:center;gap:8px">
+<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(140deg,#EFE7DC,#DCCFBE);flex:none"></div>
+<span style="font:600 13px/1 Pretendard,sans-serif">수민</span>
+<span style="font:400 11.5px/1 Pretendard,sans-serif;color:#737373">2026.08.09 14:22</span>
+</div>
+<div style="margin-top:10px;font:400 14px/1.75 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">8월 3일에 주문한 앰플이 아직 배송중으로 표시돼 있어요. 오늘까지 도착 예정이었는데 언제쯤 받을 수 있을까요?</div>
+<div style="margin-top:12px;display:flex;gap:8px">
+<div style="width:72px;height:72px;border-radius:8px;background:linear-gradient(135deg,#EFEBE7,#D9D2CB);flex:none"></div>
+<div style="width:72px;height:72px;border-radius:8px;background:linear-gradient(135deg,#F1E7EA,#DCCCD3);flex:none"></div>
+</div>
+</div>
+
+<div style="padding:20px 14px 0">
+<div style="border-radius:8px;background:#F7F7F8;padding:14px">
+<div style="display:flex;align-items:center;gap:8px">
+
+<span style="font:600 13px/1 Pretendard,sans-serif">쇼룸즈 고객센터</span>
+<span style="font:400 11.5px/1 Pretendard,sans-serif;color:#737373">2026.08.10 10:41</span>
+</div>
+<div style="margin-top:11px;font:400 14px/1.75 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">안녕하세요, 쇼룸즈입니다. 확인해 보니 배송사 물량 지연으로 하루 늦어졌고 현재 배송 출발한 상태예요. 오늘 중 수령이 어려우면 다시 알려주세요. 불편을 드려 죄송합니다.</div>
+</div>
+</div>
+
+
+
+<div style="height:26px"></div>
+
+</div>
+
+
+
+</div>
+</div>
+<p class="dv-note"><b>스레드 구조</b> — 상태·유형·날짜 머리 → 연결된 주문 → 내 문의(첨부 사진 포함) → 운영자 답변. <b>주문을 연결하지 않은 문의</b>는 해당 블록을 아예 노출하지 않습니다(우측 Tweaks의 <b>detailOrder</b>로 전환) — 서비스·계정 문의는 주문과 무관하므로 빈 안내 블록이 오히려 잡음이 됩니다. 답변은 <b>회색 블록으로 감싸</b> 내 글과 구분했습니다. 채팅 버블(좌우 정렬)을 쓰지 않은 이유는 문의가 <b>실시간 대화가 아니라 하루 단위 왕복</b>이고, 버블은 짧은 대화에 맞는 형식이라 긴 답변에서는 가독성이 떨어지기 때문입니다.<br><br><b>이어서 문의하기</b> — 새 문의를 만들지 않고 <b>같은 스레드에 추가</b>합니다. 새로 접수하면 담당자가 앞의 맥락을 못 보고 사용자도 같은 설명을 반복해야 합니다. 파괴적이지 않지만 주 액션도 아니라 중립 외곽선입니다.<br><br><b>남은 결정</b> — ① 이어서 문의 가능 기간(답변 후 N일) ② 답변 만족도 평가를 붙일지 ③ 문의 종료(닫힘) 상태를 둘지 ④ 답변 알림 방식.</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;detailOrder&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;연결됨&quot;,&quot;연결 안 됨&quot;],&quot;default&quot;:&quot;연결됨&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;문의 상세&quot;}}">
+class Component extends DCLogic {
+  state = { waitingOnly: false };
+
+  renderVals(){
+    const DATA = [
+      { kind:'1:1', status:'답변 대기', type:'배송', date:'2026.08.10', body:'주문한 앰플이 아직 배송중으로 표시돼 있어요. 오늘까지 도착 예정이었는데 언제쯤 받을 수 있을까요?',
+        orderNo:'20260803-1147', orderName:'시카 리페어 앰플 30ml 리필 2개 세트', thumb:'linear-gradient(135deg,#EFEBE7,#D9D2CB)' },
+      { kind:'상품', status:'답변 대기', type:'재입고', date:'2026.08.10', body:'리필은 본품과 같은 용량인가요?', product:'라보에이치 · 시카 리페어 앰플 30ml' },
+      { kind:'1:1', status:'답변 완료', type:'취소/교환/반품', date:'2026.08.02', body:'패드 뚜껑이 깨져서 왔어요. 교환 가능한가요?',
+        orderNo:'20260729-0842', orderName:'진정 토너 패드 60매', thumb:'linear-gradient(135deg,#F1E7EA,#DCCCD3)',
+        answer:'교환 접수해 드렸어요. 회수 기사가 방문합니다.' },
+      { kind:'상품', status:'답변 완료', type:'성분·사용법', date:'2026.08.01', body:'민감성인데 아침에도 써도 괜찮을까요?', product:'라보에이치 · 시카 리페어 앰플 30ml',
+        answer:'네, 아침저녁 모두 사용 가능합니다.' },
+      { kind:'1:1', status:'답변 완료', type:'주문·결제', date:'2026.07.28', body:'결제가 두 번 된 것 같은데 확인 부탁드려요.',
+        answer:'중복 결제 1건은 취소 처리되었습니다.' },
+      { kind:'상품', status:'답변 완료', type:'옵션·구성', date:'2026.07.25', body:'비밀글로 문의한 내용이에요', product:'하루 코스메틱 · 마일드 필링 패드 70매',
+        answer:'문의 주신 내용 확인해 답변드렸습니다.' },
+      { kind:'1:1', status:'답변 완료', type:'계정', date:'2026.07.20', body:'닉네임을 바꿨는데 문의에는 예전 이름이 보여요.',
+        answer:'캐시 갱신 후 정상 표시됩니다.' }
+    ];
+
+    const kind = this.state.kind || '1:1';
+    const scoped = DATA.filter(d => d.kind === kind);
+    const filtered = this.state.waitingOnly ? scoped.filter(d => d.status === '답변 대기') : scoped;
+
+    const tabs = [
+      { key:'1:1', label:'1:1 문의' },
+      { key:'상품', label:'상품 문의' }
+    ].map(t => {
+      const on = kind === t.key;
+      const n = DATA.filter(d => d.kind === t.key).length;
+      return {
+        label: t.label,
+        count: String(n),
+        underline: on ? '2px solid #0F0F0F' : '2px solid transparent',
+        font: (on ? '600' : '400') + ' 14px/1 Pretendard,sans-serif',
+        color: on ? '#0F0F0F' : '#8E8E8E',
+        countColor: on ? '#737373' : '#B5B5B5',
+        pick: () => this.setState({ kind: t.key })
+      };
+    });
+    const items = filtered.map((d, i) => {
+      const key = d.kind + d.date + i;
+      const isProd = d.kind === '상품' && !!d.answer;
+      const open = isProd && !!(this.state.open || {})[key];
+      return {
+      status: d.status,
+      statusBg: d.status === '답변 대기' ? '#F2456E' : '#F4F4F5',
+      statusColor: d.status === '답변 대기' ? '#fff' : '#737373',
+      type: d.type,
+      date: d.date,
+      body: d.body,
+      divider: i === 0 ? 'none' : '.5px solid #F0F0F0',
+      hasOrder: !!d.orderNo,
+      orderNo: d.orderNo || '',
+      orderName: d.orderName || '',
+      thumb: d.thumb || 'transparent',
+      hasProduct: !!d.product,
+      product: d.product || '',
+      isProductKind: isProd,
+      clamp: open ? 8 : 2,
+      chevron: open ? 'rotate(180deg)' : 'none',
+      brand: (d.product || '').split(' · ')[0],
+      answerDate: d.date,
+      showPreview: d.kind !== '상품' && !!d.answer,
+      showAnswer: open,
+      showWaiting: false,
+      answered: !!d.answer,
+      answerPreview: d.answer || '',
+      toggle: () => { if (isProd) this.setState(s => ({ open: { ...(s.open || {}), [key]: !(s.open || {})[key] } })); }
+      };
+    });
+
+    const on = this.state.waitingOnly;
+    const oCur = this.state.detailOrder ?? this.props.detailOrder ?? '연결됨';
+    const dOrder = oCur === '연결됨';
+    return {
+      swOrder: ['연결됨', '연결 안 됨'].map(label => ({
+        label,
+        pick: () => this.setState({ detailOrder: label }),
+        bg: label === oCur ? '#1a1a1a' : '#fff',
+        color: label === oCur ? '#fff' : 'rgba(0,0,0,.62)',
+        border: label === oCur ? '#1a1a1a' : 'rgba(0,0,0,.14)',
+        font: (label === oCur ? '600' : '400') + ' 11px/1 Pretendard,sans-serif'
+      })),
+      detailHasOrder: dOrder,
+      detailNoOrder: !dOrder,
+      tabs,
+      items,
+      scopeLabel: (this.state.waitingOnly ? '답변 대기 ' : '전체 ') + filtered.length + '건',
+      ctaLabel: kind === '1:1' ? '1:1 문의하기' : '상품 문의하기',
+      emptyTitle: this.state.waitingOnly ? '답변 대기 중인 문의가 없어요' : (kind === '1:1' ? '1:1 문의 내역이 없어요' : '상품 문의 내역이 없어요'),
+      emptyDesc: this.state.waitingOnly ? '모든 문의에 답변이 등록되었어요' : (kind === '1:1' ? '주문·배송·환불은 1:1 문의로 접수해 주세요' : '상품 상세에서 궁금한 점을 물어보세요'),
+      total: String(filtered.length),
+      isEmpty: filtered.length === 0,
+      filterBg: on ? '#F2456E' : '#fff',
+      filterBorder: on ? '1.5px solid #F2456E' : '1.5px solid #DEDEE0',
+      filterCheck: on ? '#fff' : '#DEDEE0',
+      toggleWaiting: () => this.setState(s => ({ waitingOnly: !s.waitingOnly }))
+    };
+  }
+}
+</script>
+</body>
+</html>

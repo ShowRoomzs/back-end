@@ -163,7 +163,7 @@ public class SellerClaimReshipService {
         values.put(ClaimReshipColumn.OPTION, rejected || claim.getExchangeOptionName() == null
                 ? product.getOptionName() : claim.getExchangeOptionName());
         values.put(ClaimReshipColumn.QUANTITY, String.valueOf(claim.getQuantity()));
-        values.put(ClaimReshipColumn.RESHIP_REASON, rejected ? "거절 반송" : "교환 재발송");
+        values.put(ClaimReshipColumn.RESHIP_REASON, rejected ? "반려 반송" : "교환 재발송");
         values.put(ClaimReshipColumn.REQUESTED_AT, DATE_TIME.format(claim.getRequestedAt()));
         values.put(ClaimReshipColumn.ORDER_NUMBER, group.getOrder().getOrderNumber());
         values.put(ClaimReshipColumn.GROUP_BUY_NAME, group.getGroupBuy() == null
@@ -278,7 +278,7 @@ public class SellerClaimReshipService {
             } else if (raw.trackingNumber().isEmpty()) {
                 code = "TRACKING_REQUIRED";
                 message = "송장번호를 입력해 주세요.";
-            } else if (!raw.carrierText().isEmpty() && carrier == null) {
+            } else if (!raw.carrierText().isEmpty() && (carrier == null || !carrier.isSelectable())) {
                 code = "CARRIER_INVALID";
                 message = "지원하지 않는 택배사입니다.";
             } else if (carrier != null) {

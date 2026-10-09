@@ -69,6 +69,7 @@ public final class CreatorGroupBuyActionPredicate {
                         .where(check.groupBuy.eq(g), check.checkerSide.eq(FulfillmentSide.CREATOR))
                         .notExists());
 
-        return postToWrite.or(hiddenPostToFix).or(extensionToAnswer).or(fulfillmentToCheck);
+        // 이행 확인(fulfillmentToCheck)은 2026-10-06 폐기 — 조치 필요에서 뺀다. 식은 기획 복귀에 대비해 남긴다.
+        return postToWrite.or(hiddenPostToFix).or(extensionToAnswer);
     }
 }

@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>wf-admin-05 · 공구 관리 · 1440×1024</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,"Malgun Gothic","맑은 고딕",sans-serif; background:#e6e6e6; color:#222; }
+  .doc-head { padding:24px 40px 4px; }
+  .doc-head h1 { font-size:18px; font-weight:700; }
+  .doc-head h1 span { font-weight:400; color:#888; font-size:13px; }
+  .doc-head .sub { font-size:12px; color:#777; margin-top:4px; line-height:1.6; }
+  .doc-head .spec { display:inline-block; margin-top:8px; font-size:11px; color:#555; background:#fff; border:1px solid #ccc; border-radius:4px; padding:4px 8px; }
+  .stack { padding:16px 40px 60px; }
+  .ftitle { font-size:13px; font-weight:700; color:#333; margin:22px 0 8px; }
+  .ftitle span { font-weight:400; color:#888; font-size:12px; }
+  .ftitle .pill { font-weight:400; font-size:11px; color:#555; background:#fff; border:1px solid #bbb; border-radius:10px; padding:1px 8px; margin-left:6px; }
+
+  .frame { width:1440px; background:#fff; border:1px solid #b5b5b5; border-radius:8px; box-shadow:0 1px 5px rgba(0,0,0,.1); overflow:hidden; position:relative; }
+  .chrome { height:32px; background:#e2e2e2; border-bottom:1px solid #c8c8c8; display:flex; align-items:center; padding:0 12px; gap:6px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#c0c0c0; }
+  .urlbar { flex:1; height:18px; background:#fff; border:1px solid #d0d0d0; border-radius:9px; font-size:11px; color:#888; display:flex; align-items:center; padding:0 10px; margin-left:8px; }
+  .app { display:flex; min-height:992px; }
+  .gnb { width:224px; flex-shrink:0; background:#3f3f3f; color:#cfcfcf; padding:0 0 20px; }
+  .gnb .brand { padding:22px 20px 18px; border-bottom:1px solid #565656; }
+  .gnb .brand .m { font-size:15px; font-weight:800; color:#fff; letter-spacing:.5px; }
+  .gnb .brand .s { font-size:10px; color:#a5a5a5; margin-top:3px; }
+  .gnb-item { display:flex; align-items:center; gap:8px; padding:11px 20px; font-size:12.5px; color:#c2c2c2; border-left:3px solid transparent; }
+  .gnb-item .n { font-size:11px; color:#8f8f8f; width:14px; }
+  .gnb-item .cnt { margin-left:auto; background:#5a5a5a; color:#fff; border-radius:9px; font-size:10px; min-width:17px; height:17px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; }
+  .gnb-item.hot .cnt { background:#a33; }
+  .gnb-item.on { background:#2a2a2a; color:#fff; font-weight:700; border-left-color:#fff; }
+  .gnb-item.on .n { color:#ddd; }
+  .gnb-right { margin-left:auto; display:flex; align-items:center; gap:5px; }
+  .gnb-right .cnt { margin-left:0; }
+  .chev { font-size:9px; color:#8f8f8f; }
+  .gnb-item.on .chev { color:#ddd; }
+  .gnb-sub { padding:9px 20px 9px 44px; font-size:12px; color:#999; display:flex; align-items:center; }
+  .gnb-sub .cnt { margin-left:auto; background:#5a5a5a; color:#fff; border-radius:9px; font-size:10px; min-width:17px; height:17px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; }
+  .gnb-sub.on .cnt { background:#555; }
+  .gnb-sub.on { background:#333; color:#fff; border-left:2px solid #888; padding-left:42px; }
+  .main { flex:1; background:#f7f7f7; min-width:0; position:relative; }
+  .topbar { height:56px; background:#fff; border-bottom:1px solid #e2e2e2; display:flex; align-items:center; justify-content:space-between; padding:0 24px; }
+  .crumb { font-size:14px; font-weight:700; color:#222; }
+  .crumb .sub2 { font-weight:400; color:#999; font-size:12px; margin-left:6px; }
+  .op-chip { display:flex; align-items:center; gap:8px; font-size:12px; color:#555; }
+  .op-chip .st { border:1px solid #999; border-radius:12px; padding:2px 10px; background:#f2f2f2; }
+  .content { padding:24px; }
+
+  /* 목록 */
+  .filter-row { display:flex; gap:8px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
+  .fchip { border:1px solid #ccc; border-radius:14px; padding:5px 14px; font-size:12px; color:#555; background:#fff; }
+  .fchip.on { background:#333; color:#fff; border-color:#333; }
+  .fchip.hot { border-color:#c9a24a; color:#8a5a00; }
+  .search-box { margin-left:auto; border:1px solid #ccc; border-radius:6px; padding:6px 12px; font-size:12px; color:#999; background:#fff; width:240px; }
+  .list-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:12px; color:#888; }
+  .list-toolbar b { color:#333; }
+
+  table.list { width:100%; border-collapse:collapse; font-size:12.5px; background:#fff; border:1px solid #e2e2e2; border-radius:8px; overflow:hidden; }
+  table.list th { text-align:left; padding:11px 14px; background:#f6f6f6; color:#666; font-size:11.5px; border-bottom:1px solid #eee; font-weight:700; }
+  table.list td { padding:12px 14px; border-bottom:1px solid #f2f2f2; color:#444; vertical-align:middle; }
+  table.list tr:last-child td { border-bottom:none; }
+  table.list tr.row-link td:first-child { text-decoration:underline; color:#333; font-weight:600; }
+  .p-name { font-weight:600; color:#333; }
+  .p-sub { font-size:10.5px; color:#aaa; margin-top:2px; }
+  .badge { border:1px solid #999; border-radius:10px; padding:1px 9px; font-size:10.5px; color:#444; background:#f6f6f6; white-space:nowrap; }
+  .badge.prep { background:#eee; color:#777; }
+  .badge.ready { background:#96771f; color:#fff; border-color:#96771f; }
+  .badge.live { background:#3a3a3a; color:#fff; border-color:#3a3a3a; }
+  .badge.done { background:#eee; color:#888; }
+  .badge.settled { background:#f6f6f6; color:#555; }
+  .badge.cancel { background:#fff; color:#a33; border-color:#a33; }
+  .badge.post-draft { background:#fff; color:#999; }
+  .badge.post-wait { background:#fff; color:#96771f; border-color:#96771f; }
+  .badge.post-live { background:#333; color:#fff; border-color:#333; }
+  .badge.post-hidden { background:#eee; color:#888; }
+  .row-actions { display:flex; gap:6px; }
+  .mini-btn { border:1px solid #ccc; border-radius:4px; padding:5px 10px; font-size:11px; color:#555; background:#fff; white-space:nowrap; }
+  .mini-btn.doa { color:#fff; background:#333; border-color:#333; }
+  .mini-btn.disabled { color:#bbb; border-color:#e2e2e2; background:#fafafa; }
+  .pager { display:flex; justify-content:center; gap:6px; margin-top:16px; font-size:12px; color:#888; }
+  .pager span { width:24px; height:24px; display:flex; align-items:center; justify-content:center; border:1px solid #ddd; border-radius:4px; }
+  .pager span.on { background:#333; color:#fff; border-color:#333; }
+
+  /* 상세 */
+  .detail-grid { display:flex; gap:18px; align-items:flex-start; }
+  .det-l { flex:1; min-width:0; } .det-r { width:340px; flex-shrink:0; }
+  .card { background:#fff; border:1px solid #e2e2e2; border-radius:10px; margin-bottom:16px; }
+  .card-h { padding:13px 18px; border-bottom:1px solid #eee; font-size:13.5px; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
+  .card-b { padding:16px 18px; }
+  .form-row { display:flex; border-bottom:1px solid #f2f2f2; padding:10px 0; font-size:12.5px; }
+  .form-row:last-child { border-bottom:none; }
+  .form-label { width:150px; flex-shrink:0; color:#888; }
+  .form-val { color:#333; flex:1; }
+
+  table.sku { width:100%; border-collapse:collapse; font-size:12px; }
+  table.sku th { text-align:left; padding:8px 10px; background:#f6f6f6; color:#777; font-size:10.5px; font-weight:700; border-bottom:1px solid #eee; }
+  table.sku td { padding:9px 10px; border-bottom:1px solid #f2f2f2; color:#444; }
+  table.sku tr:last-child td { border-bottom:none; }
+
+  .status-box { text-align:center; padding:18px 0 6px; }
+  .status-box .lb { font-size:11px; color:#999; margin-bottom:8px; }
+  .status-box .cur { font-size:15px; font-weight:800; color:#333; margin-bottom:2px; }
+  .act-row { display:flex; gap:8px; padding:0 18px 18px; }
+  .abtn { flex:1; padding:11px 0; text-align:center; border-radius:6px; font-size:13px; font-weight:700; border:1px solid #333; }
+  .abtn.appr { background:#333; color:#fff; }
+  .abtn.rej { background:#fff; color:#a33; border-color:#a33; }
+  .abtn.disabled { background:#f2f2f2; color:#bbb; border-color:#ddd; }
+
+  .hist { padding:14px 18px; }
+  .hitem { display:flex; gap:10px; padding:9px 0; border-bottom:1px solid #f2f2f2; font-size:12px; }
+  .hitem:last-child { border-bottom:none; }
+  .hitem .hd { color:#333; } .hitem .ht { color:#aaa; font-size:10.5px; margin-top:2px; }
+
+  /* 메시지 센터 — 파트너센터 연결·소통과 동일 UI 재사용 */
+  .av { border-radius:50%; background:#d8d8d8; border:1px solid #c5c5c5; display:flex; align-items:center; justify-content:center; font-size:11px; color:#888; flex-shrink:0; }
+  .unread { background:#555; color:#fff; border-radius:9px; min-width:18px; height:18px; font-size:11px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; }
+  .cs-wrap { display:flex; height:820px; border:1px solid #e2e2e2; border-radius:10px; overflow:hidden; }
+  .cs-list { width:320px; flex-shrink:0; border-right:1px solid #e2e2e2; background:#fff; display:flex; flex-direction:column; overflow-y:auto; }
+  .cs-lh { padding:14px; border-bottom:1px solid #eee; }
+  .cs-search { height:36px; border:1px solid #bbb; border-radius:6px; display:flex; align-items:center; padding:0 10px; font-size:12px; color:#a3a3a3; }
+  .cs-item { display:flex; gap:10px; padding:12px 14px; border-bottom:1px solid #f0f0f0; align-items:center; cursor:default; }
+  .cs-item.sel { background:#f0f4fb; border-left:3px solid #555; padding-left:11px; }
+  .cs-item .av { width:38px; height:38px; }
+  .cs-meta { flex:1; min-width:0; }
+  .cs-top { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+  .cs-name { font-size:13px; font-weight:700; color:#333; }
+  .cs-time { font-size:10px; color:#aaa; }
+  .cs-prev { font-size:11.5px; color:#999; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:3px; }
+  .cs-row2 { display:flex; align-items:center; justify-content:space-between; margin-top:5px; }
+  .cs-thread { flex:1; display:flex; flex-direction:column; min-width:0; background:#fafafa; }
+  .th-head { height:64px; background:#fff; border-bottom:1px solid #e2e2e2; display:flex; align-items:center; padding:0 20px; gap:12px; }
+  .th-head .av { width:40px; height:40px; }
+  .th-hmeta { flex:1; }
+  .th-hname { font-size:14px; font-weight:700; }
+  .th-hstat { font-size:11px; color:#888; margin-top:2px; }
+  .th-body { flex:1; padding:22px 20px; display:flex; flex-direction:column; gap:16px; overflow-y:auto; }
+  .daymark { text-align:center; font-size:11px; color:#aaa; }
+  .msg { max-width:60%; }
+  .msg .who { font-size:11px; color:#999; margin-bottom:4px; }
+  .bubble { border-radius:10px; padding:10px 13px; font-size:13px; line-height:1.5; }
+  .msg.them .bubble { background:#eee; color:#333; border-top-left-radius:2px; }
+  .msg.me { align-self:flex-end; text-align:right; }
+  .msg.me .bubble { background:#d7d7d7; color:#222; border-top-right-radius:2px; text-align:left; }
+  .msg.op .bubble { background:#333; color:#fff; border-top-left-radius:2px; }
+  .msg .tstamp { font-size:10px; color:#bbb; margin-top:4px; }
+  .th-input { border-top:1px solid #e2e2e2; background:#fff; padding:12px 16px; display:flex; align-items:center; gap:10px; }
+  .th-field { flex:1; height:40px; border:1px solid #bbb; border-radius:20px; display:flex; align-items:center; padding:0 16px; font-size:13px; color:#a3a3a3; }
+
+  /* 체크리스트 */
+  .chk-item { display:flex; gap:10px; align-items:flex-start; padding:11px 0; border-bottom:1px solid #f2f2f2; font-size:12.5px; }
+  .chk-item:last-child { border-bottom:none; }
+  .chk-box { width:18px; height:18px; border:1.5px solid #333; border-radius:4px; background:#333; color:#fff; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; margin-top:1px; }
+  .chk-txt b { color:#222; } .chk-txt .d { color:#888; font-size:11.5px; margin-top:2px; }
+
+  /* 모달 */
+  .modal-overlay { position:absolute; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:20; }
+  .modal { width:480px; background:#fff; border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,.2); overflow:hidden; max-height:920px; }
+  .modal-h { padding:18px 20px; font-size:15px; font-weight:800; border-bottom:1px solid #eee; }
+  .modal-b { padding:18px 20px; font-size:13px; color:#555; line-height:1.7; max-height:680px; overflow-y:auto; }
+  .modal-b .sel { width:100%; border:1px solid #ccc; border-radius:6px; padding:9px 10px; font-size:12.5px; color:#666; margin:10px 0 8px; }
+  .modal-b .ta { width:100%; border:1px solid #ccc; border-radius:6px; padding:9px 10px; font-size:12.5px; color:#888; min-height:70px; }
+  .modal-f { display:flex; gap:8px; padding:14px 20px; border-top:1px solid #eee; }
+  .modal-btn { flex:1; padding:11px 0; text-align:center; border-radius:6px; font-size:13px; font-weight:700; border:1px solid #ccc; background:#fff; color:#555; }
+  .modal-btn.do { background:#a33; color:#fff; border-color:#a33; }
+  .modal-btn.doa { background:#333; color:#fff; border-color:#333; }
+
+  .foldline { position:absolute; left:0; right:0; top:1024px; border-top:1.5px dashed #c4553f; z-index:5; }
+  .foldline::after { content:"↑ 1440×1024 뷰포트 경계 · 이하 스크롤"; position:absolute; right:14px; top:-9px; background:#f7f7f7; padding:0 8px; font-size:10px; color:#c4553f; }
+  .note { margin:6px 0 0; border:1.5px dashed #999; border-radius:6px; background:#fafafa; padding:9px 12px; font-size:11.5px; color:#555; line-height:1.6; }
+  .note b { color:#333; } .note .tag { font-weight:700; margin-right:4px; }
+  .note.rule .tag { color:#555; }
+  .note.legal .tag { color:#8a5a00; }
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>⑤ 어드민 · 5. 공구 관리 <span>wf-admin-05 · 데스크톱 1440×1024</span></h1>
+  <div class="sub">그레이스케일 lo-fi · 공구 목록·상세 · <b>오픈 승인(문구 점검 체크리스트)</b> · <b>공구 취소(일괄 환불)</b> — 공구 상태 6종(준비중→준비완료→진행중→종료→정산완료 / 취소, ② draft36 §5) · <b>2026.07 신규</b>: 공구 종료 후 <b>계약 이행 확인</b>(브랜드·인플루언서 각자 계약 조항별 체크리스트 확인, 전체 체크 시 이행함, 7일 무응답 시 자동 이행함) + 미체크 항목 있으면 <b>메시지 센터</b>(신규 최상위 메뉴, ★ 임시 번호)에 이슈 표시 · <b>메시지 센터 = 전체 브랜드·인플루언서 상시 연결</b>(연결요청 없음), 운영자 작성 가능(wf-admin-09의 열람 전용 소통 스레드와는 별개)</div>
+  <div class="spec">프레임 1440×1024 · 오픈 승인 = 체크리스트 전체 확인 후 활성 · 취소 = 사유 필수 + 일괄 환불 연동 → 감사 기록</div>
+</div>
+
+<div class="stack">
+
+<!-- ============ F1. 공구 목록 ============ -->
+<div class="ftitle">1. 공구 목록 <span>— 계약 체결완료 시 자동 생성, 브랜드 생성 버튼 없음</span><span class="pill">GNB #5 · F1</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/campaigns</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item hot on"><span class="n">5</span> 공구 관리 <span class="gnb-right"><span class="cnt">1</span></span></div>
+      <div class="gnb-item"><span class="n">★</span> 메시지 센터 <span class="gnb-right"><span class="cnt">1</span></span></div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">공구 관리</div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="filter-row">
+          <span class="fchip on">전체 8</span>
+          <span class="fchip">준비중 1</span>
+          <span class="fchip hot">오픈승인대기 1</span>
+          <span class="fchip">진행중 3</span>
+          <span class="fchip">종료 1</span>
+          <span class="fchip">정산완료 1</span>
+          <span class="fchip">취소 1</span>
+          <div class="search-box">공구명 · 브랜드 · 인플루언서 검색</div>
+        </div>
+        <div class="list-toolbar"><span>총 <b>8</b>건</span><span>기간 시작일순 ▾</span></div>
+        <table class="list">
+          <thead><tr>
+            <th>공구명 <span style="font-weight:400;color:#999">(관리용)</span></th>
+            <th style="width:120px">브랜드</th>
+            <th style="width:130px">인플루언서(쇼룸)</th>
+            <th style="width:96px">공구 상태</th>
+            <th style="width:96px">게시물 등록</th>
+            <th style="width:230px">공구 기간</th>
+            <th style="width:130px">판매(건/액)</th>
+            <th style="width:130px">관리</th>
+          </tr></thead>
+          <tbody>
+            <tr class="row-link">
+              <td><div class="p-name">여름 수분 세럼 공구</div></td>
+              <td>글로우랩</td>
+              <td>글로우_지민</td>
+              <td><span class="badge ready">준비완료</span></td>
+              <td><span class="badge post-wait">예약</span></td>
+              <td>2026.07.20 00:00 ~ 2026.08.05 23:59</td>
+              <td>—</td>
+              <td><div class="row-actions"><span class="mini-btn">상세</span></div></td>
+            </tr>
+            <tr class="row-link">
+              <td><div class="p-name">글로우 크림 앵콜 공구</div></td>
+              <td>글로우랩</td>
+              <td>글로우_지민</td>
+              <td><span class="badge live">진행중</span></td>
+              <td><span class="badge post-live">노출중</span></td>
+              <td>2026.07.01 00:00 ~ 2026.07.15 23:59</td>
+              <td>128건 / 4,820,000원</td>
+              <td><div class="row-actions"><span class="mini-btn">상세</span></div></td>
+            </tr>
+            <tr class="row-link">
+              <td><div class="p-name">여름 비타C 루틴 공동구매</div></td>
+              <td>스킨랩코리아</td>
+              <td>글로우랩 with 지수</td>
+              <td><span class="badge live">진행중</span></td>
+              <td><span class="badge post-live">노출중</span></td>
+              <td>2026.06.25 00:00 ~ 2026.07.25 23:59</td>
+              <td>342건 / 9,890,000원</td>
+              <td><div class="row-actions"><span class="mini-btn">상세</span></div></td>
+            </tr>
+            <tr class="row-link">
+              <td><div class="p-name">라이스 모공 케어 공동구매</div></td>
+              <td>무드코스메틱</td>
+              <td>무드코스메틱 with 유리</td>
+              <td><span class="badge live">진행중</span></td>
+              <td><span class="badge post-live">노출중</span></td>
+              <td>2026.06.20 00:00 ~ 2026.07.20 23:59</td>
+              <td>76건 / 1,980,000원</td>
+              <td><div class="row-actions"><span class="mini-btn">상세</span></div></td>
+            </tr>
+            <tr class="row-link">
+              <td><div class="p-name">(공구명 미입력)</div><div class="p-sub">브랜드 협의항목 임시저장 중</div></td>
+              <td>뷰티랩</td>
+              <td>뷰티_소연</td>
+              <td><span class="badge prep">준비중</span></td>
+              <td><span class="badge post-draft">작성중</span></td>
+              <td>— (미설정)</td>
+              <td>—</td>
+              <td><div class="row-actions"><span class="mini-btn">상세</span></div></td>
+            </tr>
+            <tr class="row-link">
+              <td><div class="p-name">데일리 클렌징 오일 공구</div></td>
+              <td>클렌즈하우스</td>
+              <td>클렌즈_민경</td>
+              <td><span class="badge done">종료</span></td>
+              <td><span class="badge post-hidden">종료</span></td>
+              <td>2026.05.01 00:00 ~ 2026.05.15 23:59</td>
+              <td>210건 / 5,040,000원</td>
+              <td><div class="row-actions"><span class="mini-btn">상세</span></div></td>
+            </tr>
+            <tr class="row-link">
+              <td><div class="p-name">여드름 진정 라인 공구</div></td>
+              <td>스킨랩코리아</td>
+              <td>스킨랩_하늘</td>
+              <td><span class="badge settled">정산완료</span></td>
+              <td><span class="badge post-hidden">종료</span></td>
+              <td>2026.04.10 00:00 ~ 2026.04.24 23:59</td>
+              <td>95건 / 2,150,000원</td>
+              <td><div class="row-actions"><span class="mini-btn">상세</span></div></td>
+            </tr>
+            <tr class="row-link">
+              <td><div class="p-name">히알루론 토너 특가 공구</div></td>
+              <td>글로우랩</td>
+              <td>글로우_지민</td>
+              <td><span class="badge cancel">취소</span></td>
+              <td><span class="badge post-hidden">숨김</span></td>
+              <td>2026.03.15 00:00 ~ 2026.03.30 23:59</td>
+              <td>12건 / 280,000원 <span style="color:#aaa">(환불완료)</span></td>
+              <td><div class="row-actions"><span class="mini-btn">상세</span></div></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="pager"><span>‹</span><span class="on">1</span><span>›</span></div>
+        <div class="note rule"><span class="tag">[규칙]</span> <b>목록에서는 오픈 승인·취소 퀵액션 없음</b> — "상세"로만 진입, 문구 점검·계약/게시물 내용을 확인한 뒤 상세 화면 안에서만 처리(오조작 방지). "오픈승인대기" 필터 = <b>홈 대시보드 처리 대기 큐와 동일 소스</b>(공구 오픈 승인 N건) · 게시물 미등록(작성중) 상태는 상세에서도 오픈 승인 액션이 비활성 — 게시물 등록이 준비완료 전제(② draft36)</div>
+        <div class="note rule"><span class="tag">[규칙]</span> 공구 <b>생성·삭제 버튼 없음</b> — 계약 체결완료 시 시스템이 자동 생성. 공구명은 계약 작성 시 브랜드가 입력한 관리용 명칭(소비자 노출 게시물 제목과 별개, wf-partner-04 참조)</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F2. 공구 상세 ============ -->
+<div class="ftitle">2. 공구 상세 — 준비완료(오픈승인대기) 상태 <span>— 문구 점검 게이트 진입 시점</span><span class="pill">GNB #5 · F2</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/campaigns/CMP-20260720-01</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item hot on"><span class="n">5</span> 공구 관리 <span class="gnb-right"><span class="cnt">1</span></span></div>
+      <div class="gnb-item"><span class="n">★</span> 메시지 센터 <span class="gnb-right"><span class="cnt">1</span></span></div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">공구 관리 <span class="sub2">/ 여름 수분 세럼 공구</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="detail-grid">
+          <div class="det-l">
+            <div class="card">
+              <div class="card-h">기본 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">공구 ID</div><div class="form-val">CMP-20260720-01</div></div>
+                <div class="form-row"><div class="form-label">공구명</div><div class="form-val">여름 수분 세럼 공구 <span style="color:#aaa">(관리용 · 브랜드 입력)</span></div></div>
+                <div class="form-row"><div class="form-label">연결 계약</div><div class="form-val">CTR-20260715-004 <span style="color:#666;text-decoration:underline">계약 상세 보기</span> <span style="color:#aaa">· 서명완료 2026.07.15 09:31</span></div></div>
+                <div class="form-row"><div class="form-label">브랜드</div><div class="form-val">글로우랩 <span style="color:#666;text-decoration:underline">입점 상세 보기</span></div></div>
+                <div class="form-row"><div class="form-label">인플루언서(쇼룸)</div><div class="form-val">글로우_지민 <span style="color:#666;text-decoration:underline">입점 상세 보기</span></div></div>
+                <div class="form-row"><div class="form-label">공구 기간</div><div class="form-val">2026.07.20 00:00 ~ 2026.08.05 23:59 <span style="color:#aaa">(17일)</span> <span class="mini-btn" style="margin-left:6px">기간 연장</span></div></div>
+                <div class="form-row"><div class="form-label">고정 지급비</div><div class="form-val">있음 · 500,000원 <span style="color:#aaa">(콘텐츠 제작 대가, 판매와 무관)</span></div></div>
+                <div class="form-row"><div class="form-label">공구 상태</div><div class="form-val">준비완료 <span style="color:#aaa">(세팅 완료, 기간 시작 대기 · 소비자 비공개)</span></div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">관련 당사자 연락처 <span style="font-size:11px;color:#999;font-weight:400">CS·분쟁 대응용</span></div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">브랜드 담당자</div><div class="form-val">김민지 매니저 · 010-3456-7890 · biz@glowlab.co.kr</div></div>
+                <div class="form-row"><div class="form-label">인플루언서 업무 이메일</div><div class="form-val">jimin.glow@gmail.com <span style="color:#aaa">(활동 채널 5필드 중 1)</span></div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">계약 상품 항목</div>
+              <div class="card-b" style="padding:0">
+                <table class="sku">
+                  <thead><tr><th style="padding-left:18px">상품</th><th>공구가</th><th>리워드율</th><th>재고 상태</th></tr></thead>
+                  <tbody>
+                    <tr><td style="padding-left:18px">글로우 세럼 앰플 30ml</td><td>34,000원</td><td>12%</td><td><span class="badge live">진열</span></td></tr>
+                    <tr><td style="padding-left:18px">히알루론산 토너 200ml</td><td>19,000원</td><td>10%</td><td><span class="badge live">진열</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="card-b" style="padding-top:0"><div style="font-size:11px;color:#999">가격은 계약 체결 시점 저장(공구가 불변) · 실제 판매 시 재고·진열 상태 재확인(② draft36)</div></div>
+            </div>
+            <div class="card">
+              <div class="card-h">공구 게시물 <span style="font-size:11px;color:#999;font-weight:400">등록 완료 — 오픈 승인 전제 충족</span></div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">게시물 ID</div><div class="form-val">POST-20260716-118</div></div>
+                <div class="form-row"><div class="form-label">게시물 제목</div><div class="form-val">여름엔 수분 폭탄 세럼 🌊 지민 픽</div></div>
+                <div class="form-row"><div class="form-label">게시물 등록 상태</div><div class="form-val"><span class="badge post-wait">예약</span> <span style="color:#aaa">(기간 시작 시 자동 노출중 전환)</span></div></div>
+                <div class="form-row"><div class="form-label">등록 일시</div><div class="form-val">2026.07.16 18:04</div></div>
+                <div class="form-row"><div class="form-label">본문 미리보기</div><div class="form-val" style="color:#666">"장마철 뒤집어진 피부 진정엔 이 조합이 최고예요 :) #광고 #글로우랩제공" <span class="mini-btn" style="margin-left:6px">운영자 경유 수정</span></div></div>
+                <div class="form-row"><div class="form-label">본문 수정 권한</div><div class="form-val" style="color:#aaa">예약 상태 — 인플루언서 직접 수정 잠금(운영자 경유 시에만 가능)</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">정산 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">공구 정산(판매분)</div><div class="form-val">— <span style="color:#aaa">(진행중 진입 전 · 종료 후 발생)</span></div></div>
+                <div class="form-row"><div class="form-label">고정 지급비 정산</div><div class="form-val">— <span style="color:#aaa">(트리거 = 게시물 노출중 최초 전환 시점, 아직 미도래)</span></div></div>
+              </div>
+              <div class="card-b" style="padding-top:0"><div style="font-size:11px;color:#999">정산 처리·이체는 <b>⑦ 정산 관리</b>에서 진행(이 화면은 조회만, ② draft36 §11-1)</div></div>
+            </div>
+            <div class="card">
+              <div class="card-h">판매 현황</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">주문 건수</div><div class="form-val">— <span style="color:#aaa">(진행중 진입 전)</span></div></div>
+                <div class="form-row"><div class="form-label">판매액</div><div class="form-val">—</div></div>
+                <div class="form-row"><div class="form-label">노출·클릭·전환 등 성과</div><div class="form-val" style="color:#aaa">[집계 대기] — 진행중 진입 후 이벤트 로깅 파이프라인 연동</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="det-r">
+            <div class="card">
+              <div class="card-h">상태 관리</div>
+              <div class="status-box">
+                <div class="lb">현재 공구 상태</div>
+                <div class="cur">준비완료</div>
+              </div>
+              <div class="act-row">
+                <div class="abtn appr">오픈 승인 (문구 점검)</div>
+              </div>
+              <div class="act-row" style="padding-top:0">
+                <div class="abtn rej">공구 취소</div>
+              </div>
+              <div style="padding:0 18px 16px;font-size:11px;color:#999;line-height:1.6">오픈 승인 시 기간 시작일(2026.07.20)에 <b>자동으로 진행중 전환</b> · 조기 마감은 진행중 상태에서만 노출(하단 예시)</div>
+            </div>
+            <div class="card">
+              <div class="card-h">처리 이력</div>
+              <div class="hist">
+                <div class="hitem"><div>⚪</div><div><div class="hd">계약 체결완료 (양측 서명)</div><div class="ht">2026.07.15 09:31 · 시스템</div></div></div>
+                <div class="hitem"><div>🟢</div><div><div class="hd">공구 생성 (공구가·대상 상품 확정)</div><div class="ht">2026.07.15 09:31 · 시스템</div></div></div>
+                <div class="hitem"><div>⚪</div><div><div class="hd">공구 게시물 작성 시작</div><div class="ht">2026.07.16 15:20 · 인플루언서(글로우_지민)</div></div></div>
+                <div class="hitem"><div>⚪</div><div><div class="hd">공구 게시물 등록 완료 → 예약</div><div class="ht">2026.07.16 18:04 · 인플루언서(글로우_지민)</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note rule" style="margin-top:14px"><span class="tag">[규칙]</span> "오픈 승인" 버튼은 <b>공구 게시물 등록 완료 상태에서만</b> 노출(미등록이면 비활성 + "게시물 미등록" 안내). "공구 취소"는 <b>준비중·준비완료·진행중</b> 전 구간에서 상시 가능(종료·정산완료·취소 상태에선 액션 없음, 상태만 표시).</div>
+        <div class="note rule"><span class="tag">[규칙]</span> <b>고정 지급비는 판매 실적과 무관</b>하게 계약에 명시된 정액 지급 — 트리거는 게시물 "노출중" 최초 전환 시점(공구 종료·구매확정 대기 안 함, ② draft36 §11-1). 공구 취소 시에도 이미 트리거된 지급비는 회수하지 않음.</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F3. 공구 상세 — 진행중 상태 ============ -->
+<div class="ftitle">3. 공구 상세 — 진행중 상태 <span>— 조기 마감 액션 노출, 오픈 승인 버튼은 사라짐</span><span class="pill">GNB #5 · F3</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/campaigns/CMP-20260625-02</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item hot on"><span class="n">5</span> 공구 관리 <span class="gnb-right"><span class="cnt">1</span></span></div>
+      <div class="gnb-item"><span class="n">★</span> 메시지 센터 <span class="gnb-right"><span class="cnt">1</span></span></div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">공구 관리 <span class="sub2">/ 여름 비타C 루틴 공동구매</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="detail-grid">
+          <div class="det-l">
+            <div class="card">
+              <div class="card-h">기본 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">공구 ID</div><div class="form-val">CMP-20260625-02</div></div>
+                <div class="form-row"><div class="form-label">공구명</div><div class="form-val">여름 비타C 루틴 공동구매 <span style="color:#aaa">(관리용 · 브랜드 입력)</span></div></div>
+                <div class="form-row"><div class="form-label">연결 계약</div><div class="form-val">CTR-20260620-011 <span style="color:#666;text-decoration:underline">계약 상세 보기</span> <span style="color:#aaa">· 서명완료 2026.06.20 11:02</span></div></div>
+                <div class="form-row"><div class="form-label">브랜드</div><div class="form-val">스킨랩코리아 <span style="color:#666;text-decoration:underline">입점 상세 보기</span></div></div>
+                <div class="form-row"><div class="form-label">인플루언서(쇼룸)</div><div class="form-val">글로우랩 with 지수 <span style="color:#666;text-decoration:underline">입점 상세 보기</span></div></div>
+                <div class="form-row"><div class="form-label">공구 기간</div><div class="form-val">2026.06.25 00:00 ~ 2026.07.25 23:59 <span style="color:#aaa">(D-8 남음)</span> <span class="mini-btn" style="margin-left:6px">기간 연장</span></div></div>
+                <div class="form-row"><div class="form-label">고정 지급비</div><div class="form-val">있음 · 700,000원 <span style="color:#3a7d3a">(지급 완료 — 노출중 최초 전환 시 트리거됨)</span></div></div>
+                <div class="form-row"><div class="form-label">공구 상태</div><div class="form-val">진행중 <span style="color:#aaa">(소비자 구매 가능)</span></div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">관련 당사자 연락처 <span style="font-size:11px;color:#999;font-weight:400">CS·분쟁 대응용</span></div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">브랜드 담당자</div><div class="form-val">이서연 매니저 · 010-2233-4455 · cs@skinlabkorea.co.kr</div></div>
+                <div class="form-row"><div class="form-label">인플루언서 업무 이메일</div><div class="form-val">jisu.glow@gmail.com</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">계약 상품 항목</div>
+              <div class="card-b" style="padding:0">
+                <table class="sku">
+                  <thead><tr><th style="padding-left:18px">상품</th><th>공구가</th><th>리워드율</th><th>재고 상태</th></tr></thead>
+                  <tbody>
+                    <tr><td style="padding-left:18px">비타민C 브라이트닝 크림</td><td>29,000원</td><td>11%</td><td><span class="badge live">진열</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">공구 게시물</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">게시물 ID</div><div class="form-val">POST-20260624-096</div></div>
+                <div class="form-row"><div class="form-label">게시물 제목</div><div class="form-val">비타C 루틴 이거 하나로 끝 ☀️</div></div>
+                <div class="form-row"><div class="form-label">게시물 등록 상태</div><div class="form-val"><span class="badge post-live">노출중</span> <span style="color:#aaa">· 쇼룸 피드 최상단 고정</span></div></div>
+                <div class="form-row"><div class="form-label">본문 미리보기</div><div class="form-val" style="color:#666">"비타민C 하나로 여름 칙칙함 싹 정리 :) #광고 #스킨랩코리아제공" <span class="mini-btn" style="margin-left:6px">운영자 경유 수정</span></div></div>
+                <div class="form-row"><div class="form-label">본문 수정 권한</div><div class="form-val" style="color:#aaa">잠금(노출중 — 오픈 승인 시 점검한 문구 무력화 방지, 운영자 경유 시에만 수정)</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">정산 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">공구 정산(판매분)</div><div class="form-val">— <span style="color:#aaa">(공구 종료 후 발생)</span></div></div>
+                <div class="form-row"><div class="form-label">고정 지급비 정산</div><div class="form-val"><span class="badge live">이체완료</span> 2026.06.25 00:05</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">판매 현황</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">주문 건수</div><div class="form-val">342건</div></div>
+                <div class="form-row"><div class="form-label">판매액</div><div class="form-val">9,890,000원</div></div>
+                <div class="form-row"><div class="form-label">노출·클릭·전환 등 성과</div><div class="form-val" style="color:#aaa">[집계 대기] — 이벤트 로깅 파이프라인 연동 후 노출</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="det-r">
+            <div class="card">
+              <div class="card-h">상태 관리</div>
+              <div class="status-box">
+                <div class="lb">현재 공구 상태</div>
+                <div class="cur">진행중</div>
+              </div>
+              <div class="act-row">
+                <div class="abtn appr">조기 마감</div>
+              </div>
+              <div class="act-row" style="padding-top:0">
+                <div class="abtn rej">공구 취소</div>
+              </div>
+              <div style="padding:0 18px 16px;font-size:11px;color:#999;line-height:1.6">조기 마감 = 종료일 이전에 <b>수동으로 종료 전환</b>(판매 즉시 마감, 환불 없음) · 공구 취소와 달리 사유 입력 없음, 확인만</div>
+            </div>
+            <div class="card">
+              <div class="card-h">처리 이력</div>
+              <div class="hist">
+                <div class="hitem"><div>⚪</div><div><div class="hd">계약 체결완료 (양측 서명)</div><div class="ht">2026.06.20 11:02 · 시스템</div></div></div>
+                <div class="hitem"><div>⚪</div><div><div class="hd">공구 생성</div><div class="ht">2026.06.20 11:02 · 시스템</div></div></div>
+                <div class="hitem"><div>🟢</div><div><div class="hd">오픈 승인 (문구 점검 통과)</div><div class="ht">2026.06.23 14:10 · 김운영 운영자</div></div></div>
+                <div class="hitem"><div>⚪</div><div><div class="hd">진행중 전환 (기간 시작일 도래)</div><div class="ht">2026.06.25 00:00 · 시스템</div></div></div>
+                <div class="hitem"><div>⚪</div><div><div class="hd">고정 지급비 이체완료</div><div class="ht">2026.06.25 00:05 · 시스템</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note rule" style="margin-top:14px"><span class="tag">[규칙]</span> 진행중 상태에선 <b>오픈 승인 버튼이 사라지고 "조기 마감"</b>이 대신 노출 — 이미 승인된 공구를 재승인하는 개념 없음. 조기 마감·정상 종료(기간 만료) 모두 다음 상태는 "종료"로 동일.</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F4. 오픈 승인 모달 (문구 점검 체크리스트) ============ -->
+<div class="ftitle">4. 오픈 승인 모달 <span>— 문구 점검 체크리스트(경량 검수), 전체 체크 시 승인 버튼 활성</span><span class="pill">GNB #5 · F4</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/campaigns/CMP-20260720-01</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item hot on"><span class="n">5</span> 공구 관리 <span class="gnb-right"><span class="cnt">1</span></span></div>
+      <div class="gnb-item"><span class="n">★</span> 메시지 센터 <span class="gnb-right"><span class="cnt">1</span></span></div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">공구 관리 <span class="sub2">/ 여름 수분 세럼 공구</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="detail-grid" style="opacity:.4">
+          <div class="det-l"><div class="card"><div class="card-h">기본 정보</div><div class="card-b"><div class="form-row"><div class="form-label">공구명</div><div class="form-val">여름 수분 세럼 공구</div></div></div></div></div>
+          <div class="det-r"></div>
+        </div>
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-h">공구 오픈 승인 — 문구 점검</div>
+            <div class="modal-b">
+              <b>여름 수분 세럼 공구</b>를 오픈 승인하면 기간 시작일에 자동으로 진행중 전환됩니다. 아래 항목을 상품 상세·공구 게시물 본문 기준으로 점검해주세요.
+              <div class="chk-item"><div class="chk-box">✓</div><div class="chk-txt"><b>의약품 오인 표현 없음</b><div class="d">치료·의학적 효능을 암시하는 문구 없음</div></div></div>
+              <div class="chk-item"><div class="chk-box">✓</div><div class="chk-txt"><b>기능성 화장품 표방 오남용 없음</b><div class="d">인증 없는 기능성 효과 주장 없음(상품 고시의 기능성 여부와 일치)</div></div></div>
+              <div class="chk-item"><div class="chk-box">✓</div><div class="chk-txt"><b>효능 단정 표현 없음</b><div class="d">"100% 효과", "완치" 등 과장·단정적 표현 없음</div></div></div>
+              <div class="chk-item"><div class="chk-box">✓</div><div class="chk-txt"><b>대가관계 표시 확인</b><div class="d">게시물 본문에 협찬·광고 문구(#광고 등) 명시됨</div></div></div>
+              <div class="chk-item"><div class="chk-box">✓</div><div class="chk-txt"><b>상품 정보 제공 고시 누락 없음</b><div class="d">필수 고시 항목(용량·사용기한·책임판매업자 등) 전부 입력됨</div></div></div>
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">취소</div>
+              <div class="modal-btn doa">승인하기</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F5. 게시물 본문 수정 모달 (운영자 경유) ============ -->
+<div class="ftitle">5. 게시물 본문 수정 모달 <span>— 운영자 경유 · 경미한 수정은 취소 대신 이 경로로 처리</span><span class="pill">GNB #5 · F5</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/campaigns/CMP-20260625-02</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item hot on"><span class="n">5</span> 공구 관리 <span class="gnb-right"><span class="cnt">1</span></span></div>
+      <div class="gnb-item"><span class="n">★</span> 메시지 센터 <span class="gnb-right"><span class="cnt">1</span></span></div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">공구 관리 <span class="sub2">/ 여름 비타C 루틴 공동구매</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="detail-grid" style="opacity:.4">
+          <div class="det-l"><div class="card"><div class="card-h">공구 게시물</div><div class="card-b"><div class="form-row"><div class="form-label">게시물 제목</div><div class="form-val">비타C 루틴 이거 하나로 끝 ☀️</div></div></div></div></div>
+          <div class="det-r"></div>
+        </div>
+        <div class="modal-overlay">
+          <div class="modal" style="width:520px">
+            <div class="modal-h">공구 게시물 본문 수정 <span style="font-weight:400;font-size:12px;color:#999">운영자 경유</span></div>
+            <div class="modal-b">
+              <b>비타C 루틴 이거 하나로 끝 ☀️</b> — 노출중 상태라 인플루언서가 직접 수정할 수 없어 운영자가 대신 수정합니다. 문구 점검 위반·오탈자 등 <b>경미한 수정</b>에 한정하며, 재승인 절차 없이 즉시 반영됩니다.
+              <div style="margin:12px 0 4px;font-size:11.5px;color:#888">게시물 제목</div>
+              <textarea class="ta" style="min-height:36px">비타C 루틴 이거 하나로 끝 ☀️</textarea>
+              <div style="margin:10px 0 4px;font-size:11.5px;color:#888">본문</div>
+              <textarea class="ta" style="min-height:90px">비타민C 하나로 여름 칙칙함 싹 정리 :) #광고 #스킨랩코리아제공</textarea>
+              <select class="sel"><option>수정 사유 선택 (필수)</option><option>화장품법 금지 표현 발견(오픈 승인 후 재검토)</option><option>대가관계 표시 누락·오류</option><option>단순 오탈자·표기 수정(인플루언서 요청)</option><option>기타(직접 입력)</option></select>
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">취소</div>
+              <div class="modal-btn doa">수정 저장</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F6. 공구 기간 연장 모달 (운영자 경유) ============ -->
+<div class="ftitle">6. 공구 기간 연장 모달 <span>— 운영자 경유 · 종료일만 연장, 시작일 변경 불가</span><span class="pill">GNB #5 · F6</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/campaigns/CMP-20260625-02</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item hot on"><span class="n">5</span> 공구 관리 <span class="gnb-right"><span class="cnt">1</span></span></div>
+      <div class="gnb-item"><span class="n">★</span> 메시지 센터 <span class="gnb-right"><span class="cnt">1</span></span></div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">공구 관리 <span class="sub2">/ 여름 비타C 루틴 공동구매</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="detail-grid" style="opacity:.4">
+          <div class="det-l"><div class="card"><div class="card-h">기본 정보</div><div class="card-b"><div class="form-row"><div class="form-label">공구 기간</div><div class="form-val">2026.06.25 00:00 ~ 2026.07.25 23:59</div></div></div></div></div>
+          <div class="det-r"></div>
+        </div>
+        <div class="modal-overlay">
+          <div class="modal" style="width:480px">
+            <div class="modal-h">공구 기간 연장 <span style="font-weight:400;font-size:12px;color:#999">운영자 경유</span></div>
+            <div class="modal-b">
+              <b>여름 비타C 루틴 공동구매</b>의 종료일을 연장합니다. 브랜드·인플루언서 협의 결과를 바탕으로 운영자가 대신 반영하며, <b>시작일은 변경할 수 없습니다.</b>
+              <div class="form-row" style="border:none;padding-top:12px"><div class="form-label">현재 종료일</div><div class="form-val">2026.07.25 23:59</div></div>
+              <div style="margin:10px 0 4px;font-size:11.5px;color:#888">새 종료일</div>
+              <input class="sel" style="margin:0 0 8px" value="2026.08.05 23:59">
+              <select class="sel"><option>연장 사유 선택 (필수)</option><option>브랜드·인플루언서 협의(판매 호조로 연장 요청)</option><option>재고 소진 지연</option><option>초기 노출 지연 보정</option><option>기타(직접 입력)</option></select>
+              <textarea class="ta" placeholder="상세 사유 입력 (처리 이력에 기록됨)"></textarea>
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">취소</div>
+              <div class="modal-btn doa">기간 연장 저장</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F7. 공구 취소 모달 ============ -->
+<div class="ftitle">7. 공구 취소 모달 <span>— 사유 필수 + 미확정 주문 일괄 환불 안내</span><span class="pill">GNB #5 · F7</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/campaigns/CMP-20260625-02</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item hot on"><span class="n">5</span> 공구 관리 <span class="gnb-right"><span class="cnt">1</span></span></div>
+      <div class="gnb-item"><span class="n">★</span> 메시지 센터 <span class="gnb-right"><span class="cnt">1</span></span></div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">공구 관리 <span class="sub2">/ 여름 비타C 루틴 공동구매</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="detail-grid" style="opacity:.4">
+          <div class="det-l"><div class="card"><div class="card-h">기본 정보</div><div class="card-b"><div class="form-row"><div class="form-label">공구명</div><div class="form-val">여름 비타C 루틴 공동구매</div></div></div></div></div>
+          <div class="det-r"></div>
+        </div>
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-h">공구 취소</div>
+            <div class="modal-b">
+              <b>여름 비타C 루틴 공동구매</b>(진행중, 342건 판매)를 취소하시겠습니까?<br>취소 즉시 <b>미확정 주문 전체가 일괄 환불</b>(PG 취소) 처리되며, 이미 배송된 건은 반품 회수 절차로 전환됩니다.
+              <select class="sel"><option>취소 사유 선택 (필수)</option><option>상품 정보 제공 고시 위반 발견</option><option>브랜드 요청(입점 상태 변경 등)</option><option>인플루언서 요청</option><option>기타(직접 입력)</option></select>
+              <textarea class="ta" placeholder="상세 사유 입력 (처리 이력에 기록됨)"></textarea>
+              <div style="font-size:11px;color:#8a5a00;margin-top:8px">이미 트리거된 고정 지급비 정산은 별도 회수 로직 없음(트리거 = 게시물 노출중 최초 전환 시점, ② draft36 §11-1)</div>
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">취소</div>
+              <div class="modal-btn do">공구 취소 · 일괄 환불</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<div class="note rule" style="margin:20px 40px 0"><span class="tag">[규칙]</span> <b>취소는 최후 수단</b> — 문구 위반·오탈자 등 게시물 본문만 고치면 되는 경미한 문제는 <b>"운영자 경유 수정"</b>, 판매 연장이 필요하면 <b>"기간 연장"</b>으로 처리(둘 다 재승인 없이 즉시 반영, 공구는 그대로 유지). 상품 구성·공구가·리워드율 등 계약 자체를 바꿔야 하거나, 공구를 더 이상 진행할 수 없는 경우에만 "공구 취소"(일괄 환불 수반) 사용.</div>
+<div class="note rule" style="margin:10px 40px 0"><span class="tag">[규칙]</span> 기간 연장 = <b>종료일만 변경 가능, 시작일 불가</b>(이미 확정·진행중인 판매 개시 시점은 유지) · 연장 시 공구의 자동 종료 트리거(기간 만료)와 게시물 "종료" 전환 시점이 함께 뒤로 밀림 · 준비완료·진행중 상태에서만 가능(종료 이후엔 연장 의미 없음).</div>
+<div class="note rule" style="margin:20px 40px 0"><span class="tag">[규칙]</span> 오픈 승인=체크리스트 전체 확인 후 활성(사유 입력 없음) · 취소=사유 선택+상세 입력 필수 → 처리 즉시 <b>감사 기록</b> 생성(처리자·시각·사유) + 처리 이력에 누적 표시. 결과 통지는 알림 #6(공구 오픈 승인/반려)·#15(운영자 집행 통지, 취소는 사유 포함)로 인플루언서·브랜드에게 전달(② draft36).</div>
+<div class="note legal" style="margin:10px 40px 0"><span class="tag">[법률 대기]</span> 문구 점검 체크리스트 5항목은 초안 — 화장품법 금지 표현 기준 최종 목록은 변호사 검토 후 확정(법률검토 패키지 반영 예정, 신규 쟁점 후보).</div>
+
+<!-- ============ F8. 공구 상세 — 종료 상태 + 계약 이행 이슈 ============ -->
+<div class="ftitle">8. 공구 상세 — 종료 상태 <span>— 계약 이행 확인 현황 + 이슈 발생 시 3자 스레드</span><span class="pill">GNB #5 · F8 · 2026.07 신규</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/campaigns/CMP-20260601-019</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item hot on"><span class="n">5</span> 공구 관리 <span class="gnb-right"><span class="cnt">1</span></span></div>
+      <div class="gnb-item"><span class="n">★</span> 메시지 센터 <span class="gnb-right"><span class="cnt">1</span></span></div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">공구 관리 <span class="sub2">/ 수분 크림 공구</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="detail-grid">
+          <div class="det-l">
+            <div class="card">
+              <div class="card-h">기본 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">공구명</div><div class="form-val">수분 크림 공구 <span style="color:#aaa">(관리용 · 브랜드 입력)</span></div></div>
+                <div class="form-row"><div class="form-label">브랜드</div><div class="form-val">글로우랩</div></div>
+                <div class="form-row"><div class="form-label">인플루언서(쇼룸)</div><div class="form-val">글로우_지민</div></div>
+                <div class="form-row"><div class="form-label">공구 기간</div><div class="form-val">2026.06.11 00:00 ~ 2026.07.11 23:59</div></div>
+                <div class="form-row"><div class="form-label">고정 지급비</div><div class="form-val">있음 · 300,000원 <span style="color:#3a7d3a">(지급 완료)</span></div></div>
+                <div class="form-row"><div class="form-label">공구 상태</div><div class="form-val">종료 <span style="color:#aaa">· 2026.07.11 00:00 자동 종료</span></div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">관련 당사자 연락처 <span style="font-size:11px;color:#999;font-weight:400">CS·분쟁 대응용</span></div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">브랜드 담당자</div><div class="form-val">김민지 매니저 · 010-3456-7890 · biz@glowlab.co.kr</div></div>
+                <div class="form-row"><div class="form-label">인플루언서 업무 이메일</div><div class="form-val">jimin.glow@gmail.com</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">계약 상품 항목</div>
+              <div class="card-b" style="padding:0">
+                <table class="sku">
+                  <thead><tr><th style="padding-left:18px">상품</th><th>공구가</th><th>리워드율</th><th>재고 상태</th></tr></thead>
+                  <tbody><tr><td style="padding-left:18px">글로우 수분 크림 50ml</td><td>27,000원</td><td>12%</td><td><span class="badge live">진열</span></td></tr></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">공구 게시물</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">게시물 제목</div><div class="form-val">촉촉함 오래가는 수분 크림, 이 조합 최고예요 💧</div></div>
+                <div class="form-row"><div class="form-label">게시물 등록 상태</div><div class="form-val"><span class="badge post-hidden">종료</span></div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">정산 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">공구 정산(판매분)</div><div class="form-val"><span class="badge live">정산완료</span> 147,840원</div></div>
+                <div class="form-row"><div class="form-label">고정 지급비 정산</div><div class="form-val"><span class="badge live">이체완료</span></div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">판매 현황 <span style="font-size:11px;color:#999;font-weight:400">종료 · 최종값</span></div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">주문 건수</div><div class="form-val">44건</div></div>
+                <div class="form-row"><div class="form-label">판매액</div><div class="form-val">1,232,000원</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">계약 이행 확인 <span style="font-size:11px;color:#999;font-weight:400">공구 종료 후 양측 확인</span></div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">브랜드 → 인플루언서</div><div class="form-val"><span class="badge cancel">미이행·문제있음</span> <span style="color:#aaa">2026.07.14 19:02</span> <span style="color:#999">(브랜드가 인플루언서의 콘텐츠 의무 이행을 체크)</span></div></div>
+                <div class="form-row"><div class="form-label">인플루언서 → 브랜드</div><div class="form-val"><span class="badge">확인 대기</span> <span style="color:#aaa">2026.07.18까지</span></div></div>
+                <div class="form-row"><div class="form-label">미체크 항목</div><div class="form-val">스토리 3건 중 1건 미확인 <span style="color:#aaa">(브랜드 체크리스트 기준 · 나머지 항목은 체크 완료)</span></div></div>
+              </div>
+              <div class="card-b" style="padding-top:0"><div style="font-size:11px;color:#999">응답 기한 = 종료 후 <b>7일</b> · 무응답 시 자동 "이행함" 처리 · "미이행" 처리돼도 정산은 자동 진행(막지 않음)</div></div>
+            </div>
+          </div>
+          <div class="det-r">
+            <div class="card">
+              <div class="card-h">계약 이행 이슈 <span class="badge ready">진행중</span></div>
+              <div class="card-b">
+                <div style="font-size:12.5px;color:#555;margin-bottom:8px">최근 메시지 · <span style="color:#999">07.15 10:11 · 운영자(나)</span></div>
+                <div style="font-size:12.5px;color:#333;margin-bottom:12px">"확인 중입니다. 인플루언서 측 답변 기다리고 있어요."</div>
+                <div style="color:#666;text-decoration:underline;font-size:12.5px">메시지 센터에서 대화 이어가기 →</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note rule"><span class="tag">[규칙]</span> <b>계약 이행 이슈는 연결·소통 스레드(브랜드↔인플루언서 전용, 운영자 열람만)와 별개</b> — 처음부터 <b>브랜드+인플루언서+운영자 3자 협의용</b>으로 설계되어 운영자도 자유롭게 작성 가능. 대화는 <b>메시지 센터</b>(신규 최상위 메뉴)에서 진행(아래 F9). 기존 연결·소통 스레드의 "운영자 열람 전용" 원칙은 그대로 유지(② draft36 §3, wf-admin-09 참조).</div>
+        <div class="note legal" style="margin-left:0;margin-right:0"><span class="tag">[2026.07 신규]</span> "이슈 종결 처리"는 운영자만 가능(사유 입력 없이 종결) — 종결 후에도 스레드 기록은 그대로 보존. 재정산·페널티 등 실제 조치는 정산 관리(GNB #7)에서 별도 처리(이 화면은 협의·기록용).</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F9. 메시지 센터 ============ -->
+<div class="ftitle">9. 메시지 센터 <span>— 전체 브랜드·인플루언서 상시 연결(연결요청 없음) + 이슈 스레드 흡수</span><span class="pill">신규 최상위 메뉴 · F9 · ★ 임시 번호(전체 admin 재정렬 대기)</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/messages</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리 <span class="gnb-right"><span class="cnt">1</span></span></div>
+      <div class="gnb-item hot on"><span class="n">★</span> 메시지 센터 <span class="gnb-right"><span class="cnt">1</span></span></div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">메시지 센터</div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="cs-wrap">
+          <!-- 좌: 전체 브랜드↔인플루언서 페어 목록 -->
+          <div class="cs-list">
+            <div class="cs-lh"><div class="cs-search">브랜드·인플루언서 검색</div></div>
+            <div class="cs-item sel">
+              <div class="av">IMG</div>
+              <div class="cs-meta">
+                <div class="cs-top"><span class="cs-name">글로우랩 ↔ 글로우_지민</span><span class="cs-time">07.15</span></div>
+                <div class="cs-prev">확인 중입니다. 인플루언서 측 답변 기다리고 있어요.</div>
+                <div class="cs-row2"><span class="badge cancel">이슈 진행중</span><span class="unread">1</span></div>
+              </div>
+            </div>
+            <div class="cs-item">
+              <div class="av">IMG</div>
+              <div class="cs-meta">
+                <div class="cs-top"><span class="cs-name">○○ 브랜드 ↔ 뷰티_소연</span><span class="cs-time">07.02</span></div>
+                <div class="cs-prev">(대화 없음)</div>
+                <div class="cs-row2"><span class="badge on2">연결됨</span></div>
+              </div>
+            </div>
+            <div class="cs-item">
+              <div class="av">IMG</div>
+              <div class="cs-meta">
+                <div class="cs-top"><span class="cs-name">스킨랩코리아 ↔ 스킨랩_하늘</span><span class="cs-time">06.28</span></div>
+                <div class="cs-prev">네, 확인했습니다 감사합니다!</div>
+                <div class="cs-row2"><span class="badge on2">연결됨</span></div>
+              </div>
+            </div>
+            <div class="cs-item">
+              <div class="av">IMG</div>
+              <div class="cs-meta">
+                <div class="cs-top"><span class="cs-name">무드코스메틱 ↔ 무드코스메틱 with 유리</span><span class="cs-time">06.20</span></div>
+                <div class="cs-prev">(대화 없음)</div>
+                <div class="cs-row2"><span class="badge on2">연결됨</span></div>
+              </div>
+            </div>
+          </div>
+          <!-- 우: 스레드 -->
+          <div class="cs-thread">
+            <div class="th-head">
+              <div class="av">IMG</div>
+              <div class="th-hmeta"><div class="th-hname">글로우랩 ↔ 글로우_지민</div><div class="th-hstat">수분 크림 공구 · 계약 이행 이슈 · 진행중</div></div>
+              <span style="color:#666;text-decoration:underline;font-size:12px;margin-right:10px">공구 상세 보기</span>
+              <div class="mini-btn doa">이슈 종결 처리</div>
+            </div>
+            <div class="th-body">
+              <div class="daymark">2026.07.14</div>
+              <div class="msg them"><div class="who">시스템</div><div class="bubble" style="background:#fff;border:1px dashed #999;color:#777">체크리스트 미체크 항목으로 이슈가 자동 생성되었습니다 — 스토리 3건 중 1건 미확인</div><div class="tstamp">19:02</div></div>
+              <div class="msg them"><div class="who">브랜드(글로우랩)</div><div class="bubble">스토리 1건이 확인이 안 돼서요. 혹시 비공개로 올리신 건 아닌지 한번 봐주실 수 있을까요?</div><div class="tstamp">19:03</div></div>
+              <div class="msg op"><div class="who" style="text-align:right">운영자(나)</div><div class="bubble">확인 중입니다. 인플루언서 측 답변 기다리고 있어요.</div><div class="tstamp">07.15 10:11</div></div>
+            </div>
+            <div class="th-input">
+              <div class="th-field">메시지 입력…</div>
+              <div class="btn btn-sm" style="height:40px">전송</div>
+            </div>
+          </div>
+        </div>
+        <div class="note rule"><span class="tag">[규칙 · 2026.07 확정]</span> <b>메시지 센터 = 전체 브랜드·인플루언서 페어가 기본으로 다 연결</b>(연결 요청·수락 절차 없음, 운영자가 아무 페어에게나 먼저 말 걸 수 있음) · <b>브랜드·인플루언서·운영자 3자 모두 읽기·쓰기</b> · 기존 "이슈 스레드" 개념은 여기 흡수됨 — 계약 이행 이슈가 있는 페어는 목록에서 "이슈 진행중" 뱃지로 강조, 없으면 그냥 일반 대화 목록</div>
+        <div class="note legal" style="margin-left:0;margin-right:0"><span class="tag">[UI 재사용]</span> 좌 목록+우 스레드 구조·말풍선 스타일은 <b>파트너센터 연결·소통(wf-partner-03 F1)과 동일 컴포넌트</b>를 재사용 — 다만 <b>운영자 메시지는 진한 배지·오른쪽 정렬</b>로 구분(3자 대화라 발신자 구분이 더 중요)</div>
+        <div class="note legal" style="margin-left:0;margin-right:0"><span class="tag">[wf-admin-09와 구분]</span> 이 메시지 센터는 <b>운영자가 직접 작성 가능</b>(3자 상시 채널) · wf-admin-09의 "소통 스레드"는 <b>브랜드↔인플루언서 전용 1:1(운영자 열람만)</b> — 서로 다른 데이터, 혼동 금지</div>
+        <div class="note legal" style="margin-left:0;margin-right:0"><span class="tag">[★ 임시 번호 안내]</span> 지금은 GNB에 <b>번호 없이 별표(★)로 임시 배치</b> — wf-admin-01~10 전체 파일의 번호 재정렬(6→7, 7→8 …)은 다음 세션에서 한 번에 진행 예정. 그 전까지 다른 admin 파일들과 번호가 어긋나 있을 수 있음</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

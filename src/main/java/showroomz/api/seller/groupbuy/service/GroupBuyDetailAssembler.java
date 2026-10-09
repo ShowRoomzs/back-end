@@ -78,7 +78,8 @@ public class GroupBuyDetailAssembler {
                 summary(groupBuy, contract),
                 timeline(groupBuy, contract, now),
                 new Counterparty(groupBuy.getCreator().getId(), groupBuy.getCreator().getShowroomName(), pairThreadId),
-                new ContractRef(contract.getId(), contract.getContractNumber(), contract.getConcludedAt()),
+                new ContractRef(contract.getId(), contract.getContractNumber(), contract.getConcludedAt(),
+                        groupBuy.concludedSignerName()),
                 items(contract),
                 fixedFee(contract),
                 new ContentDuty(contract.getContentFeedCount(), contract.getContentReelsCount(),
@@ -377,13 +378,17 @@ public class GroupBuyDetailAssembler {
                 request == null ? null : request.getDecisionReason());
     }
 
+    /** [기획 제외] 계약 이행 확인 — 2026-10-06 폐기. 기획 복귀 시 true. */
+    private static final boolean FULFILLMENT_CHECK_ENABLED = false;
+
     private AfterEnd afterEnd(GroupBuy groupBuy, GroupBuyFacts facts) {
         GroupBuyStatus status = groupBuy.getStatus();
         if (!status.isTerminal()) {
             return null;
         }
+        // 이행 확인은 2026-10-06 폐기됐다 — fulfillment 는 항상 null(조건을 false 로 묶어 조립식은 남긴다).
         Fulfillment fulfillment = null;
-        if (status == GroupBuyStatus.ENDED || status == GroupBuyStatus.SETTLED) {
+        if (FULFILLMENT_CHECK_ENABLED && (status == GroupBuyStatus.ENDED || status == GroupBuyStatus.SETTLED)) {
             List<GroupBuyFulfillmentCheck> checks = facts.fulfillmentChecks();
             Long threadId = checks.stream()
                     .map(GroupBuyFulfillmentCheck::getThreadId)

@@ -82,7 +82,7 @@ public class CreatorGroupBuyDetailAssembler {
                 timeline(groupBuy, contract, now),
                 new Brand(groupBuy.getMarket().getId(), groupBuy.getMarket().getMarketName(), pairThreadId),
                 new ContractRef(contract.getId(), contract.getContractNumber(), contract.getConcludedAt(),
-                        contract.getContentDueDate()),
+                        contract.getContentDueDate(), groupBuy.concludedSignerName()),
                 items(contract),
                 fixedFee(contract),
                 payout(groupBuy, contract, myReward, pairThreadId),
@@ -429,13 +429,20 @@ public class CreatorGroupBuyDetailAssembler {
         if (status != GroupBuyStatus.ENDED && status != GroupBuyStatus.SETTLED) {
             return null;
         }
+        // 이행 확인은 2026-10-06 폐기됐다 — fulfillment 는 항상 null. 종료 후 화면은 orderClosure 하나로 답한다.
+        return new AfterEnd(null);
+    }
+
+    /** [기획 제외] 폐기 전 조립식 — 기획 복귀 시 {@link #afterEnd}에서 다시 부른다. */
+    @SuppressWarnings("unused")
+    private Fulfillment legacyFulfillment(GroupBuy groupBuy, Contract contract, GroupBuyFacts facts) {
         List<GroupBuyFulfillmentCheck> checks = facts.fulfillmentChecks();
         Long threadId = checks.stream()
                 .map(GroupBuyFulfillmentCheck::getThreadId)
                 .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
-        return new AfterEnd(new Fulfillment(
+        return new Fulfillment(
                 facts.fulfillmentCheck(FulfillmentSide.CREATOR).map(this::toCheck).orElse(null),
                 facts.fulfillmentCheck(FulfillmentSide.SELLER).map(this::toCheck).orElse(null),
                 brandTarget(contract),
@@ -445,7 +452,7 @@ public class CreatorGroupBuyDetailAssembler {
                 properties.getFulfillment().isAutoConfirmOnTimeout(),
                 GroupBuyCommandService.isSettlementOnHold(groupBuy, checks),
                 threadId,
-                groupBuy.getFulfillmentResolvedAt()));
+                groupBuy.getFulfillmentResolvedAt());
     }
 
     private FulfillmentCheck toCheck(GroupBuyFulfillmentCheck check) {

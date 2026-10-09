@@ -137,11 +137,12 @@ public interface OrderProductRepository extends JpaRepository<OrderProduct, Long
             + "WHERE op.id = :orderProductId AND op.returnedQuantity + :quantity <= op.quantity")
     int addReturnedQuantity(@Param("orderProductId") Long orderProductId, @Param("quantity") int quantity);
 
-    /** 전량 반품된 항목을 RETURNED 로 — 구매확정 배치가 PURCHASE_CONFIRMED 로 올리지 않게 한다. */
+    /** 전량 반품된 항목을 RETURNED 로 — 구매확정 배치가 PURCHASE_CONFIRMED 로 올리지 않게 한다. 운영자 개설 하자 반품은 구매확정 항목에서 온다. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderProduct op SET op.status = showroomz.domain.order.type.OrderProductStatus.RETURNED "
             + "WHERE op.id = :orderProductId AND op.returnedQuantity >= op.quantity "
-            + "AND op.status = showroomz.domain.order.type.OrderProductStatus.PAID")
+            + "AND op.status IN (showroomz.domain.order.type.OrderProductStatus.PAID, "
+            + "    showroomz.domain.order.type.OrderProductStatus.PURCHASE_CONFIRMED)")
     int markReturnedIfFull(@Param("orderProductId") Long orderProductId);
 
     // ------------------------------------------------------------------ 판매 관리 포트(7-2)

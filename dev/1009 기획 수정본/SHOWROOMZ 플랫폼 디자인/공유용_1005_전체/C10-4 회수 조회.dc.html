@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C10-4 회수 조회 — 반품 · 교환 공통</span></div>
+<p class="dv-tsub">반품 상세 · 교환 상세의 [회수 조회]에서 진입합니다. <b>C10-2 배송 조회와 같은 틀</b>이고, 방향만 반대(고객 → 브랜드)입니다. 택배 단계 뒤에 <b>브랜드 검수 단계</b>를 이어 붙여 끝까지 한 줄로 보여줍니다. 위 버튼으로 반품/교환과 진행 단계를 바꿔 보세요.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>회수 조회 — 정상</div>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:5px"><span style="font:600 11px/1 Pretendard,sans-serif;color:rgba(0,0,0,.45);margin-right:3px">유형</span>
+<sc-for list="{{ kindSw }}" as="w" hint-placeholder-count="2"><span onClick="{{ w.pick }}" style="padding:6px 10px;border-radius:100px;cursor:pointer;background:{{ w.bg }};color:{{ w.color }};border:1px solid {{ w.border }};font:{{ w.font }}">{{ w.label }}</span></sc-for>
+<span style="font:600 11px/1 Pretendard,sans-serif;color:rgba(0,0,0,.45);margin:0 3px 0 8px">단계</span>
+<sc-for list="{{ stageSw }}" as="w" hint-placeholder-count="3"><span onClick="{{ w.pick }}" style="padding:6px 10px;border-radius:100px;cursor:pointer;background:{{ w.bg }};color:{{ w.color }};border:1px solid {{ w.border }};font:{{ w.font }}">{{ w.label }}</span></sc-for>
+</div>
+<div class="dv-card">
+<div data-screen-label="C10-4 회수 조회" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">회수 조회</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:22px 14px 0">
+<div style="font:700 19px/1.4 Pretendard,sans-serif;letter-spacing:-.5px;text-wrap:pretty"><span style="color:#F2456E">{{ headDate }}</span> {{ headText }}</div>
+<div style="margin-top:7px;font:400 13px/1.6 Pretendard,sans-serif;color:#737373;text-wrap:pretty">{{ headSub }}</div>
+</div>
+
+<div style="padding:18px 14px 0;display:flex;gap:6px">
+<sc-for list="{{ segs }}" as="s" hint-placeholder-count="5">
+<div style="flex:1;min-width:0">
+<i style="display:block;height:3px;border-radius:2px;background:{{ s.bar }}"></i>
+<div style="margin-top:9px;font:{{ s.font }};color:{{ s.color }};word-break:keep-all">{{ s.label }}</div>
+</div>
+</sc-for>
+</div>
+<div style="padding:8px 14px 0;display:flex;gap:6px">
+<span style="flex:3;min-width:0;font:400 10.5px/1.3 Pretendard,sans-serif;color:#9E9E9E;border-top:.5px solid #EAEAEC;padding-top:5px">택배사</span>
+<span style="flex:2;min-width:0;font:400 10.5px/1.3 Pretendard,sans-serif;color:#9E9E9E;border-top:.5px solid #EAEAEC;padding-top:5px">브랜드</span>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+
+<div style="padding:18px 14px 0;display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+<span style="font:700 14px/1.3 Pretendard,sans-serif">{{ kindLabel }} 요청 · 26.10.04 (일)</span>
+<div style="flex:none;display:flex;align-items:center;padding:13px 0 13px 12px;margin:-13px 0;cursor:pointer" style-active="opacity:.55">
+<span style="font:500 12.5px/1.3 Pretendard,sans-serif;color:#737373;text-decoration:underline">{{ kindLabel }} 상세</span>
+</div>
+</div>
+<div style="padding:12px 14px 0;display:flex;gap:12px">
+<div style="width:64px;height:64px;border-radius:4px;background:{{ thumb }};flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 11.5px/1.35 Pretendard,sans-serif;color:#737373">{{ brand }}</div>
+<div style="margin-top:3px;font:400 13.5px/1.45 Pretendard,sans-serif;color:#2E2E2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ pname }}</div>
+<div style="margin-top:6px;font:400 12px/1.4 Pretendard,sans-serif;color:#737373">{{ popt }}</div>
+</div>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+
+<div style="padding:18px 14px 0;display:grid;gap:9px">
+<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+<span style="flex:none;width:68px;font:400 13px/1.5 Pretendard,sans-serif;color:#737373">택배사</span>
+<span style="flex:1;min-width:0;text-align:right;font:500 13px/1.5 Pretendard,sans-serif">CJ대한통운</span>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+<span style="flex:none;width:68px;font:400 13px/1.5 Pretendard,sans-serif;color:#737373">회수 송장</span>
+<span style="flex:1;min-width:0;text-align:right;font:500 13px/1.5 Pretendard,sans-serif">684922013378</span>
+<div style="flex:none;display:flex;padding:15px 0 15px 8px;margin:-15px 0;cursor:pointer" style-active="opacity:.4">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="1.8" stroke-linejoin="miter" style="display:block"><rect x="8.5" y="8.5" width="11" height="11"></rect><path d="M15.5 5.5h-11v11"></path></svg>
+</div>
+</div>
+<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+<span style="flex:none;width:68px;font:400 13px/1.5 Pretendard,sans-serif;color:#737373">보내는 분</span>
+<span style="flex:1;min-width:0;text-align:right;font:500 13px/1.5 Pretendard,sans-serif">김수* · 서울 강남구</span>
+</div>
+<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+<span style="flex:none;width:68px;font:400 13px/1.5 Pretendard,sans-serif;color:#737373">받는 곳</span>
+<span style="flex:1;min-width:0;text-align:right;font:500 13px/1.5 Pretendard,sans-serif">{{ brand }} 반품센터</span>
+</div>
+</div>
+
+<div style="padding:16px 14px 0;display:flex;gap:7px">
+<div style="flex:1;min-width:0;display:flex;align-items:center;padding:2px 0;margin:-2px 0;cursor:pointer" style-active="opacity:.55">
+<span style="flex:1;min-width:0;height:44px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 12.5px/1 Pretendard,sans-serif;color:#3C3C3C">택배사 전화하기</span>
+</div>
+<div style="flex:1;min-width:0;display:flex;align-items:center;padding:2px 0;margin:-2px 0;cursor:pointer" style-active="opacity:.55">
+<span style="flex:1;min-width:0;height:44px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:5px;font:600 12.5px/1 Pretendard,sans-serif;color:#3C3C3C">택배사에서 조회<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="3" stroke-linecap="round" stroke-linejoin="miter" style="display:block"><path d="M9.5 8H16v6.5"></path><path d="M8.4 15.6L16 8"></path></svg></span>
+</div>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+
+<div style="padding:18px 14px 0">
+<sc-for list="{{ scans }}" as="s" hint-placeholder-count="4">
+<div style="display:flex;gap:11px;align-items:stretch">
+<div style="flex:none;width:14px;display:flex;flex-direction:column;align-items:center">
+<span style="flex:none;width:14px;height:14px;border-radius:50%;box-sizing:border-box;border:{{ s.ring }};background:{{ s.fill }};margin-top:3px"></span>
+<i style="flex:1;width:2px;background:{{ s.line }};margin:3px 0"></i>
+</div>
+<div style="flex:1;min-width:0;padding-bottom:{{ s.pad }}">
+<div style="display:flex;align-items:center;gap:6px">
+<sc-if value="{{ s.brand }}" hint-placeholder-val="{{ false }}"><span style="flex:none;padding:3px 6px;border-radius:8px;background:#F4F4F5;font:600 10.5px/1 Pretendard,sans-serif;color:#737373">브랜드</span></sc-if>
+<span style="flex:1;min-width:0;font:{{ s.font }};color:{{ s.color }};text-wrap:pretty">{{ s.what }}</span>
+</div>
+<div style="margin-top:3px;font:400 12px/1.4 Pretendard,sans-serif;color:{{ s.atColor }}">{{ s.at }}</div>
+</div>
+</div>
+</sc-for>
+</div>
+<div style="padding:4px 14px 0;display:flex;gap:6px">
+<span style="flex:none;font:400 11.5px/1.7 Pretendard,sans-serif;color:#737373">·</span>
+<span style="flex:1;min-width:0;font:400 11.5px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">택배 이력은 택배사 추적 정보이고, 입고·검수는 브랜드가 등록한 정보예요.</span>
+</div>
+
+<div style="height:30px"></div>
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>배송 조회와 같은 틀, 다른 끝</b> — 결론 제목 · 단계 바 · 대상 상품 · 송장 · 이력 순서는 C10-2 배송 조회 그대로입니다. 다른 점은 <b>단계 바가 5칸</b>이라는 것 — 택배 3칸(접수 · 이동 중 · 도착) 뒤에 <b>브랜드 2칸(검수 · 완료)</b>을 붙이고, 바 아래에 "택배사 / 브랜드" 구분선을 둬 어디까지가 택배 정보인지 갈랐습니다. 택배가 "배송 완료"여도 고객에게는 아직 끝이 아니라서, 검수까지 한 줄로 보여줘야 "도착했는데 왜 환불이 안 되지" 문의가 줄어듭니다.<br><br><b>이력에도 브랜드 단계가 섞입니다</b> — 입고 · 검수 완료 같은 브랜드 이벤트는 회색 [브랜드] 표시를 붙여 택배사 스캔과 구분합니다. 마지막 단계 문구만 유형에 따라 바뀝니다(반품 = "환불 진행", 교환 = "새 상품 출발").<br><br><b>보내는 분 · 받는 곳</b>을 송장 아래에 넣어 방향이 반대라는 걸 분명히 했습니다(배송 조회에는 없는 줄).</p>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>회수 조회 — 조회되지 않음</div>
+<div class="dv-card">
+<div data-screen-label="C10-4 회수 조회 · 조회 안 됨" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">회수 조회</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+<div style="padding:22px 14px 0">
+<div style="font:700 19px/1.4 Pretendard,sans-serif;letter-spacing:-.5px;text-wrap:pretty">아직 조회되지 않아요</div>
+<div style="margin-top:7px;font:400 13px/1.6 Pretendard,sans-serif;color:#737373;text-wrap:pretty">택배사가 접수 정보를 올리기까지 반나절 정도 걸릴 수 있어요. 하루가 지나도 그대로면 송장 번호를 확인해 주세요.</div>
+</div>
+
+<div style="padding:18px 14px 0;display:flex;gap:6px">
+<sc-for list="{{ segsNone }}" as="s" hint-placeholder-count="5">
+<div style="flex:1;min-width:0">
+<i style="display:block;height:3px;border-radius:2px;background:{{ s.bar }}"></i>
+<div style="margin-top:9px;font:{{ s.font }};color:{{ s.color }};word-break:keep-all">{{ s.label }}</div>
+</div>
+</sc-for>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:22px"></div>
+
+<div style="padding:18px 14px 0;display:grid;gap:9px">
+<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+<span style="flex:none;width:68px;font:400 13px/1.5 Pretendard,sans-serif;color:#737373">택배사</span>
+<span style="flex:1;min-width:0;text-align:right;font:500 13px/1.5 Pretendard,sans-serif">CJ대한통운</span>
+</div>
+<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+<span style="flex:none;width:68px;font:400 13px/1.5 Pretendard,sans-serif;color:#737373">회수 송장</span>
+<span style="flex:1;min-width:0;text-align:right;font:500 13px/1.5 Pretendard,sans-serif">68492201337</span>
+</div>
+<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+<span style="flex:none;width:68px;font:400 13px/1.5 Pretendard,sans-serif;color:#737373">등록 일시</span>
+<span style="flex:1;min-width:0;text-align:right;font:500 13px/1.5 Pretendard,sans-serif">10.04 (일) 15:12</span>
+</div>
+</div>
+
+<div style="margin:18px 14px 0;padding:13px 14px;border-radius:8px;background:#F7F7F8">
+<div style="font:600 13px/1 Pretendard,sans-serif;color:#0F0F0F">이런 경우일 수 있어요</div>
+<div style="margin-top:9px;display:grid;gap:4px">
+<div style="display:flex;gap:7px;font:400 12.5px/1.65 Pretendard,sans-serif;color:#3C3C3C"><span style="flex:none">•</span><span style="text-wrap:pretty">송장 번호 숫자가 빠졌거나 잘못 입력됐어요</span></div>
+<div style="display:flex;gap:7px;font:400 12.5px/1.65 Pretendard,sans-serif;color:#3C3C3C"><span style="flex:none">•</span><span style="text-wrap:pretty">다른 택배사를 선택했어요</span></div>
+<div style="display:flex;gap:7px;font:400 12.5px/1.65 Pretendard,sans-serif;color:#3C3C3C"><span style="flex:none">•</span><span style="text-wrap:pretty">편의점에 맡겼지만 아직 택배사가 가져가지 않았어요</span></div>
+</div>
+</div>
+
+<div style="padding:16px 14px 0">
+<div style="display:flex;align-items:center;padding:2px 0;margin:-2px 0;cursor:pointer" style-active="opacity:.55">
+<span style="flex:1;height:44px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">송장 수정</span>
+</div>
+</div>
+<div style="height:30px"></div>
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>택배사는 추적 연동 업체 목록에서만</b> 고르므로(자유 입력·수기 송장 없음) "다른 택배사를 선택했어요"는 목록 안에서 잘못 고른 경우를 뜻합니다. 송장 등록 후 <b>24시간</b> 동안 조회되지 않으면 이 화면이 뜹니다. <b>조회되지 않음</b> — 등록한 송장이 추적 API에서 나오지 않을 때입니다. 실패라고 단정하지 않고 <b>"아직"</b>이라고 씁니다 — 대부분은 택배사 반영 지연이라 기다리면 풀리기 때문입니다. 단계 바는 전부 회색, 아래에 <b>등록 일시</b>를 둬 얼마나 지났는지 판단할 수 있게 했습니다(예시 송장은 11자리로 한 자리 빠진 상태). 흔한 원인 3가지를 회색 박스로 보여주고, <b>[송장 수정]</b>은 <b>C10-5 반품·교환 상세의 회수 송장 등록 화면</b>을 입력값이 채워진 채로 다시 엽니다(같은 화면 재사용 — 저장하면 이 조회 화면으로 돌아옵니다). 수정 기한은 등록 기한(7일)과 같습니다.</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { kind: '반품', stage: '이동 중' };
+
+  sw(list, cur, key){
+    return list.map(k => ({ label: k, pick: () => this.setState({ [key]: k }),
+      bg: cur === k ? '#1a1a1a' : '#fff', color: cur === k ? '#fff' : 'rgba(0,0,0,.6)',
+      border: cur === k ? '#1a1a1a' : 'rgba(0,0,0,.15)', font: (cur === k ? '600' : '500') + ' 11px/1 Pretendard,sans-serif' }));
+  }
+
+  segs(cur, last){
+    return ['접수', '이동 중', '도착', '검수', last].map((label, i) => ({
+      label,
+      bar: i < cur ? '#0F0F0F' : (i === cur ? '#F2456E' : '#EAEAEC'),
+      font: (i === cur ? '600' : '400') + ' 11.5px/1.35 Pretendard,sans-serif',
+      color: i === cur ? '#0F0F0F' : (i < cur ? '#3C3C3C' : '#9E9E9E')
+    }));
+  }
+
+  renderVals(){
+    const K = this.state.kind, ST = this.state.stage;
+    const isR = K === '반품';
+    const last = isR ? '환불' : '새 상품';
+    const idx = ST === '이동 중' ? 1 : (ST === '검수 중' ? 3 : 4);
+    const ALL = [
+      { what: '고객 편의점 접수 (CU 역삼점)', at: '10.04 (일) 15:40', brand: false },
+      { what: '집하 · 강남 터미널', at: '10.05 (월) 09:12', brand: false },
+      { what: '간선 상차 · 옥천 HUB', at: '10.05 (월) 22:30', brand: false },
+      { what: '배송 완료 · ' + (isR ? '하루 코스메틱' : '라보에이치') + ' 반품센터', at: '10.06 (화) 14:05', brand: false },
+      { what: '입고 · 검수 시작', at: '10.07 (수) 10:20', brand: true },
+      { what: isR ? '검수 완료 · 환불 진행' : '검수 완료 · 새 상품 출발', at: '10.08 (목) 16:48', brand: true }
+    ];
+    const n = idx === 1 ? 3 : (idx === 3 ? 5 : 6);
+    const rows = ALL.slice(0, n).reverse();
+    const scans = rows.map((r, i, arr) => {
+      const first = i === 0, lastRow = i === arr.length - 1;
+      return { what: r.what, at: r.at, brand: r.brand,
+        ring: first ? 'none' : '2px solid #DEDEE0', fill: first ? '#0F0F0F' : '#fff',
+        line: lastRow ? 'transparent' : '#EAEAEC', pad: lastRow ? '0' : '18px',
+        font: (first ? '600' : '400') + ' 14px/1.4 Pretendard,sans-serif', color: first ? '#0F0F0F' : '#737373',
+        atColor: first ? '#3C3C3C' : '#9E9E9E' };
+    });
+    const HEAD = {
+      '이동 중': { d: '10.06 (화)', t: '도착 예정이에요', s: '브랜드에 도착하면 검수를 시작해요' },
+      '검수 중': { d: '10.07 (수)', t: '도착해서 검수 중이에요', s: '보통 1~3일 걸리고, 끝나면 알림으로 알려드려요' },
+      '검수 완료': { d: '10.08 (목)', t: isR ? '검수가 끝나 환불이 진행돼요' : '검수가 끝나 새 상품이 출발했어요', s: isR ? '결제 수단에 따라 영업일 3–5일 안에 돌아가요' : '배송 조회에서 새 상품 위치를 확인할 수 있어요' }
+    }[ST];
+    return {
+      kindSw: this.sw(['반품', '교환'], K, 'kind'),
+      stageSw: this.sw(['이동 중', '검수 중', '검수 완료'], ST, 'stage'),
+      kindLabel: K,
+      headDate: HEAD.d, headText: HEAD.t, headSub: HEAD.s,
+      segs: this.segs(idx, last),
+      segsNone: this.segs(-1, last),
+      scans,
+      brand: isR ? '하루 코스메틱' : '라보에이치',
+      pname: isR ? '수분 진정 마스크 10매' : '시카 리페어 앰플 30ml 리필 2개 세트 기획',
+      popt: isR ? '단품 · 1개' : '30ml + 리필 2개 → 30ml + 리필 1개',
+      thumb: isR ? 'linear-gradient(135deg,#EFE7DC,#DCCFBE)' : 'linear-gradient(135deg,#EFEBE7,#D9D2CB)'
+    };
+  }
+}
+</script>
+</body>
+</html>

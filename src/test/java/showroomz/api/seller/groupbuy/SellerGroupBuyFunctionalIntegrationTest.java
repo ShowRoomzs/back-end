@@ -1,5 +1,6 @@
 package showroomz.api.seller.groupbuy;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -106,7 +108,8 @@ class SellerGroupBuyFunctionalIntegrationTest extends GroupBuyTestSupport {
                 .andExpect(jsonPath("$.closure.requester.type").value("SELLER"))
                 .andExpect(jsonPath("$.closure.decisionReason").value(reason))
                 .andExpect(jsonPath("$.sales").doesNotExist())
-                .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(true));
+                // 계약 이행 확인은 2026-10-06 폐기 — 버튼이 없다.
+                .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(false));
         assertThat(reload(groupBuy.getId()).getEndedAt()).isBefore(plannedEnd);
     }
 
@@ -226,7 +229,7 @@ class SellerGroupBuyFunctionalIntegrationTest extends GroupBuyTestSupport {
         detail(groupBuy.getId()).andExpect(status().isOk())
                 .andExpect(jsonPath("$.sales").doesNotExist())
                 .andExpect(jsonPath("$.orderClosure.unclosedCount").value(5))
-                .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(true));
+                .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(false));
 
         moveTo(groupBuy.getId(), GroupBuyStatus.SETTLED);
         detail(groupBuy.getId()).andExpect(status().isOk())
@@ -254,7 +257,8 @@ class SellerGroupBuyFunctionalIntegrationTest extends GroupBuyTestSupport {
         detail(groupBuy.getId()).andExpect(status().isOk())
                 .andExpect(jsonPath("$.groupBuy.status").value("ENDED"))
                 .andExpect(jsonPath("$.afterEnd.openIssue.threadId").value(901))
-                .andExpect(jsonPath("$.afterEnd.fulfillment.onHold").value(false))
+                // 정산 보류가 생길 이행 확인 블록 자체가 없다(2026-10-06 폐기).
+                .andExpect(jsonPath("$.afterEnd.fulfillment").value(nullValue()))
                 .andExpect(jsonPath("$.permissions.canOpenIssue").value(false));
 
         action(groupBuy.getId(), "issues", Map.of("issueType", "CONTENT_FULFILLMENT", "content", "중복"))
@@ -269,6 +273,7 @@ class SellerGroupBuyFunctionalIntegrationTest extends GroupBuyTestSupport {
     }
 
     @Test
+    @Disabled("[기획 제외] 계약 이행 확인 폐기(2026-10-06 · 1009 기획 수정본 6절) — 기획 복귀 시 되살린다")
     @DisplayName("B5/C7→B5f: 미이행은 사유를 스레드 첫 글로 보내고 보류하며 재제출할 수 없다")
     void unfulfilledCheckCreatesDisputeAndBlocksSettlement() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);
@@ -296,12 +301,9 @@ class SellerGroupBuyFunctionalIntegrationTest extends GroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("B5→B5a: 주문이 모두 종결되고 양측 이행이 확인된 경우에만 정산 게이트가 열린다")
+    @DisplayName("B5→B5a: 주문이 모두 종결된 경우에만 정산 게이트가 열린다 — 이행 확인은 게이트가 아니다(2026-10-06 폐기)")
     void settlementGateRequiresKnownClosedOrdersAndBothChecks() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);
-        action(groupBuy.getId(), "fulfillment-check", Map.of("result", "FULFILLED"))
-                .andExpect(status().isOk());
-        saveCreatorFulfilled(groupBuy);
 
         // 판매 포트가 비어 있을 때 모르는 주문 수를 0으로 해석하면 안 된다.
         assertThat(groupBuyCommandService.isSettlementReady(groupBuy.getId())).isFalse();

@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
@@ -66,9 +67,9 @@ class CreatorGroupBuyQueryIntegrationTest extends CreatorGroupBuyTestSupport {
     void actionRequiredIsOneDefinition() throws Exception {
         Fixture f = seedMixed();
 
-        // soon: 승인대기(운영자 차례) · later: 미작성(내 차례) · ended: 이행 확인 전(내 차례) · suspended: 없음
+        // soon: 승인대기(운영자 차례) · later: 미작성(내 차례) · ended: 없음(이행 확인 폐기) · suspended: 없음
         studioSummary().andExpect(status().isOk())
-                .andExpect(jsonPath("$.actionRequiredCount").value(2))
+                .andExpect(jsonPath("$.actionRequiredCount").value(1))
                 .andExpect(jsonPath("$.tabCounts.ALL").value(4))
                 .andExpect(jsonPath("$.tabCounts.PREPARING").value(2))
                 .andExpect(jsonPath("$.tabCounts.ENDED").value(2))
@@ -76,9 +77,9 @@ class CreatorGroupBuyQueryIntegrationTest extends CreatorGroupBuyTestSupport {
 
         studioList("sort=ACTION_REQUIRED_FIRST").andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[*].groupBuyId").value(contains(
-                        f.later.getId().intValue(), f.ended.getId().intValue(),
-                        f.soon.getId().intValue(), f.suspended.getId().intValue())))
-                .andExpect(jsonPath("$.content[*].actionRequired").value(contains(true, true, false, false)));
+                        f.later.getId().intValue(), f.soon.getId().intValue(),
+                        f.suspended.getId().intValue(), f.ended.getId().intValue())))
+                .andExpect(jsonPath("$.content[*].actionRequired").value(contains(true, false, false, false)));
     }
 
     @Test
@@ -226,23 +227,16 @@ class CreatorGroupBuyQueryIntegrationTest extends CreatorGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("종료 상세 — 내가 받는 금액 없음 · 확인 방향이 파트너와 반대 · 자동 이행 스위치를 내린다")
+    @DisplayName("종료 상세 — 내가 받는 금액 없음 · 이행 확인 블록과 버튼이 없다(2026-10-06 폐기)")
     void endedDetail() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);
 
         studioDetail(groupBuy.getId()).andExpect(status().isOk())
                 .andExpect(jsonPath("$.payout").doesNotExist())
                 .andExpect(jsonPath("$.closure.closeType").value("COMPLETED"))
-                .andExpect(jsonPath("$.afterEnd.fulfillment.mine").doesNotExist())
-                .andExpect(jsonPath("$.afterEnd.fulfillment.myTarget.party").value("BRAND"))
-                .andExpect(jsonPath("$.afterEnd.fulfillment.myTarget.duties")
-                        .value(contains("ORDER_DELIVERY", "FIXED_FEE_PAYMENT")))
-                .andExpect(jsonPath("$.afterEnd.fulfillment.theirTarget.duties")
-                        .value(contains("SHOWROOM_POST", "FEED", "REELS", "STORY")))
-                .andExpect(jsonPath("$.afterEnd.fulfillment.theirTarget.counts.story").value(3))
-                .andExpect(jsonPath("$.afterEnd.fulfillment.autoConfirmOnTimeout").value(false))
-                .andExpect(jsonPath("$.afterEnd.fulfillment.dueAt").exists())
-                .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(true));
+                .andExpect(jsonPath("$.afterEnd").exists())
+                .andExpect(jsonPath("$.afterEnd.fulfillment").value(nullValue()))
+                .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(false));
     }
 
     @Test

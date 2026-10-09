@@ -1,0 +1,48 @@
+package showroomz.api.admin.transaction.controller;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import showroomz.api.admin.transaction.docs.AdminRefundControllerDocs;
+import showroomz.api.admin.transaction.dto.AdminTransactionDto;
+import showroomz.api.admin.transaction.service.AdminRefundService;
+import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.global.dto.PageResponse;
+import showroomz.global.dto.PagingRequest;
+
+@RestController
+@RequestMapping("/v1/admin/refunds")
+@RequiredArgsConstructor
+public class AdminRefundController implements AdminRefundControllerDocs {
+
+    private final AdminRefundService refundService;
+
+    @Override
+    @GetMapping
+    public ResponseEntity<PageResponse<AdminTransactionDto.RefundItem>> getRefunds(
+            @RequestParam(value = "tab", required = false) AdminTransactionDto.RefundTab tab,
+            @RequestParam(value = "days", required = false) Integer days,
+            @ModelAttribute PagingRequest pagingRequest) {
+        return ResponseEntity.ok(refundService.getRefunds(tab, days, pagingRequest));
+    }
+
+    @Override
+    @GetMapping("/summary")
+    public ResponseEntity<AdminTransactionDto.RefundSummary> getSummary() {
+        return ResponseEntity.ok(refundService.getSummary());
+    }
+
+    @Override
+    @PostMapping("/{refundTaskId}/execute")
+    public ResponseEntity<AdminTransactionDto.RefundExecuteResponse> execute(
+            @AuthenticationPrincipal UserPrincipal principal, @PathVariable Long refundTaskId) {
+        return ResponseEntity.ok(refundService.execute(AdminOrderController.operatorId(principal), refundTaskId));
+    }
+}

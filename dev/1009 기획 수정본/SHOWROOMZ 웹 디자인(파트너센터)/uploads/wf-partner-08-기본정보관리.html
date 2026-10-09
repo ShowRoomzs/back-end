@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>wf-partner-08 · 기본정보 관리 · 1440×1024</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,"Malgun Gothic","맑은 고딕",sans-serif; background:#e6e6e6; color:#222; }
+  .doc-head { padding:24px 40px 4px; }
+  .doc-head h1 { font-size:18px; font-weight:700; }
+  .doc-head h1 span { font-weight:400; color:#888; font-size:13px; }
+  .doc-head .sub { font-size:12px; color:#777; margin-top:4px; line-height:1.6; }
+  .doc-head .spec { display:inline-block; margin-top:8px; font-size:11px; color:#555; background:#fff; border:1px solid #ccc; border-radius:4px; padding:4px 8px; }
+  .stack { padding:16px 40px 60px; }
+  .ftitle { font-size:13px; font-weight:700; color:#333; margin:22px 0 8px; }
+  .ftitle span { font-weight:400; color:#888; font-size:12px; }
+  .ftitle .pill { font-weight:400; font-size:11px; color:#555; background:#fff; border:1px solid #bbb; border-radius:10px; padding:1px 8px; margin-left:6px; }
+
+  .frame { width:1440px; background:#fff; border:1px solid #b5b5b5; border-radius:8px; box-shadow:0 1px 5px rgba(0,0,0,.1); overflow:hidden; position:relative; }
+  .chrome { height:32px; background:#e2e2e2; border-bottom:1px solid #c8c8c8; display:flex; align-items:center; padding:0 12px; gap:6px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#c0c0c0; }
+  .urlbar { flex:1; height:18px; background:#fff; border:1px solid #d0d0d0; border-radius:9px; font-size:11px; color:#888; display:flex; align-items:center; padding:0 10px; margin-left:8px; }
+  .app { display:flex; min-height:992px; }
+  .gnb { width:224px; flex-shrink:0; background:#3f3f3f; color:#cfcfcf; padding:0 0 20px; }
+  .gnb .brand { padding:22px 20px 18px; border-bottom:1px solid #565656; }
+  .gnb .brand .m { font-size:15px; font-weight:800; color:#fff; letter-spacing:.5px; }
+  .gnb .brand .s { font-size:10px; color:#a5a5a5; margin-top:3px; }
+  .gnb-item { display:flex; align-items:center; gap:8px; padding:12px 20px; font-size:13px; color:#c2c2c2; border-left:3px solid transparent; }
+  .gnb-item .n { font-size:11px; color:#8f8f8f; width:14px; }
+  .gnb-item.on { background:#2a2a2a; color:#fff; font-weight:700; border-left-color:#fff; }
+  .gnb-item.on .n { color:#ddd; }
+  .main { flex:1; background:#f7f7f7; min-width:0; position:relative; }
+  .topbar { height:56px; background:#fff; border-bottom:1px solid #e2e2e2; display:flex; align-items:center; justify-content:space-between; padding:0 24px; }
+  .crumb { font-size:14px; font-weight:700; color:#222; }
+  .crumb .sub { font-weight:400; color:#999; font-size:12px; }
+  .brand-chip { display:flex; align-items:center; gap:8px; font-size:12px; color:#555; }
+  .brand-chip .st { border:1px solid #999; border-radius:12px; padding:2px 10px; background:#f2f2f2; }
+  .content { padding:24px; display:flex; gap:22px; }
+
+  /* 서브 사이드탭 */
+  .subnav { width:180px; flex-shrink:0; }
+  .subnav-item { padding:11px 14px; font-size:13px; color:#666; border-radius:6px; margin-bottom:4px; }
+  .subnav-item.on { background:#fff; color:#222; font-weight:700; border:1px solid #ddd; }
+  .subbody { flex:1; min-width:0; }
+
+  .card { background:#fff; border:1px solid #e2e2e2; border-radius:8px; margin-bottom:16px; }
+  .card-h { padding:16px 20px; border-bottom:1px solid #eee; font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
+  .sec { padding:20px; border-bottom:1px solid #eee; } .sec:last-child { border-bottom:none; }
+  .sec-t { font-size:14px; font-weight:700; margin-bottom:14px; }
+  .row { display:flex; gap:16px; align-items:flex-start; margin-bottom:12px; }
+  .row:last-child { margin-bottom:0; }
+  .lab { width:150px; flex-shrink:0; font-size:13px; color:#555; padding-top:11px; }
+  .lab .req { color:#c4553f; }
+  .ctrl { flex:1; }
+  .inp { width:100%; height:42px; border:1px solid #bbb; border-radius:6px; background:#fff; display:flex; align-items:center; padding:0 12px; font-size:13px; color:#a3a3a3; }
+  .inp.sel { justify-content:space-between; } .inp.sel::after { content:"▾"; color:#999; }
+  .inp.ro { background:#f4f4f4; color:#666; }
+  .inp.sm { max-width:220px; }
+  .two { display:flex; gap:8px; align-items:center; }
+  .hint { font-size:11.5px; color:#999; margin-top:6px; }
+  .btn { height:38px; border-radius:6px; background:#333; color:#fff; font-size:12.5px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; padding:0 16px; }
+  .btn-line { height:38px; border-radius:6px; background:#fff; border:1px solid #999; color:#555; font-size:12.5px; display:inline-flex; align-items:center; justify-content:center; padding:0 14px; }
+  .btn-row { display:flex; gap:10px; justify-content:flex-end; padding:16px 20px; }
+  .toggle { width:44px; height:24px; border-radius:12px; background:#ccc; position:relative; flex-shrink:0; }
+  .toggle.on { background:#555; } .toggle.on::after { left:23px; }
+  .toggle::after { content:""; width:18px; height:18px; border-radius:50%; background:#fff; position:absolute; top:3px; left:3px; }
+  .toggle-row { display:flex; align-items:center; gap:10px; padding-top:10px; }
+  .badge { border:1px solid #999; border-radius:10px; padding:2px 9px; font-size:11px; color:#444; background:#f6f6f6; }
+  .badge.on2 { background:#333; color:#fff; border-color:#333; }
+  .badge.warn { border-style:dashed; color:#777; }
+
+  .foldline { position:absolute; left:0; right:0; top:1024px; border-top:1.5px dashed #c4553f; z-index:5; }
+  .foldline::after { content:"↑ 1440×1024 뷰포트 경계 · 이하 스크롤"; position:absolute; right:14px; top:-9px; background:#f7f7f7; padding:0 8px; font-size:10px; color:#c4553f; }
+  .note { margin:0 20px 16px; border:1.5px dashed #999; border-radius:6px; background:#fafafa; padding:9px 12px; font-size:11.5px; color:#555; line-height:1.6; }
+  .note b { color:#333; } .note .tag { font-weight:700; margin-right:4px; }
+  .note.legal { border:2px dashed #333; background:#f3f3f3; color:#222; }
+  .down { text-align:center; padding:12px 0 2px; } .down .a { font-size:24px; color:#888; } .down .l { font-size:11px; color:#777; }
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>④ 파트너센터 · 9. 기본정보 관리 <span>wf-partner-08 · 데스크톱 1440×1024</span></h1>
+  <div class="sub">그레이스케일 lo-fi · 좌측 서브탭 6개(사업자정보·배송정책·택배연동·정산계좌·담당자·계정) · 근거: ③ §1-1 브랜드 계정 전체 · ④ draft20 §1</div>
+  <div class="spec">프레임 1440×1024 · 배송정책·택배연동은 이번 세션 A안 반영(브랜드 통합·연동 자동발급)</div>
+</div>
+
+<div class="stack">
+
+<!-- ============ F1. 사업자 정보 ============ -->
+<div class="ftitle">1. 사업자 정보 <span>— 조회 중심(가입 시 입력값)</span><span class="pill">GNB #9</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">partner.showroomz.com/settings</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">브랜드 파트너센터</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div><div class="gnb-item"><span class="n">2</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">3</span> 연결·소통</div><div class="gnb-item"><span class="n">4</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div><div class="gnb-item"><span class="n">6</span> 판매 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리</div><div class="gnb-item"><span class="n">8</span> 문의 관리</div>
+      <div class="gnb-item on"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드 <span class="st">활성</span></div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item on">사업자 정보</div>
+          <div class="subnav-item">배송·반품 정책</div>
+          <div class="subnav-item">택배 연동</div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">사업자 정보</div>
+            <div class="sec">
+              <div class="row"><div class="lab">사업자 유형</div><div class="ctrl"><div class="inp ro">일반과세자</div></div></div>
+              <div class="row"><div class="lab">브랜드명</div><div class="ctrl"><div class="inp ro">○○ 브랜드</div><div class="hint">공개 상점명 · 사업자 상호와 별개 · 변경은 운영자 문의</div></div></div>
+              <div class="row"><div class="lab">대표자명</div><div class="ctrl"><div class="inp ro">홍길동</div></div></div>
+              <div class="row"><div class="lab">사업자등록증 상호</div><div class="ctrl"><div class="inp ro">주식회사 ○○</div></div></div>
+              <div class="row"><div class="lab">사업자등록번호</div><div class="ctrl"><div class="inp ro">000-00-00000</div></div></div>
+              <div class="row"><div class="lab">업태</div><div class="ctrl"><div class="inp ro">도소매업</div></div></div>
+              <div class="row"><div class="lab">사업장 주소</div><div class="ctrl"><div class="inp ro">서울시 ○○구 …</div></div></div>
+              <div class="row"><div class="lab">통신판매업 신고번호</div><div class="ctrl"><div class="inp ro">제0000-서울○○-00000호</div></div></div>
+              <div class="row"><div class="lab">tax 확인용 이메일</div><div class="ctrl"><div class="inp">tax@brand.com</div><div class="hint">세금계산서 등 세무 확인용 · 로그인 이메일과 별개 · 수정 가능</div></div></div>
+              <div class="row"><div class="lab">브랜드 사이트 링크</div><div class="ctrl"><div class="inp">https://ohh-cosmetic.com</div><div class="hint"><b>소비자 상품 상세페이지 "사이트에서 보기" 버튼</b>에 사용(선택 입력, 미입력 시 버튼 비노출) · 신원정보 아님 — 즉시 수정 가능</div></div></div>
+              <div class="row"><div class="lab">심사 첨부 파일</div><div class="ctrl"><span class="badge">사업자등록증.jpg</span> <span class="badge">통신판매업신고증.jpg</span> <span class="badge">통장사본.jpg</span></div></div>
+            </div>
+            <div class="btn-row"><div class="btn-line">변경 요청(운영자 검토)</div><div class="btn">저장</div></div>
+          </div>
+          <div class="note" style="margin-left:0;margin-right:0"><span class="tag">[조회 중심]</span> 사업자등록번호·상호 등 법정 신원정보는 <b>가입 심사 시 확정</b> — 변경 시 재검토 필요(운영자 경유) · tax 이메일·브랜드 사이트 링크는 즉시 수정 가능</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">배송·반품 정책 탭</div></div>
+
+<!-- ============ F2. 배송·반품 정책 (브랜드 통합, A안) ============ -->
+<div class="ftitle">2. 배송·반품 정책 <span>— 브랜드 기본 배송정책(A 통합) · 전 상품 공통 상속</span><span class="pill">이번 세션 A안</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">partner.showroomz.com/settings/shipping</span></div>
+  <div class="app">
+    <div class="foldline"></div>
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">브랜드 파트너센터</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div><div class="gnb-item"><span class="n">2</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">3</span> 연결·소통</div><div class="gnb-item"><span class="n">4</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div><div class="gnb-item"><span class="n">6</span> 판매 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리</div><div class="gnb-item"><span class="n">8</span> 문의 관리</div>
+      <div class="gnb-item on"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드 <span class="st">활성</span></div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item on">배송·반품 정책</div>
+          <div class="subnav-item">택배 연동</div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">기본 배송정책 <span style="font-size:12px;font-weight:400;color:#888">전 상품 공통 적용 · 상품별 개별 설정 없음</span></div>
+            <div class="sec">
+              <div class="sec-t">배송비</div>
+              <div class="row"><div class="lab"><span class="req">*</span> 기본 배송비</div><div class="ctrl"><div class="two"><div class="inp sm">3,000</div><span>원 / 하위주문 단위</span></div></div></div>
+              <div class="row"><div class="lab">무료배송 기준금액</div><div class="ctrl"><div class="two"><div class="inp sm">30,000</div><span>원 이상 무료 (선택)</span></div></div></div>
+              <div class="row"><div class="lab">도서산간 추가비</div><div class="ctrl"><div class="two"><span>제주</span><div class="inp sm">3,000</div><span>원</span><span style="margin-left:10px">그 외</span><div class="inp sm">5,000</div><span>원</span></div><div class="hint">우편번호 자동 판별 가산 · 무료배송과 무관하게 부과</div></div></div>
+              <div class="row"><div class="lab">배송 방법</div><div class="ctrl"><div class="inp sm sel">택배</div></div></div>
+              <div class="row"><div class="lab">출고 소요일</div><div class="ctrl"><div class="two"><span>영업일</span><div class="inp sm">3</div><span>일 이내</span></div></div></div>
+            </div>
+            <div class="sec">
+              <div class="sec-t">반품·교환비</div>
+              <div class="row"><div class="lab">반품비(회수비)</div><div class="ctrl"><div class="two"><div class="inp sm">3,000</div><span>원 · 반품(환불) 시 회수 편도</span></div></div></div>
+              <div class="row"><div class="lab">교환비(회수비+배송비)</div><div class="ctrl"><div class="two"><div class="inp sm">6,000</div><span>원 · 교환 시 회수+재배송 왕복</span></div></div></div>
+            </div>
+            <div class="btn-row"><div class="btn-line">취소</div><div class="btn">저장 (전 상품 즉시 반영)</div></div>
+          </div>
+          <div class="note" style="margin-left:0;margin-right:0"><span class="tag">[2026.07 이동]</span> <b>최초 입력은 온보딩 필수 항목으로 이동</b>(wf-partner-01 F5 · 활성 게이트) — 이 화면은 <b>이후 값 변경용</b>으로 유지 · 이 정책 1세트가 <b>모든 상품에 공통 상속</b>(상품 등록 화면엔 읽기 전용 표시만) · 소비자 C7 배송 안내·C9 도서산간 판별에 참조 · 저장 시 <b>진행중 공구는 결제 스냅샷값 유지</b>(소급 미적용), 신규 결제부터 반영</div>
+          <div class="note legal" style="margin-left:0;margin-right:0"><span class="tag">[법률 대기 · 쟁점 B]</span> 반품/교환 배송비 부담 주체·공제 방식(단순변심=소비자 / 불량·오배송=브랜드) — 금액 입력은 확정, 문구·정책은 변호사 검토 후</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">택배 연동 탭</div></div>
+
+<!-- ============ F3. 택배 연동 설정 (A안) ============ -->
+<div class="ftitle">3. 택배 연동 설정 <span>— 송장 자동발급(A안) · 연동사·업체코드</span><span class="pill">이번 세션 A안</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">partner.showroomz.com/settings/delivery</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">브랜드 파트너센터</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div><div class="gnb-item"><span class="n">2</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">3</span> 연결·소통</div><div class="gnb-item"><span class="n">4</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div><div class="gnb-item"><span class="n">6</span> 판매 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리</div><div class="gnb-item"><span class="n">8</span> 문의 관리</div>
+      <div class="gnb-item on"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드 <span class="st">활성</span></div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item">배송·반품 정책</div>
+          <div class="subnav-item on">택배 연동</div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">택배 연동 설정 <span class="badge on2">연동됨</span></div>
+            <div class="sec">
+              <div class="row"><div class="lab">연동 상태</div><div class="ctrl"><span class="badge on2">연동됨 · CJ대한통운</span> <span style="font-size:11px;color:#999;margin-left:8px">2026.00.00 연동 완료</span></div></div>
+              <div class="row"><div class="lab">기본 택배사</div><div class="ctrl"><div class="inp sm sel" style="color:#555">CJ대한통운</div><div class="hint">송장 발급 시 기본 선택값 · 판매 관리 [송장 발급]에서 원클릭 적용</div></div></div>
+              <div class="row"><div class="lab">업체코드</div><div class="ctrl"><div class="inp ro sm">CJ-000000</div><div class="hint">택배사 대리점 계약 승인 코드(연동사 발급)</div></div></div>
+              <div class="row"><div class="lab">연동 이용료</div><div class="ctrl"><span style="font-size:12.5px;color:#666">월 10,000원(1,000건 이하) + 발급 건당 차감 · 브랜드 부담</span></div></div>
+            </div>
+            <div class="btn-row"><div class="btn-line">연동 해지</div><div class="btn-line">다른 택배사 연동 추가</div><div class="btn">저장</div></div>
+          </div>
+
+          <div class="card">
+            <div class="card-h">미연동 시 <span style="font-size:12px;font-weight:400;color:#888">(참고 — 연동 전 상태 예시)</span></div>
+            <div class="sec">
+              <div class="row"><div class="lab">연동 상태</div><div class="ctrl"><span class="badge warn">미연동</span></div></div>
+              <div class="row"><div class="lab">폴백 방식</div><div class="ctrl"><span style="font-size:12.5px;color:#666">판매 관리에서 <b>택배사 선택 + 송장번호 수기 입력</b>으로 대체 진행 가능</span></div></div>
+            </div>
+            <div class="btn-row"><div class="btn">택배 연동 신청</div></div>
+          </div>
+
+          <div class="note" style="margin-left:0;margin-right:0"><span class="tag">[A안 · 로드맵]</span> MVP = 연동사(굿스플로형) 통한 송장 자동발급 · 미연동 브랜드는 수기 폴백 · [확장 가능] 복수 택배사 프로필 · <b>3PL 풀필먼트(창고 대행)는 브랜드 직발송 모델과 불일치로 제외</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">정산 계좌 탭</div></div>
+
+<!-- ============ F4. 정산 계좌 (조회) ============ -->
+<div class="ftitle">4. 정산 계좌 <span>— 조회 전용 · 셀프 변경 없음</span><span class="pill">GNB #9</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">partner.showroomz.com/settings/account</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">브랜드 파트너센터</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div><div class="gnb-item"><span class="n">2</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">3</span> 연결·소통</div><div class="gnb-item"><span class="n">4</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div><div class="gnb-item"><span class="n">6</span> 판매 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리</div><div class="gnb-item"><span class="n">8</span> 문의 관리</div>
+      <div class="gnb-item on"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드 <span class="st">활성</span></div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item">배송·반품 정책</div>
+          <div class="subnav-item">택배 연동</div>
+          <div class="subnav-item on">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">정산 수취 계좌</div>
+            <div class="sec">
+              <div class="row"><div class="lab">은행</div><div class="ctrl"><div class="inp ro">○○은행</div></div></div>
+              <div class="row"><div class="lab">계좌번호</div><div class="ctrl"><div class="inp ro">***-**-******78</div></div></div>
+              <div class="row"><div class="lab">예금주</div><div class="ctrl"><div class="inp ro">주식회사 ○○</div></div></div>
+            </div>
+            <div class="btn-row"><div class="btn-line">변경 요청 (운영자 검토)</div></div>
+          </div>
+          <div class="note" style="margin-left:0;margin-right:0"><span class="tag">[조회 전용]</span> 정산 계좌는 가입 시 기입 · <b>셀프 변경 없음</b>(민감정보) · 변경은 운영자 수동 처리·감사 기록 남음</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">담당자·CS 탭</div></div>
+
+<!-- ============ F5. 담당자·CS ============ -->
+<div class="ftitle">5. 담당자·CS <span>— 판매 담당자 · 고객센터 전화번호</span><span class="pill">GNB #9</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">partner.showroomz.com/settings/contact</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">브랜드 파트너센터</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div><div class="gnb-item"><span class="n">2</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">3</span> 연결·소통</div><div class="gnb-item"><span class="n">4</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div><div class="gnb-item"><span class="n">6</span> 판매 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리</div><div class="gnb-item"><span class="n">8</span> 문의 관리</div>
+      <div class="gnb-item on"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드 <span class="st">활성</span></div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item">배송·반품 정책</div>
+          <div class="subnav-item">택배 연동</div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item on">담당자·CS</div>
+          <div class="subnav-item">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">담당자·CS 정보</div>
+            <div class="sec">
+              <div class="row"><div class="lab">판매 담당자 이름</div><div class="ctrl"><div class="inp">담당자명</div></div></div>
+              <div class="row"><div class="lab">판매 담당자 연락처</div><div class="ctrl"><div class="inp">010-0000-0000</div></div></div>
+              <div class="row"><div class="lab">고객센터 전화번호</div><div class="ctrl"><div class="inp">000-0000-0000</div><div class="hint">소비자 노출(상품 상세) · 부재중 번호 시 서비스 이용 제한</div></div></div>
+              <div class="row"><div class="lab">반품 수취 주소</div><div class="ctrl"><div class="inp">우편번호·주소·상세주소</div><div class="hint">활성 전환 필수(온보딩에서 최초 입력) · 판매관리 반품 회수지로 참조</div></div></div>
+            </div>
+            <div class="btn-row"><div class="btn-line">취소</div><div class="btn">저장</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">계정 탭</div></div>
+
+<!-- ============ F6. 계정 ============ -->
+<div class="ftitle">6. 계정 <span>— 로그인 이메일·비밀번호 변경</span><span class="pill">GNB #9</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">partner.showroomz.com/settings/login</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">브랜드 파트너센터</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div><div class="gnb-item"><span class="n">2</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">3</span> 연결·소통</div><div class="gnb-item"><span class="n">4</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div><div class="gnb-item"><span class="n">6</span> 판매 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리</div><div class="gnb-item"><span class="n">8</span> 문의 관리</div>
+      <div class="gnb-item on"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드 <span class="st">활성</span></div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item">배송·반품 정책</div>
+          <div class="subnav-item">택배 연동</div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item on">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">계정</div>
+            <div class="sec">
+              <div class="row"><div class="lab">로그인 이메일</div><div class="ctrl"><div class="inp ro">brand@example.com</div></div></div>
+              <div class="row"><div class="lab">비밀번호 변경</div><div class="ctrl"><div class="inp">현재 비밀번호</div><div style="height:8px"></div><div class="inp">새 비밀번호</div></div></div>
+            </div>
+            <div class="btn-row"><div class="btn">변경 저장</div></div>
+          </div>
+          <div class="card">
+            <div class="card-h">브랜드 탈퇴 <div class="btn-line" style="color:#c4553f;border-color:#ddd">브랜드 탈퇴 신청</div></div>
+          </div>
+          <div class="note" style="margin-left:0;margin-right:0"><span class="tag">[신규 · 2026.07]</span> <b>진행중 공구·미정산(브랜드→인플루언서 지급)·미처리 반품/교환이 있으면 탈퇴 불가</b> · <b>셀프 처리 아님 — 신청 후 운영자 승인 필요</b>(→ F7 신청서 · F8 승인 대기 상태) · 계약·거래·정산 이력은 법정 보존 기간 동안 보관</div>
+          <div class="note legal" style="margin-left:0;margin-right:0">[법률 대기] 탈퇴 시 개인정보 파기·거래기록 분리 보존 문구는 ③ §13 확정 후 반영</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">[브랜드 탈퇴 신청] 클릭</div></div>
+
+<!-- ============ F7. 브랜드 탈퇴 신청 ============ -->
+<div class="ftitle">7. 브랜드 탈퇴 신청 <span>— 조건 확인 · 사유 · 고지 · 신청 제출</span><span class="pill">GNB #9 · 운영자 승인 필요</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">partner.showroomz.com/settings/withdrawal</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">브랜드 파트너센터</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div><div class="gnb-item"><span class="n">2</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">3</span> 연결·소통</div><div class="gnb-item"><span class="n">4</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div><div class="gnb-item"><span class="n">6</span> 판매 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리</div><div class="gnb-item"><span class="n">8</span> 문의 관리</div>
+      <div class="gnb-item on"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">기본정보 관리 <span class="sub">› 계정 › 브랜드 탈퇴 신청</span></div><div class="brand-chip">○○ 브랜드 <span class="st">활성</span></div></div>
+      <div class="content" style="display:block">
+        <div class="card">
+          <div class="card-h">신청 조건 확인</div>
+          <div class="sec">
+            <div class="row"><div class="lab">진행중 공구</div><div class="ctrl"><div class="inp ro">없음</div></div></div>
+            <div class="row"><div class="lab">미정산(브랜드→인플루언서 지급)</div><div class="ctrl"><div class="inp ro">없음</div></div></div>
+            <div class="row"><div class="lab">미처리 반품·교환</div><div class="ctrl"><div class="inp ro">없음</div></div></div>
+            <div class="hint">조건 모두 "없음"일 때만 [탈퇴 신청하기] 활성화. 미충족 시 비활성 + 해당 항목에 사유·바로가기 노출(같은 화면 내 상태 전환, 별도 차단 화면 없음)</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">탈퇴 사유 (선택)</div>
+          <div class="sec">
+            <div class="row"><div class="lab">사유</div><div class="ctrl"><div class="inp sel" style="color:#888">사유 선택 (운영 종료 / 타 플랫폼 이용 / 비용 부담 / 기타)</div></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">탈퇴 시 처리 안내</div>
+          <div class="sec">
+            <div class="hint" style="font-size:12px;line-height:1.8">· 승인 즉시 브랜드 계정이 비활성화되고 인플루언서와의 연결·계약이 모두 종료돼요<br>· 등록된 상품·공구는 노출에서 제외돼요<br>· 계약·거래·정산 이력은 법령에 따라 일정 기간 별도 보관돼요<br>· 신청 후 운영자 승인 전까지는 <b>신청 취소</b>가 가능해요</div>
+          </div>
+          <div class="btn-row"><div class="btn-line">취소</div><div class="btn" style="background:#c4553f">탈퇴 신청하기</div></div>
+        </div>
+        <div class="card">
+          <div class="card-h">처리 흐름</div>
+          <div class="sec">
+            <div class="hint">1. 신청 제출 → 2. 운영자 승인 대기(F8 상태로 전환) → 3-a. 승인 시 계정 비활성화 + 이메일/문자 통지 &nbsp;/&nbsp; 3-b. 반려 시 사유 통지 + 신청 화면 재진입 가능</div>
+          </div>
+        </div>
+        <div class="note legal" style="margin-left:0;margin-right:0">[법률 확정 대기] 파기 범위·보존 항목·보존 기간 정확한 문구는 ③ §13 확정 후 교체 — 현재는 구조·자리만 확보</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">[탈퇴 신청하기] 제출</div></div>
+
+<!-- ============ F8. 계정 (탈퇴 승인 대기 상태) ============ -->
+<div class="ftitle">8. 계정 — 탈퇴 승인 대기 상태 <span>— F6 대체 상태</span><span class="pill">GNB #9</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">partner.showroomz.com/settings/login</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">브랜드 파트너센터</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div><div class="gnb-item"><span class="n">2</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">3</span> 연결·소통</div><div class="gnb-item"><span class="n">4</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div><div class="gnb-item"><span class="n">6</span> 판매 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리</div><div class="gnb-item"><span class="n">8</span> 문의 관리</div>
+      <div class="gnb-item on"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">기본정보 관리</div><div class="brand-chip">○○ 브랜드 <span class="st">활성</span></div></div>
+      <div class="content">
+        <div class="subnav">
+          <div class="subnav-item">사업자 정보</div>
+          <div class="subnav-item">배송·반품 정책</div>
+          <div class="subnav-item">택배 연동</div>
+          <div class="subnav-item">정산 계좌</div>
+          <div class="subnav-item">담당자·CS</div>
+          <div class="subnav-item on">계정</div>
+        </div>
+        <div class="subbody">
+          <div class="card">
+            <div class="card-h">브랜드 탈퇴</div>
+            <div class="sec">
+              <div style="border:1.5px solid #c9a35a;border-radius:8px;background:#fbf6ea;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+                <div>
+                  <div style="font-size:13px;font-weight:700;color:#8a6a1f">⏳ 탈퇴 승인 대기 중</div>
+                  <div style="font-size:11px;color:#9c8556;margin-top:3px">2026.07.15 14:20 신청 · 운영자 검토 후 결과 안내</div>
+                </div>
+                <div class="btn-line" style="flex-shrink:0">신청 취소</div>
+              </div>
+            </div>
+          </div>
+          <div class="note" style="margin-left:0;margin-right:0"><span class="tag">[규칙]</span> 승인 대기 중에는 <b>모든 기능 정상 이용 가능</b>(상품·공구 등록 제한 없음) — 승인 시점에만 계정 비활성화 · 신청 취소 시 즉시 F6 원래 상태로 복귀</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

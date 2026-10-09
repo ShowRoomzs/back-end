@@ -1,11 +1,16 @@
 package showroomz.domain.order.service;
 
+import org.springframework.context.ApplicationEventPublisher;
+import showroomz.domain.order.type.RefundTaskOrigin;
+import showroomz.domain.order.type.OperatorRefundReason;
+import showroomz.domain.order.event.RefundTaskEnqueuedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.order.entity.Order;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.entity.OrderFulfillmentHistory;
@@ -52,6 +57,8 @@ public class OrderFulfillmentService {
     private final ProductVariantRepository productVariantRepository;
     private final DeliveryTrackingEventRecorder trackingEventRecorder;
     private final OrderProperties orderProperties;
+    private final ShipDuePolicy shipDuePolicy;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ------------------------------------------------------------------ 이력
 
@@ -84,9 +91,8 @@ public class OrderFulfillmentService {
         for (OrderDeliveryGroup group : deliveryGroupRepository.findByOrderId(orderId)) {
             seq++;
             Order order = group.getOrder();
-            Integer leadDays = group.getMarket() == null ? null : group.getMarket().getShippingLeadDays();
             plan.add(new Activation(group.getId(), "%s-%02d".formatted(order.getOrderNumber(), seq),
-                    leadDays == null ? null : paidAt.plusDays(leadDays)));
+                    shipDueAtOnPaid(group, paidAt)));
         }
         for (Activation activation : plan) {
             if (deliveryGroupRepository.activate(activation.deliveryGroupId(), activation.subOrderNumber(),
@@ -98,6 +104,22 @@ public class OrderFulfillmentService {
     }
 
     private record Activation(Long deliveryGroupId, String subOrderNumber, LocalDateTime shipDueAt) {
+    }
+
+    /**
+     * 결제 시점의 발송기한(1009 기획 수정본 1-2) — 공구가 이미 종결됐으면 마감 + N영업일, 진행 중이면 null(종결 훅이 채운다).
+     * 공구 없는 백필 행은 결제 시각을 기산점으로 쓴다.
+     */
+    private LocalDateTime shipDueAtOnPaid(OrderDeliveryGroup group, LocalDateTime paidAt) {
+        GroupBuy groupBuy = group.getGroupBuy();
+        int businessDays = group.getShipDueBusinessDays();
+        if (groupBuy == null) {
+            return shipDuePolicy.dueAt(paidAt, businessDays);
+        }
+        if (groupBuy.getStatus() != null && groupBuy.getStatus().isTerminal() && groupBuy.getEndedAt() != null) {
+            return shipDuePolicy.dueAt(groupBuy.getEndedAt(), businessDays);
+        }
+        return null;
     }
 
     // ------------------------------------------------------------------ 소비자 전액 취소(설계서 5-2)
@@ -148,16 +170,53 @@ public class OrderFulfillmentService {
                 .toList();
     }
 
-    /** 환불 큐 적재 — 집행은 어드민(§34-8 「환불은 브랜드가 절대 실행하지 않는다」). */
+    /**
+     * 환불 큐 적재 — <b>PG 즉시 자동 환불</b>(1009 기획 수정본 2-2). 커밋 직후 {@code RefundExecutor}가 포트원 부분 취소로
+     * 돌려준다. 브랜드는 여전히 환불을 실행하지 않는다(§34-8) — 큐를 쌓을 뿐 집행 주체는 시스템이다.
+     */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void enqueueRefund(OrderDeliveryGroup group, RefundTaskSource source, Long sourceId, int refundAmount) {
-        refundTaskRepository.save(OrderRefundTask.builder()
+    public OrderRefundTask enqueueRefund(OrderDeliveryGroup group, RefundTaskSource source, Long sourceId,
+                                         int refundAmount) {
+        return enqueue(OrderRefundTask.builder()
                 .deliveryGroup(group)
                 .order(group.getOrder())
                 .source(source)
                 .sourceId(sourceId)
                 .refundAmount(refundAmount)
+                .origin(RefundTaskOrigin.PG_AUTO)
+                .paymentId(group.getOrder().getPaidPaymentId())
                 .build());
+    }
+
+    /**
+     * 운영자 사유 환불 편입(어드민 06a B5 · 06b B2) — 반려 이의 인용 · 구매확정 후 하자 · 위해성 리콜. <b>편입만</b> 한다 — 돈은
+     * 어드민 환불 관리의 재확인 다이얼로그에서만 나간다(편입과 집행을 나눈다).
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public OrderRefundTask enqueueOperatorRefund(OrderDeliveryGroup group, Long sourceId, int refundAmount,
+                                                 OperatorRefundReason reason, String detail, Long operatorId,
+                                                 LocalDateTime now) {
+        OrderRefundTask task = enqueue(OrderRefundTask.builder()
+                .deliveryGroup(group)
+                .order(group.getOrder())
+                .source(RefundTaskSource.OPERATOR_REASON)
+                .sourceId(sourceId)
+                .refundAmount(refundAmount)
+                .origin(RefundTaskOrigin.OPERATOR)
+                .paymentId(group.getOrder().getPaidPaymentId())
+                .reasonCode(reason)
+                .reasonDetail(detail)
+                .requestedBy(operatorId)
+                .build());
+        appendHistory(group.getId(), FulfillmentEventType.REFUND_ENQUEUED_BY_OPERATOR, FulfillmentActorType.ADMIN,
+                operatorId, String.format("%s · %,d원", reason.getLabel(), refundAmount), now);
+        return task;
+    }
+
+    private OrderRefundTask enqueue(OrderRefundTask task) {
+        OrderRefundTask saved = refundTaskRepository.save(task);
+        eventPublisher.publishEvent(new RefundTaskEnqueuedEvent(saved.getId(), saved.getOrigin()));
+        return saved;
     }
 
     // ------------------------------------------------------------------ 구매확정(설계서 3-4)
@@ -188,6 +247,49 @@ public class OrderFulfillmentService {
     @Transactional
     public boolean confirmIfDue(Long deliveryGroupId, LocalDateTime now) {
         return confirmPurchase(deliveryGroupId, now, now.minusDays(orderProperties.getPurchaseConfirmDays()));
+    }
+
+    // ------------------------------------------------------------------ 구매확정 타이머 정지 · 재개(1009 기획 수정본 4절)
+
+    /** 반품·교환 접수 — 그 하위주문의 구매확정 타이머를 멈춘다. 이미 멈춰 있으면 먼저 멈춘 시각을 유지한다. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void pauseConfirmTimer(Long deliveryGroupId, LocalDateTime now) {
+        deliveryGroupRepository.pauseConfirmTimer(deliveryGroupId, now);
+    }
+
+    /**
+     * 진행 중 클레임이 없어졌으면 재개 — 정지한 시간만큼 기산점을 밀어 「남은 일수부터」 다시 센다(철회 · 자동 취소 · 반려 ·
+     * 환불 완료). 재개 뒤 예정이 이미 지났으면 그 자리에서 확정한다.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void resumeConfirmTimerIfIdle(Long deliveryGroupId, LocalDateTime now) {
+        OrderDeliveryGroup group = deliveryGroupRepository.findById(deliveryGroupId).orElse(null);
+        if (group != null && group.getConfirmPausedAt() != null
+                && !deliveryGroupRepository.existsTimerHoldingClaim(deliveryGroupId)) {
+            LocalDateTime pausedAt = group.getConfirmPausedAt();
+            LocalDateTime base = group.confirmBaseAt();
+            if (base != null && now.isAfter(pausedAt)) {
+                base = base.plus(java.time.Duration.between(pausedAt, now));
+            }
+            deliveryGroupRepository.resumeConfirmTimer(deliveryGroupId, pausedAt, base, null);
+        }
+        confirmIfDue(deliveryGroupId, now);
+    }
+
+    /**
+     * 교환 재발송 도착 — 구매확정을 도착 시각부터 7일 새로 센다(35 설계서 3-4 · 「교환 완료일부터 7일 새로 시작」). 같은 하위주문에
+     * 다른 클레임이 아직 진행 중이면 정지는 유지하되 정지 시계를 지금부터 다시 잰다(새 기산점에 지난 정지 시간을 더하지 않는다).
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void restartConfirmTimer(Long deliveryGroupId, LocalDateTime deliveredAt, LocalDateTime now) {
+        deliveryGroupRepository.restartConfirmTimer(deliveryGroupId, deliveredAt);
+        OrderDeliveryGroup group = deliveryGroupRepository.findById(deliveryGroupId).orElse(null);
+        if (group == null || group.getConfirmPausedAt() == null) {
+            return;
+        }
+        boolean stillHeld = deliveryGroupRepository.existsTimerHoldingClaim(deliveryGroupId);
+        deliveryGroupRepository.resumeConfirmTimer(deliveryGroupId, group.getConfirmPausedAt(), group.confirmBaseAt(),
+                stillHeld ? now : null);
     }
 
     // ------------------------------------------------------------------ 배송 추적(설계서 3-3)

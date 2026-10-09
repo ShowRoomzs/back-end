@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import showroomz.domain.common.BaseTimeEntity;
 import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.order.service.ShipDuePolicy;
 import showroomz.domain.order.type.DeliveredSource;
 import showroomz.domain.order.type.DeliveryCarrier;
 import showroomz.domain.order.type.FulfillmentStatus;
@@ -90,9 +91,16 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
     @Column(name = "fulfillment_status", nullable = false, length = 30)
     private FulfillmentStatus fulfillmentStatus = FulfillmentStatus.PENDING;
 
-    /** 발송기한 — PAID 전이 때 {@code paid_at + market.shipping_lead_days} 스냅샷. 이후 마켓 설정이 바뀌어도 불변(귀책 판정값). */
+    /**
+     * 발송기한 = 공구 마감 시각 + {@link #shipDueBusinessDays}영업일(1009 기획 수정본 1절 · {@code ShipDuePolicy}).
+     * <b>공구가 종결되기 전에는 NULL</b>이다 — 진행 중 결제 건은 마감 전까지 기한이 없다. 종결 순간 확정되고 이후 불변(귀책 판정값).
+     */
     @Column(name = "ship_due_at")
     private LocalDateTime shipDueAt;
+
+    /** 이 주문에 적용된 발송 기한 N(영업일) — 주문 생성 때 마켓 설정의 스냅샷. 브랜드가 뒤에 바꿔도 그대로다. */
+    @Column(name = "ship_due_business_days", nullable = false)
+    private Integer shipDueBusinessDays;
 
     @Column(name = "prepare_started_at")
     private LocalDateTime prepareStartedAt;
@@ -133,11 +141,19 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
     private LocalDateTime deliveredAt;
 
     /**
-     * 구매확정 기산점 재시작 — 교환 재발송 도착 시각(35 설계서 1-10 · §35-7). {@code deliveredAt}을 덮지 않는다 —
-     * 최초 배송완료 시각은 사실이다.
+     * 구매확정 기산점 재설정 — ① 교환 재발송 도착 시각(35 설계서 1-10 · §35-7 · 「교환 완료일부터 7일 새로 시작」)
+     * ② 정지가 풀릴 때 정지했던 시간만큼 뒤로 민 기산점(1009 기획 수정본 4절 · 「철회되면 남은 일수부터 재개」).
+     * {@code deliveredAt}을 덮지 않는다 — 최초 배송완료 시각은 사실이다. 예정 = {@link #confirmBaseAt()} + N일.
      */
     @Column(name = "confirm_restart_at")
     private LocalDateTime confirmRestartAt;
+
+    /**
+     * 구매확정 타이머 정지 시각 — 반품·교환이 접수되는 순간 멈추고(요청 시점부터), 진행 중 클레임이 없어지면 정지한 시간만큼
+     * 기산점을 밀고 NULL 로 돌아간다(1009 기획 수정본 4-2). 정지 중에는 배치가 확정하지 않는다.
+     */
+    @Column(name = "confirm_paused_at")
+    private LocalDateTime confirmPausedAt;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "delivered_source", length = 16)
@@ -164,6 +180,16 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
     @Column(name = "cancel_reason_detail", length = 300)
     private String cancelReasonDetail;
 
+    /**
+     * 발송 기한 경과 자동 알림 횟수(1009 기획 수정본 8-4 · 결정 「독촉 → 자동 알림」) — 영업일마다 한 번 브랜드에 자동 알림이
+     * 나가고 여기 센다. 발송은 알림 모듈이다. 3회 무응답이면 어드민 대행(송장 대행 · 직권 취소)이 열린다.
+     */
+    @Column(name = "overdue_notice_count", nullable = false)
+    private int overdueNoticeCount;
+
+    @Column(name = "last_overdue_notice_at")
+    private LocalDateTime lastOverdueNoticeAt;
+
     /** 취소 당시 이행 상태 — 신규 탭 직권 취소 허용 미결(§34-13 #1)의 데이터 분리(설계서 0-7). */
     @Enumerated(EnumType.STRING)
     @Column(name = "status_at_cancel", length = 30)
@@ -172,7 +198,7 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
     @Builder
     public OrderDeliveryGroup(Order order, GroupBuy groupBuy, Market market, Integer productTotal, Integer deliveryFee,
                               Integer baseDeliveryFee, boolean freeShippingApplied, String marketName,
-                              String groupBuyNumber) {
+                              String groupBuyNumber, Integer shipDueBusinessDays) {
         this.order = order;
         this.groupBuy = groupBuy;
         this.market = market;
@@ -183,6 +209,9 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
         this.freeShippingApplied = freeShippingApplied;
         this.marketName = marketName;
         this.groupBuyNumber = groupBuyNumber;
+        // 지정하지 않으면 마켓 설정에서 — 주문 시점 값으로 고정한다.
+        this.shipDueBusinessDays = shipDueBusinessDays != null ? shipDueBusinessDays
+                : ShipDuePolicy.businessDaysOf(market);
     }
 
     /**
@@ -191,6 +220,20 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
      */
     public LocalDateTime confirmBaseAt() {
         return confirmRestartAt != null ? confirmRestartAt : deliveredAt;
+    }
+
+    /**
+     * 구매확정까지 남은 일수(올림) — 정지 중이면 정지 시점 기준(멈춘 채 그대로), 아니면 지금 기준. 배송완료 전이면 null.
+     * 파트너 클레임 상세 「구매확정 타이머 · 정지 · 남은 4일」 · 소비자 반품·교환 상세가 같은 값을 쓴다.
+     */
+    public Long confirmRemainingDays(int confirmDays, LocalDateTime now) {
+        LocalDateTime base = confirmBaseAt();
+        if (base == null) {
+            return null;
+        }
+        LocalDateTime reference = confirmPausedAt != null ? confirmPausedAt : now;
+        long minutes = java.time.Duration.between(reference, base.plusDays(confirmDays)).toMinutes();
+        return Math.max(0, (long) Math.ceil(minutes / (24.0 * 60)));
     }
 
     public Long getGroupBuyId() {

@@ -38,10 +38,14 @@ public interface UserClaimControllerDocs {
                       2 이상이면 수량 선택을 그리고, 고른 값을 요청의 `items[].quantity` 로 보낸다(일부 수량만 반품·교환 가능).
                       금액은 `unitPrice × 수량` 이다 — 배송비는 수량과 무관하다
                     - `reasons[]` — `feeBearer` 가 `CONSUMER` 면 배송비가 발생하고 반송 택배비는 선불, `SELLER` 면 0원 · 착불.
-                      `detailRequired` 면 상세 내용 필수, `photoAllowed` 면 사진 블록을 연다
+                      `detailRequired` 면 상세 내용 필수, `photoAllowed` 면 사진 블록을 연다.
+                      반품 폼에만 `OTHER`(기타 · 직접 입력)가 있다 — 소비자 귀책(배송비 차감 · 선불)이고 상세 내용이 필수다.
+                      검수에서 브랜드 귀책으로 인정되면 차감액이 환불에 돌아온다
                     - `fees.consumerFault` — 고객 귀책일 때의 배송비. **반품**은 환불액에서 빼는 최초 배송비(무료배송으로 받은
                       주문만, 배송비를 내고 받은 주문은 0), **교환**은 요청할 때 결제하는 재발송 배송비다.
                       주문할 때의 배송비라 브랜드가 그 뒤 설정을 바꿔도 변하지 않는다
+                    - `paymentMethods`(교환 폼만) — 지금 열려 있는 결제수단. 주문서(C9)와 같은 목록이다. 고객 귀책 교환의
+                      재발송 배송비를 결제할 때 여기서 고른 값을 요청의 `payment` 로 보낸다. 반품 폼은 null
                     - `returnTo` — 브랜드 반품 수취 주소(원문). 송장에 적는 값이다
                     - 반송 택배비는 고객이 택배사에 직접 낸다 — 앱이 받지 않는다(`courierPayment` 는 안내용)
 
@@ -84,7 +88,7 @@ public interface UserClaimControllerDocs {
                     - `invoice` 를 같이 내면 회수 중(`COLLECTING`)으로 시작한다. `null` 이면 「나중에 입력하기」 —
                       회수 대기(`REQUESTED`)로 접수되고 **7일 안에** 송장을 넣지 않으면 요청이 자동 취소된다
                     - `reasonDetail` — `detailRequired` 사유면 필수, 250자까지
-                    - `imageUrls` — 이미지 업로드 API 가 준 URL. **브랜드 귀책 사유에서만** 받고 그 밖에는 무시한다. 10장까지
+                    - `imageUrls` — 이미지 업로드 API 가 준 URL. **`photoAllowed` 사유(브랜드 귀책 · 기타)에서만** 받고 그 밖에는 무시한다. 10장까지
                     - `expectedFee` — 폼의 `fees` 에서 고른 값. 서버 계산과 다르면 409 `CLAIM_AMOUNT_CHANGED`(폼을 다시 받는다)
                     - `idempotencyKey` — 같은 키의 재요청은 새로 만들지 않고 기존 요청을 돌려준다
                     - 구매확정은 이 요청이 끝날 때까지 멈춘다(같은 하위 주문의 다른 항목 포함)

@@ -92,13 +92,111 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
 
     // ------------------------------------------------------------------ 전이(설계서 2절)
 
-    /** #1 PENDING → NEW — PAID 전이와 같은 트랜잭션(설계서 5-1). 발송기한·하위주문번호를 함께 확정한다. */
+    /**
+     * #1 PENDING → NEW — PAID 전이와 같은 트랜잭션(설계서 5-1). 하위주문번호를 확정한다. 발송기한은 공구가 이미 종결됐을 때만
+     * 들어온다 — 종결 훅이 먼저 채운 값이 있으면 덮지 않는다({@code COALESCE}).
+     */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderDeliveryGroup g SET g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.NEW, "
-            + "g.subOrderNumber = :subOrderNumber, g.shipDueAt = :shipDueAt "
+            + "g.subOrderNumber = :subOrderNumber, g.shipDueAt = COALESCE(g.shipDueAt, :shipDueAt) "
             + "WHERE g.id = :id AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.PENDING")
     int activate(@Param("id") Long id, @Param("subOrderNumber") String subOrderNumber,
                  @Param("shipDueAt") LocalDateTime shipDueAt);
+
+    /**
+     * 발송 기한 경과 자동 알림 대상 — 기한이 지났고 아직 발송 전 · 검토 중 취소 요청 없음(요청은 1영업일 자동 승인이라 대상이
+     * 아니다) · 오늘 아직 알리지 않음(1009 기획 수정본 8-4).
+     */
+    @Query("SELECT g.id FROM OrderDeliveryGroup g WHERE g.shipDueAt IS NOT NULL AND g.shipDueAt < :now "
+            + "AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.NEW, "
+            + "    showroomz.domain.order.type.FulfillmentStatus.PREPARING) "
+            + "AND (g.lastOverdueNoticeAt IS NULL OR g.lastOverdueNoticeAt < :todayStart) "
+            + "AND NOT EXISTS (SELECT r FROM OrderCancelRequest r WHERE r.deliveryGroup = g "
+            + "    AND r.status = showroomz.domain.order.type.CancelRequestStatus.PENDING) ORDER BY g.id ASC")
+    List<Long> findShipOverdueToNotify(@Param("now") LocalDateTime now, @Param("todayStart") LocalDateTime todayStart,
+                                       Pageable pageable);
+
+    /** 자동 알림 1회 기록 — 같은 날 두 번 세지 않는다. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderDeliveryGroup g SET g.overdueNoticeCount = g.overdueNoticeCount + 1, g.lastOverdueNoticeAt = :now "
+            + "WHERE g.id = :id AND (g.lastOverdueNoticeAt IS NULL OR g.lastOverdueNoticeAt < :todayStart)")
+    int recordOverdueNotice(@Param("id") Long id, @Param("now") LocalDateTime now,
+                            @Param("todayStart") LocalDateTime todayStart);
+
+    /** 배송완료일 정정(어드민 06a B3) — 소비자 수령일 이의. 구매확정 기산점도 같은 날로 되돌린다(교환 재시작이 없을 때). */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderDeliveryGroup g SET g.deliveredAt = :deliveredAt, "
+            + "g.deliveredSource = showroomz.domain.order.type.DeliveredSource.ADMIN, g.deliveredBy = :adminId "
+            + "WHERE g.id = :id AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.DELIVERED")
+    int correctDeliveredAt(@Param("id") Long id, @Param("deliveredAt") LocalDateTime deliveredAt,
+                           @Param("adminId") Long adminId);
+
+    /** 어드민 예외 관리 — 발송 기한 경과(06d 처리 지연). 검토 중 취소 요청 건은 1영업일 자동 승인이라 뺀다. */
+    @Query("SELECT g FROM OrderDeliveryGroup g JOIN FETCH g.order WHERE g.shipDueAt IS NOT NULL AND g.shipDueAt < :now "
+            + "AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.NEW, "
+            + "    showroomz.domain.order.type.FulfillmentStatus.PREPARING) "
+            + "AND NOT EXISTS (SELECT r FROM OrderCancelRequest r WHERE r.deliveryGroup = g "
+            + "    AND r.status = showroomz.domain.order.type.CancelRequestStatus.PENDING) ORDER BY g.shipDueAt ASC")
+    List<OrderDeliveryGroup> findShipOverdueForAdmin(@Param("now") LocalDateTime now);
+
+    /** 어드민 예외 관리 — 배송 이상(집화 확인 필요 · 추적 정지 · 반송 중 · 06d 배송 예외). */
+    @Query("SELECT g FROM OrderDeliveryGroup g JOIN FETCH g.order WHERE "
+            + "(g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING AND g.trackingAlert IS NOT NULL) "
+            + "OR g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.RETURNING ORDER BY g.id ASC")
+    List<OrderDeliveryGroup> findDeliveryExceptionsForAdmin();
+
+    /** 구매확정 기산점 직접 설정 — 배송완료일 정정이 기산점을 같은 만큼 옮길 때(어드민 06a B3). */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderDeliveryGroup g SET g.confirmRestartAt = :at WHERE g.id = :id")
+    int setConfirmRestartAt(@Param("id") Long id, @Param("at") LocalDateTime at);
+
+    /** 운영자 대행 송장 등록(어드민 06a B4) — 브랜드 송장 등록과 같은 조건 · 마켓 조건 없음. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderDeliveryGroup g SET g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING, "
+            + "g.carrier = :carrier, g.trackingNumber = :trackingNumber, g.shippedAt = :now "
+            + "WHERE g.id = :id "
+            + "AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.PREPARING "
+            + "AND NOT EXISTS (SELECT r FROM OrderCancelRequest r WHERE r.deliveryGroup = g "
+            + "    AND r.status = showroomz.domain.order.type.CancelRequestStatus.PENDING) "
+            + "AND NOT EXISTS (SELECT p FROM Payment p WHERE p.order = g.order "
+            + "    AND p.status = showroomz.domain.payment.type.PaymentStatus.CANCEL_REQUESTED)")
+    int registerInvoiceByAdmin(@Param("id") Long id, @Param("carrier") DeliveryCarrier carrier,
+                               @Param("trackingNumber") String trackingNumber, @Param("now") LocalDateTime now);
+
+    /** 운영자 대행 직권 취소(어드민 06a B4 · B5 미발송분) — 브랜드 직권 취소와 같은 조건 · 마켓 조건 없음. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderDeliveryGroup g SET g.statusAtCancel = g.fulfillmentStatus, "
+            + "g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.CANCELLED, "
+            + "g.cancelledAt = :now, g.cancelType = showroomz.domain.order.type.OrderCancelType.SELLER_DIRECT, "
+            + "g.cancelReasonCode = :reasonCode, g.cancelReasonDetail = :reasonDetail "
+            + "WHERE g.id = :id "
+            + "AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.NEW, "
+            + "    showroomz.domain.order.type.FulfillmentStatus.PREPARING) "
+            + "AND NOT EXISTS (SELECT r FROM OrderCancelRequest r WHERE r.deliveryGroup = g "
+            + "    AND r.status = showroomz.domain.order.type.CancelRequestStatus.PENDING) "
+            + "AND NOT EXISTS (SELECT p FROM Payment p WHERE p.order = g.order "
+            + "    AND p.status = showroomz.domain.payment.type.PaymentStatus.CANCEL_REQUESTED)")
+    int cancelByAdmin(@Param("id") Long id,
+                      @Param("reasonCode") showroomz.domain.order.type.SellerCancelReason reasonCode,
+                      @Param("reasonDetail") String reasonDetail, @Param("now") LocalDateTime now);
+
+    /** 공구 종결 훅의 대상 N 값들 — 아직 기한이 없는 결제 대기 · 신규 · 상품준비중(1009 기획 수정본 1-2). */
+    @Query("SELECT DISTINCT g.shipDueBusinessDays FROM OrderDeliveryGroup g WHERE g.groupBuy.id = :groupBuyId "
+            + "AND g.shipDueAt IS NULL AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.PENDING, "
+            + "showroomz.domain.order.type.FulfillmentStatus.NEW, showroomz.domain.order.type.FulfillmentStatus.PREPARING)")
+    List<Integer> findShipDueBusinessDaysAwaitingDue(@Param("groupBuyId") Long groupBuyId);
+
+    /**
+     * 공구 종결 시 발송기한 확정 — 같은 N 의 그룹을 한 번에. 공구 종결 트랜잭션 안이라 영속성 컨텍스트를 비우지 않는다
+     * (종결 경로가 이어서 공구 엔티티를 고친다).
+     */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE OrderDeliveryGroup g SET g.shipDueAt = :shipDueAt WHERE g.groupBuy.id = :groupBuyId "
+            + "AND g.shipDueBusinessDays = :businessDays AND g.shipDueAt IS NULL "
+            + "AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.PENDING, "
+            + "showroomz.domain.order.type.FulfillmentStatus.NEW, showroomz.domain.order.type.FulfillmentStatus.PREPARING)")
+    int assignShipDue(@Param("groupBuyId") Long groupBuyId, @Param("businessDays") Integer businessDays,
+                      @Param("shipDueAt") LocalDateTime shipDueAt);
 
     /** #2 NEW → PREPARING — 소비자 단순 취소권 종료(약관 제17조②). 되돌리기 없음. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
@@ -255,6 +353,7 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
     @Query("UPDATE OrderDeliveryGroup g SET g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.CONFIRMED, "
             + "g.confirmedAt = :now "
             + "WHERE g.id = :id AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.DELIVERED "
+            + "AND g.confirmPausedAt IS NULL "
             + "AND COALESCE(g.confirmRestartAt, g.deliveredAt) <= :threshold "
             + "AND NOT EXISTS (SELECT c FROM OrderClaim c WHERE c.deliveryGroup = g "
             + "    AND c.status <> showroomz.domain.order.type.ClaimStatus.COMPLETED AND c.rejectedAt IS NULL)")
@@ -270,6 +369,32 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
             + "WHERE g.id = :id AND (g.confirmRestartAt IS NULL OR g.confirmRestartAt < :at)")
     int restartConfirmTimer(@Param("id") Long id, @Param("at") LocalDateTime at);
 
+    /** 구매확정 타이머 정지 — 배송완료이고 아직 멈추지 않았을 때만(먼저 멈춘 시각을 유지한다 · 1009 기획 수정본 4-2). */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderDeliveryGroup g SET g.confirmPausedAt = :now WHERE g.id = :id "
+            + "AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.DELIVERED "
+            + "AND g.confirmPausedAt IS NULL")
+    int pauseConfirmTimer(@Param("id") Long id, @Param("now") LocalDateTime now);
+
+    /**
+     * 구매확정 타이머 재개 — 정지한 시간만큼 민 기산점을 적고 정지를 푼다. 읽은 정지 시각을 WHERE 에 넣어 두 재개가 겹치면
+     * 하나만 통과한다.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderDeliveryGroup g SET g.confirmRestartAt = :base, g.confirmPausedAt = :pausedAt2 "
+            + "WHERE g.id = :id AND g.confirmPausedAt = :pausedAt")
+    int resumeConfirmTimer(@Param("id") Long id, @Param("pausedAt") LocalDateTime pausedAt,
+                           @Param("base") LocalDateTime base, @Param("pausedAt2") LocalDateTime nextPausedAt);
+
+    /**
+     * 타이머를 멈춰 두는 진행 중 클레임이 있는가 — 반려되지 않았고 종결 전 · 결제 대기(아직 접수 전) 제외.
+     * 확정 조건의 NOT EXISTS 와 같은 기준이다(결제 대기만 다르다 — 확정은 안전하게 막고, 정지는 접수된 것만 센다).
+     */
+    @Query("SELECT COUNT(c) > 0 FROM OrderClaim c WHERE c.deliveryGroup.id = :id "
+            + "AND c.status <> showroomz.domain.order.type.ClaimStatus.COMPLETED "
+            + "AND c.status <> showroomz.domain.order.type.ClaimStatus.PAYMENT_PENDING AND c.rejectedAt IS NULL")
+    boolean existsTimerHoldingClaim(@Param("id") Long id);
+
     // ------------------------------------------------------------------ 배치 대상
 
     /** 추적 대상 — id 커서({@code afterId} 초과)로 이어 읽는다. 첫 페이지는 0. */
@@ -281,6 +406,7 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
     /** 구매확정 대상 — {@link #confirmPurchase}와 같은 조건(보류 클레임이 있는 하위주문은 회차마다 다시 집히지 않는다). */
     @Query("SELECT g.id FROM OrderDeliveryGroup g "
             + "WHERE g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.DELIVERED "
+            + "AND g.confirmPausedAt IS NULL "
             + "AND COALESCE(g.confirmRestartAt, g.deliveredAt) <= :threshold "
             + "AND NOT EXISTS (SELECT c FROM OrderClaim c WHERE c.deliveryGroup = g "
             + "    AND c.status <> showroomz.domain.order.type.ClaimStatus.COMPLETED AND c.rejectedAt IS NULL) "

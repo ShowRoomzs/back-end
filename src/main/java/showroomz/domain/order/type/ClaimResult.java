@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 public enum ClaimResult {
     REFUNDED("환불 완료"),
     EXCHANGED("교환 완료"),
-    REJECTED("거절 종결"),
+    REJECTED("반려 종결"),
     CANCELLED("요청 취소");
 
     private final String label;

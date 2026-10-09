@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.api.app.order.dto.UserCancelDto;
 import showroomz.api.app.order.dto.OrderDto;
 import showroomz.api.app.order.dto.UserOrderDto;
 import showroomz.global.dto.PageResponse;
@@ -299,4 +300,51 @@ public interface OrderControllerDocs {
     ResponseEntity<OrderDto.CancelResponse> cancelOrder(@AuthenticationPrincipal UserPrincipal principal,
                                                         @Parameter(description = "주문 ID", example = "1147") @PathVariable("orderId") Long orderId,
                                                         @Valid @RequestBody(required = false) OrderDto.CancelRequest request);
+
+    @Operation(
+            summary = "취소 요청 (C10 1b)",
+            description = """
+                    준비 시작 뒤(또는 다른 하위주문이 준비 시작돼 주문 전체 취소가 막힌 경우) **한 하위주문(브랜드)의 항목 일부 · 전부**를
+                    취소 요청한다. 항목 전량이다(수량 쪼개기 없음). 준비 시작 전 주문 전체 취소는 `POST /{orderId}/cancel` 이다.
+
+                    - 요청이 걸리면 **그 하위주문 전체가 발송 보류**된다 — 브랜드가 송장을 등록할 수 없다. 요청하지 않은 항목은
+                      주문 상세에서 버튼이 사라지고 「취소 요청이 처리될 때까지 이 주문의 상품은 발송되지 않아요」가 붙는다
+                    - **브랜드 응답 기한 = 요청 + 1영업일(주말·공휴일 제외)의 끝.** 그때까지 브랜드가 확인하지 않으면 **자동으로 취소**되고
+                      PG 가 즉시 환불한다(응답의 `respondDueAt`)
+                    - 사유 `reasonCode` — `CHANGE_OF_MIND`(단순 변심) · `ORDER_MISTAKE`(주문 실수) · `PAYMENT_CHANGE`(다른 결제 수단으로 변경) ·
+                      `ETC`(기타 — `reasonDetail` 필수 · 300자)
+                    - 응답은 취소 상세와 같은 모양이다 — 접수 화면을 그대로 그린다
+
+                    **권한:** USER
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "접수"),
+            @ApiResponse(responseCode = "400", description = "INVALID_INPUT — 항목 없음 · 사유 없음 · 기타인데 상세 없음 · 300자 초과"),
+            @ApiResponse(responseCode = "404", description = "ORDER_GROUP_NOT_FOUND · ORDER_PRODUCT_NOT_FOUND — 남의 주문 · 다른 하위주문 항목"),
+            @ApiResponse(responseCode = "409", description = "CANCEL_REQUEST_PENDING_EXISTS — 그 하위주문에 검토 중 요청이 있다 · "
+                    + "ORDER_STATE_CHANGED — 이미 발송 · 취소됐거나 결제 상태가 아닌 항목")
+    })
+    ResponseEntity<UserCancelDto.DetailResponse> requestCancel(@Parameter(hidden = true) UserPrincipal principal,
+                                                              Long orderId, UserCancelDto.CreateRequest request);
+
+    @Operation(
+            summary = "취소 상세 (C10 1c · 1d)",
+            description = """
+                    주문 항목의 [취소 상세] — 그 항목이 어떤 경로로 취소됐는지에 따라 같은 화면이 다른 값을 그린다.
+
+                    - `kind` — `REQUEST`(취소 요청) · `CONSUMER_CANCEL`(준비 시작 전 직접 취소) · `SELLER_CANCEL`(브랜드 판매 취소)
+                    - `phase` — `REVIEWING`(확인 중 · `respondDueAt` 까지 확인하지 않으면 자동 취소) · `CANCELLED` · `REJECTED`(거부 — 상품 발송)
+                    - `notices` — 상단 안내 문구(서버 문장 그대로). 확인 중이면 자동 취소 · 발송 보류 안내 두 줄
+                    - `autoApproved` — 브랜드가 응답 기한 안에 확인하지 않아 자동으로 취소됐다
+                    - `refund` — 취소 완료일 때만. 환불은 **PG 가 자동으로 처리**한다 — `PROCESSING`(환불 처리 중) · `DONE`(환불 완료)
+                    - 「쿠폰·적립금 반환」 문구는 없다(결제에 쿠폰·적립금이 없다)
+
+                    **권한:** USER
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "ORDER_NOT_FOUND · ORDER_PRODUCT_NOT_FOUND — 남의 주문 · 취소 내역 없는 항목")
+    })
+    ResponseEntity<UserCancelDto.DetailResponse> getCancelDetail(@Parameter(hidden = true) UserPrincipal principal,
+                                                                Long orderId, Long orderProductId);
 }

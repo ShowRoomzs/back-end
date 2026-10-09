@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-studio-06-account — 쇼룸 스튜디오 기본정보 관리 · 계정 rev.1</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --pt-sidebar-w:240px; --pt-topbar-h:56px; --pt-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;margin-top:12px;line-height:1.8;}
+.rule b{color:var(--n-900);} .rule code{font-family:monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.rule.warn{border-color:var(--warning-text);background:#FFFDF8;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;display:inline-flex;align-items:center;gap:6px;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;min-height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+.stage.tall{height:auto;}
+
+/* ══ 셸(ui-studio-04 동일) ══ */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--pt-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--pt-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:9px 10px;border-radius:var(--r-sm);margin-bottom:2px;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--n-200);color:var(--n-700);border-radius:9px;
+  min-width:18px;height:18px;line-height:1;padding:1px 5px 0;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gnb-item.active .gcnt{background:rgba(255,255,255,.24);color:#fff;}
+.gnb-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-item.active .gn{color:rgba(255,255,255,.8);}
+.gcnt .bnum{display:inline-block;transform:translateY(-0.5px);}
+.top{position:absolute;left:var(--pt-sidebar-w);right:0;top:0;height:var(--pt-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;padding:0 var(--pt-pad);z-index:2;}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.crumb-s{font-weight:400;color:var(--n-400);font-size:var(--fs-caption);}
+.brand-chip{display:flex;align-items:center;gap:7px;font-size:var(--fs-caption);color:var(--n-600);}
+.brand-chip .st{font-size:var(--fs-micro);font-weight:500;padding:2px 9px;border-radius:var(--r-pill);
+  background:var(--success-bg);color:var(--success-text);}
+.main{position:absolute;left:var(--pt-sidebar-w);right:0;top:var(--pt-topbar-h);bottom:0;overflow:hidden;
+  display:flex;flex-direction:column;}
+.stage.tall .main{position:static;margin:var(--pt-topbar-h) 0 0 var(--pt-sidebar-w);overflow:visible;}
+.page-h{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:var(--pt-pad) var(--pt-pad) var(--sp-3);flex-shrink:0;}
+.page-t{font-size:var(--fs-h1);font-weight:600;}
+.page-body{flex:1;min-height:0;overflow-y:auto;padding:0 var(--pt-pad) var(--pt-pad);}
+
+/* ══ 버튼 ══ */
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:0 14px;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:none;cursor:pointer;white-space:nowrap;}
+.btn-primary{background:var(--accent-500);color:#fff;}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-ghost{background:transparent;color:var(--n-600);}
+.btn-danger{background:var(--danger-text);color:#fff;}
+.btn-quiet{background:#fff;color:var(--danger-text);border:1px solid var(--n-300);}
+.btn:disabled{background:var(--n-100);color:var(--n-400);border:1px solid var(--n-200);cursor:not-allowed;}
+.btn-sm{height:28px;padding:0 10px;font-size:var(--fs-micro);}
+.btn-block{width:100%;}
+
+/* ══ 탭(디자인시스템) ══ */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-4);}
+.tab{font-size:var(--fs-caption);color:var(--n-500);padding:9px 2px;margin-right:20px;cursor:pointer;
+  border-bottom:2px solid transparent;}
+.tab.active{color:var(--accent-500);border-bottom-color:var(--accent-500);font-weight:500;}
+
+/* ══ 2컬럼 · 카드 ══ */
+.cols{display:flex;gap:16px;align-items:flex-start;}
+.col-l{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px;}
+.col-r{width:400px;flex-shrink:0;display:flex;flex-direction:column;gap:16px;}
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);}
+.card-h{padding:13px 18px;border-bottom:1px solid var(--n-200);font-size:var(--fs-h3);font-weight:600;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.card-h .ch-s{font-size:var(--fs-micro);font-weight:400;color:var(--n-500);}
+.sec{padding:18px;border-bottom:1px solid var(--n-200);}
+.sec:last-child{border-bottom:none;}
+.btn-row{padding:14px 18px;border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+
+/* ══ 폼 ══ */
+.field{margin-bottom:14px;}
+.field:last-child{margin-bottom:0;}
+.flabel{display:block;font-size:var(--fs-caption);color:var(--n-600);margin-bottom:5px;font-weight:500;}
+.flabel .req{color:var(--danger-text);}
+.flabel .opt{color:var(--n-400);font-weight:400;}
+.inp{width:100%;height:36px;border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;
+  display:flex;align-items:center;padding:0 12px;font-size:var(--fs-body);color:var(--n-400);}
+.inp.filled{color:var(--n-900);}
+.inp.ro{background:var(--n-50);color:var(--n-600);border-color:var(--n-200);}
+.inp.area{height:70px;align-items:flex-start;padding-top:9px;line-height:1.6;}
+.inp.bad{border-color:var(--danger-text);}
+.lk{margin-left:auto;font-size:var(--fs-micro);color:var(--n-400);white-space:nowrap;}
+.hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:5px;line-height:1.7;}
+.err{font-size:var(--fs-micro);color:var(--danger-text);margin-top:5px;font-weight:500;}
+.cnt{text-align:right;font-size:var(--fs-micro);color:var(--n-400);margin-top:4px;}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-warning{background:var(--warning-bg);color:var(--warning-text);}
+.b-danger{background:var(--danger-bg);color:var(--danger-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+
+/* ══ 프로필 ══ */
+.prof-row{display:flex;gap:18px;align-items:center;}
+.av-big{width:84px;height:84px;border-radius:50%;background:var(--n-200);border:1px solid var(--n-300);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-micro);color:var(--n-500);flex-shrink:0;}
+.av-big.empty{border-style:dashed;background:var(--n-50);}
+.prof-acts{display:flex;gap:8px;}
+
+/* ══ 연결코드 ══ */
+.codebox{border:1px solid var(--accent-100);background:var(--accent-50);border-radius:var(--r-md);
+  padding:18px;text-align:center;}
+.code-val{font-size:26px;font-weight:600;letter-spacing:3px;color:var(--accent-600);
+  font-variant-numeric:tabular-nums;}
+.code-lb{font-size:var(--fs-micro);color:var(--n-500);margin:2px 0 14px;}
+.code-acts{display:flex;gap:8px;justify-content:center;}
+.linkbox{display:flex;gap:8px;align-items:center;}
+.linkbox .inp{flex:1;font-size:var(--fs-caption);}
+.note-i{font-size:var(--fs-micro);color:var(--n-600);background:var(--n-50);border:1px solid var(--n-200);
+  border-radius:var(--r-sm);padding:9px 12px;margin-top:var(--sp-3);line-height:1.7;}
+.note-i b{color:var(--n-900);}
+
+/* ══ 팔로워 ══ */
+.stats{display:flex;gap:10px;}
+.stat{flex:1;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:13px;background:var(--n-50);}
+.stat .num{font-size:19px;font-weight:600;}
+.stat .lb{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.chart{height:180px;border:1px solid var(--n-200);border-radius:var(--r-sm);background:var(--n-50);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-micro);color:var(--n-400);}
+.flist{border:1px solid var(--n-200);border-radius:var(--r-sm);background:#fff;padding:0 14px;}
+.frow{display:flex;gap:11px;align-items:center;padding:10px 0;border-bottom:1px solid var(--n-100);}
+.frow:last-child{border-bottom:none;}
+.av{width:30px;height:30px;border-radius:50%;background:var(--n-200);display:flex;align-items:center;
+  justify-content:center;font-size:9px;color:var(--n-500);flex-shrink:0;}
+.frow .fn{flex:1;font-size:var(--fs-caption);color:var(--n-900);}
+.frow .fd{font-size:var(--fs-micro);color:var(--n-400);}
+
+/* ══ 빈 상태 ══ */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  text-align:center;padding:48px 20px;}
+.empty .ic{font-size:30px;}
+.empty .t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);}
+.empty .d{font-size:var(--fs-caption);color:var(--n-500);max-width:340px;line-height:1.7;}
+
+/* ══ 모달 ══ */
+.scrim{position:absolute;inset:0;background:rgba(26,27,31,.45);display:flex;align-items:center;justify-content:center;z-index:10;}
+.mdl{width:440px;background:#fff;border-radius:12px;box-shadow:var(--shadow-popover);overflow:hidden;}
+.mdl-h{padding:16px 20px;border-bottom:1px solid var(--n-200);font-size:var(--fs-h2);font-weight:600;
+  display:flex;align-items:center;justify-content:space-between;}
+.mdl-x{color:var(--n-400);font-size:14px;cursor:pointer;}
+.mdl-b{padding:20px;}
+.mdl-p{font-size:var(--fs-caption);color:var(--n-600);margin:0;line-height:1.7;}
+.mdl-f{padding:14px 20px;border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.mdl-box{background:var(--n-50);border:1px solid var(--n-200);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:14px;}
+.mdl-code{font-size:19px;font-weight:600;letter-spacing:2px;color:var(--n-900);text-align:center;}
+.chklist{margin:0;padding-left:18px;font-size:var(--fs-caption);color:var(--n-600);line-height:1.8;}
+/* ══ 정산 정보 ══ */
+.inp.sel{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237B7F89' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;cursor:pointer;}
+.inp.tnum{font-variant-numeric:tabular-nums;letter-spacing:.2px;}
+.inp-row{display:flex;gap:8px;align-items:center;}
+.inp-row .inp{flex:1;}
+.radio-g{display:flex;flex-direction:column;gap:7px;}
+.radio-i{display:flex;align-items:flex-start;gap:9px;border:1px solid var(--n-200);border-radius:var(--r-sm);
+  padding:10px 12px;cursor:pointer;}
+.radio-i.on{border-color:var(--accent-500);background:var(--accent-50);}
+.radio-i .rd{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--n-300);flex-shrink:0;margin-top:1px;
+  display:flex;align-items:center;justify-content:center;background:#fff;}
+.radio-i.on .rd{border-color:var(--accent-500);}
+.radio-i.on .rd::after{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent-500);}
+.radio-i .rl{font-size:var(--fs-caption);color:var(--n-900);}
+.radio-i .rs{display:block;font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;line-height:1.6;}
+.radio-i.on .rl{font-weight:500;}
+.filebox{display:flex;align-items:center;gap:9px;border:1px dashed var(--n-300);border-radius:var(--r-sm);
+  padding:10px 12px;background:var(--n-50);}
+.filebox .fic{width:26px;height:26px;border-radius:4px;background:var(--n-200);color:var(--n-600);
+  font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.filebox .fnm{flex:1;min-width:0;font-size:var(--fs-micro);color:var(--n-700);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;}
+.filebox .fnm span{display:block;color:var(--n-500);}
+.filebox.empty .fnm{color:var(--n-500);}
+.kv{display:flex;flex-direction:column;gap:0;}
+.kv-r{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.kv-r:last-child{border-bottom:none;}
+.kv-r:first-child{padding-top:0;}
+.kv-r .kk{width:104px;flex-shrink:0;color:var(--n-500);}
+.kv-r .kvv{flex:1;color:var(--n-900);}
+.kv-r .kvv b{font-weight:600;}
+.kv-r .kvv .sub{display:block;font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;line-height:1.6;}
+
+/* ══ 탈퇴 조건 ══ */
+.cond{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.cond-i{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border-bottom:1px solid var(--n-100);}
+.cond-i:last-child{border-bottom:none;}
+.cond-i .cm{width:17px;height:17px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:700;flex-shrink:0;margin-top:1px;background:var(--success-bg);color:var(--success-text);}
+.cond-i.no .cm{background:var(--warning-bg);color:var(--warning-text);}
+.cond-i .cb{flex:1;min-width:0;}
+.cond-i .ct{display:block;font-size:var(--fs-caption);color:var(--n-900);}
+.cond-i .cd{display:block;font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;line-height:1.6;}
+.cond-i.no .cd{color:var(--warning-text);}
+.cond-i .cgo{font-size:var(--fs-micro);color:var(--accent-600);font-weight:500;flex-shrink:0;cursor:pointer;margin-top:1px;}
+.cond-h{display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-micro);
+  color:var(--n-600);margin-bottom:7px;}
+.cond-h b{color:var(--n-900);}
+.reqbox{border:1px solid var(--n-200);background:var(--n-50);border-radius:var(--r-sm);padding:12px 14px;}
+.reqbox .rt{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);display:flex;align-items:center;gap:7px;}
+.reqbox .rd{font-size:var(--fs-micro);color:var(--n-600);line-height:1.7;margin-top:5px;}
+.reqbox .rd b{color:var(--n-900);}
+.reqbox.warn{border-color:var(--warning-text);background:#fff;}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 640.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+<div class="doc-head">
+  <h1>ui-studio-06-account <span style="font-weight:400;color:var(--n-500)">— 쇼룸 스튜디오 기본정보 관리 · 계정</span></h1>
+  <p class="meta">근거: wf-studio-05-쇼룸기본정보 F3(기본정보 관리 — 계정) · ui-studio-04-connections.html(메인 셸 · 컴포넌트 재사용) · SHOWROOMZ 웹 디자인시스템 v1.3(셸 · 탭 · 액션 모달) · GNB #9 · 정산 정보 탭 포함(온보딩 ui-studio-03 입력값 기준) · 상태 15종(T1~T7 정산 정보 · S1~S8 계정)</p>
+
+  <div class="rule">
+    <b class="new">[2026.10.07 · 리워드 지급 구조 반영]</b> ①비사업자 상태(T1 · T2 · T3)에 <b>주민등록번호 카드</b>를 추가했다 — 리워드 지급자가 <b>SHOWROOMZ</b>이고 원천징수 신고(지급명세서 제출)에 필요하다. ②주민등록번호는 <b>온보딩(rev.3) 필수 입력</b>이고 기존 회원이 없어 <b>미등록 상태를 두지 않는다</b>(T1a · 정산 관리 D3a 삭제). ③사업자(T5)에는 주민번호 대신 <b>「세금계산서는 SHOWROOMZ 앞으로 발행해요(리워드 + 부가세 10%)」 1회 안내</b>. ④우측 「정산은 이렇게 진행됩니다」를 새 흐름(주문 종결 → 3영업일 확인 → 자동 확정 → +3영업일 · SHOWROOMZ 지급 · 고정 지급비는 브랜드 직접 지급)으로 교체했다.<br>
+    <span class="wait">[약관수정필요]</span> 개인정보처리방침에 주민등록번호 수집 · 이용 목적(원천징수 신고) · 보관 기간 추가.<br>
+    <b>[스코프]</b> GNB #9 <b>기본정보 관리</b> — <b>정산 정보 탭(T1~T6)</b> + <b>계정 탭(S1~S8)</b>. 계정 탭의 탈퇴 흐름은 <b>승인제</b>다.<br>
+    <b class="new">[온보딩이 정본이다 · 「미등록」 빈 상태는 없다]</b> 정산 정보는 <b>온보딩(ui-studio-03)에서 이미 받는다</b> — 사업자 여부 · 은행 · 계좌번호 · 예금주 · <b>통장 사본</b>(사업자면 사업자등록번호 · 사업자등록증). 온보딩을 마쳐야 스튜디오에 들어오므로 이 탭에서 <b>계좌가 비어 있는 상태는 발생하지 않는다</b> — 그래서 「미등록」 빈 상태를 그리지 않고 <b>최초 진입(T1) = 온보딩 값이 들어온 읽기 전용</b>으로 시작한다. 이 탭에 오는 목적은 <b>확인과 변경</b>이다.<br>
+    &nbsp;&nbsp;· <b>필드 구성 · 제약을 온보딩과 일치</b>시켰다 — 은행 <b>드롭다운</b> · 계좌번호 <b>숫자만 10~16자리</b> · 예금주 <b>본인 인증값 마스킹 + 잠금</b>(소*연) · <b>통장 사본 필수</b>(최대 10MB · jpg · png · pdf). 같은 정보를 두 화면에서 다른 형태로 받으면 검증 규칙이 갈라진다.<br>
+    &nbsp;&nbsp;· <b>사업자는 등록번호 · 등록증 두 값만</b> 받는다 — 온보딩이 그 둘만 받으므로 <b>상호 · 대표자 · 업태를 화면에 만들지 않았다</b>(받지 않는 정보를 표시할 수 없다). 상호는 <b>사업자등록증으로 운영자가 확인</b>하고, 승인 후 <b>예금주 규칙이 「대표자명 또는 상호」</b>로 바뀐다(온보딩 안내와 동일).<br>
+    &nbsp;&nbsp;· 온보딩은 사업자 선택을 <b>「개인사업자 · 법인」 한 덩어리</b>로 묶었지만 이 시안은 <b>법인을 제외</b>해 <b>「개인사업자」</b>로 표기했다 — <b>온보딩 라벨도 함께 정정이 필요하다</b>.<br>
+    <b class="new">[「사업자 여부 변경 요청」은 어느 상태에서 보이나]</b> 이 버튼은 <b>모든 상태에서 같은 자리에 있다</b> — 계좌 변경 중(T2 · T3)에도 숨기지 않는다. <b>계좌 변경과 사업자 전환은 서로 다른 절차</b>이고 동시에 진행하지 못할 이유가 없으며, 같은 카드가 상태마다 있다 없다 하면 사용자는 <b>「지금은 왜 없지?」</b>를 매번 판단해야 한다. 요청을 누르면 <b>사업자등록번호 · 사업자등록증을 받는 모달(T7)</b>이 뜨고, 제출 후 <b>확인 대기(T4)</b>로 넘어간다. <b>유일한 예외는 그 확인 대기 상태</b>다 — 이미 요청이 걸려 있으므로 같은 버튼 자리가 <b>[요청 취소]</b>로 바뀐다(같은 요청을 두 번 걸 수 없다).<br>
+    <b class="new">[정산 정보 = 「지급받을 정보」만 관리한다]</b> 이 탭에는 <b>금액이 없다</b> — 확정 금액 · 지급일 · 명세 · 세금계산서 발행 대상은 <b>정산 관리(#7)가 단일 소스</b>이고, 여기는 <b>어디로 · 어떤 세무 형태로</b> 받을지만 정한다. 두 화면이 금액을 각각 말하면 어긋나는 순간 어느 쪽이 맞는지 알 수 없다. 우측 안내 카드도 <b>절차 설명까지만</b> 하고 숫자를 넣지 않는다.<br>
+    <b class="new">[확인이 끝난 값은 편집 필드가 아니다]</b> 계좌는 <b>예금주 실명 확인</b>을 통과한 값이라 그대로 두면 지급이 되고, 바꾸면 <b>확인을 다시</b> 거친다. 그래서 등록 후에는 <b>읽기 전용 + [계좌 변경]</b>이며(T2 · T4) 계좌번호는 <b>마스킹</b>한다 — 전체를 노출할 업무상 이유가 없다. <b>예금주는 본인 인증 실명 고정</b>이라 처음부터 잠겨 있고 <b>본인 명의 계좌만</b> 등록된다(정산 대상자 = 실명 기준).<br>
+    <b class="new">[정산 형태 변경은 셀프 저장이 아니다]</b> 비사업자 ↔ 사업자는 <b>세금 처리 자체가 바뀌는 일</b>(원천징수 3.3% ↔ 세금계산서 발행)이라 <b>사업자등록증 제출 + 운영자 확인</b>을 거친다(T3). 중요한 건 <b>심사 중에도 기존 형태로 정산이 계속</b>된다는 점이다 — 확인을 기다리는 동안 지급이 멈추면 인플루언서가 형태 변경을 꺼리게 된다. 상태는 <b>정보색</b>(정상 진행 · 대기 · 원칙①)이고 <b>요청 취소</b>가 열려 있다.<br>
+    <b class="new">[에러 문구를 쓰는 경계]</b> 이 탭의 <b>에러 문구는 파일 형식 · 용량 오류 하나</b>다(T3) — 다른 파일을 골라야 해결되므로 문구가 필요하고 <b>업로드 박스 바로 밑</b>에 붙는다. <b>계좌번호는 형식 오류가 발생하지 않는다</b> — 숫자만 입력되고 하이픈 · 문자는 타이핑돼도 들어가지 않으므로 <b>틀린 값이 화면에 남지 않는다</b>. <b>미입력과 자리수 미달은 [변경하고 실명 확인] 비활성만</b>으로 표현한다(T2) — 아직 다 적지 않은 것은 오류가 아니다. <b>예금주 불일치는 입력 오류가 아니라 실명 확인 절차의 응답</b>이라 이 입력 화면에서 다루지 않는다.<br>
+    
+    <b class="new">[미등록은 실패가 아니라 기한이 있는 할 일이다]</b> 계좌가 없어도 <b>공구는 진행</b>되므로 T1을 「등록하세요」로 몰지 않고 <b>언제까지 필요한지</b>(첫 정산 확정 전)를 밝힌다. 다만 <b>돈을 받을 수 없다</b>는 사실은 맨 위에서 먼저 말한다 — 신규 인플루언서가 가장 먼저 보는 상태다.<br>
+    <b>[표기 규칙]</b> <b>계좌번호는 숫자만 입력 가능 · 10~16자리</b>(하이픈 · 문자는 <b>입력 단계에서 차단</b>되므로 형식 에러 문구를 쓰지 않고, 자리수 미달은 <b>버튼 비활성만</b>이다 · 온보딩 <code>maxlength=16</code> · <code>acct-only</code>와 동일) · <b>사업자등록번호는 하이픈 포함</b> 표기(123-45-67890).<br>
+    <b>[설계 원칙 — 공개/비공개 분리]</b> <b>쇼룸 관리(#8) = 공개</b> / <b>기본정보 관리(#9) = 비공개</b>. 우측 카드는 두 메뉴의 역할 구분을 화면 안에서 알려주는 안내 카드(와이어 F3의 설계 원칙 메모를 <b>실제 UI 문구로 번역</b> — 시안 주석을 UI에 넣지 않기 위해 값 형태로 재작성).<br>
+    <b>[본인 인증값]</b> 이름 · 생년월일 · 휴대폰은 마스킹 + 잠금. 셀프 수정 불가이며 변경은 운영팀 확인 + 재인증. 세부 절차(재인증 방식)는 미확정이라 화면에 그리지 않고 안내 문구까지만.<br>
+    <b>[활동 채널 축소]</b> 플랫폼 · 채널 주소 · 계정 아이디 · 팔로워 수 필드는 두지 않음(가입 신청 시 1회 확인 정보) — <b>업무 이메일 하나만</b> 남기고 카드 안 작은 저장 버튼으로 축소(wf-studio-05 F3 2026.07 축소 근거).<br>
+    <b>[에러 문구 사용 범위]</b> 필수 미입력은 <b>버튼 비활성만</b>(S2) · 형식 오류(S3) · 중복은 에러 문구. 탈퇴 불가(S4)는 <b>사용자가 스스로 해결할 수 없는 제약</b>이라 비활성 + 사유를 함께 밝힘 — 필수 미입력 규칙의 예외로 처리했다.<br>
+    <b class="new">[탈퇴는 즉시 실행이 아니라 승인제다 · 확정]</b> [스튜디오 탈퇴]를 눌러 바로 탈퇴되지 않는다 — <b>탈퇴 승인 요청 → 운영자 승인 → 탈퇴 완료</b> 3단이다. 즉시 탈퇴로 두면 <b>플랫폼이 확인해야 하는 것을 확인할 수 없다</b>: ①원천징수 · 세금계산서 등 <b>세무 종결</b>, ②브랜드에게 남은 <b>콘텐츠 의무</b>, ③소비자에게 남은 <b>배송 · 반품 책임</b>. 이 셋은 시스템 조건으로 다 잡히지 않아 <b>사람이 확인해야</b> 한다.<br>
+    &nbsp;&nbsp;· <b>요청 자체에 조건을 건다</b> — 조건을 요청 이후 심사에서만 보면 운영자가 <b>이미 시스템에 다 있는 사실</b>을 매번 손으로 확인하게 되고, 인플루언서는 <b>왜 반려됐는지 나중에</b> 안다. 그래서 <b>기계가 판정할 수 있는 5가지는 화면에서 먼저 잠근다</b>: 진행중 공구 0건 · 유효 계약 0건 · 미정산 0건 · 열린 이슈 0건 · 미발행 세금계산서 0건. 다섯 개가 모두 충족돼야 <b>[탈퇴 승인 요청]이 활성</b>된다(S4 → S5).<br>
+    &nbsp;&nbsp;· <b>조건은 체크리스트로 보여준다</b> — "탈퇴할 수 없습니다" 한 줄로 끝내면 <b>무엇을 끝내야 하는지</b> 알 수 없다. 각 조건에 <b>건수와 해당 화면 링크</b>를 달아 스스로 해소할 수 있게 했다. 조건 미충족은 <b>사용자가 스스로 해결할 수 있는 제약</b>이라 필수 미입력 규칙(비활성만)의 예외로 <b>사유를 함께 밝힌다</b>.<br>
+    &nbsp;&nbsp;· <b>요청에는 사유가 필수</b>다(S6) — 운영자가 승인 · 반려를 판단할 근거이고, 반려 시 무엇을 다시 확인해야 하는지가 사유에서 나온다. <b>미선택은 버튼 비활성만</b>으로 표현한다.<br>
+    &nbsp;&nbsp;· <b>승인 대기 중에도 스튜디오는 계속 쓸 수 있다</b>(S7) — 요청은 예약이지 정지가 아니다. 단 <b>새 연결 수락과 계약 서명만 막는다</b>: 탈퇴 심사 중에 새 의무가 생기면 조건이 다시 깨져 심사가 무의미해진다. <b>요청 취소는 언제든</b> 가능하다.<br>
+    &nbsp;&nbsp;· <b>반려에는 사유와 다음 조치를 함께</b> 준다(S8) — 반려는 거절이 아니라 <b>아직 남은 것이 있다</b>는 통보이므로 재요청 경로를 막지 않는다. 반려 안내는 <b>[확인]으로 직접 닫는다</b>(자동으로 사라지지 않는다) — 읽었는지 확인되지 않은 통보가 조용히 없어지면 <b>왜 탈퇴가 안 되는지 모른 채</b> 체크리스트만 남는다. 닫으면 <b>S4 · S5의 체크리스트 화면으로 복귀</b>하고, 사유와 이력은 <b>운영자 쪽에 보존</b>된다.<br>
+    <b>[탈퇴 후]</b> 소비자 계정 유지 · 쇼룸 비공개 전환 · 계약 · 정산 이력은 법정 보존. 되돌릴 수 없어 요청 모달(S6)에서 목록으로 고지하고 확정 버튼은 위험색.
+  <br>
+    <b>[스냅샷 높이]</b> 본문이 1024px를 넘는 상태는 디자인시스템 v1.3 「1024 초과」 규격에 따라 <code>.stage</code>를 세로로 늘려 전체를 펼쳐 표시했다 — 실제 화면은 GNB · 탑바 고정 + 본문만 스크롤.
+  </div>
+  <div class="rule warn">
+    <b>[확인 필요]</b> ① <b>업무 이메일 변경 시 인증 메일 확인 절차</b>가 와이어에 없음 — 알림 수신 주소이므로 검증 없이 저장하면 알림이 유실될 수 있다. 즉시 저장 / 인증 후 확정 중 어느 쪽인지 확정 필요.<br>
+    ②-A <b>정산 정보 확정 필요</b> — ㉠<b>실명 확인 실패 횟수 제한</b> 여부, ㉡사업자 승인 후 <b>사업자 명의 계좌로의 교체를 강제</b>할지(현재 시안은 안내만), ㉢지급 예정 건이 있을 때 계좌 변경을 <b>막을지 허용하되 보류할지</b>(현재 시안은 허용 + 보류), ㉣<b>비사업자로 되돌릴 때 받을 서류</b>(폐업사실증명 등) 확정 필요 · ㉤사업자 변경의 <b>적용 시점</b>(현재 "다음 정산부터" — 이미 확정된 건의 소급 여부 미정). <b style="color:var(--danger-text)">[자문대기-세무]</b><br>
+    ②-B <b>온보딩 안내 문구 오류</b> — ui-studio-03의 「사업자 여부 · 정산 계좌는 입력 후에도 <b>쇼룸 관리</b>에서 계속 수정할 수 있어요」는 실제 위치가 <b>기본정보 관리 › 정산 정보</b>다. 온보딩 문구 정정 필요.<br>
+    ② <b>탈퇴 조건 5가지의 정확한 상태값</b> — 공구는 「준비중 · 준비완료 · 진행중」까지 막는지(종료 후 주문 종결 대기는 공구 조건이, 정산 생성 이후는 정산 조건이 잡는다), 계약은 「서명대기 · 유효」 전부인지, 정산은 「지급 완료」 전 전부인지를 상태정의서로 확정해야 한다.<br>    ②-1 <b>승인 처리 기한</b>(현재 시안 영업일 5일) · <b>무응답 시 자동 승인 여부</b> · <b>재요청 제한</b> 미정.<br>
+    ③ 탈퇴 후 <b>쇼룸 주소(showroomz.com/@…)의 재사용 가능 여부</b>가 규정에 없음 — 동일 주소로 재가입 가능한지 확인 필요.<br>
+    <b>[GNB 명칭]</b> GNB #6은 <b>"성과 관리"</b>로 확정됐다(2026.08 판매 현황 → 성과 관리 개칭).
+  </div>
+</div>
+<section class="state">
+  <div class="state-bar"><span class="state-id">T1</span><span class="state-label">정산 정보 · 최초 진입(온보딩 값)<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">정산 정보는 <b>온보딩에서 이미 받는다</b>(사업자 여부 · 은행 · 계좌번호 · 예금주 · 통장 사본) — 온보딩을 마쳐야 스튜디오에 들어오므로 이 탭에 <b>「미등록」 빈 상태는 존재하지 않는다</b> · 여기 오는 목적은 <b>확인과 변경</b>이라 처음부터 <b>읽기 전용 + 변경 버튼</b>이다 · 값은 온보딩 입력 그대로(국민은행 · 110123456789 · 소*연 · 통장사본)</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">기본정보 관리</div></div><div class="page-body"><div class="tabs"><div class="tab">계정</div><div class="tab active">정산 정보</div></div><div class="cols"><div class="col-l">
+<div class="card"><div class="card-h">사업자 여부 <span class="badge b-neutral nodot">🔒 변경 시 운영자 확인</span></div><div class="sec">
+<div class="field"><label class="flabel">구분</label><div class="inp ro">개인 (비사업자)<span class="lk">🔒</span></div><div class="hint">리워드에서 <b>3.3%</b>(소득세 3% + 지방세 0.3%)가 원천징수되고 원천징수영수증이 발급됩니다.</div><div class="hint">가입 · 온보딩에서 선택한 값입니다.</div></div>
+<div style="display:flex;justify-content:flex-end"><button class="btn btn-secondary btn-sm">개인사업자로 변경 요청</button></div></div></div>
+<div class="card"><div class="card-h">주민등록번호 <span class="badge b-success">등록 완료</span></div><div class="sec">
+<div class="kv"><div class="kv-r"><span class="kk">주민등록번호</span><span class="kvv tnum">900101-2******<span class="sub">암호화 보관 · 2026.07.02 등록</span></span></div></div>
+<div class="note-i">원천징수 신고(지급명세서 제출)를 위해 소득세법에 따라 수집하며 암호화해 보관합니다.</div></div></div>
+<div class="card"><div class="card-h">정산 계좌 <span class="badge b-success">실명 확인 완료</span></div><div class="sec">
+<div class="kv">
+<div class="kv-r"><span class="kk">은행</span><span class="kvv">국민은행</span></div>
+<div class="kv-r"><span class="kk">계좌번호</span><span class="kvv tnum">110-****-6789</span></div>
+<div class="kv-r"><span class="kk">예금주</span><span class="kvv">소*연<span class="sub">본인 인증 실명과 일치</span></span></div>
+<div class="kv-r"><span class="kk">통장 사본</span><span class="kvv">제출 완료<span class="sub">통장사본_국민은행.jpg · 2026.07.02 제출</span></span></div>
+<div class="kv-r"><span class="kk">확인일</span><span class="kvv tnum">2026.07.02</span></div>
+</div>
+<div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn btn-secondary btn-sm">계좌 변경</button></div>
+<div class="note-i">계좌를 바꾸면 <b>통장 사본을 다시 제출</b>하고 <b>예금주 실명 확인</b>을 거칩니다. 지급 예정 건이 있으면 <b>확인이 끝난 뒤에 입금</b>되므로 지급일이 늦어질 수 있습니다.</div></div></div>
+</div><div class="col-r"><div class="card"><div class="card-h">정산은 이렇게 진행됩니다</div><div class="sec"><div class="kv">
+<div class="kv-r"><span class="kk">확정 시점</span><span class="kvv">주문 종결 후 3영업일 확인 → 자동 확정<span class="sub">확인 기간에 금액이 맞지 않으면 정산 조정을 요청할 수 있습니다.</span></span></div>
+<div class="kv-r"><span class="kk">지급</span><span class="kvv">자동 확정일 + 3영업일<span class="sub">리워드는 <b>SHOWROOMZ가 지급</b>합니다 — 브랜드가 지급하지 않습니다.</span></span></div>
+<div class="kv-r"><span class="kk">세금</span><span class="kvv">비사업자 · <b>SHOWROOMZ가 3.3% 원천징수</b><span class="sub">신고 · 납부도 SHOWROOMZ가 하며 원천징수영수증은 정산 관리에서 받습니다.</span></span></div>
+<div class="kv-r"><span class="kk">고정 지급비</span><span class="kvv">브랜드가 직접 지급<span class="sub">계약서 기준이며 <b>정산에 포함되지 않습니다</b>.</span></span></div>
+</div><div class="note-i">확정 금액 · 지급일 · 명세는 <b>정산 관리(#7)</b>에서 확인합니다. 이 화면은 <b>지급받을 정보</b>만 관리합니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">T2</span><span class="state-label">정산 정보 · 계좌 변경(입력 중)<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">변경 폼은 <b>온보딩과 같은 4개 필드</b>(은행 · 계좌번호 · 예금주 · 통장 사본)를 그대로 쓴다 — 같은 정보를 두 화면에서 다른 형태로 받으면 검증 규칙이 갈라진다 · <b>계좌번호는 숫자만 입력 가능 · 10~16자리</b>(하이픈 · 문자는 입력 자체가 막히므로 형식 에러 문구가 없고, 자리수 미달은 <b>버튼 비활성만</b>으로 표현한다) · <b>예금주는 본인 인증값 고정</b>(마스킹 · 잠금 — 명의가 다르면 입력으로 고칠 문제가 아니라 <b>계정 탭 재인증</b> 사안이다) · <b>통장 사본 재제출 필수</b> · 미입력은 <b>에러 문구 없이 버튼 비활성만</b></span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">기본정보 관리</div></div><div class="page-body"><div class="tabs"><div class="tab">계정</div><div class="tab active">정산 정보</div></div><div class="cols"><div class="col-l">
+<div class="card"><div class="card-h">사업자 여부 <span class="badge b-neutral nodot">🔒 변경 시 운영자 확인</span></div><div class="sec">
+<div class="field"><label class="flabel">구분</label><div class="inp ro">개인 (비사업자)<span class="lk">🔒</span></div><div class="hint">리워드에서 <b>3.3%</b>(소득세 3% + 지방세 0.3%)가 원천징수되고 원천징수영수증이 발급됩니다.</div><div class="hint">가입 · 온보딩에서 선택한 값입니다.</div></div>
+<div style="display:flex;justify-content:flex-end"><button class="btn btn-secondary btn-sm">개인사업자로 변경 요청</button></div></div></div>
+<div class="card"><div class="card-h">주민등록번호 <span class="badge b-success">등록 완료</span></div><div class="sec">
+<div class="kv"><div class="kv-r"><span class="kk">주민등록번호</span><span class="kvv tnum">900101-2******<span class="sub">암호화 보관 · 2026.07.02 등록</span></span></div></div>
+<div class="note-i">원천징수 신고(지급명세서 제출)를 위해 소득세법에 따라 수집하며 암호화해 보관합니다.</div></div></div>
+<div class="card"><div class="card-h">정산 계좌 변경</div><div class="sec">
+<div class="field"><label class="flabel">은행 <span class="req">*</span></label><div class="inp sel filled">국민은행</div></div>
+<div class="field"><label class="flabel">계좌번호 <span class="req">*</span></label><div class="inp filled tnum">1101234567</div><div class="hint"><b>숫자만 입력</b>됩니다 — 하이픈(-)과 문자는 입력되지 않습니다 · <b>10~16자리</b> · 현재 등록: 110-****-6789</div></div>
+<div class="field"><label class="flabel">예금주 <span class="req">*</span></label><div class="inp ro">소*연<span class="lk">🔒 본인 인증값</span></div><div class="hint"><b>본인 명의 계좌만</b> 등록할 수 있습니다.</div></div>
+<div class="field"><label class="flabel">통장 사본 <span class="req">*</span></label><div class="filebox"><span class="fic">JPG</span><span class="fnm">통장사본_신한은행.jpg<span>740KB · 업로드 완료</span></span><button class="btn btn-secondary btn-sm">다시 선택</button></div></div>
+
+<div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn btn-ghost">취소</button><button class="btn btn-primary">변경하고 실명 확인</button></div></div></div>
+</div><div class="col-r"><div class="card"><div class="card-h">정산은 이렇게 진행됩니다</div><div class="sec"><div class="kv">
+<div class="kv-r"><span class="kk">확정 시점</span><span class="kvv">주문 종결 후 3영업일 확인 → 자동 확정<span class="sub">확인 기간에 금액이 맞지 않으면 정산 조정을 요청할 수 있습니다.</span></span></div>
+<div class="kv-r"><span class="kk">지급</span><span class="kvv">자동 확정일 + 3영업일<span class="sub">리워드는 <b>SHOWROOMZ가 지급</b>합니다 — 브랜드가 지급하지 않습니다.</span></span></div>
+<div class="kv-r"><span class="kk">세금</span><span class="kvv">비사업자 · <b>SHOWROOMZ가 3.3% 원천징수</b><span class="sub">신고 · 납부도 SHOWROOMZ가 하며 원천징수영수증은 정산 관리에서 받습니다.</span></span></div>
+<div class="kv-r"><span class="kk">고정 지급비</span><span class="kvv">브랜드가 직접 지급<span class="sub">계약서 기준이며 <b>정산에 포함되지 않습니다</b>.</span></span></div>
+</div><div class="note-i">확정 금액 · 지급일 · 명세는 <b>정산 관리(#7)</b>에서 확인합니다. 이 화면은 <b>지급받을 정보</b>만 관리합니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">T3</span><span class="state-label">정산 정보 · 파일 오류<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">이 화면의 <b>에러 문구는 파일 오류 하나</b>다 — <b>형식 · 용량 오류</b>는 사용자가 다른 파일을 골라야 해결되므로 문구가 필요하고, <b>업로드 박스 바로 밑</b>에 붙는다 · <b>계좌번호는 형식 오류가 발생할 수 없다</b>(숫자만 입력되고 하이픈 · 문자는 타이핑돼도 들어가지 않는다) · <b>예금주 불일치는 실명 확인 결과</b>라 입력 오류가 아니다</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">기본정보 관리</div></div><div class="page-body"><div class="tabs"><div class="tab">계정</div><div class="tab active">정산 정보</div></div><div class="cols"><div class="col-l">
+<div class="card"><div class="card-h">사업자 여부 <span class="badge b-neutral nodot">🔒 변경 시 운영자 확인</span></div><div class="sec">
+<div class="field"><label class="flabel">구분</label><div class="inp ro">개인 (비사업자)<span class="lk">🔒</span></div><div class="hint">리워드에서 <b>3.3%</b>(소득세 3% + 지방세 0.3%)가 원천징수되고 원천징수영수증이 발급됩니다.</div><div class="hint">가입 · 온보딩에서 선택한 값입니다.</div></div>
+<div style="display:flex;justify-content:flex-end"><button class="btn btn-secondary btn-sm">개인사업자로 변경 요청</button></div></div></div>
+<div class="card"><div class="card-h">주민등록번호 <span class="badge b-success">등록 완료</span></div><div class="sec">
+<div class="kv"><div class="kv-r"><span class="kk">주민등록번호</span><span class="kvv tnum">900101-2******<span class="sub">암호화 보관 · 2026.07.02 등록</span></span></div></div>
+<div class="note-i">원천징수 신고(지급명세서 제출)를 위해 소득세법에 따라 수집하며 암호화해 보관합니다.</div></div></div>
+<div class="card"><div class="card-h">정산 계좌 변경</div><div class="sec">
+<div class="field"><label class="flabel">은행 <span class="req">*</span></label><div class="inp sel filled">국민은행</div></div>
+<div class="field"><label class="flabel">계좌번호 <span class="req">*</span></label><div class="inp filled tnum">1101234567</div><div class="hint"><b>숫자만 입력</b>됩니다 — 하이픈(-)과 문자는 입력되지 않습니다 · <b>10~16자리</b> · 현재 등록: 110-****-6789</div></div>
+<div class="field"><label class="flabel">예금주 <span class="req">*</span></label><div class="inp ro">소*연<span class="lk">🔒 본인 인증값</span></div><div class="hint"><b>본인 명의 계좌만</b> 등록할 수 있습니다.</div></div>
+<div class="field"><label class="flabel">통장 사본 <span class="req">*</span></label><div class="filebox" style="border-color:var(--danger-text)"><span class="fic">JPG</span><span class="fnm">통장사본.heic<span>12.4MB</span></span><button class="btn btn-secondary btn-sm">다시 선택</button></div><div class="err">jpg · png · pdf 파일만 올릴 수 있고 최대 10MB입니다.</div></div>
+<div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn btn-ghost">취소</button><button class="btn btn-primary" disabled>변경하고 실명 확인</button></div></div></div>
+</div><div class="col-r"><div class="card"><div class="card-h">정산은 이렇게 진행됩니다</div><div class="sec"><div class="kv">
+<div class="kv-r"><span class="kk">확정 시점</span><span class="kvv">주문 종결 후 3영업일 확인 → 자동 확정<span class="sub">확인 기간에 금액이 맞지 않으면 정산 조정을 요청할 수 있습니다.</span></span></div>
+<div class="kv-r"><span class="kk">지급</span><span class="kvv">자동 확정일 + 3영업일<span class="sub">리워드는 <b>SHOWROOMZ가 지급</b>합니다 — 브랜드가 지급하지 않습니다.</span></span></div>
+<div class="kv-r"><span class="kk">세금</span><span class="kvv">비사업자 · <b>SHOWROOMZ가 3.3% 원천징수</b><span class="sub">신고 · 납부도 SHOWROOMZ가 하며 원천징수영수증은 정산 관리에서 받습니다.</span></span></div>
+<div class="kv-r"><span class="kk">고정 지급비</span><span class="kvv">브랜드가 직접 지급<span class="sub">계약서 기준이며 <b>정산에 포함되지 않습니다</b>.</span></span></div>
+</div><div class="note-i">확정 금액 · 지급일 · 명세는 <b>정산 관리(#7)</b>에서 확인합니다. 이 화면은 <b>지급받을 정보</b>만 관리합니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">T4</span><span class="state-label">정산 정보 · 개인사업자 변경 요청(확인 대기)<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">사업자 전환은 <b>세금 처리 자체가 바뀌는 일</b>이라 셀프 저장이 아니라 <b>운영자 확인</b>을 거친다 — 온보딩과 같은 두 값(<b>사업자등록번호 · 사업자등록증</b>)만 받고 상호 · 업태는 <b>등록증에서 확인</b>한다(받지 않는 정보를 화면에 만들지 않는다) · <b>사업자등록번호는 하이픈 포함</b> · <b>확인 중에도 비사업자로 정산이 계속</b>된다(지급이 멈추지 않는다) · 상태는 <b>정보색</b>(정상 대기 · 원칙①)</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">기본정보 관리</div></div><div class="page-body"><div class="tabs"><div class="tab">계정</div><div class="tab active">정산 정보</div></div><div class="cols"><div class="col-l">
+<div class="card"><div class="card-h">사업자 여부</div><div class="sec">
+<div class="reqbox"><div class="rt"><span class="badge b-info">확인 대기</span>개인사업자 변경 요청 중</div><div class="rd">요청일 <b>2026.09.05</b> · 사업자등록번호 <b>123-45-67890</b><br>운영자가 <b>영업일 3일 이내</b> 확인합니다 · 승인되면 <b>다음 정산부터</b> 원천징수 없이 전액 지급되고 세금계산서 발행 대상이 됩니다.<br><b>확인이 끝날 때까지는 비사업자(3.3% 원천징수)로 정산이 계속</b>됩니다 — 정산이 멈추지는 않습니다.</div><div style="display:flex;justify-content:flex-end;margin-top:11px"><button class="btn btn-secondary btn-sm">요청 취소</button></div></div>
+<div class="field" style="margin-top:14px"><label class="flabel">제출한 사업자등록증</label><div class="filebox"><span class="fic">PDF</span><span class="fnm">사업자등록증_뷰티소연.pdf<span>1.2MB · 2026.09.05 제출</span></span></div><div class="hint">상호 · 대표자 · 업태는 <b>등록증으로 확인</b>합니다 — 따로 입력받지 않습니다.</div></div>
+</div></div>
+<div class="card"><div class="card-h">정산 계좌 <span class="badge b-success">실명 확인 완료</span></div><div class="sec">
+<div class="kv">
+<div class="kv-r"><span class="kk">은행</span><span class="kvv">국민은행</span></div>
+<div class="kv-r"><span class="kk">계좌번호</span><span class="kvv tnum">110-****-6789</span></div>
+<div class="kv-r"><span class="kk">예금주</span><span class="kvv">소*연<span class="sub">본인 인증 실명과 일치</span></span></div>
+<div class="kv-r"><span class="kk">통장 사본</span><span class="kvv">제출 완료<span class="sub">통장사본_국민은행.jpg · 2026.07.02 제출</span></span></div>
+<div class="kv-r"><span class="kk">확인일</span><span class="kvv tnum">2026.07.02</span></div>
+</div>
+<div class="note-i">사업자로 변경되면 예금주는 <b>대표자명 또는 상호</b>로 등록된 계좌여야 합니다 — 지금 계좌를 그대로 쓸 수 있는지 <b>승인 후 안내</b>드립니다.</div></div></div>
+</div><div class="col-r"><div class="card"><div class="card-h">정산은 이렇게 진행됩니다</div><div class="sec"><div class="kv">
+<div class="kv-r"><span class="kk">확정 시점</span><span class="kvv">주문 종결 후 3영업일 확인 → 자동 확정<span class="sub">확인 기간에 금액이 맞지 않으면 정산 조정을 요청할 수 있습니다.</span></span></div>
+<div class="kv-r"><span class="kk">지급</span><span class="kvv">자동 확정일 + 3영업일<span class="sub">리워드는 <b>SHOWROOMZ가 지급</b>합니다 — 브랜드가 지급하지 않습니다.</span></span></div>
+<div class="kv-r"><span class="kk">세금</span><span class="kvv">비사업자 · <b>SHOWROOMZ가 3.3% 원천징수</b><span class="sub">신고 · 납부도 SHOWROOMZ가 하며 원천징수영수증은 정산 관리에서 받습니다.</span></span></div>
+<div class="kv-r"><span class="kk">고정 지급비</span><span class="kvv">브랜드가 직접 지급<span class="sub">계약서 기준이며 <b>정산에 포함되지 않습니다</b>.</span></span></div>
+</div><div class="note-i">확정 금액 · 지급일 · 명세는 <b>정산 관리(#7)</b>에서 확인합니다. 이 화면은 <b>지급받을 정보</b>만 관리합니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">T5</span><span class="state-label">정산 정보 · 개인사업자 등록 완료<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">사업자는 <b>원천징수 없이 전액</b> 받는 대신 <b>내가 세금계산서를 발행</b>한다 — 화면은 <b>발행에 필요한 값(사업자등록번호)</b>과 [발행 정보 복사]까지만 담고 발행은 <b>홈택스 등 외부</b>에서 한다 · 발행 대상 · 기한 · 금액은 <b>정산 관리</b>가 말한다(금액의 단일 소스) · 예금주 규칙이 <b>대표자명 또는 상호</b>로 바뀐다</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">기본정보 관리</div></div><div class="page-body"><div class="tabs"><div class="tab">계정</div><div class="tab active">정산 정보</div></div><div class="reqbox" style="margin-bottom:14px;border-color:var(--accent-100);background:var(--accent-50)"><div class="rt"><span class="badge b-info">안내</span>세금계산서는 SHOWROOMZ 앞으로 발행해요(리워드 + 부가세 10%)</div><div class="rd">정산이 자동 확정되면 <b>정산 관리</b>에 발행 카드가 나타납니다 · 홈택스에서 발행한 뒤 <b>승인번호를 입력</b>하면 운영팀 확인 후 지급됩니다 · 이 안내는 <b>한 번만</b> 보입니다.</div></div><div class="cols"><div class="col-l">
+<div class="card"><div class="card-h">사업자 여부 <span class="badge b-neutral nodot">🔒 변경 시 운영자 확인</span></div><div class="sec"><div class="kv">
+<div class="kv-r"><span class="kk">구분</span><span class="kvv">개인사업자 <span class="sub">2026.09.09 확인 완료</span></span></div>
+<div class="kv-r"><span class="kk">사업자등록번호</span><span class="kvv tnum">123-45-67890</span></div>
+<div class="kv-r"><span class="kk">사업자등록증</span><span class="kvv">제출 완료<span class="sub">사업자등록증_뷰티소연.pdf · 2026.09.05 제출</span></span></div>
+</div>
+<div class="note-i"><b>원천징수 없이 리워드 전액</b>이 지급되고, 대신 <b>내가 브랜드에게 세금계산서를 발행</b>해야 합니다. 발행 대상 · 공급가액 · 기한은 <b>정산 관리</b>에서 공구별로 안내됩니다.</div>
+<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px"><button class="btn btn-secondary btn-sm">발행 정보 복사</button><button class="btn btn-secondary btn-sm">비사업자로 변경 요청</button></div></div></div>
+<div class="card"><div class="card-h">정산 계좌 <span class="badge b-success">실명 확인 완료</span></div><div class="sec">
+<div class="kv">
+<div class="kv-r"><span class="kk">은행</span><span class="kvv">국민은행</span></div>
+<div class="kv-r"><span class="kk">계좌번호</span><span class="kvv tnum">987-****-6541</span></div>
+<div class="kv-r"><span class="kk">예금주</span><span class="kvv">소연컴퍼니<span class="sub">상호와 일치 · 사업자는 대표자명 또는 상호 명의</span></span></div>
+<div class="kv-r"><span class="kk">통장 사본</span><span class="kvv">제출 완료<span class="sub">통장사본_국민은행.jpg · 2026.09.09 제출</span></span></div>
+<div class="kv-r"><span class="kk">확인일</span><span class="kvv tnum">2026.09.09</span></div>
+</div>
+<div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn btn-secondary btn-sm">계좌 변경</button></div></div></div>
+</div><div class="col-r"><div class="card"><div class="card-h">정산은 이렇게 진행됩니다</div><div class="sec"><div class="kv">
+<div class="kv-r"><span class="kk">확정 시점</span><span class="kvv">주문 종결 후 3영업일 확인 → 자동 확정<span class="sub">확인 기간에 금액이 맞지 않으면 정산 조정을 요청할 수 있습니다.</span></span></div>
+<div class="kv-r"><span class="kk">지급</span><span class="kvv">자동 확정일 + 3영업일<span class="sub">리워드는 <b>SHOWROOMZ가 지급</b>합니다 — 브랜드가 지급하지 않습니다.</span></span></div>
+<div class="kv-r"><span class="kk">세금</span><span class="kvv">사업자 <b>세금계산서 발행</b><span class="sub">발행이 확인되면 지급됩니다 — 발행 전에는 지급이 시작되지 않습니다.</span></span></div>
+<div class="kv-r"><span class="kk">고정 지급비</span><span class="kvv">브랜드가 직접 지급<span class="sub">계약서 기준이며 <b>정산에 포함되지 않습니다</b>.</span></span></div>
+</div><div class="note-i">확정 금액 · 지급일 · 명세는 <b>정산 관리(#7)</b>에서 확인합니다. 이 화면은 <b>지급받을 정보</b>만 관리합니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">T6</span><span class="state-label">모달 · 계좌 변경 확인<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">계좌 변경은 <b>돈이 늦어질 수 있는 액션</b>이라 확인을 받는다 — <b>통장 사본 재제출 · 실명 재확인 · 지급 예정 건 보류 금액</b>을 구체적으로 말하고(추상적 경고는 판단에 쓸 수 없다) <b>이미 지급된 건은 영향 없음</b>도 밝힌다 · 삭제가 아니므로 확정 버튼은 <b>위험색이 아니라 주 액션</b> · 모달 상태는 <b>1024px 고정 뷰포트</b></span></div>
+<div class="stage" style="height:1024px">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">기본정보 관리</div></div><div class="page-body"><div class="tabs"><div class="tab">계정</div><div class="tab active">정산 정보</div></div><div class="cols"><div class="col-l">
+<div class="card"><div class="card-h">사업자 여부 <span class="badge b-neutral nodot">🔒 변경 시 운영자 확인</span></div><div class="sec">
+<div class="field"><label class="flabel">구분</label><div class="inp ro">개인 (비사업자)<span class="lk">🔒</span></div><div class="hint">리워드에서 <b>3.3%</b>(소득세 3% + 지방세 0.3%)가 원천징수되고 원천징수영수증이 발급됩니다.</div><div class="hint">가입 · 온보딩에서 선택한 값입니다.</div></div>
+<div style="display:flex;justify-content:flex-end"><button class="btn btn-secondary btn-sm">개인사업자로 변경 요청</button></div></div></div>
+<div class="card"><div class="card-h">주민등록번호 <span class="badge b-success">등록 완료</span></div><div class="sec">
+<div class="kv"><div class="kv-r"><span class="kk">주민등록번호</span><span class="kvv tnum">900101-2******<span class="sub">암호화 보관 · 2026.07.02 등록</span></span></div></div>
+<div class="note-i">원천징수 신고(지급명세서 제출)를 위해 소득세법에 따라 수집하며 암호화해 보관합니다.</div></div></div>
+<div class="card"><div class="card-h">정산 계좌 <span class="badge b-success">실명 확인 완료</span></div><div class="sec">
+<div class="kv">
+<div class="kv-r"><span class="kk">은행</span><span class="kvv">국민은행</span></div>
+<div class="kv-r"><span class="kk">계좌번호</span><span class="kvv tnum">110-****-6789</span></div>
+<div class="kv-r"><span class="kk">예금주</span><span class="kvv">소*연<span class="sub">본인 인증 실명과 일치</span></span></div>
+<div class="kv-r"><span class="kk">통장 사본</span><span class="kvv">제출 완료<span class="sub">통장사본_국민은행.jpg · 2026.07.02 제출</span></span></div>
+<div class="kv-r"><span class="kk">확인일</span><span class="kvv tnum">2026.07.02</span></div>
+</div>
+<div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn btn-secondary btn-sm">계좌 변경</button></div>
+<div class="note-i">계좌를 바꾸면 <b>통장 사본을 다시 제출</b>하고 <b>예금주 실명 확인</b>을 거칩니다. 지급 예정 건이 있으면 <b>확인이 끝난 뒤에 입금</b>되므로 지급일이 늦어질 수 있습니다.</div></div></div>
+</div><div class="col-r"><div class="card"><div class="card-h">정산은 이렇게 진행됩니다</div><div class="sec"><div class="kv">
+<div class="kv-r"><span class="kk">확정 시점</span><span class="kvv">주문 종결 후 3영업일 확인 → 자동 확정<span class="sub">확인 기간에 금액이 맞지 않으면 정산 조정을 요청할 수 있습니다.</span></span></div>
+<div class="kv-r"><span class="kk">지급</span><span class="kvv">자동 확정일 + 3영업일<span class="sub">리워드는 <b>SHOWROOMZ가 지급</b>합니다 — 브랜드가 지급하지 않습니다.</span></span></div>
+<div class="kv-r"><span class="kk">세금</span><span class="kvv">비사업자 · <b>SHOWROOMZ가 3.3% 원천징수</b><span class="sub">신고 · 납부도 SHOWROOMZ가 하며 원천징수영수증은 정산 관리에서 받습니다.</span></span></div>
+<div class="kv-r"><span class="kk">고정 지급비</span><span class="kvv">브랜드가 직접 지급<span class="sub">계약서 기준이며 <b>정산에 포함되지 않습니다</b>.</span></span></div>
+</div><div class="note-i">확정 금액 · 지급일 · 명세는 <b>정산 관리(#7)</b>에서 확인합니다. 이 화면은 <b>지급받을 정보</b>만 관리합니다.</div></div></div></div></div></div>
+</div>
+<div class="scrim"><div class="mdl"><div class="mdl-h">정산 계좌를 변경할까요?<span class="mdl-x">✕</span></div><div class="mdl-b"><ul class="chklist"><li><b>통장 사본을 다시 제출</b>하고 <b>예금주 실명 확인</b>을 거칩니다</li><li>확인이 끝날 때까지 <b>지급 예정 1건(99,505원)의 입금이 보류</b>됩니다</li><li>이미 <b>지급이 끝난 건은 영향이 없습니다</b></li><li><b>본인 명의 계좌</b>만 등록할 수 있습니다</li></ul><p class="mdl-p" style="margin-top:14px">지급 예정일이 가까우면 <b>입금 후에 변경</b>하는 것이 안전합니다.</p></div><div class="mdl-f"><button class="btn btn-ghost">취소</button><button class="btn btn-primary">계좌 변경 계속</button></div></div></div>
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">T7</span><span class="state-label">모달 · 개인사업자 변경 요청<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">[개인사업자로 변경 요청]을 누르면 뜨는 모달 — 받는 값은 <b>사업자등록번호 · 사업자등록증 둘뿐</b>(온보딩과 동일) · <b>미입력은 에러 문구 없이 버튼 비활성만</b> · 누르기 전에 <b>바로 반영되지 않는다 · 확인 중 정산은 계속된다 · 승인 후 세금 처리가 바뀐다 · 계좌를 바꿔야 할 수 있다</b> 네 가지를 고지한다 · <b>[비사업자로 변경 요청]도 같은 모달</b>을 쓰되 등록증 대신 폐업 확인 서류를 받는다(서류 종류 확정 필요)</span></div>
+<div class="stage" style="height:1024px">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">기본정보 관리</div></div><div class="page-body"><div class="tabs"><div class="tab">계정</div><div class="tab active">정산 정보</div></div><div class="cols"><div class="col-l">
+<div class="card"><div class="card-h">사업자 여부 <span class="badge b-neutral nodot">🔒 변경 시 운영자 확인</span></div><div class="sec">
+<div class="field"><label class="flabel">구분</label><div class="inp ro">개인 (비사업자)<span class="lk">🔒</span></div><div class="hint">리워드에서 <b>3.3%</b>(소득세 3% + 지방세 0.3%)가 원천징수되고 원천징수영수증이 발급됩니다.</div><div class="hint">가입 · 온보딩에서 선택한 값입니다.</div></div>
+<div style="display:flex;justify-content:flex-end"><button class="btn btn-secondary btn-sm">개인사업자로 변경 요청</button></div></div></div>
+<div class="card"><div class="card-h">주민등록번호 <span class="badge b-success">등록 완료</span></div><div class="sec">
+<div class="kv"><div class="kv-r"><span class="kk">주민등록번호</span><span class="kvv tnum">900101-2******<span class="sub">암호화 보관 · 2026.07.02 등록</span></span></div></div>
+<div class="note-i">원천징수 신고(지급명세서 제출)를 위해 소득세법에 따라 수집하며 암호화해 보관합니다.</div></div></div>
+<div class="card"><div class="card-h">정산 계좌 <span class="badge b-success">실명 확인 완료</span></div><div class="sec">
+<div class="kv">
+<div class="kv-r"><span class="kk">은행</span><span class="kvv">국민은행</span></div>
+<div class="kv-r"><span class="kk">계좌번호</span><span class="kvv tnum">110-****-6789</span></div>
+<div class="kv-r"><span class="kk">예금주</span><span class="kvv">소*연<span class="sub">본인 인증 실명과 일치</span></span></div>
+<div class="kv-r"><span class="kk">통장 사본</span><span class="kvv">제출 완료<span class="sub">통장사본_국민은행.jpg · 2026.07.02 제출</span></span></div>
+<div class="kv-r"><span class="kk">확인일</span><span class="kvv tnum">2026.07.02</span></div>
+</div>
+<div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn btn-secondary btn-sm">계좌 변경</button></div>
+<div class="note-i">계좌를 바꾸면 <b>통장 사본을 다시 제출</b>하고 <b>예금주 실명 확인</b>을 거칩니다. 지급 예정 건이 있으면 <b>확인이 끝난 뒤에 입금</b>되므로 지급일이 늦어질 수 있습니다.</div></div></div>
+</div><div class="col-r"><div class="card"><div class="card-h">정산은 이렇게 진행됩니다</div><div class="sec"><div class="kv">
+<div class="kv-r"><span class="kk">확정 시점</span><span class="kvv">주문 종결 후 3영업일 확인 → 자동 확정<span class="sub">확인 기간에 금액이 맞지 않으면 정산 조정을 요청할 수 있습니다.</span></span></div>
+<div class="kv-r"><span class="kk">지급</span><span class="kvv">자동 확정일 + 3영업일<span class="sub">리워드는 <b>SHOWROOMZ가 지급</b>합니다 — 브랜드가 지급하지 않습니다.</span></span></div>
+<div class="kv-r"><span class="kk">세금</span><span class="kvv">비사업자 · <b>SHOWROOMZ가 3.3% 원천징수</b><span class="sub">신고 · 납부도 SHOWROOMZ가 하며 원천징수영수증은 정산 관리에서 받습니다.</span></span></div>
+<div class="kv-r"><span class="kk">고정 지급비</span><span class="kvv">브랜드가 직접 지급<span class="sub">계약서 기준이며 <b>정산에 포함되지 않습니다</b>.</span></span></div>
+</div><div class="note-i">확정 금액 · 지급일 · 명세는 <b>정산 관리(#7)</b>에서 확인합니다. 이 화면은 <b>지급받을 정보</b>만 관리합니다.</div></div></div></div></div></div>
+</div>
+
+<div class="scrim"><div class="mdl"><div class="mdl-h">개인사업자로 변경할까요?<span class="mdl-x">✕</span></div><div class="mdl-b"><div class="field"><label class="flabel">사업자등록번호 <span class="req">*</span></label><div class="inp" style="color:var(--n-400)">000-00-00000</div><div class="hint">하이픈(-)을 포함해 입력합니다.</div></div><div class="field"><label class="flabel">사업자등록증 <span class="req">*</span></label><div class="filebox empty"><span class="fic">FILE</span><span class="fnm">사업자등록증 사본을 올려주세요<span>최대 10MB · jpg, png, pdf</span></span><button class="btn btn-secondary btn-sm">파일 선택</button></div></div><ul class="chklist"><li>바로 반영되지 않습니다 — <b>운영자 확인(영업일 3일 이내)</b> 후 적용됩니다</li><li><b>확인 중에는 비사업자(3.3% 원천징수)로 정산이 계속</b>됩니다</li><li>승인되면 <b>다음 정산부터</b> 원천징수 없이 전액 지급되고 <b>내가 세금계산서를 발행</b>합니다</li><li>예금주가 <b>대표자명 또는 상호</b> 명의여야 해 <b>계좌를 바꿔야 할 수 있습니다</b></li></ul><p class="mdl-p" style="margin-top:14px">상호 · 대표자 · 업태는 <b>등록증으로 확인</b>하므로 따로 입력하지 않습니다.</p></div><div class="mdl-f"><button class="btn btn-ghost">취소</button><button class="btn btn-primary" disabled>변경 요청</button></div></div></div>
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S1</span><span class="state-label">계정 · 기본<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">비공개 정보만 모임 · 본인 인증값(이름 · 생년월일 · 휴대폰)은 마스킹 + <b>셀프 수정 불가</b> · 업무 이메일만 수정 가능하며 <b>카드 안 작은 저장 버튼</b>으로 축소</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">기본정보 관리</div></div><div class="page-body"><div class="tabs"><div class="tab active">계정</div><div class="tab">정산 정보</div></div><div class="cols"><div class="col-l"><div class="card"><div class="card-h">본인 인증 정보 <span class="badge b-neutral nodot">🔒 수정 불가</span></div><div class="sec"><div class="field"><label class="flabel">이름(본명)</label><div class="inp ro">소*연<span class="lk">🔒 인증값</span></div></div><div class="field"><label class="flabel">생년월일</label><div class="inp ro">2003.07.19<span class="lk">🔒 인증값</span></div></div><div class="field"><label class="flabel">휴대폰 번호</label><div class="inp ro">010-****-6416<span class="lk">🔒 인증값</span></div></div><div class="note-i">가입 시 본인 인증한 값입니다. 정산 대상자 실명 기준이라 직접 수정할 수 없고, 변경이 필요하면 <b>운영팀 확인 후 재인증</b>이 필요합니다.</div></div></div><div class="card"><div class="card-h">활동 채널</div><div class="sec"><div class="field"><label class="flabel">업무 이메일 <span class="req">*</span></label><div class="inp filled">soyeon@example.com</div><div class="hint">승인 · 계약 · 정산 알림을 받는 주소입니다.</div></div><div style="display:flex;justify-content:flex-end"><button class="btn btn-primary btn-sm">저장</button></div></div></div></div><div class="col-r"><div class="card"><div class="card-h">계정</div><div class="sec"><div class="field"><label class="flabel">로그인 수단</label><div class="inp ro">카카오 (소셜 로그인)<span class="lk">🔒 </span></div><div class="hint">비밀번호가 없습니다 — 소비자 앱과 같은 계정으로 로그인합니다.</div></div><div style="margin-top:14px"><div class="cond-h"><span>탈퇴 승인 요청 조건</span><b>1 / 5 충족</b></div><div class="cond"><div class="cond-i no"><span class="cm">!</span><span class="cb"><span class="ct">진행중인 공구가 없다</span><span class="cd">진행중 공구 1건 — 종료되어야 합니다</span></span><span class="cgo">공구 관리 ›</span></div><div class="cond-i no"><span class="cm">!</span><span class="cb"><span class="ct">유효한 계약이 없다</span><span class="cd">유효 계약 1건 — 계약 기간이 끝나야 합니다</span></span><span class="cgo">계약 관리 ›</span></div><div class="cond-i no"><span class="cm">!</span><span class="cb"><span class="ct">미정산 건이 없다</span><span class="cd">조정 협의 2건 · 정산 확인 중 1건 · 지급 예정 1건</span></span><span class="cgo">정산 관리 ›</span></div><div class="cond-i no"><span class="cm">!</span><span class="cb"><span class="ct">열린 이슈가 없다</span><span class="cd">진행 중 이슈 2건 — 합의가 끝나야 합니다</span></span><span class="cgo">연결·소통 ›</span></div><div class="cond-i"><span class="cm">✓</span><span class="cb"><span class="ct">미발행 세금계산서가 없다</span><span class="cd">비사업자라 해당 없음</span></span></div></div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-secondary">로그아웃</button><button class="btn btn-quiet" disabled>탈퇴 승인 요청</button></div><div class="note-i">탈퇴는 <b>운영자 승인</b>을 받아야 완료됩니다. 위 조건이 <b>모두 충족되면</b> 승인을 요청할 수 있습니다 — 탈퇴해도 <b>스튜디오 자격만 해지</b>되고 소비자 계정은 유지됩니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S2</span><span class="state-label">계정 · 신규(업무 이메일 미입력 · 저장 비활성)<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">가입 직후 — 필수인 업무 이메일이 비어 있으면 <b>[저장] 비활성만</b>, 에러 문구 없음 · 본인 인증 정보는 가입 시 값이 이미 채워져 있음</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">기본정보 관리</div></div><div class="page-body"><div class="tabs"><div class="tab active">계정</div><div class="tab">정산 정보</div></div><div class="cols"><div class="col-l"><div class="card"><div class="card-h">본인 인증 정보 <span class="badge b-neutral nodot">🔒 수정 불가</span></div><div class="sec"><div class="field"><label class="flabel">이름(본명)</label><div class="inp ro">소*연<span class="lk">🔒 인증값</span></div></div><div class="field"><label class="flabel">생년월일</label><div class="inp ro">2003.07.19<span class="lk">🔒 인증값</span></div></div><div class="field"><label class="flabel">휴대폰 번호</label><div class="inp ro">010-****-6416<span class="lk">🔒 인증값</span></div></div><div class="note-i">가입 시 본인 인증한 값입니다. 정산 대상자 실명 기준이라 직접 수정할 수 없고, 변경이 필요하면 <b>운영팀 확인 후 재인증</b>이 필요합니다.</div></div></div><div class="card"><div class="card-h">활동 채널</div><div class="sec"><div class="field"><label class="flabel">업무 이메일 <span class="req">*</span></label><div class="inp">example@email.com</div><div class="hint">승인 · 계약 · 정산 알림을 받는 주소입니다.</div></div><div style="display:flex;justify-content:flex-end"><button class="btn btn-primary btn-sm" disabled>저장</button></div></div></div></div><div class="col-r"><div class="card"><div class="card-h">계정</div><div class="sec"><div class="field"><label class="flabel">로그인 수단</label><div class="inp ro">카카오 (소셜 로그인)<span class="lk">🔒 </span></div><div class="hint">비밀번호가 없습니다 — 소비자 앱과 같은 계정으로 로그인합니다.</div></div><div style="margin-top:14px"><div class="cond-h"><span>탈퇴 승인 요청 조건</span><b>1 / 5 충족</b></div><div class="cond"><div class="cond-i no"><span class="cm">!</span><span class="cb"><span class="ct">진행중인 공구가 없다</span><span class="cd">진행중 공구 1건 — 종료되어야 합니다</span></span><span class="cgo">공구 관리 ›</span></div><div class="cond-i no"><span class="cm">!</span><span class="cb"><span class="ct">유효한 계약이 없다</span><span class="cd">유효 계약 1건 — 계약 기간이 끝나야 합니다</span></span><span class="cgo">계약 관리 ›</span></div><div class="cond-i no"><span class="cm">!</span><span class="cb"><span class="ct">미정산 건이 없다</span><span class="cd">조정 협의 2건 · 정산 확인 중 1건 · 지급 예정 1건</span></span><span class="cgo">정산 관리 ›</span></div><div class="cond-i no"><span class="cm">!</span><span class="cb"><span class="ct">열린 이슈가 없다</span><span class="cd">진행 중 이슈 2건 — 합의가 끝나야 합니다</span></span><span class="cgo">연결·소통 ›</span></div><div class="cond-i"><span class="cm">✓</span><span class="cb"><span class="ct">미발행 세금계산서가 없다</span><span class="cd">비사업자라 해당 없음</span></span></div></div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-secondary">로그아웃</button><button class="btn btn-quiet" disabled>탈퇴 승인 요청</button></div><div class="note-i">탈퇴는 <b>운영자 승인</b>을 받아야 완료됩니다. 위 조건이 <b>모두 충족되면</b> 승인을 요청할 수 있습니다 — 탈퇴해도 <b>스튜디오 자격만 해지</b>되고 소비자 계정은 유지됩니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S3</span><span class="state-label">계정 · 이메일 형식 오류<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">형식 오류는 에러 문구 대상 · 필드 보더 위험색 + 문구 1줄 · [저장] 비활성 · 중복 오류 문구도 같은 자리에 표시</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">기본정보 관리</div></div><div class="page-body"><div class="tabs"><div class="tab active">계정</div><div class="tab">정산 정보</div></div><div class="cols"><div class="col-l"><div class="card"><div class="card-h">본인 인증 정보 <span class="badge b-neutral nodot">🔒 수정 불가</span></div><div class="sec"><div class="field"><label class="flabel">이름(본명)</label><div class="inp ro">소*연<span class="lk">🔒 인증값</span></div></div><div class="field"><label class="flabel">생년월일</label><div class="inp ro">2003.07.19<span class="lk">🔒 인증값</span></div></div><div class="field"><label class="flabel">휴대폰 번호</label><div class="inp ro">010-****-6416<span class="lk">🔒 인증값</span></div></div><div class="note-i">가입 시 본인 인증한 값입니다. 정산 대상자 실명 기준이라 직접 수정할 수 없고, 변경이 필요하면 <b>운영팀 확인 후 재인증</b>이 필요합니다.</div></div></div><div class="card"><div class="card-h">활동 채널</div><div class="sec"><div class="field"><label class="flabel">업무 이메일 <span class="req">*</span></label><div class="inp filled bad">soyeon@example</div><div class="err">이메일 형식이 올바르지 않습니다.</div></div><div style="display:flex;justify-content:flex-end"><button class="btn btn-primary btn-sm" disabled>저장</button></div></div></div></div><div class="col-r"><div class="card"><div class="card-h">계정</div><div class="sec"><div class="field"><label class="flabel">로그인 수단</label><div class="inp ro">카카오 (소셜 로그인)<span class="lk">🔒 </span></div><div class="hint">비밀번호가 없습니다 — 소비자 앱과 같은 계정으로 로그인합니다.</div></div><div style="margin-top:14px"><div class="cond-h"><span>탈퇴 승인 요청 조건</span><b>1 / 5 충족</b></div><div class="cond"><div class="cond-i no"><span class="cm">!</span><span class="cb"><span class="ct">진행중인 공구가 없다</span><span class="cd">진행중 공구 1건 — 종료되어야 합니다</span></span><span class="cgo">공구 관리 ›</span></div><div class="cond-i no"><span class="cm">!</span><span class="cb"><span class="ct">유효한 계약이 없다</span><span class="cd">유효 계약 1건 — 계약 기간이 끝나야 합니다</span></span><span class="cgo">계약 관리 ›</span></div><div class="cond-i no"><span class="cm">!</span><span class="cb"><span class="ct">미정산 건이 없다</span><span class="cd">조정 협의 2건 · 정산 확인 중 1건 · 지급 예정 1건</span></span><span class="cgo">정산 관리 ›</span></div><div class="cond-i no"><span class="cm">!</span><span class="cb"><span class="ct">열린 이슈가 없다</span><span class="cd">진행 중 이슈 2건 — 합의가 끝나야 합니다</span></span><span class="cgo">연결·소통 ›</span></div><div class="cond-i"><span class="cm">✓</span><span class="cb"><span class="ct">미발행 세금계산서가 없다</span><span class="cd">비사업자라 해당 없음</span></span></div></div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-secondary">로그아웃</button><button class="btn btn-quiet" disabled>탈퇴 승인 요청</button></div><div class="note-i">탈퇴는 <b>운영자 승인</b>을 받아야 완료됩니다. 위 조건이 <b>모두 충족되면</b> 승인을 요청할 수 있습니다 — 탈퇴해도 <b>스튜디오 자격만 해지</b>되고 소비자 계정은 유지됩니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S4</span><span class="state-label">계정 · 탈퇴 조건 미충족(요청 불가)<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">탈퇴는 <b>운영자 승인제</b>다 — 그 앞에 <b>기계가 판정할 수 있는 5가지 조건</b>을 두고 화면에서 먼저 잠근다 · <b>체크리스트 + 건수 + 해당 화면 링크</b>로 무엇을 끝내야 하는지 밝힌다("탈퇴할 수 없습니다" 한 줄로 끝내지 않는다) · 버튼 라벨은 <b>[탈퇴 승인 요청]</b>이지 [스튜디오 탈퇴]가 아니다</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">기본정보 관리</div></div><div class="page-body"><div class="tabs"><div class="tab active">계정</div><div class="tab">정산 정보</div></div><div class="cols"><div class="col-l"><div class="card"><div class="card-h">본인 인증 정보 <span class="badge b-neutral nodot">🔒 수정 불가</span></div><div class="sec"><div class="field"><label class="flabel">이름(본명)</label><div class="inp ro">소*연<span class="lk">🔒 인증값</span></div></div><div class="field"><label class="flabel">생년월일</label><div class="inp ro">2003.07.19<span class="lk">🔒 인증값</span></div></div><div class="field"><label class="flabel">휴대폰 번호</label><div class="inp ro">010-****-6416<span class="lk">🔒 인증값</span></div></div><div class="note-i">가입 시 본인 인증한 값입니다. 정산 대상자 실명 기준이라 직접 수정할 수 없고, 변경이 필요하면 <b>운영팀 확인 후 재인증</b>이 필요합니다.</div></div></div><div class="card"><div class="card-h">활동 채널</div><div class="sec"><div class="field"><label class="flabel">업무 이메일 <span class="req">*</span></label><div class="inp filled">soyeon@example.com</div><div class="hint">승인 · 계약 · 정산 알림을 받는 주소입니다.</div></div><div style="display:flex;justify-content:flex-end"><button class="btn btn-primary btn-sm">저장</button></div></div></div></div><div class="col-r"><div class="card"><div class="card-h">계정</div><div class="sec"><div class="field"><label class="flabel">로그인 수단</label><div class="inp ro">카카오 (소셜 로그인)<span class="lk">🔒 </span></div><div class="hint">비밀번호가 없습니다 — 소비자 앱과 같은 계정으로 로그인합니다.</div></div><div style="margin-top:14px"><div class="cond-h"><span>탈퇴 승인 요청 조건</span><b>1 / 5 충족</b></div><div class="cond"><div class="cond-i no"><span class="cm">!</span><span class="cb"><span class="ct">진행중인 공구가 없다</span><span class="cd">진행중 공구 1건 — 종료되어야 합니다</span></span><span class="cgo">공구 관리 ›</span></div><div class="cond-i no"><span class="cm">!</span><span class="cb"><span class="ct">유효한 계약이 없다</span><span class="cd">유효 계약 1건 — 계약 기간이 끝나야 합니다</span></span><span class="cgo">계약 관리 ›</span></div><div class="cond-i no"><span class="cm">!</span><span class="cb"><span class="ct">미정산 건이 없다</span><span class="cd">조정 협의 2건 · 정산 확인 중 1건 · 지급 예정 1건</span></span><span class="cgo">정산 관리 ›</span></div><div class="cond-i no"><span class="cm">!</span><span class="cb"><span class="ct">열린 이슈가 없다</span><span class="cd">진행 중 이슈 2건 — 합의가 끝나야 합니다</span></span><span class="cgo">연결·소통 ›</span></div><div class="cond-i"><span class="cm">✓</span><span class="cb"><span class="ct">미발행 세금계산서가 없다</span><span class="cd">비사업자라 해당 없음</span></span></div></div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-secondary">로그아웃</button><button class="btn btn-quiet" disabled>탈퇴 승인 요청</button></div><div class="note-i">탈퇴는 <b>운영자 승인</b>을 받아야 완료됩니다. 위 조건이 <b>모두 충족되면</b> 승인을 요청할 수 있습니다.</div></div></div></div></div></div>
+</div>
+
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S5</span><span class="state-label">계정 · 조건 충족(요청 가능)<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">5 / 5 충족 → <b>[탈퇴 승인 요청] 활성</b> · 요청해도 <b>바로 탈퇴되지 않는다</b>는 사실과 <b>처리 기한</b>을 버튼 옆 안내로 미리 말한다 · 체크리스트는 사라지지 않고 <b>충족 상태로 남는다</b>(무엇을 근거로 열렸는지 보여야 한다)</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">기본정보 관리</div></div><div class="page-body"><div class="tabs"><div class="tab active">계정</div><div class="tab">정산 정보</div></div><div class="cols"><div class="col-l"><div class="card"><div class="card-h">본인 인증 정보 <span class="badge b-neutral nodot">🔒 수정 불가</span></div><div class="sec"><div class="field"><label class="flabel">이름(본명)</label><div class="inp ro">소*연<span class="lk">🔒 인증값</span></div></div><div class="field"><label class="flabel">생년월일</label><div class="inp ro">2003.07.19<span class="lk">🔒 인증값</span></div></div><div class="field"><label class="flabel">휴대폰 번호</label><div class="inp ro">010-****-6416<span class="lk">🔒 인증값</span></div></div><div class="note-i">가입 시 본인 인증한 값입니다. 정산 대상자 실명 기준이라 직접 수정할 수 없고, 변경이 필요하면 <b>운영팀 확인 후 재인증</b>이 필요합니다.</div></div></div><div class="card"><div class="card-h">활동 채널</div><div class="sec"><div class="field"><label class="flabel">업무 이메일 <span class="req">*</span></label><div class="inp filled">soyeon@example.com</div><div class="hint">승인 · 계약 · 정산 알림을 받는 주소입니다.</div></div><div style="display:flex;justify-content:flex-end"><button class="btn btn-primary btn-sm">저장</button></div></div></div></div><div class="col-r"><div class="card"><div class="card-h">계정</div><div class="sec"><div class="field"><label class="flabel">로그인 수단</label><div class="inp ro">카카오 (소셜 로그인)<span class="lk">🔒 </span></div><div class="hint">비밀번호가 없습니다 — 소비자 앱과 같은 계정으로 로그인합니다.</div></div><div style="margin-top:14px"><div class="cond-h"><span>탈퇴 승인 요청 조건</span><b>5 / 5 충족</b></div><div class="cond"><div class="cond-i"><span class="cm">✓</span><span class="cb"><span class="ct">진행중인 공구가 없다</span><span class="cd">준비중 · 준비완료 · 진행중 공구 0건</span></span></div><div class="cond-i"><span class="cm">✓</span><span class="cb"><span class="ct">유효한 계약이 없다</span><span class="cd">서명대기 · 유효 계약 0건</span></span></div><div class="cond-i"><span class="cm">✓</span><span class="cb"><span class="ct">미정산 건이 없다</span><span class="cd">정산 확인 중 · 조정 협의 · 지급 예정 0건 · 모두 지급 완료</span></span></div><div class="cond-i"><span class="cm">✓</span><span class="cb"><span class="ct">열린 이슈가 없다</span><span class="cd">합의가 끝나지 않은 이슈 스레드 0건</span></span></div><div class="cond-i"><span class="cm">✓</span><span class="cb"><span class="ct">미발행 세금계산서가 없다</span><span class="cd">비사업자라 해당 없음</span></span></div></div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-secondary">로그아웃</button><button class="btn btn-quiet">탈퇴 승인 요청</button></div><div class="note-i">조건이 모두 충족되어 <b>승인을 요청할 수 있습니다</b>. 요청하면 운영자가 세무 · 콘텐츠 의무 종결을 확인한 뒤 승인합니다(영업일 5일 이내).</div></div></div></div></div></div>
+</div>
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S6</span><span class="state-label">모달 · 탈퇴 승인 요청<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec"><b>사유 선택 필수</b> — 운영자의 판단 근거이자 반려 시 재조치의 단서 · <b>미선택은 에러 문구 없이 버튼 비활성만</b> · 즉시 탈퇴가 아니라는 사실 · 처리 기한 · <b>대기 중 제약(새 연결 · 서명 차단)</b> · 탈퇴 후 결과를 목록으로 고지 · 확정 버튼 위험색 · 모달 상태는 <b>1024px 고정 뷰포트</b>로 잘라 실제 화면처럼 모달이 <b>화면 중앙</b>에 오게 했다(본문을 펼치면 모달이 한참 아래로 밀린다)</span></div>
+<div class="stage" style="height:1024px">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">기본정보 관리</div></div><div class="page-body"><div class="tabs"><div class="tab active">계정</div><div class="tab">정산 정보</div></div><div class="cols"><div class="col-l"><div class="card"><div class="card-h">본인 인증 정보 <span class="badge b-neutral nodot">🔒 수정 불가</span></div><div class="sec"><div class="field"><label class="flabel">이름(본명)</label><div class="inp ro">소*연<span class="lk">🔒 인증값</span></div></div><div class="field"><label class="flabel">생년월일</label><div class="inp ro">2003.07.19<span class="lk">🔒 인증값</span></div></div><div class="field"><label class="flabel">휴대폰 번호</label><div class="inp ro">010-****-6416<span class="lk">🔒 인증값</span></div></div><div class="note-i">가입 시 본인 인증한 값입니다. 정산 대상자 실명 기준이라 직접 수정할 수 없고, 변경이 필요하면 <b>운영팀 확인 후 재인증</b>이 필요합니다.</div></div></div><div class="card"><div class="card-h">활동 채널</div><div class="sec"><div class="field"><label class="flabel">업무 이메일 <span class="req">*</span></label><div class="inp filled">soyeon@example.com</div><div class="hint">승인 · 계약 · 정산 알림을 받는 주소입니다.</div></div><div style="display:flex;justify-content:flex-end"><button class="btn btn-primary btn-sm">저장</button></div></div></div></div><div class="col-r"><div class="card"><div class="card-h">계정</div><div class="sec"><div class="field"><label class="flabel">로그인 수단</label><div class="inp ro">카카오 (소셜 로그인)<span class="lk">🔒 </span></div><div class="hint">비밀번호가 없습니다 — 소비자 앱과 같은 계정으로 로그인합니다.</div></div><div style="margin-top:14px"><div class="cond-h"><span>탈퇴 승인 요청 조건</span><b>5 / 5 충족</b></div><div class="cond"><div class="cond-i"><span class="cm">✓</span><span class="cb"><span class="ct">진행중인 공구가 없다</span><span class="cd">준비중 · 준비완료 · 진행중 공구 0건</span></span></div><div class="cond-i"><span class="cm">✓</span><span class="cb"><span class="ct">유효한 계약이 없다</span><span class="cd">서명대기 · 유효 계약 0건</span></span></div><div class="cond-i"><span class="cm">✓</span><span class="cb"><span class="ct">미정산 건이 없다</span><span class="cd">정산 확인 중 · 조정 협의 · 지급 예정 0건 · 모두 지급 완료</span></span></div><div class="cond-i"><span class="cm">✓</span><span class="cb"><span class="ct">열린 이슈가 없다</span><span class="cd">합의가 끝나지 않은 이슈 스레드 0건</span></span></div><div class="cond-i"><span class="cm">✓</span><span class="cb"><span class="ct">미발행 세금계산서가 없다</span><span class="cd">비사업자라 해당 없음</span></span></div></div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-secondary">로그아웃</button><button class="btn btn-quiet">탈퇴 승인 요청</button></div><div class="note-i">조건이 모두 충족되어 <b>승인을 요청할 수 있습니다</b>. 요청하면 운영자가 세무 · 콘텐츠 의무 종결을 확인한 뒤 승인합니다(영업일 5일 이내).</div></div></div></div></div></div>
+</div>
+<div class="scrim"><div class="mdl"><div class="mdl-h">탈퇴 승인을 요청할까요?<span class="mdl-x">✕</span></div><div class="mdl-b"><div class="field"><label class="flabel">탈퇴 사유 <span class="req">*</span></label><div class="inp" style="color:var(--n-400)">사유를 선택하세요</div><div class="hint">운영자가 승인 · 반려를 판단하는 근거입니다.</div></div><ul class="chklist"><li>요청 즉시 탈퇴되지 않습니다 — <b>운영자 승인(영업일 5일 이내)</b> 후 처리됩니다</li><li>대기 중에는 <b>새 연결 수락 · 계약 서명이 막힙니다</b></li><li>승인되면 내 쇼룸이 소비자에게 <b>더 이상 보이지 않습니다</b></li><li>소비자 계정은 유지되고 계약 · 정산 이력은 <b>법정 보존 기간 동안 보관</b>됩니다</li></ul><p class="mdl-p" style="margin-top:14px">다시 활동하려면 <b>처음부터 다시 가입 신청</b>해야 합니다.</p></div><div class="mdl-f"><button class="btn btn-ghost">취소</button><button class="btn btn-danger" disabled>승인 요청</button></div></div></div>
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S7</span><span class="state-label">계정 · 승인 대기<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">요청은 <b>예약이지 정지가 아니다</b> — 대기 중에도 스튜디오를 계속 쓰되 <b>새 연결 수락 · 계약 서명만 막는다</b>(심사 중 새 의무가 생기면 조건이 다시 깨진다) · 상태는 <b>정보색</b>(정상 진행 · 대기 · 원칙①) · <b>[요청 취소]는 언제든</b> 가능하며 취소하면 제약도 함께 풀린다</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">기본정보 관리</div></div><div class="page-body"><div class="tabs"><div class="tab active">계정</div><div class="tab">정산 정보</div></div><div class="cols"><div class="col-l"><div class="card"><div class="card-h">본인 인증 정보 <span class="badge b-neutral nodot">🔒 수정 불가</span></div><div class="sec"><div class="field"><label class="flabel">이름(본명)</label><div class="inp ro">소*연<span class="lk">🔒 인증값</span></div></div><div class="field"><label class="flabel">생년월일</label><div class="inp ro">2003.07.19<span class="lk">🔒 인증값</span></div></div><div class="field"><label class="flabel">휴대폰 번호</label><div class="inp ro">010-****-6416<span class="lk">🔒 인증값</span></div></div><div class="note-i">가입 시 본인 인증한 값입니다. 정산 대상자 실명 기준이라 직접 수정할 수 없고, 변경이 필요하면 <b>운영팀 확인 후 재인증</b>이 필요합니다.</div></div></div><div class="card"><div class="card-h">활동 채널</div><div class="sec"><div class="field"><label class="flabel">업무 이메일 <span class="req">*</span></label><div class="inp filled">soyeon@example.com</div><div class="hint">승인 · 계약 · 정산 알림을 받는 주소입니다.</div></div><div style="display:flex;justify-content:flex-end"><button class="btn btn-primary btn-sm">저장</button></div></div></div></div><div class="col-r"><div class="card"><div class="card-h">계정</div><div class="sec"><div class="field"><label class="flabel">로그인 수단</label><div class="inp ro">카카오 (소셜 로그인)<span class="lk">🔒 </span></div><div class="hint">비밀번호가 없습니다 — 소비자 앱과 같은 계정으로 로그인합니다.</div></div><div style="margin-top:14px"><div class="reqbox"><div class="rt"><span class="badge b-info">승인 대기</span>탈퇴 승인 요청 중</div><div class="rd">요청일 <b>2026.09.05 14:20</b> · 사유 <b>활동 중단</b><br>운영자가 <b>영업일 5일 이내</b>(2026.09.12까지) 확인합니다 · 승인되면 <b>즉시 탈퇴 처리</b>되고 알림을 받습니다.<br>대기 중에도 <b>스튜디오는 그대로 사용</b>할 수 있지만 <b>새 연결 수락 · 계약 서명은 막힙니다</b> — 새 의무가 생기면 조건이 다시 깨집니다.</div></div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-secondary">로그아웃</button><button class="btn btn-quiet">요청 취소</button></div><div class="note-i">요청은 <b>승인 전까지 언제든 취소</b>할 수 있고, 취소하면 새 연결 수락 · 계약 서명이 다시 열립니다.</div></div></div></div></div></div>
+</div>
+</div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">S8</span><span class="state-label">계정 · 승인 반려<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">반려는 <b>거절이 아니라 남은 것이 있다는 통보</b>다 — <b>사유 + 다음 조치 + 재요청 경로</b>를 함께 준다 · 상태는 <b>경고</b>(내 조치가 필요하다 · 원칙①)이고 <b>위험색은 쓰지 않는다</b> · <b>[확인]으로 직접 닫아야</b> 사라지고(자동 소멸 없음) 닫으면 <b>체크리스트 화면으로 복귀</b>한다 · 사유가 해소되면 체크리스트가 다시 5 / 5로 바뀐다</span></div>
+<div class="stage tall">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt"><span class="bnum">2</span></span></div>
+<div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span><span class="gcnt"><span class="bnum">1</span></span></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+<div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+<div class="gnb-item active"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+</div>
+</div>
+<div class="top"><div class="crumb">기본정보 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+<div class="page-h"><div class="page-t">기본정보 관리</div></div><div class="page-body"><div class="tabs"><div class="tab active">계정</div><div class="tab">정산 정보</div></div><div class="cols"><div class="col-l"><div class="card"><div class="card-h">본인 인증 정보 <span class="badge b-neutral nodot">🔒 수정 불가</span></div><div class="sec"><div class="field"><label class="flabel">이름(본명)</label><div class="inp ro">소*연<span class="lk">🔒 인증값</span></div></div><div class="field"><label class="flabel">생년월일</label><div class="inp ro">2003.07.19<span class="lk">🔒 인증값</span></div></div><div class="field"><label class="flabel">휴대폰 번호</label><div class="inp ro">010-****-6416<span class="lk">🔒 인증값</span></div></div><div class="note-i">가입 시 본인 인증한 값입니다. 정산 대상자 실명 기준이라 직접 수정할 수 없고, 변경이 필요하면 <b>운영팀 확인 후 재인증</b>이 필요합니다.</div></div></div><div class="card"><div class="card-h">활동 채널</div><div class="sec"><div class="field"><label class="flabel">업무 이메일 <span class="req">*</span></label><div class="inp filled">soyeon@example.com</div><div class="hint">승인 · 계약 · 정산 알림을 받는 주소입니다.</div></div><div style="display:flex;justify-content:flex-end"><button class="btn btn-primary btn-sm">저장</button></div></div></div></div><div class="col-r"><div class="card"><div class="card-h">계정</div><div class="sec"><div class="field"><label class="flabel">로그인 수단</label><div class="inp ro">카카오 (소셜 로그인)<span class="lk">🔒 </span></div><div class="hint">비밀번호가 없습니다 — 소비자 앱과 같은 계정으로 로그인합니다.</div></div><div style="margin-top:14px"><div class="reqbox warn"><div class="rt"><span class="badge b-warning">반려</span>탈퇴 승인이 반려되었습니다</div><div class="rd">반려일 <b>2026.09.09 11:02</b> · 운영자<br>사유 — <b>퓨어랩 립밤 공구의 정산 조정 협의가 끝나지 않았습니다.</b> 이슈 스레드에서 합의되거나 합의 기한이 지나 종결된 뒤 다시 요청해 주세요.<br>반려는 <b>거절이 아니라 남은 것이 있다는 통보</b>입니다 — 해소 후 재요청할 수 있습니다.</div><div style="display:flex;justify-content:flex-end;margin-top:11px"><button class="btn btn-secondary btn-sm">확인</button></div></div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-secondary">로그아웃</button><button class="btn btn-quiet" disabled>탈퇴 승인 요청</button></div><div class="note-i"><b>[확인]</b>을 누르면 이 안내가 사라지고 <b>조건 체크리스트</b>로 돌아갑니다. 반려 사유와 이력은 <b>운영자 쪽에 남습니다</b> — 사유가 해소되면 체크리스트가 <b>5 / 5 충족</b>으로 바뀌고 다시 요청할 수 있습니다.</div></div></div></div></div></div>
+</div>
+</div>
+</section>
+
+</body>
+</html>

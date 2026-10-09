@@ -1,6 +1,7 @@
 package showroomz.api.seller.order.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.order.type.DeliveryCarrier;
 import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.domain.order.type.OrderBadgeTone;
@@ -55,7 +56,9 @@ public record SellerOrderDetailResponse(
     /** 우 레일 핵심 시각 — 아직 일어나지 않은 시각은 null. */
     @Schema(name = "SellerOrderTimeline")
     public record Timeline(
-            @Schema(description = "발송기한", example = "2026-10-04T23:59:59Z", nullable = true) LocalDateTime shipDueAt,
+            @Schema(description = "발송기한 = 공구 마감 + N영업일 — 공구 진행 중이면 null", example = "2026-10-04T23:59:59Z",
+                    nullable = true) LocalDateTime shipDueAt,
+            @Schema(description = "이 주문에 적용된 발송 기한 N(영업일) — 주문 시점 값", example = "3") int shipDueBusinessDays,
             @Schema(description = "준비 시작(발주확인) 시각 — 소비자 단순 취소권 종료 시점", example = "2026-10-02T09:00:00Z", nullable = true)
             LocalDateTime prepareStartedAt,
             @Schema(description = "발송 처리(송장 등록 확정) 시각 — 발송기한 판정값 · 송장 수정으로 바뀌지 않는다",
@@ -64,6 +67,10 @@ public record SellerOrderDetailResponse(
             @Schema(description = "택배사 표시명", example = "CJ대한통운", nullable = true) String carrierLabel,
             @Schema(description = "송장번호", example = "640012345678", nullable = true) String trackingNumber,
             @Schema(description = "배송 추적 최종 갱신", example = "2026-10-03T21:05:00Z", nullable = true) LocalDateTime lastTrackingAt,
+            @Schema(description = "마지막 스캔 위치 — 택배사 원문. 「배송중 · 대전 허브 출발」 · 추적 정지의 「마지막 위치」. 스캔 기록이 없으면 null",
+                    example = "대전 허브", nullable = true) String lastTrackingLocation,
+            @Schema(description = "마지막 스캔 문구 — 택배사 원문. 스캔 기록이 없으면 null", example = "출발", nullable = true)
+            String lastTrackingDescription,
             @Schema(description = "반송 감지 시각", nullable = true) LocalDateTime returnDetectedAt,
             @Schema(description = "배송완료 시각", example = "2026-10-05T16:10:00Z", nullable = true) LocalDateTime deliveredAt,
             @Schema(description = "출처 병기 — 항상(§34-7). 자동 확인 · 운영자 처리", example = "자동 확인", nullable = true)
@@ -83,10 +90,18 @@ public record SellerOrderDetailResponse(
     @Schema(name = "SellerOrderCancelRequestBlock")
     public record CancelRequestBlock(
             @Schema(description = "취소 요청 id — 승인·거부 API 경로 키", example = "77") Long cancelRequestId,
+            @Schema(description = "요청자 — 주문한 소비자(소비자 앱은 본인 주문만 요청한다). 실명, 없으면 닉네임", example = "양세린",
+                    nullable = true) String requesterName,
+            @Schema(description = "요청자 = 수취인 — 「(수취인과 동일)」", example = "true") boolean requesterIsRecipient,
+            @Schema(description = "공구 상태 — 백필 주문은 null. 검토 중 요청은 발송 전 하위주문에만 걸리므로 「· 발송 전」은 FE 가 붙인다",
+                    example = "IN_PROGRESS", nullable = true) GroupBuyStatus groupBuyStatus,
+            @Schema(description = "공구 상태 문구", example = "진행중", nullable = true) String groupBuyStatusLabel,
             @Schema(description = "소비자가 고른 사유 — 단순 변심 · 주문 실수 · 다른 결제 수단으로 변경 · 기타", example = "단순 변심")
             String reasonLabel,
             @Schema(description = "소비자 상세 사유", example = "색상을 잘못 골랐어요", nullable = true) String reasonDetail,
             @Schema(description = "요청 시각", example = "2026-10-02T14:30:00Z") LocalDateTime requestedAt,
+            @Schema(description = "응답 기한 — 요청 + 1영업일(주말·공휴일 제외)의 끝. 지나면 자동 승인 · PG 즉시 환불",
+                    example = "2026-10-05T23:59:59Z") LocalDateTime respondDueAt,
             @Schema(description = "요청 당시 이행 상태 라벨", example = "상품준비중") String statusAtRequestLabel,
             @Schema(description = "준비 시작 후 경과(시간) — 준비 시작 전 요청이면 null", example = "5", nullable = true)
             Long hoursSincePrepareStart,

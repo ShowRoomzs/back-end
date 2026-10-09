@@ -25,11 +25,13 @@ import showroomz.domain.member.creator.repository.CreatorApplicationRepository;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.creator.type.CreatorApplicationStatus;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
+import showroomz.domain.member.creator.type.ResidentRegistrationNumber;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.ClientUtils;
 import showroomz.global.utils.ConnectionCodeGenerator;
+import showroomz.global.utils.PersonalDataCipher;
 import showroomz.global.utils.ShowroomNamePolicy;
 import showroomz.global.utils.ShowroomAddressGenerator;
 
@@ -49,6 +51,7 @@ public class CreatorAuthService {
     private final BankRepository bankRepository;
     private final AuthService authService;
     private final AuthTokenProvider tokenProvider;
+    private final PersonalDataCipher personalDataCipher;
     private final OperatorChannelService operatorChannelService;
 
     @Transactional
@@ -104,6 +107,11 @@ public class CreatorAuthService {
                 request.getAccountNumber(),
                 request.getBankBookImageUrl()
         );
+        // 1009 기획 7-a — 비사업자 주민등록번호(원천징수 신고용). 암호문과 마스킹 값만 저장한다.
+        String residentNumber = isBusiness ? null
+                : ResidentRegistrationNumber.normalize(request.getResidentRegistrationNumber());
+        creator.registerResidentNumber(residentNumber == null ? null : personalDataCipher.encrypt(residentNumber),
+                residentNumber == null ? null : ResidentRegistrationNumber.mask(residentNumber));
         // §13-6 — 연결코드는 등록 완료 시 쇼룸별로 고정 발급된다(재발급은 §14-1 연결·소통 영역에서 별도 처리).
         creator.reissueConnectionCode(ConnectionCodeGenerator.generateUnique(creatorRepository::existsByConnectionCode));
 
@@ -287,6 +295,10 @@ public class CreatorAuthService {
 
     private void validateBusinessFields(CreatorCompleteRegistrationRequest request) {
         if (request.getBusinessType() != CreatorBusinessType.BUSINESS) {
+            // 비사업자는 주민등록번호가 필수다 — 원문을 메시지에 싣지 않는다.
+            if (ResidentRegistrationNumber.normalize(request.getResidentRegistrationNumber()) == null) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "주민등록번호를 정확히 입력해 주세요.");
+            }
             return;
         }
 

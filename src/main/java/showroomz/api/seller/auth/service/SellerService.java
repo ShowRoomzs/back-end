@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import showroomz.domain.order.service.ShipDuePolicy;
 import showroomz.api.app.auth.DTO.RefreshTokenRequest;
 import showroomz.api.app.auth.DTO.TokenResponse;
 import showroomz.api.app.auth.entity.RoleType;
@@ -379,7 +380,9 @@ public class SellerService {
         market.setRemoteAreaSurcharge(
                 request.getRemoteAreaSurcharge() != null ? request.getRemoteAreaSurcharge() : 0
         );
-        market.setShippingLeadDays(request.getShippingLeadDays());
+        // 발송 기한 N(공구 마감 후 N영업일) — 생략하면 기본 3(1009 기획 수정본 1-4).
+        market.setShippingLeadDays(request.getShippingLeadDays() != null
+                ? request.getShippingLeadDays() : ShipDuePolicy.DEFAULT_BUSINESS_DAYS);
         market.setReturnFee(request.getReturnFee() != null ? request.getReturnFee() : 3000);
         market.setExchangeFee(request.getExchangeFee() != null ? request.getExchangeFee() : 6000);
 

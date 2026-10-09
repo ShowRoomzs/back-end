@@ -34,8 +34,9 @@ public class OrderClaimRepositoryImpl implements OrderClaimRepositoryCustom {
         QOrder o = QOrder.order;
         QOrderProduct p = QOrderProduct.orderProduct;
 
+        // marketId 가 null 이면 어드민 거래 관리(06b) — 전 브랜드 조회다.
         BooleanBuilder where = new BooleanBuilder()
-                .and(c.marketId.eq(condition.marketId()))
+                .and(condition.marketId() == null ? null : c.marketId.eq(condition.marketId()))
                 .and(c.status.in(condition.tab().getStatuses()))
                 .and(c.requestedAt.goe(condition.from()))
                 .and(c.requestedAt.loe(condition.to()));

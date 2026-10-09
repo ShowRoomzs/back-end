@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>wf-admin-08 · CS·콘텐츠 관리 · 1440×1024</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,"Malgun Gothic","맑은 고딕",sans-serif; background:#e6e6e6; color:#222; }
+  .doc-head { padding:24px 40px 4px; }
+  .doc-head h1 { font-size:18px; font-weight:700; }
+  .doc-head h1 span { font-weight:400; color:#888; font-size:13px; }
+  .doc-head .sub { font-size:12px; color:#777; margin-top:4px; line-height:1.6; }
+  .doc-head .spec { display:inline-block; margin-top:8px; font-size:11px; color:#555; background:#fff; border:1px solid #ccc; border-radius:4px; padding:4px 8px; }
+  .stack { padding:16px 40px 60px; }
+  .ftitle { font-size:13px; font-weight:700; color:#333; margin:22px 0 8px; }
+  .ftitle span { font-weight:400; color:#888; font-size:12px; }
+  .ftitle .pill { font-weight:400; font-size:11px; color:#555; background:#fff; border:1px solid #bbb; border-radius:10px; padding:1px 8px; margin-left:6px; }
+  .ftitle .src { font-weight:400; font-size:10.5px; color:#96771f; background:#fdf6e8; border:1px solid #e0c778; border-radius:10px; padding:1px 8px; margin-left:6px; }
+
+  .frame { width:1440px; background:#fff; border:1px solid #b5b5b5; border-radius:8px; box-shadow:0 1px 5px rgba(0,0,0,.1); overflow:hidden; position:relative; }
+  .chrome { height:32px; background:#e2e2e2; border-bottom:1px solid #c8c8c8; display:flex; align-items:center; padding:0 12px; gap:6px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#c0c0c0; }
+  .urlbar { flex:1; height:18px; background:#fff; border:1px solid #d0d0d0; border-radius:9px; font-size:11px; color:#888; display:flex; align-items:center; padding:0 10px; margin-left:8px; }
+  .app { display:flex; min-height:992px; }
+  .gnb { width:224px; flex-shrink:0; background:#3f3f3f; color:#cfcfcf; padding:0 0 20px; }
+  .gnb .brand { padding:22px 20px 18px; border-bottom:1px solid #565656; }
+  .gnb .brand .m { font-size:15px; font-weight:800; color:#fff; letter-spacing:.5px; }
+  .gnb .brand .s { font-size:10px; color:#a5a5a5; margin-top:3px; }
+  .gnb-item { display:flex; align-items:center; gap:8px; padding:11px 20px; font-size:12.5px; color:#c2c2c2; border-left:3px solid transparent; }
+  .gnb-item .n { font-size:11px; color:#8f8f8f; width:14px; }
+  .gnb-item .cnt { margin-left:auto; background:#5a5a5a; color:#fff; border-radius:9px; font-size:10px; min-width:17px; height:17px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; }
+  .gnb-item.hot .cnt { background:#a33; }
+  .gnb-item.on { background:#2a2a2a; color:#fff; font-weight:700; border-left-color:#fff; }
+  .gnb-item.on .n { color:#ddd; }
+  .gnb-right { margin-left:auto; display:flex; align-items:center; gap:5px; }
+  .gnb-right .cnt { margin-left:0; }
+  .chev { font-size:9px; color:#8f8f8f; }
+  .gnb-item.on .chev { color:#ddd; }
+  .gnb-sub { padding:9px 20px 9px 44px; font-size:12px; color:#999; display:flex; align-items:center; }
+  .gnb-sub .cnt { margin-left:auto; background:#5a5a5a; color:#fff; border-radius:9px; font-size:10px; min-width:17px; height:17px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; }
+  .gnb-sub.on .cnt { background:#555; }
+  .gnb-sub.on { background:#333; color:#fff; border-left:2px solid #888; padding-left:42px; }
+  .main { flex:1; background:#f7f7f7; min-width:0; position:relative; }
+  .topbar { height:56px; background:#fff; border-bottom:1px solid #e2e2e2; display:flex; align-items:center; justify-content:space-between; padding:0 24px; }
+  .crumb { font-size:14px; font-weight:700; color:#222; }
+  .crumb .sub2 { font-weight:400; color:#999; font-size:12px; margin-left:6px; }
+  .op-chip { display:flex; align-items:center; gap:8px; font-size:12px; color:#555; }
+  .op-chip .st { border:1px solid #999; border-radius:12px; padding:2px 10px; background:#f2f2f2; }
+  .content { padding:24px; }
+  .subtabs { display:flex; gap:6px; margin-bottom:16px; }
+  .subtab { padding:7px 16px; border:1px solid #ccc; border-radius:16px; font-size:12px; color:#666; background:#fff; }
+  .subtab.on { background:#333; color:#fff; border-color:#333; }
+
+  /* 목록 */
+  .filter-row { display:flex; gap:8px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
+  .fchip { border:1px solid #ccc; border-radius:14px; padding:5px 14px; font-size:12px; color:#555; background:#fff; }
+  .fchip.on { background:#333; color:#fff; border-color:#333; }
+  .fchip.hot { border-color:#c9a24a; color:#8a5a00; }
+  .search-box { margin-left:auto; border:1px solid #ccc; border-radius:6px; padding:6px 12px; font-size:12px; color:#999; background:#fff; width:230px; }
+  .list-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:12px; color:#888; }
+  .list-toolbar b { color:#333; }
+  .add-btn { border:1px solid #333; background:#333; color:#fff; border-radius:6px; padding:7px 14px; font-size:12px; font-weight:700; }
+
+  table.list { width:100%; border-collapse:collapse; font-size:12.5px; background:#fff; border:1px solid #e2e2e2; border-radius:8px; overflow:hidden; }
+  table.list th { text-align:left; padding:11px 14px; background:#f6f6f6; color:#666; font-size:11.5px; border-bottom:1px solid #eee; font-weight:700; }
+  table.list td { padding:12px 14px; border-bottom:1px solid #f2f2f2; color:#444; vertical-align:middle; }
+  table.list tr:last-child td { border-bottom:none; }
+  table.list tr.row-link td:first-child { text-decoration:underline; color:#333; font-weight:600; }
+  .p-sub { font-size:10.5px; color:#aaa; margin-top:2px; }
+  .badge { border:1px solid #999; border-radius:10px; padding:1px 9px; font-size:10.5px; color:#444; background:#f6f6f6; white-space:nowrap; }
+  .badge.wait { background:#96771f; color:#fff; border-color:#96771f; }
+  .badge.done { background:#eee; color:#888; }
+  .badge.warn { background:#fff; color:#a33; border-color:#a33; }
+  .badge.live { background:#3a3a3a; color:#fff; border-color:#3a3a3a; }
+  .badge.lock { background:#fff; color:#96771f; border-color:#96771f; }
+  .mini-btn { border:1px solid #ccc; border-radius:4px; padding:5px 10px; font-size:11px; color:#555; background:#fff; white-space:nowrap; }
+  .mini-btn.danger { color:#a33; border-color:#e0b3b3; }
+  .pager { display:flex; justify-content:center; gap:6px; margin-top:16px; font-size:12px; color:#888; }
+  .pager span { width:24px; height:24px; display:flex; align-items:center; justify-content:center; border:1px solid #ddd; border-radius:4px; }
+  .pager span.on { background:#333; color:#fff; border-color:#333; }
+  .qa-q { font-weight:600; color:#333; } .qa-a { color:#777; font-size:11.5px; margin-top:3px; }
+  .drag { color:#bbb; cursor:grab; text-align:center; }
+  .pin { border:1px solid #96771f; color:#96771f; border-radius:3px; padding:0 5px; font-size:10px; margin-right:5px; }
+
+  /* 상세 */
+  .detail-grid { display:flex; gap:18px; align-items:flex-start; }
+  .det-l { flex:1; min-width:0; } .det-r { width:340px; flex-shrink:0; }
+  .card { background:#fff; border:1px solid #e2e2e2; border-radius:10px; margin-bottom:16px; }
+  .card-h { padding:13px 18px; border-bottom:1px solid #eee; font-size:13.5px; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
+  .card-b { padding:16px 18px; }
+  .form-row { display:flex; border-bottom:1px solid #f2f2f2; padding:10px 0; font-size:12.5px; }
+  .form-row:last-child { border-bottom:none; }
+  .form-label { width:150px; flex-shrink:0; color:#888; }
+  .form-val { color:#333; flex:1; }
+  .thread-msg { border:1px solid #eee; border-radius:8px; padding:12px 14px; margin-bottom:10px; font-size:12.5px; }
+  .thread-msg .who { font-weight:700; color:#333; font-size:11.5px; margin-bottom:4px; }
+  .thread-msg.me { background:#fafafa; }
+  .ta-answer { width:100%; border:1px solid #ccc; border-radius:6px; padding:10px; font-size:12.5px; color:#888; min-height:80px; margin-top:8px; }
+
+  .status-box { text-align:center; padding:18px 0 6px; }
+  .status-box .lb { font-size:11px; color:#999; margin-bottom:8px; }
+  .status-box .cur { font-size:15px; font-weight:800; color:#333; margin-bottom:2px; }
+  .act-row { display:flex; gap:8px; padding:0 18px 18px; }
+  .abtn { flex:1; padding:11px 0; text-align:center; border-radius:6px; font-size:13px; font-weight:700; border:1px solid #333; }
+  .abtn.appr { background:#333; color:#fff; }
+  .abtn.rej { background:#fff; color:#a33; border-color:#a33; }
+
+  .hist { padding:14px 18px; }
+  .hitem { display:flex; gap:10px; padding:9px 0; border-bottom:1px solid #f2f2f2; font-size:12px; }
+  .hitem:last-child { border-bottom:none; }
+  .hitem .hd { color:#333; } .hitem .ht { color:#aaa; font-size:10.5px; margin-top:2px; }
+
+  /* 약관 */
+  .term-card { display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e2e2; border-radius:8px; padding:14px 18px; margin-bottom:10px; background:#fff; }
+  .term-card .tn { font-size:13px; font-weight:700; color:#333; }
+  .term-card .tv { font-size:11.5px; color:#999; margin-top:3px; }
+  table.verhist { width:100%; border-collapse:collapse; font-size:12px; }
+  table.verhist th { text-align:left; padding:8px 10px; background:#f6f6f6; color:#777; font-size:10.5px; font-weight:700; border-bottom:1px solid #eee; }
+  table.verhist td { padding:9px 10px; border-bottom:1px solid #f2f2f2; color:#444; }
+  table.verhist tr:last-child td { border-bottom:none; }
+
+  /* 모달 */
+  .modal-overlay { position:absolute; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:20; }
+  .modal { width:480px; background:#fff; border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,.2); overflow:hidden; }
+  .modal-h { padding:18px 20px; font-size:15px; font-weight:800; border-bottom:1px solid #eee; }
+  .modal-b { padding:18px 20px; font-size:13px; color:#555; line-height:1.7; }
+  .modal-b .sel { width:100%; border:1px solid #ccc; border-radius:6px; padding:9px 10px; font-size:12.5px; color:#666; margin:10px 0 8px; }
+  .modal-b .inp { width:100%; border:1px solid #ccc; border-radius:6px; padding:9px 10px; font-size:12.5px; color:#666; margin:6px 0; }
+  .modal-b .ta { width:100%; border:1px solid #ccc; border-radius:6px; padding:9px 10px; font-size:12.5px; color:#888; min-height:90px; }
+  .modal-f { display:flex; gap:8px; padding:14px 20px; border-top:1px solid #eee; }
+  .modal-btn { flex:1; padding:11px 0; text-align:center; border-radius:6px; font-size:13px; font-weight:700; border:1px solid #ccc; background:#fff; color:#555; }
+  .modal-btn.do { background:#a33; color:#fff; border-color:#a33; }
+  .modal-btn.doa { background:#333; color:#fff; border-color:#333; }
+
+  .foldline { position:absolute; left:0; right:0; top:1024px; border-top:1.5px dashed #c4553f; z-index:5; }
+  .foldline::after { content:"↑ 1440×1024 뷰포트 경계 · 이하 스크롤"; position:absolute; right:14px; top:-9px; background:#f7f7f7; padding:0 8px; font-size:10px; color:#c4553f; }
+  .note { margin:6px 0 0; border:1.5px dashed #999; border-radius:6px; background:#fafafa; padding:9px 12px; font-size:11.5px; color:#555; line-height:1.6; }
+  .note b { color:#333; } .note .tag { font-weight:700; margin-right:4px; }
+  .note.rule .tag { color:#555; }
+  .note.legal .tag { color:#8a5a00; }
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>⑤ 어드민 · 8. CS·콘텐츠 관리 <span>wf-admin-08 · 데스크톱 1440×1024</span></h1>
+  <div class="sub">그레이스케일 lo-fi · 1:1 문의 답변(신규) · 상품 문의 모니터링+숨김(신규) · FAQ·공지 관리(<b>기존 목업 베이스</b> — faq-manage.html·notice-manage.html 컬럼·로직 재사용, 규격 변환) · 약관 관리 4종·버전(신규)</div>
+  <div class="spec">프레임 1440×1024 · 상품 문의=브랜드 처리·공개 QnA / 1:1 문의=운영자 단일 창구 · FAQ·공지=운영자 정적 콘텐츠</div>
+</div>
+
+<div class="stack">
+
+<!-- ============ F1. 1:1 문의 목록 ============ -->
+<div class="ftitle">1. 1:1 문의 목록 <span>— 주문·배송·환불·기타, 운영자 단일 창구</span><span class="pill">GNB #8 · F1</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/cs/inquiries</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item hot on"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><span class="cnt">2</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub on">1:1 문의</div>
+      <div class="gnb-sub">상품 문의 모니터링</div>
+      <div class="gnb-sub">FAQ 관리</div>
+      <div class="gnb-sub">공지 관리</div>
+      <div class="gnb-sub">약관 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">CS·콘텐츠 관리 <span class="sub2">/ 1:1 문의</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="filter-row">
+          <span class="fchip on">전체 6</span>
+          <span class="fchip hot">접수 1</span>
+          <span class="fchip hot">처리중 1</span>
+          <span class="fchip">답변완료 2</span>
+          <span class="fchip">종료 2</span>
+          <div class="search-box">소비자명 · 주문번호 검색</div>
+        </div>
+        <div class="list-toolbar"><span>총 <b>6</b>건</span><span>접수일순 ▾</span></div>
+        <table class="list">
+          <thead><tr>
+            <th style="width:90px">유형</th>
+            <th>제목</th>
+            <th style="width:90px">소비자</th>
+            <th style="width:120px">참조 주문</th>
+            <th style="width:90px">상태</th>
+            <th style="width:90px">접수일</th>
+            <th style="width:70px">관리</th>
+          </tr></thead>
+          <tbody>
+            <tr class="row-link"><td>환불</td><td>반품 환불이 아직 안 됐어요</td><td>김민서</td><td>ORD-20260710-0456</td><td><span class="badge warn">접수</span></td><td>2026.07.16</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>배송</td><td>배송 조회가 안 돼요</td><td>오세아</td><td>ORD-20260620-0102</td><td><span class="badge wait">처리중</span></td><td>2026.07.15</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>기타</td><td>탈퇴 신청 방법 문의</td><td>이하은</td><td>—</td><td><span class="badge done">답변완료</span></td><td>2026.07.12</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>주문</td><td>결제 수단 변경 가능한가요</td><td>정서준</td><td>ORD-20260701-0233</td><td><span class="badge done">답변완료</span></td><td>2026.07.02</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>환불</td><td>취소했는데 환불이 늦어요</td><td>박도윤</td><td>ORD-20260708-0398</td><td><span class="badge">종료</span></td><td>2026.06.29</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td>기타</td><td>쿠폰이 적용 안 돼요</td><td>강태윤</td><td>—</td><td><span class="badge">종료</span></td><td>2026.06.11</td><td><span class="mini-btn">상세</span></td></tr>
+          </tbody>
+        </table>
+        <div class="pager"><span>‹</span><span class="on">1</span><span>›</span></div>
+        <div class="note rule"><span class="tag">[규칙]</span> <b>주문·배송·환불·기타 = 운영자 단일 창구</b>(상품 문의는 브랜드 처리, 다음 프레임). 1:1 게시판형(실시간 아님), <b>주문 참조 가능</b>. 답변완료 후 소비자 확인 또는 자동 종료.</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F2. 1:1 문의 상세 · 답변 작성 ============ -->
+<div class="ftitle">2. 1:1 문의 상세 · 답변 작성 <span>— 1:1 스레드형</span><span class="pill">GNB #8 · F2</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/cs/inquiries/INQ-20260716-021</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item hot on"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><span class="cnt">2</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub on">1:1 문의</div>
+      <div class="gnb-sub">상품 문의 모니터링</div>
+      <div class="gnb-sub">FAQ 관리</div>
+      <div class="gnb-sub">공지 관리</div>
+      <div class="gnb-sub">약관 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">CS·콘텐츠 관리 <span class="sub2">/ 1:1 문의 / 반품 환불이 아직 안 됐어요</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="detail-grid">
+          <div class="det-l">
+            <div class="card">
+              <div class="card-h">문의 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">유형</div><div class="form-val">환불</div></div>
+                <div class="form-row"><div class="form-label">소비자</div><div class="form-val">김민서 · 010-1122-3344</div></div>
+                <div class="form-row"><div class="form-label">참조 주문</div><div class="form-val">ORD-20260710-0456 <span style="color:#666;text-decoration:underline">주문 상세 보기</span></div></div>
+                <div class="form-row"><div class="form-label">접수일</div><div class="form-val">2026.07.16 10:12</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">문의 스레드</div>
+              <div class="card-b">
+                <div class="thread-msg"><div class="who">김민서 · 2026.07.16 10:12</div>반품 신청한 지 일주일이 넘었는데 아직도 환불이 안 됐어요. 확인 부탁드립니다.</div>
+                <textarea class="ta-answer" placeholder="답변 작성 (소비자에게 그대로 노출)"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="det-r">
+            <div class="card">
+              <div class="card-h">처리 상태 관리</div>
+              <div class="status-box">
+                <div class="lb">현재 상태</div>
+                <div class="cur">접수</div>
+              </div>
+              <div class="act-row">
+                <div class="abtn appr">답변 등록 (처리중→답변완료)</div>
+              </div>
+              <div style="padding:0 18px 16px;font-size:11px;color:#999;line-height:1.6">참조 주문을 보니 반송완료 상태로 환불 실행 대기 중 — <b>거래 관리에서 환불 실행</b> 먼저 처리 후 답변 권장</div>
+            </div>
+            <div class="card">
+              <div class="card-h">처리 이력</div>
+              <div class="hist">
+                <div class="hitem"><div>🟡</div><div><div class="hd">문의 접수</div><div class="ht">2026.07.16 10:12 · 소비자(김민서)</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F3. 상품 문의 모니터링 목록 ============ -->
+<div class="ftitle">3. 상품 문의 모니터링 <span>— 브랜드 처리 · 공개 QnA · 운영자는 전체 열람+숨김 권한</span><span class="pill">GNB #8 · F3</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/cs/product-qna</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item hot on"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><span class="cnt">2</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub">1:1 문의</div>
+      <div class="gnb-sub on">상품 문의 모니터링</div>
+      <div class="gnb-sub">FAQ 관리</div>
+      <div class="gnb-sub">공지 관리</div>
+      <div class="gnb-sub">약관 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">CS·콘텐츠 관리 <span class="sub2">/ 상품 문의 모니터링</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="filter-row">
+          <span class="fchip on">전체 5</span>
+          <span class="fchip">답변대기 1</span>
+          <span class="fchip">답변완료 3</span>
+          <span class="fchip hot">숨김 1</span>
+          <span class="fchip">비공개 문의 1</span>
+          <div class="search-box">상품명 · 브랜드 검색</div>
+        </div>
+        <div class="list-toolbar"><span>총 <b>5</b>건</span><span>등록일순 ▾</span></div>
+        <table class="list">
+          <thead><tr>
+            <th>질문</th>
+            <th style="width:150px">상품</th>
+            <th style="width:110px">브랜드</th>
+            <th style="width:80px">작성자</th>
+            <th style="width:80px">공개여부</th>
+            <th style="width:90px">상태</th>
+            <th style="width:90px">등록일</th>
+            <th style="width:110px">관리</th>
+          </tr></thead>
+          <tbody>
+            <tr class="row-link"><td><div class="qa-q">30ml, 50ml 중 어떤 걸 추천하세요?</div></td><td>비타민C 브라이트닝 크림</td><td>스킨랩코리아</td><td>이**</td><td><span class="badge">공개</span></td><td><span class="badge warn">답변대기</span></td><td>2026.07.16</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td><div class="qa-q">임산부도 사용 가능한가요?</div></td><td>글로우 세럼 앰플 30ml</td><td>글로우랩</td><td>박**</td><td><span class="badge">공개</span></td><td><span class="badge done">답변완료</span></td><td>2026.07.14</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td><div class="qa-q">환불 계좌를 잘못 입력했어요</div><div class="p-sub">개인정보 포함 — 비공개 문의</div></td><td>히알루론산 토너 200ml</td><td>글로우랩</td><td>최**</td><td><span class="badge lock">🔒 비공개</span></td><td><span class="badge done">답변완료</span></td><td>2026.07.10</td><td><span class="mini-btn">상세</span></td></tr>
+            <tr class="row-link"><td><div class="qa-q">타 사이트 최저가 링크입니다 http://...</div><div class="p-sub">광고성 게시물로 판단, 숨김 처리됨</div></td><td>라이스 브라이트닝 크림 50ml</td><td>무드코스메틱</td><td>정**</td><td><span class="badge">공개</span></td><td><span class="badge live">숨김</span></td><td>2026.07.08</td><td><span class="mini-btn">상세</span><span class="mini-btn">복원</span></td></tr>
+            <tr class="row-link"><td><div class="qa-q">재입고는 언제 되나요?</div></td><td>여드름 진정 세럼</td><td>스킨랩코리아</td><td>한**</td><td><span class="badge">공개</span></td><td><span class="badge done">답변완료</span></td><td>2026.07.01</td><td><span class="mini-btn">상세</span></td></tr>
+          </tbody>
+        </table>
+        <div class="pager"><span>‹</span><span class="on">1</span><span>›</span></div>
+        <div class="note rule"><span class="tag">[규칙]</span> 상품 문의 = <b>브랜드가 답변</b>(상품 상세 QnA 탭, 공개·닉네임 마스킹). 작성 시 <b>비공개 옵션</b> 선택 가능(본인·브랜드·운영자만 열람) — 운영자는 <b>비공개 포함 전체 모니터링</b> 가능(품질 관리).</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F4. 상품 문의 숨김 처리 모달 ============ -->
+<div class="ftitle">4. 상품 문의 숨김 처리 모달 <span>— 사유 필수, 감사 기록 + 당사자 통지</span><span class="pill">GNB #8 · F4</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/cs/product-qna/QNA-20260708-044</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item hot on"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><span class="cnt">2</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub">1:1 문의</div>
+      <div class="gnb-sub on">상품 문의 모니터링</div>
+      <div class="gnb-sub">FAQ 관리</div>
+      <div class="gnb-sub">공지 관리</div>
+      <div class="gnb-sub">약관 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">CS·콘텐츠 관리 <span class="sub2">/ 상품 문의 모니터링</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="detail-grid" style="opacity:.4">
+          <div class="det-l"><div class="card"><div class="card-h">문의 내용</div><div class="card-b"><div class="form-row"><div class="form-label">질문</div><div class="form-val">타 사이트 최저가 링크입니다</div></div></div></div></div>
+          <div class="det-r"></div>
+        </div>
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-h">상품 문의 숨김 처리</div>
+            <div class="modal-b">
+              <b>"타 사이트 최저가 링크입니다..."</b> 문의를 숨김 처리합니다. 소비자·브랜드 화면에서 즉시 비노출됩니다.
+              <select class="sel"><option>숨김 사유 선택 (필수)</option><option>광고·홍보성 게시물</option><option>비방·욕설</option><option>개인정보 노출</option><option>기타(직접 입력)</option></select>
+              <textarea class="ta" placeholder="상세 사유 입력 (처리 이력에 기록됨)"></textarea>
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">취소</div>
+              <div class="modal-btn do">숨김 처리</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F5. FAQ 관리 ============ -->
+<div class="ftitle">5. FAQ 관리 <span>— 카테고리·순서(드래그)·게시 여부</span><span class="pill">GNB #8 · F5</span><span class="src">기존 목업 베이스 · faq-manage.html</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/cs/faq</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item hot on"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><span class="cnt">2</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub">1:1 문의</div>
+      <div class="gnb-sub">상품 문의 모니터링</div>
+      <div class="gnb-sub on">FAQ 관리</div>
+      <div class="gnb-sub">공지 관리</div>
+      <div class="gnb-sub">약관 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">CS·콘텐츠 관리 <span class="sub2">/ FAQ 관리</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="filter-row">
+          <span class="fchip on">전체 8</span>
+          <span class="fchip">배송</span><span class="fchip">취소/교환/반품</span><span class="fchip">상품 문의</span><span class="fchip">주문/결제</span><span class="fchip">회원 정보</span>
+          <div class="search-box">질문 검색</div>
+        </div>
+        <div class="list-toolbar"><span>총 <b>8</b>건</span><span class="add-btn">＋ FAQ 등록</span></div>
+        <table class="list">
+          <thead><tr><th style="width:36px"></th><th style="width:90px">카테고리</th><th>질문 / 답변</th><th style="width:90px">등록일</th><th style="width:90px">수정일</th><th style="width:100px">관리</th></tr></thead>
+          <tbody>
+            <tr><td class="drag">⠿</td><td><span class="badge">주문/결제</span></td><td><div class="qa-q">Q. 주문 후 취소는 어떻게 하나요?</div><div class="qa-a">A. 배송 준비 전 단계에서만 취소 가능합니다. 마이 &gt; 주문 내역에서 취소 신청해 주세요.</div></td><td>2026.03.01</td><td>2026.03.15</td><td><span class="mini-btn">수정</span> <span class="mini-btn danger">삭제</span></td></tr>
+            <tr><td class="drag">⠿</td><td><span class="badge">배송</span></td><td><div class="qa-q">Q. 배송은 얼마나 걸리나요?</div><div class="qa-a">A. 결제 완료 후 1~3영업일 내 출고, 출고 후 1~2일 내 수령 가능합니다.</div></td><td>2026.03.01</td><td>2026.03.10</td><td><span class="mini-btn">수정</span> <span class="mini-btn danger">삭제</span></td></tr>
+            <tr><td class="drag">⠿</td><td><span class="badge">취소/교환/반품</span></td><td><div class="qa-q">Q. 반품·교환 신청은 어떻게 하나요?</div><div class="qa-a">A. 수령 후 7일 이내 마이 &gt; 주문 내역 &gt; 반품/교환 신청에서 진행하실 수 있습니다.</div></td><td>2026.03.02</td><td>2026.04.01</td><td><span class="mini-btn">수정</span> <span class="mini-btn danger">삭제</span></td></tr>
+            <tr><td class="drag">⠿</td><td><span class="badge">취소/교환/반품</span></td><td><div class="qa-q">Q. 반품이 불가한 경우가 있나요?</div><div class="qa-a">A. 화장품 개봉·사용, 위생 문제로 재판매 곤란한 경우 반품이 제한될 수 있습니다.</div></td><td>2026.03.02</td><td>2026.03.20</td><td><span class="mini-btn">수정</span> <span class="mini-btn danger">삭제</span></td></tr>
+            <tr><td class="drag">⠿</td><td><span class="badge">상품 문의</span></td><td><div class="qa-q">Q. 피부 타입별 추천 방법이 있나요?</div><div class="qa-a">A. 상품 상세페이지 QnA 탭에서 브랜드에 직접 문의하실 수 있습니다.</div></td><td>2026.03.10</td><td>2026.03.10</td><td><span class="mini-btn">수정</span> <span class="mini-btn danger">삭제</span></td></tr>
+            <tr><td class="drag">⠿</td><td><span class="badge">회원 정보</span></td><td><div class="qa-q">Q. 회원 탈퇴는 어떻게 하나요?</div><div class="qa-a">A. 마이 &gt; 설정 &gt; 회원 탈퇴에서 진행하실 수 있습니다.</div></td><td>2026.03.05</td><td>2026.04.02</td><td><span class="mini-btn">수정</span> <span class="mini-btn danger">삭제</span></td></tr>
+          </tbody>
+        </table>
+        <div class="note rule"><span class="tag">[규칙]</span> FAQ = 운영자가 올리는 <b>정적 콘텐츠</b>(문의와 별개) · 순서는 드래그로 조정(소비자 화면 노출 순서) · 카테고리는 뷰티 버티컬 기준으로 재정리(기존 목업의 패션 관련 카테고리 제외).</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F6. FAQ 등록 모달 ============ -->
+<div class="ftitle">6. FAQ 등록 모달 <span>— 카테고리·질문·답변, 등록 즉시 목록 최상단 반영</span><span class="pill">GNB #8 · F6</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/cs/faq</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item hot on"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><span class="cnt">2</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub">1:1 문의</div>
+      <div class="gnb-sub">상품 문의 모니터링</div>
+      <div class="gnb-sub on">FAQ 관리</div>
+      <div class="gnb-sub">공지 관리</div>
+      <div class="gnb-sub">약관 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">CS·콘텐츠 관리 <span class="sub2">/ FAQ 관리</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="filter-row" style="opacity:.4"><span class="fchip on">전체 8</span></div>
+        <table class="list" style="opacity:.4"><thead><tr><th>질문 / 답변</th></tr></thead><tbody><tr><td>Q. 주문 후 취소는 어떻게 하나요?</td></tr></tbody></table>
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-h">FAQ 등록</div>
+            <div class="modal-b">
+              <div style="font-size:11.5px;color:#888;margin-bottom:4px">카테고리 <span style="color:#a33">*</span></div>
+              <select class="sel"><option>선택</option><option>배송</option><option>취소/교환/반품</option><option>상품 문의</option><option>주문/결제</option><option>회원 정보</option></select>
+              <div style="font-size:11.5px;color:#888;margin:8px 0 4px">질문 <span style="color:#a33">*</span></div>
+              <input class="inp" placeholder="질문을 입력해주세요">
+              <div style="font-size:11.5px;color:#888;margin:8px 0 4px">답변 <span style="color:#a33">*</span></div>
+              <textarea class="ta" placeholder="답변을 입력해주세요"></textarea>
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">취소</div>
+              <div class="modal-btn doa">저장하기</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F7. 공지 관리 ============ -->
+<div class="ftitle">7. 공지 관리 <span>— 상단 고정·게시/임시저장</span><span class="pill">GNB #8 · F7</span><span class="src">기존 목업 베이스 · notice-manage.html</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/cs/notices</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item hot on"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><span class="cnt">2</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub">1:1 문의</div>
+      <div class="gnb-sub">상품 문의 모니터링</div>
+      <div class="gnb-sub">FAQ 관리</div>
+      <div class="gnb-sub on">공지 관리</div>
+      <div class="gnb-sub">약관 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">CS·콘텐츠 관리 <span class="sub2">/ 공지 관리</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="filter-row">
+          <span class="fchip on">전체 6</span>
+          <span class="fchip">게시 5</span>
+          <span class="fchip">임시저장 1</span>
+          <div class="search-box">제목 검색</div>
+        </div>
+        <div class="list-toolbar"><span>총 <b>6</b>건</span><span class="add-btn">＋ 공지 등록</span></div>
+        <table class="list">
+          <thead><tr><th style="width:50px">번호</th><th>제목 / 내용</th><th style="width:90px">등록일</th><th style="width:90px">수정일</th><th style="width:80px">상태</th><th style="width:100px">관리</th></tr></thead>
+          <tbody>
+            <tr><td>6</td><td><span class="pin">고정</span><span class="qa-q">SHOROOMZ 앱 v1.2 업데이트 안내</span><div class="qa-a">쇼룸 탐색·결제 흐름 개선 및 상품 필터 기능이 강화되었습니다.</div></td><td>2026.07.10</td><td>2026.07.10</td><td><span class="badge live">게시</span></td><td><span class="mini-btn">수정</span> <span class="mini-btn danger">삭제</span></td></tr>
+            <tr><td>5</td><td><span class="pin">고정</span><span class="qa-q">여름 뷰티 위크 기획전 오픈 안내</span><div class="qa-a">7월 한 달간 뷰티 인플루언서 쇼룸에서 특별 할인 공구가 진행됩니다.</div></td><td>2026.07.08</td><td>2026.07.09</td><td><span class="badge live">게시</span></td><td><span class="mini-btn">수정</span> <span class="mini-btn danger">삭제</span></td></tr>
+            <tr><td>4</td><td><span class="qa-q">정기 서버 점검 안내 (7월 20일 02:00~06:00)</span><div class="qa-a">서버 안정성 향상을 위한 정기 점검이 진행됩니다.</div></td><td>2026.07.07</td><td>2026.07.07</td><td><span class="badge live">게시</span></td><td><span class="mini-btn">수정</span> <span class="mini-btn danger">삭제</span></td></tr>
+            <tr><td>3</td><td><span class="qa-q">개인정보처리방침 개정 안내 (2026년 7월)</span><div class="qa-a">관련 법령 변경에 따라 개인정보처리방침이 일부 개정됩니다.</div></td><td>2026.07.05</td><td>2026.07.06</td><td><span class="badge live">게시</span></td><td><span class="mini-btn">수정</span> <span class="mini-btn danger">삭제</span></td></tr>
+            <tr><td>2</td><td><span class="qa-q">브랜드 수수료 정책 변경 안내</span><div class="qa-a">2026년 8월 1일부터 플랫폼 수수료율이 일부 조정됩니다.</div></td><td>2026.06.20</td><td>2026.07.08</td><td><span class="badge">임시저장</span></td><td><span class="mini-btn">수정</span> <span class="mini-btn danger">삭제</span></td></tr>
+            <tr><td>1</td><td><span class="qa-q">SHOWROOMZ 인플루언서 상시 모집 안내</span><div class="qa-a">뷰티 나노·마이크로 인플루언서를 상시 모집합니다. 지원 방법은 공지 내용을 확인해 주세요.</div></td><td>2026.03.10</td><td>2026.03.10</td><td><span class="badge live">게시</span></td><td><span class="mini-btn">수정</span> <span class="mini-btn danger">삭제</span></td></tr>
+          </tbody>
+        </table>
+        <div class="note rule"><span class="tag">[규칙]</span> 공지도 FAQ와 동일하게 <b>운영자 정적 콘텐츠</b> · 상단 고정(핀) 여러 개 가능(최신순) · 게시/임시저장 2단계 · 용어 정리(기존 목업의 "마켓"·"크리에이터" → "브랜드"·"인플루언서"로 교체).</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F8. 공지 등록 모달 ============ -->
+<div class="ftitle">8. 공지 등록 모달 <span>— 제목·내용·상단고정·게시상태</span><span class="pill">GNB #8 · F8</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/cs/notices</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item hot on"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><span class="cnt">2</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub">1:1 문의</div>
+      <div class="gnb-sub">상품 문의 모니터링</div>
+      <div class="gnb-sub">FAQ 관리</div>
+      <div class="gnb-sub on">공지 관리</div>
+      <div class="gnb-sub">약관 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">CS·콘텐츠 관리 <span class="sub2">/ 공지 관리</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="filter-row" style="opacity:.4"><span class="fchip on">전체 6</span></div>
+        <table class="list" style="opacity:.4"><thead><tr><th>제목 / 내용</th></tr></thead><tbody><tr><td>SHOWROOMZ 앱 v1.2 업데이트 안내</td></tr></tbody></table>
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-h">공지 등록</div>
+            <div class="modal-b">
+              <div style="font-size:11.5px;color:#888;margin-bottom:4px">제목 <span style="color:#a33">*</span></div>
+              <input class="inp" placeholder="공지 제목을 입력해주세요">
+              <div style="font-size:11.5px;color:#888;margin:8px 0 4px">내용 <span style="color:#a33">*</span></div>
+              <textarea class="ta" placeholder="공지 내용을 입력해주세요"></textarea>
+              <div style="display:flex;gap:16px;margin-top:10px;font-size:12.5px;color:#555">
+                <label><input type="checkbox"> 상단 고정</label>
+                <label><input type="radio" name="nstat" checked> 게시</label>
+                <label><input type="radio" name="nstat"> 임시저장</label>
+              </div>
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">취소</div>
+              <div class="modal-btn doa">저장하기</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F9. 약관 관리 ============ -->
+<div class="ftitle">9. 약관 관리 <span>— 4종·버전 관리</span><span class="pill">GNB #8 · F9</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/cs/terms</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item hot on"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><span class="cnt">2</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub">1:1 문의</div>
+      <div class="gnb-sub">상품 문의 모니터링</div>
+      <div class="gnb-sub">FAQ 관리</div>
+      <div class="gnb-sub">공지 관리</div>
+      <div class="gnb-sub on">약관 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">CS·콘텐츠 관리 <span class="sub2">/ 약관 관리</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="term-card">
+          <div><div class="tn">소비자 이용약관</div><div class="tv">시행 v3.1 · 2026.06.01 시행 · 과거 버전 3개 보관</div></div>
+          <div><span class="mini-btn">버전 이력</span> <span class="mini-btn">새 버전 등록</span></div>
+        </div>
+        <div class="term-card">
+          <div><div class="tn">개인정보처리방침</div><div class="tv">시행 v2.4 · 2026.05.01 시행 · 과거 버전 2개 보관</div></div>
+          <div><span class="mini-btn">버전 이력</span> <span class="mini-btn">새 버전 등록</span></div>
+        </div>
+        <div class="term-card">
+          <div><div class="tn">브랜드(판매자) 이용약관</div><div class="tv">시행 v1.2 · 2026.04.10 시행 · 과거 버전 1개 보관</div></div>
+          <div><span class="mini-btn">버전 이력</span> <span class="mini-btn">새 버전 등록</span></div>
+        </div>
+        <div class="term-card">
+          <div><div class="tn">인플루언서 이용약관</div><div class="tv">시행 v1.3 · 2026.06.15 시행 · 과거 버전 1개 보관</div></div>
+          <div><span class="mini-btn">버전 이력</span> <span class="mini-btn">새 버전 등록</span></div>
+        </div>
+        <div style="margin-top:16px">
+          <div class="card-h" style="border:1px solid #e2e2e2;border-radius:8px 8px 0 0;background:#fff">소비자 이용약관 — 버전 이력</div>
+          <table class="verhist" style="border:1px solid #e2e2e2;border-top:none;background:#fff">
+            <thead><tr><th style="padding-left:14px">버전</th><th>시행일</th><th>등록자</th><th>상태</th></tr></thead>
+            <tbody>
+              <tr><td style="padding-left:14px">v3.1</td><td>2026.06.01</td><td>김운영</td><td><span class="badge live">시행중</span></td></tr>
+              <tr><td style="padding-left:14px">v3.0</td><td>2026.04.15</td><td>김운영</td><td><span class="badge done">과거 버전</span></td></tr>
+              <tr><td style="padding-left:14px">v2.0</td><td>2026.02.01</td><td>소 대표</td><td><span class="badge done">과거 버전</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note rule" style="margin-top:14px"><span class="tag">[규칙]</span> 유형당 <b>시행 버전은 1개</b> · 개정 = 새 버전 등록 → 시행일부터 노출 교체 · 과거 버전은 삭제하지 않고 <b>전부 보관</b>(동의 기록이 "동의한 버전"을 참조하므로).</div>
+        <div class="note legal" style="margin-top:8px"><span class="tag">[패치 대기]</span> 약관 관리 범위는 현재 <b>4종</b>이나, 운영정책·마케팅 동의 문구를 포함한 <b>6종으로 확장 예정</b>(약관후속패치리스트 #4·#5 — "약관 6종 최종 확정" 트리거 대기 중). 확장 시 동의 기록도 단순 보존이 아니라 <b>상태(동의/철회)·변경 이력</b> 구조로 함께 개편 필요.</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F10. 약관 새 버전 등록 페이지 ============ -->
+<div class="ftitle">10. 약관 새 버전 등록 <span>— 본문·시행일 입력, 과거 버전 자동 보관 (모달 아님, 전체 페이지)</span><span class="pill">GNB #8 · F10</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/cs/terms/consumer-tos</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item hot on"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><span class="cnt">2</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub">1:1 문의</div>
+      <div class="gnb-sub">상품 문의 모니터링</div>
+      <div class="gnb-sub">FAQ 관리</div>
+      <div class="gnb-sub">공지 관리</div>
+      <div class="gnb-sub on">약관 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">CS·콘텐츠 관리 <span class="sub2">/ 약관 관리 / 소비자 이용약관 / 새 버전 등록</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="detail-grid">
+          <div class="det-l">
+            <div class="card">
+              <div class="card-h">현재 시행 버전</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">유형</div><div class="form-val">소비자 이용약관</div></div>
+                <div class="form-row"><div class="form-label">시행 버전</div><div class="form-val">v3.1</div></div>
+                <div class="form-row"><div class="form-label">시행일</div><div class="form-val">2026.06.01</div></div>
+              </div>
+              <div class="card-b" style="padding-top:0"><div style="font-size:11px;color:#999">새 버전이 등록·시행되면 이 버전은 자동으로 <b>과거 버전</b>으로 전환되어 계속 보관됩니다(삭제되지 않음, 동의 기록이 참조).</div></div>
+            </div>
+            <div class="card">
+              <div class="card-h">새 버전 작성</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">버전 번호</div><div class="form-val"><input class="inp" style="max-width:160px" value="v3.2"></div></div>
+                <div class="form-row"><div class="form-label">시행일</div><div class="form-val"><input class="inp" style="max-width:200px" placeholder="2026.08.01"></div></div>
+                <div class="form-row" style="align-items:flex-start"><div class="form-label">본문</div><div class="form-val"><textarea class="ta" style="min-height:280px" placeholder="약관 전문 입력 (변경된 조항은 굵게 또는 밑줄 표시 권장)"></textarea></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="det-r">
+            <div class="card">
+              <div class="card-h">등록</div>
+              <div class="act-row" style="padding-top:16px">
+                <div class="abtn appr">등록 (시행일부터 자동 교체)</div>
+              </div>
+              <div style="padding:0 18px 16px;font-size:11px;color:#999;line-height:1.6">시행일 이전에는 등록만 되고 노출되지 않음 · 시행일 도래 시 시스템이 자동으로 노출 교체</div>
+            </div>
+            <div class="card">
+              <div class="card-h">체크리스트</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label" style="width:auto;flex:1">변경 조항 요약 작성 여부</div></div>
+                <div class="form-row"><div class="form-label" style="width:auto;flex:1">시행일 사전 고지 기간 확보</div></div>
+                <div class="form-row"><div class="form-label" style="width:auto;flex:1">법무 검토 완료 여부</div></div>
+              </div>
+              <div class="card-b" style="padding-top:0"><div style="font-size:11px;color:#8a5a00">개정 고지 방법·의무·사전 고지 기간은 <b>[법률 확정 대기]</b> — 변호사 확인 필요</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<div class="note rule" style="margin:20px 40px 0"><span class="tag">[규칙]</span> 운영자의 모든 집행 액션(문의 숨김·답변 등록·약관 개정)은 <b>감사 기록</b>(처리자·시각·사유) 대상 — 도메인모델 §16-1 공통 규칙.</div>
+
+</div>
+</body>
+</html>

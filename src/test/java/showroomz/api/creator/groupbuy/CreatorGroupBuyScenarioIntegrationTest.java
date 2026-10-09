@@ -1,5 +1,6 @@
 package showroomz.api.creator.groupbuy;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
@@ -75,7 +76,8 @@ class CreatorGroupBuyScenarioIntegrationTest extends CreatorGroupBuyTestSupport 
         studioDetail(id).andExpect(jsonPath("$.groupBuy.status").value("ENDED"))
                 .andExpect(jsonPath("$.post.status").value("CLOSED"))
                 .andExpect(jsonPath("$.payout").doesNotExist())
-                .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(true));
+                // 계약 이행 확인은 2026-10-06 폐기 — 종료 뒤에도 버튼이 없다.
+                .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(false));
         // 종료 후 3일 동안은 마감 게시물로 소비자에게 남고, 스케줄러의 「마감 게시물 내리기」가 그 뒤 내린다(공구 게시물 설계 4-1 · 4-2)
         assertThat(postRepository.findById(post.getPostId()).orElseThrow().getStatus()).isEqualTo(PostStatus.PUBLISHED);
         assertThat(lifecycleService.retirePost(id, now.plusHours(72))).isEqualTo(1);
@@ -288,7 +290,7 @@ class CreatorGroupBuyScenarioIntegrationTest extends CreatorGroupBuyTestSupport 
                 .andExpect(jsonPath("$.closure.requester.type").value("SELLER"))
                 .andExpect(jsonPath("$.closure.requester.mine").value(false))
                 .andExpect(jsonPath("$.closure.decisionReason").value("재고 소진을 확인했습니다."))
-                .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(true));
+                .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(false));
         assertThat(postRepository.findById(groupBuyPost.getPostId()).orElseThrow().getStatus())
                 .isEqualTo(PostStatus.DRAFT);
     }
@@ -466,6 +468,7 @@ class CreatorGroupBuyScenarioIntegrationTest extends CreatorGroupBuyTestSupport 
     }
 
     @Test
+    @Disabled("[기획 제외] 계약 이행 확인 폐기(2026-10-06 · 1009 기획 수정본 6절) — 기획 복귀 시 되살린다")
     @DisplayName("이행 기한이 지나도 자동 간주 스위치가 꺼져 있으면 직접 확인할 수 있다")
     void fulfillmentTimeoutDoesNotSilentlyConfirm() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);

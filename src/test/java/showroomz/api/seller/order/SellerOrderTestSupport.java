@@ -65,6 +65,9 @@ public abstract class SellerOrderTestSupport extends OrderPaymentTestSupport {
 
     protected static final String SELLER_ORDERS = "/v1/seller/orders";
     protected static final String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    @org.springframework.beans.factory.annotation.Autowired
+    protected showroomz.domain.groupbuy.service.port.GroupBuyClosureHook groupBuyClosureHook;
+
     protected static final int SHIPPING_LEAD_DAYS = 2;
     protected static final int SERUM_PRICE = 24_000;
     protected static final int FREE_SHIPPING_THRESHOLD = 100_000;
@@ -208,6 +211,11 @@ public abstract class SellerOrderTestSupport extends OrderPaymentTestSupport {
         return historyRepository.findByDeliveryGroupId(group.getId());
     }
 
+    /** 그 유형의 가장 최근 이력 — PG 자동 환불(REFUND_EXECUTED)이 커밋 뒤에 쌓여 최신 행이 바뀌는 경우에 쓴다. */
+    protected OrderFulfillmentHistory history(OrderDeliveryGroup group, FulfillmentEventType eventType) {
+        return history(group).stream().filter(h -> h.getEventType() == eventType).findFirst().orElseThrow();
+    }
+
     protected long historyCount(OrderDeliveryGroup group, FulfillmentEventType eventType) {
         return history(group).stream().filter(h -> h.getEventType() == eventType).count();
     }
@@ -238,6 +246,11 @@ public abstract class SellerOrderTestSupport extends OrderPaymentTestSupport {
 
     protected void backdatePaidAt(OrderDeliveryGroup group, LocalDateTime paidAt) {
         jdbc.update("UPDATE orders SET paid_at = ? WHERE order_id = ?", paidAt, group.getOrder().getId());
+    }
+
+    /** 공구 종결 — 그 공구 주문의 발송기한이 마감 + 주문 시점 N영업일로 확정된다(1009 기획 수정본 1-2). */
+    protected void closeGroupBuy(LocalDateTime endedAt) {
+        transactionTemplate.executeWithoutResult(tx -> groupBuyClosureHook.onGroupBuyClosed(groupBuy.getId(), endedAt));
     }
 
     protected void backdateShipDueAt(OrderDeliveryGroup group, LocalDateTime shipDueAt) {

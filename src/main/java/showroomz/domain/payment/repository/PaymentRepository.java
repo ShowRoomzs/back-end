@@ -20,6 +20,26 @@ import java.util.Optional;
  */
 public interface PaymentRepository extends JpaRepository<Payment, String> {
 
+    /** 환불 집행의 직렬화 지점 — 한 결제에 부분 취소를 하나씩만 보낸다(1009 기획 수정본 2-4). */
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Payment p WHERE p.paymentId = :paymentId")
+    Optional<Payment> findForUpdate(@Param("paymentId") String paymentId);
+
+    /** 부분 취소 확인 — 누적액을 올린다. 상태는 건드리지 않는다. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Payment p SET p.cancelledAmount = p.cancelledAmount + :amount WHERE p.paymentId = :paymentId")
+    int addCancelledAmount(@Param("paymentId") String paymentId, @Param("amount") int amount);
+
+    /**
+     * 부분 취소 누적이 결제액에 닿았다 — PAID → CANCELLED. 주문 취소 연쇄는 없다(항목은 이미 각 경로가 닫았다). 이렇게 닫아 두어야
+     * 포트원 CANCELLED 웹훅 · 대사가 이 결제를 「주문 전체 취소」로 수렴시키지 않는다.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Payment p SET p.status = showroomz.domain.payment.type.PaymentStatus.CANCELLED "
+            + "WHERE p.paymentId = :paymentId AND p.status = showroomz.domain.payment.type.PaymentStatus.PAID "
+            + "AND p.cancelledAmount >= p.amount")
+    int closeIfFullyRefunded(@Param("paymentId") String paymentId);
+
     Optional<Payment> findFirstByOrder_IdAndStatus(Long orderId, PaymentStatus status);
 
     List<Payment> findByOrder_IdOrderByAttemptDesc(Long orderId);

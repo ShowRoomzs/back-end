@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>SHOWROOMZ 웹 디자인 시스템 v1.3</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  /* ---- Neutral ramp (cool, refined) ---- */
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+
+  /* ---- Accent (indigo — 유일한 주 액션색) ---- */
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+
+  /* ---- Status (원칙 기반: 조치필요=경고/위험, 정상흐름=정보/성공, 종료=중립) ---- */
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+
+  /* ---- Typography scale (Compact 전역) ---- */
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+
+  /* ---- Spacing (4px 그리드) ---- */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+
+  /* ---- Radius ---- */
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+
+  /* ---- Brand (로고 전용 — UI 액센트와 별개 체계) ---- */
+  --brand-50:#FEF4F6; --brand-100:#FDE1E8; --brand-200:#FBC0CE; --brand-300:#F899AF;
+  --brand-400:#F56E8E; --brand-500:#F2456E; --brand-600:#CF3D61; --brand-700:#A93353;
+  --brand-800:#822A44; --brand-900:#5B2136;
+
+  /* ---- Logo (서피스별 적용색) ---- */
+  --logo-color:var(--brand-500);   /* 소비자 앱 · IR · 마케팅 */
+  --logo-dark:var(--n-900);        /* 웹 3서피스 · 계약서 — 기본값 */
+  --logo-white:#FFFFFF;            /* 어두운 배경 */
+}
+*{box-sizing:border-box;}
+body{
+  font-family:'Pretendard',-apple-system,sans-serif;
+  background:var(--n-50); color:var(--n-900);
+  margin:0; padding:40px; font-size:var(--fs-body); line-height:1.6;
+}
+h1{font-size:24px;font-weight:600;margin:0 0 4px;}
+.sub{color:var(--n-500);font-size:var(--fs-caption);margin:0 0 40px;}
+section{margin-bottom:48px;}
+h2{font-size:var(--fs-h2);font-weight:600;margin:0 0 4px;padding-bottom:8px;border-bottom:1px solid var(--n-200);}
+.note{font-size:var(--fs-caption);color:var(--n-500);margin:0 0 16px;}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+
+/* ---- swatch ---- */
+.swatch{width:96px;}
+.swatch .box{height:56px;border-radius:var(--r-md);border:1px solid var(--n-200);margin-bottom:6px;}
+.swatch .label{font-size:var(--fs-micro);color:var(--n-600);font-weight:500;}
+.swatch .hex{font-size:10px;color:var(--n-400);font-family:monospace;}
+
+/* ---- buttons ---- */
+button{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:7px 14px;cursor:pointer;transition:background .12s;}
+.btn-primary{background:var(--accent-500);color:#fff;border:none;}
+.btn-primary:hover{background:var(--accent-600);}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-secondary:hover{background:var(--n-100);}
+.btn-ghost{background:transparent;color:var(--n-600);border:none;}
+.btn-ghost:hover{background:var(--n-100);}
+.btn-danger{background:var(--danger-text);color:#fff;border:none;}
+.btn-danger:hover{background:#8F2828;}
+button:disabled{background:var(--n-100);color:var(--n-400);border:1px solid var(--n-200);cursor:not-allowed;}
+
+/* ---- badges ---- */
+.badge{display:inline-flex;align-items:center;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);}
+.badge-info{background:var(--info-bg);color:var(--info-text);}
+.badge-success{background:var(--success-bg);color:var(--success-text);}
+.badge-warning{background:var(--warning-bg);color:var(--warning-text);}
+.badge-danger{background:var(--danger-bg);color:var(--danger-text);}
+.badge-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+
+/* ---- form ---- */
+input[type=text],select{
+  font-family:inherit;font-size:var(--fs-body);padding:6px 10px;border-radius:var(--r-sm);
+  border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:32px;
+}
+input[type=text]:focus,select:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+select{
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  padding-right:32px;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 10px center;
+  cursor:pointer;
+}
+label{display:block;font-size:var(--fs-caption);color:var(--n-600);margin-bottom:4px;font-weight:500;}
+.field{width:220px;}
+
+/* ---- table (compact) ---- */
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+thead td{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);font-weight:500;padding:6px 12px;}
+tbody td{padding:6px 12px;font-size:var(--fs-caption);border-top:1px solid var(--n-200);}
+tbody tr:hover{background:var(--n-50);}
+
+/* ---- card ---- */
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);padding:var(--sp-3) var(--sp-4);}
+.metric-label{font-size:var(--fs-caption);color:var(--n-600);margin-bottom:2px;}
+.metric-value{font-size:17px;font-weight:600;}
+
+/* ---- GNB sidebar ---- */
+.gnb{width:180px;background:var(--n-100);border-radius:var(--r-md);padding:var(--sp-3) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);padding:7px 10px;border-radius:var(--r-sm);margin-bottom:2px;cursor:pointer;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item.active .gn{color:rgba(255,255,255,.8);}
+.gnb-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-item:hover:not(.active){background:var(--n-200);}
+.gnb-sub{font-size:var(--fs-micro);color:var(--n-500);padding:5px 10px 5px 22px;}
+
+/* ---- tabs ---- */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--n-200);}
+.tab{font-size:var(--fs-caption);color:var(--n-500);padding:8px 4px;margin-right:16px;cursor:pointer;border-bottom:2px solid transparent;}
+.tab.active{color:var(--accent-500);border-bottom-color:var(--accent-500);font-weight:500;}
+
+/* ---- 필터 영역 (다중선택, 상시 노출 패널) ---- */
+.filter-panel{position:relative;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);
+  padding:20px 100px 20px 16px;display:flex;flex-direction:column;gap:16px;}
+.fp-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.fp-glabel{font-size:var(--fs-micro);color:var(--n-400);font-weight:600;flex-shrink:0;width:58px;}
+.fp-item{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:var(--fs-caption);color:var(--n-600);}
+.fp-box{width:15px;height:15px;border:1.5px solid var(--n-300);border-radius:4px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;background:#fff;}
+.fp-box svg{width:9px;height:9px;display:none;}
+.fp-item.on .fp-box{background:var(--accent-500);border-color:var(--accent-500);}
+.fp-item.on .fp-box svg{display:block;}
+.fp-item.on{color:var(--n-900);font-weight:500;}
+.fp-n{font-size:var(--fs-micro);color:var(--n-400);}
+.fp-reset{position:absolute;top:17px;right:14px;display:inline-flex;align-items:center;gap:5px;
+  height:26px;padding:0 10px;border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;
+  color:var(--n-500);font-size:var(--fs-micro);font-weight:500;cursor:pointer;}
+.fp-reset:hover{background:var(--n-100);color:var(--n-700);border-color:var(--n-400);}
+.fp-reset svg{width:11px;height:11px;}
+
+/* ---- pagination ---- */
+.page-item{width:26px;height:26px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-600);cursor:pointer;}
+.page-item.active{background:var(--accent-500);color:#fff;}
+
+/* ---- brand logo ---- */
+.logo-stage{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);
+  padding:24px;display:flex;align-items:center;justify-content:center;min-height:88px;}
+.logo-stage.dark{background:var(--n-900);border-color:var(--n-900);}
+.lockup{display:inline-flex;align-items:center;gap:14px;}
+.tier{border-collapse:collapse;width:100%;font-size:var(--fs-caption);margin-top:12px;}
+.tier th,.tier td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--n-200);}
+.tier th{background:var(--n-100);color:var(--n-600);font-weight:600;font-size:var(--fs-micro);}
+.tier td code{font-family:monospace;font-size:var(--fs-micro);background:var(--n-100);
+  padding:1px 5px;border-radius:4px;}
+.gnb-brand{display:flex;align-items:center;padding:12px 12px 15px;
+  border-bottom:1px solid var(--n-200);margin-bottom:6px;}
+
+/* ---- 상태 배지(점 포함형 · 목록·상세 표준) ---- */
+.badge.dot::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;margin-right:5px;}
+
+/* ---- 서브탭 A · 좌측 세로형 ---- */
+.subnav{width:180px;flex-shrink:0;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);padding:var(--sp-2);}
+.subnav-item{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:var(--fs-caption);
+  color:var(--n-600);padding:8px 10px;border-radius:var(--r-sm);margin-bottom:2px;cursor:pointer;}
+.subnav-item:hover:not(.on):not(.disabled){background:var(--n-100);}
+.subnav-item.on{background:var(--accent-50);color:var(--accent-600);font-weight:600;}
+.subnav-item.disabled{color:var(--n-400);cursor:not-allowed;}
+.subnav-tag{font-size:10px;color:var(--n-500);background:var(--n-100);border-radius:4px;padding:1px 5px;font-weight:500;}
+
+/* ---- 서브탭 B · 상단 가로형(필형) ---- */
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;}
+.subtab{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 13px;border-radius:15px;
+  border:1px solid var(--n-300);background:#fff;color:var(--n-600);font-size:var(--fs-caption);cursor:pointer;}
+.subtab:hover:not(.on){background:var(--n-100);}
+.subtab.on{background:var(--accent-500);border-color:var(--accent-500);color:#fff;font-weight:500;}
+.subtab .c{font-size:var(--fs-micro);opacity:.75;}
+
+/* ---- 요약 통계 카드 ---- */
+.stat{flex:1;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);padding:var(--sp-3) var(--sp-4);}
+.stat .num{font-size:19px;font-weight:600;color:var(--n-900);font-variant-numeric:tabular-nums;}
+.stat .lb{font-size:var(--fs-micro);color:var(--n-600);margin-top:3px;}
+.stat.attn{border-color:var(--warning-bg);background:#FDFAF4;}
+.stat.attn .num{color:var(--warning-text);}
+
+/* ---- 진행 단계(이행 이력) ---- */
+.steps{display:flex;align-items:center;gap:3px;flex-wrap:wrap;}
+.stp{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:5px 9px;font-size:var(--fs-micro);
+  color:var(--n-400);background:#fff;line-height:1.35;}
+.stp .who{display:block;font-size:10px;color:var(--n-400);margin-top:1px;}
+.stp.done{background:var(--n-100);color:var(--n-600);border-color:var(--n-200);}
+.stp.cur{border-color:var(--accent-500);color:var(--accent-600);font-weight:600;background:var(--accent-50);}
+.stp.cur .who{color:var(--accent-600);}
+.stp-ar{color:var(--n-300);font-size:var(--fs-micro);}
+
+/* ---- 계산 명세표 ---- */
+.calc{width:100%;border-collapse:collapse;font-size:var(--fs-caption);}
+.calc td{padding:8px 4px;border-bottom:1px solid var(--n-100);}
+.calc .lbl{color:var(--n-600);}
+.calc .val{text-align:right;color:var(--n-900);font-variant-numeric:tabular-nums;}
+.calc tr.sub .lbl{padding-left:14px;color:var(--n-500);font-size:var(--fs-micro);}
+.calc tr.sub .val{color:var(--n-500);font-size:var(--fs-micro);}
+.calc tr.minus .val::before{content:"− ";}
+.calc tr.plus .val::before{content:"+ ";}
+.calc tr.total td{border-top:1.5px solid var(--n-300);border-bottom:none;padding-top:10px;
+  font-weight:600;color:var(--n-900);font-size:var(--fs-h2);}
+
+/* ---- 안내 배너 ---- */
+.notice{display:flex;gap:8px;border-radius:var(--r-sm);padding:11px 13px;font-size:var(--fs-micro);line-height:1.6;}
+.notice.info{background:var(--info-bg);color:var(--info-text);}
+.notice.warn{background:var(--warning-bg);color:var(--warning-text);}
+.notice.danger{background:var(--danger-bg);color:var(--danger-text);}
+.notice b{font-weight:600;}
+
+/* ---- 빈 상태 ---- */
+.empty{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);padding:56px 24px;text-align:center;}
+.empty-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);margin-bottom:4px;}
+.empty-d{font-size:var(--fs-caption);color:var(--n-500);}
+
+/* ---- 목록 실행 액션 버튼 ---- */
+.act-btn{height:28px;padding:0 14px;font-size:var(--fs-micro);font-weight:500;border:1px solid var(--n-300);
+  background:#fff;border-radius:var(--r-sm);color:var(--n-700);cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;}
+.act-btn:hover{background:var(--n-100);border-color:var(--n-400);}
+.act-btn.primary{background:var(--accent-500);border-color:var(--accent-500);color:#fff;}
+.act-btn.primary:hover{background:var(--accent-600);border-color:var(--accent-600);}
+.act-btn.del{color:var(--danger-text);}
+.act-btn.del:hover{background:var(--danger-bg);border-color:var(--danger-text);}
+
+/* ---- GNB 카운트 배지(중립 · 숫자만) ---- */
+.gcnt{font-size:10px;font-weight:600;background:var(--n-200);color:var(--n-700);
+  border-radius:9px;min-width:18px;height:18px;padding:0 5px;
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gnb-item.active .gcnt{background:rgba(255,255,255,.24);color:#fff;}
+
+/* ---- modal ---- */
+.modal-overlay{background:rgba(26,27,31,0.45);border-radius:var(--r-md);padding:40px;display:flex;justify-content:center;}
+.modal{background:#fff;border-radius:12px;padding:20px;width:320px;box-shadow:var(--shadow-popover);}
+.modal h3{font-size:var(--fs-h3);font-weight:600;margin:0 0 8px;}
+.modal p{font-size:var(--fs-caption);color:var(--n-600);margin:0 0 20px;}
+</style>
+</head>
+<body>
+
+<h1>SHOWROOMZ 웹 디자인 시스템 <span style="color:var(--n-400);font-weight:400;">_v1.3</span></h1>
+<p class="sub">방향 A(인디고, 쿨 뉴트럴) 확정 · 전역 Compact · 다크모드 미지원 · 파트너센터·쇼룸 스튜디오·어드민 3서피스 공통<br>브랜드 로고 계층 포함 — 로고 로즈 레드 #F2456E / UI 액센트 인디고 #3B5BDB (별개 체계)<br>[v1.3] 조치 주체 축 신설 · 상태 배지 사전 · 탐색 위계 3단 · 목록 상호작용 규칙 · GNB 배지 중립 확정 · 컴포넌트 6종 승격</p>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-s" d="M389 1000Q334 1000 274 992.5Q214 985 160.5 970.0Q107 955 64 934Q27 916 12 886.5Q-3 857 1 824.0Q5 791 24.5 765.5Q44 740 75.5 731.0Q107 722 147 740Q199 765 265 778.5Q331 792 389 792Q480 792 516 768.0Q552 744 552 708Q552 677 527 657.5Q502 638 437 624L276 590Q144 563 79.5 494.0Q15 425 15 316Q15 245 44.5 186.5Q74 128 128 86.5Q182 45 257 22.5Q332 0 425 0Q496 0 569.5 16.0Q643 32 697 63Q729 80 742.5 109.0Q756 138 753.5 168.5Q751 199 732 222.5Q713 246 682.5 253.5Q652 261 609 243Q569 226 519 217.0Q469 208 422 208Q371 208 335 219.5Q299 231 280.5 253.0Q262 275 262 304Q262 333 286 353.0Q310 373 375 387L535 421Q668 450 734 516.0Q800 582 800 688Q800 759 771 817.0Q742 875 688.5 915.5Q635 956 559.5 978.0Q484 1000 389 1000Z"/><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 640.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+
+<section>
+<h2>브랜드 로고</h2>
+<p class="note">로고 색과 UI 액센트 색은 <b>별개 체계</b>다. 웹 3서피스의 로고는 단색 다크를 쓰고, 액션은 인디고를 쓴다.</p>
+
+<div class="row" style="gap:12px;margin-bottom:12px;">
+  <div class="logo-stage" style="flex:1;min-width:280px;"><span class="lockup" style="gap:11px"><svg viewBox="-25.3 -25.3 850.7 1050.6" width="32.4" height="40" role="img" aria-label="SHOWROOMZ"><use href="#sz-s" fill="var(--logo-dark)" stroke="var(--logo-dark)" stroke-width="50.6" stroke-linejoin="round" paint-order="stroke"/></svg><svg viewBox="0 0 1863.4 200" width="242.2" height="26" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg></span></div>
+  <div class="logo-stage dark" style="flex:1;min-width:280px;"><span class="lockup" style="gap:11px"><svg viewBox="-25.3 -25.3 850.7 1050.6" width="32.4" height="40" role="img" aria-label="SHOWROOMZ"><use href="#sz-s" fill="var(--logo-white)" stroke="var(--logo-white)" stroke-width="50.6" stroke-linejoin="round" paint-order="stroke"/></svg><svg viewBox="0 0 1863.4 200" width="242.2" height="26" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-white)"/></svg></span></div>
+</div>
+<div class="row" style="gap:12px;">
+  <div class="logo-stage" style="flex:1;min-width:180px;"><svg viewBox="-25.3 -25.3 850.7 1050.6" width="35.6" height="44" role="img" aria-label="SHOWROOMZ"><use href="#sz-s" fill="var(--logo-color)" stroke="var(--logo-color)" stroke-width="50.6" stroke-linejoin="round" paint-order="stroke"/></svg></div>
+  <div class="logo-stage" style="flex:1;min-width:180px;"><svg viewBox="-25.3 -25.3 850.7 1050.6" width="35.6" height="44" role="img" aria-label="SHOWROOMZ"><use href="#sz-s" fill="var(--logo-dark)" stroke="var(--logo-dark)" stroke-width="50.6" stroke-linejoin="round" paint-order="stroke"/></svg></div>
+  <div class="logo-stage dark" style="flex:1;min-width:180px;"><svg viewBox="-25.3 -25.3 850.7 1050.6" width="35.6" height="44" role="img" aria-label="SHOWROOMZ"><use href="#sz-s" fill="var(--logo-white)" stroke="var(--logo-white)" stroke-width="50.6" stroke-linejoin="round" paint-order="stroke"/></svg></div>
+</div>
+
+<table class="tier">
+  <tr><th style="width:150px">계층</th><th style="width:130px">색</th><th>적용</th></tr>
+  <tr><td>브랜드 로고</td><td><code>#F2456E</code></td><td>로고 · 앱 아이콘 · 소비자 앱</td></tr>
+  <tr><td>브랜드 문서</td><td><code>#1E2A6E</code></td><td>IR 덱 · PPT (본 문서 범위 밖)</td></tr>
+  <tr><td>제품 UI (웹)</td><td><code>#3B5BDB</code></td><td>파트너센터 · 쇼룸 스튜디오 · 어드민</td></tr>
+</table>
+
+<table class="tier">
+  <tr><th style="width:150px">서피스</th><th style="width:130px">로고</th><th style="width:130px">토큰</th><th>액션 컬러</th></tr>
+  <tr><td>파트너센터</td><td>단색 다크</td><td><code>--logo-dark</code></td><td><code>--accent-500</code></td></tr>
+  <tr><td>쇼룸 스튜디오</td><td>단색 다크</td><td><code>--logo-dark</code></td><td><code>--accent-500</code></td></tr>
+  <tr><td>어드민</td><td>단색 다크</td><td><code>--logo-dark</code></td><td><code>--accent-500</code></td></tr>
+  <tr><td>계약서 · 세금계산서</td><td>단색 다크</td><td><code>--logo-dark</code></td><td>—</td></tr>
+</table>
+
+<p class="note" style="margin-top:12px;">사이드바 GNB는 <b>워드마크 단독 14px</b>를 쓴다 — 폭이 좁아 조합형은 여백이 남지 않고, 심볼은 워드마크와 같은 정보를 반복한다. 심볼 단독은 워드마크를 넣을 수 없을 때만 쓴다(파비콘 16px · 앱 아이콘 · 축소 사이드바 20px). 최소 사용 크기 조합형 20px.
+로고 주위 여백은 심볼 높이의 1/2 이상. 상세 규정은 <b>SHOWROOMZ 로고 가이드 v2.0</b> 참조.</p>
+</section>
+
+<section>
+<h2>색 토큰 — 뉴트럴</h2>
+<p class="note">웹 전체 배경·텍스트·보더 기준. 순회색이 아닌 미세 쿨톤.</p>
+<div class="row">
+  <div class="swatch"><div class="box" style="background:var(--n-50)"></div><div class="label">n-50</div><div class="hex">#FAFAFB</div></div>
+  <div class="swatch"><div class="box" style="background:var(--n-100)"></div><div class="label">n-100</div><div class="hex">#F1F2F4</div></div>
+  <div class="swatch"><div class="box" style="background:var(--n-200)"></div><div class="label">n-200</div><div class="hex">#E4E5E9</div></div>
+  <div class="swatch"><div class="box" style="background:var(--n-300)"></div><div class="label">n-300</div><div class="hex">#C7C9D1</div></div>
+  <div class="swatch"><div class="box" style="background:var(--n-400)"></div><div class="label">n-400</div><div class="hex">#A8ACB4</div></div>
+  <div class="swatch"><div class="box" style="background:var(--n-500)"></div><div class="label">n-500</div><div class="hex">#7B7F89</div></div>
+  <div class="swatch"><div class="box" style="background:var(--n-600)"></div><div class="label">n-600</div><div class="hex">#5B5F68</div></div>
+  <div class="swatch"><div class="box" style="background:var(--n-700)"></div><div class="label">n-700</div><div class="hex">#3A3D45</div></div>
+  <div class="swatch"><div class="box" style="background:var(--n-900)"></div><div class="label">n-900</div><div class="hex">#1A1B1F</div></div>
+</div>
+</section>
+
+<section>
+<h2>색 토큰 — 액센트 &amp; 상태 (4원칙 적용)</h2>
+<p class="note">① 조치 필요=경고/위험, 정상 흐름=정보/성공 · ② 취소·종료=중립 회색 · ③ 동일 의미는 전 도메인 동일 색 · ④ 기획 태그와 UI 상태색은 별개 체계</p>
+<p class="note" style="margin-top:-8px;">웹 3서피스는 로고가 단색 다크라 화면에 브랜드 레드가 등장하지 않는다. 따라서 <code style="font-family:monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;">--danger</code>와 색이 충돌하지 않으며, 별도 딥레드 토큰이 필요 없다. 소비자 앱은 주 액션이 브랜드 레드라 이 조건이 성립하지 않는다 — 앱 디자인 시스템에서 별도 확정한다.</p>
+<div class="row" style="margin-bottom:16px;">
+  <div class="swatch"><div class="box" style="background:var(--accent-500)"></div><div class="label">accent</div><div class="hex">#3B5BDB</div></div>
+</div>
+<div class="row">
+  <span class="badge badge-info">진행중 / 모집중</span>
+  <span class="badge badge-success">완료 / 활성</span>
+  <span class="badge badge-warning">정산대기 / 변경 승인대기</span>
+  <span class="badge badge-danger">변경 요청 반려 / 거절 / 분쟁</span>
+  <span class="badge badge-neutral">취소 / 종료 / 해지</span>
+</div>
+</section>
+
+<section>
+<h2>타이포그래피 — 서체</h2>
+<p class="note">웹 3서피스(파트너센터·쇼룸 스튜디오·어드민) 공통 서체. 로고 워드마크(Fredoka)와는 별개 체계 — 로고는 브랜드 자산, 본문 서체는 제품 UI 전용.</p>
+<table class="tier">
+  <tr><th style="width:120px">항목</th><th>내용</th></tr>
+  <tr><td>서체</td><td>Pretendard — 무료 오픈소스(OFL 라이선스), 상업적 이용 무료</td></tr>
+  <tr><td>font-family</td><td><code>'Pretendard', -apple-system, sans-serif</code></td></tr>
+  <tr><td>폴백 스택</td><td>Pretendard 로딩 실패 시 <code>-apple-system</code>(맥 SF) → 시스템 기본 sans-serif 순으로 대체. 레이아웃은 깨지지 않고 서체만 달라짐</td></tr>
+  <tr><td>로딩 방식</td><td>목업(HTML 시안)은 CDN(jsdelivr) 링크 방식 — 간편하지만 외부 의존. <b>프로덕션 핸드오프 시 <code>npm install pretendard</code>로 self-host 권장</b>(로딩 안정성·속도, 라이선스 비용 없음)</td></tr>
+  <tr><td>두께(weight)</td><td>현재 400(Regular) · 500(Medium) · 600(SemiBold) 3단만 사용 — 타이포 스케일과 매칭</td></tr>
+</table>
+
+<h2 style="margin-top:32px;">타이포 스케일</h2>
+<div style="font-size:var(--fs-h1);font-weight:600;">H1 · 20px/600 — 페이지 타이틀</div>
+<div style="font-size:var(--fs-h2);font-weight:600;margin-top:6px;">H2 · 16px/600 — 섹션 타이틀</div>
+<div style="font-size:var(--fs-h3);font-weight:600;margin-top:6px;">H3 · 13px/600 — 카드·모달 타이틀</div>
+<div style="font-size:var(--fs-body);margin-top:6px;">Body · 13px/400 — 본문·테이블 셀</div>
+<div style="font-size:var(--fs-caption);color:var(--n-600);margin-top:6px;">Caption · 12px/400 — 보조 텍스트</div>
+<div style="font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;">Micro · 11px/500 — 배지·테이블 헤더</div>
+</section>
+
+<section>
+<h2>버튼</h2>
+<div class="row">
+  <button class="btn-primary">공구 등록</button>
+  <button class="btn-secondary">내보내기</button>
+  <button class="btn-ghost">취소</button>
+  <button class="btn-danger">계정 정지</button>
+  <button disabled>비활성</button>
+</div>
+</section>
+
+<section>
+<h2>폼 요소</h2>
+<div class="row">
+  <div class="field"><label>브랜드명</label><input type="text" placeholder="브랜드명 입력" style="width:100%"></div>
+  <div class="field"><label>상태</label><select style="width:100%"><option>전체</option><option>진행중</option><option>완료</option></select></div>
+</div>
+</section>
+
+<section>
+<h2>테이블 (Compact)</h2>
+<table>
+<thead><tr><td style="width:40%">공구명</td><td>브랜드</td><td>상태</td><td>등록일</td></tr></thead>
+<tbody>
+<tr><td>글로우 세럼 공구</td><td>라피스</td><td><span class="badge badge-success">완료</span></td><td>2026.07.02</td></tr>
+<tr><td>쿠션 리뉴얼 공구</td><td>뮤엘</td><td><span class="badge badge-warning">정산대기</span></td><td>2026.07.10</td></tr>
+<tr><td>립밤 신제품 공구</td><td>클레어</td><td><span class="badge badge-info">모집중</span></td><td>2026.07.15</td></tr>
+<tr><td>틴트 리뉴얼 공구</td><td>노트</td><td><span class="badge badge-danger">거절</span></td><td>2026.07.16</td></tr>
+<tr><td>선크림 여름 공구</td><td>클레어</td><td><span class="badge badge-neutral">종료</span></td><td>2026.06.20</td></tr>
+</tbody>
+</table>
+<div class="row" style="margin-top:10px;justify-content:flex-end;">
+  <div class="page-item">‹</div><div class="page-item active">1</div><div class="page-item">2</div><div class="page-item">3</div><div class="page-item">›</div>
+</div>
+</section>
+
+<section>
+<h2>사이드바 GNB <span style="color:var(--n-400);font-weight:400;font-size:var(--fs-caption);">(서피스별 2형 · v1.3 분리)</span></h2>
+<p class="note">파트너센터는 <b>플랫 리스트</b>(서브메뉴 없음), 어드민은 <b>아코디언</b>이다. 두 구조를 섞지 않는다 — 파트너센터에서 화면 내 하위 구분이 필요하면 본문 서브탭으로 처리한다.</p>
+<div class="row" style="align-items:flex-start;gap:24px;">
+  <div>
+    <div style="font-size:var(--fs-micro);color:var(--n-500);font-weight:600;margin-bottom:6px;">파트너센터 · 플랫 9항목(확정)</div>
+    <div class="gnb" style="width:200px;">
+      <div class="gnb-brand"><svg viewBox="0 0 1863.4 200" width="130.4" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg></div>
+      <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+      <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+      <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+      <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+      <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+      <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+      <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+      <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+      <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+    </div>
+  </div>
+  <div>
+    <div style="font-size:var(--fs-micro);color:var(--n-500);font-weight:600;margin-bottom:6px;">어드민 · 아코디언</div>
+    <div class="gnb">
+      <div class="gnb-brand"><svg viewBox="0 0 1863.4 200" width="130.4" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg></div>
+      <div class="gnb-item active"><span class="gt">공구 관리</span></div>
+      <div class="gnb-item"><span class="gt">상품 관리</span></div>
+      <div class="gnb-sub">└ 상품 등록</div>
+      <div class="gnb-sub">└ 배송 정책</div>
+      <div class="gnb-item"><span class="gt">정산 관리</span></div>
+      <div class="gnb-item"><span class="gt">회원 관리</span></div>
+    </div>
+  </div>
+  <div style="flex:1;min-width:280px;">
+    <div class="notice warn" style="margin-bottom:12px;"><div><b>[v1.3 확정 · 소급 수정]</b> GNB 카운트 배지는 <b>중립 회색 · 숫자만</b>이다. 기제작 셸(ui-partner-04 rev.31)의 빨강 배경(<code>--danger-text</code>)은 규칙 위반 — 전 화면 일괄 교체한다.</div></div>
+    <table class="tier">
+      <tr><th style="width:120px">항목</th><th>규칙</th></tr>
+      <tr><td>배지 색</td><td><b>상태색 사용 금지.</b> 중립(<code>--n-200</code>/<code>--n-700</code>) 고정 — 설령 긴급 건이어도 색으로 구분하지 않는다. 긴급도는 각 화면 안에서 표현한다</td></tr>
+      <tr><td>배지 내용</td><td>미처리 건수 숫자만. 0이면 배지 자체를 렌더하지 않는다(0 표기 금지). 상한은 99+</td></tr>
+      <tr><td>활성 항목</td><td>인디고 면(<code>--accent-500</code>) + 흰 텍스트. 배지는 반투명 흰면으로 반전</td></tr>
+      <tr><td>배지 소스</td><td>홈 대시보드 '처리 대기' 카드와 <b>동일 소스</b> — 두 숫자가 어긋나면 버그</td></tr>
+      <tr><td>순서</td><td>파트너센터 9항목은 <b>확정값</b> — 추가·삭제·재배열 불가</td></tr>
+    </table>
+  </div>
+</div>
+</section>
+
+<section>
+<h2>탭</h2>
+<div class="tabs">
+  <div class="tab active">전체</div>
+  <div class="tab">진행중</div>
+  <div class="tab">완료</div>
+  <div class="tab">반려</div>
+</div>
+</section>
+
+<section>
+<h2>필터 영역 <span style="color:var(--n-400);font-weight:400;font-size:var(--fs-caption);">(다중선택 · v1.2 신설)</span></h2>
+<p class="note">탭과 구분 — <b>탭은 배타적 단일선택</b>(카테고리가 서로 겹치지 않을 때), <b>필터 영역은 비배타적 다중선택</b>(카테고리가 겹치거나 별개 축일 때)에 쓴다. 목록 툴바에 얹지 않고 <b>별도 패널로 분리</b>해 항상 펼쳐진 상태로 둔다 — 클릭 1번으로 즉시 필터링(펼치는 동작 없음).</p>
+<div class="filter-panel" id="fpDemoPanel">
+  <button class="fp-reset" type="button" id="fpDemoReset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>초기화</button>
+  <div class="fp-row">
+    <span class="fp-glabel">진열 상태</span>
+    <span class="fp-item on"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>진열<span class="fp-n">119</span></span>
+    <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>미진열<span class="fp-n">7</span></span>
+    <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>재검토 대기<span class="fp-n">2</span></span>
+  </div>
+  <div class="fp-row">
+    <span class="fp-glabel">공구 상태</span>
+    <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>준비중<span class="fp-n">5</span></span>
+    <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>준비완료<span class="fp-n">4</span></span>
+    <span class="fp-item on"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>진행중<span class="fp-n">14</span></span>
+    <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>연결 없음<span class="fp-n">105</span></span>
+  </div>
+</div>
+<table class="tier" style="margin-top:16px;">
+  <tr><th style="width:160px">규칙</th><th>내용</th></tr>
+  <tr><td>그룹 구분</td><td>그룹마다 <b>별도 줄(row)</b>로 분리 — 축이 다른 카테고리군을 세로로 쌓아 나열(예: 진열 상태 줄 · 공구 상태 줄). 그룹 내 항목은 서로 독립 — 완전히 같은 상태가 아니면 상위/하위로 합치지 않고 <b>플랫하게 나열</b>(위계 표현이 필요하면 항목명 자체에 표기)</td></tr>
+  <tr><td>다중선택</td><td>그룹 내·그룹 간 모두 동시 선택 가능(AND 조건). 선택 시 체크박스가 인디고로 채워짐</td></tr>
+  <tr><td>초기화</td><td>패널 우상단에 <b>보더 있는 버튼</b>(아이콘+"초기화")로 배치 — 텍스트 링크보다 클릭 대상이 명확. 항상 같은 위치에 고정(행이 늘어도 패널 최상단 우측)</td></tr>
+  <tr><td>사용 기준</td><td>필터를 자주 바꿔가며 쓰는 목록 화면(운영자가 하루에도 여러 번 상태를 걸러보는 화면)에 적합. 필터를 가끔만 쓰는 화면은 트리거+팝오버 방식 등 다른 패턴을 검토</td></tr>
+</table>
+</section>
+
+<section>
+<h2>메트릭 카드</h2>
+<div class="row">
+  <div class="card" style="width:160px;"><div class="metric-label">이번달 거래액</div><div class="metric-value">₩12.4M</div></div>
+  <div class="card" style="width:160px;"><div class="metric-label">활성 인플루언서</div><div class="metric-value">18</div></div>
+  <div class="card" style="width:160px;"><div class="metric-label">정산 대기</div><div class="metric-value">3건</div></div>
+</div>
+</section>
+
+<section>
+<h2>모달</h2>
+<div class="modal-overlay">
+  <div class="modal">
+    <h3>공구를 종료하시겠어요?</h3>
+    <p>종료 후에는 되돌릴 수 없습니다. 진행중인 주문이 있는지 먼저 확인하세요.</p>
+    <div class="row" style="justify-content:flex-end;">
+      <button class="btn-ghost">취소</button>
+      <button class="btn-danger">공구 종료</button>
+    </div>
+  </div>
+</div>
+</section>
+
+<section>
+<h2>상태색 — 조치 주체 축 <span style="color:var(--n-400);font-weight:400;font-size:var(--fs-caption);">(v1.3 신설)</span></h2>
+<p class="note">v1.2의 4원칙은 ①에서 <b>“운영자 조치 필요=경고/위험”</b>만 규정해 파트너센터의 절반을 덮지 못했다 — 미답변 문의(답변대기)·신규 주문·입고 확인·서명 대기는 모두 <b>브랜드 본인의 조치 대기</b>다. v1.3은 조치 주체를 묻지 않고 <b>“조치가 필요한가”만으로 색을 결정</b>한다. 주체 구분은 색이 아니라 화면의 라벨·배치가 맡는다.</p>
+<table class="tier">
+  <tr><th style="width:110px">색</th><th style="width:190px">의미군</th><th>판정 기준</th></tr>
+  <tr><td><span class="badge badge-warning">경고</span></td><td><b>조치 필요</b>(주체 불문)</td><td>누군가가 손을 대야 다음으로 넘어가는 상태. 브랜드 조치(미답변·신규 주문·반송완료·내 서명 대기)도, 운영자 조치(재검토 대기·정산 보류)도 동일하게 경고</td></tr>
+  <tr><td><span class="badge badge-danger">위험</span></td><td><b>부정 결과 확정</b></td><td>요청이 기각되어 <b>그대로 종결</b>된 상태 — 변경 요청 반려·삭제 요청 반려·계약 거절·분쟁. <b>단순 조치 대기에는 쓰지 않는다.</b><br><b>같은 ‘반려’라도 본 흐름이 멈추면 경고다</b> — 판정 기준은 <b>반려 후 본 흐름이 계속 가는가</b>이다. 요청만 기각되고 대상은 멀직히 살아있으면(문의는 그대로 게시, 기본정보는 기존 값 유지) <b>위험</b> — 브랜드가 아무것도 안 해도 진행에 지장이 없는 <b>결과 통보</b>다. 반면 반려로 <b>본 흐름이 멈추고 재작업해야 풀리는</b> 경우는 <b>경고</b>다(원칙 ① — 누군가 손을 대야 다음으로 넘어간다).<br>예외 2건: 진열 상태 ‘미진열’ 배지(공식 확정 예외) · 공구 게시물 ‘반려’(경고 — 공구가 준비중에서 멈추고 재등록해야 열린다)</td></tr>
+  <tr><td><span class="badge badge-info">정보</span></td><td><b>정상 진행 · 대기</b></td><td>아무도 손대지 않아도 시간·시스템이 다음으로 넘기는 상태(회수중·배송중·정산대기·상대 서명 대기)</td></tr>
+  <tr><td><span class="badge badge-success">성공</span></td><td><b>정상 완결</b></td><td>구매확정·환불완료·이체완료·답변완료·체결완료·활성</td></tr>
+  <tr><td><span class="badge badge-neutral">중립</span></td><td><b>취소·종료·해지·미시작</b></td><td>v1.2 원칙 ② 유지 + 아직 시작되지 않은 상태(준비중·작성중)도 여기</td></tr>
+</table>
+<div class="notice info" style="margin-top:12px;"><div><b>색은 의미군 표시일 뿐 값 구분자가 아니다.</b> 한 목록 안에서 서로 다른 값이 같은 색을 쓰는 건 정상이다(예: 진행중·정산완료 둘 다 성공색). 값의 구분은 <b>라벨</b>이 한다 — 구분을 위해 색을 늘리지 않는다(원칙 ③).</div></div>
+</section>
+
+<section>
+<h2>상태 배지 사전 <span style="color:var(--n-400);font-weight:400;font-size:var(--fs-caption);">(도메인별 값→색 매핑 · v1.3 신설)</span></h2>
+<p class="note">같은 상태명이 여러 화면에 나오면 <b>문자열도 색도 동일</b>해야 한다. 상태명은 임의로 만들지 않는다 — 아래가 유일한 목록이다.<br>
+<b style="color:var(--danger-text)">[근거 대기]</b> 거래플로우·상태정의서 v1.2 미첨부 상태에서 와이어프레임(wf-partner-03~09)의 값을 <b>잠정치</b>로 옮겨둔 것. 정본 수신 시 문자 단위 대조 필요.</p>
+<table class="tier">
+  <tr><th style="width:150px">도메인</th><th>값 · 색</th></tr>
+  <tr><td><b>진열 상태</b><br><span style="font-size:var(--fs-micro);color:var(--n-500)">상품 관리 · 확정 4종</span></td><td class="row">
+    <span class="badge badge-success dot">진열</span><span class="badge badge-danger dot">미진열</span><span class="badge badge-warning dot">재검토 대기</span><span class="badge badge-neutral dot">미진열(요청)</span>
+    <span style="font-size:var(--fs-micro);color:var(--n-500);width:100%;margin-top:4px">미진열=위험색은 <b>공식 예외</b>(확정) · 재검토 대기=운영자 조치 필요</span></td></tr>
+  <tr><td><b>공구 상태(필터 축)</b><br><span style="font-size:var(--fs-micro);color:var(--n-500)">상품 관리 필터 전용 · 확정 4종</span></td><td class="row">
+    <span class="badge badge-neutral dot">준비중</span><span class="badge badge-info dot">준비완료</span><span class="badge badge-success dot">진행중</span><span class="badge badge-neutral dot">연결 없음</span>
+    <span style="font-size:var(--fs-micro);color:var(--n-500);width:100%;margin-top:4px">상품을 기준으로 본 <b>파생값</b> — ‘연결 없음’은 공구 자체의 상태가 아니다</span></td></tr>
+  <tr><td><b>공구 상태(라이프사이클)</b><br><span style="font-size:var(--fs-micro);color:var(--n-500)">공구 관리 목록·상세</span></td><td class="row">
+    <span class="badge badge-neutral dot">준비중</span><span class="badge badge-info dot">준비완료</span><span class="badge badge-success dot">진행중</span><span class="badge badge-neutral dot">종료</span><span class="badge badge-success dot">정산완료</span><span class="badge badge-neutral dot">취소</span>
+    <span style="font-size:var(--fs-micro);color:var(--n-500);width:100%;margin-top:4px">공구 자체의 생명주기 · 위 필터 축과 <b>다른 축</b>이다 — 한 열에 섞지 않는다 <b style="color:var(--danger-text)">[근거 대기]</b></span></td></tr>
+  <tr><td><b>공구 게시물</b><br><span style="font-size:var(--fs-micro);color:var(--n-500)">인플루언서가 작성 · 브랜드는 열람만 · 확정 9종</span></td><td class="row">
+    <span class="badge badge-neutral dot">미작성</span><span class="badge badge-neutral dot">작성중</span><span class="badge badge-info dot">승인대기</span><span class="badge badge-warning dot">반려</span><span class="badge badge-info dot">예약</span><span class="badge badge-success dot">노출중</span><span class="badge badge-warning dot">숨김</span><span class="badge badge-neutral dot">종료</span><span class="badge badge-danger dot">중단</span>
+    <span style="font-size:var(--fs-micro);color:var(--n-500);width:100%;margin-top:4px"><b>공구 상태와 별 축</b>이라 목록에서도 별 열로 둔다 — 미작성·작성중→준비중 / 승인대기→준비중(검토 중·미지급) / 반려→준비중에서 멈춤 / 예약→준비완료(승인·지급 완료) / 노출중·숨김→진행중 / 종료→종료 이후 / <b>중단→공구 중단</b>(공구와 같은 위험색 — 정상 종료와 강제 끊김을 가른다). <b>승인대기·반려·예약은 제출·기각·통과 세 결과</b>를 각각 맡는다 — 예약 하나로 승인 전후를 겸하면 공구가 열렸는지·돈이 나갔는지가 구분되지 않는다. 게시물은 공구를 <b>따라가는 값</b>이며, 공구를 움직이는 건 <b>예약→노출중</b> 전이 하나다.<br>
+    <b>경고색은 반려와 숨김 둘뿐</b>인 이유 — 나머지 여섯은 정상 흐름이지만 이 둘은 <b>운영자가 개입해 진행이 멈추거나 노출이 끊긴</b> 상태다. <b>반려</b>는 공구가 준비중에서 더 나아가지 못하고, 게시물을 고칠 권한은 인플루언서에게 있어 브랜드가 할 일은 <b>스레드에서 확인·재등록 요청</b>이다. <b>숨김</b>은 <b>공구는 진행중인데 게시물만 끊긴</b> 유일한 어긋남이라 두 열의 색이 갈리는 게 정상이다. 둘 다 <b>브랜드가 직접 고칠 수 없지만 움직여야 하는</b> 상태라 경고다(원칙 ①). 변경 요청 반려·삭제 요청 반려가 위험색인 것과 갈리는 지점은 <b>반려 후 본 흐름이 멈추느냐</b>다(「상태색 — 조치 주체 축」 위험 행 참조).<br>
+    <b>미작성·작성중·종료는 전부 중립</b> — 미작성(상대가 착수도 안 함, 스레드에서 확인할 일)과 작성중(진행 중, 기다리면 됨)은 브랜드에게 의미가 다르지만 <b>구분은 색이 아니라 라벨이 한다</b>(원칙 ③)</span></td></tr>
+  <tr><td><b>주문 이행</b><br><span style="font-size:var(--fs-micro);color:var(--n-500)">판매 관리</span></td><td class="row">
+    <span class="badge badge-warning dot">신규</span><span class="badge badge-info dot">상품 준비중</span><span class="badge badge-info dot">배송중</span><span class="badge badge-info dot">배송완료</span><span class="badge badge-success dot">구매확정</span><span class="badge badge-neutral dot">취소</span>
+    <span style="font-size:var(--fs-micro);color:var(--n-500);width:100%;margin-top:4px">신규만 경고 — 브랜드가 [준비 시작]을 눌러야 진행되므로</span></td></tr>
+  <tr><td><b>반품·교환</b><br><span style="font-size:var(--fs-micro);color:var(--n-500)">판매 관리</span></td><td class="row">
+    <span class="badge badge-info dot">반품요청</span><span class="badge badge-info dot">회수중</span><span class="badge badge-warning dot">반송완료</span><span class="badge badge-success dot">환불완료</span><span class="badge badge-info dot">교환회수중</span><span class="badge badge-info dot">교환재발송</span><span class="badge badge-danger dot">거절</span><span class="badge badge-warning dot">거절 보류</span>
+    <span style="font-size:var(--fs-micro);color:var(--n-500);width:100%;margin-top:4px">반송완료=브랜드 입고 확인 대기라 경고 · 거절 보류=미결 사건이라 경고</span></td></tr>
+  <tr><td><b>정산</b><br><span style="font-size:var(--fs-micro);color:var(--n-500)">브랜드 열람 전용</span></td><td class="row">
+    <span class="badge badge-info dot">정산대기</span><span class="badge badge-warning dot">보류</span><span class="badge badge-success dot">이체완료</span>
+    <span style="font-size:var(--fs-micro);color:var(--n-500);width:100%;margin-top:4px">정산대기는 브랜드가 할 일이 없으므로 경고 아니라 <b>정보</b></span></td></tr>
+  <tr><td><b>계약</b></td><td class="row">
+    <span class="badge badge-neutral dot">작성중</span><span class="badge badge-info dot">상대 서명 대기</span><span class="badge badge-warning dot">내 서명 대기</span><span class="badge badge-success dot">체결완료</span><span class="badge badge-danger dot">거절</span><span class="badge badge-neutral dot">해지</span>
+    <span style="font-size:var(--fs-micro);color:var(--n-500);width:100%;margin-top:4px">같은 ‘서명 대기’라도 <b>주체가 나인지 상대인지에 따라 색이 갈린다</b> — 조치 주체 축의 대표 사례</span></td></tr>
+  <tr><td><b>연결</b></td><td class="row">
+    <span class="badge badge-info dot">연결요청</span><span class="badge badge-success dot">연결됨</span><span class="badge badge-danger dot">거절</span><span class="badge badge-neutral dot">해제</span></td></tr>
+  <tr><td><b>상품 문의</b><br><span style="font-size:var(--fs-micro);color:var(--n-500)">ui-admin-07 확정 4종</span></td><td class="row">
+    <span class="badge badge-info dot">답변대기</span><span class="badge badge-neutral dot">답변완료</span><span class="badge badge-warning dot">삭제 요청</span><span class="badge badge-danger dot">삭제</span>
+    <span style="font-size:var(--fs-micro);color:var(--n-500);width:100%;margin-top:4px"><b>3서피스 동일 색으로 확정</b> — 답변대기=정보, 삭제 요청=경고(운영자 조치 필요)를 파트너센터·어드민 모두 같게 쓴다 — 같은 값이 서피스마다 다른 색이면 운영 소통에서 혼선이 생긴다(원칙 ③ 우선). 브랜드 조치의 시급성은 색이 아니라 경과 시간 표기·GNB 카운트가 전달한다 · <b>답변완료는 성공색이 아니라 중립</b>(일상적 종결) · ‘숨김’은 폐기되고 삭제로 통합 · 공개/비밀글·문의 유형은 상태가 아니라 <b>분류</b>라 점 없는 중립 배지</span></td></tr>
+</table>
+</section>
+
+<section>
+<h2>탐색 위계 — 3단 <span style="color:var(--n-400);font-weight:400;font-size:var(--fs-caption);">(v1.3 신설)</span></h2>
+<p class="note">파트너센터 GNB에 서브메뉴가 없으므로 화면 내 구분은 전부 본문이 떠맞는다. 위계는 <b>최대 3단</b>까지만 허용한다.</p>
+<table class="tier">
+  <tr><th style="width:60px">단</th><th style="width:150px">컴포넌트</th><th style="width:130px">선택</th><th>쓰는 경우</th></tr>
+  <tr><td>1단</td><td>탭 <code>.tabs</code></td><td>배타적 단일</td><td>한 화면이 서로 겹치지 않는 도메인으로 나뉘는 경우(판매 관리의 주문 / 취소 / 반품·교환)</td></tr>
+  <tr><td>2단</td><td>서브탭 <code>.subtabs</code> / <code>.subnav</code></td><td>배타적 단일</td><td>같은 도메인 안의 단계·구간(신규 / 준비중 / 배송 / 구매확정). 항목이 <b>짧고 건수가 보이면 상단 필형</b>, <b>길거나 8개 이상이면 좌측 세로형</b></td></tr>
+  <tr><td>3단</td><td>필터 패널 <code>.filter-panel</code></td><td>비배타적 다중</td><td>순서가 없는 별개 축을 겹쳐 걸러보는 경우(진열 상태 × 공구 상태)</td></tr>
+</table>
+<div class="notice warn" style="margin-top:12px;"><div><b>탭 안의 탭 금지.</b> 1단과 2단을 둘 다 밑줄 탭으로 그리면 어느 게 상위인지 읽힌지 않는다 — <b>1단은 밑줄 탭, 2단은 필형/세로형으로 모양을 바꿔</b> 위계를 드러낸다.</div></div>
+<div style="margin-top:16px;">
+  <div style="font-size:var(--fs-micro);color:var(--n-500);font-weight:600;margin-bottom:6px;">2단 A · 상단 필형(건수 노출)</div>
+  <div class="subtabs">
+    <div class="subtab on">신규 <span class="c">3</span></div>
+    <div class="subtab">준비중 <span class="c">5</span></div>
+    <div class="subtab">배송 <span class="c">8</span></div>
+    <div class="subtab">구매확정 <span class="c">42</span></div>
+  </div>
+</div>
+<div style="margin-top:16px;">
+  <div style="font-size:var(--fs-micro);color:var(--n-500);font-weight:600;margin-bottom:6px;">2단 B · 좌측 세로형(항목명이 길거나 많을 때 · ui-partner-06 채택형)</div>
+  <div class="subnav">
+    <div class="subnav-item on">사업자 정보</div>
+    <div class="subnav-item">배송·반품 정책</div>
+    <div class="subnav-item disabled">택배 연동<span class="subnav-tag">준비중</span></div>
+    <div class="subnav-item">정산 계좌</div>
+    <div class="subnav-item">담당자·CS</div>
+    <div class="subnav-item">계정</div>
+  </div>
+</div>
+</section>
+
+<section>
+<h2>목록 상호작용 규칙 <span style="color:var(--n-400);font-weight:400;font-size:var(--fs-caption);">(v1.3 신설)</span></h2>
+<table class="tier">
+  <tr><th style="width:150px">규칙</th><th>내용</th></tr>
+  <tr><td>상세 진입</td><td><b>행 전체 클릭.</b> 관리 열에 [상세]·[보기]·[답변] 같은 진입 전용 버튼을 두지 않는다. 호버 시 행 배경 <code>--accent-50</code> + 대표명 <code>--accent-600</code>으로 클릭 가능을 알린다</td></tr>
+  <tr><td>실행 액션 열</td><td><b>허용.</b> 상세로 들어가지 않고 목록에서 바로 상태를 옮기는 버튼([준비 시작]·[송장 발급]·[입고 확인])은 오히려 목록에 있어야 한다. <b>행당 최대 1개</b>, 현재 상태에서 가능한 다음 행동 하나만 노출(버튼 나열 금지)</td></tr>
+  <tr><td>버튼 교체</td><td>같은 자리에서 상태에 따라 버튼이 <b>교체</b>된다 — 입고 확인 완료 직후 그 자리가 [재발송 처리]로 바뀜다. 두 버튼을 동시에 둘 다 노출하지 않는다</td></tr>
+  <tr><td>일괄 처리</td><td>동일 액션을 여러 건에 적용하는 화면은 행 첫 열 체크박스 + 툴바 일괄 버튼. 선택 0건이면 일괄 버튼은 <b>비활성</b>(에러 문구 없음)</td></tr>
+  <tr><td>삭제·위험 액션</td><td>목록에서 즉시 실행하지 않고 항상 확인 모달을 경유</td></tr>
+</table>
+<div class="row" style="margin-top:14px;">
+  <button class="act-btn primary">준비 시작</button>
+  <button class="act-btn">입고 확인</button>
+  <button class="act-btn del">거절</button>
+  <span style="font-size:var(--fs-micro);color:var(--n-500)">목록 실행 액션 버튼 · 28px</span>
+</div>
+</section>
+
+<section>
+<h2>요약 통계 카드 <span style="color:var(--n-400);font-weight:400;font-size:var(--fs-caption);">(v1.3 승격)</span></h2>
+<p class="note">목록 상단의 현황 요약. <b>조치가 필요한 칸만</b> <code>.attn</code>으로 경고 톤을 입힌다 — 카드 전체가 강조되면 강조가 아니다. 파트너센터 홈의 ‘처리 대기’도 이 컴포넌트를 쓴다.</p>
+<div class="row" style="gap:12px;flex-wrap:nowrap;max-width:720px;">
+  <div class="stat attn"><div class="num">3</div><div class="lb">답변대기 문의</div></div>
+  <div class="stat attn"><div class="num">2</div><div class="lb">입고 확인 대기</div></div>
+  <div class="stat"><div class="num">12</div><div class="lb">답변완료</div></div>
+  <div class="stat"><div class="num">1,240,000</div><div class="lb">이번달 지급 예정(원)</div></div>
+</div>
+</section>
+
+<section>
+<h2>진행 단계 <span style="color:var(--n-400);font-weight:400;font-size:var(--fs-caption);">(이행 이력 · v1.3 신설)</span></h2>
+<p class="note">주문·반품·교환처럼 상태가 순차적으로 전이하는 건의 상세에 넣는다. 단계명 아래에 <b>주체</b>를 적어 ‘누가 다음 공을 잡고 있는가’를 드러낸다.</p>
+<div class="steps">
+  <span class="stp done">반품요청<span class="who">소비자</span></span><span class="stp-ar">›</span>
+  <span class="stp done">회수중<span class="who">운영자 승인</span></span><span class="stp-ar">›</span>
+  <span class="stp cur">반송완료<span class="who">브랜드 입고 확인</span></span><span class="stp-ar">›</span>
+  <span class="stp">환불완료<span class="who">운영자 PG취소</span></span>
+</div>
+</section>
+
+<section>
+<h2>계산 명세표 <span style="color:var(--n-400);font-weight:400;font-size:var(--fs-caption);">(v1.3 신설)</span></h2>
+<p class="note">정산처럼 금액 산출 근거를 줄 단위로 보여줘야 하는 곳에 쓴다. 숫자는 <code>tabular-nums</code> 우측 정렬, 소계 항목은 들여쓰기, 최종값은 굵은 상단 구분선.</p>
+<div class="card" style="max-width:520px;">
+<table class="calc">
+  <tr><td class="lbl">구매확정 매출 (공구가 × 수량 합계)</td><td class="val">1,024,000원</td></tr>
+  <tr class="minus"><td class="lbl">환불분 (취소·반품)</td><td class="val">18,000원</td></tr>
+  <tr><td class="lbl"><b>정산 대상 금액 S</b></td><td class="val"><b>1,006,000원</b></td></tr>
+  <tr class="minus"><td class="lbl">플랫폼 수수료 (2%)</td><td class="val">20,120원</td></tr>
+  <tr class="sub"><td class="lbl">└ 인플루언서 지급액</td><td class="val">130,050원</td></tr>
+  <tr class="total"><td class="lbl">브랜드 지급액</td><td class="val">893,520원</td></tr>
+</table>
+</div>
+</section>
+
+<section>
+<h2>안내 배너 · 빈 상태 <span style="color:var(--n-400);font-weight:400;font-size:var(--fs-caption);">(v1.3 신설)</span></h2>
+<p class="note">배너는 상태색 체계를 그대로 따른다 — 조치가 필요하면 경고, 단순 안내는 정보, 거절·반려 통보만 위험.</p>
+<div style="display:flex;flex-direction:column;gap:8px;max-width:720px;">
+  <div class="notice info"><div><b>정산 계좌 변경 요청 검토 중</b> — 운영자 검토 후 반영됩니다.</div></div>
+  <div class="notice warn"><div><b>반품 수취 주소가 입력되지 않았습니다</b> — 반품을 처리하려면 먼저 등록해야 합니다.</div></div>
+  <div class="notice danger"><div><b>변경 요청이 반려되었습니다</b> — 사유를 확인하고 다시 요청해주세요.</div></div>
+</div>
+<div class="empty" style="margin-top:16px;max-width:720px;">
+  <div class="empty-t">진행중인 공구가 없습니다</div>
+  <div class="empty-d">계약이 체결되면 공구가 자동으로 생성됩니다.</div>
+</div>
+<p class="note" style="margin-top:12px;">빈 상태는 <b>제목(무엇이 없는가) + 설명(어떻게 채워지는가)</b> 2줄 고정. 사용자가 직접 만들 수 없는 목록(공구·정산·문의)에는 <b>CTA 버튼을 넣지 않는다</b> — 누를 수 없는 버튼은 거짓말이다. 검색·필터 결과가 0건인 경우는 별도 문구(“검색 결과가 없습니다”)를 쓴다.</p>
+</section>
+
+<section>
+<h2>부록 A. 변경 이력</h2>
+<table class="tier">
+  <tr><th style="width:90px">버전</th><th style="width:100px">일자</th><th>내용</th></tr>
+  <tr><td>v1.3</td><td>2026.08</td><td><b>조치 주체 축 신설</b> — 상태색 원칙 ①을 “조치가 필요한가”로 재정의(브랜드 본인의 조치 대기도 경고색, 위험색은 부정 결과 확정에만). <b>상태 배지 사전</b> 신설(9개 도메인 값→색 매핑, 일부 <b>[근거 대기]</b>). <b>탐색 위계 3단</b>(탭→서브탭→필터패널, 탭 안의 탭 금지) · <b>목록 상호작용 규칙</b>(행 클릭 진입, 진입 전용 버튼 금지, 실행 액션 열은 허용) · GNB 서피스별 2형 분리와 <b>배지 중립색 확정</b>(ui-partner-04 빨강 배지는 규칙 위반, 소급 교체). 기제작 UI에서 컴포넌트 6종 승격 — 서브탭(상단 필형·좌측 세로형) · 요약 통계 카드 · 진행 단계 · 계산 명세표 · 안내 배너 · 빈 상태. 상태 배지는 <b>점 포함형(.dot)</b>을 목록·상세 표준으로 확정</td></tr>
+  <tr><td>v1.2</td><td>2026.08</td><td>「타이포그래피 — 서체」섹션 신설(Pretendard 명문화, 폴백 스택·로딩 방식·두께 팔레트 정리, 프로덕션은 self-host 권장). 「필터 영역(다중선택)」컴포넌트 신설 — 탭(배타적 단일선택)과 구분되는 비배타적 다중선택 패턴, wf-admin-04-상품관리 필터 설계 과정에서 확정</td></tr>
+  <tr><td>v1.1</td><td>2026.07</td><td>브랜드 로고 계층 반영 — <code>--brand-50~900</code> 및 <code>--logo-*</code> 토큰 추가,
+  「브랜드 로고」 섹션 신설, 사이드바 GNB 샘플에 워드마크 단독 로고 배치(14px), 상태색 섹션에 브랜드 레드 비충돌 근거 명시</td></tr>
+  <tr><td>v1.0</td><td>2026.07</td><td>방향 A(인디고 · 쿨 뉴트럴) 확정. 전역 Compact · 다크모드 미지원.
+  뉴트럴 9단 · 액센트 · 상태색 4원칙 · 타이포 · 컴포넌트 정의</td></tr>
+</table>
+</section>
+
+<script>
+document.getElementById('fpDemoPanel').addEventListener('click', function(e){
+  var item = e.target.closest('.fp-item');
+  if(item) item.classList.toggle('on');
+});
+document.getElementById('fpDemoReset').addEventListener('click', function(){
+  document.querySelectorAll('#fpDemoPanel .fp-item').forEach(function(i){ i.classList.remove('on'); });
+});
+</script>
+
+</body>
+</html>

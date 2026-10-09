@@ -15,6 +15,7 @@ import showroomz.domain.groupbuy.type.AdminSuspensionStatus;
 import showroomz.domain.groupbuy.type.GroupBuyCloseType;
 import showroomz.domain.groupbuy.type.GroupBuyEventType;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
+import showroomz.domain.groupbuy.service.port.GroupBuyClosureHook;
 import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -54,6 +55,7 @@ public class GroupBuyTerminator {
     private final ProductGroupBuyStatusSynchronizer productSynchronizer;
     private final GroupBuyNotifier notifier;
     private final GroupBuyProperties properties;
+    private final GroupBuyClosureHook closureHook;
 
     /** 판정 경로 — 상태가 이미 바뀌었으면 409다. */
     @Transactional(propagation = Propagation.MANDATORY)
@@ -74,8 +76,8 @@ public class GroupBuyTerminator {
         if (changed != 1) {
             return false;
         }
-        LocalDateTime fulfillmentDueAt = t.to() == GroupBuyStatus.ENDED
-                ? t.endedAt().plusDays(properties.getFulfillment().getDueDays()) : null;
+        // 이행 확인 기한은 더 이상 발급하지 않는다 — 이행 확인 폐기(2026-10-06). 자동 이행 배치도 대상이 없어진다.
+        LocalDateTime fulfillmentDueAt = null;
         groupBuy.applyTerminated(t.to(), t.endedAt(), t.closeType(),
                 t.closingChangeRequestId(), t.closingAdminSuspensionId(), fulfillmentDueAt);
 
@@ -107,6 +109,8 @@ public class GroupBuyTerminator {
         // 상품 재동기화 — 빠뜨리면 중단된 공구의 상품이 계속 결제된다(30 설계 1-11).
         productSynchronizer.resync(groupBuy);
         notifier.notifyBothParties(groupBuy, t.event().name());
+        // 주문 발송기한 확정 — 진행 중 결제 건은 마감 전까지 기한이 없었다(1009 기획 수정본 1-2). 중단도 종결이다.
+        closureHook.onGroupBuyClosed(id, t.endedAt());
         return true;
     }
 

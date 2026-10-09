@@ -117,7 +117,8 @@ public class AdminGroupBuyDetailAssembler {
                         threadGateway.findPairThreadId(groupBuy).orElse(null)),
                 new CreatorRef(groupBuy.getCreator().getId(), groupBuy.getCreator().getShowroomName(),
                         groupBuy.getCreator().getAccountId()),
-                new ContractRef(contract.getId(), contract.getContractNumber(), contract.getConcludedAt()),
+                new ContractRef(contract.getId(), contract.getContractNumber(), contract.getConcludedAt(),
+                        groupBuy.concludedSignerName()),
                 items(contract),
                 fixedFee(contract),
                 readiness(groupBuy, facts.post(), names),
@@ -484,7 +485,8 @@ public class AdminGroupBuyDetailAssembler {
                 facts.openIssue().getIssueType().getLabel(), facts.openIssue().getOpenerType(),
                 facts.openIssue().getOpenedAt(), facts.openIssue().getThreadId(), awaitingReply(facts.openIssue()));
         return new AfterEnd(
-                ended ? fulfillment(groupBuy, facts, contract, now) : null,
+                // 이행 확인은 2026-10-06 폐기됐다 — 항상 null. 조립식(fulfillment)은 기획 복귀에 대비해 남긴다.
+                ended && FULFILLMENT_CHECK_ENABLED ? fulfillment(groupBuy, facts, contract, now) : null,
                 ended ? settlement(groupBuy, facts, contract, sales, now) : null,
                 orderClosure,
                 openIssue);
@@ -500,6 +502,9 @@ public class AdminGroupBuyDetailAssembler {
                 .map(speaker -> speaker == issue.getOpenerType())
                 .orElse(null);
     }
+
+    /** [기획 제외] 계약 이행 확인 — 2026-10-06 폐기. 기획 복귀 시 true. */
+    private static final boolean FULFILLMENT_CHECK_ENABLED = false;
 
     private Fulfillment fulfillment(GroupBuy groupBuy, GroupBuyFacts facts, Contract contract, LocalDateTime now) {
         List<GroupBuyFulfillmentCheck> checks = facts.fulfillmentChecks();

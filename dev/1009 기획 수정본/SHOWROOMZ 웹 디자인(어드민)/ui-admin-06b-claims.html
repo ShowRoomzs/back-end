@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-admin-06b-claims — 어드민 거래 관리 · 반품·교환 rev.1</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+
+/* ══════════════════════════════════════════════════════════════════
+   SHOWROOMZ 웹 디자인시스템 v1.2 — 어드민
+   이 <style> 블록 전체가 소스오브트루스다.
+   신규 ui-admin-*.html 은 이 블록을 통째로 복사한 뒤 화면 전용 CSS만 덧붙인다.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── ① 토큰 ───────────────────────────────────────────────────── */
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --adm-sidebar-w:240px; --adm-topbar-h:56px; --adm-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+
+/* ── ② 문서 골격 (시안 파일 공통) ─────────────────────────────── */
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;line-height:1.8;}
+.doc-head .rule{margin-top:12px;}
+.rule b{color:var(--n-900);} .rule .new{color:var(--accent-600);font-weight:600;}
+.rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+
+/* ── ③ 어드민 셸 · 사이드바 ───────────────────────────────────── */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--adm-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--adm-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;overflow-y:auto;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:7px 10px;border-radius:var(--r-sm);margin-bottom:2px;cursor:pointer;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--danger-text);color:#fff;
+  border-radius:8px;padding:0 5px;min-width:16px;text-align:center;}
+.gnb-item .chev{width:14px;height:14px;color:var(--n-500);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:transform .15s;}
+.gnb-item .chev svg{width:11px;height:11px;display:block;}
+.gnb-item.open .chev{transform:rotate(180deg);color:var(--n-700);}
+.gnb-group{overflow:hidden;}
+.gnb-group.closed{display:none;}
+.gnb-item:hover:not(.active){background:var(--n-200);}
+.gnb-item.open{color:var(--n-900);font-weight:500;}
+.gnb-sub{display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-micro);
+  color:var(--n-500);padding:5px 10px 5px 33px;border-radius:var(--r-sm);margin-bottom:1px;cursor:pointer;}
+.gnb-sub:hover:not(.active){background:var(--n-200);}
+.gnb-sub.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-sub.active .scnt{color:#fff;}
+.scnt{font-size:10px;color:var(--n-500);}
+
+/* ── ④ 어드민 셸 · 탑바 / 본문 ────────────────────────────────── */
+.top{position:absolute;left:var(--adm-sidebar-w);right:0;top:0;height:var(--adm-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--adm-pad);}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.crumb .c-sub{font-size:var(--fs-caption);color:var(--n-500);font-weight:400;margin-left:6px;}
+.op{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);}
+.op-av{width:24px;height:24px;border-radius:50%;background:var(--n-200);color:var(--n-600);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-micro);font-weight:600;}
+.main{position:absolute;left:var(--adm-sidebar-w);right:0;top:var(--adm-topbar-h);bottom:0;
+  overflow-y:auto;padding:var(--adm-pad);}
+.navgrp{display:flex;align-items:center;gap:6px;}
+.nav-btn{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-caption);font-weight:500;
+  color:var(--n-700);cursor:pointer;padding:0 12px;height:32px;background:#fff;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);white-space:nowrap;}
+.nav-btn:hover{background:var(--n-100);color:var(--n-900);border-color:var(--n-400);}
+.nav-sep{width:1px;height:18px;background:var(--n-300);margin:0 2px;}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:var(--sp-4);}
+.page-t{font-size:var(--fs-h1);font-weight:600;display:flex;align-items:center;gap:10px;}
+.t-link{font-size:var(--fs-micro);font-weight:500;color:var(--n-600);background:var(--n-100);
+  border:1px solid var(--n-200);border-radius:var(--r-pill);padding:2px 10px;cursor:pointer;
+  white-space:nowrap;line-height:1.7;}
+.t-link:hover{background:var(--accent-50);color:var(--accent-600);border-color:var(--accent-100);}
+.page-d{font-size:var(--fs-caption);color:var(--n-600);margin-top:2px;}
+
+/* ── ⑤ 필터 · 폼 컨트롤 ───────────────────────────────────────── */
+.filter{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);
+  padding:var(--sp-3) var(--sp-4);margin-bottom:var(--sp-4);display:flex;align-items:center;
+  justify-content:space-between;gap:var(--sp-4);}
+.tabs{display:flex;gap:0;}
+.tab{font-size:var(--fs-caption);color:var(--n-500);padding:6px 2px;margin-right:20px;cursor:pointer;
+  border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;}
+.tab.active{color:var(--accent-500);border-bottom-color:var(--accent-500);font-weight:500;}
+.tab .tn{font-size:10px;background:var(--n-100);color:var(--n-600);border-radius:8px;padding:0 5px;}
+.tab.active .tn{background:var(--accent-50);color:var(--accent-600);}
+.search{display:flex;gap:6px;}
+.inp{font-family:inherit;font-size:var(--fs-body);padding:6px 10px;border-radius:var(--r-sm);
+  border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:32px;width:180px;}
+.inp::placeholder{color:var(--n-400);}
+.inp:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:7px 14px;cursor:pointer;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
+.btn-primary{background:var(--accent-500);color:#fff;border:none;}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-danger{background:var(--danger-text);color:#fff;border:none;}
+.btn:disabled{background:var(--n-100);color:var(--n-400);border:1px solid var(--n-200);cursor:not-allowed;}
+.sel-sm{font-family:inherit;font-size:var(--fs-caption);height:28px;padding:0 26px 0 10px;cursor:pointer;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-700);
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;}
+.sel-sm:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+
+/* ── ⑥ 테이블 ─────────────────────────────────────────────────── */
+.tcard{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+.tbar{display:flex;align-items:center;justify-content:space-between;padding:10px var(--sp-4);
+  border-bottom:1px solid var(--n-200);}
+.tbar-l{font-size:var(--fs-caption);color:var(--n-600);} .tbar-l b{color:var(--n-900);}
+.tbar-r{display:flex;align-items:center;gap:8px;}
+table{width:100%;border-collapse:collapse;}
+thead td{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);font-weight:500;
+  padding:10px 16px;white-space:nowrap;border-bottom:1px solid var(--n-200);}
+tbody td{padding:13px 16px;font-size:var(--fs-caption);border-top:1px solid var(--n-100);
+  vertical-align:middle;white-space:nowrap;}
+tbody tr:first-child td{border-top:none;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:var(--accent-50);}
+tbody tr:hover .t-main{color:var(--accent-600);}
+.t-main{font-size:var(--fs-body);font-weight:500;color:var(--n-900);}
+.tcard table{table-layout:fixed;}
+.tnum{font-variant-numeric:tabular-nums;letter-spacing:-.1px;}
+.t-sub{color:var(--n-500);font-size:var(--fs-micro);}
+.t-c{text-align:center;}
+.t-r{text-align:right;}
+.over{color:var(--warning-text);font-weight:600;}
+
+/* ── ⑦ 배지 ───────────────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-warning{background:var(--warning-bg);color:var(--warning-text);}
+.b-danger{background:var(--danger-bg);color:var(--danger-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+
+/* ── ⑧ 페이지네이션 · 빈 상태 ─────────────────────────────────── */
+.pager{display:flex;align-items:center;justify-content:center;gap:4px;padding:12px;border-top:1px solid var(--n-200);}
+.page-item{min-width:26px;height:26px;padding:0 6px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-600);cursor:pointer;}
+.page-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.empty{padding:72px 24px;text-align:center;}
+.empty-ic{font-size:28px;color:var(--n-300);margin-bottom:10px;}
+.empty-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);margin-bottom:4px;}
+.empty-d{font-size:var(--fs-caption);color:var(--n-500);}
+
+/* ── ⑨ 상세 · 카드 ────────────────────────────────────────────── */
+.detail{display:grid;grid-template-columns:1fr 320px;gap:var(--sp-4);align-items:start;}
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);margin-bottom:var(--sp-4);}
+.card:last-child{margin-bottom:0;}
+.card-h{font-size:var(--fs-h3);font-weight:600;padding:11px var(--sp-4);border-bottom:1px solid var(--n-200);
+  background:var(--n-50);border-radius:var(--r-md) var(--r-md) 0 0;display:flex;align-items:center;
+  justify-content:space-between;}
+.card-h .ch-n{font-size:var(--fs-micro);color:var(--n-500);font-weight:400;}
+.card-b{padding:var(--sp-4);}
+.rsn{margin:0;font-size:var(--fs-caption);color:var(--n-700);line-height:1.75;}
+
+/* 상세 필드 행 — 라벨 140px · 행 패딩 9px (어드민 공통 규격) */
+.frow{display:flex;gap:var(--sp-3);padding:9px 0;border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.frow:last-child{border-bottom:none;}
+.frow:first-child{padding-top:0;}
+.fk{width:140px;flex-shrink:0;color:var(--n-500);}
+.fv{flex:1;color:var(--n-900);min-width:0;}
+.fv .fsub{color:var(--n-500);font-size:var(--fs-micro);margin-top:2px;}
+.flink{color:var(--n-600);text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
+.flink:hover{color:var(--accent-600);}
+
+/* ── ⑩ 변경 대조 표 ───────────────────────────────────────────── */
+table.diff{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+table.diff thead td{width:auto;} table.diff thead td:first-child{width:180px;}
+table.diff tbody td{white-space:normal;cursor:default;padding:11px 16px;}
+table.diff tbody tr{cursor:default;} table.diff tbody tr:hover{background:transparent;}
+table.diff tbody tr.chg{background:var(--accent-50);}
+table.diff tbody tr.chg:hover{background:var(--accent-50);}
+.dk{color:var(--n-500);font-size:var(--fs-micro);}
+.dv{color:var(--n-900);}
+.dold{color:var(--n-500);text-decoration:line-through;text-decoration-color:var(--n-400);}
+.dnew{color:var(--accent-600);font-weight:600;}
+.dsame{color:var(--n-400);font-size:var(--fs-micro);}
+.dlock{color:var(--n-500);font-size:var(--fs-micro);font-weight:500;}
+
+/* ── ⑪ 인라인 안내 박스 ───────────────────────────────────────── */
+.chk-note{display:flex;gap:9px;background:var(--warning-bg);border-radius:var(--r-sm);padding:11px 13px;
+  font-size:var(--fs-micro);color:var(--n-700);line-height:1.65;margin-bottom:var(--sp-4);}
+.chk-note.danger{background:var(--danger-bg);}
+.chk-note .ci{width:16px;height:16px;border-radius:50%;background:var(--warning-text);color:#fff;font-size:10px;
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;margin-top:1px;}
+.chk-note.danger .ci{background:var(--danger-text);}
+
+/* ── ⑫ 첨부 ───────────────────────────────────────────────────── */
+.files{display:flex;flex-direction:column;gap:8px;}
+.file{display:flex;align-items:center;gap:10px;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:9px 12px;}
+.file-ic{width:28px;height:28px;border-radius:var(--r-sm);background:var(--accent-50);color:var(--accent-600);
+  display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+.file-n{flex:1;font-size:var(--fs-caption);}
+.file-s{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ── ⑬ 우측 액션 카드 · 이력 ──────────────────────────────────── */
+.detail > div:last-child{position:sticky;top:0;align-self:start;}
+.side-card{}
+.st-now{padding:var(--sp-4);}
+.st-line{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding-bottom:var(--sp-3);border-bottom:1px solid var(--n-100);}
+.st-meta{padding-top:var(--sp-2);}
+.mrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);}
+.mrow:last-child{border-bottom:none;}
+.mk{color:var(--n-500);} .mv{color:var(--n-900);font-weight:500;text-align:right;}
+.st-lbl{font-size:var(--fs-caption);color:var(--n-500);flex-shrink:0;}
+.act-in{border-top:1px solid var(--n-100);margin:var(--sp-2) 0 0;padding-top:var(--sp-2);}
+.act-in .st-meta{padding-top:0;}
+.act-in .st-hint{margin-top:6px;}
+.st-acts{display:flex;gap:8px;margin-top:var(--sp-4);}
+.st-acts .btn{flex:1;}
+.st-hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;line-height:1.55;}
+.st-rsn{padding:9px 0 0;border-top:1px solid var(--n-100);margin-top:var(--sp-2);}
+.st-rsn .rk{font-size:var(--fs-micro);color:var(--n-500);display:block;margin-bottom:3px;}
+.st-rsn .rv{font-size:var(--fs-caption);color:var(--n-900);line-height:1.6;}
+.st-rsn + .st-rsn{margin-top:9px;}
+.hist{padding:var(--sp-2) var(--sp-4) var(--sp-3);}
+.hitem{display:flex;gap:10px;padding:6px 0;}
+.hdot{width:7px;height:7px;border-radius:50%;background:var(--n-300);margin-top:6px;flex-shrink:0;}
+.hdot.on{background:var(--accent-500);}
+.hdot.h-info{background:var(--info-text);}
+.hdot.h-success{background:var(--success-text);}
+.hdot.h-warning{background:var(--warning-text);}
+.hdot.h-danger{background:var(--danger-text);}
+.hdot.h-neutral{background:var(--n-400);}
+.hmore{font-size:var(--fs-micro);color:var(--accent-600);padding:8px 0 2px;border-top:1px solid var(--n-100);margin-top:4px;cursor:pointer;}
+.htxt{font-size:var(--fs-caption);}
+.hmeta{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ── ⑭ 모달 ───────────────────────────────────────────────────── */
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;justify-content:center;}
+.modal{width:520px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);overflow:hidden;}
+.modal.sm{width:400px;}
+.modal-h{font-size:var(--fs-h3);font-weight:600;padding:14px var(--sp-5);border-bottom:1px solid var(--n-200);
+  display:flex;align-items:center;justify-content:space-between;}
+.modal-x{color:var(--n-400);cursor:pointer;font-size:var(--fs-body);}
+.modal-b{padding:var(--sp-5);font-size:var(--fs-caption);color:var(--n-700);line-height:1.7;}
+.modal-f{padding:12px var(--sp-5);border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.mlabel{display:block;font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;}
+.modal-b > .mlabel:first-child{margin-top:0;}
+.mlabel .req{color:var(--danger-text);margin-left:2px;}
+.mlabel .opt{color:var(--n-400);margin-left:4px;font-weight:400;}
+.msel,.mta{width:100%;font-family:inherit;font-size:var(--fs-body);border:1px solid var(--n-300);
+  border-radius:var(--r-sm);background:#fff;color:var(--n-900);padding:6px 10px;}
+.msel:focus,.mta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.msel{height:32px;appearance:none;-webkit-appearance:none;-moz-appearance:none;padding-right:32px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;}
+.mta{min-height:88px;resize:vertical;line-height:1.6;height:auto;padding-top:7px;}
+.mta.is-error{border-color:var(--danger-text);}
+.merr{font-size:var(--fs-micro);color:var(--danger-text);margin:6px 0 0;}
+.mwarn{display:flex;gap:8px;background:var(--danger-bg);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--danger-text);line-height:1.6;margin-top:var(--sp-4);font-weight:500;}
+.mwarn.info{background:var(--info-bg);color:var(--info-text);}
+.mhint{font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;}
+
+/* ── ⑮ 미리보기 라이트박스 ────────────────────────────────────── */
+.modal.pv{width:1080px;}
+.pv-body{display:grid;grid-template-columns:1fr 340px;height:620px;}
+.pv-view{background:var(--n-900);display:flex;flex-direction:column;}
+.pv-canvas{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:20px;}
+.pv-img{width:440px;height:310px;background:#fff;border-radius:2px;
+  box-shadow:0 4px 18px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;
+  color:var(--n-400);font-size:var(--fs-caption);}
+.pv-bar{height:48px;background:rgba(255,255,255,.06);border-top:1px solid rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px;}
+.pv-nav{display:flex;align-items:center;gap:6px;}
+.pv-b{height:28px;padding:0 10px;border-radius:var(--r-sm);background:rgba(255,255,255,.1);
+  color:rgba(255,255,255,.85);font-size:var(--fs-micro);font-weight:500;cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;border:none;font-family:inherit;}
+.pv-b:hover{background:rgba(255,255,255,.2);color:#fff;}
+.pv-zoom{font-size:var(--fs-micro);color:rgba(255,255,255,.6);padding:0 6px;}
+.pv-side{background:#fff;border-left:1px solid var(--n-200);padding:var(--sp-4);overflow-y:auto;}
+.pv-t{font-size:var(--fs-h3);font-weight:600;margin-bottom:2px;}
+.pv-d{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:var(--sp-4);}
+.pv-sec{font-size:var(--fs-micro);color:var(--n-500);font-weight:600;padding-bottom:6px;
+  border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-2);}
+.pv-row{display:flex;gap:9px;padding:11px 0;border-bottom:1px solid var(--n-100);align-items:flex-start;}
+.pv-row:last-of-type{border-bottom:none;}
+.pv-k{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:3px;}
+.pv-old{font-size:var(--fs-micro);color:var(--n-500);text-decoration:line-through;
+  text-decoration-color:var(--n-400);margin-bottom:1px;}
+.pv-new{font-size:var(--fs-body);font-weight:600;color:var(--accent-600);line-height:1.45;}
+.pv-new.plain{color:var(--n-900);}
+.pv-note{display:flex;gap:7px;background:var(--n-100);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--n-600);line-height:1.55;margin-top:var(--sp-4);}
+.pv-note.warn{background:var(--danger-bg);color:var(--danger-text);}
+
+/* ── ⑯ 토스트 ─────────────────────────────────────────────────── */
+.toast-wrap{position:absolute;top:72px;right:24px;display:flex;flex-direction:column;gap:8px;}
+.toast{min-width:260px;background:#fff;border:1px solid var(--n-200);border-left:3px solid var(--success-text);
+  border-radius:7px;box-shadow:0 4px 16px rgba(26,27,31,.1);padding:11px 14px;font-size:var(--fs-caption);
+  font-weight:500;display:flex;align-items:center;gap:8px;}
+
+/* ══ 화면 전용 (ui-admin-06) ══ */
+/* 어드민 공통 규격 정합: 테이블 본문 셀 14px 16px · 행높이 50px */
+tbody td{padding:14px 16px;height:50px;}
+
+.tb-inq thead td:nth-child(1),.tb-inq tbody td:nth-child(1){width:8%;padding-left:20px;}
+.tb-inq thead td:nth-child(3),.tb-inq tbody td:nth-child(3){width:10%;}
+.tb-inq thead td:nth-child(4),.tb-inq tbody td:nth-child(4){width:14%;}
+.tb-inq thead td:nth-child(5),.tb-inq tbody td:nth-child(5){width:14%;}
+.tb-inq thead td:nth-child(6),.tb-inq tbody td:nth-child(6){width:10%;}
+.tb-inq thead td:nth-child(7),.tb-inq tbody td:nth-child(7){width:11%;padding-right:20px;}
+
+.tb-qna thead td:nth-child(1),.tb-qna tbody td:nth-child(1){width:10%;padding-left:20px;}
+.tb-qna thead td:nth-child(2),.tb-qna tbody td:nth-child(2){width:32%;}
+.tb-qna thead td:nth-child(3),.tb-qna tbody td:nth-child(3){width:18%;}
+.tb-qna thead td:nth-child(4),.tb-qna tbody td:nth-child(4){width:12%;}
+.tb-qna thead td:nth-child(5),.tb-qna tbody td:nth-child(5){width:10%;}
+.tb-qna thead td:nth-child(6),.tb-qna tbody td:nth-child(6){width:10%;}
+.tb-qna thead td:nth-child(7),.tb-qna tbody td:nth-child(7){width:12%;padding-right:20px;}
+.tb-qna tbody td{vertical-align:top;}
+
+.tb-faq thead td:nth-child(1),.tb-faq tbody td:nth-child(1){width:40px;padding-left:16px;padding-right:0;}
+.tb-faq thead td:nth-child(2),.tb-faq tbody td:nth-child(2){width:13%;}
+.tb-faq thead td:nth-child(3),.tb-faq tbody td:nth-child(3){white-space:normal;}
+.tb-faq thead td:nth-child(4),.tb-faq tbody td:nth-child(4){width:10%;}
+.tb-faq thead td:nth-child(5),.tb-faq tbody td:nth-child(5){width:10%;}
+.tb-faq thead td:nth-child(6),.tb-faq tbody td:nth-child(6){width:13%;padding-right:20px;}
+.tb-faq tbody td{vertical-align:top;}
+
+.tb-not thead td:nth-child(1),.tb-not tbody td:nth-child(1){width:56px;padding-left:20px;}
+.tb-not thead td:nth-child(2),.tb-not tbody td:nth-child(2){white-space:normal;}
+.tb-not thead td:nth-child(3),.tb-not tbody td:nth-child(3){width:10%;}
+.tb-not thead td:nth-child(4),.tb-not tbody td:nth-child(4){width:10%;}
+.tb-not thead td:nth-child(5),.tb-not tbody td:nth-child(5){width:9%;}
+.tb-not thead td:nth-child(6),.tb-not tbody td:nth-child(6){width:13%;padding-right:20px;}
+.tb-not tbody td{vertical-align:top;}
+
+.qa-q{font-size:var(--fs-body);font-weight:500;color:var(--n-900);line-height:1.5;}
+.qa-a{font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;line-height:1.6;max-width:660px;}
+.drag{color:var(--n-300);text-align:center;cursor:grab;font-size:13px;}
+
+.racts{display:flex;gap:6px;}
+.rbtn{display:inline-flex;align-items:center;justify-content:center;height:26px;padding:0 10px;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;font-size:var(--fs-micro);
+  font-weight:500;color:var(--n-700);cursor:pointer;font-family:inherit;white-space:nowrap;}
+.rbtn:hover{background:var(--n-100);border-color:var(--n-400);}
+.rbtn.del{color:var(--danger-text);border-color:#E9C9C9;}
+.rbtn.del:hover{background:var(--danger-bg);}
+
+.thread{display:flex;flex-direction:column;gap:10px;}
+.tmsg{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:12px 14px;
+  font-size:var(--fs-caption);line-height:1.75;color:var(--n-700);}
+.tmsg.me{background:var(--accent-50);border-color:var(--accent-100);}
+.tmsg .who{font-size:var(--fs-micro);font-weight:600;color:var(--n-700);margin-bottom:5px;
+  display:flex;align-items:center;gap:6px;}
+.tmsg .who .wt{font-weight:400;color:var(--n-500);}
+.ta-label{font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;display:block;}
+
+.term{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fff;
+  border:1px solid var(--n-200);border-radius:var(--r-md);padding:14px var(--sp-4);margin-bottom:10px;cursor:pointer;}
+.term:hover{border-color:var(--n-300);}
+.term.on{border-color:var(--accent-500);background:var(--accent-50);}
+.term .tn{font-size:var(--fs-h3);font-weight:600;}
+.term .tv{font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;}
+
+.cbrow{display:flex;gap:9px;align-items:flex-start;padding:9px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);color:var(--n-700);}
+.cbrow:last-child{border-bottom:none;}
+.cbx{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--n-300);background:#fff;
+  flex-shrink:0;margin-top:2px;}
+.cbx.on{background:var(--accent-500);border-color:var(--accent-500);color:#fff;font-size:10px;
+  display:flex;align-items:center;justify-content:center;}
+.rdo{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--n-300);background:#fff;
+  flex-shrink:0;display:inline-block;}
+.rdo.on{border-color:var(--accent-500);border-width:5px;}
+.optrow{display:flex;gap:20px;align-items:center;margin-top:var(--sp-4);font-size:var(--fs-caption);color:var(--n-700);}
+.optrow label{display:flex;align-items:center;gap:7px;cursor:pointer;}
+.w-full{width:100%;}
+.tb-inq tbody td:nth-child(2),.tb-qna tbody td:nth-child(2),.tb-qna tbody td:nth-child(3){overflow:hidden;}
+.tb-inq .t-main,.tb-qna .qa-q{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tatt{display:flex;gap:8px;margin-top:10px;}
+.tthumb{width:72px;height:72px;border-radius:var(--r-sm);border:1px solid var(--n-200);
+  background:var(--n-100);color:var(--n-400);font-size:var(--fs-micro);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.tthumb:hover{border-color:var(--accent-500);color:var(--accent-600);}
+.tatt-n{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;}
+
+
+/* ── ⑰ 화면 전용 · 주문 조회 ───────────────────────────────────── */
+/* DS §6 .filter 2행 확장 — 기간 축이 탭·검색과 한 줄에 들어가지 않는다 */
+.filter.two{flex-wrap:wrap;row-gap:0;}
+.fline{display:flex;align-items:center;gap:8px;width:100%;
+  padding-top:11px;margin-top:11px;border-top:1px solid var(--n-100);}
+.flab{font-size:var(--fs-micro);color:var(--n-500);font-weight:600;margin-right:2px;}
+.qmore{margin-left:auto;font-size:var(--fs-micro);color:var(--accent-500);cursor:pointer;
+  display:inline-flex;align-items:center;gap:4px;}
+.qmore:hover{text-decoration:underline;}
+.fchip{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-micro);font-weight:500;
+  color:var(--accent-600);background:var(--accent-50);border:1px solid var(--accent-100);
+  border-radius:var(--r-pill);padding:3px 9px;}
+.fchip i{font-style:normal;color:var(--accent-500);cursor:pointer;opacity:.7;}
+.chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.preset{display:flex;gap:0;border:1px solid var(--n-300);border-radius:var(--r-sm);overflow:hidden;background:#fff;}
+.pbtn{font-size:var(--fs-micro);color:var(--n-600);padding:0 11px;height:30px;display:flex;align-items:center;
+  border-right:1px solid var(--n-200);cursor:pointer;}
+.pbtn:last-child{border-right:none;}
+.pbtn:hover:not(.on){background:var(--n-50);}
+.pbtn.on{background:var(--accent-50);color:var(--accent-600);font-weight:500;}
+.qsub{font-size:var(--fs-micro);color:var(--n-500);}
+.tcard{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+.tbar{display:flex;align-items:center;justify-content:space-between;padding:10px var(--sp-4);
+  border-bottom:1px solid var(--n-200);}
+.tbar-l{font-size:var(--fs-caption);color:var(--n-600);}
+.tbar-l b{color:var(--n-900);}
+.tbar-r{display:flex;align-items:center;gap:8px;}
+.tcard table{width:100%;border-collapse:collapse;table-layout:fixed;}
+.tcard thead td{font-size:var(--fs-micro);font-weight:600;color:var(--n-600);background:var(--n-50);
+  padding:9px 10px;border-bottom:1px solid var(--n-200);white-space:nowrap;}
+.tcard tbody td{font-size:var(--fs-caption);color:var(--n-900);padding:11px 10px;
+  border-bottom:1px solid var(--n-100);vertical-align:middle;}
+.tcard thead td:first-child,.tcard tbody td:first-child{padding-left:20px;}
+.tcard thead td:last-child,.tcard tbody td:last-child{padding-right:20px;}
+.tcard tbody tr:last-child td{border-bottom:none;}
+.tcard tbody tr:hover{background:var(--n-50);cursor:pointer;}
+.tcard tbody tr.open{background:var(--accent-50);}
+.tcard tbody tr.sub{background:var(--n-50);}
+.tcard tbody tr.sub:hover{background:var(--n-100);}
+.tcard tbody tr.sub td{padding:9px 10px;border-bottom:1px solid var(--n-100);}
+.t-c{text-align:center;}
+.t-r{text-align:right;}
+.xt{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;
+  font-size:8px;color:var(--n-500);border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;}
+.xt.on{background:var(--accent-500);border-color:var(--accent-500);color:#fff;}
+.t-main{font-size:var(--fs-caption);color:var(--n-900);font-weight:500;}
+.t-sub{font-size:var(--fs-micro);color:var(--n-500);}
+.t-note{display:block;margin-top:3px;font-size:var(--fs-micro);font-weight:500;}
+.t-warn{color:var(--warning-text);}
+.t-danger{color:var(--danger-text);}
+.t-dim{color:var(--n-400);}
+.subline{display:flex;align-items:center;gap:7px;}
+.subline .sk{font-size:var(--fs-micro);color:var(--n-400);width:14px;text-align:center;flex-shrink:0;}
+.pay-chip{display:inline-block;font-size:var(--fs-micro);color:var(--n-600);background:var(--n-100);
+  border-radius:var(--r-sm);padding:1px 6px;}
+.pager{display:flex;justify-content:center;gap:4px;padding:11px 0;border-top:1px solid var(--n-100);}
+.page-item{min-width:26px;height:26px;display:flex;align-items:center;justify-content:center;
+  font-size:var(--fs-micro);color:var(--n-600);border-radius:var(--r-sm);cursor:pointer;}
+.page-item:hover:not(.active){background:var(--n-100);}
+.page-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.empty{padding:72px 24px;text-align:center;}
+.empty-ic{font-size:28px;color:var(--n-300);margin-bottom:10px;}
+.empty-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);margin-bottom:4px;}
+.empty-d{font-size:var(--fs-caption);color:var(--n-500);}
+.nodot::before{display:none!important;}
+
+/* 추가 — 모달 · 트리 · 레일 */
+.btn-danger-o{background:#fff;color:var(--danger-text);border:1px solid var(--n-300);}
+.btn-danger-o:hover{background:var(--danger-bg);border-color:var(--n-400);}
+.elink{color:var(--accent-500);cursor:pointer;display:inline-flex;align-items:center;gap:3px;}
+.elink:hover{text-decoration:underline;}
+.tag{display:inline-block;font-size:10px;font-weight:500;color:var(--n-600);background:var(--n-100);
+  border:1px solid var(--n-200);border-radius:var(--r-sm);padding:1px 6px;margin-left:5px;vertical-align:1px;}
+.fchip{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-micro);font-weight:500;
+  color:var(--accent-600);background:var(--accent-50);border:1px solid var(--accent-100);
+  border-radius:var(--r-pill);padding:3px 9px;}
+.fchip i{font-style:normal;color:var(--accent-500);cursor:pointer;opacity:.7;}
+/* 모달 확장 */
+.modal.wide{width:1040px;max-height:1004px;display:flex;flex-direction:column;}
+.modal-b.split{display:grid;grid-template-columns:1fr 320px;gap:var(--sp-4);padding:var(--sp-4);
+  overflow:hidden;align-items:start;background:var(--n-50);}
+.mcol{min-width:0;max-height:920px;overflow:hidden;}
+.mbk{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);margin-bottom:5px;}
+.mbk-h{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);padding:7px var(--sp-3);
+  border-bottom:1px solid var(--n-200);background:var(--n-50);border-radius:var(--r-md) var(--r-md) 0 0;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.mbk-n{font-size:10px;color:var(--n-400);font-weight:600;margin-right:6px;}
+.mbk-b{padding:9px var(--sp-3);}
+.mbk .frow{padding:4px 0;font-size:var(--fs-micro);}
+.mbk .frow:last-child{border-bottom:none;}
+.mbk .fk{width:118px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;column-gap:20px;}
+.banner{display:flex;gap:9px;background:var(--danger-bg);border:1px solid #EECFCF;border-radius:var(--r-md);
+  padding:10px 12px;margin-bottom:10px;font-size:var(--fs-micro);color:var(--danger-text);line-height:1.65;font-weight:500;}
+.banner.info{background:var(--info-bg);border-color:#D3D6EE;color:var(--info-text);}
+.sc{border:1px solid var(--n-200);border-radius:var(--r-sm);margin-bottom:6px;overflow:hidden;}
+.sc:last-child{margin-bottom:0;}
+.sc-h{display:flex;align-items:center;gap:8px;padding:5px 10px;background:var(--n-50);
+  border-bottom:1px solid var(--n-200);font-size:var(--fs-micro);}
+.sc-h b{font-size:var(--fs-caption);}
+.sc-m{margin-left:auto;color:var(--n-500);}
+.itrow{display:flex;align-items:center;gap:8px;padding:4px 10px;border-bottom:1px solid var(--n-100);font-size:var(--fs-micro);}
+.itrow:last-child{border-bottom:none;}
+.itrow .iq{color:var(--n-500);}
+.itrow .ip{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--n-700);}
+.rl{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);margin-bottom:8px;}
+.rl-h{font-size:var(--fs-caption);font-weight:600;padding:9px var(--sp-3);border-bottom:1px solid var(--n-200);
+  background:var(--n-50);border-radius:var(--r-md) var(--r-md) 0 0;}
+.rl-b{padding:var(--sp-3);display:flex;flex-direction:column;gap:7px;}
+.rl-b .btn{width:100%;}
+.rl-t{font-size:var(--fs-micro);color:var(--n-500);line-height:1.6;}
+.tlink{font-size:var(--fs-micro);color:var(--accent-500);cursor:pointer;text-align:center;padding:2px 0;}
+.tlink:hover{text-decoration:underline;}
+.ifm{background:var(--accent-50);border:1px solid var(--accent-100);border-radius:var(--r-sm);padding:10px;}
+.ifm .mlabel{margin:9px 0 3px;font-size:var(--fs-micro);}
+.ifm .mlabel:first-child{margin-top:0;}
+.ifm .inp,.ifm .msel{width:100%;height:28px;font-size:var(--fs-micro);}
+.ifm .mta{font-size:var(--fs-micro);min-height:52px;}
+.ifm .mwarn{margin-top:9px;padding:8px 9px;font-size:10px;}
+.ifm .btn{width:100%;margin-top:9px;}
+.cbrow{display:flex;align-items:center;gap:7px;font-size:var(--fs-micro);padding:4px 0;}
+.cb{width:13px;height:13px;border:1px solid var(--n-400);border-radius:3px;background:#fff;flex-shrink:0;}
+.cb.on{background:var(--accent-500);border-color:var(--accent-500);}
+.qty{width:38px;height:22px;border:1px solid var(--n-300);border-radius:4px;font-size:10px;
+  text-align:center;margin-left:auto;font-variant-numeric:tabular-nums;color:var(--n-900);background:#fff;
+  display:flex;align-items:center;justify-content:center;}
+.empty{padding:18px 0;text-align:center;}
+.empty-t{font-size:var(--fs-body);color:var(--n-700);font-weight:500;}
+.empty-d{font-size:var(--fs-caption);color:var(--n-500);margin-top:5px;}
+.divl{display:flex;align-items:center;gap:10px;margin:10px 0 8px;}
+.divl span{font-size:var(--fs-micro);font-weight:600;color:var(--n-500);}
+.divl::after{content:'';flex:1;height:1px;background:var(--n-200);}
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>⑤ 어드민 · 6. 거래 관리 — 반품·교환 <span style="font-weight:400;color:var(--n-600);font-size:var(--fs-caption)">ui-admin-06b-claims · rev.1</span></h1>
+  <p class="meta">항목 단위 반품·교환 클레임의 조회와 반려 이의 처리 · 근거: <code>SHOWROOMZ_웹_디자인시스템_v1_2.html</code> · 기준 파일: <code>ui-partner-11-claims</code> rev.1 · 소비자 <code>C10-3 · C10-5</code> · 주문 조회 <code>ui-admin-06a-orders</code> rev.4</p>
+  <div class="rule">
+    <b class="new">[2026.10.05 결정 반영]</b> ① 검수 통과 = <b>PG 즉시 자동 환불</b> — 운영자 집행 단계가 없다 ② 반려 상품은 약관 반영 전까지 <b>폐기하지 않는다</b> — 고지·보관 기한만 표시 ③ 검수 반려 입력 = <b>6항목</b>(사유 · 법적 근거 · 범위(전체/일부) · 귀책 · 증빙 · 메시지) — 파트너·소비자와 1:1 ④ 용어 <b>「반려」로 통일</b> — 「거절」은 취소 요청 거부(파트너 10d)에만 쓴다. 파트너 11-claims의 「검수 거절 · 거절 보류」는 「검수 반려 · 반려 보류」로 바뀐다.<br>
+    <b>[브랜드 큐와 같은 탭 · 같은 건수]</b> 탭 7개와 건수가 파트너 11-claims와 같다(전체 12 = 3+2+2+1+1+3). CS 통화에서 운영자와 브랜드가 같은 단계 이름을 써야 한다. 어드민 전용 열은 <b>브랜드 · 귀책</b> 둘. 반품·교환은 탭으로 나누지 않고 유형 열로 구분한다(색 없음).<br>
+    <b>[운영자가 실행하는 일은 하나]</b> 반려에 대한 <b>소비자 이의를 인용하는 운영자 사유 환불</b>(B2)뿐이다. 회수·입고·검수·재발송은 소비자와 브랜드의 일이고, 신청 단계 반려는 없다. 기각은 버튼이 아니라 스레드 답변이다(반려가 그대로 유지되므로). 구매확정 후 하자는 06a B6에서 <b>대신 열고</b> 이후는 일반 반품과 같다(B4).<br>
+    <b>[기한 2종 · 2영업일]</b> 회수 대기 방치(신청 → 소비자 송장 입력)와 검수 완료(입고 확인 → 판정). 넘기면 시스템 자동 알림 · 06d 처리 지연이 센다 · 독촉 버튼 없음. 회수 송장 7일 미입력은 자동 취소. 영업일 = 주말·공휴일 제외.<br>
+    <b>[환불 계산식]</b> 상품 금액 − 최초 배송비(무료배송 + 소비자 귀책일 때 3,000원) − 재발송비(일부 반려일 때 3,000원). 전체 반려는 재발송비를 <b>소비자가 따로 결제</b>하고, 일부 반려는 <b>통과분 환불에서 뺀다</b>(B3). 귀책은 <b>항목 단위</b>로 적는다 — 일부 반려에서 갈리기 때문이다.<br>
+    <b>[구매확정 타이머]</b> 신청 시 정지 → 철회·자동 취소 시 남은 일수부터 재개 · 교환 완료 시 7일 새로 시작. 상세 금액 블록에 남은 일수를 적는다.<br>
+    <b>[상태색]</b> 단계는 <b>정보</b>(정상 진행) · <b>검수 지연만 경고</b> · 환불·교환 완료 = <b>성공</b> · 반려 종결 = <b>중립</b>. 소비자 이의는 보조줄 경고(운영자 조치 필요).<br>
+    <b class="new">[확인 필요]</b> ⓐ 반려 고지 간격(2회 고지 사이 일수) ⓑ 보관 기한 경과 후 처리(약관 반영 대기) ⓒ 교환 반려 시 이의 경로 — 시안은 반품과 같은 운영자 사유 환불로 그렸으나 교환은 환불이 아니라 <b>원래 상품 반송</b>이 기본이다 ⓓ 운영자 개설 클레임의 개설 취소 권한 ⓔ 사이드바 「반품·교환」 배지 = 소비자 이의 건수(1)로 잡았다 — 검수 지연까지 셀지.<br>
+    <b>[규격 정합]</b> 사이드바 240 · 탑바 56 · 본문 패딩 24 · 상세 필드 행 9px · 라벨 140px · 액센트 인디고 단일 · 밀도 Compact. 설계 근거는 이 박스와 <code>.state-spec</code>에만 둔다.
+  </div>
+</div>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">A1</span><span class="state-label">목록 — 전체 (기본 진입)</span><span class="state-spec"><b>파트너 11-claims와 같은 탭·같은 건수</b>(전체 12 = 3+2+2+1+1+3) — 브랜드가 보는 큐와 운영자가 보는 큐가 어긋나면 CS 통화에서 단계가 맞지 않는다 · 어드민 전용 열은 <b>브랜드</b>와 <b>귀책</b> 둘 · 반품·교환은 탭을 나누지 않고 <b>유형 열</b>로 구분(색 없음) · 단계 배지는 <b>정보</b>가 기본이고 <b>검수 지연(2영업일 초과)만 경고</b>다 — 지연은 브랜드 일이지만 운영자가 모니터해야 해서 상단 고정 · <b>운영자 조치 대상은 소비자 이의 1건</b>뿐이라 보조줄 경고로 띄운다 · CLM-3018은 06a B6에서 <b>운영자가 대신 연</b> 확정 후 하자 반품</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item open" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">10</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub active"><span>반품·교환</span><span class="scnt">1</span></div><div class="gnb-sub"><span>환불 관리</span><span class="scnt">2</span></div><div class="gnb-sub"><span>예외 관리</span><span class="scnt">7</span></div></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">거래 관리<span class="c-sub">/ 반품·교환</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">반품·교환</div></div></div><div class="filter"><div class="tabs"><div class="tab active">전체<span class="tn">12</span></div><div class="tab">회수 대기<span class="tn">3</span></div><div class="tab">회수 중<span class="tn">2</span></div><div class="tab">입고·검수<span class="tn">2</span></div><div class="tab">재발송<span class="tn">1</span></div><div class="tab">반려 보류<span class="tn">1</span></div><div class="tab">완료<span class="tn">3</span></div></div><div class="search"><select class="sel-sm" style="width:96px"><option selected>유형 전체</option><option>반품</option><option>교환</option></select><input class="inp" placeholder="접수번호 · 주문번호 · 브랜드명 · 소비자" style="width:220px"><button class="btn btn-secondary">검색</button><button class="btn btn-secondary">초기화</button></div></div><div class="tcard"><div class="tbar"><div class="tbar-l">총 <b>12</b>건 · 지연 <b>1</b>건 · 반려 이의 <b>1</b>건 <span class="t-sub">· 운영자 조치는 이의 1건뿐 — 나머지는 브랜드·소비자 진행</span></div><div class="tbar-r"><select class="sel-sm"><option selected>신청일시 최신순</option><option>경과 오래된순</option></select><select class="sel-sm"><option>20건씩</option><option>50건씩</option></select></div></div><table><thead><tr><td style="width:92px">접수번호</td><td class="t-c" style="width:54px">유형</td><td class="t-c" style="width:58px">소비자</td><td style="width:100px">브랜드</td><td>상품 · 옵션</td><td class="t-c" style="width:44px">수량</td><td style="width:150px">사유</td><td class="t-c" style="width:64px">귀책</td><td class="t-c" style="width:150px">단계</td><td class="t-c" style="width:92px">경과</td></tr></thead><tbody><tr><td class="tnum">CLM-3021</td><td class="t-c">반품</td><td class="t-c">최**</td><td>데일리랩</td><td><span class="t-main">데일리 선크림</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">1</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">회수 대기</span></td><td class="t-c t-sub tnum">신청 1일</td></tr><tr><td class="tnum">CLM-3020</td><td class="t-c">교환</td><td class="t-c">강**</td><td>무드코스메틱</td><td><span class="t-main">립 틴트</span> <span class="t-sub">03 → 05</span></td><td class="t-c tnum">1</td><td>사이즈가 맞지 않음</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">회수 대기</span></td><td class="t-c t-sub tnum">신청 1일</td></tr><tr><td class="tnum">CLM-3018</td><td class="t-c">반품</td><td class="t-c">최**</td><td>글로우코스</td><td><span class="t-main">글로우 세럼</span> <span class="t-sub">30ml</span></td><td class="t-c tnum">1</td><td>배송 상품 파손 및 불량</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-info">회수 대기</span><span class="t-note">운영자 개설 · 확정 후 하자</span></td><td class="t-c t-sub tnum">신청 1일</td></tr><tr><td class="tnum">CLM-3016</td><td class="t-c">교환</td><td class="t-c">한**</td><td>글로우코스</td><td><span class="t-main">톤업 쿠션</span> <span class="t-sub">21호 → 23호</span></td><td class="t-c tnum">1</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">회수 중</span></td><td class="t-c t-sub tnum">집화 2일</td></tr><tr><td class="tnum">CLM-3014</td><td class="t-c">반품</td><td class="t-c">송**</td><td>퓨어네이처</td><td><span class="t-main">하이드라 앰플</span> <span class="t-sub">30ml · 3개입</span></td><td class="t-c tnum">1</td><td>오배송 및 배송 지연</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-info">회수 중</span></td><td class="t-c t-sub tnum">집화 1일</td></tr><tr class="pin"><td class="tnum">CLM-3015</td><td class="t-c">반품</td><td class="t-c">이**</td><td>데일리랩</td><td><span class="t-main">선크림 리필</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">2</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-warning">검수 지연</span></td><td class="t-c t-sub tnum t-warn">입고 3영업일</td></tr><tr><td class="tnum">CLM-3012</td><td class="t-c">반품</td><td class="t-c">문**</td><td>퓨어랩</td><td><span class="t-main">클렌징 밤</span> <span class="t-sub">100ml</span></td><td class="t-c tnum">1</td><td>배송 상품 파손 및 불량</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-info">검수 대기</span></td><td class="t-c t-sub tnum">입고 1영업일</td></tr><tr><td class="tnum">CLM-3010</td><td class="t-c">교환</td><td class="t-c">윤**</td><td>무드코스메틱</td><td><span class="t-main">립 틴트</span> <span class="t-sub">02 → 04</span></td><td class="t-c tnum">1</td><td>주문 실수</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">교환 재발송 대기</span></td><td class="t-c t-sub tnum">통과 1영업일</td></tr><tr><td class="tnum">CLM-3008</td><td class="t-c">반품</td><td class="t-c">정**</td><td>글로우코스</td><td><span class="t-main">글로우 크림</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">1</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">재발송비 결제 대기</span><span class="t-note t-warn">소비자 이의 접수</span></td><td class="t-c t-sub tnum">고지 1회</td></tr><tr><td class="tnum">CLM-3006</td><td class="t-c">반품</td><td class="t-c">조**</td><td>글로우코스</td><td><span class="t-main">클렌징 밤</span> <span class="t-sub">100ml</span></td><td class="t-c tnum">1</td><td>주문 실수</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-success">환불 완료</span></td><td class="t-c t-sub tnum">09.12</td></tr><tr><td class="tnum">CLM-3004</td><td class="t-c">교환</td><td class="t-c">서**</td><td>퓨어네이처</td><td><span class="t-main">하이드라 앰플</span> <span class="t-sub">30ml → 50ml</span></td><td class="t-c tnum">1</td><td>사이즈가 맞지 않음</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-success">교환 완료</span></td><td class="t-c t-sub tnum">09.10</td></tr><tr><td class="tnum">CLM-3002</td><td class="t-c">반품</td><td class="t-c">배**</td><td>데일리랩</td><td><span class="t-main">데일리 선크림</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">2</td><td>배송 상품 파손 및 불량</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-success">일부 반려 · 환불 완료</span></td><td class="t-c t-sub tnum">09.08</td></tr></tbody></table></div></div></div></section>
+<section class="state">
+<div class="state-bar"><span class="state-id">A2</span><span class="state-label">목록 — 입고·검수 탭</span><span class="state-spec">기한 2종 중 <b>검수 완료 = 입고 확인 + 2영업일</b>(파트너 11-claims) — 넘긴 건은 행 전체 경고 배경 + 상단 고정 · 06d 처리 지연의 「검수 지연」이 이 건을 센다 · 운영자 액션은 없다(독촉 버튼 없음 · 시스템 자동 알림) · 정렬은 <b>경과 오래된순</b></span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item open" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">10</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub active"><span>반품·교환</span><span class="scnt">1</span></div><div class="gnb-sub"><span>환불 관리</span><span class="scnt">2</span></div><div class="gnb-sub"><span>예외 관리</span><span class="scnt">7</span></div></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">거래 관리<span class="c-sub">/ 반품·교환</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">반품·교환</div></div></div><div class="filter"><div class="tabs"><div class="tab">전체<span class="tn">12</span></div><div class="tab">회수 대기<span class="tn">3</span></div><div class="tab">회수 중<span class="tn">2</span></div><div class="tab active">입고·검수<span class="tn">2</span></div><div class="tab">재발송<span class="tn">1</span></div><div class="tab">반려 보류<span class="tn">1</span></div><div class="tab">완료<span class="tn">3</span></div></div><div class="search"><select class="sel-sm" style="width:96px"><option selected>유형 전체</option><option>반품</option><option>교환</option></select><input class="inp" placeholder="접수번호 · 주문번호 · 브랜드명 · 소비자" style="width:220px"><button class="btn btn-secondary">검색</button><button class="btn btn-secondary">초기화</button></div></div><div class="tcard"><div class="tbar"><div class="tbar-l">입고·검수 <b>2</b>건 · 지연 <b>1</b>건</div><div class="tbar-r"><select class="sel-sm"><option selected>신청일시 최신순</option><option>경과 오래된순</option></select><select class="sel-sm"><option>20건씩</option><option>50건씩</option></select></div></div><table><thead><tr><td style="width:92px">접수번호</td><td class="t-c" style="width:54px">유형</td><td class="t-c" style="width:58px">소비자</td><td style="width:100px">브랜드</td><td>상품 · 옵션</td><td class="t-c" style="width:44px">수량</td><td style="width:150px">사유</td><td class="t-c" style="width:64px">귀책</td><td class="t-c" style="width:150px">단계</td><td class="t-c" style="width:92px">경과</td></tr></thead><tbody><tr class="pin"><td class="tnum">CLM-3015</td><td class="t-c">반품</td><td class="t-c">이**</td><td>데일리랩</td><td><span class="t-main">선크림 리필</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">2</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-warning">검수 지연</span></td><td class="t-c t-sub tnum t-warn">입고 3영업일</td></tr><tr><td class="tnum">CLM-3012</td><td class="t-c">반품</td><td class="t-c">문**</td><td>퓨어랩</td><td><span class="t-main">클렌징 밤</span> <span class="t-sub">100ml</span></td><td class="t-c tnum">1</td><td>배송 상품 파손 및 불량</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-info">검수 대기</span></td><td class="t-c t-sub tnum">입고 1영업일</td></tr></tbody></table></div></div></div></section>
+<section class="state">
+<div class="state-bar"><span class="state-id">A3</span><span class="state-label">목록 — 반려 보류 탭</span><span class="state-spec">반려된 상품이 브랜드 창고에 있고 <b>소비자 재발송비 결제를 기다리는</b> 상태 · 열은 파트너와 같다(반려 사유 · 고지 · 보관 기한) · <b>「폐기 가능」 표기와 폐기 액션은 두지 않는다</b> — 약관에 고지·보관·폐기 조항이 들어가기 전이라(결정 12) 보관 기한까지만 보여준다 · 어드민 전용 열 <b>재발송비 결제</b>(결제 대기 · 기한) · 소비자 이의가 들어온 건은 보조줄 경고 — 상세에서 <b>운영자 사유 환불</b>로 받는다(B2)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item open" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">10</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub active"><span>반품·교환</span><span class="scnt">1</span></div><div class="gnb-sub"><span>환불 관리</span><span class="scnt">2</span></div><div class="gnb-sub"><span>예외 관리</span><span class="scnt">7</span></div></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">거래 관리<span class="c-sub">/ 반품·교환</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">반품·교환</div></div></div><div class="filter"><div class="tabs"><div class="tab">전체<span class="tn">12</span></div><div class="tab">회수 대기<span class="tn">3</span></div><div class="tab">회수 중<span class="tn">2</span></div><div class="tab">입고·검수<span class="tn">2</span></div><div class="tab">재발송<span class="tn">1</span></div><div class="tab active">반려 보류<span class="tn">1</span></div><div class="tab">완료<span class="tn">3</span></div></div><div class="search"><select class="sel-sm" style="width:96px"><option selected>유형 전체</option><option>반품</option><option>교환</option></select><input class="inp" placeholder="접수번호 · 주문번호 · 브랜드명 · 소비자" style="width:220px"><button class="btn btn-secondary">검색</button><button class="btn btn-secondary">초기화</button></div></div><div class="tcard"><div class="tbar"><div class="tbar-l">반려 보류 <b>1</b>건 · 이의 <b>1</b>건</div><div class="tbar-r"><select class="sel-sm"><option selected>신청일시 최신순</option><option>경과 오래된순</option></select><select class="sel-sm"><option>20건씩</option><option>50건씩</option></select></div></div><table><thead><tr><td style="width:92px">접수번호</td><td class="t-c" style="width:58px">소비자</td><td style="width:100px">브랜드</td><td>보관 중인 상품</td><td class="t-c" style="width:44px">수량</td><td style="width:170px">반려 사유</td><td class="t-c" style="width:110px">반려일시</td><td class="t-c" style="width:120px">재발송비 결제</td><td class="t-c" style="width:70px">고지</td><td class="t-c" style="width:96px">보관 기한</td></tr></thead><tbody><tr><td class="tnum">CLM-3008</td><td class="t-c">정**</td><td>글로우코스</td><td><span class="t-main">글로우 크림</span> <span class="t-sub">50ml</span><span class="t-note t-warn">소비자 이의 접수 09.17</span></td><td class="t-c tnum">1</td><td>사용 흔적 · 재판매 불가</td><td class="t-c t-sub tnum">09.15 16:40</td><td class="t-c"><span class="badge b-info nodot">결제 대기</span><span class="t-note">3,000원 · D-12</span></td><td class="t-c tnum">1회</td><td class="t-c tnum">12.15</td></tr></tbody></table></div></div></div></section>
+<section class="state">
+<div class="state-bar"><span class="state-id">B1</span><span class="state-label">상세 — 반품 · 입고·검수 (검수 지연 · 조치 없음)</span><span class="state-spec"><b>기준 시각 09.18 10:00</b> · 운영자가 <b>가장 자주 여는 상태</b>지만 할 일은 없다 — 검수는 브랜드의 일이고, 기한(입고 + 2영업일)을 넘기면 시스템이 자동 알림을 보낸다(06d 처리 지연이 센다) · 확인하는 값은 셋 — <b>기한과 경과 · 구매확정 타이머 정지 · 통과하면 바로 나갈 금액</b> · 금액은 <b>예정</b>으로 표시한다(검수 통과 즉시 PG 자동 환불이라 운영자 집행 단계가 없다) · 단순 변심 + 무료배송 주문이라 <b>최초 배송비 3,000원 차감</b>이 계산식에 들어간다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item open" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">10</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub active"><span>반품·교환</span><span class="scnt">1</span></div><div class="gnb-sub"><span>환불 관리</span><span class="scnt">2</span></div><div class="gnb-sub"><span>예외 관리</span><span class="scnt">7</span></div></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">거래 관리<span class="c-sub">/ 반품·교환</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">반품·교환</div></div></div><div class="filter"><div class="tabs"><div class="tab active">전체<span class="tn">12</span></div><div class="tab">회수 대기<span class="tn">3</span></div><div class="tab">회수 중<span class="tn">2</span></div><div class="tab">입고·검수<span class="tn">2</span></div><div class="tab">재발송<span class="tn">1</span></div><div class="tab">반려 보류<span class="tn">1</span></div><div class="tab">완료<span class="tn">3</span></div></div><div class="search"><select class="sel-sm" style="width:96px"><option selected>유형 전체</option><option>반품</option><option>교환</option></select><input class="inp" placeholder="접수번호 · 주문번호 · 브랜드명 · 소비자" style="width:220px"><button class="btn btn-secondary">검색</button><button class="btn btn-secondary">초기화</button></div></div><div class="tcard"><div class="tbar"><div class="tbar-l">총 <b>12</b>건 · 지연 <b>1</b>건 · 반려 이의 <b>1</b>건 <span class="t-sub">· 운영자 조치는 이의 1건뿐 — 나머지는 브랜드·소비자 진행</span></div><div class="tbar-r"><select class="sel-sm"><option selected>신청일시 최신순</option><option>경과 오래된순</option></select><select class="sel-sm"><option>20건씩</option><option>50건씩</option></select></div></div><table><thead><tr><td style="width:92px">접수번호</td><td class="t-c" style="width:54px">유형</td><td class="t-c" style="width:58px">소비자</td><td style="width:100px">브랜드</td><td>상품 · 옵션</td><td class="t-c" style="width:44px">수량</td><td style="width:150px">사유</td><td class="t-c" style="width:64px">귀책</td><td class="t-c" style="width:150px">단계</td><td class="t-c" style="width:92px">경과</td></tr></thead><tbody><tr><td class="tnum">CLM-3021</td><td class="t-c">반품</td><td class="t-c">최**</td><td>데일리랩</td><td><span class="t-main">데일리 선크림</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">1</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">회수 대기</span></td><td class="t-c t-sub tnum">신청 1일</td></tr><tr><td class="tnum">CLM-3020</td><td class="t-c">교환</td><td class="t-c">강**</td><td>무드코스메틱</td><td><span class="t-main">립 틴트</span> <span class="t-sub">03 → 05</span></td><td class="t-c tnum">1</td><td>사이즈가 맞지 않음</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">회수 대기</span></td><td class="t-c t-sub tnum">신청 1일</td></tr><tr><td class="tnum">CLM-3018</td><td class="t-c">반품</td><td class="t-c">최**</td><td>글로우코스</td><td><span class="t-main">글로우 세럼</span> <span class="t-sub">30ml</span></td><td class="t-c tnum">1</td><td>배송 상품 파손 및 불량</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-info">회수 대기</span><span class="t-note">운영자 개설 · 확정 후 하자</span></td><td class="t-c t-sub tnum">신청 1일</td></tr><tr><td class="tnum">CLM-3016</td><td class="t-c">교환</td><td class="t-c">한**</td><td>글로우코스</td><td><span class="t-main">톤업 쿠션</span> <span class="t-sub">21호 → 23호</span></td><td class="t-c tnum">1</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">회수 중</span></td><td class="t-c t-sub tnum">집화 2일</td></tr><tr><td class="tnum">CLM-3014</td><td class="t-c">반품</td><td class="t-c">송**</td><td>퓨어네이처</td><td><span class="t-main">하이드라 앰플</span> <span class="t-sub">30ml · 3개입</span></td><td class="t-c tnum">1</td><td>오배송 및 배송 지연</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-info">회수 중</span></td><td class="t-c t-sub tnum">집화 1일</td></tr><tr class="pin"><td class="tnum">CLM-3015</td><td class="t-c">반품</td><td class="t-c">이**</td><td>데일리랩</td><td><span class="t-main">선크림 리필</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">2</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-warning">검수 지연</span></td><td class="t-c t-sub tnum t-warn">입고 3영업일</td></tr><tr><td class="tnum">CLM-3012</td><td class="t-c">반품</td><td class="t-c">문**</td><td>퓨어랩</td><td><span class="t-main">클렌징 밤</span> <span class="t-sub">100ml</span></td><td class="t-c tnum">1</td><td>배송 상품 파손 및 불량</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-info">검수 대기</span></td><td class="t-c t-sub tnum">입고 1영업일</td></tr><tr><td class="tnum">CLM-3010</td><td class="t-c">교환</td><td class="t-c">윤**</td><td>무드코스메틱</td><td><span class="t-main">립 틴트</span> <span class="t-sub">02 → 04</span></td><td class="t-c tnum">1</td><td>주문 실수</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">교환 재발송 대기</span></td><td class="t-c t-sub tnum">통과 1영업일</td></tr><tr><td class="tnum">CLM-3008</td><td class="t-c">반품</td><td class="t-c">정**</td><td>글로우코스</td><td><span class="t-main">글로우 크림</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">1</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">재발송비 결제 대기</span><span class="t-note t-warn">소비자 이의 접수</span></td><td class="t-c t-sub tnum">고지 1회</td></tr><tr><td class="tnum">CLM-3006</td><td class="t-c">반품</td><td class="t-c">조**</td><td>글로우코스</td><td><span class="t-main">클렌징 밤</span> <span class="t-sub">100ml</span></td><td class="t-c tnum">1</td><td>주문 실수</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-success">환불 완료</span></td><td class="t-c t-sub tnum">09.12</td></tr><tr><td class="tnum">CLM-3004</td><td class="t-c">교환</td><td class="t-c">서**</td><td>퓨어네이처</td><td><span class="t-main">하이드라 앰플</span> <span class="t-sub">30ml → 50ml</span></td><td class="t-c tnum">1</td><td>사이즈가 맞지 않음</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-success">교환 완료</span></td><td class="t-c t-sub tnum">09.10</td></tr><tr><td class="tnum">CLM-3002</td><td class="t-c">반품</td><td class="t-c">배**</td><td>데일리랩</td><td><span class="t-main">데일리 선크림</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">2</td><td>배송 상품 파손 및 불량</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-success">일부 반려 · 환불 완료</span></td><td class="t-c t-sub tnum">09.08</td></tr></tbody></table></div></div><div class="overlay"><div class="modal wide"><div class="modal-h"><span>반품·교환 상세 <span class="tnum" style="color:var(--n-600);font-weight:500">CLM-3015</span> <span class="badge b-warning nodot">검수 지연</span></span><span class="navgrp"><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span><span class="nav-sep"></span><span class="modal-x">✕</span></span></div><div class="modal-b split"><div class="mcol"><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">①</span>클레임</span></div><div class="mbk-b"><div class="grid2"><div class="frow"><div class="fk">유형</div><div class="fv">반품 · 단순 변심 <span class="t-sub">· 소비자 귀책</span></div></div><div class="frow"><div class="fk">주문</div><div class="fv"><span class="tnum">ORD-24190</span> <span class="t-sub">· 데일리랩</span></div></div><div class="frow"><div class="fk">신청</div><div class="fv"><span class="tnum">09.11 20:14</span> <span class="t-sub">· 소비자 이**</span></div></div><div class="frow"><div class="fk">상세 내용</div><div class="fv"><span class="t-dim">선택 입력 없음</span></div></div></div></div></div><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">②</span>항목</span><span class="ch-n">주문 수량 2 · 반품 신청 2</span></div><div class="mbk-b"><div class="sc"><div class="itrow"><span>선크림 리필</span><span class="t-dim">50ml</span><span class="iq">×2</span><span class="badge b-warning nodot">입고·검수</span><span class="ip">16,000원</span></div></div></div></div><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">③</span>회수</span></div><div class="mbk-b"><div class="sc"><div class="itrow"><span class="t-sub">회수 송장</span><span>CJ대한통운 <span class="tnum">6512****9902</span> <span class="t-dim">· 소비자 입력</span></span><span class="ip t-sub">집화 <span class="tnum">09.12</span></span></div><div class="itrow"><span class="t-sub">입고 확인</span><span>브랜드 데일리랩 · <span class="tnum">09.14 11:20</span></span><span class="ip t-sub">검수 기한 <b class="t-warn tnum">09.16</b> · 2영업일 초과</span></div></div></div></div><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">④</span>금액 (예정)</span></div><div class="mbk-b"><div class="grid2"><div class="frow"><div class="fk">상품 금액</div><div class="fv"><span class="tnum">16,000원</span></div></div><div class="frow"><div class="fk">최초 배송비 차감</div><div class="fv"><span class="tnum">− 3,000원</span> <span class="t-sub">· 무료배송 · 소비자 귀책</span></div></div><div class="frow"><div class="fk">통과 시 환불</div><div class="fv"><b class="tnum">13,000원</b> <span class="t-sub">· PG 자동</span></div></div><div class="frow"><div class="fk">구매확정</div><div class="fv"><b>타이머 정지</b> <span class="t-sub">· 남은 3일</span></div></div></div></div></div><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">⑤</span>이력</span></div><div class="mbk-b"><div class="hist" style="padding:2px 0 0"><div class="hitem"><div class="hdot h-warning"></div><div><div class="htxt">검수 기한 경과 · 자동 알림 1회</div><div class="hmeta">시스템 · 브랜드 데일리랩 · 09.17 00:00</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">입고 확인</div><div class="hmeta">브랜드 데일리랩 · 09.14 11:20</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">회수 송장 입력</div><div class="hmeta">소비자 이** · 09.12 08:40</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">반품 신청 · 구매확정 타이머 정지</div><div class="hmeta">소비자 이** · 단순 변심 · 09.11 20:14</div></div></div></div></div></div></div><div class="mcol"><div class="rl"><div class="rl-h">현재 상태</div><div class="rl-b"><div class="st-line" style="margin-bottom:8px"><span class="st-lbl">단계</span><span class="badge b-warning">검수 지연</span></div><div class="st-meta"><div class="mrow"><span class="mk">검수 기한</span><span class="mv"><span class="tnum">09.16</span> · 2영업일 초과</span></div><div class="mrow"><span class="mk">자동 알림</span><span class="mv">1회</span></div><div class="mrow"><span class="mk">통과 시</span><span class="mv">PG 자동 환불 13,000원</span></div></div></div></div><div class="rl"><div class="rl-h">운영자 조치</div><div class="rl-b"><p class="rl-t" style="margin-top:0">조치할 것이 없습니다 — 검수는 <b>브랜드</b>의 일이고 기한 경과는 <b>시스템이 자동으로 알립니다</b>. 반복 무응답은 <b>예외 관리 › 처리 지연</b>에서 연락 두절로 넘어갑니다.</p><div class="tlink">주문 상세 열기 (주문 조회) ↗</div><div class="tlink">연결·소통 스레드 열기 ↗</div></div></div></div></div></div></div></div></section>
+<section class="state">
+<div class="state-bar"><span class="state-id">B2</span><span class="state-label">상세 — 반품 · 반려 보류 · 소비자 이의 → 운영자 사유 환불</span><span class="state-spec"><b>기준 시각 09.18 14:00</b> · 06b에서 <b>운영자가 실행하는 유일한 지점</b> · ② 반려 블록은 <b>파트너 검수 반려 6항목 = 소비자 C10-5</b>와 같은 값·같은 순서다(사유 · 법적 근거 · 범위 · 귀책 · 증빙 · 메시지) — 세 화면 값을 대조할 수 있어야 이의를 판정한다 · 이의를 <b>인용하면 반품 승인과 같아진다</b> — 상품이 이미 브랜드에 있으므로 재발송비 결제가 취소되고 환불 대기로 편입된다(집행은 환불 관리) · <b>기각은 버튼이 아니다</b> — 반려가 그대로 유지되므로 스레드로 답한다 · 폐기 표기 없음(결정 12)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item open" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">10</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub active"><span>반품·교환</span><span class="scnt">1</span></div><div class="gnb-sub"><span>환불 관리</span><span class="scnt">2</span></div><div class="gnb-sub"><span>예외 관리</span><span class="scnt">7</span></div></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">거래 관리<span class="c-sub">/ 반품·교환</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">반품·교환</div></div></div><div class="filter"><div class="tabs"><div class="tab active">전체<span class="tn">12</span></div><div class="tab">회수 대기<span class="tn">3</span></div><div class="tab">회수 중<span class="tn">2</span></div><div class="tab">입고·검수<span class="tn">2</span></div><div class="tab">재발송<span class="tn">1</span></div><div class="tab">반려 보류<span class="tn">1</span></div><div class="tab">완료<span class="tn">3</span></div></div><div class="search"><select class="sel-sm" style="width:96px"><option selected>유형 전체</option><option>반품</option><option>교환</option></select><input class="inp" placeholder="접수번호 · 주문번호 · 브랜드명 · 소비자" style="width:220px"><button class="btn btn-secondary">검색</button><button class="btn btn-secondary">초기화</button></div></div><div class="tcard"><div class="tbar"><div class="tbar-l">총 <b>12</b>건 · 지연 <b>1</b>건 · 반려 이의 <b>1</b>건 <span class="t-sub">· 운영자 조치는 이의 1건뿐 — 나머지는 브랜드·소비자 진행</span></div><div class="tbar-r"><select class="sel-sm"><option selected>신청일시 최신순</option><option>경과 오래된순</option></select><select class="sel-sm"><option>20건씩</option><option>50건씩</option></select></div></div><table><thead><tr><td style="width:92px">접수번호</td><td class="t-c" style="width:54px">유형</td><td class="t-c" style="width:58px">소비자</td><td style="width:100px">브랜드</td><td>상품 · 옵션</td><td class="t-c" style="width:44px">수량</td><td style="width:150px">사유</td><td class="t-c" style="width:64px">귀책</td><td class="t-c" style="width:150px">단계</td><td class="t-c" style="width:92px">경과</td></tr></thead><tbody><tr><td class="tnum">CLM-3021</td><td class="t-c">반품</td><td class="t-c">최**</td><td>데일리랩</td><td><span class="t-main">데일리 선크림</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">1</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">회수 대기</span></td><td class="t-c t-sub tnum">신청 1일</td></tr><tr><td class="tnum">CLM-3020</td><td class="t-c">교환</td><td class="t-c">강**</td><td>무드코스메틱</td><td><span class="t-main">립 틴트</span> <span class="t-sub">03 → 05</span></td><td class="t-c tnum">1</td><td>사이즈가 맞지 않음</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">회수 대기</span></td><td class="t-c t-sub tnum">신청 1일</td></tr><tr><td class="tnum">CLM-3018</td><td class="t-c">반품</td><td class="t-c">최**</td><td>글로우코스</td><td><span class="t-main">글로우 세럼</span> <span class="t-sub">30ml</span></td><td class="t-c tnum">1</td><td>배송 상품 파손 및 불량</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-info">회수 대기</span><span class="t-note">운영자 개설 · 확정 후 하자</span></td><td class="t-c t-sub tnum">신청 1일</td></tr><tr><td class="tnum">CLM-3016</td><td class="t-c">교환</td><td class="t-c">한**</td><td>글로우코스</td><td><span class="t-main">톤업 쿠션</span> <span class="t-sub">21호 → 23호</span></td><td class="t-c tnum">1</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">회수 중</span></td><td class="t-c t-sub tnum">집화 2일</td></tr><tr><td class="tnum">CLM-3014</td><td class="t-c">반품</td><td class="t-c">송**</td><td>퓨어네이처</td><td><span class="t-main">하이드라 앰플</span> <span class="t-sub">30ml · 3개입</span></td><td class="t-c tnum">1</td><td>오배송 및 배송 지연</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-info">회수 중</span></td><td class="t-c t-sub tnum">집화 1일</td></tr><tr class="pin"><td class="tnum">CLM-3015</td><td class="t-c">반품</td><td class="t-c">이**</td><td>데일리랩</td><td><span class="t-main">선크림 리필</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">2</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-warning">검수 지연</span></td><td class="t-c t-sub tnum t-warn">입고 3영업일</td></tr><tr><td class="tnum">CLM-3012</td><td class="t-c">반품</td><td class="t-c">문**</td><td>퓨어랩</td><td><span class="t-main">클렌징 밤</span> <span class="t-sub">100ml</span></td><td class="t-c tnum">1</td><td>배송 상품 파손 및 불량</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-info">검수 대기</span></td><td class="t-c t-sub tnum">입고 1영업일</td></tr><tr><td class="tnum">CLM-3010</td><td class="t-c">교환</td><td class="t-c">윤**</td><td>무드코스메틱</td><td><span class="t-main">립 틴트</span> <span class="t-sub">02 → 04</span></td><td class="t-c tnum">1</td><td>주문 실수</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">교환 재발송 대기</span></td><td class="t-c t-sub tnum">통과 1영업일</td></tr><tr><td class="tnum">CLM-3008</td><td class="t-c">반품</td><td class="t-c">정**</td><td>글로우코스</td><td><span class="t-main">글로우 크림</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">1</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">재발송비 결제 대기</span><span class="t-note t-warn">소비자 이의 접수</span></td><td class="t-c t-sub tnum">고지 1회</td></tr><tr><td class="tnum">CLM-3006</td><td class="t-c">반품</td><td class="t-c">조**</td><td>글로우코스</td><td><span class="t-main">클렌징 밤</span> <span class="t-sub">100ml</span></td><td class="t-c tnum">1</td><td>주문 실수</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-success">환불 완료</span></td><td class="t-c t-sub tnum">09.12</td></tr><tr><td class="tnum">CLM-3004</td><td class="t-c">교환</td><td class="t-c">서**</td><td>퓨어네이처</td><td><span class="t-main">하이드라 앰플</span> <span class="t-sub">30ml → 50ml</span></td><td class="t-c tnum">1</td><td>사이즈가 맞지 않음</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-success">교환 완료</span></td><td class="t-c t-sub tnum">09.10</td></tr><tr><td class="tnum">CLM-3002</td><td class="t-c">반품</td><td class="t-c">배**</td><td>데일리랩</td><td><span class="t-main">데일리 선크림</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">2</td><td>배송 상품 파손 및 불량</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-success">일부 반려 · 환불 완료</span></td><td class="t-c t-sub tnum">09.08</td></tr></tbody></table></div></div><div class="overlay"><div class="modal wide"><div class="modal-h"><span>반품·교환 상세 <span class="tnum" style="color:var(--n-600);font-weight:500">CLM-3008</span> <span class="badge b-info nodot">반려 보류</span></span><span class="navgrp"><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span><span class="nav-sep"></span><span class="modal-x">✕</span></span></div><div class="modal-b split"><div class="mcol"><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">①</span>클레임</span></div><div class="mbk-b"><div class="grid2"><div class="frow"><div class="fk">유형</div><div class="fv">반품 · 단순 변심 <span class="t-sub">· 소비자 귀책</span></div></div><div class="frow"><div class="fk">주문</div><div class="fv"><span class="tnum">ORD-24171</span> <span class="t-sub">· 글로우코스</span></div></div><div class="frow"><div class="fk">신청</div><div class="fv"><span class="tnum">09.08 21:30</span></div></div><div class="frow"><div class="fk">항목</div><div class="fv">글로우 크림 50ml ×1 · <span class="tnum">27,200원</span></div></div></div></div></div><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">②</span>검수 반려 <span class="t-sub" style="font-weight:400">· 브랜드 제출 = 소비자 C10-5</span></span></div><div class="mbk-b"><div class="grid2"><div class="frow"><div class="fk">반려 사유</div><div class="fv">사용 흔적 · 재판매 불가</div></div><div class="frow"><div class="fk">법적 근거</div><div class="fv">전자상거래법 제17조② 1호</div></div><div class="frow"><div class="fk">범위</div><div class="fv"><b>전체 반려</b> <span class="t-sub">· 1 / 1개</span></div></div><div class="frow"><div class="fk">귀책</div><div class="fv">변경 없음 <span class="t-sub">· 소비자</span></div></div></div><div class="frow"><div class="fk">증빙</div><div class="fv"><span class="t-sub">사진 2장 · 펌프 내부 잔량 · 용기 외부 오염</span></div></div><div class="frow"><div class="fk">소비자 메시지</div><div class="fv">“용기 내부에 사용 흔적이 있어 반품이 어렵습니다. 재발송비 결제 후 원래 상품을 보내 드립니다.”</div></div></div></div><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">③</span>반려 보류</span></div><div class="mbk-b"><div class="grid2"><div class="frow"><div class="fk">재발송비</div><div class="fv"><span class="tnum">3,000원</span> · 결제 대기 <span class="t-sub">· D-12</span></div></div><div class="frow"><div class="fk">고지</div><div class="fv">1회 <span class="t-sub">· 09.15</span></div></div><div class="frow"><div class="fk">보관 기한</div><div class="fv"><span class="tnum">12.15</span> <span class="t-sub">· 이후 처리는 약관 반영 후</span></div></div><div class="frow"><div class="fk">구매확정</div><div class="fv"><b>타이머 정지</b></div></div></div></div></div><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">④</span>소비자 이의</span></div><div class="mbk-b"><p style="margin:0;font-size:var(--fs-caption);line-height:1.7">“펌프는 시향만 1회 했고 사용하지 않았습니다. 배송 당시부터 펌프 입구에 내용물이 묻어 있었어요.” <span class="t-sub">· 1:1 문의 #4527 · 사진 1장 · 09.17 10:05</span></p></div></div><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">⑤</span>이력</span></div><div class="mbk-b"><div class="hist" style="padding:2px 0 0"><div class="hitem"><div class="hdot h-warning"></div><div><div class="htxt">소비자 이의 접수</div><div class="hmeta">1:1 문의 #4527 · 09.17 10:05</div></div></div><div class="hitem"><div class="hdot h-warning"></div><div><div class="htxt">검수 반려 · 재발송비 결제 고지</div><div class="hmeta">브랜드 글로우코스 · 6항목 제출 · 09.15 16:40</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">입고 확인</div><div class="hmeta">브랜드 글로우코스 · 09.14 10:10</div></div></div></div></div></div></div><div class="mcol"><div class="rl"><div class="rl-h">현재 상태</div><div class="rl-b"><div class="st-line" style="margin-bottom:8px"><span class="st-lbl">단계</span><span class="badge b-info">반려 보류</span></div><div class="st-meta"><div class="mrow"><span class="mk">재발송비</span><span class="mv">결제 대기 · D-12</span></div><div class="mrow"><span class="mk">이의</span><span class="mv">1건 · 09.17</span></div></div></div></div><div class="rl"><div class="rl-h">운영자 사유 환불</div><div class="rl-b"><div class="ifm"><label class="mlabel">사유<span class="req">*</span></label><select class="msel inp"><option>반려 이의 인용</option><option>위해성 리콜</option><option>기타(직접 입력)</option></select><label class="mlabel">근거<span class="req">*</span></label><textarea class="mta">1:1 문의 #4527 사진상 배송 시점 오염으로 판단 — 시향 1회는 사용 흔적으로 보기 어려움</textarea><label class="mlabel">환불 금액</label><input class="inp tnum" value="27,200원" disabled><p class="mhint" style="font-size:10px;margin-top:4px">인용하면 귀책이 <b>브랜드</b>로 바뀌어 배송비 차감이 없습니다.</p><div class="mwarn"><span>!</span><span>인용하면 반려가 <b>반품 승인과 같아집니다</b> — 재발송비 결제 요청이 취소되고 상품은 브랜드에 남습니다. 환불은 <b>환불 관리</b>에서 재확인 후 실행됩니다. 브랜드·소비자에게 통지됩니다.</span></div><button class="btn btn-primary">환불 대기 편입</button></div><p class="rl-t">받아들이지 않으면 버튼 없이 <b>스레드로 답합니다</b> — 반려는 그대로 유지됩니다.</p><div class="tlink">주문 상세 열기 (주문 조회) ↗</div><div class="tlink">연결·소통 스레드 열기 ↗</div></div></div></div></div></div></div></div></section>
+<section class="state">
+<div class="state-bar"><span class="state-id">B3</span><span class="state-label">상세 — 반품 · 완료 (일부 반려 · 환불 계산식)</span><span class="state-spec"><b>기준 시각 09.18 14:00</b> · 일부 반려에서 <b>환불액이 어떻게 나왔는지</b>를 계산식으로 보여준다 — 소비자가 “왜 13,000원만 들어왔냐”고 물으면 운영자가 답할 근거가 이 블록이다 · 일부 반려는 <b>재발송비를 따로 결제받지 않고 통과분 환불에서 차감</b>한다(전체 반려만 추가 결제) · 반려분의 <b>귀책이 항목별로 갈린다</b>(통과분 브랜드 · 반려분 소비자) — 귀책을 클레임 단위가 아니라 <b>항목 단위</b>로 적는 이유 · 환불 출처 <b>PG 자동</b></span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item open" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">10</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub active"><span>반품·교환</span><span class="scnt">1</span></div><div class="gnb-sub"><span>환불 관리</span><span class="scnt">2</span></div><div class="gnb-sub"><span>예외 관리</span><span class="scnt">7</span></div></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">거래 관리<span class="c-sub">/ 반품·교환</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">반품·교환</div></div></div><div class="filter"><div class="tabs"><div class="tab active">전체<span class="tn">12</span></div><div class="tab">회수 대기<span class="tn">3</span></div><div class="tab">회수 중<span class="tn">2</span></div><div class="tab">입고·검수<span class="tn">2</span></div><div class="tab">재발송<span class="tn">1</span></div><div class="tab">반려 보류<span class="tn">1</span></div><div class="tab">완료<span class="tn">3</span></div></div><div class="search"><select class="sel-sm" style="width:96px"><option selected>유형 전체</option><option>반품</option><option>교환</option></select><input class="inp" placeholder="접수번호 · 주문번호 · 브랜드명 · 소비자" style="width:220px"><button class="btn btn-secondary">검색</button><button class="btn btn-secondary">초기화</button></div></div><div class="tcard"><div class="tbar"><div class="tbar-l">총 <b>12</b>건 · 지연 <b>1</b>건 · 반려 이의 <b>1</b>건 <span class="t-sub">· 운영자 조치는 이의 1건뿐 — 나머지는 브랜드·소비자 진행</span></div><div class="tbar-r"><select class="sel-sm"><option selected>신청일시 최신순</option><option>경과 오래된순</option></select><select class="sel-sm"><option>20건씩</option><option>50건씩</option></select></div></div><table><thead><tr><td style="width:92px">접수번호</td><td class="t-c" style="width:54px">유형</td><td class="t-c" style="width:58px">소비자</td><td style="width:100px">브랜드</td><td>상품 · 옵션</td><td class="t-c" style="width:44px">수량</td><td style="width:150px">사유</td><td class="t-c" style="width:64px">귀책</td><td class="t-c" style="width:150px">단계</td><td class="t-c" style="width:92px">경과</td></tr></thead><tbody><tr><td class="tnum">CLM-3021</td><td class="t-c">반품</td><td class="t-c">최**</td><td>데일리랩</td><td><span class="t-main">데일리 선크림</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">1</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">회수 대기</span></td><td class="t-c t-sub tnum">신청 1일</td></tr><tr><td class="tnum">CLM-3020</td><td class="t-c">교환</td><td class="t-c">강**</td><td>무드코스메틱</td><td><span class="t-main">립 틴트</span> <span class="t-sub">03 → 05</span></td><td class="t-c tnum">1</td><td>사이즈가 맞지 않음</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">회수 대기</span></td><td class="t-c t-sub tnum">신청 1일</td></tr><tr><td class="tnum">CLM-3018</td><td class="t-c">반품</td><td class="t-c">최**</td><td>글로우코스</td><td><span class="t-main">글로우 세럼</span> <span class="t-sub">30ml</span></td><td class="t-c tnum">1</td><td>배송 상품 파손 및 불량</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-info">회수 대기</span><span class="t-note">운영자 개설 · 확정 후 하자</span></td><td class="t-c t-sub tnum">신청 1일</td></tr><tr><td class="tnum">CLM-3016</td><td class="t-c">교환</td><td class="t-c">한**</td><td>글로우코스</td><td><span class="t-main">톤업 쿠션</span> <span class="t-sub">21호 → 23호</span></td><td class="t-c tnum">1</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">회수 중</span></td><td class="t-c t-sub tnum">집화 2일</td></tr><tr><td class="tnum">CLM-3014</td><td class="t-c">반품</td><td class="t-c">송**</td><td>퓨어네이처</td><td><span class="t-main">하이드라 앰플</span> <span class="t-sub">30ml · 3개입</span></td><td class="t-c tnum">1</td><td>오배송 및 배송 지연</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-info">회수 중</span></td><td class="t-c t-sub tnum">집화 1일</td></tr><tr class="pin"><td class="tnum">CLM-3015</td><td class="t-c">반품</td><td class="t-c">이**</td><td>데일리랩</td><td><span class="t-main">선크림 리필</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">2</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-warning">검수 지연</span></td><td class="t-c t-sub tnum t-warn">입고 3영업일</td></tr><tr><td class="tnum">CLM-3012</td><td class="t-c">반품</td><td class="t-c">문**</td><td>퓨어랩</td><td><span class="t-main">클렌징 밤</span> <span class="t-sub">100ml</span></td><td class="t-c tnum">1</td><td>배송 상품 파손 및 불량</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-info">검수 대기</span></td><td class="t-c t-sub tnum">입고 1영업일</td></tr><tr><td class="tnum">CLM-3010</td><td class="t-c">교환</td><td class="t-c">윤**</td><td>무드코스메틱</td><td><span class="t-main">립 틴트</span> <span class="t-sub">02 → 04</span></td><td class="t-c tnum">1</td><td>주문 실수</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">교환 재발송 대기</span></td><td class="t-c t-sub tnum">통과 1영업일</td></tr><tr><td class="tnum">CLM-3008</td><td class="t-c">반품</td><td class="t-c">정**</td><td>글로우코스</td><td><span class="t-main">글로우 크림</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">1</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">재발송비 결제 대기</span><span class="t-note t-warn">소비자 이의 접수</span></td><td class="t-c t-sub tnum">고지 1회</td></tr><tr><td class="tnum">CLM-3006</td><td class="t-c">반품</td><td class="t-c">조**</td><td>글로우코스</td><td><span class="t-main">클렌징 밤</span> <span class="t-sub">100ml</span></td><td class="t-c tnum">1</td><td>주문 실수</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-success">환불 완료</span></td><td class="t-c t-sub tnum">09.12</td></tr><tr><td class="tnum">CLM-3004</td><td class="t-c">교환</td><td class="t-c">서**</td><td>퓨어네이처</td><td><span class="t-main">하이드라 앰플</span> <span class="t-sub">30ml → 50ml</span></td><td class="t-c tnum">1</td><td>사이즈가 맞지 않음</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-success">교환 완료</span></td><td class="t-c t-sub tnum">09.10</td></tr><tr><td class="tnum">CLM-3002</td><td class="t-c">반품</td><td class="t-c">배**</td><td>데일리랩</td><td><span class="t-main">데일리 선크림</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">2</td><td>배송 상품 파손 및 불량</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-success">일부 반려 · 환불 완료</span></td><td class="t-c t-sub tnum">09.08</td></tr></tbody></table></div></div><div class="overlay"><div class="modal wide"><div class="modal-h"><span>반품·교환 상세 <span class="tnum" style="color:var(--n-600);font-weight:500">CLM-3002</span> <span class="badge b-success nodot">환불 완료</span></span><span class="navgrp"><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span><span class="nav-sep"></span><span class="modal-x">✕</span></span></div><div class="modal-b split"><div class="mcol"><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">①</span>클레임</span></div><div class="mbk-b"><div class="grid2"><div class="frow"><div class="fk">유형</div><div class="fv">반품 · 배송 상품 파손 및 불량 <span class="t-sub">· 브랜드 귀책</span></div></div><div class="frow"><div class="fk">주문</div><div class="fv"><span class="tnum">ORD-24133</span> <span class="t-sub">· 데일리랩</span></div></div><div class="frow"><div class="fk">신청</div><div class="fv"><span class="tnum">08.29 19:20</span></div></div><div class="frow"><div class="fk">상세 내용</div><div class="fv">“2개 중 1개 용기 깨짐, 1개는 뚜껑 헐거움”</div></div></div></div></div><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">②</span>항목 · 검수 결과</span><span class="ch-n">신청 2 · 통과 1 · 반려 1</span></div><div class="mbk-b"><div class="sc"><div class="itrow"><span>데일리 선크림</span><span class="t-dim">50ml</span><span class="iq">×1</span><span class="badge b-success nodot">통과</span><span class="ip">16,000원</span></div><div class="itrow"><span>데일리 선크림</span><span class="t-dim">50ml</span><span class="iq">×1</span><span class="badge b-neutral nodot">반려 · 반송 완료</span><span class="ip t-dim">16,000원</span></div></div></div></div><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">③</span>반려분 (6항목)</span></div><div class="mbk-b"><div class="grid2"><div class="frow"><div class="fk">반려 사유</div><div class="fv">정상 제품 · 하자 미확인</div></div><div class="frow"><div class="fk">법적 근거</div><div class="fv">전자상거래법 제17조② 1호</div></div><div class="frow"><div class="fk">범위</div><div class="fv"><b>일부 반려</b> <span class="t-sub">· 1 / 2개</span></div></div><div class="frow"><div class="fk">귀책</div><div class="fv">반려분 소비자 <span class="t-sub">· 통과분 브랜드</span></div></div></div><div class="frow"><div class="fk">증빙</div><div class="fv"><span class="t-sub">사진 1장 · 뚜껑 체결 정상</span></div></div></div></div><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">④</span>환불 계산 (PG 자동 · 완료)</span></div><div class="mbk-b"><div class="sc"><div class="itrow"><span class="t-sub">통과분 상품 금액</span><span><span class="tnum">16,000원</span></span><span class="ip t-sub">브랜드 귀책 · 배송비 차감 없음</span></div><div class="itrow"><span class="t-sub">반려분 재발송비</span><span><span class="tnum">− 3,000원</span></span><span class="ip t-sub">일부 반려 → 통과분 환불에서 차감</span></div><div class="itrow"><span class="t-sub"><b>환불</b></span><span><b class="tnum">13,000원</b></span><span class="ip t-sub">PG 자동 · <span class="tnum">09.08 10:02</span> · 원래 결제 부분 취소</span></div></div></div></div><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">⑤</span>이력</span></div><div class="mbk-b"><div class="hist" style="padding:2px 0 0"><div class="hitem"><div class="hdot h-success"></div><div><div class="htxt">PG 자동 환불 13,000원</div><div class="hmeta">시스템 · 원래 결제 부분 취소 · 09.08 10:02</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">반려분 반송 완료</div><div class="hmeta">브랜드 데일리랩 · 09.07 15:00</div></div></div><div class="hitem"><div class="hdot h-warning"></div><div><div class="htxt">검수 · 일부 반려 (통과 1 · 반려 1)</div><div class="hmeta">브랜드 데일리랩 · 09.04 16:10</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">반품 신청 · 구매확정 타이머 정지</div><div class="hmeta">소비자 배** · 08.29 19:20</div></div></div></div></div></div></div><div class="mcol"><div class="rl"><div class="rl-h">현재 상태</div><div class="rl-b"><div class="st-line" style="margin-bottom:8px"><span class="st-lbl">단계</span><span class="badge b-success">일부 반려 · 환불 완료</span></div><div class="st-meta"><div class="mrow"><span class="mk">종결</span><span class="mv"><span class="tnum">09.08</span></span></div><div class="mrow"><span class="mk">환불 출처</span><span class="mv">PG 자동</span></div><div class="mrow"><span class="mk">정산</span><span class="mv">통과분 차감 · 반려분 정상</span></div></div></div></div><div class="rl"><div class="rl-h">운영자 조치</div><div class="rl-b"><p class="rl-t" style="margin-top:0">조치할 것이 없습니다 — 일부 반려는 <b>재발송비를 통과분 환불에서 빼고</b> PG가 자동 환불합니다. 소비자 추가 결제가 없습니다.</p><div class="tlink">주문 상세 열기 (주문 조회) ↗</div><div class="tlink">연결·소통 스레드 열기 ↗</div></div></div></div></div></div></div></div></section>
+<section class="state">
+<div class="state-bar"><span class="state-id">B4</span><span class="state-label">상세 — 반품 · 회수 대기 (운영자 개설 · 구매확정 후 하자)</span><span class="state-spec"><b>기준 시각 09.18 16:30</b> · 06a B6에서 운영자가 <b>대신 연</b> 클레임이 06b에 들어온 모습 — 브랜드 화면(11-claims)에도 같은 건이 <b>일반 반품으로</b> 뜬다 · 다른 클레임과 구분되는 값은 <b>출처(운영자 개설) · 근거 문의 · 법정 기한</b> 셋이고 나머지는 같다 · <b>이미 정산 확정</b>된 주문이라 통과 시 <b>다음 정산 차감</b>(브랜드 수취액 + 리워드)을 미리 적는다 · 귀책은 <b>브랜드로 열리지만</b> 검수에서 뒤집힐 수 있다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">4</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3"><div class="gnb-sub"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item open" data-acc="6"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">10</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="6"><div class="gnb-sub"><span>주문 조회</span><span class="scnt"></span></div><div class="gnb-sub active"><span>반품·교환</span><span class="scnt">1</span></div><div class="gnb-sub"><span>환불 관리</span><span class="scnt">2</span></div><div class="gnb-sub"><span>예외 관리</span><span class="scnt">7</span></div></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">거래 관리<span class="c-sub">/ 반품·교환</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main">
+<div class="page-h"><div><div class="page-t">반품·교환</div></div></div><div class="filter"><div class="tabs"><div class="tab active">전체<span class="tn">12</span></div><div class="tab">회수 대기<span class="tn">3</span></div><div class="tab">회수 중<span class="tn">2</span></div><div class="tab">입고·검수<span class="tn">2</span></div><div class="tab">재발송<span class="tn">1</span></div><div class="tab">반려 보류<span class="tn">1</span></div><div class="tab">완료<span class="tn">3</span></div></div><div class="search"><select class="sel-sm" style="width:96px"><option selected>유형 전체</option><option>반품</option><option>교환</option></select><input class="inp" placeholder="접수번호 · 주문번호 · 브랜드명 · 소비자" style="width:220px"><button class="btn btn-secondary">검색</button><button class="btn btn-secondary">초기화</button></div></div><div class="tcard"><div class="tbar"><div class="tbar-l">총 <b>12</b>건 · 지연 <b>1</b>건 · 반려 이의 <b>1</b>건 <span class="t-sub">· 운영자 조치는 이의 1건뿐 — 나머지는 브랜드·소비자 진행</span></div><div class="tbar-r"><select class="sel-sm"><option selected>신청일시 최신순</option><option>경과 오래된순</option></select><select class="sel-sm"><option>20건씩</option><option>50건씩</option></select></div></div><table><thead><tr><td style="width:92px">접수번호</td><td class="t-c" style="width:54px">유형</td><td class="t-c" style="width:58px">소비자</td><td style="width:100px">브랜드</td><td>상품 · 옵션</td><td class="t-c" style="width:44px">수량</td><td style="width:150px">사유</td><td class="t-c" style="width:64px">귀책</td><td class="t-c" style="width:150px">단계</td><td class="t-c" style="width:92px">경과</td></tr></thead><tbody><tr><td class="tnum">CLM-3021</td><td class="t-c">반품</td><td class="t-c">최**</td><td>데일리랩</td><td><span class="t-main">데일리 선크림</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">1</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">회수 대기</span></td><td class="t-c t-sub tnum">신청 1일</td></tr><tr><td class="tnum">CLM-3020</td><td class="t-c">교환</td><td class="t-c">강**</td><td>무드코스메틱</td><td><span class="t-main">립 틴트</span> <span class="t-sub">03 → 05</span></td><td class="t-c tnum">1</td><td>사이즈가 맞지 않음</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">회수 대기</span></td><td class="t-c t-sub tnum">신청 1일</td></tr><tr><td class="tnum">CLM-3018</td><td class="t-c">반품</td><td class="t-c">최**</td><td>글로우코스</td><td><span class="t-main">글로우 세럼</span> <span class="t-sub">30ml</span></td><td class="t-c tnum">1</td><td>배송 상품 파손 및 불량</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-info">회수 대기</span><span class="t-note">운영자 개설 · 확정 후 하자</span></td><td class="t-c t-sub tnum">신청 1일</td></tr><tr><td class="tnum">CLM-3016</td><td class="t-c">교환</td><td class="t-c">한**</td><td>글로우코스</td><td><span class="t-main">톤업 쿠션</span> <span class="t-sub">21호 → 23호</span></td><td class="t-c tnum">1</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">회수 중</span></td><td class="t-c t-sub tnum">집화 2일</td></tr><tr><td class="tnum">CLM-3014</td><td class="t-c">반품</td><td class="t-c">송**</td><td>퓨어네이처</td><td><span class="t-main">하이드라 앰플</span> <span class="t-sub">30ml · 3개입</span></td><td class="t-c tnum">1</td><td>오배송 및 배송 지연</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-info">회수 중</span></td><td class="t-c t-sub tnum">집화 1일</td></tr><tr class="pin"><td class="tnum">CLM-3015</td><td class="t-c">반품</td><td class="t-c">이**</td><td>데일리랩</td><td><span class="t-main">선크림 리필</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">2</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-warning">검수 지연</span></td><td class="t-c t-sub tnum t-warn">입고 3영업일</td></tr><tr><td class="tnum">CLM-3012</td><td class="t-c">반품</td><td class="t-c">문**</td><td>퓨어랩</td><td><span class="t-main">클렌징 밤</span> <span class="t-sub">100ml</span></td><td class="t-c tnum">1</td><td>배송 상품 파손 및 불량</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-info">검수 대기</span></td><td class="t-c t-sub tnum">입고 1영업일</td></tr><tr><td class="tnum">CLM-3010</td><td class="t-c">교환</td><td class="t-c">윤**</td><td>무드코스메틱</td><td><span class="t-main">립 틴트</span> <span class="t-sub">02 → 04</span></td><td class="t-c tnum">1</td><td>주문 실수</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">교환 재발송 대기</span></td><td class="t-c t-sub tnum">통과 1영업일</td></tr><tr><td class="tnum">CLM-3008</td><td class="t-c">반품</td><td class="t-c">정**</td><td>글로우코스</td><td><span class="t-main">글로우 크림</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">1</td><td>단순 변심</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-info">재발송비 결제 대기</span><span class="t-note t-warn">소비자 이의 접수</span></td><td class="t-c t-sub tnum">고지 1회</td></tr><tr><td class="tnum">CLM-3006</td><td class="t-c">반품</td><td class="t-c">조**</td><td>글로우코스</td><td><span class="t-main">클렌징 밤</span> <span class="t-sub">100ml</span></td><td class="t-c tnum">1</td><td>주문 실수</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-success">환불 완료</span></td><td class="t-c t-sub tnum">09.12</td></tr><tr><td class="tnum">CLM-3004</td><td class="t-c">교환</td><td class="t-c">서**</td><td>퓨어네이처</td><td><span class="t-main">하이드라 앰플</span> <span class="t-sub">30ml → 50ml</span></td><td class="t-c tnum">1</td><td>사이즈가 맞지 않음</td><td class="t-c">소비자</td><td class="t-c"><span class="badge b-success">교환 완료</span></td><td class="t-c t-sub tnum">09.10</td></tr><tr><td class="tnum">CLM-3002</td><td class="t-c">반품</td><td class="t-c">배**</td><td>데일리랩</td><td><span class="t-main">데일리 선크림</span> <span class="t-sub">50ml</span></td><td class="t-c tnum">2</td><td>배송 상품 파손 및 불량</td><td class="t-c">브랜드</td><td class="t-c"><span class="badge b-success">일부 반려 · 환불 완료</span></td><td class="t-c t-sub tnum">09.08</td></tr></tbody></table></div></div><div class="overlay"><div class="modal wide"><div class="modal-h"><span>반품·교환 상세 <span class="tnum" style="color:var(--n-600);font-weight:500">CLM-3018</span> <span class="badge b-info nodot">운영자 개설</span></span><span class="navgrp"><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span><span class="nav-sep"></span><span class="modal-x">✕</span></span></div><div class="modal-b split"><div class="mcol"><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">①</span>클레임</span></div><div class="mbk-b"><div class="grid2"><div class="frow"><div class="fk">유형</div><div class="fv">반품 · 배송 상품 파손 및 불량 <span class="t-sub">· 브랜드 귀책</span></div></div><div class="frow"><div class="fk">주문</div><div class="fv"><span class="tnum">ORD-24112</span> <span class="t-sub">· 글로우코스 · 구매확정 09.03</span></div></div><div class="frow"><div class="fk">개설</div><div class="fv"><b>운영자 김운영</b> <span class="t-sub">· 09.18 16:10</span></div></div><div class="frow"><div class="fk">근거</div><div class="fv">1:1 문의 #4521 · 내용물 변색 · 사진 3장</div></div></div></div></div><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">②</span>항목</span></div><div class="mbk-b"><div class="sc"><div class="itrow"><span>글로우 세럼</span><span class="t-dim">30ml</span><span class="iq">×1</span><span class="badge b-info nodot">회수 대기</span><span class="ip">45,000원</span></div></div></div></div><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">③</span>법정 청약철회 기한</span></div><div class="mbk-b"><div class="grid2"><div class="frow"><div class="fk">공급일</div><div class="fv"><span class="tnum">08.27</span> <span class="t-sub">→ 3개월 11.27</span></div></div><div class="frow"><div class="fk">하자 인지</div><div class="fv"><span class="tnum">09.17</span> <span class="t-sub">→ 30일 10.17</span></div></div><div class="frow"><div class="fk">적용 기한</div><div class="fv"><b class="tnum">10.17</b> <span class="t-sub">· 이른 날</span></div></div><div class="frow"><div class="fk">회수 송장</div><div class="fv"><span class="t-dim">소비자 입력 대기</span> <span class="t-sub">· 7일 미입력 시 자동 취소</span></div></div></div></div></div><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">④</span>정산 반영</span></div><div class="mbk-b"><div class="grid2"><div class="frow"><div class="fk">정산</div><div class="fv"><span class="tnum">09.10</span> 회차 확정</div></div><div class="frow"><div class="fk">통과 시</div><div class="fv"><b>다음 정산에서 차감</b> <span class="t-sub">· 브랜드 수취액 · 리워드</span></div></div></div></div></div><div class="mbk"><div class="mbk-h"><span><span class="mbk-n">⑤</span>이력</span></div><div class="mbk-b"><div class="hist" style="padding:2px 0 0"><div class="hitem"><div class="hdot h-warning"></div><div><div class="htxt">반품 대신 개설 · 확정 후 하자</div><div class="hmeta">운영자 김운영 · 브랜드 귀책 · 09.18 16:10</div></div></div><div class="hitem"><div class="hdot h-warning"></div><div><div class="htxt">1:1 문의 접수 · 하자 주장</div><div class="hmeta">소비자 최** · #4521 · 09.18 15:20</div></div></div><div class="hitem"><div class="hdot h-success"></div><div><div class="htxt">구매확정 (자동)</div><div class="hmeta">시스템 · 09.03</div></div></div></div></div></div></div><div class="mcol"><div class="rl"><div class="rl-h">현재 상태</div><div class="rl-b"><div class="st-line" style="margin-bottom:8px"><span class="st-lbl">단계</span><span class="badge b-info">회수 대기</span></div><div class="st-meta"><div class="mrow"><span class="mk">출처</span><span class="mv"><b>운영자 개설</b></span></div><div class="mrow"><span class="mk">귀책</span><span class="mv">브랜드 · 착불 · 차감 없음</span></div><div class="mrow"><span class="mk">기한</span><span class="mv">10.17</span></div></div></div></div><div class="rl"><div class="rl-h">운영자 조치</div><div class="rl-b"><p class="rl-t" style="margin-top:0">개설 뒤로는 <b>일반 반품과 같은 흐름</b>입니다 — 소비자 회수 송장 입력 → 브랜드 검수 → 통과 시 PG 자동 환불. 브랜드가 검수에서 귀책을 소비자로 바꿀 수 있고, 그 경우 소비자 이의는 B2와 같은 경로로 받습니다.</p><div class="tlink">주문 상세 열기 (주문 조회) ↗</div><div class="tlink">연결·소통 스레드 열기 ↗</div></div></div></div></div></div></div></div></section>
+
+</body></html>

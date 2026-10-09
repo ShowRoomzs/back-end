@@ -69,6 +69,10 @@ import java.lang.annotation.Target;
                 // 회수 송장 미등록 자동 취소 배치(매시)도 끄고 서비스를 직접 부른다.
                 "order.claim.invoice-expiry-scheduler-enabled=false",
                 "order.claim.payment-reconcile-scheduler-enabled=false",
+                // 환불 재시도 · 취소 요청 자동 승인 배치(10분)도 끄고 서비스를 직접 부른다(1009 기획 수정본 2 · 3절).
+                "order.refund-retry-scheduler-enabled=false",
+                "order.cancel-request-auto-approve-scheduler-enabled=false",
+                "order.overdue-notice-scheduler-enabled=false",
                 // 택배 추적 연동은 끈다 — application.yml 이 .env 를 불러오므로 기본값에 기대면 .env 의
                 // DELIVERY_TRACKER_ENABLED=true 가 실키로 스마트택배를 부르는 감시 배치를 띄운다(조회 한도가 줄어든다).
                 // 켠 상태의 배선은 DeliveryTrackerWiringTest, 어댑터→전이는 SweetTrackerTrackingIntegrationTest 가 본다.

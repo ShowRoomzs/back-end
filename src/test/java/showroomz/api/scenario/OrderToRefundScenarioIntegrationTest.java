@@ -10,7 +10,6 @@ import org.springframework.test.web.servlet.ResultActions;
 import showroomz.domain.order.entity.OrderCancelRequest;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.entity.OrderProduct;
-import showroomz.domain.order.service.OrderClaimService;
 import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.domain.order.type.OrderCancelType;
 import showroomz.domain.order.type.OrderProductStatus;
@@ -42,15 +41,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <pre>
  * 결제 전 취소          돌려줄 돈이 없다 — PG 호출 없음
- * 결제 후 · 준비 전 취소  PG 자동 환불(payment_cancel) — 환불 큐 없음
- * 준비 후 취소 요청 승인  환불 큐(운영자 집행) — PG 호출 없음
- * 브랜드 직권 취소       환불 큐
- * 배송 중 반송          환불 큐
- * 배송완료 후 반품       환불 큐 → 집행
+ * 결제 후 · 준비 전 취소  PG 전액 취소(payment_cancel) — 환불 큐 없음
+ * 준비 후 취소 요청 승인  환불 큐 → 커밋 직후 PG 부분 취소(1009 기획 수정본 2절 · PG 즉시 자동)
+ * 브랜드 직권 취소       환불 큐 → PG 부분 취소
+ * 배송 중 반송          환불 큐 → PG 부분 취소
+ * 배송완료 후 반품       검수 통과 → 환불 큐 → PG 부분 취소
  * </pre>
  *
- * <p>환불 큐의 집행은 반품 클레임만 진입점({@code OrderClaimService.completeRefund})이 있다. 취소·반송분은 어드민 거래 관리
- * API 가 생길 때까지 PENDING 적재가 판정선이다(시나리오 7절).
+ * <p>장부의 「남은 환불」은 큐에 올랐지만 아직 돈이 나가지 않은 금액(대기 · 집행 중 · 실패)이다 — PG 자동이라 정상 경로에서는 0 이다.
  */
 @IntegrationTest
 @DisplayName("[시나리오 M] 주문 → 취소 · 환불 — 돈의 행방")
@@ -59,7 +57,6 @@ class OrderToRefundScenarioIntegrationTest extends OrderFlowTestSupport {
     private static final String USER_CLAIMS = "/v1/user/claims";
     private static final String SELLER_CLAIMS = "/v1/seller/claims";
 
-    @Autowired private OrderClaimService claimService;
 
     // ================================================================== 취소
 
@@ -125,7 +122,7 @@ class OrderToRefundScenarioIntegrationTest extends OrderFlowTestSupport {
     }
 
     @Test
-    @DisplayName("[M-03] 준비 시작 후 — 앱 취소는 409, 취소 요청을 브랜드가 승인하면 환불 큐(전액+배송비) · PG 는 부르지 않고 결제는 PAID 로 남는다 · 앱 「환불 처리 중」")
+    @DisplayName("[M-03] 준비 시작 후 — 앱 취소는 409, 취소 요청을 브랜드가 승인하면 PG 가 전액+배송비를 즉시 부분 취소 · 큐 DONE · 전액이라 결제 CANCELLED · 앱 「완료」")
     void cancelRequestApprovedAfterPreparation() throws Exception {
         Purchase purchase = purchase(creamVariant, 1);
         OrderDeliveryGroup group = preparing(purchase.group());
@@ -142,18 +139,19 @@ class OrderToRefundScenarioIntegrationTest extends OrderFlowTestSupport {
         approveRequest(request).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CANCELLED"));
 
         assertThat(refundTasks(group)).containsExactly(
-                new RefundTask("CANCEL_REQUEST_APPROVED", CREAM_PRICE + DELIVERY_FEE, "PENDING"));
-        // 환불은 운영자 집행 — 브랜드 승인이 PG 를 부르지 않는다.
+                new RefundTask("CANCEL_REQUEST_APPROVED", CREAM_PRICE + DELIVERY_FEE, "DONE"));
+        // 환불은 PG 즉시 자동 — 전액 취소가 아니라 부분 취소로 나간다(주문 전체 취소 연쇄 없음).
         assertThat(fake.cancelCalls()).isEmpty();
-        assertLedger(purchase.orderId(), PaymentStatus.PAID, 0, CREAM_PRICE + DELIVERY_FEE);
+        assertThat(fake.partialCancelCalls()).containsExactly(purchase.paymentId() + ":" + (CREAM_PRICE + DELIVERY_FEE));
+        assertLedger(purchase.orderId(), PaymentStatus.CANCELLED, CREAM_PRICE + DELIVERY_FEE, 0);
         assertThat(stockOf(creamVariant)).isEqualTo(10);
         userGet(ORDERS).andExpect(jsonPath("$.content[0].items[0].status").value("CANCELLED"))
-                .andExpect(jsonPath("$.content[0].items[0].statusSub").value("환불 처리 중"))
+                .andExpect(jsonPath("$.content[0].items[0].statusSub").value("완료"))
                 .andExpect(jsonPath("$.content[0].items[0].amountLabel").value("환불 27,200원"));
     }
 
     @Test
-    @DisplayName("[M-04] 브랜드 직권 취소 — 환불 큐(전액+배송비) · 그 뒤 소비자 취소는 이중 환불 없이 막힌다")
+    @DisplayName("[M-04] 브랜드 직권 취소 — PG 즉시 부분 취소(전액+배송비) · 그 뒤 소비자 취소는 이중 환불 없이 막힌다")
     void sellerDirectCancel() throws Exception {
         Purchase purchase = purchase(creamVariant, 1);
 
@@ -161,21 +159,22 @@ class OrderToRefundScenarioIntegrationTest extends OrderFlowTestSupport {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.succeeded").value(1));
 
         assertThat(refundTasks(purchase.group())).containsExactly(
-                new RefundTask("SELLER_DIRECT_CANCEL", CREAM_PRICE + DELIVERY_FEE, "PENDING"));
-        assertLedger(purchase.orderId(), PaymentStatus.PAID, 0, CREAM_PRICE + DELIVERY_FEE);
+                new RefundTask("SELLER_DIRECT_CANCEL", CREAM_PRICE + DELIVERY_FEE, "DONE"));
+        assertLedger(purchase.orderId(), PaymentStatus.CANCELLED, CREAM_PRICE + DELIVERY_FEE, 0);
         assertThat(stockOf(creamVariant)).isEqualTo(10);
 
-        // 이미 환불 큐에 오른 주문을 소비자가 다시 취소해도 PG 환불이 겹치지 않는다.
+        // 이미 환불된 주문을 소비자가 다시 취소해도 PG 환불이 겹치지 않는다.
         cancel(purchase.orderId()).andExpect(status().isConflict());
         assertThat(fake.cancelCalls()).isEmpty();
-        assertLedger(purchase.orderId(), PaymentStatus.PAID, 0, CREAM_PRICE + DELIVERY_FEE);
+        assertThat(fake.partialCancelCalls()).hasSize(1);
+        assertLedger(purchase.orderId(), PaymentStatus.CANCELLED, CREAM_PRICE + DELIVERY_FEE, 0);
         assertThat(stockOf(creamVariant)).isEqualTo(10);
     }
 
     // ================================================================== 발송 뒤
 
     @Test
-    @DisplayName("[M-05] 배송 중 반송 — 입고가 감지되면 환불 큐(전액+배송비) 1회 · 다시 감지돼도 늘지 않는다 · 취소 경로는 전부 닫혀 있다")
+    @DisplayName("[M-05] 배송 중 반송 — 입고가 감지되면 PG 부분 취소(전액+배송비) 1회 · 다시 감지돼도 늘지 않는다 · 취소 경로는 전부 닫혀 있다")
     void returnedInTransit() throws Exception {
         OrderDeliveryGroup group = shippingGroup("400050006001");
         Long orderId = group.getOrder().getId();
@@ -190,18 +189,19 @@ class OrderToRefundScenarioIntegrationTest extends OrderFlowTestSupport {
         track(group, new TrackSnapshot(now, null, true, true), now);
 
         assertThat(refundTasks(group)).containsExactly(
-                new RefundTask("RETURN_COMPLETED", CREAM_PRICE + DELIVERY_FEE, "PENDING"));
-        assertLedger(orderId, PaymentStatus.PAID, 0, CREAM_PRICE + DELIVERY_FEE);
+                new RefundTask("RETURN_COMPLETED", CREAM_PRICE + DELIVERY_FEE, "DONE"));
+        assertLedger(orderId, PaymentStatus.CANCELLED, CREAM_PRICE + DELIVERY_FEE, 0);
 
         cancel(orderId).andExpect(status().isConflict());
         directCancel(List.of(group.getId()), "SOLD_OUT", "품절")
                 .andExpect(jsonPath("$.succeeded").value(0));
         assertThat(fake.cancelCalls()).isEmpty();
-        assertLedger(orderId, PaymentStatus.PAID, 0, CREAM_PRICE + DELIVERY_FEE);
+        assertThat(fake.partialCancelCalls()).hasSize(1);
+        assertLedger(orderId, PaymentStatus.CANCELLED, CREAM_PRICE + DELIVERY_FEE, 0);
     }
 
     @Test
-    @DisplayName("[M-06] 한 주문의 두 갈래 — 크림은 준비 중 부분 취소(환불 큐 27,200), 세럼은 배송완료 뒤 반품(검수 통과 → 집행 24,000) · 환불 합계 = 결제액 − 배송비 · 재고는 항목마다 한 번")
+    @DisplayName("[M-06] 한 주문의 두 갈래 — 크림은 준비 중 부분 취소(PG 27,200), 세럼은 배송완료 뒤 반품(검수 통과 → PG 24,000) · 환불 합계 = 결제액 − 배송비 · 재고는 항목마다 한 번")
     void partialCancelThenReturnOfTheRest() throws Exception {
         // 무료배송 기준을 올려 배송비 3,000 이 붙게 한다 — 부분 취소도 반품도 낸 배송비는 돌려주지 않는다.
         jdbc.update("UPDATE market SET free_shipping_threshold = ? WHERE market_id = ?", 100_000, brand.marketId());
@@ -216,9 +216,9 @@ class OrderToRefundScenarioIntegrationTest extends OrderFlowTestSupport {
         approveRequest(seedCancelRequest(group, List.of(itemOf(group, cream))))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PREPARING"));
         assertThat(refundTasks(group)).containsExactly(
-                new RefundTask("CANCEL_REQUEST_APPROVED", CREAM_PRICE, "PENDING"));
+                new RefundTask("CANCEL_REQUEST_APPROVED", CREAM_PRICE, "DONE"));
         assertThat(stockOf(creamVariant)).isEqualTo(10);
-        assertLedger(orderId, PaymentStatus.PAID, 0, CREAM_PRICE);
+        assertLedger(orderId, PaymentStatus.PAID, CREAM_PRICE, 0);
 
         // ── 세럼: 발송 → 배송완료.
         registerShipment(group, "CJ", "400050006002").andExpect(jsonPath("$.succeeded").value(1));
@@ -232,29 +232,20 @@ class OrderToRefundScenarioIntegrationTest extends OrderFlowTestSupport {
         Long claimId = json(userPost(USER_CLAIMS, returnBody(group, serumItem.getId()))
                 .andExpect(status().isCreated())).get("claimIds").get(0).asLong();
         // 요청만으로는 환불이 서지 않는다 — 검수가 통과해야 한다.
-        assertLedger(orderId, PaymentStatus.PAID, 0, CREAM_PRICE);
+        assertLedger(orderId, PaymentStatus.PAID, CREAM_PRICE, 0);
 
         sellerPost(SELLER_CLAIMS + "/receive", Map.of("claimIds", List.of(claimId)))
                 .andExpect(jsonPath("$.succeeded").value(1));
+        // 검수 통과 = PG 즉시 자동 환불 — 응답 시점에 이미 환불이 끝나 클레임이 종결돼 있다.
         sellerPost(SELLER_CLAIMS + "/" + claimId + "/inspection/pass", Map.of()).andExpect(status().isOk())
-                .andExpect(jsonPath("$.summary.status").value("REFUND_PENDING"));
+                .andExpect(jsonPath("$.summary.status").value("COMPLETED"));
 
         // 배송비를 내고 받은 주문 — 반품 환불에서 더 빼는 것은 없다.
         assertThat(refundTasks(group)).containsExactly(
-                new RefundTask("CANCEL_REQUEST_APPROVED", CREAM_PRICE, "PENDING"),
-                new RefundTask("CLAIM_RETURN_PASSED", SERUM_PRICE, "PENDING"));
-        assertLedger(orderId, PaymentStatus.PAID, 0, paid - DELIVERY_FEE);
+                new RefundTask("CANCEL_REQUEST_APPROVED", CREAM_PRICE, "DONE"),
+                new RefundTask("CLAIM_RETURN_PASSED", SERUM_PRICE, "DONE"));
         // 크림 재고는 취소 때 한 번 돌아온 그대로다.
         assertThat(stockOf(creamVariant)).isEqualTo(10);
-
-        // ── 환불 집행(어드민 — 받는 API 전이라 도메인 진입점).
-        Long taskId = jdbc.queryForObject("SELECT refund_task_id FROM order_refund_task WHERE delivery_group_id = ? "
-                + "AND source = 'CLAIM_RETURN_PASSED'", Long.class, group.getId());
-        claimService.completeRefund(taskId, SERUM_PRICE, 1L, LocalDateTime.now());
-
-        assertThat(refundTasks(group)).containsExactly(
-                new RefundTask("CANCEL_REQUEST_APPROVED", CREAM_PRICE, "PENDING"),
-                new RefundTask("CLAIM_RETURN_PASSED", SERUM_PRICE, "DONE"));
         assertThat(itemOf(group, cream).getStatus()).isEqualTo(OrderProductStatus.CANCELLED);
         assertThat(itemOf(group, serum).getStatus()).isEqualTo(OrderProductStatus.RETURNED);
         userGet(USER_CLAIMS + "/" + claimId).andExpect(jsonPath("$.refund.amount").value(SERUM_PRICE))
@@ -263,16 +254,17 @@ class OrderToRefundScenarioIntegrationTest extends OrderFlowTestSupport {
                 .andExpect(jsonPath("$.items[?(@.status == 'CANCELLED')]", hasSize(1)))
                 .andExpect(jsonPath("$.items[?(@.status == 'RETURNED')]", hasSize(1)));
 
-        // 돈은 두 갈래로 나갔고 합쳐도 결제액을 넘지 않는다 — 남는 것은 돌려주지 않는 배송비뿐이다.
-        assertLedger(orderId, PaymentStatus.PAID, 0, paid - DELIVERY_FEE);
+        // 돈은 두 갈래(부분 취소 2회)로 나갔고 합쳐도 결제액을 넘지 않는다 — 남는 것은 돌려주지 않는 배송비뿐이다.
+        assertLedger(orderId, PaymentStatus.PAID, paid - DELIVERY_FEE, 0);
         assertThat(fake.cancelCalls()).isEmpty();
+        assertThat(fake.partialCancelCalls()).hasSize(2);
     }
 
     // ------------------------------------------------------------------ 장부
 
     /**
-     * 주문 한 건의 돈 — 결제 상태 · PG 가 돌려준 금액(payment_cancel 성공분) · 환불 큐에 오른 금액(대기 + 집행).
-     * 두 길을 합친 환불이 결제액을 넘으면 이중 환불이다.
+     * 주문 한 건의 돈 — 결제 상태 · PG 가 돌려준 금액(payment_cancel 성공분 — 전액 취소 + 부분 취소) · 큐에 올랐지만 아직 나가지
+     * 않은 금액(대기 · 집행 중 · 실패). 둘을 합친 환불이 결제액을 넘으면 이중 환불이다.
      */
     private void assertLedger(Long orderId, PaymentStatus paymentStatus, int pgRefunded, int queued) {
         String paymentId = order(orderId).getPaidPaymentId();
@@ -292,8 +284,8 @@ class OrderToRefundScenarioIntegrationTest extends OrderFlowTestSupport {
     }
 
     private int queuedRefund(Long orderId) {
-        return jdbc.queryForObject("SELECT COALESCE(SUM(refund_amount), 0) FROM order_refund_task WHERE order_id = ?",
-                Integer.class, orderId);
+        return jdbc.queryForObject("SELECT COALESCE(SUM(refund_amount), 0) FROM order_refund_task WHERE order_id = ? "
+                + "AND status IN ('PENDING', 'EXECUTING', 'FAILED')", Integer.class, orderId);
     }
 
     // ------------------------------------------------------------------ 요청

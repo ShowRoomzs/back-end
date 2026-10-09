@@ -237,7 +237,7 @@ class OrderShippingScenarioIntegrationTest extends OrderFlowTestSupport {
             assertThat(completed.getReturnCompletedAt()).isNotNull();
             assertThat(completed.getFulfillmentStatus()).isEqualTo(FulfillmentStatus.RETURNING);
             assertThat(refundTasks(group)).containsExactly(
-                    new RefundTask("RETURN_COMPLETED", CREAM_PRICE + DELIVERY_FEE, "PENDING"));
+                    new RefundTask("RETURN_COMPLETED", CREAM_PRICE + DELIVERY_FEE, "DONE"));
             assertThat(fulfillmentEvents(group)).containsSubsequence("RETURN_COMPLETED", "RETURN_DETECTED");
             sellerGet(GROUP_BUYS + "/" + groupBuy.getId())
                     .andExpect(jsonPath("$.orderClosure.unclosedCount").value(1));

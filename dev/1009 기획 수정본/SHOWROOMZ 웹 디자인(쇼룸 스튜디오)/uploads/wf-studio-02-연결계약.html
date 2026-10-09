@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>wf-studio-02 · 연결·소통 + 계약 관리 (수신 측) · 1440×1024</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,"Malgun Gothic","맑은 고딕",sans-serif; background:#e6e6e6; color:#222; }
+  .doc-head { padding:24px 40px 4px; }
+  .doc-head h1 { font-size:18px; font-weight:700; }
+  .doc-head h1 span { font-weight:400; color:#888; font-size:13px; }
+  .doc-head .sub { font-size:12px; color:#777; margin-top:4px; line-height:1.6; }
+  .doc-head .spec { display:inline-block; margin-top:8px; font-size:11px; color:#555; background:#fff; border:1px solid #ccc; border-radius:4px; padding:4px 8px; }
+  .stack { padding:16px 40px 60px; }
+  .ftitle { font-size:13px; font-weight:700; color:#333; margin:22px 0 8px; }
+  .ftitle span { font-weight:400; color:#888; font-size:12px; }
+  .ftitle .pill { font-weight:400; font-size:11px; color:#555; background:#fff; border:1px solid #bbb; border-radius:10px; padding:1px 8px; margin-left:6px; }
+
+  .frame { width:1440px; background:#fff; border:1px solid #b5b5b5; border-radius:8px; box-shadow:0 1px 5px rgba(0,0,0,.1); overflow:hidden; position:relative; }
+  .chrome { height:32px; background:#e2e2e2; border-bottom:1px solid #c8c8c8; display:flex; align-items:center; padding:0 12px; gap:6px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#c0c0c0; }
+  .urlbar { flex:1; height:18px; background:#fff; border:1px solid #d0d0d0; border-radius:9px; font-size:11px; color:#888; display:flex; align-items:center; padding:0 10px; margin-left:8px; }
+  .app { display:flex; min-height:992px; }
+  .gnb { width:224px; flex-shrink:0; background:#3f3f3f; color:#cfcfcf; padding:0 0 20px; }
+  .gnb .brand { padding:22px 20px 18px; border-bottom:1px solid #565656; }
+  .gnb .brand .m { font-size:15px; font-weight:800; color:#fff; letter-spacing:.5px; }
+  .gnb .brand .s { font-size:10px; color:#a5a5a5; margin-top:3px; }
+  .gnb-item { display:flex; align-items:center; gap:8px; padding:12px 20px; font-size:13px; color:#c2c2c2; border-left:3px solid transparent; }
+  .gnb-item .n { font-size:11px; color:#8f8f8f; width:14px; }
+  .gnb-item.on { background:#2a2a2a; color:#fff; font-weight:700; border-left-color:#fff; }
+  .gnb-item.on .n { color:#ddd; }
+  .main { flex:1; background:#f7f7f7; min-width:0; position:relative; }
+  .topbar { height:56px; background:#fff; border-bottom:1px solid #e2e2e2; display:flex; align-items:center; justify-content:space-between; padding:0 24px; }
+  .crumb { font-size:14px; font-weight:700; color:#222; }
+  .crumb .sub { font-weight:400; color:#999; font-size:12px; }
+  .brand-chip { display:flex; align-items:center; gap:8px; font-size:12px; color:#555; }
+  .brand-chip .st { border:1px solid #999; border-radius:12px; padding:2px 10px; background:#f2f2f2; }
+  .content { padding:24px; }
+
+  .btn { height:40px; border-radius:6px; background:#333; color:#fff; font-size:13px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; padding:0 18px; }
+  .btn-line { height:40px; border-radius:6px; background:#fff; border:1px solid #999; color:#555; font-size:13px; display:inline-flex; align-items:center; justify-content:center; padding:0 18px; }
+  .btn.dis { background:#cbcbcb; color:#888; }
+  .btn-sm { height:32px; padding:0 12px; font-size:12px; border-radius:5px; }
+  .btn.warn { background:#fff; border:1px solid #999; color:#555; }
+
+  .av { border-radius:50%; background:#d8d8d8; border:1px solid #c5c5c5; display:flex; align-items:center; justify-content:center; font-size:11px; color:#888; flex-shrink:0; }
+  .badge { border:1px solid #999; border-radius:10px; padding:2px 9px; font-size:11px; color:#444; background:#f6f6f6; }
+  .badge.req { border-style:dashed; color:#777; }
+  .badge.on2 { background:#e3e3e3; }
+  .unread { background:#555; color:#fff; border-radius:9px; min-width:18px; height:18px; font-size:11px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; }
+
+  /* 2패널 */
+  .cs-wrap { display:flex; height:936px; }
+  .cs-list { width:320px; flex-shrink:0; border-right:1px solid #e2e2e2; background:#fff; display:flex; flex-direction:column; }
+  .cs-lh { padding:14px; border-bottom:1px solid #eee; }
+  .cs-search { height:36px; border:1px solid #bbb; border-radius:6px; display:flex; align-items:center; padding:0 10px; font-size:12px; color:#a3a3a3; margin-bottom:8px; }
+  .cs-tabs { display:flex; gap:4px; }
+  .cs-tab { flex:1; text-align:center; padding:7px 4px; font-size:12px; color:#888; border:1px solid #ddd; border-radius:6px; background:#fafafa; display:flex; align-items:center; justify-content:center; gap:5px; }
+  .cs-tab.on { background:#333; color:#fff; border-color:#333; font-weight:700; }
+  .tab-badge { background:#c4553f; color:#fff; border-radius:8px; min-width:15px; height:15px; font-size:10px; display:inline-flex; align-items:center; justify-content:center; padding:0 4px; }
+  .req-card { border:1px solid #e2e2e2; border-radius:8px; background:#fff; padding:16px; }
+  .req-top { display:flex; align-items:center; gap:14px; }
+  .req-meta { flex:1; min-width:0; }
+  .req-name { font-size:14px; font-weight:700; color:#222; }
+  .req-sub { font-size:11.5px; color:#999; margin-top:3px; }
+  .req-actions { display:flex; gap:8px; flex-shrink:0; }
+  .cs-item { display:flex; gap:10px; padding:12px 14px; border-bottom:1px solid #f0f0f0; align-items:center; }
+  .cs-item.sel { background:#f0f4fb; border-left:3px solid #555; padding-left:11px; }
+  .cs-item .av { width:38px; height:38px; }
+  .cs-meta { flex:1; min-width:0; }
+  .cs-top { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+  .cs-name { font-size:13px; font-weight:700; color:#333; }
+  .cs-time { font-size:10px; color:#aaa; }
+  .cs-prev { font-size:11.5px; color:#999; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:3px; }
+  .cs-row2 { display:flex; align-items:center; justify-content:space-between; margin-top:5px; }
+
+  .cs-thread { flex:1; display:flex; flex-direction:column; min-width:0; background:#fafafa; }
+  .th-head { height:64px; background:#fff; border-bottom:1px solid #e2e2e2; display:flex; align-items:center; padding:0 20px; gap:12px; }
+  .th-head .av { width:40px; height:40px; }
+  .th-hmeta { flex:1; }
+  .th-hname { font-size:14px; font-weight:700; }
+  .th-hstat { font-size:11px; color:#888; margin-top:2px; }
+  .th-body { flex:1; padding:22px 20px; display:flex; flex-direction:column; gap:16px; overflow:hidden; }
+  .daymark { text-align:center; font-size:11px; color:#aaa; }
+  .msg { max-width:60%; }
+  .msg .who { font-size:11px; color:#999; margin-bottom:4px; }
+  .bubble { border-radius:10px; padding:10px 13px; font-size:13px; line-height:1.5; }
+  .msg.them .bubble { background:#eee; color:#333; border-top-left-radius:2px; }
+  .msg.me { align-self:flex-end; text-align:right; }
+  .msg.me .bubble { background:#d7d7d7; color:#222; border-top-right-radius:2px; text-align:left; }
+  .msg .tstamp { font-size:10px; color:#bbb; margin-top:4px; }
+  .msg .media { width:150px; height:110px; border:1px solid #ccc; border-radius:8px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; font-size:10px; color:#aaa; margin-top:6px; }
+  .th-input { border-top:1px solid #e2e2e2; background:#fff; padding:12px 16px; display:flex; align-items:center; gap:10px; }
+  .th-attach { width:36px; height:36px; border:1px solid #bbb; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#999; font-size:16px; flex-shrink:0; }
+  .th-field { flex:1; height:40px; border:1px solid #bbb; border-radius:20px; display:flex; align-items:center; padding:0 16px; font-size:13px; color:#a3a3a3; }
+
+  /* 모달 */
+  .scrim { position:absolute; inset:0; background:rgba(40,40,40,.45); display:flex; align-items:center; justify-content:center; }
+  .modal { width:460px; background:#fff; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,.25); overflow:hidden; }
+  .modal-h { padding:18px 22px; border-bottom:1px solid #eee; font-size:16px; font-weight:700; display:flex; justify-content:space-between; align-items:center; }
+  .modal-h .x { color:#aaa; font-size:16px; }
+  .modal-b { padding:22px; }
+  .flabel { font-size:12px; color:#555; margin-bottom:5px; }
+  .inp { width:100%; height:42px; border:1px solid #bbb; border-radius:6px; background:#fff; display:flex; align-items:center; padding:0 12px; font-size:13px; color:#a3a3a3; }
+  .inp.area { height:80px; align-items:flex-start; padding-top:10px; }
+  .modal-f { padding:16px 22px; border-top:1px solid #eee; display:flex; justify-content:flex-end; gap:10px; }
+
+  /* 테이블 */
+  table.grid { width:100%; border-collapse:collapse; font-size:13px; background:#fff; }
+  table.grid th { text-align:left; padding:12px 14px; background:#f4f4f4; border-bottom:1px solid #e2e2e2; color:#555; font-weight:700; font-size:12px; }
+  table.grid td { padding:14px; border-bottom:1px solid #eee; color:#444; }
+  .link { color:#666; text-decoration:underline; font-size:12px; }
+  .card { background:#fff; border:1px solid #e2e2e2; border-radius:8px; margin-bottom:18px; }
+  .card-h { padding:16px 20px; border-bottom:1px solid #eee; font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
+  .toolbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .spacer { flex:1; }
+
+  /* 계약 뷰 (읽기전용) */
+  .sec { padding:22px 20px; border-bottom:1px solid #eee; }
+  .sec:last-child { border-bottom:none; }
+  .sec-t { font-size:15px; font-weight:700; color:#222; margin-bottom:16px; }
+  .row { display:flex; gap:16px; align-items:flex-start; margin-bottom:14px; }
+  .lab { width:130px; flex-shrink:0; font-size:13px; color:#555; padding-top:2px; }
+  .val { flex:1; font-size:13px; color:#333; line-height:1.6; }
+  .hint { font-size:11.5px; color:#999; margin-top:6px; }
+
+  .citem-head { display:flex; gap:10px; padding:0 0 8px; font-size:11px; color:#888; }
+  .citem-head .c-prod { flex:2; } .citem-head .c-price { width:150px; } .citem-head .c-rw { width:120px; }
+  .citem { display:flex; gap:10px; align-items:center; margin-bottom:8px; }
+  .citem .c-prod { flex:2; } .citem .c-price { width:150px; } .citem .c-rw { width:120px; }
+  .citem .cro { height:40px; border:1px solid #ddd; border-radius:6px; background:#f7f7f7; display:flex; align-items:center; padding:0 12px; font-size:13px; color:#555; }
+
+  /* 서명 */
+  .sign-wrap { display:flex; gap:14px; }
+  .sign-box { flex:1; border:1px solid #ddd; border-radius:8px; padding:16px; background:#fafafa; }
+  .sign-who { font-size:12px; color:#777; margin-bottom:10px; }
+  .sign-name { font-size:14px; font-weight:700; margin-bottom:12px; }
+  .sign-state { font-size:12px; display:inline-flex; align-items:center; gap:6px; border-radius:12px; padding:4px 12px; }
+  .sign-state.done { background:#e3e3e3; color:#444; }
+  .sign-state.wait { border:1px dashed #bbb; color:#999; }
+
+  .settle-box { border:1px solid #ddd; border-radius:8px; background:#fafafa; padding:4px 16px; }
+  .settle-r { display:flex; gap:14px; padding:11px 0; border-bottom:1px solid #ebebeb; font-size:12.5px; }
+  .settle-r:last-child { border-bottom:none; }
+  .settle-r .sk { width:110px; flex-shrink:0; color:#888; }
+  .settle-r .sv { color:#444; line-height:1.5; }
+  .waittag { border:1px dashed #999; border-radius:4px; padding:0 6px; font-size:10.5px; color:#777; margin-left:4px; white-space:nowrap; }
+
+  .sign-steps { display:flex; align-items:stretch; gap:6px; margin-bottom:16px; }
+  .ss { flex:1; border:1px solid #ddd; border-radius:8px; padding:10px 8px; text-align:center; font-size:12px; color:#888; background:#fff; }
+  .ss .ss-n { display:inline-flex; width:18px; height:18px; border-radius:50%; border:1px solid #bbb; align-items:center; justify-content:center; font-size:10px; margin-right:4px; color:#999; }
+  .ss .ss-d { font-size:10px; color:#aaa; margin-top:4px; }
+  .ss.done { background:#f0f0f0; color:#555; } .ss.done .ss-n { background:#888; border-color:#888; color:#fff; }
+  .ss.cur { border:1.5px solid #555; color:#333; font-weight:700; } .ss.cur .ss-n { background:#333; border-color:#333; color:#fff; }
+  .ss-arrow { display:flex; align-items:center; color:#bbb; font-size:14px; }
+
+  .foldline { position:absolute; left:0; right:0; top:1024px; border-top:1.5px dashed #c4553f; z-index:5; }
+  .foldline::after { content:"↑ 1440×1024 뷰포트 경계 · 이하 스크롤"; position:absolute; right:14px; top:-9px; background:#f7f7f7; padding:0 8px; font-size:10px; color:#c4553f; }
+
+  .note { margin:14px 20px 0; border:1.5px dashed #999; border-radius:6px; background:#fafafa; padding:9px 12px; font-size:11.5px; color:#555; line-height:1.6; }
+  .note.inbody { margin:14px 0 0; }
+  .note b { color:#333; } .note .tag { font-weight:700; margin-right:4px; }
+  .note.legal { border:2px dashed #333; background:#f3f3f3; color:#222; }
+  .note.term { border-color:#6f6f6f; }
+
+  .btn-row { display:flex; gap:12px; justify-content:flex-end; padding:20px; }
+  .down { text-align:center; padding:12px 0 2px; } .down .a { font-size:24px; color:#888; } .down .l { font-size:11px; color:#777; }
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>④ 쇼룸 스튜디오 · 2. 연결·소통 + 3. 계약 관리 (수신 측) <span>wf-studio-02 · 데스크톱 1440×1024</span></h1>
+  <div class="sub">그레이스케일 lo-fi · 근거: wf-partner-03 대칭 구조 + ④ draft22 §2 확정사항 · 계약은 브랜드가 작성 → 인플루언서는 확인·서명·거절만</div>
+  <div class="spec">프레임 1440×1024 · 붉은 점선 = 1024 접힘선 · 연결 요청은 브랜드가 발신 · 계약 항목(공구가·리워드율 등)은 전 필드 읽기전용</div>
+</div>
+
+<!-- ============ F1. 연결·소통 2패널 (수신 측) ============ -->
+<div class="stack">
+<div class="ftitle">1. 연결·소통 (통합 2패널) <span>— 좌 상대(브랜드) 목록 + 우 스레드 + [계약 확인]</span><span class="pill">GNB #2</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">studio.showroomz.com/connections</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">쇼룸 스튜디오</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item on"><span class="n">2</span> 연결·소통</div>
+      <div class="gnb-item"><span class="n">3</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">4</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 게시물</div>
+      <div class="gnb-item"><span class="n">6</span> 판매 현황</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리</div>
+      <div class="gnb-item"><span class="n">8</span> 쇼룸 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar">
+        <div class="crumb">연결·소통</div>
+        <div class="brand-chip">뷰티_소연 <span class="st">활성</span></div>
+      </div>
+      <div style="display:flex;gap:8px;padding:14px 20px 0">
+        <div style="padding:8px 16px;border-radius:16px;font-size:12.5px;font-weight:700;background:#333;color:#fff">1:1 소통</div>
+        <div style="padding:8px 16px;border-radius:16px;font-size:12.5px;font-weight:700;background:#fff;border:1px solid #c9a24a;color:#8a5a00">이슈 스레드 <span style="background:#c9a24a;color:#fff;border-radius:8px;padding:0 6px;font-size:10px;margin-left:2px">1</span></div>
+      </div>
+      <div class="cs-wrap">
+        <!-- 좌: 상대(브랜드) 목록 -->
+        <div class="cs-list">
+          <div class="cs-lh">
+            <div class="cs-search">브랜드명 검색</div>
+            <div class="cs-tabs">
+              <div class="cs-tab on">연결됨</div>
+              <div class="cs-tab">요청함 <span class="tab-badge">1</span></div>
+            </div>
+          </div>
+          <div class="cs-item sel">
+            <div class="av">IMG</div>
+            <div class="cs-meta">
+              <div class="cs-top"><span class="cs-name">○○ 브랜드</span><span class="cs-time">방금</span></div>
+              <div class="cs-prev">계약서 보내드렸어요, 확인 부탁드려요!</div>
+              <div class="cs-row2"><span class="badge on2">연결됨</span><span class="unread">2</span></div>
+            </div>
+          </div>
+          <div class="cs-item">
+            <div class="av">IMG</div>
+            <div class="cs-meta">
+              <div class="cs-top"><span class="cs-name">글로우랩</span><span class="cs-time">1시간</span></div>
+              <div class="cs-prev">지난 공구 정산 확인 감사합니다.</div>
+              <div class="cs-row2"><span class="badge on2">연결됨</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- 우: 스레드 -->
+        <div class="cs-thread">
+          <div class="th-head">
+            <div class="av">IMG</div>
+            <div class="th-hmeta"><div class="th-hname">○○ 브랜드</div><div class="th-hstat">연결됨 · 스레드 열림</div></div>
+            <div class="btn">계약 확인</div>
+          </div>
+          <div class="th-body">
+            <div class="daymark">2026. 00. 00</div>
+            <div class="msg them"><div class="who">○○ 브랜드</div><div class="bubble">안녕하세요! 신제품 세럼 공구 계약서 보내드렸어요, 확인 부탁드려요 😊</div><div class="tstamp">14:02</div></div>
+            <div class="msg me"><div class="bubble">네 확인했습니다! 세럼 30ml/50ml 두 옵션 좋아요.</div><div class="tstamp">14:05</div></div>
+            <div class="msg them"><div class="who">○○ 브랜드</div><div class="bubble">공구가 이 정도면 진행 가능할 것 같아요!</div><div class="tstamp">14:12</div></div>
+          </div>
+          <div class="th-input">
+            <div class="th-attach">📎</div>
+            <div class="th-field">메시지 입력…</div>
+            <div class="btn btn-sm" style="height:40px">전송</div>
+          </div>
+        </div>
+      </div>
+      <div class="note inbody" style="margin:0 20px 16px"><span class="tag">[규칙]</span> 스레드 = <b>쌍(브랜드+인플루언서) 기준 유일</b>(재연결 시에도 이어짐) · 해제 시 휴면(열람만) · <b>[계약 확인]은 해당 상대와의 계약이 존재할 때만 활성</b>(없으면 버튼 숨김) · 안읽음 = 스레드 단위 마지막 읽은 시각 이후 수(② §3·③ §3 — 브랜드와 동일 규칙)</div>
+      <div class="note term"><span class="tag">[구조 차이]</span> 원본(브랜드) 화면과 달리 <b>[+ 연결 요청] 버튼 없음</b> — 매칭은 브랜드가 파트너센터에서 시작(§2 구조 원칙) · 인플루언서는 <b>수신·수락/거절만</b> 수행</div>
+      <div class="note legal inbody" style="margin:0 20px 16px"><span class="tag">[2026.07 신규]</span> <b>"이슈 스레드" 탭 추가</b> — 공구 종료 후 계약 이행 확인에서 문제가 제기되면 여기로 옮겨짐(아래 F6). 기존 1:1 소통(브랜드↔인플루언서 전용)과는 완전히 별개 — 이슈 스레드는 <b>브랜드+인플루언서+운영자 3자</b>가 함께 봄</div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">"요청함" 탭 클릭 → 모아서 확인</div></div>
+
+<!-- ============ F2. 연결 요청함 (모아보기) ============ -->
+<div class="ftitle">2. 연결 요청함 <span>— 받은 요청을 모아서 확인 · 개별 수락/거절</span><span class="pill">GNB #2 · "요청함" 탭</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">studio.showroomz.com/connections?tab=requests</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">쇼룸 스튜디오</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item on"><span class="n">2</span> 연결·소통</div>
+      <div class="gnb-item"><span class="n">3</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">4</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 게시물</div>
+      <div class="gnb-item"><span class="n">6</span> 판매 현황</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리</div>
+      <div class="gnb-item"><span class="n">8</span> 쇼룸 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar">
+        <div class="crumb">연결·소통</div>
+        <div class="brand-chip">뷰티_소연 <span class="st">활성</span></div>
+      </div>
+      <div class="cs-wrap">
+        <!-- 좌: 필터 탭 (요청함 선택 상태) -->
+        <div class="cs-list">
+          <div class="cs-lh">
+            <div class="cs-search">브랜드명 검색</div>
+            <div class="cs-tabs">
+              <div class="cs-tab">연결됨</div>
+              <div class="cs-tab on">요청함 <span class="tab-badge">3</span></div>
+            </div>
+          </div>
+          <div class="cs-item">
+            <div class="av">IMG</div>
+            <div class="cs-meta">
+              <div class="cs-top"><span class="cs-name">데일리코스</span><span class="cs-time">어제</span></div>
+              <div class="cs-prev">요청 도착 · 미확인</div>
+            </div>
+          </div>
+          <div class="cs-item">
+            <div class="av">IMG</div>
+            <div class="cs-meta">
+              <div class="cs-top"><span class="cs-name">퓨어랩</span><span class="cs-time">2일 전</span></div>
+              <div class="cs-prev">요청 도착 · 미확인</div>
+            </div>
+          </div>
+          <div class="cs-item">
+            <div class="av">IMG</div>
+            <div class="cs-meta">
+              <div class="cs-top"><span class="cs-name">모이스처하우스</span><span class="cs-time">4일 전</span></div>
+              <div class="cs-prev">요청 도착 · 미확인</div>
+            </div>
+          </div>
+        </div>
+        <!-- 우: 요청 상세 카드 리스트 -->
+        <div class="cs-thread" style="padding:20px;gap:14px;overflow-y:auto">
+          <div class="req-card">
+            <div class="req-top">
+              <div class="av" style="width:44px;height:44px">IMG</div>
+              <div class="req-meta"><div class="req-name">데일리코스</div><div class="req-sub">뷰티 브랜드 · 정산 이력 3건 · 어제 요청</div></div>
+              <div class="req-actions"><div class="btn-line btn-sm">거절</div><div class="btn btn-sm">수락</div></div>
+            </div>
+          </div>
+          <div class="req-card">
+            <div class="req-top">
+              <div class="av" style="width:44px;height:44px">IMG</div>
+              <div class="req-meta"><div class="req-name">퓨어랩</div><div class="req-sub">뷰티 브랜드 · 첫 연결 요청 · 2일 전</div></div>
+              <div class="req-actions"><div class="btn-line btn-sm">거절</div><div class="btn btn-sm">수락</div></div>
+            </div>
+          </div>
+          <div class="req-card">
+            <div class="req-top">
+              <div class="av" style="width:44px;height:44px">IMG</div>
+              <div class="req-meta"><div class="req-name">모이스처하우스</div><div class="req-sub">뷰티 브랜드 · 정산 이력 1건 · 4일 전</div></div>
+              <div class="req-actions"><div class="btn-line btn-sm">거절</div><div class="btn btn-sm">수락</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="note legal inbody" style="margin:0 20px 16px"><span class="tag">[결정 · 팝업 폐기]</span> 요청 도착 시 <b>즉시 팝업 알림 없음</b> — "요청함" 탭에 <b>누적 카운트 배지</b>로만 표시, 인플루언서가 원할 때 탭을 눌러 <b>모아서 한 번에</b> 확인·처리. 인앱 알림·이메일로 도착 사실만 조용히 통지(알림 #목록 연동)</div>
+      <div class="note inbody" style="margin:0 20px 16px"><span class="tag">[규칙]</span> 탐색·매칭 시스템 없음(외부 합의 전제) · 브랜드가 검색 또는 <b>연결코드</b>로 인플루언서를 지정해 요청 발송(파트너센터와 동일 로직) · <b>인플루언서는 수락/거절만 가능</b> · 각 카드에서 개별 처리 · 수락 시 연결됨+스레드 활성 · 같은 쌍 동시 유효 연결 1개(② §2·③ §1-3·§2)</div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">[수락] → 연결됨 · [계약 확인] → 계약 관리</div></div>
+
+<!-- ============ F3. 계약 목록 ============ -->
+<div class="ftitle">3. 계약 목록 <span>— 브랜드·상품 수·공구 기간·상태·수신일</span><span class="pill">GNB #3</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">studio.showroomz.com/contracts</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">쇼룸 스튜디오</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 연결·소통</div>
+      <div class="gnb-item on"><span class="n">3</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">4</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 게시물</div>
+      <div class="gnb-item"><span class="n">6</span> 판매 현황</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리</div>
+      <div class="gnb-item"><span class="n">8</span> 쇼룸 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">계약 관리 <span class="sub">› 계약 목록</span></div><div class="brand-chip">뷰티_소연 <span class="st">활성</span></div></div>
+      <div class="content">
+        <div class="toolbar"><div class="cs-search" style="max-width:300px;width:300px">브랜드명 검색</div><div class="badge" style="height:40px;display:flex;align-items:center">상태 전체 ▾</div><div class="spacer"></div></div>
+        <div class="card">
+          <table class="grid">
+            <thead><tr><th>공구명 / 계약 상대</th><th style="width:80px">상품 수</th><th style="width:290px">공구 기간</th><th style="width:110px">상태</th><th style="width:110px">수신일</th><th style="width:80px">관리</th></tr></thead>
+            <tbody>
+              <tr><td>여름 수분 세럼 공구 <span style="color:#999;font-size:11px">· ○○ 브랜드</span></td><td>2</td><td>2026.00.00 00:00 ~ 2026.00.00 00:00</td><td><span class="badge">서명대기</span></td><td>2026.00.00</td><td><span class="link">확인</span></td></tr>
+              <tr><td>글로우 크림 앵콜 공구 <span style="color:#999;font-size:11px">· 글로우랩</span></td><td>1</td><td>2026.00.00 00:00 ~ 2026.00.00 00:00</td><td><span class="badge on2">체결완료</span></td><td>2026.00.00</td><td><span class="link">보기</span></td></tr>
+              <tr><td>봄 클렌저 공구 <span style="color:#999;font-size:11px">· 데일리코스</span></td><td>1</td><td>2026.00.00 00:00 ~ 2026.00.00 00:00</td><td><span class="badge">거절</span></td><td>2026.00.00</td><td><span class="link">보기</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note inbody" style="margin-left:0;margin-right:0"><span class="tag">[상태]</span> 서명대기 / 체결완료 / 거절 / 만료 / 취소 — <b>"작성중"은 브랜드 전용 상태</b>(계약 작성 자체를 인플루언서가 하지 않으므로 목록에 나타나지 않음) · 체결완료 = 공구 생성 게이트(② §4·③ §4)</div>
+        <div class="note term" style="margin-left:0;margin-right:0"><span class="tag">[구조 차이]</span> <b>[+ 계약 작성] 버튼 없음</b> — 계약은 항상 브랜드가 작성·발송, 인플루언서는 목록에서 <b>확인·서명/거절만</b> 수행</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">[확인] / [보기]</div></div>
+
+<!-- ============ F4. 계약 확인·서명 ============ -->
+<div class="ftitle">4. 계약 확인·서명 <span>— 전 필드 읽기전용 + 서명/거절 액션</span><span class="pill">GNB #3</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">studio.showroomz.com/contracts/ct-2026-0031</span></div>
+  <div class="app">
+    <div class="foldline"></div>
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">쇼룸 스튜디오</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 연결·소통</div>
+      <div class="gnb-item on"><span class="n">3</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">4</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 게시물</div>
+      <div class="gnb-item"><span class="n">6</span> 판매 현황</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리</div>
+      <div class="gnb-item"><span class="n">8</span> 쇼룸 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">계약 관리 <span class="sub">› 계약 확인</span></div><div class="brand-chip">뷰티_소연 <span class="st">활성</span></div></div>
+      <div class="content">
+        <div class="card">
+          <div class="card-h">계약 확인 · 서명 <span class="badge">서명대기</span></div>
+
+          <div class="sec">
+            <div class="sec-t">계약 상대 · 공구명 · 기간</div>
+            <div class="row"><div class="lab">계약 상대</div><div class="val">○○ 브랜드</div></div>
+            <div class="row"><div class="lab">공구명</div><div class="val">여름 수분 세럼 공구 <span style="color:#999;font-size:11.5px">(브랜드 내부 관리용 — 내 게시물 제목과 별개)</span></div></div>
+            <div class="row"><div class="lab">공구 기간</div><div class="val">2026.00.00 00:00 ~ 2026.00.00 00:00</div></div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-t">계약 상품 항목 <span style="font-size:12px;font-weight:400;color:#888">(공구가·리워드율 — 읽기전용)</span></div>
+            <div class="citem-head"><div class="c-prod">상품</div><div class="c-price">공구가</div><div class="c-rw">리워드율</div></div>
+            <div class="citem"><div class="c-prod cro">○○ 세럼 30ml/50ml</div><div class="c-price cro">28,000 원</div><div class="c-rw cro">15 %</div></div>
+            <div class="citem"><div class="c-prod cro">○○ 크림 50ml</div><div class="c-price cro">24,000 원</div><div class="c-rw cro">12 %</div></div>
+            <div class="note legal inbody"><span class="tag">[열람 전용]</span> 상품·공구가·리워드율은 <b>브랜드가 계약 작성 시 입력</b> · 인플루언서는 <b>수정 불가</b>, 이견 시 스레드로 협의 후 브랜드가 재작성·재발송(③ §4-2·§11)</div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-t">콘텐츠 의무 <span style="font-size:12px;font-weight:400;color:#888">(계약 단위 · 인스타그램 기준 — 내가 이행할 항목)</span></div>
+            <div class="row"><div class="lab">게시 포맷·수량</div><div class="val">피드 1 · 릴스 1 · 스토리 3개</div></div>
+            <div class="row"><div class="lab">게시 시점</div><div class="val">공구 기간 중</div></div>
+            <div class="row"><div class="lab">유지 기간</div><div class="val">공구 종료까지 게시 유지</div></div>
+            <div class="row"><div class="lab">콘텐츠 2차 활용</div><div class="val">허용 <span class="hint">— 브랜드가 게시물을 광고·상세페이지에 재사용</span></div></div>
+            <div class="row"><div class="lab">사전 검수</div><div class="val">없음</div></div>
+            <div class="note inbody"><span class="tag">[스코프]</span> 외부 SNS 연동 <b>없음</b> → 이행 여부는 <b>수기 확인</b>(브랜드·운영자) · 서명 후 이 항목이 <b>공구 관리 §게시물 작성</b>의 의무 기준이 됨 · <b>대가관계(유료광고) 표시 의무</b> 준수 필요 [쟁점 A]</div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-t">협의 조건</div>
+            <div class="row"><div class="lab">최소 준비 물량</div><div class="val">200 개 <span class="hint">— 브랜드 재고 확보 약속</span></div></div>
+            <div class="row"><div class="lab">샘플 제공</div><div class="val">유상 · 15,000원</div></div>
+            <div class="row"><div class="lab">독점(단독) 여부</div><div class="val">아니오</div></div>
+            <div class="row"><div class="lab">고정 지급비 <span style="color:#999;font-weight:400">(신규)</span></div><div class="val">300,000 원 <span class="hint">— 매출과 무관, 콘텐츠 제작 대가</span></div></div>
+            <div class="note inbody"><span class="tag">[유상 샘플 정산]</span> 유상 샘플비는 정산 시 <b>내 리워드에서 한도 내 차감</b>(min(샘플비, 리워드)) → 브랜드로 이전 · 리워드보다 샘플비가 크면 부족분은 비고·수기 처리 · 원천징수는 <b>리워드 총액 선산정 후 차감</b> <span class="waittag">[세무 확정 대기]</span></div>
+            <div class="note legal inbody"><span class="tag">[고정 지급비 · 신규]</span> 매출연동 리워드와 <b>별개</b> — <b>공구 게시물이 "노출중"으로 전환되는 시점</b>에 자동 지급 트리거(공구 종료·구매확정을 기다리지 않음) · <b>플랫폼 수수료 미적용(0%)</b> · 원천징수는 리워드와 동일 원칙 적용 · 브랜드 결제수단 출금 실패 시 <b>내 게시물은 그대로 유지</b>되고 정산만 보류(재촉 알림은 브랜드에게 감) <span class="waittag">[PG 상담 대기]</span></div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-t">정산 조건 <span style="font-size:12px;font-weight:400;color:#888">(표준 조항 · 열람 전용)</span></div>
+            <div class="settle-box">
+              <div class="settle-r"><span class="sk">기준가</span><span class="sv"><b>공구가 = 부가세 포함 소비자 판매가</b> — 리워드·정산 계산 기준</span></div>
+              <div class="settle-r"><span class="sk">플랫폼 수수료</span><span class="sv">2% + PG 결제 수수료 <span class="waittag">[PG 상담 대기]</span></span></div>
+              <div class="settle-r"><span class="sk">리워드 지급</span><span class="sv">영업일 5일 유예 · <b>사업자면 세금계산서 / 비사업자면 원천징수 3.3% 공제</b> <span class="waittag">[세무 확정 대기]</span></span></div>
+              <div class="settle-r"><span class="sk">고정 지급비</span><span class="sv">게시물 <b>"노출중" 전환 시</b> 지급 · 수수료 미적용(0%) · 원천징수는 리워드와 동일 <span class="waittag">[PG 상담 대기]</span></span></div>
+              <div class="settle-r"><span class="sk">취소·반품</span><span class="sv">구매확정 기준 정산 · 취소/반품분 차감</span></div>
+              <div class="settle-r"><span class="sk">대가관계 표시</span><span class="sv">내 게시물에 유료광고 표시 의무(표준 조항) <span class="waittag">[쟁점 A]</span></span></div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-t">계약 표준 조항 <span style="font-size:12px;font-weight:400;color:#888">(열람 전용 · 문안 법률 검토 대기)</span></div>
+            <div class="settle-box">
+              <div class="settle-r"><span class="sk">화장품 표시·광고</span><span class="sv"><b>효능·기능성 과장 금지</b> 등 화장품법·표시광고법 준수</span></div>
+              <div class="settle-r"><span class="sk">가격 정책</span><span class="sv">공구 기간 중 타 채널 최저가 준수</span></div>
+              <div class="settle-r"><span class="sk">지식재산권</span><span class="sv">브랜드 상표·상품 이미지 사용 허락 범위</span></div>
+              <div class="settle-r"><span class="sk">비밀유지</span><span class="sv">공구가·리워드율·계약 조건 비공개</span></div>
+              <div class="settle-r"><span class="sk">위반 시 조치</span><span class="sv">콘텐츠 미이행·허위광고 시 리워드 보류·공구 중단</span></div>
+              <div class="settle-r"><span class="sk">준거법·분쟁</span><span class="sv">관할·준거법·분쟁 해결 절차</span></div>
+              <div class="settle-r"><span class="sk">손해배상·위약금</span><span class="sv">위반 시 손해배상·위약금(간이) <span class="waittag">[쟁점 E]</span></span></div>
+            </div>
+            <div class="note legal inbody"><span class="tag">[법률 대기]</span> 표준 조항 문구는 <b>법률 검토 패키지(쟁점 E)</b>에서 확정 · 인플루언서가 <b>비사업자로 반복 계약 시 통신판매업자 오인 리스크</b>는 별도 검토 중 <span class="waittag">[쟁점 F]</span></div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-t">서명 <span style="font-size:12px;font-weight:400;color:#888">(전자서명 · 인플루언서 → 브랜드 순)</span></div>
+            <div class="sign-steps">
+              <div class="ss done"><span class="ss-n">1</span> 계약서 발송<div class="ss-d">브랜드 · 완료</div></div>
+              <div class="ss-arrow">→</div>
+              <div class="ss cur"><span class="ss-n">2</span> 인플루언서 서명<div class="ss-d">1순위 · 내 차례</div></div>
+              <div class="ss-arrow">→</div>
+              <div class="ss"><span class="ss-n">3</span> 브랜드 서명<div class="ss-d">2순위 · 대기</div></div>
+              <div class="ss-arrow">→</div>
+              <div class="ss"><span class="ss-n">4</span> 체결완료<div class="ss-d">PDF+인증서 발급</div></div>
+            </div>
+            <div class="sign-wrap">
+              <div class="sign-box">
+                <div class="sign-who">1순위 · 인플루언서(나)</div>
+                <div class="sign-name">뷰티_소연</div>
+                <div style="display:flex;gap:8px"><div class="btn-line btn-sm" style="height:36px;color:#999;border-color:#ccc">거절</div><div class="btn btn-sm" style="height:36px">서명하기</div></div>
+              </div>
+              <div class="sign-box">
+                <div class="sign-who">2순위 · ○○ 브랜드</div>
+                <div class="sign-name">○○ 브랜드</div>
+                <div class="sign-state wait">대기중</div>
+              </div>
+            </div>
+            <div class="note inbody"><span class="tag">[프로세스]</span> 브랜드 발송 → <b>인플루언서 서명</b>(여기) → 브랜드 최종 서명 → <b>체결완료</b>(서명 PDF+감사추적인증서 발급·보관) → 공구 생성 게이트 개방 · <b>[거절]</b> 선택 시 사유 입력 모달(F5)로 이동</div>
+            <div class="note legal inbody"><span class="tag">[미확정 · 대기]</span> ① 전자서명 업체·자체구축 여부 ② 서명 시 본인확인 수준(휴대폰 인증 결합 여부) ③ <b>인플루언서 서명 위치 = 쇼룸 스튜디오 내부로 확정</b>(원본 draft33 "외부 서명 링크" 안 대신 여기 화면에서 직접 서명) — 개발/업체 선정 후 최종 확정</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">[거절] 클릭 시</div></div>
+
+<!-- ============ F5. 계약 거절 사유 입력 모달 ============ -->
+<div class="ftitle">5. 계약 거절 <span>— 사유 입력(필수) 후 거절 확정</span><span class="pill">오버레이</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">studio.showroomz.com/contracts/ct-2026-0031 · 거절</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">쇼룸 스튜디오</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 연결·소통</div>
+      <div class="gnb-item on"><span class="n">3</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">4</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 게시물</div>
+      <div class="gnb-item"><span class="n">6</span> 판매 현황</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리</div>
+      <div class="gnb-item"><span class="n">8</span> 쇼룸 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">계약 관리 <span class="sub">› 계약 확인</span></div><div class="brand-chip">뷰티_소연 <span class="st">활성</span></div></div>
+      <div class="content" style="min-height:600px">
+        <div class="scrim" style="position:absolute;inset:0">
+          <div class="modal">
+            <div class="modal-h">계약 거절 <span class="x">✕</span></div>
+            <div class="modal-b">
+              <div class="flabel">거절 사유 <span style="color:#c4553f">*</span></div>
+              <div class="inp area">예: 리워드율 협의가 더 필요합니다</div>
+              <div class="hint">브랜드에게 그대로 전달되며, 스레드에도 자동 기록됩니다.</div>
+            </div>
+            <div class="modal-f"><div class="btn-line">취소</div><div class="btn warn">거절 확정</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="note inbody" style="margin:0 20px 16px"><span class="tag">[규칙]</span> 거절 사유 <b>입력 필수</b> · 거절 확정 시 계약 상태 = <b>거절</b>(불가역) · 브랜드는 <b>같은 신청서 수정 후 즉시 재발송</b> 가능(반려 재신청 규칙과 별개 — 계약은 브랜드·인플루언서 양측 모두 <b>즉시 재작성·재발송</b> 제한 없음)</div>
+      <div class="note legal inbody" style="margin:0 20px 16px"><span class="tag">[③ draft44 확인 필요]</span> 계약 거절 시 <b>동일 연결에서 재계약 횟수 제한</b> 여부 미기재 — 무제한 반복 거절 시 운영 대응 방안(예: 반복 거절 3회 시 스레드 경고) 정책 확정 대기</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F6. 연결·소통 — 이슈 스레드 ============ -->
+<div class="ftitle">6. 연결·소통 — 이슈 스레드 <span>— 공구별 계약 이행 이슈, 브랜드+인플루언서+운영자 3자</span><span class="pill">GNB #2 · F6 · 2026.07 신규</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">studio.showroomz.com/connections?tab=issues</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">쇼룸 스튜디오</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item on"><span class="n">2</span> 연결·소통</div>
+      <div class="gnb-item"><span class="n">3</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">4</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 게시물</div>
+      <div class="gnb-item"><span class="n">6</span> 성과 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리</div>
+      <div class="gnb-item"><span class="n">8</span> 쇼룸 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar">
+        <div class="crumb">연결·소통</div>
+        <div class="brand-chip">뷰티_소연 <span class="st">활성</span></div>
+      </div>
+      <div style="display:flex;gap:8px;padding:14px 20px 0">
+        <div style="padding:8px 16px;border-radius:16px;font-size:12.5px;font-weight:700;background:#fff;border:1px solid #ccc;color:#666">1:1 소통</div>
+        <div style="padding:8px 16px;border-radius:16px;font-size:12.5px;font-weight:700;background:#333;color:#fff">이슈 스레드 <span style="background:#c9a24a;color:#fff;border-radius:8px;padding:0 6px;font-size:10px;margin-left:2px">1</span></div>
+      </div>
+      <div class="cs-wrap">
+        <div class="cs-list">
+          <div class="cs-lh"><div class="cs-search">공구명 검색</div></div>
+          <div class="cs-item sel">
+            <div class="av">IMG</div>
+            <div class="cs-meta">
+              <div class="cs-top"><span class="cs-name">수분 크림 공구</span><span class="cs-time">어제</span></div>
+              <div class="cs-prev">확인 중입니다. 인플루언서 측 답변 기다리고 있어요.</div>
+              <div class="cs-row2"><span class="badge" style="border-color:#c9a24a;color:#8a5a00">진행중</span><span class="unread">1</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="cs-thread">
+          <div class="th-head">
+            <div class="av">IMG</div>
+            <div class="th-hmeta"><div class="th-hname">수분 크림 공구 <span style="font-weight:400;color:#999;font-size:11px">— 글로우랩</span></div><div class="th-hstat">계약 이행 이슈 · 진행중 · 브랜드+인플루언서+운영자</div></div>
+            <div class="link" style="font-size:12px">공구 상세 보기 →</div>
+          </div>
+          <div class="th-body">
+            <div class="daymark">2026.07.14</div>
+            <div class="msg them"><div class="who">시스템</div><div class="bubble" style="background:#fff;border:1px dashed #999;color:#777">체크리스트 미체크 항목으로 이슈가 자동 생성되었습니다 — 고정 지급비 300,000원 지급 미확인</div><div class="tstamp">19:02</div></div>
+            <div class="msg me"><div class="bubble">고정 지급비 30만원이 아직 안 들어왔어요. 확인 부탁드려요.</div><div class="tstamp">19:03</div></div>
+            <div class="msg them"><div class="who">운영자(김운영)</div><div class="bubble" style="background:#e9e9e9">확인 중입니다. 브랜드 측 정산 계좌 등록 지연 건으로 파악됩니다.</div><div class="tstamp">07.15 10:11</div></div>
+          </div>
+          <div class="th-input">
+            <div class="th-field">메시지 입력…</div>
+            <div class="btn btn-sm" style="height:40px">전송</div>
+          </div>
+        </div>
+      </div>
+      <div class="note legal inbody" style="margin:0 20px 16px"><span class="tag">[규칙]</span> 이슈 스레드는 <b>공구 종료 후 계약 이행 확인에서 미체크 항목 제출 시 자동 생성</b>(공구 관리 GNB #4 참조) · <b>브랜드·인플루언서·운영자 3자 모두 읽기·쓰기 가능</b> — 1:1 소통(운영자 열람 전용)과 무관한 별도 데이터 · 종결 처리는 운영자만(어드민에서)</div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
