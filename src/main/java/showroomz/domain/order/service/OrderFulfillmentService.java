@@ -209,7 +209,7 @@ public class OrderFulfillmentService {
                 .requestedBy(operatorId)
                 .build());
         appendHistory(group.getId(), FulfillmentEventType.REFUND_ENQUEUED_BY_OPERATOR, FulfillmentActorType.ADMIN,
-                operatorId, String.format("%s · %,d원", reason.getLabel(), refundAmount), now);
+                operatorId, String.format("%s · %s · %,d원", task.refundNo(), reason.getLabel(), refundAmount), now);
         return task;
     }
 

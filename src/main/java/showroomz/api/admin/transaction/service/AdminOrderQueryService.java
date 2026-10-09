@@ -175,7 +175,7 @@ public class AdminOrderQueryService {
                         item.getId(), item.getProductName(), item.getOptionName(), item.getQuantity(),
                         item.getReturnedQuantity(), item.getPrice(), item.getStatus().name(),
                         item.getCancelType() == null ? null : item.getCancelType().getLabel())).toList(),
-                refunds.stream().map(task -> new AdminOrderDto.Refund(task.getId(), task.getSource(), task.getOrigin(),
+                refunds.stream().map(task -> new AdminOrderDto.Refund(task.getId(), task.refundNo(), task.getSource(), task.getOrigin(),
                         task.getOrigin().getLabel(), task.getRefundAmount(), task.getStatus(), task.getLastError(),
                         task.getExecutedAt(), task.getCreatedAt())).toList(),
                 historyRepository.findByDeliveryGroupId(group.getId()).stream()

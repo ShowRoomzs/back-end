@@ -119,7 +119,7 @@ public class RefundTransitions {
         Long sourceId = task.getSourceId();
         FulfillmentActorType actor = operatorId == null ? FulfillmentActorType.SYSTEM : FulfillmentActorType.ADMIN;
         fulfillmentService.appendHistory(deliveryGroupId, FulfillmentEventType.REFUND_EXECUTED, actor, operatorId,
-                String.format("%,d원 · %s", amount, task.getOrigin().getLabel()), now);
+                String.format("%s · %,d원 · %s", task.refundNo(), amount, task.getOrigin().getLabel()), now);
         // 아래 조건부 UPDATE 가 영속성 컨텍스트를 비운다 — 엔티티 변경을 다 적은 뒤에 부른다.
         if (amount > 0 && paymentId != null) {
             paymentRepository.addCancelledAmount(paymentId, amount);
@@ -168,8 +168,9 @@ public class RefundTransitions {
     }
 
     private void appendHistory(OrderRefundTask task, FulfillmentEventType eventType, String detail) {
+        // 환불번호 접두 — 어드민 환불 상세가 이 큐 행의 이력만 고르는 키다(39 설계서 7-2 #5 · 컬럼 추가 없음).
         fulfillmentService.appendHistory(task.getDeliveryGroup().getId(), eventType, FulfillmentActorType.SYSTEM, null,
-                detail, LocalDateTime.now());
+                task.refundNo() + " · " + detail, LocalDateTime.now());
     }
 
     private static String reasonOf(OrderRefundTask task) {
@@ -182,6 +183,8 @@ public class RefundTransitions {
             case RETURN_COMPLETED -> "반송 완료";
             case CLAIM_RETURN_PASSED -> "반품 검수 통과";
             case OPERATOR_REASON -> "운영자 사유 환불";
+            case USER_CANCEL_BEFORE_PREPARE -> "결제완료 소비자 취소";
+            case CLAIM_PAYMENT_CANCELLED -> "교환 재발송비 환불";
         };
     }
 }

@@ -179,7 +179,8 @@ public final class AdminOrderDto {
     }
 
     @Schema(name = "AdminOrderRefund")
-    public record Refund(Long refundTaskId, RefundTaskSource source, RefundTaskOrigin origin, String originLabel,
+    public record Refund(Long refundTaskId, @Schema(description = "환불번호 — 환불 관리 검색어", example = "RFD-918") String refundNo,
+                         RefundTaskSource source, RefundTaskOrigin origin, String originLabel,
                          Integer amount, RefundTaskStatus status, @Schema(nullable = true) String lastError,
                          @Schema(nullable = true) LocalDateTime executedAt, LocalDateTime createdAt) {
     }

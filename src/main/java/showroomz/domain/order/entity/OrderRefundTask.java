@@ -114,6 +114,11 @@ public class OrderRefundTask extends BaseTimeEntity {
         this.attempt = 0;
     }
 
+    /** 환불번호 {@code RFD-918} — 저장하지 않고 id 를 포맷한다(39 설계서 1-4). 이력 detail 의 접두로 큐 행과 이력을 잇는다. */
+    public String refundNo() {
+        return id == null ? null : "RFD-" + id;
+    }
+
     public boolean isPending() {
         return status == RefundTaskStatus.PENDING;
     }

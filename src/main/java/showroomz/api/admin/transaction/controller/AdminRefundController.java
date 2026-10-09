@@ -28,15 +28,24 @@ public class AdminRefundController implements AdminRefundControllerDocs {
     @GetMapping
     public ResponseEntity<PageResponse<AdminTransactionDto.RefundItem>> getRefunds(
             @RequestParam(value = "tab", required = false) AdminTransactionDto.RefundTab tab,
+            @RequestParam(value = "route", required = false) AdminTransactionDto.RefundRoute route,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "sort", required = false) AdminTransactionDto.RefundSort sort,
             @RequestParam(value = "days", required = false) Integer days,
             @ModelAttribute PagingRequest pagingRequest) {
-        return ResponseEntity.ok(refundService.getRefunds(tab, days, pagingRequest));
+        return ResponseEntity.ok(refundService.getRefunds(tab, route, keyword, sort, days, pagingRequest));
     }
 
     @Override
     @GetMapping("/summary")
     public ResponseEntity<AdminTransactionDto.RefundSummary> getSummary() {
         return ResponseEntity.ok(refundService.getSummary());
+    }
+
+    @Override
+    @GetMapping("/{refundTaskId}")
+    public ResponseEntity<AdminTransactionDto.RefundDetail> getRefund(@PathVariable Long refundTaskId) {
+        return ResponseEntity.ok(refundService.getRefund(refundTaskId));
     }
 
     @Override

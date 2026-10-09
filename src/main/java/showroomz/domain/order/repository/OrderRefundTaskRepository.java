@@ -18,7 +18,7 @@ import java.util.Optional;
 /**
  * 환불 큐 — 주문 모듈은 INSERT 하고, 집행은 {@code RefundTransitions}(PG 자동 · 운영자 집행 공용)가 한다(1009 기획 수정본 2-4).
  */
-public interface OrderRefundTaskRepository extends JpaRepository<OrderRefundTask, Long> {
+public interface OrderRefundTaskRepository extends JpaRepository<OrderRefundTask, Long>, OrderRefundTaskRepositoryCustom {
 
     /** 소비자 앱 「환불 처리 중」 판정(C10 설계서 1-2 · 2-4 #4) — 아직 돈이 나가지 않은 환불이 남은 배송 그룹. */
     @Query("SELECT DISTINCT t.deliveryGroup.id FROM OrderRefundTask t WHERE t.order.id IN :orderIds "
@@ -55,18 +55,9 @@ public interface OrderRefundTaskRepository extends JpaRepository<OrderRefundTask
             + "showroomz.domain.order.type.RefundTaskStatus.EXECUTING, showroomz.domain.order.type.RefundTaskStatus.FAILED)")
     long sumOutstandingByPayment(@Param("paymentId") String paymentId);
 
-    /** 어드민 환불 관리(06c) 탭 목록 — 출처 · 상태로 거른다. */
-    @Query(value = "SELECT t FROM OrderRefundTask t JOIN FETCH t.order o JOIN FETCH t.deliveryGroup g "
-            + "WHERE t.status IN :statuses AND (:origin IS NULL OR t.origin = :origin) "
-            + "AND t.createdAt >= :from ORDER BY t.id DESC",
-            countQuery = "SELECT COUNT(t) FROM OrderRefundTask t WHERE t.status IN :statuses "
-                    + "AND (:origin IS NULL OR t.origin = :origin) AND t.createdAt >= :from")
-    org.springframework.data.domain.Page<OrderRefundTask> findForAdmin(
-            @Param("statuses") Collection<RefundTaskStatus> statuses, @Param("origin") RefundTaskOrigin origin,
-            @Param("from") LocalDateTime from, Pageable pageable);
-
-    @Query("SELECT t.status, t.origin, COUNT(t) FROM OrderRefundTask t GROUP BY t.status, t.origin")
-    List<Object[]> countByStatusAndOrigin();
+    /** 어드민 환불 상세(06c) — 주문 · 하위주문을 함께 올린다. */
+    @Query("SELECT t FROM OrderRefundTask t JOIN FETCH t.order JOIN FETCH t.deliveryGroup WHERE t.id = :id")
+    java.util.Optional<OrderRefundTask> findWithOrder(@Param("id") Long id);
 
     List<OrderRefundTask> findByDeliveryGroupIdOrderByIdAsc(Long deliveryGroupId);
 
