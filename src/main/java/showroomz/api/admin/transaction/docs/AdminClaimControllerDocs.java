@@ -42,7 +42,10 @@ public interface AdminClaimControllerDocs {
     @Operation(summary = "반품·교환 상세 (06b B1)",
             description = """
                     파트너 상세와 같은 값(`claim` — 반려 6항목 · 구매확정 타이머 「정지 · 남은 N일」 · 운영자 개설 표시 포함)에 브랜드 · 귀책을 더한다.
-                    `canAcceptDispute` — 반려 보류 중인 반품이면 B2 반려 이의 인용을 할 수 있다.
+                    `canAcceptDispute` — 반려된 반품이 아직 반송 전(반려 보류 · 재발송 대기)이면 B2 반려 이의 인용을 할 수 있다.
+                    `disputeRefundAmount` — 인용 환불액(서버 계산 · 수정 불가). FE 는 비활성 입력으로 보인다.
+                    `inspectNotice` — 검수 기한 경과 자동 알림 횟수 · 마지막 시각(B1 레일 「자동 알림 N회」).
+                    `inspectOverdueBusinessDays` — 입고 · 검수 대기에서 기한을 넘긴 영업일 수(아니면 null).
                     `dispute` — ④ 소비자 이의. 앱 「이의 제기」로 걸린 가장 최근 1:1 문의의 원문 · 사진 · 접수 시각 · 답변 여부(없으면 null).
 
                     **권한:** ADMIN
@@ -55,16 +58,25 @@ public interface AdminClaimControllerDocs {
 
     @Operation(summary = "B2 반려 이의 인용",
             description = """
-                    검수 반려에 대한 소비자 이의(1:1 문의)를 받아들인다 — **운영자가 실행하는 유일한 일**이다. 반려 보류(아직 반송 전)인 반품만.
-                    반려를 환불로 닫고(재발송 없음 · 같은 박스에 반려 보류가 더 없으면 재발송비 청구 소멸) **운영자 사유 환불로 편입**한다 —
-                    돈은 환불 관리(06c)의 재확인 다이얼로그에서만 나간다. 기각은 버튼이 아니라 스레드 답변이다(반려가 그대로 유지된다).
-                    교환 반려 이의는 기획 확정 전이라 받지 않는다.
+                    검수 반려에 대한 소비자 이의(1:1 문의)를 받아들인다 — **운영자가 실행하는 유일한 일**이다.
+                    반려된 반품이 아직 반송 전(반려 보류 · 재발송 대기)일 때만. 재발송 송장이 나간 뒤는 409.
+
+                    효과는 한 번에 일어난다.
+                    - 반려를 환불로 닫는다(재발송 없음) · 귀책을 브랜드로 돌린다(`faultChangedToSeller = true`) · 반품 수량에 반영한다.
+                    - **환불액은 서버 계산** — 단가 × 수량 + 통과분 환불에서 차감했던 재발송비(환원). 요청에 금액이 없다.
+                    - 반려 재발송비 — 같은 박스에 재발송 대상 반려가 이 건뿐이면: 결제 전 → 요청 소멸 · **결제됨 → 결제 자동 취소** ·
+                      차감됨 → 소멸하고 환불액에 가산. 다른 반려가 남아 있으면 그 건의 것이라 건드리지 않는다.
+                    - **운영자 사유 환불로 편입**한다 — 돈은 환불 관리(06c)의 재확인 다이얼로그에서만 나간다.
+
+                    기각은 버튼이 아니라 이의 문의의 답변이다(반려가 그대로 유지된다). 교환 반려 이의는 기획 확정 전이라 받지 않는다.
 
                     **권한:** ADMIN
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "인용 — 편입된 환불 큐 id"),
-            @ApiResponse(responseCode = "409", description = "CLAIM_STATE_CHANGED — 반려 보류 중인 반품이 아님")
+            @ApiResponse(responseCode = "200", description = "인용 — 편입된 환불 큐 id · 환불번호 · 서버 계산 금액"),
+            @ApiResponse(responseCode = "400", description = "INVALID_INPUT_VALUE — 근거(detail) 누락 · 500자 초과"),
+            @ApiResponse(responseCode = "404", description = "CLAIM_NOT_FOUND"),
+            @ApiResponse(responseCode = "409", description = "CLAIM_STATE_CHANGED — 반려된 반품이 아니거나 이미 반송 중 · 종결")
     })
     ResponseEntity<AdminTransactionDto.DisputeAcceptResponse> acceptDispute(
             @Parameter(hidden = true) UserPrincipal principal, Long claimId,

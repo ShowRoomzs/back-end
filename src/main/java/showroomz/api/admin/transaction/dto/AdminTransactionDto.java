@@ -57,9 +57,22 @@ public final class AdminTransactionDto {
             String brandName,
             ClaimFeeBearer feeBearer,
             String feeBearerLabel,
-            @Schema(description = "B2 반려 이의 인용 — 반려 보류 중인 반품") boolean canAcceptDispute,
+            @Schema(description = "B2 반려 이의 인용 — 반품 ∧ 반려됨 ∧ 반송 전(반려 보류 · 재발송 대기)") boolean canAcceptDispute,
+            @Schema(description = "B2 인용 환불액 — 서버 계산(단가 × 수량 + 차감된 재발송비 환원분) · 수정 불가. "
+                    + "인용할 수 없으면 null", example = "27200", nullable = true) Integer disputeRefundAmount,
             @Schema(description = "④ 소비자 이의 — 앱 「이의 제기」로 걸린 가장 최근 문의. 이의가 없으면 null", nullable = true)
-            Dispute dispute
+            Dispute dispute,
+            @Schema(description = "B1 레일 「자동 알림 N회」 — 검수 기한 경과 자동 알림(영업일 10 · 15시 · 하루 1회)")
+            InspectNotice inspectNotice,
+            @Schema(description = "「검수 기한 N영업일 초과」 — 입고 · 검수 대기이고 기한이 지났을 때만. 그 밖은 null",
+                    example = "3", nullable = true) Integer inspectOverdueBusinessDays
+    ) {
+    }
+
+    @Schema(name = "AdminClaimInspectNotice", description = "검수 기한 경과 자동 알림 — 06d `noticeCount` 와 같은 값")
+    public record InspectNotice(
+            @Schema(example = "1") int count,
+            @Schema(nullable = true) LocalDateTime lastAt
     ) {
     }
 
@@ -74,15 +87,19 @@ public final class AdminTransactionDto {
     ) {
     }
 
-    @Schema(name = "AdminDisputeAcceptRequest", description = "B2 — 반려 이의 인용 → 운영자 사유 환불 편입(집행은 환불 관리)")
+    @Schema(name = "AdminDisputeAcceptRequest", description = "B2 — 반려 이의 인용 → 운영자 사유 환불 편입(집행은 환불 관리). "
+            + "환불액은 받지 않는다 — 서버가 계산한다(상세 `disputeRefundAmount`)")
     public record DisputeAcceptRequest(
-            @NotNull @Min(1) @Schema(description = "환불액", example = "27200") Integer amount,
             @NotBlank @Size(max = 500) @Schema(description = "인용 근거 — 이력 · 환불 관리에 남는다") String detail
     ) {
     }
 
     @Schema(name = "AdminDisputeAcceptResponse")
-    public record DisputeAcceptResponse(Long refundTaskId) {
+    public record DisputeAcceptResponse(
+            @Schema(description = "편입된 환불 큐 id", example = "918") Long refundTaskId,
+            @Schema(description = "환불번호 — 환불 관리 검색어", example = "RFD-918") String refundNo,
+            @Schema(description = "편입액 — 서버 계산", example = "27200") int amount
+    ) {
     }
 
     // ------------------------------------------------------------------ 06c 환불 관리

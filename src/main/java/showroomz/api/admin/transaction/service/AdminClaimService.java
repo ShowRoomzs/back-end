@@ -5,7 +5,9 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.admin.transaction.AdminRefundNumber;
 import showroomz.api.admin.transaction.dto.AdminTransactionDto;
+import showroomz.api.app.claim.service.ClaimPaymentService;
 import showroomz.api.seller.claim.dto.SellerClaimDetailResponse;
 import showroomz.api.seller.claim.dto.SellerClaimListItem;
 import showroomz.api.seller.claim.dto.SellerClaimSummaryResponse;
@@ -24,6 +26,7 @@ import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.BusinessCalendar;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -46,6 +49,8 @@ public class AdminClaimService {
     private final OrderClaimRepository claimRepository;
     private final OrderClaimService claimService;
     private final OneToOneInquiryRepository inquiryRepository;
+    private final ClaimPaymentService claimPaymentService;
+    private final BusinessCalendar businessCalendar;
 
     @Transactional(readOnly = true)
     public PageResponse<AdminTransactionDto.ClaimListItem> getClaims(Long marketId, ClaimTab tab, Set<ClaimType> types,
@@ -85,9 +90,16 @@ public class AdminClaimService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
         AdminTransactionDto.Dispute dispute = claim.getDisputeInquiryId() == null ? null
                 : inquiryRepository.findById(claim.getDisputeInquiryId()).map(AdminClaimService::toDispute).orElse(null);
+        boolean acceptable = OrderClaimService.isDisputeAcceptable(claim);
+        LocalDateTime now = LocalDateTime.now();
+        Integer inspectOverdue = claim.getStatus() == ClaimStatus.RECEIVED && claim.getInspectDueAt() != null
+                && claim.getInspectDueAt().isBefore(now)
+                ? businessCalendar.businessDaysBetween(claim.getInspectDueAt().toLocalDate(), now.toLocalDate()) : null;
         return new AdminTransactionDto.ClaimDetail(detail, claim.getDeliveryGroup().getMarketName(), claim.getFeeBearer(),
-                feeBearerLabel(claim.getFeeBearer()),
-                claim.getType() == ClaimType.RETURN && claim.getStatus() == ClaimStatus.REJECT_HOLD, dispute);
+                feeBearerLabel(claim.getFeeBearer()), acceptable,
+                acceptable ? claimService.previewDisputeRefund(claimId) : null, dispute,
+                new AdminTransactionDto.InspectNotice(claim.getInspectNoticeCount(), claim.getLastInspectNoticeAt()),
+                inspectOverdue);
     }
 
     /** 미처리 이의 — 반려 보류 중이고 걸린 문의가 답변 전. 요약 {@code countOpenDisputes}와 같은 식이다. */
@@ -101,12 +113,17 @@ public class AdminClaimService {
                 inquiry.getCreatedAt(), inquiry.isAnswered(), inquiry.getAnsweredAt());
     }
 
-    /** B2 반려 이의 인용 — 운영자 사유 환불로 편입하고 반려를 환불로 닫는다(재발송 없음). 돈은 환불 관리에서 나간다. */
-    @Transactional
+    /**
+     * B2 반려 이의 인용 — 운영자 사유 환불로 편입하고 반려를 환불로 닫는다(재발송 없음). 돈은 환불 관리에서 나간다.
+     * 트랜잭션 밖이다 — 결제된 재발송비의 포트원 취소는 인용이 커밋된 뒤에 한다(실패하면 정리 배치가 재시도 · 교환 철회와 같은 길).
+     */
     public AdminTransactionDto.DisputeAcceptResponse acceptDispute(Long adminId, Long claimId,
                                                                    AdminTransactionDto.DisputeAcceptRequest request) {
-        return new AdminTransactionDto.DisputeAcceptResponse(claimService.acceptRejectionDispute(claimId, adminId,
-                request.amount(), request.detail(), LocalDateTime.now()));
+        OrderClaimService.DisputeAcceptance accepted = claimService.acceptRejectionDispute(claimId, adminId,
+                request.detail(), LocalDateTime.now());
+        claimPaymentService.cancelRequested();
+        return new AdminTransactionDto.DisputeAcceptResponse(accepted.refundTaskId(),
+                AdminRefundNumber.format(accepted.refundTaskId()), accepted.amount());
     }
 
     private static String feeBearerLabel(ClaimFeeBearer bearer) {

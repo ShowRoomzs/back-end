@@ -152,7 +152,7 @@ class AdminClaimDisputeIntegrationTest extends ClaimTestSupport {
         long inquiryId = json(dispute(claimId, null).andExpect(status().isCreated())).get("inquiryId").asLong();
 
         adminPost(ADMIN_CLAIMS + "/" + claimId + "/dispute-acceptance",
-                Map.of("amount", CREAM_PRICE, "detail", "1:1 문의 사진상 배송 시점 오염")).andExpect(status().isOk());
+                Map.of("detail", "1:1 문의 사진상 배송 시점 오염")).andExpect(status().isOk());
 
         adminGet(ADMIN_CLAIMS + "/summary").andExpect(jsonPath("$.disputeCount").value(0));
         adminGet(ADMIN_CLAIMS + "/" + claimId).andExpect(jsonPath("$.dispute.inquiryId").value(inquiryId));

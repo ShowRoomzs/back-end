@@ -164,15 +164,17 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
     int withdraw(@Param("id") Long id, @Param("userId") Long userId, @Param("now") LocalDateTime now);
 
     /**
-     * 반려 이의 인용(어드민 06b B2) — 반려 보류(아직 반송 전)인 반품을 환불로 닫는다. 재발송은 없다. 환불액은 운영자 사유 환불
-     * 집행으로 나가고 여기서는 예정액을 적는다.
+     * 반려 이의 인용(어드민 06b B2) — 아직 반송 전(반려 보류 · 재발송 대기)인 반려 반품을 환불로 닫는다. 재발송은 없다. 귀책은
+     * 브랜드로 돌린다({@code faultChangedToSeller} — 「귀책」 열 · 정산 집계가 본다). 환불액은 운영자 사유 환불 집행으로 나가고
+     * 여기서는 예정액을 적는다.
      */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderClaim c SET c.status = " + COMPLETED + ", "
             + "c.result = showroomz.domain.order.type.ClaimResult.REFUNDED, c.refundedAmount = :amount, "
-            + "c.completedAt = :now, c.stageEnteredAt = :now "
-            + "WHERE c.id = :id AND c.type = showroomz.domain.order.type.ClaimType.RETURN "
-            + "AND c.status = showroomz.domain.order.type.ClaimStatus.REJECT_HOLD")
+            + "c.faultChangedToSeller = true, c.completedAt = :now, c.stageEnteredAt = :now "
+            + "WHERE c.id = :id AND c.type = showroomz.domain.order.type.ClaimType.RETURN AND c.rejectedAt IS NOT NULL "
+            + "AND c.status IN (showroomz.domain.order.type.ClaimStatus.REJECT_HOLD, "
+            + "showroomz.domain.order.type.ClaimStatus.RESHIP_READY)")
     int closeRejectedByDispute(@Param("id") Long id, @Param("amount") int amount, @Param("now") LocalDateTime now);
 
     /** 어드민 예외 관리 — 검수 기한이 지난 입고 건(06d 처리 지연). */

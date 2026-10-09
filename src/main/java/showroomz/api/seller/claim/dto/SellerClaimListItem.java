@@ -90,7 +90,9 @@ public record SellerClaimListItem(
             @Schema(description = "금액(원)", example = "6000") int amount,
             @Schema(description = "PENDING 결제 대기 · PAID 결제됨 · DEDUCTED 환불액에서 차감 · COVERED 교환 결제분으로 충당 · "
                     + "VOID 소멸 · REFUNDED 결제 취소", example = "PAID") ClaimChargeStatus status,
-            @Schema(example = "결제됨") String statusLabel
+            @Schema(example = "결제됨") String statusLabel,
+            @Schema(description = "결제 기한 — 반려 재발송비 · 판정 종료 때 발급(반려 + 14일 · 「재발송비 결제 D-N」의 기준일). "
+                    + "결제가 필요 없거나 아직 판정 중이면 null", nullable = true) LocalDateTime dueAt
     ) {
     }
 
@@ -100,7 +102,7 @@ public record SellerClaimListItem(
             @Schema(description = "미결제 고지 횟수", example = "2") int noticeCount,
             @Schema(description = "최종 고지 시각", nullable = true) LocalDateTime lastNoticeAt,
             @Schema(description = "보관 기한 — 고지 2회 미만이면 null(기한 미정)", nullable = true) LocalDateTime storageDueAt,
-            @Schema(description = "NOTICE_PENDING 고지 부족 · STORING 보관 중 · EXPIRED 기한 경과(폐기 가능)", example = "STORING")
+            @Schema(description = "NOTICE_PENDING 고지 부족 · STORING 보관 중 · EXPIRED 기한 경과 · 약관 반영 후 처리(폐기 경로 없음)", example = "STORING")
             StoragePhase phase
     ) {
     }

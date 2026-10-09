@@ -159,7 +159,7 @@ public class SellerClaimAssembler {
                 .reduce((first, second) -> second)
                 .map(charge -> new SellerClaimListItem.ReshipFee(
                         charge.getAmount() == null ? 0 : charge.getAmount(),
-                        charge.getStatus(), charge.getStatus().getLabel()))
+                        charge.getStatus(), charge.getStatus().getLabel(), charge.getDueAt()))
                 .orElse(null);
     }
 

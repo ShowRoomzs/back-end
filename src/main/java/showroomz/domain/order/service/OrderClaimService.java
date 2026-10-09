@@ -1124,31 +1124,104 @@ public class OrderClaimService {
         appendHistory(claimId, ClaimEventType.DISPOSED, FulfillmentActorType.ADMIN, adminId, null, now);
     }
 
+    /** 반려 이의 인용 결과 — 편입한 환불 큐 · 서버가 계산한 환불액(운영자 입력 없음). */
+    public record DisputeAcceptance(Long refundTaskId, int amount) {
+    }
+
     /**
-     * 반려 이의 인용(어드민 06b B2 · 1009 기획 수정본 8-3) — 검수 반려에 대한 소비자 이의를 운영자가 받아들였다. 반려 보류(아직 반송
-     * 전)인 반품만. 상품은 브랜드에 있으므로 반품 수량으로 올리고, 돈은 <b>운영자 사유 환불로 편입</b>한다(집행은 환불 관리의
-     * 재확인에서만). 같은 박스에 반려 보류가 더 없으면 반려 재발송비 청구는 소멸한다. 기각은 버튼이 아니라 스레드 답변이다.
+     * 인용 계획 — 환불액과 반려 재발송비 청구의 처리. 같은 박스에 재발송 대상 반려가 더 남아 있으면 청구는 그 건의 것이라
+     * {@code charge = null}(건드리지 않는다 · 환원 없음).
+     */
+    private record DisputePlan(int goods, OrderClaimCharge charge, int restored) {
+        int amount() {
+            return goods + restored;
+        }
+    }
+
+    /** 반려 재발송 대상 — 반려 보류(결제 전) · 재발송 대기(결제 · 차감 · 충당 뒤). 송장이 나간 뒤({@code RESHIPPING})는 아니다. */
+    private static final Set<ClaimStatus> RESHIP_TARGET = EnumSet.of(ClaimStatus.REJECT_HOLD, ClaimStatus.RESHIP_READY);
+
+    /**
+     * 이의를 인용할 수 있는 반려인가 — 반품 ∧ 반려됨 ∧ 아직 반송 전(반려 보류 · 재발송 대기). 재발송비가 결제 · 차감되면 반려 보류가
+     * 재발송 대기로 넘어가므로 둘 다 받는다(41 보고 1번 · 2026-10-09 확정). 교환 반려는 인용의 효과가 정의되지 않아 받지 않는다.
+     */
+    public static boolean isDisputeAcceptable(OrderClaim claim) {
+        return claim.getType() == ClaimType.RETURN && claim.getRejectedAt() != null
+                && RESHIP_TARGET.contains(claim.getStatus());
+    }
+
+    /** 인용 환불액 미리 보기 — 어드민 상세의 수정 불가 금액. 인용할 수 없으면 null. */
+    @Transactional(readOnly = true)
+    public Integer previewDisputeRefund(Long claimId) {
+        return claimRepository.findById(claimId).filter(OrderClaimService::isDisputeAcceptable)
+                .map(claim -> planDispute(claim).amount()).orElse(null);
+    }
+
+    private DisputePlan planDispute(OrderClaim claim) {
+        Long collectionId = claim.getCollection().getId();
+        int goods = Math.toIntExact((long) claim.getOrderProduct().getPrice() * claim.getQuantity());
+        boolean othersToReship = claimRepository.findByCollectionId(collectionId).stream()
+                .anyMatch(other -> !other.getId().equals(claim.getId()) && other.getRejectedAt() != null
+                        && RESHIP_TARGET.contains(other.getStatus()));
+        OrderClaimCharge charge = othersToReship ? null : chargeRepository.findByCollectionId(collectionId).stream()
+                .filter(found -> found.getType() == ClaimChargeType.REJECT_RESHIP)
+                .reduce((first, second) -> second).orElse(null);
+        int restored = charge != null && charge.getStatus() == ClaimChargeStatus.DEDUCTED && charge.getAmount() != null
+                ? charge.getAmount() : 0;
+        return new DisputePlan(goods, charge, restored);
+    }
+
+    /**
+     * 반려 이의 인용(어드민 06b B2 · 38 설계서 2-4 · 41 보고 1번) — 검수 반려에 대한 소비자 이의를 운영자가 받아들였다. 「반품 승인과
+     * 같아지는 것」이다: 상품은 브랜드에 있으므로 반품 수량으로 올리고, 귀책을 브랜드로 돌리고, 돈은 <b>운영자 사유 환불로 편입</b>한다
+     * (집행은 환불 관리의 재확인에서만).
      *
-     * @return 편입한 환불 큐 id
+     * <p>환불액은 <b>서버 계산</b>이다 — {@code 단가 × 수량} + 통과분 환불에서 차감했던 재발송비(환원). 반려 재발송비 청구는 같은
+     * 박스에 재발송 대상 반려가 이 건뿐일 때만 정리한다: 결제 전이면 소멸, 결제됐으면 결제 취소(선점만 — 포트원 취소는 커밋 뒤
+     * 호출자가 {@code ClaimPaymentService.cancelRequested}로, 실패분은 정리 배치가), 차감됐으면 소멸 + 환불액에 가산.
      */
     @Transactional
-    public Long acceptRejectionDispute(Long claimId, Long adminId, int amount, String detail, LocalDateTime now) {
+    public DisputeAcceptance acceptRejectionDispute(Long claimId, Long adminId, String detail, LocalDateTime now) {
+        OrderClaim found = claimRepository.findById(claimId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        Long collectionId = found.getCollection().getId();
+        // 같은 박스의 판정 · 재발송비 결제와 직렬화한다 — 잠근 뒤 상태를 다시 본다.
+        collectionRepository.findForUpdate(collectionId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
         OrderClaim claim = claimRepository.findById(claimId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
-        if (claim.getType() != ClaimType.RETURN || claim.getStatus() != ClaimStatus.REJECT_HOLD) {
-            throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED, "반려 보류 중인 반품만 이의를 인용할 수 있습니다.");
+        if (!isDisputeAcceptable(claim)) {
+            throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED,
+                    "반려 보류 · 재발송 대기 중인 반품만 이의를 인용할 수 있습니다.");
         }
-        Long collectionId = claim.getCollection().getId();
         Long orderProductId = claim.getOrderProduct().getId();
         int quantity = claim.getQuantity();
         OrderDeliveryGroup group = claim.getDeliveryGroup();
-        collectionRepository.findForUpdate(collectionId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
-        boolean othersOnHold = claimRepository.findByCollectionId(collectionId).stream()
-                .anyMatch(other -> !other.getId().equals(claimId) && other.getStatus() == ClaimStatus.REJECT_HOLD);
-        OrderClaimCharge charge = othersOnHold ? null : pendingRejectCharge(collectionId);
+        DisputePlan plan = planDispute(claim);
+        int amount = plan.amount();
+
+        List<String> notes = new ArrayList<>();
+        String paymentToCancel = null;
+        OrderClaimCharge charge = plan.charge();
         if (charge != null) {
-            charge.settle(ClaimChargeStatus.VOID, null, now);
+            switch (charge.getStatus()) {
+                case PENDING -> {
+                    charge.settle(ClaimChargeStatus.VOID, null, now);
+                    notes.add("재발송비 결제 요청 취소");
+                }
+                case PAID -> {
+                    charge.refund(now);
+                    paymentToCancel = charge.getPaidPaymentId();
+                    notes.add("재발송비 결제 취소");
+                }
+                case DEDUCTED -> {
+                    charge.settle(ClaimChargeStatus.VOID, null, now);
+                    notes.add(String.format("차감 환원 %,d원", plan.restored()));
+                }
+                default -> {
+                    // WAIVED(브랜드 부담) · 이미 정리된 청구 — 소비자가 낸 돈이 없다.
+                }
+            }
         }
         OrderRefundTask task = fulfillmentService.enqueueOperatorRefund(group, claimId, amount,
                 showroomz.domain.order.type.OperatorRefundReason.DISPUTE_ACCEPTED, detail, adminId, now);
@@ -1157,9 +1230,15 @@ public class OrderClaimService {
         }
         orderProductRepository.addReturnedQuantity(orderProductId, quantity);
         orderProductRepository.markReturnedIfFull(orderProductId);
+        // 선점 UPDATE 가 영속성 컨텍스트를 비운다 — 청구의 변경이 위의 조건부 UPDATE 로 이미 적힌 뒤에 부른다.
+        if (paymentToCancel != null) {
+            claimPaymentRepository.requestCancel(paymentToCancel, List.of(ClaimPaymentStatus.PAID), now);
+        }
+        StringBuilder history = new StringBuilder(String.format("%,d원 · %s", amount, detail));
+        notes.forEach(note -> history.append(" · ").append(note));
         appendHistory(claimId, ClaimEventType.DISPUTE_ACCEPTED, FulfillmentActorType.ADMIN, adminId,
-                String.format("%,d원 · %s", amount, detail), now);
-        return task.getId();
+                history.toString(), now);
+        return new DisputeAcceptance(task.getId(), amount);
     }
 
     // ------------------------------------------------------------------ 환불 집행 · 재발송비 결제(3-7 · 전이 #8 · #10)
