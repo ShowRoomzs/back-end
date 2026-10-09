@@ -1,4 +1,4 @@
-package showroomz.api.seller.basicinfo;
+package showroomz.global.utils;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

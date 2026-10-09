@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.domain.order.entity.OrderRefundTask;
 import showroomz.domain.order.repository.OrderRefundTaskRepository;
+import showroomz.domain.order.service.port.SettlementClawbackHook;
 import showroomz.domain.order.type.FulfillmentActorType;
 import showroomz.domain.order.type.FulfillmentEventType;
 import showroomz.domain.order.type.RefundTaskOrigin;
@@ -38,6 +39,7 @@ public class RefundTransitions {
     private final PaymentCancelRepository paymentCancelRepository;
     private final OrderFulfillmentService fulfillmentService;
     private final OrderClaimService claimService;
+    private final SettlementClawbackHook settlementClawbackHook;
 
     /**
      * @param zeroAmount 환불액 0 — PG 를 부르지 않고 바로 완료로 닫는다(차감이 상품 금액을 다 덮은 경우)
@@ -194,6 +196,8 @@ public class RefundTransitions {
         if (source == RefundTaskSource.CLAIM_RETURN_PASSED && sourceId != null) {
             claimService.applyRefundExecuted(sourceId, amount, actor, operatorId, now);
         }
+        // 이미 생성된 정산의 항목이면 차감(클로백) 행이 생긴다 — 이번 정산 금액은 고치지 않는다(44 어드민 정산관리 설계서 6-1).
+        settlementClawbackHook.onRefundExecuted(task);
     }
 
     /** PG 가 명시적으로 거절했다 — FAILED. 자동 재시도 상한 뒤에는 운영자 [재시도]다. */

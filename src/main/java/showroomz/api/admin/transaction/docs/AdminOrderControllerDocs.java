@@ -63,6 +63,8 @@ public interface AdminOrderControllerDocs {
                     - `actions` — 우 레일 조치 버튼(B3 정정 · B4 대행 송장 · 대행 직권 취소 · B5 사유 환불 편입 · B6 하자 반품 열기)
                     - `inquiryCount` — 모달 헤더 「문의 N건」(이 주문을 가리키는 1:1 문의)
                     - `groups[].activeClaims[]` — 진행 중 반품·교환(B8) · 06b 상세 링크
+                    - `groups[].settlement` — ④ 정산 반영: 이 하위주문이 들어간 정산 번호 · 상태 · 반영액 · 리워드(항목 기준) · 정산 후 환불로 생긴 차감.
+                      정산 생성 전이면 null(공구 주문이 전부 종결된 뒤 10분 안에 생긴다)
 
                     **권한:** ADMIN
                     """)

@@ -9,7 +9,7 @@ import showroomz.api.seller.auth.refreshToken.SellerRefreshToken;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshTokenRepository;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
-import showroomz.api.seller.basicinfo.SettlementAccountMasker;
+import showroomz.global.utils.SettlementAccountMasker;
 import showroomz.api.seller.basicinfo.dto.SellerBasicInfoDto;
 import showroomz.api.seller.changerequest.service.BrandChangeRequestService;
 import showroomz.domain.changerequest.service.ChangeRequestFieldResolver;

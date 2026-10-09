@@ -148,7 +148,34 @@ public final class AdminOrderDto {
             @Schema(description = "진행 중 클레임(B8 교환 진행 중 등) — 06b 상세 링크용. 종결 · 결제 대기는 없다") List<ActiveClaim> activeClaims,
             @Schema(description = "처리 이력 — 오래된순. 준비 시작 사유(발주서 다운로드 / 개별 / 일괄) · 자동 알림 · 운영자 조치가 남는다")
             List<History> history,
+            @Schema(description = "④ 정산 반영(37 설계서 8절 #4) — 이 하위주문이 어느 정산에 얼마로 들어갔나. 정산 생성 전이면 null",
+                    nullable = true)
+            Settlement settlement,
             Actions actions
+    ) {
+    }
+
+    @Schema(name = "AdminOrderSettlement", description = "하위주문의 정산 반영(44 어드민 정산관리 설계서 8-3)")
+    public record Settlement(
+            Long settlementId,
+            @Schema(example = "STL-2610-004") String settlementNumber,
+            @Schema(description = "정산 상태 — REVIEWING · ADJUSTING · PAYOUT_SCHEDULED · PAID · PAYOUT_FAILED", example = "PAYOUT_SCHEDULED")
+            String status,
+            @Schema(example = "지급 예정") String statusLabel,
+            @Schema(description = "정산 확정 시각 — 확정 전 null", nullable = true) LocalDateTime confirmedAt,
+            @Schema(description = "이 하위주문 항목들의 정산 반영액 합(원)", example = "51200") long settledAmount,
+            @Schema(description = "이 하위주문 항목들의 리워드 합(원) — 항목 기준(합의 금액이 아니다)", example = "5664") long rewardAmount,
+            @Schema(description = "정산 후 환불로 생긴 차감 — 없으면 빈 목록") List<SettlementClawback> clawbacks
+    ) {
+    }
+
+    @Schema(name = "AdminOrderSettlementClawback")
+    public record SettlementClawback(
+            @Schema(example = "CLW-0003") String clawbackNumber,
+            @Schema(description = "BRAND · CREATOR — 한 환불이 측별 2행을 만든다", example = "BRAND") String side,
+            @Schema(description = "PENDING · APPLIED · UNRECOVERABLE", example = "PENDING") String status,
+            @Schema(example = "차감 예정") String statusLabel,
+            @Schema(example = "24336") long amount
     ) {
     }
 

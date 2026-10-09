@@ -20,4 +20,13 @@ public interface OrderClaimChargeRepository extends JpaRepository<OrderClaimChar
 
     @Query("SELECT h FROM OrderClaimCharge h WHERE h.collection.id IN :collectionIds ORDER BY h.id ASC")
     List<OrderClaimCharge> findByCollectionIds(@Param("collectionIds") Collection<Long> collectionIds);
+
+    /**
+     * 공구 하위주문 클레임의 재발송비 — [건수, 합](44 어드민 설계서 2-2). 소비자가 낸 돈(결제 · 환불액 차감 · 교환 결제분 충당)만 —
+     * 브랜드 부담(WAIVED) · 소멸 · 결제 취소 · 결제 대기는 뺀다. 브랜드 수취액에 가산된다(§41-4 ⑦).
+     */
+    @Query("SELECT COUNT(h), COALESCE(SUM(h.amount), 0) FROM OrderClaimCharge h JOIN h.collection c "
+            + "WHERE c.deliveryGroup.groupBuy.id = :groupBuyId AND h.status IN :statuses")
+    List<Object[]> sumByGroupBuy(@Param("groupBuyId") Long groupBuyId,
+                                 @Param("statuses") Collection<showroomz.domain.order.type.ClaimChargeStatus> statuses);
 }

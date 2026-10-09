@@ -25,6 +25,7 @@ import showroomz.domain.order.repository.OrderFulfillmentHistoryRepository;
 import showroomz.domain.order.repository.OrderProductRepository;
 import showroomz.domain.order.repository.OrderRefundTaskRepository;
 import showroomz.domain.order.repository.OrderRepository;
+import showroomz.domain.order.service.port.OrderSettlementReader;
 import showroomz.domain.order.type.AdminOrderTab;
 import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.domain.payment.repository.PaymentRepository;
@@ -64,6 +65,7 @@ public class AdminOrderQueryService {
     private final OrderProperties orderProperties;
     private final ActOnBehalfPolicy actOnBehalfPolicy;
     private final StalledPolicy stalledPolicy;
+    private final OrderSettlementReader settlementReader;
 
     public PageResponse<AdminOrderDto.ListItem> getOrders(AdminOrderDto.SearchParams params, LocalDate from,
                                                           LocalDate to, PagingRequest paging) {
@@ -194,7 +196,15 @@ public class AdminOrderQueryService {
                 historyRepository.findByDeliveryGroupId(group.getId()).reversed().stream()
                         .map(h -> new AdminOrderDto.History(h.getEventType().name(), h.getEventType().getLabel(),
                                 h.getActorType().name(), h.getDetail(), h.getOccurredAt())).toList(),
+                settlementReader.readByDeliveryGroup(group.getId()).map(AdminOrderQueryService::settlement).orElse(null),
                 actions(group, pendingRequest != null, now));
+    }
+
+    private static AdminOrderDto.Settlement settlement(OrderSettlementReader.GroupSettlement s) {
+        return new AdminOrderDto.Settlement(s.settlementId(), s.settlementNumber(), s.status(), s.statusLabel(),
+                s.confirmedAt(), s.settledAmount(), s.rewardAmount(),
+                s.clawbacks().stream().map(c -> new AdminOrderDto.SettlementClawback(c.clawbackNumber(), c.side(),
+                        c.status(), c.statusLabel(), c.amount())).toList());
     }
 
     /**

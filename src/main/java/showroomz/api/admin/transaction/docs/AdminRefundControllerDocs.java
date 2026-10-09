@@ -56,7 +56,9 @@ public interface AdminRefundControllerDocs {
     @Operation(summary = "환불 상세 (06c M1 · M2)",
             description = """
                     집행 재확인(M1) · 재시도(M2) 다이얼로그가 보는 값 전부 — 경로 · 운영자 사유와 근거 · **취소 대상 결제**(수단 · PG 거래번호 ·
-                    취소 가능 잔액) · 추가 결제(재발송비 청구와 그 처리) · 정산(정산 모듈 전이라 「정산 전」 고정) · 실패 기록 · 이 건의 이력.
+                    취소 가능 잔액) · 추가 결제(재발송비 청구와 그 처리) · 정산 · 실패 기록 · 이 건의 이력.
+                    `settlement.state` — `BEFORE_SETTLEMENT`(그 하위주문의 정산이 아직 없다 — 생성 때 배송 예외 · 반품 차감으로 반영) ·
+                    `SETTLED`(이미 생성된 정산의 항목 — 이번 정산 금액은 바뀌지 않고 `clawback`(차감)으로 다음 정산에 간다).
                     소멸(VOID) 건도 돌려준다.
 
                     **권한:** ADMIN

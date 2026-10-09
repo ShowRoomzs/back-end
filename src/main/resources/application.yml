@@ -184,6 +184,44 @@ delivery:
     validation-enabled: false                       # 송장 형식 검증 — 에러 104 판정을 택배사별로 확인한 뒤 켠다
     usage-alert-ratio: 0.2                          # 이용권 잔여 사용량 경고 기준
 
+# SettlementProperties.java — 정산 관리(44 어드민 정산관리 설계서 9-1). 전부 [근거 대기] 값이다.
+# 요율은 생성 시점에 정산 행에 스냅샷된다 — 바꿔도 지난 정산은 그때 요율로 읽힌다.
+settlement:
+  review-business-days: 3                           # 정산 확인 기간 — 생성 다음 영업일부터 N영업일째 23:59:59
+  payout-business-days: 3                           # 지급 예정일 — 확정일 + N영업일
+  payout-hour: 10                                   # 지급 배치 — 영업일 N시(KST)
+  payout-retry-limit: 3                             # 재분배 상한(M3)
+  pg-fee-rate: 0.03                                 # PG 수수료 [자문대기-PG]
+  platform-fee-rate: 0.00                           # 플랫폼 수수료 — 베타 0
+  platform-fee-normal-rate: 0.02                    # 정상 요율(표시용)
+  reward-vat-rate: 0.10
+  withholding-income-rate: 0.03                     # 원천징수 소득세 — 지방소득세와 각각 절사
+  withholding-local-rate: 0.003
+  brand-invoice-due-day: 10                         # 브랜드 세금계산서 — 공급일이 속한 달의 다음 달 N일
+  tax-invoice-attachment-max-bytes: 10485760        # 세금계산서 첨부 · 발행본 10MB
+  generation-scheduler-enabled: true                # 정산 생성 배치(10분)
+  auto-confirm-scheduler-enabled: true              # 자동 확정 배치(10분)
+  payout-scheduler-enabled: true                    # 지급 배치(영업일 payout-hour 시)
+  payout-result-scheduler-enabled: true             # 지급 결과 폴링(30분 · PG 모드만)
+  receipt-retry-scheduler-enabled: true             # 원천징수영수증 재생성(매시 40분)
+  clawback-scheduler-enabled: true                  # 차감 미회수 판정(매일 01:00)
+  payout:
+    mode: ${SETTLEMENT_PAYOUT_MODE:SIMULATED}       # SIMULATED(즉시 지급 완료 · 개발용) | PG — 운영 프로필은 PG 강제(어댑터 미구현 · 런칭 게이트)
+  platform:                                         # SHOWROOMZ 사업자 정보 — 운영 값 수령 전 더미(이름에 TEST). 운영 프로필에서 비면 기동 실패
+    business-name: ${SETTLEMENT_PLATFORM_BUSINESS_NAME:SHOWROOMZ TEST}
+    representative: ${SETTLEMENT_PLATFORM_REPRESENTATIVE:TEST 대표}
+    registration-number: ${SETTLEMENT_PLATFORM_REGISTRATION_NUMBER:000-00-00000}
+    address: ${SETTLEMENT_PLATFORM_ADDRESS:TEST 주소}
+    tax-email: ${SETTLEMENT_PLATFORM_TAX_EMAIL:tax-test@showroomz.shop}
+  adjustment:                                       # 정산 조정 협의(44 이슈 스레드 설계서 1-8)
+    deadline-business-days: 10                      # 합의 기한 — 개설 + N영업일 · 연장 없음
+    deadline-time: "23:59:59"                       # 마감 시각(§46 B-4 미결)
+    notice-business-days-before: 1                  # D-1 통지 — 영업일 기준(잠정)
+    notice-time: "10:00"
+    reason-max-length: 1000
+    scheduler-enabled: true                         # 합의 기한 배치(10분 · D-1 통지 · 만료)
+    batch-size: 200
+
 # Sentry 설정 (공통)
 sentry:
   dsn: ${SENTRY_DSN:https://default-dsn-address@sentry.io/0} # Sentry에서 발급받은 DSN을 환경 변수에서 읽어옴

@@ -326,11 +326,23 @@ public final class AdminTransactionDto {
     ) {
     }
 
-    @Schema(name = "AdminRefundSettlement", description = "정산 모듈 전 — 자리만(39 설계서 0-8)")
+    @Schema(name = "AdminRefundSettlement", description = "이 환불과 정산(39 설계서 0-8 · 44 어드민 정산관리 설계서 8-3)")
     public record RefundSettlement(
-            @Schema(example = "BEFORE_SETTLEMENT") String state,
-            @Schema(example = "정산 전 · 클로백 없음") String stateLabel,
-            @Schema(nullable = true) Object clawback
+            @Schema(description = "BEFORE_SETTLEMENT(정산 생성 전 — 생성 때 반영) · SETTLED(이미 생성된 정산의 항목 — 차감으로 다음 정산에)",
+                    example = "BEFORE_SETTLEMENT") String state,
+            @Schema(example = "정산 전 · 정산 생성 시 반영") String stateLabel,
+            @Schema(description = "그 하위주문이 들어간 정산 — 정산 전 null", nullable = true, example = "STL-2610-004")
+            String settlementNumber,
+            @Schema(description = "이 환불로 생긴 차감(측별 2행 중 덜 끝난 쪽 상태) — 없으면 null", nullable = true)
+            RefundClawback clawback
+    ) {
+    }
+
+    @Schema(name = "AdminRefundClawback")
+    public record RefundClawback(
+            @Schema(example = "CLW-0003") String clawbackNumber,
+            @Schema(description = "PENDING · APPLIED · UNRECOVERABLE", example = "PENDING") String status,
+            @Schema(example = "차감 예정") String statusLabel
     ) {
     }
 

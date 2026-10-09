@@ -94,7 +94,7 @@ class AdminGroupBuyPortIntegrationTest extends AdminGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("미종결 주문이 있으면 막고, 모두 끝나면 정산 포트에만 확인을 위임한다 — 이행 확인은 게이트가 아니다(2026-10-06 폐기)")
+    @DisplayName("정산 확인은 폐기 — 미종결이 있어도 · 모두 끝나도 항상 409 · 포트에 위임하지 않는다(§41-1 #6 · 44 정산 설계서 8-1)")
     void settlementConfirmationRequiresAllFactsAndDelegates() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);
         when(settlementGateway.readStage(groupBuy.getId()))
@@ -117,9 +117,10 @@ class AdminGroupBuyPortIntegrationTest extends AdminGroupBuyTestSupport {
         adminDetail(groupBuy.getId()).andExpect(jsonPath("$.afterEnd.settlement.blockers.length()").value(0))
                 .andExpect(jsonPath("$.afterEnd.orderClosure.purchaseConfirmedCount").value(9))
                 .andExpect(jsonPath("$.afterEnd.orderClosure.refundedCount").value(1))
-                .andExpect(jsonPath("$.permissions.canConfirmSettlement").value(true));
-        adminAction(groupBuy.getId(), "settlement/confirm", null).andExpect(status().isNoContent());
-        verify(settlementGateway).confirm(groupBuy.getId(), operator.getId());
+                .andExpect(jsonPath("$.permissions.canConfirmSettlement").value(false));
+        adminAction(groupBuy.getId(), "settlement/confirm", null).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("GROUP_BUY_SETTLEMENT_NOT_READY"));
+        verify(settlementGateway, never()).confirm(groupBuy.getId(), operator.getId());
         assertThat(reload(groupBuy.getId()).getStatus()).isEqualTo(GroupBuyStatus.ENDED);
     }
 

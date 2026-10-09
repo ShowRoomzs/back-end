@@ -239,8 +239,10 @@ class OrderShippingScenarioIntegrationTest extends OrderFlowTestSupport {
             assertThat(refundTasks(group)).containsExactly(
                     new RefundTask("RETURN_COMPLETED", CREAM_PRICE + DELIVERY_FEE, "DONE"));
             assertThat(fulfillmentEvents(group)).containsSubsequence("RETURN_COMPLETED", "RETURN_DETECTED");
+            // 반송은 환불로 종결된다 — PG 자동 환불이 집행(DONE)되면 정산 게이트에서 종결로 센다(44 정산 설계서 2-2 · 배송 예외).
             sellerGet(GROUP_BUYS + "/" + groupBuy.getId())
-                    .andExpect(jsonPath("$.orderClosure.unclosedCount").value(1));
+                    .andExpect(jsonPath("$.orderClosure.unclosedCount").value(0))
+                    .andExpect(jsonPath("$.orderClosure.refundedCount").value(1));
         }
     }
 

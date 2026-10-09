@@ -466,6 +466,19 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
             + "AND g.order.paidAt IS NOT NULL GROUP BY g.fulfillmentStatus")
     List<Object[]> countByStatusForGroupBuy(@Param("groupBuyId") Long groupBuyId);
 
+    /**
+     * 반송 완료 환불이 집행된 반송중 하위주문 수 — 반송은 환불로 종결된다({@code FulfillmentStatus#isSettlementOpen} · 「RETURNING 은
+     * 환불 집행 전까지 미종결」). 이행 상태는 RETURNING 에 머무르므로 상태 분포만으로는 종결을 알 수 없다 — 정산 게이트가 이 수를 뺀다.
+     */
+    @Query("SELECT COUNT(g) FROM OrderDeliveryGroup g WHERE g.groupBuy.id = :groupBuyId "
+            + "AND g.order.paidAt IS NOT NULL "
+            + "AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.RETURNING "
+            + "AND g.returnCompletedAt IS NOT NULL "
+            + "AND EXISTS (SELECT t.id FROM OrderRefundTask t WHERE t.deliveryGroup = g "
+            + "    AND t.source = showroomz.domain.order.type.RefundTaskSource.RETURN_COMPLETED "
+            + "    AND t.status = showroomz.domain.order.type.RefundTaskStatus.DONE)")
+    long countReturnRefundedForGroupBuy(@Param("groupBuyId") Long groupBuyId);
+
     /** 배송 이상 중 배지 분 — 요약 바 「배송 이상」 = 이 값 + RETURNING 카운트 합산(§34-2). */
     @Query("SELECT COUNT(g) FROM OrderDeliveryGroup g WHERE g.market.id = :marketId "
             + "AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING "

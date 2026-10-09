@@ -17,6 +17,7 @@ import showroomz.domain.order.repository.OrderClaimHistoryRepository;
 import showroomz.domain.order.repository.OrderClaimPaymentRepository;
 import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.repository.OrderFulfillmentHistoryRepository;
+import showroomz.domain.order.service.port.OrderSettlementReader;
 import showroomz.domain.order.type.ClaimChargeStatus;
 import showroomz.domain.order.type.ClaimChargeType;
 import showroomz.domain.order.type.ClaimEventType;
@@ -76,6 +77,7 @@ public class AdminRefundAssembler {
     private final OrderFulfillmentHistoryRepository fulfillmentHistoryRepository;
     private final AdminOperatorResolver operatorResolver;
     private final OrderProperties orderProperties;
+    private final OrderSettlementReader settlementReader;
 
     /** 한 페이지의 연관 — 행마다 쿼리하지 않는다. */
     private record Context(Map<String, Payment> payments, Map<Long, OrderCancelRequest> cancelRequests,
@@ -158,10 +160,23 @@ public class AdminRefundAssembler {
                 new AdminTransactionDto.RefundSourceRef(task.getSource(), RefundRoute.of(task.getSource()),
                         sourceLabel(task, context), sourceRef(task, context), claimId, cancelRequestId, collectionId),
                 task.getOrigin(), task.getOrigin().getLabel(), reason, target, additional,
-                new AdminTransactionDto.RefundSettlement("BEFORE_SETTLEMENT", "정산 전 · 클로백 없음", null),
+                settlement(task),
                 task.getStatus(), statusLabel(task.getStatus()), task.getAttempt(),
                 orderProperties.getRefundAutoMaxAttempts(), failure, execution, executable(task), task.isVoidable(),
                 task.isExecutable(), history);
+    }
+
+    /** 06c 「정산」 — 정산 생성 전이면 생성 때 반영되고, 생성 후면 이 환불이 만든 차감 행을 보인다(44 어드민 설계서 6-1). */
+    private AdminTransactionDto.RefundSettlement settlement(OrderRefundTask task) {
+        return settlementReader.readByRefundTask(task.getId(), task.getDeliveryGroup().getId())
+                .map(s -> new AdminTransactionDto.RefundSettlement("SETTLED",
+                        s.clawback() == null ? "정산 " + s.settlementNumber() + " 생성 후"
+                                : "정산 후 · 차감 " + s.clawback().clawbackNumber(),
+                        s.settlementNumber(),
+                        s.clawback() == null ? null : new AdminTransactionDto.RefundClawback(
+                                s.clawback().clawbackNumber(), s.clawback().status(), s.clawback().statusLabel())))
+                .orElseGet(() -> new AdminTransactionDto.RefundSettlement("BEFORE_SETTLEMENT",
+                        "정산 전 · 정산 생성 시 반영", null, null));
     }
 
     // ------------------------------------------------------------------ 행

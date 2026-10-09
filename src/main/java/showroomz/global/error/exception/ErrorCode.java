@@ -423,7 +423,16 @@ public enum ErrorCode {
     CLAIM_EXPORT_EMPTY(HttpStatus.BAD_REQUEST, "CLAIM_EXPORT_EMPTY", "내려받을 재발송 대기 건이 없습니다."),
     CLAIM_EXPORT_COLUMNS_REQUIRED(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "컬럼을 1개 이상 선택해 주세요."),
     CLAIM_UPLOAD_HEADER_MISSING(HttpStatus.BAD_REQUEST, "CLAIM_UPLOAD_HEADER_MISSING", "파일에 접수번호 · 택배사 · 송장번호 열이 있어야 합니다."),
-    CLAIM_DISPUTE_ALREADY_EXISTS(HttpStatus.CONFLICT, "CLAIM_DISPUTE_ALREADY_EXISTS", "이미 접수된 이의가 있습니다. 답변 전에는 기존 문의를 수정해 주세요.");
+    CLAIM_DISPUTE_ALREADY_EXISTS(HttpStatus.CONFLICT, "CLAIM_DISPUTE_ALREADY_EXISTS", "이미 접수된 이의가 있습니다. 답변 전에는 기존 문의를 수정해 주세요."),
+
+    // 정산 관리(44 어드민 정산관리 설계서 9-2 — 44 시리즈 공통 표)
+    SETTLEMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "SETTLEMENT_NOT_FOUND", "존재하지 않는 정산입니다."),
+    SETTLEMENT_STATE_CHANGED(HttpStatus.CONFLICT, "SETTLEMENT_STATE_CHANGED", "정산 상태가 변경되었습니다. 새로고침 후 다시 확인해 주세요."),
+    /** 생성 검산(2-6) 실패 — 내부 오류다. 생성을 롤백하고 다음 회차가 다시 시도한다. */
+    SETTLEMENT_GENERATION_INCONSISTENT(HttpStatus.INTERNAL_SERVER_ERROR, "SETTLEMENT_GENERATION_INCONSISTENT", "정산 금액 검산이 맞지 않습니다."),
+    SETTLEMENT_STATEMENT_NOT_READY(HttpStatus.CONFLICT, "SETTLEMENT_STATEMENT_NOT_READY", "정산이 확정된 뒤에 명세를 내려받을 수 있습니다."),
+    SETTLEMENT_PAYOUT_RETRY_EXCEEDED(HttpStatus.CONFLICT, "SETTLEMENT_PAYOUT_RETRY_EXCEEDED", "재분배 횟수를 넘었습니다. 수동 이체 절차로 처리해 주세요."),
+    SETTLEMENT_ACCOUNT_MISSING(HttpStatus.BAD_REQUEST, "SETTLEMENT_ACCOUNT_MISSING", "수취자의 등록 계좌가 없습니다.");
 
     private final HttpStatus status;
     private final String code;

@@ -407,10 +407,13 @@ public class AdminGroupBuyCommandService {
     }
 
     /**
-     * 정산 확인 — 정산 포트에 위임한다. 공구 테이블에 쓰지 않고 공구 상태도 바꾸지 않는다(8-2). 정산 모듈이 없으면
-     * 판정이 항상 거짓이라 409다 — 착수 게이트.
+     * 정산 확인 — <b>폐기</b>(§41-1 #6 · 44 어드민 정산관리 설계서 8-1). 정산 확정은 시스템(자동 · 합의 · 만료)만 하므로 항상 409다.
      */
     public void confirmSettlement(Long groupBuyId, Long operatorId) {
+        // [기획 제외] 운영자 정산 확인 폐기 — 첫 줄에서 409. 아래는 기획 복귀 시의 위임 경로다(판정이 항상 거짓이라 닿지 않는다).
+        if (!permissionPolicy.canConfirmSettlement(null)) {
+            throw new BusinessException(ErrorCode.GROUP_BUY_SETTLEMENT_NOT_READY);
+        }
         GroupBuy groupBuy = access.lock(groupBuyId);
         admin(operatorId);
         GroupBuyFacts facts = factsLoader.load(groupBuy);

@@ -62,4 +62,13 @@ public interface OrderRefundTaskRepository extends JpaRepository<OrderRefundTask
     List<OrderRefundTask> findByDeliveryGroupIdOrderByIdAsc(Long deliveryGroupId);
 
     List<OrderRefundTask> findByOrderIdOrderByIdAsc(Long orderId);
+
+    /**
+     * 공구 하위주문의 집행 완료 환불 — 경로별(44 어드민 설계서 2-2 「정산 전 집행된 운영자 사유 환불」). 정산 생성이 배송 예외 차감에 더한다.
+     */
+    @Query("SELECT t FROM OrderRefundTask t JOIN FETCH t.deliveryGroup g "
+            + "WHERE g.groupBuy.id = :groupBuyId AND t.source = :source "
+            + "AND t.status = showroomz.domain.order.type.RefundTaskStatus.DONE ORDER BY t.id ASC")
+    List<OrderRefundTask> findDoneByGroupBuyAndSource(@Param("groupBuyId") Long groupBuyId,
+                                                      @Param("source") showroomz.domain.order.type.RefundTaskSource source);
 }

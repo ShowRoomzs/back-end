@@ -122,8 +122,16 @@ public class AdminGroupBuyPermissionPolicy {
         return facts.groupBuy().getStatus().isTerminal() && facts.openIssue() == null;
     }
 
-    /** 정산 확인 — ENDED ∧ 차단 사유 없음 ∧ 정산 포트 단계 WAITING. 포트가 비면 false다(8-2 착수 게이트). */
+    /**
+     * 항상 false — 운영자 정산 확인 폐기(§41-1 #6 · 44 어드민 정산관리 설계서 8-1). 정산 확정은 시스템(자동 · 합의 · 만료)만 한다.
+     * 판정식은 기획 복귀에 대비해 {@link #wouldConfirmSettlement}로 남긴다.
+     */
     public boolean canConfirmSettlement(GroupBuyFacts facts) {
+        return false;
+    }
+
+    /** [기획 제외] 폐기 전 판정식 — ENDED ∧ 차단 사유 없음 ∧ 정산 포트 단계 WAITING. */
+    boolean wouldConfirmSettlement(GroupBuyFacts facts) {
         return facts.groupBuy().getStatus() == GroupBuyStatus.ENDED
                 && settlementBlockers(facts).isEmpty()
                 && settlementGateway.readStage(facts.groupBuy().getId())

@@ -156,7 +156,8 @@ public interface AdminGroupBuyControllerDocs {
                     - 소명 첨부 URL은 싣지 않는다 — 첨부 다운로드 API로 클릭 시 발급한다.
                     - `afterEnd.settlement.blockers` — 「왜 아직 정산이 안 되나」를 서버가 판정한다. 사유가 둘이면 카드도 둘.
                       `UNCLOSED_ORDERS`(미종결 주문) · `FULFILLMENT_PENDING`(한쪽이라도 이행 확인 전) · `FULFILLMENT_DISPUTE`(정산 보류) · `CLOSURE_UNKNOWN`(판매 포트 없음 — 판정 불가).
-                      `stageSource = DERIVED`면 공구 상태에서 파생한 값이다 — 중간 단계를 확정값처럼 그리지 않는다. `preview.rewardAmount`는 항상 null(확정 대기).
+                      `stageSource = PORT`면 정산 모듈(정산 관리 07a · 07b)의 값이고(`WAITING` 정산 확인 중 · 조정 협의 / `CONFIRMED` 지급 예정 · 분배 실패 / `TRANSFERRED` 지급 완료),
+                      `DERIVED`면 정산이 아직 생기지 않아 공구 상태에서 파생한 값이다 — 중간 단계를 확정값처럼 그리지 않는다. `preview.rewardAmount`는 항상 null(확정 대기).
                     - `afterEnd.fulfillment` — 방향 이름(`brandToCreator` · `creatorToBrand`). 미이행 행은 합의 후에도 `UNFULFILLED` 그대로다 —
                       「합의로 해소」는 `UNFULFILLED + agreedAt` 조합으로 FE가 만든다. `autoConfirmOnTimeout = false`면 「무응답은 이행으로 처리됩니다」를 쓰지 않는다.
                     - `fixedFee.displayText` — 3서피스 동일 표준 표기. 지급 여부는 내리지 않는다. 고정 지급비 없는 계약이면 네 칸 모두 null.
@@ -774,12 +775,8 @@ public interface AdminGroupBuyControllerDocs {
     @Operation(
             summary = "정산 확인(B5 계열)",
             description = """
-                    정산대기 → 운영자 확인. **바디 없음 · 응답 바디 없음(204).** 정산 모듈에 위임하고 공구 상태는 바꾸지 않는다
-                    (정산완료는 이체 완료 통보가 만든다).
-
-                    **권한:** ADMIN · **조건:** 종료 ∧ `afterEnd.settlement.blockers` 없음 ∧ 정산 모듈 단계 `WAITING`(`permissions.canConfirmSettlement`)
-
-                    🚧 착수 게이트 — 정산 모듈 연동 전에는 `permissions.canConfirmSettlement`가 항상 false이고 이 API는 409다.
+                    ⛔ **폐기(§41-1 #6)** — 운영자 정산 확인 절차가 없어졌다. 정산 확정은 시스템(확인 기간 경과 자동 확정 · 조정 합의 · 합의 기한 만료)만 한다.
+                    `permissions.canConfirmSettlement`는 항상 false이고 이 API는 항상 409다. Swagger 에서 숨긴다.
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "확인 완료"),
