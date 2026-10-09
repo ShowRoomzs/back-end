@@ -22,7 +22,7 @@ public interface AdminOrderControllerDocs {
             description = """
                     전 브랜드 · 전 공구 주문의 조회 입구. **단위는 주문(결제 1건)**이고 행 확장(A2)은 하위주문(브랜드)이다.
 
-                    - `tab` — `ALL`(전체 · 기본) · `DELIVERY_ISSUE`(배송 이상 — 집화 확인 필요 · 추적 정지 · 반송 중) · `CANCEL`(취소 · 검토 중 취소 요청)
+                    - `tab` — `ALL`(전체 · 기본) · `DELIVERY_ISSUE`(배송 이상 — 집화 확인 필요 · 추적 정지 · 반송 중. 반송 완료가 감지된 건은 빠진다) · `CANCEL`(취소 · 검토 중 취소 요청)
                     - `status` — 상태 셀렉트(NEW · PREPARING · SHIPPING · RETURNING · DELIVERED · CONFIRMED · CANCELLED). 하위주문 하나라도 맞으면 나온다
                     - `marketId` — 브랜드 상세의 「이 브랜드 진행 주문 보기」
                     - `keyword` — 주문번호 · 하위주문번호 · 수취인 · 브랜드명 · 송장번호
@@ -73,13 +73,14 @@ public interface AdminOrderControllerDocs {
     @Operation(summary = "B4 운영자 대행 송장 등록",
             description = """
                     상품준비중 ∧ **대행 조건** — 발송 기한 경과 ∧ 자동 알림 N회(기본 3) 무응답. 브랜드 송장 등록과 같은 전이(배송중 · 발송기한 판정값 =
-                    지금)다. 택배사는 추적 연동 목록만. 이력 「운영자 대행」.
+                    지금)다. 택배사는 추적 연동 목록만. **대행 사유(`note`)는 필수** — 이력 「운영자 대행 · 사유」로 남는다.
+                    대행 조건은 06d 예외 관리 「대행 가능」과 같은 판정이다.
 
                     **권한:** ADMIN
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "등록 후 상세"),
-            @ApiResponse(responseCode = "400", description = "INVOICE_FORMAT_INVALID"),
+            @ApiResponse(responseCode = "400", description = "INVOICE_FORMAT_INVALID · INVALID_INPUT_VALUE(대행 사유 누락)"),
             @ApiResponse(responseCode = "409", description = "ORDER_ACT_ON_BEHALF_NOT_ALLOWED — 대행 조건 미충족 · INVOICE_DUPLICATE · "
                     + "CANCEL_REQUEST_PENDING_EXISTS · ORDER_STATE_CHANGED")
     })

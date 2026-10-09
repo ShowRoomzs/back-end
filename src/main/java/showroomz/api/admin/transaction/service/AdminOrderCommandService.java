@@ -46,6 +46,7 @@ public class AdminOrderCommandService {
     private final OrderFulfillmentService fulfillmentService;
     private final OrderClaimService claimService;
     private final AdminOrderQueryService queryService;
+    private final ActOnBehalfPolicy actOnBehalfPolicy;
     private final DeliveryTrackerPort tracker;
 
     /** B3 배송완료일 정정 — 소비자 수령일 이의. 「직권 배송완료」는 없다. 구매확정 기산점도 같은 만큼 옮긴다. */
@@ -83,7 +84,7 @@ public class AdminOrderCommandService {
                                                          AdminOrderDto.ShipmentRequest request) {
         LocalDateTime now = LocalDateTime.now();
         OrderDeliveryGroup group = loadGroup(deliveryGroupId);
-        if (!queryService.canActOnBehalf(group, now)) {
+        if (!actOnBehalfPolicy.canActOnBehalf(group, now)) {
             throw new BusinessException(ErrorCode.ORDER_ACT_ON_BEHALF_NOT_ALLOWED);
         }
         String trackingNumber = request.trackingNumber().replaceAll("[^0-9]", "");
@@ -116,7 +117,7 @@ public class AdminOrderCommandService {
     public AdminOrderDto.DetailResponse cancel(Long adminId, Long deliveryGroupId, AdminOrderDto.CancelCommand request) {
         LocalDateTime now = LocalDateTime.now();
         OrderDeliveryGroup group = loadGroup(deliveryGroupId);
-        if (request.reasonCode() != SellerCancelReason.DEFECT && !queryService.canActOnBehalf(group, now)) {
+        if (request.reasonCode() != SellerCancelReason.DEFECT && !actOnBehalfPolicy.canActOnBehalf(group, now)) {
             throw new BusinessException(ErrorCode.ORDER_ACT_ON_BEHALF_NOT_ALLOWED);
         }
         Long orderId = group.getOrder().getId();

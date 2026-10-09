@@ -109,8 +109,9 @@ public class OrderDeliveryGroupRepositoryImpl implements OrderDeliveryGroupRepos
             where.and(o.paidAt.loe(condition.to()));
         }
         switch (condition.tab()) {
+            // 반송 완료가 감지된 건은 상태가 RETURNING 에 머물러도 이상이 아니다 — 환불로 종결된다(06d 와 같은 조건).
             case DELIVERY_ISSUE -> where.and(g.trackingAlert.isNotNull()
-                    .or(g.fulfillmentStatus.eq(FulfillmentStatus.RETURNING)));
+                    .or(g.fulfillmentStatus.eq(FulfillmentStatus.RETURNING).and(g.returnCompletedAt.isNull())));
             case CANCEL -> where.and(g.fulfillmentStatus.eq(FulfillmentStatus.CANCELLED)
                     .or(JPAExpressions.selectOne().from(r)
                             .where(r.deliveryGroup.eq(g).and(r.status.eq(CancelRequestStatus.PENDING))).exists()));

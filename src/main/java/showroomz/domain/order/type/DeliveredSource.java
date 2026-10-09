@@ -12,7 +12,8 @@ import lombok.RequiredArgsConstructor;
 public enum DeliveredSource {
 
     TRACKER("자동 확인"),
-    ADMIN("운영자 처리");
+    /** 배송완료일 정정(어드민 06a B3) — 「직권 배송완료」는 없다. */
+    ADMIN("운영자 정정");
 
     private final String label;
 }

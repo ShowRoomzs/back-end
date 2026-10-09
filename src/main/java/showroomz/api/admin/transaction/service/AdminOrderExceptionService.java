@@ -12,7 +12,6 @@ import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.domain.order.service.BusinessDayCalculator;
 import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.domain.order.type.TrackingAlert;
-import showroomz.global.config.properties.OrderProperties;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -40,7 +39,7 @@ public class AdminOrderExceptionService {
     private final OrderDeliveryGroupRepository deliveryGroupRepository;
     private final OrderClaimRepository claimRepository;
     private final BusinessDayCalculator businessDayCalculator;
-    private final OrderProperties orderProperties;
+    private final ActOnBehalfPolicy actOnBehalfPolicy;
 
     public List<AdminTransactionDto.ExceptionItem> getExceptions(AdminTransactionDto.ExceptionTab tab) {
         LocalDateTime now = LocalDateTime.now();
@@ -63,16 +62,15 @@ public class AdminOrderExceptionService {
 
     private List<AdminTransactionDto.ExceptionItem> delays(LocalDateTime now) {
         List<AdminTransactionDto.ExceptionItem> rows = new ArrayList<>();
-        int threshold = orderProperties.getActOnBehalfNoticeThreshold();
         for (OrderDeliveryGroup group : deliveryGroupRepository.findShipOverdueForAdmin(now)) {
-            boolean actOnBehalf = group.getOverdueNoticeCount() >= threshold;
+            boolean actOnBehalf = actOnBehalfPolicy.canActOnBehalf(group, now);
             rows.add(groupRow(ExceptionKind.SHIP_OVERDUE, group, group.getShipDueAt(), now, group.getOverdueNoticeCount(),
                     actOnBehalf, actOnBehalf ? "브랜드 무응답 · 운영자 대행 가능(송장 대행 · 직권 취소)"
                             : "브랜드가 발송해야 합니다 · 자동 알림 중"));
         }
         for (OrderClaim claim : claimRepository.findInspectOverdue(now)) {
             rows.add(claimRow(ExceptionKind.INSPECT_OVERDUE, claim, claim.getInspectDueAt(), now,
-                    claim.getInspectNoticeCount(), claim.getInspectNoticeCount() >= threshold,
+                    claim.getInspectNoticeCount(), actOnBehalfPolicy.thresholdReached(claim.getInspectNoticeCount()),
                     "브랜드가 검수해야 합니다 · 자동 알림 중(운영자는 검수를 대신하지 않는다)"));
         }
         for (OrderClaim claim : claimRepository.findReshipReady()) {

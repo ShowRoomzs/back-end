@@ -143,7 +143,7 @@ public final class AdminOrderDto {
             @Schema(nullable = true) LocalDateTime returnDetectedAt,
             @Schema(nullable = true) LocalDateTime returnCompletedAt,
             @Schema(nullable = true) LocalDateTime deliveredAt,
-            @Schema(description = "배송완료 출처 — 자동 확인 · 운영자 처리", nullable = true) String deliveredSourceLabel
+            @Schema(description = "배송완료 출처 — 자동 확인 · 운영자 정정", nullable = true) String deliveredSourceLabel
     ) {
     }
 
@@ -213,7 +213,7 @@ public final class AdminOrderDto {
     public record ShipmentRequest(
             @NotNull DeliveryCarrier carrier,
             @NotBlank @Schema(example = "640012345678") String trackingNumber,
-            @Size(max = 300) @Schema(description = "대행 사유 — 이력에 남는다", nullable = true) String note
+            @NotBlank @Size(max = 300) @Schema(description = "대행 사유(필수) — 이력에 남는다", example = "자동 알림 3회 무응답 · 소비자 문의") String note
     ) {
     }
 

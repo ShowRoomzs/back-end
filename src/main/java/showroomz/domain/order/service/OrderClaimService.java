@@ -402,6 +402,8 @@ public class OrderClaimService {
             appendHistory(claim, ClaimEventType.REQUESTED, FulfillmentActorType.ADMIN, adminId,
                     "운영자 개설 · 구매확정 후 하자 · 증빙 " + evidences.size() + "장", now);
         }
+        // 클레임 접수 = 구매확정 타이머 정지(1009 수정계획 4-2) — 소비자 접수와 같다. 배송완료 건에서 열었을 때 남은 일수가 보인다.
+        fulfillmentService.pauseConfirmTimer(group.getId(), now);
         return new RequestResult(collection.getId(), claimIds, true, ClaimStatus.REQUESTED, null);
     }
 

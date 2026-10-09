@@ -57,6 +57,7 @@ public class AdminOrderQueryService {
     private final OrderFulfillmentHistoryRepository historyRepository;
     private final PaymentRepository paymentRepository;
     private final OrderProperties orderProperties;
+    private final ActOnBehalfPolicy actOnBehalfPolicy;
 
     public PageResponse<AdminOrderDto.ListItem> getOrders(AdminOrderDto.SearchParams params, LocalDate from,
                                                           LocalDate to, PagingRequest paging) {
@@ -135,7 +136,7 @@ public class AdminOrderQueryService {
         return new AdminOrderDto.GroupSummary(group.getId(), group.getSubOrderNumber(), group.getMarketName(), status,
                 status.getLabel(), status.getTone(), group.getTrackingAlert(),
                 group.getTrackingAlert() == null ? null : group.getTrackingAlert().getLabel(), group.getShipDueAt(),
-                isShipOverdue(group, now), cancelRequested);
+                ActOnBehalfPolicy.isShipOverdue(group, now), cancelRequested);
     }
 
     private AdminOrderDto.GroupDetail detail(OrderDeliveryGroup group, List<OrderProduct> items,
@@ -152,7 +153,7 @@ public class AdminOrderQueryService {
                 group.getId(), group.getSubOrderNumber(), group.getMarketId(), group.getMarketName(),
                 group.getGroupBuyNumber(), status, status.getLabel(), status.getTone(),
                 new AdminOrderDto.Shipping(group.getShipDueAt(), group.getShipDueBusinessDays(),
-                        isShipOverdue(group, now), group.getOverdueNoticeCount(), group.getPrepareStartedAt(),
+                        ActOnBehalfPolicy.isShipOverdue(group, now), group.getOverdueNoticeCount(), group.getPrepareStartedAt(),
                         group.getShippedAt(), group.getCarrier(),
                         group.getCarrier() == null ? null : group.getCarrier().getLabel(), group.getTrackingNumber(),
                         group.getTrackingAlert(),
@@ -185,7 +186,7 @@ public class AdminOrderQueryService {
 
     AdminOrderDto.Actions actions(OrderDeliveryGroup group, boolean cancelRequested, LocalDateTime now) {
         FulfillmentStatus status = group.getFulfillmentStatus();
-        boolean actOnBehalf = canActOnBehalf(group, now);
+        boolean actOnBehalf = actOnBehalfPolicy.canActOnBehalf(group, now);
         boolean deliveredWithin3Months = group.getDeliveredAt() != null
                 && !group.getDeliveredAt().plusMonths(3).isBefore(now);
         return new AdminOrderDto.Actions(
@@ -196,17 +197,6 @@ public class AdminOrderQueryService {
                         || status == FulfillmentStatus.CONFIRMED || status == FulfillmentStatus.RETURNING,
                 (status == FulfillmentStatus.CONFIRMED || status == FulfillmentStatus.DELIVERED)
                         && deliveredWithin3Months);
-    }
-
-    /** 대행 가능 조건(06d 확인 필요 ⓐ — 근거 대기) — 발송 기한 경과 ∧ 자동 알림 N회(기본 3) 무응답. 상태가 아니라 조건이다. */
-    boolean canActOnBehalf(OrderDeliveryGroup group, LocalDateTime now) {
-        return isShipOverdue(group, now)
-                && group.getOverdueNoticeCount() >= orderProperties.getActOnBehalfNoticeThreshold();
-    }
-
-    static boolean isShipOverdue(OrderDeliveryGroup group, LocalDateTime now) {
-        return FulfillmentStatus.WORKABLE.contains(group.getFulfillmentStatus())
-                && group.getShipDueAt() != null && group.getShipDueAt().isBefore(now);
     }
 
     private Set<Long> pendingCancelGroupIds(List<OrderDeliveryGroup> groups) {
