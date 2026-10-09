@@ -170,6 +170,13 @@ public class PaymentTransitions {
             stockReleaser.release(orderId, now);
             // 하위주문에도 취소의 사실을 남긴다(34 설계서 5-2) — 그룹 CANCELLED(CONSUMER) + 항목 취소 메타 + 이력.
             fulfillmentService.applyConsumerCancel(orderId, now);
+            if (!mismatch) {
+                // 어드민 환불 관리 완료 탭 — 큐를 거치지 않은 전액 취소도 「모든 환불」에 보이게 기록 행을 남긴다(39 설계서 0-4).
+                Long paymentCancelId = paymentCancelRepository
+                        .findByPayment_PaymentIdAndStatus(paymentId, PaymentCancelStatus.SUCCEEDED).stream()
+                        .map(PaymentCancel::getId).reduce((a, b) -> b).orElse(null);
+                fulfillmentService.recordConsumerCancelRefunds(orderId, paymentId, paymentCancelId, payment.getAmount(), now);
+            }
         }
         if (mismatch) {
             alerts.error("결제 자동 취소 - paymentId: " + paymentId + ", 사유: " + payment.getMismatchReason());

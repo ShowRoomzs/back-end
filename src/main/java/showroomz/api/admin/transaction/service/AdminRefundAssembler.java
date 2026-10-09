@@ -174,7 +174,7 @@ public class AdminRefundAssembler {
                 RefundRoute.of(task.getSource()), sourceLabel(task, context), sourceRef(task, context), task.getOrigin(),
                 task.getOrigin().getLabel(), task.getReasonCode() == null ? null : task.getReasonCode().getLabel(),
                 task.getReasonDetail(), paymentKind, partial, payment == null ? null : payment.methodLabel(),
-                paymentLabel(payment, paymentKind, partial), task.getRefundAmount(), task.getStatus(),
+                paymentLabel(task, payment, paymentKind, partial), task.getRefundAmount(), task.getStatus(),
                 statusLabel(task.getStatus()), statusNote(task, context.names()), task.getAttempt(), task.getLastError(),
                 displayAt(task), task.getCreatedAt(), task.getExecutedAt(), executable(task));
     }
@@ -227,9 +227,12 @@ public class AdminRefundAssembler {
                     ? "반품 · 일부 반려" : "반품 검수 통과";
             case CLAIM_PAYMENT_CANCELLED -> {
                 List<OrderClaim> claims = claimsOf(task, context);
+                boolean exchange = claims.isEmpty()
+                        || claims.get(0).getType() == showroomz.domain.order.type.ClaimType.EXCHANGE;
                 boolean withdrawn = !claims.isEmpty() && claims.stream()
                         .allMatch(c -> c.getResult() == ClaimResult.CANCELLED);
-                yield withdrawn ? "교환 재발송비 환불 · 교환 철회" : "교환 재발송비 환불";
+                String base = exchange ? "교환 재발송비 환불" : "반려 재발송비 환불";
+                yield withdrawn && exchange ? base + " · 교환 철회" : base;
             }
             case OPERATOR_REASON -> task.getReasonCode() == null ? "운영자 사유 환불" : task.getReasonCode().getLabel();
         };
@@ -300,12 +303,17 @@ public class AdminRefundAssembler {
         return task.isPartialCancel();
     }
 
-    private static String paymentLabel(Payment payment, String paymentKind, boolean partial) {
-        String kind = ADDITIONAL.equals(paymentKind) ? "추가" : "원래";
-        if (payment == null) {
-            return ADDITIONAL.equals(paymentKind) ? "카드 · 추가" : null;
+    private String paymentLabel(OrderRefundTask task, Payment payment, String paymentKind, boolean partial) {
+        if (ADDITIONAL.equals(paymentKind)) {
+            // 추가 결제는 원래 결제 테이블이 아니라 클레임 결제다 — 수단은 그 결제에서 읽는다.
+            String method = task.getPaymentId() == null ? null : claimPaymentRepository.findById(task.getPaymentId())
+                    .map(p -> p.getMethod() == null ? null : p.getMethod().getLabel()).orElse(null);
+            return (method == null ? "결제" : method) + " · 추가";
         }
-        return payment.getMethod().getLabel() + " · " + kind + (partial ? " 부분" : "");
+        if (payment == null) {
+            return null;
+        }
+        return payment.getMethod().getLabel() + " · 원래" + (partial ? " 부분" : "");
     }
 
     private static String statusLabel(RefundTaskStatus status) {

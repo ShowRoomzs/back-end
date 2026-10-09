@@ -220,8 +220,10 @@ public abstract class OrderFlowTestSupport extends OrderPaymentTestSupport {
     protected record RefundTask(String source, int amount, String status) {
     }
 
+    /** 환불 큐의 작업 행 — 기록 전용 행(39 설계서 0-4)은 뺀다. {@code SellerOrderTestSupport#refundTasks}와 같은 규칙. */
     protected List<RefundTask> refundTasks(OrderDeliveryGroup group) {
         return jdbc.query("SELECT source, refund_amount, status FROM order_refund_task WHERE delivery_group_id = ? "
+                        + "AND source NOT IN ('USER_CANCEL_BEFORE_PREPARE', 'CLAIM_PAYMENT_CANCELLED') "
                         + "ORDER BY refund_task_id",
                 (rs, i) -> new RefundTask(rs.getString(1), rs.getInt(2), rs.getString(3)), group.getId());
     }

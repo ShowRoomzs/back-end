@@ -220,9 +220,14 @@ public abstract class SellerOrderTestSupport extends OrderPaymentTestSupport {
         return history(group).stream().filter(h -> h.getEventType() == eventType).count();
     }
 
+    /**
+     * 환불 큐의 <b>작업</b> 행 — 기록 전용 행(결제완료 소비자 취소 · 재발송비 결제 취소 · 39 설계서 0-4)은 뺀다. 그 행들은 이미 PG 가
+     * 돌려준 사실을 어드민 환불 관리에 보이려고 DONE 으로 적은 것이라 큐가 할 일이 아니다(검증은 {@code AdminRefundIntegrationTest}).
+     */
     protected List<Map<String, Object>> refundTasks(OrderDeliveryGroup group) {
         return jdbc.queryForList("SELECT source, source_id, refund_amount, status FROM order_refund_task "
-                + "WHERE delivery_group_id = ? ORDER BY refund_task_id", group.getId());
+                + "WHERE delivery_group_id = ? AND source NOT IN ('USER_CANCEL_BEFORE_PREPARE', 'CLAIM_PAYMENT_CANCELLED') "
+                + "ORDER BY refund_task_id", group.getId());
     }
 
     protected String orderNumberOf(OrderDeliveryGroup group) {

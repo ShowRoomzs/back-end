@@ -268,6 +268,65 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
                 .andExpect(status().isForbidden());
     }
 
+    // ------------------------------------------------------------------ P3 비큐 경로 기록 행
+
+    @Test
+    @DisplayName("[R-11] 결제완료 소비자 취소 — 하위주문마다 DONE 기록 행 · 합 = 결제액 · 부분 아님 · 집행기 미호출 · 「환불 처리 중」 아님")
+    void consumerCancelRecorded() throws Exception {
+        OrderDeliveryGroup group = paidTwoItemGroup();
+        Long orderId = group.getOrder().getId();
+        String paymentId = paymentIdOf(group);
+        int paid = jdbc.queryForObject("SELECT amount FROM payment WHERE payment_id = ?", Integer.class, paymentId);
+
+        cancel(orderId).andExpect(status().is2xxSuccessful());
+
+        List<Map<String, Object>> rows = jdbc.queryForList("SELECT * FROM order_refund_task WHERE order_id = ?", orderId);
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0)).containsEntry("source", "USER_CANCEL_BEFORE_PREPARE").containsEntry("status", "DONE")
+                .containsEntry("origin", "PG_AUTO").containsEntry("partial_cancel", false)
+                .containsEntry("payment_kind", "ORIGINAL").containsEntry("refund_amount", paid);
+        assertThat(rows.get(0).get("payment_cancel_id")).isNotNull();
+        assertThat(fake.partialCancelCalls()).isEmpty();
+        assertThat(refundTaskRepositoryPending(orderId)).isEmpty();
+
+        JsonNode row = json(adminGet(ADMIN_REFUNDS + "?tab=DONE&route=CANCEL")).get("content").get(0);
+        assertThat(row.get("sourceLabel").asText()).isEqualTo("결제완료 소비자 취소");
+        assertThat(row.get("paymentLabel").asText()).isEqualTo("카드 · 원래");
+        assertThat(row.get("executable").asBoolean()).isFalse();
+    }
+
+    @Test
+    @DisplayName("[R-12] 교환 철회 — 선결제 재발송비 취소가 추가 결제 기록 행으로 · route=EXCHANGE · 「교환 철회」")
+    void exchangeFeeRefundRecorded() throws Exception {
+        OrderDeliveryGroup group = deliveredGroup(creamVariant, 1);
+        JsonNode created = json(userPost(USER_CLAIMS, claimBody(group, "EXCHANGE", "CHANGE_OF_MIND",
+                items(group).get(0).getId(), null, addSamePriceVariant(creamVariant, 5).getVariantId()))
+                .andExpect(status().isCreated()));
+        long claimId = created.get("claimIds").get(0).asLong();
+        String paymentId = created.get("payment").get("paymentId").asText();
+        completeClaimPayment(paymentId).andExpect(status().isOk());
+
+        userPost(USER_CLAIMS + "/" + claimId + "/withdraw", Map.of()).andExpect(status().isOk());
+        assertThat(claimPaymentStatus(paymentId)).isEqualTo("CANCELLED");
+
+        Map<String, Object> task = jdbc.queryForMap("SELECT * FROM order_refund_task WHERE source = 'CLAIM_PAYMENT_CANCELLED'");
+        assertThat(task).containsEntry("status", "DONE").containsEntry("payment_kind", "ADDITIONAL")
+                .containsEntry("payment_id", paymentId).containsEntry("source_id", collectionIdOf(claimId));
+        JsonNode row = json(adminGet(ADMIN_REFUNDS + "?tab=DONE&route=EXCHANGE")).get("content").get(0);
+        assertThat(row.get("sourceLabel").asText()).isEqualTo("교환 재발송비 환불 · 교환 철회");
+        assertThat(row.get("paymentLabel").asText()).isEqualTo("카드 · 추가");
+        assertThat(row.get("sourceRef").asText()).isEqualTo("CLM-" + claimId);
+        // 두 번 닫혀도 기록은 한 번이다.
+        claimPaymentService.cancelRequested();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM order_refund_task WHERE source = 'CLAIM_PAYMENT_CANCELLED'",
+                Integer.class)).isEqualTo(1);
+    }
+
+    private List<Long> refundTaskRepositoryPending(Long orderId) {
+        return jdbc.queryForList("SELECT refund_task_id FROM order_refund_task WHERE order_id = ? "
+                + "AND status IN ('PENDING', 'EXECUTING', 'FAILED')", Long.class, orderId);
+    }
+
     // ------------------------------------------------------------------ 도우미
 
     /** 운영자 사유 환불 편입(06a B5) — 발송분이라 배송완료 하위주문에서. */

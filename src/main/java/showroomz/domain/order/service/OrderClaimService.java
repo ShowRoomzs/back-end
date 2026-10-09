@@ -1243,6 +1243,26 @@ public class OrderClaimService {
         return new DisputeAcceptance(task.getId(), amount);
     }
 
+    /**
+     * 재발송비(추가 결제) 결제 취소 확인의 <b>기록 행</b> — 교환 철회 · 반려 이의 인용 · 중복 결제 자동 취소 등으로 돌려준 추가 결제를
+     * 어드민 환불 관리 완료 탭에 보인다(39 설계서 0-4 · P3). 결제 취소를 적은 트랜잭션 안에서 부른다. 집행기는 DONE 행을 집지 않는다.
+     */
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public void recordClaimPaymentRefund(String paymentId, LocalDateTime now) {
+        showroomz.domain.order.entity.OrderClaimPayment payment = claimPaymentRepository.findById(paymentId).orElse(null);
+        if (payment == null || payment.getCollectionId() == null || payment.getAmount() == null) {
+            return;
+        }
+        OrderClaimCollection collection = collectionRepository.findById(payment.getCollectionId()).orElse(null);
+        if (collection == null) {
+            return;
+        }
+        OrderDeliveryGroup group = collection.getDeliveryGroup();
+        refundTaskRepository.save(OrderRefundTask.recorded(group, group.getOrder(),
+                RefundTaskSource.CLAIM_PAYMENT_CANCELLED, collection.getId(), payment.getAmount(), paymentId,
+                showroomz.domain.order.type.RefundPaymentKind.ADDITIONAL, null, now));
+    }
+
     // ------------------------------------------------------------------ 환불 집행 · 재발송비 결제(3-7 · 전이 #8 · #10)
 
     /**

@@ -240,7 +240,13 @@ public class ClaimPaymentService {
         try {
             PortOneCancelResult result = gateway.cancel(paymentId, payment.getAmount(), "재발송 배송비 결제 취소");
             if (result.isCancelled()) {
-                transaction.executeWithoutResult(tx -> paymentRepository.markCancelled(paymentId, LocalDateTime.now()));
+                LocalDateTime now = LocalDateTime.now();
+                transaction.executeWithoutResult(tx -> {
+                    // 처음 닫는 호출만 기록 행을 남긴다 — 어드민 환불 관리 완료 탭의 「재발송비 환불」(39 설계서 0-4).
+                    if (paymentRepository.markCancelled(paymentId, now) == 1) {
+                        claimService.recordClaimPaymentRefund(paymentId, now);
+                    }
+                });
             }
         } catch (PaymentGatewayException e) {
             log.warn("클레임 결제 취소 결과 미상 - 재시도 대기 - paymentId: {} - {}", paymentId, e.getMessage());

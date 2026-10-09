@@ -27,6 +27,7 @@ import showroomz.domain.order.type.FulfillmentEventType;
 import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.domain.order.type.OrderCancelType;
 import showroomz.domain.order.type.OrderProductStatus;
+import showroomz.domain.order.type.RefundPaymentKind;
 import showroomz.domain.order.type.RefundTaskSource;
 import showroomz.domain.order.type.TrackingAlert;
 import showroomz.domain.product.repository.ProductVariantRepository;
@@ -38,6 +39,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -214,6 +217,39 @@ public class OrderFulfillmentService {
         appendHistory(group.getId(), FulfillmentEventType.REFUND_ENQUEUED_BY_OPERATOR, FulfillmentActorType.ADMIN,
                 operatorId, String.format("%s · %s · %,d원", task.refundNo(), reason.getLabel(), refundAmount), now);
         return task;
+    }
+
+    /**
+     * 결제완료 소비자 취소(준비 시작 전 · 결제 전액 취소)의 <b>기록 행</b> — 큐를 거치지 않은 PG 환불을 어드민 환불 관리 완료 탭에
+     * 보이려고 취소가 확인된 트랜잭션 안에서 하위주문마다 DONE 으로 적는다(39 설계서 0-4 · P3). 금액 = 하위주문 항목 합(공구가) +
+     * 배송비. <b>합이 결제액과 다르면 적지 않는다</b> — 주문 단위 할인 등 나눌 규칙이 없는 금액이 끼어든 것이다(39 설계서 7-3 #2).
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void recordConsumerCancelRefunds(Long orderId, String paymentId, Long paymentCancelId, int paymentAmount,
+                                            LocalDateTime now) {
+        List<OrderDeliveryGroup> groups = deliveryGroupRepository.findByOrderId(orderId);
+        if (groups.isEmpty()) {
+            return;
+        }
+        Map<Long, Integer> goods = new HashMap<>();
+        for (OrderProduct item : orderProductRepository.findByDeliveryGroupIds(
+                groups.stream().map(OrderDeliveryGroup::getId).toList())) {
+            goods.merge(item.getDeliveryGroup().getId(), item.getPrice() * item.getQuantity(), Integer::sum);
+        }
+        Map<OrderDeliveryGroup, Integer> amounts = new java.util.LinkedHashMap<>();
+        for (OrderDeliveryGroup group : groups) {
+            amounts.put(group, goods.getOrDefault(group.getId(), 0)
+                    + (group.getDeliveryFee() == null ? 0 : group.getDeliveryFee()));
+        }
+        int sum = amounts.values().stream().mapToInt(Integer::intValue).sum();
+        if (sum != paymentAmount) {
+            log.warn("결제완료 소비자 취소 기록 생략 — 하위주문 합이 결제액과 다르다 - orderId: {}, 합: {}, 결제액: {}", orderId,
+                    sum, paymentAmount);
+            return;
+        }
+        amounts.forEach((group, amount) -> refundTaskRepository.save(OrderRefundTask.recorded(group, group.getOrder(),
+                RefundTaskSource.USER_CANCEL_BEFORE_PREPARE, null, amount, paymentId, RefundPaymentKind.ORIGINAL,
+                paymentCancelId, now)));
     }
 
     /** 원래 결제의 부분 취소인가 — 어드민 06c 결제 열 「부분」. 결제가 없는 주문은 거짓. */
