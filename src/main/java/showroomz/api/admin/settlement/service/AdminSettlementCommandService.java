@@ -4,8 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import showroomz.api.admin.common.AdminOperatorResolver;
 import showroomz.api.admin.settlement.type.AdminPayoutAccountSource;
+import showroomz.api.admin.settlement.type.AdminTaxInvoiceVerifyResult;
+import showroomz.api.common.settlement.service.SettlementPdfUploads;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementPayout;
 import showroomz.domain.settlement.repository.SettlementPayoutRepository;
@@ -14,6 +17,7 @@ import showroomz.domain.settlement.service.AfterCommit;
 import showroomz.domain.settlement.service.SettlementHistoryRecorder;
 import showroomz.domain.settlement.service.SettlementPayoutService;
 import showroomz.domain.settlement.service.SettlementPayoutTransitions;
+import showroomz.domain.settlement.service.SettlementTaxDocumentService;
 import showroomz.domain.settlement.type.PayoutStatus;
 import showroomz.domain.settlement.type.SettlementActorType;
 import showroomz.domain.settlement.type.SettlementEventType;
@@ -45,6 +49,7 @@ public class AdminSettlementCommandService {
     private final AdminOperatorResolver operators;
     private final PersonalDataCipher cipher;
     private final SettlementProperties properties;
+    private final SettlementTaxDocumentService taxDocumentService;
 
     /**
      * M3 재분배 — FAILED 행을 오늘 예정으로 되돌리고(횟수 + 1 · 계좌 재스냅샷) 정산을 지급 예정으로 재파생한다. 지시는 커밋 뒤 바로
@@ -106,5 +111,22 @@ public class AdminSettlementCommandService {
                 log.error("재분배 즉시 지시 실패 - settlementId: {}, payoutId: {}", settlementId, payoutId, e);
             }
         });
+    }
+
+    /** M4 승인번호 대조(7-6) — 확인이면 인플루언서 몫 지급 보류가 풀린다(확인일 + N영업일). */
+    public void verifyTaxInvoice(Long settlementId, Long documentId, AdminTaxInvoiceVerifyResult result,
+                                 Long operatorId) {
+        operators.operatorName(operatorId);
+        taxDocumentService.verify(settlementId, documentId, result.rejectReason(), operatorId, LocalDateTime.now());
+    }
+
+    /** M5 브랜드 세금계산서 발행본 등록(7-7) — 정상 등록 뒤에는 버튼이 사라진다. */
+    public void issueBrandInvoice(Long settlementId, Long documentId, MultipartFile file, String approvalNumber,
+                                  LocalDate issuedDate, Long operatorId) {
+        operators.operatorName(operatorId);
+        SettlementTaxDocumentService.Attachment pdf = SettlementPdfUploads.read(file,
+                properties.getTaxInvoiceAttachmentMaxBytes());
+        taxDocumentService.issueBrandInvoice(settlementId, documentId, pdf, approvalNumber, issuedDate, operatorId,
+                LocalDateTime.now());
     }
 }

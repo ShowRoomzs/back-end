@@ -2,6 +2,7 @@ package showroomz.api.admin.settlement.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -69,6 +70,8 @@ public class AdminSettlementQueryService {
     private final SettlementPartyViews views;
     private final AdminSettlementDetailAssembler detailAssembler;
     private final SettlementStatementExcel statementExcel;
+    private final AdminEvidenceRows evidenceRows;
+    private final AdminClawbackRows clawbackRows;
 
     // ------------------------------------------------------------------ 7-1 · 7-2 목록
 
@@ -76,10 +79,11 @@ public class AdminSettlementQueryService {
                                                    PagingRequest paging) {
         AdminSettlementTab target = tab == null ? AdminSettlementTab.ALL : tab;
         Pageable pageable = pageable(paging);
-        if (!target.isSettlementRow()) {
-            // 증빙 · 차감 탭 — 행의 원천(V181 · V182)이 붙기 전이다.
-            return new AdminSettlementDto.ListResponse<>(List.of(), new PaginationInfo(Page.empty(pageable)), null,
-                    emptyToolbar(target));
+        if (target == AdminSettlementTab.EVIDENCE) {
+            return evidence(pageable);
+        }
+        if (target == AdminSettlementTab.CLAWBACK) {
+            return clawbacks(keyword, pageable);
         }
         SettlementAdminSort order = target.getFixedSort() != null ? target.getFixedSort()
                 : (sort == null ? AdminSettlementSort.SCHEDULE_DESC : sort).getDomainSort();
@@ -106,14 +110,17 @@ public class AdminSettlementQueryService {
         }
         long all = counts.values().stream().mapToLong(Long::longValue).sum();
         long failed = counts.getOrDefault(SettlementStatus.PAYOUT_FAILED, 0L);
+        AdminEvidenceRows.Rows evidence = evidenceRows.build();
+        AdminClawbackRows.Rows clawback = clawbackRows.build(null);
         Map<String, Long> tabCounts = new LinkedHashMap<>();
         tabCounts.put(AdminSettlementTab.ALL.name(), all);
         tabCounts.put(AdminSettlementTab.REVIEWING.name(), counts.getOrDefault(SettlementStatus.REVIEWING, 0L));
         tabCounts.put(AdminSettlementTab.ADJUSTING.name(), counts.getOrDefault(SettlementStatus.ADJUSTING, 0L));
         tabCounts.put(AdminSettlementTab.PAYOUT_FAILED.name(), failed);
-        tabCounts.put(AdminSettlementTab.EVIDENCE.name(), 0L);
-        tabCounts.put(AdminSettlementTab.CLAWBACK.name(), 0L);
-        return new AdminSettlementDto.Summary(tabCounts, failed);
+        tabCounts.put(AdminSettlementTab.EVIDENCE.name(), (long) evidence.items().size());
+        tabCounts.put(AdminSettlementTab.CLAWBACK.name(), (long) clawback.items().size());
+        return new AdminSettlementDto.Summary(tabCounts,
+                failed + evidence.operatorActionCount() + clawback.unrecoverableCount());
     }
 
     // ------------------------------------------------------------------ 7-4 · 7-8 · 7-9
@@ -221,10 +228,29 @@ public class AdminSettlementQueryService {
                 elapsed, null, null, null, null, null);
     }
 
-    private static AdminSettlementDto.Toolbar emptyToolbar(AdminSettlementTab tab) {
-        return tab == AdminSettlementTab.EVIDENCE
-                ? new AdminSettlementDto.Toolbar(null, null, null, null, null, 0L, 0L, 0L, null, null)
-                : new AdminSettlementDto.Toolbar(null, null, null, null, null, 0L, null, null, 0L, 0L);
+    /** 증빙 탭 — 행 = 문서 1건 · 기한 이른순 · 툴바 건수 · 운영자 조치(확인 대기 + 발행 대기) · 지급을 막는 건. */
+    private AdminSettlementDto.ListResponse<AdminSettlementDto.EvidenceItem> evidence(Pageable pageable) {
+        AdminEvidenceRows.Rows rows = evidenceRows.build();
+        List<AdminSettlementDto.EvidenceItem> all = rows.items();
+        int from = (int) Math.min(pageable.getOffset(), all.size());
+        int to = Math.min(from + pageable.getPageSize(), all.size());
+        Page<AdminSettlementDto.EvidenceItem> page = new PageImpl<>(all.subList(from, to), pageable, all.size());
+        return new AdminSettlementDto.ListResponse<>(page.getContent(), new PaginationInfo(page), null,
+                new AdminSettlementDto.Toolbar(null, null, null, null, null, (long) all.size(),
+                        rows.operatorActionCount(), rows.payoutBlockedCount(), null, null));
+    }
+
+    /** 차감 탭 — 행 = 차감 번호 1건 · 발생일 최신순 · 툴바 건수 · 미회수 건수 · 미회수 금액. */
+    private AdminSettlementDto.ListResponse<AdminSettlementDto.ClawbackItem> clawbacks(String keyword,
+                                                                                    Pageable pageable) {
+        AdminClawbackRows.Rows rows = clawbackRows.build(keyword);
+        List<AdminSettlementDto.ClawbackItem> all = rows.items();
+        int from = (int) Math.min(pageable.getOffset(), all.size());
+        int to = Math.min(from + pageable.getPageSize(), all.size());
+        Page<AdminSettlementDto.ClawbackItem> page = new PageImpl<>(all.subList(from, to), pageable, all.size());
+        return new AdminSettlementDto.ListResponse<>(page.getContent(), new PaginationInfo(page), null,
+                new AdminSettlementDto.Toolbar(null, null, null, null, null, (long) all.size(), null, null,
+                        rows.unrecoverableCount(), rows.unrecoverableAmount()));
     }
 
     private static Pageable pageable(PagingRequest paging) {

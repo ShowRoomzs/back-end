@@ -260,4 +260,26 @@ class SellerSettlementIntegrationTest extends SettlementTestSupport {
         assertThat(agreed.get("breakdown").get("rewardAmount").asLong()).isEqualTo(s.getRewardAmount() + 5_000);
         assertThat(agreed.get("actions").get("canRespondAdjustment").asBoolean()).isFalse();
     }
+
+    @Test
+    @DisplayName("P4(증빙) · P9 — 확정 뒤 SHOWROOMZ 발행 세금계산서 「발행 대기」 · 발행 전 다운로드 409 · 다른 정산의 문서 404")
+    void taxDocumentsBlock() throws Exception {
+        Settlement s = confirm(reviewing());
+        JsonNode detail = json(sellerGet(SETTLEMENTS + "/" + s.getId()).andExpect(status().isOk()));
+        JsonNode document = detail.at("/taxDocuments/0");
+        assertThat(document.get("type").asText()).isEqualTo("BRAND_TAX_INVOICE");
+        assertThat(document.get("status").asText()).isEqualTo("PENDING_ISSUE");
+        assertThat(document.get("supplyAmount").asLong()).isEqualTo(s.getRewardAmount());
+        assertThat(document.get("statusLabel").asText()).startsWith("발행 대기 · 운영팀이");
+        assertThat(document.get("downloadable").asBoolean()).isFalse();
+        assertThat(detail.at("/actions/canDownloadTaxInvoice").asBoolean()).isFalse();
+        long documentId = document.get("documentId").asLong();
+
+        sellerGet(SETTLEMENTS + "/" + s.getId() + "/tax-documents/" + documentId + "/download")
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SETTLEMENT_TAX_INVOICE_NOT_ISSUED"));
+        Settlement other = seedSettlement("다른 공구", 1_000_000, SettlementStatus.REVIEWING);
+        sellerGet(SETTLEMENTS + "/" + other.getId() + "/tax-documents/" + documentId + "/download")
+                .andExpect(status().isNotFound());
+    }
 }

@@ -22,7 +22,7 @@ public enum AdminSettlementTab {
     EVIDENCE(Set.of(), null),
     CLAWBACK(Set.of(), null);
 
-    /** 정산 탭의 상태 — 증빙 · 차감 탭은 비어 있다. */
+    /** 정산 탭의 상태 — 증빙 · 차감 탭은 행의 원천이 다르다(문서 · 차감 행). */
     private final Set<SettlementStatus> statuses;
     /** 탭별 고정 정렬 — null 이면 사용자가 고른다(전체 탭). */
     private final SettlementAdminSort fixedSort;

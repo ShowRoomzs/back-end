@@ -8,12 +8,17 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.creator.settlement.docs.CreatorSettlementControllerDocs;
 import showroomz.api.creator.settlement.dto.CreatorSettlementDto;
+import showroomz.api.creator.settlement.service.CreatorSettlementCommandService;
+import showroomz.api.creator.settlement.service.CreatorSettlementDocumentService;
 import showroomz.api.creator.settlement.service.CreatorSettlementQueryService;
 import showroomz.domain.settlement.service.SettlementStatementExcel;
 import showroomz.domain.settlement.type.SettlementPartySort;
@@ -33,6 +38,8 @@ import java.util.Set;
 public class CreatorSettlementController implements CreatorSettlementControllerDocs {
 
     private final CreatorSettlementQueryService queryService;
+    private final CreatorSettlementCommandService commandService;
+    private final CreatorSettlementDocumentService documentService;
 
     @Override
     @GetMapping
@@ -68,6 +75,34 @@ public class CreatorSettlementController implements CreatorSettlementControllerD
     @GetMapping("/{settlementId}/items/download")
     public ResponseEntity<byte[]> downloadItems(@PathVariable Long settlementId) {
         return xlsx(queryService.downloadItems(getCurrentUserEmail(), settlementId));
+    }
+
+    @Override
+    @PostMapping(value = "/{settlementId}/tax-invoice", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CreatorSettlementDto.TaxInvoiceSubmitResponse> submitTaxInvoice(
+            @PathVariable Long settlementId,
+            @RequestParam(value = "approvalNumber", required = false) String approvalNumber,
+            @RequestPart(value = "attachment", required = false) MultipartFile attachment) {
+        return ResponseEntity.ok(commandService.submitTaxInvoice(getCurrentUserEmail(), settlementId, approvalNumber,
+                attachment));
+    }
+
+    @Override
+    @GetMapping("/{settlementId}/withholding-receipt")
+    public ResponseEntity<byte[]> downloadWithholdingReceipt(@PathVariable Long settlementId) {
+        return documentService.withholdingReceipt(getCurrentUserEmail(), settlementId).toResponse();
+    }
+
+    @Override
+    @GetMapping("/{settlementId}/tax-invoice/attachment")
+    public ResponseEntity<byte[]> downloadTaxInvoiceAttachment(@PathVariable Long settlementId) {
+        return documentService.taxInvoiceAttachment(getCurrentUserEmail(), settlementId).toResponse();
+    }
+
+    @Override
+    @GetMapping("/annual-statement")
+    public ResponseEntity<byte[]> downloadAnnualStatement(@RequestParam(value = "year", required = false) Integer year) {
+        return documentService.annualStatement(getCurrentUserEmail(), year).toResponse();
     }
 
     static ResponseEntity<byte[]> xlsx(SettlementStatementExcel.File file) {

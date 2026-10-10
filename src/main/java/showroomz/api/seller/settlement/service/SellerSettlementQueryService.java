@@ -6,6 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.common.settlement.dto.SettlementFile;
 import showroomz.api.common.settlement.dto.SettlementPartyDto;
 import showroomz.api.common.settlement.service.SettlementPartyViews;
 import showroomz.api.seller.settlement.dto.SellerSettlementDto;
@@ -18,15 +19,19 @@ import showroomz.domain.order.type.ClaimType;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementItem;
 import showroomz.domain.settlement.entity.SettlementPayout;
+import showroomz.domain.settlement.entity.SettlementTaxDocument;
 import showroomz.domain.settlement.repository.SettlementItemRepository;
 import showroomz.domain.settlement.repository.SettlementPayoutRepository;
 import showroomz.domain.settlement.repository.SettlementRepository;
+import showroomz.domain.settlement.repository.SettlementTaxDocumentRepository;
 import showroomz.domain.settlement.service.SettlementStatementExcel;
+import showroomz.domain.settlement.service.SettlementTaxDocumentService;
 import showroomz.domain.settlement.type.PayoutStatus;
 import showroomz.domain.settlement.type.SettlementPartySort;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatementColumn;
 import showroomz.domain.settlement.type.SettlementStatus;
+import showroomz.domain.settlement.type.TaxDocumentStatus;
 import showroomz.global.config.properties.SettlementProperties;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
@@ -62,6 +67,8 @@ public class SellerSettlementQueryService {
     private final SettlementStatementExcel statementExcel;
     private final SettlementProperties properties;
     private final SellerSettlementBlocks blocks;
+    private final SettlementTaxDocumentRepository taxDocumentRepository;
+    private final SettlementTaxDocumentService taxDocumentService;
 
     // ------------------------------------------------------------------ 목록(2-2)
 
@@ -280,6 +287,20 @@ public class SellerSettlementQueryService {
         Settlement s = accessGuard.loadOwned(settlementId, accessGuard.resolveMarket(sellerEmail));
         Page<SettlementItem> page = itemRepository.findPageBySettlementId(s.getId(), pageable(paging));
         return new PageResponse<>(page.getContent().stream().map(SellerSettlementQueryService::item).toList(), page);
+    }
+
+    /** SHOWROOMZ 발행 세금계산서 스트림(2-6) — 발행 완료 · 파일이 있을 때만(409) · 다른 정산의 문서는 404. */
+    public SettlementFile downloadTaxDocument(String sellerEmail, Long settlementId, Long documentId) {
+        Settlement s = accessGuard.loadOwned(settlementId, accessGuard.resolveMarket(sellerEmail));
+        SettlementTaxDocument document = taxDocumentRepository.findById(documentId)
+                .filter(d -> d.getSettlementId().equals(s.getId()) && d.getType().isBrandInvoice())
+                .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
+        if (document.getStatus() != TaxDocumentStatus.ISSUED || !document.hasFile()) {
+            throw new BusinessException(ErrorCode.SETTLEMENT_TAX_INVOICE_NOT_ISSUED);
+        }
+        String filename = document.getFileName() != null ? document.getFileName()
+                : "세금계산서_%s.pdf".formatted(s.getSettlementNumber());
+        return new SettlementFile(filename, SettlementFile.PDF, taxDocumentService.readFile(document));
     }
 
     public SettlementStatementExcel.File downloadItems(String sellerEmail, Long settlementId) {

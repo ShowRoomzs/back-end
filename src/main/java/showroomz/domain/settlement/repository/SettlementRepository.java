@@ -105,4 +105,32 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
     /** 상태별 건수 — [status, count]. 탭 숫자 · GNB 배지. */
     @Query("SELECT s.status, COUNT(s) FROM Settlement s GROUP BY s.status")
     List<Object[]> countAllByStatus();
+
+    // ------------------------------------------------------------------ 증빙 자료(5-5 · 스튜디오 4-3)
+
+    /** 인플루언서 몫 지급 완료가 기간에 속한 비사업자 정산 — [정산, 지급 시각]. 원천세 신고 자료. */
+    @Query("SELECT s, p.paidAt FROM Settlement s, SettlementPayout p WHERE p.settlementId = s.id "
+            + "AND p.payee = showroomz.domain.settlement.type.SettlementPayee.CREATOR "
+            + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.PAID "
+            + "AND s.creatorBusinessType = showroomz.domain.member.creator.type.CreatorBusinessType.INDIVIDUAL "
+            + "AND p.paidAt >= :from AND p.paidAt < :to ORDER BY p.paidAt ASC, s.id ASC")
+    List<Object[]> findWithholdingTargets(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /** 내 몫 지급 완료가 기간에 속한 정산 — [정산, 지급 시각]. 스튜디오 연간 지급 내역. */
+    @Query("SELECT s, p.paidAt FROM Settlement s, SettlementPayout p WHERE p.settlementId = s.id "
+            + "AND p.payee = showroomz.domain.settlement.type.SettlementPayee.CREATOR "
+            + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.PAID "
+            + "AND s.creator.id = :creatorId AND p.paidAt >= :from AND p.paidAt < :to ORDER BY p.paidAt ASC, s.id ASC")
+    List<Object[]> findCreatorPaidBetween(@Param("creatorId") Long creatorId, @Param("from") LocalDateTime from,
+                                          @Param("to") LocalDateTime to);
+
+    // ------------------------------------------------------------------ 정산 리더(8-5)
+
+    @Query("SELECT COUNT(s) > 0 FROM Settlement s WHERE s.creator.id = :creatorId "
+            + "AND s.status <> showroomz.domain.settlement.type.SettlementStatus.PAID")
+    boolean existsUnpaidForCreator(@Param("creatorId") Long creatorId);
+
+    @Query("SELECT COUNT(s) > 0 FROM Settlement s WHERE s.market.id = :marketId "
+            + "AND s.status <> showroomz.domain.settlement.type.SettlementStatus.PAID")
+    boolean existsUnpaidForMarket(@Param("marketId") Long marketId);
 }

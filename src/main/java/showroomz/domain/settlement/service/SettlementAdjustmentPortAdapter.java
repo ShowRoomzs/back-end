@@ -41,6 +41,7 @@ public class SettlementAdjustmentPortAdapter implements SettlementAdjustmentPort
     private final SettlementCalculator calculator;
     private final SettlementConfirmService confirmService;
     private final SettlementHistoryRecorder historyRecorder;
+    private final SettlementClawbackService clawbackService;
 
     /** {@code inReviewWindow} = 정산 확인 중 ∧ 마감 전 ∧ 협의 없음(3-1 · 조회 · 자동 확정과 같은 식). */
     @Override
@@ -104,6 +105,10 @@ public class SettlementAdjustmentPortAdapter implements SettlementAdjustmentPort
         long original = settlement.getRewardAmount();
         SettlementAmounts amounts = calculator.recalculateForReward(settlement, agreedRewardAmount);
         settlement.applyAmounts(amounts);
+        if (amounts.rewardClawbackCarryover() > 0) {
+            // 합의 리워드가 이미 반영된 리워드 차감보다 작다 — 넘친 차감을 다음 정산으로 넘긴다(6-2 이월).
+            clawbackService.carryOverAfterAgreement(settlementId, amounts.rewardClawbackCarryover(), now);
+        }
         // 수취자 행 UPDATE 가 정산 엔티티의 변경을 먼저 flush 한다.
         payoutRepository.updateAmountBeforeConfirm(settlementId, SettlementPayee.BRAND, amounts.brandPayoutAmount());
         payoutRepository.updateAmountBeforeConfirm(settlementId, SettlementPayee.CREATOR, amounts.creatorPayoutAmount());

@@ -65,6 +65,12 @@ public class SellerSettlementController implements SellerSettlementControllerDoc
     }
 
     @Override
+    @GetMapping("/{settlementId}/tax-documents/{documentId}/download")
+    public ResponseEntity<byte[]> downloadTaxDocument(@PathVariable Long settlementId, @PathVariable Long documentId) {
+        return queryService.downloadTaxDocument(getCurrentSellerEmail(), settlementId, documentId).toResponse();
+    }
+
+    @Override
     @GetMapping("/{settlementId}/items/download")
     public ResponseEntity<byte[]> downloadItems(@PathVariable Long settlementId) {
         return xlsx(queryService.downloadItems(getCurrentSellerEmail(), settlementId));

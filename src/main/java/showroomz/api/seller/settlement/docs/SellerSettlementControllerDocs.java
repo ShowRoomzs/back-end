@@ -116,4 +116,21 @@ public interface SellerSettlementControllerDocs {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<byte[]> downloadItems(@Parameter(description = "정산 id") Long settlementId);
+
+    @Operation(summary = "SHOWROOMZ 발행 세금계산서 다운로드 (PDF)",
+            description = """
+                    상세 `taxDocuments[].downloadable = true` 인 문서(브랜드 세금계산서 · 수정세금계산서 — 운영팀이 발행본을 등록한 뒤)의 PDF 스트림.
+                    발행 전이면 409 `SETTLEMENT_TAX_INVOICE_NOT_ISSUED` · 다른 정산의 문서면 404.
+
+                    **권한:** SELLER
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "PDF", content = @Content(mediaType = "application/pdf")),
+            @ApiResponse(responseCode = "404", description = "SETTLEMENT_NOT_FOUND",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "SETTLEMENT_TAX_INVOICE_NOT_ISSUED",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<byte[]> downloadTaxDocument(@Parameter(description = "정산 id") Long settlementId,
+                                               @Parameter(description = "문서 id — taxDocuments[].documentId") Long documentId);
 }

@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.creator.settlement.dto.CreatorSettlementDto;
 import showroomz.domain.settlement.type.SettlementPartySort;
@@ -113,4 +114,79 @@ public interface CreatorSettlementControllerDocs {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<byte[]> downloadItems(@Parameter(description = "정산 id") Long settlementId);
+
+    @Operation(summary = "세금계산서 승인번호 제출 (D5 · D5b)",
+            description = """
+                    사업자 정산 확정 뒤 카드(`taxInvoice`)에서 국세청 승인번호를 입력합니다 — multipart `approvalNumber` + 선택 `attachment`(PDF · 10MB).
+                    반려 뒤 재제출은 **같은 행**이고 첨부는 새로 올리면 바뀝니다(안 올리면 이전 첨부 유지).
+
+                    | 검증 | 결과 |
+                    |---|---|
+                    | 내 정산 아님 | 404 `SETTLEMENT_NOT_FOUND` |
+                    | 비사업자 정산 | 409 `SETTLEMENT_TAX_INVOICE_NOT_REQUIRED` |
+                    | 확정 전 · 확인 중(SUBMITTED) · 확인 완료(VERIFIED) | 409 `SETTLEMENT_TAX_INVOICE_NOT_OPEN` |
+                    | 형식 `YYYYMMDD-NNNNNNNN-NNNNNNNN` 불일치 · 빈 값 · 다른 정산에서 이미 확인된 번호 | 400 `SETTLEMENT_TAX_INVOICE_NUMBER_INVALID` |
+                    | 첨부가 PDF 아님 · 10MB 초과 | 400 `INVALID_INPUT` |
+
+                    결과 카드 `cardStatus = SUBMITTED`(「확인 중」) — 운영자가 대조(확인 · 반려)합니다. 확인되면 내 몫 지급 예정일 = 확인일 + 3영업일.
+
+                    **권한:** CREATOR
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "제출 — 갱신된 세금계산서 카드"),
+            @ApiResponse(responseCode = "400", description = "SETTLEMENT_TAX_INVOICE_NUMBER_INVALID · INVALID_INPUT",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "SETTLEMENT_NOT_FOUND",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "SETTLEMENT_TAX_INVOICE_NOT_REQUIRED · SETTLEMENT_TAX_INVOICE_NOT_OPEN · SETTLEMENT_TAX_DOCUMENT_STATE_CHANGED",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<CreatorSettlementDto.TaxInvoiceSubmitResponse> submitTaxInvoice(
+            @Parameter(description = "정산 id") Long settlementId,
+            @Parameter(description = "국세청 승인번호", example = "20260829-41000012-38475920") String approvalNumber,
+            @Parameter(description = "세금계산서 PDF(선택 · 10MB)") MultipartFile attachment);
+
+    @Operation(summary = "원천징수영수증 다운로드 (PDF)",
+            description = """
+                    비사업자 정산의 내 몫 지급 완료 뒤 시스템이 만드는 원천징수영수증 — `withholding.receiptAvailable = true` 일 때만.
+                    생성 전이면 409 `SETTLEMENT_RECEIPT_NOT_READY`. 바이트 스트림(링크가 밖으로 새지 않게).
+
+                    **권한:** CREATOR
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "PDF", content = @Content(mediaType = "application/pdf")),
+            @ApiResponse(responseCode = "404", description = "SETTLEMENT_NOT_FOUND",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "SETTLEMENT_RECEIPT_NOT_READY",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<byte[]> downloadWithholdingReceipt(@Parameter(description = "정산 id") Long settlementId);
+
+    @Operation(summary = "제출한 세금계산서 PDF 다운로드 (D5c)",
+            description = """
+                    제출 때 올린 첨부 — 첨부가 없었으면 404(`taxInvoice.attachmentName = null` 이면 버튼이 없다).
+
+                    **권한:** CREATOR
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "PDF", content = @Content(mediaType = "application/pdf")),
+            @ApiResponse(responseCode = "404", description = "SETTLEMENT_NOT_FOUND",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<byte[]> downloadTaxInvoiceAttachment(@Parameter(description = "정산 id") Long settlementId);
+
+    @Operation(summary = "연간 지급 내역 다운로드 (xlsx)",
+            description = """
+                    `year`(생략 시 올해)에 **내 몫 지급 완료일**이 속한 정산 전부 — 정산번호 · 공구명 · 브랜드 · 지급일 · 판매 리워드 · 차감 ·
+                    (비사업자) 소득세 · 지방소득세 / (사업자) 부가세 · 세금계산서 승인번호 · 실지급액 + 합계 행. 종합소득세 신고용입니다.
+                    데이터가 없으면 빈 파일이 아니라 404 `SETTLEMENT_NOT_FOUND`(빈 엑셀은 「올해 소득 0」으로 읽힌다).
+
+                    **권한:** CREATOR
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "xlsx", content = @Content(mediaType = XLSX)),
+            @ApiResponse(responseCode = "404", description = "SETTLEMENT_NOT_FOUND — 그 해 지급 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<byte[]> downloadAnnualStatement(@Parameter(description = "연도 — 생략 시 올해", example = "2026") Integer year);
 }

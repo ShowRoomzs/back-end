@@ -39,6 +39,7 @@ import showroomz.domain.settlement.type.SettlementConfirmReason;
 import showroomz.domain.settlement.type.SettlementEventType;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
+import showroomz.global.utils.PersonalDataCipher;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackSnapshot;
 import showroomz.global.utils.BusinessCalendar;
 
@@ -80,6 +81,11 @@ public abstract class SettlementTestSupport extends OrderFlowTestSupport {
     @Autowired protected SettlementCalculator settlementCalculator;
     @Autowired protected SettlementNumberGenerator settlementNumberGenerator;
     @Autowired protected OrderClaimService claimService;
+    @Autowired protected PersonalDataCipher personalDataCipher;
+    @Autowired protected FakeSettlementTaxDocumentStorage taxDocumentStorage;
+
+    /** 시드 주민등록번호 — 실제 암호문으로 넣는다(원천징수영수증 · 신고 자료가 복호화한다). */
+    protected static final String RESIDENT_NUMBER = "900101-1234567";
 
     protected Seller operator;
     protected String adminToken;
@@ -276,7 +282,7 @@ public abstract class SettlementTestSupport extends OrderFlowTestSupport {
 
     protected void registerCreatorResidentNumber() {
         jdbc.update("UPDATE creator SET resident_registration_number_enc = ?, resident_registration_number_masked = ? "
-                + "WHERE creator_id = ?", "enc-test", "900101-1******", creator.getId());
+                + "WHERE creator_id = ?", personalDataCipher.encrypt(RESIDENT_NUMBER), "900101-1******", creator.getId());
     }
 
     protected void registerSellerAccount() {

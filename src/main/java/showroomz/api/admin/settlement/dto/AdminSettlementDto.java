@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import showroomz.api.admin.settlement.type.AdminPayoutAccountSource;
+import showroomz.api.admin.settlement.type.AdminTaxInvoiceVerifyResult;
 import showroomz.api.common.settlement.dto.SettlementPartyDto;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
 import showroomz.domain.settlement.type.PayoutStatus;
@@ -35,7 +36,7 @@ public final class AdminSettlementDto {
     // ------------------------------------------------------------------ 7-1 목록 · 7-2 툴바 · 7-3 요약
 
     @Schema(name = "AdminSettlementListResponse",
-            description = "목록 — 정산 탭은 content = AdminSettlementListItem. 증빙 · 차감 탭은 행 단위가 다르다(단계 7 · 8 전까지 빈 목록)")
+            description = "목록 — 정산 탭은 content = AdminSettlementListItem. 증빙 탭은 AdminSettlementEvidenceItem(문서 1건) · 차감 탭은 AdminSettlementClawbackItem(차감 번호 1건)")
     public record ListResponse<T>(
             List<T> content,
             PaginationInfo pageInfo,
@@ -371,6 +372,59 @@ public final class AdminSettlementDto {
 
     @Schema(name = "AdminSettlementByThread", description = "20b 이슈 패널의 「정산 영향 · 진행 단계」 보강 — 7-4 의 rail + adjustment")
     public record ByThread(Long settlementId, String settlementNumber, Rail rail, Adjustment adjustment) {
+    }
+
+    @Schema(name = "AdminSettlementVerifyRequest", description = "M4 승인번호 대조 — 운영자는 번호를 입력하지 않고 결과만 고른다")
+    public record VerifyRequest(
+            @NotNull @Schema(description = "MATCH(확인) · AMOUNT_MISMATCH · RECIPIENT_MISMATCH · NOT_FOUND(반려 사유)",
+                    requiredMode = Schema.RequiredMode.REQUIRED, example = "MATCH")
+            AdminTaxInvoiceVerifyResult result) {
+    }
+
+    // ------------------------------------------------------------------ 7-2 증빙 탭
+
+    @Schema(name = "AdminSettlementEvidenceItem",
+            description = "증빙 탭 행 = 문서 1건(정산 1건에 2건일 수 있다) · 처리 끝(확인 · 발행 · 생성 완료)은 뺀다. "
+                    + "비사업자 주민번호 미등록은 문서가 아니라 보류 사유지만 type = RESIDENT_NUMBER_MISSING 가상 행으로 함께 내린다")
+    public record EvidenceItem(
+            @Schema(description = "문서 id — 가상 행(주민번호 미등록)은 null", nullable = true) Long documentId,
+            Long settlementId,
+            String settlementNumber,
+            String groupBuyTitle,
+            @Schema(description = "조치할 상대 — 인플루언서 건은 쇼룸명 · 브랜드 건은 브랜드명") String counterpartyName,
+            CreatorBusinessType creatorBusinessType,
+            @Schema(description = "CREATOR_TAX_INVOICE · BRAND_TAX_INVOICE · BRAND_TAX_INVOICE_CREDIT · WITHHOLDING_RECEIPT · RESIDENT_NUMBER_MISSING")
+            String type,
+            String typeLabel,
+            @Schema(example = "인플루언서 → 플랫폼") String direction,
+            @Schema(description = "인플루언서 입력 시각", nullable = true) LocalDateTime inputAt,
+            @Schema(description = "기한 — 브랜드 세금계산서", nullable = true) LocalDate dueAt,
+            @Schema(description = "문서 상태 · 가상 행은 WAITING_CREATOR") String status,
+            String statusLabel,
+            @Schema(description = "BLOCKING(인플루언서 몫 지급을 막는다) · NONE") String payoutImpact) {
+    }
+
+    @Schema(name = "AdminSettlementClawbackItem",
+            description = "차감 탭 행 = 차감 번호 1건(측별 행을 한 줄로 합친다 · 상태가 다르면 측별로 따로 내린다)")
+    public record ClawbackItem(
+            @Schema(example = "CLW-0003") String clawbackNumber,
+            Long originSettlementId,
+            @Schema(example = "STL-2609-002") String originSettlementNumber,
+            @Schema(nullable = true) String orderNumber,
+            @Schema(nullable = true) String productName,
+            String brandName,
+            String showroomName,
+            @Schema(example = "구매확정 후 하자") String reasonLabel,
+            @Schema(description = "환불 상품 금액분") long refundAmount,
+            @Schema(description = "브랜드 측 차감(이월 포함 합)") long brandAmount,
+            @Schema(description = "인플루언서 측 차감(이월 포함 합)") long creatorAmount,
+            @Schema(description = "PENDING · APPLIED · UNRECOVERABLE — 이월 중이면 PENDING", nullable = true) String brandStatus,
+            @Schema(nullable = true) String brandStatusLabel,
+            @Schema(nullable = true) String creatorStatus,
+            @Schema(nullable = true) String creatorStatusLabel,
+            @Schema(description = "반영된 정산(마지막)", nullable = true) String appliedSettlementNumber,
+            @Schema(description = "미회수 사유 — 인플루언서 탈퇴 · 브랜드 탈퇴", nullable = true) String unrecoverableReasonLabel,
+            LocalDateTime createdAt) {
     }
 
     @Schema(name = "AdminSettlementRedistributeRequest")

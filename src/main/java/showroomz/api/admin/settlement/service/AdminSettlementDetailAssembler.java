@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.common.AdminOperatorResolver;
 import showroomz.api.admin.settlement.dto.AdminSettlementDto;
 import showroomz.api.common.settlement.dto.SettlementPartyDto;
+import showroomz.api.common.settlement.service.SettlementClawbackViews;
 import showroomz.api.common.settlement.service.SettlementPartyViews;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.settlement.adjustment.port.SettlementAdjustmentPort;
@@ -17,14 +18,19 @@ import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementHistory;
 import showroomz.domain.settlement.entity.SettlementItem;
 import showroomz.domain.settlement.entity.SettlementPayout;
+import showroomz.domain.settlement.entity.SettlementTaxDocument;
 import showroomz.domain.settlement.repository.SettlementHistoryRepository;
 import showroomz.domain.settlement.repository.SettlementItemRepository;
+import showroomz.domain.settlement.repository.SettlementTaxDocumentRepository;
 import showroomz.domain.settlement.service.PayoutBlockPolicy;
 import showroomz.domain.settlement.service.SettlementPayoutTransitions;
+import showroomz.domain.settlement.type.ClawbackSide;
 import showroomz.domain.settlement.type.PayoutStatus;
 import showroomz.domain.settlement.type.SettlementActorType;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
+import showroomz.domain.settlement.type.TaxDocumentStatus;
+import showroomz.domain.settlement.type.TaxDocumentType;
 import showroomz.global.config.properties.SettlementProperties;
 import showroomz.global.utils.PersonalDataCipher;
 
@@ -55,12 +61,15 @@ public class AdminSettlementDetailAssembler {
     private final AdminOperatorResolver operators;
     private final PersonalDataCipher cipher;
     private final SettlementProperties properties;
+    private final SettlementTaxDocumentRepository documentRepository;
+    private final SettlementClawbackViews clawbackViews;
 
     public AdminSettlementDto.Detail detail(Settlement s) {
         boolean confirmed = s.getStatus().isConfirmed();
         Map<SettlementPayee, SettlementPayout> payouts = views.payoutsOf(s.getId());
         AdjustmentSummary adjustment = adjustmentReader.findBySettlementId(s.getId()).orElse(null);
         Object[] totals = first(itemRepository.totalsOf(s.getId()));
+        List<SettlementTaxDocument> documents = documentRepository.findBySettlementIdOrderByIdAsc(s.getId());
         long orderCount = totals == null ? 0 : ((Number) totals[3]).longValue();
         return new AdminSettlementDto.Detail(s.getId(), s.getSettlementNumber(), s.getStatus(),
                 s.getStatus().getLabel(), s.getStatus().getTone(),
@@ -69,9 +78,9 @@ public class AdminSettlementDetailAssembler {
                         s.getCreatorId(), s.getCreator().getShowroomName(), s.getCreatorBusinessType(),
                         s.getPeriodStartAt(), s.getPeriodEndAt(), s.getOrdersClosedAt(), s.getCreatedAt(),
                         orderCount, orderCount),
-                stage(s, adjustment), breakdown(s), List.of(), adjustment(s, adjustment),
-                confirmed ? payouts(s, payouts) : null, List.of(), fixedFee(s.getContract()), items(s, totals),
-                rail(s, payouts, adjustment), actions(s, payouts), history(s));
+                stage(s, adjustment), breakdown(s), clawbacksApplied(s), adjustment(s, adjustment),
+                confirmed ? payouts(s, payouts) : null, taxDocuments(s, documents), fixedFee(s.getContract()),
+                items(s, totals), rail(s, payouts, adjustment), actions(s, payouts, documents), history(s));
     }
 
     /** 20b 이슈 패널 보강(7-9) — 상세의 rail + adjustment. */
@@ -111,6 +120,23 @@ public class AdminSettlementDetailAssembler {
                         s.getWithholdingIncomeRate(), s.getWithholdingLocalRate()),
                 s.getCreatorVatAmount(), s.getCreatorPayoutAmount());
         return new AdminSettlementDto.Breakdown(brand, creator, s.getPlatformShareAmount());
+    }
+
+    /** 차감 반영(D3) — 이 정산에서 회수한 차감을 번호별로 측 합. */
+    private List<AdminSettlementDto.AppliedClawback> clawbacksApplied(Settlement s) {
+        Map<String, List<SettlementClawbackViews.Row>> byNumber = new java.util.LinkedHashMap<>();
+        clawbackViews.appliedTo(s.getId()).forEach(row ->
+                byNumber.computeIfAbsent(row.clawback().getClawbackNumber(), k -> new java.util.ArrayList<>()).add(row));
+        return byNumber.entrySet().stream().map(entry -> {
+            SettlementClawbackViews.Row head = entry.getValue().get(0);
+            long brand = entry.getValue().stream().filter(r -> r.clawback().getSide() == ClawbackSide.BRAND)
+                    .mapToLong(r -> r.clawback().getAmount()).sum();
+            long creator = entry.getValue().stream().filter(r -> r.clawback().getSide() == ClawbackSide.CREATOR)
+                    .mapToLong(r -> r.clawback().getAmount()).sum();
+            return new AdminSettlementDto.AppliedClawback(entry.getKey(),
+                    head.origin() == null ? null : head.origin().getSettlementNumber(), head.orderNumber(),
+                    head.productName(), head.reasonLabel(), brand, creator);
+        }).toList();
     }
 
     private AdminSettlementDto.Adjustment adjustment(Settlement s, AdjustmentSummary a) {
@@ -226,10 +252,49 @@ public class AdminSettlementDetailAssembler {
                         failed.getFailReason(), failed.getAttempt(), properties.getPayoutRetryLimit()));
     }
 
-    /** 버튼 판정 — 커맨드가 같은 식을 다시 검사한다. 증빙 두 버튼은 증빙 단계(V181) 전까지 false. */
-    AdminSettlementDto.Actions actions(Settlement s, Map<SettlementPayee, SettlementPayout> payouts) {
-        return new AdminSettlementDto.Actions(canRedistribute(s, payouts.values()), false, false,
+    /**
+     * 버튼 판정 — 커맨드가 같은 식을 다시 검사한다. 대조 = 인플루언서 세금계산서 확인 대기 · 등록 = 브랜드 세금계산서(수정 포함)
+     * 발행 대기 — 정상 등록 뒤 버튼이 사라진다(M5 덮어쓰기 방지).
+     */
+    AdminSettlementDto.Actions actions(Settlement s, Map<SettlementPayee, SettlementPayout> payouts,
+                                       List<SettlementTaxDocument> documents) {
+        return new AdminSettlementDto.Actions(canRedistribute(s, payouts.values()),
+                documents.stream().anyMatch(AdminSettlementDetailAssembler::canVerify),
+                documents.stream().anyMatch(AdminSettlementDetailAssembler::canRegister),
                 s.getStatus().isConfirmed());
+    }
+
+    private static boolean canVerify(SettlementTaxDocument d) {
+        return d.getType() == TaxDocumentType.CREATOR_TAX_INVOICE && d.getStatus() == TaxDocumentStatus.SUBMITTED;
+    }
+
+    private static boolean canRegister(SettlementTaxDocument d) {
+        return d.getType().isBrandInvoice() && d.getStatus() == TaxDocumentStatus.PENDING_ISSUE;
+    }
+
+    /** 증빙(D7) — 승인번호는 앞 8 · 뒤 4 만 보인다. */
+    private static List<AdminSettlementDto.TaxDocument> taxDocuments(Settlement s, List<SettlementTaxDocument> documents) {
+        return documents.stream().map(d -> new AdminSettlementDto.TaxDocument(d.getId(), d.getType().name(),
+                d.getType().getLabel(), d.getType().getDirection(), counterpartyOf(s, d), d.getSupplyAmount(),
+                d.getVatAmount(), d.getTotalAmount(), d.getStatus().name(), d.getStatus().getLabel(),
+                maskApprovalNumber(d.getApprovalNumber()), d.getIssuedDate(), d.getDueDate(), d.getSubmittedAt(),
+                d.getVerifiedAt(), d.getRejectReason() == null ? null : d.getRejectReason().name(),
+                d.getRejectReason() == null ? null : d.getRejectReason().getLabel(), d.getFileName(),
+                new AdminSettlementDto.TaxDocumentActions(canVerify(d), canRegister(d)))).toList();
+    }
+
+    private static String counterpartyOf(Settlement s, SettlementTaxDocument d) {
+        if (d.getCounterpartyName() != null) {
+            return d.getCounterpartyName();
+        }
+        return d.getType().isBrandInvoice() ? s.getMarket().getMarketName() : s.getCreator().getShowroomName();
+    }
+
+    static String maskApprovalNumber(String number) {
+        if (number == null || number.length() < 12) {
+            return number;
+        }
+        return number.substring(0, 8) + "-********-****" + number.substring(number.length() - 4);
     }
 
     boolean canRedistribute(Settlement s, java.util.Collection<SettlementPayout> payouts) {

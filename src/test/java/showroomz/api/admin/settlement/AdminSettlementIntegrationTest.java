@@ -94,9 +94,11 @@ class AdminSettlementIntegrationTest extends SettlementTestSupport {
         assertThat(ids(json(adminGet(SETTLEMENTS + "?keyword=토너")))).containsExactly(failed.getId());
         assertThat(json(adminGet(SETTLEMENTS + "?keyword=글로우랩")).at("/pageInfo/totalResults").asLong()).isEqualTo(6);
 
+        // 증빙 탭 — 지급 예정 정산의 브랜드 세금계산서(발행 대기) + 주민번호 미등록 가상 행(비사업자 인플루언서 행 보류).
         adminGet(SETTLEMENTS + "?tab=EVIDENCE").andExpect(status().isOk())
-                .andExpect(jsonPath("$.content.length()").value(0))
-                .andExpect(jsonPath("$.toolbar.count").value(0));
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.toolbar.count").value(2))
+                .andExpect(jsonPath("$.toolbar.operatorActionCount").value(1));
         adminGet(SETTLEMENTS + "?tab=UNKNOWN").andExpect(status().isBadRequest());
 
         adminGet(SETTLEMENTS + "/summary").andExpect(status().isOk())
@@ -104,8 +106,8 @@ class AdminSettlementIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.tabCounts.REVIEWING").value(2))
                 .andExpect(jsonPath("$.tabCounts.ADJUSTING").value(1))
                 .andExpect(jsonPath("$.tabCounts.PAYOUT_FAILED").value(1))
-                .andExpect(jsonPath("$.tabCounts.EVIDENCE").value(0))
-                .andExpect(jsonPath("$.gnbBadge").value(1));
+                .andExpect(jsonPath("$.tabCounts.EVIDENCE").value(2))
+                .andExpect(jsonPath("$.gnbBadge").value(2));   // 분배 실패 1 + 브랜드 세금계산서 발행 대기 1
     }
 
     // ------------------------------------------------------------------ 07b 상세 · 명세 · ST-12(2/2)
@@ -201,7 +203,8 @@ class AdminSettlementIntegrationTest extends SettlementTestSupport {
     void redistributeSucceeds() throws Exception {
         Settlement s = failedOnCreator();
         Long creatorPayoutId = payout(s.getId(), SettlementPayee.CREATOR).getId();
-        adminGet(SETTLEMENTS + "/summary").andExpect(jsonPath("$.gnbBadge").value(1));
+        // 배지 = 분배 실패 1 + 브랜드 세금계산서 발행 대기 1(M5 전).
+        adminGet(SETTLEMENTS + "/summary").andExpect(jsonPath("$.gnbBadge").value(2));
         JsonNode before = json(adminGet(SETTLEMENTS + "/" + s.getId()));
         assertThat(before.at("/actions/canRedistribute").asBoolean()).isTrue();
         assertThat(before.at("/rail/failedPayout/payoutId").asLong()).isEqualTo(creatorPayoutId);
@@ -228,7 +231,7 @@ class AdminSettlementIntegrationTest extends SettlementTestSupport {
         assertThat(retried.get("actorType").asText()).isEqualTo("ADMIN");
         assertThat(retried.get("actorLabel").asText()).isEqualTo("김운영");
         assertThat(reload(groupBuy.getId()).getStatus()).isEqualTo(GroupBuyStatus.SETTLED);
-        adminGet(SETTLEMENTS + "/summary").andExpect(jsonPath("$.gnbBadge").value(0));
+        adminGet(SETTLEMENTS + "/summary").andExpect(jsonPath("$.gnbBadge").value(1));   // 발행 대기만 남는다
 
         redistribute(s, payout(s.getId(), SettlementPayee.BRAND).getId(), "PREVIOUS")
                 .andExpect(status().isConflict())
