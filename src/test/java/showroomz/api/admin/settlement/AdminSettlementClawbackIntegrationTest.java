@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import showroomz.api.common.settlement.SettlementTestSupport;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
+import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.settlement.entity.Settlement;
@@ -298,6 +299,82 @@ class AdminSettlementClawbackIntegrationTest extends SettlementTestSupport {
                 .containsExactly(tuple(ClawbackSide.BRAND, CREAM_BRAND, ClawbackStatus.PENDING),
                         tuple(ClawbackSide.CREATOR, CREAM_REWARD, ClawbackStatus.PENDING));
         adminGet(ADMIN_REFUNDS + "/" + taskId).andExpect(jsonPath("$.settlement.clawback.status").value("PENDING"));
+    }
+
+    // ------------------------------------------------------------------ 측별 독립 · 등록 트랜잭션(CB-01 · CB-05)
+
+    @Test
+    @DisplayName("CB-01 같은 브랜드 · 다른 인플루언서의 다음 정산 — 브랜드 측만 APPLIED · 인플루언서 측 PENDING 유지(측별 독립) · 다음 정산 리워드는 차감 없음")
+    void brandSideAppliedToOtherCreatorsSettlement() throws Exception {
+        OrderDeliveryGroup creamGroup = confirmedGroup(creamVariant, 1);
+        endGroupBuy();
+        confirm(generate(LocalDateTime.now().withNano(0)));
+        Long taskId = operatorRefund(creamGroup, "POST_CONFIRM_DEFECT", 27_200);
+
+        Creator other = createCreator("다른_쇼룸", "other-creator");
+        openNextGroupBuy(other);
+        confirmedGroup(creamVariant, 2);
+        endGroupBuy();
+        Settlement next = generate(LocalDateTime.now().withNano(0));
+
+        assertThat(next.getCreatorId()).isEqualTo(other.getId());
+        assertThat(next.getBrandClawbackAmount()).isEqualTo(CREAM_BRAND);
+        assertThat(next.getBrandPayoutAmount()).isEqualTo(next.getBrandPayoutBeforeClawback() - CREAM_BRAND);
+        assertThat(next.getRewardClawbackAmount()).isZero();
+        assertThat(next.getRewardAfterClawback()).isEqualTo(next.getRewardAmount());
+        assertThat(clawbackRepository.findByRefundTaskIdOrderByIdAsc(taskId))
+                .extracting(SettlementClawback::getSide, SettlementClawback::getStatus, SettlementClawback::getAppliedSettlementId)
+                .containsExactly(tuple(ClawbackSide.BRAND, ClawbackStatus.APPLIED, next.getId()),
+                        tuple(ClawbackSide.CREATOR, ClawbackStatus.PENDING, null));
+        // 검산 — 회수한 브랜드 측 금액은 플랫폼 몫으로 간다(환불은 플랫폼이 먼저 집행했다).
+        assertThat(next.getBrandPayoutAmount() + next.getCreatorPayoutAmount() + next.getWithholdingAmount()
+                + next.getPlatformShareAmount() + next.getPgFeeAmount())
+                .isEqualTo(next.getConfirmedSalesAmount() + next.getConsumerDeliveryFeeAmount());
+        // 인플루언서 측은 원래 인플루언서의 다음 정산을 기다린다 — 스튜디오(다른 인플루언서)에는 차감 블록이 없다.
+        String otherToken = bearerToken(other.getUser().getUsername(), showroomz.api.app.auth.entity.RoleType.CREATOR,
+                other.getUser().getId());
+        JsonNode studio = json(mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/v1/creator/settlements/" + next.getId())
+                .header(org.springframework.http.HttpHeaders.AUTHORIZATION, otherToken)).andExpect(status().isOk()));
+        assertThat(studio.at("/clawbacks")).isEmpty();
+        assertThat(studio.at("/breakdown/rewardAfterClawback").asLong()).isEqualTo(next.getRewardAmount());
+        assertThat(clawbackService.pendingFor(brand.marketId(), creator.getId()).rewardAmount()).isEqualTo(CREAM_REWARD);
+    }
+
+    @Test
+    @DisplayName("CB-05 차감 등록 실패(번호 발급 불가) — 06c 집행은 DONE 으로 끝나고 되돌아가지 않는다 · 차감 행 · 이력 없음 · 고친 뒤 같은 큐 행으로 다시 부르면 한 번만 생긴다")
+    void clawbackFailureDoesNotRollBackRefund() throws Exception {
+        OrderDeliveryGroup creamGroup = confirmedGroup(creamVariant, 1);
+        endGroupBuy();
+        Settlement first = confirm(generate(LocalDateTime.now().withNano(0)));
+        int pgCalls = fake.partialCancelCalls().size();
+
+        Long taskId;
+        // 차감번호 발급(clawback_number_sequence)을 끊는다 — 커밋 뒤 별도 트랜잭션의 등록만 실패한다.
+        jdbc.execute("ALTER TABLE clawback_number_sequence RENAME TO clawback_number_sequence_off");
+        try {
+            taskId = operatorRefund(creamGroup, "POST_CONFIRM_DEFECT", 27_200);
+        } finally {
+            jdbc.execute("ALTER TABLE clawback_number_sequence_off RENAME TO clawback_number_sequence");
+        }
+
+        assertThat(jdbc.queryForObject("SELECT status FROM order_refund_task WHERE refund_task_id = ?", String.class,
+                taskId)).isEqualTo("DONE");
+        assertThat(fake.partialCancelCalls()).hasSize(pgCalls + 1);
+        assertThat(clawbackRepository.findByRefundTaskIdOrderByIdAsc(taskId)).isEmpty();
+        assertThat(settlementEvents(first.getId())).doesNotContain(SettlementEventType.CLAWBACK_REGISTERED);
+        adminGet(ADMIN_REFUNDS + "/" + taskId).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DONE"))
+                .andExpect(jsonPath("$.settlement.clawback").doesNotExist());
+
+        // 운영 확인 뒤 같은 큐 행으로 다시 등록 — 2행이 생기고 세 번째 호출은 아무것도 만들지 않는다.
+        assertThat(clawbackService.register(taskId, LocalDateTime.now())).hasSize(2);
+        assertThat(clawbackService.register(taskId, LocalDateTime.now())).isEmpty();
+        assertThat(clawbackRepository.findByRefundTaskIdOrderByIdAsc(taskId))
+                .extracting(SettlementClawback::getSide, SettlementClawback::getAmount, SettlementClawback::getClawbackNumber)
+                .containsExactly(tuple(ClawbackSide.BRAND, CREAM_BRAND, "CLW-0001"),
+                        tuple(ClawbackSide.CREATOR, CREAM_REWARD, "CLW-0001"));
+        assertThat(settlementEvents(first.getId())).filteredOn(SettlementEventType.CLAWBACK_REGISTERED::equals).hasSize(1);
     }
 
     // ------------------------------------------------------------------ 보조

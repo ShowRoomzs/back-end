@@ -11,6 +11,7 @@ import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.scenario.OrderFlowTestSupport;
 import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
+import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
@@ -19,6 +20,7 @@ import showroomz.domain.order.service.OrderClaimService;
 import showroomz.domain.order.type.ClaimReason;
 import showroomz.domain.order.type.ClaimType;
 import showroomz.domain.order.type.DeliveryCarrier;
+import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementItem;
@@ -42,6 +44,7 @@ import showroomz.domain.settlement.type.SettlementStatus;
 import showroomz.global.utils.PersonalDataCipher;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackSnapshot;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.support.ContractOptions;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -193,6 +196,25 @@ public abstract class SettlementTestSupport extends OrderFlowTestSupport {
     /** 공구 종료(스케줄러 몫) — SQL 로 옮긴다. */
     protected void endGroupBuy() {
         moveTo(groupBuy.getId(), GroupBuyStatus.ENDED);
+    }
+
+    /**
+     * 같은 브랜드의 다음 공구(진행 중) — {@code counterparty}와 맺은 새 계약 · 크림 · 세럼 재고 10. 이후 {@link #purchase} ·
+     * {@link #endGroupBuy} · {@link #generate}가 이 공구를 쓰도록 {@code groupBuy} · 옵션 필드를 바꿔 끼운다.
+     */
+    protected GroupBuy openNextGroupBuy(Creator counterparty) {
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        GroupBuy next = seed(brand, counterparty, "글로우 크림 앵콜 공구", now.minusDays(3), now.plusDays(4));
+        moveTo(next.getId(), GroupBuyStatus.IN_PROGRESS);
+        groupBuy = reload(next.getId());
+        for (Product product : List.of(cream, serum)) {
+            jdbc.update("UPDATE product SET group_buy_status = 'IN_PROGRESS' WHERE product_id = ?", product.getProductId());
+        }
+        creamVariant = ContractOptions.variantsOf(productVariantRepository, cream).get(0);
+        serumVariant = ContractOptions.variantsOf(productVariantRepository, serum).get(0);
+        setStock(creamVariant, 10);
+        setStock(serumVariant, 10);
+        return groupBuy;
     }
 
     protected Settlement generate(LocalDateTime now) {

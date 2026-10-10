@@ -437,6 +437,31 @@ class SettlementAdjustmentIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
+    @DisplayName("IS-01 이슈 탭에는 조정 협의 스레드만 — 운영자가 열람할 수 있게 된 PAIR 스레드도 진행 · 종결 어느 쪽에도 섞이지 않는다")
+    void issueTabExcludesPairThreads() throws Exception {
+        long threadId = json(creatorRequest(settlement, 130_000).andExpect(status().isCreated())).get("threadId").asLong();
+        // 협의가 생긴 쌍이라 운영자 열람(SA-18)은 열린다 — 그래도 목록 축은 다르다.
+        adminGet(ADMIN_THREADS + pairThreadId + "/info").andExpect(status().isOk());
+
+        for (String state : List.of("OPEN", "CLOSED")) {
+            JsonNode page = json(adminGet("/v1/admin/connections/threads?tab=ISSUE&state=" + state)
+                    .andExpect(status().isOk()));
+            List<Long> ids = new ArrayList<>();
+            page.get("content").forEach(row -> {
+                ids.add(row.get("threadId").asLong());
+                assertThat(row.get("tab").asText()).isEqualTo("ISSUE");
+            });
+            assertThat(ids).doesNotContain(pairThreadId);
+            if (state.equals("OPEN")) {
+                assertThat(ids).containsExactly(threadId);
+            }
+        }
+        adminGet("/v1/admin/connections/threads?tab=ISSUE&keyword=글로우랩")
+                .andExpect(jsonPath("$.pageInfo.totalResults").value(1))
+                .andExpect(jsonPath("$.content[0].threadId").value(threadId));
+    }
+
+    @Test
     @DisplayName("SA-16 어드민 이슈 패널 — 진행 · 합의 · 만료의 steps · holdLabel · 실지급")
     void adminIssuePanel() throws Exception {
         JsonNode requested = json(creatorRequest(settlement, 130_000).andExpect(status().isCreated()));

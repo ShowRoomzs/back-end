@@ -16,9 +16,11 @@ import showroomz.domain.settlement.type.SettlementEventType;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
 import showroomz.global.error.exception.BusinessException;
+import showroomz.global.config.properties.SettlementProperties;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.scheduler.SettlementAutoConfirmScheduler;
 import showroomz.global.scheduler.SettlementGenerationScheduler;
+import showroomz.global.scheduler.SettlementPayoutResultScheduler;
 import showroomz.global.scheduler.SettlementPayoutScheduler;
 
 import java.time.LocalDate;
@@ -53,6 +55,7 @@ class SettlementPayoutSafetyIntegrationTest extends SettlementTestSupport {
     private static final LocalDate PAYOUT_DUE = LocalDate.of(2026, 10, 12);
 
     @Autowired private SettlementAdjustmentPort adjustmentPort;
+    @Autowired private SettlementProperties settlementProperties;
 
     @BeforeEach
     void hangulDayOnly() {
@@ -98,6 +101,27 @@ class SettlementPayoutSafetyIntegrationTest extends SettlementTestSupport {
         assertThat(payoutGateway.calls()).isEmpty();
         assertThat(payoutsOf(s.getId())).extracting(SettlementPayout::getStatus).containsOnly(PayoutStatus.REQUESTED);
         assertThat(settlementEvents(s.getId())).filteredOn(SettlementEventType.PAYOUT_REQUESTED::equals).hasSize(3);
+    }
+
+    @Test
+    @DisplayName("PY-04 결과 조회 배치 — SIMULATED 면 아무것도 하지 않는다(REQUESTED 그대로 · 지시 0) · PG 모드도 어댑터가 없어 경고 로그뿐 · 상태 불변")
+    void payoutResultTickIsSkeleton() {
+        readyToPay();
+        Settlement s = confirm(generated());
+        payoutGateway.unresponsive();
+        payoutService.distribute(s.getId(), PAYOUT_DUE, PAYOUT_DUE.atTime(10, 0));
+        payoutGateway.reset();
+        List<SettlementEventType> eventsBefore = settlementEvents(s.getId());
+
+        new SettlementPayoutResultScheduler(settlementProperties).tick();
+        SettlementProperties pgMode = new SettlementProperties();
+        pgMode.getPayout().setMode(SettlementProperties.PayoutMode.PG);
+        new SettlementPayoutResultScheduler(pgMode).tick();
+
+        assertThat(payoutGateway.calls()).isEmpty();
+        assertThat(payoutsOf(s.getId())).extracting(SettlementPayout::getStatus).containsOnly(PayoutStatus.REQUESTED);
+        assertThat(settlement(s.getId()).getStatus()).isEqualTo(SettlementStatus.PAYOUT_SCHEDULED);
+        assertThat(settlementEvents(s.getId())).isEqualTo(eventsBefore);
     }
 
     // ------------------------------------------------------------------ PS-02 재실행

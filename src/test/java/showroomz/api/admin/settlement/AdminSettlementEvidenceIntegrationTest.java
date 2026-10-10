@@ -220,10 +220,67 @@ class AdminSettlementEvidenceIntegrationTest extends SettlementTestSupport {
         adminGet(SETTLEMENTS + "/withholding-report").andExpect(status().isBadRequest());
     }
 
+    @Test
+    @DisplayName("EV-02 합의로 리워드가 바뀐 정산 — 확인 기간 · 협의 중에는 증빙 행 없음 · 합의 확정 때 생긴 브랜드 세금계산서 공급가 = 합의 후 리워드(수정세금계산서 없음)")
+    void brandInvoiceUsesAgreedReward() throws Exception {
+        confirmedGroup(creamVariant, 1);
+        confirmedGroup(serumVariant, 1);
+        endGroupBuy();
+        Settlement s = generate(LocalDateTime.now().withNano(0));
+        long agreed = s.getRewardAmount() + 1_000;
+        assertThat(documentRepository.findBySettlementIdOrderByIdAsc(s.getId())).isEmpty();
+
+        JsonNode requested = json(mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/v1/creator/settlements/" + s.getId() + "/adjustment")
+                        .header(HttpHeaders.AUTHORIZATION, creatorToken)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(toJson(Map.of("rewardAmount", agreed, "reason", "추가 콘텐츠 2건 제작"))))
+                .andExpect(status().isCreated()));
+        assertThat(documentRepository.findBySettlementIdOrderByIdAsc(s.getId())).isEmpty();
+        sellerPost("/v1/seller/settlement-adjustments/" + requested.get("adjustmentId").asLong() + "/proposals/"
+                + requested.get("proposalId").asLong() + "/accept", Map.of()).andExpect(status().isOk());
+
+        Settlement confirmed = settlement(s.getId());
+        assertThat(confirmed.getRewardAmount()).isEqualTo(agreed);
+        assertThat(documentRepository.findBySettlementIdOrderByIdAsc(s.getId())).singleElement().satisfies(d -> {
+            assertThat(d.getType()).isEqualTo(TaxDocumentType.BRAND_TAX_INVOICE);
+            assertThat(d.getStatus()).isEqualTo(TaxDocumentStatus.PENDING_ISSUE);
+            assertThat(d.getSupplyAmount()).isEqualTo(agreed).isNotEqualTo(confirmed.getOriginalRewardAmount());
+            assertThat(d.getVatAmount()).isEqualTo(confirmed.getRewardVatAmount()).isEqualTo(agreed / 10);
+            assertThat(d.getDueDate()).isEqualTo(taxDocumentService.brandInvoiceDueDate(
+                    confirmed.getConfirmedAt().toLocalDate()));
+        });
+    }
+
+    @Test
+    @DisplayName("EV-03 브랜드 세금계산서 기한 — 확정일이 속한 달의 다음 달 N일 · 01.31 → 02.10 · 12월 → 다음 해 1월 · N 이 달 길이보다 크면 말일")
+    void brandInvoiceDueDateRollsMonth() {
+        assertThat(taxDocumentService.brandInvoiceDueDate(LocalDate.of(2027, 1, 31))).isEqualTo(LocalDate.of(2027, 2, 10));
+        assertThat(taxDocumentService.brandInvoiceDueDate(LocalDate.of(2026, 10, 6))).isEqualTo(LocalDate.of(2026, 11, 10));
+        assertThat(taxDocumentService.brandInvoiceDueDate(LocalDate.of(2026, 12, 1))).isEqualTo(LocalDate.of(2027, 1, 10));
+
+        int original = settlementProperties.getBrandInvoiceDueDay();
+        try {
+            settlementProperties.setBrandInvoiceDueDay(31);
+            assertThat(taxDocumentService.brandInvoiceDueDate(LocalDate.of(2027, 1, 31)))
+                    .isEqualTo(LocalDate.of(2027, 2, 28));
+            assertThat(taxDocumentService.brandInvoiceDueDate(LocalDate.of(2028, 1, 15)))
+                    .isEqualTo(LocalDate.of(2028, 2, 29));
+            assertThat(taxDocumentService.brandInvoiceDueDate(LocalDate.of(2026, 9, 30)))
+                    .isEqualTo(LocalDate.of(2026, 10, 31));
+        } finally {
+            settlementProperties.setBrandInvoiceDueDay(original);
+        }
+    }
+
     // ------------------------------------------------------------------ 보조
 
     @org.springframework.beans.factory.annotation.Autowired
     private showroomz.domain.settlement.service.WithholdingReceiptGenerator withholdingReceiptGenerator;
+    @org.springframework.beans.factory.annotation.Autowired
+    private showroomz.domain.settlement.service.SettlementTaxDocumentService taxDocumentService;
+    @org.springframework.beans.factory.annotation.Autowired
+    private showroomz.global.config.properties.SettlementProperties settlementProperties;
 
     private Settlement generatedSettlement() {
         confirmedGroup(creamVariant, 1);

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import showroomz.api.common.settlement.SettlementTestSupport;
 import showroomz.domain.groupbuy.entity.GroupBuyHistory;
 import showroomz.domain.groupbuy.type.GroupBuyEventType;
@@ -18,10 +19,19 @@ import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.config.properties.SettlementProperties;
 import showroomz.global.scheduler.SettlementGenerationScheduler;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -40,6 +50,8 @@ class SettlementGenerationIntegrationTest extends SettlementTestSupport {
 
     @Autowired(required = false)
     private SettlementGenerationScheduler scheduler;
+    @Autowired
+    private SettlementProperties settlementProperties;
 
     @Test
     @DisplayName("ST-03 미종결 1건이면 정산 없음 → 종결 뒤 생성 · 확인 마감 = 다음 영업일부터 3영업일째 23:59:59(공휴일 건너뜀)")
@@ -179,6 +191,64 @@ class SettlementGenerationIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
+    @DisplayName("GN-07 요율 스냅샷 — 플랫폼 수수료율을 0.02 로 바꾼 뒤 생긴 정산만 0.02 · 이미 생긴 정산은 0 그대로(07b 분해도 행 값)")
+    void ratesAreSnapshotted() throws Exception {
+        confirmedGroup(creamVariant, 1);
+        endGroupBuy();
+        Settlement before = generate(GENERATED_AT);
+        BigDecimal original = settlementProperties.getPlatformFeeRate();
+        Settlement after;
+        try {
+            settlementProperties.setPlatformFeeRate(new BigDecimal("0.02"));
+            openNextGroupBuy(creator);
+            confirmedGroup(creamVariant, 1);
+            endGroupBuy();
+            after = generate(GENERATED_AT);
+        } finally {
+            settlementProperties.setPlatformFeeRate(original);
+        }
+
+        assertThat(settlement(before.getId()).getPlatformFeeRate()).isEqualByComparingTo("0");
+        assertThat(settlement(before.getId()).getPlatformFeeAmount()).isZero();
+        assertThat(settlement(after.getId()).getPlatformFeeRate()).isEqualByComparingTo("0.02");
+        assertThat(settlement(after.getId()).getPlatformFeeAmount()).isEqualTo(CREAM_PRICE * 2 / 100);
+        // 검산 — 플랫폼 수수료가 생겨도 다섯 몫의 합은 확정 거래액 + 소비자 배송비다.
+        Settlement s = settlement(after.getId());
+        assertThat(s.getBrandPayoutAmount() + s.getCreatorPayoutAmount() + s.getWithholdingAmount()
+                + s.getPlatformShareAmount() + s.getPgFeeAmount())
+                .isEqualTo(s.getConfirmedSalesAmount() + s.getConsumerDeliveryFeeAmount());
+
+        // 설정을 되돌린 뒤에도 각 정산은 생성 때 요율로 읽힌다.
+        adminGet("/v1/admin/settlements/" + before.getId()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.breakdown.brand.platformFee.rate").value(0))
+                .andExpect(jsonPath("$.breakdown.brand.platformFee.amount").value(0));
+        adminGet("/v1/admin/settlements/" + after.getId()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.breakdown.brand.platformFee.rate").value(0.02))
+                .andExpect(jsonPath("$.breakdown.brand.platformFee.amount").value(CREAM_PRICE * 2 / 100));
+    }
+
+    @Test
+    @DisplayName("GN-08 같은 공구를 두 스레드가 동시에 생성 — 한쪽만 정산을 만들고 다른 쪽은 빈 결과(공구 행 잠금) 또는 유일 제약 위반 · 정산 · 수취자 행 · 생성 이력 1벌")
+    void concurrentGenerationCreatesOne() throws Exception {
+        confirmedGroup(creamVariant, 1);
+        endGroupBuy();
+
+        List<String> results = race(2, () -> generationService.generate(groupBuy.getId(), GENERATED_AT)
+                .map(id -> "CREATED").orElse("EMPTY"));
+
+        assertThat(results).containsOnlyOnce("CREATED");
+        assertThat(results).filteredOn(r -> !r.equals("CREATED"))
+                .allSatisfy(r -> assertThat(r).isIn("EMPTY", DataIntegrityViolationException.class.getSimpleName()));
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM settlement WHERE group_buy_id = ?", Long.class,
+                groupBuy.getId())).isEqualTo(1);
+        Settlement s = settlementRepository.findByGroupBuyId(groupBuy.getId()).orElseThrow();
+        assertThat(payoutsOf(s.getId())).hasSize(3);
+        assertThat(itemsOf(s)).hasSize(1);
+        assertThat(settlementEvents(s.getId())).containsExactly(SettlementEventType.CREATED);
+        assertThat(jdbc.queryForObject("SELECT last_no FROM settlement_number_sequence", Integer.class)).isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("ST-12(1/2) 공구 상세 settlement.stage 는 포트 값 · 정산 확인 409 · 06a ④ · 06c settlement")
     void portsFilled() throws Exception {
         OrderDeliveryGroup group = confirmedGroup(creamVariant, 1);
@@ -275,5 +345,34 @@ class SettlementGenerationIntegrationTest extends SettlementTestSupport {
         assertThat(itemsOf(s)).filteredOn(item -> item.getDeliveryGroupId().equals(shipping.getId()))
                 .extracting(SettlementItem::getStatus).containsOnly(SettlementItemStatus.DELIVERY_EXCEPTION);
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM settlement_clawback", Integer.class)).isZero();
+    }
+
+    // ------------------------------------------------------------------ 보조
+
+    /** 같은 호출을 n 스레드에서 같은 순간에 출발시킨다 — 예외는 클래스 이름으로 바꿔 돌려준다(누가 이겼는지는 테스트가 판정). */
+    private static List<String> race(int threads, Callable<String> call) throws Exception {
+        CountDownLatch ready = new CountDownLatch(threads);
+        CountDownLatch start = new CountDownLatch(1);
+        try (ExecutorService pool = Executors.newFixedThreadPool(threads)) {
+            List<Future<String>> futures = new ArrayList<>();
+            for (int i = 0; i < threads; i++) {
+                futures.add(pool.submit(() -> {
+                    ready.countDown();
+                    start.await();
+                    try {
+                        return call.call();
+                    } catch (Exception e) {
+                        return e.getClass().getSimpleName();
+                    }
+                }));
+            }
+            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            List<String> results = new ArrayList<>();
+            for (Future<String> future : futures) {
+                results.add(future.get(30, TimeUnit.SECONDS));
+            }
+            return results;
+        }
     }
 }
