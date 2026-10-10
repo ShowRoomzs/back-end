@@ -207,10 +207,11 @@ class AdminThreadChannelListIntegrationTest extends AdminThreadTestSupport {
     // ------------------------------------------------------------------ 요청 검증 · 권한
 
     @Test
-    @DisplayName("탭은 필수다 — 없거나 모르는 값이면 400이다(이슈 스레드 탭은 아직 없다)")
+    @DisplayName("탭은 필수다 — 없거나 모르는 값이면 400이다(이슈 스레드 탭 ISSUE 는 44 이슈 스레드 설계서 4-1 로 생겼다)")
     void tabIsRequired() throws Exception {
         channels(null).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_INPUT"));
-        channels("ISSUE").andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        channels("PAIR").andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        channels("ISSUE").andExpect(status().isOk()).andExpect(jsonPath("$.content", hasSize(0)));
     }
 
     @Test
@@ -250,7 +251,9 @@ class AdminThreadChannelListIntegrationTest extends AdminThreadTestSupport {
                 .andExpect(jsonPath("$.brand.pendingCardCount").value(0))
                 .andExpect(jsonPath("$.influencer.unreadCount").value(1))
                 .andExpect(jsonPath("$.influencer.pendingCardCount").value(0))
-                .andExpect(jsonPath("$.issue").value(nullValue()));
+                .andExpect(jsonPath("$.issue.openCount").value(0))
+                .andExpect(jsonPath("$.issue.closedCount").value(0))
+                .andExpect(jsonPath("$.issue.unreadCount").value(0));
     }
 
     @Test

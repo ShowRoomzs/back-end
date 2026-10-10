@@ -3,6 +3,8 @@ package showroomz.api.creator.settlement;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.common.settlement.SettlementTestSupport;
 import showroomz.domain.member.creator.entity.Creator;
@@ -12,9 +14,11 @@ import showroomz.domain.settlement.type.SettlementStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -155,5 +159,28 @@ class CreatorSettlementIntegrationTest extends SettlementTestSupport {
         List<List<String>> rows = readSheet(xlsx);
         assertThat(rows.get(0)).contains("주문번호", "상품", "리워드").doesNotContain("주문자", "하위주문번호", "정산번호");
         assertThat(rows.size()).isGreaterThanOrEqualTo(2 + 1 + 3);
+    }
+
+    @Test
+    @DisplayName("C-04 상세 ADJUSTING — adjustment.turn · 내 요청 금액 · review = null · 수취자 행 「보류 중」")
+    void adjustingDetail() throws Exception {
+        Settlement s = reviewing();
+        mockMvc.perform(post(SETTLEMENTS + "/" + s.getId() + "/adjustment")
+                        .header(HttpHeaders.AUTHORIZATION, creatorToken).contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(Map.of("rewardAmount", s.getRewardAmount() + 5_000, "reason", "추가 콘텐츠"))))
+                .andExpect(status().isCreated());
+
+        JsonNode detail = json(creatorGet(SETTLEMENTS + "/" + s.getId()).andExpect(status().isOk()));
+        assertThat(detail.get("settlement").get("status").asText()).isEqualTo("ADJUSTING");
+        assertThat(detail.get("review").isNull()).isTrue();
+        JsonNode adjustment = detail.get("adjustment");
+        assertThat(adjustment.get("turn").asText()).isEqualTo("THEIR_TURN");
+        assertThat(adjustment.get("requesterType").asText()).isEqualTo("CREATOR");
+        assertThat(adjustment.get("myLatestAmount").asLong()).isEqualTo(s.getRewardAmount() + 5_000);
+        assertThat(adjustment.get("proposals").get(0).get("mine").asBoolean()).isTrue();
+        assertThat(adjustment.get("remainingBusinessDays").asInt()).isPositive();
+        assertThat(detail.get("payouts").get("shownAfterConfirm").asBoolean()).isTrue();
+        detail.get("payouts").get("rows").forEach(row ->
+                assertThat(row.get("statusLabel").asText()).isEqualTo("보류 중"));
     }
 }

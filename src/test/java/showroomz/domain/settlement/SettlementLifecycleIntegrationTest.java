@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import showroomz.api.common.settlement.FakeSettlementPayoutGateway;
 import showroomz.api.common.settlement.SettlementTestSupport;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
+import showroomz.domain.settlement.adjustment.port.SettlementAdjustmentPort;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementPayout;
 import showroomz.domain.settlement.service.SettlementConfirmService;
@@ -17,13 +18,17 @@ import showroomz.domain.settlement.type.SettlementConfirmReason;
 import showroomz.domain.settlement.type.SettlementEventType;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
+import showroomz.global.error.exception.BusinessException;
+import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.scheduler.SettlementPayoutScheduler;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 /**
@@ -42,6 +47,7 @@ class SettlementLifecycleIntegrationTest extends SettlementTestSupport {
     @Autowired private SettlementConfirmService confirmService;
     @Autowired private SettlementPayoutService payoutService;
     @Autowired private FakeSettlementPayoutGateway payoutGateway;
+    @Autowired private SettlementAdjustmentPort adjustmentPort;
 
     @BeforeEach
     void hangulDayOnly() {
@@ -220,5 +226,70 @@ class SettlementLifecycleIntegrationTest extends SettlementTestSupport {
 
         assertThat(settlement(s.getId()).getStatus()).isEqualTo(SettlementStatus.PAID);
         assertThat(reload(groupBuy.getId()).getStatus()).isEqualTo(GroupBuyStatus.SETTLED);
+    }
+
+    // ------------------------------------------------------------------ 조정 포트(단계 5-2)
+
+    @Test
+    @DisplayName("ST-06 포트 — 보류 → 전 수취자 행 HELD · 합의 확정 → 리워드 이하만 다시 계산 · 원래 리워드 · 확정 거래액 · 명세 불변 · HELD → SCHEDULED")
+    void adjustmentPortHoldAndAgreement() {
+        registerCreatorResidentNumber();
+        Settlement s = generated();
+        long originalReward = s.getRewardAmount();
+        long agreed = originalReward + 10_000;
+        List<Long> itemRewards = itemsOf(s).stream().map(i -> i.getRewardAmount()).toList();
+        LocalDateTime heldAt = LocalDateTime.of(2026, 10, 2, 10, 0);
+
+        inTransaction(() -> {
+            adjustmentPort.holdForAdjustment(s.getId(), 0L, heldAt);
+            return null;
+        });
+        assertThat(settlement(s.getId()).getStatus()).isEqualTo(SettlementStatus.ADJUSTING);
+        assertThat(payoutsOf(s.getId())).extracting(SettlementPayout::getStatus).containsOnly(PayoutStatus.HELD);
+        assertThat(confirmService.findIdsToAutoConfirm(LocalDateTime.of(2026, 10, 6, 0, 10), 200))
+                .doesNotContain(s.getId());
+
+        LocalDateTime agreedAt = LocalDateTime.of(2026, 10, 2, 15, 0);
+        inTransaction(() -> {
+            adjustmentPort.confirmByAgreement(s.getId(), 0L, agreed, agreedAt);
+            return null;
+        });
+
+        Settlement after = settlement(s.getId());
+        assertThat(after.getStatus()).isEqualTo(SettlementStatus.PAYOUT_SCHEDULED);
+        assertThat(after.getConfirmReason()).isEqualTo(SettlementConfirmReason.AGREED);
+        assertThat(after.getConfirmedAt()).isEqualTo(agreedAt);
+        assertThat(after.getOriginalRewardAmount()).isEqualTo(originalReward);
+        assertThat(after.getRewardAmount()).isEqualTo(agreed);
+        assertThat(after.getConfirmedSalesAmount()).isEqualTo(s.getConfirmedSalesAmount());
+        assertThat(after.getBrandPayoutAmount()).isEqualTo(s.getBrandPayoutAmount() - 11_000);
+        assertThat(itemsOf(s)).extracting(i -> i.getRewardAmount()).containsExactlyElementsOf(itemRewards);
+        assertThat(payoutsOf(s.getId())).extracting(SettlementPayout::getPayee, SettlementPayout::getStatus,
+                        SettlementPayout::getAmount)
+                .containsExactly(
+                        tuple(SettlementPayee.BRAND, PayoutStatus.SCHEDULED, after.getBrandPayoutAmount()),
+                        tuple(SettlementPayee.CREATOR, PayoutStatus.SCHEDULED, after.getCreatorPayoutAmount()),
+                        tuple(SettlementPayee.PLATFORM, PayoutStatus.SCHEDULED, after.getPlatformShareAmount()));
+        // 확정일(금) + 3영업일 = 수요일
+        assertThat(payout(s.getId(), SettlementPayee.BRAND).getDueDate()).isEqualTo(LocalDate.of(2026, 10, 7));
+        assertThat(settlementEvents(s.getId())).containsSubsequence(SettlementEventType.ADJUSTMENT_REQUESTED,
+                SettlementEventType.ADJUSTMENT_ACCEPTED, SettlementEventType.CONFIRMED_BY_AGREEMENT);
+    }
+
+    @Test
+    @DisplayName("ST-07 포트 — 자동 확정이 먼저 지나간 정산의 보류는 409 WINDOW_CLOSED · 정산 그대로(만료 확정은 SA-21)")
+    void adjustmentHoldAfterAutoConfirm() {
+        registerCreatorResidentNumber();
+        Settlement s = generated();
+        assertThat(confirmService.autoConfirm(s.getId(), LocalDateTime.of(2026, 10, 6, 0, 10))).isTrue();
+
+        assertThatThrownBy(() -> inTransaction(() -> {
+            adjustmentPort.holdForAdjustment(s.getId(), 0L, LocalDateTime.of(2026, 10, 6, 0, 20));
+            return null;
+        })).isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.SETTLEMENT_ADJUSTMENT_WINDOW_CLOSED);
+        assertThat(settlement(s.getId()).getStatus()).isEqualTo(SettlementStatus.PAYOUT_SCHEDULED);
+        assertThat(payoutsOf(s.getId())).extracting(SettlementPayout::getStatus).doesNotContain(PayoutStatus.HELD);
     }
 }

@@ -3,6 +3,8 @@ package showroomz.api.seller.settlement;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import showroomz.api.common.settlement.SettlementTestSupport;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.type.ClaimReason;
@@ -13,8 +15,10 @@ import showroomz.support.BrandFixture;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -220,5 +224,40 @@ class SellerSettlementIntegrationTest extends SettlementTestSupport {
                 String.valueOf(s.getConfirmedSalesAmount())));
         assertThat(rows).anySatisfy(row -> assertThat(row).startsWith("합의 후 리워드",
                 String.valueOf(s.getRewardAmount())));
+    }
+
+    @Test
+    @DisplayName("P5 상세 ADJUSTING · AGREED 뒤 — adjustment.turn · canRespondAdjustment · 원래 리워드 ≠ 리워드")
+    void adjustmentDetail() throws Exception {
+        Settlement s = reviewing();
+        mockMvc.perform(post("/v1/creator/settlements/" + s.getId() + "/adjustment")
+                        .header(HttpHeaders.AUTHORIZATION, creatorToken).contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(Map.of("rewardAmount", s.getRewardAmount() + 5_000, "reason", "추가 콘텐츠"))))
+                .andExpect(status().isCreated());
+
+        JsonNode adjusting = json(sellerGet(SETTLEMENTS + "/" + s.getId()).andExpect(status().isOk()));
+        assertThat(adjusting.get("status").asText()).isEqualTo("ADJUSTING");
+        assertThat(adjusting.get("adjustment").get("turn").asText()).isEqualTo("MY_TURN");
+        assertThat(adjusting.get("adjustment").get("counterpartLatestAmount").asLong())
+                .isEqualTo(s.getRewardAmount() + 5_000);
+        assertThat(adjusting.get("adjustment").get("myLatestAmount").isNull()).isTrue();
+        assertThat(adjusting.get("actions").get("canRequestAdjustment").asBoolean()).isFalse();
+        assertThat(adjusting.get("actions").get("canRespondAdjustment").asBoolean()).isTrue();
+        assertThat(adjusting.get("payouts").isNull()).isTrue();
+
+        long adjustmentId = adjusting.get("adjustment").get("adjustmentId").asLong();
+        Long proposalId = jdbc.queryForObject("SELECT MAX(proposal_id) FROM settlement_adjustment_proposal "
+                + "WHERE adjustment_id = ?", Long.class, adjustmentId);
+        sellerPost("/v1/seller/settlement-adjustments/" + adjustmentId + "/proposals/" + proposalId + "/accept",
+                Map.of()).andExpect(status().isOk());
+
+        JsonNode agreed = json(sellerGet(SETTLEMENTS + "/" + s.getId()).andExpect(status().isOk()));
+        assertThat(agreed.get("status").asText()).isEqualTo("PAYOUT_SCHEDULED");
+        assertThat(agreed.get("dates").get("confirmReason").asText()).isEqualTo("AGREED");
+        assertThat(agreed.get("adjustment").get("status").asText()).isEqualTo("AGREED");
+        assertThat(agreed.get("adjustment").get("turn").asText()).isEqualTo("CLOSED");
+        assertThat(agreed.get("breakdown").get("originalRewardAmount").asLong()).isEqualTo(s.getRewardAmount());
+        assertThat(agreed.get("breakdown").get("rewardAmount").asLong()).isEqualTo(s.getRewardAmount() + 5_000);
+        assertThat(agreed.get("actions").get("canRespondAdjustment").asBoolean()).isFalse();
     }
 }

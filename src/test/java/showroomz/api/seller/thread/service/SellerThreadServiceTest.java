@@ -16,6 +16,7 @@ import showroomz.api.common.attachment.dto.CompleteAttachmentRequest;
 import showroomz.api.common.attachment.dto.PresignRequest;
 import showroomz.api.common.attachment.dto.PresignResponse;
 import showroomz.api.common.attachment.service.MessageAttachmentService;
+import showroomz.api.common.thread.service.ThreadAdjustmentViews;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.thread.dto.SendMessageRequest;
 import showroomz.api.seller.thread.dto.ThreadListItem;
@@ -37,6 +38,7 @@ import showroomz.domain.message.type.AttachmentStatus;
 import showroomz.domain.message.type.AttachmentType;
 import showroomz.domain.message.type.ParticipantType;
 import showroomz.domain.message.type.ThreadStatus;
+import showroomz.domain.settlement.adjustment.service.SettlementAdjustmentThreadGuard;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -75,6 +77,10 @@ class SellerThreadServiceTest {
     private MessageAttachmentService messageAttachmentService;
     @Mock
     private GroupBuyRepository groupBuyRepository;
+    @Mock
+    private ThreadAdjustmentViews adjustmentViews;
+    @Mock
+    private SettlementAdjustmentThreadGuard adjustmentThreadGuard;
 
     @InjectMocks
     private SellerThreadService sellerThreadService;
