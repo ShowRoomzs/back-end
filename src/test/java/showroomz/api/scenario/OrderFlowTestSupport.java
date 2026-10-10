@@ -12,6 +12,8 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.ResultActions;
 import showroomz.api.app.order.OrderPaymentTestSupport;
 import showroomz.domain.cart.entity.Cart;
+import showroomz.domain.groupbuy.entity.GroupBuy;
+import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.order.entity.OrderCancelRequest;
 import showroomz.domain.order.entity.OrderCancelRequestItem;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
@@ -25,6 +27,8 @@ import showroomz.domain.order.type.CancelRequestReason;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductVariant;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackSnapshot;
+import showroomz.support.BrandFixture;
+import showroomz.support.ContractOptions;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -155,6 +159,79 @@ public abstract class OrderFlowTestSupport extends OrderPaymentTestSupport {
         OrderDeliveryGroup group = shippingGroup(trackingNumber);
         LocalDateTime now = LocalDateTime.now();
         return track(group, new TrackSnapshot(now, null, true, false), now);
+    }
+
+    // ------------------------------------------------------------------ 브랜드가 섞인 주문(한 결제 · 하위주문 둘)
+
+    /** 한 결제에 이 브랜드 하위주문(크림 1)과 다른 브랜드 하위주문(상품 1)이 함께 — 다른 브랜드 셀러 토큰 · 마켓을 같이 든다. */
+    protected record MixedOrder(Long orderId, String paymentId, OrderDeliveryGroup mine, OrderDeliveryGroup other,
+                                Long otherMarketId, String otherToken) {
+    }
+
+    /** 다른 브랜드의 진행 중 공구(상품 1 · 재고 10 · 배송비 3,000)를 열고 크림과 함께 장바구니로 한 번에 결제한다. */
+    protected MixedOrder placeMixedBrandOrder() {
+        try {
+            BrandFixture.Brand other = fixture.createBrand("mixed-brand@showroomz.test", "브랜드비");
+            LocalDateTime now = LocalDateTime.now().withNano(0);
+            GroupBuy otherGroupBuy = seed(other, creator, "브랜드비 토너 공구", now.minusDays(3), now.plusDays(4));
+            moveTo(otherGroupBuy.getId(), GroupBuyStatus.IN_PROGRESS);
+            Long productId = jdbc.queryForObject("SELECT product_id FROM product WHERE market_id = ?", Long.class,
+                    other.marketId());
+            jdbc.update("UPDATE product SET group_buy_status = 'IN_PROGRESS' WHERE product_id = ?", productId);
+            jdbc.update("UPDATE market SET default_delivery_fee = ?, free_shipping_threshold = ?, shipping_lead_days = ? "
+                    + "WHERE market_id = ?", DELIVERY_FEE, 50_000, SHIPPING_LEAD_DAYS, other.marketId());
+            ProductVariant otherVariant = ContractOptions.variantsOf(productVariantRepository,
+                    productRepository.findById(productId).orElseThrow()).get(0);
+            setStock(otherVariant, 10);
+            Cart mineCart = cartItem(creamVariant, 1);
+            Cart otherCart = cartRepository.save(new Cart(consumer, otherVariant, otherGroupBuy, 1));
+            Created created = created(createOrder(Map.of(
+                    "idempotencyKey", newKey(),
+                    "cartItemIds", List.of(mineCart.getId(), otherCart.getId()),
+                    "payment", Map.of("method", "CARD", "cardIssuer", "SHINHAN")))
+                    .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
+            complete(created.paymentId()).andExpect(status().isOk());
+            List<OrderDeliveryGroup> groups = deliveryGroupRepository.findByOrderId(created.orderId());
+            assertThat(groups).hasSize(2);
+            OrderDeliveryGroup mine = null;
+            OrderDeliveryGroup otherGroup = null;
+            for (OrderDeliveryGroup group : groups) {
+                Optional<OrderDeliveryGroup> owned = deliveryGroupRepository.findOwned(group.getId(), brand.marketId());
+                if (owned.isPresent()) {
+                    mine = owned.get();
+                } else {
+                    otherGroup = reloadGroup(group.getId(), other.marketId());
+                }
+            }
+            return new MixedOrder(created.orderId(), created.paymentId(), mine, otherGroup, other.marketId(),
+                    sellerToken(other.seller()));
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** 섞인 주문의 두 하위주문을 각 브랜드 토큰으로 준비 → 발송 → 배송완료(추적 반영)까지. */
+    protected MixedOrder deliverBoth(MixedOrder order, LocalDateTime deliveredAt) {
+        try {
+            OrderDeliveryGroup mine = deliveredGroupOf(order.mine(), brand.marketId(), brandToken, deliveredAt);
+            OrderDeliveryGroup other = deliveredGroupOf(order.other(), order.otherMarketId(), order.otherToken(), deliveredAt);
+            return new MixedOrder(order.orderId(), order.paymentId(), mine, other, order.otherMarketId(), order.otherToken());
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private OrderDeliveryGroup deliveredGroupOf(OrderDeliveryGroup group, Long marketId, String token,
+                                                LocalDateTime deliveredAt) throws Exception {
+        sellerPost(SELLER_ORDERS + "/prepare-start", Map.of("deliveryGroupIds", List.of(group.getId())), token)
+                .andExpect(jsonPath("$.succeeded").value(1));
+        sellerPost(SELLER_ORDERS + "/shipments", Map.of("rows", List.of(Map.of("deliveryGroupId", group.getId(),
+                "carrier", "CJ", "trackingNumber", String.valueOf(400_000_000_000L + group.getId())))), token)
+                .andExpect(jsonPath("$.succeeded").value(1));
+        LocalDateTime at = deliveredAt.withNano(0);
+        fulfillmentService.applyTracking(reloadGroup(group.getId(), marketId),
+                Optional.of(new TrackSnapshot(at, at, false, false)), LocalDateTime.now(), 24, 7);
+        return reloadGroup(group.getId(), marketId);
     }
 
     // ------------------------------------------------------------------ 소비자 앱 C10(범위 밖) — 테이블 계약대로 적재

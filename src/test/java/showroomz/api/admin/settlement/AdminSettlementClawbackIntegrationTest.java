@@ -179,7 +179,142 @@ class AdminSettlementClawbackIntegrationTest extends SettlementTestSupport {
         assertThat(settlementReader.hasUnsettledForMarket(brand.marketId())).isTrue();
     }
 
+    // ------------------------------------------------------------------ 45 보완 시나리오 2-3(06a · 06c 화면)
+
+    @Test
+    @DisplayName("[SG-01] 06a B5 편입 직후엔 차감 없음(집행 전) → 06c 집행 → 06a 차감 2행(측별 금액 · 「차감 예정」) · 반영액 불변 · 06c 「정산 후 · 차감 CLW-」")
+    void clawbackShownAfterExecutionNotEnqueue() throws Exception {
+        OrderDeliveryGroup creamGroup = confirmedGroup(creamVariant, 1);
+        endGroupBuy();
+        Settlement first = generate(LocalDateTime.now().withNano(0));
+        Long orderId = creamGroup.getOrder().getId();
+        long settledBefore = json(adminGet(ADMIN_ORDERS + "/" + orderId)).at("/groups/0/settlement/settledAmount").asLong();
+
+        adminPost(ADMIN_ORDERS + "/groups/" + creamGroup.getId() + "/refund-tasks",
+                java.util.Map.of("reason", "POST_CONFIRM_DEFECT", "amount", 27_200, "detail", "구매확정 후 하자 확인"))
+                .andExpect(status().isOk());
+        Long taskId = jdbc.queryForObject("SELECT MAX(refund_task_id) FROM order_refund_task WHERE delivery_group_id = ?",
+                Long.class, creamGroup.getId());
+        adminGet(ADMIN_ORDERS + "/" + orderId).andExpect(jsonPath("$.groups[0].settlement.clawbacks").isEmpty());
+        adminGet(ADMIN_REFUNDS + "/" + taskId).andExpect(jsonPath("$.settlement.state").value("SETTLED"))
+                .andExpect(jsonPath("$.settlement.clawback").doesNotExist())
+                .andExpect(jsonPath("$.settlement.stateLabel").value("정산 " + first.getSettlementNumber() + " 생성 후"));
+
+        adminPost(ADMIN_REFUNDS + "/" + taskId + "/execute", java.util.Map.of()).andExpect(jsonPath("$.outcome").value("DONE"));
+
+        List<SettlementClawback> rows = clawbackRepository.findByRefundTaskIdOrderByIdAsc(taskId);
+        assertThat(rows).extracting(SettlementClawback::getSide).containsExactly(ClawbackSide.BRAND, ClawbackSide.CREATOR);
+        String number = rows.get(0).getClawbackNumber();
+        JsonNode settlement = json(adminGet(ADMIN_ORDERS + "/" + orderId)).at("/groups/0/settlement");
+        assertThat(settlement.get("settledAmount").asLong()).isEqualTo(settledBefore);
+        assertThat(settlement.get("clawbacks")).hasSize(2).allSatisfy(c -> {
+            assertThat(c.get("clawbackNumber").asText()).isEqualTo(number).startsWith("CLW-");
+            assertThat(c.get("status").asText()).isEqualTo("PENDING");
+            assertThat(c.get("statusLabel").asText()).isEqualTo("차감 예정");
+        });
+        assertThat(settlement.get("clawbacks")).extracting(c -> c.get("side").asText() + ":" + c.get("amount").asLong())
+                .containsExactly("BRAND:" + CREAM_BRAND, "CREATOR:" + CREAM_REWARD);
+        adminGet(ADMIN_REFUNDS + "/" + taskId).andExpect(jsonPath("$.settlement.stateLabel").value("정산 후 · 차감 " + number))
+                .andExpect(jsonPath("$.settlement.clawback.clawbackNumber").value(number))
+                .andExpect(jsonPath("$.settlement.clawback.status").value("PENDING"))
+                .andExpect(jsonPath("$.settlement.clawback.statusLabel").value("차감 예정"));
+    }
+
+    @Test
+    @DisplayName("[SG-01 부분] 단가에 못 미치는 사유 환불(10,000) — 회수할 리워드 수량이 0 이라 브랜드 측 1행만(코드 기준 고정 · 45 보완 시나리오는 2행으로 적었다)")
+    void partialRefundClawsBrandOnly() throws Exception {
+        OrderDeliveryGroup creamGroup = confirmedGroup(creamVariant, 1);
+        endGroupBuy();
+        generate(LocalDateTime.now().withNano(0));
+
+        Long taskId = operatorRefund(creamGroup, "POST_CONFIRM_DEFECT", 10_000);
+
+        assertThat(clawbackRepository.findByRefundTaskIdOrderByIdAsc(taskId))
+                .extracting(SettlementClawback::getSide, SettlementClawback::getAmount)
+                .containsExactly(tuple(ClawbackSide.BRAND, 10_000L));
+        adminGet(ADMIN_ORDERS + "/" + creamGroup.getOrder().getId())
+                .andExpect(jsonPath("$.groups[0].settlement.clawbacks.length()").value(1))
+                .andExpect(jsonPath("$.groups[0].settlement.clawbacks[0].side").value("BRAND"));
+    }
+
+    @Test
+    @DisplayName("[SG-02] 다음 정산에서 측별 전액 회수 — 06a 차감 행 「차감 반영」 · 06c 대표도 APPLIED / 한쪽만 미회수면 06c 대표는 미회수(덜 끝난 쪽)")
+    void clawbackAppliedAndRepresentativeStatus() throws Exception {
+        OrderDeliveryGroup creamGroup = confirmedGroup(creamVariant, 1);
+        endGroupBuy();
+        confirm(generate(LocalDateTime.now().withNano(0)));
+        Long taskId = operatorRefund(creamGroup, "POST_CONFIRM_DEFECT", 27_200);
+
+        nextSettlementWithCreams(2);
+
+        assertThat(clawbackRepository.findByRefundTaskIdOrderByIdAsc(taskId)).extracting(SettlementClawback::getStatus)
+                .containsOnly(ClawbackStatus.APPLIED);
+        JsonNode clawbacks = json(adminGet(ADMIN_ORDERS + "/" + creamGroup.getOrder().getId())).at("/groups/0/settlement/clawbacks");
+        assertThat(clawbacks).hasSize(2).allSatisfy(c -> {
+            assertThat(c.get("status").asText()).isEqualTo("APPLIED");
+            assertThat(c.get("statusLabel").asText()).isEqualTo("차감 반영");
+        });
+        adminGet(ADMIN_REFUNDS + "/" + taskId).andExpect(jsonPath("$.settlement.clawback.status").value("APPLIED"))
+                .andExpect(jsonPath("$.settlement.clawback.statusLabel").value("차감 반영"));
+    }
+
+    @Test
+    @DisplayName("[SG-02] 측별 2행 중 인플루언서 측만 미회수 — 06c 대표는 미회수 · 06a 는 측별 그대로(브랜드 차감 예정 · 인플루언서 미회수)")
+    void representativeIsLeastFinished() throws Exception {
+        OrderDeliveryGroup creamGroup = confirmedGroup(creamVariant, 1);
+        endGroupBuy();
+        confirm(generate(LocalDateTime.now().withNano(0)));
+        Long taskId = operatorRefund(creamGroup, "RECALL", 27_200);
+        jdbc.update("UPDATE users SET status = 'WITHDRAWN' WHERE user_id = ?", creator.getUser().getId());
+        assertThat(clawbackService.markUnrecoverable(LocalDateTime.now())).isEqualTo(1);
+
+        adminGet(ADMIN_REFUNDS + "/" + taskId).andExpect(jsonPath("$.settlement.clawback.status").value("UNRECOVERABLE"))
+                .andExpect(jsonPath("$.settlement.clawback.statusLabel").value("미회수"));
+        JsonNode clawbacks = json(adminGet(ADMIN_ORDERS + "/" + creamGroup.getOrder().getId())).at("/groups/0/settlement/clawbacks");
+        assertThat(clawbacks).extracting(c -> c.get("side").asText() + ":" + c.get("status").asText())
+                .containsExactly("BRAND:PENDING", "CREATOR:UNRECOVERABLE");
+    }
+
+    @Test
+    @DisplayName("[SG-03] 06c 수동 완료 기록도 집행 완료 — PG 집행과 같은 차감 2행이 생긴다(9절 #15 · 훅이 수동 기록 경로에도 걸린다)")
+    void manualCompleteCreatesSameClawback() throws Exception {
+        OrderDeliveryGroup creamGroup = confirmedGroup(creamVariant, 1);
+        endGroupBuy();
+        confirm(generate(LocalDateTime.now().withNano(0)));
+        adminPost(ADMIN_ORDERS + "/groups/" + creamGroup.getId() + "/refund-tasks",
+                java.util.Map.of("reason", "POST_CONFIRM_DEFECT", "amount", 27_200, "detail", "구매확정 후 하자 확인"))
+                .andExpect(status().isOk());
+        Long taskId = jdbc.queryForObject("SELECT MAX(refund_task_id) FROM order_refund_task WHERE delivery_group_id = ?",
+                Long.class, creamGroup.getId());
+        int pgCalls = fake.partialCancelCalls().size();
+
+        adminPost(ADMIN_REFUNDS + "/" + taskId + "/manual-complete",
+                java.util.Map.of("pgCancellationId", "console-sg03", "note", "포트원 콘솔에서 부분 취소"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("DONE"));
+
+        assertThat(fake.partialCancelCalls()).hasSize(pgCalls);
+        assertThat(clawbackRepository.findByRefundTaskIdOrderByIdAsc(taskId))
+                .extracting(SettlementClawback::getSide, SettlementClawback::getAmount, SettlementClawback::getStatus)
+                .containsExactly(tuple(ClawbackSide.BRAND, CREAM_BRAND, ClawbackStatus.PENDING),
+                        tuple(ClawbackSide.CREATOR, CREAM_REWARD, ClawbackStatus.PENDING));
+        adminGet(ADMIN_REFUNDS + "/" + taskId).andExpect(jsonPath("$.settlement.clawback.status").value("PENDING"));
+    }
+
     // ------------------------------------------------------------------ 보조
+
+    /** 같은 브랜드 · 같은 인플루언서의 다음 공구 — 크림 N개 구매확정 → 종료 → 정산 생성(리워드 · 브랜드 지급이 차감보다 크다). */
+    private Settlement nextSettlementWithCreams(int quantity) {
+        groupBuy = seedIn(GroupBuyStatus.IN_PROGRESS);
+        for (Product product : List.of(cream, serum)) {
+            jdbc.update("UPDATE product SET group_buy_status = 'IN_PROGRESS' WHERE product_id = ?", product.getProductId());
+        }
+        creamVariant = ContractOptions.variantsOf(productVariantRepository, cream).get(0);
+        serumVariant = ContractOptions.variantsOf(productVariantRepository, serum).get(0);
+        setStock(creamVariant, 10);
+        confirmedGroup(creamVariant, quantity);
+        endGroupBuy();
+        return generate(LocalDateTime.now().withNano(0));
+    }
 
     /** 같은 브랜드 · 같은 인플루언서의 다음 공구 — 세럼 1개 구매확정 → 종료 → 정산 생성. */
     private Settlement nextSettlementWithSerum() {

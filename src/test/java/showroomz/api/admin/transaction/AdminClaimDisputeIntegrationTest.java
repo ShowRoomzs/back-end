@@ -10,11 +10,19 @@ import org.springframework.test.web.servlet.ResultActions;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.seller.claim.ClaimTestSupport;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.order.entity.OrderDeliveryGroup;
+import showroomz.domain.order.type.ClaimReason;
+import showroomz.domain.order.type.ClaimType;
+import showroomz.domain.product.entity.ProductVariant;
+import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackSnapshot;
+import showroomz.support.BrandFixture;
 import showroomz.support.IntegrationTest;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -115,9 +123,50 @@ class AdminClaimDisputeIntegrationTest extends ClaimTestSupport {
         adminGet(ADMIN_CLAIMS + "/summary").andExpect(jsonPath("$.disputeCount").value(0));
         adminGet(ADMIN_CLAIMS + "/" + claimId).andExpect(jsonPath("$.dispute.answered").value(true));
 
+        // [F-B03] 기각 뒤 목록 행 — 미처리는 풀리지만 가장 최근 이의 시각은 남는다 · [F-B04] 상세 답변 시각 · 사진 복사.
+        JsonNode answeredRow = json(adminGet(ADMIN_CLAIMS + "?tab=REJECT_HOLD")).at("/content/0");
+        assertThat(answeredRow.at("/claim/claimId").asLong()).isEqualTo(claimId);
+        assertThat(answeredRow.get("disputeOpen").asBoolean()).isFalse();
+        assertThat(answeredRow.get("disputedAt").isNull()).isFalse();
+        JsonNode answered = json(adminGet(ADMIN_CLAIMS + "/" + claimId)).get("dispute");
+        assertThat(answered.get("inquiryId").asLong()).isEqualTo(first);
+        assertThat(answered.get("answeredAt").isNull()).isFalse();
+        assertThat(answered.get("imageUrls")).extracting(JsonNode::asText).containsExactly("https://img.test/d1.jpg");
+
         long second = json(dispute(claimId, null).andExpect(status().isCreated())).get("inquiryId").asLong();
         assertThat(((Number) claimRow(claimId).get("dispute_inquiry_id")).longValue()).isEqualTo(second);
         adminGet(ADMIN_CLAIMS + "/summary").andExpect(jsonPath("$.disputeCount").value(1));
+        adminGet(ADMIN_CLAIMS + "/" + claimId).andExpect(jsonPath("$.dispute.answered").value(false))
+                .andExpect(jsonPath("$.dispute.answeredAt").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("[F-B02] 요약 브랜드 한정 — disputeCount 는 그 브랜드의 이의만 센다 · 전체는 합")
+    void disputeCountByMarket() throws Exception {
+        Long mine = rejectedClaim(returnClaim(deliveredGroup(creamVariant, 1)));
+        dispute(mine, null).andExpect(status().isCreated());
+        BrandFixture.Brand other = otherBrand();
+        String otherToken = sellerToken(other.seller());
+        ProductVariant variant = openOtherBrandGroupBuy(other);
+        OrderDeliveryGroup group = paidOtherBrandGroup(other, variant);
+        sellerPost(otherToken, SELLER_ORDERS + "/prepare-start", Map.of("deliveryGroupIds", List.of(group.getId())))
+                .andExpect(jsonPath("$.succeeded").value(1));
+        sellerPost(otherToken, SELLER_ORDERS + "/shipments", Map.of("rows", List.of(shipmentRow(group.getId(), "CJ", newInvoice()))))
+                .andExpect(jsonPath("$.succeeded").value(1));
+        LocalDateTime deliveredAt = LocalDateTime.now().minusHours(1).withNano(0);
+        fulfillmentService.applyTracking(deliveryGroupRepository.findOwned(group.getId(), other.marketId()).orElseThrow(),
+                Optional.of(new TrackSnapshot(deliveredAt, deliveredAt, false, false)), LocalDateTime.now(), 24, 7);
+        Long theirs = requestClaim(group, ClaimType.RETURN, ClaimReason.CHANGE_OF_MIND, allItems(group), newInvoice())
+                .claimIds().get(0);
+        sellerPost(otherToken, SELLER_CLAIMS + "/receive", Map.of("claimIds", List.of(theirs)))
+                .andExpect(jsonPath("$.succeeded").value(1));
+        sellerPost(otherToken, SELLER_CLAIMS + "/" + theirs + "/inspection/reject", rejectBody()).andExpect(status().isOk());
+        dispute(theirs, null).andExpect(status().isCreated());
+
+        adminGet(ADMIN_CLAIMS + "/summary").andExpect(jsonPath("$.disputeCount").value(2));
+        adminGet(ADMIN_CLAIMS + "/summary?marketId=" + brand.marketId()).andExpect(jsonPath("$.disputeCount").value(1));
+        adminGet(ADMIN_CLAIMS + "/summary?marketId=" + other.marketId()).andExpect(jsonPath("$.disputeCount").value(1));
+        adminGet(ADMIN_CLAIMS + "/summary?marketId=999999").andExpect(jsonPath("$.disputeCount").value(0));
     }
 
     @Test

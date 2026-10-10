@@ -287,4 +287,34 @@ class CreatorSettlementIntegrationTest extends SettlementTestSupport {
         assertThat(rows.get(rows.size() - 1).get(0)).isEqualTo("합계");
         creatorGet(SETTLEMENTS + "/annual-statement?year=" + (year - 1)).andExpect(status().isNotFound());
     }
+
+    @Test
+    @DisplayName("C-10 연간 지급 내역(사업자) — 부가세 · 세금계산서 승인번호 열 · 원천징수 열 없음 · 합계 행 부가세 = 행 합")
+    void annualStatementForBusiness() throws Exception {
+        makeCreatorBusiness();
+        registerSellerAccount();
+        registerCreatorAccount();
+        Settlement s = confirm(reviewing());
+        submitInvoice(s, "20261007-41000012-38475920", null).andExpect(status().isOk());
+        Long invoiceId = jdbc.queryForObject("SELECT document_id FROM settlement_tax_document WHERE settlement_id = ? "
+                + "AND type = 'CREATOR_TAX_INVOICE'", Long.class, s.getId());
+        adminPost("/v1/admin/settlements/" + s.getId() + "/tax-documents/" + invoiceId + "/verify",
+                java.util.Map.of("result", "MATCH")).andExpect(status().isOk());
+        Settlement paid = pay(s, java.time.LocalDate.now().plusDays(30));
+        assertThat(paid.getStatus()).isEqualTo(SettlementStatus.PAID);
+        int year = payout(s.getId(), SettlementPayee.CREATOR).getPaidAt().getYear();
+
+        List<List<String>> rows = readSheet(creatorGet(SETTLEMENTS + "/annual-statement?year=" + year)
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray());
+
+        assertThat(rows.get(0)).contains("부가세", "세금계산서 승인번호").doesNotContain("소득세", "지방소득세");
+        assertThat(rows).hasSize(3);
+        List<String> line = rows.get(1);
+        assertThat(line.get(0)).isEqualTo(s.getSettlementNumber());
+        assertThat(line).contains("20261007-41000012-38475920");
+        int vatColumn = rows.get(0).indexOf("부가세");
+        assertThat(Long.parseLong(line.get(vatColumn).replace(",", ""))).isEqualTo(paid.getCreatorVatAmount()).isPositive();
+        assertThat(rows.get(2).get(0)).isEqualTo("합계");
+        assertThat(Long.parseLong(rows.get(2).get(vatColumn).replace(",", ""))).isEqualTo(paid.getCreatorVatAmount());
+    }
 }

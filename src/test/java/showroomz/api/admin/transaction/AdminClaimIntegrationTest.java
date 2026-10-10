@@ -494,7 +494,228 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
         assertThat(fake.cancelCalls()).hasSize(2);
     }
 
+    // ------------------------------------------------------------------ 경합 — 운영자 × 당사자(45 보완 시나리오 3절)
+
+    @Test
+    @DisplayName("[RC-01] 검수 무응답 환불 × 브랜드 검수 통과 동시 — 클레임 종결 1회 · 환불은 한 길만(운영자 큐 대기 또는 PG 자동 완료) · 반품 수량 1회 · 진 쪽 409")
+    void unansweredRefundRacingInspectionPass() throws Exception {
+        OrderDeliveryGroup group = deliveredGroup(creamVariant, 1);
+        Long claimId = unansweredClaim(group);
+
+        List<String> results = ConcurrentCalls.race(
+                () -> "RFD-" + adminClaimService.refundUnanswered(operator.getId(), claimId,
+                        new AdminTransactionDto.ClaimRefundRequest("자동 알림 3회 무응답")).refundTaskId(),
+                () -> String.valueOf(sellerPost(SELLER_CLAIMS + "/" + claimId + "/inspection/pass", Map.of())
+                        .andReturn().getResponse().getStatus()));
+
+        assertThat(claimRow(claimId)).containsEntry("status", "COMPLETED").containsEntry("result", "REFUNDED");
+        int operatorTasks = operatorTasksOf(claimId);
+        int pgTasks = jdbc.queryForObject("SELECT COUNT(*) FROM order_refund_task WHERE source = 'CLAIM_RETURN_PASSED' "
+                + "AND delivery_group_id = ?", Integer.class, group.getId());
+        assertThat(operatorTasks + pgTasks).as("환불 경로 %s", results).isEqualTo(1);
+        if (results.get(0).startsWith("RFD-")) {
+            assertThat(results.get(1)).startsWith("4");
+            assertThat(taskStatusOf(results.get(0))).isEqualTo("PENDING");
+            assertThat(fake.partialCancelCalls()).isEmpty();
+            assertThat(events(claimId)).doesNotContain("INSPECTION_PASSED");
+        } else {
+            assertThat(results.get(0)).isEqualTo("CLAIM_STATE_CHANGED");
+            assertThat(results.get(1)).isEqualTo("200");
+            assertThat(fake.partialCancelCalls()).hasSize(1);
+            assertThat(events(claimId)).doesNotContain("INSPECTION_UNANSWERED");
+        }
+        assertThat(returnedQuantity(group)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("[RC-02] 검수 무응답 환불 × 브랜드 전량 반려 동시 — 종결 또는 반려 보류 하나 · 재발송비 청구는 반려가 이긴 경우에만 1건 · 진 쪽 409")
+    void unansweredRefundRacingInspectionReject() throws Exception {
+        OrderDeliveryGroup group = deliveredGroup(creamVariant, 1);
+        Long claimId = unansweredClaim(group);
+
+        List<String> results = ConcurrentCalls.race(
+                () -> "RFD-" + adminClaimService.refundUnanswered(operator.getId(), claimId,
+                        new AdminTransactionDto.ClaimRefundRequest("자동 알림 3회 무응답")).refundTaskId(),
+                () -> String.valueOf(sellerPost(SELLER_CLAIMS + "/" + claimId + "/inspection/reject", rejectBody())
+                        .andReturn().getResponse().getStatus()));
+
+        int charges = jdbc.queryForObject("SELECT COUNT(*) FROM order_claim_charge WHERE collection_id = ?", Integer.class,
+                collectionIdOf(claimId));
+        if (results.get(0).startsWith("RFD-")) {
+            assertThat(results.get(1)).startsWith("4");
+            assertThat(claimRow(claimId)).containsEntry("status", "COMPLETED").containsEntry("result", "REFUNDED");
+            assertThat(operatorTasksOf(claimId)).isEqualTo(1);
+            assertThat(charges).isZero();
+            assertThat(returnedQuantity(group)).isEqualTo(1);
+        } else {
+            assertThat(results.get(0)).isEqualTo("CLAIM_STATE_CHANGED");
+            assertThat(results.get(1)).isEqualTo("200");
+            assertThat(claimStatus(claimId)).isEqualTo("REJECT_HOLD");
+            assertThat(operatorTasksOf(claimId)).isZero();
+            assertThat(charges).isEqualTo(1);
+            assertThat(returnedQuantity(group)).isZero();
+        }
+    }
+
+    @Test
+    @DisplayName("[RC-03] 반려 보류 · 이의 접수 — 인용 × 소비자 재발송비 결제 완료 동시 · 인용은 어느 순서든 성립 · 결제는 자동 취소돼 소비자 돈이 남지 않는다")
+    void acceptRacingReshipFeePayment() throws Exception {
+        Long claimId = rejectedClaim(returnClaim(deliveredGroup(creamVariant, 1)));
+        Map<String, Object> inquiry = new HashMap<>();
+        inquiry.put("type", "CANCEL_EXCHANGE_RETURN");
+        inquiry.put("content", "받았을 때부터 오염이 있었습니다.");
+        inquiry.put("imageUrls", List.of());
+        inquiry.put("claimId", claimId);
+        userPost("/v1/user/inquiries", inquiry).andExpect(status().isCreated());
+        String paymentId = json(userPost(USER_CLAIMS + "/" + claimId + "/reship-fee/payments", CARD)
+                .andExpect(status().isOk())).get("paymentId").asText();
+
+        List<String> results = ConcurrentCalls.race(
+                () -> "RFD-" + adminClaimService.acceptDispute(operator.getId(), claimId,
+                        new AdminTransactionDto.DisputeAcceptRequest("1:1 문의 사진상 배송 시점 오염")).refundTaskId(),
+                () -> String.valueOf(completeClaimPayment(paymentId).andReturn().getResponse().getStatus()));
+        // 커밋 뒤 취소가 경합으로 남았으면 정리 배치가 닫는다(AC-17 과 같은 길).
+        claimPaymentService.cancelRequested();
+
+        assertThat(results.get(0)).as("인용 %s", results).startsWith("RFD-");
+        assertThat(claimRow(claimId)).containsEntry("status", "COMPLETED").containsEntry("result", "REFUNDED");
+        assertThat(operatorTasksOf(claimId)).isEqualTo(1);
+        assertThat(claimPaymentStatus(paymentId)).isNotEqualTo("PAID").isNotEqualTo("CANCEL_REQUESTED");
+        assertThat(chargeStatusOf(claimId)).isIn("VOID", "REFUNDED");
+        assertThat(fake.cancelCalls()).filteredOn(paymentId::equals).hasSizeLessThanOrEqualTo(1);
+        if (chargeStatusOf(claimId).equals("REFUNDED")) {
+            // 결제가 먼저였다 — 재발송 대기에서 인용 · 결제 취소 1회.
+            assertThat(fake.cancelCalls()).filteredOn(paymentId::equals).hasSize(1);
+            assertThat(claimPaymentStatus(paymentId)).isEqualTo("CANCELLED");
+        }
+    }
+
+    @Test
+    @DisplayName("[RC-04] 재발송 대기(재발송비 결제됨) — 인용 × 브랜드 재발송 송장 동시 · 하나만 · 결제 취소는 인용이 이긴 경우만 1회")
+    void acceptRacingReshipment() throws Exception {
+        Long claimId = rejectedClaim(returnClaim(deliveredGroup(creamVariant, 1)));
+        String paymentId = json(userPost(USER_CLAIMS + "/" + claimId + "/reship-fee/payments", CARD)
+                .andExpect(status().isOk())).get("paymentId").asText();
+        completeClaimPayment(paymentId).andExpect(jsonPath("$.paymentStatus").value("PAID"));
+        assertThat(claimStatus(claimId)).isEqualTo("RESHIP_READY");
+        String invoice = newInvoice();
+
+        List<String> results = ConcurrentCalls.race(
+                () -> "RFD-" + adminClaimService.acceptDispute(operator.getId(), claimId,
+                        new AdminTransactionDto.DisputeAcceptRequest("배송 시점 오염")).refundTaskId(),
+                () -> json(registerReship(claimId, "CJ", invoice)).get("succeeded").asInt() == 1 ? "RESHIPPED" : "SKIPPED");
+
+        assertThat(results).filteredOn(r -> r.startsWith("RFD-") || r.equals("RESHIPPED")).as("%s", results).hasSize(1);
+        if (results.get(0).startsWith("RFD-")) {
+            assertThat(results.get(1)).isEqualTo("SKIPPED");
+            assertThat(claimRow(claimId)).containsEntry("status", "COMPLETED").containsEntry("result", "REFUNDED")
+                    .containsEntry("reship_tracking_number", null);
+            assertThat(fake.cancelCalls()).containsExactly(paymentId);
+            assertThat(claimPaymentStatus(paymentId)).isEqualTo("CANCELLED");
+        } else {
+            assertThat(results.get(0)).isEqualTo("CLAIM_STATE_CHANGED");
+            assertThat(claimStatus(claimId)).isEqualTo("RESHIPPING");
+            assertThat(operatorTasksOf(claimId)).isZero();
+            assertThat(fake.cancelCalls()).isEmpty();
+            assertThat(claimPaymentStatus(paymentId)).isEqualTo("PAID");
+        }
+    }
+
+    // ------------------------------------------------------------------ 응답 필드(45 보완 시나리오 4-2 · F-A02)
+
+    @Test
+    @DisplayName("[F-A02] 06a 상세 — 교환 진행 중은 activeClaims[0] 교환 · 상태 문구 · 구매확정 정지 · 재발송비 결제 대기(접수 전) 교환은 없다")
+    void orderDetailShowsExchangeInProgress() throws Exception {
+        OrderDeliveryGroup group = deliveredGroup(creamVariant, 1);
+        Long claimId = exchangeClaim(group, addSamePriceVariant(creamVariant, 5));
+        Long orderId = group.getOrder().getId();
+
+        adminGet("/v1/admin/orders/" + orderId).andExpect(status().isOk())
+                .andExpect(jsonPath("$.groups[0].activeClaims.length()").value(1))
+                .andExpect(jsonPath("$.groups[0].activeClaims[0].claimId").value(claimId))
+                .andExpect(jsonPath("$.groups[0].activeClaims[0].type").value("EXCHANGE"))
+                .andExpect(jsonPath("$.groups[0].activeClaims[0].statusLabel").value("회수 중"))
+                .andExpect(jsonPath("$.groups[0].purchaseConfirm.paused").value(true));
+
+        OrderDeliveryGroup drafted = deliveredGroup(creamVariant, 1);
+        JsonNode created = json(userPost(USER_CLAIMS, claimBody(drafted, "EXCHANGE", "CHANGE_OF_MIND",
+                items(drafted).get(0).getId(), null, addSamePriceVariant(creamVariant, 5).getVariantId()))
+                .andExpect(status().isCreated()));
+        assertThat(claimStatus(created.get("claimIds").get(0).asLong())).isEqualTo("PAYMENT_PENDING");
+        adminGet("/v1/admin/orders/" + drafted.getOrder().getId())
+                .andExpect(jsonPath("$.groups[0].activeClaims").isEmpty());
+    }
+
+    @Test
+    @DisplayName("[F-B06] 전체 탭 검수 지연 상단 고정은 페이지를 넘어서도 — size=1 이면 1쪽 = 검수 지연 · 2쪽 = 그다음(신청 최신순)")
+    void overduePinnedAcrossPages() throws Exception {
+        Long older = returnClaim(deliveredGroup(creamVariant, 1));
+        Long newer = returnClaim(deliveredGroup(creamVariant, 1));
+        Long overdue = received(returnClaim(deliveredGroup(creamVariant, 1)));
+        jdbc.update("UPDATE order_claim SET requested_at = ? WHERE claim_id = ?", LocalDateTime.now().minusDays(9), overdue);
+        jdbc.update("UPDATE order_claim SET inspect_due_at = ? WHERE claim_id = ?", LocalDateTime.now().minusDays(3), overdue);
+        jdbc.update("UPDATE order_claim SET requested_at = ? WHERE claim_id = ?", LocalDateTime.now().minusDays(5), older);
+
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?size=1&page=1"))).containsExactly(overdue);
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?size=1&page=2"))).containsExactly(newer);
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?size=1&page=3"))).containsExactly(older);
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?size=2&page=1"))).containsExactly(overdue, newer);
+    }
+
+    @Test
+    @DisplayName("[F-B07] types — RETURN + EXCHANGE 둘 다 = 생략과 같은 건수 · 빈 값(types=)도 생략과 같다")
+    void bothTypesEqualNoFilter() throws Exception {
+        returnClaim(deliveredGroup(creamVariant, 1));
+        exchangeClaim(deliveredGroup(creamVariant, 1), addSamePriceVariant(creamVariant, 5));
+
+        List<Long> all = ids(adminGet(ADMIN_CLAIMS));
+        assertThat(all).hasSize(2);
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?types=RETURN&types=EXCHANGE"))).containsExactlyInAnyOrderElementsOf(all);
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?types=RETURN,EXCHANGE"))).containsExactlyInAnyOrderElementsOf(all);
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?types="))).containsExactlyInAnyOrderElementsOf(all);
+    }
+
+    @Test
+    @DisplayName("[F-B08] 인용 뒤 — 상세 인용 불가 · 인용 금액 null · 목록 행 귀책 변경 참 · 종결 단계 · fee_bearer 는 그대로(현재 동작)")
+    void afterAcceptanceDetailAndRow() throws Exception {
+        Long claimId = rejectedClaim(returnClaim(deliveredGroup(creamVariant, 1)));
+        accept(claimId).andExpect(status().isOk());
+
+        JsonNode detail = json(adminGet(ADMIN_CLAIMS + "/" + claimId).andExpect(status().isOk()));
+        assertThat(detail.get("canAcceptDispute").asBoolean()).isFalse();
+        assertThat(detail.has("disputeRefundAmount") && !detail.get("disputeRefundAmount").isNull()).isFalse();
+        // 인용은 귀책 변경 표시(faultChangedToSeller)만 세우고 fee_bearer 는 그대로다 — 「귀책」 열이 소비자 귀책으로 남는다(현재 동작 고정 · 확인 필요).
+        assertThat(detail.get("feeBearer").asText()).isEqualTo("CONSUMER");
+        JsonNode row = rowOf(json(adminGet(ADMIN_CLAIMS + "?tab=DONE")).get("content"), claimId);
+        assertThat(row.get("faultChangedToSeller").asBoolean()).isTrue();
+        assertThat(row.at("/claim/stage").asText()).isEqualTo("DONE");
+        assertThat(row.get("feeBearerLabel").asText()).isEqualTo("소비자 귀책");
+    }
+
     // ------------------------------------------------------------------ 도우미
+
+    /** 입고 확인 · 검수 기한 경과 · 자동 알림 3회 — 검수 무응답 운영자 환불 조건(알림 횟수는 배치 몫이라 SQL 로 적는다). */
+    private Long unansweredClaim(OrderDeliveryGroup group) throws Exception {
+        Long claimId = received(returnClaim(group));
+        jdbc.update("UPDATE order_claim SET inspect_due_at = ?, inspect_notice_count = 3 WHERE claim_id = ?",
+                LocalDateTime.now().minusDays(4), claimId);
+        return claimId;
+    }
+
+    private int operatorTasksOf(Long claimId) {
+        return jdbc.queryForObject("SELECT COUNT(*) FROM order_refund_task WHERE source = 'OPERATOR_REASON' AND source_id = ?",
+                Integer.class, claimId);
+    }
+
+    private String taskStatusOf(String refundNo) {
+        return jdbc.queryForObject("SELECT status FROM order_refund_task WHERE refund_task_id = ?", String.class,
+                Long.parseLong(refundNo.substring("RFD-".length())));
+    }
+
+    private int returnedQuantity(OrderDeliveryGroup group) {
+        return jdbc.queryForObject("SELECT returned_quantity FROM order_product WHERE order_product_id = ?", Integer.class,
+                items(group).get(0).getId());
+    }
 
     private ResultActions accept(Long claimId) throws Exception {
         return adminPost(ADMIN_CLAIMS + "/" + claimId + "/dispute-acceptance",

@@ -86,6 +86,25 @@ class AdminOrderExceptionIntegrationTest extends ClaimTestSupport {
         assertThat(row.at("/link/type").asText()).isEqualTo("ORDER");
         assertThat(row.at("/link/deliveryGroupId").asLong()).isEqualTo(group.getId());
         assertThat(row.get("invoice").isNull()).isTrue();
+        // [F-D03] 처리 지연 행은 배송 예외 열(기준 문장 · 송장 · 처리 주체)이 null.
+        assertThat(row.get("handlerLabel").isNull()).isTrue();
+        assertThat(row.get("basisLabel").isNull()).isTrue();
+    }
+
+    @Test
+    @DisplayName("[F-D04] 추적 정지 27일 — 「소비자·브랜드가 택배사 조회」(28일 문장 없음) · 대행 불가 · 29일이면 운영자 판정 문장 · 대행 가능")
+    void stalledBeforeAndAfterThreshold() throws Exception {
+        OrderDeliveryGroup group = shippingGroup("400070012001");
+        alert(group, "STALLED", LocalDateTime.now().minusDays(27));
+        JsonNode row = only(rows("?tab=DELIVERY&kind=TRACKING_STALLED"));
+        assertThat(row.get("handlerLabel").asText()).isEqualTo("소비자·브랜드가 택배사 조회");
+        assertThat(row.get("actOnBehalfAvailable").asBoolean()).isFalse();
+        assertThat(row.get("elapsedLabel").asText()).isEqualTo("27일 무갱신");
+
+        alert(group, "STALLED", LocalDateTime.now().minusDays(29));
+        row = only(rows("?tab=DELIVERY&kind=TRACKING_STALLED"));
+        assertThat(row.get("handlerLabel").asText()).startsWith("소비자·브랜드가 택배사 조회 · ").contains("운영자 판정");
+        assertThat(row.get("actOnBehalfAvailable").asBoolean()).isTrue();
     }
 
     @Test
@@ -151,7 +170,9 @@ class AdminOrderExceptionIntegrationTest extends ClaimTestSupport {
         row = only(rows("?tab=DELAY"));
         assertThat(row.get("actOnBehalfAvailable").asBoolean()).isTrue();
         assertThat(row.get("nextStepLabel").asText()).isEqualTo("자동 알림 3회 무응답 · 운영자 환불 가능");
-        assertThat(row.get("nextStepNote").asText()).startsWith("운영자 사유 환불 편입 — 클레임 상세");
+        // [F-D01] 검수는 대신하지 않는다 — 운영자가 하는 일은 환불 편입뿐.
+        assertThat(row.get("nextStepNote").asText()).isEqualTo("운영자 사유 환불 편입 — 클레임 상세(검수는 대신하지 않는다)");
+        assertThat(row.get("nextNoticeAt").isNull()).isTrue();
 
         sellerPost(SELLER_CLAIMS + "/" + claimId + "/inspection/pass", Map.of()).andExpect(status().isOk());
         assertThat(rows("?tab=DELAY")).isEmpty();
@@ -177,6 +198,11 @@ class AdminOrderExceptionIntegrationTest extends ClaimTestSupport {
         assertThat(exchangeRow.get("dueBasisLabel").asText()).isEqualTo("검수 통과 + 2영업일");
         assertThat(exchangeRow.get("noticeCount").isNull()).isTrue();
         assertThat(exchangeRow.get("nextStepNote").asText()).isEqualTo("자동 알림 없음 — 근거 대기");
+        // [F-D02] 재발송 지연의 다음 단계는 브랜드 몫 — 자동 알림 회차가 없다.
+        assertThat(exchangeRow.get("nextStepLabel").asText()).isEqualTo("브랜드가 재발송 송장을 등록해야 합니다");
+        assertThat(exchangeRow.get("nextNoticeAt").isNull()).isTrue();
+        assertThat(exchangeRow.get("lastNoticeAt").isNull()).isTrue();
+        assertThat(exchangeRow.get("actOnBehalfAvailable").asBoolean()).isFalse();
         assertThat(byClaim(rows, rejected).get("dueBasisLabel").asText()).isEqualTo("재발송비 결제 + 2영업일");
 
         registerReship(exchange, "CJ", newInvoice()).andExpect(status().isOk());
@@ -218,6 +244,19 @@ class AdminOrderExceptionIntegrationTest extends ClaimTestSupport {
                 String.class, collecting));
         assertThat(collectionRow.at("/link/type").asText()).isEqualTo("CLAIM");
         assertThat(collectionRow.get("elapsedLabel").asText()).isEqualTo("25시간");
+        // [F-D03] 배송 예외 행은 처리 지연 열(기한 · 기한 문장 · 경과 영업일 · 알림 · 다음 단계)이 전부 null.
+        for (JsonNode row : rows) {
+            for (String field : List.of("dueAt", "dueBasisLabel", "elapsedBusinessDays", "noticeCount", "lastNoticeAt",
+                    "nextNoticeAt", "nextStepLabel", "nextStepNote")) {
+                assertThat(row.get(field).isNull()).as("%s · %s", row.get("kind").asText(), field).isTrue();
+            }
+            assertThat(row.get("invoice").isNull()).isFalse();
+            assertThat(row.get("handlerLabel").asText()).isNotBlank();
+        }
+        // [F-D04] 추적 정지 28일 전 — 처리 주체 문장에 운영자 판정이 없고 대행 불가.
+        JsonNode stalledRow = byKind(rows, "TRACKING_STALLED");
+        assertThat(stalledRow.get("handlerLabel").asText()).isEqualTo("소비자·브랜드가 택배사 조회");
+        assertThat(stalledRow.get("actOnBehalfAvailable").asBoolean()).isFalse();
 
         jdbc.update("UPDATE order_delivery_group SET return_completed_at = ? WHERE delivery_group_id = ?", now,
                 returning.getId());
@@ -296,6 +335,15 @@ class AdminOrderExceptionIntegrationTest extends ClaimTestSupport {
         orderProperties.getException().setBadgeScope("DELAY");
         adminGet(EXCEPTIONS + "/summary").andExpect(jsonPath("$.badge").value(1))
                 .andExpect(jsonPath("$.badgeScope").value("DELAY"));
+        // [F-D05] 설정 문자열은 대소문자를 가리지 않고, 모르는 값은 ALL 로 돌아간다.
+        orderProperties.getException().setBadgeScope("delay");
+        adminGet(EXCEPTIONS + "/summary").andExpect(jsonPath("$.badge").value(1))
+                .andExpect(jsonPath("$.badgeScope").value("DELAY"));
+        for (String unknown : List.of("delivery", "", "NONE")) {
+            orderProperties.getException().setBadgeScope(unknown);
+            adminGet(EXCEPTIONS + "/summary").andExpect(jsonPath("$.badge").value(2))
+                    .andExpect(jsonPath("$.badgeScope").value("ALL"));
+        }
     }
 
     @Test

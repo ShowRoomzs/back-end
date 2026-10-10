@@ -17,6 +17,8 @@ import showroomz.api.scenario.OrderFlowTestSupport;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.type.DeliveryCarrier;
+import showroomz.global.config.properties.OrderProperties;
+import showroomz.global.scheduler.PurchaseConfirmScheduler;
 import showroomz.support.IntegrationTest;
 
 import java.sql.Timestamp;
@@ -31,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -46,6 +49,7 @@ class AdminOrderIntegrationTest extends OrderFlowTestSupport {
     private static final int DELIVERY_FEE = 3_000;
 
     @Autowired private AdminOrderCommandService commandService;
+    @Autowired private OrderProperties orderProperties;
 
     private String admin;
     private Seller operator;
@@ -240,6 +244,10 @@ class AdminOrderIntegrationTest extends OrderFlowTestSupport {
         assertThat(orderIds(adminGet(ADMIN_ORDERS))).doesNotContain(orderId);
         adminGet(ADMIN_ORDERS + "/999999").andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("ORDER_NOT_FOUND"));
+        // [S-02] 열람 로그는 조회 앞에서 남는다 — 404(결제 전 · 없는 주문)도 기록된다(45 보완 시나리오 9절 #12 결정 대기 · 현재 동작 고정).
+        assertThat(output).contains("어드민 주문 상세 열람 - operatorId: " + operator.getId() + ", orderId: 999999");
+        assertThat(output.getOut().split("어드민 주문 상세 열람 - operatorId: " + operator.getId() + ", orderId: " + orderId + "\\b", -1))
+                .hasSize(3);
     }
 
     // ------------------------------------------------------------------ T12 동시 조치
@@ -303,6 +311,12 @@ class AdminOrderIntegrationTest extends OrderFlowTestSupport {
         assertThat(orderIds(adminGet(ADMIN_ORDERS + "?keyword=" + target.getMarketName()))).hasSize(2);
         // 공통 페이징 검증(PagingRequest)이 먼저 막는다 — 코드는 INVALID_INPUT, 상한은 같다.
         adminGet(ADMIN_ORDERS + "?size=101").andExpect(status().isBadRequest());
+        // [S-04] 부분 일치 검색어의 SQL 와일드카드는 글자로 다룬다(Querydsl contains 가 이스케이프) — 전체가 나오지 않는다.
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?searchType=BRAND&keyword=%"))).isEmpty();
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?searchType=BRAND&keyword=_"))).isEmpty();
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?keyword=%"))).isEmpty();
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?searchType=ORDER_NUMBER&keyword="
+                + target.getOrder().getOrderNumber().substring(0, 4) + "%"))).isEmpty();
     }
 
     // ------------------------------------------------------------------ T7 06a · 06d 정합
@@ -390,7 +404,11 @@ class AdminOrderIntegrationTest extends OrderFlowTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.groups[0].status").value("CANCELLED"))
                 .andExpect(jsonPath("$.groups[0].refunds[0].source").value("LOST_IN_TRANSIT"))
-                .andExpect(jsonPath("$.groups[0].refunds[0].origin").value("PG_AUTO"));
+                .andExpect(jsonPath("$.groups[0].refunds[0].origin").value("PG_AUTO"))
+                // [F-A05] 응답의 취소 블록 · 항목 — DB 와 같은 값이 화면 문장으로 나간다.
+                .andExpect(jsonPath("$.groups[0].cancel.cancelTypeLabel").value("배송 분실 · 운영자 처리"))
+                .andExpect(jsonPath("$.groups[0].items[0].status").value("CANCELLED"))
+                .andExpect(jsonPath("$.groups[0].items[0].cancelTypeLabel").value("배송 분실 · 운영자 처리"));
         assertThat(refundTasks(lost)).singleElement().satisfies(task -> {
             assertThat(task.source()).isEqualTo("LOST_IN_TRANSIT");
             assertThat(task.amount()).isEqualTo(CREAM_PRICE + DELIVERY_FEE);
@@ -425,6 +443,146 @@ class AdminOrderIntegrationTest extends OrderFlowTestSupport {
                 .filter(item -> item.get("deliveryGroupId").asLong() == watching.getId()).findFirst().orElseThrow();
         assertThat(row.get("actOnBehalfAvailable").asBoolean()).isTrue();
         assertThat(row.get("handlerLabel").asText()).contains("운영자 판정");
+    }
+
+    // ------------------------------------------------------------------ 45 보완 시나리오 — 응답 필드 · 연계
+
+    @Test
+    @DisplayName("[F-A07] 구매확정(CONFIRMED)에서 하자 반품 — 확정 시각 유지 · 하위주문 · 항목 상태는 그대로 · 파트너 11 행에 운영자 개설 · 사유")
+    void openDefectClaimOnConfirmed() throws Exception {
+        OrderDeliveryGroup group = deliveredGroup("400060013001", LocalDateTime.now().minusDays(8).withNano(0));
+        LocalDateTime now = LocalDateTime.now();
+        assertThat(fulfillmentService.confirmPurchase(group.getId(), now, now.minusDays(7))).isTrue();
+        JsonNode before = json(adminGet(ADMIN_ORDERS + "/" + orderOf(group)));
+        String confirmedAt = before.at("/groups/0/purchaseConfirm/confirmedAt").asText();
+        assertThat(before.at("/groups/0/status").asText()).isEqualTo("CONFIRMED");
+        assertThat(confirmedAt).isNotBlank();
+
+        long claimId = json(defect(group, itemsOf(group).get(0).getId(), "DAMAGED_OR_DEFECTIVE",
+                List.of("https://img.test/d.jpg")).andExpect(status().isOk())).get("claimIds").get(0).asLong();
+
+        JsonNode after = json(adminGet(ADMIN_ORDERS + "/" + orderOf(group)));
+        assertThat(after.at("/groups/0/status").asText()).isEqualTo("CONFIRMED");
+        assertThat(after.at("/groups/0/purchaseConfirm/confirmedAt").asText()).isEqualTo(confirmedAt);
+        assertThat(after.at("/groups/0/items/0/status").asText()).isEqualTo("PURCHASE_CONFIRMED");
+        assertThat(after.at("/groups/0/activeClaims/0/claimId").asLong()).isEqualTo(claimId);
+        assertThat(after.at("/groups/0/activeClaims/0/status").asText()).isEqualTo("REQUESTED");
+        JsonNode partner = StreamSupport.stream(json(sellerGet("/v1/seller/claims?tab=ALL")).get("content").spliterator(), false)
+                .filter(row -> row.get("claimId").asLong() == claimId).findFirst().orElseThrow();
+        assertThat(partner.get("openedByOperator").asBoolean()).isTrue();
+        assertThat(partner.get("openReason").asText()).isEqualTo("구매확정 후 하자");
+    }
+
+    @Test
+    @DisplayName("[F-A08] 조건 조합(코드 기준 고정) — PG 거래번호 검색 대상에 검색어가 없으면 조건 없음(전체) · 이상 유형은 전체 탭에서도 적용")
+    void searchConditionCombinations() throws Exception {
+        OrderDeliveryGroup stalled = shippingGroup("400060014001");
+        OrderDeliveryGroup plain = shippingGroup("400060014002");
+        jdbc.update("UPDATE order_delivery_group SET tracking_alert = 'STALLED', last_tracking_at = ? WHERE delivery_group_id = ?",
+                LocalDateTime.now().minusDays(9), stalled.getId());
+
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?searchType=PG_TX_ID")))
+                .containsExactlyInAnyOrder(orderOf(stalled), orderOf(plain));
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?searchType=PG_TX_ID&keyword= ")))
+                .containsExactlyInAnyOrder(orderOf(stalled), orderOf(plain));
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?tab=ALL&trackingAlert=STALLED"))).containsExactly(orderOf(stalled));
+        // 요약은 이상 유형 조건을 받지 않는다(컨트롤러에 파라미터 없음) — 목록과 달리 전체를 센다.
+        adminGet(ADMIN_ORDERS + "/summary?trackingAlert=STALLED").andExpect(jsonPath("$.tabCounts.ALL").value(2));
+    }
+
+    @Test
+    @DisplayName("[L-01] 운영자 하자 반품 → 소비자 회수 송장 → 입고 · 검수 통과 → PG 자동 환불(브랜드 귀책 · 차감 0) → 06c 「반품 검수 통과」 → 06a 진행 클레임 없음 · 타이머 정지 해제")
+    void operatorDefectClaimPassedEndToEnd() throws Exception {
+        OrderDeliveryGroup group = deliveredGroup("400060015001", LocalDateTime.now().minusDays(1).withNano(0));
+        long claimId = json(defect(group, itemsOf(group).get(0).getId(), "DAMAGED_OR_DEFECTIVE",
+                List.of("https://img.test/d.jpg")).andExpect(status().isOk())).get("claimIds").get(0).asLong();
+        assertThat(groupRow(group).get("confirm_paused_at")).isNotNull();
+
+        consumerPut("/v1/user/claims/" + claimId + "/collection-invoice", Map.of("carrier", "CJ", "trackingNumber", "500060015001"))
+                .andExpect(status().isOk());
+        sellerPost("/v1/seller/claims/receive", Map.of("claimIds", List.of(claimId))).andExpect(jsonPath("$.succeeded").value(1));
+        sellerPost("/v1/seller/claims/" + claimId + "/inspection/pass", Map.of()).andExpect(status().isOk());
+
+        Map<String, Object> task = jdbc.queryForMap("SELECT refund_task_id, source, origin, status, refund_amount "
+                + "FROM order_refund_task WHERE delivery_group_id = ?", group.getId());
+        assertThat(task).containsEntry("source", "CLAIM_RETURN_PASSED").containsEntry("origin", "PG_AUTO")
+                .containsEntry("status", "DONE").containsEntry("refund_amount", CREAM_PRICE);
+        assertThat(jdbc.queryForMap("SELECT status, result, refunded_amount, fee_bearer FROM order_claim WHERE claim_id = ?", claimId))
+                .containsEntry("status", "COMPLETED").containsEntry("result", "REFUNDED")
+                .containsEntry("refunded_amount", CREAM_PRICE).containsEntry("fee_bearer", "SELLER");
+        JsonNode done = StreamSupport.stream(json(adminGet("/v1/admin/refunds?tab=DONE&route=RETURN")).get("content").spliterator(), false)
+                .filter(row -> row.get("refundTaskId").asLong() == ((Number) task.get("refund_task_id")).longValue())
+                .findFirst().orElseThrow();
+        assertThat(done.get("sourceLabel").asText()).isEqualTo("반품 검수 통과");
+        assertThat(done.get("sourceRef").asText()).isEqualTo("CLM-" + claimId);
+        JsonNode detail = json(adminGet(ADMIN_ORDERS + "/" + orderOf(group)));
+        assertThat(detail.at("/groups/0/activeClaims")).isEmpty();
+        assertThat(detail.at("/groups/0/purchaseConfirm/paused").asBoolean()).isFalse();
+        assertThat(groupRow(group).get("confirm_paused_at")).isNull();
+    }
+
+    @Test
+    @DisplayName("[L-02] 운영자 하자 반품을 브랜드가 반려 → 소비자 이의 → 운영자 인용 — 일반 반품과 같은 인용(금액 · 종결) · 귀책은 처음부터 브랜드 · 귀책 변경 표시도 참")
+    void operatorDefectClaimRejectedThenDisputeAccepted() throws Exception {
+        OrderDeliveryGroup group = deliveredGroup("400060016001", LocalDateTime.now().minusDays(1).withNano(0));
+        long claimId = json(defect(group, itemsOf(group).get(0).getId(), "DAMAGED_OR_DEFECTIVE",
+                List.of("https://img.test/d.jpg")).andExpect(status().isOk())).get("claimIds").get(0).asLong();
+        consumerPut("/v1/user/claims/" + claimId + "/collection-invoice", Map.of("carrier", "CJ", "trackingNumber", "500060016001"))
+                .andExpect(status().isOk());
+        sellerPost("/v1/seller/claims/receive", Map.of("claimIds", List.of(claimId))).andExpect(jsonPath("$.succeeded").value(1));
+        sellerPost("/v1/seller/claims/" + claimId + "/inspection/reject", Map.of("reasonCode", "USED",
+                "detail", "용기 입구에 사용 흔적이 있습니다.", "legalBasis", "ART17_2_2",
+                "consumerMessage", "용기 입구에 사용 흔적이 있습니다.", "evidenceImageUrls", List.of("https://img.test/e1.jpg")))
+                .andExpect(status().isOk());
+        assertThat(jdbc.queryForObject("SELECT status FROM order_claim WHERE claim_id = ?", String.class, claimId))
+                .isEqualTo("REJECT_HOLD");
+        Map<String, Object> inquiry = new HashMap<>();
+        inquiry.put("type", "CANCEL_EXCHANGE_RETURN");
+        inquiry.put("content", "처음부터 파손돼 있었습니다.");
+        inquiry.put("imageUrls", List.of());
+        inquiry.put("claimId", claimId);
+        mockMvc.perform(post("/v1/user/inquiries").header(HttpHeaders.AUTHORIZATION, consumerToken)
+                .contentType(MediaType.APPLICATION_JSON).content(toJson(inquiry))).andExpect(status().isCreated());
+        adminGet("/v1/admin/claims/" + claimId).andExpect(jsonPath("$.canAcceptDispute").value(true))
+                .andExpect(jsonPath("$.disputeRefundAmount").value(CREAM_PRICE))
+                .andExpect(jsonPath("$.feeBearer").value("SELLER"));
+
+        adminPost("/v1/admin/claims/" + claimId + "/dispute-acceptance", Map.of("detail", "1:1 문의 사진상 배송 전 파손"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.amount").value(CREAM_PRICE));
+
+        // 처음부터 브랜드 귀책이어도 인용은 faultChangedToSeller 를 참으로 둔다(45 보완 시나리오 9절 #14 — 보조줄 문구 결정 대기).
+        assertThat(jdbc.queryForMap("SELECT status, result, fee_bearer, fault_changed_to_seller FROM order_claim WHERE claim_id = ?",
+                claimId)).containsEntry("status", "COMPLETED").containsEntry("result", "REFUNDED")
+                .containsEntry("fee_bearer", "SELLER").containsEntry("fault_changed_to_seller", true);
+        assertThat(refundTasks(group)).singleElement().satisfies(refund -> {
+            assertThat(refund.source()).isEqualTo("OPERATOR_REASON");
+            assertThat(refund.amount()).isEqualTo(CREAM_PRICE);
+            assertThat(refund.status()).isEqualTo("PENDING");
+        });
+    }
+
+    @Test
+    @DisplayName("[L-06] 추적 정지 배송완료 처리 → 7일 뒤 구매확정 배치 — 확정 · 06a 확정 시각 · 남은 일수 없음")
+    void stalledDeliveredThenConfirmedByBatch() throws Exception {
+        OrderDeliveryGroup group = shippingGroup("400060017001");
+        stalled(group, 29);
+        adminPost(ADMIN_ORDERS + "/groups/" + group.getId() + "/delivered",
+                Map.of("deliveredAt", LocalDateTime.now().minusDays(8).withNano(0).toString(), "reason", "소비자 수령 확인"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.groups[0].purchaseConfirm.confirmedAt").doesNotExist());
+
+        new PurchaseConfirmScheduler(fulfillmentService, orderProperties).tick();
+
+        JsonNode detail = json(adminGet(ADMIN_ORDERS + "/" + orderOf(group)));
+        assertThat(detail.at("/groups/0/status").asText()).isEqualTo("CONFIRMED");
+        assertThat(detail.at("/groups/0/purchaseConfirm/confirmedAt").isNull()).isFalse();
+        assertThat(detail.at("/groups/0/shipping/deliveredSourceLabel").asText()).isEqualTo("운영자 처리 · 추적 정지");
+        assertThat(jdbc.queryForList("SELECT status FROM order_product WHERE delivery_group_id = ?", String.class, group.getId()))
+                .containsOnly("PURCHASE_CONFIRMED");
+    }
+
+    private ResultActions consumerPut(String url, Object body) throws Exception {
+        return mockMvc.perform(put(url).header(HttpHeaders.AUTHORIZATION, consumerToken)
+                .contentType(MediaType.APPLICATION_JSON).content(toJson(body)));
     }
 
     private void stalled(OrderDeliveryGroup group, int daysAgo) {

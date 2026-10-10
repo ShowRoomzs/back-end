@@ -207,9 +207,73 @@ class SettlementGenerationIntegrationTest extends SettlementTestSupport {
         assertThat(settlement.get("settledAmount").asLong()).isEqualTo(CREAM_PRICE);
         assertThat(settlement.get("rewardAmount").asLong()).isEqualTo(CREAM_PRICE * 12 / 100);
         assertThat(settlement.get("clawbacks")).isEmpty();
+        // [SG-00] 06a ④ 상태 문장 · 확정 전이라 확정 시각 없음.
+        assertThat(settlement.get("statusLabel").asText()).isEqualTo("정산 확인 중");
+        assertThat(settlement.get("confirmedAt").isNull()).isTrue();
 
         adminGet(ADMIN_REFUNDS + "/" + refundTaskId).andExpect(status().isOk())
                 .andExpect(jsonPath("$.settlement.state").value("SETTLED"))
-                .andExpect(jsonPath("$.settlement.settlementNumber").value(s.getSettlementNumber()));
+                .andExpect(jsonPath("$.settlement.settlementNumber").value(s.getSettlementNumber()))
+                // [SG-00] 정산 전에 나간 환불은 생성 때 반영됐다 — 차감이 아니다.
+                .andExpect(jsonPath("$.settlement.stateLabel").value("정산 " + s.getSettlementNumber() + " 생성 후"))
+                .andExpect(jsonPath("$.settlement.clawback").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("[SG-04] 정산 생성 뒤 운영자 개설 반품 통과(PG 자동 · CLAIM_RETURN_PASSED) — 운영자 사유와 같은 차감 2행 · 사유 「반품 통과(운영자 개설)」")
+    void operatorOpenedReturnPassedAfterSettlement() throws Exception {
+        OrderDeliveryGroup group = confirmedGroup(creamVariant, 1);
+        endGroupBuy();
+        Settlement s = generate(LocalDateTime.now().withNano(0));
+
+        long claimId = json(adminPost(ADMIN_ORDERS + "/groups/" + group.getId() + "/defect-claims", java.util.Map.of(
+                "items", List.of(java.util.Map.of("orderProductId", itemsOf(group).get(0).getId(), "quantity", 1)),
+                "reasonCode", "DAMAGED_OR_DEFECTIVE", "detail", "구매확정 후 용기 파손",
+                "evidenceImageUrls", List.of("https://img.test/d.jpg"))).andExpect(status().isOk()))
+                .get("claimIds").get(0).asLong();
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .put("/v1/user/claims/" + claimId + "/collection-invoice")
+                        .header(org.springframework.http.HttpHeaders.AUTHORIZATION, consumerToken)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(toJson(java.util.Map.of("carrier", "CJ", "trackingNumber", nextTrackingNumber()))))
+                .andExpect(status().isOk());
+        passClaim(claimId);
+
+        Long taskId = jdbc.queryForObject("SELECT refund_task_id FROM order_refund_task WHERE source = 'CLAIM_RETURN_PASSED' "
+                + "AND delivery_group_id = ?", Long.class, group.getId());
+        assertThat(jdbc.queryForObject("SELECT status FROM order_refund_task WHERE refund_task_id = ?", String.class, taskId))
+                .isEqualTo("DONE");
+        List<java.util.Map<String, Object>> clawbacks = jdbc.queryForList("SELECT side, amount, status, reason, "
+                + "origin_settlement_id FROM settlement_clawback WHERE refund_task_id = ? ORDER BY clawback_id", taskId);
+        assertThat(clawbacks).extracting(row -> row.get("side")).containsExactly("BRAND", "CREATOR");
+        assertThat(clawbacks).allSatisfy(row -> {
+            assertThat(row.get("status")).isEqualTo("PENDING");
+            assertThat(row.get("reason")).isNull();
+            assertThat(((Number) row.get("origin_settlement_id")).longValue()).isEqualTo(s.getId());
+        });
+        assertThat(((Number) clawbacks.get(1).get("amount")).longValue()).isEqualTo(CREAM_PRICE * 12 / 100);
+        adminGet(ADMIN_REFUNDS + "/" + taskId).andExpect(jsonPath("$.settlement.clawback.status").value("PENDING"))
+                .andExpect(jsonPath("$.settlement.stateLabel").value(org.hamcrest.Matchers.startsWith("정산 후 · 차감 CLW-")));
+        assertThat(settlement(s.getId()).getBrandPayoutAmount()).isEqualTo(s.getBrandPayoutAmount());
+    }
+
+    @Test
+    @DisplayName("[SG-04] 분실 · 반송 완료 환불은 정산 뒤에 생길 수 없다 — 배송중 하위주문이 있으면 정산이 생기지 않고, 분실로 닫은 뒤 생성되면 차감이 아니라 배송 예외로 반영")
+    void lostCannotHappenAfterSettlement() throws Exception {
+        confirmedGroup(creamVariant, 1);
+        OrderDeliveryGroup shipping = preparing(paidGroup());
+        registerShipment(shipping, "CJ", nextTrackingNumber()).andExpect(status().isOk());
+        endGroupBuy();
+        assertThat(generationService.generate(groupBuy.getId(), LocalDateTime.now())).isEmpty();
+
+        jdbc.update("UPDATE order_delivery_group SET tracking_alert = 'STALLED', last_tracking_at = ?, shipped_at = ? "
+                + "WHERE delivery_group_id = ?", LocalDateTime.now().minusDays(29), LocalDateTime.now().minusDays(30), shipping.getId());
+        adminPost(ADMIN_ORDERS + "/groups/" + shipping.getId() + "/lost", java.util.Map.of("reason", "택배사 분실 확인"))
+                .andExpect(status().isOk());
+        Settlement s = generate(LocalDateTime.now().withNano(0));
+
+        assertThat(itemsOf(s)).filteredOn(item -> item.getDeliveryGroupId().equals(shipping.getId()))
+                .extracting(SettlementItem::getStatus).containsOnly(SettlementItemStatus.DELIVERY_EXCEPTION);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM settlement_clawback", Integer.class)).isZero();
     }
 }

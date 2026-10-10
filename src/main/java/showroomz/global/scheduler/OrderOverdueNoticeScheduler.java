@@ -26,7 +26,11 @@ public class OrderOverdueNoticeScheduler {
 
     @Scheduled(cron = "0 0 10,15 * * *", zone = "Asia/Seoul")
     public void tick() {
-        LocalDateTime now = LocalDateTime.now();
+        run(LocalDateTime.now());
+    }
+
+    /** 한 회차 — 실행 시각을 받는다(테스트가 회차 시각을 고정한다). */
+    public void run(LocalDateTime now) {
         if (!noticeService.isNoticeDay(now)) {
             return;
         }

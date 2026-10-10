@@ -183,6 +183,32 @@ class AdminRefundDetailIntegrationTest extends ClaimTestSupport {
         assertThat(rowOfTask(rows("?tab=FAILED"), taskId).has("lastErrorCode")).isFalse();
     }
 
+    @Test
+    @DisplayName("[F-C05] 코드 없는 실패 — 잔액 부족 · 결과 미확인 정리는 failure.code null · 메시지는 운영자 문장 · 시도 기록은 남는다")
+    void failureWithoutCode() throws Exception {
+        OrderDeliveryGroup lowBalance = deliveredGroup(creamVariant, 1);
+        long lowTask = operatorRefund(lowBalance, 5_000);
+        jdbc.update("UPDATE payment SET cancelled_amount = amount - 1000 WHERE payment_id = ?", paymentIdOf(lowBalance));
+        adminPost(ADMIN_REFUNDS + "/" + lowTask + "/execute", Map.of()).andExpect(status().isOk());
+        JsonNode balance = json(adminGet(ADMIN_REFUNDS + "/" + lowTask)).get("failure");
+        assertThat(balance.get("code").isNull()).isTrue();
+        assertThat(balance.get("message").asText()).contains("취소 가능 잔액");
+        assertThat(balance.get("attempts")).singleElement()
+                .satisfies(attempt -> assertThat(attempt.get("actorType").asText()).isEqualTo("ADMIN"));
+
+        OrderDeliveryGroup unknown = deliveredGroup(creamVariant, 1);
+        long unknownTask = operatorRefund(unknown, 4_000);
+        String paymentId = paymentIdOf(unknown);
+        fake.willFailCancel(paymentId, FakePaymentGateway.Failure.TIMEOUT);
+        adminPost(ADMIN_REFUNDS + "/" + unknownTask + "/execute", Map.of()).andExpect(status().isOk());
+        fake.willReturnPaid(paymentId, CREAM_PRICE + DELIVERY_FEE);
+        assertThat(refundExecutor.resolveStale(unknownTask)).isEqualTo(RefundExecutor.Outcome.FAILED);
+        JsonNode stale = json(adminGet(ADMIN_REFUNDS + "/" + unknownTask)).get("failure");
+        assertThat(stale.get("code").isNull()).isTrue();
+        assertThat(stale.get("message").asText()).startsWith("결과 미확인");
+        assertThat(rowOfTask(rows("?tab=FAILED"), unknownTask).get("statusNote").asText()).startsWith("결과 미확인");
+    }
+
     // ------------------------------------------------------------------ 이력 분리
 
     @Test

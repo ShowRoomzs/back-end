@@ -143,8 +143,11 @@ class AdminOrderActionGuardIntegrationTest extends OrderFlowTestSupport {
 
         cancel(group, "SOLD_OUT", "재고가 소진되어 취소합니다.").andExpect(status().isOk())
                 .andExpect(jsonPath("$.groups[0].status").value("CANCELLED"))
-                .andExpect(jsonPath("$.groups[0].cancel.cancelTypeLabel").isNotEmpty())
+                .andExpect(jsonPath("$.groups[0].cancel.cancelTypeLabel").value("브랜드 직권 취소"))
                 .andExpect(jsonPath("$.groups[0].cancel.reasonDetail").value("재고가 소진되어 취소합니다."))
+                // [F-A04] 항목 행에도 취소 유형 — 소비자 메시지와 블록 문장이 같은 값이다.
+                .andExpect(jsonPath("$.groups[0].items[0].status").value("CANCELLED"))
+                .andExpect(jsonPath("$.groups[0].items[0].cancelTypeLabel").value("브랜드 직권 취소"))
                 .andExpect(jsonPath("$.groups[0].refunds[0].origin").value("PG_AUTO"))
                 .andExpect(jsonPath("$.groups[0].actions.canCancel").value(false));
         // 응답은 커밋 전에 조립된다 — PG 자동 환불(커밋 직후)의 결과는 DB 로 본다.
@@ -398,6 +401,61 @@ class AdminOrderActionGuardIntegrationTest extends OrderFlowTestSupport {
             assertThat(pendingRequest).isTrue();
             assertThat(refundTasks(group)).isEmpty();
         }
+    }
+
+    @Test
+    @DisplayName("[RC-07] 한 결제 · 하위주문 둘에 사유 환불 편입 동시 — 잠금은 하위주문 단위라 합이 잔액을 넘을 수 있다(9절 #11) · 집행이 잔액으로 막아 돈은 넘지 않는다 · 같은 하위주문 둘은 하나가 409")
+    void concurrentEnqueueAcrossGroupsOfOnePayment() throws Exception {
+        MixedOrder order = deliverBoth(placeMixedBrandOrder(), LocalDateTime.now().minusDays(1));
+        int paid = jdbc.queryForObject("SELECT amount FROM payment WHERE payment_id = ?", Integer.class, order.paymentId());
+        int each = paid / 2 + 1_000;
+
+        List<String> results = ConcurrentCalls.race(
+                () -> enqueueByService(order.mine(), each),
+                () -> enqueueByService(order.other(), each));
+
+        long enqueued = results.stream().filter("ENQUEUED"::equals).count();
+        assertThat(results).allMatch(r -> r.equals("ENQUEUED") || r.equals("REFUND_AMOUNT_EXCEEDED"));
+        assertThat(enqueued).isPositive();
+        long outstanding = jdbc.queryForObject("SELECT COALESCE(SUM(refund_amount), 0) FROM order_refund_task "
+                + "WHERE payment_id = ? AND status = 'PENDING'", Long.class, order.paymentId());
+        assertThat(outstanding).isEqualTo(enqueued * each);
+        if (enqueued == 2) {
+            // 결과를 사실대로 고정 — 큐 합이 잔액을 넘었다. 결제 행 잠금으로 바꿀지는 9절 #11 결정 대기.
+            assertThat(outstanding).isGreaterThan(paid);
+        }
+
+        int pgCalls = fake.partialCancelCalls().size();
+        List<Long> tasks = jdbc.queryForList("SELECT refund_task_id FROM order_refund_task WHERE payment_id = ? "
+                + "AND status = 'PENDING' ORDER BY refund_task_id", Long.class, order.paymentId());
+        for (Long taskId : tasks) {
+            adminPost("/v1/admin/refunds/" + taskId + "/execute", Map.of()).andExpect(status().isOk());
+        }
+        assertThat(jdbc.queryForObject("SELECT cancelled_amount FROM payment WHERE payment_id = ?", Integer.class,
+                order.paymentId())).isEqualTo(each).isLessThanOrEqualTo(paid);
+        assertThat(fake.partialCancelCalls()).hasSize(pgCalls + 1);
+        assertThat(jdbc.queryForList("SELECT status FROM order_refund_task WHERE payment_id = ? ORDER BY refund_task_id",
+                String.class, order.paymentId())).containsExactlyElementsOf(enqueued == 2 ? List.of("DONE", "FAILED")
+                : List.of("DONE"));
+        if (enqueued == 2) {
+            assertThat(jdbc.queryForObject("SELECT last_error FROM order_refund_task WHERE payment_id = ? AND status = 'FAILED'",
+                    String.class, order.paymentId())).contains("취소 가능 잔액");
+        }
+
+        // 같은 하위주문 × 2 — 하위주문 잠금으로 직렬화돼 뒤엣것이 잔액을 다시 본다.
+        OrderDeliveryGroup single = deliveredGroup("400080011001", LocalDateTime.now().minusDays(1));
+        int singlePaid = CREAM_PRICE + DELIVERY_FEE;
+        List<String> same = ConcurrentCalls.race(
+                () -> enqueueByService(single, singlePaid / 2 + 1_000),
+                () -> enqueueByService(single, singlePaid / 2 + 1_000));
+        assertThat(same).containsExactlyInAnyOrder("ENQUEUED", "REFUND_AMOUNT_EXCEEDED");
+        assertThat(refundTasks(single)).hasSize(1);
+    }
+
+    private String enqueueByService(OrderDeliveryGroup group, int amount) {
+        commandService.enqueueRefund(operator.getId(), group.getId(), new AdminOrderDto.OperatorRefundRequest(
+                showroomz.domain.order.type.OperatorRefundReason.RECALL, amount, "위해성 리콜"));
+        return "ENQUEUED";
     }
 
     // ------------------------------------------------------------------ 도우미

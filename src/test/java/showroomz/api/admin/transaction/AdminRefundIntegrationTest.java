@@ -90,6 +90,10 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
             assertThat(ids(adminGet(ADMIN_REFUNDS + "?tab=" + tab + "&days=60"))).doesNotContain(pending);
         }
         adminGet(ADMIN_REFUNDS + "/" + pending).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("VOID"));
+        // [F-C11] 페이지 크기 — 06a · 06d 와 같은 공통 검증(1 ~ 100).
+        adminGet(ADMIN_REFUNDS + "?size=101").andExpect(status().isBadRequest());
+        adminGet(ADMIN_REFUNDS + "?size=0").andExpect(status().isBadRequest());
+        adminGet(ADMIN_REFUNDS + "?size=100").andExpect(status().isOk());
     }
 
     // ------------------------------------------------------------------ 검색 · 경로 · 정렬
@@ -112,6 +116,11 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
         assertThat(ids(adminGet(ADMIN_REFUNDS + "?keyword=tosspay_9c41e0b2"))).containsExactly(target);
         assertThat(ids(adminGet(ADMIN_REFUNDS + "?keyword=RFD-abc"))).isEmpty();
         assertThat(ids(adminGet(ADMIN_REFUNDS + "?keyword=없는번호"))).isEmpty();
+        // [S-04] 주문번호는 정확 일치 — SQL 와일드카드가 패턴으로 동작하지 않는다.
+        assertThat(ids(adminGet(ADMIN_REFUNDS + "?keyword=%"))).isEmpty();
+        assertThat(ids(adminGet(ADMIN_REFUNDS + "?keyword=_"))).isEmpty();
+        assertThat(ids(adminGet(ADMIN_REFUNDS + "?keyword=" + orderNumber.substring(0, orderNumber.length() - 1) + "_")))
+                .isEmpty();
     }
 
     @Test
@@ -134,6 +143,17 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
         assertThat(row.get("originLabel").asText()).isEqualTo("PG 자동");
         assertThat(row.get("paymentLabel").asText()).isEqualTo("카드 · 원래 부분");
         assertThat(row.get("refundNo").asText()).isEqualTo("RFD-" + returned);
+
+        // [F-C07] 분실 처리(LOST_IN_TRANSIT) 환불은 경로 「취소」에 들어온다 — 반송 · 반품이 아니다.
+        OrderDeliveryGroup lost = shipped(prepared(paidGroup(creamVariant, 1)), "CJ", newInvoice());
+        jdbc.update("UPDATE order_delivery_group SET tracking_alert = 'STALLED', last_tracking_at = ?, shipped_at = ? "
+                + "WHERE delivery_group_id = ?", LocalDateTime.now().minusDays(29), LocalDateTime.now().minusDays(30), lost.getId());
+        adminPost(ADMIN_ORDERS + "/groups/" + lost.getId() + "/lost", Map.of("reason", "택배사 분실 확인")).andExpect(status().isOk());
+        long lostTask = taskIdOfSource("LOST_IN_TRANSIT");
+        assertThat(ids(adminGet(ADMIN_REFUNDS + "?tab=DONE&route=CANCEL"))).contains(lostTask);
+        for (String route : List.of("RETURN", "RETURN_SHIPMENT", "OPERATOR", "EXCHANGE")) {
+            assertThat(ids(adminGet(ADMIN_REFUNDS + "?tab=DONE&route=" + route))).as(route).doesNotContain(lostTask);
+        }
     }
 
     @Test
@@ -155,6 +175,11 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
     @Test
     @DisplayName("[R-05] 요약 — 탭 건수 = 목록 건수 · 합계 · 소비자 대기 일수 · 배지 = 대기 + 실패")
     void refundSummary() throws Exception {
+        // [F-C06] 실패 0건이면 가장 오래 기다린 일수는 0 이 아니라 null.
+        JsonNode empty = json(adminGet(ADMIN_REFUNDS + "/summary").andExpect(status().isOk()));
+        assertThat(empty.at("/tabs/FAILED/count").asLong()).isZero();
+        assertThat(empty.at("/tabs/FAILED/oldestWaitingDays").isNull()).isTrue();
+
         operatorRefund(deliveredGroup(creamVariant, 1), 5_000);
         operatorRefund(deliveredGroup(creamVariant, 1), 7_000);
         long failed = failedRefund();
@@ -191,6 +216,9 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
         assertThat(detail.at("/reason/code").asText()).isEqualTo("RECALL");
         assertThat(detail.at("/reason/requestedByName").asText()).isEqualTo("김운영");
         assertThat(detail.at("/settlement/state").asText()).isEqualTo("BEFORE_SETTLEMENT");
+        // [F-C01] 자동 시도 상한 — 설정값(order.refund-auto-max-attempts).
+        assertThat(detail.get("autoMaxAttempts").asInt()).isEqualTo(2);
+        assertThat(detail.get("attempt").asInt()).isZero();
         assertThat(detail.get("additionalPayments")).isEmpty();
         assertThat(detail.get("history")).hasSize(1);
         assertThat(detail.at("/history/0/type").asText()).isEqualTo("REFUND_ENQUEUED_BY_OPERATOR");
@@ -349,10 +377,28 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
         long taskId = operatorRefund(group, 5_000);
         assertThat(json(adminGet(ADMIN_REFUNDS)).at("/content/0/voidable").asBoolean()).isTrue();
 
-        adminPost(ADMIN_REFUNDS + "/" + taskId + "/void", Map.of("reason", "오편입 · 금액 재산정")).andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("VOID")).andExpect(jsonPath("$.statusNote").value("편입 철회"));
+        JsonNode voided = json(adminPost(ADMIN_REFUNDS + "/" + taskId + "/void", Map.of("reason", "오편입 · 금액 재산정"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("VOID")).andExpect(jsonPath("$.statusNote").value("편입 철회")));
         assertThat(jdbc.queryForObject("SELECT status FROM order_refund_task WHERE refund_task_id = ?", String.class, taskId))
                 .isEqualTo("VOID");
+        // [F-C09] 철회 응답 행의 「일시」 = 철회 시각(modified_at) · [F-A01] 06a 상세 환불 목록에는 소멸 행이 남는다.
+        assertThat(voided.get("displayAt").asText()).isEqualTo(jsonTime(jdbc.queryForObject(
+                "SELECT modified_at FROM order_refund_task WHERE refund_task_id = ?", java.sql.Timestamp.class, taskId)
+                .toLocalDateTime()));
+        JsonNode refunds = json(adminGet(ADMIN_ORDERS + "/" + group.getOrder().getId())).at("/groups/0/refunds");
+        assertThat(refunds).singleElement().satisfies(refund -> {
+            assertThat(refund.get("refundTaskId").asLong()).isEqualTo(taskId);
+            assertThat(refund.get("status").asText()).isEqualTo("VOID");
+        });
+        // [F-C02] 소멸 건 상세는 200 — 버튼 셋 다 없음 · 이력에 철회.
+        JsonNode voidDetail = json(adminGet(ADMIN_REFUNDS + "/" + taskId).andExpect(status().isOk()));
+        assertThat(voidDetail.get("status").asText()).isEqualTo("VOID");
+        assertThat(voidDetail.get("statusLabel").asText()).isEqualTo("취소됨");
+        assertThat(voidDetail.get("executable").asBoolean()).isFalse();
+        assertThat(voidDetail.get("voidable").asBoolean()).isFalse();
+        assertThat(voidDetail.get("manuallyCompletable").asBoolean()).isFalse();
+        assertThat(voidDetail.get("history")).extracting(h -> h.get("type").asText()).contains("REFUND_VOIDED");
         assertThat(jdbc.queryForList("SELECT detail FROM order_fulfillment_history WHERE delivery_group_id = ? "
                 + "AND event_type = 'REFUND_VOIDED'", String.class, group.getId())).singleElement().asString()
                 .contains("RFD-" + taskId).contains("오편입");
@@ -374,6 +420,11 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
         // PG 자동(실패) 건도 철회 대상이 아니다.
         adminPost(ADMIN_REFUNDS + "/" + failedRefund() + "/void", Map.of("reason", "x")).andExpect(status().isConflict());
         adminPost(ADMIN_REFUNDS + "/" + taskId + "/void", Map.of("reason", " ")).andExpect(status().isBadRequest());
+        // [F-C08] 없는 환불 — 철회 · 수동 완료도 404(집행 · 상세와 같다).
+        adminPost(ADMIN_REFUNDS + "/999999/void", Map.of("reason", "오편입")).andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("REFUND_TASK_NOT_FOUND"));
+        adminPost(ADMIN_REFUNDS + "/999999/manual-complete", Map.of("note", "콘솔 처리")).andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("REFUND_TASK_NOT_FOUND"));
     }
 
     @Test
@@ -596,6 +647,116 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM payment_cancel WHERE payment_id = ?", Integer.class,
                 paymentIdOf(group))).isPositive();
         assertThat(output).contains("결제완료 소비자 취소 기록 생략");
+    }
+
+    // ------------------------------------------------------------------ 45 보완 시나리오 — 경합 · 응답 필드
+
+    @Test
+    @DisplayName("[RC-05] 실패 건 — 운영자 집행 × 다른 운영자 수동 완료 기록 동시 · 취소 기록 1행 · 누적 취소액 1회 · 하나만 DONE(R-18 의 짝)")
+    void executeRacingManualComplete() throws Exception {
+        Seller other = fixture.createAdmin("refunds-ops2@showroomz.test", "이운영");
+        long taskId = failedRefund();
+        String paymentId = jdbc.queryForObject("SELECT payment_id FROM order_refund_task WHERE refund_task_id = ?",
+                String.class, taskId);
+        fake.willAnswerCancel(paymentId, PortOneCancelResult.Outcome.SUCCEEDED);
+        int calls = fake.partialCancelCalls().size();
+
+        List<String> results = ConcurrentCalls.race(
+                () -> refundService.execute(operator.getId(), taskId).outcome(),
+                () -> {
+                    refundService.recordManual(other.getId(), taskId,
+                            new AdminTransactionDto.RefundManualCompleteRequest("console-rc05", "포트원 콘솔 부분 취소"));
+                    return "MANUAL";
+                });
+
+        assertThat(taskStatus(taskId)).isEqualTo("DONE");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM payment_cancel WHERE refund_task_id = ?", Integer.class, taskId))
+                .isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT cancelled_amount FROM payment WHERE payment_id = ?", Integer.class, paymentId))
+                .isEqualTo(CREAM_PRICE + DELIVERY_FEE);
+        Long executedBy = jdbc.queryForObject("SELECT executed_by FROM order_refund_task WHERE refund_task_id = ?", Long.class,
+                taskId);
+        if (results.get(1).equals("MANUAL")) {
+            assertThat(results.get(0)).isIn("SKIPPED", "REFUND_TASK_NOT_EXECUTABLE");
+            assertThat(executedBy).isEqualTo(other.getId());
+            assertThat(fake.partialCancelCalls()).hasSize(calls);
+        } else {
+            assertThat(results.get(0)).isEqualTo("DONE");
+            assertThat(results.get(1)).isEqualTo("REFUND_TASK_NOT_EXECUTABLE");
+            assertThat(executedBy).isEqualTo(operator.getId());
+            assertThat(fake.partialCancelCalls()).hasSize(calls + 1);
+        }
+    }
+
+    @Test
+    @DisplayName("[F-C03] 추가 결제 문장 — 결제 대기 청구 소멸(AC-07) 「인용 시 취소됨」 · 차감 환원(AC-07c) 「환불액에 포함」 · 결제 id 없음")
+    void additionalPaymentVoidNotes() throws Exception {
+        Long pendingFee = rejectedClaim(returnClaim(deliveredGroup(creamVariant, 1)));
+        long pendingTask = acceptDispute(pendingFee);
+        JsonNode voided = json(adminGet(ADMIN_REFUNDS + "/" + pendingTask)).at("/additionalPayments/0");
+        assertThat(voided.get("status").asText()).isEqualTo("VOID");
+        assertThat(voided.get("note").asText()).isEqualTo("재발송비 결제 요청은 인용 시 취소됨");
+        assertThat(voided.get("claimPaymentId").isNull()).isTrue();
+
+        Long claimId = received(returnClaim(deliveredGroup(creamVariant, 2)));
+        Map<String, Object> body = new java.util.HashMap<>(rejectBody());
+        body.put("rejectedQuantity", 1);
+        sellerPost(SELLER_CLAIMS + "/" + claimId + "/inspection/reject", body).andExpect(status().isOk());
+        Long split = jdbc.queryForObject("SELECT claim_id FROM order_claim WHERE split_from_claim_id = ?", Long.class, claimId);
+        assertThat(chargeStatusOf(split)).isEqualTo("DEDUCTED");
+        long restoredTask = acceptDispute(split);
+        JsonNode restored = json(adminGet(ADMIN_REFUNDS + "/" + restoredTask)).at("/additionalPayments/0");
+        assertThat(restored.get("status").asText()).isEqualTo("VOID");
+        assertThat(restored.get("note").asText()).isEqualTo("차감분 환원 — 환불액에 포함");
+        assertThat(restored.get("claimPaymentId").isNull()).isTrue();
+    }
+
+    @Test
+    @DisplayName("[F-C04] 같은 박스에 재발송할 다른 반려가 남아 청구가 결제됨으로 유지 — 「같은 박스의 다른 반려 재발송에 쓰인다」 · 결제 그대로")
+    void additionalPaymentKeptForOtherReject() throws Exception {
+        OrderDeliveryGroup group = deliveredTwoItemGroup();
+        List<Long> claimIds = requestClaim(group, showroomz.domain.order.type.ClaimType.RETURN,
+                showroomz.domain.order.type.ClaimReason.CHANGE_OF_MIND, allItems(group), newInvoice()).claimIds();
+        sellerPost(SELLER_CLAIMS + "/receive", Map.of("claimIds", claimIds)).andExpect(status().isOk());
+        for (Long id : claimIds) {
+            sellerPost(SELLER_CLAIMS + "/" + id + "/inspection/reject", rejectBody()).andExpect(status().isOk());
+        }
+        String paymentId = json(userPost(USER_CLAIMS + "/" + claimIds.get(0) + "/reship-fee/payments", CARD)
+                .andExpect(status().isOk())).get("paymentId").asText();
+        completeClaimPayment(paymentId).andExpect(jsonPath("$.paymentStatus").value("PAID"));
+        assertThat(claimIds).allSatisfy(id -> assertThat(claimStatus(id)).isEqualTo("RESHIP_READY"));
+
+        long taskId = acceptDispute(claimIds.get(0));
+
+        JsonNode kept = json(adminGet(ADMIN_REFUNDS + "/" + taskId)).at("/additionalPayments/0");
+        assertThat(kept.get("status").asText()).isEqualTo("PAID");
+        assertThat(kept.get("note").asText()).isEqualTo("결제된 재발송비 — 같은 박스의 다른 반려 재발송에 쓰인다");
+        assertThat(kept.get("claimPaymentId").asText()).isEqualTo(paymentId);
+        assertThat(kept.get("claimPaymentStatus").asText()).isEqualTo("PAID");
+        assertThat(fake.cancelCalls()).doesNotContain(paymentId);
+        assertThat(claimStatus(claimIds.get(1))).isEqualTo("RESHIP_READY");
+    }
+
+    @Test
+    @DisplayName("[F-C10] 편입자 ≠ 집행자 — 상세 reason.requestedByName 과 execution.executedByName 이 서로 다른 두 이름 · 이력 주체도 각자")
+    void requesterAndExecutorDiffer() throws Exception {
+        Seller executor = fixture.createAdmin("refunds-exec@showroomz.test", "이집행");
+        long taskId = operatorRefund(deliveredGroup(creamVariant, 1), 5_000);
+
+        mockMvc.perform(post(ADMIN_REFUNDS + "/" + taskId + "/execute").header(HttpHeaders.AUTHORIZATION, adminToken(executor))
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.refund.statusNote").value("집행 이집행 · 재확인"));
+
+        JsonNode detail = json(adminGet(ADMIN_REFUNDS + "/" + taskId));
+        assertThat(detail.at("/reason/requestedByName").asText()).isEqualTo("김운영");
+        assertThat(detail.at("/execution/executedByName").asText()).isEqualTo("이집행");
+        assertThat(detail.get("history")).extracting(h -> h.get("type").asText() + ":" + h.get("actorName").asText())
+                .containsExactly("REFUND_ENQUEUED_BY_OPERATOR:김운영", "REFUND_EXECUTED:이집행");
+    }
+
+    private long acceptDispute(Long claimId) throws Exception {
+        return json(adminPost("/v1/admin/claims/" + claimId + "/dispute-acceptance", Map.of("detail", "배송 시점 오염"))
+                .andExpect(status().isOk())).get("refundTaskId").asLong();
     }
 
     private ResultActions execute(long taskId) throws Exception {

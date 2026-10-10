@@ -344,6 +344,74 @@ class AdminOrderDetailIntegrationTest extends OrderFlowTestSupport {
         assertStalledButtons(delivered, false);
     }
 
+    // ------------------------------------------------------------------ 45 보완 시나리오 4-1
+
+    @Test
+    @DisplayName("[F-A03] 결제 행 없는 주문(paid_payment_id NULL) — 상세 200 · payment null · 배송완료면 사유 환불 편입 가능")
+    void detailWithoutPaymentRow() throws Exception {
+        OrderDeliveryGroup group = deliveredGroup("400070031001", LocalDateTime.now().minusDays(1));
+        jdbc.update("UPDATE orders SET paid_payment_id = NULL WHERE order_id = ?", orderOf(group));
+
+        JsonNode detail = detailOf(group);
+        assertThat(detail.get("payment").isNull()).isTrue();
+        assertThat(detail.at("/groups/0/status").asText()).isEqualTo("DELIVERED");
+        assertThat(detail.at("/groups/0/actions/canEnqueueRefund").asBoolean()).isTrue();
+        assertThat(rowOf(group).get("totalAmount").asInt()).isEqualTo(CREAM_PRICE + DELIVERY_FEE);
+    }
+
+    @Test
+    @DisplayName("[F-A06] 두 브랜드가 섞인 주문 — 목록 행 하나에 하위주문 둘 · 브랜드명이 다르다 · 주의 건수는 하위주문 단위(둘 다 기한 경과면 2)")
+    void mixedBrandListRow() throws Exception {
+        MixedOrder mixed = placeMixedBrandOrder();
+
+        JsonNode row = rowOf(mixed.mine());
+        assertThat(row.get("groups")).hasSize(2);
+        assertThat(row.get("groups")).extracting(g -> g.get("deliveryGroupId").asLong())
+                .containsExactlyInAnyOrder(mixed.mine().getId(), mixed.other().getId());
+        assertThat(row.at("/groups/0/brandName").asText()).isNotEqualTo(row.at("/groups/1/brandName").asText());
+        assertThat(row.get("attentionCount").asInt()).isZero();
+        assertThat(row.get("totalAmount").asInt()).isEqualTo(jdbc.queryForObject(
+                "SELECT amount FROM payment WHERE payment_id = ?", Integer.class, mixed.paymentId()));
+
+        jdbc.update("UPDATE order_delivery_group SET ship_due_at = ? WHERE delivery_group_id = ?",
+                LocalDateTime.now().minusDays(1), mixed.mine().getId());
+        assertThat(rowOf(mixed.mine()).get("attentionCount").asInt()).isEqualTo(1);
+        jdbc.update("UPDATE order_delivery_group SET ship_due_at = ? WHERE delivery_group_id = ?",
+                LocalDateTime.now().minusDays(1), mixed.other().getId());
+        assertThat(rowOf(mixed.mine()).get("attentionCount").asInt()).isEqualTo(2);
+        assertThat(orderIds(adminGet(ADMIN_ORDERS))).containsExactly(mixed.orderId());
+        assertThat(detailOf(mixed.mine()).get("groups")).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("[F-A09] page=0 · page=-1 은 1쪽으로 보정(400 아님) — 06a · 06b · 06c · 06d 네 목록 공통")
+    void nonPositivePageIsFirstPage() throws Exception {
+        Long orderId = orderOf(paidGroup());
+        for (String page : List.of("0", "-1")) {
+            assertThat(orderIds(adminGet(ADMIN_ORDERS + "?page=" + page))).as("06a page=%s", page).containsExactly(orderId);
+            for (String list : List.of("/v1/admin/claims", "/v1/admin/refunds", "/v1/admin/order-exceptions")) {
+                adminGet(list + "?page=" + page).andExpect(status().isOk());
+            }
+        }
+        adminGet("/v1/admin/order-exceptions?page=0").andExpect(jsonPath("$.page.pageInfo.currentPage").value(1));
+        adminGet("/v1/admin/refunds?page=-1").andExpect(jsonPath("$.pageInfo.currentPage").value(1));
+        adminGet("/v1/admin/claims?page=0").andExpect(jsonPath("$.pageInfo.currentPage").value(1));
+        adminGet(ADMIN_ORDERS + "?page=0").andExpect(jsonPath("$.pageInfo.currentPage").value(1));
+    }
+
+    @Test
+    @DisplayName("[F-A10] enum 오타 · 날짜 형식 오류는 400 INVALID_INPUT(글로벌 핸들러) · status=PENDING 은 유효값이지만 결제 전이라 0건")
+    void invalidQueryParameters() throws Exception {
+        paidGroup();
+        for (String query : List.of("tab=ALLL", "sort=X", "status=SHIPPED_X", "from=2026-13-01", "searchType=NOPE&keyword=1")) {
+            adminGet(ADMIN_ORDERS + "?" + query).andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        }
+        JsonNode pending = json(adminGet(ADMIN_ORDERS + "?status=PENDING").andExpect(status().isOk()));
+        assertThat(pending.get("content")).isEmpty();
+        assertThat(pending.at("/pageInfo/totalResults").asLong()).isZero();
+    }
+
     // ------------------------------------------------------------------ 도우미
 
     private static final List<String> ACTION_KEYS = List.of("canCorrectDeliveredAt", "canRegisterShipment", "canCancel",

@@ -20,10 +20,14 @@ public class FakeSettlementPayoutGateway implements SettlementPayoutGateway {
 
     private final Map<SettlementPayee, LineResult> scripted = new EnumMap<>(SettlementPayee.class);
     private final List<PayoutCommand> calls = new ArrayList<>();
+    private boolean unresponsive;
 
     @Override
     public synchronized PayoutResult distribute(PayoutCommand command) {
         calls.add(command);
+        if (unresponsive) {
+            throw new IllegalStateException("FAKE PG 지급대행 응답 없음(타임아웃)");
+        }
         return new PayoutResult(command.lines().stream().map(line -> {
             LineResult script = scripted.get(line.payee());
             if (script == null) {
@@ -40,6 +44,11 @@ public class FakeSettlementPayoutGateway implements SettlementPayoutGateway {
         scripted.put(payee, new LineResult(null, Outcome.FAILED, "FAKE-FAIL-" + payee.name(), code, reason));
     }
 
+    /** 지시를 받은 뒤 응답 없이 끊긴다(결과 모름) — 다음 {@link #reset()} 전까지 계속. */
+    public synchronized void unresponsive() {
+        unresponsive = true;
+    }
+
     public synchronized void succeedFor(SettlementPayee payee) {
         scripted.remove(payee);
     }
@@ -51,5 +60,6 @@ public class FakeSettlementPayoutGateway implements SettlementPayoutGateway {
     public synchronized void reset() {
         scripted.clear();
         calls.clear();
+        unresponsive = false;
     }
 }

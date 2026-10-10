@@ -20,7 +20,9 @@ import showroomz.support.IntegrationTest;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
@@ -259,6 +261,48 @@ class SellerClaimQueryIntegrationTest extends SellerOrderTestSupport {
     }
 
     // ------------------------------------------------------------------ 픽스처
+
+    @Test
+    @DisplayName("[L-04] 어드민 06b 와 같은 행 — 실제 반려의 재발송비(금액 · 결제 대기 · 기한 = 반려 + 14일) · 검수 기한이 파트너에도 나가고 기존 열은 그대로")
+    void partnerRowCarriesFieldsAddedFor06b() throws Exception {
+        OrderDeliveryGroup group = deliveredGroup(1);
+        Long claimId = claimService.request(new RequestCommand(consumer.getId(), group.getId(), ClaimType.RETURN,
+                ClaimReason.CHANGE_OF_MIND, null, List.of(), List.of(new Item(items(group).get(0).getId(), 1)),
+                new OrderClaimService.Invoice(showroomz.domain.order.type.DeliveryCarrier.CJ, newInvoice()), null),
+                LocalDateTime.now()).claimIds().get(0);
+        sellerPost(CLAIMS + "/receive", Map.of("claimIds", List.of(claimId))).andExpect(jsonPath("$.succeeded").value(1));
+        sellerGet(CLAIMS + "?tab=INSPECTION").andExpect(jsonPath("$.content[0].claimId").value(claimId))
+                .andExpect(jsonPath("$.content[0].inspectDueAt").isNotEmpty())
+                .andExpect(jsonPath("$.content[0].receivedAt").isNotEmpty())
+                .andExpect(jsonPath("$.content[0].reshipFee").value(nullValue()));
+
+        sellerPost(CLAIMS + "/" + claimId + "/inspection/reject", Map.of("reasonCode", "USED",
+                "detail", "용기 입구에 사용 흔적이 있습니다.", "legalBasis", "ART17_2_2",
+                "consumerMessage", "용기 입구에 사용 흔적이 있습니다.", "evidenceImageUrls", List.of("https://img.test/e1.jpg")))
+                .andExpect(status().isOk());
+
+        LocalDateTime rejectedAt = jdbc.queryForObject("SELECT rejected_at FROM order_claim WHERE claim_id = ?",
+                java.sql.Timestamp.class, claimId).toLocalDateTime();
+        LocalDateTime dueAt = jdbc.queryForObject("SELECT due_at FROM order_claim_charge WHERE collection_id = "
+                + "(SELECT collection_id FROM order_claim WHERE claim_id = ?)", java.sql.Timestamp.class, claimId).toLocalDateTime();
+        assertThat(dueAt.toLocalDate()).isEqualTo(rejectedAt.plusDays(14).toLocalDate());
+        sellerGet(CLAIMS + "?tab=REJECT_HOLD").andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].claimId").value(claimId))
+                .andExpect(jsonPath("$.content[0].reshipFee.status").value("PENDING"))
+                .andExpect(jsonPath("$.content[0].reshipFee.statusLabel").isNotEmpty())
+                .andExpect(jsonPath("$.content[0].reshipFee.amount").value(org.hamcrest.Matchers.greaterThan(0)))
+                .andExpect(jsonPath("$.content[0].reshipFee.dueAt").value(jsonTime(dueAt)))
+                // 기존 열 — 반려 사유 · 증빙 수 · 반려 시각 · 보관 단계는 그대로다.
+                .andExpect(jsonPath("$.content[0].rejectReasonLabel").value("개봉·사용 흔적"))
+                .andExpect(jsonPath("$.content[0].sellerEvidenceCount").value(1))
+                .andExpect(jsonPath("$.content[0].rejectedAt").value(jsonTime(rejectedAt)))
+                .andExpect(jsonPath("$.content[0].storage.phase").value("NOTICE_PENDING"))
+                .andExpect(jsonPath("$.content[0].openedByOperator").value(false));
+        sellerGet(CLAIMS + "/" + claimId).andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary.reshipFee.dueAt").value(jsonTime(dueAt)))
+                .andExpect(jsonPath("$.rejection.legalBasis").value("ART17_2_2"))
+                .andExpect(jsonPath("$.rejection.splitFromClaimNumber").value(nullValue()));
+    }
 
     private OrderDeliveryGroup deliveredGroup(int quantity) throws Exception {
         return delivered(shipped(prepared(paidGroup(creamVariant, quantity)), "CJ", newInvoice()),

@@ -287,6 +287,52 @@ class AdminClaimDetailIntegrationTest extends ClaimTestSupport {
                 .isEqualTo(detail);
     }
 
+    // ------------------------------------------------------------------ 45 보완 시나리오 4-2
+
+    @Test
+    @DisplayName("[F-B01] 일부 반려로 갈라진 두 행 — 분할 행 splitFromClaimNumber = 원 행 · 원 행 수량 = 통과분 · 어드민 목록에 둘 다 · 귀책은 행마다 DB 값")
+    void partialRejectSplitRows() throws Exception {
+        Long claimId = received(returnClaim(deliveredGroup(creamVariant, 3)));
+        Map<String, Object> body = new java.util.HashMap<>(rejectBody());
+        body.put("rejectedQuantity", 1);
+        sellerPost(SELLER_CLAIMS + "/" + claimId + "/inspection/reject", body).andExpect(status().isOk());
+        Long split = jdbc.queryForObject("SELECT claim_id FROM order_claim WHERE split_from_claim_id = ?", Long.class, claimId);
+
+        JsonNode splitDetail = json(adminGet(ADMIN_CLAIMS + "/" + split).andExpect(status().isOk()));
+        assertThat(splitDetail.at("/claim/rejection/splitFromClaimNumber").asText()).isEqualTo("CLM-" + claimId);
+        assertThat(splitDetail.at("/claim/summary/quantity").asInt()).isEqualTo(1);
+        JsonNode originDetail = json(adminGet(ADMIN_CLAIMS + "/" + claimId).andExpect(status().isOk()));
+        assertThat(originDetail.at("/claim/summary/quantity").asInt()).isEqualTo(2);
+        assertThat(originDetail.at("/claim/rejection/splitFromClaimNumber").textValue()).isNull();
+
+        JsonNode page = json(adminGet(ADMIN_CLAIMS + "?tab=ALL"));
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?tab=ALL"))).contains(claimId, split);
+        for (Long id : List.of(claimId, split)) {
+            assertThat(rowOf(page, id).get("feeBearer").asText()).as("CLM-%d", id).isEqualTo(claimRow(id).get("fee_bearer"));
+        }
+    }
+
+    @Test
+    @DisplayName("[F-B05] 운영자 개설 클레임 상세 — 운영자 개설 표시 · 사유 「구매확정 후 하자」 · 이력 첫 줄 접수(ADMIN)")
+    void operatorOpenedClaimDetail() throws Exception {
+        OrderDeliveryGroup group = deliveredGroup(creamVariant, 1);
+        long claimId = json(adminPost("/v1/admin/orders/groups/" + group.getId() + "/defect-claims", Map.of(
+                "items", List.of(Map.of("orderProductId", items(group).get(0).getId(), "quantity", 1)),
+                "reasonCode", "DAMAGED_OR_DEFECTIVE", "detail", "1:1 문의 — 구매확정 후 용기 파손 발견",
+                "evidenceImageUrls", List.of("https://img.test/d.jpg"))).andExpect(status().isOk()))
+                .get("claimIds").get(0).asLong();
+
+        JsonNode detail = json(adminGet(ADMIN_CLAIMS + "/" + claimId).andExpect(status().isOk()));
+        assertThat(detail.at("/claim/summary/openedByOperator").asBoolean()).isTrue();
+        assertThat(detail.at("/claim/summary/openReason").asText()).isEqualTo("구매확정 후 하자");
+        assertThat(detail.get("feeBearer").asText()).isEqualTo("SELLER");
+        JsonNode requested = StreamSupport.stream(detail.at("/claim/history").spliterator(), false)
+                .filter(h -> h.get("eventType").asText().equals("REQUESTED")).findFirst().orElseThrow();
+        assertThat(requested.get("actorType").asText()).isEqualTo("ADMIN");
+        assertThat(requested.get("detail").asText()).contains("운영자 개설");
+        assertThat(detail.at("/claim/consumerAttachments/0").asText()).isEqualTo("https://img.test/d.jpg");
+    }
+
     // ------------------------------------------------------------------ 도우미
 
     private static LocalDateTime at(String text) {
