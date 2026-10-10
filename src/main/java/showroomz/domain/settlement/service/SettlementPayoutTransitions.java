@@ -98,11 +98,15 @@ public class SettlementPayoutTransitions {
                         PayoutStatus.NOT_APPLICABLE, payout.getDueDate());
                 continue;
             }
-            Account account = switch (payout.getPayee()) {
-                case BRAND -> brand;
-                case CREATOR -> creator;
-                case PLATFORM -> new Account(PLATFORM_ACCOUNT, null, PLATFORM_ACCOUNT);
-            };
+            // 재분배(M3)가 고른 계좌(현재 회원 정보 · 지난 지시 그대로)가 스냅샷으로 남아 있으면 그것으로 지시한다.
+            Account account = payout.hasAccountSnapshot()
+                    ? new Account(payout.getBankName(), cipher.decrypt(payout.getAccountNumberEnc()),
+                    payout.getAccountHolder())
+                    : switch (payout.getPayee()) {
+                        case BRAND -> brand;
+                        case CREATOR -> creator;
+                        case PLATFORM -> new Account(PLATFORM_ACCOUNT, null, PLATFORM_ACCOUNT);
+                    };
             if (payout.getPayee() != SettlementPayee.PLATFORM && account.isMissing()) {
                 if (payoutRepository.markFailed(payout.getId(), null, FAIL_ACCOUNT_MISSING, "등록 계좌 없음", now) == 1) {
                     historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_FAILED,

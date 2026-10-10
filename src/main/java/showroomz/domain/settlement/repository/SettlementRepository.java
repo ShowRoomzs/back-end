@@ -99,4 +99,10 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
             + "AND EXISTS (SELECT d.id FROM OrderDeliveryGroup d WHERE d.groupBuy = g AND d.order.paidAt IS NOT NULL) "
             + "ORDER BY g.endedAt ASC, g.id ASC")
     List<Long> findGroupBuyIdsToGenerate(Pageable pageable);
+
+    // ------------------------------------------------------------------ 어드민 07a(7-3)
+
+    /** 상태별 건수 — [status, count]. 탭 숫자 · GNB 배지. */
+    @Query("SELECT s.status, COUNT(s) FROM Settlement s GROUP BY s.status")
+    List<Object[]> countAllByStatus();
 }

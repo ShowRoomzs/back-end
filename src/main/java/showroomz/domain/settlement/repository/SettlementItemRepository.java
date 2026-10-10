@@ -36,4 +36,9 @@ public interface SettlementItemRepository extends JpaRepository<SettlementItem, 
     @Query("SELECT DISTINCT i.settlementId, i.rewardRate, i.productName FROM SettlementItem i "
             + "WHERE i.settlementId IN :settlementIds")
     List<Object[]> findRewardRates(@Param("settlementIds") Collection<Long> settlementIds);
+
+    /** 명세 합계 — [결제금 합, 정산 반영액 합, 항목 리워드 합, 하위주문 수]. 07b 명세 tfoot · 개요 「주문 n건」. */
+    @Query("SELECT COALESCE(SUM(i.paidAmount), 0), COALESCE(SUM(i.settledAmount), 0), COALESCE(SUM(i.rewardAmount), 0), "
+            + "COUNT(DISTINCT i.deliveryGroupId) FROM SettlementItem i WHERE i.settlementId = :settlementId")
+    List<Object[]> totalsOf(@Param("settlementId") Long settlementId);
 }

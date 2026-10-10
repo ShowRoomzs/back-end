@@ -134,4 +134,11 @@ public interface SettlementPayoutRepository extends JpaRepository<SettlementPayo
     int updateAmountBeforeConfirm(@Param("settlementId") Long settlementId,
                                   @Param("payee") SettlementPayee payee,
                                   @Param("amount") long amount);
+
+    // ------------------------------------------------------------------ 어드민 07a 분배 실패 툴바(7-2)
+
+    /** 분배 실패 행 집계 — [payee, count, amount, earliestFailedAt]. 「미지급 합계 · 실패 수취자 · 최장 경과」. */
+    @Query("SELECT p.payee, COUNT(p), COALESCE(SUM(p.amount), 0), MIN(p.failedAt) FROM SettlementPayout p "
+            + "WHERE p.status = showroomz.domain.settlement.type.PayoutStatus.FAILED GROUP BY p.payee")
+    List<Object[]> aggregateFailed();
 }
