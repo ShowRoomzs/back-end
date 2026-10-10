@@ -75,6 +75,18 @@ public class BusinessCalendar {
         return candidate;
     }
 
+    /**
+     * {@code date} 직전 영업일 — 하루씩 물러나 영업일인 첫 날. 정산 조정 협의의 D-1 통지일(44 이슈 스레드 설계서 1-6)이 쓴다 —
+     * {@link #latestStartToFinishBefore}와 뜻이 다르다(그쪽은 「D에 시작하면 target 전날까지 끝나는 D」).
+     */
+    public LocalDate previousBusinessDay(LocalDate date) {
+        LocalDate candidate = date.minusDays(1);
+        while (!isBusinessDay(candidate)) {
+            candidate = candidate.minusDays(1);
+        }
+        return candidate;
+    }
+
     /** {@code from} 다음 날부터 {@code to}까지 영업일 수 — {@code to}가 앞이면 0(B13 「집행까지 3영업일」). */
     public int businessDaysBetween(LocalDate from, LocalDate to) {
         int count = 0;

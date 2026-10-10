@@ -6,8 +6,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementPayout;
 import showroomz.domain.settlement.repository.SettlementPayoutRepository;
@@ -111,7 +109,7 @@ public class SettlementConfirmService {
         }
         taxDocumentHook.onConfirmed(settlement, confirmedAt);
         historyRecorder.recordBySystem(settlementId, eventOf(reason), basis, confirmedAt);
-        afterCommit(() -> notifier.settlementConfirmed(settlementId));
+        AfterCommit.run(() -> notifier.settlementConfirmed(settlementId));
         log.info("정산 확정 - settlementId: {}, reason: {}, payoutDueDate: {}", settlementId, reason, payoutDueDate);
     }
 
@@ -121,18 +119,5 @@ public class SettlementConfirmService {
             case AGREED -> SettlementEventType.CONFIRMED_BY_AGREEMENT;
             case EXPIRED -> SettlementEventType.CONFIRMED_BY_EXPIRY;
         };
-    }
-
-    static void afterCommit(Runnable action) {
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            action.run();
-            return;
-        }
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                action.run();
-            }
-        });
     }
 }

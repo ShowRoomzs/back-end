@@ -6,8 +6,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import showroomz.domain.contract.entity.ContractItem;
 import showroomz.domain.contract.repository.ContractItemRepository;
 import showroomz.domain.groupbuy.entity.GroupBuy;
@@ -164,7 +162,7 @@ public class SettlementGenerationService {
                 "공구 종료 · 주문 %d건 종결 · 금액 공개 · 확인 기간 %s까지".formatted(closure.totalCount(),
                         reviewDueAt.format(DUE_FORMAT)), now);
         groupBuyCommandService.recordSalesFinalized(groupBuyId, now);
-        afterCommit(() -> notifier.settlementGenerated(settlementId));
+        AfterCommit.run(() -> notifier.settlementGenerated(settlementId));
         log.info("정산 생성 - groupBuyId: {}, settlementId: {}, number: {}", groupBuyId, settlementId,
                 settlement.getSettlementNumber());
         return Optional.of(settlementId);
@@ -291,19 +289,6 @@ public class SettlementGenerationService {
 
     private static long nullToZero(Integer value) {
         return value == null ? 0 : value;
-    }
-
-    private static void afterCommit(Runnable action) {
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            action.run();
-            return;
-        }
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                action.run();
-            }
-        });
     }
 
     /** 명세 한 줄의 작업본 — 분류(2-2 ①) 뒤 운영자 환불을 덜어 내고 리워드율을 붙여 {@link SettlementItem}이 된다. */
