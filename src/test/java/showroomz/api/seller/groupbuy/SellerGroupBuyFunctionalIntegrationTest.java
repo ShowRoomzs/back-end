@@ -136,7 +136,8 @@ class SellerGroupBuyFunctionalIntegrationTest extends GroupBuyTestSupport {
                 .andExpect(jsonPath("$.closure.source").value("ADMIN_EMERGENCY"))
                 .andExpect(jsonPath("$.closure.requester").doesNotExist())
                 .andExpect(jsonPath("$.adminSuspension.noticeBody").value("피해 급증"))
-                .andExpect(jsonPath("$.permissions.canOpenIssue").value(true));
+                // 이슈 직접 개설은 폐기(44 정산조정 이슈스레드 설계서 7절) — 항상 false.
+                .andExpect(jsonPath("$.permissions.canOpenIssue").value(false));
     }
 
     @Test
@@ -239,37 +240,23 @@ class SellerGroupBuyFunctionalIntegrationTest extends GroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("B5/C5→B5e: 이슈 개설은 3자 스레드와 한 건으로 기록되고 중복 버튼이 사라져도 정산 보류는 하지 않는다")
+    @DisplayName("B5/C5: 이슈 개설은 폐기 — 409 · 이슈 행 · 이력 · 3자 스레드 없음(44 정산조정 이슈스레드 설계서 7절)")
     void issueOpeningCreatesOneLinkedThreadWithoutSettlementHold() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);
-        given(threadGateway.openIssueThread(any(GroupBuy.class), eq(FulfillmentSide.SELLER),
-                eq(GroupBuyIssueType.CONTENT_FULFILLMENT), eq("스토리 1건 누락"))).willReturn(901L);
 
         action(groupBuy.getId(), "issues", Map.of("issueType", "CONTENT_FULFILLMENT", "content", "스토리 1건 누락"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.issueId").isNumber())
-                .andExpect(jsonPath("$.threadId").value(901));
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("GROUP_BUY_ACTION_NOT_ALLOWED"));
 
-        var issue = issueRepository.findFirstByGroupBuyIdAndStatus(groupBuy.getId(), GroupBuyIssueStatus.OPEN)
-                .orElseThrow();
-        assertThat(issue.getThreadId()).isEqualTo(901L);
-        assertThat(issue.getContent()).isEqualTo("스토리 1건 누락");
+        assertThat(issueRepository.count()).isZero();
         detail(groupBuy.getId()).andExpect(status().isOk())
                 .andExpect(jsonPath("$.groupBuy.status").value("ENDED"))
-                .andExpect(jsonPath("$.afterEnd.openIssue.threadId").value(901))
-                // 정산 보류가 생길 이행 확인 블록 자체가 없다(2026-10-06 폐기).
+                .andExpect(jsonPath("$.afterEnd.openIssue").value(nullValue()))
                 .andExpect(jsonPath("$.afterEnd.fulfillment").value(nullValue()))
                 .andExpect(jsonPath("$.permissions.canOpenIssue").value(false));
-
-        action(groupBuy.getId(), "issues", Map.of("issueType", "CONTENT_FULFILLMENT", "content", "중복"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("GROUP_BUY_ISSUE_ALREADY_OPEN"));
-        assertThat(issueRepository.count()).isEqualTo(1);
         assertThat(groupBuyHistoryRepository.findByGroupBuyIdOrderByOccurredAtAscIdAsc(groupBuy.getId()))
-                .filteredOn(entry -> entry.getEventType() == GroupBuyEventType.ISSUE_OPENED)
-                .hasSize(1);
-        verify(threadGateway).openIssueThread(any(GroupBuy.class), eq(FulfillmentSide.SELLER),
-                eq(GroupBuyIssueType.CONTENT_FULFILLMENT), eq("스토리 1건 누락"));
+                .noneMatch(entry -> entry.getEventType() == GroupBuyEventType.ISSUE_OPENED);
+        verify(threadGateway, org.mockito.Mockito.never()).openIssueThread(any(GroupBuy.class), any(), any(), any());
     }
 
     @Test

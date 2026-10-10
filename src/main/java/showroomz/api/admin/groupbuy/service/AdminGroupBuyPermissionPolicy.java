@@ -117,8 +117,16 @@ public class AdminGroupBuyPermissionPolicy {
                 : status == GroupBuyStatus.IN_PROGRESS);
     }
 
-    /** 이슈 — 종료 · 정산완료 · 중단 ∧ 열린 이슈 없음. 중단은 긴급 건의 사후 이의 창구다(6-5). */
+    /**
+     * 항상 false — 운영자 이슈 직접 개설 폐기(§42-4 · 44 정산조정 이슈스레드 설계서 7절). 이슈는 정산 조정 요청으로만 열린다.
+     * 판정식은 기획 복귀에 대비해 {@link #wouldOpenIssue}로 남긴다.
+     */
     public boolean canOpenIssue(GroupBuyFacts facts) {
+        return false;
+    }
+
+    /** [기획 제외] 폐기 전 판정식 — 종료 · 정산완료 · 중단 ∧ 열린 이슈 없음. 중단은 긴급 건의 사후 이의 창구였다(6-5). */
+    boolean wouldOpenIssue(GroupBuyFacts facts) {
         return facts.groupBuy().getStatus().isTerminal() && facts.openIssue() == null;
     }
 

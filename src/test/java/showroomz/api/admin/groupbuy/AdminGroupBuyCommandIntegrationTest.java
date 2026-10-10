@@ -23,6 +23,7 @@ import showroomz.domain.groupbuy.type.GroupBuyPostReviewStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.groupbuy.type.SuspensionWithdrawReason;
 import showroomz.domain.message.type.ParticipantType;
+import showroomz.domain.message.type.ThreadKind;
 import showroomz.domain.post.type.PostStatus;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.global.error.exception.BusinessException;
@@ -334,7 +335,8 @@ class AdminGroupBuyCommandIntegrationTest extends AdminGroupBuyTestSupport {
                 .andExpect(jsonPath("$.closure.adminBasis.basisLabel").value("행정·사법기관의 명령"))
                 .andExpect(jsonPath("$.closure.decidedByName").value(OPERATOR_NAME))
                 .andExpect(jsonPath("$.closure.acceptedOrderCount").value(0))
-                .andExpect(jsonPath("$.permissions.canOpenIssue").value(true));
+                // 이슈 직접 개설은 폐기(44 정산조정 이슈스레드 설계서 7절) — 항상 false.
+                .andExpect(jsonPath("$.permissions.canOpenIssue").value(false));
     }
 
     // ── 7 요청 판정 ─────────────────────────────────────────────────────────
@@ -467,7 +469,7 @@ class AdminGroupBuyCommandIntegrationTest extends AdminGroupBuyTestSupport {
     // ── 8 이슈 · 정산 · 합의 통보 ──────────────────────────────────────────────
 
     @Test
-    @DisplayName("이슈 — 진행중이면 409 · 종료면 운영자 이름으로 3자 스레드를 연다 · 정산 확인은 착수 게이트라 409")
+    @DisplayName("이슈 직접 개설은 폐기 — 진행중 · 종료 모두 409 · 스레드 없음 · 정산 확인도 409(44 정산조정 이슈스레드 설계서 7절)")
     void issueAndSettlementGates() throws Exception {
         GroupBuy inProgress = seedIn(GroupBuyStatus.IN_PROGRESS);
         adminAction(inProgress.getId(), "issues", Map.of("issueType", "ETC", "content", "이견"))
@@ -475,19 +477,12 @@ class AdminGroupBuyCommandIntegrationTest extends AdminGroupBuyTestSupport {
                 .andExpect(jsonPath("$.code").value("GROUP_BUY_ACTION_NOT_ALLOWED"));
 
         GroupBuy ended = seedIn(GroupBuyStatus.ENDED);
-        long threadId = JsonPath.parse(adminAction(ended.getId(), "issues",
-                        Map.of("issueType", "SETTLEMENT_AMOUNT", "content", "정산 금액 이견"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.threadId").isNumber())
-                .andReturn().getResponse().getContentAsString())
-                .read("$.threadId", Number.class).longValue();
-        assertThat(messagesOf(threadId)).singleElement().satisfies(first -> {
-            assertThat(first.getSenderType()).isEqualTo(ParticipantType.ADMIN);
-            assertThat(first.getSenderId()).isEqualTo(operator.getId());
-            assertThat(first.getContent()).isEqualTo("정산 금액 이견");
-        });
-        adminDetail(ended.getId()).andExpect(jsonPath("$.afterEnd.openIssue.threadId").value(threadId))
-                .andExpect(jsonPath("$.afterEnd.openIssue.awaitingReply").value(true));
+        adminAction(ended.getId(), "issues", Map.of("issueType", "SETTLEMENT_AMOUNT", "content", "정산 금액 이견"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("GROUP_BUY_ACTION_NOT_ALLOWED"));
+        assertThat(messageThreadRepository.findAll()).noneMatch(thread -> thread.getKind() == ThreadKind.GROUP_BUY_ISSUE);
+        adminDetail(ended.getId()).andExpect(jsonPath("$.afterEnd.openIssue").doesNotExist())
+                .andExpect(jsonPath("$.permissions.canOpenIssue").value(false));
         adminAction(ended.getId(), "settlement/confirm", null)
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("GROUP_BUY_SETTLEMENT_NOT_READY"));

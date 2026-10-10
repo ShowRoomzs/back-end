@@ -391,6 +391,10 @@ public class AdminGroupBuyCommandService {
      */
     public AdminGroupBuyDto.IssueOpenResponse openIssue(Long groupBuyId, Long operatorId,
                                                         AdminGroupBuyDto.IssueOpenRequest request) {
+        // [기획 제외] 운영자 이슈 직접 개설 폐기 — 첫 줄에서 409. 아래는 기획 복귀 시의 경로다(판정이 항상 거짓이라 닿지 않는다).
+        if (!permissionPolicy.canOpenIssue(null)) {
+            throw new BusinessException(ErrorCode.GROUP_BUY_ACTION_NOT_ALLOWED);
+        }
         GroupBuy groupBuy = access.lock(groupBuyId);
         GroupBuyActor admin = admin(operatorId);
         GroupBuyFacts facts = factsLoader.load(groupBuy);

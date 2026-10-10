@@ -348,9 +348,12 @@ public record GroupBuyDetailResponse(
 
     public record AfterEnd(
             @Schema(description = "**폐기(2026-10-06) — 항상 null.** 계약 이행 확인이 없어졌다. 종료 후 화면은 orderClosure 로 그린다", nullable = true, deprecated = true) Fulfillment fulfillment,
-            @Schema(description = "열린 이슈 — 없으면 null", nullable = true) OpenIssue openIssue,
+            @Schema(description = "**폐기(2026-10-06)** — 이슈는 정산 조정 요청으로만 열린다. 기존 행이 있으면 그대로 내린다",
+                    nullable = true, deprecated = true) OpenIssue openIssue,
             @Schema(description = "종료 +30일 — 어드민 정산 지연 감시 기준. ENDED에서만", nullable = true) LocalDateTime settlementWatchAt,
-            @Schema(description = "정산(이체) 완료 시각 — SETTLED에서만", nullable = true) LocalDateTime settledAt
+            @Schema(description = "정산(이체) 완료 시각 — SETTLED에서만", nullable = true) LocalDateTime settledAt,
+            @Schema(description = "정산 — 「정산 관리 ↗」 링크(파트너 13 상세). 정산이 생기기 전이면 null", nullable = true)
+            Long settlementId
     ) {
     }
 
@@ -399,7 +402,7 @@ public record GroupBuyDetailResponse(
             @Schema(description = "[조기 마감 요청] — IN_PROGRESS ∧ 요청 차단 아님") boolean canRequestEarlyClose,
             @Schema(description = "[공구 중단 요청] — READY 또는 IN_PROGRESS ∧ 요청 차단 아님") boolean canRequestSuspension,
             @Schema(description = "[소명 제출] — SUSPENSION_SCHEDULED ∧ 통지 중 ∧ 미제출 ∧ 소명 기한 이내") boolean canSubmitAppeal,
-            @Schema(description = "[이슈 스레드 열기] — (ENDED ∨ 브랜드가 요청하지 않은 SUSPENDED) ∧ 열린 이슈 없음") boolean canOpenIssue,
+            @Schema(description = "**폐기(2026-10-06) — 항상 false.** 이슈는 정산 조정 요청(정산 상세)으로만 열린다", deprecated = true) boolean canOpenIssue,
             @Schema(description = "[이행 확인] — **폐기(2026-10-06) · 항상 false**", deprecated = true) boolean canCheckFulfillment,
             @Schema(description = "[스레드 열기] — 인플루언서와 PAIR 스레드가 있음(counterparty.pairThreadId != null)") boolean canOpenPairThread
     ) {

@@ -25,4 +25,9 @@ public class SettlementGroupBuyReader implements GroupBuySettlementReader {
                 .filter(settlement -> settlement.getStatus() == SettlementStatus.PAID)
                 .map(Settlement::getRewardAmount);
     }
+
+    @Override
+    public Optional<Long> readSettlementId(Long groupBuyId) {
+        return settlementRepository.findByGroupBuyId(groupBuyId).map(Settlement::getId);
+    }
 }

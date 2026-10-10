@@ -64,8 +64,16 @@ public class GroupBuyPermissionPolicy {
                 && facts.activeNotice().map(notice -> notice.isAppealOpen(now)).orElse(false);
     }
 
-    /** 종료 또는 <b>브랜드가 요청하지 않은</b> 중단 · 열린 이슈 없음. */
+    /**
+     * 항상 false — 브랜드 이슈 직접 개설 폐기(§42-4 · 44 정산조정 이슈스레드 설계서 7절). 이슈는 정산 조정 요청으로만 열린다.
+     * 판정식은 기획 복귀에 대비해 {@link #wouldOpenIssue}로 남긴다.
+     */
     public boolean canOpenIssue(GroupBuyFacts facts) {
+        return false;
+    }
+
+    /** [기획 제외] 폐기 전 판정식 — 종료 또는 <b>브랜드가 요청하지 않은</b> 중단 · 열린 이슈 없음. */
+    boolean wouldOpenIssue(GroupBuyFacts facts) {
         GroupBuyStatus status = facts.groupBuy().getStatus();
         boolean suspendedNotByBrand = status == GroupBuyStatus.SUSPENDED
                 && facts.closingChangeRequest()

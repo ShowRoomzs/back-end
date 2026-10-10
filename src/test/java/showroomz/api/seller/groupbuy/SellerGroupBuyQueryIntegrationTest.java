@@ -249,8 +249,8 @@ class SellerGroupBuyQueryIntegrationTest extends GroupBuyTestSupport {
         seedNotice(noticed.getId(), LocalDateTime.now().plusDays(2).withNano(0));
         assertPermissions(noticed.getId(), "canSubmitAppeal", "canOpenPairThread");
 
-        // 종료 — 이행 확인은 2026-10-06 폐기돼 이슈 · 스레드만 남는다.
-        assertPermissions(seedIn(GroupBuyStatus.ENDED).getId(), "canOpenIssue", "canOpenPairThread");
+        // 종료 — 이행 확인 · 이슈 직접 개설은 2026-10-06 폐기돼 스레드만 남는다(이슈는 정산 조정 요청으로만 열린다).
+        assertPermissions(seedIn(GroupBuyStatus.ENDED).getId(), "canOpenPairThread");
         assertPermissions(seedIn(GroupBuyStatus.SETTLED).getId(), "canOpenPairThread");
     }
 

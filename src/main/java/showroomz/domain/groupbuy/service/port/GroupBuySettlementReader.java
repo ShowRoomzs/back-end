@@ -11,4 +11,9 @@ public interface GroupBuySettlementReader {
 
     /** 정산완료 공구의 확정 리워드(공제 전). */
     Optional<Long> readConfirmedReward(Long groupBuyId);
+
+    /** 그 공구의 정산 — 「정산 관리 ↗」 링크(44 어드민 설계서 8-7). 정산이 생기기 전이면 empty. */
+    default Optional<Long> readSettlementId(Long groupBuyId) {
+        return Optional.empty();
+    }
 }

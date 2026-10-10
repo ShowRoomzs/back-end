@@ -364,12 +364,15 @@ public record CreatorGroupBuyDetailResponse(
     }
 
     public record Settlement(
-            @Schema(description = "정산 완료 시각", example = "2026-09-05T15:00:00") LocalDateTime settledAt,
-            @Schema(description = "고정 지급비(원) — 계약 금액. 실제 수령 여부와 무관", example = "300000", nullable = true)
+            @Schema(description = "정산 완료 시각", example = "2026-09-05T15:00:00", nullable = true) LocalDateTime settledAt,
+            @Schema(description = "**폐기 — 항상 null.** 고정 지급비 합산은 §41-1 #14 로 삭제됐다(44 어드민 설계서 8-7)",
+                    nullable = true, deprecated = true)
             Integer fixedFeeAmount,
-            @Schema(description = "정산 모듈이 확정한 리워드(원) — 모듈 연동 전이면 null", nullable = true) Long confirmedReward,
-            @Schema(description = "공제 전 합계 = 고정 지급비 + 확정 리워드. 확정 리워드를 모르면 null", nullable = true)
-            Long totalBeforeDeduction
+            @Schema(description = "정산 관리가 확정한 리워드(원 · 합의 후 · 차감 전) — 지급 완료 전이면 null", nullable = true)
+            Long confirmedReward,
+            @Schema(description = "**폐기 — 항상 null.** 고정 지급비 합산 삭제(§41-1 #14)", nullable = true, deprecated = true)
+            Long totalBeforeDeduction,
+            @Schema(description = "정산 — 「정산 관리 ↗」 링크(스튜디오 12 상세)", nullable = true) Long settlementId
     ) {
     }
 

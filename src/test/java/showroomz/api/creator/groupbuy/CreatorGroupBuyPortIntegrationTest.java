@@ -142,14 +142,16 @@ class CreatorGroupBuyPortIntegrationTest extends CreatorGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("B8: 정산 모듈의 확정 리워드와 계약 고정 지급비만 공제 전 합계로 묶는다")
+    @DisplayName("B8: 정산 블록은 정산 관리의 확정 리워드 · 정산 id 만 — 고정 지급비 합산은 삭제(§41-1 #14 · 44 어드민 설계서 8-7)")
     void settlementAmountUsesConfirmedRewardOnly() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.SETTLED);
         when(settlementReader.readConfirmedReward(groupBuy.getId())).thenReturn(Optional.of(867_672L));
+        when(settlementReader.readSettlementId(groupBuy.getId())).thenReturn(Optional.of(41L));
 
-        studioDetail(groupBuy.getId()).andExpect(jsonPath("$.settlement.fixedFeeAmount").value(300_000))
+        studioDetail(groupBuy.getId()).andExpect(jsonPath("$.settlement.fixedFeeAmount").doesNotExist())
                 .andExpect(jsonPath("$.settlement.confirmedReward").value(867_672))
-                .andExpect(jsonPath("$.settlement.totalBeforeDeduction").value(1_167_672))
+                .andExpect(jsonPath("$.settlement.settlementId").value(41))
+                .andExpect(jsonPath("$.settlement.totalBeforeDeduction").doesNotExist())
                 .andExpect(jsonPath("$.settlement.netPaidAmount").doesNotExist())
                 .andExpect(jsonPath("$.payout").doesNotExist());
 

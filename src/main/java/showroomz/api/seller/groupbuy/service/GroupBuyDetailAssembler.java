@@ -22,6 +22,7 @@ import showroomz.domain.groupbuy.service.GroupBuyFacts;
 import showroomz.domain.groupbuy.service.GroupBuyFactsLoader;
 import showroomz.domain.groupbuy.service.GroupBuyFixedFeeText;
 import showroomz.domain.groupbuy.service.port.GroupBuySalesReader;
+import showroomz.domain.groupbuy.service.port.GroupBuySettlementReader;
 import showroomz.domain.groupbuy.service.port.GroupBuyThreadGateway;
 import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.domain.groupbuy.type.AdminSuspensionKind;
@@ -59,6 +60,7 @@ public class GroupBuyDetailAssembler {
     private final GroupBuySalesReader salesReader;
     private final GroupBuyThreadGateway threadGateway;
     private final GroupBuyPermissionPolicy permissionPolicy;
+    private final GroupBuySettlementReader settlementReader;
     /** 정산 지연 감시 기준(§29-11) — 어드민 요약과 같은 설정값을 쓴다. */
     private final GroupBuyProperties properties;
 
@@ -414,7 +416,8 @@ public class GroupBuyDetailAssembler {
                 awaitingReply(facts.openIssue()));
         LocalDateTime watchAt = status == GroupBuyStatus.ENDED && groupBuy.getEndedAt() != null
                 ? groupBuy.getEndedAt().plusDays(properties.getSettlement().getWatchDays()) : null;
-        return new AfterEnd(fulfillment, openIssue, watchAt, groupBuy.getSettledAt());
+        return new AfterEnd(fulfillment, openIssue, watchAt, groupBuy.getSettledAt(),
+                settlementReader.readSettlementId(groupBuy.getId()).orElse(null));
     }
 
     /** 「답변 대기」는 이슈의 상태가 아니라 스레드의 사실이다 — 마지막 글을 개설 측이 썼으면 상대가 아직 답하지 않았다(30-1 2절). */

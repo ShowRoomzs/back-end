@@ -59,6 +59,16 @@ grep -rn "\[기획 제외\]" src/main/java
 
 기능 묶음으로 보면 **쿠폰 전체 · 필터 전체 · 마켓(어드민/셀러/공용) · 공용 리뷰 · 로그인 이력 · 소셜 정책 관리 · 답변 템플릿 · 상품 공지사항** 이다.
 
+### 제외 대상 엔드포인트 — 메서드 단위 (정산관리 · 3개)
+
+컨트롤러 전체가 아니라 **메서드 하나**만 `// [기획 제외]` + `@Hidden` 이다. 서비스 첫 줄에서 항상 409 를 던지고, 폐기 전 판정식은 `would…` 메서드로 남겨 두었다(`can…` 은 항상 `false`). 위 작업 규칙을 그대로 적용한다.
+
+| 역할 | 엔드포인트 | 컨트롤러 메서드 | 폐기 사유 |
+|---|---|---|---|
+| Seller | `POST /v1/seller/group-buys/{id}/issues` | `api/seller/groupbuy/controller/SellerGroupBuyController#openIssue` | 이슈 직접 개설 폐기 — 이슈는 정산 조정 요청으로만 열린다(`dev/44_정산조정_이슈스레드_BE_설계서.md` 7절) · 409 `GROUP_BUY_ACTION_NOT_ALLOWED` |
+| Admin | `POST /v1/admin/group-buys/{id}/issues` | `api/admin/groupbuy/controller/AdminGroupBuyController#openIssue` | 운영자 이슈 직접 개설 폐기 — 위와 같음 |
+| Admin | `POST /v1/admin/group-buys/{id}/settlement/confirm` | `api/admin/groupbuy/controller/AdminGroupBuyController#confirmSettlement` | 운영자 정산 확인 폐기 — 확정은 시스템(자동 · 합의 · 만료)만 한다(`dev/44_어드민_정산관리_BE_설계서.md` 8-1) · 409 `GROUP_BUY_SETTLEMENT_NOT_READY` |
+
 ### 주의: 활성 기능이 의존하는 제외 패키지
 
 제외 대상 패키지 안에 **활성 기능이 실제로 쓰는 클래스**가 섞여 있다. 아래는 **삭제·이동·시그니처 변경 금지**:

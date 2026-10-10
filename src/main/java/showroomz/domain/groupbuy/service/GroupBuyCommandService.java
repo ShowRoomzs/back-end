@@ -80,6 +80,7 @@ public class GroupBuyCommandService {
     }
 
     /**
+     * <b>폐기 이력 · 신규 호출 없음</b>(44 정산조정 이슈스레드 설계서 7절 — 새 구조에서 공구는 합의 통보를 받지 않는다).
      * 연결·소통 → 공구 · 이행 3자 스레드 양측 동의 종결(제20조⑤ · 32 설계 8-4). 당사자 합의이지 운영자 판정이 아니다 —
      * 미이행 확인 행은 고치지 않는다(제20조② 불가역). <b>정산 보류는 여기서 풀리지 않는다</b> — 해제는 정산 관리가 한다.
      * 멱등 — 이미 합의 시각이 있으면 무시한다.
@@ -95,6 +96,7 @@ public class GroupBuyCommandService {
     }
 
     /**
+     * <b>폐기 이력 · 신규 호출 없음</b>(44 정산조정 이슈스레드 설계서 7절).
      * 정산 관리 → 공구 · 정산 보류 해제(32 설계 8-4). <b>합의 없이 해제가 오면 거부한다</b> — 제20조⑤ 「양측 모두 동의해야
      * 종결·보류 해제」. D-2(보류 출구 없음)의 답이 나올 때까지 이 가드를 둔다. 멱등.
      */
@@ -113,7 +115,7 @@ public class GroupBuyCommandService {
                 GroupBuyActor.admin(operatorId, operatorName), "정산 관리", null, releasedAt);
     }
 
-    /** 연결·소통 → 공구 · 이슈 스레드 종결. 이후 새 이견은 새 이슈다. */
+    /** <b>폐기 이력 · 신규 호출 없음</b>(이슈 행이 더 생기지 않는다) — 연결·소통 → 공구 · 이슈 스레드 종결. */
     public void closeIssue(Long groupBuyId, LocalDateTime closedAt) {
         issueRepository.findFirstByGroupBuyIdAndStatus(groupBuyId, GroupBuyIssueStatus.OPEN)
                 .ifPresent(issue -> issue.close(closedAt));

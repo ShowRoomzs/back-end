@@ -441,6 +441,9 @@ public interface SellerGroupBuyControllerDocs {
     @Operation(
             summary = "이슈 스레드 열기",
             description = """
+                    **[기획 제외 · 폐기 2026-10-06] 항상 409 `GROUP_BUY_ACTION_NOT_ALLOWED` · Swagger 숨김.** 이슈는 정산 조정 요청으로만 열린다
+                    (44 정산조정 이슈스레드 설계서 7절) — 아래는 폐기 전 설명이다.
+
                     C5 — 종료 후 **정산과 무관한 이견**을 운영자가 참여하는 3자 스레드로 연다.
 
                     **권한:** SELLER · **버튼 노출:** `permissions.canOpenIssue`

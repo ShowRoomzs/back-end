@@ -125,27 +125,18 @@ class AdminGroupBuyPortIntegrationTest extends AdminGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("운영자 이슈 개설은 3자 스레드·이력·열린 이슈 1건을 묶고 중복 개설을 막는다")
+    @DisplayName("운영자 이슈 개설은 폐기 — 중단 공구에도 409 · 이슈 행 · 3자 스레드를 만들지 않는다(44 정산조정 이슈스레드 설계서 7절)")
     void adminIssueOpensExactlyOneThread() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.SUSPENDED);
-        // 첫 글의 보낸 사람이 처리 운영자여야 한다 — 3자 스레드에서 누가 열었는지가 남는다.
-        when(threadGateway.openAdminIssueThread(any(), eq(operator.getId()), eq(GroupBuyIssueType.SETTLEMENT_AMOUNT),
-                eq("정산 금액에 이견이 있습니다."))).thenReturn(9_001L);
 
         adminAction(groupBuy.getId(), "issues",
                 Map.of("issueType", "SETTLEMENT_AMOUNT", "content", "정산 금액에 이견이 있습니다."))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.issueId").isNumber())
-                .andExpect(jsonPath("$.threadId").value(9_001));
-        assertThat(issueRepository.existsByGroupBuyIdAndStatus(groupBuy.getId(), GroupBuyIssueStatus.OPEN)).isTrue();
-        adminDetail(groupBuy.getId()).andExpect(jsonPath("$.afterEnd.openIssue.threadId").value(9_001))
-                .andExpect(jsonPath("$.afterEnd.openIssue.openerType").value("ADMIN"))
-                .andExpect(jsonPath("$.permissions.canOpenIssue").value(false));
-        adminAction(groupBuy.getId(), "issues", Map.of("issueType", "ETC", "content", "중복"))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("GROUP_BUY_ISSUE_ALREADY_OPEN"));
-        verify(threadGateway).openAdminIssueThread(any(), eq(operator.getId()), eq(GroupBuyIssueType.SETTLEMENT_AMOUNT),
-                eq("정산 금액에 이견이 있습니다."));
+                .andExpect(jsonPath("$.code").value("GROUP_BUY_ACTION_NOT_ALLOWED"));
+        assertThat(issueRepository.existsByGroupBuyIdAndStatus(groupBuy.getId(), GroupBuyIssueStatus.OPEN)).isFalse();
+        adminDetail(groupBuy.getId()).andExpect(jsonPath("$.afterEnd.openIssue").value(nullValue()))
+                .andExpect(jsonPath("$.permissions.canOpenIssue").value(false));
+        verify(threadGateway, never()).openAdminIssueThread(any(), any(), any(), any());
     }
 
     @Test

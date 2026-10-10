@@ -311,7 +311,8 @@ class AdminGroupBuyQueryIntegrationTest extends AdminGroupBuyTestSupport {
                 .andExpect(jsonPath("$.afterEnd.orderClosure.unclosedCount").value(0))
                 .andExpect(jsonPath("$.sales").doesNotExist())
                 .andExpect(jsonPath("$.permissions.canConfirmSettlement").value(false))
-                .andExpect(jsonPath("$.permissions.canOpenIssue").value(true));
+                // 이슈 직접 개설은 폐기(44 정산조정 이슈스레드 설계서 7절) — 항상 false.
+                .andExpect(jsonPath("$.permissions.canOpenIssue").value(false));
     }
 
     @Test

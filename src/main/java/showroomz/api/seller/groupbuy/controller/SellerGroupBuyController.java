@@ -106,6 +106,9 @@ public class SellerGroupBuyController implements SellerGroupBuyControllerDocs {
         return ResponseEntity.ok(commandService.submitAppeal(getCurrentSellerEmail(), groupBuyId, request));
     }
 
+    // [기획 제외] 브랜드 이슈 직접 개설 폐기(§42-4 · 44 정산조정 이슈스레드 설계서 7절) — 항상 409. 이슈는 정산 조정 요청으로만 열린다.
+    // 기획 복귀 전까지 Swagger 에서 숨긴다.
+    @Hidden
     @Override
     @PostMapping("/{groupBuyId}/issues")
     public ResponseEntity<GroupBuyIssueOpenResponse> openIssue(

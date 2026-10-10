@@ -728,6 +728,9 @@ public interface AdminGroupBuyControllerDocs {
     @Operation(
             summary = "이슈 스레드 개설(B5 · B5b)",
             description = """
+                    **[기획 제외 · 폐기 2026-10-06] 항상 409 `GROUP_BUY_ACTION_NOT_ALLOWED` · Swagger 숨김.** 이슈는 정산 조정 요청으로만 열린다
+                    (44 정산조정 이슈스레드 설계서 7절) — 아래는 폐기 전 설명이다.
+
                     종결 공구에 운영자가 이슈 스레드를 연다(`openerType = ADMIN`). 공구당 열린 이슈는 1건이다.
                     **정산을 보류하지 않는다** — 이슈는 정산과 무관한 이견이다. 중단 공구에서는 긴급 건의 사후 이의 창구다.
 

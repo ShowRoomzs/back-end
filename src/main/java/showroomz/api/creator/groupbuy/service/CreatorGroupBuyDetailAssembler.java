@@ -406,17 +406,17 @@ public class CreatorGroupBuyDetailAssembler {
     }
 
     /**
-     * 확정 리워드는 정산 모듈 값을 <b>그대로</b> 받는다. 공제 전 합계의 고정 지급비는 브랜드 직접 지급이라 실제로 받았는지와
-     * 무관한 계약 금액이다 — 이름의 「공제 전」에 그 뜻을 싣는다.
+     * 정산 블록(44 어드민 설계서 8-7) — {@code settlementId} · 확정 리워드만. 확정 리워드는 정산 관리 값을 <b>그대로</b> 받는다.
+     * 고정 지급비 합산(공제 전 합계)은 §41-1 #14 로 삭제됐다 — 두 칸은 null 로 남긴다(필드 보존).
+     * 정산이 생기면(종료 후) 링크용으로 블록을 내리고, 정산완료 전에는 확정 리워드가 비어 있다.
      */
     private Settlement settlement(GroupBuy groupBuy, Contract contract) {
-        if (groupBuy.getStatus() != GroupBuyStatus.SETTLED) {
+        Long settlementId = settlementReader.readSettlementId(groupBuy.getId()).orElse(null);
+        if (groupBuy.getStatus() != GroupBuyStatus.SETTLED && settlementId == null) {
             return null;
         }
         Long confirmedReward = settlementReader.readConfirmedReward(groupBuy.getId()).orElse(null);
-        Integer fixedFee = contract.getFixedFeeAmount();
-        Long total = confirmedReward == null ? null : confirmedReward + (fixedFee == null ? 0L : fixedFee);
-        return new Settlement(groupBuy.getSettledAt(), fixedFee, confirmedReward, total);
+        return new Settlement(groupBuy.getSettledAt(), null, confirmedReward, null, settlementId);
     }
 
     /**
