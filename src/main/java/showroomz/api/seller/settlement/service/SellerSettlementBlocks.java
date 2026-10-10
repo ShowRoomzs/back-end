@@ -1,9 +1,12 @@
 package showroomz.api.seller.settlement.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.common.settlement.dto.SettlementPartyDto;
+import showroomz.api.common.settlement.service.SettlementPartyViews;
 import showroomz.api.seller.settlement.dto.SellerSettlementDto;
+import showroomz.domain.settlement.adjustment.type.SettlementParty;
 import showroomz.domain.settlement.entity.Settlement;
 
 import java.util.List;
@@ -13,12 +16,15 @@ import java.util.List;
  * 달라 조회 서비스에서 떼어 둔다. 원천 모듈이 붙기 전에는 비어 있다 — 서버가 안 내리는 것이지 FE 가 숨기는 것이 아니다.
  */
 @Component
+@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class SellerSettlementBlocks {
 
+    private final SettlementPartyViews views;
+
     /** 조정 내역(D4) — 협의가 없으면 null. */
     public SettlementPartyDto.AdjustmentBlock adjustmentOf(Settlement settlement) {
-        return null;
+        return views.adjustmentOf(settlement.getId(), SettlementParty.SELLER);
     }
 
     /** 조정 협의 차례 — MY_TURN · OPEN_FLOOR. */

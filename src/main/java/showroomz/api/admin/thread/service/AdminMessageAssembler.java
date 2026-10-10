@@ -10,12 +10,14 @@ import showroomz.api.common.attachment.dto.AttachmentSummary;
 import showroomz.api.common.attachment.service.MessageAttachmentService;
 import showroomz.api.common.thread.dto.MessageCardResponse;
 import showroomz.api.seller.auth.repository.SellerRepository;
+import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.connection.service.OperatorChannelService;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.message.entity.Message;
 import showroomz.domain.message.entity.MessageAttachment;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.repository.MessageAttachmentRepository;
+import showroomz.domain.message.service.MessageCardReader.AdjustmentCard;
 import showroomz.domain.message.service.MessageCardReader;
 import showroomz.domain.message.service.MessageCardReader.CardView;
 import showroomz.domain.message.type.MessageCardActionState;
@@ -51,9 +53,8 @@ public class AdminMessageAssembler {
         Map<Long, List<AttachmentSummary>> attachmentsByMessage = loadAttachments(messages);
         Map<Long, CardView> cards = cardReader.read(messages);
         Map<Long, String> operatorNames = loadOperatorNames(messages, cards);
-        String memberName = AdminThreadAccess.memberNameOf(thread);
         return messages.stream()
-                .map(m -> toItem(m, memberName, attachmentsByMessage.getOrDefault(m.getId(), List.of()),
+                .map(m -> toItem(m, senderNameOf(m, thread), attachmentsByMessage.getOrDefault(m.getId(), List.of()),
                         cards.get(m.getId()), operatorNames))
                 .toList();
     }
@@ -62,14 +63,27 @@ public class AdminMessageAssembler {
         return assemble(thread, List.of(message)).get(0);
     }
 
-    private MessageItem toItem(Message m, String memberName, List<AttachmentSummary> attachmentSummaries,
+    /**
+     * 상대 말풍선의 이름 — 보낸 쪽으로 정한다(브랜드명 · 쇼룸명). 운영팀 채널은 상대가 한 명이라 회원 이름과 같고,
+     * 이슈 스레드 · 쌍 스레드는 두 당사자를 가른다(44 이슈 스레드 설계서 4-4).
+     */
+    private static String senderNameOf(Message m, MessageThread thread) {
+        Connection connection = thread.getConnection();
+        return switch (m.getSenderType()) {
+            case SELLER -> connection.getMarket() == null ? null : connection.getMarket().getMarketName();
+            case CREATOR -> connection.getCreator() == null ? null : connection.getCreator().getShowroomName();
+            case ADMIN -> null;
+        };
+    }
+
+    private MessageItem toItem(Message m, String senderName, List<AttachmentSummary> attachmentSummaries,
                                CardView card, Map<Long, String> operatorNames) {
         boolean byOperator = m.getSenderType() == ParticipantType.ADMIN;
         boolean systemSender = byOperator && isSystemOperator(m.getSenderId());
         boolean bubbleByOperator = byOperator && !m.isCard();
         return new MessageItem(m.getId(), m.getMessageType(), m.getSenderType(),
                 bubbleByOperator,
-                byOperator ? null : memberName,
+                byOperator ? null : senderName,
                 bubbleByOperator ? operatorNames.get(m.getSenderId()) : null,
                 bubbleByOperator && (m.isAutoNotice() || systemSender),
                 m.getContent(), attachmentSummaries, toCard(card, operatorNames), m.getCreatedAt());
@@ -79,15 +93,26 @@ public class AdminMessageAssembler {
         if (view == null) {
             return null;
         }
+        AdjustmentCard adjustment = view.adjustment();
+        if (adjustment != null) {
+            // 정산 조정 카드 — 당사자 화면과 같은 사실 · 운영자는 답하지 않는다(respondable 항상 false · 조치자 이름 없음).
+            CardAction action = adjustment.actionState() == null ? null
+                    : new CardAction(MessageCardResponse.ADJUSTMENT_RESPOND, adjustment.actionState(), false,
+                    adjustment.respondedAt(), null, null, adjustment.resultLabel(), false);
+            return new Card(view.cardType(), view.title(), view.tone(), view.contractId(), view.contractNumber(),
+                    view.groupBuyTitle(), new CardDetail(null, null, null, null, null, null, null,
+                    MessageCardResponse.AdjustmentDetail.of(adjustment.snapshot())), action);
+        }
         boolean resend = view.cardType() == MessageCardType.CONTRACT_RESEND_REQUEST;
         CardDetail detail = resend
-                ? new CardDetail(view.requesterType(), view.requesterName(), view.requestedAt(), null, null, null, null)
+                ? new CardDetail(view.requesterType(), view.requesterName(), view.requestedAt(), null, null, null, null,
+                        null)
                 : new CardDetail(null, null, null, view.reasonLabel(), view.processedAt(),
-                        nameOf(view.processedBy(), operatorNames), true);
+                        nameOf(view.processedBy(), operatorNames), true, null);
         CardAction action = view.actionState() == null ? null
                 : new CardAction(MessageCardResponse.RESEND_NOTICE, view.actionState(),
                         view.actionState() == MessageCardActionState.PENDING,
-                        view.doneAt(), nameOf(view.doneBy(), operatorNames), view.noticeMessageId());
+                        view.doneAt(), nameOf(view.doneBy(), operatorNames), view.noticeMessageId(), null, false);
         return new Card(view.cardType(), view.title(), view.tone(), view.contractId(), view.contractNumber(),
                 view.groupBuyTitle(), detail, action);
     }

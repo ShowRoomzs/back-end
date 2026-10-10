@@ -1,9 +1,12 @@
 package showroomz.api.creator.settlement.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.common.settlement.dto.SettlementPartyDto;
+import showroomz.api.common.settlement.service.SettlementPartyViews;
 import showroomz.api.creator.settlement.dto.CreatorSettlementDto;
+import showroomz.domain.settlement.adjustment.type.SettlementParty;
 import showroomz.domain.settlement.entity.Settlement;
 
 import java.util.List;
@@ -13,12 +16,15 @@ import java.util.List;
  * 모듈이 달라 조회 서비스에서 떼어 둔다. 원천 모듈이 붙기 전에는 비어 있다.
  */
 @Component
+@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CreatorSettlementBlocks {
 
+    private final SettlementPartyViews views;
+
     /** 조정 내역(D2) — 협의가 없으면 null. */
     public SettlementPartyDto.AdjustmentBlock adjustmentOf(Settlement settlement) {
-        return null;
+        return views.adjustmentOf(settlement.getId(), SettlementParty.CREATOR);
     }
 
     /** 세금계산서 카드(D5 ~ D5c) — 사업자 ∧ 확정 후에만 부른다. */

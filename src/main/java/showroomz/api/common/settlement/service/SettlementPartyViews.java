@@ -3,6 +3,12 @@ package showroomz.api.common.settlement.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.common.settlement.dto.SettlementPartyDto;
+import showroomz.domain.settlement.adjustment.service.SettlementAdjustmentReader.AdjustmentSummary;
+import showroomz.domain.settlement.adjustment.service.SettlementAdjustmentReader.ProposalView;
+import showroomz.domain.settlement.adjustment.service.SettlementAdjustmentReader;
+import showroomz.domain.settlement.adjustment.type.AdjustmentTurn;
+import showroomz.domain.settlement.adjustment.type.SettlementParty;
 import showroomz.domain.settlement.entity.SettlementHistory;
 import showroomz.domain.settlement.entity.SettlementPayout;
 import showroomz.domain.settlement.repository.SettlementHistoryRepository;
@@ -22,6 +28,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * 파트너 13 · 스튜디오 12 조회가 함께 쓰는 조각(44 파트너 · 스튜디오 설계서) — 수취자 행 묶음 · 리워드율 표기 · 확정 근거 문장 ·
@@ -39,6 +46,7 @@ public class SettlementPartyViews {
     private final SettlementItemRepository itemRepository;
     private final SettlementHistoryRepository historyRepository;
     private final PersonalDataCipher cipher;
+    private final SettlementAdjustmentReader adjustmentReader;
 
     /** 상품별 리워드율 — 「상품별」 주석용. */
     public record RewardRate(String productName, BigDecimal rate) {
@@ -110,6 +118,26 @@ public class SettlementPartyViews {
     public String maskedSnapshotAccount(SettlementPayout payout) {
         return payout == null || payout.getAccountNumberEnc() == null ? null
                 : SettlementAccountMasker.mask(cipher.decrypt(payout.getAccountNumberEnc()));
+    }
+
+    /** 조정 내역 블록(44 이슈 스레드 설계서 1-7) — 협의가 없으면 null. 차례 · 「내 · 상대 최신 제안」은 뷰어 기준이다. */
+    public SettlementPartyDto.AdjustmentBlock adjustmentOf(Long settlementId, SettlementParty viewer) {
+        return adjustmentReader.findBySettlementId(settlementId).map(a -> adjustmentBlock(a, viewer)).orElse(null);
+    }
+
+    private static SettlementPartyDto.AdjustmentBlock adjustmentBlock(AdjustmentSummary a, SettlementParty viewer) {
+        AdjustmentTurn turn = SettlementAdjustmentReader.turnFor(a, viewer);
+        Optional<ProposalView> mine = a.latestOf(viewer);
+        Optional<ProposalView> theirs = a.latestOf(viewer.counterpart());
+        return new SettlementPartyDto.AdjustmentBlock(a.adjustmentId(), a.threadId(), a.status().name(),
+                a.status().getLabel(), a.requesterType().name(), a.openedAt(), a.deadlineAt(),
+                a.remainingBusinessDays(), a.originalRewardAmount(), a.maxRewardAmount(), a.agreedRewardAmount(),
+                a.finalRewardAmount(), mine.map(ProposalView::rewardAmount).orElse(null),
+                theirs.map(ProposalView::rewardAmount).orElse(null), theirs.map(ProposalView::proposedAt).orElse(null),
+                turn.name(), turn.getLabel(), turn.getTone().name(),
+                a.proposals().stream().map(p -> new SettlementPartyDto.AdjustmentProposal(p.seq(),
+                        p.proposerType().name(), p.proposerType() == viewer, p.rewardAmount(), p.reason(),
+                        p.status().name(), p.proposedAt(), p.respondedAt())).toList());
     }
 
     /** 상태 칩 숫자 — 수취자 화면은 분배 실패를 지급 완료로 접는다(0-4). 0 인 상태도 키가 있다. */

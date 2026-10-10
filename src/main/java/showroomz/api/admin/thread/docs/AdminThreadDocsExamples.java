@@ -72,6 +72,28 @@ final class AdminThreadDocsExamples {
             }
             """;
 
+    static final String LIST_ISSUE = """
+            {
+              "content": [
+                {
+                  "threadId": 912, "tab": "ISSUE", "name": "여름 수분 세럼 공구", "imageUrl": null,
+                  "memberNo": null, "memberId": null, "managerName": null, "businessType": null, "memberStatus": null,
+                  "lastMessagePreview": "다른 금액 제안", "lastMessageByOperator": false,
+                  "lastMessageAt": "2026-09-07T10:30:00", "unreadCount": 0, "writable": false,
+                  "issue": {
+                    "adjustmentId": 77, "status": "OPEN", "statusLabel": "협의 중",
+                    "badgeLabel": "응답 대기", "badgeTone": "INFO",
+                    "subtitle": "벨라코스 × 소연_쇼룸 · 정산 조정 요청",
+                    "settlementId": 1206, "settlementNumber": "STL-2609-006", "groupBuyId": 88,
+                    "marketId": 12, "brandName": "벨라코스", "creatorId": 7, "showroomName": "소연_쇼룸",
+                    "deadlineAt": "2026-09-17T23:59:59", "remainingBusinessDays": 7
+                  }
+                }
+              ],
+              "pageInfo": {"currentPage": 1, "totalPages": 1, "totalResults": 1, "limit": 20, "hasNext": false}
+            }
+            """;
+
     static final String LIST_EMPTY = """
             {"content": [], "pageInfo": {"currentPage": 1, "totalPages": 0, "totalResults": 0, "limit": 20, "hasNext": false}}
             """;
@@ -82,7 +104,7 @@ final class AdminThreadDocsExamples {
             {
               "brand": {"unreadCount": 3, "pendingCardCount": 0},
               "influencer": {"unreadCount": 2, "pendingCardCount": 1},
-              "issue": null
+              "issue": {"unreadCount": 0, "pendingCardCount": 0, "openCount": 1, "closedCount": 8}
             }
             """;
 
@@ -90,11 +112,42 @@ final class AdminThreadDocsExamples {
             {
               "brand": {"unreadCount": 0, "pendingCardCount": 0},
               "influencer": {"unreadCount": 0, "pendingCardCount": 0},
-              "issue": null
+              "issue": {"unreadCount": 0, "pendingCardCount": 0, "openCount": 0, "closedCount": 0}
             }
             """;
 
     // ── 헤더 · 정보 바 ────────────────────────────────────────────────────────
+
+    static final String INFO_ISSUE = """
+            {
+              "threadId": 912, "tab": "ISSUE", "name": "여름 수분 세럼 공구", "imageUrl": null,
+              "memberNo": null, "memberId": null, "memberStatus": null, "writable": false,
+              "profile": null, "progress": null, "openIssueThreads": null, "pair": null,
+              "issue": {
+                "adjustmentId": 77, "status": "OPEN", "statusLabel": "협의 중",
+                "badgeLabel": "응답 대기", "badgeTone": "INFO",
+                "settlement": {
+                  "settlementId": 1206, "settlementNumber": "STL-2609-006",
+                  "holdLabel": "정산 보류 · 전액", "holdTone": "WARNING", "originalRewardAmount": 150528,
+                  "currentProposal": {"proposalId": 301, "seq": 2, "rewardAmount": 165528, "proposerType": "SELLER",
+                                      "proposerName": "벨라코스", "responderName": "소연_쇼룸", "status": "PENDING"},
+                  "agreedRewardAmount": null, "finalRewardAmount": null, "finalCreatorNetAmount": null
+                },
+                "groupBuy": {"groupBuyId": 88, "groupBuyNumber": "GB-20260814-041", "title": "여름 수분 세럼 공구"},
+                "contract": {"contractId": 19, "contractNumber": "CTR-20260801-019"},
+                "brand": {"marketId": 12, "name": "벨라코스"}, "influencer": {"creatorId": 7, "name": "소연_쇼룸"},
+                "requesterType": "CREATOR", "openedAt": "2026-09-03T14:10:00",
+                "deadlineAt": "2026-09-17T23:59:59", "remainingBusinessDays": 7, "closedAt": null,
+                "steps": [
+                  {"key": "REQUESTED", "label": "요청", "state": "DONE", "note": "09.03 · 소연_쇼룸"},
+                  {"key": "OPEN", "label": "협의", "state": "CURRENT", "note": "양측 직접"},
+                  {"key": "AGREED", "label": "합의 · 반영", "state": "TODO", "note": "동의 시 자동"},
+                  {"key": "CLOSED", "label": "종결", "state": "TODO", "note": "합의 또는 09.17"}
+                ],
+                "links": {"pairThreadId": 455, "settlementId": 1206, "marketId": 12, "creatorId": 7}
+              }
+            }
+            """;
 
     static final String INFO_BRAND = """
             {
@@ -443,6 +496,10 @@ final class AdminThreadDocsExamples {
 
     static final String ERR_THREAD_READ_ONLY = """
             {"code": "THREAD_READ_ONLY", "message": "탈퇴한 회원의 채널에는 메시지를 보낼 수 없습니다."}
+            """;
+
+    static final String ERR_THREAD_OPERATOR_READ_ONLY = """
+            {"code": "THREAD_OPERATOR_READ_ONLY", "message": "운영팀은 이슈 스레드를 열람만 합니다."}
             """;
 
     static final String ERR_MESSAGE_EMPTY = """

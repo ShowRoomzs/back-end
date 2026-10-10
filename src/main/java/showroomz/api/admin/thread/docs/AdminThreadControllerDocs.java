@@ -18,6 +18,7 @@ import showroomz.api.admin.thread.dto.AdminThreadDto.ResendNoticeResponse;
 import showroomz.api.admin.thread.dto.AdminThreadDto.SendRequest;
 import showroomz.api.admin.thread.dto.AdminThreadDto.Summary;
 import showroomz.api.admin.thread.type.AdminChannelTab;
+import showroomz.api.admin.thread.type.AdminIssueState;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.common.attachment.dto.AttachmentDownloadRequest;
@@ -39,8 +40,8 @@ public interface AdminThreadControllerDocs {
 
     // ── 목록 · 배지 ──────────────────────────────────────────────────────────
 
-    @Operation(summary = "운영팀 채널 목록", description = """
-            탭별 운영팀 1:1 채널을 최근 메시지순으로 반환합니다.
+    @Operation(summary = "운영팀 채널 · 이슈 스레드 목록", description = """
+            탭별 운영팀 1:1 채널(또는 이슈 탭의 정산 조정 3자 스레드)을 최근 메시지순으로 반환합니다.
 
             **권한:** ADMIN
 
@@ -53,10 +54,18 @@ public interface AdminThreadControllerDocs {
             |---|---|---|---|---|
             | `BRAND` | 브랜드(마켓) | 브랜드명 | 브랜드 대표 이미지 | `BRD-{마켓 ID}` |
             | `INFLUENCER` | 인플루언서(크리에이터) | 쇼룸명 | 프로필 이미지 | `INF-{크리에이터 ID}` |
+            | `ISSUE` | 정산 조정 3자 스레드(브랜드 · 인플루언서 · 운영팀 열람) | 공구명 | null | null |
 
-            이슈 스레드(공구 3자 스레드) 탭은 추후 기획이라 이 API에 없습니다.
+            **이슈 탭 `tab=ISSUE`** (20b · 44 이슈 스레드 설계서 4-1)
+            - `state` — `OPEN`(진행 중 · 기본) · `CLOSED`(종결 = 합의 ∪ 기한 만료). 다른 탭에서는 무시합니다.
+            - `keyword` — 공구명 · 브랜드명 · 쇼룸명 부분 일치(회원번호 검색 없음).
+            - 행의 `issue` 블록: `badgeLabel`은 **운영자 기준**입니다 — `OPEN` 「응답 대기」(`INFO`) · `AGREED` 「합의 · 금액 변경」(`SUCCESS`) ·
+              `EXPIRED` 「기한 만료 · 원래 금액」(`NEUTRAL`). `subtitle` = 「{브랜드명} × {쇼룸명} · 정산 조정 요청」. `remainingBusinessDays`는 종결 뒤 null.
+            - 운영팀은 참가자가 아니라 `unreadCount`는 **항상 0**, `writable`은 **항상 false**(열람 전용), `lastMessageByOperator`는 false입니다.
+              회원 칸(`memberNo` · `memberId` · `memberStatus` · `managerName` · `businessType`)은 null입니다.
+            - 브랜드–인플루언서 1:1 스레드는 이 목록에 섞이지 않습니다 — 이슈 패널의 `links.pairThreadId`로만 들어갑니다.
 
-            **검색 `keyword`** — 앞뒤 공백은 무시합니다.
+            **검색 `keyword`(운영팀 채널 탭)** — 앞뒤 공백은 무시합니다.
             - `BRAND` 탭: 브랜드명 **또는** 판매 담당자 이름 부분 일치
             - `INFLUENCER` 탭: 쇼룸명 부분 일치
             - **회원번호 검색:** 그 탭의 접두사(`BRD-` · `INF-`, 대소문자 무시)로 시작하면 이름 검색을 하지 않고 회원번호로만 찾습니다.
@@ -83,25 +92,27 @@ public interface AdminThreadControllerDocs {
                     content = @Content(schema = @Schema(implementation = PageResponse.class), examples = {
                             @ExampleObject(name = "브랜드 탭", summary = "안 읽음 2 · 정지 회원(쓰기 가능) · 메시지 없는 채널(맨 아래)", value = LIST_BRAND),
                             @ExampleObject(name = "인플루언서 탭", summary = "마지막이 재발송 요청 카드 · 탈퇴 회원(writable=false)", value = LIST_INFLUENCER),
+                            @ExampleObject(name = "이슈 탭", summary = "tab=ISSUE&state=OPEN — 정산 조정 협의 진행 중", value = LIST_ISSUE),
                             @ExampleObject(name = "결과 없음", summary = "keyword=BRD-abc 처럼 접두사 뒤가 숫자가 아닌 경우 포함", value = LIST_EMPTY)
                     })),
-            @ApiResponse(responseCode = "400", description = "`tab` 누락 · 없는 `tab` 값 (`INVALID_INPUT`)",
+            @ApiResponse(responseCode = "400", description = "`tab` 누락 · 없는 `tab` · `state` 값 (`INVALID_INPUT`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_INVALID_INPUT))),
             @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "403", description = "관리자 권한 없음", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     PageResponse<ChannelListItem> list(
-            @Parameter(description = "탭 — BRAND · INFLUENCER (필수)", example = "BRAND", required = true) AdminChannelTab tab,
-            @Parameter(description = "검색어 — 브랜드명 · 담당자명 · 쇼룸명 부분 일치, 또는 회원번호(BRD-1017 · INF-3021)", example = "무드") String keyword,
+            @Parameter(description = "탭 — BRAND · INFLUENCER · ISSUE (필수)", example = "BRAND", required = true) AdminChannelTab tab,
+            @Parameter(description = "[이슈 탭] OPEN(진행 중 · 기본) · CLOSED(종결)", example = "OPEN") AdminIssueState state,
+            @Parameter(description = "검색어 — 브랜드명 · 담당자명 · 쇼룸명 부분 일치, 또는 회원번호(BRD-1017 · INF-3021). 이슈 탭은 공구명 · 브랜드명 · 쇼룸명", example = "무드") String keyword,
             PagingRequest paging);
 
     @Operation(summary = "탭 배지", description = """
-            두 탭의 배지 값을 한 번에 내립니다. **파라미터를 받지 않습니다** — 검색어와 무관한 전체 기준입니다.
+            세 탭의 배지 값을 한 번에 내립니다. **파라미터를 받지 않습니다** — 검색어와 무관한 전체 기준입니다.
 
             **권한:** ADMIN
 
             **폴링 대상입니다.** 실시간 푸시가 없으므로 어드민 화면에 있는 동안 30~60초 간격으로 호출합니다.
-            채널 수와 관계없이 쿼리 2회로 끝나는 가벼운 API입니다.
+            채널 수와 관계없이 쿼리 3회로 끝나는 가벼운 API입니다.
 
             | 필드 | 뜻 |
             |---|---|
@@ -111,7 +122,8 @@ public interface AdminThreadControllerDocs {
             - 탭 숫자로 무엇을 보여줄지 확정되기 전이라 두 값을 함께 내립니다. FE가 고르거나 합쳐 씁니다.
             - `pendingCardCount`는 요청자 기준으로 나뉩니다 — 브랜드가 요청하면 `brand`, 인플루언서가 요청하면 `influencer`.
             - 계약이 서명 단계를 벗어나 닫힌 카드(`CLOSED`)는 세지 않습니다. 계약 관리의 재발송 큐와 같은 정의입니다.
-            - `issue`는 이슈 스레드 기획 전까지 **항상 null**입니다.
+            - `issue`(이슈 탭) — `openCount`(진행 중) · `closedCount`(종결)가 seg 숫자입니다. 운영팀은 참가자가 아니라
+              `unreadCount` · `pendingCardCount`는 **항상 0**이며, 게시물·소통 GNB 배지에 **더하지 않습니다**(1:1 미답만).
             """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "탭별 배지 값",
@@ -126,8 +138,9 @@ public interface AdminThreadControllerDocs {
 
     // ── 스레드 ───────────────────────────────────────────────────────────────
 
-    @Operation(summary = "스레드 헤더 · 접이식 정보 바", description = """
-            스레드 헤더와 정보 바 3칸(① 정보 · ② 진행 중 · ③ 열린 이슈 스레드)입니다.
+    @Operation(summary = "스레드 헤더 · 접이식 정보 바 · 이슈 패널", description = """
+            스레드 헤더와 정보 바 3칸(① 정보 · ② 진행 중 · ③ 열린 이슈 스레드)입니다. 이슈 스레드면 이슈 패널(`issue`)을,
+            이슈 패널에서 들어온 브랜드–인플루언서 1:1 스레드면 쌍 헤더(`pair`)를 내립니다(아래).
             정보 바가 접혀 있어도 요약 줄이 보이므로 **스레드 진입 시 1회** 호출합니다.
 
             **권한:** ADMIN
@@ -160,17 +173,32 @@ public interface AdminThreadControllerDocs {
 
             인플루언서의 계약 수는 스튜디오에 도착한 계약(서명 진행중 이후)만 셉니다 — 브랜드가 작성 · 검토 중인 계약은 세지 않습니다.
 
-            **③ 열린 이슈 스레드 `openIssueThreads`** — 그 회원이 당사자인 열린 공구 3자 스레드입니다(`GROUP_BUY_ISSUE` · `GROUP_BUY_FULFILLMENT`).
-            이슈 스레드 화면이 기획 전이라 **목록만 내립니다** — 이 스레드 ID로 아래 메시지 API를 호출하면 403입니다. 없으면 빈 배열입니다.
+            **③ 열린 이슈 스레드 `openIssueThreads`** — 그 회원이 당사자인 열린 3자 스레드입니다. `SETTLEMENT_ADJUSTMENT`(정산 조정 · 진행 중)는
+            클릭하면 이슈 탭의 그 스레드로 이동합니다. `GROUP_BUY_ISSUE` · `GROUP_BUY_FULFILLMENT`는 폐기 이력(신규 생성 없음)이라
+            메시지 API가 403입니다. 없으면 빈 배열입니다.
+
+            **이슈 스레드(`tab = ISSUE`) — `issue` 패널** (20b · 44 이슈 스레드 설계서 4-3). 헤더 `name` = 공구명 · `writable = false` ·
+            `profile` · `progress` · `openIssueThreads` = null(상대가 한 명이 아니다).
+
+            | 칸 | 필드 | 규칙 |
+            |---|---|---|
+            | 정산 영향 | `settlement` | `holdLabel` — `OPEN` 「정산 보류 · 전액」(`WARNING`) · `AGREED` 「보류 해제 · 금액 변경」 · `EXPIRED` 「보류 해제 · 금액 변경 없음」(`SUCCESS`). `currentProposal` = 최신 제안(제안자 · 답할 쪽 이름). `finalCreatorNetAmount`(실지급)는 종결 뒤만 |
+            | 이슈 정보 | `groupBuy` · `contract` · `brand` · `influencer` · `requesterType` · `openedAt` · `deadlineAt` · `remainingBusinessDays` | 유형 라벨 「정산 조정 요청」은 종류가 하나라 FE 고정 문구 |
+            | 진행 단계 | `steps[4]` | `OPEN`: ① DONE ② CURRENT ③④ TODO / `AGREED`: 전부 DONE / `EXPIRED`: ①② DONE · ③ **SKIPPED**(합의 없음) · ④ DONE |
+            | 참고 | `links` | `pairThreadId` — 그 쌍의 1:1 스레드(열람 전용) · 끊긴 연결이면 null. `settlementId` → 정산 상세 |
+
+            **브랜드–인플루언서 1:1 스레드(`tab = null`) — `pair`** — 정산 조정 협의가 **있었던** 쌍만 열립니다(상태 무관 · 목록 없음 · 패널 링크로만).
+            헤더 `name` = 「{브랜드명} × {쇼룸명}」 · `writable = false`. 협의가 없던 쌍의 스레드는 403입니다.
             """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "헤더와 정보 바",
                     content = @Content(schema = @Schema(implementation = ChannelInfo.class), examples = {
                             @ExampleObject(name = "브랜드", summary = "담당자 · 연락처 / 미정산 null / 이행 이견 3자 스레드 1건", value = INFO_BRAND),
                             @ExampleObject(name = "인플루언서", summary = "사업자 · 이메일 · 인스타 / 종료 공구 · 연결 브랜드 수", value = INFO_INFLUENCER),
-                            @ExampleObject(name = "탈퇴 회원", summary = "writable=false — 열람만", value = INFO_WITHDRAWN)
+                            @ExampleObject(name = "탈퇴 회원", summary = "writable=false — 열람만", value = INFO_WITHDRAWN),
+                            @ExampleObject(name = "이슈 스레드", summary = "정산 조정 협의 진행 중 — 이슈 패널", value = INFO_ISSUE)
                     })),
-            @ApiResponse(responseCode = "403", description = "운영팀 1:1 채널이 아닌 스레드 — 브랜드↔인플루언서 쌍 스레드 · 공구 3자 스레드 (`THREAD_ACCESS_DENIED`)",
+            @ApiResponse(responseCode = "403", description = "열람할 수 없는 스레드 — 협의가 없던 쌍의 1:1 스레드 · 폐기된 공구 3자 스레드 (`THREAD_ACCESS_DENIED`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_THREAD_ACCESS_DENIED))),
             @ApiResponse(responseCode = "404", description = "스레드 없음 (`THREAD_NOT_FOUND`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_THREAD_NOT_FOUND)))
@@ -236,6 +264,10 @@ public interface AdminThreadControllerDocs {
             | `CLOSED` | 알림 전에 계약이 서명 단계를 벗어남(체결 · 취소 등) | 버튼 없음 — 다시 보낼 안내가 없다 |
 
             카드 상태는 조회 시점의 계약 상태로 계산합니다. 같은 카드라도 다시 조회하면 `PENDING` → `CLOSED`로 바뀔 수 있습니다.
+
+            **이슈 스레드 · 쌍 스레드(열람 전용)** — 말풍선의 `senderName`은 보낸 쪽(브랜드명 · 쇼룸명)입니다. 운영팀 말풍선이 없습니다.
+            정산 조정 카드 8종(`SETTLEMENT_ADJUSTMENT_*` · 보낸 사람 = 시스템 `ADMIN`)은 `detail.adjustment`에 사실을, 제안 카드(요청 · 다른 금액 제안)는
+            `action`(`type = ADJUSTMENT_RESPOND` · `state` · `resultLabel`)에 응답 결과를 싣습니다. 운영자는 답하지 않으므로 `canExecute` · `respondable`은 항상 false입니다.
             """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "메시지 목록",
@@ -245,7 +277,7 @@ public interface AdminThreadControllerDocs {
                             @ExampleObject(name = "닫힌 요청 · 직권 취소", summary = "CLOSED 카드 · 직권 취소 결과 카드", value = MESSAGES_CLOSED_AND_CANCELED),
                             @ExampleObject(name = "메시지 없음", value = MESSAGES_EMPTY)
                     })),
-            @ApiResponse(responseCode = "403", description = "운영팀 1:1 채널이 아닌 스레드 (`THREAD_ACCESS_DENIED`)",
+            @ApiResponse(responseCode = "403", description = "열람할 수 없는 스레드 — 운영팀 채널 · 이슈 스레드 · 협의가 있었던 쌍의 1:1 스레드만 열린다 (`THREAD_ACCESS_DENIED`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_THREAD_ACCESS_DENIED))),
             @ApiResponse(responseCode = "404", description = "스레드 없음 (`THREAD_NOT_FOUND`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_THREAD_NOT_FOUND)))
@@ -299,10 +331,12 @@ public interface AdminThreadControllerDocs {
             @ApiResponse(responseCode = "401", description = "운영자 계정이 아님 (`UNAUTHORIZED`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_UNAUTHORIZED))),
             @ApiResponse(responseCode = "403", description = """
-                    - 운영팀 1:1 채널이 아닌 스레드 (`THREAD_ACCESS_DENIED`)
+                    - 열람할 수 없는 스레드 (`THREAD_ACCESS_DENIED`)
+                    - 이슈 스레드 · 쌍 스레드 — 운영팀은 열람만 한다 (`THREAD_OPERATOR_READ_ONLY`)
                     - 없는 첨부 · 다른 스레드의 첨부 · 다른 운영자가 올린 첨부 (`ATTACHMENT_ACCESS_DENIED`)""",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {
                             @ExampleObject(name = "운영팀 채널 아님", value = ERR_THREAD_ACCESS_DENIED),
+                            @ExampleObject(name = "이슈 스레드 · 열람 전용", value = ERR_THREAD_OPERATOR_READ_ONLY),
                             @ExampleObject(name = "내 첨부 아님", value = ERR_ATTACHMENT_ACCESS_DENIED)
                     })),
             @ApiResponse(responseCode = "404", description = "스레드 없음 (`THREAD_NOT_FOUND`)",
@@ -334,10 +368,12 @@ public interface AdminThreadControllerDocs {
             - 스레드를 열었을 때와 새 메시지를 받아 화면에 보일 때 호출합니다. 몇 번을 불러도 결과가 같습니다(멱등).
             - 상대(브랜드 · 인플루언서)의 읽음 위치는 바뀌지 않습니다. 탈퇴 회원의 채널도 읽음 처리는 됩니다.
             - 호출 뒤 목록 행 · 탭 배지를 다시 조회하면 줄어든 값이 보입니다.
+            - 이슈 스레드도 운영팀 공용 읽음 위치를 씁니다(배지에는 영향 없음). 브랜드–인플루언서 1:1 스레드는 **아무것도 기록하지 않고 204**입니다 —
+              쌍 스레드에 운영팀 참가자 행을 두지 않습니다.
             """)
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "처리됨 — 본문 없음"),
-            @ApiResponse(responseCode = "403", description = "운영팀 1:1 채널이 아닌 스레드 (`THREAD_ACCESS_DENIED`)",
+            @ApiResponse(responseCode = "403", description = "열람할 수 없는 스레드 (`THREAD_ACCESS_DENIED`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_THREAD_ACCESS_DENIED))),
             @ApiResponse(responseCode = "404", description = "스레드 없음 (`THREAD_NOT_FOUND`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_THREAD_NOT_FOUND)))
@@ -388,8 +424,11 @@ public interface AdminThreadControllerDocs {
                     })),
             @ApiResponse(responseCode = "401", description = "운영자 계정이 아님 (`UNAUTHORIZED`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_UNAUTHORIZED))),
-            @ApiResponse(responseCode = "403", description = "운영팀 1:1 채널이 아닌 스레드 (`THREAD_ACCESS_DENIED`)",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_THREAD_ACCESS_DENIED))),
+            @ApiResponse(responseCode = "403", description = "열람할 수 없는 스레드 (`THREAD_ACCESS_DENIED`) · 이슈 스레드 · 쌍 스레드 — 열람 전용 (`THREAD_OPERATOR_READ_ONLY`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {
+                            @ExampleObject(name = "운영팀 채널 아님", value = ERR_THREAD_ACCESS_DENIED),
+                            @ExampleObject(name = "이슈 스레드 · 열람 전용", value = ERR_THREAD_OPERATOR_READ_ONLY)
+                    })),
             @ApiResponse(responseCode = "404", description = "스레드 없음 (`THREAD_NOT_FOUND`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_THREAD_NOT_FOUND))),
             @ApiResponse(responseCode = "409", description = "탈퇴한 회원의 채널 (`THREAD_READ_ONLY`)",
@@ -445,7 +484,7 @@ public interface AdminThreadControllerDocs {
             @Parameter(hidden = true) UserPrincipal principal);
 
     @Operation(summary = "첨부 다운로드 URL 일괄 발급", description = """
-            운영팀 채널 첨부의 presigned GET URL을 **한 번에** 발급합니다.
+            운영팀 채널 · 이슈 스레드 · 이슈 쌍의 1:1 스레드 첨부의 presigned GET URL을 **한 번에** 발급합니다.
             파일 하나를 누를 때도, 메시지의 **전체 다운로드**도 이 API 하나입니다. 파트너센터 · 스튜디오의 `POST /attachments/download`와 같은 규칙입니다.
 
             **권한:** ADMIN
@@ -462,7 +501,8 @@ public interface AdminThreadControllerDocs {
             **규칙**
             - **전부 되거나 전부 안 됩니다** — 하나라도 받을 수 없으면 아무 URL도 발급하지 않습니다.
               일부만 받으면 운영자가 빠진 파일을 모른 채 「전체 다운로드」를 끝낸 것으로 알게 됩니다.
-            - 운영팀 1:1 채널의 첨부만 받을 수 있습니다. 여러 채널의 첨부를 한 요청에 섞어도 됩니다.
+            - 열람할 수 있는 스레드(운영팀 채널 · 이슈 스레드 · 협의가 있었던 쌍의 1:1 스레드)의 첨부만 받을 수 있습니다 — 조정 근거 자료는 말풍선 첨부에 있습니다.
+              여러 스레드의 첨부를 한 요청에 섞어도 됩니다.
             - 상대가 보낸 첨부도 받을 수 있습니다. **아직 전송하지 않은 첨부**는 올린 운영자 본인만 받습니다.
             - URL은 **300초** 뒤 만료되지만 다운로드가 **시작되는** 시점에만 검사하므로 차례로 받아도 됩니다. 받아온 URL은 바로 씁니다.
             """)
@@ -479,7 +519,7 @@ public interface AdminThreadControllerDocs {
                     })),
             @ApiResponse(responseCode = "403", description = """
                     - 없는 첨부 ID 포함 · 전송 전인 다른 운영자의 첨부 (`ATTACHMENT_ACCESS_DENIED`) — 존재 여부를 따로 알려주지 않는다
-                    - 운영팀 1:1 채널이 아닌 스레드의 첨부 (`THREAD_ACCESS_DENIED`)""",
+                    - 열람할 수 없는 스레드의 첨부 (`THREAD_ACCESS_DENIED`)""",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {
                             @ExampleObject(name = "받을 수 없는 첨부", value = ERR_ATTACHMENT_ACCESS_DENIED),
                             @ExampleObject(name = "운영팀 채널 아님", value = ERR_THREAD_ACCESS_DENIED)

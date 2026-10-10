@@ -24,6 +24,7 @@ import showroomz.api.admin.thread.dto.AdminThreadDto.Summary;
 import showroomz.api.admin.thread.service.AdminThreadCommandService;
 import showroomz.api.admin.thread.service.AdminThreadQueryService;
 import showroomz.api.admin.thread.type.AdminChannelTab;
+import showroomz.api.admin.thread.type.AdminIssueState;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.common.attachment.dto.AttachmentDownloadRequest;
 import showroomz.api.common.attachment.dto.AttachmentDownloadResponse;
@@ -50,13 +51,14 @@ public class AdminThreadController implements AdminThreadControllerDocs {
     @Override
     @GetMapping("/v1/admin/connections/threads")
     public PageResponse<ChannelListItem> list(@RequestParam(required = false) AdminChannelTab tab,
+                                              @RequestParam(required = false) AdminIssueState state,
                                               @RequestParam(required = false) String keyword,
                                               @ModelAttribute PagingRequest paging) {
         // 필수 파라미터 누락은 전역 처리기가 받지 않아 500이 된다 — 여기서 400으로 돌린다.
         if (tab == null) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
-        return queries.list(tab, keyword, paging);
+        return queries.list(tab, state, keyword, paging);
     }
 
     @Override

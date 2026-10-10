@@ -14,6 +14,7 @@ import showroomz.api.admin.thread.dto.AdminThreadDto.Summary;
 import showroomz.api.admin.thread.dto.AdminThreadDto.TabSummary;
 import showroomz.api.admin.thread.type.AdminChannelMemberStatus;
 import showroomz.api.admin.thread.type.AdminChannelTab;
+import showroomz.api.admin.thread.type.AdminIssueState;
 import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.connection.type.ConnectionType;
 import showroomz.domain.contract.repository.ContractResendRequestRepository;
@@ -54,12 +55,19 @@ public class AdminThreadQueryService {
     private final ContractResendRequestRepository resendRequests;
     private final AdminMessageAssembler messageAssembler;
     private final AdminChannelInfoReader infoReader;
+    private final AdminIssueThreadQueryService issueQueries;
+    private final AdminIssuePanelAssembler issuePanels;
 
     /**
      * 채널 목록 — 최근 메시지순, 메시지 0건 채널은 맨 아래다(정렬은 쿼리가 소유한다).
      * 검색어가 그 탭의 회원번호 접두로 시작하면 번호 축으로만 본다 — 숫자가 아니면 결과 0건이다.
+     * 이슈 탭은 정산 조정 협의 목록이다({@code state} 는 이 탭에서만 쓴다 — 기본 OPEN).
      */
-    public PageResponse<ChannelListItem> list(AdminChannelTab tab, String keyword, PagingRequest paging) {
+    public PageResponse<ChannelListItem> list(AdminChannelTab tab, AdminIssueState state, String keyword,
+                                              PagingRequest paging) {
+        if (tab == AdminChannelTab.ISSUE) {
+            return issueQueries.list(state, keyword, paging);
+        }
         Pageable pageable = paging.toPageable(Sort.unsorted());
         String trimmed = keyword == null || keyword.isBlank() ? null : keyword.trim();
         Long memberId = null;
@@ -97,12 +105,21 @@ public class AdminThreadQueryService {
                         pending.getOrDefault(ContractActorType.SELLER, 0L)),
                 new TabSummary(unread.getOrDefault(ConnectionType.OPERATOR_CREATOR, 0L),
                         pending.getOrDefault(ContractActorType.CREATOR, 0L)),
-                null);
+                issueQueries.summary());
     }
 
-    /** 스레드 헤더 + 접이식 정보 바 — 접혀 있어도 요약 줄이 보이므로 스레드 진입 시 1회 부른다. */
+    /**
+     * 스레드 헤더 + 접이식 정보 바 — 접혀 있어도 요약 줄이 보이므로 스레드 진입 시 1회 부른다.
+     * 이슈 스레드는 이슈 패널, 이슈 쌍의 1:1 스레드는 쌍 헤더만 내린다(44 이슈 스레드 설계서 4-3 · 4-5).
+     */
     public ChannelInfo info(Long threadId) {
-        MessageThread thread = access.requireOperatorChannel(threadId);
+        MessageThread thread = access.requireReadable(threadId);
+        if (AdminThreadAccess.isIssueThread(thread)) {
+            return issuePanels.info(thread);
+        }
+        if (AdminThreadAccess.isPairThread(thread)) {
+            return issuePanels.pairInfo(thread);
+        }
         Connection connection = thread.getConnection();
         AdminChannelTab tab = AdminThreadAccess.tabOf(thread);
         AdminChannelMemberStatus status = AdminThreadAccess.memberStatusOf(thread);
@@ -112,18 +129,18 @@ public class AdminThreadQueryService {
             return new ChannelInfo(thread.getId(), tab, market.getMarketName(), market.getMarketImageUrl(),
                     AdminChannelMemberNumber.format(tab, memberId), memberId, status, status.isWritable(),
                     infoReader.brandProfile(market), infoReader.brandProgress(market),
-                    infoReader.openIssueThreads(market.getId(), null));
+                    infoReader.openIssueThreads(market.getId(), null), null, null);
         }
         Creator creator = connection.getCreator();
         return new ChannelInfo(thread.getId(), tab, creator.getShowroomName(), AdminThreadAccess.memberImageOf(thread),
                 AdminChannelMemberNumber.format(tab, memberId), memberId, status, status.isWritable(),
                 infoReader.creatorProfile(creator), infoReader.creatorProgress(creator),
-                infoReader.openIssueThreads(null, creator.getId()));
+                infoReader.openIssueThreads(null, creator.getId()), null, null);
     }
 
     /** 최신순 커서 페이징 — size+1개를 읽어 hasNext를 판정한다(count 쿼리 없이). */
     public MessageList messages(Long threadId, Long cursor, int size) {
-        MessageThread thread = access.requireOperatorChannel(threadId);
+        MessageThread thread = access.requireReadable(threadId);
         List<Message> fetched = messageThreadService.getMessages(thread, cursor, size + 1);
         boolean hasNext = fetched.size() > size;
         List<Message> page = hasNext ? fetched.subList(0, size) : fetched;
@@ -143,6 +160,6 @@ public class AdminThreadQueryService {
                 brand ? null : connection.getCreator().getBusinessType(),
                 status, thread.getLastMessagePreview(),
                 thread.getLastMessageSenderType() == ParticipantType.ADMIN,
-                thread.getLastMessageAt(), unread, status.isWritable());
+                thread.getLastMessageAt(), unread, status.isWritable(), null);
     }
 }
