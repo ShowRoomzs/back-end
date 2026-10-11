@@ -47,6 +47,7 @@ public class SettlementConfirmService {
     private final SettlementTaxDocumentHook taxDocumentHook;
     private final SettlementNotifier notifier;
     private final PersonalDataCipher cipher;
+    private final SettlementPartnerSyncService partnerSync;
 
     @Transactional(readOnly = true)
     public List<Long> findIdsToAutoConfirm(LocalDateTime now, int limit) {
@@ -122,6 +123,8 @@ public class SettlementConfirmService {
         taxDocumentHook.onConfirmed(settlement, confirmedAt);
         historyRecorder.recordBySystem(settlementId, eventOf(reason), basis, confirmedAt);
         AfterCommit.run(() -> notifier.settlementConfirmed(settlementId));
+        // PG 파트너 보장(포트원 설계서 4-3) — 외부 호출은 커밋 뒤. 실패해도 확정은 유지되고 그 수취자 행만 보류된다.
+        AfterCommit.run(() -> partnerSync.ensureForSettlement(settlementId));
         log.info("정산 확정 - settlementId: {}, reason: {}, payoutDueDate: {}", settlementId, reason, payoutDueDate);
     }
 

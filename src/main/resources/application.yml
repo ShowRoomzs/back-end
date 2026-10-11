@@ -116,6 +116,12 @@ portone:
     kakaopay: ${PORTONE_CHANNEL_KAKAOPAY:}          # 비워 두면 카드 채널을 따라간다
     naverpay: ${PORTONE_CHANNEL_NAVERPAY:}
     tosspay: ${PORTONE_CHANNEL_TOSSPAY:}
+  platform:                                         # 파트너 정산(Platform) — 44_포트원_파트너정산_연동_BE_설계서.md 6-3. 상점 · Secret 은 위 값을 쓴다
+    api-secret: ${PORTONE_PLATFORM_API_SECRET:}     # 지급 권한 Secret 을 분리할 때만 — 비우면 portone.api-secret
+    read-timeout-millis: 10000
+    partner-id-prefix-test: "t-"                    # PG_TEST 모드의 파트너 · 정산건 id 접두
+    startup-check: true                             # 기동 시 getPlatformSetting 1회(활성화 · deductWht=false)
+    withdrawal-memo: "SHOWROOMZ 정산"
 
 # OrderProperties.java 관련 설정 — 주문·결제 운영값(결제 계획서 4-4 · 4-8 · 6-2)
 order:
@@ -199,6 +205,7 @@ settlement:
   withholding-local-rate: 0.003
   brand-invoice-due-day: 10                         # 브랜드 세금계산서 — 공급일이 속한 달의 다음 달 N일
   tax-invoice-attachment-max-bytes: 10485760        # 세금계산서 첨부 · 발행본 10MB
+  launch-gate-enabled: ${SETTLEMENT_LAUNCH_GATE_ENABLED:false}   # 실제 돈이 오가는 운영 서버에서만 true — prod + true 면 실제 사업자 정보 · PG 모드 강제. 개발 단계 prod 는 false(기동 경고만)
   generation-scheduler-enabled: true                # 정산 생성 배치(10분)
   auto-confirm-scheduler-enabled: true              # 자동 확정 배치(10분)
   payout-scheduler-enabled: true                    # 지급 배치(영업일 payout-hour 시)
@@ -206,7 +213,8 @@ settlement:
   receipt-retry-scheduler-enabled: true             # 원천징수영수증 재생성(매시 40분)
   clawback-scheduler-enabled: true                  # 차감 미회수 판정(매일 01:00)
   payout:
-    mode: ${SETTLEMENT_PAYOUT_MODE:SIMULATED}       # SIMULATED(즉시 지급 완료 · 개발용) | PG — 운영 프로필은 PG 강제(어댑터 미구현 · 런칭 게이트)
+    mode: ${SETTLEMENT_PAYOUT_MODE:SIMULATED}       # SIMULATED(즉시 지급 완료 · 개발용) | PG_TEST(포트원 테스트 모드 · 개발 서버) | PG(운영) — 운영 프로필은 PG 만
+    result-stale-business-days: 1                   # 지시 뒤 N영업일 지나도 PG 지급이 없으면 「지급 미실행」 알림
   platform:                                         # SHOWROOMZ 사업자 정보 — 운영 값 수령 전 더미(이름에 TEST). 운영 프로필에서 비면 기동 실패
     business-name: ${SETTLEMENT_PLATFORM_BUSINESS_NAME:SHOWROOMZ TEST}
     representative: ${SETTLEMENT_PLATFORM_REPRESENTATIVE:TEST 대표}

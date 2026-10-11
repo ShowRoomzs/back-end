@@ -41,6 +41,12 @@ public class SettlementProperties {
     private long taxInvoiceAttachmentMaxBytes = 10L * 1024 * 1024;
 
     // 배치 — 통합 테스트는 끄고 서비스를 직접 부른다(공구 관례).
+    /**
+     * 런칭 게이트 — 실제 돈이 오가는 운영 서버에서만 true. 켜진 {@code prod} 는 SHOWROOMZ 실제 사업자 정보 · {@code PG} 지급 모드를
+     * 강제한다. 지금 {@code prod} 프로필로 도는 서버는 개발 단계라 기본 false(시뮬레이터 지급 · 기동 경고만).
+     */
+    private boolean launchGateEnabled = false;
+
     private boolean generationSchedulerEnabled = true;
     private boolean autoConfirmSchedulerEnabled = true;
     private boolean payoutSchedulerEnabled = true;
@@ -55,14 +61,22 @@ public class SettlementProperties {
     public enum PayoutMode {
         /** 즉시 PAID · 참조번호 SIM- — 개발 · QA · 통합 테스트. 운영 프로필에서는 기동 실패. */
         SIMULATED,
-        /** PG 지급대행 — 어댑터 미구현(런칭 게이트 · 13절 A-1). */
-        PG
+        /** 포트원 파트너 정산 **테스트 모드**(전 호출 test=true · id 접두 t-) — 개발 서버. 운영 프로필에서는 기동 실패. */
+        PG_TEST,
+        /** 포트원 파트너 정산 운영 — 44_포트원_파트너정산_연동_BE_설계서.md. */
+        PG;
+
+        public boolean isPortOne() {
+            return this != SIMULATED;
+        }
     }
 
     @Getter
     @Setter
     public static class Payout {
         private PayoutMode mode = PayoutMode.SIMULATED;
+        /** 지시 뒤 N영업일이 지나도 PG 지급 id 가 없으면 「지급 미실행」 알림(포트원 설계서 9-2). */
+        private int resultStaleBusinessDays = 1;
     }
 
     /** SHOWROOMZ 사업자 정보 — 인플루언서 세금계산서의 공급받는자 · 원천징수영수증 발행자(13절 신규 #6). */

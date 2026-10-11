@@ -104,8 +104,8 @@ class SettlementPayoutSafetyIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("PY-04 결과 조회 배치 — SIMULATED 면 아무것도 하지 않는다(REQUESTED 그대로 · 지시 0) · PG 모드도 어댑터가 없어 경고 로그뿐 · 상태 불변")
-    void payoutResultTickIsSkeleton() {
+    @DisplayName("PY-04 결과 조회 배치 — SIMULATED 면 PG 를 묻지 않는다(REQUESTED 그대로) · 포트원 모드는 조회만 하고 PG 가 아직 지급 전이면 상태 불변 · 재지시 없음")
+    void payoutResultTickOnlyPollsInPortOneMode() {
         readyToPay();
         Settlement s = confirm(generated());
         payoutGateway.unresponsive();
@@ -113,10 +113,12 @@ class SettlementPayoutSafetyIntegrationTest extends SettlementTestSupport {
         payoutGateway.reset();
         List<SettlementEventType> eventsBefore = settlementEvents(s.getId());
 
-        new SettlementPayoutResultScheduler(settlementProperties).tick();
+        new SettlementPayoutResultScheduler(settlementProperties, payoutService).run(PAYOUT_DUE.atTime(14, 0));
+        assertThat(payoutGateway.lookups()).isEmpty();
         SettlementProperties pgMode = new SettlementProperties();
         pgMode.getPayout().setMode(SettlementProperties.PayoutMode.PG);
-        new SettlementPayoutResultScheduler(pgMode).tick();
+        new SettlementPayoutResultScheduler(pgMode, payoutService).run(PAYOUT_DUE.atTime(14, 0));
+        assertThat(payoutGateway.lookups()).hasSize(1);
 
         assertThat(payoutGateway.calls()).isEmpty();
         assertThat(payoutsOf(s.getId())).extracting(SettlementPayout::getStatus).containsOnly(PayoutStatus.REQUESTED);

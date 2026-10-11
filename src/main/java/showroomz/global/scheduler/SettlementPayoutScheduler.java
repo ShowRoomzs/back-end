@@ -54,5 +54,7 @@ public class SettlementPayoutScheduler {
         if (distributed > 0) {
             log.info("정산 지급 지시 완료 - {}건", distributed);
         }
+        // 포트원 모드 — 올라간 정산건을 PG 와 대조하고 운영자에게 「콘솔에서 일괄 지급 실행」을 알린다(포트원 설계서 5-3). 시뮬레이터는 0건.
+        payoutService.notifyReadyForExecution(today);
     }
 }

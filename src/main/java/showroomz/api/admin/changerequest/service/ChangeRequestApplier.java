@@ -1,6 +1,9 @@
 package showroomz.api.admin.changerequest.service;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
+import showroomz.domain.settlement.service.SettlementPartnerSyncService;
+import showroomz.domain.settlement.service.AfterCommit;
 import showroomz.domain.changerequest.entity.BrandChangeRequest;
 import showroomz.domain.changerequest.entity.BrandChangeRequestItem;
 import showroomz.domain.changerequest.type.ChangeRequestField;
@@ -16,6 +19,12 @@ import showroomz.domain.member.seller.entity.Seller;
 @Component
 public class ChangeRequestApplier {
 
+    private final ObjectProvider<SettlementPartnerSyncService> partnerSync;
+
+    public ChangeRequestApplier(ObjectProvider<SettlementPartnerSyncService> partnerSync) {
+        this.partnerSync = partnerSync;
+    }
+
     public void apply(BrandChangeRequest request) {
         Market market = request.getMarket();
         Seller seller = market.getSeller();
@@ -26,6 +35,9 @@ public class ChangeRequestApplier {
         // §7-2 M2 승인 시 통장 사본 교체 — 계좌가 바뀌었는데 옛 사본이 남으면 다음 정산 대조가 어긋난다.
         if (request.getType() == ChangeRequestType.SETTLEMENT_ACCOUNT) {
             seller.setBankbookImageUrl(request.getEvidenceFileUrl());
+            // PG 파트너 계좌도 즉시 맞춘다(포트원 설계서 4-3) — 외부 호출은 커밋 뒤 · 실패해도 승인은 끝난다.
+            Long marketId = market.getId();
+            AfterCommit.run(() -> partnerSync.ifAvailable(sync -> sync.onBrandAccountChanged(marketId)));
         }
     }
 

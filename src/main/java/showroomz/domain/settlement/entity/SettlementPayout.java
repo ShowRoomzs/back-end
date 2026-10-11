@@ -79,6 +79,14 @@ public class SettlementPayout {
     @Column(name = "attempt", nullable = false)
     private int attempt;
 
+    /** PG 정산건 id(포트원 수기 정산건 · 지시 때) — 결과 조회의 키. 시뮬레이터는 비운다. */
+    @Column(name = "pg_transfer_id", length = 64)
+    private String pgTransferId;
+
+    /** PG 지급 id(결과 조회 뒤) — {@code pg_reference} 와 같은 값. */
+    @Column(name = "pg_payout_id", length = 64)
+    private String pgPayoutId;
+
     /** 생성(2-7) — 금액은 2-4 값 · 확정 전 WAITING. */
     public static SettlementPayout waiting(Long settlementId, SettlementPayee payee, long amount) {
         SettlementPayout payout = new SettlementPayout();
