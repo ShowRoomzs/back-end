@@ -41,6 +41,12 @@ public class SettlementProperties {
     private long taxInvoiceAttachmentMaxBytes = 10L * 1024 * 1024;
 
     // 배치 — 통합 테스트는 끄고 서비스를 직접 부른다(공구 관례).
+    /**
+     * 런칭 게이트 — 실제 돈이 오가는 운영 서버에서만 true. 켜진 {@code prod} 는 SHOWROOMZ 실제 사업자 정보 · {@code PG} 지급 모드를
+     * 강제한다. 지금 {@code prod} 프로필로 도는 서버는 개발 단계라 기본 false(시뮬레이터 지급 · 기동 경고만).
+     */
+    private boolean launchGateEnabled = false;
+
     private boolean generationSchedulerEnabled = true;
     private boolean autoConfirmSchedulerEnabled = true;
     private boolean payoutSchedulerEnabled = true;

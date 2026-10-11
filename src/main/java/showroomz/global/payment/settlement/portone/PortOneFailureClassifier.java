@@ -26,7 +26,7 @@ public final class PortOneFailureClassifier {
     public static final String AMOUNT_MISMATCH = "AMOUNT_MISMATCH";
     public static final String BANK_REJECTED = "BANK_REJECTED";
     public static final String TRANSFER_NOT_FOUND = "TRANSFER_NOT_FOUND";
-    public static final String PLATFORM_NOT_ENABLED = "PLATFORM_NOT_ENABLED";
+    public static final String PLATFORM_NOT_ENABLED = PayoutBlockReason.PLATFORM_NOT_ENABLED.name();
 
     private PortOneFailureClassifier() {
     }

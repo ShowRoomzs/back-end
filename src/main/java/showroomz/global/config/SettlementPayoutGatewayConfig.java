@@ -47,7 +47,7 @@ public class SettlementPayoutGatewayConfig {
     public PlatformClient settlementPlatformClient(SettlementProperties settlement, PortOneProperties portone,
                                                    PortOnePlatformProperties platform, Environment environment) {
         PayoutMode mode = settlement.getPayout().getMode();
-        validateMode(mode, environment);
+        validateMode(settlement, environment);
         if (!portone.isEnabled()) {
             throw new IllegalStateException("settlement.payout.mode=" + mode + " 는 portone.enabled=true 가 필요합니다.");
         }
@@ -67,7 +67,7 @@ public class SettlementPayoutGatewayConfig {
                                                            ObjectProvider<PlatformClient> platformClient,
                                                            PortOnePlatformProperties platform) {
         PayoutMode mode = settlement.getPayout().getMode();
-        validateMode(mode, environment);
+        validateMode(settlement, environment);
         if (mode == PayoutMode.SIMULATED) {
             return new SimulatedSettlementPayoutGateway();
         }
@@ -89,12 +89,21 @@ public class SettlementPayoutGatewayConfig {
                 platform.getReadTimeoutMillis());
     }
 
-    /** 운영 프로필은 {@code PG} 만 — 시뮬레이터 · 테스트 모드가 운영에 새면 지급이 된 것처럼 기록된다(44 어드민 0-5 · 포트원 6-4). */
-    static void validateMode(PayoutMode mode, Environment environment) {
-        if (mode != PayoutMode.PG && environment.acceptsProfiles(Profiles.of("prod"))) {
-            throw new IllegalStateException("settlement.payout.mode=" + mode + " 는 운영 프로필(prod)에서 쓸 수 없습니다 — "
-                    + "운영은 PG(포트원 파트너 정산 운영 모드)만 됩니다(44 정산 설계서 0-5).");
+    /**
+     * 런칭 게이트가 켜진 운영 프로필은 {@code PG} 만 — 시뮬레이터 · 테스트 모드가 운영에 새면 지급이 된 것처럼 기록된다(44 어드민 0-5 ·
+     * 포트원 6-4). 게이트를 끈 개발 단계 {@code prod} 는 경고만 남기고 뜬다.
+     */
+    static void validateMode(SettlementProperties settlement, Environment environment) {
+        PayoutMode mode = settlement.getPayout().getMode();
+        if (mode == PayoutMode.PG || !environment.acceptsProfiles(Profiles.of("prod"))) {
+            return;
         }
+        if (settlement.isLaunchGateEnabled()) {
+            throw new IllegalStateException("settlement.payout.mode=" + mode + " 는 런칭 게이트가 켜진 운영 프로필(prod)에서 쓸 수 "
+                    + "없습니다 — 운영은 PG(포트원 파트너 정산 운영 모드)만 됩니다(44 정산 설계서 0-5).");
+        }
+        log.warn("정산 런칭 게이트 꺼짐(settlement.launch-gate-enabled=false) — prod 인데 지급 모드 {} 입니다. 실제 돈은 나가지 않습니다. "
+                + "실제 돈이 오가는 운영 서버에서는 반드시 켜고 PG 로 두세요(44 포트원 설계서 9-4).", mode);
     }
 
     /** 기동 검증 — 상점에 Platform 이 켜져 있고 원천징수를 포트원이 떼지 않는다(포트원 설계서 0-4 · 2-1). */

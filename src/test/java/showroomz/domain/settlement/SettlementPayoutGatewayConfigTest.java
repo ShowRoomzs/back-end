@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 지급 모드 기동 검증(44 어드민 설계서 0-5 · 포트원 설계서 6-4) — 설정이 틀렸으면 컨텍스트가 뜨지 않는다. 포트원 호출은 하지 않는다
  * (설정 검증이 네트워크 앞에서 끝난다).
  */
-@DisplayName("정산 지급 모드 — SIMULATED · PG_TEST · PG 기동 검증")
+@DisplayName("정산 지급 모드 — SIMULATED · PG_TEST · PG 기동 검증 · 런칭 게이트")
 class SettlementPayoutGatewayConfigTest {
 
     private final SettlementPayoutGatewayConfig config = new SettlementPayoutGatewayConfig();
@@ -41,18 +41,27 @@ class SettlementPayoutGatewayConfigTest {
     }
 
     @Test
-    @DisplayName("운영 프로필(prod) + SIMULATED → 기동 실패")
-    void simulatedInProdFails() {
-        assertThatThrownBy(() -> config.settlementPayoutGateway(properties(PayoutMode.SIMULATED), prod(), null,
+    @DisplayName("운영 프로필(prod) + 런칭 게이트 켜짐 + SIMULATED → 기동 실패")
+    void simulatedInProdWithGateFails() {
+        assertThatThrownBy(() -> config.settlementPayoutGateway(gated(PayoutMode.SIMULATED), prod(), null,
                 new PortOnePlatformProperties()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("운영 프로필");
     }
 
     @Test
-    @DisplayName("운영 프로필(prod) + PG_TEST → 기동 실패(테스트 데이터로 운영 지급을 흉내 내지 않는다)")
-    void pgTestInProdFails() {
-        assertThatThrownBy(() -> config.settlementPlatformClient(properties(PayoutMode.PG_TEST), portone(true, "store"),
+    @DisplayName("운영 프로필(prod) + 런칭 게이트 꺼짐(개발 단계 prod) + SIMULATED → 시뮬레이터로 뜬다(경고 로그만)")
+    void simulatedInProdWithoutGateStarts() {
+        SettlementPayoutGateway gateway = config.settlementPayoutGateway(properties(PayoutMode.SIMULATED), prod(), null,
+                new PortOnePlatformProperties());
+
+        assertThat(gateway).isInstanceOf(SimulatedSettlementPayoutGateway.class);
+    }
+
+    @Test
+    @DisplayName("운영 프로필(prod) + 런칭 게이트 켜짐 + PG_TEST → 기동 실패(테스트 데이터로 운영 지급을 흉내 내지 않는다)")
+    void pgTestInProdWithGateFails() {
+        assertThatThrownBy(() -> config.settlementPlatformClient(gated(PayoutMode.PG_TEST), portone(true, "store"),
                 new PortOnePlatformProperties(), prod()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("운영 프로필");
@@ -91,6 +100,13 @@ class SettlementPayoutGatewayConfigTest {
     private static SettlementProperties properties(PayoutMode mode) {
         SettlementProperties properties = new SettlementProperties();
         properties.getPayout().setMode(mode);
+        return properties;
+    }
+
+    /** 런칭 게이트 켜짐 — 실제 돈이 오가는 운영 서버. */
+    private static SettlementProperties gated(PayoutMode mode) {
+        SettlementProperties properties = properties(mode);
+        properties.setLaunchGateEnabled(true);
         return properties;
     }
 

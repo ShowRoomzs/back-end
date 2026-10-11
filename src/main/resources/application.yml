@@ -205,6 +205,7 @@ settlement:
   withholding-local-rate: 0.003
   brand-invoice-due-day: 10                         # 브랜드 세금계산서 — 공급일이 속한 달의 다음 달 N일
   tax-invoice-attachment-max-bytes: 10485760        # 세금계산서 첨부 · 발행본 10MB
+  launch-gate-enabled: ${SETTLEMENT_LAUNCH_GATE_ENABLED:false}   # 실제 돈이 오가는 운영 서버에서만 true — prod + true 면 실제 사업자 정보 · PG 모드 강제. 개발 단계 prod 는 false(기동 경고만)
   generation-scheduler-enabled: true                # 정산 생성 배치(10분)
   auto-confirm-scheduler-enabled: true              # 자동 확정 배치(10분)
   payout-scheduler-enabled: true                    # 지급 배치(영업일 payout-hour 시)

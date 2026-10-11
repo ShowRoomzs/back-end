@@ -24,12 +24,14 @@ public enum PayoutBlockReason {
     /** 등록 계좌 없음 — 지시 전에 알았다. */
     ACCOUNT_MISSING("등록 계좌 없음", "계좌 등록 후 지급"),
     /** PG 미지원 은행. */
-    UNSUPPORTED_BANK("미지원 은행", "계좌 변경 후 지급");
+    UNSUPPORTED_BANK("미지원 은행", "계좌 변경 후 지급"),
+    /** PG 상점에 파트너 정산 기능이 꺼져 있다 — 활성화되면 지급 배치 앞단이 다시 등록한다. */
+    PLATFORM_NOT_ENABLED("PG 파트너 정산 미활성화", "PG 활성화 후 지급");
 
     /** 파트너 사유 — 지급 배치 앞단이 다시 등록을 시도하는 코드. */
     public static final java.util.Set<String> PARTNER_CODES = java.util.Set.of(PARTNER_NOT_READY.name(),
             ACCOUNT_HOLDER_MISMATCH.name(), COMPANY_NOT_IN_BUSINESS.name(), ACCOUNT_MISSING.name(),
-            UNSUPPORTED_BANK.name());
+            UNSUPPORTED_BANK.name(), PLATFORM_NOT_ENABLED.name());
 
     public static java.util.Optional<PayoutBlockReason> fromCode(String code) {
         if (code == null) {
