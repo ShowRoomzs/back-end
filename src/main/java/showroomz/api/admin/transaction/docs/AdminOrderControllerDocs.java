@@ -25,11 +25,7 @@ import java.time.LocalDate;
 
 import static showroomz.api.admin.transaction.docs.AdminTransactionDocsExamples.*;
 
-@Tag(name = "Admin - Transaction · Orders", description = """
-        어드민 거래 관리 · 주문 조회(06a). 전 브랜드 · 전 공구 주문을 **주문(결제 1건) 단위**로 보고, 하위주문(브랜드)별로 조치한다.
-
-        운영자는 이해당사자의 일을 대신하지 않는다 — 조치는 **조건이 찼을 때만** 열리고(`actions`), 돈은 **편입만** 하고 집행은 환불 관리(06c)에서 한다.
-        조치 API 의 경로 변수는 전부 `deliveryGroupId`(하위주문)이고, 응답은 처리 후 **주문 상세 전체**다(모달을 그대로 다시 그린다).""")
+@Tag(name = "Admin - Order", description = "관리자 거래 관리 · 주문 조회 API (06a)")
 public interface AdminOrderControllerDocs {
 
     // ── 조회 ─────────────────────────────────────────────────────────────────

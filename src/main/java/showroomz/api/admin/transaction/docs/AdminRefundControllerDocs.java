@@ -17,14 +17,7 @@ import showroomz.global.dto.PagingRequest;
 
 import static showroomz.api.admin.transaction.docs.AdminTransactionDocsExamples.*;
 
-@Tag(name = "Admin - Transaction · Refunds", description = """
-        어드민 거래 관리 · 환불 관리(06c). **환불은 자동이 기본이고 이 화면은 예외만 다룬다** — 결제완료 취소 · 취소 요청 승인 · 직권 취소 ·
-        반품 검수 통과 · 반송 완료 · 분실 처리는 전부 PG 즉시 자동 환불이다.
-
-        운영자가 손대는 것은 ① 운영자 사유 환불의 **집행**(06a B5 · 06b 에서 편입한 것) ② PG 자동 환불 **실패의 재시도** 둘이고, 둘은 같은 호출이다
-        (`POST /{id}/execute` — 재확인 다이얼로그 1회 · 2인 승인 없음 · 일괄 없음). 그 밖에 집행 전 편입 **철회**와 밖에서 돌려준 환불의 **수동 완료 기록**이 있다.
-
-        환불번호는 `RFD-{refundTaskId}`(0 채움 없음)이고, 경로 변수 `refundTaskId`가 그 숫자다.""")
+@Tag(name = "Admin - Refund", description = "관리자 거래 관리 · 환불 관리 API (06c)")
 public interface AdminRefundControllerDocs {
 
     @Operation(summary = "환불 목록 (06c A1 ~ A3)", description = """

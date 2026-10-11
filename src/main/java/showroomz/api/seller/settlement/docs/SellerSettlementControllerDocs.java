@@ -20,17 +20,7 @@ import java.util.Set;
 
 import static showroomz.api.seller.settlement.docs.SellerSettlementDocsExamples.*;
 
-@Tag(name = "Seller - Settlement", description = """
-        파트너센터 정산 관리(13 · 44 파트너센터 정산관리 설계서). 내 브랜드의 정산을 **조회만** 합니다 — 체크박스 · 일괄 액션이 없고,
-        파트너가 하는 일은 정산 확인 기간의 **조정 요청**(`Seller - Settlement Adjustment`)과 다운로드뿐입니다.
-
-        **공구 1건 = 정산 1건.** 금액은 정산 생성 시점의 스냅샷이고 어드민 · 스튜디오와 같은 행을 읽습니다. 라벨 · 톤은 서버가 정합니다(FE 매핑표 없음).
-        서버가 **내리지 않는 것** — 고정 지급비 · 인플루언서 원천징수 금액(분해) · 처리 이력 · 소비자 식별 정보(명세의 마스킹 이름만).
-
-        **상태** — `REVIEWING`(정산 확인 중) → (`ADJUSTING` 조정 협의) → `PAYOUT_SCHEDULED`(지급 예정) → `PAID`(지급 완료).
-        분배 실패는 파트너에게 **지급 완료로 접혀** 보이고, 수취자별 사실은 상세 `payouts[].status` 가 따로 말합니다(브랜드 행 실패만 「지급 확인 중」).
-
-        남의 정산은 404 입니다(존재를 알리지 않는다).""")
+@Tag(name = "Seller - Settlement", description = "파트너센터 정산 관리 API (§13)")
 public interface SellerSettlementControllerDocs {
 
     String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";

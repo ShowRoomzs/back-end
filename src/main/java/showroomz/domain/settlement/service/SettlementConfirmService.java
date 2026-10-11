@@ -17,6 +17,7 @@ import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.PersonalDataCipher;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -45,6 +46,7 @@ public class SettlementConfirmService {
     private final SettlementSchedule schedule;
     private final SettlementTaxDocumentHook taxDocumentHook;
     private final SettlementNotifier notifier;
+    private final PersonalDataCipher cipher;
 
     @Transactional(readOnly = true)
     public List<Long> findIdsToAutoConfirm(LocalDateTime now, int limit) {
@@ -73,7 +75,7 @@ public class SettlementConfirmService {
      * <ol>
      *   <li>조건부 UPDATE {@code REVIEWING · ADJUSTING → PAYOUT_SCHEDULED} — 0행이면 409</li>
      *   <li>수취자 3행 — 브랜드 · 플랫폼 {@code SCHEDULED(예정일)} · 인플루언서는 보류 사유가 있으면 {@code BLOCKED}, 0원이면
-     *       {@code NOT_APPLICABLE}. 확정 전 상태(WAITING · HELD)에서만 옮긴다</li>
+     *       {@code NOT_APPLICABLE}. 확정 전 상태(WAITING · HELD)에서만 옮긴다. 브랜드 행에는 지금 계좌를 고정한다</li>
      *   <li>증빙 행(세금계산서 발행 대기 · 입력 대기) — 증빙 모듈 훅</li>
      *   <li>이력 — 「자동 확정 10.06 + 3영업일 · 10.09 한글날 제외」(파트너 「정산 근거」의 원천)</li>
      * </ol>
@@ -90,6 +92,10 @@ public class SettlementConfirmService {
         settlement.applyConfirmed(reason, confirmedAt, payoutDueDate);
         boolean creatorBlocked = blockPolicy.isBlocked(settlement);
         String basis = schedule.payoutBasis(reason, confirmedDate, payoutDueDate);
+        // 「이미 확정된 정산 회차는 기존 계좌로 지급」(기본정보 §16-4) — 브랜드 계좌는 확정 시점 값으로 고정한다.
+        // 회원 정보는 행 UPDATE(영속성 컨텍스트 비움) 전에 읽는다.
+        SettlementPayoutTransitions.Account brandAccount =
+                SettlementPayoutTransitions.accountOf(settlement.getMarket().getSeller());
 
         // 수취자 행 UPDATE 는 영속성 컨텍스트를 비운다 — 정산 엔티티의 변경은 그 전에 자동 flush 된다.
         for (SettlementPayout payout : payoutRepository.findBySettlementId(settlementId)) {
@@ -104,6 +110,12 @@ public class SettlementConfirmService {
                 dueDate = payoutDueDate;
             }
             if (payoutRepository.updateStatusWhere(payout.getId(), PayoutStatus.BEFORE_CONFIRM, to, dueDate) != 1) {
+                throw new BusinessException(ErrorCode.SETTLEMENT_STATE_CHANGED);
+            }
+            // 계좌가 없으면 고정하지 않는다 — 지시 때 회원 정보를 다시 보고, 그때도 없으면 분배 실패(ACCOUNT_MISSING)다.
+            if (to == PayoutStatus.SCHEDULED && payout.getPayee() == SettlementPayee.BRAND && !brandAccount.isMissing()
+                    && payoutRepository.pinAccount(payout.getId(), brandAccount.bankName(),
+                    cipher.encrypt(brandAccount.accountNumber()), brandAccount.holder()) != 1) {
                 throw new BusinessException(ErrorCode.SETTLEMENT_STATE_CHANGED);
             }
         }

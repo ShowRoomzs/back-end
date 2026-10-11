@@ -22,16 +22,7 @@ import showroomz.global.dto.PagingRequest;
 
 import static showroomz.api.admin.settlement.docs.AdminSettlementDocsExamples.*;
 
-@Tag(name = "Admin - Settlement", description = """
-        어드민 정산 관리(07a 목록 · 07b 상세 · 44 어드민 정산관리 설계서 7절). **공구 1건 = 정산 1건**이고, 숫자는 생성 시점의 스냅샷이다 —
-        파트너센터(13) · 스튜디오(12)와 **같은 행**을 읽는다. 어드민만 보는 값은 계좌 전체 · 처리 이력 · 수취자 행 전량 · 재분배 횟수다.
-
-        **상태** — `REVIEWING`(정산 확인 중) → (`ADJUSTING` 조정 협의) → `PAYOUT_SCHEDULED`(지급 예정) → `PAID`(지급 완료).
-        수취자 행 하나라도 실패하면 `PAYOUT_FAILED`(분배 실패) — 어드민만 이 상태를 그대로 본다(파트너 · 스튜디오는 지급 완료로 접는다).
-        확정은 시스템만 한다(자동 · 합의 · 기한 만료) — 운영자 확정 버튼은 없다.
-
-        **운영자 조치는 셋뿐이다** — 재분배(M3) · 인플루언서 세금계산서 대조(M4) · 브랜드 세금계산서 발행본 등록(M5). 셋 다 응답이 **갱신된 상세**다.
-        버튼은 상세 `actions`(서버 판정)로 그리고, 커맨드가 같은 조건을 다시 검사한다.""")
+@Tag(name = "Admin - Settlement", description = "관리자 정산 관리 API (07a · 07b)")
 public interface AdminSettlementControllerDocs {
 
     String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";

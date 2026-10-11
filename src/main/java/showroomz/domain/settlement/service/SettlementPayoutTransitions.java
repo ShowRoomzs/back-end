@@ -62,7 +62,7 @@ public class SettlementPayoutTransitions {
     private final GroupBuyCommandService groupBuyCommandService;
     private final PayoutBlockPolicy blockPolicy;
 
-    /** 지급 계좌 — 지시 시점 스냅샷의 원천(회원 정보). 플랫폼은 내부 계정이다. */
+    /** 지급 계좌 — 스냅샷의 원천(회원 정보 · 브랜드는 확정 시점 · 그 밖은 지시 시점). 플랫폼은 내부 계정이다. */
     public record Account(String bankName, String accountNumber, String holder) {
         public boolean isMissing() {
             return bankName == null || bankName.isBlank() || accountNumber == null || accountNumber.isBlank();
@@ -237,7 +237,7 @@ public class SettlementPayoutTransitions {
         };
     }
 
-    private static Account accountOf(Seller seller) {
+    static Account accountOf(Seller seller) {
         return seller == null ? new Account(null, null, null)
                 : new Account(seller.getBankName(), seller.getAccountNumber(), seller.getAccountHolder());
     }

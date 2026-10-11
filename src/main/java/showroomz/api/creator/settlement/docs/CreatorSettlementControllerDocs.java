@@ -21,18 +21,7 @@ import java.util.Set;
 
 import static showroomz.api.creator.settlement.docs.CreatorSettlementDocsExamples.*;
 
-@Tag(name = "Creator - Settlement", description = """
-        쇼룸 스튜디오 정산 관리(12 · 44 쇼룸스튜디오 정산관리 설계서). 내(인플루언서) 정산을 조회하고, 사업자면 세금계산서 승인번호를 제출하며,
-        비사업자면 원천징수영수증을 내려받습니다. 정산 확인 기간의 **조정 요청**은 `Creator - Settlement Adjustment`.
-
-        **공구 1건 = 정산 1건.** 금액은 정산 생성 시점의 스냅샷이고 어드민 · 파트너센터와 같은 행을 읽습니다.
-        서버가 **내리지 않는 것** — 고정 지급비 · PG · 플랫폼 수수료 행 · 브랜드 수취액(분배 행 금액으로만 보인다) · 반품 · 교환 배송비 · 처리 이력 · 소비자 정보.
-
-        **상태** — `REVIEWING`(정산 확인 중) → (`ADJUSTING` 조정 협의) → `PAYOUT_SCHEDULED`(지급 예정) → `PAID`(지급 완료).
-        분배 실패는 **지급 완료로 접혀** 보이고, 내 행 실패만 분배 행에 「지급 확인 중」으로 나옵니다.
-        지급 날짜는 **내 행(인플루언서 몫)** 기준입니다 — 사업자는 세금계산서 확인 뒤에 지급되므로 브랜드와 날짜가 다릅니다.
-
-        남의 정산은 404 입니다.""")
+@Tag(name = "Creator - Settlement", description = "쇼룸 스튜디오 정산 관리 API (#12)")
 public interface CreatorSettlementControllerDocs {
 
     String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";

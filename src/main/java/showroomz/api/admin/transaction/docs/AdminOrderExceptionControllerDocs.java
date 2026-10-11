@@ -15,9 +15,7 @@ import showroomz.global.dto.PagingRequest;
 
 import static showroomz.api.admin.transaction.docs.AdminTransactionDocsExamples.*;
 
-@Tag(name = "Admin - Transaction · Exceptions", description = """
-        어드민 거래 관리 · 예외 관리(06d). 새 데이터 없이 주문 · 클레임에서 조건에 맞는 것을 모아 보여 주는 **모니터**다 — **쓰기 API 가 없다**
-        (실행 · 독촉 버튼 없음). 기한 경과 알림은 시스템이 자동으로 보내고, 운영자는 조건이 찬 건만 06a · 06b 상세에서 대행한다.""")
+@Tag(name = "Admin - Order Exception", description = "관리자 거래 관리 · 예외 관리 API (06d)")
 public interface AdminOrderExceptionControllerDocs {
 
     @Operation(summary = "예외 목록 (06d A1 · A2)", description = """

@@ -70,9 +70,12 @@ public class SettlementGenerationService {
     /** 정산 원천이 되는 하위주문 — 종결된 것만(반송은 반송 완료 환불까지 끝난 것만 — 게이트가 보장한다). */
     private static final Set<FulfillmentStatus> SOURCE_GROUP_STATUSES =
             EnumSet.of(FulfillmentStatus.CONFIRMED, FulfillmentStatus.CANCELLED, FulfillmentStatus.RETURNING);
-    /** 소비자가 낸 재발송비 — 브랜드 가산(2-2). */
+    /**
+     * 소비자가 낸 재발송비 — 브랜드 가산(2-2). 결제(PAID) · 환불액 차감(DEDUCTED)만 센다. 교환 결제분 충당(COVERED)은 그 돈이 이미
+     * 교환 선결제(EXCHANGE_RESHIP · PAID)로 들어와 있어 더하면 두 번 가산된다.
+     */
     private static final Set<ClaimChargeStatus> RESHIP_CHARGE_STATUSES =
-            EnumSet.of(ClaimChargeStatus.PAID, ClaimChargeStatus.DEDUCTED, ClaimChargeStatus.COVERED);
+            EnumSet.of(ClaimChargeStatus.PAID, ClaimChargeStatus.DEDUCTED);
     private static final DateTimeFormatter DUE_FORMAT = DateTimeFormatter.ofPattern("MM.dd HH:mm");
 
     private final GroupBuyRepository groupBuyRepository;

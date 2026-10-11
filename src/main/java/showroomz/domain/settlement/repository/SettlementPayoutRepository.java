@@ -77,7 +77,19 @@ public interface SettlementPayoutRepository extends JpaRepository<SettlementPayo
             + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED ORDER BY p.id ASC")
     List<SettlementPayout> findBlockedCreatorPayouts(org.springframework.data.domain.Pageable pageable);
 
-    /** 지시 — 계좌 스냅샷(지시 시점 · 0-5)과 함께 SCHEDULED → REQUESTED. */
+    /**
+     * 확정 — 브랜드 계좌 고정(「이미 확정된 정산 회차는 기존 계좌로 지급」 · 기본정보 §16-4). 지시 전(SCHEDULED)이고 아직
+     * 스냅샷이 없을 때만 — 지시({@link #markRequested})는 이 값을 그대로 쓴다.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE SettlementPayout p SET p.bankName = :bankName, p.accountNumberEnc = :accountNumberEnc, "
+            + "p.accountHolder = :accountHolder "
+            + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.SCHEDULED "
+            + "AND p.accountNumberEnc IS NULL")
+    int pinAccount(@Param("payoutId") Long payoutId, @Param("bankName") String bankName,
+                   @Param("accountNumberEnc") String accountNumberEnc, @Param("accountHolder") String accountHolder);
+
+    /** 지시 — 계좌 스냅샷(브랜드는 확정 때 고정한 값 · 그 밖은 지시 시점 · 0-5)과 함께 SCHEDULED → REQUESTED. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE SettlementPayout p SET p.status = showroomz.domain.settlement.type.PayoutStatus.REQUESTED, "
             + "p.bankName = :bankName, p.accountNumberEnc = :accountNumberEnc, p.accountHolder = :accountHolder, "

@@ -149,7 +149,8 @@ class AdminSettlementIntegrationTest extends SettlementTestSupport {
         assertThat(detail.at("/payouts/rows")).hasSize(3);
         assertThat(detail.at("/payouts/rows/0/payee").asText()).isEqualTo("BRAND");
         assertThat(detail.at("/payouts/rows/0/accountNumber").asText()).isEqualTo("110123456789");
-        assertThat(detail.at("/payouts/rows/0/accountSource").asText()).isEqualTo("CURRENT_PROFILE");
+        // 브랜드 계좌는 확정 때 고정된다(「확정 회차는 기존 계좌로 지급」) — 지시 전이어도 스냅샷이다.
+        assertThat(detail.at("/payouts/rows/0/accountSource").asText()).isEqualTo("SNAPSHOT");
         assertThat(detail.at("/payouts/check/balanced").asBoolean()).isTrue();
         // 비사업자 · 주민번호 미등록 — 인플루언서 행 보류 사유가 레일에 뜬다.
         assertThat(detail.at("/rail/blockReasons/0/code").asText()).isEqualTo("RESIDENT_NUMBER_MISSING");

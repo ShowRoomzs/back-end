@@ -173,7 +173,7 @@ public class AdminSettlementDetailAssembler {
                         total == inflow));
     }
 
-    /** 계좌 — 지시 뒤는 스냅샷, 지시 전은 회원 정보의 현재 계좌(어드민은 전체 노출 · 기본정보 정책). */
+    /** 계좌 — 스냅샷(브랜드는 확정 시점 · 인플루언서는 지시 시점)이 있으면 그것, 없으면 회원 정보의 현재 계좌(어드민은 전체 노출 · 기본정보 정책). */
     private AdminSettlementDto.Payout payout(Settlement s, SettlementPayout p) {
         String bankName;
         String accountNumber;

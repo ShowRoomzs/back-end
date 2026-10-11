@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import showroomz.api.admin.contract.AdminContractTestSupport;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
+import showroomz.api.common.settlement.FakeSettlementPayoutGateway;
 import showroomz.api.seller.contract.dto.ContractReviewRequestRequest;
 import showroomz.api.seller.contract.dto.ContractUpdateRequest;
 import showroomz.domain.address.entity.DeliveryAddress;
@@ -41,15 +42,33 @@ import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
+import showroomz.domain.settlement.entity.Settlement;
+import showroomz.domain.settlement.entity.SettlementPayout;
+import showroomz.domain.settlement.port.SettlementPayoutGateway.PayoutLine;
+import showroomz.domain.settlement.repository.SettlementPayoutRepository;
+import showroomz.domain.settlement.repository.SettlementRepository;
+import showroomz.domain.settlement.service.SettlementConfirmService;
+import showroomz.domain.settlement.service.SettlementGenerationService;
+import showroomz.domain.settlement.service.SettlementPayoutService;
+import showroomz.domain.settlement.type.PayoutStatus;
+import showroomz.domain.settlement.type.SettlementConfirmReason;
+import showroomz.domain.settlement.type.SettlementPayee;
+import showroomz.domain.settlement.type.SettlementStatus;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackSnapshot;
 import showroomz.global.payment.portone.FakePaymentGateway;
 import showroomz.global.payment.portone.PortOnePaymentGateway;
+import showroomz.global.scheduler.SettlementAutoConfirmScheduler;
+import showroomz.global.scheduler.SettlementGenerationScheduler;
+import showroomz.global.scheduler.SettlementPayoutScheduler;
+import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.PersonalDataCipher;
 import showroomz.support.BrandFixture;
 import showroomz.support.ContractOptions;
 
 import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,6 +77,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -67,21 +87,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 전체 플로우 통합 테스트 시나리오 E2E-0 — <b>한 거래의 일생</b>(dev/전체플로우_통합테스트_시나리오.md 2절).
+ * 전체 플로우 통합 테스트 시나리오 E2E-0 — <b>한 거래의 일생</b>(dev/완료/전체플로우_통합테스트_시나리오.md 2절).
  *
  * <p>연결 → 계약 체결 → 공구 준비·오픈 → 공구 게시물 → 소비자 구매·결제 → 파트너센터 주문관리 → 배송완료 →
- * 공구 종료·이행 확인 → 구매확정 → 정산 게이트까지, 쓰기는 전부 <b>각 서피스의 실제 API</b>로 한다.
+ * 공구 종료·이행 확인 → 구매확정 → 정산 게이트 → 정산 생성 · 자동 확정 · 지급까지, 쓰기는 전부 <b>각 서피스의 실제 API</b>로 한다.
  * 공구 생성도 적재하지 않는다 — 운영자 체결 API 가 만든 공구를 그대로 이어 쓴다.
  *
- * <p>예외는 사람이 없는 구간뿐이다(시나리오 5절). 시각 컬럼(공구 시작·종료, 배송완료 시각)만 SQL로 당기고,
- * 상태를 움직이는 것은 스케줄러가 부르는 서비스(수명주기 · 추적 반영 · 구매확정)를 직접 부른다.
- * 상태 컬럼을 SQL로 바꾸면 이력·부수 효과가 빠지므로 쓰지 않는다.
+ * <p>예외는 사람이 없는 구간뿐이다(시나리오 5절). 시각 컬럼(공구 시작·종료, 배송완료 시각, 정산 확인 마감)만 SQL로 당기고,
+ * 상태를 움직이는 것은 스케줄러가 부르는 서비스(수명주기 · 추적 반영 · 구매확정)나 배치 진입점(정산 생성 · 자동 확정 · 지급)을
+ * 직접 부른다. 상태 컬럼을 SQL로 바꾸면 이력·부수 효과가 빠지므로 쓰지 않는다.
  *
- * <p>이음새 핵심 셋을 단계 안에서 함께 본다 — ① 체결↔공구 생성 ② 결제↔하위주문 활성화 ③ 구매확정↔정산 게이트.
+ * <p>이음새 핵심 넷을 단계 안에서 함께 본다 — ① 체결↔공구 생성 ② 결제↔하위주문 활성화 ③ 구매확정↔정산 게이트
+ * ④ 계약 조건↔정산 금액(계약 항목의 리워드율이 명세 · 금액 분해 · 3자 분배까지 그대로 이어지는가).
  * ③은 시나리오 순서와 달리 <b>공구 종료를 구매확정보다 먼저</b> 두어, 미종결 주문이 정산을 막았다가
  * 구매확정이 그 차단을 푸는 것까지 한 흐름에서 확인한다.
  */
-@DisplayName("[시나리오 E2E-0] 한 거래의 일생 — 연결부터 정산 게이트까지")
+@DisplayName("[시나리오 E2E-0] 한 거래의 일생 — 연결부터 정산 지급까지")
 class FullFlowEndToEndIntegrationTest extends AdminContractTestSupport {
 
     private static final String CONNECTIONS = "/v1/seller/connections";
@@ -92,11 +113,28 @@ class FullFlowEndToEndIntegrationTest extends AdminContractTestSupport {
     private static final String USER_ORDERS = "/v1/user/orders";
     private static final String USER_PAYMENTS = "/v1/user/payments";
     private static final String SELLER_ORDERS = "/v1/seller/orders";
+    private static final String ADMIN_ORDERS = "/v1/admin/orders";
+    private static final String ADMIN_SETTLEMENTS = "/v1/admin/settlements";
+    private static final String SELLER_SETTLEMENTS = "/v1/seller/settlements";
+    private static final String STUDIO_SETTLEMENTS = "/v1/creator/settlements";
 
     private static final int CREAM_GROUP_BUY_PRICE = 38_400;
     private static final int SERUM_GROUP_BUY_PRICE = 25_600;
     private static final int DELIVERY_FEE = 3_000;
     private static final int SHIPPING_LEAD_DAYS = 2;
+    private static final int FIXED_FEE = 300_000;
+
+    /*
+     * 정산 산식(전 항목 절사) — 크림 1개 · 확정 거래액 38,400 · 비사업자 인플루언서.
+     * PG 3% 1,152 · 플랫폼 0% · 리워드 12% 4,608 · 리워드 부가세 10% 460 · 원천징수 3% 138 + 0.3% 13.
+     */
+    private static final long PG_FEE = 1_152;
+    private static final long REWARD = 4_608;
+    private static final long REWARD_VAT = 460;
+    private static final long WITHHOLDING = 138 + 13;
+    private static final long BRAND_PAYOUT = CREAM_GROUP_BUY_PRICE - PG_FEE - REWARD - REWARD_VAT + DELIVERY_FEE;
+    private static final long CREATOR_PAYOUT = REWARD - WITHHOLDING;
+    private static final long PLATFORM_SHARE = REWARD_VAT;
     private static final String POST_TITLE = "리페어 크림 겨울 공구 오픈";
     private static final String POST_CONTENT = "건조한 계절에 한 달 써 보고 고른 크림입니다.";
 
@@ -108,6 +146,14 @@ class FullFlowEndToEndIntegrationTest extends AdminContractTestSupport {
     @Autowired private OrderFulfillmentService fulfillmentService;
     @Autowired private DeliveryAddressRepository deliveryAddressRepository;
     @Autowired private PortOnePaymentGateway gateway;
+    @Autowired private SettlementGenerationService generationService;
+    @Autowired private SettlementConfirmService confirmService;
+    @Autowired private SettlementPayoutService payoutService;
+    @Autowired private SettlementRepository settlementRepository;
+    @Autowired private SettlementPayoutRepository payoutRepository;
+    @Autowired private FakeSettlementPayoutGateway payoutGateway;
+    @Autowired private BusinessCalendar businessCalendar;
+    @Autowired private PersonalDataCipher personalDataCipher;
 
     private FakePaymentGateway fake;
     private Creator partner;
@@ -126,15 +172,24 @@ class FullFlowEndToEndIntegrationTest extends AdminContractTestSupport {
                 + "WHERE market_id = ?", DELIVERY_FEE, 50_000, SHIPPING_LEAD_DAYS, brand.marketId());
         buyer = createBuyer();
         buyerToken = bearerToken(buyer.getUsername(), RoleType.USER, buyer.getId());
+        // 지급 계좌 · 주민등록번호는 가입 때 받는 회원 정보다 — 거래 밖의 값이라 SQL 로 깐다(없으면 지급이 막힌다).
+        jdbc.update("UPDATE seller SET bank_name = ?, account_holder = ?, account_number = ? WHERE seller_id = ?",
+                "신한은행", "글로우랩", "110123456789", brand.seller().getId());
+        jdbc.update("UPDATE creator SET bank_name = ?, account_number = ?, resident_registration_number_enc = ?, "
+                        + "resident_registration_number_masked = ? WHERE creator_id = ?",
+                "국민은행", "123456789012", personalDataCipher.encrypt("900101-1234567"), "900101-1******",
+                partner.getId());
+        payoutGateway.reset();
     }
 
     @AfterEach
     void resetFake() {
         fake.reset();
+        payoutGateway.reset();
     }
 
     @Test
-    @DisplayName("연결 → 체결(공구 자동 생성) → 준비·오픈 → 게시물 노출 → 결제(하위주문 탄생) → 발주서·송장 → 배송완료 → 공구 종료·이행 확인 → 구매확정 → 정산 게이트")
+    @DisplayName("연결 → 체결(공구 자동 생성) → 준비·오픈 → 게시물 노출 → 결제(하위주문 탄생) → 발주서·송장 → 배송완료 → 공구 종료·이행 확인 → 구매확정 → 정산 게이트 → 정산 생성 → 자동 확정 → 지급(공구 SETTLED)")
     void oneDealLifecycle() throws Exception {
         // ── [0-1] 연결 ────────────────────────────────────────────────────────
         long connectionId = readLong(body(sellerSend(post(CONNECTIONS), Map.of("creatorId", partner.getId()))
@@ -340,12 +395,90 @@ class FullFlowEndToEndIntegrationTest extends AdminContractTestSupport {
         assertThat(fulfillmentEvents(groupId)).containsSubsequence(
                 "PURCHASE_CONFIRMED", "DELIVERED", "INVOICE_REGISTERED", "PREPARE_STARTED", "PAID");
 
-        // ── [0-17] 정산 게이트 — 미종결 0 · 차단 사유 없음. 확정 버튼은 정산 모듈 연결 후(시나리오 7절) ──
+        // ── [0-17] 정산 게이트 — 미종결 0 · 차단 사유 없음. 운영자 확정 버튼은 없다 — 확정은 시스템만 한다 ──
         adminSend(get(ADMIN_GROUP_BUYS + "/" + groupBuyId), null).andExpect(status().isOk())
                 .andExpect(jsonPath("$.afterEnd.orderClosure.closedCount").value(1))
                 .andExpect(jsonPath("$.afterEnd.orderClosure.unclosedCount").value(0))
                 .andExpect(jsonPath("$.afterEnd.settlement.blockers.length()").value(0))
                 .andExpect(jsonPath("$.permissions.canConfirmSettlement").value(false));
+
+        // ── [0-18] 정산 생성 배치 — 계약 항목의 리워드율이 명세로 내려온다(이음새 ④) ──────────────
+        new SettlementGenerationScheduler(generationService).tick();
+        Settlement generated = settlementRepository.findByGroupBuyId(groupBuyId).orElseThrow();
+        long settlementId = generated.getId();
+        assertThat(generated.getStatus()).isEqualTo(SettlementStatus.REVIEWING);
+        adminSend(get(ADMIN_SETTLEMENTS + "/" + settlementId), null).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("REVIEWING"))
+                .andExpect(jsonPath("$.overview.groupBuyId").value(groupBuyId))
+                .andExpect(jsonPath("$.overview.contractId").value(contractId))
+                .andExpect(jsonPath("$.overview.orderCount").value(1))
+                .andExpect(jsonPath("$.items.rows[0].deliveryGroupId").value(groupId))
+                .andExpect(jsonPath("$.items.rows[0].unitPrice").value(CREAM_GROUP_BUY_PRICE))
+                .andExpect(jsonPath("$.items.rows[0].rewardRate").value(12.0))
+                .andExpect(jsonPath("$.items.rows[0].rewardAmount").value(REWARD))
+                .andExpect(jsonPath("$.breakdown.brand.confirmedSalesAmount").value(CREAM_GROUP_BUY_PRICE))
+                .andExpect(jsonPath("$.breakdown.brand.pgFee.amount").value(PG_FEE))
+                .andExpect(jsonPath("$.breakdown.brand.rewardAmount").value(REWARD))
+                .andExpect(jsonPath("$.breakdown.brand.rewardVat.amount").value(REWARD_VAT))
+                .andExpect(jsonPath("$.breakdown.brand.consumerDeliveryFee").value(DELIVERY_FEE))
+                .andExpect(jsonPath("$.breakdown.brand.payoutAmount").value(BRAND_PAYOUT))
+                .andExpect(jsonPath("$.breakdown.creator.withholding.amount").value(WITHHOLDING))
+                .andExpect(jsonPath("$.breakdown.creator.payoutAmount").value(CREATOR_PAYOUT))
+                .andExpect(jsonPath("$.breakdown.platformShareAmount").value(PLATFORM_SHARE))
+                // 고정 지급비는 정산 대상이 아니다 — 계약 조건을 읽기 전용으로 보여 줄 뿐이다.
+                .andExpect(jsonPath("$.fixedFee.amount").value(FIXED_FEE));
+        // 세 서피스가 같은 행을 읽는다 — 파트너 · 스튜디오 모두 확인 기간이라 조정 요청이 열려 있다.
+        sellerSend(get(SELLER_SETTLEMENTS + "/" + settlementId), null).andExpect(status().isOk())
+                .andExpect(jsonPath("$.breakdown.confirmedSalesAmount").value(CREAM_GROUP_BUY_PRICE))
+                .andExpect(jsonPath("$.breakdown.brandPayoutAmount").value(BRAND_PAYOUT))
+                .andExpect(jsonPath("$.actions.canRequestAdjustment").value(true));
+        studioSend(get(STUDIO_SETTLEMENTS + "/" + settlementId), null).andExpect(status().isOk())
+                .andExpect(jsonPath("$.breakdown.confirmedSalesAmount").value(CREAM_GROUP_BUY_PRICE))
+                .andExpect(jsonPath("$.breakdown.creatorPayoutAmount").value(CREATOR_PAYOUT))
+                .andExpect(jsonPath("$.review.canRequestAdjustment").value(true));
+        adminSend(get(ADMIN_GROUP_BUYS + "/" + groupBuyId), null)
+                .andExpect(jsonPath("$.afterEnd.settlement.stage").value("WAITING"))
+                .andExpect(jsonPath("$.afterEnd.settlement.stageSource").value("PORT"));
+        adminSend(get(ADMIN_ORDERS + "/" + orderId), null).andExpect(status().isOk())
+                .andExpect(jsonPath("$.groups[0].settlement.settlementNumber").value(generated.getSettlementNumber()));
+
+        // ── [0-19] 자동 확정 배치 — 확인 기간 마감만 SQL 로 당긴다. 3자 분배 블록이 열린다 ────────────
+        jdbc.update("UPDATE settlement SET review_due_at = ? WHERE settlement_id = ?",
+                Timestamp.valueOf(LocalDate.now().minusDays(1).atTime(23, 59, 59)), settlementId);
+        new SettlementAutoConfirmScheduler(confirmService).tick();
+        Settlement scheduled = settlementRepository.findById(settlementId).orElseThrow();
+        assertThat(scheduled.getStatus()).isEqualTo(SettlementStatus.PAYOUT_SCHEDULED);
+        assertThat(scheduled.getConfirmReason()).isEqualTo(SettlementConfirmReason.AUTO);
+        assertThat(scheduled.getPayoutDueDate()).isEqualTo(businessCalendar.addBusinessDays(LocalDate.now(), 3));
+        adminSend(get(ADMIN_SETTLEMENTS + "/" + settlementId), null)
+                .andExpect(jsonPath("$.status").value("PAYOUT_SCHEDULED"))
+                .andExpect(jsonPath("$.payouts.rows.length()").value(3))
+                .andExpect(jsonPath("$.payouts.check.balanced").value(true));
+        sellerSend(get(SELLER_SETTLEMENTS + "/" + settlementId), null)
+                .andExpect(jsonPath("$.actions.canRequestAdjustment").value(false));
+
+        // ── [0-20] 지급 배치(예정일 10:00) — 3자 분배 · 정산 PAID · 공구 SETTLED · 원천징수영수증 ─────────
+        new SettlementPayoutScheduler(payoutService, businessCalendar).run(scheduled.getPayoutDueDate().atTime(10, 0));
+        assertThat(settlementRepository.findById(settlementId).orElseThrow().getStatus())
+                .isEqualTo(SettlementStatus.PAID);
+        assertThat(payoutRepository.findBySettlementId(settlementId))
+                .extracting(SettlementPayout::getStatus).containsOnly(PayoutStatus.PAID);
+        assertThat(payoutGateway.calls()).singleElement().satisfies(call -> assertThat(call.lines())
+                .extracting(PayoutLine::payee, PayoutLine::amount)
+                .containsExactlyInAnyOrder(tuple(SettlementPayee.BRAND, BRAND_PAYOUT),
+                        tuple(SettlementPayee.CREATOR, CREATOR_PAYOUT),
+                        tuple(SettlementPayee.PLATFORM, PLATFORM_SHARE)));
+        assertThat(groupBuyRepository.findById(groupBuyId).orElseThrow().getStatus()).isEqualTo(GroupBuyStatus.SETTLED);
+        adminSend(get(ADMIN_GROUP_BUYS + "/" + groupBuyId), null)
+                .andExpect(jsonPath("$.afterEnd.settlement.stage").value("TRANSFERRED"));
+        studioSend(get(STUDIO_GROUP_BUYS + "/" + groupBuyId), null).andExpect(status().isOk())
+                .andExpect(jsonPath("$.settlement.settlementId").value(settlementId))
+                .andExpect(jsonPath("$.settlement.confirmedReward").value(REWARD));
+        studioSend(get(STUDIO_SETTLEMENTS + "/" + settlementId), null)
+                .andExpect(jsonPath("$.breakdown.creatorPayoutAmount").value(CREATOR_PAYOUT))
+                .andExpect(jsonPath("$.withholding.receiptAvailable").value(true));
+        sellerSend(get(SELLER_SETTLEMENTS + "/" + settlementId), null)
+                .andExpect(jsonPath("$.breakdown.brandPayoutAmount").value(BRAND_PAYOUT));
     }
 
     // ------------------------------------------------------------------ 흐름
@@ -355,7 +488,7 @@ class FullFlowEndToEndIntegrationTest extends AdminContractTestSupport {
         LocalDateTime startAt = LocalDateTime.now().plusDays(10).withHour(10).withMinute(0).withSecond(0).withNano(0);
         LocalDateTime endAt = startAt.plusDays(7).withHour(23).withMinute(55);
         return new ContractUpdateRequest(version, partner.getId(), "겨울 리페어 크림 공구", startAt, endAt,
-                300_000, FixedFeeTrigger.POST_REGISTERED, true, 1, 1, 3, endAt.toLocalDate().plusDays(3),
+                FIXED_FEE, FixedFeeTrigger.POST_REGISTERED, true, 1, 1, 3, endAt.toLocalDate().plusDays(3),
                 true, SecondaryUsePeriodType.FIXED, 12, false, null,
                 List.of(new ContractUpdateRequest.Item(null, cream.getProductId(), CREAM_GROUP_BUY_PRICE,
                                 new BigDecimal("12.0"), options(cream, 300)),

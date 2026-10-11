@@ -14,16 +14,7 @@ import showroomz.api.common.settlement.dto.SettlementAdjustmentDto;
 
 import static showroomz.api.creator.settlement.docs.CreatorSettlementDocsExamples.*;
 
-@Tag(name = "Creator - Settlement Adjustment", description = """
-        쇼룸 스튜디오 정산 조정 협의(12 D1 · 11 이슈 스레드 · 44 정산조정 이슈스레드 설계서 3절). 정산 확인 기간에만 열리고,
-        요청하면 **3자 이슈 스레드**가 자동으로 열려 브랜드와 금액을 주고받습니다. 운영팀은 열람만 합니다.
-
-        **금액은 합의(동의)로만 바뀝니다** — 요청 · 제안 단계에서는 정산이 「조정 협의」(전액 보류)로 멈춰 있을 뿐 차액 선지급이 없습니다.
-        합의 기한(개설 + 10영업일 23:59:59 · 연장 없음)까지 합의가 없으면 **원래 금액으로 확정**됩니다.
-        모든 금액은 리워드 **공급가**(부가세 별도)이고, 세후 · 부가세는 미리보기의 별도 필드로만 내립니다.
-
-        흐름 — 미리보기 → 요청(스레드 개설) → 스레드 고정 카드 조회 → 다른 금액 제안 · 동의 · 반대.
-        규칙은 파트너센터(`Seller - Settlement Adjustment`)와 **같은 서비스**이고 차례 · 권한만 뷰어 기준으로 갈립니다.""")
+@Tag(name = "Creator - Settlement Adjustment", description = "쇼룸 스튜디오 정산 조정 협의 API (#12)")
 public interface CreatorSettlementAdjustmentControllerDocs {
 
     String TURN_RULE = """

@@ -25,11 +25,7 @@ import java.util.Set;
 
 import static showroomz.api.admin.transaction.docs.AdminTransactionDocsExamples.*;
 
-@Tag(name = "Admin - Transaction · Claims", description = """
-        어드민 거래 관리 · 반품·교환(06b). 파트너센터 반품·교환(11)과 **같은 탭 · 같은 건수 · 같은 행**에 어드민 전용 열(브랜드 · 귀책)을 더한 화면이다.
-
-        회수 · 입고 · 검수 · 재발송은 소비자와 브랜드의 일이다. 운영자가 실행하는 일은 두 가지뿐이고, 둘 다 **운영자 사유 환불 편입**으로 끝난다
-        (돈은 환불 관리(06c)에서만 나간다) — B2 반려 이의 인용 · 검수 무응답 환불.""")
+@Tag(name = "Admin - Claim", description = "관리자 거래 관리 · 반품·교환 API (06b)")
 public interface AdminClaimControllerDocs {
 
     @Operation(summary = "반품·교환 목록 (06b A1)", description = """

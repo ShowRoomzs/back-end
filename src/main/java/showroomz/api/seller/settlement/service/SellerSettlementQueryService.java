@@ -238,7 +238,10 @@ public class SellerSettlementQueryService {
         };
     }
 
-    /** 지급 정보 — 지시 후엔 브랜드 행 스냅샷, 지시 전엔 현재 계좌(「확정 회차는 기존 계좌로 지급」 · 15-16 개발계획 7절 #5). */
+    /**
+     * 지급 정보 — 브랜드 행 스냅샷(확정 때 고정 · 「확정 회차는 기존 계좌로 지급」 · 기본정보 §16-4)이 있으면 그것, 없으면(확정 때
+     * 계좌 미등록) 현재 계좌.
+     */
     private SellerSettlementDto.Payment payment(Settlement s, SettlementPayout brand) {
         if (brand != null && brand.hasAccountSnapshot()) {
             return new SellerSettlementDto.Payment(brand.getBankName(), views.maskedSnapshotAccount(brand),

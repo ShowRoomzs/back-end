@@ -114,7 +114,7 @@ public class SettlementPartyViews {
                 .findFirst().map(SettlementHistory::getDetail).orElse(null);
     }
 
-    /** 지시 시점 스냅샷의 계좌 — 뒤 6자리 노출(공통 결정 #14). */
+    /** 스냅샷 계좌(브랜드 확정 시점 · 인플루언서 지시 시점) — 뒤 6자리 노출(공통 결정 #14). */
     public String maskedSnapshotAccount(SettlementPayout payout) {
         return payout == null || payout.getAccountNumberEnc() == null ? null
                 : SettlementAccountMasker.mask(cipher.decrypt(payout.getAccountNumberEnc()));

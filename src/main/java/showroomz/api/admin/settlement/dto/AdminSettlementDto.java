@@ -246,10 +246,10 @@ public final class AdminSettlementDto {
             @Schema(example = "벨라코스") String payeeName,
             long amount,
             @Schema(nullable = true) String bankName,
-            @Schema(description = "계좌 전체 — 어드민 기본정보 정책. 지시 뒤는 스냅샷, 지시 전은 회원 정보의 현재 계좌", nullable = true)
+            @Schema(description = "계좌 전체 — 어드민 기본정보 정책. 스냅샷(브랜드는 확정 시점 · 인플루언서는 지시 시점)이 있으면 그것, 없으면 회원 정보의 현재 계좌", nullable = true)
             String accountNumber,
             @Schema(nullable = true) String accountHolder,
-            @Schema(description = "SNAPSHOT(지시 시점 스냅샷) · CURRENT_PROFILE(회원 정보 현재 값) · NONE", example = "SNAPSHOT")
+            @Schema(description = "SNAPSHOT(브랜드 확정 시점 · 인플루언서 지시 시점 스냅샷) · CURRENT_PROFILE(회원 정보 현재 값) · NONE", example = "SNAPSHOT")
             String accountSource,
             PayoutStatus status,
             String statusLabel,
