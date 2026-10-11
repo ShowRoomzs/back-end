@@ -233,11 +233,19 @@ public class AdminSettlementDetailAssembler {
                                          AdjustmentSummary adjustment) {
         boolean confirmed = s.getStatus().isConfirmed();
         SettlementPayout creatorPayout = payouts.get(SettlementPayee.CREATOR);
-        List<AdminSettlementDto.BlockReason> blockReasons = confirmed && creatorPayout != null
-                && creatorPayout.getStatus() == PayoutStatus.BLOCKED
-                ? blockPolicy.blockReasons(s).stream()
-                .map(r -> new AdminSettlementDto.BlockReason(r.name(), r.getLabel())).toList()
-                : List.of();
+        List<AdminSettlementDto.BlockReason> blockReasons = new java.util.ArrayList<>();
+        if (confirmed && creatorPayout != null && creatorPayout.getStatus() == PayoutStatus.BLOCKED) {
+            blockPolicy.blockReasons(s).forEach(r -> blockReasons.add(new AdminSettlementDto.BlockReason(r.name(), r.getLabel())));
+        }
+        // PG 파트너 사유(포트원 설계서 4-3)는 수취자 행의 fail_code 로 남는다 — 브랜드 행도 보류될 수 있다.
+        for (SettlementPayout p : payouts.values()) {
+            if (p.getStatus() == PayoutStatus.BLOCKED && p.getFailCode() != null) {
+                showroomz.domain.settlement.type.PayoutBlockReason.fromCode(p.getFailCode())
+                        .filter(r -> blockReasons.stream().noneMatch(b -> b.code().equals(r.name())))
+                        .ifPresent(r -> blockReasons.add(new AdminSettlementDto.BlockReason(r.name(),
+                                p.getPayee().getLabel() + " · " + r.getLabel())));
+            }
+        }
         SettlementPayout failed = s.getStatus() != SettlementStatus.PAYOUT_FAILED ? null
                 : payouts.values().stream().filter(p -> p.getStatus() == PayoutStatus.FAILED)
                 .min(Comparator.comparing(SettlementPayout::getFailedAt, Comparator.nullsLast(Comparator.naturalOrder())))

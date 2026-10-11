@@ -12,6 +12,7 @@ import io.sentry.SentryOptions;
 import showroomz.global.config.properties.AppProperties;
 import showroomz.global.config.properties.CorsProperties;
 import showroomz.global.config.properties.DeliveryTrackerProperties;
+import showroomz.global.config.properties.PortOnePlatformProperties;
 import showroomz.global.config.properties.FcmProperties;
 import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.global.config.properties.OrderProperties;
@@ -27,7 +28,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 @EnableAsync
 @EnableConfigurationProperties({ AppProperties.class, CorsProperties.class, S3Properties.class, PostProperties.class,
 		FcmProperties.class, GroupBuyProperties.class, OrderProperties.class, PortOneProperties.class,
-		DeliveryTrackerProperties.class, SettlementProperties.class })
+		DeliveryTrackerProperties.class, SettlementProperties.class, PortOnePlatformProperties.class })
 public class ShowroomzApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(ShowroomzApplication.class, args);

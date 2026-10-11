@@ -98,6 +98,27 @@ public class Seller {
     @Column(name = "BANKBOOK_URL", length = 1024)
     private String bankbookImageUrl;
 
+    // PG 파트너 정산 연결(44 포트원 설계서 3-1) — 브랜드 = 포트원 파트너 1건
+    @Column(name = "PORTONE_PARTNER_ID", length = 64)
+    private String portonePartnerId;
+
+    @Column(name = "PORTONE_PARTNER_STATUS", length = 16)
+    private String portonePartnerStatus;
+
+    @Column(name = "PORTONE_PARTNER_SYNCED_AT")
+    private LocalDateTime portonePartnerSyncedAt;
+
+    /** 포트원에 보낸 계좌의 sha256(bank|number|holder) — 평문 비교 없이 변경을 감지한다. */
+    @Column(name = "PORTONE_PARTNER_ACCOUNT_HASH", length = 64)
+    private String portonePartnerAccountHash;
+
+    public void linkPortOnePartner(String partnerId, String status, String accountHash, LocalDateTime at) {
+        this.portonePartnerId = partnerId;
+        this.portonePartnerStatus = status;
+        this.portonePartnerAccountHash = accountHash;
+        this.portonePartnerSyncedAt = at;
+    }
+
     // 약관 동의 내역
     @Column(name = "AGREE_PRIVACY_POLICY")
     private Boolean agreePrivacyPolicy;

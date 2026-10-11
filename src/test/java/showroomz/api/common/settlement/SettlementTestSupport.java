@@ -86,6 +86,7 @@ public abstract class SettlementTestSupport extends OrderFlowTestSupport {
     @Autowired protected OrderClaimService claimService;
     @Autowired protected PersonalDataCipher personalDataCipher;
     @Autowired protected FakeSettlementTaxDocumentStorage taxDocumentStorage;
+    @Autowired protected FakeSettlementPartnerGateway partnerGateway;
 
     /** 시드 주민등록번호 — 실제 암호문으로 넣는다(원천징수영수증 · 신고 자료가 복호화한다). */
     protected static final String RESIDENT_NUMBER = "900101-1234567";
@@ -101,12 +102,14 @@ public abstract class SettlementTestSupport extends OrderFlowTestSupport {
         adminToken = adminToken(operator);
         creatorToken = bearerToken(creator.getUser().getUsername(), RoleType.CREATOR, creator.getUser().getId());
         payoutGateway.reset();
+        partnerGateway.reset();
     }
 
     @AfterEach
     void resetHolidays() {
         businessCalendar.replaceRegisteredHolidays(Set.of());
         payoutGateway.reset();
+        partnerGateway.reset();
     }
 
     // ------------------------------------------------------------------ 영업일

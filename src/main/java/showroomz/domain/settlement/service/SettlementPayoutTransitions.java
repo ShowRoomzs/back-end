@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.domain.bank.entity.Bank;
+import showroomz.domain.bank.repository.BankRepository;
 import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.repository.GroupBuyRepository;
 import showroomz.domain.groupbuy.service.GroupBuyCommandService;
@@ -14,6 +16,7 @@ import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementPayout;
 import showroomz.domain.settlement.port.SettlementPayoutGateway.LineResult;
+import showroomz.domain.settlement.port.SettlementPayoutGateway.Outcome;
 import showroomz.domain.settlement.port.SettlementPayoutGateway.PayoutCommand;
 import showroomz.domain.settlement.port.SettlementPayoutGateway.PayoutLine;
 import showroomz.domain.settlement.port.SettlementPayoutGateway.PayoutResult;
@@ -61,6 +64,7 @@ public class SettlementPayoutTransitions {
     private final GroupBuyRepository groupBuyRepository;
     private final GroupBuyCommandService groupBuyCommandService;
     private final PayoutBlockPolicy blockPolicy;
+    private final BankRepository bankRepository;
 
     /** 지급 계좌 — 스냅샷의 원천(회원 정보 · 브랜드는 확정 시점 · 그 밖은 지시 시점). 플랫폼은 내부 계정이다. */
     public record Account(String bankName, String accountNumber, String holder) {
@@ -86,6 +90,8 @@ public class SettlementPayoutTransitions {
         Account brand = accountOf(settlement.getMarket().getSeller());
         Account creator = accountOf(settlement.getCreator());
         String settlementNumber = settlement.getSettlementNumber();
+        Long marketId = settlement.getMarketId();
+        Long creatorId = settlement.getCreatorId();
 
         List<PayoutLine> lines = new ArrayList<>();
         for (SettlementPayout payout : payoutRepository.findBySettlementId(settlementId)) {
@@ -117,8 +123,15 @@ public class SettlementPayoutTransitions {
             }
             if (payoutRepository.markRequested(payout.getId(), account.bankName(), cipher.encrypt(account.accountNumber()),
                     account.holder(), now) == 1) {
+                Long payeeRefId = switch (payout.getPayee()) {
+                    case BRAND -> marketId;
+                    case CREATOR -> creatorId;
+                    case PLATFORM -> null;
+                };
+                String bankCode = account.bankName() == null ? null
+                        : bankRepository.findByName(account.bankName().trim()).map(Bank::getCode).orElse(null);
                 lines.add(new PayoutLine(payout.getId(), payout.getPayee(), payout.getAmount(), account.bankName(),
-                        account.accountNumber(), account.holder()));
+                        account.accountNumber(), account.holder(), payeeRefId, payout.getAttempt(), bankCode));
                 historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_REQUESTED,
                         "%s · %,d원 지급 지시".formatted(payout.getPayee().getLabel(), payout.getAmount()), now);
             }
@@ -131,15 +144,53 @@ public class SettlementPayoutTransitions {
     public void applyResults(Long settlementId, PayoutCommand command, PayoutResult result, LocalDateTime now) {
         Map<Long, PayoutLine> sent = command.lines().stream()
                 .collect(Collectors.toMap(PayoutLine::payoutId, Function.identity()));
+        applyLines(settlementId, sent, result.lines(), now, false);
+    }
+
+    /**
+     * 결과 조회(포트원 설계서 5-4) 반영 — REQUESTED 행을 PG 가 알려 준 대로 닫는다. 돌려주지 않은 행은 그대로다.
+     * REQUESTED 로 남기되 사유(failCode — 지급액 불일치 등)가 붙은 것은 사람을 부른다(이력 1회 · 사유가 바뀔 때만).
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void applyLookupResults(Long settlementId, List<LineResult> results, LocalDateTime now) {
+        Map<Long, SettlementPayout> rows = payoutRepository.findBySettlementId(settlementId).stream()
+                .filter(p -> p.getStatus() == PayoutStatus.REQUESTED)
+                .collect(Collectors.toMap(SettlementPayout::getId, Function.identity()));
+        Map<Long, PayoutLine> lines = new java.util.HashMap<>();
+        Map<Long, String> previousCodes = new java.util.HashMap<>();
+        for (SettlementPayout row : rows.values()) {
+            lines.put(row.getId(), new PayoutLine(row.getId(), row.getPayee(), row.getAmount(), null, null, null, null,
+                    row.getAttempt()));
+            previousCodes.put(row.getId(), row.getFailCode());
+        }
+        for (LineResult line : results) {
+            PayoutLine request = lines.get(line.payoutId());
+            if (request == null || line.outcome() != Outcome.REQUESTED || line.failCode() == null
+                    || line.failCode().equals(previousCodes.get(line.payoutId()))) {
+                continue;
+            }
+            historyRecorder.record(settlementId, SettlementEventType.PAYOUT_CHECK_REQUIRED, SettlementActorType.PG, null,
+                    "%s · %s · %s".formatted(request.payee().getLabel(), line.failCode(),
+                            line.failReason() == null ? "" : line.failReason()), now);
+            notifier.payoutCheckRequired(settlementId, request.payee(), line.failCode());
+        }
+        applyLines(settlementId, lines, results, now, true);
+    }
+
+    private void applyLines(Long settlementId, Map<Long, PayoutLine> sent, List<LineResult> results, LocalDateTime now,
+                            boolean fromLookup) {
         boolean creatorPaid = false;
-        for (LineResult line : result.lines()) {
+        for (LineResult line : results) {
             PayoutLine request = sent.get(line.payoutId());
             if (request == null) {
                 continue;
             }
             switch (line.outcome()) {
                 case PAID -> {
-                    if (payoutRepository.markPaid(line.payoutId(), line.pgReference(), now) == 1) {
+                    int updated = fromLookup
+                            ? payoutRepository.markPaidByPg(line.payoutId(), line.pgReference(), now)
+                            : payoutRepository.markPaid(line.payoutId(), line.pgReference(), now);
+                    if (updated == 1) {
                         historyRecorder.record(settlementId, SettlementEventType.PAYOUT_PAID, SettlementActorType.PG,
                                 null, "%s · %,d원 · %s".formatted(request.payee().getLabel(), request.amount(),
                                         line.pgReference()), now);
@@ -156,13 +207,56 @@ public class SettlementPayoutTransitions {
                         notifier.payoutFailed(settlementId, request.payee());
                     }
                 }
-                case REQUESTED -> payoutRepository.recordReference(line.payoutId(), line.pgReference());
+                case REQUESTED -> {
+                    if (line.pgTransferId() != null || line.failCode() != null) {
+                        payoutRepository.recordTransfer(line.payoutId(), line.pgTransferId(), line.failCode(),
+                                line.failReason());
+                    }
+                    if (line.pgReference() != null) {
+                        payoutRepository.recordReference(line.payoutId(), line.pgReference());
+                    }
+                }
             }
         }
         if (creatorPaid) {
             taxDocumentHook.onCreatorPaid(settlementId, now);
         }
         derive(settlementId, now);
+    }
+
+    /**
+     * 파트너 사유 보류 해제(포트원 설계서 4-3) — 파트너가 다시 승인됐을 때. 인플루언서 행에 다른 보류 사유(주민등록번호 · 세금계산서)가
+     * 남아 있으면 사유만 지우고 BLOCKED 로 둔다(기존 재판정이 푼다).
+     *
+     * @return 지급 예정으로 옮겼으면 true
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean releasePartnerBlocked(Long settlementId, Long payoutId, SettlementPayee payee, LocalDate today) {
+        Settlement settlement = settlementRepository.findForUpdate(settlementId).orElse(null);
+        if (settlement == null) {
+            return false;
+        }
+        if (payee == SettlementPayee.CREATOR && blockPolicy.isBlocked(settlement)) {
+            payoutRepository.releaseBlocked(payoutId, PayoutStatus.BLOCKED, null);
+            return false;
+        }
+        LocalDate due = settlement.getPayoutDueDate() == null || settlement.getPayoutDueDate().isBefore(today)
+                ? today : settlement.getPayoutDueDate();
+        return payoutRepository.releaseBlocked(payoutId, PayoutStatus.SCHEDULED, due) == 1;
+    }
+
+    /** 파트너 재등록이 다른 사유로 또 실패했다 — 보류 사유만 바꾼다. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void updateBlockReason(Long payoutId, String failCode, String failReason) {
+        payoutRepository.updateBlockReason(payoutId, failCode, failReason);
+    }
+
+    /** 지급 미실행(포트원 설계서 9-2) — 지시 뒤 N영업일이 지나도 PG 지급이 없다. 이력 · 운영자 알림. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markExecutionOverdue(Long settlementId, SettlementPayee payee, LocalDateTime now) {
+        historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_CHECK_REQUIRED,
+                payee.getLabel() + " · 지급 미실행 — PG 콘솔에서 일괄 지급을 실행해야 합니다", now);
+        notifier.payoutExecutionOverdue(settlementId);
     }
 
     /**

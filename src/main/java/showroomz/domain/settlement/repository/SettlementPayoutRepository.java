@@ -123,6 +123,64 @@ public interface SettlementPayoutRepository extends JpaRepository<SettlementPayo
             + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.REQUESTED")
     int recordReference(@Param("payoutId") Long payoutId, @Param("pgReference") String pgReference);
 
+    // ------------------------------------------------------------------ 포트원 파트너 정산(44 포트원 설계서 5절)
+
+    /** 정산건 생성 성공 — REQUESTED 행에 PG 정산건 id 를 적는다. 결과 조회 중 적는 메모(failCode)도 같은 자리. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE SettlementPayout p SET p.pgTransferId = COALESCE(:pgTransferId, p.pgTransferId), "
+            + "p.failCode = :failCode, p.failReason = :failReason "
+            + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.REQUESTED")
+    int recordTransfer(@Param("payoutId") Long payoutId, @Param("pgTransferId") String pgTransferId,
+                       @Param("failCode") String failCode, @Param("failReason") String failReason);
+
+    /** PG 결과 조회로 닫는 지급 완료 — 지급 id 를 참조번호와 함께 적는다. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE SettlementPayout p SET p.status = showroomz.domain.settlement.type.PayoutStatus.PAID, "
+            + "p.pgReference = :pgReference, p.pgPayoutId = :pgReference, p.paidAt = :paidAt, "
+            + "p.failCode = NULL, p.failReason = NULL "
+            + "WHERE p.id = :payoutId AND p.status IN (showroomz.domain.settlement.type.PayoutStatus.SCHEDULED, "
+            + "    showroomz.domain.settlement.type.PayoutStatus.REQUESTED)")
+    int markPaidByPg(@Param("payoutId") Long payoutId, @Param("pgReference") String pgReference,
+                     @Param("paidAt") LocalDateTime paidAt);
+
+    /** 파트너 등록 실패 — 확정된 행을 사유와 함께 보류(4-3). 예정일은 지운다(재판정이 다시 정한다). */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE SettlementPayout p SET p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED, "
+            + "p.dueDate = NULL, p.failCode = :failCode, p.failReason = :failReason "
+            + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.SCHEDULED")
+    int blockWithReason(@Param("payoutId") Long payoutId, @Param("failCode") String failCode,
+                        @Param("failReason") String failReason);
+
+    /** 이미 보류 중인 행의 사유 갱신(주민등록번호 보류에 파트너 사유를 덧붙일 때 · 재시도 실패 사유 변경). */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE SettlementPayout p SET p.failCode = :failCode, p.failReason = :failReason "
+            + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED")
+    int updateBlockReason(@Param("payoutId") Long payoutId, @Param("failCode") String failCode,
+                          @Param("failReason") String failReason);
+
+    /** 보류 해제 — 사유를 지우고 지급 예정으로. 다른 보류 사유(주민등록번호)가 남으면 호출자가 사유만 지운다. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE SettlementPayout p SET p.status = :to, p.dueDate = :dueDate, p.failCode = NULL, p.failReason = NULL "
+            + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED")
+    int releaseBlocked(@Param("payoutId") Long payoutId, @Param("to") PayoutStatus to, @Param("dueDate") LocalDate dueDate);
+
+    /** 파트너 사유로 보류된 행(수취자 무관) — 지급 배치 앞단 재판정 대상. */
+    @Query("SELECT p FROM SettlementPayout p WHERE p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED "
+            + "AND p.failCode IN :failCodes ORDER BY p.id ASC")
+    List<SettlementPayout> findBlockedWithFailCodes(@Param("failCodes") Collection<String> failCodes,
+                                                     org.springframework.data.domain.Pageable pageable);
+
+    /** 결과 대기 행 — 정산 단위로 묶어 PG 에 조회한다. */
+    @Query("SELECT p FROM SettlementPayout p WHERE p.status = showroomz.domain.settlement.type.PayoutStatus.REQUESTED "
+            + "ORDER BY p.settlementId ASC, p.id ASC")
+    List<SettlementPayout> findRequested(org.springframework.data.domain.Pageable pageable);
+
+    /** 오늘 지시한 행 수 · 합계 — 대조 알림(5-3). [count, sum]. */
+    @Query("SELECT COUNT(p), COALESCE(SUM(p.amount), 0) FROM SettlementPayout p "
+            + "WHERE p.status = showroomz.domain.settlement.type.PayoutStatus.REQUESTED "
+            + "AND p.pgTransferId IS NOT NULL AND p.requestedAt >= :from AND p.requestedAt < :to")
+    List<Object[]> countRequestedBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
     /**
      * 재분배(7-5 M3) — FAILED → SCHEDULED(오늘) · 횟수 + 1 · 계좌 재스냅샷(현재 회원 정보면 새 값 · 이전 계좌면 그대로).
      * 금액은 손대지 않는다.

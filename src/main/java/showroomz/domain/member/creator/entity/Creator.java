@@ -103,6 +103,27 @@ public class Creator extends BaseTimeEntity {
     @Column(name = "BANKBOOK_IMAGE_URL", length = 1024)
     private String bankbookImageUrl;
 
+    // PG 파트너 정산 연결(44 포트원 설계서 3-1) — 인플루언서 = 포트원 파트너 1건
+    @Column(name = "PORTONE_PARTNER_ID", length = 64)
+    private String portonePartnerId;
+
+    @Column(name = "PORTONE_PARTNER_STATUS", length = 16)
+    private String portonePartnerStatus;
+
+    @Column(name = "PORTONE_PARTNER_SYNCED_AT")
+    private LocalDateTime portonePartnerSyncedAt;
+
+    /** 포트원에 보낸 계좌의 sha256(bank|number|holder) — 평문 비교 없이 변경을 감지한다. */
+    @Column(name = "PORTONE_PARTNER_ACCOUNT_HASH", length = 64)
+    private String portonePartnerAccountHash;
+
+    public void linkPortOnePartner(String partnerId, String status, String accountHash, LocalDateTime at) {
+        this.portonePartnerId = partnerId;
+        this.portonePartnerStatus = status;
+        this.portonePartnerAccountHash = accountHash;
+        this.portonePartnerSyncedAt = at;
+    }
+
     /**
      * 주민등록번호 암호문 — 비사업자만(1009 기획 수정본 7-a). 원천징수 신고에만 복호화한다. 응답에 내리지 않는다.
      * 저장 형식은 {@code PersonalDataCipher} 참조.

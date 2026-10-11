@@ -58,7 +58,10 @@ class AdminChangeRequestServiceTest {
 
         adminChangeRequestService = new AdminChangeRequestService(
                 brandChangeRequestRepository, marketRepository, sellerRepository,
-                new ChangeRequestApplier(), mailService);
+                // PG 파트너 동기화 빈 없음 — 승인 뒤 훅은 ifAvailable 로 조용히 건너뛴다.
+                new ChangeRequestApplier(new org.springframework.beans.factory.support.DefaultListableBeanFactory()
+                        .getBeanProvider(showroomz.domain.settlement.service.SettlementPartnerSyncService.class)),
+                mailService);
     }
 
     private BrandChangeRequest pendingBusinessInfoRequest(String requestedName) {

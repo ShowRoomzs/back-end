@@ -36,6 +36,30 @@ public class SettlementNotifier {
         stub("ADMIN", "PAYOUT_FAILED:" + payee.name(), settlementId);
     }
 
+    // ------------------------------------------------------------------ PG 지급대행(44 포트원 설계서 4-3 · 5-3 · 5-4 · 9-2)
+
+    /** 파트너 등록 실패로 수취자 행 보류 — 운영자. */
+    public void payoutBlocked(Long settlementId, SettlementPayee payee, String reasonCode) {
+        stub("ADMIN", "PAYOUT_BLOCKED:" + payee.name() + ":" + reasonCode, settlementId);
+    }
+
+    /** 지시 끝 — 「D 일자 지급 N건 · 합계 — 콘솔에서 일괄 지급을 실행해 주세요」 · PG 대조 결과 포함. */
+    public void payoutReadyForExecution(java.time.LocalDate settlementDate, int ourCount, long ourAmount,
+                                        Integer pgCount, Long pgAmount) {
+        log.info("[settlement-notify:stub] to=ADMIN event=PAYOUT_READY_FOR_EXECUTION date={} ours={}건/{}원 pg={}건/{}원",
+                settlementDate, ourCount, ourAmount, pgCount, pgAmount);
+    }
+
+    /** 지시 뒤 N영업일 — 아직 PG 지급이 실행되지 않았다. */
+    public void payoutExecutionOverdue(Long settlementId) {
+        stub("ADMIN", "PAYOUT_EXECUTION_OVERDUE", settlementId);
+    }
+
+    /** 결과 조회가 사람을 부른다 — PG 보류 · 지급액 불일치. */
+    public void payoutCheckRequired(Long settlementId, SettlementPayee payee, String code) {
+        stub("ADMIN", "PAYOUT_CHECK_REQUIRED:" + payee.name() + ":" + code, settlementId);
+    }
+
     public void taxInvoiceSubmitted(Long settlementId) {
         stub("ADMIN", "TAX_INVOICE_SUBMITTED", settlementId);
     }
